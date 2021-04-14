@@ -206,7 +206,7 @@ namespace UnityEditor
                 }
                 else
                 {
-                    m_Texture.Resize(s_BaseTextureWidth, textureHeight);
+                    m_Texture.Reinitialize(s_BaseTextureWidth, textureHeight);
                 }
 
                 if (!clear)

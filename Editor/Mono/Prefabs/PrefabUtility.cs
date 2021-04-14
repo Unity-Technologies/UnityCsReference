@@ -302,6 +302,18 @@ namespace UnityEditor
                 ThrowExceptionIfInstanceIsPersistent(prefabInstanceObject);
         }
 
+        static void ThrowExceptionIfAllPrefabInstanceObjectsAreInvalid(Object[] prefabInstanceObjects, bool isApply)
+        {
+            foreach (var obj in prefabInstanceObjects)
+            {
+                if (obj != null && (obj is GameObject || obj is Component) && IsPartOfPrefabInstance(obj) && !(isApply && EditorUtility.IsPersistent(obj)))
+                    return;
+            }
+
+            // Throw exception if all objects are invalid
+            throw new ArgumentException("Cannot apply or revert on any of the objects. Attempt with individual objects for details.", nameof(prefabInstanceObjects));
+        }
+
         static void ThrowExceptionIfInstanceIsPersistent(Object prefabInstanceObject)
         {
             if (EditorUtility.IsPersistent(prefabInstanceObject))
@@ -840,8 +852,7 @@ namespace UnityEditor
             if (WarnIfInAnimationMode(OverrideOperation.Revert, action))
                 return;
 
-            Object prefabInstanceObject = instanceProperty.serializedObject.targetObject;
-            ThrowExceptionIfNotValidPrefabInstanceObject(prefabInstanceObject, false);
+            ThrowExceptionIfAllPrefabInstanceObjectsAreInvalid(instanceProperty.serializedObject.targetObjects, false);
 
             instanceProperty.prefabOverride = false;
             // Because prefabOverride changed ApplyModifiedProperties will do a prefab merge causing the revert.
@@ -1281,9 +1292,12 @@ namespace UnityEditor
             Object instanceObject,
             Action<GUIContent, Object> addApplyMenuItemAction,
             Action<GUIContent> addRevertMenuItemAction,
-            bool isAllDefaultOverridesComparedToOriginalSource = false)
+            bool isAllDefaultOverridesComparedToOriginalSource = false,
+            int targetCount = 1)
         {
-            HandleApplyMenuItems(thingThatChanged, instanceObject, addApplyMenuItemAction, isAllDefaultOverridesComparedToOriginalSource);
+            if (targetCount == 1)
+                HandleApplyMenuItems(thingThatChanged, instanceObject, addApplyMenuItemAction, isAllDefaultOverridesComparedToOriginalSource);
+
             HandleRevertMenuItem(thingThatChanged, addRevertMenuItemAction);
         }
 
@@ -1585,7 +1599,7 @@ namespace UnityEditor
 
             if (action == InteractionMode.UserAction)
             {
-                Undo.RegisterCreatedObjectUndo(GetPrefabInstanceHandle(instanceRoot), actionName);
+                Undo.RecordCreatedObject(GetPrefabInstanceHandle(instanceRoot), actionName);
             }
 
             return assetRoot;

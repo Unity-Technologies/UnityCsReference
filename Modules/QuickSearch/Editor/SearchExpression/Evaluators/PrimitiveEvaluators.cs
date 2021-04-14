@@ -15,16 +15,16 @@ namespace UnityEditor.Search
         [SearchExpressionEvaluator(SearchExpressionType.Function | SearchExpressionType.Literal)]
         public static IEnumerable<SearchItem> Constant(SearchExpressionContext c)
         {
-            if (c.expression.types.HasFlag(SearchExpressionType.Function))
+            if (c.expression.types.HasAny(SearchExpressionType.Function))
             {
                 using (c.runtime.Push(c.args[0], c.args.Skip(1)))
                     yield return Constant(c.runtime.current).First();
             }
-            else if (c.expression.types.HasFlag(SearchExpressionType.Number))
+            else if (c.expression.types.HasAny(SearchExpressionType.Number))
                 yield return EvaluatorUtils.CreateItem(c.expression.GetNumberValue(), c.expression.alias.ToString());
-            else if (c.expression.types.HasFlag(SearchExpressionType.Text))
+            else if (c.expression.types.HasAny(SearchExpressionType.Text | SearchExpressionType.Keyword))
                 yield return EvaluatorUtils.CreateItem(c.expression.innerText.ToString(), c.expression.alias.ToString());
-            else if (c.expression.types.HasFlag(SearchExpressionType.Boolean))
+            else if (c.expression.types.HasAny(SearchExpressionType.Boolean))
                 yield return EvaluatorUtils.CreateItem(c.expression.GetBooleanValue(), c.expression.alias.ToString());
             else
                 c.ThrowError($"Invalid constant expression");

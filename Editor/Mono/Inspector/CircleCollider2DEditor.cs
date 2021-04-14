@@ -24,7 +24,7 @@ namespace UnityEditor
         {
             serializedObject.Update();
 
-            EditorGUILayout.EditorToolbarForTarget(EditorGUIUtility.TrTempContent("Edit Collider"), target);
+            EditorGUILayout.EditorToolbarForTarget(EditorGUIUtility.TrTempContent("Edit Collider"), this);
 
             GUILayout.Space(5);
             base.OnInspectorGUI();

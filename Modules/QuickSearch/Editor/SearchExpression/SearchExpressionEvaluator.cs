@@ -191,7 +191,7 @@ namespace UnityEditor.Search
             if (innerException is SearchExpressionEvaluatorException runtimeEx)
                 return runtimeEx.errorView;
 
-            return c.expression?.outerText ?? innerException.Message.GetStringView();
+            return c.expression?.outerText ?? c.search.searchQuery.GetStringView();
         }
     }
 
@@ -245,24 +245,13 @@ namespace UnityEditor.Search
 
     static class EvaluatorUtils
     {
-        public static Regex s_SelectorFormatStr = new Regex(ParserUtils.k_QueryWithSelectorPattern);
-
         public static bool TryConvertToDouble(SearchItem item, out double value, string selector = null)
         {
             value = double.NaN;
             object itemValue = SelectorManager.SelectValue(item, null, selector);
             if (itemValue == null)
                 return false;
-
-            try
-            {
-                value = Convert.ToDouble(itemValue);
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            return Utils.TryGetNumber(itemValue, out value);
         }
 
         public static string CreateId()
@@ -360,15 +349,11 @@ namespace UnityEditor.Search
                 var value = SelectorManager.SelectValue(item, ctx, null);
                 return value == null ? "null" : value.ToString();
             }
-
-            var evaluator = new MatchEvaluator(match =>
+            return ParserUtils.ReplaceSelectorInExpr(formatString, (selector, cleanedSelector) =>
             {
-                var value = SelectorManager.SelectValue(item, ctx, match.Groups[2].Value.Substring(1));
-                if (value == null)
-                    return "<no value>";
-                return match.Value.Replace(match.Groups[2].Value, $"{value}");
+                var value = SelectorManager.SelectValue(item, ctx, cleanedSelector);
+                return value == null ? "<no value>" : value.ToString();
             });
-            return s_SelectorFormatStr.Replace(formatString, evaluator);
         }
 
         public static SearchExpression CreateStreamExpression(SearchExpression currentStream, string name = "<streamexpr>")

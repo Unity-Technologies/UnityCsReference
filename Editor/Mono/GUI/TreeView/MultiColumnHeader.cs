@@ -13,22 +13,27 @@ namespace UnityEditor.IMGUI.Controls
     public partial class MultiColumnHeader
     {
         MultiColumnHeaderState m_State;
-        float m_Height = DefaultGUI.defaultHeight;
         float m_DividerWidth = 6;
         Rect m_PreviousRect;
         bool m_ResizeToFit = false;
-        bool m_CanSort = true;
         GUIView m_GUIView;
         Rect[] m_ColumnRects;
+
+        int m_SelectedColumnIndex = -1; // Selected/Activated column (could be used to initiate a drag)
+        int m_DraggedColumnIndex = -1;  // Column currently being dragged
+        int m_HeaderButtonsControlID;
+        Rect m_TotalHeaderRect;
 
         public delegate void HeaderCallback(MultiColumnHeader multiColumnHeader);
         public event HeaderCallback sortingChanged;
         public event HeaderCallback visibleColumnsChanged;
+        public event Action<int> columnSettingsChanged;
+        public event Action<int, int> columnsSwapped;
 
-        public MultiColumnHeader(MultiColumnHeaderState state)
-        {
-            m_State = state;
-        }
+        public float height { get; set; } = DefaultGUI.defaultHeight;
+        public bool canSort { get; set; }
+        protected int currentColumnIndex { get; private set; } = -1;
+        protected bool allowDraggingColumnsToReorder { get; set; } = false;
 
         public int sortedColumnIndex
         {
@@ -41,6 +46,23 @@ namespace UnityEditor.IMGUI.Controls
                     OnSortingChanged();
                 }
             }
+        }
+
+        public MultiColumnHeaderState state
+        {
+            get { return m_State; }
+            set
+            {
+                if (value == null)
+                    throw new ArgumentNullException("state", "MultiColumnHeader state is not allowed to be null");
+                m_State = value;
+            }
+        }
+
+        public MultiColumnHeader(MultiColumnHeaderState state)
+        {
+            m_State = state;
+            m_HeaderButtonsControlID = GUIUtility.GetPermanentControlID();
         }
 
         public void SetSortingColumns(int[] columnIndices, bool[] sortAscending)
@@ -122,33 +144,6 @@ namespace UnityEditor.IMGUI.Controls
             if (columnIndex < 0 || columnIndex >= state.columns.Length)
                 throw new ArgumentOutOfRangeException("columnIndex", string.Format("columnIndex {0} is not valid when the current column count is {1}", columnIndex, state.columns.Length));
             return state.columns[columnIndex];
-        }
-
-        public MultiColumnHeaderState state
-        {
-            get { return m_State; }
-            set
-            {
-                if (value == null)
-                    throw new ArgumentNullException("state", "MultiColumnHeader state is not allowed to be null");
-                m_State = value;
-            }
-        }
-
-        public float height
-        {
-            get { return m_Height; }
-            set { m_Height = value; }
-        }
-
-        public bool canSort
-        {
-            get { return m_CanSort; }
-            set
-            {
-                m_CanSort = value;
-                height = m_Height;
-            }
         }
 
         public bool IsColumnVisible(int columnIndex)
@@ -241,19 +236,13 @@ namespace UnityEditor.IMGUI.Controls
             GUIClip.Push(rect, scrollOffset, Vector2.zero, false);
             {
                 Rect localRect = new Rect(0, 0, rect.width, rect.height);
+                m_TotalHeaderRect = localRect;
 
-                // Background ( We always add the width of the vertical scrollbar to accomodate if this is being shown below e.g by a tree view)
+                // Background ( We always add the width of the vertical scrollbar to accommodate if this is being shown below e.g by a tree view)
                 float widthOfAllColumns = state.widthOfAllVisibleColumns;
                 float backgroundWidth = (localRect.width > widthOfAllColumns ? localRect.width : widthOfAllColumns) + GUI.skin.verticalScrollbar.fixedWidth;
                 Rect backgroundRect = new Rect(0, 0, backgroundWidth, localRect.height);
                 GUI.Label(backgroundRect, GUIContent.none, DefaultStyles.background);
-
-                // Context menu
-                if (evt.type == EventType.ContextClick && backgroundRect.Contains(evt.mousePosition))
-                {
-                    evt.Use();
-                    DoContextMenu();
-                }
 
                 // Update column rects (cached for clients to have fast access to column rects by using GetCellRect)
                 UpdateColumnHeaderRects(localRect);
@@ -261,17 +250,30 @@ namespace UnityEditor.IMGUI.Controls
                 // Columns
                 for (int v = 0; v < state.visibleColumns.Length; v++)
                 {
-                    int columnIndex = state.visibleColumns[v];
-                    MultiColumnHeaderState.Column column = state.columns[columnIndex];
+                    currentColumnIndex = state.visibleColumns[v];
+
+                    MultiColumnHeaderState.Column column = state.columns[currentColumnIndex];
 
                     Rect headerRect = m_ColumnRects[v];
                     const float limitHeightOfDivider = 4f;
                     Rect dividerRect = new Rect(headerRect.xMax - 1, headerRect.y + limitHeightOfDivider, 1f, headerRect.height - 2 * limitHeightOfDivider);
 
+                    // Context menu
+                    if (evt.type == EventType.ContextClick && headerRect.Contains(evt.mousePosition))
+                    {
+                        evt.Use();
+                        DoContextMenu();
+                    }
+
                     // Resize columns logic
                     Rect dragRect = new Rect(dividerRect.x - m_DividerWidth * 0.5f, localRect.y, m_DividerWidth, localRect.height);
                     bool hasControl;
-                    column.width = EditorGUI.WidthResizer(dragRect, column.width, column.minWidth, column.maxWidth, out hasControl);
+                    var newColumnWidth = EditorGUI.WidthResizer(dragRect, column.width, column.minWidth, column.maxWidth, out hasControl);
+                    if (column.width != newColumnWidth)
+                    {
+                        column.width = newColumnWidth;
+                        columnSettingsChanged?.Invoke(currentColumnIndex);
+                    }
                     if (hasControl && evt.type == EventType.Repaint)
                     {
                         DrawColumnResizing(headerRect, column);
@@ -281,7 +283,16 @@ namespace UnityEditor.IMGUI.Controls
                     DrawDivider(dividerRect, column);
 
                     // Draw header (can be overridden)
-                    ColumnHeaderGUI(column, headerRect, columnIndex);
+                    ColumnHeaderGUI(column, headerRect, currentColumnIndex);
+                }
+
+                currentColumnIndex = -1;
+
+                // Context menu when clicked outside of a column header
+                if (evt.type == EventType.ContextClick && backgroundRect.Contains(evt.mousePosition))
+                {
+                    evt.Use();
+                    DoContextMenu();
                 }
             }
             GUIClip.Pop();
@@ -313,16 +324,13 @@ namespace UnityEditor.IMGUI.Controls
 
         protected virtual void OnSortingChanged()
         {
-            if (sortingChanged != null)
-                sortingChanged(this);
+            sortingChanged?.Invoke(this);
         }
 
         protected virtual void ColumnHeaderGUI(MultiColumnHeaderState.Column column, Rect headerRect, int columnIndex)
         {
-            if (canSort && column.canSort)
-            {
-                SortingButton(column, headerRect, columnIndex);
-            }
+            var evt = Event.current;
+            SortingButton(column, headerRect, columnIndex);
 
             GUIStyle style = GetStyle(column.headerTextAlignment);
 
@@ -333,25 +341,140 @@ namespace UnityEditor.IMGUI.Controls
 
         protected void SortingButton(MultiColumnHeaderState.Column column, Rect headerRect, int columnIndex)
         {
-            // Button logic
-            if (EditorGUI.Button(headerRect, GUIContent.none, GUIStyle.none))
+            DoSortingButtonAndColumnHeaderDragging(column, headerRect, columnIndex);
+        }
+
+        private void DoSortingButtonAndColumnHeaderDragging(MultiColumnHeaderState.Column column, Rect headerRect, int columnIndex)
+        {
+            var evt = Event.current;
+
+            switch (evt.GetTypeForControl(m_HeaderButtonsControlID))
             {
-                ColumnHeaderClicked(column, columnIndex);
+                case EventType.MouseDown:
+                {
+                    bool canBeInteractedWith = allowDraggingColumnsToReorder || (canSort && column.canSort);
+                    if (canBeInteractedWith && evt.button == 0 && GUIUtility.hotControl == 0)
+                    {
+                        var interactionRect = Inflate(headerRect, -10, -1, -10, -1);
+                        if (interactionRect.Contains(evt.mousePosition))
+                        {
+                            GUIUtility.hotControl = m_HeaderButtonsControlID;
+                            m_SelectedColumnIndex = columnIndex;
+                            evt.Use();
+                        }
+                    }
+                }
+                break;
+
+                case EventType.MouseDrag:
+                    if (allowDraggingColumnsToReorder && GUIUtility.hotControl == m_HeaderButtonsControlID)
+                    {
+                        if (m_DraggedColumnIndex == -1)
+                        {
+                            m_DraggedColumnIndex = m_SelectedColumnIndex;
+                            Repaint();
+                        }
+
+                        if (columnIndex == m_DraggedColumnIndex)
+                            return;
+
+                        var columnCenter = headerRect.center;
+                        float min, max;
+                        if (columnIndex < m_DraggedColumnIndex)
+                        {
+                            min = headerRect.x;
+                            max = columnCenter.x;
+                        }
+                        else
+                        {
+                            min = columnCenter.x;
+                            max = headerRect.xMax;
+                        }
+
+                        int visibleColumnIndex = GetVisibleColumnIndex(columnIndex);
+                        if (visibleColumnIndex == 0)
+                            min = float.MinValue;
+                        if (visibleColumnIndex == state.visibleColumns.Length - 1)
+                            max = float.MaxValue;
+
+                        var mousePosX = evt.mousePosition.x;
+                        var foundDragTargetColumn = mousePosX > min && mousePosX < max;
+
+                        if (foundDragTargetColumn)
+                        {
+                            MoveColumn(m_DraggedColumnIndex, columnIndex);
+                            m_DraggedColumnIndex = m_SelectedColumnIndex = columnIndex;
+                            Repaint();
+                            evt.Use();
+                        }
+                    }
+                    break;
+
+                case EventType.MouseUp:
+                    if (GUIUtility.hotControl == m_HeaderButtonsControlID && m_SelectedColumnIndex == columnIndex)
+                    {
+                        var selectedColumnIndex = m_SelectedColumnIndex;
+                        var dragging = m_DraggedColumnIndex >= 0;
+                        m_DraggedColumnIndex = -1;
+                        m_SelectedColumnIndex = -1;
+                        GUIUtility.hotControl = 0;
+                        evt.Use();
+
+                        if (canSort && column.canSort && !dragging)
+                        {
+                            if (selectedColumnIndex == columnIndex && headerRect.Contains(evt.mousePosition))
+                            {
+                                ColumnHeaderClicked(column, columnIndex);
+                            }
+                        }
+                    }
+                    break;
+
+                case EventType.Repaint:
+                    if (m_SelectedColumnIndex == columnIndex)
+                    {
+                        EditorGUI.DrawRect(headerRect, new Color(0.5f, 0.5f, 0.5f, 0.1f));
+                    }
+                    if (m_DraggedColumnIndex == columnIndex)
+                    {
+                        EditorGUIUtility.AddCursorRect(new Rect(-100000, -100000, 200000, 200000), MouseCursor.SlideArrow, m_HeaderButtonsControlID);
+                    }
+
+                    // Draw sorting arrow
+                    if (canSort && column.canSort && columnIndex == state.sortedColumnIndex)
+                    {
+                        var arrowRect = GetArrowRect(column, headerRect);
+
+                        Matrix4x4 normalMatrix = GUI.matrix;
+                        if (column.sortedAscending)
+                            GUIUtility.RotateAroundPivot(180, arrowRect.center - new Vector2(0, 1));
+
+                        GUI.Label(arrowRect, "\u25BE", DefaultStyles.arrowStyle);
+
+                        if (column.sortedAscending)
+                            GUI.matrix = normalMatrix;
+                    }
+
+                    break;
             }
+        }
 
-            // Draw sorting arrow
-            if (columnIndex == state.sortedColumnIndex && Event.current.type == EventType.Repaint)
+        internal void MoveColumn(int columnIndex, int targetColumnIndex)
+        {
+            // Swap columns until we reach our target index
+            int dir = targetColumnIndex > columnIndex ? 1 : -1;
+            int curIndex = columnIndex;
+            int count = 0;
+            while (curIndex != targetColumnIndex && count < 1000)
             {
-                var arrowRect = GetArrowRect(column, headerRect);
+                int next = curIndex + dir;
+                state.SwapColumns(curIndex, next);
 
-                Matrix4x4 normalMatrix = GUI.matrix;
-                if (column.sortedAscending)
-                    GUIUtility.RotateAroundPivot(180, arrowRect.center - new Vector2(0, 1));
+                UpdateColumnHeaderRects(m_TotalHeaderRect);
+                columnsSwapped?.Invoke(curIndex, next);
 
-                GUI.Label(arrowRect, "\u25BE", DefaultStyles.arrowStyle);
-
-                if (column.sortedAscending)
-                    GUI.matrix = normalMatrix;
+                curIndex = next;
+                count++;
             }
         }
 
@@ -418,8 +541,7 @@ namespace UnityEditor.IMGUI.Controls
 
         protected virtual void OnVisibleColumnsChanged()
         {
-            if (visibleColumnsChanged != null)
-                visibleColumnsChanged(this);
+            visibleColumnsChanged?.Invoke(this);
         }
 
         void ToggleVisibility(object userData)
@@ -506,6 +628,17 @@ namespace UnityEditor.IMGUI.Controls
                 column.width += deltaWidth * (column.width / totalAutoResizeWidth);
                 column.width = Mathf.Clamp(column.width, column.minWidth, column.maxWidth);
             }
+        }
+
+        private static Rect Inflate(Rect a, float left, float top, float right, float bottom)
+        {
+            return new Rect
+            {
+                xMin = a.xMin - left,
+                yMin = a.yMin - top,
+                xMax = a.xMax + right,
+                yMax = a.yMax + bottom
+            };
         }
     }
 }

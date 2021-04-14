@@ -58,7 +58,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 UnityLinkerPath = IL2CPPUtils.GetExePath("UnityLinker"),
                 NetCoreRunPath = NetCoreRunProgram.NetCoreRunPath,
                 EditorContentsPath = EditorApplication.applicationContentsPath,
-                ProjectDirectory = projectDirectory,
                 Packages = UnityBeeDriver.GetPackageInfos(NPath.CurrentDirectory.ToString()),
                 UnityVersion = Application.unityVersion,
                 UnitySourceCodePath = Unsupported.IsSourceBuild() ? Unsupported.GetBaseUnityDeveloperFolder() : null,

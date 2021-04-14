@@ -29,6 +29,11 @@ namespace UnityEditor.IMGUI.Controls
             public static GUIContent checkMarkContent = new GUIContent("✔");
         }
 
+        internal static void LoadStyles()
+        {
+            Debug.Assert(Event.current.type == EventType.Repaint && Styles.itemStyle != null);
+        }
+
         //This should ideally match line height
         private Vector2 s_IconSize = new Vector2(13, 13);
         private AdvancedDropdownDataSource m_DataSource;
@@ -49,13 +54,17 @@ namespace UnityEditor.IMGUI.Controls
 
         internal virtual void DrawItem(AdvancedDropdownItem item, string name, Texture2D icon, bool enabled, bool drawArrow, bool selected, bool hasSearch)
         {
-            var content = GUIContent.Temp(name, icon);
+            var content = item.content;
             var imgTemp = content.image;
             //we need to pretend we have an icon to calculate proper width in case
             if (content.image == null)
                 content.image = Texture2D.whiteTexture;
             var rect = GUILayoutUtility.GetRect(content, lineStyle, GUILayout.ExpandWidth(true));
             content.image = imgTemp;
+
+            if (!string.IsNullOrEmpty(content.tooltip) && rect.Contains(Event.current.mousePosition) &&
+                !string.Equals(content.tooltip, content.text, StringComparison.Ordinal))
+                GUIStyle.SetMouseTooltip(content.tooltip, rect);
 
             if (Event.current.type != EventType.Repaint)
                 return;
@@ -108,8 +117,8 @@ namespace UnityEditor.IMGUI.Controls
 
         internal void DrawHeader(AdvancedDropdownItem group, Action backButtonPressed, bool hasParent)
         {
-            var content = GUIContent.Temp(group.displayName, group.icon);
-            m_HeaderRect = GUILayoutUtility.GetRect(content, Styles.header, GUILayout.ExpandWidth(true));
+            var content = group.content;
+            m_HeaderRect = GUILayoutUtility.GetRect(content, Styles.header, GUILayout.ExpandWidth(true), GUILayout.MaxHeight(22));
             bool hovered = m_HeaderRect.Contains(Event.current.mousePosition);
 
             if (Event.current.type == EventType.Repaint)
@@ -136,7 +145,7 @@ namespace UnityEditor.IMGUI.Controls
 
         internal void DrawSearchField(bool isSearchFieldDisabled, string searchString, Action<string> searchChanged)
         {
-            if (!isSearchFieldDisabled)
+            if (!isSearchFieldDisabled && string.IsNullOrEmpty(GUI.GetNameOfFocusedControl()))
             {
                 EditorGUI.FocusTextInControl("ComponentSearch");
             }
@@ -189,7 +198,7 @@ namespace UnityEditor.IMGUI.Controls
 
             foreach (var child in dataSource.mainTree.children)
             {
-                var content = GUIContent.Temp(child.name, child.icon);
+                var content = child.content;
                 var a = lineStyle.CalcSize(content);
                 a.x += iconSize.x + 1;
 
@@ -222,7 +231,7 @@ namespace UnityEditor.IMGUI.Controls
             for (int i = 0; i < dataSource.mainTree.children.Count(); i++)
             {
                 var child = dataSource.mainTree.children.ElementAt(i);
-                var content = GUIContent.Temp(child.name, child.icon);
+                var content = child.content;
                 if (state.GetSelectedIndex(dataSource.mainTree) == i)
                 {
                     var diff = (lineStyle.CalcHeight(content, 0) - buttonRect.height) / 2f;

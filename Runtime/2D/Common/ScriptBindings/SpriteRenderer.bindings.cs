@@ -5,6 +5,8 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.Bindings;
+using UnityEngine.Events;
+using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
@@ -32,6 +34,34 @@ namespace UnityEngine
     [RequireComponent(typeof(Transform))]
     public sealed partial class SpriteRenderer : Renderer
     {
+        UnityEvent<SpriteRenderer> m_SpriteChangeEvent;
+
+        public void RegisterSpriteChangeCallback(UnityEngine.Events.UnityAction<SpriteRenderer> callback)
+        {
+            if (m_SpriteChangeEvent == null)
+                m_SpriteChangeEvent = new UnityEvent<SpriteRenderer>();
+            m_SpriteChangeEvent.AddListener(callback);
+        }
+
+        public void UnregisterSpriteChangeCallback(UnityEngine.Events.UnityAction<SpriteRenderer> callback)
+        {
+            if (m_SpriteChangeEvent != null)
+                m_SpriteChangeEvent.RemoveListener(callback);
+        }
+
+        [RequiredByNativeCode]
+        void InvokeSpriteChanged()
+        {
+            try
+            {
+                m_SpriteChangeEvent?.Invoke(this);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex, this);
+            }
+        }
+
         internal extern bool shouldSupportTiling
         {
             [NativeMethod("ShouldSupportTiling")]

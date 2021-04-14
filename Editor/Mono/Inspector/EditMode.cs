@@ -82,26 +82,6 @@ namespace UnityEditorInternal
             ParticleSystemShapeModuleScale
         }
 
-        static EditModeTool GetTool(IToolModeOwner owner, SceneViewEditMode mode)
-        {
-            var editor = owner as Editor;
-
-            if (editor == null)
-                return null;
-
-            var editorType = editor.GetType();
-
-            return EditorToolManager.GetCustomEditorTool(x =>
-            {
-                var tool = x as EditModeTool;
-                return tool != null
-                && tool.editMode == mode
-                && tool.owner == owner
-                && tool.editorType == editorType
-                && tool.target == editor.target;
-            }, true) as EditModeTool;
-        }
-
         public static bool IsOwner(Editor editor)
         {
             return IsOwner((IToolModeOwner)editor);
@@ -255,7 +235,7 @@ namespace UnityEditorInternal
         {
             if (mode == SceneViewEditMode.None)
             {
-                var activeToolIsEditModeTool = (EditorToolManager.activeTool is EditModeTool || EditorToolManager.activeTool is NoneTool);
+                var activeToolIsEditModeTool = EditorToolManager.activeTool is NoneTool;
 
                 if (s_EditMode != SceneViewEditMode.None && activeToolIsEditModeTool)
                     ToolManager.RestorePreviousPersistentTool();
@@ -264,13 +244,7 @@ namespace UnityEditorInternal
                 return;
             }
 
-            var tool = GetTool(owner, mode);
-
-            if (tool != null)
-                ToolManager.SetActiveTool(tool);
-            else
-                // SceneViewEditModeTool doesn't exist, use old path
-                ToolManager.SetActiveTool<NoneTool>();
+            ToolManager.SetActiveTool<NoneTool>();
 
             EditModeToolStateChanged(owner, mode);
         }

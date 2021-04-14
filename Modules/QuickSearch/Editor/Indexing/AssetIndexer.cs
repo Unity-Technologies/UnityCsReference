@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -82,11 +83,31 @@ namespace UnityEditor.Search
             }
         }
 
+        private void IndexSubAsset(Object subObj, string containerPath, bool checkIfDocumentExists, bool hasCustomIndexers)
+        {
+            var gid = GlobalObjectId.GetGlobalObjectIdSlow(subObj);
+            var id = gid.ToString();
+            var containerName = Path.GetFileNameWithoutExtension(containerPath);
+            var objPathName = Utils.RemoveInvalidCharsFromPath($"{containerName}/{subObj.name}", ' ');
+            var subObjDocumentIndex = AddDocument(id, objPathName, containerPath, checkIfDocumentExists);
+
+            IndexTypes(subObj.GetType(), subObjDocumentIndex);
+            IndexProperty(subObjDocumentIndex, "is", "nested", saveKeyword: true, exact: true);
+            IndexProperty(subObjDocumentIndex, "is", "subasset", saveKeyword: true, exact: true);
+            AddProperty("ref", containerPath.ToLowerInvariant(), subObjDocumentIndex);
+
+            if (hasCustomIndexers)
+                IndexCustomProperties(id, subObjDocumentIndex, subObj);
+
+            IndexWordComponents(subObjDocumentIndex, subObj.name);
+            IndexObject(subObjDocumentIndex, subObj, settings.options.dependencies);
+        }
+
         public override void IndexDocument(string path, bool checkIfDocumentExists)
         {
             int assetInstanceId = Utils.GetMainAssetInstanceID(path);
             var globalObjectId = GlobalObjectId.GetGlobalObjectIdSlow(assetInstanceId);
-            var documentIndex = AddDocument(globalObjectId.ToString(), path, checkIfDocumentExists);
+            var documentIndex = AddDocument(globalObjectId.ToString(), null, path, checkIfDocumentExists);
             if (documentIndex < 0)
                 return;
 
@@ -131,7 +152,14 @@ namespace UnityEditor.Search
                 IndexTypes(at, documentIndex);
 
                 foreach (var obj in AssetDatabase.LoadAllAssetRepresentationsAtPath(path).Where(o => o))
+                {
                     IndexTypes(obj.GetType(), documentIndex);
+
+                    if (!AssetDatabase.IsSubAsset(obj))
+                        continue;
+
+                    IndexSubAsset(obj, path, checkIfDocumentExists, hasCustomIndexers);
+                }
             }
             else if (at != null)
             {
@@ -143,7 +171,7 @@ namespace UnityEditor.Search
             foreach (var label in labels)
                 IndexProperty(documentIndex, "l", label, saveKeyword: true);
 
-            if (settings.options.properties || settings.options.extended)
+            if (settings.options.properties)
             {
                 bool wasLoaded = AssetDatabase.IsMainAssetAtPathLoaded(path);
                 bool isPrefab = path.EndsWith(".prefab");
@@ -155,34 +183,28 @@ namespace UnityEditor.Search
                 if (hasCustomIndexers)
                     IndexCustomProperties(path, documentIndex, mainAsset);
 
-                if (!String.IsNullOrEmpty(mainAsset.name))
+                if (!string.IsNullOrEmpty(mainAsset.name))
                     IndexWord(documentIndex, mainAsset.name, true);
 
                 if (settings.options.properties)
-                    IndexObject(documentIndex, mainAsset);
+                    IndexObject(documentIndex, mainAsset, settings.options.dependencies);
 
-                if (settings.options.extended)
+                if (mainAsset is GameObject go)
                 {
-                    var importSettings = AssetImporter.GetAtPath(path);
-                    if (importSettings)
-                        IndexObject(documentIndex, importSettings, dependencies: settings.options.dependencies, recursive: true);
-                }
-
-                if (settings.options.properties)
-                {
-                    if (mainAsset is GameObject go)
+                    foreach (var v in go.GetComponents(typeof(Component)))
                     {
-                        foreach (var v in go.GetComponents(typeof(Component)))
-                        {
-                            if (!v || v.GetType() == typeof(Transform))
-                                continue;
-                            IndexPropertyComponents(documentIndex, "t", v.GetType().Name);
+                        if (!v || v.GetType() == typeof(Transform) || (v.hideFlags & (HideFlags.DontSave | HideFlags.HideInInspector)) != 0)
+                            continue;
+                        IndexPropertyComponents(documentIndex, "t", v.GetType().Name);
 
-                            if (settings.options.properties)
-                                IndexObject(documentIndex, v, dependencies: settings.options.dependencies);
-                        }
+                        if (settings.options.properties)
+                            IndexObject(documentIndex, v, dependencies: settings.options.dependencies);
                     }
                 }
+
+                var importSettings = AssetImporter.GetAtPath(path);
+                if (importSettings)
+                    IndexObject(documentIndex, importSettings, dependencies: settings.options.dependencies, recursive: true);
 
                 if (!wasLoaded)
                 {
@@ -198,6 +220,9 @@ namespace UnityEditor.Search
                 }
             }
 
+            if (settings.options.extended)
+                IndexSceneDocument(path, checkIfDocumentExists);
+
             if (settings.options.dependencies)
             {
                 foreach (var depPath in AssetDatabase.GetDependencies(path, false))
@@ -206,6 +231,185 @@ namespace UnityEditor.Search
                         continue;
                     AddReference(documentIndex, depPath);
                 }
+            }
+        }
+
+        public bool IndexSceneDocument(string scenePath, bool checkIfDocumentExists)
+        {
+            if (scenePath.EndsWith(".unity", StringComparison.OrdinalIgnoreCase))
+            {
+                IndexScene(scenePath, checkIfDocumentExists);
+                return true;
+            }
+            else if (scenePath.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase))
+            {
+                IndexPrefab(scenePath, checkIfDocumentExists);
+                return true;
+            }
+            return false;
+        }
+
+        private void IndexObjects(GameObject[] objects, string type, string containerName, string containerPath, bool checkIfDocumentExists)
+        {
+            var options = settings.options;
+            var globalIds = new GlobalObjectId[objects.Length];
+            GlobalObjectId.GetGlobalObjectIdsSlow(objects, globalIds);
+
+            for (int i = 0; i < objects.Length; ++i)
+            {
+                var obj = objects[i];
+                if (!obj || (obj.hideFlags & (HideFlags.DontSave | HideFlags.HideInHierarchy)) != 0)
+                    continue;
+
+                var gid = globalIds[i];
+                if (gid.identifierType == 0 || gid.assetGUID.Empty())
+                    continue;
+
+                if (PrefabUtility.IsPrefabAssetMissing(obj))
+                    continue;
+
+                if (obj.tag?.Equals("noindex~", StringComparison.Ordinal) ?? false)
+                    continue;
+
+                var id = gid.ToString();
+                var transformPath = SearchUtils.GetTransformPath(obj.transform);
+                var documentIndex = AddDocument(id, transformPath, containerPath, checkIfDocumentExists);
+
+                IndexNumber(documentIndex, "depth", GetObjectDepth(obj));
+                IndexWordComponents(documentIndex, Path.GetFileName(transformPath));
+                IndexProperty(documentIndex, "is", "nested", saveKeyword: true, exact: true);
+                IndexProperty(documentIndex, "from", type, saveKeyword: true, exact: true);
+                IndexProperty(documentIndex, type, containerName, saveKeyword: true);
+                IndexProperty(documentIndex, type, containerPath, exact: true, saveKeyword: true);
+                IndexGameObject(documentIndex, obj, options);
+                IndexCustomGameObjectProperties(id, documentIndex, obj);
+            }
+        }
+
+        private int GetObjectDepth(GameObject obj)
+        {
+            int depth = 1;
+            var transform = obj.transform;
+            while (transform != null && transform.root != transform)
+            {
+                ++depth;
+                transform = transform.parent;
+            }
+            return depth;
+        }
+
+        private void IndexPrefab(string prefabPath, bool checkIfDocumentExists)
+        {
+            var prefabRoot = PrefabUtility.LoadPrefabContents(prefabPath);
+            if (!prefabRoot)
+                return;
+            try
+            {
+                var objects = SceneModeUtility.GetObjects(new[] { prefabRoot }, true);
+                IndexObjects(objects, "prefab", prefabRoot.name, prefabPath, checkIfDocumentExists);
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(prefabRoot);
+            }
+        }
+
+        private void IndexScene(string scenePath, bool checkIfDocumentExists)
+        {
+            bool sceneAdded = false;
+            var scene = EditorSceneManager.GetSceneByPath(scenePath);
+            try
+            {
+                if (scene == null || !scene.isLoaded)
+                {
+                    scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Additive);
+                    sceneAdded = scene != null && scene.isLoaded;
+                }
+
+                if (scene == null || !scene.isLoaded)
+                    return;
+
+                var objects = SearchUtils.FetchGameObjects(scene);
+                IndexObjects(objects, "scene", scene.name, scenePath, checkIfDocumentExists);
+            }
+            finally
+            {
+                if (sceneAdded)
+                    EditorSceneManager.CloseScene(scene, true);
+            }
+        }
+
+        private void IndexGameObject(int documentIndex, GameObject go, SearchDatabase.Options options)
+        {
+            if (go.transform.root != go.transform)
+                IndexProperty(documentIndex, "is", "child", saveKeyword: true, exact: true);
+            else
+                IndexProperty(documentIndex, "is", "root", saveKeyword: true, exact: true);
+
+            if (go.transform.childCount == 0)
+                IndexProperty(documentIndex, "is", "leaf", saveKeyword: true, exact: true);
+
+            IndexNumber(documentIndex, "layer", go.layer);
+            IndexProperty(documentIndex, "tag", go.tag, saveKeyword: true);
+
+            if (PrefabUtility.IsAnyPrefabInstanceRoot(go))
+            {
+                IndexProperty(documentIndex, "t", "prefab", saveKeyword: true, exact: true);
+                IndexProperty(documentIndex, "prefab", "root", saveKeyword: true, exact: true);
+            }
+
+            if (options.types)
+            {
+                if (PrefabUtility.IsPartOfPrefabInstance(go)) IndexProperty(documentIndex, "prefab", "instance", saveKeyword: true, exact: true);
+                if (PrefabUtility.IsOutermostPrefabInstanceRoot(go)) IndexProperty(documentIndex, "prefab", "top", saveKeyword: true, exact: true);
+                if (PrefabUtility.IsPartOfNonAssetPrefabInstance(go)) IndexProperty(documentIndex, "prefab", "nonasset", saveKeyword: true, exact: true);
+                if (PrefabUtility.IsPartOfPrefabAsset(go)) IndexProperty(documentIndex, "prefab", "asset", saveKeyword: true, exact: true);
+                if (PrefabUtility.IsPartOfAnyPrefab(go)) IndexProperty(documentIndex, "prefab", "any", saveKeyword: true, exact: true);
+                if (PrefabUtility.IsPartOfModelPrefab(go)) IndexProperty(documentIndex, "prefab", "model", saveKeyword: true, exact: true);
+                if (PrefabUtility.IsPartOfRegularPrefab(go)) IndexProperty(documentIndex, "prefab", "regular", saveKeyword: true, exact: true);
+                if (PrefabUtility.IsPartOfVariantPrefab(go)) IndexProperty(documentIndex, "prefab", "variant", saveKeyword: true, exact: true);
+                if (PrefabUtility.HasPrefabInstanceAnyOverrides(go, false)) IndexProperty(documentIndex, "prefab", "modified", saveKeyword: true, exact: true);
+
+                if (options.dependencies)
+                {
+                    var prefabPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(go);
+                    AddReference(documentIndex, prefabPath);
+                }
+            }
+
+            if (options.properties)
+                IndexObject(documentIndex, go, options.dependencies);
+
+            var gocs = go.GetComponents<Component>();
+            IndexNumber(documentIndex, "components", gocs.Length);
+
+            for (int componentIndex = 1; componentIndex < gocs.Length; ++componentIndex)
+            {
+                var c = gocs[componentIndex];
+                if (!c || (c.hideFlags & (HideFlags.DontSave | HideFlags.HideInInspector)) != 0)
+                    continue;
+
+                if (options.types)
+                    IndexProperty(documentIndex, "t", c.GetType().Name.ToLowerInvariant(), saveKeyword: true);
+
+                if (options.properties)
+                    IndexObject(documentIndex, c, options.dependencies);
+            }
+        }
+
+        private void IndexCustomGameObjectProperties(string id, int documentIndex, GameObject go)
+        {
+            if (HasCustomIndexers(go.GetType()))
+                IndexCustomProperties(id, documentIndex, go);
+
+            var gocs = go.GetComponents<Component>();
+            for (var componentIndex = 0; componentIndex < gocs.Length; ++componentIndex)
+            {
+                var c = gocs[componentIndex];
+                if (!c)
+                    continue;
+                if (HasCustomIndexers(c.GetType()))
+                    IndexCustomProperties(id, documentIndex, c);
             }
         }
     }

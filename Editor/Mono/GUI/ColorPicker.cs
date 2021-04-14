@@ -430,7 +430,7 @@ namespace UnityEditor
                     m_ColorBox = MakeTexture(xSize, ySize);
 
                 if (m_ColorBox.width != xSize || m_ColorBox.height != ySize)
-                    m_ColorBox.Resize(xSize, ySize);
+                    m_ColorBox.Reinitialize(xSize, ySize);
             }
 
             if ((int)m_ColorBoxMode != m_TextureColorBoxMode || m_LastConstant != constantValue || m_ColorSpaceBoxDirty)
@@ -1309,7 +1309,7 @@ namespace UnityEditor
             }
             if (preview.width != width || preview.height != height)
             {
-                preview.Resize(width, height);
+                preview.Reinitialize(width, height);
             }
 
             Vector2 p = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);

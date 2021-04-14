@@ -16,6 +16,23 @@ namespace UnityEditor.Search
         public float itemSize;
         public DisplayMode displayMode;
         public string group;
+        public SearchTable tableConfig;
+
+        public ResultViewState(DisplayMode mode, SearchTable tableConfig)
+        {
+            displayMode = mode;
+            itemSize = (float)mode;
+            group = null;
+            this.tableConfig = tableConfig;
+        }
+
+        public ResultViewState(DisplayMode mode, float itemSize)
+        {
+            displayMode = mode;
+            this.itemSize = itemSize;
+            group = null;
+            tableConfig = null;
+        }
     }
 
     /// <summary>
@@ -40,6 +57,8 @@ namespace UnityEditor.Search
         void Refresh(RefreshFlags flags = RefreshFlags.Default);
         ResultViewState SaveViewState(string name);
         void SetViewState(ResultViewState viewState);
+
+        void OnGroupChanged(string prevGroupId, string newGroupId);
     }
 
     abstract class ResultView : IResultView
@@ -68,8 +87,12 @@ namespace UnityEditor.Search
         protected bool compactView => itemSize == 0;
         public bool scrollbarVisible { get; protected set; }
 
-        public abstract int GetDisplayItemCount();
         public abstract void Draw(Rect rect, ICollection<int> selection);
+
+        public virtual int GetDisplayItemCount()
+        {
+            return items?.Count ?? 0;
+        }
 
         public void Draw(ICollection<int> selection, float viewWidth)
         {
@@ -85,13 +108,14 @@ namespace UnityEditor.Search
             // Do nothing
         }
 
+        public virtual void OnGroupChanged(string prevGroupId, string newGroupId)
+        {
+            // Do nothing
+        }
+
         public virtual ResultViewState SaveViewState(string name)
         {
-            return new ResultViewState()
-            {
-                itemSize = itemSize,
-                displayMode = searchView.displayMode
-            };
+            return new ResultViewState(searchView.displayMode, itemSize);
         }
 
         public virtual void SetViewState(ResultViewState viewState)
@@ -243,7 +267,7 @@ namespace UnityEditor.Search
             }
         }
 
-        protected void HandleKeyEvent(Event evt, List<int> selection)
+        protected virtual void HandleKeyEvent(Event evt, List<int> selection)
         {
             var ctrl = evt.control || evt.command;
             var selectedIndex = selection.Count == 0 ? k_ResetSelectionIndex : selection.Last();

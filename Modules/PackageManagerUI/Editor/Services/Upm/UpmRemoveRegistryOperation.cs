@@ -25,7 +25,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override RemoveScopedRegistryRequest CreateRequest()
         {
-            return Client.RemoveScopedRegistry(registryName);
+            return m_ClientProxy.RemoveScopedRegistry(registryName);
         }
     }
 }

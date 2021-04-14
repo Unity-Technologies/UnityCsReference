@@ -9,27 +9,12 @@ using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor.EditorTools
 {
-    [AttributeUsage(AttributeTargets.Class, Inherited = false)]
-    public sealed class EditorToolAttribute : Attribute
-    {
-        public string displayName { get; private set; }
-        public Type targetType { get; set; }
-
-        EditorToolAttribute() {}
-
-        public EditorToolAttribute(string displayName, Type targetType = null)
-        {
-            this.targetType = targetType;
-            this.displayName = displayName;
-        }
-    }
-
     public interface IDrawSelectedHandles
     {
         void OnDrawHandles();
     }
 
-    public abstract class EditorTool : ScriptableObject
+    public abstract class EditorTool : ScriptableObject, IEditor
     {
         [HideInInspector]
         [SerializeField]
@@ -59,7 +44,6 @@ namespace UnityEditor.EditorTools
             get { return m_Target == null ? Selection.activeObject : m_Target; }
         }
 
-        // [Obsolete("Use UnityEngine.IconAttribute")]
         public virtual GUIContent toolbarIcon
         {
             get { return null; }
@@ -79,6 +63,16 @@ namespace UnityEditor.EditorTools
         public virtual bool IsAvailable()
         {
             return true;
+        }
+
+        void IEditor.SetTarget(UnityObject value)
+        {
+            m_Target = value;
+        }
+
+        void IEditor.SetTargets(UnityObject[] value)
+        {
+            m_Targets = value;
         }
     }
 }

@@ -10,90 +10,384 @@ using System.Text.RegularExpressions;
 
 namespace UnityEditor.Search
 {
+    readonly struct PropertyRange
+    {
+        public readonly double min;
+        public readonly double max;
+
+        public PropertyRange(double min, double max)
+        {
+            this.min = min;
+            this.max = max;
+        }
+
+        public bool Contains(double f)
+        {
+            if (f >= min && f <= max)
+                return true;
+            return false;
+        }
+    }
+
+    readonly struct SearchColor : IEquatable<SearchColor>, IComparable<SearchColor>
+    {
+        public readonly byte r;
+        public readonly byte g;
+        public readonly byte b;
+        public readonly byte a;
+
+        public SearchColor(Color c)
+        {
+            r = (byte)Mathf.RoundToInt(c.r * 255f);
+            g = (byte)Mathf.RoundToInt(c.g * 255f);
+            b = (byte)Mathf.RoundToInt(c.b * 255f);
+            a = (byte)Mathf.RoundToInt(c.a * 255f);
+        }
+
+        public SearchColor(byte r, byte g, byte b, byte a)
+        {
+            this.r = r;
+            this.g = g;
+            this.b = b;
+            this.a = a;
+        }
+
+        public byte this[int index]
+        {
+            get
+            {
+                switch (index)
+                {
+                    case 0: return r;
+                    case 1: return g;
+                    case 2: return b;
+                    case 3: return a;
+                    default:
+                        throw new IndexOutOfRangeException("Invalid Color index(" + index + ")!");
+                }
+            }
+        }
+
+        public bool Equals(SearchColor other)
+        {
+            for (var i = 0; i < 4; ++i)
+            {
+                if (this[i] != other[i])
+                    return false;
+            }
+
+            return true;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is SearchColor ic)
+                return base.Equals(ic);
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return r.GetHashCode() ^ (g.GetHashCode() << 2) ^ (b.GetHashCode() >> 2) ^ (a.GetHashCode() >> 1);
+        }
+
+        public int CompareTo(SearchColor other)
+        {
+            for (var i = 0; i < 4; ++i)
+            {
+                if (this[i] > other[i])
+                    return 1;
+                if (this[i] < other[i])
+                    return -1;
+            }
+
+            return 0;
+        }
+
+        public static bool operator==(SearchColor lhs, SearchColor rhs)
+        {
+            return lhs.Equals(rhs);
+        }
+
+        public static bool operator!=(SearchColor lhs, SearchColor rhs)
+        {
+            return !lhs.Equals(rhs);
+        }
+
+        public static bool operator>(SearchColor lhs, SearchColor rhs)
+        {
+            return lhs.CompareTo(rhs) > 0;
+        }
+
+        public static bool operator<(SearchColor lhs, SearchColor rhs)
+        {
+            return lhs.CompareTo(rhs) < 0;
+        }
+
+        public static bool operator>=(SearchColor lhs, SearchColor rhs)
+        {
+            return lhs.CompareTo(rhs) >= 0;
+        }
+
+        public static bool operator<=(SearchColor lhs, SearchColor rhs)
+        {
+            return lhs.CompareTo(rhs) <= 0;
+        }
+
+        public override string ToString()
+        {
+            return $"RGBA({r}, {g}, {b}, {a})";
+        }
+    }
+
+    readonly struct SearchValue
+    {
+        public enum ValueType : byte
+        {
+            Nil = 0,
+            Bool,
+            Number,
+            Text,
+            Color
+        }
+
+        public readonly ValueType type;
+        public readonly double number;
+        public readonly string text;
+        public readonly SearchColor color;
+        public bool boolean => type == ValueType.Bool && number == 1d;
+
+        public bool valid => type != ValueType.Nil;
+
+        public static SearchValue invalid = new SearchValue();
+
+        public SearchValue(bool v)
+        {
+            this.type = ValueType.Bool;
+            this.number = v ? 1d : 0f;
+            this.text = null;
+            this.color = default;
+        }
+
+        public SearchValue(float number)
+        {
+            this.type = ValueType.Number;
+            this.number = Convert.ToDouble(number);
+            this.text = null;
+            this.color = default;
+        }
+
+        public SearchValue(double number)
+        {
+            this.type = ValueType.Number;
+            this.number = number;
+            this.text = null;
+            this.color = default;
+        }
+
+        public SearchValue(string text)
+        {
+            this.type = ValueType.Text;
+            this.number = float.NaN;
+            this.text = text;
+            this.color = default;
+        }
+
+        public SearchValue(Color color)
+        {
+            this.type = ValueType.Color;
+            this.number = float.NaN;
+            this.text = null;
+            this.color = new SearchColor(color);
+        }
+
+        public SearchValue(SearchColor color)
+        {
+            this.type = ValueType.Color;
+            this.number = float.NaN;
+            this.text = null;
+            this.color = color;
+        }
+
+        public SearchValue(object v)
+        {
+            if (v == null)
+            {
+                this.type = ValueType.Nil;
+                this.number = float.NaN;
+                this.text = null;
+                this.color = default;
+            }
+            else if (v is bool b)
+            {
+                this.type = ValueType.Bool;
+                this.number = b ? 1 : 0;
+                this.text = null;
+                this.color = default;
+            }
+            else if (v is string s)
+            {
+                this.type = ValueType.Text;
+                this.number = float.NaN;
+                this.text = s;
+                this.color = default;
+            }
+            else if (v is Color c)
+            {
+                this.type = ValueType.Color;
+                this.number = float.NaN;
+                this.text = null;
+                this.color = new SearchColor(c);
+            }
+            else if (Utils.TryGetNumber(v, out var d))
+            {
+                this.type = ValueType.Number;
+                this.number = (float)d;
+                this.text = null;
+                this.color = default;
+            }
+            else
+            {
+                this.type = ValueType.Text;
+                this.number = float.NaN;
+                this.text = v.ToString();
+                this.color = default;
+            }
+        }
+
+        public override string ToString()
+        {
+            switch (type)
+            {
+                case ValueType.Bool: return $"{boolean} [{type}]";
+                case ValueType.Number: return $"{number} [{type}]";
+                case ValueType.Text: return $"{text} [{type}]";
+                case ValueType.Color: return $"{color} [{type}]";
+            }
+
+            return "nil";
+        }
+
+        public static void SetupEngine<T>(QueryEngine<T> queryEngine)
+        {
+            queryEngine.AddOperatorHandler(":", (SearchValue v, PropertyRange range) => PropertyRangeCompare(v, range, (f, r) => r.Contains(f)));
+            queryEngine.AddOperatorHandler("=", (SearchValue v, PropertyRange range) => PropertyRangeCompare(v, range, (f, r) => r.Contains(f)));
+            queryEngine.AddOperatorHandler("!=", (SearchValue v, PropertyRange range) => PropertyRangeCompare(v, range, (f, r) => !r.Contains(f)));
+            queryEngine.AddOperatorHandler("<=", (SearchValue v, PropertyRange range) => PropertyRangeCompare(v, range, (f, r) => f <= r.max));
+            queryEngine.AddOperatorHandler("<", (SearchValue v, PropertyRange range) => PropertyRangeCompare(v, range, (f, r) => f < r.min));
+            queryEngine.AddOperatorHandler(">", (SearchValue v, PropertyRange range) => PropertyRangeCompare(v, range, (f, r) => f > r.max));
+            queryEngine.AddOperatorHandler(">=", (SearchValue v, PropertyRange range) => PropertyRangeCompare(v, range, (f, r) => f >= r.min));
+
+            queryEngine.AddOperatorHandler(":", (SearchValue v, double number, StringComparison sc) => PropertyFloatCompare(v, number, (f, r) => Math.Abs(f - r) < double.Epsilon));
+            queryEngine.AddOperatorHandler("=", (SearchValue v, double number) => PropertyFloatCompare(v, number, (f, r) => Math.Abs(f - r) < double.Epsilon));
+            queryEngine.AddOperatorHandler("!=", (SearchValue v, double number) => PropertyFloatCompare(v, number, (f, r) => Math.Abs(f - r) >= double.Epsilon));
+            queryEngine.AddOperatorHandler("<=", (SearchValue v, double number) => PropertyFloatCompare(v, number, (f, r) => f <= r));
+            queryEngine.AddOperatorHandler("<", (SearchValue v, double number) => PropertyFloatCompare(v, number, (f, r) => f < r));
+            queryEngine.AddOperatorHandler(">", (SearchValue v, double number) => PropertyFloatCompare(v, number, (f, r) => f > r));
+            queryEngine.AddOperatorHandler(">=", (SearchValue v, double number) => PropertyFloatCompare(v, number, (f, r) => f >= r));
+
+            queryEngine.AddOperatorHandler("=", (SearchValue v, bool b) => PropertyBoolCompare(v, b, (f, r) => f == r));
+            queryEngine.AddOperatorHandler(":", (SearchValue v, bool b) => PropertyBoolCompare(v, b, (f, r) => f == r));
+            queryEngine.AddOperatorHandler("!=", (SearchValue v, bool b) => PropertyBoolCompare(v, b, (f, r) => f != r));
+
+            queryEngine.AddOperatorHandler(":", (SearchValue v, string s, StringComparison sc) => PropertyStringCompare(v, s, (f, r) => StringContains(f, r, sc)));
+            queryEngine.AddOperatorHandler("=", (SearchValue v, string s, StringComparison sc) => PropertyStringCompare(v, s, (f, r) => string.Equals(f, r, sc)));
+            queryEngine.AddOperatorHandler("!=", (SearchValue v, string s, StringComparison sc) => PropertyStringCompare(v, s, (f, r) => !string.Equals(f, r, sc)));
+            queryEngine.AddOperatorHandler("<=", (SearchValue v, string s, StringComparison sc) => PropertyStringCompare(v, s, (f, r) => string.Compare(f, r, sc) <= 0));
+            queryEngine.AddOperatorHandler("<", (SearchValue v, string s, StringComparison sc) => PropertyStringCompare(v, s, (f, r) => string.Compare(f, r, sc) < 0));
+            queryEngine.AddOperatorHandler(">", (SearchValue v, string s, StringComparison sc) => PropertyStringCompare(v, s, (f, r) => string.Compare(f, r, sc) > 0));
+            queryEngine.AddOperatorHandler(">=", (SearchValue v, string s, StringComparison sc) => PropertyStringCompare(v, s, (f, r) => string.Compare(f, r, sc) >= 0));
+
+            queryEngine.AddOperatorHandler(":", (SearchValue v, SearchColor c) => PropertyColorCompare(v, c, (f, r) => f == r));
+            queryEngine.AddOperatorHandler("=", (SearchValue v, SearchColor c) => PropertyColorCompare(v, c, (f, r) => f == r));
+            queryEngine.AddOperatorHandler("!=", (SearchValue v, SearchColor c) => PropertyColorCompare(v, c, (f, r) => f != r));
+            queryEngine.AddOperatorHandler("<=", (SearchValue v, SearchColor c) => PropertyColorCompare(v, c, (f, r) => f <= r));
+            queryEngine.AddOperatorHandler("<", (SearchValue v, SearchColor c) => PropertyColorCompare(v, c, (f, r) => f < r));
+            queryEngine.AddOperatorHandler(">", (SearchValue v, SearchColor c) => PropertyColorCompare(v, c, (f, r) => f > r));
+            queryEngine.AddOperatorHandler(">=", (SearchValue v, SearchColor c) => PropertyColorCompare(v, c, (f, r) => f >= r));
+
+            queryEngine.AddTypeParser(arg =>
+            {
+                if (arg.Length > 0 && arg.Last() == ']')
+                {
+                    var rangeMatches = s_RangeRx.Matches(arg);
+                    if (rangeMatches.Count == 1 && rangeMatches[0].Groups.Count == 3)
+                    {
+                        var rg = rangeMatches[0].Groups;
+                        if (Utils.TryParse(rg[1].Value, out double min) && Utils.TryParse(rg[2].Value, out double max))
+                            return new ParseResult<PropertyRange>(true, new PropertyRange(min, max));
+                    }
+                }
+
+                return ParseResult<PropertyRange>.none;
+            });
+
+            queryEngine.AddTypeParser(s =>
+            {
+                if (!s.StartsWith("#"))
+                    return new ParseResult<SearchColor?>(false, null);
+                if (ColorUtility.TryParseHtmlString(s, out var color))
+                    return new ParseResult<SearchColor?>(true, new SearchColor(color));
+                return new ParseResult<SearchColor?>(false, null);
+            });
+        }
+
+        private static readonly Regex s_RangeRx = new Regex(@"\[(-?[\d\.]+)[,](-?[\d\.]+)\s*\]");
+
+        private static bool StringContains(string ev, string fv, StringComparison sc)
+        {
+            if (ev == null || fv == null)
+                return false;
+            return ev.IndexOf(fv, sc) != -1;
+        }
+
+        private static bool PropertyRangeCompare(in SearchValue v, in PropertyRange range, Func<double, PropertyRange, bool> comparer)
+        {
+            if (v.type != ValueType.Number)
+                return false;
+            return comparer(v.number, range);
+        }
+
+        private static bool PropertyFloatCompare(in SearchValue v, double value, Func<double, double, bool> comparer)
+        {
+            if (v.type != ValueType.Number)
+                return false;
+            return comparer(v.number, value);
+        }
+
+        private static bool PropertyBoolCompare(in SearchValue v, bool b, Func<bool, bool, bool> comparer)
+        {
+            if (v.type != ValueType.Bool)
+                return false;
+            return comparer(v.number == 1d, b);
+        }
+
+        private static bool PropertyStringCompare(in SearchValue v, string s, Func<string, string, bool> comparer)
+        {
+            if (v.type == ValueType.Bool)
+            {
+                if (v.boolean && string.Equals(s, "on", StringComparison.OrdinalIgnoreCase))
+                    return true;
+                if (!v.boolean && string.Equals(s, "off", StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            else if (v.type != ValueType.Text || string.IsNullOrEmpty(v.text))
+                return false;
+            return comparer(v.text, s);
+        }
+
+        private static bool PropertyColorCompare(in SearchValue v, SearchColor value, Func<SearchColor, SearchColor, bool> comparer)
+        {
+            if (v.type != ValueType.Color)
+                return false;
+            return comparer(v.color, value);
+        }
+
+    }
+
     class SearchItemQueryEngine : QueryEngine<SearchItem>
     {
         SearchExpressionContext m_Context;
-
-        struct PropertyValue
-        {
-            public enum Type
-            {
-                String,
-                Boolean,
-                Double,
-                Int,
-                Object
-            }
-
-            public PropertyValue(object v)
-            {
-                value = v;
-                if (v is string)
-                    type = Type.String;
-                else if (v is float f)
-                {
-                    type = Type.Double;
-                    value = (double)f;
-                }
-                else if (v is double)
-                    type = Type.Double;
-                else if (v is int)
-                    type = Type.Int;
-                else if (v is bool)
-                    type = Type.Boolean;
-                else
-                    type = Type.Object;
-            }
-
-            public Type type;
-            public object value;
-
-            public bool IsNumber()
-            {
-                return type == Type.Int || type == Type.Double;
-            }
-
-            public int ToInt()
-            {
-                if (type == Type.Int)
-                    return (int)value;
-
-                if (type == Type.Double)
-                    return (int)(double)value;
-
-                throw new System.Exception($"Cannot convert property value to number {value}");
-            }
-
-            public double ToDouble()
-            {
-                if (type == Type.Int)
-                    return (int)value;
-
-                if (type == Type.Double)
-                    return (double)value;
-
-                throw new System.Exception($"Cannot convert property value to number {value}");
-            }
-
-            public bool ToBool()
-            {
-                if (type == Type.Int)
-                    return (int)value != 0;
-
-                if (type == Type.Double)
-                    return (double)value != 0.0;
-
-                if (type == Type.Boolean)
-                    return (bool)value;
-
-                return value != null;
-            }
-
-            public override string ToString()
-            {
-                return value.ToString();
-            }
-        }
 
         public SearchItemQueryEngine()
         {
@@ -159,43 +453,14 @@ namespace UnityEditor.Search
 
         static string ConvertSelectors(string queryStr)
         {
-            var re = new Regex(ParserUtils.k_QueryWithSelectorPattern);
-            var evaluator = new MatchEvaluator(match => {
-                return match.Value.Replace(match.Groups[2].Value, $"p({match.Groups[2].Value.Substring(1)})");
-            });
-            var sanitizeQuery = re.Replace(queryStr, evaluator);
-            return sanitizeQuery;
+            return ParserUtils.ReplaceSelectorInExpr(queryStr, (selector, cleanedSelector) => $"p({cleanedSelector})");
         }
 
         private void Setup()
         {
             AddFilter("p", GetValue, s => s, StringComparison.OrdinalIgnoreCase);
 
-            AddOperatorHandler("=", (PropertyValue v, int fv) => v.IsNumber() && v.ToInt() == fv);
-            AddOperatorHandler("!=", (PropertyValue v, int fv) => v.IsNumber() && v.ToInt() != fv);
-            AddOperatorHandler("<=", (PropertyValue v, int fv) => v.IsNumber() && v.ToInt() <= fv);
-            AddOperatorHandler("<", (PropertyValue v, int fv) => v.IsNumber() && v.ToInt() < fv);
-            AddOperatorHandler(">=", (PropertyValue v, int fv) => v.IsNumber() && v.ToInt() >= fv);
-            AddOperatorHandler(">", (PropertyValue v, int fv) => v.IsNumber() && v.ToInt() > fv);
-
-            AddOperatorHandler("=", (PropertyValue v, double fv) => v.IsNumber() && v.ToDouble() == fv);
-            AddOperatorHandler("!=", (PropertyValue v, double fv) => v.IsNumber() && v.ToDouble() != fv);
-            AddOperatorHandler("<=", (PropertyValue v, double fv) => v.IsNumber() && v.ToDouble() <= fv);
-            AddOperatorHandler("<", (PropertyValue v, double fv) => v.IsNumber() && v.ToDouble() < fv);
-            AddOperatorHandler(">=", (PropertyValue v, double fv) => v.IsNumber() && v.ToDouble() >= fv);
-            AddOperatorHandler(">", (PropertyValue v, double fv) => v.IsNumber() && v.ToDouble() > fv);
-
-            AddOperatorHandler(":", (PropertyValue v, string fv, StringComparison sc) => v.value != null && StringContains(v.ToString(), fv, sc));
-
-            AddOperatorHandler("=", (PropertyValue v, string fv, StringComparison sc) => v.value != null && string.Equals(v.ToString(), fv, sc));
-            AddOperatorHandler("!=", (PropertyValue v, string fv, StringComparison sc) => v.value != null && !string.Equals(v.ToString(), fv, sc));
-            AddOperatorHandler("<=", (PropertyValue v, string fv, StringComparison sc) => v.value != null && string.Compare(v.ToString(), fv, sc) <= 0);
-            AddOperatorHandler("<", (PropertyValue v, string fv, StringComparison sc) => v.value != null && string.Compare(v.ToString(), fv, sc) < 0);
-            AddOperatorHandler(">", (PropertyValue v, string fv, StringComparison sc) => v.value != null && string.Compare(v.ToString(), fv, sc) > 0);
-            AddOperatorHandler(">=", (PropertyValue v, string fv, StringComparison sc) => v.value != null && string.Compare(v.ToString(), fv, sc) >= 0);
-
-            AddOperatorHandler("=", (PropertyValue v, bool fv) => v.ToBool() == fv);
-            AddOperatorHandler("!=", (PropertyValue v, bool fv) => v.ToBool() != fv);
+            SearchValue.SetupEngine(this);
 
             SetSearchDataCallback(GetSearchableData, StringComparison.OrdinalIgnoreCase);
         }
@@ -208,15 +473,10 @@ namespace UnityEditor.Search
                 yield return item.label;
         }
 
-        static bool StringContains(string s1, string s2, StringComparison sc)
-        {
-            return s1.IndexOf(s2, sc) != -1;
-        }
-
-        PropertyValue GetValue(SearchItem item, string selector)
+        SearchValue GetValue(SearchItem item, string selector)
         {
             var v = SelectorManager.SelectValue(item, m_Context.search, selector);
-            return new PropertyValue(v);
+            return new SearchValue(v);
         }
     }
 }

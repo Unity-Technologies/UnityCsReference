@@ -67,9 +67,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected override SearchRequest CreateRequest()
         {
             if (string.IsNullOrEmpty(m_PackageNameOrId))
-                return Client.SearchAll(isOfflineMode);
+                return m_ClientProxy.SearchAll(isOfflineMode);
             else
-                return Client.Search(m_PackageNameOrId, isOfflineMode);
+                return m_ClientProxy.Search(m_PackageNameOrId, isOfflineMode);
         }
 
         public void Cancel()

@@ -38,19 +38,19 @@ namespace UnityEditor
         class Texts
         {
             public GUIContent separateAxes = EditorGUIUtility.TrTextContent("Separate Axes", "If enabled, you can control the noise separately for each axis.");
-            public GUIContent strength = EditorGUIUtility.TrTextContent("Strength", "How strong the overall noise effect is.");
+            public GUIContent strength = EditorGUIUtility.TrTextContent("Strength", "How strong the overall noise effect is. If you use a curve to set this value, the Particle System applies the curve over the lifetime of each particle.");
             public GUIContent frequency = EditorGUIUtility.TrTextContent("Frequency", "Low values create soft, smooth noise, and high values create rapidly changing noise.");
             public GUIContent damping = EditorGUIUtility.TrTextContent("Damping", "If enabled, strength is proportional to frequency.");
             public GUIContent octaves = EditorGUIUtility.TrTextContent("Octaves", "Layers of noise that combine to produce final noise (Adding octaves increases the performance cost substantially!)");
             public GUIContent octaveMultiplier = EditorGUIUtility.TrTextContent("Octave Multiplier", "When combining each octave, scale the intensity by this amount.");
             public GUIContent octaveScale = EditorGUIUtility.TrTextContent("Octave Scale", "When combining each octave, zoom in by this amount.");
             public GUIContent quality = EditorGUIUtility.TrTextContent("Quality", "Generate 1D, 2D or 3D noise.");
-            public GUIContent scrollSpeed = EditorGUIUtility.TrTextContent("Scroll Speed", "Scroll the noise map over the particle system.");
-            public GUIContent remap = EditorGUIUtility.TrTextContent("Remap", "Remap the final noise values into a new range.");
+            public GUIContent scrollSpeed = EditorGUIUtility.TrTextContent("Scroll Speed", "Scroll the noise map over the particle system. If you use a curve to set this value, the Particle System applies the curve over the lifetime of each particle.");
+            public GUIContent remap = EditorGUIUtility.TrTextContent("Remap", "Remap the final noise values into a new range. If you use a curve to set this value, the Particle System applies the curve over the lifetime of each particle.");
             public GUIContent remapCurve = EditorGUIUtility.TrTextContent("Remap Curve");
-            public GUIContent positionAmount = EditorGUIUtility.TrTextContent("Position Amount", "What proportion of the noise is applied to the particle positions.");
-            public GUIContent rotationAmount = EditorGUIUtility.TrTextContent("Rotation Amount", "What proportion of the noise is applied to the particle rotations, in degrees per second.");
-            public GUIContent sizeAmount = EditorGUIUtility.TrTextContent("Size Amount", "Multiply the size of the particle by a proportion of the noise.");
+            public GUIContent positionAmount = EditorGUIUtility.TrTextContent("Position Amount", "What proportion of the noise is applied to the particle positions. If you use a curve to set this value, the Particle System applies the curve over the lifetime of each particle.");
+            public GUIContent rotationAmount = EditorGUIUtility.TrTextContent("Rotation Amount", "What proportion of the noise is applied to the particle rotations, in degrees per second. If you use a curve to set this value, the Particle System applies the curve over the lifetime of each particle.");
+            public GUIContent sizeAmount = EditorGUIUtility.TrTextContent("Size Amount", "Multiply the size of the particle by a proportion of the noise. If you use a curve to set this value, the Particle System applies the curve over the lifetime of each particle.");
             public GUIContent x = EditorGUIUtility.TextContent("X");
             public GUIContent y = EditorGUIUtility.TextContent("Y");
             public GUIContent z = EditorGUIUtility.TextContent("Z");

@@ -344,7 +344,7 @@ namespace Unity.UI.Builder
         {
             foreach (var usingEntry in usings)
             {
-                if (usingEntry.path == path || usingEntry.asset == template)
+                if ((!string.IsNullOrEmpty(path) && usingEntry.path == path) || usingEntry.asset == template)
                 {
                     return true;
                 }

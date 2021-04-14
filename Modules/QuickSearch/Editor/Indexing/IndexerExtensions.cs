@@ -51,9 +51,7 @@ namespace UnityEditor.Search
         [CustomObjectIndexer(typeof(Shader), version = 1)]
         internal static void ShaderIndexing(CustomObjectIndexerTarget context, ObjectIndexer indexer)
         {
-            if (!(context.target is Shader shader) ||
-                !indexer.settings.options.properties ||
-                !indexer.settings.type.Equals("asset", System.StringComparison.Ordinal))
+            if (!(context.target is Shader shader) || !indexer.settings.options.properties)
                 return;
 
             for (int i = 0, end = shader.GetPropertyCount(); i != end; ++i)
@@ -80,7 +78,7 @@ namespace UnityEditor.Search
 
         #endregion
 
-        [CustomObjectIndexer(typeof(Material), version = 1)]
+        [CustomObjectIndexer(typeof(Material), version = 2)]
         internal static void MaterialShaderReferences(CustomObjectIndexerTarget context, ObjectIndexer indexer)
         {
             var material = context.target as Material;
@@ -92,9 +90,6 @@ namespace UnityEditor.Search
                 var fullShaderName = material.shader.name.ToLowerInvariant();
                 indexer.AddReference(context.documentIndex, fullShaderName);
             }
-
-            if (!indexer.settings.type.Equals("asset", System.StringComparison.Ordinal))
-                return;
 
             if (!indexer.settings.options.properties)
                 return;
@@ -125,27 +120,45 @@ namespace UnityEditor.Search
 
                     case MaterialProperty.PropType.Texture:
                         if (property.textureValue)
+                        {
                             indexer.AddReference(context.documentIndex, AssetDatabase.GetAssetPath(property.textureValue));
+                            if (!string.IsNullOrEmpty(property.textureValue.name))
+                                indexer.AddProperty(propertyName, property.textureValue.name.ToLowerInvariant(), context.documentIndex);
+                        }
                         break;
                 }
             }
         }
 
-        [CustomObjectIndexer(typeof(MeshRenderer), version = 1)]
+        [CustomObjectIndexer(typeof(MeshRenderer), version = 2)]
         internal static void IndexMeshRendererMaterials(CustomObjectIndexerTarget context, ObjectIndexer indexer)
         {
             var c = context.target as MeshRenderer;
-            if (c == null || !indexer.settings.type.Equals("asset", System.StringComparison.Ordinal))
+            if (!c)
                 return;
 
             indexer.AddNumber("materialcount", c.sharedMaterials.Length, indexer.settings.baseScore + 2, context.documentIndex);
             foreach (var m in c.sharedMaterials)
             {
-                indexer.AddProperty("material", m.name.Replace(" (Instance)", "").ToLowerInvariant(), context.documentIndex, saveKeyword: true);
+                if (!m)
+                    continue;
+
+                if (!string.IsNullOrEmpty(m.name))
+                    indexer.AddProperty("material", m.name.Replace(" (Instance)", "").ToLowerInvariant(), context.documentIndex, saveKeyword: false, exact: false);
 
                 var mp = AssetDatabase.GetAssetPath(m);
                 if (!string.IsNullOrEmpty(mp))
-                    indexer.AddProperty("material", mp.ToLowerInvariant(), context.documentIndex, saveKeyword: false, exact: true);
+                    indexer.AddReference(context.documentIndex, mp);
+
+                if (m.shader != null)
+                {
+                    // Index shader name reference
+                    indexer.AddProperty("shader", m.shader.name.ToLowerInvariant(), context.documentIndex, exact: false);
+
+                    var sp = AssetDatabase.GetAssetPath(m.shader);
+                    if (!string.IsNullOrEmpty(sp))
+                        indexer.AddReference(context.documentIndex, sp);
+                }
             }
         }
 

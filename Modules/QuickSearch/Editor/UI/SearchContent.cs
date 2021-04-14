@@ -34,6 +34,8 @@ namespace UnityEditor.Search
         public static GUIContent FormatDescription(SearchItem item, SearchContext context, float availableSpace, bool useColor = true)
         {
             var desc = item.GetDescription(context);
+            if (desc != null && item.options.HasAny(SearchItemOptions.Compacted))
+                desc = desc.Replace("\n", " ");
             if (String.IsNullOrEmpty(desc))
                 return Styles.emptyContent;
             var content = Take(desc);

@@ -8,7 +8,7 @@ namespace UnityEditor.Search
 {
     static partial class Parsers
     {
-        static readonly Regex s_SelectorPattern = new Regex(@"^[@$][\w\d]+([.][\w\d]+)*");
+        static readonly Regex s_SelectorPattern = new Regex(@"^[@$][^><=!:\s]+");
         static readonly SearchExpressionEvaluator s_SelectorEvaluator = EvaluatorManager.GetConstantEvaluatorByName("selector");
 
         [SearchExpressionParser("selector", BuiltinParserPriority.String)]

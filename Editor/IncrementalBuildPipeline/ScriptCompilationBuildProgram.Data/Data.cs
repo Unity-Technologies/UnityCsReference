@@ -7,7 +7,7 @@ namespace ScriptCompilationBuildProgram.Data
     public static class Constants
     {
         public const string ScriptAssembliesTarget = "ScriptAssemblies";
-        public const string MovedFromExtension = "movedfrom";
+        public const string MovedFromExtension = "mvfrm";
     }
 
     public class ScriptCompilationData

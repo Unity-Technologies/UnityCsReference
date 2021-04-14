@@ -42,5 +42,65 @@ namespace UnityEditor.Search
                 Debug.Log($"[{string.Join(",", str)}]");
             }
         }
+
+        struct RangeDouble
+        {
+            public double? start;
+            public double? end;
+            public bool valid => start.HasValue && end.HasValue;
+        }
+
+        [Description("Generate a range of expressions."), Category("Utilities")]
+        [SearchExpressionEvaluator(SearchExpressionType.AnyValue, SearchExpressionType.AnyValue | SearchExpressionType.Optional)]
+        public static IEnumerable<SearchItem> Range(SearchExpressionContext c)
+        {
+            var range = new RangeDouble();
+            var alias = c.ResolveAlias("Range");
+
+            foreach (var sr in c.args[0].Execute(c))
+            {
+                if (GetRange(sr, ref range))
+                    break;
+                else
+                    yield return null;
+            }
+
+            if (!range.valid)
+            {
+                if (c.args.Length < 2)
+                    c.ThrowError("No expression to end range");
+                foreach (var sr in c.args[1].Execute(c))
+                {
+                    if (GetRange(sr, ref range))
+                        break;
+                    else
+                        yield return null;
+                }
+            }
+
+            if (!range.valid)
+                c.ThrowError("Incomplete range");
+
+            for (double d = range.start.Value; d < range.end.Value; d += 1d)
+                yield return EvaluatorUtils.CreateItem(d, alias);
+        }
+
+        static bool GetRange(SearchItem item, ref RangeDouble range)
+        {
+            if (item == null)
+                return false;
+            if (!range.start.HasValue)
+            {
+                if (Utils.TryGetNumber(item.value, out var rs))
+                    range.start = rs;
+            }
+            else if (!range.end.HasValue)
+            {
+                if (Utils.TryGetNumber(item.value, out var re))
+                    range.end = re;
+            }
+
+            return range.valid;
+        }
     }
 }

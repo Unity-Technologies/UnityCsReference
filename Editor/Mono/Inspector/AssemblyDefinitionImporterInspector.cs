@@ -399,7 +399,7 @@ namespace UnityEditor
             base.Apply();
 
             // Do not write back to the asset if no asset can be found.
-            if (assetTarget != null)
+            if (targets != null)
                 SaveAndUpdateAssemblyDefinitionStates(extraDataTargets.Cast<AssemblyDefinitionState>().ToArray());
         }
 

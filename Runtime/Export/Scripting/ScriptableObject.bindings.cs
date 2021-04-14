@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
@@ -42,6 +43,26 @@ namespace UnityEngine
         public static T CreateInstance<T>() where T : ScriptableObject
         {
             return (T)CreateInstance(typeof(T));
+        }
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        internal static ScriptableObject CreateInstance(Type type, Action<ScriptableObject> initialize)
+        {
+            if (!typeof(ScriptableObject).IsAssignableFrom(type))
+                throw new ArgumentException("Type must inherit ScriptableObject.", "type");
+
+            var res = CreateScriptableObjectInstanceFromType(type, false);
+
+            try
+            {
+                initialize(res);
+            }
+            finally
+            {
+                ResetAndApplyDefaultInstances(res);
+            }
+
+            return res;
         }
 
         [NativeMethod(IsThreadSafe = true)]

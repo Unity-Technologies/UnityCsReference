@@ -497,6 +497,16 @@ namespace Unity.UI.Builder
                     m_TreeView.ExpandItem(item.id);
         }
 
+        public void ExpandItem(VisualElement element)
+        {
+            var item = FindElement(m_TreeRootItems, element);
+
+            if (item != null)
+            {
+                m_TreeView.ExpandItem(item.id);
+            }
+        }
+
         public void ExpandAllItems()
         {
             // Auto-expand all items on load.

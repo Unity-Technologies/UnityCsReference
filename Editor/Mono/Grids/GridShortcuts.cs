@@ -40,7 +40,7 @@ namespace UnityEditor.Snap
             SnapSettingsWindow.RepaintAll();
         }
 
-        [Shortcut("Grid/Nudge Grid Backward", typeof(SceneView), KeyCode.LeftBracket, ShortcutModifiers.Shift)]
+        [Shortcut("Grid/Nudge Grid Backward", typeof(SceneView))]
         internal static void MenuNudgePerspectiveBackward()
         {
             SceneView sv = SceneView.lastActiveSceneView;
@@ -65,7 +65,7 @@ namespace UnityEditor.Snap
             sv.Repaint();
         }
 
-        [Shortcut("Grid/Nudge Grid Forward", typeof(SceneView), KeyCode.RightBracket, ShortcutModifiers.Shift)]
+        [Shortcut("Grid/Nudge Grid Forward", typeof(SceneView))]
         internal static void MenuNudgePerspectiveForward()
         {
             SceneView sv = SceneView.lastActiveSceneView;

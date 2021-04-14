@@ -96,6 +96,7 @@ namespace UnityEditor.IMGUI.Controls
 
         public event Action<AdvancedDropdownWindow> windowClosed;
         public event Action<AdvancedDropdownItem> selectionChanged;
+        internal Func<Event, bool> specialKeyboardHandling;
 
         protected virtual void OnEnable()
         {
@@ -372,7 +373,7 @@ namespace UnityEditor.IMGUI.Controls
 
         protected virtual bool SpecialKeyboardHandling(Event evt)
         {
-            return false;
+            return specialKeyboardHandling?.Invoke(evt) ?? false;
         }
 
         private void DrawDropdown(float anim, AdvancedDropdownItem group)

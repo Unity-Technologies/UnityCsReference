@@ -249,6 +249,9 @@ namespace UnityEditor
             // Gamepad support level for Android TV
             internal static extern AndroidGamepadSupportLevel androidGamepadSupportLevel { get; set; }
 
+            // Disable Chrome OS's default behaviour of converting mouse and touchpad input events into touchscreen input events.
+            public static extern bool chromeosInputEmulation { get; set; }
+
             // Returns Android banner list
             internal static extern AndroidBanner[] GetAndroidBanners();
 

@@ -193,9 +193,12 @@ namespace UnityEditor.Search
                 label = $"{label ?? id} ({score})";
             }
 
+            var modifiedScore = score;
+            if (SearchSettings.searchItemFavorites.Contains(id))
+                modifiedScore = int.MinValue + score;
             return new SearchItem(id)
             {
-                score = score,
+                score = modifiedScore,
                 label = label,
                 description = description,
                 options = SearchItemOptions.Highlight | SearchItemOptions.Ellipsis,
@@ -352,10 +355,18 @@ namespace UnityEditor.Search
         /// <summary> Returns any valid Unity object held by the search item.</summary>
         public Func<SearchItem, Type, UnityEngine.Object> toObject;
 
+        /// <summary> Returns a document key in which the item is contained.</summary>
+        internal Func<SearchItem, ulong> toKey;
+
         /// <summary>
         /// Provider can return a list of words that will help the user complete his search query.
         /// </summary>
         internal Func<SearchContext, SearchPropositionOptions, IEnumerable<SearchProposition>> fetchPropositions;
+
+        /// <summary>
+        /// Fetch search tables that are used to display search result using a table view.
+        /// </summary>
+        internal Func<SearchContext, IEnumerable<SearchItem>, IEnumerable<SearchColumn>> fetchColumns;
 
         /// <summary>
         /// Called when the QuickSearchWindow is opened. Allow the Provider to perform some caching.

@@ -25,11 +25,11 @@ namespace UnityEditor
         public const int kPackagesFolderInstanceId = int.MaxValue;
         public const int kAssetCreationInstanceID_ForNonExistingAssets = Int32.MaxValue - 1;
 
-        private static readonly Color kColorModifierForNonImportedAssetsInSafeMode = new Color(1, 1, 1, 0.5f);
+        private static readonly Color kFadedOutAssetsColor = new Color(1, 1, 1, 0.5f);
 
         public static Color GetAssetItemColor(int instanceID)
         {
-            return EditorUtility.isInSafeMode && !InternalEditorUtility.AssetReference.IsAssetImported(instanceID) ? GUI.color * kColorModifierForNonImportedAssetsInSafeMode : GUI.color;
+            return (EditorUtility.isInSafeMode && !InternalEditorUtility.AssetReference.IsAssetImported(instanceID)) || AssetClipboardUtility.HasCutAsset(instanceID) ? GUI.color * kFadedOutAssetsColor : GUI.color;
         }
 
         private static readonly int[] k_EmptySelection = new int[0];
@@ -39,6 +39,8 @@ namespace UnityEditor
         private const string k_WarningImmutableSelectionFormat = "The operation \"{0}\" cannot be executed because the selection or package is read-only.";
 
         private const string k_WarningRootFolderDeletionFormat = "The operation \"{0}\" cannot be executed because the selection is a root folder.";
+
+        private const string k_ImmutableSelectionActionFormat = " The operation \"{0}\" is not allowed in an immutable package.";
 
         // Alive ProjectBrowsers
         private static List<ProjectBrowser> s_ProjectBrowsers = new List<ProjectBrowser>();
@@ -1512,46 +1514,6 @@ namespace UnityEditor
                 s_LastInteractedProjectBrowser = null;
         }
 
-        // Returns list of duplicated instanceIDs
-        static internal int[] DuplicateFolders(int[] instanceIDs)
-        {
-            AssetDatabase.Refresh();
-
-            List<string> copiedPaths = new List<string>();
-            bool failed = false;
-            int asssetsFolderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID("Assets");
-
-            foreach (int instanceID in instanceIDs)
-            {
-                if (instanceID == asssetsFolderInstanceID)
-                    continue;
-
-                string assetPath = AssetDatabase.GetAssetPath(InternalEditorUtility.GetObjectFromInstanceID(instanceID));
-                string newPath = AssetDatabase.GenerateUniqueAssetPath(assetPath);
-
-                // Copy
-                if (newPath.Length != 0)
-                    failed |= !AssetDatabase.CopyAsset(assetPath, newPath);
-                else
-                    failed |= true;
-
-                if (!failed)
-                {
-                    copiedPaths.Add(newPath);
-                }
-            }
-
-            AssetDatabase.Refresh();
-
-            int[] copiedAssets = new int[copiedPaths.Count];
-            for (int i = 0; i < copiedPaths.Count; i++)
-            {
-                copiedAssets[i] = AssetDatabase.LoadMainAssetAtPath(copiedPaths[i]).GetInstanceID();
-            }
-
-            return copiedAssets;
-        }
-
         static void DeleteFilter(int filterInstanceID)
         {
             if (SavedSearchFilters.GetRootInstanceID() == filterInstanceID)
@@ -1606,12 +1568,13 @@ namespace UnityEditor
 
         private static bool ShouldDiscardCommandsEventsForImmutablePackages()
         {
-            if ((Event.current.type == EventType.ExecuteCommand || Event.current.type == EventType.ValidateCommand) &&
-                (Event.current.commandName == EventCommandNames.Cut ||
-                 Event.current.commandName == EventCommandNames.Paste ||
-                 Event.current.commandName == EventCommandNames.Delete ||
-                 Event.current.commandName == EventCommandNames.SoftDelete ||
-                 Event.current.commandName == EventCommandNames.Duplicate))
+            var evt = Event.current;
+            if ((evt.type == EventType.ExecuteCommand || evt.type == EventType.ValidateCommand || evt.keyCode == KeyCode.Escape) &&
+                (evt.commandName == EventCommandNames.Cut ||
+                 evt.commandName == EventCommandNames.Paste ||
+                 evt.commandName == EventCommandNames.Delete ||
+                 evt.commandName == EventCommandNames.SoftDelete ||
+                 evt.commandName == EventCommandNames.Duplicate))
             {
                 if (AssetsMenuUtility.SelectionHasImmutable())
                     return true;
@@ -1634,7 +1597,8 @@ namespace UnityEditor
         void HandleCommandEventsForTreeView()
         {
             // Handle all event for tree view
-            EventType eventType = Event.current.type;
+            var evt = Event.current;
+            EventType eventType = evt.type;
             if (eventType == EventType.ExecuteCommand || eventType == EventType.ValidateCommand)
             {
                 bool execute = eventType == EventType.ExecuteCommand;
@@ -1651,7 +1615,7 @@ namespace UnityEditor
                 {
                     if (ShouldDiscardCommandsEventsForImmutablePackages())
                     {
-                        EditorUtility.DisplayDialog(L10n.Tr("Invalid Operation"), L10n.Tr("Deleting or modifying an immutable package is not allowed."), L10n.Tr("Ok"));
+                        EditorUtility.DisplayDialog(L10n.Tr("Invalid Operation"), L10n.Tr(string.Format(k_ImmutableSelectionActionFormat, Event.current.commandName)), L10n.Tr("Ok"));
                         return;
                     }
                     if (ShouldDiscardCommandsEventsForRootFolders())
@@ -1661,9 +1625,9 @@ namespace UnityEditor
                     }
                 }
 
-                if (Event.current.commandName == EventCommandNames.Delete || Event.current.commandName == EventCommandNames.SoftDelete)
+                if (evt.commandName == EventCommandNames.Delete || evt.commandName == EventCommandNames.SoftDelete)
                 {
-                    Event.current.Use();
+                    evt.Use();
                     if (execute)
                     {
                         if (itemType == ItemType.SavedFilter)
@@ -1682,7 +1646,7 @@ namespace UnityEditor
                     }
                     GUIUtility.ExitGUI();
                 }
-                else if (Event.current.commandName == EventCommandNames.Duplicate)
+                else if (evt.commandName == EventCommandNames.Duplicate)
                 {
                     if (execute)
                     {
@@ -1692,16 +1656,50 @@ namespace UnityEditor
                         }
                         else if (itemType == ItemType.Asset)
                         {
-                            Event.current.Use();
-                            int[] copiedFolders = DuplicateFolders(instanceIDs);
+                            evt.Use();
+                            int[] copiedFolders = AssetClipboardUtility.DuplicateFolders(instanceIDs);
                             SetFolderSelection(copiedFolders, true);
                             GUIUtility.ExitGUI();
                         }
                     }
                     else
                     {
-                        Event.current.Use();
+                        evt.Use();
                     }
+                }
+                else if (evt.commandName == EventCommandNames.Cut)
+                {
+                    evt.Use();
+                    if (execute && itemType == ItemType.Asset)
+                    {
+                        AssetClipboardUtility.CutCopySelectedFolders(instanceIDs, AssetClipboardUtility.PerformedAction.Cut);
+                        GUIUtility.ExitGUI();
+                    }
+                }
+                else if (evt.commandName == EventCommandNames.Copy)
+                {
+                    evt.Use();
+                    if (execute && itemType == ItemType.Asset)
+                    {
+                        AssetClipboardUtility.CutCopySelectedFolders(instanceIDs, AssetClipboardUtility.PerformedAction.Copy);
+                        GUIUtility.ExitGUI();
+                    }
+                }
+                else if (evt.commandName == EventCommandNames.Paste)
+                {
+                    evt.Use();
+                    if (execute && itemType == ItemType.Asset && AssetClipboardUtility.CanPaste())
+                    {
+                        int[] copiedFolders =  AssetClipboardUtility.PasteFolders();
+                        SetFolderSelection(copiedFolders, true);
+                        GUIUtility.ExitGUI();
+                    }
+                }
+                else if (evt.keyCode == KeyCode.Escape)
+                {
+                    evt.Use();
+                    AssetClipboardUtility.CancelCut();
+                    GUIUtility.ExitGUI();
                 }
             }
         }
@@ -1723,74 +1721,98 @@ namespace UnityEditor
                 return;
             }
 
-            EventType eventType = Event.current.type;
-            if (eventType == EventType.ExecuteCommand || eventType == EventType.ValidateCommand)
+            var evt = Event.current;
+            EventType eventType = evt.type;
+            if (eventType == EventType.ExecuteCommand || eventType == EventType.ValidateCommand || evt.keyCode == KeyCode.Escape)
             {
                 bool execute = eventType == EventType.ExecuteCommand;
 
-                if (Event.current.commandName == EventCommandNames.Delete || Event.current.commandName == EventCommandNames.SoftDelete)
+                if (evt.commandName == EventCommandNames.Delete || evt.commandName == EventCommandNames.SoftDelete)
                 {
-                    Event.current.Use();
+                    evt.Use();
                     if (execute)
                     {
-                        bool askIfSure = Event.current.commandName == EventCommandNames.SoftDelete;
+                        bool askIfSure = evt.commandName == EventCommandNames.SoftDelete;
                         DeleteSelectedAssets(askIfSure);
                         if (askIfSure)
                             Focus(); // Workaround that we do not get focus back when dialog is closed
                     }
                     GUIUtility.ExitGUI();
                 }
-                else if (Event.current.commandName == EventCommandNames.Duplicate)
+                else if (evt.commandName == EventCommandNames.Duplicate)
                 {
                     if (execute)
                     {
-                        Event.current.Use();
-                        ProjectWindowUtil.DuplicateSelectedAssets();
+                        evt.Use();
+                        AssetClipboardUtility.DuplicateSelectedAssets();
                         GUIUtility.ExitGUI();
                     }
                     else
                     {
                         Object[] selectedAssets = Selection.GetFiltered(typeof(Object), SelectionMode.Assets);
                         if (selectedAssets.Length != 0)
-                            Event.current.Use();
+                            evt.Use();
                     }
                 }
-                else if (Event.current.commandName == FocusProjectWindowCommand)
+                else if (evt.commandName == EventCommandNames.Cut)
+                {
+                    evt.Use();
+                    AssetClipboardUtility.CutCopySelectedAssets(AssetClipboardUtility.PerformedAction.Cut);
+                    Repaint();
+                }
+                else if (evt.commandName == EventCommandNames.Copy)
+                {
+                    evt.Use();
+                    AssetClipboardUtility.CutCopySelectedAssets(AssetClipboardUtility.PerformedAction.Copy);
+                }
+                else if (evt.commandName == EventCommandNames.Paste)
+                {
+                    evt.Use();
+                    if (execute)
+                        AssetClipboardUtility.PasteSelectedAssets(m_ViewMode == ViewMode.TwoColumns);
+                }
+                else if (evt.keyCode == KeyCode.Escape)
+                {
+                    AssetClipboardUtility.CancelCut();
+                    Repaint();
+                    GUIUtility.ExitGUI();
+                }
+                else if (evt.commandName == FocusProjectWindowCommand)
                 {
                     if (execute)
                     {
                         FrameObjectPrivate(Selection.activeInstanceID, true, false);
-                        Event.current.Use();
+                        evt.Use();
                         Focus();
                         GUIUtility.ExitGUI();
                     }
                     else
                     {
-                        Event.current.Use();
+                        evt.Use();
                     }
                 }
-                else if (Event.current.commandName == EventCommandNames.SelectAll)
+                else if (evt.commandName == EventCommandNames.SelectAll)
                 {
                     if (execute)
                         SelectAll();
-                    Event.current.Use();
+                    evt.Use();
                 }
                 // Frame selected assets
-                else if (Event.current.commandName == EventCommandNames.FrameSelected)
+                else if (evt.commandName == EventCommandNames.FrameSelected)
                 {
                     if (execute)
                     {
                         FrameObjectPrivate(Selection.activeInstanceID, true, false);
-                        Event.current.Use();
+                        evt.Use();
                         GUIUtility.ExitGUI();
                     }
-                    Event.current.Use();
+                    evt.Use();
                 }
-                else if (Event.current.commandName == EventCommandNames.Find)
+                else if (evt.commandName == EventCommandNames.Find)
                 {
                     if (execute)
                         m_FocusSearchField = true;
-                    Event.current.Use();
+                    evt.Use();
                 }
             }
         }

@@ -706,21 +706,39 @@ namespace UnityEngine
         [uei.ExcludeFromDocs] public void Apply(bool updateMipmaps) { Apply(updateMipmaps, false); }
         [uei.ExcludeFromDocs] public void Apply() { Apply(true, false); }
 
+        public bool Reinitialize(int width, int height)
+        {
+            if (!isReadable) throw CreateNonReadableException(this);
+            return ReinitializeImpl(width, height);
+        }
+
+        public bool Reinitialize(int width, int height, TextureFormat format, bool hasMipMap)
+        {
+            return ReinitializeWithFormatImpl(width, height, GraphicsFormatUtility.GetGraphicsFormat(format, activeTextureColorSpace == ColorSpace.Gamma), hasMipMap);
+        }
+
+        public bool Reinitialize(int width, int height, GraphicsFormat format, bool hasMipMap)
+        {
+            if (!isReadable) throw CreateNonReadableException(this);
+            return ReinitializeWithFormatImpl(width, height, format, hasMipMap);
+        }
+
+        [Obsolete("Texture2D.Resize(int, int) has been deprecated because it actually reinitializes the texture. Use Texture2D.Reinitialize(int, int) instead (UnityUpgradable) -> Reinitialize(System.Int32, System.Int32)", false)]
         public bool Resize(int width, int height)
         {
-            if (!isReadable) throw CreateNonReadableException(this);
-            return ResizeImpl(width, height);
+            return Reinitialize(width, height);
         }
 
+        [Obsolete("Texture2D.Resize(int, int, TextureFormat, bool) has been deprecated because it actually reinitializes the texture. Use Texture2D.Reinitialize(int, int, TextureFormat, bool) instead (UnityUpgradable) -> Reinitialize(System.Int32, System.Int32, UnityEngine.TextureFormat, System.Boolean)", false)]
         public bool Resize(int width, int height, TextureFormat format, bool hasMipMap)
         {
-            return ResizeWithFormatImpl(width, height, GraphicsFormatUtility.GetGraphicsFormat(format, activeTextureColorSpace == ColorSpace.Linear), hasMipMap);
+            return Reinitialize(width, height, format, hasMipMap);
         }
 
+        [Obsolete("Texture2D.Resize(int, int, GraphicsFormat, bool) has been deprecated because it actually reinitializes the texture. Use Texture2D.Reinitialize(int, int, GraphicsFormat, bool) instead (UnityUpgradable) -> Reinitialize(System.Int32, System.Int32, UnityEngine.Experimental.Rendering.GraphicsFormat, System.Boolean)", false)]
         public bool Resize(int width, int height, GraphicsFormat format, bool hasMipMap)
         {
-            if (!isReadable) throw CreateNonReadableException(this);
-            return ResizeWithFormatImpl(width, height, format, hasMipMap);
+            return Reinitialize(width, height, format, hasMipMap);
         }
 
         public void ReadPixels(Rect source, int destX, int destY, [uei.DefaultValue("true")] bool recalculateMipMaps)

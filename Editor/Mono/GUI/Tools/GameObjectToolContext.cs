@@ -4,7 +4,7 @@
 
 namespace UnityEditor.EditorTools
 {
-    [EditorToolContext("GameObject", "Manipulate GameObjects in the Scene View.")]
+    [EditorToolContext]
     public sealed class GameObjectToolContext : EditorToolContext
     {
         GameObjectToolContext() {}

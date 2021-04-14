@@ -49,11 +49,11 @@ namespace UnityEditor
             {
                 EditorGUILayout.HelpBox(Styles.s_ColliderEditDisableHelp.text, MessageType.Info);
 
-                if (EditorTools.ToolManager.activeToolType == typeof(BoxCollider2DTool))
-                    EditorTools.ToolManager.RestorePreviousPersistentTool();
+                if (ToolManager.activeToolType == typeof(BoxCollider2DTool))
+                    ToolManager.RestorePreviousPersistentTool();
             }
             else
-                EditorGUILayout.EditorToolbarForTarget(EditorGUIUtility.TrTempContent("Edit Collider"), target);
+                EditorGUILayout.EditorToolbarForTarget(EditorGUIUtility.TrTempContent("Edit Collider"), this);
 
             GUILayout.Space(5);
             base.OnInspectorGUI();

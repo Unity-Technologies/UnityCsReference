@@ -20,18 +20,19 @@ namespace UnityEditor.IMGUI.Controls
         [Serializable]
         public class Column
         {
-            // Only serialize the fields that can be changed by the user (the others are reconstructed)
             [SerializeField] public float width = 50;
             [SerializeField] public bool sortedAscending;
-            [NonSerialized] public GUIContent headerContent = new GUIContent();
-            [NonSerialized] public string contextMenuText;
-            [NonSerialized] public TextAlignment headerTextAlignment = TextAlignment.Left;
-            [NonSerialized] public TextAlignment sortingArrowAlignment = TextAlignment.Center;
-            [NonSerialized] public float minWidth = 20;
-            [NonSerialized] public float maxWidth = 1000000f;
-            [NonSerialized] public bool autoResize = true;
-            [NonSerialized] public bool allowToggleVisibility = true;
-            [NonSerialized] public bool canSort = true;
+            [SerializeField] public GUIContent headerContent = new GUIContent();
+            [SerializeField] public string contextMenuText;
+            [SerializeField] public TextAlignment headerTextAlignment = TextAlignment.Left;
+            [SerializeField] public TextAlignment sortingArrowAlignment = TextAlignment.Center;
+            [SerializeField] public float minWidth = 20;
+            [SerializeField] public float maxWidth = 1000000f;
+            [SerializeField] public bool autoResize = true;
+            [SerializeField] public bool allowToggleVisibility = true;
+            [SerializeField] public bool canSort = true;
+            [SerializeField] public int userData;
+            [NonSerialized] internal object userDataObj;
         }
 
         public static bool CanOverwriteSerializedFields(MultiColumnHeaderState source, MultiColumnHeaderState destination)
@@ -103,6 +104,38 @@ namespace UnityEditor.IMGUI.Controls
                         m_SortedColumns.Clear();
                     }
                 }
+            }
+        }
+
+        internal void SwapColumns(int columnIndex, int targetColumnIndex)
+        {
+            if (Mathf.Abs(columnIndex - targetColumnIndex) != 1)
+                throw new ArgumentException("SwapColumn is only supported for columns next to each other otherwise visible columns and sorted columns will be incorrect. Column index " + columnIndex + ", targetColumnIndex " + targetColumnIndex);
+
+            // Swap columns
+            var temp = columns[columnIndex];
+            columns[columnIndex] = columns[targetColumnIndex];
+            columns[targetColumnIndex] = temp;
+
+            // Swap visible columns state so it matches swapped columns above
+            for (int i = 0; i < m_VisibleColumns.Length; i++)
+            {
+                if (m_VisibleColumns[i] == columnIndex)
+                    m_VisibleColumns[i] = targetColumnIndex;
+                else if (m_VisibleColumns[i] == targetColumnIndex)
+                    m_VisibleColumns[i] = columnIndex;
+            }
+            var list = new List<int>(m_VisibleColumns);
+            list.Sort();
+            m_VisibleColumns = list.ToArray();
+
+            // Swap sorted column state so it matches swapped columns above
+            for (int i = 0; i < m_SortedColumns.Count; i++)
+            {
+                if (m_SortedColumns[i] == columnIndex)
+                    m_SortedColumns[i] = targetColumnIndex;
+                else if (m_SortedColumns[i] == targetColumnIndex)
+                    m_SortedColumns[i] = columnIndex;
             }
         }
 

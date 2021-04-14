@@ -808,7 +808,7 @@ namespace UnityEditor
             return RangePropertyInternal(position, prop, new GUIContent(label));
         }
 
-        internal float RangePropertyInternal(Rect position, MaterialProperty prop, GUIContent label)
+        internal static float RangePropertyInternal(Rect position, MaterialProperty prop, GUIContent label)
         {
             return DoPowerRangeProperty(position, prop, label, 1f);
         }
@@ -902,7 +902,7 @@ namespace UnityEditor
             return FloatPropertyInternal(position, prop, new GUIContent(label));
         }
 
-        internal float FloatPropertyInternal(Rect position, MaterialProperty prop, GUIContent label)
+        internal static float FloatPropertyInternal(Rect position, MaterialProperty prop, GUIContent label)
         {
             EditorGUI.BeginChangeCheck();
             EditorGUI.showMixedValue = prop.hasMixedValue;
@@ -930,7 +930,7 @@ namespace UnityEditor
             return ColorPropertyInternal(position, prop, new GUIContent(label));
         }
 
-        internal Color ColorPropertyInternal(Rect position, MaterialProperty prop, GUIContent label)
+        internal static Color ColorPropertyInternal(Rect position, MaterialProperty prop, GUIContent label)
         {
             EditorGUI.BeginChangeCheck();
             EditorGUI.showMixedValue = prop.hasMixedValue;
@@ -951,6 +951,11 @@ namespace UnityEditor
         }
 
         public Vector4 VectorProperty(Rect position, MaterialProperty prop, string label)
+        {
+            return VectorPropertyInternal(position, prop, label);
+        }
+
+        internal static Vector4 VectorPropertyInternal(in Rect position, in MaterialProperty prop, in string label)
         {
             EditorGUI.BeginChangeCheck();
             EditorGUI.showMixedValue = prop.hasMixedValue;

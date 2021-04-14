@@ -236,7 +236,7 @@ namespace UnityEditor
             serializedObject.Update();
             using (new EditorGUI.DisabledScope(targets.Length > 1))
             {
-                EditorGUILayout.EditorToolbarForTarget(EditorGUIUtility.TrTempContent("Edit Collider"), target);
+                EditorGUILayout.EditorToolbarForTarget(EditorGUIUtility.TrTempContent("Edit Collider"), this);
             }
         }
 

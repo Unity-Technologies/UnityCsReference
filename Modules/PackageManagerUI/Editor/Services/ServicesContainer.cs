@@ -24,6 +24,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private readonly PackageManagerProjectSettingsProxy m_SettingsProxy;
 
+        private readonly ClientProxy m_ClientProxy;
+
         [SerializeField]
         private ResourceLoader m_ResourceLoader;
 
@@ -76,6 +78,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         [NonSerialized]
         private bool m_DependenciesResolved;
 
+        [NonSerialized]
+        private bool m_Initialized;
+
         public ServicesContainer()
         {
             // In the constructor we only need to worry about creating a brand new instance.
@@ -89,6 +94,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ApplicationProxy = new ApplicationProxy();
             m_IOProxy = new IOProxy();
             m_SettingsProxy = new PackageManagerProjectSettingsProxy();
+            m_ClientProxy = new ClientProxy();
 
             m_ResourceLoader = new ResourceLoader();
             m_ExtensionManager = new ExtensionManager();
@@ -115,6 +121,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             RegisterDefaultServices();
 
             m_DependenciesResolved = false;
+            m_Initialized = false;
         }
 
         private void ResolveDependencies()
@@ -130,8 +137,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreDownloadManager.ResolveDependencies(m_ApplicationProxy, m_HttpClientFactory, m_UnityConnectProxy, m_IOProxy, m_AssetStoreCache, m_AssetStoreUtils, m_AssetStoreRestAPI);
 
             m_UpmCache.ResolveDependencies(m_PackageManagerPrefs);
-            m_UpmClient.ResolveDependencies(m_UpmCache, m_IOProxy, m_SettingsProxy);
-            m_UpmRegistryClient.ResolveDependencies(m_UpmCache, m_SettingsProxy);
+            m_UpmClient.ResolveDependencies(m_UpmCache, m_IOProxy, m_SettingsProxy, m_ClientProxy);
+            m_UpmRegistryClient.ResolveDependencies(m_UpmCache, m_SettingsProxy, m_ClientProxy);
 
             m_PackageFiltering.ResolveDependencies(m_UnityConnectProxy, m_SettingsProxy);
 
@@ -143,8 +150,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_DependenciesResolved = true;
         }
 
-        void OnEnable()
+        private void Initialize()
         {
+            if (m_Initialized)
+                return;
+
             ResolveDependencies();
 
             // Some services has dependencies that requires some initialization in `OnEnable`.
@@ -160,6 +170,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_PackageDatabase.OnEnable();
             m_PageManager.OnEnable();
+
+            m_Initialized = true;
         }
 
         void OnDisable()
@@ -190,6 +202,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             Register(m_ExtensionManager);
             Register(m_IOProxy);
             Register(m_SettingsProxy);
+            Register(m_ClientProxy);
 
             Register(m_AssetStoreCache);
             Register(m_AssetStoreClient);
@@ -217,8 +230,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public T Resolve<T>() where T : class
         {
-            object result;
-            return m_RegisteredObjects.TryGetValue(typeof(T), out result) ? result as T : null;
+            Initialize();
+            return m_RegisteredObjects.TryGetValue(typeof(T), out var result) ? result as T : null;
         }
 
         public void OnBeforeSerialize()

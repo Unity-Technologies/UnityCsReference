@@ -49,17 +49,17 @@ namespace UnityEditor.Search
         {
             if (settings.options.disabled)
                 return Enumerable.Empty<SearchResult>();
-            return base.Search(searchQuery, context, provider, maxScore, patternMatchLimit);
+            return base.Search(searchQuery, context, provider, maxScore, patternMatchLimit).Take(patternMatchLimit);
         }
 
-        internal override IEnumerable<SearchResult> SearchWord(string word, SearchIndexOperator op, int maxScore, SearchResultCollection subset, int patternMatchLimit)
+        internal override IEnumerable<SearchResult> SearchWord(string word, SearchIndexOperator op, SearchResultCollection subset)
         {
             var baseScore = settings.baseScore;
             var options = FindOptions.Words | FindOptions.Regex | FindOptions.Glob | FindOptions.Fuzzy;
             if (op == SearchIndexOperator.Equal)
                 options = FindOptions.Exact;
             var documents = subset != null ? subset.Select(r => GetDocument(r.index)) : GetDocuments(ignoreNulls: true);
-            return base.SearchWord(word, op, maxScore, subset, patternMatchLimit)
+            return base.SearchWord(word, op, subset)
                 .Concat(FindProvider.SearchWord(false, word, options, documents)
                     .Select(r => new SearchResult(r.id, m_IndexByDocuments[r.id], baseScore + r.score + 5)));
         }

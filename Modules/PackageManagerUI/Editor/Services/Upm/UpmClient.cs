@@ -31,28 +31,28 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         private UpmSearchOperation m_SearchOperation;
-        private UpmSearchOperation searchOperation => m_SearchOperation ?? (m_SearchOperation = new UpmSearchOperation());
+        private UpmSearchOperation searchOperation => CreateOperation(ref m_SearchOperation);
         [SerializeField]
         private UpmSearchOperation m_SearchOfflineOperation;
-        private UpmSearchOperation searchOfflineOperation => m_SearchOfflineOperation ?? (m_SearchOfflineOperation = new UpmSearchOperation());
+        private UpmSearchOperation searchOfflineOperation => CreateOperation(ref m_SearchOfflineOperation);
         [SerializeField]
         private UpmListOperation m_ListOperation;
-        private UpmListOperation listOperation => m_ListOperation ?? (m_ListOperation = new UpmListOperation());
+        private UpmListOperation listOperation => CreateOperation(ref m_ListOperation);
         [SerializeField]
         private UpmListOperation m_ListOfflineOperation;
-        private UpmListOperation listOfflineOperation => m_ListOfflineOperation ?? (m_ListOfflineOperation = new UpmListOperation());
+        private UpmListOperation listOfflineOperation => CreateOperation(ref m_ListOfflineOperation);
 
         [SerializeField]
         private UpmAddOperation m_AddOperation;
-        private UpmAddOperation addOperation => m_AddOperation ?? (m_AddOperation = new UpmAddOperation());
+        private UpmAddOperation addOperation => CreateOperation(ref m_AddOperation);
         [SerializeField]
         private UpmRemoveOperation m_RemoveOperation;
-        private UpmRemoveOperation removeOperation => m_RemoveOperation ?? (m_RemoveOperation = new UpmRemoveOperation());
+        private UpmRemoveOperation removeOperation => CreateOperation(ref m_RemoveOperation);
         [SerializeField]
         private UpmEmbedOperation m_EmbedOperation;
-        private UpmEmbedOperation embedOperation => m_EmbedOperation ?? (m_EmbedOperation = new UpmEmbedOperation());
+        private UpmEmbedOperation embedOperation => CreateOperation(ref m_EmbedOperation);
 
-        private readonly Dictionary<string, UpmBaseOperation> m_ExtraFetchOperations = new Dictionary<string, UpmBaseOperation>();
+        private readonly Dictionary<string, UpmSearchOperation> m_ExtraFetchOperations = new Dictionary<string, UpmSearchOperation>();
 
         private HashSet<string> m_PackagesToExtraFetchForRegistryVersions = new HashSet<string>();
         [SerializeField]
@@ -77,13 +77,25 @@ namespace UnityEditor.PackageManager.UI.Internal
         private IOProxy m_IOProxy;
         [NonSerialized]
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
+        [NonSerialized]
+        private ClientProxy m_ClientProxy;
         public void ResolveDependencies(UpmCache upmCache,
             IOProxy IOProxy,
-            PackageManagerProjectSettingsProxy settingsProxy)
+            PackageManagerProjectSettingsProxy settingsProxy,
+            ClientProxy clientProxy)
         {
             m_UpmCache = upmCache;
             m_IOProxy = IOProxy;
             m_SettingsProxy = settingsProxy;
+            m_ClientProxy = clientProxy;
+
+            m_SearchOperation?.ResolveDependencies(m_ClientProxy);
+            m_SearchOfflineOperation?.ResolveDependencies(m_ClientProxy);
+            m_ListOperation?.ResolveDependencies(m_ClientProxy);
+            m_ListOfflineOperation?.ResolveDependencies(m_ClientProxy);
+            m_AddOperation?.ResolveDependencies(m_ClientProxy);
+            m_RemoveOperation?.ResolveDependencies(m_ClientProxy);
+            m_EmbedOperation?.ResolveDependencies(m_ClientProxy);
         }
 
         public virtual bool IsAnyExperimentalPackagesInUse()
@@ -323,6 +335,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (m_ExtraFetchOperations.ContainsKey(packageIdOrName))
                 return null;
             var operation = new UpmSearchOperation();
+            operation.ResolveDependencies(m_ClientProxy);
             operation.Search(packageIdOrName, productId);
             operation.onProcessResult += (requst) => OnProcessExtraFetchResult(requst, productId);
             operation.onOperationError += (op, error) => OnProcessExtraFetchError(error, productId);
@@ -634,7 +647,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual void Resolve()
         {
-            Client.Resolve();
+            m_ClientProxy.Resolve();
         }
 
         public virtual bool IsUnityPackage(PackageInfo packageInfo)
@@ -664,6 +677,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 return false;
             }
+        }
+
+        private T CreateOperation<T>(ref T operation) where T : UpmBaseOperation, new()
+        {
+            if (operation != null)
+                return operation;
+
+            operation = new T();
+            operation.ResolveDependencies(m_ClientProxy);
+            return operation;
         }
     }
 }

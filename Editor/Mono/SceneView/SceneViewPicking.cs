@@ -52,8 +52,8 @@ namespace UnityEditor
                 return null;
 
             var topmost = enumerator.Current;
-            // Selection base is only interesting if it's not the topmost
-            var selectionBase = HandleUtility.FindSelectionBaseForPicking(topmost.transform.parent);
+            // Selection base is only interesting if it's not the topmost or if it's part of a prefab
+            var selectionBase = HandleUtility.FindSelectionBaseForPicking(topmost);
             var first = (selectionBase == null ? topmost : selectionBase);
             int topmostHash = topmost.GetHashCode();
             int prefixHash = topmostHash;

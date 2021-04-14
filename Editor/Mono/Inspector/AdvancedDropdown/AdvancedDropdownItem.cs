@@ -11,10 +11,10 @@ namespace UnityEditor.IMGUI.Controls
     public class AdvancedDropdownItem : IComparable
     {
         string m_Name;
-        Texture2D m_Icon;
         int m_Id;
         int m_ElementIndex = -1;
         bool m_Enabled = true;
+        GUIContent m_Content;
         List<AdvancedDropdownItem> m_Children = new List<AdvancedDropdownItem>();
 
         public string name
@@ -23,23 +23,29 @@ namespace UnityEditor.IMGUI.Controls
             set { m_Name = value; }
         }
 
+        internal GUIContent content => m_Content;
+
+        internal string tooltip
+        {
+            get => m_Content.tooltip;
+            set { m_Content.tooltip = value; }
+        }
+
         internal virtual string displayName
         {
-            get { return m_Name; }
+            get => string.IsNullOrEmpty(m_Content.text) ? m_Name : m_Content.text;
+            set { m_Content.text = value; }
         }
 
         public Texture2D icon
         {
-            get { return m_Icon; }
-            set { m_Icon = value; }
+            get => m_Content?.image as Texture2D;
+            set { m_Content.image = value; }
         }
 
         public int id
         {
-            get
-            {
-                return m_Id;
-            }
+            get => m_Id;
             set { m_Id = value; }
         }
 
@@ -55,7 +61,11 @@ namespace UnityEditor.IMGUI.Controls
             set { m_Enabled = value; }
         }
 
+        internal object userData { get; set; }
+
         public IEnumerable<AdvancedDropdownItem> children => m_Children;
+
+        internal bool hasChildren => m_Children.Count > 0;
 
         public void AddChild(AdvancedDropdownItem child)
         {
@@ -68,6 +78,7 @@ namespace UnityEditor.IMGUI.Controls
         {
             m_Name = name;
             m_Id = name.GetHashCode();
+            m_Content = new GUIContent(m_Name);
         }
 
         public virtual int CompareTo(object o)
@@ -88,6 +99,17 @@ namespace UnityEditor.IMGUI.Controls
         public override string ToString()
         {
             return m_Name;
+        }
+
+        internal void SortChildren(Comparison<AdvancedDropdownItem> comparer, bool recursive = false)
+        {
+            if (recursive)
+            {
+                foreach (var child in m_Children)
+                    child.SortChildren(comparer, recursive);
+            }
+
+            m_Children.Sort(comparer);
         }
 
         class SeparatorDropdownItem : AdvancedDropdownItem

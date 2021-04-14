@@ -27,7 +27,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override ListRequest CreateRequest()
         {
-            return Client.List(isOfflineMode, true);
+            return m_ClientProxy.List(isOfflineMode, true);
         }
 
         public void Cancel()

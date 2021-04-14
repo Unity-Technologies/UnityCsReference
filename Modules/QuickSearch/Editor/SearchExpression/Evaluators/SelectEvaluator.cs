@@ -20,20 +20,16 @@ namespace UnityEditor.Search
             yield return EvaluatorUtils.CreateItem(c.ResolveAlias("Selector"), c.expression.innerText, c.expression.innerText.ToString());
         }
 
-        public static IEnumerable<SearchItem> Select(SearchExpressionContext c, bool append)
+        [SearchExpressionEvaluator]
+        [Description("Create new results by selecting which value and property to take."), Category("Transformers")]
+        public static IEnumerable<SearchItem> Select(SearchExpressionContext c)
         {
             if (c.args.Length < 2)
                 c.ThrowError($"Invalid arguments");
 
             // Select dataset
             var dataset = c.args[0].Execute(c);
-            var results = append ? dataset : dataset.Select(r =>
-            {
-                if (r == null)
-                    return r;
-                return SearchExpressionProvider.CreateItem(c.search, r.id, r.score, null, null, r.thumbnail, r);
-            });
-
+            var results = dataset;
             var sIt = c.args.Skip(1).GetEnumerator();
             while (sIt.MoveNext())
             {
@@ -44,23 +40,21 @@ namespace UnityEditor.Search
                     var selectorAlias = c.ResolveAlias(selector);
                     results = TaskEvaluatorManager.EvaluateMainThread(results, item =>
                     {
-                        var selectedValue = SelectorManager.SelectValue(append ? item : (SearchItem)item.data,
-                            c.search, selectorName, out string suggestedSelectorName);
-                        if (selectedValue != null)
-                            AddSelectedValue(item, selectorAlias ?? suggestedSelectorName, selectedValue, append);
+                        var selectedValue = SelectorManager.SelectValue(item, c.search, selectorName, out string suggestedSelectorName);
+                        AddSelectedValue(item, selector.innerText.ToString(), selectorAlias ?? suggestedSelectorName, selectedValue);
                         return item;
                     });
                 }
                 else
                 {
-                    results = ProcessIterableSelector(c, results, selector, append);
+                    results = ProcessIterableSelector(c, results, selector);
                 }
             }
 
             return results;
         }
 
-        static IEnumerable<SearchItem> ProcessIterableSelector(SearchExpressionContext c, IEnumerable<SearchItem> results, SearchExpression selector, bool append)
+        static IEnumerable<SearchItem> ProcessIterableSelector(SearchExpressionContext c, IEnumerable<SearchItem> results, SearchExpression selector)
         {
             var selectorName = c.ResolveAlias(selector, selector.name);
             foreach (var r in results)
@@ -71,7 +65,7 @@ namespace UnityEditor.Search
                     continue;
                 }
 
-                using (c.runtime.Push(append ? r : (SearchItem)r.data))
+                using (c.runtime.Push(r))
                 {
                     foreach (var sv in selector.Execute(c))
                     {
@@ -79,7 +73,7 @@ namespace UnityEditor.Search
                             yield return null;
                         else
                         {
-                            AddSelectedValue(r, selectorName, sv.value, append);
+                            AddSelectedValue(r, selectorName, null, sv.value);
                             yield return r;
                             break;
                         }
@@ -88,36 +82,19 @@ namespace UnityEditor.Search
             }
         }
 
-        private static void AddSelectedValue(SearchItem item, string name, object value, bool append)
+        private static void AddSelectedValue(SearchItem item, string name, string alias, object value)
         {
-            item.SetField(name, value);
+            item.SetField(name, alias, value);
             if (value == null)
                 return;
             item.value = value;
-            if (!append)
-            {
-                if (item.label == null)
-                    item.label = value.ToString();
-                else if (item.description == null)
-                    item.description = value.ToString();
-            }
+            if (item.label == null)
+                item.label = value.ToString();
+            else if (item.description == null)
+                item.description = value.ToString();
         }
 
-        [SearchExpressionEvaluator]
-        [Description("Create new results by selecting which value and property to take."), Category("Transformers")]
-        public static IEnumerable<SearchItem> Select(SearchExpressionContext c)
-        {
-            return Select(c, append: false);
-        }
-
-        [SearchExpressionEvaluator]
-        [Description("Add selected values to expression results."), Category("Transformers")]
-        public static IEnumerable<SearchItem> Append(SearchExpressionContext c)
-        {
-            return Select(c, append: true);
-        }
-
-        static bool IsSelectorLiteral(SearchExpression selector)
+        public static bool IsSelectorLiteral(SearchExpression selector)
         {
             if (selector.types.HasAny(SearchExpressionType.Text | SearchExpressionType.Selector))
                 return true;

@@ -107,6 +107,7 @@ namespace UnityEditor.Search
         /// <returns>Returns list of tokens and variations in lowercase</returns>
         public static IEnumerable<string> SplitFileEntryComponents(string path, char[] entrySeparators)
         {
+            path = Utils.RemoveInvalidCharsFromPath(path, '_');
             var name = Path.GetFileName(path);
             var nameTokens = name.Split(entrySeparators).Distinct().ToArray();
             var scc = nameTokens.SelectMany(s => SplitCamelCase(s)).Where(s => s.Length > 0).ToArray();
@@ -145,6 +146,23 @@ namespace UnityEditor.Search
             if (obj is Component c)
                 return GetTransformPath(c.gameObject.transform);
             return obj.name;
+        }
+
+        /// <summary>
+        /// Return a unique document key owning the object
+        /// </summary>
+        internal static ulong GetDocumentKey(UnityEngine.Object obj)
+        {
+            if (!obj)
+                return ulong.MaxValue;
+            if (obj is GameObject go)
+                return GetTransformPath(go.transform).GetHashCode64();
+            if (obj is Component c)
+                return GetTransformPath(c.gameObject.transform).GetHashCode64();
+            var assetPath = AssetDatabase.GetAssetPath(obj);
+            if (string.IsNullOrEmpty(assetPath))
+                return ulong.MaxValue;
+            return AssetDatabase.AssetPathToGUID(assetPath).GetHashCode64();
         }
 
         /// <summary>

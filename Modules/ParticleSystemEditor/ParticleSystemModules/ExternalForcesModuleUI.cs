@@ -19,7 +19,7 @@ namespace UnityEditor
 
         class Texts
         {
-            public GUIContent multiplier = EditorGUIUtility.TrTextContent("Multiplier", "Used to scale the force applied to this Particle System.");
+            public GUIContent multiplier = EditorGUIUtility.TrTextContent("Multiplier", "Used to scale the force applied to this Particle System. If you use a curve to set this value, the Particle System applies the curve over the lifetime of each particle.");
             public GUIContent influenceFilter = EditorGUIUtility.TrTextContent("Influence Filter", "Use either a LayerMask or a List, to decide which Force Fields affect this Particle System.");
             public GUIContent influenceMask = EditorGUIUtility.TrTextContent("Influence Mask", "Select a global mask of which GameObjects can affect this Particle System.");
             public GUIContent createForceField = EditorGUIUtility.TrTextContent("", "Create a GameObject containing a Particle System Force Field and assign it to the list.");

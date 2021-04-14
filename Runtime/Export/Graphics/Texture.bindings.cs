@@ -195,13 +195,13 @@ namespace UnityEngine
         extern override public bool isReadable { get; }
         [NativeConditional("ENABLE_VIRTUALTEXTURING && UNITY_EDITOR")][NativeName("VTOnly")] extern public bool vtOnly { get; }
         [NativeName("Apply")] extern private void ApplyImpl(bool updateMipmaps, bool makeNoLongerReadable);
-        [NativeName("Resize")] extern private bool ResizeImpl(int width, int height);
+        [NativeName("Reinitialize")] extern private bool ReinitializeImpl(int width, int height);
         [NativeName("SetPixel")] extern private void SetPixelImpl(int image, int mip, int x, int y, Color color);
         [NativeName("GetPixel")] extern private Color GetPixelImpl(int image, int mip, int x, int y);
         [NativeName("GetPixelBilinear")] extern private Color GetPixelBilinearImpl(int image, int mip, float u, float v);
 
-        [FreeFunction(Name = "Texture2DScripting::ResizeWithFormat", HasExplicitThis = true)]
-        extern private bool ResizeWithFormatImpl(int width, int height, GraphicsFormat format, bool hasMipMap);
+        [FreeFunction(Name = "Texture2DScripting::ReinitializeWithFormat", HasExplicitThis = true)]
+        extern private bool ReinitializeWithFormatImpl(int width, int height, GraphicsFormat format, bool hasMipMap);
 
         [FreeFunction(Name = "Texture2DScripting::ReadPixels", HasExplicitThis = true)]
         extern private void ReadPixelsImpl(Rect source, int destX, int destY, bool recalculateMipMaps);

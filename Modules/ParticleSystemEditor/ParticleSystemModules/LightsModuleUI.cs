@@ -17,8 +17,8 @@ namespace UnityEditor
             public GUIContent color = EditorGUIUtility.TrTextContent("Use Particle Color", "Check the option to multiply the particle color by the light color. Otherwise, only the color of the light is used.");
             public GUIContent range = EditorGUIUtility.TrTextContent("Size Affects Range", "Multiply the range of the light with the size of the particle.");
             public GUIContent intensity = EditorGUIUtility.TrTextContent("Alpha Affects Intensity", "Multiply the intensity of the light with the alpha of the particle.");
-            public GUIContent rangeCurve = EditorGUIUtility.TrTextContent("Range Multiplier", "Apply a custom multiplier to the range of the lights.");
-            public GUIContent intensityCurve = EditorGUIUtility.TrTextContent("Intensity Multiplier", "Apply a custom multiplier to the intensity of the lights.");
+            public GUIContent rangeCurve = EditorGUIUtility.TrTextContent("Range Multiplier", "Apply a custom multiplier to the range of the lights. If you use a curve to set this value, the Particle System applies the curve over the lifetime of each particle.");
+            public GUIContent intensityCurve = EditorGUIUtility.TrTextContent("Intensity Multiplier", "Apply a custom multiplier to the intensity of the lights. If you use a curve to set this value, the Particle System applies the curve over the lifetime of each particle.");
             public GUIContent maxLights = EditorGUIUtility.TrTextContent("Maximum Lights", "Limit the amount of lights the system can create. This module makes it very easy to create lots of lights, which can hurt performance.");
         }
         static Texts s_Texts;

@@ -810,6 +810,12 @@ namespace UnityEditor
         }
 
         // Make a Scene view scale handle
+        public static Vector3 ScaleHandle(Vector3 scale, Vector3 position, Quaternion rotation)
+        {
+            return DoScaleHandle(scale, position, rotation, HandleUtility.GetHandleSize(position));
+        }
+
+        // Make a Scene view scale handle
         public static Vector3 ScaleHandle(Vector3 scale, Vector3 position, Quaternion rotation, float size)
         {
             return DoScaleHandle(scale, position, rotation, size);

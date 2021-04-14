@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using UnityEditor.Experimental.Licensing;
 using UnityEngine;
 using UnityEngine.Bindings;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
@@ -22,10 +23,16 @@ namespace UnityEditor.PackageManager
 
         [SerializeField]
         [NativeName("licenseType")]
-        private EntitlementLicenseType m_licenseType;
+        private EntitlementLicenseType m_LicenseType;
 
-        public EntitlementLicenseType licenseType => m_licenseType;
+        [SerializeField]
+        [NativeName("status")]
+        private EntitlementStatus m_Status;
 
         public bool isAllowed { get { return m_IsAllowed;  } }
+
+        public EntitlementLicenseType licenseType { get { return m_LicenseType;  } }
+
+        public EntitlementStatus status { get { return m_Status;  } }
     }
 }

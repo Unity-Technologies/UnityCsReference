@@ -15,7 +15,7 @@ namespace UnityEditor.Search
         public static IEnumerable<SearchItem> Union(SearchExpressionContext c)
         {
             if (c.args == null || c.args.Length == 0)
-                throw new Exception("Nothing to merge");
+                c.ThrowError("Nothing to merge");
 
             var set = new HashSet<int>();
             foreach (var e in c.args)

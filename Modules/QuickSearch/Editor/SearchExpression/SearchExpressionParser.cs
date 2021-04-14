@@ -29,6 +29,7 @@ namespace UnityEditor.Search
     enum BuiltinParserPriority : int
     {
         Alias = 1,
+        Keyword = 2,
         Named = 5,
         Set = 9,
         Number = 10,
@@ -188,8 +189,7 @@ namespace UnityEditor.Search
         private static readonly char[] k_Quotes = { '\'', '"' };
         private static readonly char[] k_Openers = { '[', '{' };
         private static readonly char[] k_Closers = { ']', '}' };
-
-        public static readonly string k_QueryWithSelectorPattern = @"(^|\s|[^\w])([@$][\w\d]+([.][\w\d]+)*)";
+        public static readonly string k_QueryWithSelectorPattern = @"([@$][^><=!:\s\[\]]+)";
         public static readonly Regex namedExpressionStartRegex = new Regex(@"(?<name>[a-zA-Z0-9_\-]*?){");
 
         public static StringView[] ExtractArguments(StringView text, string errorPrefix = "")
@@ -214,9 +214,6 @@ namespace UnityEditor.Search
                 {
                     if (currentStringTokenIndex == -1)
                         currentStringTokenIndex = i;
-                    // Already tested in GetExpressionsStartAndLength
-                    //else if (paramsBlock[currentStringTokenIndex] != paramsBlock[i])
-                    //throw new SearchExpressionParseException($"Nested strings are not allowed);
                     else currentStringTokenIndex = -1;
                 }
                 if (currentStringTokenIndex != -1) // is in string
@@ -246,8 +243,6 @@ namespace UnityEditor.Search
                         }
                         continue;
                     }
-                    // Already tested in GetExpressionsStartAndLength
-                    //else throw new SearchExpressionParseException($"Missing \"{GetCorrespondingCloser(openersStack.Peek())}\" in \"{errorPrefix + args.text.Substring(0, i + 1)}\"", args.text.startIndex, i + 1);
                 }
                 if (paramsBlock[i] == ',' && openersStack.Count == 1)
                 {
@@ -262,12 +257,6 @@ namespace UnityEditor.Search
                     expressionParams.Add(paramsBlock.Substring(startIndex, lastCommaIndex - startIndex).Trim());
                 }
             }
-
-            // Already tested in GetExpressionsStartAndLength
-            //if (currentStringTokenIndex != -1)
-            //    throw new SearchExpressionParseException($"The string \"{args.text.Substring(currentStringTokenIndex)}\" is not closed correctly", args.text.startIndex + currentStringTokenIndex, args.text.Length - currentStringTokenIndex);
-            //if (openersStack.Count != 0)
-            //    throw new SearchExpressionParseException($"Missing \"{GetCorrespondingCloser(openersStack.Peek())}\" in \"{errorPrefix + args.text}\"", args.text.startIndex - errorPrefix.Length, args.text.Length);
 
             return expressionParams.ToArray();
         }
@@ -453,6 +442,20 @@ namespace UnityEditor.Search
                 result = outerText.Substring(start, length);
             }
             return trimLastWhiteSpaces ? result.Trim() : result;
+        }
+
+        static readonly Regex k_QueryWithSelectorPatternRx = new Regex(k_QueryWithSelectorPattern);
+        public static string ReplaceSelectorInExpr(string originalExpr, Func<string, string, string> selectorReplacer, Regex pattern = null)
+        {
+            var re = pattern ?? k_QueryWithSelectorPatternRx;
+            var evaluator = new MatchEvaluator(match =>
+            {
+                var selectorExpr = match.Groups[1].Value;
+                var cleanedSelectorExpr = selectorExpr.Substring(1);
+                var replacement = selectorReplacer(selectorExpr, cleanedSelectorExpr);
+                return match.Value.Replace(selectorExpr, replacement);
+            });
+            return re.Replace(originalExpr, evaluator);
         }
     }
 }

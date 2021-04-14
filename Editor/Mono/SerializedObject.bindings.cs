@@ -205,6 +205,9 @@ namespace UnityEditor
             set;
         }
 
+        [NativeMethod("HasAnyInstantiatedPrefabs")]
+        internal extern bool HasAnyInstantiatedPrefabs();
+
         internal static bool VersionEquals(SerializedObject x, SerializedObject y)
         {
             if (x == null || y == null || x.m_NativeObjectPtr == IntPtr.Zero || y.m_NativeObjectPtr == IntPtr.Zero

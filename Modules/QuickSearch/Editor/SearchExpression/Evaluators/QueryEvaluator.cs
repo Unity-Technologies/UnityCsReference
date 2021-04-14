@@ -42,8 +42,7 @@ namespace UnityEditor.Search
 
         public static IEnumerable<SearchItem> RunQuery(SearchExpressionContext c, string queryText)
         {
-            using (var context = new SearchContext(c.search.GetProviders(), queryText, c.search.options & ~SearchFlags.Expression))
-            //using (new DebugTimer($"{context.searchText} {context.options}"))
+            using (var context = new SearchContext(c.search.GetProviders(), queryText, c.search.options | SearchFlags.QueryString))
             using (var results = SearchService.Request(context))
                 foreach (var r in results)
                     yield return r;

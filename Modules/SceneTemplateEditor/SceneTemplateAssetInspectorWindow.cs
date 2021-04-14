@@ -91,6 +91,7 @@ namespace UnityEditor.SceneTemplate
             // Template scene
             var templateSceneProperty = serializedObject.FindProperty(SceneTemplateUtils.TemplateScenePropertyName);
             var templatePropertyField = new PropertyField(templateSceneProperty, "Template Scene");
+            templatePropertyField.tooltip = "Scene to instantiate.";
             templatePropertyField.RegisterCallback<ChangeEvent<Object>>(e =>
             {
                 RebuildDependencies(root);
@@ -101,12 +102,14 @@ namespace UnityEditor.SceneTemplate
             // Scene title
             var templateTitleProperty = serializedObject.FindProperty(SceneTemplateUtils.TemplateTitlePropertyName);
             var titlePropertyField = new PropertyField(templateTitleProperty, "Title");
+            titlePropertyField.tooltip = "Scene template display name. Shown in New Scene Dialog.";
             titlePropertyField.RegisterCallback<ChangeEvent<string>>(e => TriggerSceneTemplateModified());
             detailElement.Add(titlePropertyField);
 
             // Scene description
             var templateDescriptionProperty = serializedObject.FindProperty(SceneTemplateUtils.TemplateDescriptionPropertyName);
             var description = new PropertyField(templateDescriptionProperty, "Description");
+            description.tooltip = "Scene template description. Shown in New Scene Dialog.";
             description.RegisterCallback<ChangeEvent<string>>(e => TriggerSceneTemplateModified());
             description.RegisterCallback<SerializedPropertyBindEvent>(e =>
             {
@@ -132,6 +135,7 @@ namespace UnityEditor.SceneTemplate
             addToDefaultsPropertyField.style.flexShrink = 0;
             defaultTemplateField.Add(addToDefaultsPropertyField);
             var label = new Label("Pin in New Scene Dialog");
+            label.tooltip = "Pin in New Scene Dialog. Ensuring this template is shown before unpinned template in the list.";
             label.style.unityTextAlign = TextAnchor.MiddleLeft;
             label.style.overflow = Overflow.Hidden;
             label.style.textOverflow = TextOverflow.Ellipsis;
@@ -149,6 +153,7 @@ namespace UnityEditor.SceneTemplate
             var sceneTemplatePipeline = new VisualElement();
             var pipelineProperty = serializedObject.FindProperty(SceneTemplateUtils.TemplatePipelineName);
             var pipelineField = new PropertyField(pipelineProperty, "Scene Template Pipeline");
+            pipelineField.tooltip = "Scene Template Pipeline must be a Mono Script whose main class derives from ISceneTemplatePipeline or SceneTemplatePipelineAdapter. The main class and the script must have the same name.";
             pipelineField.RegisterCallback<ChangeEvent<Object>>(e =>
             {
                 if (e.newValue != null && !SceneTemplateAsset.IsValidPipeline(e.newValue as MonoScript))
@@ -290,6 +295,7 @@ namespace UnityEditor.SceneTemplate
         {
             var propertyElement = new VisualElement();
             var thumbnailObjectField = new PropertyField(thumbnailProperty, label);
+            thumbnailObjectField.tooltip = "Scene template thumbnail. Shown in New Scene Dialog.";
             propertyElement.Add(thumbnailObjectField);
 
             m_PreviewArea = new SceneTemplatePreviewArea(k_ThumbnailAreaName, thumbnailProperty.objectReferenceValue as Texture2D, "No preview available");
@@ -308,6 +314,7 @@ namespace UnityEditor.SceneTemplate
             snapshotHeaderRowElement.AddToClassList(Styles.classUnityBaseField);
             propertyElement.Add(snapshotHeaderRowElement);
             var snapshotHeaderLabel = new Label("Snapshot");
+            snapshotHeaderLabel.tooltip = "Generate a Scene template thumbnail from a snapshot in Scene or Game view.";
             snapshotHeaderLabel.AddToClassList(Styles.classUnityLabel);
             snapshotHeaderRowElement.Add(snapshotHeaderLabel);
 
@@ -316,6 +323,7 @@ namespace UnityEditor.SceneTemplate
             cameraNames.Add(new SnapshotTargetInfo()); // Separator
             cameraNames.Add(new SnapshotTargetInfo { Name = "Game View", OnSnapshotAction = (info, callback) => TakeSnapshotFromGameView(callback) });
             var snapshotTargetPopup = new PopupField<SnapshotTargetInfo>("View", cameraNames, Camera.allCameras.Length == 0 ? 1 : 0);
+            snapshotTargetPopup.tooltip = "View or Camera to use as the source of the snapshot.";
             snapshotTargetPopup.formatListItemCallback = info => info.Name;
             snapshotTargetPopup.formatSelectedValueCallback = info => info.Name;
             snapshotTargetPopup.name = k_SnapshotTargetPopupName;

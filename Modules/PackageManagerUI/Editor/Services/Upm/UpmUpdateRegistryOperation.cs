@@ -38,7 +38,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected override UpdateScopedRegistryRequest CreateRequest()
         {
             var updatedregistryName = string.IsNullOrEmpty(newRegistryName) ? registryName : newRegistryName;
-            return Client.UpdateScopedRegistry(registryName,  new UpdateScopedRegistryOptions(updatedregistryName, registryUrl, scopes));
+            return m_ClientProxy.UpdateScopedRegistry(registryName,  new UpdateScopedRegistryOptions(updatedregistryName, registryUrl, scopes));
         }
     }
 }

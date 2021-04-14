@@ -836,11 +836,6 @@ namespace UnityEditor
             return result.ToArray();
         }
 
-        internal static void DuplicateSelectedAssets()
-        {
-            Selection.objects = DuplicateAssets(Selection.objects).ToArray();
-        }
-
         // Deletes the assets of the instance IDs, with an optional user confirmation dialog.
         // Returns true if the delete operation was successfully performed on all assets.
         // Note: Zero input assets always returns true.
@@ -972,77 +967,6 @@ namespace UnityEditor
             PackageManager.Client.Resolve(false);
 
             return success;
-        }
-
-        internal static IEnumerable<Object> DuplicateAssets(IEnumerable<Object> assets)
-        {
-            var copiedPaths = new List<string>();
-            Object firstDuplicatedObjectToFail = null;
-
-            foreach (var asset in assets)
-            {
-                var assetPath = AssetDatabase.GetAssetPath(asset);
-
-                // if duplicating a sub-asset, then create a copy next to the main asset file
-                if (!String.IsNullOrEmpty(assetPath) && AssetDatabase.IsSubAsset(asset))
-                {
-                    if (asset is ISubAssetNotDuplicatable || asset is GameObject)
-                    {
-                        firstDuplicatedObjectToFail = firstDuplicatedObjectToFail ? firstDuplicatedObjectToFail : asset;
-                        continue;
-                    }
-
-                    var extension = NativeFormatImporterUtility.GetExtensionForAsset(asset);
-
-                    // We dot sanitize or block unclean the asset filename (asset.name)
-                    // since the assertdb will do it for us and has a whole tailored logic for that.
-
-                    // It feels wrong that the asset name (that can apparently contain any char)
-                    // is conflated with the orthogonal notion of filename. From the user's POV
-                    // it will force an asset dup but with mangled names if the original name contained
-                    // "invalid chars" for filenames.
-                    // Path.Combine is not used here to avoid blocking asset names that might
-                    // contain chars not allowed in filenames.
-                    if ((new HashSet<char>(Path.GetInvalidFileNameChars())).Intersect(asset.name).Count() != 0)
-                    {
-                        Debug.LogWarning(string.Format("Duplicated asset name '{0}' contains invalid characters. Those will be replaced in the duplicated asset name.", asset.name));
-                    }
-
-                    var newPath = AssetDatabase.GenerateUniqueAssetPath(
-                        string.Format("{0}{1}{2}.{3}",
-                            Path.GetDirectoryName(assetPath),
-                            Path.DirectorySeparatorChar,
-                            asset.name,
-                            extension)
-                    );
-                    AssetDatabase.CreateAsset(Object.Instantiate(asset), newPath);
-                    copiedPaths.Add(newPath);
-                }
-                // otherwise duplicate the main asset file
-                else if (EditorUtility.IsPersistent(asset))
-                {
-                    var newPath = AssetDatabase.GenerateUniqueAssetPath(assetPath);
-                    if (newPath.Length > 0 && AssetDatabase.CopyAsset(assetPath, newPath))
-                        copiedPaths.Add(newPath);
-                }
-            }
-
-            if (firstDuplicatedObjectToFail != null)
-            {
-                var errString = string.Format(
-                    "Duplication error: One or more sub assets (with types of {0}) can not be duplicated directly, use the appropriate editor instead",
-                    firstDuplicatedObjectToFail.GetType().Name
-                );
-
-                Debug.LogError(errString, firstDuplicatedObjectToFail);
-            }
-
-            return copiedPaths.Select(AssetDatabase.LoadMainAssetAtPath);
-        }
-
-        internal static IEnumerable<Object> DuplicateAssets(IEnumerable<int> instanceIDs)
-        {
-            return DuplicateAssets(instanceIDs.Select(id => EditorUtility.InstanceIDToObject(id)));
         }
 
         internal static IEnumerable<string> GetMainPathsOfAssets(IEnumerable<int> instanceIDs)

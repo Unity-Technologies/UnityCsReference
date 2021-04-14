@@ -19,7 +19,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override GetRegistriesRequest CreateRequest()
         {
-            return Client.GetRegistries();
+            return m_ClientProxy.GetRegistries();
         }
 
         public void Cancel()

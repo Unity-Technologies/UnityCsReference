@@ -70,6 +70,7 @@ namespace PlayerBuildProgramLibrary.Data
         public string[] AdditionalArgs = new string[0];
         public string ExtraTypes;
         public bool CreateSymbolFiles;
+        public bool AllowDebugging;
     }
 
     public class Services

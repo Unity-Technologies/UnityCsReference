@@ -33,7 +33,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override AddScopedRegistryRequest CreateRequest()
         {
-            return Client.AddScopedRegistry(registryName, registryUrl, scopes);
+            return m_ClientProxy.AddScopedRegistry(registryName, registryUrl, scopes);
         }
     }
 }

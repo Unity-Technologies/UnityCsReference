@@ -5,10 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Text.RegularExpressions;
-using UnityEngine.Serialization;
 using UnityEngine.Scripting;
-using UnityEngineInternal;
+using UnityEngine.Serialization;
 
 namespace UnityEngine.Events
 {
@@ -834,6 +832,13 @@ namespace UnityEngine.Events
                 listener.callState = state;
 
             DirtyPersistentCalls();
+        }
+
+        public UnityEventCallState GetPersistentListenerState(int index)
+        {
+            if (index < 0 || index > m_PersistentCalls.Count)
+                throw new IndexOutOfRangeException($"Index {index} is out of range of the {GetPersistentEventCount()} persistent listeners.");
+            return m_PersistentCalls.GetListener(index).callState;
         }
 
         protected void AddListener(object targetObj, MethodInfo method)

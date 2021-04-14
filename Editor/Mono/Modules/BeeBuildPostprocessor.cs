@@ -38,13 +38,25 @@ namespace UnityEditor.Modules
 
         protected virtual PluginsData PluginsDataFor(BuildPostProcessArgs args)
         {
-            var pluginsList = new List<Plugin>();
-            string buildTargetName = BuildPipeline.GetBuildTargetName(args.target);
+            return new PluginsData
+            {
+                Plugins = GetPluginBuildTargetsFor(args).SelectMany(GetPluginsFor).ToArray()
+            };
+        }
+
+        protected virtual IEnumerable<BuildTarget> GetPluginBuildTargetsFor(BuildPostProcessArgs args)
+        {
+            yield return args.target;
+        }
+
+        private IEnumerable<Plugin> GetPluginsFor(BuildTarget target)
+        {
+            var buildTargetName = BuildPipeline.GetBuildTargetName(target);
             IPluginImporterExtension pluginImpExtension = new DesktopPluginImporterExtension();
 
-            foreach (PluginImporter imp in PluginImporter.GetImporters(args.target))
+            foreach (PluginImporter imp in PluginImporter.GetImporters(target))
             {
-                if (!IsPluginCompatibleWithCurrentBuild(args.target, imp))
+                if (!IsPluginCompatibleWithCurrentBuild(target, imp))
                     continue;
 
                 // Skip .cpp files. They get copied to il2cpp output folder just before code compilation
@@ -58,7 +70,7 @@ namespace UnityEditor.Modules
                 // HACK: This should never happen.
                 if (string.IsNullOrEmpty(imp.assetPath))
                 {
-                    UnityEngine.Debug.LogWarning("Got empty plugin importer path for " + args.target);
+                    UnityEngine.Debug.LogWarning("Got empty plugin importer path for " + target);
                     continue;
                 }
 
@@ -66,17 +78,12 @@ namespace UnityEditor.Modules
                 if (string.IsNullOrEmpty(destinationPath))
                     continue;
 
-                pluginsList.Add(new Plugin()
+                yield return new Plugin()
                 {
                     AssetPath = imp.assetPath,
                     DestinationPath = pluginImpExtension.CalculateFinalPluginPath(buildTargetName, imp)
-                });
+                };
             }
-
-            return new PluginsData
-            {
-                Plugins = pluginsList.ToArray()
-            };
         }
 
         LinkerConfig LinkerConfigFor(BuildPostProcessArgs args)
@@ -140,9 +147,8 @@ namespace UnityEditor.Modules
                     // *end-nonstandard-formatting*
                     AdditionalArgs = additionalArgs.ToArray(),
                     ModulesAssetPath = $"{BuildPipeline.GetPlaybackEngineDirectory(args.target, 0)}/modules.asset",
-                    AllowDebugging = (args.report.summary.options & BuildOptions.AllowDebugging) ==
-                        BuildOptions.AllowDebugging,
-                    PerformEngineStripping = PlayerSettings.stripEngineCode
+                    AllowDebugging = (args.report.summary.options & BuildOptions.AllowDebugging) == BuildOptions.AllowDebugging,
+                    PerformEngineStripping = PlayerSettings.stripEngineCode,
                 };
             }
 
@@ -185,7 +191,8 @@ namespace UnityEditor.Modules
                     .Where(imp => DesktopPluginImporterExtension.IsCppPluginFile(imp.assetPath))
                     .Select(imp => imp.assetPath)
                     .ToArray(),
-                AdditionalArgs = additionalArgs.ToArray()
+                AdditionalArgs = additionalArgs.ToArray(),
+                AllowDebugging = (args.report.summary.options & BuildOptions.AllowDebugging) == BuildOptions.AllowDebugging,
             };
         }
 
@@ -213,7 +220,15 @@ namespace UnityEditor.Modules
         };
 
         public override bool UsesBeeBuild() => true;
-        protected virtual string GetInstallPathFor(BuildPostProcessArgs args) => args.installPath;
+        protected virtual string GetInstallPathFor(BuildPostProcessArgs args)
+        {
+            // Try to minimize path lengths for windows
+            NPath absoluteInstallationPath = args.installPath;
+            return absoluteInstallationPath.IsChildOf(NPath.CurrentDirectory)
+                ? absoluteInstallationPath.RelativeTo(NPath.CurrentDirectory).ToString()
+                : absoluteInstallationPath.ToString();
+        }
+
         protected virtual string GetPlatformNameForBuildProgram(BuildPostProcessArgs args) => args.target.ToString();
         protected virtual string GetArchitecture(BuildPostProcessArgs args) => EditorUserBuildSettings.GetPlatformSettings(BuildPipeline.GetBuildTargetName(args.target), "Architecture");
         private SystemProcessRunnableProgram MakePlayerBuildProgram(BuildPostProcessArgs args)
@@ -277,7 +292,7 @@ namespace UnityEditor.Modules
         {
             RunnableProgram buildProgram = MakePlayerBuildProgram(args);
             progressAPI = new PlayerBuildProgressAPI($"Building {args.productName}");
-            Driver = UnityBeeDriver.Make(buildProgram, DagName(args), DagDirectory.ToString(), false, NPath.CurrentDirectory.ToString(), progressAPI);
+            Driver = UnityBeeDriver.Make(buildProgram, DagName(args), DagDirectory.ToString(), false, "", progressAPI);
 
             foreach (var o in GetDataForBuildProgramFor(args))
             {
@@ -331,7 +346,7 @@ namespace UnityEditor.Modules
 
         void ReportBuildOutputFiles(BuildPostProcessArgs args)
         {
-            var filesOutput = Driver.DataFromBuildProgram.Get<BuiltFilesOutput>();
+            var filesOutput = Driver.DataFromBuildProgram?.Get<BuiltFilesOutput>() ?? new BuiltFilesOutput();
             foreach (var outputfile in filesOutput.Files.ToNPaths().Where(f => f.FileExists()))
                 args.report.RecordFileAdded(outputfile.ToString(), outputfile.Extension);
         }

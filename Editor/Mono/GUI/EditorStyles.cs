@@ -356,7 +356,7 @@ namespace UnityEditor
         internal static GUIStyle searchFieldCancelButtonEmpty { get { return s_Current.m_SearchFieldCancelButtonEmpty; } }
         private GUIStyle m_SearchFieldCancelButtonEmpty;
 
-        internal static GUIStyle selectionRect { get { return s_Current.m_SelectionRect; } }
+        public static GUIStyle selectionRect { get { return s_Current.m_SelectionRect; } }
         private GUIStyle m_SelectionRect;
 
         internal static GUIStyle toolbarSlider { get { return s_Current.m_ToolbarSlider; } }

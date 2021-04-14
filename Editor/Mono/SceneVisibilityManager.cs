@@ -133,6 +133,10 @@ namespace UnityEditor
 
         private static void EditorSceneManagerOnSceneClosing(Scene scene, bool removingScene)
         {
+            //Scene closing is called multiple times on the same scene which messes with the scene visibility persistent data
+            if (BuildPipeline.isBuildingPlayer)
+                return;
+
             SceneVisibilityState.GeneratePersistentDataForLoadedScene(scene);
         }
 

@@ -230,19 +230,13 @@ namespace UnityEditor.Search
                         }
                     }
                 }
-                catch (Exception ex)
+                catch
                 {
-                    EditorGUILayout.HelpBox(new GUIContent($"Failed to display inspector for {e.GetType().Name}", ex.Message));
+                    // Skip item
                 }
             }
         }
 
-        private bool UseWideEditor(UnityEngine.Object target)
-        {
-            if (target.GetType() == typeof(Transform))
-                return true;
-            return false;
-        }
 
         private void SetEditorCollapsed(Editor e, bool collapsed)
         {
@@ -272,32 +266,15 @@ namespace UnityEditor.Search
             foreach (var s in selection)
             {
                 var item = s;
-                var itemObject = item.ToObject();
+                LoadEditor(item, targets);
 
-                if (!itemObject)
-                    continue;
-
-                if (itemObject is GameObject go)
+                if (item.GetFieldCount() > 0)
                 {
-                    var components = go.GetComponents<Component>();
-                    foreach (var c in components)
+                    targets.Add(new ExpressionItem()
                     {
-                        if (!c || (c.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
-                            continue;
-
-                        targets.Add(c);
-                    }
-                }
-                else
-                {
-                    targets.Add(itemObject);
-
-                    if (item.provider.id == "asset")
-                    {
-                        var importer = AssetImporter.GetAtPath(item.id);
-                        if (importer && importer.GetType() != typeof(AssetImporter))
-                            targets.Add(importer);
-                    }
+                        name = item.label ?? item.value.ToString(),
+                        item = item
+                    });
                 }
             }
 
@@ -314,10 +291,44 @@ namespace UnityEditor.Search
             m_EditorsHash = selectionHash;
         }
 
+        private bool LoadEditor(SearchItem item, List<UnityEngine.Object> targets)
+        {
+            var itemObject = item.ToObject();
+            if (!itemObject)
+                return false;
+
+            if (itemObject is GameObject go)
+            {
+                var components = go.GetComponents<Component>();
+                foreach (var c in components)
+                {
+                    if (!c || (c.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
+                        continue;
+
+                    targets.Add(c);
+                }
+            }
+            else
+            {
+                targets.Add(itemObject);
+
+                if (item.provider.id == "asset")
+                {
+                    var importer = AssetImporter.GetAtPath(item.id);
+                    if (importer && importer.GetType() != typeof(AssetImporter))
+                        targets.Add(importer);
+                }
+            }
+
+            return true;
+        }
+
         private static void DrawDescription(SearchContext context, SearchItem item)
         {
-            var description = SearchContent.FormatDescription(item, context, 2048);
+            item.options |= SearchItemOptions.FullDescription;
+            var description = item.GetDescription(context, false);
             GUILayout.Label(description, Styles.previewDescription);
+            item.options &= ~SearchItemOptions.FullDescription;
         }
 
         private void DrawPreview(SearchContext context, SearchItem item, float size)
@@ -329,20 +340,21 @@ namespace UnityEditor.Search
                 return;
 
             var now = EditorApplication.timeSinceStartup;
-            if (now - m_LastPreviewStamp > 2.5 && m_PreviewTexture?.GetInstanceID() < 0)
-                m_PreviewTexture = null;
-
-            if (!m_PreviewTexture)
+            if (!m_PreviewTexture || (now - m_LastPreviewStamp > 2.5 && m_PreviewTexture?.GetInstanceID() < 0))
             {
                 var maxHeight = Mathf.Min(256, size);
                 var previewFlags = FetchPreviewOptions.Preview2D | FetchPreviewOptions.Large;
-                m_PreviewTexture = item.provider.fetchPreview(item, context, new Vector2(size, maxHeight), previewFlags);
-                m_LastPreviewStamp = now;
+                var newPreview = item.provider.fetchPreview(item, context, new Vector2(size, maxHeight), previewFlags);
+                if (newPreview && newPreview.height >= 64)
+                {
+                    m_PreviewTexture = newPreview;
+                    m_LastPreviewStamp = now;
+                }
             }
 
             if (m_PreviewTexture)
             {
-                var previewHeight = !IsBuiltInIcon(m_PreviewTexture) ? m_PreviewTexture.height : 64f;
+                var previewHeight = Math.Min(!IsBuiltInIcon(m_PreviewTexture) ? m_PreviewTexture.height : 64f, 256);
                 var textureRect = EditorGUILayout.GetControlRect(false, previewHeight,
                     Styles.largePreview, GUILayout.MaxWidth(size), GUILayout.Height(previewHeight));
                 if (Event.current.type == EventType.Repaint)

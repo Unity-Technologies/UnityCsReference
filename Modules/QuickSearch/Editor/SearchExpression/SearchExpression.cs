@@ -21,6 +21,7 @@ namespace UnityEditor.Search
         Text = 1 << 5,
 
         Selector = 1 << 6,
+        Keyword = 1 << 7,
 
         Set = 1 << 8,
         Function = 1 << 10,
@@ -29,10 +30,16 @@ namespace UnityEditor.Search
         Expandable = 1 << 12,
         Group = 1 << 13,
 
-        Literal = Boolean | Number | Text,
+        Literal = Boolean | Number | Text | Keyword,
         Iterable = Set | Function | QueryString,
         AnyValue = Literal | Iterable,
         AnyExpression = Literal | Iterable | Selector
+    }
+
+    enum SearchExpressionKeyword
+    {
+        asc,
+        desc
     }
 
     static class SearchExpressionTypeExtensions
@@ -199,10 +206,6 @@ namespace UnityEditor.Search
                 ExceptionDispatchInfo.Capture(ex).Throw();
                 return null; // To stop visual studio complaining about not all code path return a value
             }
-            catch (Exception ex)
-            {
-                throw new SearchExpressionEvaluatorException(c, ex);
-            }
         }
 
         private IEnumerable<SearchItem> Evaluate(SearchExpressionContext c, SearchExpressionExecutionFlags flags)
@@ -225,6 +228,29 @@ namespace UnityEditor.Search
                         }
                         else
                             yield return null;
+                    }
+                }
+                else if (p.types.HasFlag(SearchExpressionType.Expandable))
+                {
+                    foreach (var exprItem in p.Execute(c))
+                    {
+                        if (exprItem == null)
+                        {
+                            yield return null;
+                            continue;
+                        }
+
+                        if (exprItem.value != null)
+                        {
+                            if (Utils.TryGetNumber(exprItem.value, out var d))
+                                args.Add(new SearchExpression(SearchExpressionType.Number, d.ToString().GetStringView(), Parsers.ConstantEvaluator));
+                            else if (exprItem.value is string s)
+                                args.Add(new SearchExpression(SearchExpressionType.Text, s.GetStringView(), Parsers.ConstantEvaluator));
+                            else
+                                c.ThrowError("Cannot expand parameters");
+                        }
+                        else
+                            c.ThrowError("Cannot expand null value");
                     }
                 }
                 else
@@ -262,6 +288,11 @@ namespace UnityEditor.Search
             var seeArgs = new List<SearchExpression> { this };
             seeArgs.AddRange(args);
             return new SearchExpression(SearchExpressionType.Function, StringView.Null, innerText, alias, see, seeArgs.ToArray());
+        }
+
+        public bool IsKeyword(SearchExpressionKeyword keyword)
+        {
+            return innerText.Equals(keyword.ToString(), StringComparison.OrdinalIgnoreCase);
         }
     }
 }

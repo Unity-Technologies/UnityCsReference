@@ -45,6 +45,22 @@ namespace UnityEditor.Search
             return height > 30f;
         }
 
+        readonly struct TextUndoInfo
+        {
+            readonly public string text;
+            readonly public int cursorPos;
+
+            public TextUndoInfo(string text, int cursorPos)
+            {
+                this.text = text;
+                this.cursorPos = cursorPos;
+            }
+        }
+
+        static int s_UndoIndex = -1;
+        static TextUndoInfo[] s_UndoStack = new TextUndoInfo[10];
+        static double s_UndoLastTime = 0f;
+
         public static string Draw(Rect position, string text, GUIStyle style)
         {
             var evt = Event.current;
@@ -58,6 +74,9 @@ namespace UnityEditor.Search
                     selectAll = GUI.changed = true;
                 }
 
+                if (GUI.changed || evt.isKey)
+                    SaveUndo(text);
+
                 text = Draw(position, text, IsMultiline(position.height), false, null, style ?? Styles.searchField);
 
                 if (selectAll)
@@ -65,6 +84,36 @@ namespace UnityEditor.Search
 
                 return text;
             }
+        }
+
+        private static void SaveUndo(string text)
+        {
+            var now = EditorApplication.timeSinceStartup;
+            if (now - s_UndoLastTime <= 1f)
+                return;
+
+            if (!string.IsNullOrEmpty(text) && (s_UndoIndex == -1 || s_UndoStack[s_UndoIndex].text != text))
+            {
+                s_UndoIndex = Utils.Wrap(s_UndoIndex + 1, s_UndoStack.Length);
+                s_UndoStack[s_UndoIndex] = new TextUndoInfo(text, GetTextEditor().cursorIndex);
+            }
+            s_UndoLastTime = now;
+        }
+
+        private static bool UndoEdit(TextEditor editor, int direction = 1)
+        {
+            s_UndoIndex = Utils.Wrap(s_UndoIndex - direction, s_UndoStack.Length);
+            if (s_UndoStack[s_UndoIndex].text == null)
+                return false;
+
+            editor.text = s_UndoStack[s_UndoIndex].text;
+            editor.cursorIndex = s_UndoStack[s_UndoIndex].cursorPos;
+            return true;
+        }
+
+        private static bool RedoEdit(TextEditor editor)
+        {
+            return UndoEdit(editor, -1);
         }
 
         public static string Draw(Rect position, string text, bool multiline, bool passwordField, string allowedletters, GUIStyle style)
@@ -298,7 +347,23 @@ namespace UnityEditor.Search
                             break;
                         }
 
-                        if (evt.keyCode == KeyCode.Escape)
+                        if (s_UndoIndex != -1 && evt.keyCode == KeyCode.Z && (evt.command || evt.control))
+                        {
+                            if (editor.IsEditingControl(id) && UndoEdit(editor))
+                            {
+                                editor.EndEditing();
+                                mayHaveChanged = true;
+                            }
+                        }
+                        else if (s_UndoIndex != -1 && evt.keyCode == KeyCode.Y && (evt.command || evt.control))
+                        {
+                            if (editor.IsEditingControl(id) && RedoEdit(editor))
+                            {
+                                editor.EndEditing();
+                                mayHaveChanged = true;
+                            }
+                        }
+                        else if (evt.keyCode == KeyCode.Escape)
                         {
                             if (editor.IsEditingControl(id))
                             {
@@ -748,14 +813,14 @@ namespace UnityEditor.Search
             var tooltipRect = new Rect(lineRect);
             tooltipRect.yMin -= textTopBottomPadding;
             tooltipRect.yMax += textTopBottomPadding;
-            tooltipStyle.Draw(tooltipRect, GUIContent.Temp(string.Empty, tooltip), controlID);
+            tooltipStyle.Draw(tooltipRect, Utils.GUIContentTemp(string.Empty, tooltip), controlID);
             EditorGUIUtility.AddCursorRect(tooltipRect, MouseCursor.Arrow);
         }
 
         internal static Rect GetRect(string text, float width, float padding)
         {
             var fieldWidth = width - padding;
-            var fieldHeight = Mathf.Max(minSinglelineTextHeight, Styles.searchField.CalcHeight(GUIContent.Temp(text), fieldWidth));
+            var fieldHeight = Mathf.Max(minSinglelineTextHeight, Styles.searchField.CalcHeight(Utils.GUIContentTemp(text), fieldWidth));
             return GUILayoutUtility.GetRect(fieldWidth, fieldHeight + textTopBottomPadding, Styles.searchField);
         }
     }

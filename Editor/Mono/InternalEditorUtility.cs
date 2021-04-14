@@ -47,7 +47,7 @@ namespace UnityEditorInternal
                 case "uxml": return EditorGUIUtility.FindTexture(typeof(UnityEngine.UIElements.VisualTreeAsset));
                 case "uss": return EditorGUIUtility.FindTexture(typeof(StyleSheet));
                 case "lighting": return EditorGUIUtility.FindTexture(typeof(UnityEngine.LightingSettings));
-                case "scenetemplate": return EditorResources.Load<Texture2D>("Icons/SceneTemplate.png");
+                case "scenetemplate": return EditorGUIUtility.FindTexture("UnityEditor/SceneTemplate/SceneTemplateAsset Icon");
                 case "ttf": case "otf": case "fon": case "fnt":
                     return EditorGUIUtility.FindTexture(typeof(Font));
 

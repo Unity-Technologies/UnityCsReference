@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Serialization;
 using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor.EditorTools
@@ -20,23 +19,20 @@ namespace UnityEditor.EditorTools
         [SerializeField]
         EditorTool m_ActiveTool;
 
-        static ActiveEditorTracker m_Tracker;
-
         [SerializeField]
         List<EditorTool> m_ToolHistory = new List<EditorTool>();
 
-        static bool s_ChangingActiveTool;
+        static bool s_ChangingActiveTool, s_ChangingActiveContext;
 
         // Mimic behavior of Tools.toolChanged for backwards compatibility until existing tools are converted to the new
         // apis.
         internal static event Action<EditorTool, EditorTool> activeToolChanged;
 
-        // EditorTools that are created as custom editor tools. This list represents only the shared tracker.
-        List<EditorTool> m_CustomEditorTools = new List<EditorTool>();
+        [SerializeField]
+        List<ComponentEditor> m_ComponentTools = new List<ComponentEditor>();
 
-        // This list represents any custom editor tools created by locked inspectors. They are not shown in the scene
-        // or context menu.
-        List<EditorTool> m_LockedCustomEditorTools = new List<EditorTool>();
+        [SerializeField]
+        List<ComponentEditor> m_ComponentContexts = new List<ComponentEditor>();
 
         [SerializeField]
         EditorToolContext m_ActiveToolContext;
@@ -52,24 +48,38 @@ namespace UnityEditor.EditorTools
 
             set
             {
+                if (s_ChangingActiveContext)
+                {
+                    // pop the changing state so that we don't lock the active tool after an exception is thrown.
+                    s_ChangingActiveContext = false;
+                    throw new InvalidOperationException("Setting the active context from EditorToolContext.OnActivated or EditorToolContext.OnWillBeDeactivated is not allowed.");
+                }
+
                 var ctx = value == null ? GetSingleton<GameObjectToolContext>() : value;
 
                 if (ctx == activeToolContext)
                     return;
 
+                s_ChangingActiveContext = true;
+
                 // Make sure to get the active tool enum prior to setting the context, otherwise we'll be comparing
-                // apples to oranges
+                // apples to oranges. Ie, the transform tools will be different despite being the same `Tool` enum value.
                 var tool = Tools.current;
                 var prev = instance.m_ActiveToolContext;
 
-                // Remap the history for manipulation tools to use their correctly resolved EditorTool instances
-                RebuildToolHistoryWithContext(prev, ctx);
+                if (prev != null)
+                    prev.OnWillBeDeactivated();
 
                 ToolManager.ActiveContextWillChange();
                 instance.m_ActiveToolContext = ctx;
                 ToolManager.ActiveContextDidChange();
 
-                DestroyImmediate(prev);
+                ctx.OnActivated();
+
+                instance.RebuildAvailableTools();
+
+                // Remap the history for manipulation tools to use their correctly resolved EditorTool instances
+                RebuildToolHistoryWithContext(prev, ctx);
 
                 var resolved = EditorToolUtility.GetEditorToolWithEnum(tool);
 
@@ -79,27 +89,14 @@ namespace UnityEditor.EditorTools
 
                 // If resolved is null at this point, the setter for activeTool will substitute an instance of NoneTool for us.
                 ToolManager.SetActiveTool(resolved);
-            }
-        }
 
-        internal static Type activeToolContextType
-        {
-            get { return activeToolContext.GetType(); }
-            set
-            {
-                var mode = value != null ? value : typeof(GameObjectToolContext);
-                if (!typeof(EditorToolContext).IsAssignableFrom(mode))
-                    throw new ArgumentException("ActiveToolMode property must derive from EditorToolMode", "value");
-                activeToolContext = GetSingleton(mode) as EditorToolContext;
+                s_ChangingActiveContext = false;
             }
         }
 
         internal static EditorTool activeTool
         {
-            get
-            {
-                return instance.m_ActiveTool;
-            }
+            get { return instance.m_ActiveTool; }
 
             set
             {
@@ -153,159 +150,130 @@ namespace UnityEditor.EditorTools
             }
         }
 
-        static ActiveEditorTracker tracker
-        {
-            get
-            {
-                if (m_Tracker == null)
-                    m_Tracker = new ActiveEditorTracker();
-                return m_Tracker;
-            }
-        }
-
         [Serializable]
         struct ComponentToolCache : ISerializationCallbackReceiver
         {
             [SerializeField]
-            string m_EditorToolType;
-
+            string m_ToolType;
             [SerializeField]
-            string m_EditorToolState;
+            string m_ContextType;
 
-            public Type editorToolType;
-
+            public Type contextType;
+            public Type toolType;
             public UnityObject targetObject;
-
             public UnityObject[] targetObjects;
 
-            public string editorToolState
-            {
-                get { return m_EditorToolState; }
-            }
+            public static readonly ComponentToolCache Empty = new ComponentToolCache(null, null);
 
-            public static readonly ComponentToolCache Empty = new ComponentToolCache(null);
-
-            public ComponentToolCache(EditorTool tool)
+            public ComponentToolCache(EditorToolContext context, EditorTool tool)
             {
-                if (tool != null)
+                bool customTool = IsCustomEditorTool(tool);
+                bool customContext = IsCustomToolContext(context);
+
+                if (customTool || customContext)
                 {
-                    editorToolType = tool.GetType();
+                    toolType = customTool ? tool.GetType() : null;
+                    contextType = customContext ? context.GetType() : null;
                     targetObject = tool.target;
                     targetObjects = tool.targets.ToArray();
-                    m_EditorToolState = EditorJsonUtility.ToJson(tool);
                 }
                 else
                 {
-                    editorToolType = null;
+                    toolType = null;
+                    contextType = null;
                     targetObject = null;
                     targetObjects = null;
-                    m_EditorToolState = null;
                 }
 
-                m_EditorToolType = null;
+                m_ToolType = null;
+                m_ContextType = null;
             }
 
-            public bool IsEqual(EditorTool other)
+            public bool IsEqual(ComponentEditor other)
             {
-                if (other == null || editorToolType != other.GetType())
+                var editor = other?.GetEditor<EditorTool>();
+
+                if (editor == null || targetObjects == null || editor.targets == null)
                     return false;
 
-                if (ReferenceEquals(targetObjects, other.m_Targets))
-                    return true;
-
-                if (targetObjects == null || other.m_Targets == null)
-                    return false;
-
-                return targetObjects.SequenceEqual(other.m_Targets);
+                // todo need to cache ComponentEditor targets
+                return toolType == editor.GetType() && targetObjects.SequenceEqual(editor.targets);
             }
 
             public override string ToString()
             {
-                return editorToolType != null ? editorToolType.ToString() : "null";
+                return $"Tool: {toolType} Context: {contextType}";
             }
 
             public void OnBeforeSerialize()
             {
-                m_EditorToolType = editorToolType != null ? editorToolType.AssemblyQualifiedName : null;
+                m_ToolType = toolType != null ? toolType.AssemblyQualifiedName : null;
+                m_ContextType = contextType != null ? contextType.AssemblyQualifiedName : null;
             }
 
             public void OnAfterDeserialize()
             {
-                if (!string.IsNullOrEmpty(m_EditorToolType))
-                    editorToolType = Type.GetType(m_EditorToolType);
+                if (!string.IsNullOrEmpty(m_ToolType))
+                    toolType = Type.GetType(m_ToolType);
+                if (!string.IsNullOrEmpty(m_ContextType))
+                    contextType = Type.GetType(m_ContextType);
             }
         }
 
         [SerializeField]
         ComponentToolCache m_PreviousComponentToolCache;
 
-        // EditorApplication.isPlayingOrWillEnterPlayMode doesn't handle exiting.
-        [SerializeField]
-        PlayModeStateChange m_PlayModeState;
+        void SaveComponentTool()
+        {
+            m_PreviousComponentToolCache = new ComponentToolCache(m_ActiveToolContext, m_ActiveTool);
+        }
 
         EditorToolManager() {}
 
         void OnEnable()
         {
-            EditorApplication.playModeStateChanged += PlayModeStateChanged;
             Undo.undoRedoPerformed += UndoRedoPerformed;
             ActiveEditorTracker.editorTrackerRebuilt += TrackerRebuilt;
             Selection.selectedObjectWasDestroyed += SelectedObjectWasDestroyed;
             AssemblyReloadEvents.beforeAssemblyReload += BeforeAssemblyReload;
-            // Delay calls for functions that require all objects have run through "OnEnable"
-            EditorApplication.delayCall += RebuildAvailableCustomEditorTools;
+
             if (activeTool != null)
                 EditorApplication.delayCall += activeTool.OnActivated;
+            if (activeToolContext != null)
+                EditorApplication.delayCall += activeToolContext.OnActivated;
         }
 
         void OnDisable()
         {
-            EditorApplication.playModeStateChanged -= PlayModeStateChanged;
             Undo.undoRedoPerformed -= UndoRedoPerformed;
             ActiveEditorTracker.editorTrackerRebuilt -= TrackerRebuilt;
             Selection.selectedObjectWasDestroyed -= SelectedObjectWasDestroyed;
             AssemblyReloadEvents.beforeAssemblyReload -= BeforeAssemblyReload;
-            ClearCustomEditorTools();
-        }
-
-        void PlayModeStateChanged(PlayModeStateChange state)
-        {
-            switch (state)
-            {
-                case PlayModeStateChange.EnteredEditMode:
-                    m_PlayModeState = PlayModeStateChange.EnteredEditMode;
-                    break;
-
-                case PlayModeStateChange.ExitingEditMode:
-                    m_PlayModeState = PlayModeStateChange.ExitingEditMode;
-                    break;
-
-                case PlayModeStateChange.EnteredPlayMode:
-                    m_PlayModeState = PlayModeStateChange.EnteredPlayMode;
-                    break;
-
-                case PlayModeStateChange.ExitingPlayMode:
-
-                    // ExitPlayMode tests invoke this callback twice
-                    if (EditorApplication.isPlaying)
-                        m_PlayModeState = PlayModeStateChange.ExitingPlayMode;
-                    break;
-            }
-
-            // TrackerRebuilt is called during the ExitingEditMode phase, but the selection might not be valid yet.
-            if (m_PlayModeState == PlayModeStateChange.EnteredPlayMode || m_PlayModeState == PlayModeStateChange.EnteredEditMode)
-                RebuildAvailableCustomEditorTools();
         }
 
         void BeforeAssemblyReload()
         {
             if (m_ActiveTool != null)
                 m_ActiveTool.OnWillBeDeactivated();
+
+            if (m_ActiveToolContext != null)
+                m_ActiveToolContext.OnWillBeDeactivated();
+        }
+
+        // used by tests
+        internal static void ForceTrackerRebuild()
+        {
+            instance.TrackerRebuilt();
         }
 
         void TrackerRebuilt()
         {
-            RebuildAvailableCustomEditorTools();
+            // when entering play mode there is an intermediate tracker rebuild where nothing is selected. ignore it.
+            if (EditorApplication.isPlayingOrWillChangePlaymode && !EditorApplication.isPlaying)
+                return;
+
+            RebuildAvailableContexts();
+            RebuildAvailableTools();
             EnsureCurrentToolIsNotNull();
         }
 
@@ -321,10 +289,17 @@ namespace UnityEditor.EditorTools
 
         void SelectedObjectWasDestroyed(int id)
         {
-            if (m_CustomEditorTools.Any(x => x == m_ActiveTool) &&
-                m_ActiveTool.m_Targets.Any(x => x == null || x.GetInstanceID() == id))
+            bool componentToolActive = m_ComponentTools.Any(
+                x => x?.GetEditor<EditorTool>() == m_ActiveTool)
+                && m_ActiveTool.m_Targets.Any(x => x == null || x.GetInstanceID() == id);
+
+            bool componentContextActive = m_ComponentContexts.Any(
+                x => x?.GetEditor<EditorToolContext>() == m_ActiveToolContext)
+                && m_ActiveToolContext.targets.Any(x => x == null || x.GetInstanceID() == id);
+
+            if (componentToolActive || componentContextActive)
             {
-                m_PreviousComponentToolCache = new ComponentToolCache(m_ActiveTool);
+                SaveComponentTool();
                 RestorePreviousTool();
             }
         }
@@ -336,21 +311,15 @@ namespace UnityEditor.EditorTools
 
         void RestoreCustomEditorTool()
         {
-            var restored = m_CustomEditorTools.FirstOrDefault(m_PreviousComponentToolCache.IsEqual);
-
-            // Check for existence in locked inspectors too, but only if the locked inspector target is being inspected
-            if (restored == null
-                && m_PreviousComponentToolCache.targetObject != null
-                && Selection.objects.Any(x => x.Equals(m_PreviousComponentToolCache.targetObject)))
-                restored = m_LockedCustomEditorTools.FirstOrDefault(m_PreviousComponentToolCache.IsEqual);
+            var restored = m_ComponentTools.FirstOrDefault(m_PreviousComponentToolCache.IsEqual);
 
             if (restored != null)
             {
-                var targets = restored.targets.ToArray();
-                EditorJsonUtility.FromJsonOverwrite(m_PreviousComponentToolCache.editorToolState, restored);
-                restored.m_Targets = targets;
-                restored.m_Target = targets.Last();
-                activeTool = restored;
+                // todo Use generated Context
+                if (m_PreviousComponentToolCache.contextType != null)
+                    activeToolContext = GetComponentContext(m_PreviousComponentToolCache.contextType);
+
+                activeTool = restored.GetEditor<EditorTool>();
             }
 
             m_PreviousComponentToolCache = ComponentToolCache.Empty;
@@ -359,20 +328,26 @@ namespace UnityEditor.EditorTools
         // destroy invalid custom editor tools
         void ClearCustomEditorTools()
         {
-            foreach (var customEditorTool in m_CustomEditorTools)
+            foreach (var customEditorTool in m_ComponentTools)
             {
-                if (customEditorTool != null && customEditorTool != m_ActiveTool)
-                    DestroyImmediate(customEditorTool);
+                if (customEditorTool.editor == m_ActiveTool)
+                    m_ActiveTool.OnWillBeDeactivated();
+                DestroyImmediate(customEditorTool.editor);
             }
 
-            foreach (var customEditorTool in m_LockedCustomEditorTools)
+            m_ComponentTools.Clear();
+        }
+
+        void ClearComponentContexts()
+        {
+            foreach (var context in m_ComponentContexts)
             {
-                if (customEditorTool != null && customEditorTool != m_ActiveTool)
-                    DestroyImmediate(customEditorTool);
+                if (context.GetEditor<EditorToolContext>() == m_ActiveToolContext)
+                    m_ActiveToolContext.OnWillBeDeactivated();
+                DestroyImmediate(context.editor);
             }
 
-            m_LockedCustomEditorTools.Clear();
-            m_CustomEditorTools.Clear();
+            m_ComponentContexts.Clear();
         }
 
         void CleanupSingletons()
@@ -466,6 +441,16 @@ namespace UnityEditor.EditorTools
             return null;
         }
 
+        public static void RestorePreviousPersistentTool()
+        {
+            var last = GetLastTool(x => x && !EditorToolUtility.IsCustomEditorTool(x.GetType()));
+
+            if (last != null)
+                activeTool = last;
+            else
+                activeTool = GetSingleton<MoveTool>();
+        }
+
         public static void RestorePreviousTool()
         {
             activeTool = GetLastTool(x => x && x != instance.m_ActiveTool);
@@ -491,254 +476,159 @@ namespace UnityEditor.EditorTools
             return EditorToolUtility.IsCustomEditorTool(tool != null ? tool.GetType() : null);
         }
 
-        static List<CustomEditorTool> s_CustomEditorTools = new List<CustomEditorTool>();
-
-        void RebuildAvailableCustomEditorTools()
+        static bool IsCustomToolContext(EditorToolContext context)
         {
-            EditorApplication.delayCall -= RebuildAvailableCustomEditorTools;
+            return context != null && context.GetType() != typeof(GameObjectToolContext);
+        }
 
-            // Do not rebuild the cache since objects are serialized, destroyed, deserialized during this phase
-            if (m_PlayModeState == PlayModeStateChange.ExitingEditMode ||
-                m_PlayModeState == PlayModeStateChange.ExitingPlayMode)
-                return;
+        void RebuildAvailableContexts()
+        {
+            var activeContextType = activeToolContext.GetType();
+            ClearComponentContexts();
+            EditorToolUtility.InstantiateComponentContexts(m_ComponentContexts);
+            var restoredContext = m_ComponentContexts.Find(x => x.editorType == activeContextType);
+            if (restoredContext != null)
+                activeToolContext = restoredContext.GetEditor<EditorToolContext>();
+        }
 
-            var preservedActiveTool = false;
-
+        void RebuildAvailableTools()
+        {
+            ComponentToolCache activeComponentTool = new ComponentToolCache(m_ActiveToolContext, activeTool);
             ClearCustomEditorTools();
 
-            var inspectors = InspectorWindow.GetInspectors();
+            EditorToolUtility.InstantiateComponentTools(activeToolContext, m_ComponentTools);
 
-            // If the shared tracker is locked, use our own tracker instance so that the current selection is always
-            // represented. Addresses case where a single locked inspector is open.
-            var shared = ActiveEditorTracker.sharedTracker;
-
-            m_CustomEditorTools.Clear();
-            m_LockedCustomEditorTools.Clear();
-
-            // Collect editor tools for the shared tracker first
-            EditorToolUtility.GetEditorToolsForTracker(shared.isLocked ? tracker : shared, s_CustomEditorTools);
-
-            foreach (var customEditorTool in s_CustomEditorTools)
+            if (activeComponentTool.toolType != null)
             {
-                if (m_CustomEditorTools.Any(x => x.GetType() == customEditorTool.editorToolType && x.target == customEditorTool.owner.target))
-                    continue;
-                EditorTool tool;
-                preservedActiveTool |= CreateOrRestoreTool(customEditorTool, out tool);
-                m_CustomEditorTools.Add(tool);
-            }
+                var restoredTool = m_ComponentTools.Find(x => x.editorType == activeComponentTool.toolType);
 
-            // Next, collect tools from locked inspectors
-            foreach (var inspector in inspectors)
-            {
-                if (inspector.isLocked)
+                if (restoredTool != null)
                 {
-                    EditorToolUtility.GetEditorToolsForTracker(inspector.tracker, s_CustomEditorTools);
-
-                    foreach (var customEditorTool in s_CustomEditorTools)
-                    {
-                        // Don't add duplicate tools to either another locked inspector with the same target, or a shared tracker
-                        if (m_CustomEditorTools.Any(x => x.GetType() == customEditorTool.editorToolType && x.target == customEditorTool.owner.target)
-                            || m_LockedCustomEditorTools.Any(x => x.GetType() == customEditorTool.editorToolType && x.target == customEditorTool.owner.target))
-                            continue;
-                        EditorTool tool;
-                        preservedActiveTool |= CreateOrRestoreTool(customEditorTool, out tool);
-                        m_LockedCustomEditorTools.Add(tool);
-                    }
+                    activeTool = restoredTool.GetEditor<EditorTool>();
+                }
+                else
+                {
+                    m_PreviousComponentToolCache = activeComponentTool;
+                    RestorePreviousPersistentTool();
                 }
             }
-
-            if (IsCustomEditorTool(m_ActiveTool) && !preservedActiveTool)
-            {
-                var previous = m_ActiveTool;
-                m_PreviousComponentToolCache = new ComponentToolCache(m_ActiveTool);
-                RestorePreviousTool();
-                DestroyImmediate(previous);
-            }
         }
 
-        bool CreateOrRestoreTool(CustomEditorTool customEditorTool, out EditorTool customEditorToolInstance)
+        // Used by tests
+        public static T GetComponentContext<T>(bool searchLockedInspectors = false) where T : EditorToolContext
         {
-            var toolType = customEditorTool.editorToolType;
-            var toolOwner = customEditorTool.owner;
-            var targets = customEditorTool.targets;
-            var target = customEditorTool.owner.target;
-            var activeIsCustomEditorTool = IsCustomEditorTool(m_ActiveTool);
-            bool preservedActiveTool = false;
-
-            // The only case where a custom editor tool is serialized is when it is the active tool. All other
-            // instances are discarded and rebuilt on any tracker rebuild.
-            if (activeIsCustomEditorTool && CustomEditorToolIsMatch(toolOwner, toolType, m_ActiveTool))
-            {
-                preservedActiveTool = true;
-
-                m_ActiveTool.m_Targets = targets;
-                m_ActiveTool.m_Target = target;
-
-                // domain reload - the owning editor was destroyed and therefore we need to reset the EditMode active
-                if (m_ActiveTool is EditModeTool && toolOwner.GetInstanceID() != UnityEditorInternal.EditMode.ownerID)
-                    UnityEditorInternal.EditMode.EditModeToolStateChanged(toolOwner, ((EditModeTool)m_ActiveTool).editMode);
-
-                customEditorToolInstance = m_ActiveTool;
-            }
-            else
-            {
-                customEditorToolInstance = (EditorTool)CreateInstance(toolType, x =>
-                {
-                    ((EditorTool)x).m_Targets = targets;
-                    ((EditorTool)x).m_Target = target;
-                });
-
-                customEditorToolInstance.hideFlags = HideFlags.DontSave;
-            }
-
-            var editModeTool = customEditorToolInstance as EditModeTool;
-
-            if (editModeTool != null)
-                editModeTool.owner = toolOwner;
-
-            return preservedActiveTool;
+            return GetComponentContext(typeof(T), searchLockedInspectors) as T;
         }
 
-        static bool CustomEditorToolIsMatch(Editor editor, Type toolType, EditorTool tool)
+        // Used by tests
+        public static EditorToolContext GetComponentContext(Type type, bool searchLockedInspectors = false)
         {
-            if (editor == null || toolType != tool.GetType())
-                return false;
-
-            // if it's an EditModeTool we need to be stricter about ownership for backwards compatibility.
-            var editModeTool = tool as EditModeTool;
-
-            if (editModeTool != null)
-                return editModeTool.owner == (IToolModeOwner)editor || editModeTool.target == editor.target;
-
-            // otherwise just check if it's a valid type
-            return true;
+            return GetComponentContext(x => x.editorType == type && (searchLockedInspectors || !x.lockedInspector));
         }
 
-        internal static EditorTool GetCustomEditorToolOfType(Type type, bool searchLockedInspectors = true)
+        // Used by tests
+        internal static EditorToolContext GetComponentContext(Func<ComponentEditor, bool> predicate)
         {
-            foreach (var customEditorTool in instance.m_CustomEditorTools)
-                if (customEditorTool != null && customEditorTool.GetType() == type)
-                    return customEditorTool;
-
-            if (searchLockedInspectors)
+            foreach (var ctx in instance.m_ComponentContexts)
             {
-                foreach (var customEditorTool in instance.m_LockedCustomEditorTools)
-                    if (customEditorTool != null && customEditorTool.GetType() == type)
-                        return customEditorTool;
+                if (predicate(ctx))
+                    return ctx.GetEditor<EditorToolContext>();
             }
 
             return null;
         }
 
-        internal static EditorTool GetCustomEditorToolsForType(Type targetType, List<EditorTool> list, bool searchLockedInspectors)
-        {
-            foreach (var customEditorTool in instance.m_CustomEditorTools)
-                if (customEditorTool != null &&
-                    EditorToolUtility.GetCustomEditorToolTargetType(customEditorTool) == targetType)
-                    list.Add(customEditorTool);
-
-            if (searchLockedInspectors)
-            {
-                foreach (var customEditorTool in instance.m_LockedCustomEditorTools)
-                    if (customEditorTool != null && EditorToolUtility.GetCustomEditorToolTargetType(customEditorTool) == targetType)
-                        list.Add(customEditorTool);
-            }
-
-            return null;
-        }
-
-        internal static void GetCustomEditorTools(List<EditorTool> list, bool includeLockedInspectorTools)
+        // Used by tests
+        public static void GetComponentContexts(Func<ComponentEditor, bool> predicate, List<EditorToolContext> list)
         {
             list.Clear();
 
-            foreach (var customEditorTool in instance.m_CustomEditorTools)
-                list.Add(customEditorTool);
-
-            if (includeLockedInspectorTools)
+            foreach (var ctx in instance.m_ComponentContexts)
             {
-                foreach (var customEditorTool in instance.m_LockedCustomEditorTools)
-                    list.Add(customEditorTool);
+                if (predicate(ctx))
+                    list.Add(ctx.GetEditor<EditorToolContext>());
             }
         }
 
         internal static int GetCustomEditorToolsCount(bool includeLockedInspectorTools)
         {
-            var totalCustomToolsCount = 0;
-
-            totalCustomToolsCount += instance.m_CustomEditorTools.Count;
-
             if (includeLockedInspectorTools)
-            {
-                totalCustomToolsCount += instance.m_LockedCustomEditorTools.Count;
-            }
-
-            return totalCustomToolsCount;
+                return instance.m_ComponentTools.Count;
+            return instance.m_ComponentTools.Count(x => !x.lockedInspector);
         }
 
-        internal static void GetCustomEditorToolsForTarget(UnityObject target, List<EditorTool> list, bool searchLockedInspectors)
+        // Used by tests.
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        internal static T GetComponentTool<T>(bool searchLockedInspectors = false)
+            where T : EditorTool
         {
-            list.Clear();
-
-            if (target == null)
-                return;
-
-            foreach (var tool in instance.m_CustomEditorTools)
-            {
-                if (tool.targets.Contains(target))
-                    list.Add(tool);
-            }
-
-            if (searchLockedInspectors)
-            {
-                foreach (var tool in instance.m_LockedCustomEditorTools)
-                {
-                    if (tool.targets.Contains(target))
-                        list.Add(tool);
-                }
-            }
+            return GetComponentTool(typeof(T), searchLockedInspectors) as T;
         }
 
-        internal static EditorTool GetCustomEditorTool(Func<EditorTool, bool> predicate, bool searchLockedInspectors)
+        internal static EditorTool GetComponentTool(Type type, bool searchLockedInspectors = false)
         {
-            foreach (var tool in instance.m_CustomEditorTools)
-                if (predicate(tool))
-                    return tool;
+            return GetComponentTool(x => x.editorType == type, searchLockedInspectors);
+        }
 
-            if (searchLockedInspectors)
-                foreach (var tool in instance.m_LockedCustomEditorTools)
-                    if (predicate(tool))
-                        return tool;
+        // Get the first component tool matching a predicate.
+        internal static EditorTool GetComponentTool(Func<ComponentEditor, bool> predicate, bool searchLockedInspectors)
+        {
+            foreach (var customEditorTool in instance.m_ComponentTools)
+            {
+                if (!searchLockedInspectors && customEditorTool.lockedInspector)
+                    continue;
+
+                if (predicate(customEditorTool))
+                    return customEditorTool.GetEditor<EditorTool>();
+            }
 
             return null;
         }
 
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        internal static ScriptableObject CreateInstance(Type type, Action<ScriptableObject> initialize)
+        // Collect all instantiated EditorTools for the current selection, not including locked inspectors. This is
+        // what should be used to get component tools in 99% of cases. The exception is locked Inspectors, in which
+        // case you can use `GetComponentTools(x => x.inspector == editor)`.
+        public static void GetComponentToolsForSharedTracker(List<EditorTool> list)
         {
-            if (!typeof(ScriptableObject).IsAssignableFrom(type))
-                throw new ArgumentException("Type must inherit ScriptableObject.", "type");
+            GetComponentTools(x => x.typeAssociation.targetContext == null, list, false);
+        }
 
-            var res = CreateScriptableObjectInstanceFromType(type, false);
+        // Used by tests.
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        internal static void GetComponentTools(List<EditorTool> list, bool searchLockedInspectors)
+        {
+            GetComponentTools(x => true, list, searchLockedInspectors);
+        }
 
-            try
+        internal static void GetComponentTools(Func<ComponentEditor, bool> predicate,
+            List<EditorTool> list,
+            bool searchLockedInspectors = false)
+        {
+            list.Clear();
+
+            foreach (var customEditorTool in instance.m_ComponentTools)
             {
-                initialize(res);
-            }
-            finally
-            {
-                ResetAndApplyDefaultInstances(res);
-            }
+                if (!searchLockedInspectors && customEditorTool.lockedInspector)
+                    continue;
 
-            return res;
+                if (predicate(customEditorTool))
+                    list.Add(customEditorTool.GetEditor<EditorTool>());
+            }
         }
 
         internal static void InvokeOnSceneGUICustomEditorTools()
         {
-            foreach (var tool in instance.m_CustomEditorTools)
+            foreach (var context in instance.m_ComponentContexts)
             {
-                var handle = tool as IDrawSelectedHandles;
+                // ReSharper disable once SuspiciousTypeConversion.Global
+                if (context.editor is IDrawSelectedHandles handle)
+                    handle.OnDrawHandles();
+            }
 
-                if (handle != null)
+            foreach (var tool in instance.m_ComponentTools)
+            {
+                // ReSharper disable once SuspiciousTypeConversion.Global
+                if (tool.editor is IDrawSelectedHandles handle)
                     handle.OnDrawHandles();
             }
         }

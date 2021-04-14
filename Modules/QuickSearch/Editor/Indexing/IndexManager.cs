@@ -428,9 +428,6 @@ namespace UnityEditor.Search
                         toggle.tooltip = "Toggles this index off so search does not use it";
                         toggle.RegisterValueChangedCallback(evt => m_ListViewIndexSettings.ListView.Refresh());
                         break;
-                    case "files":
-                        toggle.tooltip = "Include file paths in this index";
-                        break;
                     case "types":
                         toggle.tooltip = "Include object type information in this index";
                         break;
@@ -438,7 +435,8 @@ namespace UnityEditor.Search
                         toggle.tooltip = "Include objects' serialized properties in this index";
                         break;
                     case "extended":
-                        toggle.tooltip = "Include as many properties as possible";
+                        toggle.label = "Sub objects";
+                        toggle.tooltip = "Include all sub objects (all Scene objects for a Unity scene, and all sub-assets for an FBX)";
                         break;
                     case "dependencies":
                         toggle.tooltip = "Include information about objects' direct dependencies in this index";
@@ -489,11 +487,11 @@ namespace UnityEditor.Search
                     m_DependenciesButton.style.display = DisplayStyle.Flex;
 
                     var dependencies = selectedItemAsset.index.GetDependencies();
+                    m_DependenciesButton.text = $"{dependencies.Count} Assets";
                     UpdateIndexPreviewListView(dependencies, m_DependenciesListView);
-                    m_DependenciesButton.text = $"{dependencies.Count} Documents";
 
-                    UpdateIndexPreviewListView(selectedItemAsset.index.GetDocuments(true).OrderBy(p => p.id).Select(d => d.id).ToList(), m_DocumentsListView);
                     m_DocumentsButton.text = $"{selectedItemAsset.index.documentCount} Objects";
+                    UpdateIndexPreviewListView(selectedItemAsset.index.GetDocuments(true).Select(d => $"{d.name} {{{d.id}}}").ToList(), m_DocumentsListView);
 
                     UpdateIndexPreviewListView(selectedItemAsset.index.GetKeywords().OrderBy(p => p).ToList(), m_KeywordsListView);
                     m_KeywordsButton.text = $"{selectedItemAsset.index.keywordCount} Keywords";
@@ -806,7 +804,7 @@ namespace UnityEditor.Search
                 else
                 {
                     File.Delete(path);
-                    AssetPostprocessorIndexer.RaiseContentRefreshed(new string[0], new string[] { path }, new string[0]);
+                    SearchMonitor.RaiseContentRefreshed(new string[0], new string[] { path }, new string[0]);
                     AssetDatabase.Refresh();
                 }
             }
@@ -937,7 +935,7 @@ namespace UnityEditor.Search
                         menu.AddItem(new GUIContent("Force rebuild"), false, () =>
                         {
                             var settings = m_IndexSettingsAssets[index].settings;
-                            var indexImporterType = SearchIndexEntryImporter.GetIndexImporterType(settings.type, settings.options.GetHashCode());
+                            var indexImporterType = SearchIndexEntryImporter.GetIndexImporterType(settings.options.GetHashCode());
                             AssetDatabaseAPI.RegisterCustomDependency(indexImporterType.GUID.ToString("N"), Hash128.Parse(Guid.NewGuid().ToString("N")));
                             SearchDatabase.ImportAsset(m_IndexSettingsFilePaths[index]);
                         });

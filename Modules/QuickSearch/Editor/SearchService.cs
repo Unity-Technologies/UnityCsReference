@@ -508,10 +508,7 @@ namespace UnityEditor.Search
             if (reuseExisting) flags |= SearchFlags.ReuseExistingWindow;
             if (multiselect) flags |= SearchFlags.Multiselect;
             if (dockable) flags |= SearchFlags.Dockable;
-            var view = QuickSearch.Create(context, topic, flags).ShowWindow(defaultWidth, defaultHeight, flags);
-            if (context != null && !string.IsNullOrEmpty(context.searchText))
-                view.Refresh();
-            return view;
+            return QuickSearch.Create(context, topic, flags).ShowWindow(defaultWidth, defaultHeight, flags);
         }
 
         /// <summary>

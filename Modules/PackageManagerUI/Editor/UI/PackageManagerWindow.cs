@@ -49,7 +49,7 @@ namespace UnityEditor.PackageManager.UI
 
         internal const string k_UpmUrl = "com.unity3d.kharma:upmpackage/";
 
-        void OnEnable()
+        void CreateGUI()
         {
             this.SetAntiAliasing(4);
             if (instance == null) instance = this;
@@ -74,14 +74,9 @@ namespace UnityEditor.PackageManager.UI
             m_Root = new PackageManagerWindowRoot(resourceLoader, extensionManager, selection, packageFiltering, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy, applicationProxy, upmClient);
             rootVisualElement.Add(m_Root);
 
-            m_Root.OnEnable();
+            m_Root.CreateGUI();
 
             Events.registeredPackages += OnRegisteredPackages;
-        }
-
-        void CreateGUI()
-        {
-            m_Root?.CreateGUI();
         }
 
         void OnDisable()

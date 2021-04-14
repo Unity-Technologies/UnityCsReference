@@ -369,17 +369,20 @@ namespace UnityEditor
 
         public void AddMenuItems(SerializedProperty property, GenericMenu menu)
         {
-            if (contextMenuItems == null)
-                return;
-
-            Type scriptType = property.serializedObject.targetObject.GetType();
-            foreach (ContextMenuItemAttribute attribute in contextMenuItems)
+            if (contextMenuItems != null)
             {
-                MethodInfo method = scriptType.GetMethod(attribute.function, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                if (method == null)
-                    continue;
-                menu.AddItem(new GUIContent(attribute.name), false, () => CallMenuCallback(property.serializedObject.targetObjects, method));
+                Type scriptType = property.serializedObject.targetObject.GetType();
+                foreach (ContextMenuItemAttribute attribute in contextMenuItems)
+                {
+                    MethodInfo method = scriptType.GetMethod(attribute.function, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                    if (method == null)
+                        continue;
+                    menu.AddItem(new GUIContent(attribute.name), false, () => CallMenuCallback(property.serializedObject.targetObjects, method));
+                }
             }
+
+            var propertyPath = property.propertyPath;
+            menu.AddItem(new GUIContent("Copy Property Path"), false, () => EditorGUIUtility.systemCopyBuffer = propertyPath);
         }
 
         public void CallMenuCallback(object[] targets, MethodInfo method)

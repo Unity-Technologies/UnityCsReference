@@ -30,6 +30,7 @@ namespace UnityEditor.Search
         public Action<SearchItem, bool> selectCallback => OnItemSelected;
         public Func<SearchItem, bool> filterCallback => null;
         public Action<SearchItem> trackingCallback => null;
+        public string currentGroup => string.Empty;
 
         public SearchResultView(ISearchList results)
         {

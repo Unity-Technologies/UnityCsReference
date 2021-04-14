@@ -114,8 +114,8 @@ namespace UnityEditor
                     if (contentRect.Overlaps(visibleRect))
                     {
                         EditorGUI.indentLevel = property.depth;
-                        using (new EditorGUI.DisabledScope(isInspectorModeNormal && "m_Script" == property.propertyPath))
-                            childrenAreExpanded &= handler.OnGUI(contentRect, property, null, PropertyHandler.UseReorderabelListControl(property), visibleRect);
+                        using (new EditorGUI.DisabledScope(isInspectorModeNormal && string.Equals("m_Script", property.propertyPath, System.StringComparison.Ordinal)))
+                            childrenAreExpanded &= handler.OnGUI(contentRect, property, GetPropertyLabel(property), PropertyHandler.UseReorderabelListControl(property), visibleRect);
                     }
 
                     if (contentRect.height > 0)
@@ -137,6 +137,15 @@ namespace UnityEditor
 
             GUI.enabled = wasEnabled;
             return m_SerializedObject.ApplyModifiedProperties();
+        }
+
+        GUIContent GetPropertyLabel(SerializedProperty property)
+        {
+            var isInspectorModeNormal = inspectorMode == InspectorMode.Normal;
+            if (isInspectorModeNormal)
+                return null;
+
+            return GUIContent.Temp(property.displayName, $"{property.tooltip}\n{property.propertyPath} ({property.propertyType})".Trim());
         }
 
         internal static bool IsAnyMonoBehaviourTargetPartOfPrefabInstance(Editor editor)

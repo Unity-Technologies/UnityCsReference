@@ -130,7 +130,7 @@ namespace UnityEditor
             public static readonly GUIContent metalAPIValidation = EditorGUIUtility.TrTextContent("Metal API Validation*", "When enabled, additional binding state validation is applied.");
             public static readonly GUIContent metalFramebufferOnly = EditorGUIUtility.TrTextContent("Metal Write-Only Backbuffer", "Set framebufferOnly flag on backbuffer. This prevents readback from backbuffer but enables some driver optimizations.");
             public static readonly GUIContent framebufferDepthMemorylessMode = EditorGUIUtility.TrTextContent("Memoryless Depth", "Memoryless mode of framebuffer depth");
-            public static readonly GUIContent[] memorylessModeNames = { EditorGUIUtility.TrTextContent("Unused"), EditorGUIUtility.TrTextContent("Forced"), EditorGUIUtility.TrTextContent("Automatic")};
+            public static readonly GUIContent[] memorylessModeNames = { EditorGUIUtility.TrTextContent("Unused"), EditorGUIUtility.TrTextContent("Forced"), EditorGUIUtility.TrTextContent("Automatic") };
             public static readonly GUIContent vulkanEnableSetSRGBWrite = EditorGUIUtility.TrTextContent("SRGB Write Mode*", "If set, enables Graphics.SetSRGBWrite() for toggling sRGB write mode during the frame but may decrease performance especially on tiled GPUs.");
             public static readonly GUIContent vulkanNumSwapchainBuffers = EditorGUIUtility.TrTextContent("Number of swapchain buffers*");
             public static readonly GUIContent vulkanEnableLateAcquireNextImage = EditorGUIUtility.TrTextContent("Acquire swapchain image late as possible*", "If set, renders to a staging image to delay acquiring the swapchain buffer.");
@@ -145,6 +145,7 @@ namespace UnityEditor
             public static readonly GUIContent useOnDemandResources = EditorGUIUtility.TrTextContent("Use on-demand resources*");
             public static readonly GUIContent gcIncremental = EditorGUIUtility.TrTextContent("Use incremental GC", "With incremental Garbage Collection, the Garbage Collector will try to time-slice the collection task into multiple steps, to avoid long GC times preventing content from running smoothly.");
             public static readonly GUIContent assemblyVersionValidation = EditorGUIUtility.TrTextContent("Assembly Version Validation", "When Mono Resolves types from a assembly that is Strong Named, versions have to match with the one already loaded.");
+            public static readonly GUIContent assemblyVersionValidationEditorOnly = EditorGUIUtility.TrTextContent("Assembly Version Validation (editor only)", "When Mono Resolves types from a assembly that is Strong Named, versions have to match with the one already loaded.");
             public static readonly GUIContent accelerometerFrequency = EditorGUIUtility.TrTextContent("Accelerometer Frequency*");
             public static readonly GUIContent cameraUsageDescription = EditorGUIUtility.TrTextContent("Camera Usage Description*", "String shown to the user when requesting permission to use the device camera. Written to the NSCameraUsageDescription field in Xcode project's info.plist file");
             public static readonly GUIContent locationUsageDescription = EditorGUIUtility.TrTextContent("Location Usage Description*", "String shown to the user when requesting permission to access the device location. Written to the NSLocationWhenInUseUsageDescription field in Xcode project's info.plist file.");
@@ -192,7 +193,7 @@ namespace UnityEditor
             public static readonly GUIContent normalMapEncodingLabel = EditorGUIUtility.TrTextContent("Normal Map Encoding");
             public static readonly GUIContent[] normalMapEncodingNames = { EditorGUIUtility.TrTextContent("XYZ"), EditorGUIUtility.TrTextContent("DXT5nm-style") };
             public static readonly GUIContent lightmapEncodingLabel = EditorGUIUtility.TrTextContent("Lightmap Encoding", "Affects the encoding scheme and compression format of the lightmaps.");
-            public static readonly GUIContent[] lightmapEncodingNames = { EditorGUIUtility.TrTextContent("Low Quality"), EditorGUIUtility.TrTextContent("Normal Quality"), EditorGUIUtility.TrTextContent("High Quality")};
+            public static readonly GUIContent[] lightmapEncodingNames = { EditorGUIUtility.TrTextContent("Low Quality"), EditorGUIUtility.TrTextContent("Normal Quality"), EditorGUIUtility.TrTextContent("High Quality") };
             public static readonly GUIContent lightmapStreamingEnabled = EditorGUIUtility.TrTextContent("Lightmap Streaming", "Only load larger lightmap mipmaps as needed to render the current game cameras. Requires texture streaming to be enabled in quality settings. This value is applied to the light map textures as they are generated.");
             public static readonly GUIContent lightmapStreamingPriority = EditorGUIUtility.TrTextContent("Streaming Priority", "Lightmap mipmap streaming priority when there's contention for resources. Positive numbers represent higher priority. Valid range is -128 to 127. This value is applied to the light map textures as they are generated.");
             public static readonly GUIContent lightmapQualityAndroidWarning = EditorGUIUtility.TrTextContent("The selected Lightmap Encoding requires OpenGL ES 3.0 or Vulkan. Uncheck 'Automatic Graphics API' and remove OpenGL ES 2 API");
@@ -432,7 +433,7 @@ namespace UnityEditor
         ApiCompatibilityLevel serializedAPICompatibilityLevel;
         bool serializedUseDeterministicCompilation;
 
-        List<string>  scriptingDefinesList;
+        List<string> scriptingDefinesList;
         bool hasScriptingDefinesBeenModified;
         ReorderableList scriptingDefineSymbolsList;
 
@@ -465,7 +466,7 @@ namespace UnityEditor
 
         void OnEnable()
         {
-            isPreset = !AssetDatabase.Contains(target);
+            isPreset = PresetEditor.IsPreset(target);
             validPlatforms = BuildPlatforms.instance.GetValidPlatforms(true).ToArray();
 
             m_StripEngineCode               = FindPropertyAssert("stripEngineCode");
@@ -1004,10 +1005,10 @@ namespace UnityEditor
 
                             GUILayout.Label(SettingsContent.allowedOrientationTitle, EditorStyles.boldLabel);
 
-                            bool somethingAllowed =     m_AllowedAutoRotateToPortrait.boolValue
-                                ||  m_AllowedAutoRotateToPortraitUpsideDown.boolValue
-                                ||  m_AllowedAutoRotateToLandscapeRight.boolValue
-                                ||  m_AllowedAutoRotateToLandscapeLeft.boolValue;
+                            bool somethingAllowed = m_AllowedAutoRotateToPortrait.boolValue
+                                || m_AllowedAutoRotateToPortraitUpsideDown.boolValue
+                                || m_AllowedAutoRotateToLandscapeRight.boolValue
+                                || m_AllowedAutoRotateToLandscapeLeft.boolValue;
 
                             if (!somethingAllowed)
                             {
@@ -1015,10 +1016,10 @@ namespace UnityEditor
                                 Debug.LogError("All orientations are disabled. Allowing portrait");
                             }
 
-                            EditorGUILayout.PropertyField(m_AllowedAutoRotateToPortrait,            SettingsContent.allowedAutoRotateToPortrait);
-                            EditorGUILayout.PropertyField(m_AllowedAutoRotateToPortraitUpsideDown,  SettingsContent.allowedAutoRotateToPortraitUpsideDown);
-                            EditorGUILayout.PropertyField(m_AllowedAutoRotateToLandscapeRight,          SettingsContent.allowedAutoRotateToLandscapeRight);
-                            EditorGUILayout.PropertyField(m_AllowedAutoRotateToLandscapeLeft,           SettingsContent.allowedAutoRotateToLandscapeLeft);
+                            EditorGUILayout.PropertyField(m_AllowedAutoRotateToPortrait, SettingsContent.allowedAutoRotateToPortrait);
+                            EditorGUILayout.PropertyField(m_AllowedAutoRotateToPortraitUpsideDown, SettingsContent.allowedAutoRotateToPortraitUpsideDown);
+                            EditorGUILayout.PropertyField(m_AllowedAutoRotateToLandscapeRight, SettingsContent.allowedAutoRotateToLandscapeRight);
+                            EditorGUILayout.PropertyField(m_AllowedAutoRotateToLandscapeLeft, SettingsContent.allowedAutoRotateToLandscapeLeft);
 
                             EditorGUI.indentLevel--;
                         }
@@ -1315,6 +1316,9 @@ namespace UnityEditor
 
         void GraphicsAPIsGUIOnePlatform(BuildTargetGroup targetGroup, BuildTarget targetPlatform, string platformTitle)
         {
+            if (isPreset)
+                return;
+
             GraphicsDeviceType[] availableDevices = PlayerSettings.GetSupportedGraphicsAPIs(targetPlatform);
             // if no devices (e.g. no platform module), or we only have one possible choice, then no
             // point in having any UI
@@ -1484,6 +1488,8 @@ namespace UnityEditor
 
         void ColorGamutGUI(BuildTargetGroup targetGroup)
         {
+            if (isPreset)
+                return;
             if (!s_SupportedColorGamuts.ContainsKey(targetGroup))
                 return;
 
@@ -1566,7 +1572,7 @@ namespace UnityEditor
         {
             using (new EditorGUI.DisabledScope(true))
             {
-                EditorGUI.Popup(EditorGUILayout.GetControlRect(true), uiString, 0, new GUIContent[] {selected});
+                EditorGUI.Popup(EditorGUILayout.GetControlRect(true), uiString, 0, new GUIContent[] { selected });
             }
         }
 
@@ -1690,68 +1696,70 @@ namespace UnityEditor
                 if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS)
                     EditorGUILayout.PropertyField(m_MetalForceHardShadows, SettingsContent.metalForceHardShadows);
 
-                int[] memorylessModeValues = {0, 1, 2};
+                int[] memorylessModeValues = { 0, 1, 2 };
                 BuildEnumPopup(m_FramebufferDepthMemorylessMode, SettingsContent.framebufferDepthMemorylessMode, memorylessModeValues, SettingsContent.memorylessModeNames);
             }
 
-            // Multithreaded rendering
-            if (settingsExtension != null && settingsExtension.SupportsMultithreadedRendering())
-                settingsExtension.MultithreadedRenderingGUI(targetGroup);
-
-            // Batching section
+            if (!isPreset)
             {
-                int staticBatching, dynamicBatching;
-                bool staticBatchingSupported = true;
-                bool dynamicBatchingSupported = true;
-                if (settingsExtension != null)
-                {
-                    staticBatchingSupported = settingsExtension.SupportsStaticBatching();
-                    dynamicBatchingSupported = settingsExtension.SupportsDynamicBatching();
-                }
-                PlayerSettings.GetBatchingForPlatform(platform.defaultTarget, out staticBatching, out dynamicBatching);
+                // Multithreaded rendering
+                if (settingsExtension != null && settingsExtension.SupportsMultithreadedRendering())
+                    settingsExtension.MultithreadedRenderingGUI(targetGroup);
 
-                bool reset = false;
-                if (staticBatchingSupported == false && staticBatching == 1)
+                // Batching section
                 {
-                    staticBatching = 0;
-                    reset = true;
-                }
-
-                if (dynamicBatchingSupported == false && dynamicBatching == 1)
-                {
-                    dynamicBatching = 0;
-                    reset = true;
-                }
-
-                if (reset)
-                {
-                    PlayerSettings.SetBatchingForPlatform(platform.defaultTarget, staticBatching, dynamicBatching);
-                }
-
-                EditorGUI.BeginChangeCheck();
-                using (new EditorGUI.DisabledScope(!staticBatchingSupported))
-                {
-                    if (GUI.enabled)
-                        staticBatching = EditorGUILayout.Toggle(SettingsContent.staticBatching, staticBatching != 0) ? 1 : 0;
-                    else
-                        EditorGUILayout.Toggle(SettingsContent.staticBatching, false);
-                }
-
-                if (GraphicsSettings.currentRenderPipeline == null)
-                {
-                    using (new EditorGUI.DisabledScope(!dynamicBatchingSupported))
+                    int staticBatching, dynamicBatching;
+                    bool staticBatchingSupported = true;
+                    bool dynamicBatchingSupported = true;
+                    if (settingsExtension != null)
                     {
-                        dynamicBatching = EditorGUILayout.Toggle(SettingsContent.dynamicBatching, dynamicBatching != 0) ? 1 : 0;
+                        staticBatchingSupported = settingsExtension.SupportsStaticBatching();
+                        dynamicBatchingSupported = settingsExtension.SupportsDynamicBatching();
+                    }
+                    PlayerSettings.GetBatchingForPlatform(platform.defaultTarget, out staticBatching, out dynamicBatching);
+
+                    bool reset = false;
+                    if (staticBatchingSupported == false && staticBatching == 1)
+                    {
+                        staticBatching = 0;
+                        reset = true;
+                    }
+
+                    if (dynamicBatchingSupported == false && dynamicBatching == 1)
+                    {
+                        dynamicBatching = 0;
+                        reset = true;
+                    }
+
+                    if (reset)
+                    {
+                        PlayerSettings.SetBatchingForPlatform(platform.defaultTarget, staticBatching, dynamicBatching);
+                    }
+
+                    EditorGUI.BeginChangeCheck();
+                    using (new EditorGUI.DisabledScope(!staticBatchingSupported))
+                    {
+                        if (GUI.enabled)
+                            staticBatching = EditorGUILayout.Toggle(SettingsContent.staticBatching, staticBatching != 0) ? 1 : 0;
+                        else
+                            EditorGUILayout.Toggle(SettingsContent.staticBatching, false);
+                    }
+
+                    if (GraphicsSettings.currentRenderPipeline == null)
+                    {
+                        using (new EditorGUI.DisabledScope(!dynamicBatchingSupported))
+                        {
+                            dynamicBatching = EditorGUILayout.Toggle(SettingsContent.dynamicBatching, dynamicBatching != 0) ? 1 : 0;
+                        }
+                    }
+
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        Undo.RecordObject(target, SettingsContent.undoChangedBatchingString);
+                        PlayerSettings.SetBatchingForPlatform(platform.defaultTarget, staticBatching, dynamicBatching);
                     }
                 }
-
-                if (EditorGUI.EndChangeCheck())
-                {
-                    Undo.RecordObject(target, SettingsContent.undoChangedBatchingString);
-                    PlayerSettings.SetBatchingForPlatform(platform.defaultTarget, staticBatching, dynamicBatching);
-                }
             }
-
 
             bool hdrDisplaySupported = false;
             bool gfxJobModesSupported = false;
@@ -1814,37 +1822,40 @@ namespace UnityEditor
                 PlayerSettings.SetGraphicsJobModeForPlatform(platform.defaultTarget, newGfxJobMode);
                 graphicsJobsModeOptionEnabled = false;
             }
-            EditorGUI.BeginChangeCheck();
-            GUIContent graphicsJobsGUI = SettingsContent.graphicsJobsNonExperimental;
-            switch (platform.defaultTarget)
-            {
-                case BuildTarget.StandaloneOSX:
-                case BuildTarget.iOS:
-                case BuildTarget.tvOS:
-                case BuildTarget.Android:
-                    graphicsJobsGUI = SettingsContent.graphicsJobsExperimental;
-                    break;
-                default:
-                    break;
-            }
 
-            using (new EditorGUI.DisabledScope(!graphicsJobsOptionEnabled))
+            if (!isPreset)
             {
-                if (GUI.enabled)
+                EditorGUI.BeginChangeCheck();
+                GUIContent graphicsJobsGUI = SettingsContent.graphicsJobsNonExperimental;
+                switch (platform.defaultTarget)
                 {
-                    newGraphicsJobs = EditorGUILayout.Toggle(graphicsJobsGUI, graphicsJobs);
+                    case BuildTarget.StandaloneOSX:
+                    case BuildTarget.iOS:
+                    case BuildTarget.tvOS:
+                    case BuildTarget.Android:
+                        graphicsJobsGUI = SettingsContent.graphicsJobsExperimental;
+                        break;
+                    default:
+                        break;
                 }
-                else
-                {
-                    EditorGUILayout.Toggle(graphicsJobsGUI, graphicsJobs);
-                }
-            }
-            if (EditorGUI.EndChangeCheck() && (newGraphicsJobs != graphicsJobs))
-            {
-                Undo.RecordObject(target, SettingsContent.undoChangedGraphicsJobsString);
-                PlayerSettings.SetGraphicsJobsForPlatform(platform.defaultTarget, newGraphicsJobs);
-            }
 
+                using (new EditorGUI.DisabledScope(!graphicsJobsOptionEnabled))
+                {
+                    if (GUI.enabled)
+                    {
+                        newGraphicsJobs = EditorGUILayout.Toggle(graphicsJobsGUI, graphicsJobs);
+                    }
+                    else
+                    {
+                        EditorGUILayout.Toggle(graphicsJobsGUI, graphicsJobs);
+                    }
+                }
+                if (EditorGUI.EndChangeCheck() && (newGraphicsJobs != graphicsJobs))
+                {
+                    Undo.RecordObject(target, SettingsContent.undoChangedGraphicsJobsString);
+                    PlayerSettings.SetGraphicsJobsForPlatform(platform.defaultTarget, newGraphicsJobs);
+                }
+            }
             if (gfxJobModesSupported)
             {
                 EditorGUI.BeginChangeCheck();
@@ -1868,7 +1879,7 @@ namespace UnityEditor
                 }
             }
 
-            if (settingsExtension != null && settingsExtension.SupportsCustomNormalMapEncoding())
+            if ((settingsExtension != null && settingsExtension.SupportsCustomNormalMapEncoding()) || !isPreset)
             {
                 using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || Lightmapping.isRunning))
                 {
@@ -1886,13 +1897,13 @@ namespace UnityEditor
             }
 
             // Show Lightmap Encoding quality option
-            if (customLightmapEncodingSupported)
+            if (customLightmapEncodingSupported && !isPreset)
             {
                 using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || Lightmapping.isRunning))
                 {
                     EditorGUI.BeginChangeCheck();
                     LightmapEncodingQuality encodingQuality = PlayerSettings.GetLightmapEncodingQualityForPlatformGroup(targetGroup);
-                    LightmapEncodingQuality[] lightmapEncodingValues = {LightmapEncodingQuality.Low, LightmapEncodingQuality.Normal, LightmapEncodingQuality.High};
+                    LightmapEncodingQuality[] lightmapEncodingValues = { LightmapEncodingQuality.Low, LightmapEncodingQuality.Normal, LightmapEncodingQuality.High };
                     LightmapEncodingQuality newEncodingQuality = BuildEnumPopup(SettingsContent.lightmapEncodingLabel, encodingQuality, lightmapEncodingValues, SettingsContent.lightmapEncodingNames);
                     if (EditorGUI.EndChangeCheck() && encodingQuality != newEncodingQuality)
                     {
@@ -1945,147 +1956,150 @@ namespace UnityEditor
             }
 
             // Light map settings
-            using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || Lightmapping.isRunning))
+            if (!isPreset)
             {
-                bool streamingEnabled = PlayerSettings.GetLightmapStreamingEnabledForPlatformGroup(targetGroup);
-                int streamingPriority = PlayerSettings.GetLightmapStreamingPriorityForPlatformGroup(targetGroup);
-
-                EditorGUI.BeginChangeCheck();
-                streamingEnabled = EditorGUILayout.Toggle(SettingsContent.lightmapStreamingEnabled, streamingEnabled);
-                if (streamingEnabled)
+                using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || Lightmapping.isRunning))
                 {
-                    EditorGUI.indentLevel++;
-                    streamingPriority = EditorGUILayout.DelayedIntField(SettingsContent.lightmapStreamingPriority, streamingPriority);
-                    EditorGUI.indentLevel--;
-                }
-                if (EditorGUI.EndChangeCheck())
-                {
-                    PlayerSettings.SetLightmapStreamingEnabledForPlatformGroup(targetGroup, streamingEnabled);
-                    PlayerSettings.SetLightmapStreamingPriorityForPlatformGroup(targetGroup, streamingPriority);
+                    bool streamingEnabled = PlayerSettings.GetLightmapStreamingEnabledForPlatformGroup(targetGroup);
+                    int streamingPriority = PlayerSettings.GetLightmapStreamingPriorityForPlatformGroup(targetGroup);
 
-                    Lightmapping.OnUpdateLightmapStreaming(targetGroup);
-
-                    serializedObject.ApplyModifiedProperties();
-
-                    GUIUtility.ExitGUI();
-                }
-            }
-
-            if (targetGroup == BuildTargetGroup.Standalone || targetGroup == BuildTargetGroup.WSA || (settingsExtension != null && settingsExtension.SupportsFrameTimingStatistics()))
-            {
-                PlayerSettings.enableFrameTimingStats = EditorGUILayout.Toggle(SettingsContent.enableFrameTimingStats, PlayerSettings.enableFrameTimingStats);
-            }
-
-            if (hdrDisplaySupported)
-            {
-                string label = "Use display in HDR mode";
-                string tooltip = "Switch the display to HDR output (on supported displays)" + ((targetGroup == BuildTargetGroup.XboxOne) ? " at start of application." : ".");
-                bool oldUseHDRDisplay = PlayerSettings.useHDRDisplay;
-                PlayerSettings.useHDRDisplay = EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent(label, tooltip), oldUseHDRDisplay);
-                bool requestRepaint = false;
-
-                if (oldUseHDRDisplay != PlayerSettings.useHDRDisplay)
-                    requestRepaint = true;
-
-                if (targetGroup == BuildTargetGroup.Standalone || targetGroup == BuildTargetGroup.WSA)
-                {
-                    using (new EditorGUI.DisabledScope(!PlayerSettings.useHDRDisplay))
+                    EditorGUI.BeginChangeCheck();
+                    streamingEnabled = EditorGUILayout.Toggle(SettingsContent.lightmapStreamingEnabled, streamingEnabled);
+                    if (streamingEnabled)
                     {
-                        using (new EditorGUI.IndentLevelScope())
-                        {
-                            EditorGUI.BeginChangeCheck();
-                            D3DHDRDisplayBitDepth oldBitDepth = PlayerSettings.D3DHDRBitDepth;
-                            D3DHDRDisplayBitDepth[] bitDepthValues = { D3DHDRDisplayBitDepth.D3DHDRDisplayBitDepth10, D3DHDRDisplayBitDepth.D3DHDRDisplayBitDepth16 };
-                            GUIContent HDRBitDepthLabel = EditorGUIUtility.TrTextContent("Swap Chain Bit Depth", "Affects the bit depth of the final swap chain format and color space.");
-                            GUIContent[] HDRBitDepthNames = { EditorGUIUtility.TrTextContent("Bit Depth 10"),  EditorGUIUtility.TrTextContent("Bit Depth 16")};
+                        EditorGUI.indentLevel++;
+                        streamingPriority = EditorGUILayout.DelayedIntField(SettingsContent.lightmapStreamingPriority, streamingPriority);
+                        EditorGUI.indentLevel--;
+                    }
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        PlayerSettings.SetLightmapStreamingEnabledForPlatformGroup(targetGroup, streamingEnabled);
+                        PlayerSettings.SetLightmapStreamingPriorityForPlatformGroup(targetGroup, streamingPriority);
 
-                            D3DHDRDisplayBitDepth bitDepth = BuildEnumPopup(HDRBitDepthLabel, oldBitDepth, bitDepthValues, HDRBitDepthNames);
-                            if (EditorGUI.EndChangeCheck())
+                        Lightmapping.OnUpdateLightmapStreaming(targetGroup);
+
+                        serializedObject.ApplyModifiedProperties();
+
+                        GUIUtility.ExitGUI();
+                    }
+                }
+
+                if (targetGroup == BuildTargetGroup.Standalone || targetGroup == BuildTargetGroup.WSA || (settingsExtension != null && settingsExtension.SupportsFrameTimingStatistics()))
+                {
+                    PlayerSettings.enableFrameTimingStats = EditorGUILayout.Toggle(SettingsContent.enableFrameTimingStats, PlayerSettings.enableFrameTimingStats);
+                }
+
+                if (hdrDisplaySupported)
+                {
+                    string label = "Use display in HDR mode";
+                    string tooltip = "Switch the display to HDR output (on supported displays)" + ((targetGroup == BuildTargetGroup.XboxOne) ? " at start of application." : ".");
+                    bool oldUseHDRDisplay = PlayerSettings.useHDRDisplay;
+                    PlayerSettings.useHDRDisplay = EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent(label, tooltip), oldUseHDRDisplay);
+                    bool requestRepaint = false;
+
+                    if (oldUseHDRDisplay != PlayerSettings.useHDRDisplay)
+                        requestRepaint = true;
+
+                    if (targetGroup == BuildTargetGroup.Standalone || targetGroup == BuildTargetGroup.WSA)
+                    {
+                        using (new EditorGUI.DisabledScope(!PlayerSettings.useHDRDisplay))
+                        {
+                            using (new EditorGUI.IndentLevelScope())
                             {
-                                PlayerSettings.D3DHDRBitDepth = bitDepth;
-                                if (oldBitDepth != bitDepth)
-                                    requestRepaint = true;
+                                EditorGUI.BeginChangeCheck();
+                                D3DHDRDisplayBitDepth oldBitDepth = PlayerSettings.D3DHDRBitDepth;
+                                D3DHDRDisplayBitDepth[] bitDepthValues = { D3DHDRDisplayBitDepth.D3DHDRDisplayBitDepth10, D3DHDRDisplayBitDepth.D3DHDRDisplayBitDepth16 };
+                                GUIContent HDRBitDepthLabel = EditorGUIUtility.TrTextContent("Swap Chain Bit Depth", "Affects the bit depth of the final swap chain format and color space.");
+                                GUIContent[] HDRBitDepthNames = { EditorGUIUtility.TrTextContent("Bit Depth 10"), EditorGUIUtility.TrTextContent("Bit Depth 16") };
+
+                                D3DHDRDisplayBitDepth bitDepth = BuildEnumPopup(HDRBitDepthLabel, oldBitDepth, bitDepthValues, HDRBitDepthNames);
+                                if (EditorGUI.EndChangeCheck())
+                                {
+                                    PlayerSettings.D3DHDRBitDepth = bitDepth;
+                                    if (oldBitDepth != bitDepth)
+                                        requestRepaint = true;
+                                }
                             }
+                        }
+                    }
+
+                    if (requestRepaint)
+                        EditorApplication.RequestRepaintAllViews();
+                }
+
+                // Virtual Texturing settings
+                using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || EditorApplication.isCompiling))
+                {
+                    EditorGUI.BeginChangeCheck();
+                    bool selectedValue = m_VirtualTexturingSupportEnabled.boolValue;
+                    m_VirtualTexturingSupportEnabled.boolValue = EditorGUILayout.Toggle(SettingsContent.virtualTexturingSupportEnabled, m_VirtualTexturingSupportEnabled.boolValue);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        if (PlayerSettings.OnVirtualTexturingChanged())
+                        {
+                            PlayerSettings.SetVirtualTexturingSupportEnabled(m_VirtualTexturingSupportEnabled.boolValue);
+                            EditorApplication.RequestCloseAndRelaunchWithCurrentArguments();
+                            GUIUtility.ExitGUI();
+                        }
+                        else
+                        {
+                            m_VirtualTexturingSupportEnabled.boolValue = selectedValue;
                         }
                     }
                 }
 
-                if (requestRepaint)
-                    EditorApplication.RequestRepaintAllViews();
-            }
-
-            // Virtual Texturing settings
-            using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || EditorApplication.isCompiling))
-            {
-                EditorGUI.BeginChangeCheck();
-                bool selectedValue = m_VirtualTexturingSupportEnabled.boolValue;
-                m_VirtualTexturingSupportEnabled.boolValue = EditorGUILayout.Toggle(SettingsContent.virtualTexturingSupportEnabled, m_VirtualTexturingSupportEnabled.boolValue);
-                if (EditorGUI.EndChangeCheck())
+                if (PlayerSettings.GetVirtualTexturingSupportEnabled())
                 {
-                    if (PlayerSettings.OnVirtualTexturingChanged())
+                    // Test Platform compatibility
+                    bool platformSupportsVT = UnityEngine.Rendering.VirtualTexturingEditor.Building.IsPlatformSupportedForPlayer(platform.defaultTarget);
+                    if (!platformSupportsVT)
                     {
-                        PlayerSettings.SetVirtualTexturingSupportEnabled(m_VirtualTexturingSupportEnabled.boolValue);
-                        EditorApplication.RequestCloseAndRelaunchWithCurrentArguments();
-                        GUIUtility.ExitGUI();
+                        EditorGUILayout.HelpBox(SettingsContent.virtualTexturingUnsupportedPlatformWarning.text, MessageType.Warning);
+                    }
+
+                    // Test for all three 'Automatic Graphics API for X' checkboxes and report API/Platform-specific error
+                    if (targetGroup == BuildTargetGroup.Standalone)
+                    {
+                        if (VirtualTexturingInvalidGfxAPI(BuildTarget.StandaloneWindows, true) ||
+                            VirtualTexturingInvalidGfxAPI(BuildTarget.StandaloneWindows64, true))
+                        {
+                            EditorGUILayout.HelpBox(SettingsContent.virtualTexturingUnsupportedAPIWin.text, MessageType.Warning);
+                        }
+
+                        if (VirtualTexturingInvalidGfxAPI(BuildTarget.StandaloneLinux64, true))
+                        {
+                            EditorGUILayout.HelpBox(SettingsContent.virtualTexturingUnsupportedAPILinux.text, MessageType.Warning);
+                        }
+
+                        if (VirtualTexturingInvalidGfxAPI(BuildTarget.StandaloneOSX, true))
+                        {
+                            EditorGUILayout.HelpBox(SettingsContent.virtualTexturingUnsupportedAPIMac.text, MessageType.Warning);
+                        }
                     }
                     else
                     {
-                        m_VirtualTexturingSupportEnabled.boolValue = selectedValue;
+                        if (platformSupportsVT && VirtualTexturingInvalidGfxAPI(platform.defaultTarget, false))
+                        {
+                            EditorGUILayout.HelpBox(SettingsContent.virtualTexturingUnsupportedAPI.text, MessageType.Warning);
+                        }
+                    }
+                }
+
+                using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || EditorApplication.isCompiling))
+                {
+                    EditorGUI.BeginChangeCheck();
+
+                    ShaderPrecisionModel currShaderPrecisionModel = PlayerSettings.GetShaderPrecisionModel();
+                    ShaderPrecisionModel[] shaderPrecisionModelValues = { ShaderPrecisionModel.PlatformDefault, ShaderPrecisionModel.Unified };
+                    ShaderPrecisionModel newShaderPrecisionModel = BuildEnumPopup(SettingsContent.shaderPrecisionModel, currShaderPrecisionModel, shaderPrecisionModelValues, SettingsContent.shaderPrecisionModelOptions);
+                    if (EditorGUI.EndChangeCheck() && currShaderPrecisionModel != newShaderPrecisionModel)
+                    {
+                        PlayerSettings.SetShaderPrecisionModel(newShaderPrecisionModel);
                     }
                 }
             }
-
-            if (PlayerSettings.GetVirtualTexturingSupportEnabled())
-            {
-                // Test Platform compatibility
-                bool platformSupportsVT = UnityEngine.Rendering.VirtualTexturingEditor.Building.IsPlatformSupportedForPlayer(platform.defaultTarget);
-                if (!platformSupportsVT)
-                {
-                    EditorGUILayout.HelpBox(SettingsContent.virtualTexturingUnsupportedPlatformWarning.text, MessageType.Warning);
-                }
-
-                // Test for all three 'Automatic Graphics API for X' checkboxes and report API/Platform-specific error
-                if (targetGroup == BuildTargetGroup.Standalone)
-                {
-                    if (VirtualTexturingInvalidGfxAPI(BuildTarget.StandaloneWindows, true) ||
-                        VirtualTexturingInvalidGfxAPI(BuildTarget.StandaloneWindows64, true))
-                    {
-                        EditorGUILayout.HelpBox(SettingsContent.virtualTexturingUnsupportedAPIWin.text, MessageType.Warning);
-                    }
-
-                    if (VirtualTexturingInvalidGfxAPI(BuildTarget.StandaloneLinux64, true))
-                    {
-                        EditorGUILayout.HelpBox(SettingsContent.virtualTexturingUnsupportedAPILinux.text, MessageType.Warning);
-                    }
-
-                    if (VirtualTexturingInvalidGfxAPI(BuildTarget.StandaloneOSX, true))
-                    {
-                        EditorGUILayout.HelpBox(SettingsContent.virtualTexturingUnsupportedAPIMac.text, MessageType.Warning);
-                    }
-                }
-                else
-                {
-                    if (platformSupportsVT && VirtualTexturingInvalidGfxAPI(platform.defaultTarget, false))
-                    {
-                        EditorGUILayout.HelpBox(SettingsContent.virtualTexturingUnsupportedAPI.text, MessageType.Warning);
-                    }
-                }
-            }
-
-            using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || EditorApplication.isCompiling))
-            {
-                EditorGUI.BeginChangeCheck();
-
-                ShaderPrecisionModel currShaderPrecisionModel = PlayerSettings.GetShaderPrecisionModel();
-                ShaderPrecisionModel[] shaderPrecisionModelValues = { ShaderPrecisionModel.PlatformDefault, ShaderPrecisionModel.Unified };
-                ShaderPrecisionModel newShaderPrecisionModel = BuildEnumPopup(SettingsContent.shaderPrecisionModel, currShaderPrecisionModel, shaderPrecisionModelValues, SettingsContent.shaderPrecisionModelOptions);
-                if (EditorGUI.EndChangeCheck() && currShaderPrecisionModel != newShaderPrecisionModel)
-                {
-                    PlayerSettings.SetShaderPrecisionModel(newShaderPrecisionModel);
-                }
-            }
-
-            EditorGUILayout.Space();
+            if (!isPreset)
+                EditorGUILayout.Space();
 
             Stereo360CaptureGUI(targetGroup);
 
@@ -2151,10 +2165,12 @@ namespace UnityEditor
                 return;
 
             GUILayout.Label(SettingsContent.vulkanSettingsTitle, EditorStyles.boldLabel);
-
-            PlayerSettings.vulkanEnableSetSRGBWrite = EditorGUILayout.Toggle(SettingsContent.vulkanEnableSetSRGBWrite, PlayerSettings.vulkanEnableSetSRGBWrite);
-            EditorGUILayout.PropertyField(m_VulkanNumSwapchainBuffers, SettingsContent.vulkanNumSwapchainBuffers);
-            PlayerSettings.vulkanNumSwapchainBuffers = (UInt32)m_VulkanNumSwapchainBuffers.intValue;
+            if (!isPreset)
+            {
+                PlayerSettings.vulkanEnableSetSRGBWrite = EditorGUILayout.Toggle(SettingsContent.vulkanEnableSetSRGBWrite, PlayerSettings.vulkanEnableSetSRGBWrite);
+                EditorGUILayout.PropertyField(m_VulkanNumSwapchainBuffers, SettingsContent.vulkanNumSwapchainBuffers);
+                PlayerSettings.vulkanNumSwapchainBuffers = (UInt32)m_VulkanNumSwapchainBuffers.intValue;
+            }
             EditorGUILayout.PropertyField(m_VulkanEnableLateAcquireNextImage, SettingsContent.vulkanEnableLateAcquireNextImage);
 
             if (settingsExtension != null && settingsExtension.ShouldShowVulkanSettings())
@@ -2172,7 +2188,7 @@ namespace UnityEditor
         {
             var oldIdentifier = "";
             string currentIdentifier = PlayerSettings.SanitizeApplicationIdentifier(defaultID, targetGroup);
-            var buildTargetGroup = (targetGroup == BuildTargetGroup.iOS) ? "iPhone" : targetGroup.ToString();
+            var buildTargetGroup = BuildPipeline.GetBuildTargetGroupName(targetGroup);
 
             if (!prop.serializedObject.isEditingMultipleObjects)
             {
@@ -2213,7 +2229,7 @@ namespace UnityEditor
 
         internal static void ShowBuildNumberUI(SerializedProperty prop, BuildTargetGroup targetGroup, string label, string tooltip)
         {
-            var buildTargetGroup = (targetGroup == BuildTargetGroup.iOS) ? "iPhone" : targetGroup.ToString();
+            var buildTargetGroup = BuildPipeline.GetBuildTargetGroupName(targetGroup);
 
             if (!prop.serializedObject.isEditingMultipleObjects)
             {
@@ -2234,7 +2250,7 @@ namespace UnityEditor
 
         private ScriptingImplementation GetCurrentBackendForTarget(BuildTargetGroup targetGroup)
         {
-            if (m_ScriptingBackend.TryGetMapEntry(targetGroup.ToString(), out var entry))
+            if (m_ScriptingBackend.TryGetMapEntry(BuildPipeline.GetBuildTargetGroupName(targetGroup), out var entry))
                 return (ScriptingImplementation)entry.FindPropertyRelative("second").intValue;
             else
                 return PlayerSettings.GetDefaultScriptingBackend(targetGroup);
@@ -2242,7 +2258,7 @@ namespace UnityEditor
 
         private Il2CppCompilerConfiguration GetCurrentIl2CppCompilerConfigurationForTarget(BuildTargetGroup targetGroup)
         {
-            if (m_Il2CppCompilerConfiguration.TryGetMapEntry(targetGroup.ToString(), out var entry))
+            if (m_Il2CppCompilerConfiguration.TryGetMapEntry(BuildPipeline.GetBuildTargetGroupName(targetGroup), out var entry))
                 return (Il2CppCompilerConfiguration)entry.FindPropertyRelative("second").intValue;
             else
                 return Il2CppCompilerConfiguration.Release;
@@ -2250,7 +2266,7 @@ namespace UnityEditor
 
         private ManagedStrippingLevel GetCurrentManagedStrippingLevelForTarget(BuildTargetGroup targetGroup, ScriptingImplementation backend)
         {
-            if (m_ManagedStrippingLevel.TryGetMapEntry(targetGroup.ToString(), out var entry))
+            if (m_ManagedStrippingLevel.TryGetMapEntry(BuildPipeline.GetBuildTargetGroupName(targetGroup), out var entry))
                 return (ManagedStrippingLevel)entry.FindPropertyRelative("second").intValue;
             else
             {
@@ -2263,7 +2279,7 @@ namespace UnityEditor
 
         private ApiCompatibilityLevel GetApiCompatibilityLevelForTarget(BuildTargetGroup targetGroup)
         {
-            if (m_APICompatibilityLevel.TryGetMapEntry(targetGroup.ToString(), out var entry))
+            if (m_APICompatibilityLevel.TryGetMapEntry(BuildPipeline.GetBuildTargetGroupName(targetGroup), out var entry))
                 return (ApiCompatibilityLevel)entry.FindPropertyRelative("second").intValue;
             else
                 // See comment in EditorOnlyPlayerSettings regarding defaultApiCompatibilityLevel
@@ -2313,7 +2329,7 @@ namespace UnityEditor
 
                                 if (newBackend != currentBackend)
                                 {
-                                    m_ScriptingBackend.SetMapValue(targetGroup.ToString(), (int)newBackend);
+                                    m_ScriptingBackend.SetMapValue(BuildPipeline.GetBuildTargetGroupName(targetGroup), (int)newBackend);
                                     currentBackend = newBackend;
                                 }
                             }
@@ -2339,7 +2355,7 @@ namespace UnityEditor
 
                             if (serializedAPICompatibilityLevel != currentAPICompatibilityLevel)
                             {
-                                m_APICompatibilityLevel.SetMapValue(targetGroup.ToString(), (int)currentAPICompatibilityLevel);
+                                m_APICompatibilityLevel.SetMapValue(BuildPipeline.GetBuildTargetGroupName(targetGroup), (int)currentAPICompatibilityLevel);
                                 serializedAPICompatibilityLevel = currentAPICompatibilityLevel;
 
                                 if (EditorUserBuildSettings.activeBuildTargetGroup == targetGroup)
@@ -2366,7 +2382,7 @@ namespace UnityEditor
                                 var newConfiguration = BuildEnumPopup(SettingsContent.il2cppCompilerConfiguration, currentConfiguration, configurations, configurationNames);
 
                                 if (currentConfiguration != newConfiguration)
-                                    m_Il2CppCompilerConfiguration.SetMapValue(targetGroup.ToString(), (int)newConfiguration);
+                                    m_Il2CppCompilerConfiguration.SetMapValue(BuildPipeline.GetBuildTargetGroupName(targetGroup), (int)newConfiguration);
                             }
                         }
                     }
@@ -2393,10 +2409,8 @@ namespace UnityEditor
                     }
                 }
 
-                using (new EditorGUI.DisabledScope(PlayerSettings.GetScriptingBackend(targetGroup) != ScriptingImplementation.Mono2x))
-                {
-                    EditorGUILayout.PropertyField(m_AssemblyVersionValidation, SettingsContent.assemblyVersionValidation);
-                }
+                EditorGUILayout.PropertyField(m_AssemblyVersionValidation,
+                    (PlayerSettings.GetScriptingBackend(targetGroup) != ScriptingImplementation.Mono2x) ? SettingsContent.assemblyVersionValidationEditorOnly : SettingsContent.assemblyVersionValidation);
             }
 
             // Privacy permissions
@@ -2774,7 +2788,7 @@ namespace UnityEditor
 
                         newManagedStrippingLevel = BuildEnumPopup(SettingsContent.managedStrippingLevel, currentManagedStrippingLevel, availableStrippingLevels, GetNiceManagedStrippingLevelNames(availableStrippingLevels));
                         if (newManagedStrippingLevel != currentManagedStrippingLevel)
-                            m_ManagedStrippingLevel.SetMapValue(targetGroup.ToString(), (int)newManagedStrippingLevel);
+                            m_ManagedStrippingLevel.SetMapValue(BuildPipeline.GetBuildTargetGroupName(targetGroup), (int)newManagedStrippingLevel);
                     }
                 }
             }

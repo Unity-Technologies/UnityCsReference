@@ -156,13 +156,10 @@ namespace UnityEngine
                 {
                     m_DelagateCallback(m_DelagateState);
                 }
-                catch (Exception e)
+                finally
                 {
-                    Debug.LogException(e);
+                    m_WaitHandle?.Set();
                 }
-
-                if (m_WaitHandle != null)
-                    m_WaitHandle.Set();
             }
         }
     }

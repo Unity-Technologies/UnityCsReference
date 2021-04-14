@@ -1219,9 +1219,6 @@
     <Compile Include="..\..\Editor\Mono\GUI\DragRect.cs">
       <Link>Editor\Mono\GUI\DragRect.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\EditModeTools\EditModeTool.cs">
-      <Link>Editor\Mono\GUI\EditModeTools\EditModeTool.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\EditModeTools\PrimitiveCollider2DTool.cs">
       <Link>Editor\Mono\GUI\EditModeTools\PrimitiveCollider2DTool.cs</Link>
     </Compile>
@@ -1420,6 +1417,12 @@
     <Compile Include="..\..\Editor\Mono\GUI\Tools\EditorTool.cs">
       <Link>Editor\Mono\GUI\Tools\EditorTool.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\GUI\Tools\EditorToolAttributes.cs">
+      <Link>Editor\Mono\GUI\Tools\EditorToolAttributes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\GUI\Tools\EditorToolCache.cs">
+      <Link>Editor\Mono\GUI\Tools\EditorToolCache.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\Tools\EditorToolContext.cs">
       <Link>Editor\Mono\GUI\Tools\EditorToolContext.cs</Link>
     </Compile>
@@ -1440,6 +1443,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\Tools\GameObjectToolContext.cs">
       <Link>Editor\Mono\GUI\Tools\GameObjectToolContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\GUI\Tools\IEditor.cs">
+      <Link>Editor\Mono\GUI\Tools\IEditor.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\Tools\ToolManager.cs">
       <Link>Editor\Mono\GUI\Tools\ToolManager.cs</Link>
@@ -2730,6 +2736,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\ProjectTemplateWindow.cs">
       <Link>Editor\Mono\ProjectTemplateWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\ProjectWindow\AssetClipboardUtility.cs">
+      <Link>Editor\Mono\ProjectWindow\AssetClipboardUtility.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\ProjectWindow\CachedFilteredHierachy.cs">
       <Link>Editor\Mono\ProjectWindow\CachedFilteredHierachy.cs</Link>
@@ -4075,342 +4084,6 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\VisualTreeAssetExtensions\VisualTreeAssetUtilities.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\VisualTreeAssetExtensions\VisualTreeAssetUtilities.cs</Link>
     </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Bindings\BindingExtensions.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Bindings\BindingExtensions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Bindings\BindingStyleHelpers.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Bindings\BindingStyleHelpers.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Bindings\BindingsInterface.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Bindings\BindingsInterface.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Bindings\ListViewBindings.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Bindings\ListViewBindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Bindings\SerializedPropertyHelper.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Bindings\SerializedPropertyHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\BaseCompositeField.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\BaseCompositeField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\BasePopupField.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\BasePopupField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\BoundsField.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\BoundsField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\BoundsIntField.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\BoundsIntField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\ColorField.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\ColorField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\CompoundFields.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\CompoundFields.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\CurveField.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\CurveField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\DoubleField.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\DoubleField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\EnumField.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\EnumField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\EnumFlagsField.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\EnumFlagsField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\FloatField.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\FloatField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\GradientField.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\GradientField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\Hash128Field.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\Hash128Field.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\IntegerField.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\IntegerField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\LayerField.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\LayerField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\LayerMaskField.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\LayerMaskField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\LongField.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\LongField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\MaskField.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\MaskField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\ObjectField.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\ObjectField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\PopupField.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\PopupField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\PropertyControl.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\PropertyControl.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\PropertyField.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\PropertyField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\TagField.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\TagField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Controls\TextValueField.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Controls\TextValueField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\BoxModelView.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\BoxModelView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\DebuggerSearchBar.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\DebuggerSearchBar.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\DebuggerSplitter.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\DebuggerSplitter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\DebuggerTreeView.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\DebuggerTreeView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\EditorWindowExtension.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\EditorWindowExtension.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\CodeLine.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\CodeLine.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\EventLog.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\EventLog.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\EventLogLine.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\EventLogLine.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\EventTypeSearchField.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\EventTypeSearchField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\IRegisteredCallbackLine.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\IRegisteredCallbackLine.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\RegisterCallbackLines\CallbackInfo.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\RegisterCallbackLines\CallbackInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\RegisterCallbackLines\CodeLineInfo.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\RegisterCallbackLines\CodeLineInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\RegisterCallbackLines\TitleInfo.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\RegisterCallbackLines\TitleInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\UIElementsEventDebugger.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\Events\UIElementsEventDebugger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\OverlayPainter.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\OverlayPainter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\PanelDebugger.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\PanelDebugger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\StyleLengthField.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\StyleLengthField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\StylePropertyDebugger.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\StylePropertyDebugger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\StylesDebugger.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\StylesDebugger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\UIElementsDebugger.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\UIElementsDebugger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\UIR\Debugger\AllocatorDebugger.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\UIR\Debugger\AllocatorDebugger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\UIR\Debugger\UIRDebugger.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\UIR\Debugger\UIRDebugger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\UIR\UIRDebugUtility.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\UIR\UIRDebugUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Debugger\UxmlExporter.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Debugger\UxmlExporter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Delegates\EditorDelegateRegistration.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Delegates\EditorDelegateRegistration.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Delegates\SerializedPropertyDelegates.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Delegates\SerializedPropertyDelegates.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Delegates\TextDelegateRegistration.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Delegates\TextDelegateRegistration.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\EditorAtlasMonitorInjector.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\EditorAtlasMonitorInjector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\EditorContextualMenuManager.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\EditorContextualMenuManager.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\EditorCursor.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\EditorCursor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\EditorDragAndDrop.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\EditorDragAndDrop.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\EditorMenuExtensions.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\EditorMenuExtensions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\EditorPanel.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\EditorPanel.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\FieldMouseDragger.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\FieldMouseDragger.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\GameObjects\Delegates\RuntimeEditorDelegateRegistration.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\GameObjects\Delegates\RuntimeEditorDelegateRegistration.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\GameObjects\Inspector\PanelSettingsInspector.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\GameObjects\Inspector\PanelSettingsInspector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\GameObjects\Inspector\UIDocumentInspector.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\GameObjects\Inspector\UIDocumentInspector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\GameObjects\LiveReloadTrackerCreator.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\GameObjects\LiveReloadTrackerCreator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\GameObjects\PanelSettingsCreator\PanelSettingsCreator.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\GameObjects\PanelSettingsCreator\PanelSettingsCreator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\GameObjects\PlayModeMenuItems.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\GameObjects\PlayModeMenuItems.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\GameObjects\UIDocumentAssetPostProcessor.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\GameObjects\UIDocumentAssetPostProcessor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\GameObjects\UIDocumentHierarchyWatcher.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\GameObjects\UIDocumentHierarchyWatcher.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Inspector\EditorElement.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Inspector\EditorElement.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Inspector\InspectorElement.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Inspector\InspectorElement.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Legacy\ProgressBar.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Legacy\ProgressBar.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\PanelDebug.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\PanelDebug.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\RetainedMode.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\RetainedMode.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\StyleSheetEditor.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\StyleSheetEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\StyleSheetImportErrors.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\StyleSheetImportErrors.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\StyleSheetImportGlossary.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\StyleSheetImportGlossary.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\StyleSheetImporter.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\StyleSheetImporter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\StyleSheetImporterImpl.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\StyleSheetImporterImpl.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\StyleSheetResourceUtil.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\StyleSheetResourceUtil.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\ThemeAssetDefinitionState.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\ThemeAssetDefinitionState.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\ThemeRegistry.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\ThemeRegistry.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\ThemeStyleSheetImporter.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\ThemeStyleSheetImporter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\ThemeStyleSheetImporterEditor.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\ThemeStyleSheetImporterEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\URIHelpers.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\StyleSheets\URIHelpers.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Text\PanelTextSettingsCreationMenu.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Text\PanelTextSettingsCreationMenu.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Text\PanelTextSettingsEditor.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Text\PanelTextSettingsEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Text\PanelTextSettingsImporter.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Text\PanelTextSettingsImporter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\IToolbarMenuElement.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\IToolbarMenuElement.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\SearchFieldBase.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\SearchFieldBase.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\Toolbar.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\Toolbar.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\ToolbarBreadcrumbs.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\ToolbarBreadcrumbs.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\ToolbarButton.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\ToolbarButton.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\ToolbarMenu.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\ToolbarMenu.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\ToolbarPopupSearchField.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\ToolbarPopupSearchField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\ToolbarSearchField.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\ToolbarSearchField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\ToolbarSpacer.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\ToolbarSpacer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\ToolbarToggle.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Toolbar\ToolbarToggle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\Tooltip.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\Tooltip.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\UIElementsEditorUtility.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\UIElementsEditorUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\UIElementsEditorWindowCreator\CSharpTemplateCreator.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\UIElementsEditorWindowCreator\CSharpTemplateCreator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\UIElementsEditorWindowCreator\UIElementsEditorWindowCreator.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\UIElementsEditorWindowCreator\UIElementsEditorWindowCreator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\UIElementsEditorWindowCreator\UssTemplateCreator.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\UIElementsEditorWindowCreator\UssTemplateCreator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\UIElementsEditorWindowCreator\UxmlTemplateCreator.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\UIElementsEditorWindowCreator\UxmlTemplateCreator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\UIElementsViewImporter.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\UIElementsViewImporter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\UXMLEditorFactories.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\UXMLEditorFactories.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\UXMLSchemaGenerator.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\UXMLSchemaGenerator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\VisualTreeAssetEditor.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\VisualTreeAssetEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\WindowBackends\DefaultEditorWindowBackend.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\WindowBackends\DefaultEditorWindowBackend.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Editor\WindowBackends\DefaultWindowBackend.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui\Editor\WindowBackends\DefaultWindowBackend.cs</Link>
-    </Compile>
     <Compile Include="..\..\External\NiceIO\NiceIO.cs">
       <Link>External\NiceIO\NiceIO.cs</Link>
     </Compile>
@@ -4419,6 +4092,357 @@
     </Compile>
     <Compile Include="..\..\External\il2cpp\builds\LinkerEditorIntegration\SharedWithEditor.cs">
       <Link>External\il2cpp\builds\LinkerEditorIntegration\SharedWithEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Bindings\BindingExtensions.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Bindings\BindingExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Bindings\BindingStyleHelpers.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Bindings\BindingStyleHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Bindings\BindingsInterface.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Bindings\BindingsInterface.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Bindings\ListViewBindings.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Bindings\ListViewBindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Bindings\SerializedPropertyHelper.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Bindings\SerializedPropertyHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\BaseCompositeField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Controls\BaseCompositeField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\BasePopupField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Controls\BasePopupField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\BoundsField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Controls\BoundsField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\BoundsIntField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Controls\BoundsIntField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\ColorField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Controls\ColorField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\CompoundFields.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Controls\CompoundFields.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\CurveField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Controls\CurveField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\DoubleField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Controls\DoubleField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\EnumField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Controls\EnumField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\EnumFlagsField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Controls\EnumFlagsField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\FloatField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Controls\FloatField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\GradientField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Controls\GradientField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\Hash128Field.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Controls\Hash128Field.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\IntegerField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Controls\IntegerField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\LayerField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Controls\LayerField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\LayerMaskField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Controls\LayerMaskField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\LongField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Controls\LongField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\MaskField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Controls\MaskField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\ObjectField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Controls\ObjectField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\PopupField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Controls\PopupField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\PropertyControl.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Controls\PropertyControl.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\PropertyField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Controls\PropertyField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\TagField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Controls\TagField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\TextValueField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Controls\TextValueField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\BoxModelView.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\BoxModelView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\DebuggerSearchBar.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\DebuggerSearchBar.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\DebuggerSplitter.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\DebuggerSplitter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\DebuggerTreeView.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\DebuggerTreeView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\EditorWindowExtension.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\EditorWindowExtension.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\Events\CodeLine.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\Events\CodeLine.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\Events\EventLog.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\Events\EventLog.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\Events\EventLogLine.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\Events\EventLogLine.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\Events\EventTypeSearchField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\Events\EventTypeSearchField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\Events\IRegisteredCallbackLine.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\Events\IRegisteredCallbackLine.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\Events\RegisterCallbackLines\CallbackInfo.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\Events\RegisterCallbackLines\CallbackInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\Events\RegisterCallbackLines\CodeLineInfo.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\Events\RegisterCallbackLines\CodeLineInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\Events\RegisterCallbackLines\TitleInfo.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\Events\RegisterCallbackLines\TitleInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\Events\UIElementsEventDebugger.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\Events\UIElementsEventDebugger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\OverlayPainter.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\OverlayPainter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\PanelDebugger.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\PanelDebugger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\StyleLengthField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\StyleLengthField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\StylePropertyDebugger.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\StylePropertyDebugger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\StylesDebugger.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\StylesDebugger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\UIElementsDebugger.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\UIElementsDebugger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\UIR\Debugger\AllocatorDebugger.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\UIR\Debugger\AllocatorDebugger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\UIR\Debugger\UIRDebugger.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\UIR\Debugger\UIRDebugger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\UIR\UIRDebugUtility.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\UIR\UIRDebugUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\UxmlExporter.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\UxmlExporter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Delegates\EditorDelegateRegistration.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Delegates\EditorDelegateRegistration.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Delegates\SerializedPropertyDelegates.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Delegates\SerializedPropertyDelegates.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Delegates\TextDelegateRegistration.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Delegates\TextDelegateRegistration.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\EditorAtlasMonitorInjector.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\EditorAtlasMonitorInjector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\EditorContextualMenuManager.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\EditorContextualMenuManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\EditorCursor.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\EditorCursor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\EditorDragAndDrop.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\EditorDragAndDrop.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\EditorMenuExtensions.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\EditorMenuExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\EditorPanel.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\EditorPanel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\FieldMouseDragger.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\FieldMouseDragger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\GameObjects\Converter\GUIDConversionTask.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\GameObjects\Converter\GUIDConversionTask.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\GameObjects\Converter\GUIDConverter.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\GameObjects\Converter\GUIDConverter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\GameObjects\Converter\PackageManagerHookGUIDConverter.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\GameObjects\Converter\PackageManagerHookGUIDConverter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\GameObjects\Converter\UI\GUIDConverterListDialog.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\GameObjects\Converter\UI\GUIDConverterListDialog.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\GameObjects\Converter\UI\GUIDConverterMainDialog.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\GameObjects\Converter\UI\GUIDConverterMainDialog.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\GameObjects\Delegates\RuntimeEditorDelegateRegistration.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\GameObjects\Delegates\RuntimeEditorDelegateRegistration.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\GameObjects\Inspector\PanelSettingsInspector.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\GameObjects\Inspector\PanelSettingsInspector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\GameObjects\Inspector\UIDocumentInspector.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\GameObjects\Inspector\UIDocumentInspector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\GameObjects\LiveReloadTrackerCreator.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\GameObjects\LiveReloadTrackerCreator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\GameObjects\PanelSettingsCreator\PanelSettingsCreator.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\GameObjects\PanelSettingsCreator\PanelSettingsCreator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\GameObjects\PlayModeMenuItems.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\GameObjects\PlayModeMenuItems.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\GameObjects\UIDocumentAssetPostProcessor.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\GameObjects\UIDocumentAssetPostProcessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\GameObjects\UIDocumentHierarchyWatcher.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\GameObjects\UIDocumentHierarchyWatcher.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Inspector\EditorElement.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Inspector\EditorElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Inspector\InspectorElement.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Inspector\InspectorElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Legacy\ProgressBar.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Legacy\ProgressBar.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\PanelDebug.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\PanelDebug.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\RetainedMode.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\RetainedMode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\StyleSheets\StyleSheetEditor.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\StyleSheets\StyleSheetEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\StyleSheets\StyleSheetImportErrors.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\StyleSheets\StyleSheetImportErrors.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\StyleSheets\StyleSheetImportGlossary.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\StyleSheets\StyleSheetImportGlossary.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\StyleSheets\StyleSheetImporter.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\StyleSheets\StyleSheetImporter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\StyleSheets\StyleSheetImporterImpl.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\StyleSheets\StyleSheetImporterImpl.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\StyleSheets\StyleSheetResourceUtil.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\StyleSheets\StyleSheetResourceUtil.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\StyleSheets\ThemeAssetDefinitionState.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\StyleSheets\ThemeAssetDefinitionState.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\StyleSheets\ThemeRegistry.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\StyleSheets\ThemeRegistry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\StyleSheets\ThemeStyleSheetImporter.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\StyleSheets\ThemeStyleSheetImporter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\StyleSheets\ThemeStyleSheetImporterEditor.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\StyleSheets\ThemeStyleSheetImporterEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\StyleSheets\URIHelpers.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\StyleSheets\URIHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Text\PanelTextSettingsCreationMenu.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Text\PanelTextSettingsCreationMenu.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Text\PanelTextSettingsEditor.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Text\PanelTextSettingsEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Text\PanelTextSettingsImporter.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Text\PanelTextSettingsImporter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Toolbar\IToolbarMenuElement.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Toolbar\IToolbarMenuElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Toolbar\SearchFieldBase.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Toolbar\SearchFieldBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Toolbar\Toolbar.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Toolbar\Toolbar.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Toolbar\ToolbarBreadcrumbs.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Toolbar\ToolbarBreadcrumbs.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Toolbar\ToolbarButton.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Toolbar\ToolbarButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Toolbar\ToolbarMenu.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Toolbar\ToolbarMenu.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Toolbar\ToolbarPopupSearchField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Toolbar\ToolbarPopupSearchField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Toolbar\ToolbarSearchField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Toolbar\ToolbarSearchField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Toolbar\ToolbarSpacer.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Toolbar\ToolbarSpacer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Toolbar\ToolbarToggle.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Toolbar\ToolbarToggle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Tooltip.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Tooltip.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UIElementsEditorUtility.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\UIElementsEditorUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UIElementsEditorWindowCreator\CSharpTemplateCreator.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\UIElementsEditorWindowCreator\CSharpTemplateCreator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UIElementsEditorWindowCreator\UIElementsEditorWindowCreator.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\UIElementsEditorWindowCreator\UIElementsEditorWindowCreator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UIElementsEditorWindowCreator\UssTemplateCreator.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\UIElementsEditorWindowCreator\UssTemplateCreator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UIElementsEditorWindowCreator\UxmlTemplateCreator.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\UIElementsEditorWindowCreator\UxmlTemplateCreator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UIElementsViewImporter.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\UIElementsViewImporter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UXMLEditorFactories.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\UXMLEditorFactories.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UXMLSchemaGenerator.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\UXMLSchemaGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\VisualTreeAssetEditor.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\VisualTreeAssetEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\WindowBackends\DefaultEditorWindowBackend.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\WindowBackends\DefaultEditorWindowBackend.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\WindowBackends\DefaultWindowBackend.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\WindowBackends\DefaultWindowBackend.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\AIEditor\Builder\NavMeshBuilderEditor.bindings.cs">
       <Link>Modules\AIEditor\Builder\NavMeshBuilderEditor.bindings.cs</Link>
@@ -5199,6 +5223,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\AssetDatabaseProxy.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Proxies\AssetDatabaseProxy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\ClientProxy.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Proxies\ClientProxy.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\HttpClientFactory.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Proxies\HttpClientFactory.cs</Link>
@@ -6067,9 +6094,6 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\AssetIndexer.cs">
       <Link>Modules\QuickSearch\Editor\Indexing\AssetIndexer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\AssetPostprocessorIndexer.cs">
-      <Link>Modules\QuickSearch\Editor\Indexing\AssetPostprocessorIndexer.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\CustomIndexers.cs">
       <Link>Modules\QuickSearch\Editor\Indexing\CustomIndexers.cs</Link>
     </Compile>
@@ -6081,9 +6105,6 @@
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\ObjectIndexer.cs">
       <Link>Modules\QuickSearch\Editor\Indexing\ObjectIndexer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\SceneIndexer.cs">
-      <Link>Modules\QuickSearch\Editor\Indexing\SceneIndexer.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\SearchDatabase.cs">
       <Link>Modules\QuickSearch\Editor\Indexing\SearchDatabase.cs</Link>
@@ -6117,9 +6138,6 @@
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\AssetProvider.cs">
       <Link>Modules\QuickSearch\Editor\Providers\AssetProvider.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\AssetProviderSelectors.cs">
-      <Link>Modules\QuickSearch\Editor\Providers\AssetProviderSelectors.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\AssetStoreProvider.cs">
       <Link>Modules\QuickSearch\Editor\Providers\AssetStoreProvider.cs</Link>
@@ -6207,9 +6225,6 @@
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\QueryEngine\QueryGraph.cs">
       <Link>Modules\QuickSearch\Editor\QueryEngine\QueryGraph.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\QueryEngine\QueryGraphViewer.cs">
-      <Link>Modules\QuickSearch\Editor\QueryEngine\QueryGraphViewer.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\QueryEngine\QueryNodes.cs">
       <Link>Modules\QuickSearch\Editor\QueryEngine\QueryNodes.cs</Link>
@@ -6334,9 +6349,6 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\SearchExpressionRuntime.cs">
       <Link>Modules\QuickSearch\Editor\SearchExpression\SearchExpressionRuntime.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\SearchExpressionSelector.cs">
-      <Link>Modules\QuickSearch\Editor\SearchExpression\SearchExpressionSelector.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\SearchExpressionValidator.cs">
       <Link>Modules\QuickSearch\Editor\SearchExpression\SearchExpressionValidator.cs</Link>
     </Compile>
@@ -6354,6 +6366,9 @@
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchList.cs">
       <Link>Modules\QuickSearch\Editor\SearchList.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchMonitor.cs">
+      <Link>Modules\QuickSearch\Editor\SearchMonitor.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchProvider.cs">
       <Link>Modules\QuickSearch\Editor\SearchProvider.cs</Link>
@@ -6378,6 +6393,48 @@
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchUtils.cs">
       <Link>Modules\QuickSearch\Editor\SearchUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Selectors\AssetSelectors.cs">
+      <Link>Modules\QuickSearch\Editor\Selectors\AssetSelectors.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Selectors\ItemSelectors.cs">
+      <Link>Modules\QuickSearch\Editor\Selectors\ItemSelectors.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Selectors\MaterialSelectors.cs">
+      <Link>Modules\QuickSearch\Editor\Selectors\MaterialSelectors.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Selectors\PropertySelectors.cs">
+      <Link>Modules\QuickSearch\Editor\Selectors\PropertySelectors.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Selectors\SceneSelectors.cs">
+      <Link>Modules\QuickSearch\Editor\Selectors\SceneSelectors.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Selectors\SearchColumn.cs">
+      <Link>Modules\QuickSearch\Editor\Selectors\SearchColumn.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Selectors\SearchSelector.cs">
+      <Link>Modules\QuickSearch\Editor\Selectors\SearchSelector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Table\ColumnEditor.cs">
+      <Link>Modules\QuickSearch\Editor\Table\ColumnEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Table\ColumnSelector.cs">
+      <Link>Modules\QuickSearch\Editor\Table\ColumnSelector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Table\PropertyTable.cs">
+      <Link>Modules\QuickSearch\Editor\Table\PropertyTable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Table\SearchReport.cs">
+      <Link>Modules\QuickSearch\Editor\Table\SearchReport.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Table\SearchReportWindow.cs">
+      <Link>Modules\QuickSearch\Editor\Table\SearchReportWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Table\SearchTable.cs">
+      <Link>Modules\QuickSearch\Editor\Table\SearchTable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Table\TableView.cs">
+      <Link>Modules\QuickSearch\Editor\Table\TableView.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Transactions\TimeRange.cs">
       <Link>Modules\QuickSearch\Editor\Transactions\TimeRange.cs</Link>
@@ -6433,11 +6490,17 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\UI\SearchResultView.cs">
       <Link>Modules\QuickSearch\Editor\UI\SearchResultView.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\UI\SplitterInfo.cs">
+      <Link>Modules\QuickSearch\Editor\UI\SplitterInfo.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\UI\Styles.cs">
       <Link>Modules\QuickSearch\Editor\UI\Styles.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\UI\VisualSplitter.cs">
       <Link>Modules\QuickSearch\Editor\UI\VisualSplitter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\BinarySearchFinder.cs">
+      <Link>Modules\QuickSearch\Editor\Utilities\BinarySearchFinder.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\DebugTimer.cs">
       <Link>Modules\QuickSearch\Editor\Utilities\DebugTimer.cs</Link>
@@ -7334,7 +7397,7 @@
       <HintPath>..\..\External\ExCSS\builds\builds\lib\net35\ExCSS.Unity.dll</HintPath>
     </Reference>
     <Reference Include="Bee.BeeDriver">
-      <HintPath>..\..\artifacts\Stevedore\bee-libraries_b54a\Bee.BeeDriver.dll</HintPath>
+      <HintPath>..\..\artifacts\Stevedore\bee-libraries_7430\Bee.BeeDriver.dll</HintPath>
     </Reference>
     <ProjectReference Include="UnityEngine.csproj">
       <Project>{F0499708-3EB6-4026-8362-97E6FFC4E7C8}</Project>

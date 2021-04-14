@@ -37,12 +37,26 @@ namespace UnityEditor.Search
 
         private IEnumerable<SearchProposition> FetchPropositions(SearchContext context, SearchPropositionOptions options)
         {
-            if (!context.options.HasFlag(SearchFlags.Expression))
-                yield break;
             foreach (var e in EvaluatorManager.evaluators)
             {
                 var help = e.description ?? "Expression evaluator";
                 yield return new SearchProposition($"{e.name}{{}}", $"{e.name.ToLowerInvariant()}{{\t}}", help, 1);
+            }
+
+            if (options.tokens.Length > 0 && options.tokens[0].Length > 0)
+            {
+                var token = options.tokens[0][0];
+                if (token == '#')
+                {
+                    foreach (var c in PropertySelectors.Enumerate(context.searchView.results.Take(10)))
+                        yield return new SearchProposition($"{token}{c.content.text ?? c.path}", $"{c.selector}\t", $"Property ({c.selector})");
+                }
+
+                if (token == '@')
+                {
+                    foreach (var s in SelectorManager.selectors.Where(s => s.printable))
+                        yield return new SearchProposition($"{token}{s.label}", $"@{s.label}\t", $"Selector");
+                }
             }
         }
 
@@ -60,18 +74,21 @@ namespace UnityEditor.Search
 
         private IEnumerable<SearchItem> EvaluateExpression(SearchContext context, SearchProvider expressionProvider)
         {
-            if (!context.options.HasFlag(SearchFlags.Expression))
-                yield break;
-            if (string.IsNullOrEmpty(context.searchText))
+            if (string.IsNullOrEmpty(context.searchText) || context.options.HasAny(SearchFlags.QueryString))
                 yield break;
 
             var rootExpression = ParseExpression(context, expressionProvider);
-            if (rootExpression == null)
+            if (rootExpression == null || (rootExpression.types.HasAny(SearchExpressionType.QueryString) && rootExpression.parameters.Length == 0))
                 yield break;
-            var evaluationFlags = SearchExpressionExecutionFlags.ThreadedEvaluation;
-            var it = rootExpression.Execute(context, evaluationFlags).GetEnumerator();
-            while (EvaluateExpression(context, expressionProvider, it))
-                yield return it.Current;
+
+            {
+                var evaluationFlags = SearchExpressionExecutionFlags.ThreadedEvaluation;
+                var it = rootExpression.Execute(context, evaluationFlags).GetEnumerator();
+                while (EvaluateExpression(context, expressionProvider, it))
+                    yield return it.Current;
+
+                TableView.SetupColumns(context, rootExpression);
+            }
         }
 
         private SearchExpression ParseExpression(SearchContext context, SearchProvider expressionProvider)
@@ -123,7 +140,7 @@ namespace UnityEditor.Search
 
         public static ISearchView ShowWindow(string searchQuery, IEnumerable<SearchProvider> providers)
         {
-            var context = SearchService.CreateContext(providers, searchQuery, SearchFlags.Expression);
+            var context = SearchService.CreateContext(providers, searchQuery);
             return SearchService.ShowWindow(context, topic: "Expression", saveFilters: false);
         }
 
@@ -136,79 +153,74 @@ namespace UnityEditor.Search
         {
             return ShowWindow(string.Empty, providers);
         }
+    }
 
-        [ExcludeFromPreset]
-        class ExpressionItem : ScriptableObject, IDisposable
+    [ExcludeFromPreset]
+    class ExpressionItem : ScriptableObject, IDisposable
+    {
+        public SearchItem item;
+        private volatile bool m_Disposed;
+
+        protected virtual void Dispose(bool disposing)
         {
-            public SearchItem item;
-            private volatile bool m_Disposed;
+            if (m_Disposed || !this)
+                return;
 
-            protected virtual void Dispose(bool disposing)
+            if (disposing)
             {
-                if (m_Disposed || !this)
-                    return;
-
-                if (disposing)
-                {
-                    item.data = null;
-                    item = null;
-                }
-
-                DestroyImmediate(this);
-                m_Disposed = true;
+                item.data = null;
+                item = null;
             }
 
-            ~ExpressionItem()
-            {
-                Dispose(disposing: false);
-            }
-
-            public void Dispose()
-            {
-                Dispose(disposing: true);
-                GC.SuppressFinalize(this);
-            }
-
-            public override string ToString()
-            {
-                return item.value.ToString();
-            }
+            DestroyImmediate(this);
+            m_Disposed = true;
         }
 
-        [CustomEditor(typeof(ExpressionItem))]
-        class ExpressionItemEditor : Editor
+        ~ExpressionItem()
         {
-            public SearchItem item;
+            Dispose(disposing: false);
+        }
 
-            internal void OnEnable()
-            {
-                item = ((ExpressionItem)serializedObject.targetObject).item;
-            }
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
 
-            public override void OnInspectorGUI()
-            {
-                EditorGUIUtility.labelWidth = EditorGUIUtility.currentViewWidth * 0.3f;
-                EditorGUILayout.BeginVertical();
-                EditorGUI.BeginDisabledGroup(true);
-                EditorGUILayout.TextField("provider", item.provider.name);
-                EditorGUILayout.IntField("score", item.score);
-                EditorGUILayout.TextField("id", item.id);
-                EditorGUILayout.TextField("label", item.label);
-                EditorGUILayout.TextField("description", item.description);
-                if (item.data != null)
-                    EditorGUILayout.TextField("data", item.data.ToString());
-                if (item.value != null)
-                    EditorGUILayout.TextField("value", item.value.ToString());
-                EditorGUI.EndDisabledGroup();
-                foreach (var n in item.GetFieldNames())
-                {
-                    EditorGUI.BeginChangeCheck();
-                    var newValue = EditorGUILayout.TextField(n, item.GetValue(n).ToString());
-                    if (EditorGUI.EndChangeCheck())
-                        item.SetField(n, newValue);
-                }
-                EditorGUILayout.EndVertical();
-            }
+        public override string ToString()
+        {
+            return item.value.ToString();
+        }
+    }
+
+    [CustomEditor(typeof(ExpressionItem))]
+    class ExpressionItemEditor : Editor
+    {
+        public SearchItem item;
+
+        internal void OnEnable()
+        {
+            item = ((ExpressionItem)serializedObject.targetObject).item;
+        }
+
+        public override void OnInspectorGUI()
+        {
+            EditorGUIUtility.labelWidth = EditorGUIUtility.currentViewWidth * 0.3f;
+            EditorGUILayout.BeginVertical();
+            EditorGUI.BeginDisabledGroup(true);
+            EditorGUILayout.TextField("provider", item.provider.name);
+            EditorGUILayout.IntField("score", item.score);
+            EditorGUILayout.TextField("id", item.id);
+            EditorGUILayout.TextField("label", item.label);
+            EditorGUILayout.TextField("description", item.description);
+            if (item.data != null)
+                EditorGUILayout.TextField("data", item.data.ToString());
+            if (item.value != null)
+                EditorGUILayout.TextField("value", item.value.ToString());
+            EditorGUI.EndDisabledGroup();
+            foreach (var f in item.GetFields())
+                EditorGUILayout.TextField(Utils.GUIContentTemp(f.alias ?? f.name, f.name), f.value?.ToString());
+            EditorGUILayout.EndVertical();
         }
     }
 }

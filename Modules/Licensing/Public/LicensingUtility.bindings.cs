@@ -19,4 +19,12 @@ namespace UnityEditor.Experimental.Licensing
         [NativeMethod("IsOnPremiseLicensingEnabled")]
         internal extern static bool IsOnPremiseLicensingEnabled();
     }
+
+    internal enum EntitlementStatus
+    {
+        Unknown,
+        Granted,
+        NotGranted,
+        Free
+    }
 }

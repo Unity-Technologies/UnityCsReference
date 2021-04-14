@@ -198,6 +198,22 @@ namespace UnityEditor
             return dist - radius;
         }
 
+        // Pixel distance from mouse pointer to camera facing circle.
+        public static float DistanceToCircle(CameraProjectionCache projection, Vector3 position, float radius)
+        {
+            Vector2 screenCenter = projection.WorldToGUIPoint(position);
+            Camera cam = Camera.current;
+            if (cam)
+            {
+                var screenEdge = projection.WorldToGUIPoint(position + cam.transform.right * radius);
+                radius = (screenCenter - screenEdge).magnitude;
+            }
+            float dist = (screenCenter - Event.current.mousePosition).magnitude;
+            if (dist < radius)
+                return 0;
+            return dist - radius;
+        }
+
         // Pixel distance from mouse pointer to cone projection on screen
         static ProfilerMarker s_DistanceToConeMarker = new ProfilerMarker("Handles.DistanceToCone");
         static readonly Vector3[] s_DistanceToConePoints = new Vector3[7];
@@ -1016,7 +1032,8 @@ namespace UnityEditor
             // Find prefab based base
             Transform prefabBase = null;
 
-            if (PrefabUtility.IsPartOfNonAssetPrefabInstance(go))
+            var isPrefabPart = PrefabUtility.IsPartOfNonAssetPrefabInstance(go);
+            if (isPrefabPart)
                 prefabBase = PrefabUtility.GetOutermostPrefabInstanceRoot(go).transform;
 
             // Walk up the hierarchy to find the outermost prefab instance root that is not marked as non-pickable, or
@@ -1032,11 +1049,16 @@ namespace UnityEditor
                     if (tr == prefabBase)
                         return tr.gameObject;
 
-                    // If prefabBase is not pickable, we want to select the nearest pickable root to the base
-                    GameObject nestedRoot = PrefabUtility.GetNearestPrefabInstanceRoot(tr);
+                    // Only test again nested prefab if go is already part of a prefab to avoid selecting a
+                    // parent prefab is the current go is only child of this prefab but does not belong to it
+                    if (isPrefabPart)
+                    {
+                        // If prefabBase is not pickable, we want to select the nearest pickable root to the base
+                        GameObject nestedRoot = PrefabUtility.GetNearestPrefabInstanceRoot(tr);
 
-                    if (nestedRoot != null && tr == nestedRoot.transform)
-                        outerMostSelectableRoot = tr.gameObject;
+                        if (nestedRoot != null && tr == nestedRoot.transform)
+                            outerMostSelectableRoot = tr.gameObject;
+                    }
 
                     // If a SelectionBaseAttribute is found, select the nearest to the picked GameObject
                     if (AttributeHelper.GameObjectContainsAttribute<SelectionBaseAttribute>(tr.gameObject))

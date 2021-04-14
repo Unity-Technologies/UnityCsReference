@@ -71,7 +71,11 @@ namespace UnityEditor.Search
             }
 
             if (task.IsFaulted && task.Exception?.InnerException != null)
-                throw new SearchExpressionEvaluatorException(c, task.Exception.InnerException);
+            {
+                if (task.Exception.InnerException is SearchExpressionEvaluatorException sex)
+                    throw sex;
+                UnityEngine.Debug.LogException(task.Exception.InnerException);
+            }
         }
 
         public static T EvaluateMainThread<T>(Func<T> callback)

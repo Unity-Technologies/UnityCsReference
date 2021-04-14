@@ -19,6 +19,7 @@ namespace UnityEditor
         static readonly EditorToolGUI.ReusableArrayPool<GUIContent> s_ButtonArrays = new EditorToolGUI.ReusableArrayPool<GUIContent>();
         static readonly EditorToolGUI.ReusableArrayPool<bool> s_BoolArrays = new EditorToolGUI.ReusableArrayPool<bool>();
         static readonly List<EditorTool> s_CustomEditorTools = new List<EditorTool>();
+        static readonly List<EditorToolContext> s_CustomEditorContexts = new List<EditorToolContext>();
 
         static class Styles
         {
@@ -29,10 +30,7 @@ namespace UnityEditor
         {
             if (target == null)
                 throw new ArgumentNullException("target");
-
-            EditorToolManager.GetCustomEditorToolsForTarget(target, s_CustomEditorTools, true);
-            EditorToolbar<EditorTool>(s_CustomEditorTools);
-            s_CustomEditorTools.Clear();
+            EditorToolbarForTarget(null, target);
         }
 
         public static void EditorToolbarForTarget(GUIContent content, UObject target)
@@ -40,11 +38,29 @@ namespace UnityEditor
             if (target == null)
                 throw new ArgumentNullException("target");
 
-            GUILayout.BeginHorizontal();
-            PrefixLabel(content);
-            EditorToolManager.GetCustomEditorToolsForTarget(target, s_CustomEditorTools, true);
-            EditorToolbar<EditorTool>(s_CustomEditorTools);
-            GUILayout.EndHorizontal();
+            if (target is Editor editor)
+                EditorToolManager.GetComponentTools(x => x.inspector == editor, s_CustomEditorTools, true);
+            else
+                EditorToolManager.GetComponentTools(x => x.target == target, s_CustomEditorTools, true);
+
+            using (new PrefixScope(content))
+                EditorToolbar<EditorTool>(s_CustomEditorTools);
+
+            s_CustomEditorTools.Clear();
+        }
+
+        public static void ToolContextToolbarForTarget(GUIContent content, UObject target)
+        {
+            if (target == null)
+                throw new ArgumentNullException("target");
+
+            if (target is Editor editor)
+                EditorToolManager.GetComponentContexts(x => x.inspector == editor, s_CustomEditorContexts);
+            else
+                EditorToolManager.GetComponentContexts(x => x.target == target, s_CustomEditorContexts);
+
+            ToolContextToolbar(content, s_CustomEditorContexts);
+
             s_CustomEditorTools.Clear();
         }
 
@@ -57,49 +73,80 @@ namespace UnityEditor
         {
             T selected;
 
-            if (EditorToolbar(EditorToolManager.activeTool as T, tools, out selected))
+            if (EditorToolbar(null, EditorToolManager.activeTool as T, tools, out selected))
             {
-                if (selected == EditorToolManager.activeTool)
+                if (ToolManager.IsActiveTool(selected))
                     EditorToolManager.RestorePreviousTool();
                 else
                     EditorToolManager.activeTool = selected;
             }
         }
 
-        internal static bool EditorToolbar<T>(T selected, IList<T> tools, out T clicked) where T : EditorTool
+        public static void ToolContextToolbar<T>(GUIContent content, IList<T> contexts) where T : EditorToolContext
         {
-            int toolsLength = tools.Count;
-            int index = -1;
-            var buttons = s_ButtonArrays.Get(toolsLength);
-            var enabled = s_BoolArrays.Get(toolsLength);
-            clicked = selected;
-
-            for (int i = 0; i < toolsLength; i++)
+            T selected;
+            if (EditorToolbar(content, EditorToolManager.activeToolContext as T, contexts, out selected))
             {
-                // can happen if the user deletes a tool through scripting
-                if (tools[i] == null)
+                if (EditorToolManager.activeToolContext == selected)
+                    ToolManager.SetActiveContext<GameObjectToolContext>();
+                else
+                    EditorToolManager.activeToolContext = selected;
+            }
+        }
+
+        struct PrefixScope : IDisposable
+        {
+            public PrefixScope(GUIContent label)
+            {
+                GUILayout.BeginHorizontal();
+
+                if (label != null && label != GUIContent.none)
+                    PrefixLabel(label);
+            }
+
+            public void Dispose()
+            {
+                GUILayout.EndHorizontal();
+            }
+        }
+
+        internal static bool EditorToolbar<T>(GUIContent content, T selected, IList<T> tools, out T clicked) where T : IEditor
+        {
+            using (new PrefixScope(content))
+            {
+                int toolsLength = tools.Count;
+                int index = -1;
+                var buttons = s_ButtonArrays.Get(toolsLength);
+                var enabled = s_BoolArrays.Get(toolsLength);
+                clicked = selected;
+
+                for (int i = 0; i < toolsLength; i++)
                 {
-                    buttons[i] = GUIContent.none;
-                    continue;
+                    // can happen if the user deletes a tool through scripting
+                    if (tools[i] == null)
+                    {
+                        buttons[i] = GUIContent.none;
+                        continue;
+                    }
+
+                    if (Equals(tools[i], selected))
+                        index = i;
+
+                    enabled[i] = tools[i] is EditorTool tool && !tool.IsAvailable() ? false : true;
+                    buttons[i] = EditorToolUtility.GetToolbarIcon(tools[i]);
                 }
 
-                if (Equals(tools[i], selected))
-                    index = i;
+                EditorGUI.BeginChangeCheck();
 
-                enabled[i] = tools[i].IsAvailable();
-                buttons[i] = EditorToolUtility.GetToolbarIcon(tools[i]);
+                index = GUILayout.Toolbar(index, buttons, enabled, Styles.command);
+
+                if (EditorGUI.EndChangeCheck())
+                {
+                    clicked = tools[index];
+                    return true;
+                }
+                return false;
             }
-
-            EditorGUI.BeginChangeCheck();
-
-            index = GUILayout.Toolbar(index, buttons, enabled, Styles.command);
-
-            if (EditorGUI.EndChangeCheck())
-            {
-                clicked = tools[index];
-                return true;
-            }
-            return false;
         }
     }
 
@@ -212,7 +259,6 @@ namespace UnityEditor
         }
 
         static readonly List<EditorTool> s_ToolList = new List<EditorTool>();
-
         static readonly List<EditorTool> s_EditorToolModes = new List<EditorTool>(8);
         public static readonly StyleRect s_ButtonRect = EditorResources.GetStyle("AppToolbar-Button").GetRect(StyleCatalogKeyword.size, StyleRect.Size(22, 22));
 
@@ -252,7 +298,7 @@ namespace UnityEditor
         {
             GUILayout.BeginHorizontal(GUIStyle.none, GUILayout.MinWidth(210), GUILayout.Height(30));
 
-            EditorToolManager.GetCustomEditorTools(s_EditorToolModes, false);
+            EditorToolManager.GetComponentToolsForSharedTracker(s_EditorToolModes);
 
             if (s_EditorToolModes.Count > 0)
             {
@@ -305,7 +351,7 @@ namespace UnityEditor
                     var name = EditorToolUtility.GetToolName(tool.GetType());
 
                     if (tool.IsAvailable())
-                        toolHistoryMenu.AddItem(new GUIContent(name), false, () => { EditorToolManager.activeTool = tool; });
+                        toolHistoryMenu.AddItem(new GUIContent(name), false, () => { ToolManager.SetActiveTool(tool); });
                     else
                         toolHistoryMenu.AddDisabledItem(new GUIContent(name));
                 }
@@ -313,7 +359,7 @@ namespace UnityEditor
                 toolHistoryMenu.AddSeparator("");
             }
 
-            EditorToolManager.GetCustomEditorTools(s_ToolList, false);
+            EditorToolManager.GetComponentToolsForSharedTracker(s_ToolList);
 
             // Current selection
             if (s_ToolList.Any())
@@ -341,18 +387,21 @@ namespace UnityEditor
 
             var global = EditorToolUtility.GetCustomEditorToolsForType(null);
 
-            if (global.Any())
+            foreach (var tool in global)
             {
-                foundTool = true;
-                toolHistoryMenu.AddDisabledItem(Styles.availableTools);
+                if (tool.targetContext != null && tool.targetContext != ToolManager.activeContextType)
+                    continue;
 
-                foreach (var toolType in global)
+                if (!foundTool)
                 {
-                    toolHistoryMenu.AddItem(
-                        new GUIContent(EditorToolUtility.GetToolMenuPath(toolType)),
-                        false,
-                        () => { ToolManager.SetActiveTool(toolType); });
+                    foundTool = true;
+                    toolHistoryMenu.AddDisabledItem(Styles.availableTools);
                 }
+
+                toolHistoryMenu.AddItem(
+                    new GUIContent(EditorToolUtility.GetToolMenuPath(tool.editor)),
+                    false,
+                    () => { ToolManager.SetActiveTool(tool.editor); });
             }
 
             if (!foundTool)
@@ -378,7 +427,7 @@ namespace UnityEditor
 
         internal static Rect DoToolContextButton(Rect rect)
         {
-            var icon = EditorToolUtility.GetIcon(EditorToolManager.activeToolContextType);
+            var icon = EditorToolUtility.GetIcon(ToolManager.activeContextType);
             rect.x += rect.width;
             rect.width = Styles.dropdown.CalcSize(icon).x;
             if (EditorGUI.DropdownButton(rect, icon, FocusType.Passive, Styles.dropdown))

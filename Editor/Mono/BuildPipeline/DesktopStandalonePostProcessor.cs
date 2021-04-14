@@ -467,12 +467,21 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         {
             destinationFolder = Directory.GetCurrentDirectory();
         }
+
+        HashSet<string> fileExtensionsToInclude = new HashSet<string>
+        {
+            ".exe",
+            ".dll",
+            ".winmd",
+            ".pdb",
+        };
+
         // Copy entire staging area over
-        CopyFilesToDestination(args.stagingArea, destinationFolder, filesToNotOverwrite);
+        CopyFilesToDestination(args.stagingArea, destinationFolder, filesToNotOverwrite, fileExtensionsToInclude);
         args.report.RecordFilesMoved(args.stagingArea, destinationFolder);
     }
 
-    private static void CopyFilesToDestination(string source, string target, HashSet<string> filesToNotOverwrite)
+    private static void CopyFilesToDestination(string source, string target, HashSet<string> filesToNotOverwrite, HashSet<string> fileExtensionsToIncludeInManagedDirectory)
     {
         if (!Directory.Exists(target))
         {
@@ -481,6 +490,9 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
 
         foreach (string sourceFile in Directory.GetFiles(source))
         {
+            if (Path.GetDirectoryName(source) == "Managed" &&  !fileExtensionsToIncludeInManagedDirectory.Contains(Path.GetExtension(sourceFile)))
+                continue;
+
             var targetFile = Path.Combine(target, Path.GetFileName(sourceFile));
 
             if (File.Exists(targetFile))
@@ -495,7 +507,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         }
 
         foreach (var directory in Directory.GetDirectories(source))
-            CopyFilesToDestination(directory, Path.Combine(target, Path.GetFileName(directory)), filesToNotOverwrite);
+            CopyFilesToDestination(directory, Path.Combine(target, Path.GetFileName(directory)), filesToNotOverwrite, fileExtensionsToIncludeInManagedDirectory);
     }
 
     protected abstract string GetStagingAreaPluginsFolder(BuildPostProcessArgs args);

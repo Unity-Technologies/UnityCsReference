@@ -1003,10 +1003,11 @@ namespace UnityEngine
             var evt = Event.current;
             if (evt.type != EventType.Repaint)
                 return;
-            style.Draw(position, content, false, false, false, false);
+            bool hovered = position.Contains(evt.mousePosition);
+            style.Draw(position, content, hovered, false, false, false);
 
             // Is inside label AND inside guiclip visible rect (prevents tooltips on labels that are clipped)
-            if (!String.IsNullOrEmpty(content.tooltip) && position.Contains(evt.mousePosition) && GUIClip.visibleRect.Contains(evt.mousePosition))
+            if (!String.IsNullOrEmpty(content.tooltip) && hovered && GUIClip.visibleRect.Contains(evt.mousePosition))
                 GUIStyle.SetMouseTooltip(content.tooltip, position);
         }
 

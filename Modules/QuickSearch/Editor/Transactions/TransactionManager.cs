@@ -5,13 +5,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Threading;
 using System.Threading.Tasks;
-using UnityEngine;
 using DateTime = System.DateTime;
-using System.Security.AccessControl;
+using System.Text;
 
 
 namespace UnityEditor.Search
@@ -35,43 +31,6 @@ namespace UnityEditor.Search
         Task ClearAll();
     }
 
-    struct BinarySearchRange : IEquatable<BinarySearchRange>
-    {
-        public long startOffset;
-        public long endOffset;
-        public long halfOffset;
-
-        public static BinarySearchRange invalid = new BinarySearchRange { startOffset = -1, endOffset = -1 };
-
-        public bool Equals(BinarySearchRange other)
-        {
-            return startOffset == other.startOffset && endOffset == other.endOffset;
-        }
-
-        public override bool Equals(object obj)
-        {
-            return obj is BinarySearchRange other && Equals(other);
-        }
-
-        public static bool operator==(BinarySearchRange lhs, BinarySearchRange rhs)
-        {
-            return lhs.Equals(rhs);
-        }
-
-        public static bool operator!=(BinarySearchRange lhs, BinarySearchRange rhs)
-        {
-            return !lhs.Equals(rhs);
-        }
-
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                return (startOffset.GetHashCode() * 397) ^ endOffset.GetHashCode();
-            }
-        }
-    }
-
     static class TaskHelper
     {
         public static bool IsTaskFinished(Task task)
@@ -80,26 +39,28 @@ namespace UnityEditor.Search
         }
     }
 
-    abstract class TransactionHandler : IDisposable
+    abstract class TransactionHandler : IDisposable, IBinarySearchRangeData<DateTime>
     {
-        const int k_DateTimeSize = sizeof(long);
-        byte[] m_DateTimeBuffer;
-
         bool m_Disposed;
 
         protected string m_FileName;
         protected FileStream m_Fs;
+        protected BinaryReader m_Br;
+        protected BinaryWriter m_Bw;
         protected int m_HeaderSize;
 
-        public static readonly int transactionSize = Marshal.SizeOf<Transaction>();
+        public static readonly int transactionSize = Transaction.size;
 
         public bool Opened => m_Fs != null;
+
+        public long length => GetTotalReadableTransactions(m_Fs);
+
+        public DateTime this[long index] => ReadDateTime(index);
 
         protected TransactionHandler(string fileName, int headerSize)
         {
             m_FileName = fileName;
             m_HeaderSize = headerSize;
-            m_DateTimeBuffer = new byte[k_DateTimeSize];
         }
 
         ~TransactionHandler()
@@ -123,8 +84,6 @@ namespace UnityEditor.Search
                 Close();
             }
 
-            m_DateTimeBuffer = null;
-
             m_Disposed = true;
         }
 
@@ -134,80 +93,18 @@ namespace UnityEditor.Search
         {
             if (m_Fs != null)
             {
+                m_Br?.Dispose();
+                m_Br = null;
+                m_Bw?.Dispose();
+                m_Bw = null;
                 m_Fs.Dispose();
                 m_Fs = null;
             }
         }
 
-        public BinarySearchRange FindRange(TimeRange range, FileStream fs)
+        public BinarySearchRange FindRange(TimeRange range)
         {
-            {
-                var nbTransaction = GetTotalReadableTransactions(fs);
-                if (nbTransaction == 0)
-                    return BinarySearchRange.invalid;
-
-                BinarySearchRange binarySearchRangeStart = new BinarySearchRange { startOffset = 0, endOffset = nbTransaction, halfOffset = nbTransaction / 2 };
-                BinarySearchRange binarySearchRangeEnd = new BinarySearchRange { startOffset = 0, endOffset = nbTransaction, halfOffset = nbTransaction / 2 };
-                var foundStartOffset = false;
-                var foundEndOffset = false;
-                while (!foundStartOffset || !foundEndOffset)
-                {
-                    if (!foundStartOffset)
-                    {
-                        // Update StartIndex
-                        var startDateTime = ReadDateTime(fs, binarySearchRangeStart.halfOffset);
-                        if (range.first.InRange(startDateTime))
-                        {
-                            binarySearchRangeStart.endOffset = binarySearchRangeStart.halfOffset;
-                            binarySearchRangeStart.halfOffset = binarySearchRangeStart.startOffset + (binarySearchRangeStart.endOffset - binarySearchRangeStart.startOffset) / 2;
-
-                            if (binarySearchRangeStart.endOffset == binarySearchRangeStart.halfOffset)
-                                foundStartOffset = true;
-                        }
-                        else
-                        {
-                            // timeRange is outside of the file
-                            if (binarySearchRangeStart.halfOffset >= nbTransaction - 1)
-                                return BinarySearchRange.invalid;
-
-                            binarySearchRangeStart.startOffset = binarySearchRangeStart.halfOffset;
-                            binarySearchRangeStart.halfOffset = binarySearchRangeStart.startOffset + (binarySearchRangeStart.endOffset - binarySearchRangeStart.startOffset) / 2;
-
-                            if (binarySearchRangeStart.startOffset == binarySearchRangeStart.halfOffset)
-                                foundStartOffset = true;
-                        }
-                    }
-
-                    if (!foundEndOffset)
-                    {
-                        // Update EndIndex
-                        var endDateTime = ReadDateTime(fs, binarySearchRangeEnd.halfOffset);
-                        if (range.last.InRange(endDateTime))
-                        {
-                            binarySearchRangeEnd.startOffset = binarySearchRangeEnd.halfOffset;
-                            binarySearchRangeEnd.halfOffset = binarySearchRangeEnd.startOffset + (binarySearchRangeEnd.endOffset - binarySearchRangeEnd.startOffset) / 2;
-
-                            if (binarySearchRangeEnd.startOffset == binarySearchRangeEnd.halfOffset)
-                                foundEndOffset = true;
-                        }
-                        else
-                        {
-                            // timeRange is outside of the file
-                            if (binarySearchRangeEnd.halfOffset == 0)
-                                return BinarySearchRange.invalid;
-
-                            binarySearchRangeEnd.endOffset = binarySearchRangeEnd.halfOffset;
-                            binarySearchRangeEnd.halfOffset = binarySearchRangeEnd.startOffset + (binarySearchRangeEnd.endOffset - binarySearchRangeEnd.startOffset) / 2;
-
-                            if (binarySearchRangeEnd.endOffset == binarySearchRangeEnd.halfOffset)
-                                foundEndOffset = true;
-                        }
-                    }
-                }
-
-                // We take the endOffset because we know the transactions of interests lie on these offset.
-                return new BinarySearchRange { startOffset = binarySearchRangeStart.endOffset, endOffset = binarySearchRangeEnd.endOffset };
-            }
+            return BinarySearchFinder.FindRange(range, this);
         }
 
         public long GetTotalReadableTransactions(FileStream fs)
@@ -217,29 +114,13 @@ namespace UnityEditor.Search
             return nbTransaction;
         }
 
-        public DateTime ReadDateTime(FileStream fs, long transactionOffset)
+        public DateTime ReadDateTime(long transactionOffset)
         {
-            if (m_DateTimeBuffer == null || m_DateTimeBuffer.Length != k_DateTimeSize)
-                throw new Exception($"DateTime Buffer not initialized correctly: {(m_DateTimeBuffer == null ? "Buffer is null" : $"Buffer size is {m_DateTimeBuffer.Length}")}");
-            lock (fs)
+            lock (m_Fs)
             {
-                fs.Seek(transactionOffset * transactionSize + m_HeaderSize, SeekOrigin.Begin);
-                ReadWholeArray(fs, m_DateTimeBuffer);
-                return TransactionUtils.TimeStampFromByte(m_DateTimeBuffer);
-            }
-        }
-
-        public void ReadWholeArray(FileStream fs, byte[] data)
-        {
-            var offset = 0;
-            var remaining = data.Length;
-            while (remaining > 0)
-            {
-                var read = fs.Read(data, offset, remaining);
-                if (read <= 0)
-                    throw new EndOfStreamException($"End of stream reached with {remaining} bytes left to read");
-                remaining -= read;
-                offset += read;
+                m_Fs.Seek(transactionOffset * transactionSize + m_HeaderSize, SeekOrigin.Begin);
+                var dateTimeBinary = m_Br.ReadInt64();
+                return DateTime.FromBinary(dateTimeBinary);
             }
         }
     }
@@ -263,6 +144,8 @@ namespace UnityEditor.Search
                     {
                         m_Fs = File.Open(m_FileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
                         m_Fs.Seek(0, SeekOrigin.End);
+                        m_Br = new BinaryReader(m_Fs, Encoding.UTF8, true);
+                        m_Bw = new BinaryWriter(m_Fs, Encoding.UTF8, true);
                         break;
                     }
                     catch (System.IO.IOException ex)
@@ -295,23 +178,31 @@ namespace UnityEditor.Search
 
         public Task Write(Transaction t)
         {
-            var bytes = TransactionUtils.Serialize(t);
-            return WriteBuffer(bytes);
+            return AppendTask(() =>
+            {
+                lock (m_Fs)
+                {
+                    m_Fs.Seek(0, SeekOrigin.End);
+                    t.ToBinary(m_Bw);
+                    m_Fs.Flush(true);
+                }
+            });
         }
 
         public Task Write(IEnumerable<Transaction> transactions)
         {
-            var enumerable = transactions as Transaction[] ?? transactions.ToArray();
-            var count = enumerable.Length;
-            var buffer = new byte[count * transactionSize];
-            var transactionOffset = 0;
-            foreach (var transaction in enumerable)
+            return AppendTask(() =>
             {
-                TransactionUtils.SerializeInto(transaction, buffer, transactionOffset * transactionSize);
-                ++transactionOffset;
-            }
-
-            return WriteBuffer(buffer);
+                lock (m_Fs)
+                {
+                    m_Fs.Seek(0, SeekOrigin.End);
+                    foreach (var transaction in transactions)
+                    {
+                        transaction.ToBinary(m_Bw);
+                    }
+                    m_Fs.Flush(true);
+                }
+            });
         }
 
         public Task ClearAll()
@@ -332,7 +223,7 @@ namespace UnityEditor.Search
             {
                 lock (m_Fs)
                 {
-                    var searchRange = FindRange(timeRange, m_Fs);
+                    var searchRange = FindRange(timeRange);
                     RemoveTransactions(searchRange);
                 }
             });
@@ -345,20 +236,7 @@ namespace UnityEditor.Search
                 lock (m_Fs)
                 {
                     m_Fs.Seek(0, SeekOrigin.Begin);
-                    var bytes = TransactionUtils.Serialize(header);
-                    m_Fs.Write(bytes, 0, bytes.Length);
-                    m_Fs.Flush(true);
-                }
-            });
-        }
-
-        Task WriteBuffer(byte[] buffer)
-        {
-            return AppendTask(() =>
-            {
-                lock (m_Fs)
-                {
-                    m_Fs.Write(buffer, 0, buffer.Length);
+                    m_Bw.Write(header);
                     m_Fs.Flush(true);
                 }
             });
@@ -389,14 +267,15 @@ namespace UnityEditor.Search
             var newSize = m_HeaderSize + (totalTransactions - nbRemoved) * transactionSize;
 
             var transactionsToShift = totalTransactions - range.endOffset;
-            var byteSizeToRead = transactionsToShift * transactionSize;
             if (transactionsToShift > 0)
             {
                 m_Fs.Seek(range.endOffset * transactionSize + m_HeaderSize, SeekOrigin.Begin);
-                var buffer = new byte[byteSizeToRead];
-                ReadWholeArray(m_Fs, buffer);
+                var readTransactions = new Transaction[transactionsToShift];
+                for (var i = 0; i < transactionsToShift; ++i)
+                    readTransactions[i] = Transaction.FromBinary(m_Br);
                 m_Fs.Seek(range.startOffset * transactionSize + m_HeaderSize, SeekOrigin.Begin);
-                m_Fs.Write(buffer, 0, (int)byteSizeToRead);
+                for (var i = 0; i < transactionsToShift; ++i)
+                    readTransactions[i].ToBinary(m_Bw);
             }
             m_Fs.SetLength(newSize);
             m_Fs.Flush(true);
@@ -405,8 +284,6 @@ namespace UnityEditor.Search
 
     class TransactionReader : TransactionHandler, ITransactionReader
     {
-        DateTime m_LastTransaction = DateTime.MinValue;
-
         public TransactionReader(string fileName, int headerSize)
             : base(fileName, headerSize)
         {}
@@ -418,17 +295,10 @@ namespace UnityEditor.Search
                 if (!File.Exists(m_FileName))
                     return false;
                 m_Fs = File.Open(m_FileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                var totalTransactions = GetTotalReadableTransactions(m_Fs);
-                if (totalTransactions > 0)
-                    m_LastTransaction = ReadDateTime(m_Fs, totalTransactions - 1);
+                m_Br = new BinaryReader(m_Fs, Encoding.UTF8, true);
             }
 
             return m_Fs != null;
-        }
-
-        public override void Close()
-        {
-            base.Close();
         }
 
         public int ReadHeader()
@@ -436,36 +306,17 @@ namespace UnityEditor.Search
             if (m_Fs.Length < m_HeaderSize)
                 return 0;
             m_Fs.Seek(0, SeekOrigin.Begin);
-            var bytes = new byte[m_HeaderSize];
-            ReadWholeArray(m_Fs, bytes);
-            var fileHeader = BitConverter.ToInt32(bytes, 0);
+            var fileHeader = m_Br.ReadInt32();
             return fileHeader;
         }
 
         public Transaction Read(int transactionOffset)
         {
-            var bytes = new byte[transactionSize];
             lock (m_Fs)
             {
                 m_Fs.Seek(transactionOffset * transactionSize + m_HeaderSize, SeekOrigin.Begin);
-                ReadWholeArray(m_Fs, bytes);
+                return Transaction.FromBinary(m_Br);
             }
-            return TransactionUtils.Deserialize<Transaction>(bytes);
-        }
-
-        public Transaction[] Read(TimeRange timeRange)
-        {
-            return Read(timeRange, m_Fs);
-        }
-
-        public Transaction[] Read(TimeRange timeRange, long transactionCount)
-        {
-            return Read(timeRange, transactionCount, m_Fs);
-        }
-
-        public long Read(TimeRange timeRange, Transaction[] transactions)
-        {
-            return Read(timeRange, transactions, m_Fs);
         }
 
         public DateTime[] ReadAllDateTimes()
@@ -477,7 +328,7 @@ namespace UnityEditor.Search
 
         public long NumberOfTransactionsInRange(TimeRange timeRange)
         {
-            var transactionRange = FindRange(timeRange, m_Fs);
+            var transactionRange = FindRange(timeRange);
             if (transactionRange.startOffset == -1 || transactionRange.endOffset == -1)
                 return 0;
             return transactionRange.endOffset - transactionRange.startOffset;
@@ -488,63 +339,63 @@ namespace UnityEditor.Search
             return GetTotalReadableTransactions(m_Fs);
         }
 
-        Transaction[] Read(TimeRange timeRange, FileStream fs)
+        public Transaction[] Read(TimeRange timeRange)
         {
-            var transactionRange = FindRange(timeRange, fs);
+            var transactionRange = FindRange(timeRange);
             if (transactionRange.startOffset == -1 || transactionRange.endOffset == -1)
                 return new Transaction[0];
-            return Read(transactionRange.startOffset, transactionRange.endOffset, fs);
+            return Read(transactionRange.startOffset, transactionRange.endOffset);
         }
 
-        Transaction[] Read(TimeRange timeRange, long transactionCount, FileStream fs)
+        public Transaction[] Read(TimeRange timeRange, long transactionCount)
         {
-            var transactionRange = FindRange(timeRange, fs);
+            var transactionRange = FindRange(timeRange);
             if (transactionRange.startOffset == -1 || transactionRange.endOffset == -1)
                 return new Transaction[0];
             var maxTransactionCount = Math.Min(transactionCount, transactionRange.endOffset - transactionRange.startOffset);
             transactionRange.endOffset = transactionRange.startOffset + maxTransactionCount;
-            return Read(transactionRange.startOffset, transactionRange.endOffset, fs);
+            return Read(transactionRange.startOffset, transactionRange.endOffset);
         }
 
-        long Read(TimeRange timeRange, Transaction[] transactions, FileStream fs)
+        public long Read(TimeRange timeRange, Transaction[] transactions)
         {
-            var transactionRange = FindRange(timeRange, fs);
+            var transactionRange = FindRange(timeRange);
             if (transactionRange.startOffset == -1 || transactionRange.endOffset == -1)
                 return 0;
             var maxTransactionCount = Math.Min(transactions.Length, transactionRange.endOffset - transactionRange.startOffset);
             transactionRange.endOffset = transactionRange.startOffset + maxTransactionCount;
-            return Read(transactionRange.startOffset, transactionRange.endOffset, transactions, fs);
+            return Read(transactionRange.startOffset, transactionRange.endOffset, transactions);
         }
 
-        Transaction[] Read(long startTransactionOffset, long endTransactionOffset, FileStream fs)
+        Transaction[] Read(long startTransactionOffset, long endTransactionOffset)
         {
             if (startTransactionOffset < 0)
                 throw new ArgumentOutOfRangeException(nameof(startTransactionOffset));
-            if (endTransactionOffset < 0 || endTransactionOffset * transactionSize > fs.Length)
+            if (endTransactionOffset < 0 || endTransactionOffset * transactionSize > m_Fs.Length)
                 throw new ArgumentOutOfRangeException(nameof(endTransactionOffset));
 
             var nbTransaction = endTransactionOffset - startTransactionOffset;
             var transactions = new Transaction[nbTransaction];
-            Read(startTransactionOffset, endTransactionOffset, transactions, fs);
+            Read(startTransactionOffset, endTransactionOffset, transactions);
             return transactions;
         }
 
-        long Read(long startTransactionOffset, long endTransactionOffset, Transaction[] transactions, FileStream fs)
+        long Read(long startTransactionOffset, long endTransactionOffset, Transaction[] transactions)
         {
             if (startTransactionOffset < 0)
                 throw new ArgumentOutOfRangeException(nameof(startTransactionOffset));
-            if (endTransactionOffset < 0 || endTransactionOffset * transactionSize > fs.Length)
+            if (endTransactionOffset < 0 || endTransactionOffset * transactionSize > m_Fs.Length)
                 throw new ArgumentOutOfRangeException(nameof(endTransactionOffset));
 
             var nbTransaction = endTransactionOffset - startTransactionOffset;
-            var buffer = new byte[nbTransaction * transactionSize];
-            lock (fs)
+            lock (m_Fs)
             {
-                fs.Seek(startTransactionOffset * transactionSize + m_HeaderSize, SeekOrigin.Begin);
-                ReadWholeArray(fs, buffer);
+                m_Fs.Seek(startTransactionOffset * transactionSize + m_HeaderSize, SeekOrigin.Begin);
+                for (var i = 0; i < nbTransaction; ++i)
+                    transactions[i] = Transaction.FromBinary(m_Br);
             }
 
-            return TransactionUtils.ArrayDeserializeInto(buffer, transactions);
+            return nbTransaction;
         }
 
         DateTime[] ReadDateTimes(long startTransactionOffset, long endTransactionOffset)
@@ -559,7 +410,7 @@ namespace UnityEditor.Search
             var currentIndex = 0;
             for (var i = startTransactionOffset; i < endTransactionOffset; ++i, ++currentIndex)
             {
-                dateTimes[currentIndex] = ReadDateTime(m_Fs, i);
+                dateTimes[currentIndex] = ReadDateTime(i);
             }
 
             return dateTimes;
@@ -574,10 +425,10 @@ namespace UnityEditor.Search
         protected TransactionReader m_Reader;
         protected bool m_Initialized;
 
-        const short k_Version = 1;
+        const short k_Version = 2;
 
         public const int Header = (0x54 << 24) | (0x4D << 16) | k_Version;
-        public static int HeaderSize { get; } = Marshal.SizeOf(Header);
+        public static int HeaderSize { get; } = sizeof(int);
 
         public event Action<DateTime> transactionsAdded;
 
@@ -702,6 +553,22 @@ namespace UnityEditor.Search
         public virtual Task ClearRange(TimeRange timeRange)
         {
             return m_Writer.ClearRange(timeRange);
+        }
+
+        public string GetInfo()
+        {
+            if (m_Reader == null || !m_Reader.Opened)
+                return string.Empty;
+
+            var header = m_Reader.ReadHeader();
+            var nbTransaction = NumberOfTransactions();
+            var transactionsSize = nbTransaction * TransactionHandler.transactionSize;
+            var sb = new StringBuilder();
+            sb.AppendLine($"Transaction Manager: {m_FilePath}");
+            sb.AppendLine($"\tVersion: {header}");
+            sb.AppendLine($"\tTransaction count: {nbTransaction}");
+            sb.AppendLine($"\tFile size: {Utils.FormatBytes(HeaderSize + transactionsSize)}");
+            return sb.ToString();
         }
 
         void FixHeader()

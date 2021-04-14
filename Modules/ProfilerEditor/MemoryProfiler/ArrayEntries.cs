@@ -522,7 +522,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
 
         public static string ToString(byte[] data, uint startIndex, uint numBytes)
         {
-            var result = new string('\0', (int)numBytes);
+            var result = new string('A', (int)numBytes);
             unsafe
             {
                 fixed(char* resultPtr = result)

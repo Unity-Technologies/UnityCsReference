@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Linq;
-using UnityEditor;
 using UnityEngine;
 
 namespace UnityEditor.Search
@@ -56,19 +55,15 @@ namespace UnityEditor.Search
             EditorGUILayout.PropertyField(m_Settings, title, true);
 
             var documentTitle = "Documents";
-            if (m_DB.index is SceneIndexer objectIndexer)
+            var dependencies = m_DB.index.GetDependencies();
+            m_DependenciesFoldout = EditorGUILayout.Foldout(m_DependenciesFoldout, $"Documents (Count={dependencies.Count})", true);
+            if (m_DependenciesFoldout)
             {
-                var dependencies = objectIndexer.GetDependencies();
-                m_DependenciesFoldout = EditorGUILayout.Foldout(m_DependenciesFoldout, $"Documents (Count={dependencies.Count})", true);
-                if (m_DependenciesFoldout)
-                {
-                    foreach (var d in dependencies)
-                        EditorGUILayout.LabelField(d);
-                }
-
-                documentTitle = "Objects";
+                foreach (var d in dependencies)
+                    EditorGUILayout.LabelField(d);
             }
 
+            documentTitle = "Objects";
             m_DocumentsFoldout = EditorGUILayout.Foldout(m_DocumentsFoldout, $"{documentTitle} (Count={m_DB.index.documentCount})", true);
             if (m_DocumentsFoldout)
             {

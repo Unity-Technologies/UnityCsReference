@@ -991,7 +991,7 @@ namespace UnityEditor
                 EditorUserBuildSettings.installInBuildFolder = GUILayout.Toggle(EditorUserBuildSettings.installInBuildFolder, styles.installInBuildFolder, GUILayout.ExpandWidth(false));
                 if (GUILayout.Button(styles.installInBuildFolderHelp, EditorStyles.iconButton))
                 {
-                    var path = Path.Combine(Directory.GetParent(EditorApplication.applicationPath).FullName, "../../Documentation/BuildDocs/view");
+                    var path = Path.Combine(Unsupported.GetBaseUnityDeveloperFolder(), "Documentation/BuildDocs/view");
                     if (Application.platform == RuntimePlatform.WindowsEditor)
                         System.Diagnostics.Process.Start(path + ".cmd");
                     else

@@ -51,6 +51,8 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/Undo/PropertyUndoManager.h")]
     [NativeHeader("Editor/Src/Undo/ObjectUndo.h")]
     [NativeHeader("Editor/Mono/Undo/Undo.bindings.h")]
+    [NativeHeader("Editor/Src/Undo/AssetUndo.h")]
+
     public partial class Undo
     {
         [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]
@@ -102,7 +104,7 @@ namespace UnityEditor
         {
             if (objectToUndo.GetType() == typeof(Transform) || objectToUndo.GetType().IsSubclassOf(typeof(Transform)))
                 throw new ArgumentException("Cannot call 'RegisterCreatedObjectUndo' on Transform components, as transforms cannot be created/destroyed independently from their game object");
-            RecordObjectCreation(objectToUndo, name);
+            RecordObjectCreation(objectToUndo, name, true);
         }
 
         internal static void RegisterCreatedObjectUndoToFrontOfUndoQueue(Object objectToUndo, string name)
@@ -110,8 +112,13 @@ namespace UnityEditor
             RecordObjectCreationToFrontOfUndoQueue(objectToUndo, name);
         }
 
+        internal static void RecordCreatedObject(Object objectToUndo, string name)
+        {
+            RecordObjectCreation(objectToUndo, name, false);
+        }
+
         [FreeFunction]
-        private static extern void RecordObjectCreation([NotNull] Object objectToUndo, string name);
+        private static extern void RecordObjectCreation([NotNull] Object objectToUndo, string name, bool withLegacyHierarchyRegistration);
 
         [FreeFunction]
         private static extern void RecordObjectCreationToFrontOfUndoQueue([NotNull] Object objectToUndo, string name);
@@ -270,6 +277,9 @@ namespace UnityEditor
         [StaticAccessor("GetUndoManager()", StaticAccessorType.Dot)]
         [NativeMethod("ClearUndoSceneHandle")]
         internal static extern void ClearUndoSceneHandle(UnityEngine.SceneManagement.Scene scene);
+
+        [FreeFunction("RegisterAssetsMoveUndo")]
+        internal static extern void RegisterAssetsMoveUndo(string[] assetPaths);
 
         [Obsolete("Use Undo.RecordObject instead")]
         public static void SetSnapshotTarget(Object objectToUndo, string name) {}

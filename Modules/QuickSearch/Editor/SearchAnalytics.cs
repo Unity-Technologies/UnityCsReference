@@ -235,7 +235,26 @@ namespace UnityEditor.Search
 
             QuickSearchJumpToSearch,
             QuickSearchSyncViewButton,
-            QuickSearchSwitchTab
+            QuickSearchSwitchTab,
+
+            QuickSearchRemoveFavoriteItem,
+            QuickSearchRemoveFavoriteQuery,
+            QuickSearchAddFavoriteItem,
+            QuickSearchAddFavoriteQuery,
+            QuickSearchSizeRadioButton,
+
+            QuickSearchTableAddColumn,
+            QuickSearchTableReset,
+            QuickSearchTableRemoveColumn,
+            QuickSearchTableEditColumn,
+            QuickSearchTableChangeColumnFormat,
+            QuickSearchTableToggleColumnVisibility,
+
+            QuickSearchQueryChange,
+
+            QuickSearchExportReport,
+            QuickSearchImportReport,
+            ReportViewOpen
         }
 
         public static readonly string Package = "com.unity.quicksearch";

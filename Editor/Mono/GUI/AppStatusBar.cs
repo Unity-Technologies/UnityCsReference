@@ -187,7 +187,7 @@ namespace UnityEditor
             bool compiling = EditorApplication.isCompiling;
             bool assembliesLocked = !EditorApplication.CanReloadAssemblies();
 
-            if (compiling || showProgress)
+            if (compiling)
             {
                 if (assembliesLocked)
                 {

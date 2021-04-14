@@ -172,5 +172,10 @@ namespace UnityEngine
             }
             return retval;
         }
+
+        public override string ToString()
+        {
+            return text ?? tooltip ?? base.ToString();
+        }
     }
 }

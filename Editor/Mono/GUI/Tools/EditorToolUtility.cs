@@ -5,115 +5,27 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using UObject = UnityEngine.Object;
 
 namespace UnityEditor.EditorTools
 {
-    /// <summary>
-    /// An Editor instance and EditorTool type.
-    /// </summary>
-    class CustomEditorTool
-    {
-        public Editor owner;
-        public List<Editor> additionalEditors;
-        public Type editorToolType;
-
-        public CustomEditorTool(Editor owner, Type tool)
-        {
-            this.owner = owner;
-            this.editorToolType = tool;
-        }
-
-        public UObject[] targets
-        {
-            get
-            {
-                if (additionalEditors == null)
-                    return owner.targets;
-                List<UObject> objects = new List<UObject>(owner.targets);
-                foreach (var editor in additionalEditors)
-                    objects.AddRange(editor.targets);
-                return objects.ToArray();
-            }
-        }
-    }
-
     static class EditorToolUtility
     {
         static readonly Regex k_NewLine = new Regex(@"\r|\n", RegexOptions.Compiled | RegexOptions.Multiline);
         static readonly Regex k_TrailingForwardSlashOrWhiteSpace = new Regex(@"[/|\s]*\Z", RegexOptions.Compiled);
 
-        struct CustomEditorToolAssociation
-        {
-            public Type targetBehaviour;
-            public Type editorTool;
-        }
-
-        static CustomEditorToolAssociation[] s_CustomEditorTools;
-        static Dictionary<Type, List<Type>> s_CustomEditorToolsTypeAssociations = new Dictionary<Type, List<Type>>();
+        static EditorToolCache s_ToolCache = new EditorToolCache(typeof(EditorToolAttribute));
+        static EditorToolCache s_ContextCache = new EditorToolCache(typeof(EditorToolContextAttribute));
         static Dictionary<Type, GUIContent> s_ToolbarIcons = new Dictionary<Type, GUIContent>();
-        static HashSet<Type> s_TrackerSelectedTypes = new HashSet<Type>();
         static Type[] s_AvailableToolContexts;
 
-        static CustomEditorToolAssociation[] customEditorTools
+        // Caution: Returns all types without filtering for EditorToolContext
+        internal static IEnumerable<EditorTypeAssociation> GetCustomEditorToolsForType(Type type)
         {
-            get
-            {
-                if (s_CustomEditorTools == null)
-                {
-                    Type[] editorTools = TypeCache.GetTypesWithAttribute<EditorToolAttribute>()
-                        .Where(x => !x.IsAbstract)
-                        .ToArray();
-
-                    int len = editorTools.Length;
-
-                    s_CustomEditorTools = new CustomEditorToolAssociation[len];
-
-                    for (int i = 0; i < len; i++)
-                    {
-                        var customToolAttribute = (EditorToolAttribute)editorTools[i].GetCustomAttributes(typeof(EditorToolAttribute), false).FirstOrDefault();
-
-                        s_CustomEditorTools[i] = new CustomEditorToolAssociation()
-                        {
-                            editorTool = editorTools[i],
-                            targetBehaviour = customToolAttribute.targetType
-                        };
-                    }
-                }
-
-                return s_CustomEditorTools;
-            }
-        }
-
-        internal static List<Type> GetCustomEditorToolsForType(Type type)
-        {
-            List<Type> res;
-
-            if (type == null)
-            {
-                res = new List<Type>();
-                foreach (var tool in customEditorTools)
-                    if (!IsBuiltinTool(tool.editorTool) && tool.targetBehaviour == null)
-                        res.Add(tool.editorTool);
-                return res;
-            }
-
-            if (s_CustomEditorToolsTypeAssociations.TryGetValue(type, out res))
-                return res;
-
-            s_CustomEditorToolsTypeAssociations.Add(type, res = new List<Type>());
-
-            for (int i = 0, c = customEditorTools.Length; i < c; i++)
-            {
-                if (customEditorTools[i].targetBehaviour != null
-                    && (customEditorTools[i].targetBehaviour.IsAssignableFrom(type)
-                        || type.IsAssignableFrom(customEditorTools[i].targetBehaviour)))
-                    res.Add(customEditorTools[i].editorTool);
-            }
-
-            return res;
+            return s_ToolCache.GetEditorsForTargetType(type);
         }
 
         internal static Type[] availableToolContexts
@@ -173,33 +85,12 @@ namespace UnityEditor.EditorTools
                         return L10n.Tr(path);
                 }
             }
-            else if (typeof(EditorToolContext).IsAssignableFrom(tool))
-            {
-                var toolContextAttribute =
-                    tool.GetCustomAttributes(typeof(EditorToolContextAttribute), false).FirstOrDefault();
-
-                if (toolContextAttribute is EditorToolContextAttribute ctxAttrib &&
-                    !string.IsNullOrEmpty(ctxAttrib.title))
-                {
-                    string path = SanitizeToolPath(ctxAttrib.title);
-                    if (!string.IsNullOrEmpty(path))
-                        return L10n.Tr(path);
-                }
-            }
-
             return L10n.Tr(ObjectNames.NicifyVariableName(tool.Name));
         }
 
         internal static string GetToolMenuPath(EditorTool tool)
         {
             return GetToolMenuPath(tool != null ? tool.GetType() : typeof(EditorTool));
-        }
-
-        static EditorToolAttribute GetEditorToolAttribute(EditorTool tool)
-        {
-            if (tool == null)
-                return null;
-            return GetEditorToolAttribute(tool.GetType());
         }
 
         internal static EditorToolAttribute GetEditorToolAttribute(Type type)
@@ -212,66 +103,35 @@ namespace UnityEditor.EditorTools
 
         internal static int GetNonBuiltinToolCount()
         {
-            var globalToolsCount = GetCustomEditorToolsForType(null).Count;
+            var globalToolsCount = GetCustomEditorToolsForType(null).Count();
             var customToolsCount = EditorToolManager.GetCustomEditorToolsCount(true);
             var totalCount = globalToolsCount + customToolsCount;
 
             return totalCount;
         }
 
-        internal static Type GetCustomEditorToolTargetType(EditorTool tool)
+        internal static bool IsComponentEditor(Type type)
         {
-            var attr = GetEditorToolAttribute(tool);
-            if (attr == null)
-                return null;
-            return attr.targetType;
+            if (type.GetCustomAttributes(typeof(ToolAttribute), false).FirstOrDefault() is ToolAttribute attrib)
+                return attrib.targetType != null;
+            return false;
         }
 
-        internal static void GetEditorToolsForTracker(ActiveEditorTracker tracker, List<CustomEditorTool> tools)
+        public static void InstantiateComponentContexts(List<ComponentEditor> editors)
         {
-            tools.Clear();
-            s_TrackerSelectedTypes.Clear();
-            var editors = tracker.activeEditors;
+            s_ContextCache.InstantiateEditors(null, editors);
+        }
 
-            for (int i = 0, c = editors.Length; i < c; i++)
-            {
-                var editor = editors[i];
-
-                if (editor == null || editor.target == null)
-                    continue;
-
-                var targetType = editor.target.GetType();
-
-                // Some components can be added to a GameObject multiple times. Prevent them from creating multiple tools.
-                if (s_TrackerSelectedTypes.Add(targetType))
-                {
-                    var eligibleToolTypes = GetCustomEditorToolsForType(targetType);
-
-                    foreach (var type in eligibleToolTypes)
-                        tools.Add(new CustomEditorTool(editor, type));
-                }
-                else
-                {
-                    foreach (var tool in tools)
-                    {
-                        if (tool.owner.target.GetType() == targetType)
-                        {
-                            if (tool.additionalEditors == null)
-                                tool.additionalEditors = new List<Editor>() { editor };
-                            else
-                                tool.additionalEditors.Add(editor);
-                        }
-                    }
-                }
-            }
-
-            s_TrackerSelectedTypes.Clear();
+        public static void InstantiateComponentTools(EditorToolContext ctx, List<ComponentEditor> editors)
+        {
+            s_ToolCache.InstantiateEditors(ctx, editors);
         }
 
         // Get an EditorTool instance for type of tool enum. This will return an instance of NoneTool if the active
         // context does not resolve to a valid tool.
         internal static EditorTool GetEditorToolWithEnum(Tool type, EditorToolContext ctx = null)
         {
+            var context = (ctx == null ? EditorToolManager.activeToolContext : ctx);
             switch (type)
             {
                 case Tool.View:
@@ -281,9 +141,26 @@ namespace UnityEditor.EditorTools
                 case Tool.None:
                     return EditorToolManager.GetSingleton<NoneTool>();
                 default:
-                    var resolved = (ctx == null ? EditorToolManager.activeToolContext : ctx).ResolveTool(type);
+                    var resolved = context.ResolveTool(type);
                     if (resolved == null)
                         goto case Tool.None;
+
+                    // Tool types can resolve to either global or instance tools
+                    if (IsCustomEditorTool(resolved))
+                    {
+                        var instance = EditorToolManager.GetComponentTool(resolved);
+                        if (instance == null)
+                        {
+                            Debug.LogError($"{context} resolved Tool.{type} to a Component tool of type `{resolved}`, but " +
+                                $"no component matching the target type is in the active selection. The active tool " +
+                                $"context will be set to the default.");
+                            EditorToolManager.activeToolContext = EditorToolManager.GetSingleton<GameObjectToolContext>();
+                            return (EditorTool)EditorToolManager.GetSingleton(EditorToolManager.activeToolContext.ResolveTool(type));
+                        }
+
+                        return instance;
+                    }
+
                     // EditorToolContext.ResolveTool does type validation, so a fast cast is safe here.
                     return (EditorTool)EditorToolManager.GetSingleton(resolved);
             }
@@ -308,16 +185,6 @@ namespace UnityEditor.EditorTools
             return Tool.Custom;
         }
 
-        static bool IsBuiltinTool(Type type)
-        {
-            return type == typeof(ViewModeTool) ||
-                type == typeof(TransformTool) ||
-                type == typeof(MoveTool) ||
-                type == typeof(RotateTool) ||
-                type == typeof(ScaleTool) ||
-                type == typeof(RectTool);
-        }
-
         internal static bool IsManipulationTool(Tool tool)
         {
             return tool == Tool.Move
@@ -329,18 +196,15 @@ namespace UnityEditor.EditorTools
 
         internal static bool IsCustomEditorTool(Type type)
         {
-            for (int i = 0, c = customEditorTools.Length; i < c; i++)
-                if (customEditorTools[i].editorTool == type)
-                    return customEditorTools[i].targetBehaviour != null;
-            return false;
+            return s_ToolCache.GetTargetType(type) != null;
         }
 
-        internal static GUIContent GetToolbarIcon<T>(T obj) where T : EditorTool
+        internal static GUIContent GetToolbarIcon<T>(T obj) where T : IEditor
         {
             if (obj == null)
                 return GetIcon(typeof(T));
-            if (obj.toolbarIcon != null)
-                return obj.toolbarIcon;
+            if (obj is EditorTool tool && tool.toolbarIcon != null)
+                return tool.toolbarIcon;
             return GetIcon(obj.GetType());
         }
 
@@ -352,11 +216,6 @@ namespace UnityEditor.EditorTools
                 return res;
 
             res = new GUIContent() { tooltip = GetToolName(editorToolType) };
-
-            EditorToolContextAttribute ctxAttribute = editorToolType.GetCustomAttributes(typeof(EditorToolContextAttribute), false).FirstOrDefault() as EditorToolContextAttribute;
-
-            if (ctxAttribute != null && !string.IsNullOrEmpty(ctxAttribute.tooltip))
-                res.tooltip = ctxAttribute.tooltip;
 
             // First check for the tool type itself
             if ((res.image = EditorGUIUtility.FindTexture(editorToolType)) != null)

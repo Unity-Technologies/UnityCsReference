@@ -18,7 +18,6 @@ namespace BeeBuildProgramCommon.Data
         public string Il2CppPath;
         public string NetCoreRunPath;
         public string EditorContentsPath;
-        public string ProjectDirectory;
         public PackageInfo[] Packages;
         public string UnityVersion;
         public string UnitySourceCodePath;

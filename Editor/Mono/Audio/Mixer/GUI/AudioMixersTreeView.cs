@@ -645,7 +645,7 @@ namespace UnityEditor
                 {
                     Event.current.Use();
                     if (execute)
-                        ProjectWindowUtil.DuplicateAssets(m_TreeView.GetSelection());
+                        AssetClipboardUtility.DuplicateAssets(m_TreeView.GetSelection());
                 }
             }
         }

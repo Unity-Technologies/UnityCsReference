@@ -27,7 +27,11 @@ namespace UnityEditor.Search
         /// <summary>Highlight parts of the description that match the Fuzzy Search Query</summary>
         FuzzyHighlight = 1 << 3,
         /// <summary>Use Label instead of description for shorter display.</summary>
-        Compacted = 1 << 4
+        Compacted = 1 << 4,
+        /// <summary>Have the item description always refreshed.</summary>
+        AlwaysRefresh = 1 << 5,
+        /// <summary>Item description is being drawn in details view.</summary>
+        FullDescription = 1 << 6
     }
 
     internal enum SearchItemSorting
@@ -161,15 +165,22 @@ namespace UnityEditor.Search
         /// <returns>The search item description</returns>
         public string GetDescription(SearchContext context, bool stripHTML = false)
         {
-            if (options.HasAny(SearchItemOptions.Compacted) && provider?.fetchDescription != null)
+            var tempDescription = description;
+            if (options.HasAny(SearchItemOptions.Compacted | SearchItemOptions.FullDescription) && provider?.fetchDescription != null)
                 return provider?.fetchDescription?.Invoke(this, context);
             if (description == null && provider?.fetchDescription != null)
-                description = provider.fetchDescription(this, context);
-            if (description == null && m_Value != null)
+            {
+                tempDescription = provider.fetchDescription(this, context);
+                if (!options.HasAny(SearchItemOptions.AlwaysRefresh))
+                    description = tempDescription;
+            }
+
+            if (tempDescription == null && m_Value != null)
                 return value.ToString();
-            if (!stripHTML || string.IsNullOrEmpty(description))
-                return description;
-            return Utils.StripHTML(description);
+
+            if (!stripHTML || string.IsNullOrEmpty(tempDescription))
+                return tempDescription;
+            return Utils.StripHTML(tempDescription);
         }
 
         /// <summary>
@@ -326,6 +337,19 @@ namespace UnityEditor.Search
         }
 
         /// <summary>
+        /// Return a unique document key owning this object
+        /// </summary>
+        internal ulong key
+        {
+            get
+            {
+                if (provider.toKey != null)
+                    return provider.toKey(this);
+                return id.GetHashCode64();
+            }
+        }
+
+        /// <summary>
         /// Insert new search item keeping the list sorted and preventing duplicated.
         /// </summary>
         /// <param name="list"></param>
@@ -419,15 +443,71 @@ namespace UnityEditor.Search
             }
         }
 
-        private Dictionary<string, object> m_Fields;
+        internal readonly struct Field : IEquatable<Field>
+        {
+            public readonly string name;
+            public readonly string alias;
+            public readonly object value;
+
+            public string label => alias ?? name;
+
+            public Field(string name)
+            {
+                this.name = name;
+                this.alias = null;
+                this.value = null;
+            }
+
+            public Field(string name, object value)
+            {
+                this.name = name;
+                this.alias = null;
+                this.value = value;
+            }
+
+            public Field(string name, string alias, object value)
+            {
+                this.name = name;
+                this.alias = alias;
+                this.value = value;
+            }
+
+            public override string ToString() => $"{name}[{label}]={value}";
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    return name.GetHashCode();
+                }
+            }
+
+            public override bool Equals(object other)
+            {
+                return other is SearchIndexEntry l && Equals(l);
+            }
+
+            public bool Equals(Field other)
+            {
+                return string.Equals(name, other.name, StringComparison.Ordinal);
+            }
+        }
+
+        private Dictionary<string, Field> m_Fields;
         internal void SetField(string name, object value)
         {
+            SetField(name, null, value);
+        }
+
+        internal void SetField(string name, string alias, object value)
+        {
             if (m_Fields == null)
-                m_Fields = new Dictionary<string, object>();
-            if (value != null)
-                m_Fields[name] = value;
-            else
-                RemoveField(name);
+                m_Fields = new Dictionary<string, Field>();
+
+            var f = new Field(name, alias, value);
+            m_Fields[name] = f;
+
+            //UnityEngine.Debug.Log($"SetField({id}, {name}, {alias}, {value}");
         }
 
         internal bool RemoveField(string name)
@@ -437,31 +517,63 @@ namespace UnityEditor.Search
             return m_Fields.Remove(name);
         }
 
-        internal object GetValue(string name = null, SearchContext context = null)
+        internal bool TryGetField(string name, out Field field)
+        {
+            if (m_Fields != null && m_Fields.TryGetValue(name, out field))
+                return true;
+            field = default;
+            return false;
+        }
+
+        internal bool TryGetValue(string name, out Field field)
+        {
+            return TryGetValue(name, null, out field);
+        }
+
+        internal bool TryGetValue(string name, SearchContext context, out Field field)
         {
             if (name == null)
-                return m_Value;
-            if (m_Fields != null && m_Fields.TryGetValue(name, out var value))
-                return value;
-
-            switch (name)
             {
-                case "id": return id;
-                case "value": return m_Value;
-                case "label": return GetLabel(context, true);
-                case "desc":
-                case "description":
-                    return GetDescription(context, true);
+                field = new Field(name, m_Value);
+                return true;
             }
 
+            if (TryGetField(name, out field))
+                return true;
+
+            if (string.Equals("id", name, StringComparison.Ordinal))
+            {
+                field = new Field(name, id);
+                return true;
+            }
+            if (string.Equals("value", name, StringComparison.Ordinal))
+            {
+                field = new Field(name, m_Value);
+                return true;
+            }
+            if (string.Equals("label", name, StringComparison.OrdinalIgnoreCase))
+            {
+                field = new Field(name, GetLabel(context ?? this.context, true));
+                return field.value != null;
+            }
+            if (string.Equals("description", name, StringComparison.OrdinalIgnoreCase))
+            {
+                field = new Field(name, GetDescription(context ?? this.context, true));
+                return field.value != null;
+            }
+
+            field = default;
+            return false;
+        }
+
+        internal object GetValue(string name = null, SearchContext context = null)
+        {
+            if (TryGetValue(name, context, out var field))
+                return field.value;
             return null;
         }
 
-        internal object this[string name]
-        {
-            get { return GetValue(name); }
-            set { SetField(name, value); }
-        }
+        internal object this[string name] => GetValue(name);
 
         internal int GetFieldCount()
         {
@@ -475,6 +587,13 @@ namespace UnityEditor.Search
             if (m_Fields == null)
                 return new string[0];
             return m_Fields.Keys.ToArray();
+        }
+
+        internal IEnumerable<Field> GetFields()
+        {
+            if (m_Fields == null)
+                return Enumerable.Empty<Field>();
+            return m_Fields.Values;
         }
     }
 }

@@ -21,7 +21,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override RemoveRequest CreateRequest()
         {
-            return Client.Remove(packageName);
+            return m_ClientProxy.Remove(packageName);
         }
     }
 }

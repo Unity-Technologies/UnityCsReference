@@ -2800,7 +2800,7 @@ namespace UnityEditor
                     TargetChoiceHandler.AddSetToValueOfTargetMenuItems(pm, propertyWithPath, TargetChoiceHandler.SetToValueOfTarget);
                 }
 
-                if (property.serializedObject.targetObjectsCount == 1 && property.isInstantiatedPrefab && property.prefabOverride)
+                if (property.prefabOverride)
                 {
                     Object targetObject = property.serializedObject.targetObject;
 
@@ -2830,7 +2830,8 @@ namespace UnityEditor
                             // Add revert menu item.
                             pm.AddItem(menuItemContent, false, TargetChoiceHandler.RevertPrefabPropertyOverride, properties);
                         },
-                        false
+                        false,
+                        property.serializedObject.targetObjectsCount
                     );
                 }
             }
@@ -5559,7 +5560,7 @@ namespace UnityEditor
                     // component contextual menu will override this otherwise.
                     if ((evt.type == EventType.MouseDown && evt.button == 1) || evt.type == EventType.ContextClick)
                     {
-                        SerializedObject serializedObject = new SerializedObject(targetObjs[0]);
+                        SerializedObject serializedObject = new SerializedObject(targetObjs);
                         DoPropertyContextMenu(serializedObject.FindProperty(kEnabledPropertyName));
                         evt.Use();
                     }
@@ -6314,9 +6315,8 @@ namespace UnityEditor
             }
 
             bool wasBoldDefaultFont = EditorGUIUtility.GetBoldDefaultFont();
-            if (property.serializedObject.targetObjectsCount == 1 &&
-                property.isInstantiatedPrefab &&
-                EditorGUIUtility.comparisonViewMode != EditorGUIUtility.ComparisonViewMode.Original)
+            var so = property.serializedObject;
+            if (so.HasAnyInstantiatedPrefabs() && EditorGUIUtility.comparisonViewMode != EditorGUIUtility.ComparisonViewMode.Original)
             {
                 PropertyGUIData parentData = s_PropertyStack.Count > 0 ? s_PropertyStack.Peek() : new PropertyGUIData();
                 bool linkedProperties = parentData.totalPosition == totalPosition;

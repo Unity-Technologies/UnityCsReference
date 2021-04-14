@@ -131,6 +131,11 @@ namespace UnityEditor.Search
 
         public void Report(string status)
         {
+            Report(status, lastProgress);
+        }
+
+        public void Report(string status, float progress)
+        {
             if (!IsValid())
                 return;
 
@@ -142,7 +147,7 @@ namespace UnityEditor.Search
                 return;
             }
 
-            Progress.Report(progressId, lastProgress, status);
+            Progress.Report(progressId, progress, status);
         }
 
         public void Report(int current)
@@ -170,7 +175,7 @@ namespace UnityEditor.Search
             else
             {
                 lastProgress = current / (float)total;
-                Progress.Report(progressId, lastProgress);
+                Progress.Report(progressId, current, total, status);
             }
         }
 

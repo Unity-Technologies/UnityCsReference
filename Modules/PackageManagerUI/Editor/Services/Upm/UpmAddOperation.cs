@@ -47,7 +47,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected override AddRequest CreateRequest()
         {
             var uniqueId = string.IsNullOrEmpty(specialUniqueId) ? packageId : specialUniqueId;
-            return Client.Add(uniqueId);
+            return m_ClientProxy.Add(uniqueId);
         }
     }
 }

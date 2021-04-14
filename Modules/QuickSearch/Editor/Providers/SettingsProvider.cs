@@ -35,7 +35,10 @@ namespace UnityEditor.Search.Providers
                     path = provider.settingsPath,
                     label = provider.label,
                     scope = provider.scope,
-                    searchables = new[] {provider.settingsPath, provider.label}.Concat(provider.keywords).Select(s => Utils.FastToLower(s)).ToArray()
+                    searchables = new[] {provider.settingsPath, provider.label}
+                        .Concat(provider.keywords)
+                        .Where(s => !string.IsNullOrEmpty(s))
+                        .Select(s => Utils.FastToLower(s)).ToArray()
                 })
                     .ToArray();
 

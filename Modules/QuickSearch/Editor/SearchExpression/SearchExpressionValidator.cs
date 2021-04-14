@@ -72,7 +72,7 @@ namespace UnityEditor.Search
             {
                 if (signature.arguments[i].variadic && i != signature.argumentCount - 1)
                 {
-                    errorMsg = $"{name}: arg #{i} is a variadic and is not the last argument.";
+                    errorMsg = $"{name}: arg #{i+1} is a variadic and is not the last argument.";
                     return false;
                 }
             }
@@ -85,7 +85,7 @@ namespace UnityEditor.Search
                 {
                     if (!signature.arguments[i].optional)
                     {
-                        errorMsg = $"{name}: arg #{i} is not optional after an optional argument.";
+                        errorMsg = $"{name}: arg #{i+1} is not optional after an optional argument.";
                         return false;
                     }
                 }
@@ -100,7 +100,7 @@ namespace UnityEditor.Search
             {
                 if (!signature.arguments[i].types.HasAny(SearchExpressionType.AnyExpression))
                 {
-                    errorMsg = $"{name}: arg #{i} is not a valid argument: {signature.arguments[i].types}.";
+                    errorMsg = $"{name}: arg #{i+1} is not a valid argument: {signature.arguments[i].types}.";
                     return false;
                 }
             }
@@ -135,7 +135,7 @@ namespace UnityEditor.Search
 
             if (!errorPosition.valid)
                 errorPosition = expressionInnerText;
-            throw new SearchExpressionParseException($"Error while validating signature with arguments for {evaluator.name}. {lastError}", errorPosition.startIndex, errorPosition.Length);
+            throw new SearchExpressionParseException($"Syntax error: {lastError}", errorPosition.startIndex, errorPosition.Length);
         }
 
         public static bool ValidateExpressionArgumentsCount(string name, SearchExpression[] args, Signature signature, Action<string, StringView> errorHandler)
@@ -143,14 +143,9 @@ namespace UnityEditor.Search
             var actualArgsCount = args.Length;
             var expectedArgsCount = signature.argumentCount;
             var mandatoryArgumentNumber = signature.mandatoryArgumentNumber;
-            if (actualArgsCount == 0 && mandatoryArgumentNumber != 0)
-            {
-                errorHandler($"{name} takes a minimum of {mandatoryArgumentNumber} arguments and was passed: {0}.", StringView.Null);
-                return false;
-            }
             if (actualArgsCount > expectedArgsCount && !signature.arguments.Last().variadic)
             {
-                errorHandler($"{name} takes a maximum of {expectedArgsCount} was passed: {actualArgsCount}.", StringView.Null);
+                errorHandler($"{name} takes a maximum of {expectedArgsCount} arguments and was passed: {actualArgsCount}.", StringView.Null);
                 return false;
             }
             if (actualArgsCount < mandatoryArgumentNumber)
@@ -168,7 +163,7 @@ namespace UnityEditor.Search
                 var expectedArgIndex = Math.Min(i, signature.argumentCount - 1);
                 if (!args[i].types.HasAny(signature.arguments[expectedArgIndex].types))
                 {
-                    errorHandler($"{name} Argument #{i} expects: [{signature.arguments[expectedArgIndex].types}] got passed [{args[i].types}] (\"{args[i].innerText}\")", args[i].outerText);
+                    errorHandler($"{name} Argument #{i+1} expects: [{signature.arguments[expectedArgIndex].types}] got passed [{args[i].types}] (\"{args[i].innerText}\")", args[i].outerText);
                     return false;
                 }
             }

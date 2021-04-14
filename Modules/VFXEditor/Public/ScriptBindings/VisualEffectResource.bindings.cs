@@ -150,6 +150,8 @@ namespace UnityEditor.VFX
         public VFXMapping[] values;
         public VFXMapping[] parameters;
         private UnityObject processor;
+        private int m_ShaderSourceIndex;
+        public UnityObject model;
 
         public UnityObject externalProcessor
         {
@@ -163,7 +165,7 @@ namespace UnityEditor.VFX
                 m_ShaderSourceIndex = -1;
             }
         }
-        private int m_ShaderSourceIndex;
+
         public int shaderSourceIndex
         {
             get
@@ -567,6 +569,14 @@ namespace UnityEditor.VFX
                 onCompileResource(this);
         }
 
+        [UsedByNativeCode]
+        internal void SetupMaterial(Material material, UnityObject model)
+        {
+            if (onSetupMaterial != null)
+                onSetupMaterial(this, material, model);
+        }
+
         internal static Action<VisualEffectResource> onCompileResource;
+        internal static Action<VisualEffectResource, Material, UnityObject> onSetupMaterial;
     }
 }

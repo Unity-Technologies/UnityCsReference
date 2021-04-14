@@ -61,6 +61,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         public UIError error { get; protected set; }        // Keep last error
 
         public abstract RefreshOptions refreshOptions { get; }
+
+        [NonSerialized]
+        protected ClientProxy m_ClientProxy;
+        public void ResolveDependencies(ClientProxy clientProxy)
+        {
+            m_ClientProxy = clientProxy;
+        }
     }
 
     internal abstract class UpmBaseOperation<T> : UpmBaseOperation where T : Request
@@ -75,8 +82,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected T m_Request;
         [SerializeField]
         protected bool m_IsCompleted;
-
         public override bool isInProgress { get { return m_Request != null && m_Request.Id != 0 && !m_IsCompleted; } }
+
 
         protected abstract T CreateRequest();
 

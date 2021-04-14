@@ -60,7 +60,7 @@ namespace UnityEditor.Search
             public readonly string selector;
 
             public ItemComparer(string selector) => this.selector = selector;
-            public bool Equals(SearchItem x, SearchItem y) => DefaultComparer.Compare(GetValueToCompare(x), GetValueToCompare(y)) == 0;
+            public bool Equals(SearchItem x, SearchItem y) => DefaultComparer(GetValueToCompare(x), GetValueToCompare(y)) == 0;
             public int GetHashCode(SearchItem obj) => GetValueToCompare(obj).GetHashCode();
 
             public object GetValueToCompare(SearchItem obj)

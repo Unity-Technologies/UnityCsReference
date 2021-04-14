@@ -19,7 +19,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override EmbedRequest CreateRequest()
         {
-            return Client.Embed(packageName);
+            return m_ClientProxy.Embed(packageName);
         }
     }
 }

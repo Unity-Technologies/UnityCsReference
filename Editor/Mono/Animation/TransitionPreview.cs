@@ -597,9 +597,6 @@ namespace UnityEditor
             if (m_Controller == null)
                 return;
 
-            if (Event.current.type == EventType.Repaint)
-                m_AvatarPreview.timeControl.Update();
-
             DoTimeline();
 
             // Draw the blend values
@@ -718,7 +715,12 @@ namespace UnityEditor
         {
             if (m_AvatarPreview != null && m_Controller != null)
             {
-                if (m_LastEvalTime != m_AvatarPreview.timeControl.currentTime && Event.current.type == EventType.Repaint)
+                bool isRepaint = (Event.current.type == EventType.Repaint);
+
+                if (isRepaint)
+                    m_AvatarPreview.timeControl.Update();
+
+                if (m_LastEvalTime != m_AvatarPreview.timeControl.currentTime && isRepaint)
                 {
                     m_AvatarPreview.Animator.playbackTime = m_AvatarPreview.timeControl.currentTime;
                     m_AvatarPreview.Animator.Update(0);

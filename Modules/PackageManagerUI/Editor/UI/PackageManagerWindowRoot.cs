@@ -72,7 +72,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             cache = new VisualElementCache(root);
         }
 
-        public void OnEnable()
+        public void CreateGUI()
         {
             packageDetails.OnEnable();
             packageList.OnEnable();
@@ -95,19 +95,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             PackageManagerWindowAnalytics.Setup();
 
-            var newTab = m_PackageManagerPrefs.lastUsedPackageFilter ?? m_PackageManagerPrefs.defaultFilterTab;
-            m_PackageFiltering.SetCurrentFilterTabWithoutNotify(newTab);
-            packageManagerToolbar.SetFilter(newTab);
-
-            if (newTab != PackageFilterTab.AssetStore)
-                UIUtils.SetElementDisplay(packageLoadBar, false);
-
-            if (m_PageManager.GetRefreshTimestamp(newTab) == 0)
-                DelayRefresh(newTab);
-
-            if (newTab != PackageFilterTab.UnityRegistry && m_PageManager.GetRefreshTimestamp(PackageFilterTab.UnityRegistry) == 0 && m_ApplicationProxy.isUpmRunning)
-                DelayRefresh(PackageFilterTab.UnityRegistry);
-
             EditorApplication.focusChanged += OnFocusChanged;
             m_Selection.onSelectionChanged += RefreshSelectedInInspectorClass;
 
@@ -116,10 +103,17 @@ namespace UnityEditor.PackageManager.UI.Internal
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
 
             RefreshSelectedInInspectorClass();
-        }
 
-        public void CreateGUI()
-        {
+            // set the current filter tab value after all the callback system has been setup so that we don't miss any callbacks
+            var newTab = m_PackageManagerPrefs.lastUsedPackageFilter ?? PackageFiltering.k_DefaultFilterTab;
+            m_PackageFiltering.currentFilterTab = newTab;
+
+            if (m_PageManager.GetRefreshTimestamp(newTab) == 0)
+                DelayRefresh(newTab);
+
+            if (newTab != PackageFilterTab.UnityRegistry && m_PageManager.GetRefreshTimestamp(PackageFilterTab.UnityRegistry) == 0 && m_ApplicationProxy.isUpmRunning)
+                DelayRefresh(PackageFilterTab.UnityRegistry);
+
             m_ExtensionManager.OnWindowCreated(this, packageDetails.extensionContainer, packageDetails.toolbarExtensions);
         }
 
@@ -136,14 +130,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
 
-            if (m_PackageManagerPrefs.numItemsPerPage == null ||
-                tab == PackageFilterTab.AssetStore && !m_UnityConnectProxy.isUserInfoReady)
+            if (tab == PackageFilterTab.AssetStore &&
+                (m_PackageManagerPrefs.numItemsPerPage == null || !m_UnityConnectProxy.isUserInfoReady))
             {
                 EditorApplication.delayCall += () => DelayRefresh(tab);
                 return;
             }
 
-            m_PageManager.Refresh(tab, (int)m_PackageManagerPrefs.numItemsPerPage);
+            m_PageManager.Refresh(tab, m_PackageManagerPrefs.numItemsPerPage ?? PageManager.k_DefaultPageSize);
         }
 
         private void OnAttachToPanel(AttachToPanelEvent evt)
@@ -246,14 +240,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnFilterChanged(PackageFilterTab filterTab)
         {
-            if (!filterTab.Equals(PackageFilterTab.AssetStore))
-                UIUtils.SetElementDisplay(packageLoadBar, false);
-            else
-            {
-                packageLoadBar.Refresh();
-                UIUtils.SetElementDisplay(packageLoadBar, true);
-            }
-
             DisableToolbarIfRefreshInProgress(filterTab);
         }
 

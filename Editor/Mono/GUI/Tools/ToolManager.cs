@@ -9,13 +9,27 @@ namespace UnityEditor.EditorTools
 {
     public static class ToolManager
     {
-        public static Type activeContextType => EditorToolManager.activeToolContextType;
+        public static Type activeContextType => EditorToolManager.activeToolContext.GetType();
 
         public static void SetActiveContext(Type context)
         {
             if (context != null && (!typeof(EditorToolContext).IsAssignableFrom(context) || context.IsAbstract))
-                throw new ArgumentException("Type must be assignable to EditorToolContext, and not abstract.");
-            EditorToolManager.activeToolContextType = context;
+                throw new ArgumentException("Type must be assignable to EditorToolContext, and not abstract.", "context");
+
+            var ctx = context != null ? context : typeof(GameObjectToolContext);
+
+            if (EditorToolUtility.IsComponentEditor(ctx))
+            {
+                var instance = EditorToolManager.GetComponentContext(ctx);
+                if (instance == null)
+                    throw new InvalidOperationException("The current selection does not contain any objects editable " +
+                        $"by the component tool of type: {context}");
+                EditorToolManager.activeToolContext = instance;
+            }
+            else
+            {
+                EditorToolManager.activeToolContext = EditorToolManager.GetSingleton(ctx) as EditorToolContext;
+            }
         }
 
         public static void SetActiveContext<T>() where T : EditorToolContext
@@ -80,17 +94,14 @@ namespace UnityEditor.EditorTools
             if (!typeof(EditorTool).IsAssignableFrom(type) || type.IsAbstract)
                 throw new ArgumentException("Type must be assignable to EditorTool, and not abstract.");
 
-            var attrib = EditorToolUtility.GetEditorToolAttribute(type);
-
-            if (attrib?.targetType != null)
+            if (EditorToolUtility.IsComponentEditor(type))
             {
-                var tool = EditorToolManager.GetCustomEditorToolOfType(type);
+                var tool = EditorToolManager.GetComponentTool(type);
 
                 if (tool == null)
-                    throw new InvalidOperationException("The current selection does not contain any objects editable by the CustomEditor tool \"" + type + ".\"");
-
+                    throw new InvalidOperationException("The current selection does not contain any objects editable " +
+                        $"by the component tool of type: {type}");
                 SetActiveTool(tool);
-
                 return;
             }
 
@@ -107,19 +118,16 @@ namespace UnityEditor.EditorTools
             EditorToolManager.RestorePreviousTool();
         }
 
-        public static void RestorePreviousPersistentTool()
-        {
-            var last = EditorToolManager.GetLastTool(x => x && !EditorToolUtility.IsCustomEditorTool(x.GetType()));
-
-            if (last != null)
-                SetActiveTool(last);
-            else
-                SetActiveTool<MoveTool>();
-        }
+        public static void RestorePreviousPersistentTool() => EditorToolManager.RestorePreviousPersistentTool();
 
         public static bool IsActiveTool(EditorTool tool)
         {
             return EditorToolManager.activeTool == tool;
+        }
+
+        public static bool IsActiveContext(EditorToolContext context)
+        {
+            return EditorToolManager.activeToolContext == context;
         }
     }
 }

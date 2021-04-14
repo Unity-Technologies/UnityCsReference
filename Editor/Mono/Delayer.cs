@@ -8,7 +8,7 @@ namespace UnityEditor
 {
     class Delayer
     {
-        private double m_LastExecutionTime;
+        private long m_LastExecutionTime;
         private Action<object> m_Action;
         private readonly double m_DebounceDelay;
         private object m_Context;
@@ -34,7 +34,7 @@ namespace UnityEditor
             }
             else
             {
-                m_LastExecutionTime = EditorApplication.timeSinceStartup;
+                m_LastExecutionTime = DateTime.Now.Ticks;
                 Debounce();
             }
         }
@@ -57,8 +57,8 @@ namespace UnityEditor
         private void Debounce()
         {
             EditorApplication.delayCall -= Debounce;
-            var currentTime = EditorApplication.timeSinceStartup;
-            if (m_LastExecutionTime != 0 && currentTime - m_LastExecutionTime > m_DebounceDelay)
+            var currentTime = DateTime.Now.Ticks;
+            if (m_LastExecutionTime != 0 && DelayHasPassed(currentTime))
             {
                 m_Action?.Invoke(m_Context);
                 m_LastExecutionTime = 0;
@@ -72,8 +72,8 @@ namespace UnityEditor
         private void Throttle()
         {
             EditorApplication.delayCall -= Throttle;
-            var currentTime = EditorApplication.timeSinceStartup;
-            if (m_LastExecutionTime != 0 && currentTime - m_LastExecutionTime > m_DebounceDelay)
+            var currentTime = DateTime.Now.Ticks;
+            if (m_LastExecutionTime != 0 && DelayHasPassed(currentTime))
             {
                 m_Action?.Invoke(m_Context);
                 m_LastExecutionTime = 0;
@@ -84,6 +84,12 @@ namespace UnityEditor
                     m_LastExecutionTime = currentTime;
                 EditorApplication.delayCall += Throttle;
             }
+        }
+
+        private bool DelayHasPassed(long currentTime)
+        {
+            var timeSpan = new TimeSpan(currentTime - m_LastExecutionTime);
+            return timeSpan.TotalSeconds > m_DebounceDelay;
         }
     }
 }

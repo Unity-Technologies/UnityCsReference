@@ -494,7 +494,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (groupName == PageManager.k_UnityPackageGroupName)
                 return k_UnityPackageGroupDisplayName;
 
-            if (groupName == PageManager.k_OtherPackageGroupName || groupName == PageManager.k_CustomPackageGroupName)
+            if (groupName == PageManager.k_OtherPackageGroupName)
                 return L10n.Tr(groupName);
 
             return groupName;

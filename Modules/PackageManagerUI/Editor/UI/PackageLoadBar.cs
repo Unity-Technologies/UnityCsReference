@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Linq;
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -32,6 +30,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private ResourceLoader m_ResourceLoader;
         private ApplicationProxy m_Application;
         private UnityConnectProxy m_UnityConnect;
+        private PackageFiltering m_PackageFiltering;
         private PageManager m_PageManager;
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
         private void ResolveDependencies()
@@ -40,6 +39,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ResourceLoader = container.Resolve<ResourceLoader>();
             m_Application = container.Resolve<ApplicationProxy>();
             m_UnityConnect = container.Resolve<UnityConnectProxy>();
+            m_PackageFiltering = container.Resolve<PackageFiltering>();
             m_PageManager = container.Resolve<PageManager>();
             m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
         }
@@ -63,12 +63,27 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
             m_Application.onInternetReachabilityChange += OnInternetReachabilityChange;
+            m_PackageFiltering.onFilterTabChanged += SetFilter;
             m_PageManager.onRefreshOperationFinish += Refresh;
 
-            Refresh();
+            SetFilter(m_PackageFiltering.currentFilterTab);
             UpdateMenu();
 
             loadMoreLabel.SetEnabled(m_Application.isInternetReachable);
+        }
+
+        public void OnDisable()
+        {
+            m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
+            m_Application.onInternetReachabilityChange -= OnInternetReachabilityChange;
+            m_PackageFiltering.onFilterTabChanged -= SetFilter;
+            m_PageManager.onRefreshOperationFinish -= Refresh;
+        }
+
+        private void SetFilter(PackageFilterTab filterTab)
+        {
+            UIUtils.SetElementDisplay(this, filterTab == PackageFilterTab.AssetStore);
+            Refresh();
         }
 
         public void UpdateMenu()
@@ -115,14 +130,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             }, a => m_SettingsProxy.loadAssets == value ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
         }
 
-        public void OnDisable()
-        {
-            m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
-            m_Application.onInternetReachabilityChange -= OnInternetReachabilityChange;
-
-            m_PageManager.onRefreshOperationFinish -= Refresh;
-        }
-
         private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
         {
             UpdateLoadBarMessage();
@@ -135,6 +142,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void Refresh()
         {
+            if (!UIUtils.IsElementVisible(this))
+                return;
             var page = m_PageManager.GetCurrentPage();
             Set(page?.numTotalItems ?? 0, page?.numCurrentItems ?? 0);
             UpdateMenu();

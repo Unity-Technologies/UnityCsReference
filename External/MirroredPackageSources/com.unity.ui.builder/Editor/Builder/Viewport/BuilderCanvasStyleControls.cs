@@ -15,6 +15,13 @@ namespace Unity.UI.Builder
         const string k_TextAlignName = "-unity-text-align";
         const string k_TextWrapName = "white-space";
 
+        public const string k_FlexDirectionButtonName = "flex-direction-button";
+        public const string k_AlignItemsButtonName = "align-items-button";
+        public const string k_JustifyContentButtonName = "justify-content-button";
+        public const string k_HorizontalTextAlignButtonName = "horizontal-text-align-button";
+        public const string k_VerticalTextAlignButtonName = "vertical-text-align-button";
+        public const string k_TextWrapButtonName = "text-wrap-button";
+
         // Buttons
         List<Button> m_AllButtons = new List<Button>();
         List<Button> m_FlexAlignButtons = new List<Button>();
@@ -46,12 +53,12 @@ namespace Unity.UI.Builder
             this.styleSheets.Add(uss);
 
             // Fetch buttons.
-            m_FlexDirectionButton = QueryAndBindButton("flex-direction-button", FlexDirectionOnToggle);
-            m_AlignItemsButton = QueryAndBindButton("align-items-button", AlignItemsOnToggle);
-            m_JustifyContentButton = QueryAndBindButton("justify-content-button", JustifyContentOnToggle);
-            m_HorizontalTextAlignButton = QueryAndBindButton("horizontal-text-align-button", HorizontalTextAlignOnToggle);
-            m_VerticalTextAlignButton = QueryAndBindButton("vertical-text-align-button", VerticalTextAlignOnToggle);
-            m_TextWrapButton = QueryAndBindButton("text-wrap-button", TextWrapOnToggle);
+            m_FlexDirectionButton = QueryAndBindButton(k_FlexDirectionButtonName, FlexDirectionOnToggle);
+            m_AlignItemsButton = QueryAndBindButton(k_AlignItemsButtonName, AlignItemsOnToggle);
+            m_JustifyContentButton = QueryAndBindButton(k_JustifyContentButtonName, JustifyContentOnToggle);
+            m_HorizontalTextAlignButton = QueryAndBindButton(k_HorizontalTextAlignButtonName, HorizontalTextAlignOnToggle);
+            m_VerticalTextAlignButton = QueryAndBindButton(k_VerticalTextAlignButtonName, VerticalTextAlignOnToggle);
+            m_TextWrapButton = QueryAndBindButton(k_TextWrapButtonName, TextWrapOnToggle);
 
             // Group special buttons.
             m_FlexAlignButtons.Add(m_FlexDirectionButton);
@@ -94,8 +101,8 @@ namespace Unity.UI.Builder
             if (!m_Target.IsPartOfCurrentDocument())
                 return;
 
-            // Elements with children.
-            if (m_Target.childCount > 0)
+            // if the target is of type VisualElement or has children.
+            if (m_Target.GetType() == typeof(VisualElement) || m_Target.childCount > 0)
             {
                 m_FlexDirectionButton.style.display = DisplayStyle.Flex;
                 FlexDirectionUpdateToggleIcon();

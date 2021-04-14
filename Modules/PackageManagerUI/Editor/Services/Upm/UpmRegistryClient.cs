@@ -19,26 +19,38 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         private UpmGetRegistriesOperation m_GetRegistriesOperation;
-        private UpmGetRegistriesOperation getRegistriesOperation => m_GetRegistriesOperation ?? (m_GetRegistriesOperation = new UpmGetRegistriesOperation());
+        private UpmGetRegistriesOperation getRegistriesOperation => CreateOperation(ref m_GetRegistriesOperation);
+
         [SerializeField]
         private UpmAddRegistryOperation m_AddRegistryOperation;
-        private UpmAddRegistryOperation addRegistryOperation => m_AddRegistryOperation ?? (m_AddRegistryOperation = new UpmAddRegistryOperation());
+        private UpmAddRegistryOperation addRegistryOperation => CreateOperation(ref m_AddRegistryOperation);
+
         [SerializeField]
         private UpmUpdateRegistryOperation m_UpdateRegistryOperation;
-        private UpmUpdateRegistryOperation updateRegistryOperation => m_UpdateRegistryOperation ?? (m_UpdateRegistryOperation = new UpmUpdateRegistryOperation());
+        private UpmUpdateRegistryOperation updateRegistryOperation => CreateOperation(ref m_UpdateRegistryOperation);
+
         [SerializeField]
         private UpmRemoveRegistryOperation m_RemoveRegistryOperation;
-        private UpmRemoveRegistryOperation removeRegistryOperation => m_RemoveRegistryOperation ?? (m_RemoveRegistryOperation = new UpmRemoveRegistryOperation());
+        private UpmRemoveRegistryOperation removeRegistryOperation => CreateOperation(ref m_RemoveRegistryOperation);
 
         [NonSerialized]
         private UpmCache m_UpmCache;
         [NonSerialized]
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
+        [NonSerialized]
+        private ClientProxy m_ClientProxy;
         public void ResolveDependencies(UpmCache upmCache,
-            PackageManagerProjectSettingsProxy settingsProxy)
+            PackageManagerProjectSettingsProxy settingsProxy,
+            ClientProxy clientProxy)
         {
             m_UpmCache = upmCache;
             m_SettingsProxy = settingsProxy;
+            m_ClientProxy = clientProxy;
+
+            m_GetRegistriesOperation?.ResolveDependencies(m_ClientProxy);
+            m_AddRegistryOperation?.ResolveDependencies(m_ClientProxy);
+            m_UpdateRegistryOperation?.ResolveDependencies(m_ClientProxy);
+            m_RemoveRegistryOperation?.ResolveDependencies(m_ClientProxy);
         }
 
         public virtual void AddRegistry(string name, string url, string[] scopes)
@@ -55,7 +67,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 m_SettingsProxy.Save();
                 onRegistriesModified?.Invoke();
-                Client.Resolve();
+                m_ClientProxy.Resolve();
             }
         }
 
@@ -73,7 +85,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 m_SettingsProxy.Save();
                 onRegistriesModified?.Invoke();
-                Client.Resolve();
+                m_ClientProxy.Resolve();
             }
         }
 
@@ -99,7 +111,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 m_SettingsProxy.Save();
                 onRegistriesModified?.Invoke();
-                Client.Resolve();
+                m_ClientProxy.Resolve();
             }
         }
 
@@ -133,6 +145,16 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_SettingsProxy.Save();
                 onRegistriesModified?.Invoke();
             }
+        }
+
+        private T CreateOperation<T>(ref T operation) where T : UpmBaseOperation, new()
+        {
+            if (operation != null)
+                return operation;
+
+            operation = new T();
+            operation.ResolveDependencies(m_ClientProxy);
+            return operation;
         }
 
         internal class RegistryInfoComparer : IEqualityComparer<RegistryInfo>

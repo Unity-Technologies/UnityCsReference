@@ -253,6 +253,8 @@ namespace UnityEditor.Search
         public static bool Show(SearchContext context, Rect parentRect)
         {
             var te = SearchField.GetTextEditor();
+            if (te.controlID != GUIUtility.keyboardControl)
+                return false;
 
             parent = parentRect;
             options = new SearchPropositionOptions(context.searchText, te.cursorIndex);
@@ -441,6 +443,16 @@ namespace UnityEditor.Search
         private static void FillBuiltInPropositions(SearchContext context, SortedSet<SearchProposition> propositions)
         {
             int builtPriority = -50;
+
+            if (string.IsNullOrEmpty(context.searchQuery))
+            {
+                foreach (var sf in SearchSettings.searchQueryFavorites)
+                {
+                    propositions.Add(new SearchProposition(Utils.TrimText(sf, 30), sf, "Search Favorite", priority: builtPriority, moveCursor: TextCursorPlacement.MoveLineEnd));
+                    builtPriority += 10;
+                }
+            }
+
             var savedQueries = SearchQuery.GetAllSearchQueryItems(context);
             foreach (var item in savedQueries)
             {
@@ -449,7 +461,7 @@ namespace UnityEditor.Search
                     var helpText = sq.description;
                     if (string.IsNullOrEmpty(helpText))
                         helpText = sq.text;
-                    helpText = $"<i>{helpText}</i> (Saved Query)";
+                    helpText = $"<i>{Utils.TrimText(helpText, 30)}</i> (Saved Query)";
                     propositions.Add(new SearchProposition(item.GetLabel(context, true), sq.text, helpText, priority: builtPriority, moveCursor: TextCursorPlacement.MoveLineEnd));
                     builtPriority += 10;
                 }
@@ -594,7 +606,7 @@ namespace UnityEditor.Search
         private static bool DrawItem(Event evt, Rect rect, bool selected, SearchProposition item)
         {
             var itemSelected = selected && evt.type == EventType.KeyDown && IsKeySelection(evt);
-            if (itemSelected || GUI.Button(rect, HightlightLabel(item.label), selected ? Styles.autoCompleteSelectedItemLabel : Styles.autoCompleteItemLabel))
+            if (itemSelected || GUI.Button(rect, Utils.TrimText(HightlightLabel(item.label)), selected ? Styles.autoCompleteSelectedItemLabel : Styles.autoCompleteItemLabel))
             {
                 evt.Use();
                 GUI.changed = true;
@@ -602,7 +614,7 @@ namespace UnityEditor.Search
             }
 
             if (!string.IsNullOrEmpty(item.help))
-                GUI.Label(rect, item.help, Styles.autoCompleteTooltip);
+                GUI.Label(rect, Utils.TrimText(item.help), Styles.autoCompleteTooltip);
 
             return false;
         }
