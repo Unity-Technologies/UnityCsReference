@@ -19,6 +19,8 @@ namespace UnityEditor
         SerializedProperty m_AngularDamping;
         SerializedProperty m_JointFriction;
 
+        SerializedProperty m_CollisionDetectionMode;
+
         SerializedProperty m_ParentAnchorPosition;
         SerializedProperty m_ParentAnchorRotation;
         SerializedProperty m_AnchorPosition;
@@ -50,6 +52,8 @@ namespace UnityEditor
             public static GUIContent mass = EditorGUIUtility.TrTextContent("Mass", "Mass of this articulation body");
             public static GUIContent immovable = EditorGUIUtility.TrTextContent("Immovable", "Is this articulation body immovable by forces and torques? Only applies to the root body of the articulation.");
             public static GUIContent useGravity = EditorGUIUtility.TrTextContent("Use Gravity", "Controls whether gravity affects this articulation body.");
+
+            public static GUIContent collisionDetectionMode = EditorGUIUtility.TrTextContent("Collision Detection", "The method to use to detect collisions for child colliders: discrete (default) or various modes of continuous collision detection that can help solving fast moving object issues.");
 
             public static GUIContent linearDamping = EditorGUIUtility.TrTextContent("Linear Damping", "Damping factor that affects how this body resists linear motion.");
             public static GUIContent angularDamping = EditorGUIUtility.TrTextContent("Angular Damping", "Damping factor that affects how this body resists rotations.");
@@ -92,6 +96,8 @@ namespace UnityEditor
             m_Mass = serializedObject.FindProperty("m_Mass");
             m_Immovable = serializedObject.FindProperty("m_Immovable");
             m_UseGravity = serializedObject.FindProperty("m_UseGravity");
+
+            m_CollisionDetectionMode = serializedObject.FindProperty("m_CollisionDetectionMode");
 
             m_LinearDamping = serializedObject.FindProperty("m_LinearDamping");
             m_AngularDamping = serializedObject.FindProperty("m_AngularDamping");
@@ -140,25 +146,32 @@ namespace UnityEditor
             ArticulationBody body = (ArticulationBody)target;
 
             EditorGUILayout.PropertyField(m_Mass, Styles.mass);
+            CollisionDetectionMode collisionDetectionMode = (CollisionDetectionMode)m_CollisionDetectionMode.intValue;
 
-
+            EditorGUILayout.PropertyField(m_UseGravity, Styles.useGravity);
             if (body.isRoot)
             {
-                EditorGUILayout.PropertyField(m_UseGravity, Styles.useGravity);
                 EditorGUILayout.PropertyField(m_Immovable, Styles.immovable);
                 if (!m_Immovable.boolValue)
                 {
                     EditorGUILayout.PropertyField(m_LinearDamping, Styles.linearDamping);
                     EditorGUILayout.PropertyField(m_AngularDamping, Styles.angularDamping);
                 }
+
+                collisionDetectionMode = (CollisionDetectionMode)EditorGUILayout.EnumPopup(Styles.collisionDetectionMode, collisionDetectionMode);
+                m_CollisionDetectionMode.intValue = (int)collisionDetectionMode;
+
                 EditorGUILayout.HelpBox("This is the root body of the articulation.", MessageType.Info);
             }
             else
             {
-                EditorGUILayout.PropertyField(m_UseGravity, Styles.useGravity);
                 EditorGUILayout.PropertyField(m_LinearDamping, Styles.linearDamping);
                 EditorGUILayout.PropertyField(m_AngularDamping, Styles.angularDamping);
                 EditorGUILayout.PropertyField(m_JointFriction, Styles.jointFriction);
+
+                collisionDetectionMode = (CollisionDetectionMode)EditorGUILayout.EnumPopup(Styles.collisionDetectionMode, collisionDetectionMode);
+                m_CollisionDetectionMode.intValue = (int)collisionDetectionMode;
+
                 EditorGUILayout.PropertyField(m_ComputeParentAnchor, Styles.computeParentAnchor);
 
                 // Show anchor edit fields and set to joint if changed

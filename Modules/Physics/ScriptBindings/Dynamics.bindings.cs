@@ -1155,6 +1155,8 @@ namespace UnityEngine
         extern public int GetDriveTargetVelocities(List<float> targetVelocities);
         extern public void SetDriveTargetVelocities(List<float> targetVelocities);
         extern public int GetDofStartIndices(List<int> dofStartIndices);
+
+        extern public CollisionDetectionMode collisionDetectionMode { get; set; }
     }
 
     [NativeHeader("Modules/Physics/PhysicsManager.h")]

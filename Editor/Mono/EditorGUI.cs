@@ -2576,12 +2576,44 @@ namespace UnityEditor
 
                         pm.AddItem(EditorGUIUtility.TrTextContent("Duplicate Array Element"), false, (a) =>
                         {
-                            TargetChoiceHandler.DuplicateArrayElement(a);
+                            if (PropertyHandler.s_reorderableLists.ContainsKey(ReorderableListWrapper.GetPropertyIdentifier(parentArrayProperty)))
+                            {
+                                ReorderableListWrapper list = PropertyHandler.s_reorderableLists[ReorderableListWrapper.GetPropertyIdentifier(parentArrayProperty)];
+                                if (list != null && list.m_ReorderableList.index >= 0 && list.m_ReorderableList.index < parentArrayProperty.arraySize)
+                                {
+                                    SerializedProperty resolvedProperty = parentArrayProperty.GetArrayElementAtIndex(list.m_ReorderableList.index);
+                                    if (resolvedProperty != null)
+                                    {
+                                        TargetChoiceHandler.DuplicateArrayElement(resolvedProperty);
+                                    }
+                                    ReorderableList.ClearExistingListCaches();
+                                }
+                            }
+                            else
+                            {
+                                TargetChoiceHandler.DuplicateArrayElement(a);
+                            }
                             EditorGUIUtility.editingTextField = false;
                         }, propertyWithPath);
                         pm.AddItem(EditorGUIUtility.TrTextContent("Delete Array Element"), false, (a) =>
                         {
-                            TargetChoiceHandler.DeleteArrayElement(a);
+                            if (PropertyHandler.s_reorderableLists.ContainsKey(ReorderableListWrapper.GetPropertyIdentifier(parentArrayProperty)))
+                            {
+                                ReorderableListWrapper list = PropertyHandler.s_reorderableLists[ReorderableListWrapper.GetPropertyIdentifier(parentArrayProperty)];
+                                if (list != null && list.m_ReorderableList.index >= 0 && list.m_ReorderableList.index < parentArrayProperty.arraySize)
+                                {
+                                    SerializedProperty resolvedProperty = parentArrayProperty.GetArrayElementAtIndex(list.m_ReorderableList.index);
+                                    if (resolvedProperty != null)
+                                    {
+                                        TargetChoiceHandler.DeleteArrayElement(resolvedProperty);
+                                    }
+                                    ReorderableList.ClearExistingListCaches();
+                                }
+                            }
+                            else
+                            {
+                                TargetChoiceHandler.DeleteArrayElement(a);
+                            }
                             EditorGUIUtility.editingTextField = false;
                         }, propertyWithPath);
                     }

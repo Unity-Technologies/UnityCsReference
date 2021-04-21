@@ -35,7 +35,7 @@ namespace UnityEditor.ShortcutManagement
         {
             foreach (var keyCombination in keyCombinations)
             {
-                if (s_InvalidKeyCodes.Contains(keyCombination.keyCode))
+                if (s_InvalidKeyCodes.Contains(keyCombination.keyCode) || (int)keyCombination.keyCode >= Directory.MaxIndexedEntries)
                 {
                     invalidBindingMessage = $"Binding uses invalid key code {keyCombination.keyCode}";
                     return false;

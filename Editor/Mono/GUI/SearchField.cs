@@ -63,6 +63,7 @@ namespace UnityEditor.IMGUI.Controls
             {
                 text = string.Empty;
                 GUIUtility.keyboardControl = 0;
+                GUI.changed = true;
             }
 
             // Search field
