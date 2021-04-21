@@ -17,7 +17,7 @@ using UnityEngine.Scripting;
 using UnityEngineInternal;
 using UnityEditor.StyleSheets;
 using UnityEditor.Experimental;
-
+using UnityEngine.UIElements;
 using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor
@@ -1034,8 +1034,10 @@ namespace UnityEditor
             s_TextGUIContents = new Hashtable();
             s_GUIContents = new Hashtable();
             s_IconGUIContents = new Hashtable();
+            L10n.ClearCache();
             EditorUtility.Internal_UpdateMenuTitleForLanguage(newLanguage);
             LocalizationDatabase.currentEditorLanguage = newLanguage;
+            PanelTextSettings.UpdateLocalizationFontAsset();
             EditorApplication.RequestRepaintAllViews();
         }
 

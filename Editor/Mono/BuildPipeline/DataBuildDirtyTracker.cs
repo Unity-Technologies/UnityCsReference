@@ -42,10 +42,21 @@ namespace UnityEditor.Mono.BuildPipeline
         {
             public BuildDataInputFile[] scenes;
             public BuildDataInputFile[] inputFiles;
+            public BuildOptions buildOptions;
+
+            // These options could impact the cache data files.
+            public static BuildOptions BuildOptionsMask = BuildOptions.CompressWithLz4 |
+                BuildOptions.ConnectToHost |
+                BuildOptions.ConnectWithProfiler |
+                BuildOptions.UncompressedAssetBundle |
+                BuildOptions.ShaderLivelinkSupport |
+                BuildOptions.CompressWithLz4HC;
         }
 
         private BuildData buildData;
         private string[] scenes;
+        public BuildOptions buildOptions;
+
         bool CheckAssetDirty(BuildDataInputFile file)
         {
             NPath path = file.path;
@@ -80,14 +91,20 @@ namespace UnityEditor.Mono.BuildPipeline
         {
             if (!scenes.SequenceEqual(buildData.scenes.Select(f => f.path)))
             {
-                Console.WriteLine($"Rebuiding Data files because the scene list is dirty");
+                Console.WriteLine("Rebuiding Data files because the scene list is dirty");
+                return true;
+            }
+
+            if (buildOptions != buildData.buildOptions)
+            {
+                Console.WriteLine("Rebuiding Data files because the build options have changed");
                 return true;
             }
 
             if (buildData.inputFiles.Any(CheckAssetDirty))
                 return true;
 
-            Console.WriteLine($"Not rebuiding Data files -- no changes");
+            Console.WriteLine("Not rebuiding Data files -- no changes");
             return false;
         }
 
@@ -115,12 +132,13 @@ namespace UnityEditor.Mono.BuildPipeline
             {
                 scenes = inputScenes.ToArray(),
                 inputFiles = inputFiles.ToArray(),
+                buildOptions = report.summary.options & BuildData.BuildOptionsMask
             };
             buildDataPath.ToNPath().WriteAllText(JsonUtility.ToJson(buildData));
         }
 
         [RequiredByNativeCode]
-        static public bool CheckDirty(string buildDataPath, string[] scenes)
+        static public bool CheckDirty(string buildDataPath, BuildOptions buildOptions, string[] scenes)
         {
             NPath buildReportPath = buildDataPath;
             if (!buildReportPath.FileExists())
@@ -129,7 +147,8 @@ namespace UnityEditor.Mono.BuildPipeline
             DataBuildDirtyTracker tracker = new DataBuildDirtyTracker()
             {
                 buildData = JsonUtility.FromJson<BuildData>(buildReportPath.ReadAllText()),
-                scenes = scenes
+                scenes = scenes,
+                buildOptions = buildOptions & BuildData.BuildOptionsMask
             };
             return tracker.DoCheckDirty();
         }

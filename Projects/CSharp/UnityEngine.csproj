@@ -1657,6 +1657,9 @@
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextProcessingStacks.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextProcessingStacks.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextResourcesManager.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextResourcesManager.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextSettings.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextSettings.cs</Link>
     </Compile>

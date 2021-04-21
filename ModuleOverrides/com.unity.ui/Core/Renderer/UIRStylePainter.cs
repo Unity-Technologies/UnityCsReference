@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Unity.Collections;
+using UnityEngine.Assertions;
 using UnityEngine.TextCore.Text;
 
 namespace UnityEngine.UIElements.UIR.Implementation
@@ -346,7 +347,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         public void DrawText(MeshGenerationContextUtils.TextParams textParams, ITextHandle handle, float pixelsPerPoint)
         {
-            if (textParams.font == null && textParams.fontDefinition.IsEmpty())
+            if (!TextUtilities.IsFontAssigned(textParams))
                 return;
 
             if (currentElement.panel.contextType == ContextType.Editor)
@@ -362,6 +363,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
         {
             float scaling = TextUtilities.ComputeTextScaling(currentElement.worldTransform, pixelsPerPoint);
             TextNativeSettings textSettings = MeshGenerationContextUtils.TextParams.GetTextNativeSettings(textParams, scaling);
+
+            Assert.IsNotNull(textSettings.font);
 
             using (NativeArray<TextVertex> textVertices = TextNative.GetVertices(textSettings))
             {
@@ -986,7 +989,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         public void DrawText(MeshGenerationContextUtils.TextParams textParams, ITextHandle handle, float pixelsPerPoint)
         {
-            if (textParams.font == null && textParams.fontDefinition.IsEmpty())
+            if (!TextUtilities.IsFontAssigned(textParams))
                 return;
 
             if (m_CurrentElement.panel.contextType == ContextType.Editor)

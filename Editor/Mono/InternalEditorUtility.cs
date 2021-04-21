@@ -369,12 +369,8 @@ namespace UnityEditorInternal
 
                 int from, to;
                 var addExisting = true;
-                if (prevIndex < newIndex)
-                {
-                    from = prevIndex;
-                    to = newIndex;
-                }
-                else if (newIndex >= firstIndex && newIndex < lastIndex)
+
+                if (newIndex >= firstIndex && (newIndex < lastIndex || newIndex == lastIndex))
                 {
                     addExisting = false;
                     if (dir > 0)
@@ -387,6 +383,11 @@ namespace UnityEditorInternal
                         from = newIndex;
                         to = prevIndex;
                     }
+                }
+                else if (prevIndex < newIndex)
+                {
+                    from = prevIndex;
+                    to = newIndex;
                 }
                 else
                 {
@@ -409,12 +410,12 @@ namespace UnityEditorInternal
                         if (dir > 0)
                         {
                             allSelectedInstanceIDs.AddRange(selectedInstanceIDs.GetRange(0, selectedInstanceIDs.Count - 1));
-                            allSelectedInstanceIDs.AddRange(allEntryInstanceIDs.GetRange(from, to - from + 1));
+                            for (int i = from; i <= to; i++)
+                                allSelectedInstanceIDs.Add(allEntryInstanceIDs[i]);
                         }
                         else
                         {
                             allSelectedInstanceIDs.AddRange(selectedInstanceIDs.GetRange(0, selectedInstanceIDs.Count));
-                            allSelectedInstanceIDs.Capacity = allSelectedInstanceIDs.Count + (to - from);
                             // this is necessary so that indices would be sorted in an ascending order
                             for (int i = to - 1; i >= from; i--)
                                 allSelectedInstanceIDs.Add(allEntryInstanceIDs[i]);
@@ -422,7 +423,16 @@ namespace UnityEditorInternal
                     }
                     else
                     {
-                        allSelectedInstanceIDs.AddRange(allEntryInstanceIDs.GetRange(from, to - from + 1));
+                        if (dir > 0)
+                        {
+                            allSelectedInstanceIDs.AddRange(selectedInstanceIDs.GetRange(0, selectedInstanceIDs.Count - 1));
+                            for (int i = to - 1; i > from; i--)
+                                allSelectedInstanceIDs.Add(allEntryInstanceIDs[i]);
+                        }
+                        else
+                        {
+                            allSelectedInstanceIDs.AddRange(selectedInstanceIDs.GetRange(0, selectedInstanceIDs.Count - 1));
+                        }
                     }
 
                     return allSelectedInstanceIDs;

@@ -14,9 +14,8 @@ namespace UnityEditor.TextCore.Text
 
         static bool s_Face = true, s_Outline = true, s_Outline2, s_Underlay, s_Lighting, s_Glow, s_Bevel, s_Light, s_Bump, s_Env;
 
-        static string[]
-        s_FaceUvSpeedNames = { "_FaceUVSpeedX", "_FaceUVSpeedY" },
-            s_OutlineUvSpeedNames = { "_OutlineUVSpeedX", "_OutlineUVSpeedY" };
+        static string[] s_FaceUvSpeedNames = { "_FaceUVSpeedX", "_FaceUVSpeedY" },
+                        s_OutlineUvSpeedNames = { "_OutlineUVSpeedX", "_OutlineUVSpeedY" };
 
         static TextCoreShaderGUISDF()
         {

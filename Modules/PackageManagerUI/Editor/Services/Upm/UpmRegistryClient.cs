@@ -39,18 +39,22 @@ namespace UnityEditor.PackageManager.UI.Internal
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
         [NonSerialized]
         private ClientProxy m_ClientProxy;
+        [NonSerialized]
+        private ApplicationProxy m_ApplicationProxy;
         public void ResolveDependencies(UpmCache upmCache,
             PackageManagerProjectSettingsProxy settingsProxy,
-            ClientProxy clientProxy)
+            ClientProxy clientProxy,
+            ApplicationProxy applicationProxy)
         {
             m_UpmCache = upmCache;
             m_SettingsProxy = settingsProxy;
             m_ClientProxy = clientProxy;
+            m_ApplicationProxy = applicationProxy;
 
-            m_GetRegistriesOperation?.ResolveDependencies(m_ClientProxy);
-            m_AddRegistryOperation?.ResolveDependencies(m_ClientProxy);
-            m_UpdateRegistryOperation?.ResolveDependencies(m_ClientProxy);
-            m_RemoveRegistryOperation?.ResolveDependencies(m_ClientProxy);
+            m_GetRegistriesOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
+            m_AddRegistryOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
+            m_UpdateRegistryOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
+            m_RemoveRegistryOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
         }
 
         public virtual void AddRegistry(string name, string url, string[] scopes)
@@ -153,7 +157,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return operation;
 
             operation = new T();
-            operation.ResolveDependencies(m_ClientProxy);
+            operation.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
             return operation;
         }
 

@@ -479,6 +479,17 @@ namespace UnityEditor
             rootVisualElement.hierarchy.Add(container);
             m_ScrollView = container.Q<ScrollView>();
 
+            // We need to disable view-data persistence on the scrollbars of the ScrollView.
+            // There are a bunch of places that assume the Inspector will always refresh
+            // fully scrolled up. Users also had this behaviour since the beginning of time.
+            // While we need m_ScrollView to have a view data key so users inside of an Editor
+            // can use view data persistence, adding a key will enable persistence of the
+            // scrollbars.
+            m_ScrollView.verticalScroller.viewDataKey = null;
+            m_ScrollView.horizontalScroller.viewDataKey = null;
+            m_ScrollView.verticalScroller.slider.viewDataKey = null;
+            m_ScrollView.horizontalScroller.slider.viewDataKey = null;
+
             var multiContainer = rootVisualElement.Q(className: s_MultiEditClassName);
             multiContainer.Query<TextElement>().ForEach((label) => label.text = L10n.Tr(label.text));
             multiContainer.RemoveFromHierarchy();
@@ -2063,6 +2074,10 @@ namespace UnityEditor
                     if (!(ed.target is ParticleSystemRenderer))
                     {
                         currentElement.ReinitCulled(newEditorsIndex);
+
+                        // We need to move forward as the current element is the culled one, so we're not really
+                        // interested in it.
+                        ++previousEditorsIndex;
                     }
                     ++newEditorsIndex;
                     continue;

@@ -8,7 +8,7 @@ using UnityEngine.Serialization;
 namespace UnityEngine.TextCore.Text
 {
     // Base class inherited by the various TextMeshPro Assets.
-    [System.Serializable]
+    [System.Serializable][ExcludeFromObjectFactory]
     public abstract class TextAsset : ScriptableObject
     {
         /// <summary>
@@ -76,6 +76,7 @@ namespace UnityEngine.TextCore.Text
 
                 return m_MaterialHashCode;
             }
+            set => m_MaterialHashCode = value;
         }
 
         // =============================================
@@ -83,15 +84,15 @@ namespace UnityEngine.TextCore.Text
         // =============================================
 
         [SerializeField]
-        protected string m_Version;
+        internal string m_Version;
 
-        protected int m_InstanceID;
+        internal int m_InstanceID;
 
-        protected int m_HashCode;
+        internal int m_HashCode;
 
         [SerializeField][FormerlySerializedAs("material")]
-        protected Material m_Material;
+        internal Material m_Material;
 
-        protected int m_MaterialHashCode;
+        internal int m_MaterialHashCode;
     }
 }

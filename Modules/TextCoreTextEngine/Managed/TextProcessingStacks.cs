@@ -241,6 +241,17 @@ namespace UnityEngine.TextCore.Text
 
 
         /// <summary>
+        /// Set stack elements to default item.
+        /// </summary>
+        /// <param name="stack">The stack of elements.</param>
+        /// <param name="item"></param>
+        internal static void SetDefault(TextProcessingStack<T>[] stack, T item)
+        {
+            for (int i = 0; i < stack.Length; i++)
+                stack[i].SetDefault(item);
+        }
+
+        /// <summary>
         /// Function to clear and reset stack to first item.
         /// </summary>
         public void Clear()

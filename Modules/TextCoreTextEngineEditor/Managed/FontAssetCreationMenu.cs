@@ -140,16 +140,32 @@ namespace UnityEditor.TextCore.Text
         [MenuItem("Assets/Create/Text/Font Asset", false, 100)]
         internal static void CreateFontAsset()
         {
-            Object target = Selection.activeObject;
+            Object[] targets = Selection.objects;
 
-            // Make sure the selection is a font file
-            if (target == null || target.GetType() != typeof(Font))
+            if (targets == null)
             {
                 Debug.LogWarning("A Font file must first be selected in order to create a Font Asset.");
                 return;
             }
 
-            Font sourceFont = (Font)target;
+            for (int i = 0; i < targets.Length; i++)
+            {
+                Object target = targets[i];
+
+                // Make sure the selection is a font file
+                if (target == null || target.GetType() != typeof(Font))
+                {
+                    Debug.LogWarning("Selected Object [" + target.name + "] is not a Font file. A Font file must be selected in order to create a Font Asset.", target);
+                    continue;
+                }
+
+                CreateFontAssetFromSelectedObject(target);
+            }
+        }
+
+        static void CreateFontAssetFromSelectedObject(Object target)
+        {
+            Font font = (Font)target;
 
             string sourceFontFilePath = AssetDatabase.GetAssetPath(target);
 
@@ -162,9 +178,9 @@ namespace UnityEditor.TextCore.Text
             FontEngine.InitializeFontEngine();
 
             // Load Font Face
-            if (FontEngine.LoadFontFace(sourceFont, 90) != FontEngineError.Success)
+            if (FontEngine.LoadFontFace(font, 90) != FontEngineError.Success)
             {
-                Debug.LogWarning("Unable to load font face for [" + sourceFont.name + "]. Make sure \"Include Font Data\" is enabled in the Font Import Settings.", sourceFont);
+                Debug.LogWarning("Unable to load font face for [" + font.name + "]. Make sure \"Include Font Data\" is enabled in the Font Import Settings.", font);
                 return;
             }
 
@@ -173,13 +189,15 @@ namespace UnityEditor.TextCore.Text
             AssetDatabase.CreateAsset(fontAsset, newAssetFilePathWithName);
 
             fontAsset.version = "1.1.0";
-
             fontAsset.faceInfo = FontEngine.GetFaceInfo();
 
             // Set font reference and GUID
+            fontAsset.sourceFontFile = font;
             fontAsset.m_SourceFontFileGUID = AssetDatabase.AssetPathToGUID(sourceFontFilePath);
-            fontAsset.m_SourceFontFile_EditorRef = sourceFont;
+            fontAsset.m_SourceFontFile_EditorRef = font;
+
             fontAsset.atlasPopulationMode = AtlasPopulationMode.Dynamic;
+            //fontAsset.clearDynamicDataOnBuild = TextSettings.clearDynamicDataOnBuild;
 
             // Default atlas resolution is 1024 x 1024.
             int atlasWidth = fontAsset.atlasWidth = 1024;

@@ -848,7 +848,7 @@ namespace UnityEngine.UIElements
                 // Draw the cursor
                 if (!isReadOnly && !isDragging)
                 {
-                    if (cursorIndex == selectionEndIndex && (computedStyle.unityFont != null || !computedStyle.unityFontDefinition.IsEmpty()))
+                    if (cursorIndex == selectionEndIndex && TextUtilities.IsFontAssigned(this))
                     {
                         cursorParams = CursorPositionStylePainterParameters.GetDefault(this, text);
                         cursorParams.text = editorEngine.text;
@@ -1046,8 +1046,7 @@ namespace UnityEngine.UIElements
                 bool overflowVisible = computedStyle.overflow == OverflowInternal.Visible;
                 style.clipping = overflowVisible ? TextClipping.Overflow : TextClipping.Clip;
 
-                if (computedStyle.unityFont != null)
-                    style.font = computedStyle.unityFont;
+                style.font = TextUtilities.GetFont(textInput);
 
                 style.fontSize = (int)computedStyle.fontSize.value;
                 style.fontStyle = computedStyle.unityFontStyleAndWeight;

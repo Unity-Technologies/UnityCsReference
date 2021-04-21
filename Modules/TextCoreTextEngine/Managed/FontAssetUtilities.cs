@@ -88,7 +88,7 @@ namespace UnityEngine.TextCore.Text
                         return character;
                     }
 
-                    if (temp.atlasPopulationMode == AtlasPopulationMode.Dynamic)
+                    if (temp.atlasPopulationMode == AtlasPopulationMode.Dynamic || temp.atlasPopulationMode == AtlasPopulationMode.DynamicOS)
                     {
                         if (temp.TryAddCharacterInternal(unicode, out character))
                         {
@@ -122,7 +122,7 @@ namespace UnityEngine.TextCore.Text
             if (sourceFontAsset.characterLookupTable.TryGetValue(unicode, out character))
                 return character;
 
-            if (sourceFontAsset.atlasPopulationMode == AtlasPopulationMode.Dynamic)
+            if (sourceFontAsset.atlasPopulationMode == AtlasPopulationMode.Dynamic || sourceFontAsset.atlasPopulationMode == AtlasPopulationMode.DynamicOS)
             {
                 if (sourceFontAsset.TryAddCharacterInternal(unicode, out character))
                     return character;
@@ -135,29 +135,29 @@ namespace UnityEngine.TextCore.Text
                 List<FontAsset> fallbackFontAssets = sourceFontAsset.fallbackFontAssetTable;
                 int fallbackCount = fallbackFontAssets.Count;
 
-                if (fallbackFontAssets != null && fallbackCount > 0)
+                if (fallbackCount == 0)
+                    return null;
+
+                for (int i = 0; i < fallbackCount; i++)
                 {
-                    for (int i = 0; i < fallbackCount; i++)
-                    {
-                        FontAsset temp = fallbackFontAssets[i];
+                    FontAsset temp = fallbackFontAssets[i];
 
-                        if (temp == null)
-                            continue;
+                    if (temp == null)
+                        continue;
 
-                        int id = temp.instanceID;
+                    int id = temp.instanceID;
 
-                        // Try adding font asset to search list. If already present skip to the next one otherwise check if it contains the requested character.
-                        if (k_SearchedAssets.Add(id) == false)
-                            continue;
+                    // Try adding font asset to search list. If already present skip to the next one otherwise check if it contains the requested character.
+                    if (k_SearchedAssets.Add(id) == false)
+                        continue;
 
-                        // Add reference to this search query
-                        sourceFontAsset.FallbackSearchQueryLookup.Add(id);
+                    // Add reference to this search query
+                    //sourceFontAsset.FallbackSearchQueryLookup.Add(id);
 
-                        character = GetCharacterFromFontAsset_Internal(unicode, temp, true, fontStyle, fontWeight, out isAlternativeTypeface);
+                    character = GetCharacterFromFontAsset_Internal(unicode, temp, true, fontStyle, fontWeight, out isAlternativeTypeface);
 
-                        if (character != null)
-                            return character;
-                    }
+                    if (character != null)
+                        return character;
                 }
             }
 
@@ -203,7 +203,7 @@ namespace UnityEngine.TextCore.Text
                 if (fontAsset == null) continue;
 
                 // Add reference to this search query
-                sourceFontAsset.FallbackSearchQueryLookup.Add(fontAsset.instanceID);
+                //sourceFontAsset.FallbackSearchQueryLookup.Add(fontAsset.instanceID);
 
                 Character character = GetCharacterFromFontAsset_Internal(unicode, fontAsset, includeFallbacks, fontStyle, fontWeight, out isAlternativeTypeface);
 

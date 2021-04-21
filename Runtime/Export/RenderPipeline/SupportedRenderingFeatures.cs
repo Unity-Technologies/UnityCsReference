@@ -67,6 +67,8 @@ namespace UnityEngine.Rendering
         public bool overridesMaximumLODLevel { get; set; } = false;
         public bool rendererProbes { get; set; } = true;
         public bool particleSystemInstancing { get; set; } = true;
+        public bool autoAmbientProbeBaking { get; set; } = true;
+        public bool autoDefaultReflectionProbeBaking { get; set; } = true;
 
         // if this is overridden, please provide a message telling the user where to find it, otherwise it will be an empty string (to prevent confusion)
         public bool overridesShadowmask { get; set; } = false;
@@ -231,6 +233,20 @@ namespace UnityEngine.Rendering
         {
             var isSupported = (bool*)isSupportedPtr;
             *isSupported = active.rendersUIOverlay;
+        }
+
+        [RequiredByNativeCode]
+        internal static unsafe void IsAutoAmbientProbeBakingSupported(IntPtr isSupportedPtr)
+        {
+            var isSupported = (bool*)isSupportedPtr;
+            *isSupported = active.autoAmbientProbeBaking;
+        }
+
+        [RequiredByNativeCode]
+        internal static unsafe void IsAutoDefaultReflectionProbeBakingSupported(IntPtr isSupportedPtr)
+        {
+            var isSupported = (bool*)isSupportedPtr;
+            *isSupported = active.autoDefaultReflectionProbeBaking;
         }
 
         internal static unsafe int FallbackLightmapper()

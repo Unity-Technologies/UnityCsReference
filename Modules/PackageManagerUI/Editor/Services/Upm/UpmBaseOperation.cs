@@ -64,9 +64,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [NonSerialized]
         protected ClientProxy m_ClientProxy;
-        public void ResolveDependencies(ClientProxy clientProxy)
+        [NonSerialized]
+        protected ApplicationProxy m_ApplicationProxy;
+        public void ResolveDependencies(ClientProxy clientProxy, ApplicationProxy applicationProxy)
         {
             m_ClientProxy = clientProxy;
+            m_ApplicationProxy = applicationProxy;
         }
     }
 
@@ -83,7 +86,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         protected bool m_IsCompleted;
         public override bool isInProgress { get { return m_Request != null && m_Request.Id != 0 && !m_IsCompleted; } }
-
 
         protected abstract T CreateRequest();
 
@@ -106,8 +108,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             error = null;
 
-            var applicationProxy = ServicesContainer.instance.Resolve<ApplicationProxy>();
-            if (!applicationProxy.isUpmRunning)
+            if (!m_ApplicationProxy.isUpmRunning)
             {
                 EditorApplication.delayCall += () =>
                 {

@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using System.Collections.Generic;
 using UnityEditor;
+using UnityEditor.UIElements.StyleSheets;
 using System;
 using System.IO;
 
@@ -19,7 +20,7 @@ namespace Unity.UI.Builder
             Default,
             Dark,
             Light,
-            Runtime,
+            Runtime, // obsolete but leave it for compatibility
             Custom
         }
 
@@ -274,6 +275,8 @@ namespace Unity.UI.Builder
 
             return result;
         }
+
+        public void RestoreAssetsFromBackup() => activeOpenUXMLFile.RestoreAssetsFromBackup();
 
         public bool CheckForUnsavedChanges(bool assetModifiedExternally = false)
             => activeOpenUXMLFile.CheckForUnsavedChanges(assetModifiedExternally);

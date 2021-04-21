@@ -95,16 +95,17 @@ namespace UnityEditor
             object[] args = { importedAssets, deletedAssets, movedAssets, movedFromPathAssets };
             foreach (var assetPostprocessorClass in GetCachedAssetPostprocessorClasses())
             {
-                MethodInfo method = assetPostprocessorClass.GetMethod("OnPostprocessAllAssets", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                const string methodName = "OnPostprocessAllAssets";
+                MethodInfo method = assetPostprocessorClass.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
                 if (method != null)
                 {
-                    InvokeMethod(method, args);
+                    using (new EditorPerformanceMarker($"{assetPostprocessorClass.Name}.{methodName}", assetPostprocessorClass).Auto())
+                        InvokeMethod(method, args);
                 }
             }
 
-            Profiler.BeginSample("SyncVS.PostprocessSyncProject");
-            CodeEditorProjectSync.PostprocessSyncProject(importedAssets, addedAssets, deletedAssets, movedAssets, movedFromPathAssets);
-            Profiler.EndSample();
+            using (new EditorPerformanceMarker("SyncVS.PostprocessSyncProject").Auto())
+                CodeEditorProjectSync.PostprocessSyncProject(importedAssets, addedAssets, deletedAssets, movedAssets, movedFromPathAssets);
         }
 
         [RequiredByNativeCode]
@@ -647,7 +648,7 @@ namespace UnityEditor
         static object InvokeMethod(MethodInfo method, object[] args)
         {
             object res = null;
-            using (new EditorPerformanceTracker(method.DeclaringType.Name + "." + method.Name))
+            using (new EditorPerformanceMarker(method.DeclaringType.Name + "." + method.Name, method.DeclaringType).Auto())
             {
                 res = method.Invoke(null, args);
             }
@@ -657,10 +658,11 @@ namespace UnityEditor
 
         static bool InvokeMethodIfAvailable(object target, string methodName, object[] args)
         {
-            MethodInfo method = target.GetType().GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            var type = target.GetType();
+            MethodInfo method = type.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
             if (method != null)
             {
-                using (new EditorPerformanceTracker(target.GetType().Name + "." + methodName))
+                using (new EditorPerformanceMarker(type.Name + "." + methodName, type).Auto())
                 {
                     method.Invoke(target, args);
                 }
@@ -672,10 +674,11 @@ namespace UnityEditor
 
         static bool InvokeMethodIfAvailable<T>(object target, string methodName, object[] args, ref T returnedObject) where T : class
         {
-            MethodInfo method = target.GetType().GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            var type = target.GetType();
+            MethodInfo method = type.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
             if (method != null)
             {
-                using (new EditorPerformanceTracker(target.GetType().Name + "." + methodName))
+                using (new EditorPerformanceMarker(type.Name + "." + methodName, type).Auto())
                 {
                     returnedObject = method.Invoke(target, args) as T;
                 }

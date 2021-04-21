@@ -112,6 +112,13 @@ namespace UnityEngine
                 throw new ArgumentException("Stride must be a multiple of 4 unless the buffer is only used as a vertex buffer and/or index buffer ", "stride");
             }
 
+            var bufferSize = (long)count * stride;
+            var maxBufferSize = SystemInfo.maxGraphicsBufferSize;
+            if (bufferSize > maxBufferSize)
+            {
+                throw new ArgumentException($"The total size of the graphics buffer ({bufferSize} bytes) exceeds the maximum buffer size. Maximum supported buffer size: {maxBufferSize} bytes.");
+            }
+
             m_Ptr = InitBuffer(target, count, stride);
         }
 

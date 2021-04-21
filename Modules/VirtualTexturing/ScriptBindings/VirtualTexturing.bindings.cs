@@ -129,13 +129,16 @@ namespace UnityEngine.Rendering
 
             public void UpdateSize(int width, int height)
             {
-                // When in the editor, it is possible that we have both the game and editor view rendering at the same time
-                // When they are different resolutions, we rescale the resolver twice each frame. This is obviously not good.
-                // As the SRP seems to be shared between editor/game mode, just use 'worst' case resolution
-                if (CurrentWidth < width || CurrentHeight < height)
+                if (CurrentWidth != width || CurrentHeight != height)
                 {
-                    CurrentWidth = CurrentWidth < width ? width : CurrentWidth;
-                    CurrentHeight = CurrentHeight < height ? height : CurrentHeight;
+                    if (width <= 0 || height <= 0)
+                    {
+                        throw new ArgumentException($"Zero sized dimensions are invalid (width: {width}, height: {height}.");
+                    }
+
+                    CurrentWidth = width;
+                    CurrentHeight = height;
+
                     Flush_Internal();
                     Init_Internal((int)CurrentWidth, (int)CurrentHeight);
                 }

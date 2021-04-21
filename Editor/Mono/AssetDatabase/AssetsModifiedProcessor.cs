@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEditor.Profiling;
 
 namespace UnityEditor.Experimental
 {
@@ -30,7 +31,11 @@ namespace UnityEditor.Experimental
 
         internal void Internal_OnAssetsModified(string[] changedAssets, string[] addedAssets, string[] deletedAssets, AssetMoveInfo[] movedAssets)
         {
-            OnAssetsModified(changedAssets, addedAssets, deletedAssets, movedAssets);
+            var type = GetType();
+            using (new EditorPerformanceMarker($"{type.Name}.{nameof(OnAssetsModified)}", type).Auto())
+            {
+                OnAssetsModified(changedAssets, addedAssets, deletedAssets, movedAssets);
+            }
         }
     }
 }

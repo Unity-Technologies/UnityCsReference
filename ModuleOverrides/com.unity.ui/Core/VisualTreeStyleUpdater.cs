@@ -93,7 +93,6 @@ namespace UnityEngine.UIElements
                 return;
 
             m_LastVersion = m_Version;
-
             ApplyStyles();
 
             m_StyleContextHierarchyTraversal.Clear();
@@ -104,6 +103,9 @@ namespace UnityEngine.UIElements
                 m_StyleContextHierarchyTraversal.AddChangedElement(ve, VersionChangeType.StyleSheet);
             }
             m_ApplyStyleUpdateList.Clear();
+
+            // Visibility of the focused element may have changed, reevaluate the focus.
+            visualTree.focusController.ReevaluateFocus();
         }
 
         private void ApplyStyles()

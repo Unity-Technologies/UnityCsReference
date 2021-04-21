@@ -66,7 +66,7 @@ namespace UnityEditor
         internal static extern void Internal_SetCurrentCamera(Camera cam);
 
         [FreeFunction("Internal_SetSceneViewColors")]
-        internal static extern void SetSceneViewColors(Color wire, Color wireOverlay, Color selectedOutline, Color selectedChildrenOutline, Color selectedWire);
+        internal static extern void SetSceneViewColors(Color wire, Color wireOverlay, Color selectedOutline, Color selectedChildrenOutline, Color selectedWire, Color pingedMaterialOutline);
 
         [FreeFunction("Internal_SetSceneViewModeGIContributorsReceiversColors")]
         internal static extern void SetSceneViewModeGIContributorsReceiversColors(Color noContributeGI, Color receiveGILightmaps, Color receiveGILightProbesColor);
@@ -107,6 +107,12 @@ namespace UnityEditor
 
         [FreeFunction("Internal_DrawCameraFade")]
         internal static extern void DrawCameraFade([NotNull("NullExceptionObject")] Camera camera, float fade);
+
+        [FreeFunction("Internal_SetOutlineAlpha")]
+        internal static extern void SetOutlineAlpha([NotNull("NullExceptionObject")] Camera camera, float alpha);
+
+        [FreeFunction("Internal_SetPingedMaterialInstanceID")]
+        internal static extern void SetPingedMaterialInstanceID([NotNull("NullExceptionObject")] Camera camera, int instanceID);
 
         [FreeFunction]
         static extern Vector3[] Internal_MakeBezierPoints(Vector3 startPosition, Vector3 endPosition, Vector3 startTangent, Vector3 endTangent, int division);

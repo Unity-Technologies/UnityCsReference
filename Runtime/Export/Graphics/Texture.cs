@@ -466,7 +466,6 @@ namespace UnityEngine
             }
             else if (GraphicsFormatUtility.IsCompressedTextureFormat(format))
             {
-                Debug.LogWarning(String.Format("'{0}' is not supported on this platform. Decompressing texture. Use 'SystemInfo.SupportsTextureFormat' C# API to check format support.", format.ToString()), this);
                 return true;
             }
             else
@@ -479,6 +478,10 @@ namespace UnityEngine
         internal bool ValidateFormat(GraphicsFormat format, FormatUsage usage)
         {
             if (SystemInfo.IsFormatSupported(format, usage))
+            {
+                return true;
+            }
+            else if (GraphicsFormatUtility.IsCompressedFormat(format))
             {
                 return true;
             }

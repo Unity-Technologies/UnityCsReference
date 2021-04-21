@@ -346,6 +346,11 @@ namespace UnityEditor
 
         internal static ulong GetPerformanceTrackerHandleForEvent(string scope, Delegate d)
         {
+            var declaringType = d.Method.DeclaringType;
+            if (declaringType != null)
+            {
+                return EditorPerformanceTracker.GetOrCreateTrackerHandle(GetPerformanceTrackerName(scope, d), declaringType);
+            }
             return EditorPerformanceTracker.GetOrCreateTrackerHandle(GetPerformanceTrackerName(scope, d));
         }
     }

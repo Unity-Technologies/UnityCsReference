@@ -573,7 +573,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         static void UpdateTextCoreSettings(RenderChain renderChain, VisualElement ve, uint dirtyID, ref ChainBuilderStats stats)
         {
-            if (ve == null || ve.computedStyle.unityFontDefinition.IsEmpty())
+            if (ve == null || !TextUtilities.IsFontAssigned(ve))
                 return;
 
             bool allocatesID = RenderChainVEData.AllocatesID(ve.renderChainData.textCoreSettingsID);

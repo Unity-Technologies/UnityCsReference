@@ -19,53 +19,74 @@ namespace UnityEditor
         public delegate void ImportPackageFailedCallback(string packageName, string errorMessage);
 
         // Delegate to be called when package import begins
-        public static event ImportPackageCallback importPackageStarted;
+        public static event ImportPackageCallback importPackageStarted
+        {
+            add => m_importPackageStartedEvent.Add(value);
+            remove => m_importPackageStartedEvent.Remove(value);
+        }
+        private static EventWithPerformanceTracker<ImportPackageCallback> m_importPackageStartedEvent = new EventWithPerformanceTracker<ImportPackageCallback>($"{nameof(AssetDatabase)}.{nameof(importPackageStarted)}");
 
         // Delegate to be called when package import completes
-        public static event ImportPackageCallback importPackageCompleted;
+        public static event ImportPackageCallback importPackageCompleted
+        {
+            add => m_importPackageCompletedEvent.Add(value);
+            remove => m_importPackageCompletedEvent.Remove(value);
+        }
+        private static EventWithPerformanceTracker<ImportPackageCallback> m_importPackageCompletedEvent = new EventWithPerformanceTracker<ImportPackageCallback>($"{nameof(AssetDatabase)}.{nameof(importPackageCompleted)}");
 
         // Called when package import completes, listing the selected items
         public static Action<string[]> onImportPackageItemsCompleted;
+        private static DelegateWithPerformanceTracker<Action<string[]>> m_onImportPackageItemsCompleted = new DelegateWithPerformanceTracker<Action<string[]>>($"{nameof(AssetDatabase)}.{nameof(onImportPackageItemsCompleted)}");
 
         // Delegate to be called when package import is cancelled
-        public static event ImportPackageCallback importPackageCancelled;
+        public static event ImportPackageCallback importPackageCancelled
+        {
+            add => m_importPackageCancelledEvent.Add(value);
+            remove => m_importPackageCancelledEvent.Remove(value);
+        }
+        private static EventWithPerformanceTracker<ImportPackageCallback> m_importPackageCancelledEvent = new EventWithPerformanceTracker<ImportPackageCallback>($"{nameof(AssetDatabase)}.{nameof(importPackageCancelled)}");
 
         // Delegate to be called when package import fails
-        public static event ImportPackageFailedCallback importPackageFailed;
+        public static event ImportPackageFailedCallback importPackageFailed
+        {
+            add => m_importPackageFailedEvent.Add(value);
+            remove => m_importPackageFailedEvent.Remove(value);
+        }
+        private static EventWithPerformanceTracker<ImportPackageFailedCallback> m_importPackageFailedEvent = new EventWithPerformanceTracker<ImportPackageFailedCallback>($"{nameof(AssetDatabase)}.{nameof(importPackageFailed)}");
 
         [RequiredByNativeCode]
         private static void Internal_CallImportPackageStarted(string packageName)
         {
-            if (importPackageStarted != null)
-                importPackageStarted(packageName);
+            foreach (var evt in m_importPackageStartedEvent)
+                evt(packageName);
         }
 
         [RequiredByNativeCode]
         private static void Internal_CallImportPackageCompleted(string packageName)
         {
-            if (importPackageCompleted != null)
-                importPackageCompleted(packageName);
+            foreach (var evt in m_importPackageCompletedEvent)
+                evt(packageName);
         }
 
         [RequiredByNativeCode]
         private static void Internal_CallOnImportPackageItemsCompleted(string[] items)
         {
-            if (onImportPackageItemsCompleted != null)
-                onImportPackageItemsCompleted(items);
+            foreach (var evt in m_onImportPackageItemsCompleted.UpdateAndInvoke(onImportPackageItemsCompleted))
+                evt(items);
         }
 
         [RequiredByNativeCode]
         private static void Internal_CallImportPackageCancelled(string packageName)
         {
-            if (importPackageCancelled != null)
-                importPackageCancelled(packageName);
+            foreach (var evt in m_importPackageCancelledEvent)
+                evt(packageName);
         }
 
         [RequiredByNativeCode]
         private static void Internal_CallImportPackageFailed(string packageName, string errorMessage)
         {
-            if (importPackageFailed != null)
-                importPackageFailed(packageName, errorMessage);
+            foreach (var evt in m_importPackageFailedEvent)
+                evt(packageName, errorMessage);
         }
 
         [RequiredByNativeCode]

@@ -457,6 +457,14 @@ namespace UnityEditor.UIElements
 
         private void RecreateWindow()
         {
+            // Validate that recreating the window will work, otherwise users end up with a broken window.
+            if (MonoScript.FromScriptableObject(editorWindowModel.window) == null)
+            {
+                Debug.LogError("Window serialization will fail for " + editorWindowModel.window.GetType() +
+                    ", will not reload it. Make sure that there are no compile errors and that the file name and class name match.");
+                return;
+            }
+
             if (editorWindowModel.window.rootVisualElement.panel is BaseVisualElementPanel panel)
             {
                 var view = panel.ownerObject as HostView;

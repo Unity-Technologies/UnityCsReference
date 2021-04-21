@@ -60,6 +60,7 @@ namespace UnityEditor
         {
             private const string k_UxmlExtension = ".uxml";
             private const string k_UssExtension = ".uss";
+            private const string k_UssExtensionGenerated = ".uss.asset"; // for editor_resources project
 
             static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets,
                 string[] movedFromAssetPaths)
@@ -67,7 +68,7 @@ namespace UnityEditor
                 // Early exit: no imported or deleted assets.
                 var uxmlImportedAssets = new HashSet<string>(importedAssets.Where(x => MatchesFileExtension(x, k_UxmlExtension)));
                 var uxmlDeletedAssets = new HashSet<string>(deletedAssets.Where(x => MatchesFileExtension(x, k_UxmlExtension)));
-                var ussImportedAssets = new HashSet<string>(importedAssets.Where(x => MatchesFileExtension(x, k_UssExtension)));
+                var ussImportedAssets = new HashSet<string>(importedAssets.Where(x => MatchesFileExtension(x, k_UssExtension) || MatchesFileExtension(x, k_UssExtensionGenerated)));
                 var ussDeletedAssets = new HashSet<string>(deletedAssets.Where(x => MatchesFileExtension(x, k_UssExtension)));
 
                 if (uxmlImportedAssets.Count == 0 && uxmlDeletedAssets.Count == 0 &&

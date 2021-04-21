@@ -394,7 +394,17 @@ namespace Unity.UI.Builder
         {
             var templateName = vta.GetTemplateNameFromPath(path);
             if (!vta.TemplateExists(templateName))
-                vta.RegisterTemplate(templateName, path);
+            {
+                var resolvedAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(path);
+                if (resolvedAsset)
+                {
+                    vta.RegisterTemplate(templateName, resolvedAsset);
+                }
+                else
+                {
+                    vta.RegisterTemplate(templateName, path);
+                }
+            }
 
             var templateAsset = new TemplateAsset(templateName, BuilderConstants.UxmlInstanceTypeName);
             VisualTreeAssetUtilities.InitializeElement(templateAsset);
@@ -538,8 +548,7 @@ namespace Unity.UI.Builder
 
                 if (!vta.TemplateExists(vea.templateAlias))
                 {
-                    var path = other.GetPathFromTemplateName(vea.templateAlias);
-                    vta.RegisterTemplate(vea.templateAlias, path);
+                    vta.RegisterTemplate(vea.templateAlias, other.ResolveTemplate(vea.templateAlias));
                 }
 
                 vta.templateAssets.Add(vea);

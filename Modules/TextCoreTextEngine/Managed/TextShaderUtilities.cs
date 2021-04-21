@@ -226,11 +226,11 @@ namespace UnityEngine.TextCore.Text
                 ID_ScaleRatio_C = Shader.PropertyToID("_ScaleRatioC");
 
                 // Set internal shader references
-                if (k_ShaderRef_MobileSDF == null)
-                    k_ShaderRef_MobileSDF = Shader.Find("Text/Mobile/Distance Field");
+                //if (k_ShaderRef_MobileSDF == null)
+                //    k_ShaderRef_MobileSDF = Shader.Find("Text/Mobile/Distance Field");
 
-                if (k_ShaderRef_MobileBitmap == null)
-                    k_ShaderRef_MobileBitmap = Shader.Find("Text/Bitmap");
+                //if (k_ShaderRef_MobileBitmap == null)
+                //    k_ShaderRef_MobileBitmap = Shader.Find("Text/Bitmap");
             }
         }
 

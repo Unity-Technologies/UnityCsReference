@@ -5,7 +5,7 @@ using UnityEngine.UIElements;
 using UnityEngine;
 using System.IO;
 using System.Linq;
-using UnityEditor;
+using UnityEditor.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
 {
@@ -144,14 +144,8 @@ namespace Unity.UI.Builder
                             if (index >= 0)
                             {
                                 var usingEntry = usings[index];
-                                string path = usingEntry.path;
 
-                                // If the path is empty then get the path from the asset
-                                if (string.IsNullOrEmpty(path) && usingEntry.asset != null)
-                                {
-                                    path = AssetDatabase.GetAssetPath(usingEntry.asset);
-                                }
-                                path = GetProcessedPathForSrcAttribute(vtaPath, path);
+                                var path = GetProcessedPathForSrcAttribute(usingEntry.asset, vtaPath, usingEntry.path);
                                 AppendElementAttribute("src", path, stringBuilder);
                             }
                         }
@@ -183,8 +177,11 @@ namespace Unity.UI.Builder
             }
         }
 
-        public static string GetProcessedPathForSrcAttribute(string vtaPath, string assetPath)
+        public static string GetProcessedPathForSrcAttribute(Object asset, string vtaPath, string assetPath)
         {
+            if (asset)
+                return URIHelpers.MakeAssetUri(asset);
+            
             if (string.IsNullOrEmpty(assetPath))
                 return assetPath;
 
@@ -211,7 +208,7 @@ namespace Unity.UI.Builder
 
         static void ProcessStyleSheetPath(
             string vtaPath,
-            string path, StringBuilder stringBuilder, int depth,
+            StyleSheet styleSheet, string styleSheetPath, StringBuilder stringBuilder, int depth,
             ref bool newLineAdded, ref bool hasChildTags)
         {
             if (!newLineAdded)
@@ -224,8 +221,8 @@ namespace Unity.UI.Builder
             Indent(stringBuilder, depth + 1);
             stringBuilder.Append("<Style");
             {
-                path = GetProcessedPathForSrcAttribute(vtaPath, path);
-                AppendElementAttribute("src", path, stringBuilder);
+                styleSheetPath = GetProcessedPathForSrcAttribute(styleSheet, vtaPath, styleSheetPath);
+                AppendElementAttribute("src", styleSheetPath, stringBuilder);
             }
             stringBuilder.Append(" />");
             stringBuilder.Append(BuilderConstants.newlineCharFromEditorSettings);
@@ -292,17 +289,23 @@ namespace Unity.UI.Builder
             bool hasChildTags = false;
 
             // Add special children.
-            // TODO: What's the difference between these two ifdef options?
+            var styleSheets = root.GetStyleSheets();
             var styleSheetPaths = root.GetStyleSheetPaths();
+            
             if (styleSheetPaths != null && styleSheetPaths.Count > 0)
             {
+                Assert.IsNotNull(styleSheets);
+                Assert.AreEqual(styleSheetPaths.Count, styleSheets.Count);
+                
                 bool newLineAdded = false;
 
-                foreach (var path in styleSheetPaths)
+                for (var i = 0; i < styleSheetPaths.Count; ++i)
                 {
+                    var styleSheet = styleSheets[i];
+                    var styleSheetPath = styleSheetPaths[i];
                     ProcessStyleSheetPath(
                         vtaPath,
-                        path, stringBuilder, depth,
+                        styleSheet, styleSheetPath, stringBuilder, depth,
                         ref newLineAdded, ref hasChildTags);
                 }
             }
@@ -421,16 +424,23 @@ namespace Unity.UI.Builder
             var uxmlRootAsset = rootAssets[0];
 
             bool tempHasChildTags = false;
+            var styleSheets = uxmlRootAsset.GetStyleSheets();
             var styleSheetPaths = uxmlRootAsset.GetStyleSheetPaths();
+            
             if (styleSheetPaths != null && styleSheetPaths.Count > 0)
             {
+                Assert.IsNotNull(styleSheets);
+                Assert.AreEqual(styleSheetPaths.Count, styleSheets.Count);
+                
                 bool newLineAdded = true;
 
-                foreach (var path in styleSheetPaths)
+                for (var i = 0; i < styleSheetPaths.Count; ++i)
                 {
+                    var styleSheet = styleSheets[i];
+                    var styleSheetPath = styleSheetPaths[i];
                     ProcessStyleSheetPath(
                         vtaPath,
-                        path, stringBuilder, 0,
+                        styleSheet, styleSheetPath, stringBuilder, 0,
                         ref newLineAdded, ref tempHasChildTags);
                 }
             }

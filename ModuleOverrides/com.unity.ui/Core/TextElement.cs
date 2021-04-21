@@ -91,7 +91,7 @@ namespace UnityEngine.UIElements
         {
             if (evt.eventTypeId == AttachToPanelEvent.TypeId() && evt is AttachToPanelEvent attachEvent)
             {
-                textHandle = panel.contextType == ContextType.Editor ? TextNativeHandle.New() : TextCoreHandle.New();
+                textHandle = TextCoreHandle.New();
                 (attachEvent.destinationPanel as BaseVisualElementPanel)?.OnTextElementAdded(this);
             }
             else if (evt.eventTypeId == DetachFromPanelEvent.TypeId() && evt is DetachFromPanelEvent detachEvent)

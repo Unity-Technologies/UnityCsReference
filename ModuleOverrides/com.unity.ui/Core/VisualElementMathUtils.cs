@@ -63,14 +63,24 @@ namespace UnityEngine.UIElements
             var transformedBL = matrix.MultiplyPoint3x4(bottomLeft);
 
             Vector2 min = new Vector2(
-                Mathf.Min(transformedTL.x, transformedBR.x, transformedRL.x, transformedBL.x),
-                Mathf.Min(transformedTL.y, transformedBR.y, transformedRL.y, transformedBL.y));
+                Min4(transformedTL.x, transformedBR.x, transformedRL.x, transformedBL.x),
+                Min4(transformedTL.y, transformedBR.y, transformedRL.y, transformedBL.y));
 
             Vector2 max = new Vector2(
-                Mathf.Max(transformedTL.x, transformedBR.x, transformedRL.x, transformedBL.x),
-                Mathf.Max(transformedTL.y, transformedBR.y, transformedRL.y, transformedBL.y));
+                Max4(transformedTL.x, transformedBR.x, transformedRL.x, transformedBL.x),
+                Max4(transformedTL.y, transformedBR.y, transformedRL.y, transformedBL.y));
 
             return new Rect(min.x, min.y, max.x - min.x, max.y - min.y);
+        }
+
+        private static float Min4(float a, float b, float c, float d)
+        {
+            return Mathf.Min(a, Mathf.Min(b, Mathf.Min(c, d)));
+        }
+
+        private static float Max4(float a, float b, float c, float d)
+        {
+            return Mathf.Max(a, Mathf.Max(b, Mathf.Max(c, d)));
         }
 
         internal static void TransformAlignedRect(ref Matrix4x4 matrix, ref Rect rect)

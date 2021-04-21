@@ -79,23 +79,27 @@ namespace UnityEditor.PackageManager.UI.Internal
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
         [NonSerialized]
         private ClientProxy m_ClientProxy;
+        [NonSerialized]
+        private ApplicationProxy m_ApplicationProxy;
         public void ResolveDependencies(UpmCache upmCache,
             IOProxy IOProxy,
             PackageManagerProjectSettingsProxy settingsProxy,
-            ClientProxy clientProxy)
+            ClientProxy clientProxy,
+            ApplicationProxy applicationProxy)
         {
             m_UpmCache = upmCache;
             m_IOProxy = IOProxy;
             m_SettingsProxy = settingsProxy;
             m_ClientProxy = clientProxy;
+            m_ApplicationProxy = applicationProxy;
 
-            m_SearchOperation?.ResolveDependencies(m_ClientProxy);
-            m_SearchOfflineOperation?.ResolveDependencies(m_ClientProxy);
-            m_ListOperation?.ResolveDependencies(m_ClientProxy);
-            m_ListOfflineOperation?.ResolveDependencies(m_ClientProxy);
-            m_AddOperation?.ResolveDependencies(m_ClientProxy);
-            m_RemoveOperation?.ResolveDependencies(m_ClientProxy);
-            m_EmbedOperation?.ResolveDependencies(m_ClientProxy);
+            m_SearchOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
+            m_SearchOfflineOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
+            m_ListOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
+            m_ListOfflineOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
+            m_AddOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
+            m_RemoveOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
+            m_EmbedOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
         }
 
         public virtual bool IsAnyExperimentalPackagesInUse()
@@ -335,7 +339,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (m_ExtraFetchOperations.ContainsKey(packageIdOrName))
                 return null;
             var operation = new UpmSearchOperation();
-            operation.ResolveDependencies(m_ClientProxy);
+            operation.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
             operation.Search(packageIdOrName, productId);
             operation.onProcessResult += (requst) => OnProcessExtraFetchResult(requst, productId);
             operation.onOperationError += (op, error) => OnProcessExtraFetchError(error, productId);
@@ -685,7 +689,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return operation;
 
             operation = new T();
-            operation.ResolveDependencies(m_ClientProxy);
+            operation.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
             return operation;
         }
     }

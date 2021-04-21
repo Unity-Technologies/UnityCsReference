@@ -6949,7 +6949,7 @@ namespace UnityEditor
                         NumberFieldValue val = new NumberFieldValue(property.doubleValue);
 
                         // Necessary to check for float type to get correct string formatting for float and double.
-                        bool isFloat = property.type == "float";
+                        bool isFloat = property.isTypeFloat;
                         if (isFloat)
                             FloatField(position, label, ref val);
                         else

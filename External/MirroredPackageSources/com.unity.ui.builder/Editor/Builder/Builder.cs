@@ -86,6 +86,7 @@ namespace Unity.UI.Builder
         {
             var root = rootVisualElement;
             titleContent = GetLocalizedTitleContent();
+            saveChangesMessage = BuilderConstants.SaveDialogSaveChangesPromptMessage;
 
             // Load assets.
             var builderTemplate = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(BuilderConstants.UIBuilderPackagePath + "/Builder.uxml");
@@ -198,6 +199,28 @@ namespace Unity.UI.Builder
         public override bool NewDocument(bool checkForUnsavedChanges = true, bool unloadAllSubdocuments = true)
         {
             return m_Toolbar.NewDocument(checkForUnsavedChanges, unloadAllSubdocuments);
+        }
+        
+        public override void SaveChanges()
+        {
+            m_Toolbar.SaveDocument(false);
+
+            if (!document.hasUnsavedChanges)
+                base.SaveChanges();
+        }
+
+        public override void DiscardChanges()
+        {
+            // Restore UXML and USS assets from backup
+            document.RestoreAssetsFromBackup();
+
+            // If the asset is not saved yet then reset to blank document
+            if (string.IsNullOrEmpty(document.uxmlFileName))
+            {
+                document.NewDocument(m_Viewport.documentRootElement);
+            }
+
+            base.DiscardChanges();
         }
 
         protected override void OnEnable()

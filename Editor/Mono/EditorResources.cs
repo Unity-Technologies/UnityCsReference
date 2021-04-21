@@ -52,6 +52,7 @@ namespace UnityEditor.Experimental
         public const string k_Inter = "Inter";
         public const string k_LucidaGrande = "Lucida Grande";
         public const string k_Verdana = "Verdana";
+        public const string k_SystemNormal = "System Normal";
 
         private Dictionary<Style, FontData> m_Fonts = new Dictionary<Style, FontData>();
 
@@ -292,9 +293,19 @@ namespace UnityEditor.Experimental
                 if (!EditorApplication.isBuildingAnyResources)
                 {
                     paths = GetDefaultStyleCatalogPaths();
-                    foreach (var editorUssPath in AssetDatabase.FindAssets("t:StyleSheet")
-                             .Select(AssetDatabase.GUIDToAssetPath).Where(IsEditorStyleSheet))
-                        paths.Add(editorUssPath);
+
+                    foreach (var editorUssPath in AssetDatabase.GetAllAssetPaths().Where(IsEditorStyleSheet))
+                    {
+                        var artifactKey = new ArtifactKey(new GUID(AssetDatabase.AssetPathToGUID(editorUssPath)));
+                        var artifactID = AssetDatabaseExperimental.LookupArtifact(artifactKey);
+
+                        //Only add it to the list of paths it if has been imported, since later on
+                        //the asset will be loaded, and if not imported it will fail.
+                        if (artifactID.isValid)
+                        {
+                            paths.Add(editorUssPath);
+                        }
+                    }
 
                     var forceRebuild = s_RefreshGlobalStyleCatalog;
                     s_RefreshGlobalStyleCatalog = false;

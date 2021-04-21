@@ -7,6 +7,7 @@ using UnityEditor;
 using Object = UnityEngine.Object;
 using System.Collections;
 using System.Collections.Generic;
+using System;
 
 // NOTE:
 // This file should only contain internal functions of the EditorGUI class
@@ -120,19 +121,52 @@ namespace UnityEditor
             EditorUtility.ForceRebuildInspectors();
         }
 
-        internal static void ApplyPrefabAddedGameObject(object userData)
+        internal static void ApplyPrefabAddedGameObjects(object userData)
         {
-            ObjectInstanceAndSourcePathInfo info = (ObjectInstanceAndSourcePathInfo)userData;
-            if (!PrefabUtility.PromptAndCheckoutPrefabIfNeeded(info.assetPath, PrefabUtility.SaveVerb.Apply))
+            ObjectInstanceAndSourcePathInfo[] infos = (ObjectInstanceAndSourcePathInfo[])userData;
+
+            GameObject[] gameObjects = new GameObject[infos.Length];
+            for (int i = 0; i < infos.Length; i++)
+            {
+                ObjectInstanceAndSourcePathInfo info = infos[i];
+                gameObjects[i] = info.instanceObject as GameObject;
+            }
+
+            if (!PrefabUtility.HasSameParent(gameObjects))
+                throw new ArgumentException(nameof(gameObjects), "ApplyPrefabAddedGameObjects requires that GameObjects share the same parent.");
+
+            if (!HasSameAssetPath(infos))
+                throw new ArgumentException(nameof(infos), "ApplyPrefabAddedGameObjects requires that GameObjects share the same parent asset path.");
+
+            if (!PrefabUtility.PromptAndCheckoutPrefabIfNeeded(infos[0].assetPath, PrefabUtility.SaveVerb.Apply))
                 return;
-            PrefabUtility.ApplyAddedGameObject((GameObject)info.instanceObject, info.assetPath, InteractionMode.UserAction);
+
+            PrefabUtility.ApplyAddedGameObjects(gameObjects, infos[0].assetPath, InteractionMode.UserAction);
             EditorUtility.ForceRebuildInspectors();
         }
 
-        internal static void RevertPrefabAddedGameObject(object userData)
+        internal static bool HasSameAssetPath(ObjectInstanceAndSourcePathInfo[] infos)
         {
-            GameObject obj = (GameObject)userData;
-            PrefabUtility.RevertAddedGameObject(obj, InteractionMode.UserAction);
+            if (infos == null || infos.Length == 0)
+                throw new ArgumentException(nameof(infos), "Array is invalid.");
+
+            string assetPath = infos[0].assetPath;
+            for (int i = 1; i < infos.Length; i++)
+            {
+                if (assetPath != infos[i].assetPath)
+                    return false;
+            }
+
+            return true;
+        }
+
+        internal static void RevertPrefabAddedGameObjects(object userData)
+        {
+            GameObject[] gameObjects = (GameObject[])userData;
+
+            foreach (GameObject go in gameObjects)
+                PrefabUtility.RevertAddedGameObject(go, InteractionMode.UserAction);
+
             EditorUtility.ForceRebuildInspectors();
         }
 

@@ -663,7 +663,7 @@ namespace UnityEngine.Events
         private readonly List<BaseInvokableCall> m_PersistentCalls = new List<BaseInvokableCall>();
         private readonly List<BaseInvokableCall> m_RuntimeCalls = new List<BaseInvokableCall>();
 
-        private readonly List<BaseInvokableCall> m_ExecutingCalls = new List<BaseInvokableCall>();
+        private List<BaseInvokableCall> m_ExecutingCalls = new List<BaseInvokableCall>();
 
         private bool m_NeedsUpdate = true;
 
@@ -693,19 +693,31 @@ namespace UnityEngine.Events
                     toRemove.Add(m_RuntimeCalls[index]);
             }
             m_RuntimeCalls.RemoveAll(toRemove.Contains);
-            m_NeedsUpdate = true;
+
+            // removals are done synchronously to avoid leaks
+            var newExecutingCalls = new List<BaseInvokableCall>(m_PersistentCalls.Count + m_RuntimeCalls.Count);
+            newExecutingCalls.AddRange(m_PersistentCalls);
+            newExecutingCalls.AddRange(m_RuntimeCalls);
+            m_ExecutingCalls = newExecutingCalls;
+            m_NeedsUpdate = false;
         }
 
         public void Clear()
         {
             m_RuntimeCalls.Clear();
-            m_NeedsUpdate = true;
+            // removals are done synchronously to avoid leaks
+            var newExecutingCalls = new List<BaseInvokableCall>(m_PersistentCalls);
+            m_ExecutingCalls = newExecutingCalls;
+            m_NeedsUpdate = false;
         }
 
         public void ClearPersistent()
         {
             m_PersistentCalls.Clear();
-            m_NeedsUpdate = true;
+            // removals are done synchronously to avoid leaks
+            var newExecutingCalls = new List<BaseInvokableCall>(m_RuntimeCalls);
+            m_ExecutingCalls = newExecutingCalls;
+            m_NeedsUpdate = false;
         }
 
         public List<BaseInvokableCall> PrepareInvoke()

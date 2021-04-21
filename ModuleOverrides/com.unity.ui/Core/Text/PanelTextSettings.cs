@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
@@ -23,11 +24,37 @@ namespace UnityEngine.UIElements
             get
             {
                 if (s_DefaultPanelTextSettings == null)
-                    s_DefaultPanelTextSettings = GetDefaultPanelTextSettings?.Invoke();
-                if (s_DefaultPanelTextSettings == null)
-                    s_DefaultPanelTextSettings = ScriptableObject.CreateInstance<PanelTextSettings>();
+                {
+                    s_DefaultPanelTextSettings = EditorGUIUtilityLoad(s_DefaultEditorPanelTextSettingPath) as PanelTextSettings;
+                    UpdateLocalizationFontAsset();
+
+                    if (s_DefaultPanelTextSettings == null)
+                        s_DefaultPanelTextSettings = ScriptableObject.CreateInstance<PanelTextSettings>();
+                }
+
                 return s_DefaultPanelTextSettings;
             }
+        }
+
+        internal static void UpdateLocalizationFontAsset()
+        {
+            string platform = " - Linux";
+            var localizationAssetPathPerSystemLanguage = new Dictionary<SystemLanguage, string>()
+            {
+                { SystemLanguage.English, Path.Combine(UIElementsPackageUtility.EditorResourcesBasePath, $"UIPackageResources/FontAssets/DynamicOSFontAssets/Localization/English{platform}.asset") },
+                { SystemLanguage.Japanese, Path.Combine(UIElementsPackageUtility.EditorResourcesBasePath, $"UIPackageResources/FontAssets/DynamicOSFontAssets/Localization/Japanese{platform}.asset") },
+                { SystemLanguage.ChineseSimplified, Path.Combine(UIElementsPackageUtility.EditorResourcesBasePath, $"UIPackageResources/FontAssets/DynamicOSFontAssets/Localization/ChineseSimplified{platform}.asset") },
+                { SystemLanguage.ChineseTraditional, Path.Combine(UIElementsPackageUtility.EditorResourcesBasePath, $"UIPackageResources/FontAssets/DynamicOSFontAssets/Localization/ChineseTraditional{platform}.asset") },
+                { SystemLanguage.Korean, Path.Combine(UIElementsPackageUtility.EditorResourcesBasePath, $"UIPackageResources/FontAssets/DynamicOSFontAssets/Localization/Korean{platform}.asset") }
+            };
+
+            var globalFallbackAssetPath = Path.Combine(UIElementsPackageUtility.EditorResourcesBasePath, $"UIPackageResources/FontAssets/DynamicOSFontAssets/GlobalFallback/GlobalFallback{platform}.asset");
+
+            var localizationAsset = EditorGUIUtilityLoad(localizationAssetPathPerSystemLanguage[GetCurrentLanguage()]) as FontAsset;
+            var globalFallbackAsset = EditorGUIUtilityLoad(globalFallbackAssetPath) as FontAsset;
+
+            defaultPanelTextSettings.fallbackFontAssets[0] = localizationAsset;
+            defaultPanelTextSettings.fallbackFontAssets[defaultPanelTextSettings.fallbackFontAssets.Count - 1] = globalFallbackAsset;
         }
 
         internal FontAsset GetCachedFontAsset(Font font)
@@ -35,6 +62,10 @@ namespace UnityEngine.UIElements
             return GetCachedFontAssetInternal(font);
         }
 
-        internal static Func<PanelTextSettings> GetDefaultPanelTextSettings;
+        internal static readonly string s_DefaultEditorPanelTextSettingPath =
+            Path.Combine(UIElementsPackageUtility.EditorResourcesBasePath, "UIPackageResources/Default Editor Text Settings.asset");
+
+        internal static Func<string, Object> EditorGUIUtilityLoad;
+        internal static Func<SystemLanguage> GetCurrentLanguage;
     }
 }

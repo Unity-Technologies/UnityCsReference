@@ -266,7 +266,8 @@ namespace UnityEngine.UIElements
                 }
                 else
                 {
-                    if (child.canGrabFocus && child.tabIndex >= 0)
+                    // isHierarchyDisplayed is not checked in canGrabFocus to let a hidden VisualElement grab the focus when calling the Focus method.
+                    if (child.canGrabFocus && child.isHierarchyDisplayed && child.tabIndex >= 0)
                     {
                         scopeList.Add(new FocusRingRecord
                         {

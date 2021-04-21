@@ -11,6 +11,7 @@ using UnityEditorInternal;
 using UnityEditorInternal.VersionControl;
 using System.Linq;
 using System.Reflection;
+using UnityEditor.Profiling;
 using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEditor
@@ -100,14 +101,16 @@ namespace UnityEditor
         {
             foreach (var assetModificationProcessorClass in AssetModificationProcessors)
             {
-                MethodInfo method = assetModificationProcessorClass.GetMethod("OnWillCreateAsset", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                const string methodName = "OnWillCreateAsset";
+                MethodInfo method = assetModificationProcessorClass.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
                 if (method != null)
                 {
                     object[] args = { path };
                     if (!CheckArguments(args, method))
                         continue;
 
-                    method.Invoke(null, args);
+                    using (new EditorPerformanceMarker($"{assetModificationProcessorClass.Name}.{methodName}", assetModificationProcessorClass).Auto())
+                        method.Invoke(null, args);
                 }
             }
         }
@@ -120,12 +123,14 @@ namespace UnityEditor
             object[] args = { assets, mode };
             foreach (var type in AssetModificationProcessors)
             {
-                var method = type.GetMethod("FileModeChanged", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                const string methodName = "FileModeChanged";
+                var method = type.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
                 if (method == null)
                     continue;
                 if (!CheckArgumentsAndReturnType(args, method, typeof(void)))
                     continue;
-                method.Invoke(null, args);
+                using (new EditorPerformanceMarker($"{type.Name}.{methodName}", type).Auto())
+                    method.Invoke(null, args);
             }
         }
 
@@ -151,14 +156,17 @@ namespace UnityEditor
 
             foreach (var assetModificationProcessorClass in AssetModificationProcessors)
             {
-                MethodInfo method = assetModificationProcessorClass.GetMethod("OnWillSaveAssets", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                const string methodName = "OnWillSaveAssets";
+                MethodInfo method = assetModificationProcessorClass.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
                 if (method != null)
                 {
                     object[] args = { assetsThatShouldBeSaved };
                     if (!CheckArguments(args, method))
                         continue;
 
-                    string[] result = (string[])method.Invoke(null, args);
+                    string[] result;
+                    using (new EditorPerformanceMarker($"{assetModificationProcessorClass.Name}.{methodName}", assetModificationProcessorClass).Auto())
+                        result = (string[])method.Invoke(null, args);
 
                     if (result != null)
                         assetsThatShouldBeSaved = result;
@@ -195,14 +203,16 @@ namespace UnityEditor
 
             foreach (var assetModificationProcessorClass in AssetModificationProcessors)
             {
-                MethodInfo method = assetModificationProcessorClass.GetMethod("OnWillMoveAsset", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                const string methodName = "OnWillMoveAsset";
+                MethodInfo method = assetModificationProcessorClass.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
                 if (method != null)
                 {
                     object[] args = { fromPath, toPath };
                     if (!CheckArgumentsAndReturnType(args, method, finalResult.GetType()))
                         continue;
 
-                    finalResult |= (AssetMoveResult)method.Invoke(null, args);
+                    using (new EditorPerformanceMarker($"{assetModificationProcessorClass.Name}.{methodName}", assetModificationProcessorClass).Auto())
+                        finalResult |= (AssetMoveResult)method.Invoke(null, args);
                 }
             }
 
@@ -215,14 +225,16 @@ namespace UnityEditor
 
             foreach (var assetModificationProcessorClass in AssetModificationProcessors)
             {
-                MethodInfo method = assetModificationProcessorClass.GetMethod("OnWillDeleteAsset", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                const string methodName = "OnWillDeleteAsset";
+                MethodInfo method = assetModificationProcessorClass.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
                 if (method != null)
                 {
                     object[] args = { assetPath, options };
                     if (!CheckArgumentsAndReturnType(args, method, finalResult.GetType()))
                         continue;
 
-                    finalResult |= (AssetDeleteResult)method.Invoke(null, args);
+                    using (new EditorPerformanceMarker($"{assetModificationProcessorClass.Name}.{methodName}", assetModificationProcessorClass).Auto())
+                        finalResult |= (AssetDeleteResult)method.Invoke(null, args);
                 }
             }
 
@@ -243,7 +255,8 @@ namespace UnityEditor
             List<int> nonDeletedPathIndices = new List<int>();
             foreach (var assetModificationProcessorClass in AssetModificationProcessors)
             {
-                MethodInfo method = assetModificationProcessorClass.GetMethod("OnWillDeleteAsset", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                const string methodName = "OnWillDeleteAsset";
+                MethodInfo method = assetModificationProcessorClass.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
                 if (method == null)
                     continue;
 
@@ -253,8 +266,12 @@ namespace UnityEditor
                     if (!CheckArgumentsAndReturnType(args, method, typeof(AssetDeleteResult)))
                         continue;
 
-                    AssetDeleteResult callbackResult = (AssetDeleteResult)method.Invoke(null, args);
-                    outPathDeletionResults[i] |= callbackResult;
+
+                    using (new EditorPerformanceMarker($"{assetModificationProcessorClass.Name}.{methodName}", assetModificationProcessorClass).Auto())
+                    {
+                        AssetDeleteResult callbackResult = (AssetDeleteResult)method.Invoke(null, args);
+                        outPathDeletionResults[i] |= callbackResult;
+                    }
                 }
             }
 
@@ -531,14 +548,16 @@ namespace UnityEditor
 
             foreach (var assetModificationProcessorClass in AssetModificationProcessors)
             {
-                MethodInfo method = assetModificationProcessorClass.GetMethod("OnStatusUpdated", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                const string methodName = "OnStatusUpdated";
+                MethodInfo method = assetModificationProcessorClass.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
                 if (method != null)
                 {
                     object[] args = {};
                     if (!CheckArgumentsAndReturnType(args, method, typeof(void)))
                         continue;
 
-                    method.Invoke(null, args);
+                    using (new EditorPerformanceMarker($"{assetModificationProcessorClass.Name}.{methodName}", assetModificationProcessorClass).Auto())
+                        method.Invoke(null, args);
                 }
             }
         }

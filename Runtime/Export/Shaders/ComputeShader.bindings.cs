@@ -89,6 +89,13 @@ namespace UnityEngine
                 throw new ArgumentException("Attempting to create a compute buffer with a negative or null stride", "stride");
             }
 
+            var bufferSize = (long)count * stride;
+            var maxBufferSize = SystemInfo.maxGraphicsBufferSize;
+            if (bufferSize > maxBufferSize)
+            {
+                throw new ArgumentException($"The total size of the compute buffer ({bufferSize} bytes) exceeds the maximum buffer size. Maximum supported buffer size: {maxBufferSize} bytes.");
+            }
+
             m_Ptr = InitBuffer(count, stride, type, usage);
 
             SaveCallstack(stackDepth);

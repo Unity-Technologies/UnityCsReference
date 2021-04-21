@@ -17,6 +17,13 @@ namespace UnityEditor.UIElements
             VisualTreeAssetChangeTrackerUpdater.UpdateGameView = EditorApplication.QueuePlayerLoopUpdate;
             AssetOperationsAccess.GetAssetPath = GetAssetPath;
             AssetOperationsAccess.GetAssetDirtyCount = GetAssetDirtyCount;
+            PanelTextSettings.EditorGUIUtilityLoad = EditorGUIUtilityLoad;
+            PanelTextSettings.GetCurrentLanguage = GetCurrentLanguage;
+        }
+
+        internal static SystemLanguage GetCurrentLanguage()
+        {
+            return LocalizationDatabase.currentEditorLanguage;
         }
 
         internal static bool IsEditorPlaying()
@@ -37,6 +44,11 @@ namespace UnityEditor.UIElements
         internal static int GetAssetDirtyCount(Object asset)
         {
             return EditorUtility.GetDirtyCount(asset);
+        }
+
+        internal static Object EditorGUIUtilityLoad(string path)
+        {
+            return EditorGUIUtility.Load(path);
         }
     }
 }

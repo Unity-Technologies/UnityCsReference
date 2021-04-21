@@ -385,6 +385,13 @@ namespace UnityEngine.UIElements
                 m_LastPendingFocusedElement = null;
         }
 
+        internal Focusable FocusNextInDirection(FocusChangeDirection direction)
+        {
+            Focusable f = focusRing.GetNextFocusable(GetLeafFocusedElement(), direction);
+            direction.ApplyTo(this, f);
+            return f;
+        }
+
         void AboutToReleaseFocus(Focusable focusable, Focusable willGiveFocusTo, FocusChangeDirection direction, DispatchMode dispatchMode)
         {
             using (FocusOutEvent e = FocusOutEvent.GetPooled(focusable, willGiveFocusTo, direction, this))
@@ -488,8 +495,7 @@ namespace UnityEngine.UIElements
             {
                 if (direction != FocusChangeDirection.none)
                 {
-                    Focusable f = focusRing.GetNextFocusable(GetLeafFocusedElement(), direction);
-                    direction.ApplyTo(this, f);
+                    Focusable f = FocusNextInDirection(direction);
                     e.processedByFocusController = true;
                     // f does not have the focus yet. It will when the series of focus events will have been handled.
                     return f;
@@ -497,6 +503,16 @@ namespace UnityEngine.UIElements
             }
 
             return GetLeafFocusedElement();
+        }
+
+        internal void ReevaluateFocus()
+        {
+            if (focusedElement is VisualElement currentFocus)
+            {
+                // If the currently focused element is not displayed in the hierarchy or not visible, blur it.
+                if (!currentFocus.isHierarchyDisplayed || !currentFocus.visible)
+                    currentFocus.Blur();
+            }
         }
 
         /// <summary>

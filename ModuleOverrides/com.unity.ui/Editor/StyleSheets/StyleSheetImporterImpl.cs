@@ -45,7 +45,10 @@ namespace UnityEditor.UIElements.StyleSheets
             m_AssetPath = context.assetPath;
             m_Parser = new Parser();
             m_Builder = new StyleSheetBuilder();
-            m_Errors = new StyleSheetImportErrors();
+            m_Errors = new StyleSheetImportErrors()
+            {
+                assetPath = context.assetPath
+            };
             m_Validator = new StyleValidator();
         }
 
@@ -396,20 +399,42 @@ namespace UnityEditor.UIElements.StyleSheets
         {
             string path = (string)term.Value;
 
-            string projectRelativePath, subAssetPath, errorToken;
+            var response = URIHelpers.ValidateAssetURL(assetPath, path);
 
-            URIValidationResult result = URIHelpers.ValidAssetURL(assetPath, path, out errorToken, out projectRelativePath, out subAssetPath);
-
-            if (result != URIValidationResult.OK)
+            if (response.hasWarningMessage)
             {
-                var(_, message) = ConvertErrorCode(result);
+                m_Errors.AddValidationWarning(response.warningMessage, m_CurrentLine);
+            }
+
+            if (response.result != URIValidationResult.OK)
+            {
+                var(_, message) = ConvertErrorCode(response.result);
 
                 m_Builder.AddValue(path, StyleValueType.MissingAssetReference);
-                m_Errors.AddValidationWarning(string.Format(message, errorToken), m_CurrentLine);
+                m_Errors.AddValidationWarning(string.Format(message, response.errorToken), m_CurrentLine);
             }
             else
             {
-                UnityEngine.Object asset = DeclareDependencyAndLoad(projectRelativePath, subAssetPath);
+                var projectRelativePath = response.resolvedProjectRelativePath;
+                var subAssetPath = response.resolvedSubAssetPath;
+                var asset = response.resolvedQueryAsset;
+
+                if (asset)
+                {
+                    if (response.isLibraryAsset)
+                    {
+                        // do not add path dependencies on assets in the Library folder (e.g. built-in resources)
+                        m_Builder.AddValue(asset);
+                        return;
+                    }
+
+                    // explicit asset reference already loaded
+                    m_Context?.DependsOnSourceAsset(projectRelativePath);
+                }
+                else
+                {
+                    asset = DeclareDependencyAndLoad(projectRelativePath, subAssetPath);
+                }
 
                 bool isTexture = asset is Texture2D;
                 Sprite spriteAsset = asset as Sprite;
@@ -747,13 +772,17 @@ namespace UnityEditor.UIElements.StyleSheets
 
             foreach (var e in errors)
             {
+                var errorContext = string.IsNullOrEmpty(e.assetPath)
+                    ? null
+                    : AssetDatabase.LoadMainAssetAtPath(e.assetPath);
+
                 if (e.isWarning)
                 {
-                    m_Context.LogImportWarning(e.ToString(glossary), e.assetPath, e.line);
+                    m_Context.LogImportWarning(e.ToString(glossary), e.assetPath, e.line, errorContext);
                 }
                 else
                 {
-                    m_Context.LogImportError(e.ToString(glossary), e.assetPath, e.line);
+                    m_Context.LogImportError(e.ToString(glossary), e.assetPath, e.line, errorContext);
                 }
             }
         }
@@ -812,7 +841,15 @@ namespace UnityEditor.UIElements.StyleSheets
                     {
                         var importedPath = styleSheet.ImportDirectives[i].Href;
 
-                        URIValidationResult importResult = URIHelpers.ValidAssetURL(assetPath, importedPath, out var errorToken, out var projectRelativePath);
+                        var response = URIHelpers.ValidateAssetURL(assetPath, importedPath);
+                        var importResult = response.result;
+                        var errorToken = response.errorToken;
+                        var projectRelativePath = response.resolvedProjectRelativePath;
+
+                        if (response.hasWarningMessage)
+                        {
+                            m_Errors.AddValidationWarning(response.warningMessage, m_CurrentLine);
+                        }
 
                         UnityStyleSheet importedStyleSheet = null;
                         if (importResult != URIValidationResult.OK)
@@ -822,8 +859,20 @@ namespace UnityEditor.UIElements.StyleSheets
                         }
                         else
                         {
-                            importedStyleSheet = DeclareDependencyAndLoad(projectRelativePath) as UnityStyleSheet;
-                            m_Context.DependsOnImportedAsset(projectRelativePath);
+                            importedStyleSheet = response.resolvedQueryAsset as UnityStyleSheet;
+                            if (importedStyleSheet)
+                            {
+                                m_Context.DependsOnSourceAsset(projectRelativePath);
+                            }
+                            else
+                            {
+                                importedStyleSheet = DeclareDependencyAndLoad(projectRelativePath) as UnityStyleSheet;
+                            }
+
+                            if (!response.isLibraryAsset)
+                            {
+                                m_Context.DependsOnImportedAsset(projectRelativePath);
+                            }
                         }
 
                         asset.imports[i] = new UnityStyleSheet.ImportStruct

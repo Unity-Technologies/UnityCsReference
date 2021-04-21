@@ -184,7 +184,7 @@ namespace UnityEngine.TextCore.Text
                 spriteCharacter.glyph = m_SpriteGlyphLookup[glyphIndex];
                 spriteCharacter.textAsset = this;
 
-                int nameHashCode = m_SpriteCharacterTable[i].hashCode;
+                int nameHashCode = TextUtilities.GetHashCodeCaseInSensitive(m_SpriteCharacterTable[i].name);
 
                 if (m_NameLookup.ContainsKey(nameHashCode) == false)
                     m_NameLookup.Add(nameHashCode, i);

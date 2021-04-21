@@ -133,6 +133,7 @@ namespace UnityEditor.TextCore.Text
 
         float m_AtlasGenerationProgress;
         string m_AtlasGenerationProgressLabel = string.Empty;
+        // float m_RenderingProgress;
         bool m_IsGlyphPackingDone;
         bool m_IsGlyphRenderingDone;
         bool m_IsRenderingDone;
@@ -142,6 +143,8 @@ namespace UnityEditor.TextCore.Text
 
         bool m_IsFontAtlasInvalid;
         Font m_SourceFont;
+        int m_SourceFontFaceIndex;
+        private string[] m_SourceFontFaces = new string[0];
         FontAsset m_SelectedFontAsset;
         FontAsset m_LegacyFontAsset;
         FontAsset m_ReferencedFontAsset;
@@ -207,6 +210,10 @@ namespace UnityEditor.TextCore.Text
                     LoadFontCreationSettings(m_FontAssetCreationSettingsContainer.fontAssetCreationSettings[m_FontAssetCreationSettingsCurrentIndex]);
                 }
             }
+
+            // Get potential font face and styles for the current font.
+            if (m_SourceFont != null)
+                m_SourceFontFaces = GetFontFaces();
 
             ClearGeneratedData();
         }
@@ -316,6 +323,7 @@ namespace UnityEditor.TextCore.Text
 
                 if (m_IsGenerationCancelled == false)
                 {
+                    m_AtlasGenerationProgress = FontEngine.generationProgress;
                     m_AtlasGenerationProgressLabel = "Generation completed in: " + (m_GlyphPackingGenerationTime + m_GlyphRenderingGenerationTime).ToString("0.00 ms.");
 
                     UpdateRenderFeedbackWindow();
@@ -423,14 +431,26 @@ namespace UnityEditor.TextCore.Text
             // Disable Options if already generating a font atlas texture.
             EditorGUI.BeginDisabledGroup(m_IsProcessing);
             {
-                // FONT TTF SELECTION
+                // FONT SELECTION
                 EditorGUI.BeginChangeCheck();
                 m_SourceFont = EditorGUILayout.ObjectField("Source Font", m_SourceFont, typeof(Font), false) as Font;
                 if (EditorGUI.EndChangeCheck())
                 {
                     m_SelectedFontAsset = null;
                     m_IsFontAtlasInvalid = true;
+                    m_SourceFontFaces = GetFontFaces();
                 }
+
+                // FONT FACE AND STYLE SELECTION
+                EditorGUI.BeginChangeCheck();
+                GUI.enabled = m_SourceFont != null;
+                m_SourceFontFaceIndex = EditorGUILayout.Popup("Font Face", m_SourceFontFaceIndex, m_SourceFontFaces);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    m_SelectedFontAsset = null;
+                    m_IsFontAtlasInvalid = true;
+                }
+                GUI.enabled = true;
 
                 // FONT SIZING
                 EditorGUI.BeginChangeCheck();
@@ -686,7 +706,7 @@ namespace UnityEditor.TextCore.Text
 
                     if (errorCode == FontEngineError.Success)
                     {
-                        errorCode = FontEngine.LoadFontFace(m_SourceFont);
+                        errorCode = FontEngine.LoadFontFace(m_SourceFont, 0, m_SourceFontFaceIndex);
 
                         if (errorCode != FontEngineError.Success)
                         {
@@ -1072,7 +1092,7 @@ namespace UnityEditor.TextCore.Text
 
             GUILayout.BeginVertical(EditorStyles.helpBox, GUILayout.Height(200));
             m_OutputScrollPosition = EditorGUILayout.BeginScrollView(m_OutputScrollPosition);
-            EditorGUILayout.TextArea(m_OutputFeedback, TM_EditorStyles.label);
+            EditorGUILayout.LabelField(m_OutputFeedback, TM_EditorStyles.label);
             EditorGUILayout.EndScrollView();
             GUILayout.EndVertical();
 
@@ -1158,6 +1178,16 @@ namespace UnityEditor.TextCore.Text
 
             m_OutputFeedback = string.Empty;
             m_WarningMessage = string.Empty;
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        /// <returns></returns>
+        string[] GetFontFaces()
+        {
+            FontEngine.LoadFontFace(m_SourceFont, 0, 0);
+            return FontEngine.GetFontFaces();
         }
 
         /// <summary>
@@ -1457,14 +1487,14 @@ namespace UnityEditor.TextCore.Text
                 if (tex.width != m_AtlasWidth || tex.height != m_AtlasHeight)
                 {
                     tex.Reinitialize(m_AtlasWidth, m_AtlasHeight);
-                    tex.Apply();
+                    tex.Apply(false);
                 }
 
                 // Copy new texture data to existing texture
                 Graphics.CopyTexture(m_FontAtlasTexture, tex);
 
                 // Apply changes to the texture.
-                tex.Apply(false, !isReadableState);
+                tex.Apply(false);
 
                 // Special handling due to a bug in earlier versions of Unity.
                 m_FontAtlasTexture.hideFlags = HideFlags.None;
@@ -1483,6 +1513,9 @@ namespace UnityEditor.TextCore.Text
                 //    material_references[i].SetFloat(ShaderUtilities.ID_WeightBold, fontAsset.boldStyle);
                 //}
             }
+
+            // Set texture to non readable
+            FontEngineEditorUtilities.SetAtlasTextureIsReadable(fontAsset.atlasTexture, false);
 
             // Add list of GlyphRects to font asset.
             fontAsset.freeGlyphRects = m_FreeGlyphRects;
@@ -1640,14 +1673,14 @@ namespace UnityEditor.TextCore.Text
                 if (tex.width != m_AtlasWidth || tex.height != m_AtlasHeight)
                 {
                     tex.Reinitialize(m_AtlasWidth, m_AtlasHeight);
-                    tex.Apply();
+                    tex.Apply(false);
                 }
 
                 // Copy new texture data to existing texture
                 Graphics.CopyTexture(m_FontAtlasTexture, tex);
 
                 // Apply changes to the texture.
-                tex.Apply(false, !isReadableState);
+                tex.Apply(false);
 
                 // Special handling due to a bug in earlier versions of Unity.
                 m_FontAtlasTexture.hideFlags = HideFlags.None;
@@ -1670,6 +1703,9 @@ namespace UnityEditor.TextCore.Text
             // Saving File for Debug
             //var pngData = destination_Atlas.EncodeToPNG();
             //File.WriteAllBytes("Assets/Textures/Debug Distance Field.png", pngData);
+
+            // Set texture to non readable
+            FontEngineEditorUtilities.SetAtlasTextureIsReadable(fontAsset.atlasTexture, false);
 
             // Add list of GlyphRects to font asset.
             fontAsset.freeGlyphRects = m_FreeGlyphRects;
@@ -1704,6 +1740,7 @@ namespace UnityEditor.TextCore.Text
 
             //settings.sourceFontFileName = m_SourceFontFile.name;
             settings.sourceFontFileGUID = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(m_SourceFont));
+            settings.faceIndex = m_SourceFontFaceIndex;
             settings.pointSizeSamplingMode = m_PointSizeSamplingMode;
             settings.pointSize = m_PointSize;
             settings.padding = m_Padding;
@@ -1729,6 +1766,7 @@ namespace UnityEditor.TextCore.Text
         void LoadFontCreationSettings(FontAssetCreationEditorSettings settings)
         {
             m_SourceFont = AssetDatabase.LoadAssetAtPath<Font>(AssetDatabase.GUIDToAssetPath(settings.sourceFontFileGUID));
+            m_SourceFontFaceIndex = settings.faceIndex;
             m_PointSizeSamplingMode  = settings.pointSizeSamplingMode;
             m_PointSize = settings.pointSize;
             m_Padding = settings.padding;
@@ -1806,6 +1844,13 @@ namespace UnityEditor.TextCore.Text
             if (m_FontAtlasTexture != null)
             {
                 EditorGUI.DrawTextureAlpha(pixelRect, m_FontAtlasTexture, ScaleMode.StretchToFill);
+
+                // Destroy GlyphRect preview texture
+                if (m_GlyphRectPreviewTexture != null)
+                {
+                    DestroyImmediate(m_GlyphRectPreviewTexture);
+                    m_GlyphRectPreviewTexture = null;
+                }
             }
             else if (m_GlyphRectPreviewTexture != null)
             {

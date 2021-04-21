@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using UnityEditor;
+using UnityEditor.UIElements.StyleSheets;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -109,11 +110,7 @@ namespace Unity.UI.Builder
                     break;
                 case StyleValueType.AssetReference:
                     var assetRef = sheet.ReadAssetReference(handle);
-                    var assetPath = AssetDatabase.GetAssetPath(assetRef);
-                    if (assetPath.StartsWith("Assets") || assetPath.StartsWith("Packages"))
-                        assetPath = "/" + assetPath;
-                    if (assetRef is Sprite)
-                        assetPath += "#" + assetRef.name;
+                    var assetPath = URIHelpers.MakeAssetUri(assetRef);
                     str = assetRef == null ? "none" : $"url('{assetPath}')";
                     break;
                 case StyleValueType.Variable:

@@ -4,14 +4,18 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements.StyleSheets
 {
     static class ThemeRegistry
     {
-        internal const string k_DefaultStyleSheetPath = "StyleSheets/Generated/Default.tss.asset";
+        internal static readonly string k_DefaultStyleSheetPath = Path.Combine(UIElementsPackageUtility.EditorResourcesBasePath, "StyleSheets/Generated/Default.tss.asset");
         public const string kThemeScheme = "unity-theme";
         public const string kUnityThemesPath = "Assets/UI Toolkit/UnityThemes";
+        public const string kUnityRuntimeThemeFileName = "UnityDefaultRuntimeTheme.tss";
+        public const string kUnityRuntimeThemePath = kUnityThemesPath + "/" + kUnityRuntimeThemeFileName;
         private static Dictionary<string, string> m_Themes;
 
         public static Dictionary<string, string> themes

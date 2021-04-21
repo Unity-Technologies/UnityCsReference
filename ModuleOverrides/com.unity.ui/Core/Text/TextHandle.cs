@@ -325,8 +325,7 @@ namespace UnityEngine.UIElements
             float measuredWidth = float.NaN;
             float measuredHeight = float.NaN;
 
-            Font usedFont = ve.computedStyle.unityFont;
-            if (textToMeasure == null || usedFont == null)
+            if (textToMeasure == null || !IsFontAssigned(ve))
                 return new Vector2(measuredWidth, measuredHeight);
 
             var elementScaling = ve.ComputeGlobalScale();
@@ -392,12 +391,45 @@ namespace UnityEngine.UIElements
 
         internal static FontAsset GetFontAsset(VisualElement ve)
         {
-            var textSettings = GetTextSettingsFrom(ve);
             if (ve.computedStyle.unityFontDefinition.fontAsset != null)
                 return ve.computedStyle.unityFontDefinition.fontAsset as FontAsset;
+
+            var textSettings = GetTextSettingsFrom(ve);
             if (ve.computedStyle.unityFontDefinition.font != null)
                 return textSettings.GetCachedFontAsset(ve.computedStyle.unityFontDefinition.font);
             return textSettings.GetCachedFontAsset(ve.computedStyle.unityFont);
+        }
+
+        internal static Font GetFont(MeshGenerationContextUtils.TextParams textParam)
+        {
+            if (textParam.fontDefinition.font != null)
+                return textParam.fontDefinition.font;
+
+            if (textParam.font != null)
+                return textParam.font;
+
+            return textParam.fontDefinition.fontAsset?.sourceFontFile;
+        }
+
+        internal static Font GetFont(VisualElement ve)
+        {
+            var style = ve.computedStyle;
+            if (style.unityFontDefinition.font != null)
+                return style.unityFontDefinition.font;
+            if (style.unityFont != null)
+                return style.unityFont;
+
+            return style.unityFontDefinition.fontAsset?.sourceFontFile;
+        }
+
+        internal static bool IsFontAssigned(VisualElement ve)
+        {
+            return ve.computedStyle.unityFont != null || !ve.computedStyle.unityFontDefinition.IsEmpty();
+        }
+
+        internal static bool IsFontAssigned(MeshGenerationContextUtils.TextParams textParams)
+        {
+            return textParams.font != null || !textParams.fontDefinition.IsEmpty();
         }
 
         internal static PanelTextSettings GetTextSettingsFrom(VisualElement ve)

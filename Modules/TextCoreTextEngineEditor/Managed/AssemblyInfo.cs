@@ -3,8 +3,5 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Runtime.CompilerServices;
-using System.Reflection;
-
-// Allow internal visibility to the following assemblies
 
 [assembly: InternalsVisibleTo("Unity.TextMeshPro.Editor")]

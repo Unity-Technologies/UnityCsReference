@@ -53,8 +53,11 @@ namespace UnityEngine.UIElements
         DisableClipping = 1 << 9,
         // Element needs to receive an AttachToPanel event
         NeedsAttachToPanelEvent = 1 << 10,
+        // Element is shown in the hierarchy (element or one of its ancestors is not DisplayStyle.None)
+        // Note that this flag is up-to-date only after UIRLayoutUpdater is done with its updates
+        HierarchyDisplayed = 1 << 11,
         // Element initial flags
-        Init = WorldTransformDirty | WorldTransformInverseDirty | WorldClipDirty | BoundingBoxDirty | WorldBoundingBoxDirty
+        Init = WorldTransformDirty | WorldTransformInverseDirty | WorldClipDirty | BoundingBoxDirty | WorldBoundingBoxDirty | HierarchyDisplayed
     }
 
     /// <summary>
@@ -235,6 +238,12 @@ namespace UnityEngine.UIElements
         {
             get => (m_Flags & VisualElementFlags.CompositeRoot) == VisualElementFlags.CompositeRoot;
             set => m_Flags = value ? m_Flags | VisualElementFlags.CompositeRoot : m_Flags & ~VisualElementFlags.CompositeRoot;
+        }
+
+        internal bool isHierarchyDisplayed
+        {
+            get => (m_Flags & VisualElementFlags.HierarchyDisplayed) == VisualElementFlags.HierarchyDisplayed;
+            set => m_Flags = value ? m_Flags | VisualElementFlags.HierarchyDisplayed : m_Flags & ~VisualElementFlags.HierarchyDisplayed;
         }
 
         private static uint s_NextId;

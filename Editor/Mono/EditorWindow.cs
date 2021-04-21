@@ -946,6 +946,11 @@ namespace UnityEditor
             hasUnsavedChanges = false;
         }
 
+        public virtual void DiscardChanges()
+        {
+            hasUnsavedChanges = false;
+        }
+
         // Close the editor window.
         public void Close()
         {

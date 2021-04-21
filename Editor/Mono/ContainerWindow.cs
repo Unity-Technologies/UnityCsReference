@@ -230,7 +230,7 @@ namespace UnityEditor
         {
             if (IsMainWindow())
             {
-                var UnsavedWindows = windows.SelectMany(w => w.m_UnsavedEditorWindows).ToList();
+                var UnsavedWindows = windows.Where(w => w != s_MainWindow).SelectMany(w => w.m_UnsavedEditorWindows).ToList();
 
                 if (UnsavedWindows.Any())
                     return PrivateRequestClose(UnsavedWindows);
@@ -276,7 +276,9 @@ namespace UnityEditor
 
             if (allUnsaved.Count == 1)
             {
-                option = EditorUtility.DisplayDialogComplex(L10n.Tr("Unsaved Changes Detected"),
+                var title = allUnsaved.First().titleContent.text;
+
+                option = EditorUtility.DisplayDialogComplex((string.IsNullOrEmpty(title) ? "" : (title + " - ")) + L10n.Tr("Unsaved Changes Detected"),
                     allUnsaved.First().saveChangesMessage,
                     L10n.Tr("Save"),
                     L10n.Tr("Cancel"),
@@ -298,11 +300,18 @@ namespace UnityEditor
                 switch (option)
                 {
                     case kSave:
+                        bool areAllSaved = true;
                         foreach (var w in allUnsaved)
+                        {
                             w.SaveChanges();
+                            areAllSaved &= !w.hasUnsavedChanges;
+                        }
+                        return areAllSaved;
+                    case kDiscard:
+                        foreach (var w in allUnsaved)
+                            w.DiscardChanges();
                         break;
                     case kCancel:
-                    case kDiscard:
                         break;
                     default:
                         Debug.LogError("Unrecognized option.");

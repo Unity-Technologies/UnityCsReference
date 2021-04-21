@@ -203,10 +203,16 @@ namespace UnityEditor
     }
 
     [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+    public enum XcodeBuildConfig
+    {
+        Debug = 0,
+        Release = 1,
+    }
+
+    [Obsolete("iOSBuildType is obsolete. Use XcodeBuildConfig instead (UnityUpgradable) -> XcodeBuildConfig", true)]
     public enum iOSBuildType
     {
         Debug = 0,
-
         Release = 1,
     }
 
@@ -623,14 +629,25 @@ namespace UnityEditor
         // Symlink trampoline for iOS Xcode project.
         internal static extern bool symlinkTrampoline { get; set; }
 
-        public static extern iOSBuildType iOSBuildConfigType
+
+        public static extern XcodeBuildConfig iOSXcodeBuildConfig
         {
-            [NativeMethod("GetIOSBuildType")]
-            get;
-            [NativeMethod("SetIOSBuildType")]
-            set;
+            [NativeMethod("GetIOSXcodeBuildConfig")] get;
+            [NativeMethod("SetIOSXcodeBuildConfig")] set;
+        }
+        public static extern XcodeBuildConfig macOSXcodeBuildConfig
+        {
+            [NativeMethod("GetMacOSXcodeBuildConfig")] get;
+            [NativeMethod("SetMacOSXcodeBuildConfig")] set;
         }
 
+        [Obsolete("iOSBuildConfigType is obsolete. Use iOSXcodeBuildConfig instead (UnityUpgradable) -> iOSXcodeBuildConfig", true)]
+        public static iOSBuildType iOSBuildConfigType
+        {
+            // note that the actual values of iOSBuildType and XcodeBuildConfig agree
+            get => (iOSBuildType)iOSXcodeBuildConfig;
+            set => iOSXcodeBuildConfig = (XcodeBuildConfig)value;
+        }
 
         // Create a .nsp ROM file out of the loose-files .nspd folder
         public static extern bool switchCreateRomFile
@@ -648,6 +665,15 @@ namespace UnityEditor
             [NativeMethod("GetNVNGraphicsDebuggerForSwitch")]
             get;
             [NativeMethod("SetNVNGraphicsDebuggerForSwitch")]
+            set;
+        }
+
+        // Generate Nintendo Switch shader info for shader source visualization and profiling in NVN Graphics Debugger or Low-Level Graphics Debugger (LLGD)
+        public static extern bool generateNintendoSwitchShaderInfo
+        {
+            [NativeMethod("GetGenerateNintendoSwitchShaderInfo")]
+            get;
+            [NativeMethod("SetGenerateNintendoSwitchShaderInfo")]
             set;
         }
 

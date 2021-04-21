@@ -666,7 +666,7 @@ namespace UnityEngine.UIElements
                     rect = ve.contentRect,
                     text = text,
                     fontDefinition = style.unityFontDefinition,
-                    font = style.unityFont,
+                    font = TextUtilities.GetFont(ve),
                     fontSize = (int)style.fontSize.value,
                     fontStyle = style.unityFontStyleAndWeight,
                     fontColor = style.color,
@@ -690,7 +690,7 @@ namespace UnityEngine.UIElements
                 return new TextNativeSettings
                 {
                     text = textParams.text,
-                    font = textParams.font,
+                    font = TextUtilities.GetFont(textParams),
                     size = textParams.fontSize,
                     scaling = scaling,
                     style = textParams.fontStyle,
@@ -715,7 +715,7 @@ namespace UnityEngine.UIElements
 
         public static void Text(this MeshGenerationContext mgc, TextParams textParams, ITextHandle handle, float pixelsPerPoint)
         {
-            if (textParams.font != null || !textParams.fontDefinition.IsEmpty())
+            if (TextUtilities.IsFontAssigned(textParams))
                 mgc.painter.DrawText(textParams, handle, pixelsPerPoint);
         }
 

@@ -14,7 +14,7 @@ namespace UnityEngine.TextCore.Text
         FourCornersGradient
     }
 
-    [System.Serializable][ExcludeFromPresetAttribute]
+    [System.Serializable][ExcludeFromPresetAttribute][ExcludeFromObjectFactory]
     public class TextColorGradient : ScriptableObject
     {
         public ColorGradientMode colorMode = ColorGradientMode.FourCornersGradient;

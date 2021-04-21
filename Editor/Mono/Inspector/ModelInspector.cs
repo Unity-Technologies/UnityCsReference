@@ -47,8 +47,8 @@ namespace UnityEditor
             // Multi-selection, just display total # of verts/indices and bail out
             if (targets?.Length > 1)
             {
-                var totalVertices = 0;
-                UInt32 totalIndices = 0;
+                long totalVertices = 0;
+                long totalIndices = 0;
 
                 foreach (var obj in targets)
                 {
@@ -180,7 +180,7 @@ namespace UnityEditor
         static void ShowVertexInfo(Mesh mesh, VertexAttributeDescriptor[] attributes)
         {
             var vertexSize = attributes.Sum(attr => ConvertFormatToSize(attr.format) * attr.dimension);
-            var bufferSizeStr = EditorUtility.FormatBytes(mesh.vertexCount * vertexSize);
+            var bufferSizeStr = EditorUtility.FormatBytes((long)mesh.vertexCount * vertexSize);
             EditorGUILayout.LabelField($"Vertices: {mesh.vertexCount} ({bufferSizeStr})", EditorStyles.boldLabel);
 
             EditorGUI.indentLevel++;
@@ -228,7 +228,7 @@ namespace UnityEditor
             return $"{format} x {dimension} ({ConvertFormatToSize(format) * dimension} bytes)";
         }
 
-        static UInt32 CalcTotalIndices(Mesh mesh)
+        static long CalcTotalIndices(Mesh mesh)
         {
             return mesh.GetTotalIndexCount();
         }

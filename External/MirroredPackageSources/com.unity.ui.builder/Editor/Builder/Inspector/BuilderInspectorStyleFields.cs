@@ -1898,6 +1898,10 @@ namespace Unity.UI.Builder
             if (val is Font font)
                 return font;
 
+            // Since StyleFont has two implicit constructors, it can't implicitly cast null into a StyleFont.
+            if (val == null)
+                return null;
+
             var style = (StyleFont)val;
             return style.value;
         }

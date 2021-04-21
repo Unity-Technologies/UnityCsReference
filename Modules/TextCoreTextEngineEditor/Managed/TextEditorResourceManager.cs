@@ -15,8 +15,8 @@ namespace UnityEditor.TextCore.Text
         [InitializeOnLoadMethod]
         internal static void InitializeFontAssetResourceChangeCallBacks()
         {
-            FontAsset.RegisterFontAssetForUpdate += TextEditorResourceManager.RegisterResourceForUpdate;
-            FontAsset.RegisterFontAssetForReimport += TextEditorResourceManager.RegisterResourceForReimport;
+            FontAsset.RegisterResourceForUpdate += TextEditorResourceManager.RegisterResourceForUpdate;
+            FontAsset.RegisterResourceForReimport += TextEditorResourceManager.RegisterResourceForReimport;
             FontAsset.OnFontAssetTextureChanged += TextEditorResourceManager.AddTextureToAsset;
             FontAsset.SetAtlasTextureIsReadable += FontEngineEditorUtilities.SetAtlasTextureIsReadable;
             FontAsset.GetSourceFontRef += TextEditorResourceManager.GetSourceFontRef;
@@ -57,15 +57,21 @@ namespace UnityEditor.TextCore.Text
         private TextEditorResourceManager()
         {
             Camera.onPostRender += OnCameraPostRender;
+            Canvas.willRenderCanvases += OnPreRenderCanvases;
         }
 
         void OnCameraPostRender(Camera cam)
         {
             // Exclude the PreRenderCamera
-            if (cam.cameraType == CameraType.Preview)
+            if (cam.cameraType != CameraType.SceneView)
                 return;
 
-            DoUpdates();
+            DoPostRenderUpdates();
+        }
+
+        void OnPreRenderCanvases()
+        {
+            DoPreRenderUpdates();
         }
 
         /// <summary>
@@ -164,7 +170,7 @@ namespace UnityEditor.TextCore.Text
             return AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(font));
         }
 
-        void DoUpdates()
+        void DoPostRenderUpdates()
         {
             // Handle objects that need updating
             int objUpdateCount = m_ObjectUpdateQueue.Count;
@@ -195,7 +201,6 @@ namespace UnityEditor.TextCore.Text
                 Object obj = m_ObjectReImportQueue[i];
                 if (obj != null)
                 {
-                    //Debug.Log("Re-importing [" + obj.name + "]");
                     AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(obj));
                 }
             }
@@ -205,7 +210,10 @@ namespace UnityEditor.TextCore.Text
                 m_ObjectReImportQueue.Clear();
                 m_ObjectReImportQueueLookup.Clear();
             }
+        }
 
+        void DoPreRenderUpdates()
+        {
             // Handle Font Asset Definition Refresh
             for (int i = 0; i < m_FontAssetDefinitionRefreshQueue.Count; i++)
             {

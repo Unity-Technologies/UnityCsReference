@@ -23,7 +23,7 @@ namespace UnityEditor.TextCore.Text
                 string fontAssetPath = AssetDatabase.GUIDToAssetPath(fontAssetGUIDs[i]);
                 FontAsset fontAsset = AssetDatabase.LoadAssetAtPath<FontAsset>(fontAssetPath);
 
-                if (fontAsset != null && fontAsset.atlasPopulationMode == AtlasPopulationMode.Dynamic && fontAsset.clearDynamicDataOnBuild && fontAsset.atlasTexture.width != 0)
+                if (fontAsset != null && (fontAsset.atlasPopulationMode == AtlasPopulationMode.Dynamic || fontAsset.atlasPopulationMode == AtlasPopulationMode.DynamicOS) && fontAsset.clearDynamicDataOnBuild && fontAsset.atlasTexture.width != 0)
                 {
                     //Debug.Log("Clearing [" + fontAsset.name + "] dynamic font asset data.");
                     fontAsset.ClearFontAssetDataInternal();

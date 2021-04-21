@@ -37,6 +37,7 @@ namespace UnityEngine.Rendering
         internal static extern void InitializeSortSettings(Camera camera, out SortingSettings sortingSettings);
 
         extern private void Submit_Internal();
+        extern private bool SubmitForRenderPassValidation_Internal();
 
         extern private void GetCameras_Internal(Type listType, object resultList);
 

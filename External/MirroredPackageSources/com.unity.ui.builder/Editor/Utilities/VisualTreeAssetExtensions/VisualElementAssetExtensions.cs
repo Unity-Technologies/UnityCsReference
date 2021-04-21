@@ -12,6 +12,11 @@ namespace Unity.UI.Builder
         public static readonly FieldInfo AttributesListFieldInfo =
             typeof(VisualElementAsset).GetField("m_Properties", BindingFlags.Instance | BindingFlags.NonPublic);
 
+        public static List<StyleSheet> GetStyleSheets(this VisualElementAsset vea)
+        {
+            return vea.stylesheets;
+        }
+        
         public static List<string> GetStyleSheetPaths(this VisualElementAsset vea)
         {
             return vea.stylesheetPaths;

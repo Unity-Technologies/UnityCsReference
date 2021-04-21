@@ -478,21 +478,35 @@ namespace UnityEditor.UIElements
             }
             else if (hasSrc)
             {
-                string errorMessage, projectRelativePath;
+                var response = URIHelpers.ValidateAssetURL(assetPath, src);
+                var result = response.result;
+                var projectRelativePath = response.resolvedProjectRelativePath;
 
-                URIValidationResult result = URIHelpers.ValidAssetURL(assetPath, src, out errorMessage, out projectRelativePath);
+                if (response.hasWarningMessage)
+                {
+                    logger.LogError(ImportErrorType.Semantic, ImportErrorCode.ReferenceInvalidURIProjectAssetPath,
+                        response.warningMessage, Error.Level.Warning, elt);
+                }
 
                 if (result != URIValidationResult.OK)
                 {
-                    logger.LogError(ImportErrorType.Semantic, ConvertErrorCode(result), errorMessage, Error.Level.Fatal, elt);
+                    logger.LogError(ImportErrorType.Semantic, ConvertErrorCode(result), response.errorToken, Error.Level.Fatal, elt);
                 }
                 else
                 {
-                    Object asset = DeclareDependencyAndLoad(projectRelativePath);
-
-                    if (asset is VisualTreeAsset)
+                    var asset = response.resolvedQueryAsset;
+                    if (asset)
                     {
-                        vta.RegisterTemplate(name, asset as VisualTreeAsset);
+                        m_Context.DependsOnSourceAsset(projectRelativePath);
+                    }
+                    else
+                    {
+                        asset = DeclareDependencyAndLoad(projectRelativePath);
+                    }
+
+                    if (asset is VisualTreeAsset treeAsset)
+                    {
+                        vta.RegisterTemplate(name, treeAsset);
                     }
                     else
                     {
@@ -882,7 +896,6 @@ namespace UnityEditor.UIElements
                         continue;
                     case k_StyleAttr:
                         res.AddProperty(xattr.Name.LocalName, xattr.Value);
-
                         ExCSS.StyleSheet parsed = new Parser().Parse("* { " + xattr.Value + " }");
                         if (parsed.Errors.Count != 0)
                         {
@@ -906,6 +919,7 @@ namespace UnityEditor.UIElements
                         }
                         m_Builder.BeginRule(-1);
                         startedRule = true;
+                        m_CurrentLine = ((IXmlLineInfo)xattr).LineNumber;
                         foreach (Property prop in parsed.StyleRules[0].Declarations)
                         {
                             m_Builder.BeginProperty(prop.Name);

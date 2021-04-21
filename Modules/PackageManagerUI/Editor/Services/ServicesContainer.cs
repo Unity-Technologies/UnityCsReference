@@ -78,8 +78,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         [NonSerialized]
         private bool m_DependenciesResolved;
 
+        private enum State
+        {
+            NotInitialized = 0,
+            Initializing   = 1,
+            Initialized    = 2
+        }
+
         [NonSerialized]
-        private bool m_Initialized;
+        private State m_InitializeState;
 
         public ServicesContainer()
         {
@@ -121,7 +128,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             RegisterDefaultServices();
 
             m_DependenciesResolved = false;
-            m_Initialized = false;
+            m_InitializeState = State.NotInitialized;
         }
 
         private void ResolveDependencies()
@@ -137,8 +144,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreDownloadManager.ResolveDependencies(m_ApplicationProxy, m_HttpClientFactory, m_UnityConnectProxy, m_IOProxy, m_AssetStoreCache, m_AssetStoreUtils, m_AssetStoreRestAPI);
 
             m_UpmCache.ResolveDependencies(m_PackageManagerPrefs);
-            m_UpmClient.ResolveDependencies(m_UpmCache, m_IOProxy, m_SettingsProxy, m_ClientProxy);
-            m_UpmRegistryClient.ResolveDependencies(m_UpmCache, m_SettingsProxy, m_ClientProxy);
+            m_UpmClient.ResolveDependencies(m_UpmCache, m_IOProxy, m_SettingsProxy, m_ClientProxy, m_ApplicationProxy);
+            m_UpmRegistryClient.ResolveDependencies(m_UpmCache, m_SettingsProxy, m_ClientProxy, m_ApplicationProxy);
 
             m_PackageFiltering.ResolveDependencies(m_UnityConnectProxy, m_SettingsProxy);
 
@@ -152,8 +159,15 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void Initialize()
         {
-            if (m_Initialized)
+            if (m_InitializeState == State.Initialized)
                 return;
+
+            if (m_InitializeState == State.Initializing)
+            {
+                Debug.LogWarning("[Package Manager Window] Nested ServicesContainer initialization detected.");
+                return;
+            }
+            m_InitializeState = State.Initializing;
 
             ResolveDependencies();
 
@@ -171,7 +185,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageDatabase.OnEnable();
             m_PageManager.OnEnable();
 
-            m_Initialized = true;
+            m_InitializeState = State.Initialized;
         }
 
         void OnDisable()

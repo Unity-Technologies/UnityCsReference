@@ -1251,6 +1251,98 @@ namespace UnityEditor
             );
         }
 
+        public static void ApplyAddedGameObjects(GameObject[] gameObjects, string assetPath, InteractionMode action)
+        {
+            DateTime startTime = DateTime.UtcNow;
+
+            if (gameObjects == null)
+                throw new ArgumentNullException(nameof(gameObjects), "Cannot apply added GameObjects. GameObjects array is null.");
+
+            if (!gameObjects.Any())
+                throw new ArgumentException(nameof(gameObjects), "No GameObjects in array.");
+
+            if (!HasSameParent(gameObjects))
+                throw new ArgumentException(nameof(gameObjects), "ApplyAddedGameObjects requires that GameObjects share the same parent.");
+
+            foreach (GameObject go in gameObjects)
+            {
+                if (!IsAddedGameObjectOverride(go))
+                    throw new ArgumentException(nameof(go), "Cannot apply added GameObject. GameObject is not an added GameObject override on a Prefab instance.");
+
+                ThrowExceptionIfInstanceIsPersistent(go);
+            }
+
+            GameObject gameObject = gameObjects[0];
+            Transform instanceParent = gameObject.transform.parent;
+            if (instanceParent == null)
+                return;
+
+            GameObject prefabSourceGameObjectParent = GetCorrespondingObjectFromSourceAtPath(instanceParent.gameObject, assetPath);
+            if (prefabSourceGameObjectParent == null)
+                return;
+
+            var instanceRoot = GetOutermostPrefabInstanceRoot(instanceParent);
+            if (instanceRoot == null)
+                return;
+
+            var sourceRoot = prefabSourceGameObjectParent.transform.root.gameObject;
+
+            var actionName = "Apply Added GameObject";
+            if (action == InteractionMode.UserAction)
+            {
+                Undo.RegisterFullObjectHierarchyUndo(sourceRoot, actionName);
+                Undo.RegisterFullObjectHierarchyUndo(instanceRoot, actionName);
+            }
+
+            AddGameObjectsToPrefabAndConnect(gameObjects, prefabSourceGameObjectParent);
+
+            SavePrefabAsset(sourceRoot);
+
+            for (int i = 0; i < gameObjects.Length; i++)
+            {
+                GameObject go = gameObjects[i];
+
+                if (action == InteractionMode.UserAction)
+                {
+                    var createdAssetObject = GetCorrespondingObjectFromSourceInAsset(go, prefabSourceGameObjectParent);
+                    if (createdAssetObject != null)
+                    {
+                        Undo.RegisterCreatedObjectUndo(createdAssetObject, actionName);
+                    }
+                }
+
+                Analytics.SendApplyEvent(
+                    Analytics.ApplyScope.AddedGameObject,
+                    instanceRoot,
+                    assetPath,
+                    action,
+                    startTime,
+                    false
+                );
+            }
+
+            EditorUtility.ForceRebuildInspectors();
+        }
+
+        internal static bool HasSameParent(GameObject[] gameObjects)
+        {
+            if (gameObjects == null || !gameObjects.Any() || gameObjects[0] == null)
+                throw new ArgumentException(nameof(gameObjects), "Array is invalid.");
+
+            Transform goParent = gameObjects[0].transform.parent;
+
+            if (goParent == null)
+                throw new ArgumentException(nameof(goParent), "Object is a parentless root.");
+
+            foreach (GameObject go in gameObjects)
+            {
+                if (go.transform.parent != goParent)
+                    return false;
+            }
+
+            return true;
+        }
+
         public static void RevertAddedGameObject(GameObject gameObject, InteractionMode action)
         {
             if (gameObject == null)
@@ -1859,6 +1951,16 @@ namespace UnityEditor
             // prefab asset as the parent is an instance of (e.g. instance of A is added under instance of A),
             // or not (instance of B is added under instance of A).
             return (asset.transform.parent == null);
+        }
+
+        internal static bool IsAllAddedGameObjectOverrides(GameObject[] gameObjects)
+        {
+            foreach (GameObject go in gameObjects)
+            {
+                if (!PrefabUtility.IsAddedGameObjectOverride(go))
+                    return false;
+            }
+            return true;
         }
 
         // Called before the prefab is saved to hdd (called after AssetModificationProcessor.OnWillSaveAssets and before OnPostprocessAllAssets)

@@ -106,6 +106,12 @@ namespace UnityEngine.Rendering
             Submit_Internal();
         }
 
+        public bool SubmitForRenderPassValidation()
+        {
+            Validate();
+            return SubmitForRenderPassValidation_Internal();
+        }
+
         internal void GetCameras(List<Camera> results)
         {
             Validate();

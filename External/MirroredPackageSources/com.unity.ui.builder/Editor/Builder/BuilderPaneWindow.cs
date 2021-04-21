@@ -134,6 +134,11 @@ namespace Unity.UI.Builder
             document.RegisterWindow(this);
         }
 
+        public void SetHasUnsavedChanges(bool unsaved)
+        {
+            hasUnsavedChanges = unsaved;
+        }
+
         void CreateUIInternal()
         {
             CreateUI();

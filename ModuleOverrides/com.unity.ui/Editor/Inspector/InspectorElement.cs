@@ -596,7 +596,7 @@ namespace UnityEditor.UIElements
                                 // the natural thing to do would be using SavedGUIState,
                                 // but it implicitly resets keyboards bindings and it breaks functionality.
                                 // We have identified issues with layout so we just save that for the time being.
-                                var layoutCache = new GUILayoutUtility.LayoutCache(GUILayoutUtility.current);
+                                var layoutCacheState = GUILayoutUtility.current.State;
                                 try
                                 {
                                     var rebuildOptimizedGUIBlocks = GetRebuildOptimizedGUIBlocks(editor.target);
@@ -641,7 +641,7 @@ namespace UnityEditor.UIElements
                                 }
                                 finally
                                 {
-                                    GUILayoutUtility.current = layoutCache;
+                                    GUILayoutUtility.current.CopyState(layoutCacheState);
                                 }
                             }
                             EditorGUILayout.EndVertical();

@@ -2,10 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Bee.BeeDriver;
-using NiceIO;
-using ScriptCompilationBuildProgram.Data;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
@@ -28,6 +28,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public class UnityProgressAPIToken : ProgressToken
         {
             private readonly int _token;
+            private int currentNodeIndex;
+
+            // Contains all the nodes currently in progress, with a index which is a sequencial number
+            // defining the order when they have been scheduled.
+            private Dictionary<string, int> nodesInFlight = new Dictionary<string, int>();
             public UnityProgressAPIToken(string msg) => _token = Progress.Start(msg);
 
             public override void Report(string msg)
@@ -40,20 +45,25 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 Progress.Report(_token, progress);
             }
 
+            void UpdateReportedNode()
+            {
+                // Of all the nodes currently in progress, report the one most recently scheduled.
+                if (nodesInFlight.Any())
+                    Report(nodesInFlight.OrderByDescending(x => x.Value).First().Key);
+            }
+
             public override void Report(NodeResult nodeResult)
             {
+                nodesInFlight.Remove(nodeResult.annotation);
+                UpdateReportedNode();
+
                 Report(nodeResult.processed_node_count / (float)nodeResult.number_of_nodes_ever_queued);
-                if (nodeResult.outputfile == null)
-                {
-                    Report(nodeResult.annotation.Substring(nodeResult.annotation.LastIndexOf('/') + 1));
-                    return;
-                }
+            }
 
-                var outputFile = new NPath(nodeResult.outputfile);
-                if (outputFile.HasExtension(Constants.MovedFromExtension))
-                    return;
-
-                Report(outputFile.FileName);
+            public override void ReportNodeStarted(NodeResult nodeResult)
+            {
+                nodesInFlight[nodeResult.annotation] = currentNodeIndex++;
+                UpdateReportedNode();
             }
 
             public override void Finish()

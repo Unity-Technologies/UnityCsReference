@@ -93,11 +93,13 @@ namespace UnityEngine
         // Access element at [row, column].
         public float this[int row, int column]
         {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
             get
             {
                 return this[row + column * 4];
             }
 
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
             set
             {
                 this[row + column * 4] = value;
@@ -160,12 +162,14 @@ namespace UnityEngine
         }
 
         // used to allow Matrix4x4s to be used as keys in hash tables
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public override int GetHashCode()
         {
             return GetColumn(0).GetHashCode() ^ (GetColumn(1).GetHashCode() << 2) ^ (GetColumn(2).GetHashCode() >> 2) ^ (GetColumn(3).GetHashCode() >> 1);
         }
 
         // also required for being able to use Matrix4x4s as keys in hash tables
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public override bool Equals(object other)
         {
             if (!(other is Matrix4x4)) return false;
@@ -173,6 +177,7 @@ namespace UnityEngine
             return Equals((Matrix4x4)other);
         }
 
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public bool Equals(Matrix4x4 other)
         {
             return GetColumn(0).Equals(other.GetColumn(0))

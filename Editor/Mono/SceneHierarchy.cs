@@ -1234,27 +1234,40 @@ namespace UnityEditor
                 menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Select Root"), false, SelectPrefabRoot);
             }
 
-            if (go != null && PrefabUtility.IsAddedGameObjectOverride(go))
+            GameObject[] selectedGOs = Selection.gameObjects;
+
+            if (selectedGOs.Any() && PrefabUtility.IsAllAddedGameObjectOverrides(selectedGOs))
             {
+                go = selectedGOs[0];
                 // Handle added GameObject or prefab.
                 Transform parentTransform = go.transform.parent;
                 PrefabUtility.HandleApplyRevertMenuItems(
-                    "Added GameObject",
+                    (selectedGOs.Length > 1) ? "Added GameObjects" : "Added GameObject",
                     parentTransform.gameObject,
                     (menuItemContent, sourceGo) =>
                     {
-                        TargetChoiceHandler.ObjectInstanceAndSourcePathInfo info = new TargetChoiceHandler.ObjectInstanceAndSourcePathInfo();
-                        info.instanceObject = go;
-                        info.assetPath = AssetDatabase.GetAssetPath(sourceGo);
                         GameObject rootGo = PrefabUtility.GetRootGameObject(sourceGo);
-                        if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootGo) || EditorUtility.IsPersistent(parentTransform))
+                        if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootGo) || EditorUtility.IsPersistent(parentTransform) || !PrefabUtility.HasSameParent(selectedGOs))
                             menu.AddDisabledItem(menuItemContent);
                         else
-                            menu.AddItem(menuItemContent, false, TargetChoiceHandler.ApplyPrefabAddedGameObject, info);
+                        {
+                            string assetPath = AssetDatabase.GetAssetPath(sourceGo);
+                            TargetChoiceHandler.ObjectInstanceAndSourcePathInfo[] childInfos = new TargetChoiceHandler.ObjectInstanceAndSourcePathInfo[selectedGOs.Length];
+                            for (int i = 0; i < selectedGOs.Length; i++)
+                            {
+                                GameObject go = selectedGOs[i];
+                                TargetChoiceHandler.ObjectInstanceAndSourcePathInfo info = new TargetChoiceHandler.ObjectInstanceAndSourcePathInfo();
+                                info.instanceObject = go;
+                                info.assetPath = assetPath;
+                                childInfos[i] = info;
+                            }
+
+                            menu.AddItem(menuItemContent, false, TargetChoiceHandler.ApplyPrefabAddedGameObjects, childInfos);
+                        }
                     },
                     (menuItemContent) =>
                     {
-                        menu.AddItem(menuItemContent, false, TargetChoiceHandler.RevertPrefabAddedGameObject, go);
+                        menu.AddItem(menuItemContent, false, TargetChoiceHandler.RevertPrefabAddedGameObjects, selectedGOs);
                     }
                 );
             }

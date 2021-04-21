@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEngine.UIElements;
@@ -91,6 +92,7 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// USS class name for border elements in elements of this type.
         /// </summary>
+        [Obsolete("borderUssClass is not used anymore", false)]
         public static readonly string borderUssClassName = ussClassName + "__border";
 
         VisualElement m_GradientTextureImage;
@@ -116,8 +118,14 @@ namespace UnityEditor.UIElements
             m_GradientTextureImage.AddToClassList(contentUssClassName);
             visualInput.Add(m_GradientTextureImage);
 
+            // Keep creating and adding a VisualElement for the border even though it is not used anymore.
+            // It is done to remain backwards compatible (c.f. obsoleted borderUssClassName).
             VisualElement borderElement = new VisualElement() { name = "unity-border", pickingMode = PickingMode.Ignore };
+
+#pragma warning disable 0618 // borderUssClassName is now obsolete.
             borderElement.AddToClassList(borderUssClassName);
+#pragma warning restore 0618
+
             visualInput.Add(borderElement);
             rawValue = new Gradient();
         }

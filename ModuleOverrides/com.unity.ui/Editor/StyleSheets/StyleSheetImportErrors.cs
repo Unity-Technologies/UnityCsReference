@@ -56,6 +56,11 @@ namespace UnityEditor.UIElements.StyleSheets
             this.isWarning = isWarning;
         }
 
+        public override string ToString()
+        {
+            return ToString(StyleValueImporter.glossary);
+        }
+
         public string ToString(StyleSheetImportGlossary glossary)
         {
             string lineStr = line > -1 ? $" ({glossary.line} {line})" : "";

@@ -574,6 +574,11 @@ namespace UnityEngine.UIElements
             get { return timerEventScheduler; }
         }
 
+        internal VisualTreeUpdater visualTreeUpdater
+        {
+            get { return m_VisualTreeUpdater; }
+        }
+
         public override ScriptableObject ownerObject { get; protected set; }
 
         public override ContextType contextType { get; protected set; }

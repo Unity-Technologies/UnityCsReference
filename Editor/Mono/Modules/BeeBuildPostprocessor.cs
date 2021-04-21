@@ -445,6 +445,9 @@ namespace UnityEditor.Modules
         protected static bool GetInstallingIntoBuildsFolder(BuildPostProcessArgs args) =>
             IsBuildOptionSet(args.options, BuildOptions.InstallInBuildFolder);
 
+        protected static bool ShouldAppendBuild(BuildPostProcessArgs args) =>
+            IsBuildOptionSet(args.options, BuildOptions.AcceptExternalModificationsToPlayer);
+
         protected static bool GetUseIl2Cpp(BuildPostProcessArgs args) =>
             PlayerSettings.GetScriptingBackend(BuildPipeline.GetBuildTargetGroup(args.target)) == ScriptingImplementation.IL2CPP;
     }

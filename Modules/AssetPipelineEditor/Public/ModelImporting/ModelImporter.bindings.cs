@@ -1104,5 +1104,8 @@ namespace UnityEditor
 
         [StaticAccessor("ModelImporterBindings", StaticAccessorType.DoubleColon)]
         internal extern static int vertexCacheOptimizerPrimsPerJobCount { set; }
+
+        [StaticAccessor("ModelImporterBindings", StaticAccessorType.DoubleColon)]
+        internal extern static bool enableMikktspaceCallbacks { set; }
     }
 }

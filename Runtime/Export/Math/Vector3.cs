@@ -34,6 +34,7 @@ namespace UnityEngine
         public float z;
 
         // Linearly interpolates between two vectors.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3 Lerp(Vector3 a, Vector3 b, float t)
         {
             t = Mathf.Clamp01(t);
@@ -45,6 +46,7 @@ namespace UnityEngine
         }
 
         // Linearly interpolates between two vectors without clamping the interpolant
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3 LerpUnclamped(Vector3 a, Vector3 b, float t)
         {
             return new Vector3(
@@ -55,6 +57,7 @@ namespace UnityEngine
         }
 
         // Moves a point /current/ in a straight line towards a /target/ point.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3 MoveTowards(Vector3 current, Vector3 target, float maxDistanceDelta)
         {
             // avoid vector ops because current scripting backends are terrible at inlining
@@ -74,6 +77,7 @@ namespace UnityEngine
         }
 
         [uei.ExcludeFromDocs]
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3 SmoothDamp(Vector3 current, Vector3 target, ref Vector3 currentVelocity, float smoothTime, float maxSpeed)
         {
             float deltaTime = Time.deltaTime;
@@ -81,6 +85,7 @@ namespace UnityEngine
         }
 
         [uei.ExcludeFromDocs]
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3 SmoothDamp(Vector3 current, Vector3 target, ref Vector3 currentVelocity, float smoothTime)
         {
             float deltaTime = Time.deltaTime;
@@ -161,6 +166,7 @@ namespace UnityEngine
         // Access the x, y, z components using [0], [1], [2] respectively.
         public float this[int index]
         {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
             get
             {
                 switch (index)
@@ -173,6 +179,7 @@ namespace UnityEngine
                 }
             }
 
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
             set
             {
                 switch (index)
@@ -187,20 +194,26 @@ namespace UnityEngine
         }
 
         // Creates a new vector with given x, y, z components.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public Vector3(float x, float y, float z) { this.x = x; this.y = y; this.z = z; }
         // Creates a new vector with given x, y components and sets /z/ to zero.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public Vector3(float x, float y) { this.x = x; this.y = y; z = 0F; }
 
         // Set x, y and z components of an existing Vector3.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public void Set(float newX, float newY, float newZ) { x = newX; y = newY; z = newZ; }
 
         // Multiplies two vectors component-wise.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3 Scale(Vector3 a, Vector3 b) { return new Vector3(a.x * b.x, a.y * b.y, a.z * b.z); }
 
         // Multiplies every component of this vector by the same component of /scale/.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public void Scale(Vector3 scale) { x *= scale.x; y *= scale.y; z *= scale.z; }
 
         // Cross Product of two vectors.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3 Cross(Vector3 lhs, Vector3 rhs)
         {
             return new Vector3(
@@ -210,12 +223,14 @@ namespace UnityEngine
         }
 
         // used to allow Vector3s to be used as keys in hash tables
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public override int GetHashCode()
         {
             return x.GetHashCode() ^ (y.GetHashCode() << 2) ^ (z.GetHashCode() >> 2);
         }
 
         // also required for being able to use Vector3s as keys in hash tables
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public override bool Equals(object other)
         {
             if (!(other is Vector3)) return false;
@@ -223,12 +238,14 @@ namespace UnityEngine
             return Equals((Vector3)other);
         }
 
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public bool Equals(Vector3 other)
         {
             return x == other.x && y == other.y && z == other.z;
         }
 
         // Reflects a vector off the plane defined by a normal.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3 Reflect(Vector3 inDirection, Vector3 inNormal)
         {
             float factor = -2F * Dot(inNormal, inDirection);
@@ -238,6 +255,7 @@ namespace UnityEngine
         }
 
         // *undoc* --- we have normalized property now
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3 Normalize(Vector3 value)
         {
             float mag = Magnitude(value);
@@ -248,6 +266,7 @@ namespace UnityEngine
         }
 
         // Makes this vector have a ::ref::magnitude of 1.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public void Normalize()
         {
             float mag = Magnitude(this);
@@ -260,13 +279,16 @@ namespace UnityEngine
         // Returns this vector with a ::ref::magnitude of 1 (RO).
         public Vector3 normalized
         {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
             get { return Vector3.Normalize(this); }
         }
 
         // Dot Product of two vectors.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static float Dot(Vector3 lhs, Vector3 rhs) { return lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z; }
 
         // Projects a vector onto another vector.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3 Project(Vector3 vector, Vector3 onNormal)
         {
             float sqrMag = Dot(onNormal, onNormal);
@@ -282,6 +304,7 @@ namespace UnityEngine
         }
 
         // Projects a vector onto a plane defined by a normal orthogonal to the plane.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3 ProjectOnPlane(Vector3 vector, Vector3 planeNormal)
         {
             float sqrMag = Dot(planeNormal, planeNormal);
@@ -297,6 +320,7 @@ namespace UnityEngine
         }
 
         // Returns the angle in degrees between /from/ and /to/. This is always the smallest
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static float Angle(Vector3 from, Vector3 to)
         {
             // sqrt(a) * sqrt(b) = sqrt(a * b) -- valid for real numbers
@@ -311,6 +335,7 @@ namespace UnityEngine
         // The smaller of the two possible angles between the two vectors is returned, therefore the result will never be greater than 180 degrees or smaller than -180 degrees.
         // If you imagine the from and to vectors as lines on a piece of paper, both originating from the same point, then the /axis/ vector would point up out of the paper.
         // The measured angle between the two vectors would be positive in a clockwise direction and negative in an anti-clockwise direction.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static float SignedAngle(Vector3 from, Vector3 to, Vector3 axis)
         {
             float unsignedAngle = Angle(from, to);
@@ -323,6 +348,7 @@ namespace UnityEngine
         }
 
         // Returns the distance between /a/ and /b/.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static float Distance(Vector3 a, Vector3 b)
         {
             float diff_x = a.x - b.x;
@@ -332,6 +358,7 @@ namespace UnityEngine
         }
 
         // Returns a copy of /vector/ with its magnitude clamped to /maxLength/.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3 ClampMagnitude(Vector3 vector, float maxLength)
         {
             float sqrmag = vector.sqrMagnitude;
@@ -352,27 +379,32 @@ namespace UnityEngine
         }
 
         // *undoc* --- there's a property now
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static float Magnitude(Vector3 vector) { return (float)Math.Sqrt(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z); }
 
         // Returns the length of this vector (RO).
         public float magnitude
         {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
             get { return (float)Math.Sqrt(x * x + y * y + z * z); }
         }
 
         // *undoc* --- there's a property now
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static float SqrMagnitude(Vector3 vector) { return vector.x * vector.x + vector.y * vector.y + vector.z * vector.z; }
 
         // Returns the squared length of this vector (RO).
         public float sqrMagnitude { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return x * x + y * y + z * z; } }
 
         // Returns a vector that is made from the smallest components of two vectors.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3 Min(Vector3 lhs, Vector3 rhs)
         {
             return new Vector3(Mathf.Min(lhs.x, rhs.x), Mathf.Min(lhs.y, rhs.y), Mathf.Min(lhs.z, rhs.z));
         }
 
         // Returns a vector that is made from the largest components of two vectors.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3 Max(Vector3 lhs, Vector3 rhs)
         {
             return new Vector3(Mathf.Max(lhs.x, rhs.x), Mathf.Max(lhs.y, rhs.y), Mathf.Max(lhs.z, rhs.z));
@@ -408,19 +440,26 @@ namespace UnityEngine
         public static Vector3 negativeInfinity { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return negativeInfinityVector; } }
 
         // Adds two vectors.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3 operator+(Vector3 a, Vector3 b) { return new Vector3(a.x + b.x, a.y + b.y, a.z + b.z); }
         // Subtracts one vector from another.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3 operator-(Vector3 a, Vector3 b) { return new Vector3(a.x - b.x, a.y - b.y, a.z - b.z); }
         // Negates a vector.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3 operator-(Vector3 a) { return new Vector3(-a.x, -a.y, -a.z); }
         // Multiplies a vector by a number.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3 operator*(Vector3 a, float d) { return new Vector3(a.x * d, a.y * d, a.z * d); }
         // Multiplies a vector by a number.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3 operator*(float d, Vector3 a) { return new Vector3(a.x * d, a.y * d, a.z * d); }
         // Divides a vector by a number.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3 operator/(Vector3 a, float d) { return new Vector3(a.x / d, a.y / d, a.z / d); }
 
         // Returns true if the vectors are equal.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static bool operator==(Vector3 lhs, Vector3 rhs)
         {
             // Returns false in the presence of NaN values.
@@ -432,6 +471,7 @@ namespace UnityEngine
         }
 
         // Returns true if vectors are different.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static bool operator!=(Vector3 lhs, Vector3 rhs)
         {
             // Returns true in the presence of NaN values.

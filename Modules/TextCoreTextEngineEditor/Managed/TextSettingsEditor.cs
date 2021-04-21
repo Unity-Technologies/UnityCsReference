@@ -37,7 +37,7 @@ namespace UnityEditor.TextCore.Text
             public static readonly GUIContent minLabel = new GUIContent("Min");
             public static readonly GUIContent maxLabel = new GUIContent("Max");
 
-            public static readonly GUIContent wordWrappingLabel = new GUIContent("Word Wrapping");
+            public static readonly GUIContent textWrappingModeLabel = new GUIContent("Text Wrapping Mode");
             public static readonly GUIContent kerningLabel = new GUIContent("Kerning");
             public static readonly GUIContent extraPaddingLabel = new GUIContent("Extra Padding");
             public static readonly GUIContent tintAllSpritesLabel = new GUIContent("Tint All Sprites");
@@ -48,6 +48,7 @@ namespace UnityEditor.TextCore.Text
             public static readonly GUIContent dynamicAtlasTextureGroup = new GUIContent("Dynamic Atlas Texture Group");
 
             public static readonly GUIContent missingGlyphLabel = new GUIContent("Missing Character Unicode", "The character to be displayed when the requested character is not found in any font asset or fallbacks.");
+            public static readonly GUIContent clearDynamicDataOnBuildLabel = new GUIContent("Clear Dynamic Data On Build", "Determines if the \"Clear Dynamic Data on Build\" property will be set to true or false on newly created dynamic font assets.");
             public static readonly GUIContent disableWarningsLabel = new GUIContent("Disable warnings", "Disable warning messages in the Console.");
 
             public static readonly GUIContent defaultSpriteAssetLabel = new GUIContent("Default Sprite Asset", "The Sprite Asset that will be assigned by default when using the <sprite> tag when no Sprite Asset is specified.");
@@ -95,12 +96,13 @@ namespace UnityEditor.TextCore.Text
         SerializedProperty m_PropColorGradientPresetsPath;
 
         SerializedProperty m_PropMatchMaterialPreset;
-        SerializedProperty m_PropWordWrapping;
+        SerializedProperty m_PropTextWrappingMode;
         SerializedProperty m_PropKerning;
         SerializedProperty m_PropExtraPadding;
         SerializedProperty m_PropTintAllSprites;
         SerializedProperty m_PropParseEscapeCharacters;
         SerializedProperty m_PropMissingGlyphCharacter;
+        // SerializedProperty m_PropClearDynamicDataOnBuild;
 
         //SerializedProperty m_DynamicAtlasTextureManager;
         SerializedProperty m_GetFontFeaturesAtRuntime;
@@ -172,12 +174,13 @@ namespace UnityEditor.TextCore.Text
 
             m_PropMatchMaterialPreset = serializedObject.FindProperty("m_MatchMaterialPreset");
 
-            m_PropWordWrapping = serializedObject.FindProperty("m_enableWordWrapping");
+            m_PropTextWrappingMode = serializedObject.FindProperty("m_TextWrappingMode");
             m_PropKerning = serializedObject.FindProperty("m_enableKerning");
             m_PropExtraPadding = serializedObject.FindProperty("m_enableExtraPadding");
             m_PropTintAllSprites = serializedObject.FindProperty("m_enableTintAllSprites");
             m_PropParseEscapeCharacters = serializedObject.FindProperty("m_enableParseEscapeCharacters");
             m_PropMissingGlyphCharacter = serializedObject.FindProperty("m_MissingCharacterUnicode");
+            //m_PropClearDynamicDataOnBuild = serializedObject.FindProperty("m_ClearDynamicDataOnBuild");
 
             m_PropDisplayWarnings = serializedObject.FindProperty("m_DisplayWarnings");
 
@@ -217,7 +220,12 @@ namespace UnityEditor.TextCore.Text
             // FONT ASSET FALLBACK(s)
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             GUILayout.Label(Styles.fallbackFontAssetsLabel, EditorStyles.boldLabel);
+            EditorGUI.BeginChangeCheck();
             m_FontAssetFallbackList.DoLayoutList();
+            if (EditorGUI.EndChangeCheck())
+            {
+                TextResourceManager.RebuildFontAssetCache();
+            }
 
             GUILayout.Label(Styles.fallbackMaterialSettingsLabel, EditorStyles.boldLabel);
             EditorGUI.indentLevel = 1;
@@ -235,6 +243,7 @@ namespace UnityEditor.TextCore.Text
             EditorGUI.indentLevel = 1;
             //EditorGUILayout.PropertyField(m_GetFontFeaturesAtRuntime, Styles.getFontFeaturesAtRuntime);
             EditorGUILayout.PropertyField(m_PropMissingGlyphCharacter, Styles.missingGlyphLabel);
+            // EditorGUILayout.PropertyField(m_PropClearDynamicDataOnBuild, Styles.clearDynamicDataOnBuildLabel);
             EditorGUILayout.PropertyField(m_PropDisplayWarnings, Styles.disableWarningsLabel);
             //EditorGUILayout.PropertyField(m_DynamicAtlasTextureManager, Styles.dynamicAtlasTextureManager);
             EditorGUI.indentLevel = 0;

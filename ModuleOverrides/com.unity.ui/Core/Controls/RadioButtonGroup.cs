@@ -108,6 +108,8 @@ namespace UnityEngine.UIElements
             m_RadioButtonValueChangedCallback = RadioButtonValueChangedCallback;
             choices = radioButtonChoices;
             value = -1;
+            visualInput.focusable = false;
+            delegatesFocus = true;
         }
 
         void RadioButtonValueChangedCallback(ChangeEvent<bool> evt)

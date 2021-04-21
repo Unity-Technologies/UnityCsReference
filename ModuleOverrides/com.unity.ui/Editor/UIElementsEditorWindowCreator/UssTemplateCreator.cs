@@ -44,7 +44,7 @@ namespace UnityEditor.UIElements
             else
             {
                 var folder = GetCurrentFolder();
-                var path = AssetDatabase.GenerateUniqueAssetPath(folder + "/UnityDefaultRuntimeTheme.tss");
+                var path = AssetDatabase.GenerateUniqueAssetPath(folder + "/" + ThemeRegistry.kUnityRuntimeThemeFileName);
                 var contents = "@import url(\"" + ThemeRegistry.kThemeScheme + "://default\");\nVisualElement {}";
                 var icon = EditorGUIUtility.IconContent<ThemeStyleSheet>().image as Texture2D;
                 ProjectWindowUtil.CreateAssetWithContent(path, contents, icon);

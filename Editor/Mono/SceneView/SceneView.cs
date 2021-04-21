@@ -97,6 +97,7 @@ namespace UnityEditor
         static readonly PrefColor kSceneViewWire = new PrefColor("Scene/Wireframe", 0.0f, 0.0f, 0.0f, 0.5f);
         static readonly PrefColor kSceneViewWireOverlay = new PrefColor("Scene/Wireframe Overlay", 0.0f, 0.0f, 0.0f, 0.25f);
         static readonly PrefColor kSceneViewSelectedOutline = new PrefColor("Scene/Selected Outline", 255.0f / 255.0f, 102.0f / 255.0f, 0.0f / 255.0f, 0.0f / 255.0f);
+        static readonly PrefColor kSceneViewSelectedSubmeshOutline = new PrefColor("Scene/Selected Material Highlight", 200.0f / 255.0f, 0f / 255.0f, 0f / 255.0f, 100.0f / 255.0f);
         static readonly PrefColor kSceneViewSelectedChildrenOutline = new PrefColor("Scene/Selected Children Outline", 94.0f / 255.0f, 119.0f / 255.0f, 155.0f / 255.0f, 0.0f / 255.0f);
         static readonly PrefColor kSceneViewSelectedWire = new PrefColor("Scene/Wireframe Selected", 94.0f / 255.0f, 119.0f / 255.0f, 155.0f / 255.0f, 64.0f / 255.0f);
 
@@ -200,6 +201,10 @@ namespace UnityEditor
             get { return m_Gizmos; }
             set { m_Gizmos = value; }
         }
+
+        const float kSubmeshPingDuration = 1.0f;
+
+        internal bool isPingingObject { get; set; } = false;
 
         internal bool showToolbar { get; set; } = true;
 
@@ -956,6 +961,8 @@ namespace UnityEditor
                 renderDocContent = EditorGUIUtility.TrIconContent("FrameCapture", UnityEditor.RenderDocUtil.openInRenderDocLabel);
             }
         }
+
+        internal float pingStartTime { get; set; } = 0;
 
         double m_StartSearchFilterTime = -1;
         RenderTexture m_SceneTargetTexture;
@@ -2023,7 +2030,7 @@ namespace UnityEditor
                 return;
 
             // Set scene view colors
-            Handles.SetSceneViewColors(kSceneViewWire, kSceneViewWireOverlay, kSceneViewSelectedOutline, kSceneViewSelectedChildrenOutline, kSceneViewSelectedWire);
+            Handles.SetSceneViewColors(kSceneViewWire, kSceneViewWireOverlay, kSceneViewSelectedOutline, kSceneViewSelectedChildrenOutline, kSceneViewSelectedWire, kSceneViewSelectedSubmeshOutline);
 
             // Setup shader replacement if needed by overlay mode
             if (m_CameraMode.drawMode == DrawCameraMode.Overdraw)
@@ -2090,7 +2097,26 @@ namespace UnityEditor
             if (m_SkipFadingPending)
                 sceneViewGrids.SkipFading(); // Called AFTER fade target values have been updated.
 
+            if (isPingingObject)
+            {
+                var currentTime = Time.realtimeSinceStartup;
+                if (currentTime - pingStartTime > kSubmeshPingDuration)
+                {
+                    isPingingObject = false;
+                    Handles.SetPingedMaterialInstanceID(m_Camera, 0);
+                }
+                else
+                {
+                    var elapsed = currentTime - pingStartTime;
+                    float t = (float)elapsed / (float)kSubmeshPingDuration;
+                    var alphaMultiplier = Mathf.SmoothStep(1, 0, t);
+                    Handles.SetOutlineAlpha(m_Camera, alphaMultiplier);
+                    Repaint();
+                }
+            }
+
             Event evt = Event.current;
+
             if (UseSceneFiltering())
             {
                 if (evt.type == EventType.Repaint)
@@ -2118,6 +2144,7 @@ namespace UnityEditor
 
                 DrawRenderModeOverlay(groupSpaceCameraRect);
             }
+
             ShaderUtil.allowAsyncCompilation = oldAsync;
         }
 
@@ -2772,7 +2799,18 @@ namespace UnityEditor
         public Vector3 pivot { get { return m_Position.value; } set { m_Position.value = value; } }
 
         // The direction of the scene view.
-        public Quaternion rotation { get { return m_Rotation.value; } set { m_Rotation.value = value; } }
+        public Quaternion rotation
+        {
+            get => m_2DMode ? Quaternion.identity : m_Rotation.value;
+
+            set
+            {
+                if (m_2DMode)
+                    Debug.LogWarning("SceneView rotation is fixed to identity when in 2D mode. This will be an error in future versions of Unity.");
+                else
+                    m_Rotation.value = value;
+            }
+        }
 
         static float ValidateSceneSize(float value)
         {
@@ -2943,7 +2981,7 @@ namespace UnityEditor
             SceneVisibilityManager.instance.enableSceneVisibility = m_SceneVisActive;
             ResetIfNaN();
 
-            m_Camera.transform.rotation = m_Rotation.value;
+            m_Camera.transform.rotation = m_2DMode ? Quaternion.identity : m_Rotation.value;
 
             float fov = m_Ortho.Fade(perspectiveFov, 0);
 

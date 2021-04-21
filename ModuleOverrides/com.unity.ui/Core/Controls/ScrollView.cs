@@ -122,10 +122,10 @@ namespace UnityEngine.UIElements
             { name = "vertical-scroller-visibility" };
 
             UxmlFloatAttributeDescription m_HorizontalPageSize = new UxmlFloatAttributeDescription
-            { name = "horizontal-page-size", defaultValue = Scroller.kDefaultPageSize };
+            { name = "horizontal-page-size", defaultValue = k_UnsetPageSizeValue };
 
             UxmlFloatAttributeDescription m_VerticalPageSize = new UxmlFloatAttributeDescription
-            { name = "vertical-page-size", defaultValue = Scroller.kDefaultPageSize };
+            { name = "vertical-page-size", defaultValue = k_UnsetPageSizeValue };
 
             UxmlEnumAttributeDescription<TouchScrollBehavior> m_TouchScrollBehavior = new UxmlEnumAttributeDescription<TouchScrollBehavior>
             { name = "touch-scroll-type", defaultValue = TouchScrollBehavior.Clamped };
@@ -226,6 +226,9 @@ namespace UnityEngine.UIElements
         // Case 1297053: ScrollableWidth/Height may contain some numerical imprecisions.
         const float k_SizeThreshold = 0.001f;
 
+        const float k_ScrollPageOverlapFactor = 0.1f;
+        internal const float k_UnsetPageSizeValue = -1.0f;
+
         internal bool needsHorizontal
         {
             get
@@ -275,22 +278,34 @@ namespace UnityEngine.UIElements
             }
         }
 
+        private float m_HorizontalPageSize;
+
         /// <summary>
         /// This property is controlling the scrolling speed of the horizontal scroller.
         /// </summary>
         public float horizontalPageSize
         {
-            get { return horizontalScroller.slider.pageSize; }
-            set { horizontalScroller.slider.pageSize = value; }
+            get { return m_HorizontalPageSize; }
+            set
+            {
+                m_HorizontalPageSize = value;
+                UpdateHorizontalSliderPageSize();
+            }
         }
+
+        private float m_VerticalPageSize;
 
         /// <summary>
         /// This property is controlling the scrolling speed of the vertical scroller.
         /// </summary>
         public float verticalPageSize
         {
-            get { return verticalScroller.slider.pageSize; }
-            set { verticalScroller.slider.pageSize = value; }
+            get { return m_VerticalPageSize; }
+            set
+            {
+                m_VerticalPageSize = value;
+                UpdateVerticalSliderPageSize();
+            }
         }
 
         private float scrollableWidth
@@ -373,6 +388,66 @@ namespace UnityEngine.UIElements
                     horizontalScroller.slider.clamped = false;
                     verticalScroller.slider.clamped = false;
                 }
+            }
+        }
+
+        void OnHorizontalScrollDragElementChanged(GeometryChangedEvent evt)
+        {
+            if (evt.oldRect.size == evt.newRect.size)
+            {
+                return;
+            }
+
+            UpdateHorizontalSliderPageSize();
+        }
+
+        void OnVerticalScrollDragElementChanged(GeometryChangedEvent evt)
+        {
+            if (evt.oldRect.size == evt.newRect.size)
+            {
+                return;
+            }
+
+            UpdateVerticalSliderPageSize();
+        }
+
+        void UpdateHorizontalSliderPageSize()
+        {
+            var containerWidth = horizontalScroller.resolvedStyle.width;
+            var horizontalSliderPageSize = m_HorizontalPageSize;
+
+            if (containerWidth > 0f)
+            {
+                if (Mathf.Approximately(m_HorizontalPageSize, k_UnsetPageSizeValue))
+                {
+                    var sliderDragElementWidth = horizontalScroller.slider.dragElement.resolvedStyle.width;
+                    horizontalSliderPageSize = sliderDragElementWidth * (1f - k_ScrollPageOverlapFactor);
+                }
+            }
+
+            if (horizontalSliderPageSize >= 0)
+            {
+                horizontalScroller.slider.pageSize = horizontalSliderPageSize;
+            }
+        }
+
+        void UpdateVerticalSliderPageSize()
+        {
+            var containerHeight = verticalScroller.resolvedStyle.height;
+            var verticalSliderPageSize = m_VerticalPageSize;
+
+            if (containerHeight > 0f)
+            {
+                if (Mathf.Approximately(m_VerticalPageSize, k_UnsetPageSizeValue))
+                {
+                    var sliderDragElementHeight = verticalScroller.slider.dragElement.resolvedStyle.height;
+                    verticalSliderPageSize = sliderDragElementHeight * (1f - k_ScrollPageOverlapFactor);
+                }
+            }
+
+            if (verticalSliderPageSize >= 0)
+            {
+                verticalScroller.slider.pageSize = verticalSliderPageSize;
             }
         }
 
@@ -621,6 +696,12 @@ namespace UnityEngine.UIElements
             RegisterCallback<WheelEvent>(OnScrollWheel);
             verticalScroller.RegisterCallback<GeometryChangedEvent>(OnScrollersGeometryChanged);
             horizontalScroller.RegisterCallback<GeometryChangedEvent>(OnScrollersGeometryChanged);
+
+            horizontalPageSize = k_UnsetPageSizeValue;
+            verticalPageSize = k_UnsetPageSizeValue;
+
+            horizontalScroller.slider.dragElement.RegisterCallback<GeometryChangedEvent>(OnHorizontalScrollDragElementChanged);
+            verticalScroller.slider.dragElement.RegisterCallback<GeometryChangedEvent>(OnVerticalScrollDragElementChanged);
 
             m_CapturedTargetPointerMoveCallback = OnPointerMove;
             m_CapturedTargetPointerUpCallback = OnPointerUp;

@@ -32,15 +32,7 @@ namespace UnityEditor.UIElements
 
         internal static string GetStyleSheetPathForFont(string sheetPath, string fontName)
         {
-            // Load the stylesheet of the current font
-            if (LocalizationDatabase.currentEditorLanguage == SystemLanguage.English)
-            {
-                return sheetPath.Replace(".uss", "_" + fontName.ToLowerInvariant() + ".uss");
-            }
-            else
-            {
-                return sheetPath;
-            }
+            return sheetPath.Replace(".uss", "_" + fontName.ToLowerInvariant() + ".uss");
         }
 
         internal static string GetStyleSheetPathForCurrentFont(string sheetPath)

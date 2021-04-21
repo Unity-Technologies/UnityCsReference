@@ -30,6 +30,11 @@ namespace UnityEditor
             return DoObjectField(position, dropRect, id, obj, objBeingEdited, objType, null, validator, allowSceneObjects, style != null ? style : EditorStyles.objectField);
         }
 
+        internal static Object DoObjectField(Rect position, Rect dropRect, int id, Object obj, Object objBeingEdited, System.Type objType, ObjectFieldValidator validator, bool allowSceneObjects, System.Type additionalType, GUIStyle style = null)
+        {
+            return DoObjectField(position, dropRect, id, obj, objBeingEdited, objType, additionalType, null, validator, allowSceneObjects, style != null ? style : EditorStyles.objectField);
+        }
+
         // Takes SerializedProperty, no direct reference to object.
         internal static Object DoObjectField(Rect position, Rect dropRect, int id, System.Type objType, SerializedProperty property, ObjectFieldValidator validator, bool allowSceneObjects, GUIStyle style = null)
         {
@@ -63,6 +68,17 @@ namespace UnityEditor
                     new ObjectPreviewPopup(targetObject),
                     new[] { PopupLocation.Left, PopupLocation.Below, PopupLocation.Right });
             }
+        }
+
+        internal static void PingObjectInSceneViewOnClick(Material targetMaterial)
+        {
+            var sceneView = SceneView.lastActiveSceneView;
+            if (sceneView == null || targetMaterial == null)
+                return;
+
+            sceneView.isPingingObject = true;
+            sceneView.pingStartTime = Time.realtimeSinceStartup;
+            Handles.SetPingedMaterialInstanceID(sceneView.camera, targetMaterial.GetInstanceID());
         }
 
         static Object AssignSelectedObject(SerializedProperty property, ObjectFieldValidator validator, System.Type objectType, Event evt)
@@ -140,6 +156,11 @@ namespace UnityEditor
         // Since it's not easy to know which parameters are mutually exclusively used, this method is
         // private and internal/public methods instead EITHER take SerializedObject OR direct reference.
         static Object DoObjectField(Rect position, Rect dropRect, int id, Object obj, Object objBeingEdited, System.Type objType, SerializedProperty property, ObjectFieldValidator validator, bool allowSceneObjects, GUIStyle style)
+        {
+            return DoObjectField(position, dropRect, id, obj, objBeingEdited, objType, null, property, validator, allowSceneObjects, style);
+        }
+
+        static Object DoObjectField(Rect position, Rect dropRect, int id, Object obj, Object objBeingEdited, System.Type objType, System.Type additionalType, SerializedProperty property, ObjectFieldValidator validator, bool allowSceneObjects, GUIStyle style)
         {
             if (validator == null)
                 validator = ValidateObjectFieldAssignment;
@@ -245,10 +266,11 @@ namespace UnityEditor
                             if (GUI.enabled)
                             {
                                 GUIUtility.keyboardControl = id;
+                                var types = additionalType == null ? new Type[] {objType} : new Type[] { objType, additionalType };
                                 if (property != null)
-                                    ObjectSelector.get.Show(objType, property, allowSceneObjects);
+                                    ObjectSelector.get.Show(types, property, allowSceneObjects);
                                 else
-                                    ObjectSelector.get.Show(obj, objType, objBeingEdited, allowSceneObjects);
+                                    ObjectSelector.get.Show(obj, types, objBeingEdited, allowSceneObjects);
                                 ObjectSelector.get.objectSelectorID = id;
 
                                 evt.Use();
@@ -270,6 +292,9 @@ namespace UnityEditor
                                 GUIUtility.keyboardControl = id;
 
                                 PingObjectOrShowPreviewOnClick(actualTargetObject, position);
+                                var selectedMaterial = actualTargetObject as Material;
+                                if (selectedMaterial != null)
+                                    PingObjectInSceneViewOnClick(selectedMaterial);
                                 evt.Use();
                             }
                             // Double click opens the asset in external app or changes selection to referenced object
@@ -334,10 +359,11 @@ namespace UnityEditor
                         // otherwise the Inspector will maximize upon pressing space.
                         if (evt.MainActionKeyForControl(id))
                         {
+                            var types = additionalType == null ? new Type[] {objType} : new Type[] { objType, additionalType };
                             if (property != null)
-                                ObjectSelector.get.Show(objType, property, allowSceneObjects);
+                                ObjectSelector.get.Show(types, property, allowSceneObjects);
                             else
-                                ObjectSelector.get.Show(obj, objType, objBeingEdited, allowSceneObjects);
+                                ObjectSelector.get.Show(obj, types, objBeingEdited, allowSceneObjects);
                             ObjectSelector.get.objectSelectorID = id;
                             evt.Use();
                             GUIUtility.ExitGUI();

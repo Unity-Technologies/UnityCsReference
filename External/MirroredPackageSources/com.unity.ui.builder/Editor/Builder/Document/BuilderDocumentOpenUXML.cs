@@ -727,7 +727,7 @@ namespace Unity.UI.Builder
         // Private Utilities
         //
 
-        void RestoreAssetsFromBackup()
+        public void RestoreAssetsFromBackup()
         {
             foreach (var openUSSFile in m_OpenUSSFiles)
                 openUSSFile.RestoreFromBackup();

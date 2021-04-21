@@ -211,7 +211,7 @@ namespace UnityEditor
         {
             var targetSettings = extraData as TargetSettings;
             var currentTarget = targets[targetIndex] as VideoClipImporter;
-            if (targetSettings != null && currentTarget != null)
+            if (targetSettings != null && currentTarget != null && targetSettings.allSettings == null)
             {
                 var validPlatforms = BuildPlatforms.instance.GetValidPlatforms();
                 targetSettings.allSettings = new List<InspectorTargetSettings>(validPlatforms.Count + 1);

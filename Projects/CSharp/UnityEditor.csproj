@@ -4258,9 +4258,6 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Delegates\SerializedPropertyDelegates.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\Delegates\SerializedPropertyDelegates.cs</Link>
     </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Delegates\TextDelegateRegistration.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Delegates\TextDelegateRegistration.cs</Link>
-    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\EditorAtlasMonitorInjector.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\EditorAtlasMonitorInjector.cs</Link>
     </Compile>
@@ -5761,6 +5758,15 @@
     <Compile Include="..\..\Modules\PhysicsEditor\ArticulationBodyEditor.cs">
       <Link>Modules\PhysicsEditor\ArticulationBodyEditor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PhysicsEditor\ArticulationBodyEditorCommon.cs">
+      <Link>Modules\PhysicsEditor\ArticulationBodyEditorCommon.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsEditor\ArticulationBodyJointLimitTool.cs">
+      <Link>Modules\PhysicsEditor\ArticulationBodyJointLimitTool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsEditor\ArticulatonBodyAnchorTransformTool.cs">
+      <Link>Modules\PhysicsEditor\ArticulatonBodyAnchorTransformTool.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PhysicsEditor\BoxColliderEditor.cs">
       <Link>Modules\PhysicsEditor\BoxColliderEditor.cs</Link>
     </Compile>
@@ -6850,6 +6856,9 @@
     <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\SpriteGlyphPropertyDrawer.cs">
       <Link>Modules\TextCoreTextEngineEditor\Managed\SpriteGlyphPropertyDrawer.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\TextAssetPostProcessor.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\TextAssetPostProcessor.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\TextColorGradientAssetCreationMenu.cs">
       <Link>Modules\TextCoreTextEngineEditor\Managed\TextColorGradientAssetCreationMenu.cs</Link>
     </Compile>
@@ -7397,7 +7406,7 @@
       <HintPath>..\..\External\ExCSS\builds\builds\lib\net35\ExCSS.Unity.dll</HintPath>
     </Reference>
     <Reference Include="Bee.BeeDriver">
-      <HintPath>..\..\artifacts\Stevedore\bee-libraries_7430\Bee.BeeDriver.dll</HintPath>
+      <HintPath>..\..\artifacts\Stevedore\bee-libraries_a959\Bee.BeeDriver.dll</HintPath>
     </Reference>
     <ProjectReference Include="UnityEngine.csproj">
       <Project>{F0499708-3EB6-4026-8362-97E6FFC4E7C8}</Project>

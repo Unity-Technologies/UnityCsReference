@@ -52,7 +52,7 @@ namespace UnityEditor
         public const string ObjectSelectorSelectionDoneCommand = "ObjectSelectorSelectionDone";
 
         // Filters
-        string m_RequiredType;
+        string[]        m_RequiredTypes;
         string          m_SearchFilter;
 
         // Display state
@@ -280,10 +280,8 @@ namespace UnityEditor
                 filter.searchArea = SearchFilter.SearchArea.AllAssets;
 
             filter.SearchFieldStringToFilter(m_SearchFilter);
-            if (!string.IsNullOrEmpty(m_RequiredType) && filter.classNames.Length == 0)
-            {
-                filter.classNames = new[] { m_RequiredType };
-            }
+            if (filter.classNames.Length == 0 && m_RequiredTypes.All(type => !string.IsNullOrEmpty(type)))
+                filter.classNames = m_RequiredTypes;
 
             var hierarchyType = m_IsShowingAssets ? HierarchyType.Assets : HierarchyType.GameObjects;
 
@@ -316,19 +314,42 @@ namespace UnityEditor
             if (hierarchyType == HierarchyType.Assets)
             {
                 // When AssemblyDefinitionAsset is the required type, don't skip hidden packages
-                if (!string.IsNullOrEmpty(m_RequiredType) && m_RequiredType == typeof(AssemblyDefinitionAsset).Name)
+                foreach (var type in m_RequiredTypes)
                 {
-                    m_SkipHiddenPackages = false;
+                    if (!string.IsNullOrEmpty(type) && type == typeof(AssemblyDefinitionAsset).Name)
+                    {
+                        m_SkipHiddenPackages = false;
+                        break;
+                    }
                 }
                 filter.skipHidden = m_SkipHiddenPackages;
             }
 
-            var requiredType = TypeCache.GetTypesDerivedFrom<UnityEngine.Object>()
-                .FirstOrDefault(t => t.Name == m_RequiredType) ?? typeof(UnityObject);
+            bool hasObject = false;
+            var requiredTypes = new List<Type>();
+            var objectTypes = TypeCache.GetTypesDerivedFrom<UnityEngine.Object>();
+            foreach (var type in m_RequiredTypes)
+            {
+                foreach (var objectType in objectTypes)
+                {
+                    if (objectType.Name == type)
+                        requiredTypes.Add(objectType);
+                    else if (!hasObject)
+                    {
+                        requiredTypes.Add(typeof(UnityObject));
+                        hasObject = true;
+                    }
+                }
+            }
             m_ListArea.InitForSearch(listPosition, hierarchyType, filter, true, s =>
             {
-                var asset = AssetDatabase.LoadAssetAtPath(s, requiredType);
-                return asset?.GetInstanceID() ?? 0;
+                foreach (var type in requiredTypes)
+                {
+                    var asset = AssetDatabase.LoadAssetAtPath(s, type);
+                    if (asset != null && asset.GetInstanceID() != 0)
+                        return asset.GetInstanceID();
+                }
+                return 0;
             }, m_LegacySearchSessionOptions);
         }
 
@@ -344,26 +365,64 @@ namespace UnityEditor
             if (property == null)
                 throw new ArgumentNullException(nameof(property));
 
-            UnityObject objectBeingEdited = null;
             if (requiredType == null)
             {
                 ScriptAttributeUtility.GetFieldInfoFromProperty(property, out requiredType);
                 // case 951876: built-in types do not actually have reflectable fields, so their object types must be extracted from the type string
                 // this works because built-in types will only ever have serialized references to other built-in types, which this window's filter expects as unqualified names
                 if (requiredType == null)
-                    m_RequiredType = s_MatchPPtrTypeName.Match(property.type).Groups[1].Value;
+                    m_RequiredTypes = new string[] { s_MatchPPtrTypeName.Match(property.type).Groups[1].Value };
             }
 
             // Don't select anything on multi selection
             UnityObject obj = property.hasMultipleDifferentValues ? null : property.objectReferenceValue;
 
-            objectBeingEdited = property.serializedObject.targetObject;
+            UnityObject objectBeingEdited = property.serializedObject.targetObject;
             m_EditedProperty = property;
 
-            Show(obj, requiredType, objectBeingEdited, allowSceneObjects, allowedInstanceIDs, onObjectSelectorClosed, onObjectSelectedUpdated);
+            Show(obj, new Type[] { requiredType }, objectBeingEdited, allowSceneObjects, allowedInstanceIDs, onObjectSelectorClosed, onObjectSelectedUpdated);
+        }
+
+        internal void Show(Type[] requiredTypes, SerializedProperty property, bool allowSceneObjects, List<int> allowedInstanceIDs = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null)
+        {
+            if (requiredTypes == null)
+            {
+                Show((Type)null, property, allowSceneObjects, allowedInstanceIDs, onObjectSelectorClosed, onObjectSelectedUpdated);
+                return;
+            }
+
+            if (property == null)
+                throw new ArgumentNullException(nameof(property));
+
+            m_RequiredTypes = new string[requiredTypes.Length];
+            for (int i = 0; i < requiredTypes.Length; i++)
+            {
+                var requiredType = requiredTypes[i];
+                if (requiredType == null)
+                {
+                    ScriptAttributeUtility.GetFieldInfoFromProperty(property, out requiredType);
+                    // case 951876: built-in types do not actually have reflectable fields, so their object types must be extracted from the type string
+                    // this works because built-in types will only ever have serialized references to other built-in types, which this window's filter expects as unqualified names
+                    if (requiredType == null)
+                        m_RequiredTypes[i] = s_MatchPPtrTypeName.Match(property.type).Groups[1].Value;
+                }
+            }
+
+            // Don't select anything on multi selection
+            UnityObject obj = property.hasMultipleDifferentValues ? null : property.objectReferenceValue;
+
+            UnityObject objectBeingEdited = property.serializedObject.targetObject;
+            m_EditedProperty = property;
+
+            Show(obj, requiredTypes, objectBeingEdited, allowSceneObjects, allowedInstanceIDs, onObjectSelectorClosed, onObjectSelectedUpdated);
         }
 
         internal void Show(UnityObject obj, Type requiredType, UnityObject objectBeingEdited, bool allowSceneObjects, List<int> allowedInstanceIDs = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null)
+        {
+            Show(obj, new Type[] { requiredType }, objectBeingEdited, allowSceneObjects, allowedInstanceIDs, onObjectSelectorClosed, onObjectSelectedUpdated);
+        }
+
+        internal void Show(UnityObject obj, Type[] requiredTypes, UnityObject objectBeingEdited, bool allowSceneObjects, List<int> allowedInstanceIDs = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null)
         {
             m_ObjectSelectorReceiver = null;
             m_AllowSceneObjects = allowSceneObjects;
@@ -394,7 +453,8 @@ namespace UnityEditor
                 }
                 else
                 {
-                    m_IsShowingAssets = (requiredType != typeof(GameObject) && !typeof(Component).IsAssignableFrom(requiredType));
+                    foreach (var requiredType in requiredTypes)
+                        m_IsShowingAssets &= (requiredType != typeof(GameObject) && !typeof(Component).IsAssignableFrom(requiredType));
                 }
             }
             else
@@ -405,8 +465,13 @@ namespace UnityEditor
             // Set member variables
             m_DelegateView = GUIView.current;
             // type filter requires unqualified names for built-in types, but will prioritize them over user types, so ensure user types are namespace-qualified
-            if (requiredType != null)
-                m_RequiredType = typeof(ScriptableObject).IsAssignableFrom(requiredType) || typeof(MonoBehaviour).IsAssignableFrom(requiredType) ? requiredType.FullName : requiredType.Name;
+            if (m_RequiredTypes == null)
+                m_RequiredTypes = new string[requiredTypes.Length];
+            for (int i = 0; i < requiredTypes.Length; i++)
+            {
+                if (requiredTypes[i] != null)
+                    m_RequiredTypes[i] = typeof(ScriptableObject).IsAssignableFrom(requiredTypes[i]) || typeof(MonoBehaviour).IsAssignableFrom(requiredTypes[i]) ? requiredTypes[i].FullName : requiredTypes[i].Name;
+            }
             m_SearchFilter = "";
             m_OriginalSelection = obj;
             m_ModalUndoGroup = Undo.GetCurrentGroup();
@@ -425,8 +490,8 @@ namespace UnityEditor
                     {
                         currentObject = obj,
                         editedObjects = m_EditedProperty != null ? m_EditedProperty.serializedObject.targetObjects : new[] { objectBeingEdited },
-                        requiredTypes = new[] { requiredType },
-                        requiredTypeNames = new[] { m_RequiredType },
+                        requiredTypes = requiredTypes,
+                        requiredTypeNames = m_RequiredTypes,
                         allowedInstanceIds = allowedInstanceIDs,
                         visibleObjects = allowSceneObjects ? SearchService.VisibleObjects.All : SearchService.VisibleObjects.Assets,
                         selectorConstraint = selectorConstraint
@@ -467,7 +532,10 @@ namespace UnityEditor
             ContainerWindow.SetFreezeDisplay(true);
 
             ShowWithMode(ShowMode.AuxWindow);
-            titleContent = EditorGUIUtility.TrTextContent("Select " + (requiredType == null ? m_RequiredType : requiredType.Name));
+            string text = "Select " + (requiredTypes[0] == null ? m_RequiredTypes[0] : requiredTypes[0].Name);
+            for (int i = 1; i < requiredTypes.Length; i++)
+                text += (i == requiredTypes.Length - 1 ? " or " : ", ") + (requiredTypes[i] == null ? m_RequiredTypes[i] : requiredTypes[i].Name);
+            titleContent = EditorGUIUtility.TrTextContent(text);
 
             // Deal with window size
             Rect p = m_Parent == null ? new Rect(0, 0, 1, 1) : m_Parent.window.position;
@@ -498,7 +566,7 @@ namespace UnityEditor
                     m_SkipHiddenPackages = false;
             }
 
-            if (ShouldTreeViewBeUsed(m_RequiredType))
+            if (m_RequiredTypes.All(t => ShouldTreeViewBeUsed(t)))
             {
                 m_ObjectTreeWithSearch.Init(position, this, CreateAndSetTreeView, TreeViewSelection, ItemWasDoubleClicked, initialSelection, 0);
             }

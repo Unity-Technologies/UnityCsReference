@@ -34,7 +34,7 @@ namespace UnityEngine.UIElements
             var painterParams = new CursorPositionStylePainterParameters() {
                 rect = ve.contentRect,
                 text = text,
-                font = style.unityFont,
+                font = TextUtilities.GetFont(ve),
                 fontSize = (int)style.fontSize.value,
                 fontStyle = style.unityFontStyleAndWeight,
                 anchor = style.unityTextAlign,

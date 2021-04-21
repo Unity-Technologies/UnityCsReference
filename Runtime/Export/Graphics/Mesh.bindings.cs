@@ -32,7 +32,7 @@ namespace UnityEngine
 
         extern internal UInt32 GetTotalIndexCount();
 
-        [FreeFunction(Name = "MeshScripting::SetIndexBufferParams", HasExplicitThis = true)]
+        [FreeFunction(Name = "MeshScripting::SetIndexBufferParams", HasExplicitThis = true, ThrowsException = true)]
         extern public void SetIndexBufferParams(int indexCount, UnityEngine.Rendering.IndexFormat format);
 
         [FreeFunction(Name = "MeshScripting::InternalSetIndexBufferData", HasExplicitThis = true, ThrowsException = true)]

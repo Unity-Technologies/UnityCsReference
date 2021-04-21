@@ -135,11 +135,37 @@ namespace UnityEngine.TextCore.LowLevel
         ContactPointRule    = 0x4,
     }
 
+    /// <summary>
+    /// A structure that contains information about a system font.
+    /// </summary>
+    [UsedByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct FontReference
+    {
+        /// <summary>
+        /// The family name of the font.
+        /// </summary>
+        public string familyName;
+
+        /// <summary>
+        /// The style name of the font face.
+        /// </summary>
+        public string styleName;
+
+        /// <summary>
+        /// The face index of the face face matching this style name.
+        /// </summary>
+        public int faceIndex;
+
+        /// <summary>
+        /// The file path of the font file.
+        /// </summary>
+        public string filePath;
+    }
+
     [NativeHeader("Modules/TextCoreFontEngine/Native/FontEngine.h")]
     public sealed class FontEngine
     {
-        private static string[] s_FontFaces = new string[16];
-
         private static Glyph[] s_Glyphs = new Glyph[16];
         private static uint[] s_GlyphIndexes_MarshallingArray_A;
         private static uint[] s_GlyphIndexes_MarshallingArray_B;
@@ -361,6 +387,35 @@ namespace UnityEngine.TextCore.LowLevel
         static extern int LoadFontFace_With_Size_and_FaceIndex_FromFont_Internal(Font font, int pointSize, int faceIndex);
 
         /// <summary>
+        /// Loads the font file from a potential system font by family and style name.
+        /// </summary>
+        /// <param name="familyName">The family name of the font face to load.</param>
+        /// <param name="styleName">The style name of the font face to load.</param>
+        /// <returns>A value of zero (0) if the font face was loaded successfully.</returns>
+        public static FontEngineError LoadFontFace(string familyName, string styleName)
+        {
+            return (FontEngineError)LoadFontFace_by_FamilyName_and_StyleName_Internal(familyName, styleName);
+        }
+
+        [NativeMethod(Name = "TextCore::FontEngine::LoadFontFace", IsFreeFunction = true)]
+        static extern int LoadFontFace_by_FamilyName_and_StyleName_Internal(string familyName, string styleName);
+
+        /// <summary>
+        /// Loads the font file from a potential system font by family and style name at the specified point size.
+        /// </summary>
+        /// <param name="familyName">The family name of the font face to load.</param>
+        /// <param name="styleName">The style name of the font face to load.</param>
+        /// <param name="pointSize">The point size used to scale the font face.</param>
+        /// <returns>A value of zero (0) if the font face was loaded successfully.</returns>
+        public static FontEngineError LoadFontFace(string familyName, string styleName, int pointSize)
+        {
+            return (FontEngineError)LoadFontFace_With_Size_by_FamilyName_and_StyleName_Internal(familyName, styleName, pointSize);
+        }
+
+        [NativeMethod(Name = "TextCore::FontEngine::LoadFontFace", IsFreeFunction = true)]
+        static extern int LoadFontFace_With_Size_by_FamilyName_and_StyleName_Internal(string familyName, string styleName, int pointSize);
+
+        /// <summary>
         /// Unloads current font face and removes it from the cache.
         /// </summary>
         /// <returns>A value of zero (0) if the font face was successfully unloaded and removed from the cache.</returns>
@@ -383,6 +438,48 @@ namespace UnityEngine.TextCore.LowLevel
 
         [NativeMethod(Name = "TextCore::FontEngine::UnloadAllFontFaces", IsFreeFunction = true)]
         static extern int UnloadAllFontFaces_Internal();
+
+
+        /// <summary>
+        /// Gets the family names and styles of the system fonts.
+        /// </summary>
+        /// <returns>Returns the names and styles of the system fonts.</returns>
+        public static string[] GetSystemFontNames()
+        {
+            string[] fontNames = GetSystemFontNames_Internal();
+
+            if (fontNames != null && fontNames.Length == 0)
+                return null;
+
+            return fontNames;
+        }
+
+        [NativeMethod(Name = "TextCore::FontEngine::GetSystemFontNames", IsThreadSafe = true, IsFreeFunction = true)]
+        static extern string[] GetSystemFontNames_Internal();
+
+
+        /// <summary>
+        /// Gets references to all system fonts.
+        /// </summary>
+        /// <returns>An array of font references for all system fonts.</returns>
+        [NativeMethod(Name = "TextCore::FontEngine::GetSystemFontReferences", IsThreadSafe = true, IsFreeFunction = true)]
+        internal static extern FontReference[] GetSystemFontReferences();
+
+
+        /// <summary>
+        /// Try finding and returning a reference to a system font for the given family name and style.
+        /// </summary>
+        /// <param name="familyName">The family name of the font.</param>
+        /// <param name="styleName">The style name of the font.</param>
+        /// <param name="fontRef">A FontReference to the matching system font.</param>
+        /// <returns>Returns true if a reference to the system font was found. Otherwise returns false.</returns>
+        internal static bool TryGetSystemFontReference(string familyName, string styleName, out FontReference fontRef)
+        {
+            return TryGetSystemFontReference_Internal(familyName, styleName, out fontRef);
+        }
+
+        [NativeMethod(Name = "TextCore::FontEngine::TryGetSystemFontReference", IsThreadSafe = true, IsFreeFunction = true)]
+        static extern bool TryGetSystemFontReference_Internal(string familyName, string styleName, out FontReference fontRef);
 
 
         /// <summary>
@@ -428,22 +525,16 @@ namespace UnityEngine.TextCore.LowLevel
         /// <returns>Array containing the names of the font faces and styles.</returns>
         public static string[] GetFontFaces()
         {
-            int faceCount = GetFaceCount();
+            string[] faces = GetFontFaces_Internal();
 
-            // Make sure marshalling array is of appropriate size.
-            SetMarshallingArraySize(ref s_FontFaces, faceCount);
-
-            GetFontFaces_Internal(s_FontFaces);
-
-            string[] faces = new string[faceCount];
-            for (int i = 0; i < faceCount; i++)
-                faces[i] = s_FontFaces[i];
+            if (faces != null && faces.Length == 0)
+                return null;
 
             return faces;
         }
 
         [NativeMethod(Name = "TextCore::FontEngine::GetFontFaces", IsThreadSafe = true, IsFreeFunction = true)]
-        static extern int GetFontFaces_Internal([Out] string[] fontFaces);
+        static extern string[] GetFontFaces_Internal();
 
         /// <summary>
         /// Get the index of the glyph for the character mapped at Unicode value.

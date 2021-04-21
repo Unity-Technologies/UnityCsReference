@@ -9,7 +9,7 @@ using UnityEngine.TextCore.LowLevel;
 
 namespace UnityEngine.TextCore.Text
 {
-    [System.Serializable][ExcludeFromPresetAttribute]
+    [System.Serializable][ExcludeFromPresetAttribute][ExcludeFromObjectFactory]
     public class TextSettings : ScriptableObject
     {
         /// <summary>
@@ -79,6 +79,17 @@ namespace UnityEngine.TextCore.Text
         }
         [FormerlySerializedAs("m_missingGlyphCharacter")][SerializeField]
         protected int m_MissingCharacterUnicode;
+
+        /// <summary>
+        /// Determines if the "Clear Dynamic Data on Build" property will be set to true or false on newly created dynamic font assets.
+        /// </summary>
+        public bool clearDynamicDataOnBuild
+        {
+            get => m_ClearDynamicDataOnBuild;
+            set => m_ClearDynamicDataOnBuild = value;
+        }
+        [SerializeField]
+        protected bool m_ClearDynamicDataOnBuild = true;
 
         /// <summary>
         /// The Sprite Asset to be used by default.
@@ -280,7 +291,11 @@ namespace UnityEngine.TextCore.Text
 
             //Debug.Log("Creating new Dynamic Runtime Font Asset for [" + font.name + "].");
 
-            FontAsset fontAsset = FontAsset.CreateFontAsset(font, 90, 9, GlyphRenderMode.SDFAA, 1024, 1024, AtlasPopulationMode.Dynamic);
+            FontAsset fontAsset = null;
+            if (font.name == "System Normal")
+                fontAsset = FontAsset.CreateFontAsset("Lucida Grande", "Regular");
+            else
+                fontAsset = FontAsset.CreateFontAsset(font, 90, 9, GlyphRenderMode.SDFAA, 1024, 1024, AtlasPopulationMode.Dynamic);
             fontAsset.hideFlags = HideFlags.DontSave;
             fontAsset.atlasTextures[0].hideFlags = HideFlags.DontSave;
             fontAsset.material.hideFlags = HideFlags.DontSave;

@@ -23,8 +23,14 @@ namespace UnityEditor
         private const string k_WindowMenuName = "Window";
         private const string k_HelpMenuName = "Help";
 
+        // Contains the final ordered menus that can come either from the .mode file or from attributes
         private static readonly Dictionary<string, MenuItemsTree<MenuItemOrderingNative>> s_MenusFromModeFile = new Dictionary<string, MenuItemsTree<MenuItemOrderingNative>>();
+        // Contains menu from attributes for modes other than default
+        // Used to add menu items from attributes when iterating through the .mode menus
         private static Dictionary<string, MenuItemsTree<MenuItemScriptCommand>> s_MenuItemsPerMode = null;
+        // Contains menu from attributes for the default mode
+        // The default mode menus are in a separate dictionary for performance reasons, in that case we don't need the costly MenuItemsTree structure because it won't be used when iterating through the .mode menus
+        private static Dictionary<string, MenuItemScriptCommand> s_MenuItemsDefaultMode = null;
 
         [UsedImplicitly, RequiredByNativeCode]
         internal static bool UseDefaultModeMenus()
@@ -77,24 +83,31 @@ namespace UnityEditor
 
             var menuData = GetMenusFromModeFile(GetModeIndexById(modeName));
             if (menuData == null)
-                menuData = new List<JSONObject>();
+            {
+                if (modeName == k_DefaultModeId)
+                {
+                    // if there are no menus in the mode file and we are on the default mode, we use the default modes menus directly
+                    foreach (var menuItem in s_MenuItemsDefaultMode.Values)
+                        mit.AddChildSearch(new MenuItemOrderingNative(menuItem.name, menuItem.name, menuItem.priority, menuItem.priority));
+                    return mit;
+                }
+                else
+                    menuData = new List<JSONObject>();
+            }
+            s_MenuItemsPerMode.TryGetValue(modeName, out var menuItems);
+            GetModeMenuTreeRecursive(mit, menuData, menuItems);
 
-            GetModeMenuTreeRecursive(mit, modeName, menuData);
             return mit;
         }
 
         // Get the next menu item to add (in the right order)
-        private static void GetModeMenuTreeRecursive(MenuItemsTree<MenuItemOrderingNative> menuTree, string modeId, IList menus,
+        private static void GetModeMenuTreeRecursive(MenuItemsTree<MenuItemOrderingNative> menuTree, IList menus, MenuItemsTree<MenuItemScriptCommand> menuItemsFromAttributes,
             HashSet<string> addedMenuItemAttributes = null, string currentPrefix = "", string currentOriginalPrefix = "", int parentPriority = 0, int priority = 100)
         {
             if (menus == null)
                 return;
-            if (s_MenuItemsPerMode == null)
-                return;
             if (addedMenuItemAttributes == null)
                 addedMenuItemAttributes = new HashSet<string>();
-
-            s_MenuItemsPerMode.TryGetValue(modeId, out var menuItems);
 
             for (int index = 0; index < menus.Count; ++index)
             {
@@ -122,8 +135,8 @@ namespace UnityEditor
                 // if there is an original full name (complete path) then use it, else if there is an original name (path following currentOriginalPrefix) then use that, else get the menu name
                 var originalName = JsonUtils.JsonReadString(menu, k_MenuKeyOriginalFullName, currentOriginalPrefix + JsonUtils.JsonReadString(menu, k_MenuKeyOriginalName, menuName));
 
-                if (menuItems != null)
-                    InsertMenuFromAttributeIfNecessary(menuTree, addedMenuItemAttributes, menuItems, menuName, currentPrefix, priority, parentPriority);
+                if (menuItemsFromAttributes != null)
+                    InsertMenuFromAttributeIfNecessary(menuTree, addedMenuItemAttributes, menuItemsFromAttributes, menuName, currentPrefix, priority, parentPriority);
 
                 // Check if we are a submenu
                 if (menu.Contains(k_MenuKeyChildren))
@@ -132,7 +145,7 @@ namespace UnityEditor
                     {
                         // we go deeper
                         menuTree.AddChildSearch(new MenuItemOrderingNative(fullMenuName, originalName, priority, parentPriority));
-                        GetModeMenuTreeRecursive(menuTree, modeId, children, addedMenuItemAttributes, fullMenuName + "/", originalName + "/", priority);
+                        GetModeMenuTreeRecursive(menuTree, children, menuItemsFromAttributes, addedMenuItemAttributes, fullMenuName + "/", originalName + "/", priority);
                         continue;
                     }
                     else if (menu[k_MenuKeyChildren] is string wildCard && wildCard == "*")
@@ -171,8 +184,8 @@ namespace UnityEditor
                     menuTree.AddChildSearch(new MenuItemOrderingNative(fullMenuName, originalName, priority, parentPriority));
                 priority++;
             }
-            if (menuItems != null)
-                InsertMenuFromAttributeIfNecessary(menuTree, addedMenuItemAttributes, menuItems, null, currentPrefix, priority, parentPriority);
+            if (menuItemsFromAttributes != null)
+                InsertMenuFromAttributeIfNecessary(menuTree, addedMenuItemAttributes, menuItemsFromAttributes, null, currentPrefix, priority, parentPriority);
 
             // no more menu at this level
         }
@@ -226,9 +239,9 @@ namespace UnityEditor
         }
 
         // Find menus from command id
-        private static void LoadMenuFromCommandId(IList menus, MenuItemsTree<MenuItemScriptCommand> menuItems, string prefix = "")
+        private static void LoadMenuFromCommandId(IList menus, Dictionary<string, MenuItemScriptCommand> menuItems, string prefix = "")
         {
-            if (menus == null || menuItems == null || s_MenuItemsPerMode == null)
+            if (menus == null || menuItems == null)
                 return;
 
             foreach (var menuData in menus)
@@ -267,7 +280,7 @@ namespace UnityEditor
 
                             var validateCommandId = JsonUtils.JsonReadString(menu, k_MenuKeyValidateCommandId);
                             var commandMenuItem = MenuItemScriptCommand.InitializeFromCommand(fullMenuName, 100, commandId, validateCommandId);
-                            menuItems.AddChildSearch(commandMenuItem);
+                            menuItems[fullMenuName] = commandMenuItem;
                         }
                     }
                 }
@@ -281,12 +294,12 @@ namespace UnityEditor
             var menus = GetMenusFromModeFile(GetModeIndexById(id));
 
             if (menus == null) // If there is no mode menus in the mode file
-                return GetMenuItems(id, true).menuItemChildren.ToArray();
+                return CombineMenuItemsFromAttributes(id, false).Values.ToArray();
 
-            var menuItems = GetMenuItems(id, false);
+            var menuItems = CombineMenuItemsFromAttributes(id, true);
             LoadMenuFromCommandId(menus, menuItems);
 
-            return menuItems.menuItemChildren.ToArray(); //In that case there is a .mode so menus will be filtered by the iterator
+            return menuItems.Values.ToArray(); //In that case there is a .mode so menus will be filtered by the iterator
         }
 
         private static MenuItemsTree<MenuItemOrderingNative> GetMenusItemsFromModeFile(string modeName)
@@ -314,6 +327,7 @@ namespace UnityEditor
         private static void ExtractMenuItemsFromAttributes()
         {
             s_MenuItemsPerMode = new Dictionary<string, MenuItemsTree<MenuItemScriptCommand>>();
+            s_MenuItemsDefaultMode = new Dictionary<string, MenuItemScriptCommand>();
 
             var menuItems = TypeCache.GetMethodsWithAttribute<MenuItem>();
 
@@ -328,65 +342,89 @@ namespace UnityEditor
                     string[] editorModes = ((MenuItem)attribute).editorModes;
                     foreach (var editorMode in editorModes)
                     {
-                        if (s_MenuItemsPerMode.TryGetValue(editorMode, out var menuItemsPerMode))
+                        if (editorMode == k_DefaultModeId)
                         {
-                            MenuItemScriptCommand menuItem = menuItemsPerMode.FindItem(menuName);
-                            if (menuItem == null)
-                                menuItemsPerMode.AddChildSearch(MenuItemScriptCommand.Initialize(menuName, (MenuItem)attribute, methodInfo));
-                            else
+                            if (s_MenuItemsDefaultMode.TryGetValue(menuName, out var menuItem))
                                 menuItem.Update((MenuItem)attribute, methodInfo);
+                            else
+                                s_MenuItemsDefaultMode.Add(menuName, MenuItemScriptCommand.Initialize(menuName, (MenuItem)attribute, methodInfo));
                         }
                         else
                         {
-                            var newMenusPerMode = new MenuItemsTree<MenuItemScriptCommand>();
-                            newMenusPerMode.AddChildSearch(MenuItemScriptCommand.Initialize(menuName, (MenuItem)attribute, methodInfo));
-                            s_MenuItemsPerMode.Add(editorMode, newMenusPerMode);
+                            if (s_MenuItemsPerMode.TryGetValue(editorMode, out var menuItemsPerMode))
+                            {
+                                MenuItemScriptCommand menuItem = menuItemsPerMode.FindItem(menuName);
+                                if (menuItem == null)
+                                    menuItemsPerMode.AddChildSearch(MenuItemScriptCommand.Initialize(menuName, (MenuItem)attribute, methodInfo));
+                                else
+                                    menuItem.Update((MenuItem)attribute, methodInfo);
+                            }
+                            else
+                            {
+                                var newMenusPerMode = new MenuItemsTree<MenuItemScriptCommand>();
+                                newMenusPerMode.AddChildSearch(MenuItemScriptCommand.Initialize(menuName, (MenuItem)attribute, methodInfo));
+                                s_MenuItemsPerMode.Add(editorMode, newMenusPerMode);
+                            }
                         }
                     }
                 }
             }
+            CleanUpInvalidMenuItems();
+        }
 
+        private static void CleanUpInvalidMenuItems()
+        {
             foreach (var menuItemPerMode in s_MenuItemsPerMode.Values)
             {
                 menuItemPerMode.CleanUp();
             }
+            // Default mode items
+            var itemsToDelete = new List<string>();
+            foreach (var menu in s_MenuItemsDefaultMode)
+            {
+                if (menu.Value.IsNotValid)
+                    itemsToDelete.Add(menu.Key);
+            }
+            foreach (var itemToDelete in itemsToDelete)
+            {
+                s_MenuItemsDefaultMode.Remove(itemToDelete);
+            }
         }
 
-        private static MenuItemsTree<MenuItemScriptCommand> GetMenuItems(string id, bool willUseDefaultIterator)
+        private static Dictionary<string, MenuItemScriptCommand> CombineMenuItemsFromAttributes(string id, bool menusDependOnModeFile)
         {
-            // Create the complete menu items collection
-            var menuItemsResult = new MenuItemsTree<MenuItemScriptCommand>();
-            if (s_MenuItemsPerMode.ContainsKey(id))
+            // Create the initial menu items collection for the mode id
+            var menuItemsResult = new Dictionary<string, MenuItemScriptCommand>();
+            // We add the menus from the mode id
+            if (id != k_DefaultModeId && s_MenuItemsPerMode.ContainsKey(id))
             {
                 foreach (var menuItem in s_MenuItemsPerMode[id].menuItemChildren)
-                    menuItemsResult.AddChildSearch(menuItem);
+                    menuItemsResult.Add(menuItem.name, menuItem);
             }
-            // If we use default iterator for a mode, we add the default mode menus
-            if (willUseDefaultIterator)
-            {
-                if (id != k_DefaultModeId && s_MenuItemsPerMode.ContainsKey(k_DefaultModeId))
-                    AddMenuItemsFromMode(menuItemsResult, s_MenuItemsPerMode[k_DefaultModeId]);
-            }
-            else
+            // We always add the default mode menus (if not present)
+            AddMenuItemsFromMode(menuItemsResult, s_MenuItemsDefaultMode.Values);
+
+            // If the menus depend on the .mode file, we also add the other modes menus because the mode file can reference them
+            if (menusDependOnModeFile)
             {
                 foreach (var menuItemPerMode in s_MenuItemsPerMode)
                 {
                     if (menuItemPerMode.Key != id)
                     {
-                        AddMenuItemsFromMode(menuItemsResult, menuItemPerMode.Value);
+                        AddMenuItemsFromMode(menuItemsResult, menuItemPerMode.Value.menuItemChildren);
                     }
                 }
             }
             return menuItemsResult;
         }
 
-        private static void AddMenuItemsFromMode(MenuItemsTree<MenuItemScriptCommand> menuItemsResult, MenuItemsTree<MenuItemScriptCommand> menuItemsFromMode)
+        private static void AddMenuItemsFromMode(Dictionary<string, MenuItemScriptCommand> menuItemsResult, IEnumerable<MenuItemScriptCommand> menuItems)
         {
-            foreach (var menuItem in menuItemsFromMode.menuItemChildren)
+            foreach (var menuItem in menuItems)
             {
-                if (!menuItemsResult.Contains(menuItem.name)) // there can be multiple methods that have the same attribute name for different modes, we don't add it in that case
+                if (!menuItemsResult.ContainsKey(menuItem.name)) // there can be multiple methods that have the same attribute name for different modes, we don't add it in that case
                 {
-                    menuItemsResult.AddChildSearch(menuItem);
+                    menuItemsResult.Add(menuItem.name, menuItem);
                 }
             }
         }
@@ -461,7 +499,7 @@ namespace UnityEditor
                     foreach (var child in children)
                         child.GetChildrenRecursively(sorted, result);
                 }
-                else
+                else if (value != null)
                     result.Add(value);
                 return result;
             }
@@ -574,7 +612,7 @@ namespace UnityEditor
 
             private bool IsParentMenu(string menuName)
             {
-                return key.Length == 0 || (menuName.StartsWith(key) && menuName.Substring(key.Length).StartsWith("/"));
+                return key.Length == 0 || (key.Length < menuName.Length && menuName.StartsWith(key) && menuName.Substring(key.Length).StartsWith("/"));
             }
 
             internal void CleanUp()
@@ -593,7 +631,7 @@ namespace UnityEditor
                     else
                     {
                         MenuItemScriptCommand menuItem = m_Children[i].value as MenuItemScriptCommand;
-                        if (menuItem != null && menuItem.validate != null && menuItem.execute == null)
+                        if (menuItem != null && menuItem.IsNotValid)
                         {
                             m_Children.RemoveAt(i);
                             continue;

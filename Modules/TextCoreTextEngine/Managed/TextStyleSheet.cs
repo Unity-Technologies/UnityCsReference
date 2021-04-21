@@ -8,7 +8,7 @@ using System.Collections.Generic;
 
 namespace UnityEngine.TextCore.Text
 {
-    [Serializable][ExcludeFromPresetAttribute]
+    [Serializable][ExcludeFromPresetAttribute][ExcludeFromObjectFactory]
     public class TextStyleSheet : ScriptableObject
     {
         /// <summary>

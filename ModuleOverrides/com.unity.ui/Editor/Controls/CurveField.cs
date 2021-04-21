@@ -46,6 +46,7 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// USS class name of border elements in elements of this type.
         /// </summary>
+        [Obsolete("borderUssClass is not used anymore", false)]
         public static readonly string borderUssClassName = ussClassName + "__border";
 
         private static CustomStyleProperty<Color> s_CurveColorProperty = new CustomStyleProperty<Color>("--unity-curve-color");
@@ -190,8 +191,14 @@ namespace UnityEditor.UIElements
 
             rawValue = new AnimationCurve(new Keyframe[0]);
 
+            // Keep creating and adding a VisualElement for the border even though it is not used anymore.
+            // It is done to remain backwards compatible (c.f. obsoleted borderUssClassName).
             VisualElement borderElement = new VisualElement() { name = "unity-border", pickingMode = PickingMode.Ignore };
+
+#pragma warning disable 0618 // borderUssClassName is now obsolete.
             borderElement.AddToClassList(borderUssClassName);
+#pragma warning restore 0618
+
             visualInput.Add(borderElement);
 
             RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);

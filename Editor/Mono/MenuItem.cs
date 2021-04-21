@@ -72,6 +72,7 @@ namespace UnityEditor
         public string Name => name;
 
         public int Priority => priority;
+        internal bool IsNotValid => validate != null && execute == null;
 
         public static MenuItemScriptCommand Initialize(string menuName, MenuItem menuItemAttribute, MethodInfo methodInfo)
         {
