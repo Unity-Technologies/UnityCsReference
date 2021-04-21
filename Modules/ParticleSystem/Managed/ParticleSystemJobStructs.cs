@@ -61,6 +61,7 @@ namespace UnityEngine.ParticleSystemJobs
         public int count { get; }
         public ParticleSystemNativeArray3 positions { get; }
         public ParticleSystemNativeArray3 velocities { get; }
+        public ParticleSystemNativeArray3 axisOfRotations { get; }
         public ParticleSystemNativeArray3 rotations { get; }
         public ParticleSystemNativeArray3 rotationalSpeeds { get; }
         public ParticleSystemNativeArray3 sizes { get; }
@@ -70,6 +71,7 @@ namespace UnityEngine.ParticleSystemJobs
         public NativeArray<UInt32> randomSeeds { get; }
         public ParticleSystemNativeArray4 customData1 { get; }
         public ParticleSystemNativeArray4 customData2 { get; }
+        public NativeArray<int> meshIndices { get; }
 
         internal AtomicSafetyHandle m_Safety;
 
@@ -81,6 +83,7 @@ namespace UnityEngine.ParticleSystemJobs
 
             positions = CreateNativeArray3(ref nativeData.positions, count);
             velocities = CreateNativeArray3(ref nativeData.velocities, count);
+            axisOfRotations = CreateNativeArray3(ref nativeData.axisOfRotations, count);
             rotations = CreateNativeArray3(ref nativeData.rotations, count);
             rotationalSpeeds = CreateNativeArray3(ref nativeData.rotationalSpeeds, count);
             sizes = CreateNativeArray3(ref nativeData.sizes, count);
@@ -90,6 +93,7 @@ namespace UnityEngine.ParticleSystemJobs
             randomSeeds = CreateNativeArray<UInt32>(nativeData.randomSeeds, count);
             customData1 = CreateNativeArray4(ref nativeData.customData1, count);
             customData2 = CreateNativeArray4(ref nativeData.customData2, count);
+            meshIndices = CreateNativeArray<int>(nativeData.meshIndices, count);
         }
 
         unsafe internal NativeArray<T> CreateNativeArray<T>(void* src, int count) where T : struct
@@ -143,6 +147,7 @@ namespace UnityEngine.ParticleSystemJobs
         internal int count;
         internal Array3 positions;
         internal Array3 velocities;
+        internal Array3 axisOfRotations;
         internal Array3 rotations;
         internal Array3 rotationalSpeeds;
         internal Array3 sizes;
@@ -152,6 +157,7 @@ namespace UnityEngine.ParticleSystemJobs
         internal void* randomSeeds;
         internal Array4 customData1;
         internal Array4 customData2;
+        internal void* meshIndices;
     }
 
     unsafe struct NativeListData

@@ -31,6 +31,9 @@ namespace UnityEditor.Analytics
         [StaticAccessor("GetUnityConnectSettings()", StaticAccessorType.Dot)]
         public static extern string configUrl { get; set; }
 
+        [StaticAccessor("GetUnityConnectSettings()", StaticAccessorType.Dot)]
+        public static extern string dashboardUrl { get; set; }
+
         internal static extern void SetEnabledServiceWindow(bool enabled);
 
         internal static extern bool enabledForPlatform { get; }

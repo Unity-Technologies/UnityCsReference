@@ -200,6 +200,13 @@ namespace UnityEngine
         [FreeFunction(Name = "ParticleSystemGeometryJob::SetMaximumPreMappedBufferCounts")]
         extern public static void SetMaximumPreMappedBufferCounts(int vertexBuffersCount, int indexBuffersCount);
 
+        [NativeName("SetUsesAxisOfRotation")]
+        extern public void AllocateAxisOfRotationAttribute();
+        [NativeName("SetUsesMeshIndex")]
+        extern public void AllocateMeshIndexAttribute();
+        [NativeName("SetUsesCustomData")]
+        extern public void AllocateCustomDataAttribute(ParticleSystemCustomData stream);
+
         unsafe extern internal void* GetManagedJobData();
         extern internal JobHandle GetManagedJobHandle();
         extern internal void SetManagedJobHandle(JobHandle handle);

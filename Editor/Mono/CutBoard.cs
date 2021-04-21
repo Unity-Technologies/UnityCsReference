@@ -136,7 +136,7 @@ namespace UnityEditor
 
         private static void SetParent(Transform go, Transform parent)
         {
-            Undo.SetTransformParent(go, parent, kCutAndPaste);
+            Undo.SetTransformParent(go, parent, false, kCutAndPaste);
             go.SetAsLastSibling();
         }
 
