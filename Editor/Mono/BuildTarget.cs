@@ -123,6 +123,10 @@ namespace UnityEditor
         Stadia = 40,
 
         CloudRendering = 41,
+        [System.Obsolete("GameCoreScarlett is deprecated, please use GameCoreXboxSeries (UnityUpgradable) -> GameCoreXboxSeries", false)]
+        GameCoreScarlett = 42,
+        GameCoreXboxSeries = 42, // GameCoreXboxSeries intentionally set to the same as GameCoreScarlett
+        GameCoreXboxOne = 43,
 
         PS5 = 44,
 

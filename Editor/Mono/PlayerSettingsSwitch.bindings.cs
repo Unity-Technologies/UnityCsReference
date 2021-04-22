@@ -531,6 +531,14 @@ namespace UnityEditor
             // Player Connection Enabled
             [NativeProperty("switchPlayerConnectionEnabled", TargetType.Field)]
             extern public static bool playerConnectionEnabled { get; set; }
+
+            // Controls if calls to nn::os::YieldThread are swapped with calls to nn::os::SleepThread({switchMicroSleepForYieldTime}us)
+            [NativeProperty("switchUseMicroSleepForYield", TargetType.Field)]
+            extern public static bool switchUseMicroSleepForYield { get; set; }
+
+            // Number of micro seconds used by switchUseMicroSleepForYield
+            [NativeProperty("switchMicroSleepForYieldTime", TargetType.Field)]
+            extern public static int switchMicroSleepForYieldTime { get; set; }
         }
     }
 }

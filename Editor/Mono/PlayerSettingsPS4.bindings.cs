@@ -149,27 +149,21 @@ namespace UnityEditor
                 {
                     return SdkOverrideInternal;
                 }
+
                 set
                 {
-                    string originalSDK = System.Environment.GetEnvironmentVariable("SCE_ORBIS_SDK_DIR_ORIGINAL");
-                    string newSDK;
+                    SdkOverrideInternal = value;
 
-                    if (String.IsNullOrEmpty(originalSDK))
+                    string newSDK = value;
+                    if (String.IsNullOrEmpty(newSDK))
                     {
-                        // If the SCE_ORBIS_SDK_DIR_ORIGINAL has not been set then use the raw value, this could happen during initialization.
-                        newSDK = value;
+                        // newSDK is an empty path which is perfectly valid for the player settings and the UI where an empty path means "use the SDK set in the
+                        // system environment".  We need the underlying environment to always have a valid SDK path so use the SDK that was set in SCE_ORBIS_SDK_DIR
+                        // when the editor was launched, which we recorded in the SCE_ORBIS_SDK_DIR_ORIGINAL env var.
+                        newSDK = Environment.GetEnvironmentVariable("SCE_ORBIS_SDK_DIR_ORIGINAL");
                     }
-                    else
-                    {
-                        // Check for an empty SDK string and use the original SDK if so.
-                        newSDK = String.IsNullOrEmpty(value) ? originalSDK : value;
-                    }
-
-                    if (newSDK != SdkOverrideInternal && !String.IsNullOrEmpty(newSDK))
-                    {
-                        System.Environment.SetEnvironmentVariable("SCE_ORBIS_SDK_DIR", newSDK);
-                        SdkOverrideInternal = newSDK;
-                    }
+                    Environment.SetEnvironmentVariable("SCE_ORBIS_SDK_DIR", newSDK);
+                    UnityEditor.PlayerSettings.ReinitialiseShaderCompiler("SCE_ORBIS_SDK_DIR", newSDK);
                 }
             }
 

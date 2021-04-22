@@ -2206,6 +2206,9 @@
     <Compile Include="..\..\Modules\UIElements\Renderer\UIRRepaintUpdater.cs">
       <Link>Modules\UIElements\Renderer\UIRRepaintUpdater.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Renderer\UIRShaderInfoStorage.cs">
+      <Link>Modules\UIElements\Renderer\UIRShaderInfoStorage.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Renderer\UIRTessellation.cs">
       <Link>Modules\UIElements\Renderer\UIRTessellation.cs</Link>
     </Compile>

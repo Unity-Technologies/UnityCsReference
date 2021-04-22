@@ -1223,6 +1223,10 @@ namespace UnityEngine.Rendering
         Vulkan = 21,
         Switch = 22,
         XboxOneD3D12 = 23,
+        GameCoreXboxOne = 24,
+        [System.Obsolete("GameCoreScarlett is deprecated, please use GameCoreXboxSeries (UnityUpgradable) -> GameCoreXboxSeries", false)]
+        GameCoreScarlett = 25,
+        GameCoreXboxSeries = 25, // GameCoreXboxSeries intentionally set to the same as GameCoreScarlett
         PlayStation5 = 26
     }
 
