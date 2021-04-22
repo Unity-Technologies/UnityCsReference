@@ -58,6 +58,9 @@ namespace UnityEditor
         public static extern bool IsAlphaOnlyTextureFormat(TextureFormat format);
 
         [FreeFunction]
+        public static extern bool IsHDRFormat(TextureFormat format);
+
+        [FreeFunction]
         public static extern bool HasAlphaTextureFormat(TextureFormat format);
 
         [FreeFunction]
