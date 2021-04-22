@@ -57,12 +57,12 @@ namespace UnityEditor.Search
         public static readonly string prefabs = @"{
     ""type"": ""prefab"",
     ""roots"": [],
-    ""includes"": [],
+    ""includes"": ["".prefab""],
     ""excludes"": [],
     ""options"": {
         ""types"": true,
         ""properties"": true,
-        ""extended"": false,
+        ""extended"": true,
         ""dependencies"": false
     },
     ""baseScore"": 150
@@ -70,12 +70,12 @@ namespace UnityEditor.Search
         public static readonly string scenes = @"{
     ""type"": ""scene"",
     ""roots"": [],
-    ""includes"": [],
+    ""includes"": ["".unity""],
     ""excludes"": [],
     ""options"": {
         ""types"": true,
         ""properties"": false,
-        ""extended"": false,
+        ""extended"": true,
         ""dependencies"": false
     },
     ""baseScore"": 155
@@ -113,13 +113,13 @@ namespace UnityEditor.Search
             }
         }
 
-        public static string CreateTemplateIndex(string template, string path, string name = null)
+        public static string CreateTemplateIndex(string template, string path, string name = null, string settings = null)
         {
-            if (!SearchDatabaseTemplates.all.ContainsKey(template))
+            if (settings == null && !SearchDatabaseTemplates.all.ContainsKey(template))
                 return null;
 
             var dirPath = path;
-            var templateContent = SearchDatabaseTemplates.all[template];
+            var templateContent = settings ?? SearchDatabaseTemplates.all[template];
 
             if (File.Exists(path))
             {
@@ -138,6 +138,7 @@ namespace UnityEditor.Search
 
             File.WriteAllText(indexPath, templateContent);
             AssetDatabase.ImportAsset(indexPath);
+            Providers.AssetProvider.reloadAssetIndexes = true;
 
             return indexPath;
         }

@@ -90,7 +90,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             PackageManagerWindowAnalytics.Setup();
 
-            var newTab = m_PackageManagerPrefs.lastUsedPackageFilter ?? m_PackageManagerPrefs.defaultFilterTab;
+            var newTab = m_PackageManagerPrefs.lastUsedPackageFilter ?? PackageFiltering.k_DefaultFilterTab;
             m_PackageFiltering.SetCurrentFilterTabWithoutNotify(newTab);
             packageManagerToolbar.SetFilter(newTab);
 

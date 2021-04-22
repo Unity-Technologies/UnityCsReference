@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,6 +25,7 @@ namespace UnityEditor.Search
             else
                 m_ItemRowHeight = Styles.itemRowHeight;
 
+            var evt = Event.current;
             var itemCount = items.Count;
             var availableHeight = screenRect.height;
             var itemRowHeight = m_ItemRowHeight;
@@ -49,21 +49,12 @@ namespace UnityEditor.Search
             {
                 if (itemIndex >= itemSkipCount && itemIndex <= itemSkipCount + limitCount)
                 {
-                    try
-                    {
-                        DrawItem(item, itemRect, itemIndex, selection);
-                    }
-                    catch (Exception ex)
-                    {
-                        if (!(ex is ExitGUIException))
-                            Debug.LogException(ex);
-                    }
-
+                    DrawItem(evt, item, screenRect, itemRect, itemIndex, selection);
                     itemRect.y += itemRect.height;
                 }
                 else
                 {
-                    item.thumbnail = item.preview = null;
+                    item.preview = null;
                 }
 
                 itemIndex++;
@@ -71,7 +62,7 @@ namespace UnityEditor.Search
 
             // Fix selected index display if out of virtual scrolling area
             int selectionIndex = selection.Count == 0 ? -1 : selection.Last();
-            if (Event.current.type == EventType.Repaint && focusSelectedItem && selectionIndex >= 0)
+            if (evt.type == EventType.Repaint && focusSelectedItem && selectionIndex >= 0)
             {
                 ScrollListToItem(itemSkipCount + 1, itemSkipCount + itemDisplayCount - 2, selectionIndex, screenRect);
                 focusSelectedItem = false;
@@ -88,26 +79,61 @@ namespace UnityEditor.Search
             return Math.Max(0, Math.Min(itemCount, Mathf.RoundToInt(m_DrawItemsRect.height / m_ItemRowHeight)));
         }
 
-        private void DrawItem(SearchItem item, Rect itemRect, int itemIndex, ICollection<int> selection)
+        private void DrawItem(Event evt, SearchItem item, Rect screenRect, Rect itemRect, int itemIndex, ICollection<int> selection)
         {
-            bool hasActionDropdown = searchView.selectCallback == null && searchView.selection.Count <= 1 && item.provider.actions.Count > 1;
-
-            if (Event.current.type == EventType.Repaint)
+            bool isItemSelected = selection.Contains(itemIndex);
+            if (evt.type == EventType.Repaint)
             {
-                bool isItemSelected = selection.Contains(itemIndex);
-
                 // Draw item background
                 var bgStyle = itemIndex % 2 == 0 ? Styles.itemBackground1 : Styles.itemBackground2;
                 if (isItemSelected)
                     bgStyle = Styles.selectedItemBackground;
-                bgStyle.Draw(itemRect, itemRect.Contains(Event.current.mousePosition), false, false, false);
+                bgStyle.Draw(itemRect, itemRect.Contains(evt.mousePosition), false, false, false);
+            }
 
+            // Draw action dropdown
+            var buttonRect = new Rect(itemRect.xMax - Styles.actionButton.fixedWidth - Styles.actionButton.margin.right, itemRect.y, Styles.actionButton.fixedWidth, Styles.actionButton.fixedHeight);
+            buttonRect.y += (itemRect.height - Styles.actionButton.fixedHeight) / 2f;
+            if (evt.type == EventType.Repaint || (itemRect.Contains(evt.mousePosition) && screenRect.Contains(evt.mousePosition)))
+            {
+                bool hasActionDropdown = searchView.selectCallback == null && searchView.selection.Count <= 1 && item.provider.actions.Count > 1;
+                if (hasActionDropdown)
+                {
+                    bool actionHover = buttonRect.Contains(evt.mousePosition);
+                    GUI.Label(buttonRect, Styles.moreActionsContent, actionHover ? Styles.actionButtonHovered : Styles.actionButton);
+                    EditorGUIUtility.AddCursorRect(buttonRect, MouseCursor.Link);
+                    if (evt.type == EventType.MouseDown && actionHover)
+                    {
+                        var contextRect = new Rect(evt.mousePosition, new Vector2(1, 1));
+                        searchView.ShowItemContextualMenu(item, contextRect);
+                        GUIUtility.ExitGUI();
+                    }
+
+                    buttonRect.x -= Styles.actionButton.fixedWidth + Styles.actionButton.margin.left;
+                }
+
+                if (SearchSettings.searchItemFavorites.Contains(item.id))
+                {
+                    if (GUI.Button(buttonRect, Styles.searchFavoriteOnButtonContent, Styles.actionButton))
+                        SearchSettings.RemoveItemFavorite(item);
+                    EditorGUIUtility.AddCursorRect(buttonRect, MouseCursor.Link);
+                }
+                else
+                {
+                    using (new GUI.ColorScope(new Color(0.9f, 0.9f, 0.9f, 0.4f)))
+                        if (GUI.Button(buttonRect, Styles.searchFavoriteButtonContent, Styles.actionButton))
+                            SearchSettings.AddItemFavorite(item);
+                    EditorGUIUtility.AddCursorRect(buttonRect, MouseCursor.Link);
+                }
+            }
+
+            if (evt.type == EventType.Repaint)
+            {
                 // Draw thumbnail
                 var thumbnailRect = DrawListThumbnail(item, itemRect);
 
                 // Draw label
-                var maxWidth = itemRect.width
-                    - (hasActionDropdown ? Styles.actionButtonSize : 0)
+                var maxWidth = buttonRect.xMin - itemRect.xMin
                     - (compactView ? Styles.itemPreviewSize / 2.0f : Styles.itemPreviewSize)
                     - Styles.descriptionPadding;
                 var labelStyle = isItemSelected ?
@@ -137,22 +163,6 @@ namespace UnityEditor.Search
                     item.options &= ~SearchItemOptions.Compacted;
                 }
             }
-
-            // Draw action dropdown
-            if (hasActionDropdown)
-            {
-                var buttonRect = new Rect(itemRect.xMax - Styles.actionButton.fixedWidth - Styles.actionButton.margin.right, itemRect.y, Styles.actionButton.fixedWidth, Styles.actionButton.fixedHeight);
-                buttonRect.y += (itemRect.height - Styles.actionButton.fixedHeight) / 2f;
-                bool actionHover = buttonRect.Contains(Event.current.mousePosition);
-                GUI.Label(buttonRect, Styles.moreActionsContent, actionHover ? Styles.actionButtonHovered : Styles.actionButton);
-                UnityEditor.EditorGUIUtility.AddCursorRect(buttonRect, UnityEditor.MouseCursor.Link);
-                if (Event.current.type == EventType.MouseDown && actionHover)
-                {
-                    var contextRect = new Rect(Event.current.mousePosition, new Vector2(1, 1));
-                    searchView.ShowItemContextualMenu(item, contextRect);
-                    GUIUtility.ExitGUI();
-                }
-            }
         }
 
         private Rect DrawListThumbnail(SearchItem item, Rect itemRect)
@@ -166,7 +176,7 @@ namespace UnityEditor.Search
                 {
                     var previewSize = new Vector2(Styles.itemPreviewSize, Styles.itemPreviewSize);
                     thumbnail = item.provider.fetchPreview(item, context, previewSize, FetchPreviewOptions.Preview2D | FetchPreviewOptions.Normal);
-                    if (thumbnail && !AssetPreview.IsLoadingAssetPreviews())
+                    if (thumbnail)
                         item.preview = thumbnail;
                 }
             }
@@ -177,7 +187,7 @@ namespace UnityEditor.Search
                 if (!thumbnail && item.provider.fetchThumbnail != null)
                 {
                     thumbnail = item.provider.fetchThumbnail(item, context);
-                    if (thumbnail && !AssetPreview.IsLoadingAssetPreviews())
+                    if (thumbnail)
                         item.thumbnail = thumbnail;
                 }
             }

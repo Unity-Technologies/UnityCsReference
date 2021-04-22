@@ -73,6 +73,8 @@ namespace UnityEditor.Search.Providers
             // Cache for the PurchaseInfo API
             public ProductDetails productDetail;
             public string[] images;
+
+            public Texture2D lastPreview { get; set; }
         }
 
         [Serializable]
@@ -474,17 +476,16 @@ namespace UnityEditor.Search.Providers
                         doc.images = new[] { doc.productDetail.mainImage.big }.Concat(
                             doc.productDetail.images.Where(img => img.type == "screenshot").Select(imgDesc => imgDesc.imageUrl)).ToArray();
                     });
-                    //return null;
                 }
             }
 
             if (doc.productDetail?.images.Length > 0)
-                return FetchImage(doc.images, true, s_Previews);
+                return (doc.lastPreview = FetchImage(doc.images, true, s_Previews) ?? doc.lastPreview);
 
             if (doc.key_images.Length > 0)
-                return FetchImage(doc.key_images, true, s_Previews);
+                return (doc.lastPreview = FetchImage(doc.key_images, true, s_Previews) ?? doc.lastPreview);
 
-            return FetchImage(doc.icon, true, s_Previews);
+            return (doc.lastPreview = FetchImage(doc.icon, true, s_Previews) ?? doc.lastPreview);
         }
 
         static Texture2D FetchImage(string[] imageUrls, bool animateCarrousel, Dictionary<string, PreviewData> imageDb)

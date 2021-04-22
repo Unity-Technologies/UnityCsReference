@@ -235,7 +235,26 @@ namespace UnityEditor.Search
 
             QuickSearchJumpToSearch,
             QuickSearchSyncViewButton,
-            QuickSearchSwitchTab
+            QuickSearchSwitchTab,
+
+            QuickSearchRemoveFavoriteItem,
+            QuickSearchRemoveFavoriteQuery,
+            QuickSearchAddFavoriteItem,
+            QuickSearchAddFavoriteQuery,
+            QuickSearchSizeRadioButton,
+
+            QuickSearchTableAddColumn,
+            QuickSearchTableReset,
+            QuickSearchTableRemoveColumn,
+            QuickSearchTableEditColumn,
+            QuickSearchTableChangeColumnFormat,
+            QuickSearchTableToggleColumnVisibility,
+
+            QuickSearchQueryChange,
+
+            QuickSearchExportReport,
+            QuickSearchImportReport,
+            ReportViewOpen
         }
 
         public static readonly string Package = "com.unity.quicksearch";
@@ -345,11 +364,8 @@ namespace UnityEditor.Search
 
         public static void SendReportUsage()
         {
-            using (new EditorPerformanceTracker("Quicksearch.Analytics.SendReportUsage"))
-            {
-                var report = CreateSearchUsageReport();
-                Send(EventName.quickSearchUsageReport, report);
-            }
+            var report = CreateSearchUsageReport();
+            Send(EventName.quickSearchUsageReport, report);
         }
 
         public static void DebounceSendEvent(Func<GenericEvent> evtCreator)
@@ -411,9 +427,13 @@ namespace UnityEditor.Search
 
             var allIndexes = SearchDatabase.Enumerate(SearchDatabase.IndexLocation.assets).ToArray();
             report.indexCount = allIndexes.Length;
-            var maxSize = allIndexes.Max(index => index.bytes?.Length ?? 0);
-            report.maxIndexSize = maxSize / 1048576f;
-
+            if (allIndexes.Length > 0)
+            {
+                var maxSize = allIndexes.Max(index => index.bytes?.Length ?? 0);
+                report.maxIndexSize = maxSize / 1048576f;
+            }
+            else
+                report.maxIndexSize = 0;
             return report;
         }
 

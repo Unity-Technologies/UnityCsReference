@@ -16,6 +16,13 @@ namespace UnityEditor.Search
         public float itemSize;
         public DisplayMode displayMode;
         public string group;
+
+        public ResultViewState(DisplayMode mode, float itemSize)
+        {
+            displayMode = mode;
+            this.itemSize = itemSize;
+            group = null;
+        }
     }
 
     /// <summary>
@@ -40,6 +47,8 @@ namespace UnityEditor.Search
         void Refresh(RefreshFlags flags = RefreshFlags.Default);
         ResultViewState SaveViewState(string name);
         void SetViewState(ResultViewState viewState);
+
+        void OnGroupChanged(string prevGroupId, string newGroupId);
     }
 
     abstract class ResultView : IResultView
@@ -68,8 +77,12 @@ namespace UnityEditor.Search
         protected bool compactView => itemSize == 0;
         public bool scrollbarVisible { get; protected set; }
 
-        public abstract int GetDisplayItemCount();
         public abstract void Draw(Rect rect, ICollection<int> selection);
+
+        public virtual int GetDisplayItemCount()
+        {
+            return items?.Count ?? 0;
+        }
 
         public void Draw(ICollection<int> selection, float viewWidth)
         {
@@ -85,13 +98,14 @@ namespace UnityEditor.Search
             // Do nothing
         }
 
+        public virtual void OnGroupChanged(string prevGroupId, string newGroupId)
+        {
+            // Do nothing
+        }
+
         public virtual ResultViewState SaveViewState(string name)
         {
-            return new ResultViewState()
-            {
-                itemSize = itemSize,
-                displayMode = searchView.displayMode
-            };
+            return new ResultViewState(searchView.displayMode, itemSize);
         }
 
         public virtual void SetViewState(ResultViewState viewState)
@@ -145,7 +159,7 @@ namespace UnityEditor.Search
                 {
                     var ctrl = evt.control || evt.command;
                     var now = EditorApplication.timeSinceStartup;
-                    if (searchView.multiselect && evt.modifiers.HasFlag(EventModifiers.Shift))
+                    if (searchView.multiselect && evt.modifiers.HasAny(EventModifiers.Shift))
                     {
                         int min = searchView.selection.MinIndex();
                         int max = searchView.selection.MaxIndex();
@@ -243,7 +257,7 @@ namespace UnityEditor.Search
             }
         }
 
-        protected void HandleKeyEvent(Event evt, List<int> selection)
+        protected virtual void HandleKeyEvent(Event evt, List<int> selection)
         {
             var ctrl = evt.control || evt.command;
             var selectedIndex = selection.Count == 0 ? k_ResetSelectionIndex : selection.Last();
@@ -253,7 +267,7 @@ namespace UnityEditor.Search
             var results = searchView.results;
             if (evt.keyCode == KeyCode.DownArrow)
             {
-                if (multiselect && evt.modifiers.HasFlag(EventModifiers.Shift) && selection.Count > 0)
+                if (multiselect && evt.modifiers.HasAny(EventModifiers.Shift) && selection.Count > 0)
                 {
                     if (lastIndex >= firstIndex)
                     {
@@ -276,7 +290,7 @@ namespace UnityEditor.Search
             {
                 if (selectedIndex >= 0)
                 {
-                    if (multiselect && evt.modifiers.HasFlag(EventModifiers.Shift) && selection.Count > 0)
+                    if (multiselect && evt.modifiers.HasAny(EventModifiers.Shift) && selection.Count > 0)
                     {
                         if (firstIndex < lastIndex)
                             selection.Remove(lastIndex);
@@ -312,13 +326,13 @@ namespace UnityEditor.Search
                     if (item.provider.actions.Count > 0)
                     {
                         SearchAction action = item.provider.actions[0];
-                        if (evt.modifiers.HasFlag(EventModifiers.Alt))
+                        if (evt.modifiers.HasAny(EventModifiers.Alt))
                         {
                             var actionIndex = 1;
-                            if (evt.modifiers.HasFlag(EventModifiers.Control))
+                            if (evt.modifiers.HasAny(EventModifiers.Control))
                             {
                                 actionIndex = 2;
-                                if (evt.modifiers.HasFlag(EventModifiers.Shift))
+                                if (evt.modifiers.HasAny(EventModifiers.Shift))
                                     actionIndex = 3;
                             }
                             action = item.provider.actions[Math.Max(0, Math.Min(actionIndex, item.provider.actions.Count - 1))];
@@ -358,7 +372,7 @@ namespace UnityEditor.Search
                 jumpAtIndex = searchView.results.Count - 1;
             }
 
-            if (searchView.multiselect && evt.modifiers.HasFlag(EventModifiers.Shift) && selection.Count > 0)
+            if (searchView.multiselect && evt.modifiers.HasAny(EventModifiers.Shift) && selection.Count > 0)
             {
                 var selectedIndex = selection.Count == 0 ? k_ResetSelectionIndex : selection.First();
                 searchView.SetSelection(GenerateSelectionRange(selectedIndex, jumpAtIndex));
@@ -387,7 +401,7 @@ namespace UnityEditor.Search
                 jumpAtIndex = 0;
             }
 
-            if (searchView.multiselect && evt.modifiers.HasFlag(EventModifiers.Shift) && selection.Count > 0)
+            if (searchView.multiselect && evt.modifiers.HasAny(EventModifiers.Shift) && selection.Count > 0)
             {
                 var selectedIndex = selection.Count == 0 ? k_ResetSelectionIndex : selection.First();
                 searchView.SetSelection(GenerateSelectionRange(selectedIndex, jumpAtIndex));

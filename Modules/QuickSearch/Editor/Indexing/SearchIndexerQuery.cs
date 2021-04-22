@@ -69,7 +69,7 @@ namespace UnityEditor.Search
                 case QueryNodeType.Union:
                 case QueryNodeType.NestedQuery:
                 {
-                    errors.Add(new QueryError(node.token.position, node.token.length, "Nested queries are not supported."));
+                    errors.Add(new QueryError(node.token.position, node.token.length, "Nested queries are not supported.", SearchQueryErrorType.Warning));
                     break;
                 }
             }

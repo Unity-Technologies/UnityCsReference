@@ -63,7 +63,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 try
                 {
-                    return (PackageFilterTab)Enum.Parse(typeof(PackageFilterTab), EditorPrefs.GetString(lastUsedFilterForProjectPerfs, defaultFilterTab.ToString()));
+                    return (PackageFilterTab)Enum.Parse(typeof(PackageFilterTab), EditorPrefs.GetString(lastUsedFilterForProjectPerfs, PackageFiltering.k_DefaultFilterTab.ToString()));
                 }
                 catch (Exception)
                 {
@@ -74,11 +74,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 EditorPrefs.SetString(lastUsedFilterForProjectPerfs, value?.ToString());
             }
-        }
-
-        public virtual PackageFilterTab defaultFilterTab
-        {
-            get { return PackageFilterTab.InProject; }
         }
 
         [SerializeField]

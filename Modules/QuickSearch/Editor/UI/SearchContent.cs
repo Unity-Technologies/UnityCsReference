@@ -34,6 +34,8 @@ namespace UnityEditor.Search
         public static GUIContent FormatDescription(SearchItem item, SearchContext context, float availableSpace, bool useColor = true)
         {
             var desc = item.GetDescription(context);
+            if (desc != null && item.options.HasAny(SearchItemOptions.Compacted))
+                desc = desc.Replace("\n", " ");
             if (String.IsNullOrEmpty(desc))
                 return Styles.emptyContent;
             var content = Take(desc);
@@ -44,7 +46,7 @@ namespace UnityEditor.Search
             var truncated = false;
             if (useColor)
             {
-                if (item.options.HasFlag(SearchItemOptions.Ellipsis))
+                if (item.options.HasAny(SearchItemOptions.Ellipsis))
                 {
                     int maxCharLength = Utils.GetNumCharactersThatFitWithinWidth(Styles.itemDescription, truncatedDesc + "...", availableSpace);
                     if (maxCharLength < 0)
@@ -52,7 +54,7 @@ namespace UnityEditor.Search
                     truncated = desc.Length > maxCharLength;
                     if (truncated)
                     {
-                        if (item.options.HasFlag(SearchItemOptions.RightToLeft))
+                        if (item.options.HasAny(SearchItemOptions.RightToLeft))
                         {
                             truncatedDesc = "..." + desc.Replace("<b>", "").Replace("</b>", "");
                             truncatedDesc = truncatedDesc.Substring(Math.Max(0, truncatedDesc.Length - maxCharLength));
@@ -64,13 +66,13 @@ namespace UnityEditor.Search
 
                 if (context != null)
                 {
-                    if (item.options.HasFlag(SearchItemOptions.Highlight))
+                    if (item.options.HasAny(SearchItemOptions.Highlight))
                     {
                         var parts = context.searchQuery.Split('*', ' ', '.').Where(p => p.Length > 2);
                         foreach (var p in parts)
                             truncatedDesc = Regex.Replace(truncatedDesc, Regex.Escape(p), string.Format(Styles.highlightedTextColorFormat, "$0"), RegexOptions.IgnoreCase);
                     }
-                    else if (item.options.HasFlag(SearchItemOptions.FuzzyHighlight))
+                    else if (item.options.HasAny(SearchItemOptions.FuzzyHighlight))
                     {
                         long score = 1;
                         var matches = new List<int>();

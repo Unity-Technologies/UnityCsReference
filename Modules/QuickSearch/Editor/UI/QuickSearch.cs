@@ -12,6 +12,27 @@ using Debug = UnityEngine.Debug;
 
 namespace UnityEditor.Search
 {
+    [Flags]
+    enum ShownPanels
+    {
+        None = 0,
+        LeftSideBar = 1 << 0,
+        InspectorPreview = 1 << 1
+    }
+
+    static class ShownPanelsExtensions
+    {
+        public static bool HasAny(this ShownPanels flags, ShownPanels f) => (flags & f) != 0;
+        public static bool HasAll(this ShownPanels flags, ShownPanels all) => (flags & all) == all;
+    }
+
+    static class EventModifiersExtensions
+    {
+        public static bool HasAny(this EventModifiers flags, EventModifiers f) => (flags & f) != 0;
+        public static bool HasAll(this EventModifiers flags, EventModifiers all) => (flags & all) == all;
+    }
+
+    [EditorWindowTitle(title = "Search")]
     class QuickSearch : EditorWindow, ISearchView, IDisposable, IHasCustomMenu
     {
         internal const string k_TogleSyncShortcutName = "Search/Toggle Sync Search View";
@@ -23,113 +44,10 @@ namespace UnityEditor.Search
             EventSent,
         }
 
-        [Flags]
-        enum ShownPanels
-        {
-            None = 0,
-            LeftSideBar      = 1 << 0,
-            InspectorPreview = 1 << 1
-        }
-
-        [Serializable]
-        class SplitterInfo
-        {
-            public enum Side
-            {
-                Left,
-                Right
-            }
-
-            public Side side;
-            public float pos;
-            public bool active;
-            public float lowerLimit;
-            public float upperLimit;
-            public EditorWindow host;
-
-            public float width
-            {
-                get
-                {
-                    if (side == Side.Left)
-                        return Mathf.Floor(pos);
-                    return Mathf.Floor(host.position.width - pos);
-                }
-            }
-
-            public SplitterInfo(Side side, float lowerLimit, float upperLimit, EditorWindow host)
-            {
-                this.side = side;
-                pos = -1;
-                active = false;
-                this.lowerLimit = lowerLimit;
-                this.upperLimit = upperLimit;
-                this.host = host;
-            }
-
-            public void Init(float initialPosition)
-            {
-                if (pos < 0)
-                    SetPosition(initialPosition, host.position.width);
-            }
-
-            public void SetPosition(float newPos)
-            {
-                SetPosition(newPos, host.position.width);
-            }
-
-            private void SetPosition(float newPos, float hostWidth)
-            {
-                if (newPos == -1)
-                    return;
-                var minSize = Mathf.Max(0, hostWidth * lowerLimit);
-                var maxSize = Mathf.Min(hostWidth * upperLimit, hostWidth);
-                var previousPos = pos;
-                pos = Mathf.Round(Mathf.Max(minSize, Mathf.Min(newPos, maxSize)));
-                if (previousPos != pos)
-                    host.Repaint();
-            }
-
-            public void Draw(Event evt, Rect area)
-            {
-                var sliderRect = new Rect(pos - 2f, area.y, 3f, area.height);
-                EditorGUIUtility.AddCursorRect(sliderRect, MouseCursor.ResizeHorizontal);
-
-                if (evt.type == EventType.MouseDown && sliderRect.Contains(evt.mousePosition))
-                {
-                    active = true;
-                    evt.Use();
-                }
-
-                if (active)
-                {
-                    SetPosition(evt.mousePosition.x, host.position.width);
-                    if (evt.type == EventType.MouseDrag)
-                        evt.Use();
-                }
-
-                if (active && evt.type == EventType.MouseUp)
-                {
-                    evt.Use();
-                    active = false;
-                }
-            }
-
-            public void Resize(Vector2 oldSize, Vector2 newSize)
-            {
-                var newWidth = newSize.x;
-                if (side == Side.Left)
-                    SetPosition(pos, newWidth);
-                else
-                {
-                    var widthDiff = newSize.x - oldSize.x;
-                    SetPosition(pos + widthDiff, newWidth);
-                }
-            }
-        }
-
         const int k_ResetSelectionIndex = -1;
         const string k_LastSearchPrefKey = "last_search";
+        const string k_SideBarWidthKey = "Search.SidebarWidth";
+        const string k_DetailsWidthKey = "Search.DetailsWidth";
         const float k_DetailsViewShowMinSize = 550f;
         const int k_MinimumGroupVisible = 1;
         private static readonly string k_CheckWindowKeyName = $"{typeof(QuickSearch).FullName}h";
@@ -149,9 +67,9 @@ namespace UnityEditor.Search
         private DetailView m_DetailView;
         private IResultView m_ResultView;
         private float m_PreviousItemSize = -1;
-        private SearchQuery m_CurrentSearchQuery;
         private RefreshFlags m_DebounceRefreshFlags;
-        private double m_DebounceTime = 0.0;
+        private Action m_DebounceOff = null;
+        private bool m_SyncSearch;
 
         [SerializeField] private EditorWindow m_LastFocusedWindow;
         [SerializeField] private bool m_SearchBoxFocus;
@@ -161,14 +79,13 @@ namespace UnityEditor.Search
         [SerializeField] private SplitterInfo m_DetailsPanelSplitter;
         [SerializeField] private string[] m_ProviderIds;
         [SerializeField] private string m_WindowId;
-        [SerializeField] private ShownPanels m_ShownPanels = ShownPanels.InspectorPreview;
+        [SerializeField] private ShownPanels m_ShownPanels = ShownPanels.None;
         [SerializeField] private Vector2 m_SideBarScrollPosition;
         [SerializeField] private int m_ContextHash;
         [SerializeField] internal SearchEventStatus searchEventStatus;
-        [SerializeField] internal bool saveFilters;
-        [SerializeField] internal bool testWindow;
         [SerializeField] private string searchTopic;
         [SerializeField] private bool m_Multiselect;
+        [SerializeField] internal SearchQuery activeSearchQuery;
 
         internal event Action nextFrame;
         internal event Action<Vector2, Vector2> resized;
@@ -177,7 +94,8 @@ namespace UnityEditor.Search
         public Func<SearchItem, bool> filterCallback { get; set; }
         public Action<SearchItem> trackingCallback { get; set; }
 
-        internal bool searchInProgress => (context?.searchInProgress ?? false) || nextFrame != null || m_DebounceTime > 1;
+        internal bool searchInProgress => (context?.searchInProgress ?? false) || nextFrame != null || m_DebounceOff != null;
+        internal string currentGroup => m_FilteredItems.currentGroup;
 
         public SearchSelection selection
         {
@@ -204,7 +122,6 @@ namespace UnityEditor.Search
         public float itemIconSize { get => m_ItemSize; set => UpdateItemSize(value); }
         public bool multiselect { get => m_Multiselect; set => m_Multiselect = value; }
 
-        private bool m_SyncSearch;
         public bool syncSearch
         {
             get => m_SyncSearch;
@@ -222,42 +139,57 @@ namespace UnityEditor.Search
         }
 
         internal string windowId => m_WindowId;
+        internal IResultView resultView => m_ResultView;
 
         private string searchTopicPlaceHolder => $"Search {searchTopic}";
 
         public void SetSearchText(string searchText, TextCursorPlacement moveCursor = TextCursorPlacement.Default)
         {
+            SetSearchText(searchText, moveCursor, -1);
+        }
+
+        public void SetSearchText(string searchText, TextCursorPlacement moveCursor, int cursorInsertPosition)
+        {
             if (context == null)
                 return;
-
             context.searchText = searchText ?? string.Empty;
             if (!string.IsNullOrWhiteSpace(context.searchText))
                 SearchField.UpdateLastSearchText(context.searchText);
-            m_CurrentSearchQuery = null;
-            DebouncedRefresh();
+            RefreshSearch();
+            SetTextEditorState(searchText, te => SearchField.MoveCursor(moveCursor, cursorInsertPosition));
+        }
+
+        private void SetTextEditorState(string searchText, Action<TextEditor> handler, bool selectAll = false)
+        {
             nextFrame += () =>
             {
                 var te = SearchField.GetTextEditor();
-                te.text = searchText;
-                SearchField.MoveCursor(moveCursor);
+                if (searchText != null)
+                    te.text = searchText;
+                if (selectAll)
+                    te.SelectAll();
+                handler?.Invoke(te);
             };
+            Repaint();
         }
 
         public void Refresh(RefreshFlags flags = RefreshFlags.Default)
         {
             m_DebounceRefreshFlags |= flags;
-            DebouncedRefresh();
+            DebounceRefresh();
         }
 
         private void RefreshSearch()
         {
-            EditorApplication.update -= DebouncedRefresh;
+            m_DebounceOff?.Invoke();
+            m_DebounceOff = null;
 
             if (context == null)
                 return;
-            SearchSettings.ApplyContextOptions(context);
 
             ClearCurrentErrors();
+
+            SearchSettings.ApplyContextOptions(context);
             var foundItems = SearchService.GetItems(context);
             if (selectCallback != null)
                 foundItems.Add(SearchItem.none);
@@ -284,7 +216,7 @@ namespace UnityEditor.Search
                 s_GlobalContext.options |= flags;
 
             QuickSearch qsWindow;
-            if (flags.HasFlag(SearchFlags.ReuseExistingWindow) && HasOpenInstances<QuickSearch>())
+            if (flags.HasAny(SearchFlags.ReuseExistingWindow) && HasOpenInstances<QuickSearch>())
             {
                 qsWindow = GetWindow<QuickSearch>(false, null, false);
                 if (context != null)
@@ -299,8 +231,7 @@ namespace UnityEditor.Search
                 qsWindow.m_WindowId = GUID.Generate().ToString();
             }
 
-            qsWindow.multiselect = flags.HasFlag(SearchFlags.Multiselect);
-            qsWindow.saveFilters = flags.HasFlag(SearchFlags.SaveFilters);
+            qsWindow.multiselect = flags.HasAny(SearchFlags.Multiselect);
             qsWindow.searchTopic = topic;
 
             // Ensure we won't send events while doing a domain reload.
@@ -347,10 +278,9 @@ namespace UnityEditor.Search
             if (providers.Length == 0)
                 return OpenDefaultQuickSearch();
 
-            var context = SearchService.CreateContext(providers);
+            var context = SearchService.CreateContext(providers, searchQuery);
             topic = topic ?? string.Join(", ", providers.Select(p => p.name.ToLower()));
             var qsWindow = Create(context, topic, flags);
-            qsWindow.SetSearchText(searchQuery ?? SearchSettings.GetScopeValue(k_LastSearchPrefKey, qsWindow.m_ContextHash, ""));
 
             var evt = SearchAnalytics.GenericEvent.Create(qsWindow.m_WindowId, SearchAnalytics.GenericEventType.QuickSearchOpen, "Contextual");
             evt.message = providers[0].id;
@@ -371,7 +301,7 @@ namespace UnityEditor.Search
         public QuickSearch ShowWindow(float defaultWidth = 950, float defaultHeight = 538, SearchFlags flags = SearchFlags.OpenDefault)
         {
             var windowSize = new Vector2(defaultWidth, defaultHeight);
-            if (flags.HasFlag(SearchFlags.Dockable))
+            if (flags.HasAny(SearchFlags.Dockable))
             {
                 bool firstOpen = !EditorPrefs.HasKey(k_CheckWindowKeyName);
                 if (firstOpen)
@@ -390,6 +320,43 @@ namespace UnityEditor.Search
             return this;
         }
 
+        public static QuickSearch ShowPicker(
+            SearchContext context,
+            Action<SearchItem, bool> selectHandler,
+            Action<SearchItem> trackingHandler = null,
+            Func<SearchItem, bool> filterHandler = null,
+            IEnumerable<SearchItem> subset = null,
+            string title = "item", float itemSize = 64f,
+            float defaultWidth = 850, float defaultHeight = 539, SearchFlags flags = SearchFlags.OpenPicker)
+        {
+            if (selectHandler == null)
+                return null;
+
+            var qs = Create(context, flags: flags);
+            qs.searchTopic = title;
+            qs.searchEventStatus = SearchEventStatus.WaitForEvent;
+            qs.titleContent.text = $"Select {title}...";
+            qs.itemIconSize = itemSize;
+            qs.multiselect = false;
+            qs.selectCallback = selectHandler;
+            qs.trackingCallback = trackingHandler;
+            qs.filterCallback = filterHandler;
+            qs.context.wantsMore = true;
+
+            if (subset != null)
+                qs.context.subset = subset.ToList();
+
+            qs.Refresh(RefreshFlags.StructureChanged);
+            if (flags.HasAny(SearchFlags.Dockable))
+                qs.Show();
+            else
+                qs.ShowAuxWindow();
+            qs.position = Utils.GetMainWindowCenteredPosition(new Vector2(defaultWidth, defaultHeight));
+            qs.Focus();
+
+            return qs;
+        }
+
         public static QuickSearch ShowObjectPicker(
             Action<UnityEngine.Object, bool> selectHandler,
             Action<UnityEngine.Object> trackingHandler,
@@ -404,7 +371,6 @@ namespace UnityEditor.Search
                     .FirstOrDefault(t => t.Name == typeName) ?? typeof(UnityEngine.Object);
 
             var qs = Create();
-            qs.saveFilters = false;
             qs.searchTopic = "object";
             qs.searchEventStatus = SearchEventStatus.WaitForEvent;
             qs.titleContent.text = $"Select {filterType?.Name ?? typeName}...";
@@ -417,7 +383,7 @@ namespace UnityEditor.Search
             qs.context.filterType = filterType;
             qs.SetSearchText(searchText, TextCursorPlacement.MoveToStartOfNextWord);
 
-            if (flags.HasFlag(SearchFlags.Dockable))
+            if (flags.HasAny(SearchFlags.Dockable))
                 qs.Show();
             else
                 qs.ShowAuxWindow();
@@ -453,7 +419,6 @@ namespace UnityEditor.Search
 
             if (lastIndexAdded != k_ResetSelectionIndex)
             {
-                m_CurrentSearchQuery = null;
                 m_SearchItemSelection = null;
                 if (trackSelection)
                     TrackSelection(lastIndexAdded);
@@ -490,21 +455,26 @@ namespace UnityEditor.Search
             }
         }
 
-        public void ExecuteSearchQuery(SearchQuery query, SearchAnalytics.GenericEventType eventType = SearchAnalytics.GenericEventType.SearchQueryExecute)
+        public void ExecuteSearchQuery(SearchQuery query)
         {
             SetSelection();
 
-            context.SetProviders(query.providerIds.Select(id => SearchService.GetProvider(id)));
+            var queryContext = SearchService.CreateContext(query.providerIds, query.text, context?.options ?? SearchFlags.Default);
+            SetContext(queryContext);
+
             if (query.viewState != null && query.viewState.isValid)
                 SetViewState(query.viewState);
-            SetSearchText(query.text);
 
-            if (SearchSettings.savedSearchesSortOrder == SearchQuerySortOrder.RecentlyUsed)
-                SearchQuery.SortQueries();
-
-            m_CurrentSearchQuery = query;
             RefreshSearch();
+            SetTextEditorState(queryContext.searchText, null, selectAll: true);
+            SearchQuery.AddToRecentSearch(query);
 
+            activeSearchQuery = query;
+        }
+
+        public void ExecuteSearchQuery(SearchQuery query, SearchAnalytics.GenericEventType eventType)
+        {
+            ExecuteSearchQuery(query);
             SendEvent(eventType, query.text);
         }
 
@@ -578,25 +548,42 @@ namespace UnityEditor.Search
             hideFlags |= HideFlags.DontSaveInEditor;
             m_LastFocusedWindow = m_LastFocusedWindow ?? s_FocusedWindow;
             wantsLessLayoutEvents = true;
-            testWindow = Utils.IsRunningTests();
 
-            m_SideBarSplitter = new SplitterInfo(SplitterInfo.Side.Left, 0.15f, 0.25f, this);
-            m_DetailsPanelSplitter = new SplitterInfo(SplitterInfo.Side.Right, 0.5f, 0.80f, this);
+            InitializeSplitters();
+            if (activeSearchQuery)
+                ExecuteSearchQuery(activeSearchQuery);
+            else
+            {
+                SetContext(CreateSearchViewContext());
+                LoadSessionSettings();
+            }
 
             SearchSettings.SortActionsPriority();
 
-            SetContext(CreateSearchViewContext());
-
-            LoadSessionSettings();
-
             // Create search view state objects
-            m_SearchBoxFocus = true;
             m_DetailView = new DetailView(this);
-            m_DebounceTime = 1f;
 
             resized += OnWindowResized;
 
+            SelectSearch();
             UpdateWindowTitle();
+        }
+
+        private void InitializeSplitters()
+        {
+            m_SideBarSplitter = m_SideBarSplitter ?? new SplitterInfo(SplitterInfo.Side.Left, 0.15f, 0.25f, this);
+            m_SideBarSplitter.host = this;
+
+            m_DetailsPanelSplitter = m_DetailsPanelSplitter ?? new SplitterInfo(SplitterInfo.Side.Right, 0.5f, 0.80f, this);
+            m_DetailsPanelSplitter.host = this;
+
+            Utils.CallDelayed(() =>
+            {
+                if (m_SideBarSplitter.pos <= 0f)
+                    m_SideBarSplitter.SetPosition(EditorPrefs.GetFloat(k_SideBarWidthKey, -1f));
+                if (m_DetailsPanelSplitter.pos <= 0f)
+                    m_DetailsPanelSplitter.SetPosition(EditorPrefs.GetFloat(k_DetailsWidthKey, -1f));
+            });
         }
 
         private SearchContext CreateSearchViewContext()
@@ -627,7 +614,6 @@ namespace UnityEditor.Search
             resized = null;
             nextFrame = null;
             Utils.tick -= UpdateAsyncResults;
-            EditorApplication.update -= DebouncedRefresh;
             EditorApplication.delayCall -= DelayTrackSelection;
 
             selectCallback?.Invoke(null, true);
@@ -641,9 +627,6 @@ namespace UnityEditor.Search
             context.asyncItemReceived -= OnAsyncItemsReceived;
             context.Dispose();
             context = null;
-
-            if (!Utils.IsRunningTests())
-                Resources.UnloadUnusedAssets();
         }
 
         internal void OnGUI()
@@ -673,13 +656,12 @@ namespace UnityEditor.Search
 
             using (new EditorGUILayout.VerticalScope(GUIStyle.none))
             {
+                UpdateFocusControlState(evt);
                 DrawToolbar(evt);
                 DrawPanels(evt);
                 DrawStatusBar();
                 AutoComplete.Draw(context, this);
             }
-
-            UpdateFocusControlState(evt);
         }
 
         private void NotifySyncSearch(string groupId, UnityEditor.SearchService.SearchService.SyncSearchEvent evt)
@@ -688,10 +670,10 @@ namespace UnityEditor.Search
             switch (groupId)
             {
                 case "asset":
-                    syncViewId = typeof(UnityEditor.Search.ProjectSearchEngine).FullName;
+                    syncViewId = typeof(ProjectSearchEngine).FullName;
                     break;
                 case "scene":
-                    syncViewId = typeof(UnityEditor.Search.SceneSearchEngine).FullName;
+                    syncViewId = typeof(SceneSearchEngine).FullName;
                     break;
             }
             UnityEditor.SearchService.SearchService.NotifySyncSearchChanged(evt, syncViewId, context.searchText);
@@ -703,10 +685,10 @@ namespace UnityEditor.Search
             using (var s = new EditorGUILayout.HorizontalScope())
             {
                 var shrinkedView = position.width <= k_DetailsViewShowMinSize || selectCallback != null;
-                var showSideBar = !shrinkedView && m_ShownPanels.HasFlag(ShownPanels.LeftSideBar);
-                var showDetails = !shrinkedView && m_ShownPanels.HasFlag(ShownPanels.InspectorPreview);
+                var showSideBar = !shrinkedView && m_ShownPanels.HasAny(ShownPanels.LeftSideBar);
+                var showDetails = !shrinkedView && m_ShownPanels.HasAny(ShownPanels.InspectorPreview);
 
-                var windowWidth = Mathf.Ceil(position.width);
+                var windowWidth = position.width;
                 var resultViewSize = windowWidth;
 
                 if (showSideBar)
@@ -737,20 +719,17 @@ namespace UnityEditor.Search
             m_SideBarSplitter.Init(180f);
             m_SideBarSplitter.Draw(evt, areaRect);
 
-            using (var s = new EditorGUILayout.ScrollViewScope(m_SideBarScrollPosition, false, false,
-                GUI.skin.horizontalScrollbar, GUI.skin.verticalScrollbar, Styles.panelBackgroundLeft, GUILayout.Width(m_SideBarSplitter.width), GUILayout.ExpandHeight(true)))
-            {
-                m_ResultView?.DrawControlLayout(m_SideBarSplitter.width);
-                DrawSavedSearches(evt);
-                m_SideBarScrollPosition = s.scrollPosition;
-            }
+            m_SideBarScrollPosition = Utils.BeginPanelView(m_SideBarScrollPosition, Styles.panelBackgroundLeft);
+            m_ResultView?.DrawControlLayout(m_SideBarSplitter.width);
+            DrawSavedSearches(evt);
+            Utils.EndPanelView();
         }
 
         private void DrawSavedSearches(Event evt)
         {
-            var maxWidth = GUILayout.MaxWidth(m_SideBarSplitter.width);
-            GUILayout.Label("Saved Searches", Styles.panelHeader, maxWidth);
+            var maxWidth = GUILayout.MaxWidth(m_SideBarSplitter.width - 1);
 
+            GUILayout.Label("Saved Searches", Styles.panelHeader, maxWidth);
             EditorGUI.BeginChangeCheck();
             var sortOrder = EditorGUILayout.EnumPopup(SearchSettings.savedSearchesSortOrder, Styles.sidebarDropdown);
             if (EditorGUI.EndChangeCheck())
@@ -761,12 +740,21 @@ namespace UnityEditor.Search
                 SendEvent(SearchAnalytics.GenericEventType.QuickSearchSavedSearchesSorted, SearchSettings.savedSearchesSortOrder.ToString());
             }
 
-            foreach (var query in SearchQuery.savedQueries)
+            Rect searchQueryButtonRect = Rect.zero;
+            foreach (var query in EnumerateSearchQueries())
             {
-                var itemStyle = query == m_CurrentSearchQuery ? Styles.savedSearchItemSelected : Styles.savedSearchItem;
-                if (EditorGUILayout.DropdownButton(new GUIContent(query.displayName, query.tooltip), FocusType.Keyboard, itemStyle, maxWidth))
-                    ExecuteSearchQuery(query, SearchAnalytics.GenericEventType.QuickSearchSavedSearchesExecuted);
-                var searchQueryButtonRect = GUILayoutUtility.GetLastRect();
+                var isSelected = query == activeSearchQuery;
+                var itemStyle = isSelected ? Styles.savedSearchItemSelected : Styles.savedSearchItem;
+                var itemContent = new GUIContent(query.displayName, query.icon, query.tooltip);
+                if (EditorGUILayout.DropdownButton(itemContent, FocusType.Keyboard, itemStyle, maxWidth))
+                {
+                    if (isSelected)
+                        activeSearchQuery = null;
+                    else
+                        ExecuteSearchQuery(query, SearchAnalytics.GenericEventType.QuickSearchSavedSearchesExecuted);
+                    GUIUtility.ExitGUI();
+                }
+                searchQueryButtonRect = GUILayoutUtility.GetLastRect();
                 EditorGUIUtility.AddCursorRect(searchQueryButtonRect, MouseCursor.Link);
                 if (evt.type == EventType.MouseUp && evt.button == 1 && searchQueryButtonRect.Contains(evt.mousePosition))
                 {
@@ -774,6 +762,21 @@ namespace UnityEditor.Search
                     GUIUtility.ExitGUI();
                 }
             }
+
+            GUILayout.Space(10);
+
+            if (searchQueryButtonRect != Rect.zero && evt.mousePosition.y > searchQueryButtonRect.yMax && evt.type == EventType.MouseDown)
+            {
+                activeSearchQuery = null;
+                Repaint();
+            }
+        }
+
+        private IEnumerable<SearchQuery> EnumerateSearchQueries()
+        {
+            if (SearchSettings.savedSearchesSortOrder == SearchQuerySortOrder.RecentlyUsed)
+                return SearchQuery.savedQueries.Take(11);
+            return SearchQuery.savedQueries;
         }
 
         private void ShowSavedSearchQueryContextualMenu(SearchQuery query)
@@ -802,7 +805,10 @@ namespace UnityEditor.Search
 
         internal void Update()
         {
-            if (focusedWindow != this)
+            if (context == null || focusedWindow != this)
+                return;
+
+            if (context.options.HasAny(SearchFlags.Debug))
                 return;
 
             var time = EditorApplication.timeSinceStartup;
@@ -848,8 +854,11 @@ namespace UnityEditor.Search
         private bool ToggleFilter(string providerId)
         {
             var enabled = context.IsEnabled(providerId);
+            var provider = SearchService.GetProvider(providerId);
+            if (provider != null)
+                SearchService.SetActive(providerId, !enabled);
             if (providerId == m_FilteredItems.currentGroup)
-                m_FilteredItems.currentGroup = null;
+                SelectGroup(null);
             context.SetFilter(providerId, !enabled);
             SendEvent(SearchAnalytics.GenericEventType.FilterWindowToggle, providerId, context.IsEnabled(providerId).ToString());
             Refresh();
@@ -858,35 +867,42 @@ namespace UnityEditor.Search
 
         private void TogglePanelView(ShownPanels panelOption)
         {
-            var hasOptions = m_ShownPanels.HasFlag(panelOption);
-            SendEvent(SearchAnalytics.GenericEventType.QuickSearchOpenToggleToggleSidePanel, panelOption.ToString(), (!hasOptions).ToString());
+            var hasOptions = !m_ShownPanels.HasAny(panelOption);
+            SendEvent(SearchAnalytics.GenericEventType.QuickSearchOpenToggleToggleSidePanel, panelOption.ToString(), hasOptions.ToString());
             if (hasOptions)
-                m_ShownPanels &= ~panelOption;
-            else
                 m_ShownPanels |= panelOption;
+            else
+                m_ShownPanels &= ~panelOption;
+
+            if (panelOption == ShownPanels.LeftSideBar)
+            {
+                SearchSettings.showSavedSearchPanel = hasOptions;
+                SearchSettings.Save();
+            }
         }
 
         public void AddItemsToMenu(GenericMenu menu)
         {
             menu.AddItem(new GUIContent("Preferences"), false, () => OpenPreferences());
 
-            var savedSearchContent = new GUIContent("Saved Searches");
+            var savedSearchContent = new GUIContent("Side Bar");
             var previewInspectorContent = new GUIContent("Preview Inspector");
 
-            menu.AddItem(savedSearchContent, m_ShownPanels.HasFlag(ShownPanels.LeftSideBar), () => TogglePanelView(ShownPanels.LeftSideBar));
-            menu.AddItem(previewInspectorContent, m_ShownPanels.HasFlag(ShownPanels.InspectorPreview), () => TogglePanelView(ShownPanels.InspectorPreview));
+            menu.AddItem(savedSearchContent, m_ShownPanels.HasAny(ShownPanels.LeftSideBar), () => TogglePanelView(ShownPanels.LeftSideBar));
+            menu.AddItem(previewInspectorContent, m_ShownPanels.HasAny(ShownPanels.InspectorPreview), () => TogglePanelView(ShownPanels.InspectorPreview));
             menu.AddItem(new GUIContent("Options/Keep Open"), SearchSettings.keepOpen, () => ToggleKeepOpen());
             menu.AddItem(new GUIContent("Options/Show Status"), SearchSettings.showStatusBar, () => ToggleShowStatusBar());
             menu.AddItem(new GUIContent("Options/Show more results"), context?.wantsMore ?? false, () => ToggleWantsMore());
             if (Utils.isDeveloperBuild)
             {
-                menu.AddItem(new GUIContent("Options/Debug"), context?.options.HasFlag(SearchFlags.Debug) ?? false, () => ToggleDebugQuery());
+                menu.AddItem(new GUIContent("Options/Debug"), context?.options.HasAny(SearchFlags.Debug) ?? false, () => ToggleDebugQuery());
             }
         }
 
         private void ToggleShowStatusBar()
         {
             SearchSettings.showStatusBar = !SearchSettings.showStatusBar;
+            SendEvent(SearchAnalytics.GenericEventType.PreferenceChanged, nameof(SearchSettings.showStatusBar), SearchSettings.showStatusBar.ToString());
         }
 
         private void ToggleKeepOpen()
@@ -904,7 +920,7 @@ namespace UnityEditor.Search
 
         private void ToggleDebugQuery()
         {
-            if (context.options.HasFlag(SearchFlags.Debug))
+            if (context.options.HasAny(SearchFlags.Debug))
                 context.options &= ~SearchFlags.Debug;
             else
                 context.options |= SearchFlags.Debug;
@@ -931,8 +947,16 @@ namespace UnityEditor.Search
 
         private void UpdateWindowTitle()
         {
+            titleContent.image = activeSearchQuery?.icon ?? Icons.quickSearchWindow;
             if (!titleContent.image)
-                titleContent.image = Icons.quicksearch;
+                titleContent.image = Icons.quickSearchWindow;
+
+            if (context == null)
+                return;
+
+            if (context.options.HasAll(SearchFlags.OpenPicker))
+                return;
+
             if (m_FilteredItems.Count == 0)
                 titleContent.text = $"Search";
             else
@@ -987,21 +1011,31 @@ namespace UnityEditor.Search
         {
             using (new GUILayout.HorizontalScope(Styles.statusBarBackground))
             {
-                if (SearchSettings.showStatusBar)
+                var alwaysPrintError = m_FilteredItems.currentGroup == null || !string.IsNullOrEmpty(context.filterId) || m_FilteredItems.TotalCount == 0;
+                if (context.GetAllErrors().FirstOrDefault(e => alwaysPrintError || e.provider.id == m_FilteredItems.currentGroup) is SearchQueryError err)
                 {
-                    var title = FormatStatusMessage(context, m_FilteredItems?.TotalCount ?? 0);
-                    var tooltip = Utils.FormatProviderList(context.providers, fullTimingInfo: true);
-                    var statusLabelContent = EditorGUIUtility.TrTextContent(title, tooltip);
-                    GUILayout.Label(statusLabelContent, Styles.statusLabel, GUILayout.MaxWidth(position.width - 100));
+                    var errStyle = err.type == SearchQueryErrorType.Error ? Styles.statusError : Styles.statusWarning;
+                    EditorGUILayout.LabelField(Utils.GUIContentTemp(err.reason, err.reason + '\n'), errStyle, GUILayout.ExpandWidth(true));
                 }
-
-                GUILayout.FlexibleSpace();
+                else if (SearchSettings.showStatusBar)
+                {
+                    var status = FormatStatusMessage(context, m_FilteredItems?.TotalCount ?? 0);
+                    EditorGUILayout.LabelField(Utils.GUIContentTemp(status, status + '\n'), Styles.statusLabel, GUILayout.ExpandWidth(true));
+                }
+                else
+                {
+                    GUILayout.FlexibleSpace();
+                }
 
                 EditorGUI.BeginChangeCheck();
                 var newItemIconSize = itemIconSize;
-                var sliderRect = EditorGUILayout.GetControlRect(false, Styles.statusBarBackground.fixedHeight, GUILayout.Width(55f));
-                sliderRect.y -= 1f;
-                newItemIconSize = GUI.HorizontalSlider(sliderRect, newItemIconSize, 0f, (float)DisplayMode.Limit);
+                if (itemIconSize <= (int)DisplayMode.Limit)
+                {
+                    var sliderRect = EditorGUILayout.GetControlRect(false, Styles.statusBarBackground.fixedHeight, GUILayout.Width(55f));
+                    sliderRect.y -= 1f;
+                    newItemIconSize = GUI.HorizontalSlider(sliderRect, newItemIconSize, 0f, (float)DisplayMode.Limit);
+                }
+
                 if (EditorGUI.EndChangeCheck())
                 {
                     newItemIconSize = Mathf.Round(newItemIconSize);
@@ -1091,7 +1125,13 @@ namespace UnityEditor.Search
             if (evt.type != EventType.KeyDown)
                 return false;
 
+            if (evt.modifiers > 0)
+                return false;
+
             if (AutoComplete.enabled)
+                return false;
+
+            if (GUIUtility.textFieldInput)
                 return false;
 
             if (m_Selection.Count != 0 || results.Count == 0)
@@ -1124,7 +1164,9 @@ namespace UnityEditor.Search
             if (SearchField.HandleKeyEvent(evt))
                 return;
 
-            if (evt.type == EventType.KeyDown)
+            if (evt.type == EventType.KeyDown
+                && !GUIUtility.textFieldInput
+            )
             {
                 var ctrl = evt.control || evt.command;
                 if (evt.keyCode == KeyCode.Escape)
@@ -1164,7 +1206,7 @@ namespace UnityEditor.Search
                     TogglePanelView(ShownPanels.LeftSideBar);
                     evt.Use();
                 }
-                else if (evt.modifiers.HasFlag(EventModifiers.Alt) && evt.keyCode == KeyCode.LeftArrow)
+                else if (evt.modifiers.HasAny(EventModifiers.Alt) && evt.keyCode == KeyCode.LeftArrow)
                 {
                     string previousGroupId = null;
                     foreach (var group in EnumerateGroups())
@@ -1178,7 +1220,7 @@ namespace UnityEditor.Search
                     }
                     evt.Use();
                 }
-                else if (evt.modifiers.HasFlag(EventModifiers.Alt) && evt.keyCode == KeyCode.RightArrow)
+                else if (evt.modifiers.HasAny(EventModifiers.Alt) && evt.keyCode == KeyCode.RightArrow)
                 {
                     bool selectNext = false;
                     foreach (var group in EnumerateGroups())
@@ -1221,23 +1263,41 @@ namespace UnityEditor.Search
 
         private void DrawHelpText()
         {
-            GUILayout.Box(GetHelpString(), Styles.noResult, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
-        }
-
-        private string GetHelpString()
-        {
             if (string.IsNullOrEmpty(context.searchText.Trim()))
             {
-                const string help = "Search {0}!\r\n\r\n" +
-                    "- <b>Alt + Up/Down Arrow</b> \u2192 Search history\r\n" +
-                    "- <b>Alt + Left/Right Arrow</b> \u2192 Cycle search tabs\r\n" +
-                    "- <b>Enter</b> \u2192 Default action\r\n" +
-                    "- <b>Alt + Enter</b> \u2192 Secondary action\r\n" +
-                    "- Drag items around\r\n" +
-                    "- Type <b>?</b> to get help\r\n";
-                return string.Format(help, searchTopic);
+                using (new GUILayout.VerticalScope(Styles.noResult))
+                {
+                    GUILayout.FlexibleSpace();
+                    using (new GUILayout.HorizontalScope(Styles.noResult, GUILayout.ExpandHeight(true)))
+                    {
+                        GUILayout.FlexibleSpace();
+                        using (new GUILayout.VerticalScope(Styles.tipsSection, GUILayout.Height(160)))
+                        {
+                            GUILayout.Label("<b>Search Tips</b>", Styles.tipText);
+                            GUILayout.Space(15);
+                            for (var i = 0; i < Styles.searchTipIcons.Length; ++i)
+                            {
+                                using (new GUILayout.HorizontalScope(Styles.noResult))
+                                {
+                                    GUILayout.Label(Styles.searchTipIcons[i], Styles.tipIcon);
+                                    GUILayout.Label(Styles.searchTipLabels[i], Styles.tipText);
+                                }
+                            }
+                            GUILayout.FlexibleSpace();
+                        }
+                        GUILayout.FlexibleSpace();
+                    }
+                    GUILayout.FlexibleSpace();
+                }
             }
+            else
+            {
+                GUILayout.Box(GetNoResultsHelpString(), Styles.noResult, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+            }
+        }
 
+        private string GetNoResultsHelpString()
+        {
             var provider = SearchService.GetProvider(m_FilteredItems.currentGroup);
             if (m_FilteredItems.TotalCount == 0 || provider == null)
                 return $"No result for query \"{context.searchText}\"\nTry something else?";
@@ -1247,7 +1307,7 @@ namespace UnityEditor.Search
 
         private void DrawItems(Event evt, float availableSpace)
         {
-            using (new EditorGUILayout.VerticalScope(Styles.panelBackground))
+            using (new EditorGUILayout.VerticalScope(Styles.panelBackground, GUILayout.Width(availableSpace)))
             {
                 DrawTabs(evt, availableSpace);
                 if (m_FilteredItems.Count > 0 && m_ResultView != null)
@@ -1289,11 +1349,22 @@ namespace UnityEditor.Search
                 var allGroups = EnumerateGroups().ToList();
                 var currentGroupIndex = -1;
                 var lastSelectedMoreGroupIndex = -1;
+
+                var isEmptyQuery = string.IsNullOrEmpty(context.searchText.Trim());
                 for (var i = 0; i < allGroups.Count; ++i)
                 {
                     var group = allGroups[i];
-                    var formattedCount = Utils.FormatCount((ulong)group.count);
-                    var content = new GUIContent($"{group.name} {string.Format(Styles.tabCountTextColorFormat, formattedCount)}");
+                    GUIContent content;
+                    if (isEmptyQuery)
+                    {
+                        content = new GUIContent($"{group.name}");
+                    }
+                    else
+                    {
+                        var formattedCount = Utils.FormatCount((ulong)group.count);
+                        content = new GUIContent($"{group.name} {string.Format(Styles.tabCountTextColorFormat, formattedCount)}");
+                    }
+
                     if (!groupsContent.TryAdd(group.name, content))
                         continue;
                     maxTabWidth = Mathf.Max(Styles.searchTab.CalcSize(content).x + tabExtraSpace, maxTabWidth);
@@ -1435,8 +1506,8 @@ namespace UnityEditor.Search
 
         private void SetLastTabGroup(string groupId)
         {
-            if (m_FilteredItems.currentGroup == m_LastSelectedMoreGroup)
-                m_FilteredItems.currentGroup = groupId;
+            if (m_FilteredItems.currentGroup != groupId)
+                SelectGroup(groupId);
             m_LastSelectedMoreGroup = groupId;
         }
 
@@ -1474,7 +1545,7 @@ namespace UnityEditor.Search
             if (m_FilteredItems.currentGroup == groupId)
                 return;
             var selectedProvider = SearchService.GetProvider(groupId);
-            if (selectedProvider != null && selectedProvider.showDetailsOptions.HasFlag(ShowDetailsOptions.ListView))
+            if (selectedProvider != null && selectedProvider.showDetailsOptions.HasAny(ShowDetailsOptions.ListView))
             {
                 if (m_PreviousItemSize == -1f)
                     m_PreviousItemSize = itemIconSize;
@@ -1486,13 +1557,15 @@ namespace UnityEditor.Search
                 m_PreviousItemSize = -1f;
             }
 
-            var evt = SearchAnalytics.GenericEvent.Create(m_WindowId, SearchAnalytics.GenericEventType.QuickSearchSwitchTab, groupId);
+            var evt = SearchAnalytics.GenericEvent.Create(m_WindowId, SearchAnalytics.GenericEventType.QuickSearchSwitchTab, groupId ?? string.Empty);
             evt.stringPayload1 = m_FilteredItems.currentGroup;
             evt.intPayload1 = m_FilteredItems.GetGroupById(groupId)?.count ?? 0;
             SearchAnalytics.SendEvent(evt);
 
+            m_ResultView?.OnGroupChanged(m_FilteredItems.currentGroup, groupId);
+
             m_FilteredItems.currentGroup = groupId;
-            if (syncSearch)
+            if (syncSearch && groupId != null)
                 NotifySyncSearch(m_FilteredItems.currentGroup, UnityEditor.SearchService.SearchService.SyncSearchEvent.SyncSearch);
 
             RefreshViews(RefreshFlags.GroupChanged);
@@ -1504,64 +1577,53 @@ namespace UnityEditor.Search
             m_DetailsPanelSplitter.Resize(oldSize, newSize);
         }
 
-        private Rect DrawToolbar(Event evt)
+        private void DrawToolbar(Event evt)
         {
             if (context == null)
-                return Rect.zero;
+                return;
 
-            var toolbarRect = Rect.zero;
-            using (var s = new EditorGUILayout.VerticalScope(Styles.toolbar))
+            using (new GUILayout.HorizontalScope(Styles.toolbar))
             {
-                GUILayout.FlexibleSpace();
-                using (new GUILayout.HorizontalScope())
+                var searchButtonStackWidth = BUTTON_STACK_COUNT * (Styles.toolbarButton.fixedWidth + Styles.toolbarButton.margin.left) + Styles.searchField.margin.left * 2;
+                var searchTextRect = SearchField.GetRect(context.searchText, position.width, searchButtonStackWidth);
+                var searchClearButtonRect = Styles.searchFieldBtn.margin.Remove(searchTextRect);
+                searchClearButtonRect.xMin = searchClearButtonRect.xMax - SearchField.s_CancelButtonWidth;
+
+                if (evt.type == EventType.MouseUp && searchClearButtonRect.Contains(evt.mousePosition))
+                    ClearSearch();
+
+                var previousSearchText = context.searchText;
+                if (evt.type != EventType.KeyDown || evt.keyCode != KeyCode.None || evt.character != '\r')
+                    context.searchText = SearchField.Draw(searchTextRect, context.searchText, Styles.searchField);
+
+                if (string.IsNullOrEmpty(context.searchText))
                 {
-                    GUILayout.Space(8);
-
-                    var searchTextRect = GUILayoutUtility.GetRect(position.width - 300f, Styles.searchField.fixedHeight, Styles.searchField);
-                    var searchClearButtonRect = Styles.searchFieldBtn.margin.Remove(searchTextRect);
-                    searchClearButtonRect.xMin = searchClearButtonRect.xMax - 20f;
-
-                    EditorGUIUtility.AddCursorRect(searchClearButtonRect, MouseCursor.Arrow);
-                    if (evt.type == EventType.MouseUp && searchClearButtonRect.Contains(evt.mousePosition))
-                        ClearSearch();
-
-                    var previousSearchText = context.searchText;
-                    if (evt.type != EventType.KeyDown || evt.keyCode != KeyCode.None || evt.character != '\r')
-                        context.searchText = SearchField.Draw(searchTextRect, context.searchText, Styles.searchField);
-
-                    if (string.IsNullOrEmpty(context.searchText))
-                    {
-                        EditorGUI.BeginDisabledGroup(true);
-                        EditorGUI.TextArea(searchTextRect, searchTopicPlaceHolder, Styles.placeholderTextStyle);
-                        EditorGUI.EndDisabledGroup();
-                    }
-                    else
-                    {
-                        GUI.Button(searchClearButtonRect, Icons.clear, Styles.searchFieldBtn);
-                    }
-
-                    DrawTabToFilterInfo(evt, searchTextRect);
-                    DrawToolbarButtons();
-
-                    if (string.Compare(previousSearchText, context.searchText, StringComparison.Ordinal) != 0)
-                    {
-                        SetSelection();
-                        ClearCurrentErrors();
-                        DebouncedRefresh();
-                    }
-                    else
-                    {
-                        // Only draw errors when you are done typing, to prevent cases where
-                        // the cursor moved because of changes but we did not clear the errors yet.
-                        DrawQueryErrors();
-                    }
+                    GUI.Label(searchTextRect, searchTopicPlaceHolder, Styles.placeholderTextStyle);
                 }
-                GUILayout.FlexibleSpace();
+                else
+                {
+                    GUI.Button(searchClearButtonRect, Icons.clear, Styles.searchFieldBtn);
+                    EditorGUIUtility.AddCursorRect(searchClearButtonRect, MouseCursor.Arrow);
+                }
 
-                toolbarRect = s.rect;
+                EditorGUIUtility.AddCursorRect(searchClearButtonRect, MouseCursor.Arrow);
+
+                DrawTabToFilterInfo(evt, searchTextRect);
+                DrawToolbarButtons();
+
+                if (!string.Equals(previousSearchText, context.searchText, StringComparison.Ordinal))
+                {
+                    SetSelection();
+                    ClearCurrentErrors();
+                    DebounceRefresh();
+                }
+                else
+                {
+                    // Only draw errors when you are done typing, to prevent cases where
+                    // the cursor moved because of changes but we did not clear the errors yet.
+                    DrawQueryErrors();
+                }
             }
-
-            return toolbarRect;
         }
 
         private void DrawQueryErrors()
@@ -1569,18 +1631,23 @@ namespace UnityEditor.Search
             if (context.searchInProgress)
                 return;
 
-            if (!context.options.HasFlag(SearchFlags.ShowErrorsWithResults) && m_FilteredItems.Count > 0)
+            if (!context.options.HasAny(SearchFlags.ShowErrorsWithResults) && m_FilteredItems.Count > 0)
                 return;
 
-            IEnumerable<SearchQueryError> errors;
+            List<SearchQueryError> errors;
             if (m_FilteredItems.currentGroup == (m_FilteredItems as IGroup)?.id)
-                errors = context.GetAllErrors();
+                errors = context.GetAllErrors().ToList();
             else
-                errors = context.GetErrorsByProvider(m_FilteredItems.currentGroup);
+                errors = context.GetErrorsByProvider(m_FilteredItems.currentGroup).ToList();
 
             var te = SearchField.GetTextEditor();
-            var shownErrors = new HashSet<int>();
+            errors.Sort(SearchQueryError.Compare);
+            DrawQueryErrors(errors, te);
+        }
 
+        private void DrawQueryErrors(IEnumerable<SearchQueryError> errors, TextEditor te)
+        {
+            var alreadyShownErrors = new List<SearchQueryError>();
             foreach (var searchQueryError in errors)
             {
                 var queryErrorStart = searchQueryError.index;
@@ -1597,11 +1664,10 @@ namespace UnityEditor.Search
                     continue;
 
                 // Do not stack errors on top of each other
-                var errorHashCode = searchQueryError.GetHashCode();
-                if (shownErrors.Contains(errorHashCode))
+                if (alreadyShownErrors.Any(e => e.Overlaps(searchQueryError)))
                     continue;
 
-                shownErrors.Add(errorHashCode);
+                alreadyShownErrors.Add(searchQueryError);
 
                 if (searchQueryError.type == SearchQueryErrorType.Error)
                 {
@@ -1620,15 +1686,23 @@ namespace UnityEditor.Search
             }
         }
 
+        private int BUTTON_STACK_COUNT = 2; // Number of buttons drawn in DrawToolbarButtons
         private void DrawToolbarButtons()
         {
-            GUILayout.Space(8);
+            BUTTON_STACK_COUNT = 0;
             using (new EditorGUI.DisabledScope(string.IsNullOrEmpty(context.searchQuery)))
             {
+                BUTTON_STACK_COUNT++;
                 if (GUILayout.Button(Styles.saveQueryButtonContent, Styles.toolbarButton))
-                    CreateSearchQueryFromContext();
+                    SaveSearchQueryFromContext();
             }
-            GUILayout.Space(8);
+            EditorGUI.BeginChangeCheck();
+            BUTTON_STACK_COUNT++;
+            GUILayout.Toggle(m_ShownPanels.HasFlag(ShownPanels.InspectorPreview), Styles.previewInspectorButtonContent, Styles.toolbarButton);
+            if (EditorGUI.EndChangeCheck())
+            {
+                TogglePanelView(ShownPanels.InspectorPreview);
+            }
         }
 
         private void DrawTabToFilterInfo(Event evt, Rect searchTextRect)
@@ -1637,14 +1711,14 @@ namespace UnityEditor.Search
                 return;
 
             var searchTextTrimmedRect = Styles.searchFieldTabToFilterBtn.margin.Remove(searchTextRect);
-            var searchTextWidth = Styles.searchField.CalcSize(new GUIContent(context.searchText)).x;
+            var searchTextWidth = Styles.searchField.CalcSize(Utils.GUIContentTemp(context.searchText)).x;
             var pressTabToFilterContextStart = searchTextTrimmedRect.width - Styles.pressToFilterContentWidth;
             var showPressTabToFilter = searchTextWidth < pressTabToFilterContextStart;
 
             // Prevent overlap with search topic place holder only when it is visible
             if (showPressTabToFilter && string.IsNullOrEmpty(context.searchText))
             {
-                var searchTopicPlaceHolderWidth = Styles.placeholderTextStyle.CalcSize(new GUIContent(searchTopicPlaceHolder)).x;
+                var searchTopicPlaceHolderWidth = Styles.placeholderTextStyle.CalcSize(Utils.GUIContentTemp(searchTopicPlaceHolder)).x;
                 var searchTopicPlaceHolderEnd = searchTextRect.center.x + searchTopicPlaceHolderWidth / 2;
                 if (searchTopicPlaceHolderEnd >= pressTabToFilterContextStart)
                     showPressTabToFilter = false;
@@ -1660,14 +1734,14 @@ namespace UnityEditor.Search
 
         private void ClearSearch()
         {
-            m_CurrentSearchQuery = null;
+            activeSearchQuery = null;
             SendEvent(SearchAnalytics.GenericEventType.QuickSearchClearSearch);
             AutoComplete.Clear();
             context.searchText = "";
             GUI.changed = true;
             GUI.FocusControl(null);
             SetSelection();
-            DebouncedRefresh();
+            DebounceRefresh();
             GUIUtility.ExitGUI();
         }
 
@@ -1677,66 +1751,66 @@ namespace UnityEditor.Search
             OpenDefaultQuickSearch();
         }
 
-        private void CreateSearchQueryFromContext()
+        private void SaveSearchQueryFromContext()
         {
-            var initialFolder = SearchSettings.GetFullQueryFolderPath();
-            var searchQueryFileName = SearchQuery.GetQueryName(context.searchQuery);
-            var newSearchQueryPath = EditorUtility.SaveFilePanel("Save search query...", initialFolder, searchQueryFileName, "asset");
-            if (string.IsNullOrEmpty(newSearchQueryPath))
-                return;
+            bool newQuery = false;
+            var searchQueryPath = activeSearchQuery != null ? AssetDatabase.GetAssetPath(activeSearchQuery) : null;
 
-            newSearchQueryPath = Utils.CleanPath(newSearchQueryPath);
-            if (!System.IO.Directory.Exists(Path.GetDirectoryName(newSearchQueryPath)) || !Utils.IsPathUnderProject(newSearchQueryPath))
-                return;
-
-            var pathUnderProject = Utils.GetPathUnderProject(newSearchQueryPath);
-            SearchSettings.queryFolder = Utils.CleanPath(Path.GetDirectoryName(pathUnderProject));
-
-            var sq = AssetDatabase.LoadAssetAtPath<SearchQuery>(pathUnderProject) ?? SearchQuery.Create(context);
-            if (!sq)
+            if (string.IsNullOrEmpty(searchQueryPath))
             {
-                Debug.LogError($"Failed to save search query at {pathUnderProject}");
-                return;
+                var initialFolder = SearchSettings.GetFullQueryFolderPath();
+                var searchQueryFileName = SearchQuery.GetQueryName(context.searchQuery);
+                searchQueryPath = EditorUtility.SaveFilePanel("Save search query...", initialFolder, searchQueryFileName, "asset");
+                if (string.IsNullOrEmpty(searchQueryPath))
+                    return;
+
+                searchQueryPath = Utils.CleanPath(searchQueryPath);
+                if (!System.IO.Directory.Exists(Path.GetDirectoryName(searchQueryPath)) || !Utils.IsPathUnderProject(searchQueryPath))
+                    return;
+
+                searchQueryPath = Utils.GetPathUnderProject(searchQueryPath);
+                SearchSettings.queryFolder = Utils.CleanPath(Path.GetDirectoryName(searchQueryPath));
+                newQuery = true;
             }
 
-            var queryName = Path.GetFileNameWithoutExtension(pathUnderProject);
-            sq.viewState = m_ResultView.SaveViewState(queryName);
-            sq.viewState.group = m_FilteredItems.currentGroup;
-
-            if (SearchQuery.SaveQuery(sq, context, SearchSettings.queryFolder, queryName))
+            try
             {
-                SearchSettings.AddRecentSearch(sq.text);
-                SearchQuery.ResetSearchQueryItems();
-                Selection.activeObject = sq;
-            }
+                activeSearchQuery = AssetDatabase.LoadAssetAtPath<SearchQuery>(searchQueryPath) ?? SearchQuery.Create(context);
+                if (!activeSearchQuery)
+                {
+                    Debug.LogError($"Failed to save search query at {searchQueryPath}");
+                    return;
+                }
 
-            SendEvent(SearchAnalytics.GenericEventType.QuickSearchCreateSearchQuery, sq.text, SearchSettings.queryFolder);
+                var folder = Utils.CleanPath(Path.GetDirectoryName(searchQueryPath));
+                var queryName = Path.GetFileNameWithoutExtension(searchQueryPath);
+                activeSearchQuery.viewState = m_ResultView.SaveViewState(queryName);
+                activeSearchQuery.viewState.group = m_FilteredItems.currentGroup;
+
+                if (SearchQuery.SaveQuery(activeSearchQuery, context, folder, queryName) && newQuery)
+                {
+                    SearchSettings.AddRecentSearch(activeSearchQuery.text);
+                    SearchQuery.ResetSearchQueryItems();
+                    Selection.activeObject = activeSearchQuery;
+                }
+
+                SendEvent(SearchAnalytics.GenericEventType.QuickSearchCreateSearchQuery, activeSearchQuery.text, SearchSettings.queryFolder);
+            }
+            catch
+            {
+                Debug.LogError($"Failed to save search query at {searchQueryPath}");
+            }
         }
 
-        internal void DebouncedRefresh()
+        private void DebounceRefresh()
         {
-            EditorApplication.update -= DebouncedRefresh;
             if (!this)
                 return;
 
             if (SearchSettings.debounceMs == 0)
-            {
                 RefreshSearch();
-                return;
-            }
-
-            var currentTime = EditorApplication.timeSinceStartup;
-            if (m_DebounceTime != 0 && currentTime - m_DebounceTime > (SearchSettings.debounceMs / 1000.0f))
-            {
-                RefreshSearch();
-                m_DebounceTime = 0;
-            }
-            else
-            {
-                if (m_DebounceTime == 0)
-                    m_DebounceTime = currentTime;
-                EditorApplication.update += DebouncedRefresh;
-            }
+            else if (m_DebounceOff == null)
+                m_DebounceOff = Utils.CallDelayed(RefreshSearch, SearchSettings.debounceMs / 1000.0);
         }
 
         private static bool IsObjectMatchingType(SearchItem item, Type filterType)
@@ -1753,7 +1827,7 @@ namespace UnityEditor.Search
         private void LoadContext()
         {
             var contextHash = context.GetHashCode();
-            if (context.options.HasFlag(SearchFlags.FocusContext))
+            if (context.options.HasAny(SearchFlags.FocusContext))
             {
                 var contextualProvider = GetContextualProvider();
                 if (contextualProvider != null)
@@ -1765,57 +1839,48 @@ namespace UnityEditor.Search
 
         private bool LoadSessionSettings()
         {
-            if (testWindow)
-                return false;
-
             if (context != null && string.IsNullOrEmpty(context.searchText))
                 SetSearchText(SearchSettings.GetScopeValue(k_LastSearchPrefKey, m_ContextHash, ""));
+            else
+                RefreshSearch();
 
-            itemIconSize = SearchSettings.itemIconSize;
-
-            m_ShownPanels = (ShownPanels)SearchSettings.GetScopeValue(nameof(m_ShownPanels), m_ContextHash, (int)GetDefaultShowPanelOptions());
-            Utils.CallDelayed(() =>
             {
-                m_SideBarSplitter.SetPosition(SearchSettings.GetScopeValue(nameof(m_SideBarSplitter), m_ContextHash, -1));
-                m_DetailsPanelSplitter.SetPosition(SearchSettings.GetScopeValue(nameof(m_DetailsPanelSplitter), m_ContextHash, -1));
-            });
+                itemIconSize = SearchSettings.itemIconSize;
+            }
+
+            m_ShownPanels = ShownPanels.None;
+            if (SearchSettings.GetScopeValue(nameof(ShownPanels.InspectorPreview), m_ContextHash, 0) != 0)
+            {
+                m_ShownPanels |= ShownPanels.InspectorPreview;
+            }
+
+            if (SearchSettings.showSavedSearchPanel)
+            {
+                m_ShownPanels |= ShownPanels.LeftSideBar;
+            }
 
             if (m_FilteredItems != null)
             {
-                m_FilteredItems.currentGroup = SearchSettings.GetScopeValue(nameof(m_FilteredItems.currentGroup), m_ContextHash, ((IGroup)m_FilteredItems).id);
-                if (context.options.HasFlag(SearchFlags.FocusContext))
+                var loadGroup = SearchSettings.GetScopeValue(nameof(m_FilteredItems.currentGroup), m_ContextHash, ((IGroup)m_FilteredItems).id);
+                if (context.options.HasAny(SearchFlags.FocusContext))
                 {
                     var contextualProvider = GetContextualProvider();
                     if (contextualProvider != null)
-                        m_FilteredItems.currentGroup = contextualProvider.id;
+                        loadGroup = contextualProvider.id;
                 }
+
+                SelectGroup(loadGroup);
             }
 
             return true;
         }
 
-        private ShownPanels GetDefaultShowPanelOptions()
-        {
-            if (context.options.HasFlag(SearchFlags.HidePanels))
-                return ShownPanels.None;
-            return ShownPanels.InspectorPreview | ShownPanels.LeftSideBar;
-        }
-
         private void SaveSessionSettings()
         {
-            if (testWindow)
-                return;
-
             SearchSettings.SetScopeValue(k_LastSearchPrefKey, m_ContextHash, context.searchText);
-            if (saveFilters)
-            {
-                foreach (var p in SearchService.Providers.Where(p => p.active && !p.isExplicitProvider))
-                    SearchSettings.SetScopeValue(p.id, m_ContextHash, context.IsEnabled(p.id).ToString());
-            }
-
-            SearchSettings.SetScopeValue(nameof(m_ShownPanels), m_ContextHash, (int)m_ShownPanels);
-            SearchSettings.SetScopeValue(nameof(m_SideBarSplitter), m_ContextHash, m_SideBarSplitter.pos);
-            SearchSettings.SetScopeValue(nameof(m_DetailsPanelSplitter), m_ContextHash, m_DetailsPanelSplitter.pos);
+            SearchSettings.SetScopeValue(nameof(ShownPanels.InspectorPreview), m_ContextHash, m_ShownPanels.HasAny(ShownPanels.InspectorPreview) ? 1 : 0);
+            EditorPrefs.SetFloat(k_SideBarWidthKey, m_SideBarSplitter.pos);
+            EditorPrefs.SetFloat(k_DetailsWidthKey, m_DetailsPanelSplitter.pos);
 
             if (m_FilteredItems != null)
                 SearchSettings.SetScopeValue(nameof(m_FilteredItems.currentGroup), m_ContextHash, m_FilteredItems.currentGroup);
@@ -1888,7 +1953,7 @@ namespace UnityEditor.Search
             using (new EditorGUI.DisabledScope(!supportsSync))
             {
                 EditorGUI.BeginChangeCheck();
-                var syncButtonContent = !providerSupportsSync ? Styles.syncSearchProviderNotSupportedContent : !searchViewSyncEnabled ? Styles.syncSearchViewNotEnabledContent : syncSearch ? Styles.syncSearchOnButtonContent : Styles.syncSearchButtonContent;
+                var syncButtonContent = m_FilteredItems.currentGroup == "all" ? Styles.syncSearchAllGroupTabContent : !providerSupportsSync ? Styles.syncSearchProviderNotSupportedContent : !searchViewSyncEnabled ? Styles.syncSearchViewNotEnabledContent : syncSearch ? Styles.syncSearchOnButtonContent : Styles.syncSearchButtonContent;
                 var sync = GUILayout.Toggle(syncSearch, syncButtonContent, Styles.syncButton);
                 if (EditorGUI.EndChangeCheck())
                 {
@@ -1976,7 +2041,7 @@ namespace UnityEditor.Search
         {
             var windowId = (window as QuickSearch)?.windowId ?? null;
             SearchAnalytics.SendEvent(windowId, SearchAnalytics.GenericEventType.QuickSearchOpenDocLink);
-            EditorUtility.OpenWithDefaultApp("https://docs.unity3d.com/Packages/com.unity.quicksearch@3.0/manual/index.html");
+            EditorUtility.OpenWithDefaultApp("https://docs.unity3d.com/2021.1/Documentation/Manual/search-overview.html");
         }
 
     }

@@ -3,55 +3,33 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
 namespace UnityEditor.Search
 {
-    /// <summary>
-    /// An async search session tracks all incoming items found by a search provider that weren't returned right away after the search was initiated.
-    /// </summary>
-    class SearchSession
+    class BaseAsyncIEnumerableHandler<T>
     {
-        /// <summary>
-        /// This event is used to receive any async search result.
-        /// </summary>
-        public event Action<SearchContext, IEnumerable<SearchItem>> asyncItemReceived;
+        protected SearchEnumerator<T> m_ItemsEnumerator = new SearchEnumerator<T>();
 
-        /// <summary>
-        /// This event is used to know when a search has started to fetch new search items.
-        /// </summary>
-        public event Action<SearchContext> sessionStarted;
+        protected const long k_MaxTimePerUpdate = 10; // milliseconds
+        protected long maxFetchTimePerUpdate { get; set; } = k_MaxTimePerUpdate;
 
-        /// <summary>
-        /// This event is used to know when a search has finished fetching items.
-        /// </summary>
-        public event Action<SearchContext> sessionEnded;
-
-        private const long k_MaxTimePerUpdate = 10; // milliseconds
-
-        private SearchEnumerator<SearchItem> m_ItemsEnumerator = new SearchEnumerator<SearchItem>();
-        private long m_MaxFetchTimePerProviderMs;
-        private SearchContext m_Context;
-
-        /// <summary>
-        /// Checks if this async search session is active.
-        /// </summary>
-        public bool searchInProgress { get; set; } = false;
-
-        public SearchSession(SearchContext context)
+        public BaseAsyncIEnumerableHandler()
         {
-            m_Context = context;
         }
 
-        /// <summary>
-        /// Called when the system is ready to process any new async results.
-        /// </summary>
-        public void OnUpdate()
+        public BaseAsyncIEnumerableHandler(object itemEnumerator)
         {
-            var newItems = new List<SearchItem>();
-            var atEnd = !FetchSome(newItems, m_MaxFetchTimePerProviderMs);
+            Reset(itemEnumerator);
+        }
+
+        public virtual void OnUpdate()
+        {
+            var newItems = new List<T>();
+            var atEnd = !FetchSome(newItems, maxFetchTimePerUpdate);
 
             if (newItems.Count > 0)
                 SendItems(newItems);
@@ -62,51 +40,29 @@ namespace UnityEditor.Search
             }
         }
 
-        /// <summary>
-        /// Resolved a batch of items asynchronously.
-        /// </summary>
-        /// <param name="items"></param>
-        public void SendItems(IEnumerable<SearchItem> items)
+        public virtual void SendItems(IEnumerable<T> items) {}
+
+        internal virtual void Start() {}
+
+        public virtual void Stop()
         {
-            asyncItemReceived?.Invoke(m_Context, items);
+            Utils.tick -= OnUpdate;
+
+            lock (this)
+                m_ItemsEnumerator.Dispose();
         }
 
-        /// <summary>
-        /// Hard reset an async search session.
-        /// </summary>
-        /// <param name="itemEnumerator">The enumerator that will yield new search results. This object can be an IEnumerator or IEnumerable</param>
-        /// <param name="maxFetchTimePerProviderMs">The amount of time allowed to yield new results.</param>
-        /// <remarks>Normally async search sessions are re-used per search provider.</remarks>
-        public void Reset(SearchContext context, object itemEnumerator, long maxFetchTimePerProviderMs = k_MaxTimePerUpdate)
+        public virtual void Reset(object itemEnumerator, long maxFetchTimePerUpdate = k_MaxTimePerUpdate)
         {
             // Remove and add the event handler in case it was already removed.
             Stop();
-            searchInProgress = true;
-            m_Context = context;
-            m_MaxFetchTimePerProviderMs = maxFetchTimePerProviderMs;
+            this.maxFetchTimePerUpdate = maxFetchTimePerUpdate;
             if (itemEnumerator != null)
             {
-                m_ItemsEnumerator = new SearchEnumerator<SearchItem>(itemEnumerator);
+                lock (this)
+                    m_ItemsEnumerator = new SearchEnumerator<T>(itemEnumerator);
                 Utils.tick += OnUpdate;
             }
-        }
-
-        internal void Start()
-        {
-            sessionStarted?.Invoke(m_Context);
-        }
-
-        /// <summary>
-        /// Stop the async search session and discard any new search results.
-        /// </summary>
-        public void Stop()
-        {
-            if (searchInProgress)
-                sessionEnded?.Invoke(m_Context);
-
-            searchInProgress = false;
-            Utils.tick -= OnUpdate;
-            m_ItemsEnumerator.Dispose();
         }
 
         /// <summary>
@@ -116,7 +72,7 @@ namespace UnityEditor.Search
         /// <param name="quantity">The maximum amount of items to be added to @items</param>
         /// <param name="doNotCountNull">Ignore all yield return null results.</param>
         /// <returns>Returns true if there is still some results to fetch later or false if we've fetched everything remaining.</returns>
-        public bool FetchSome(List<SearchItem> items, int quantity, bool doNotCountNull)
+        public bool FetchSome(List<T> items, int quantity, bool doNotCountNull)
         {
             if (m_ItemsEnumerator.Count == 0)
                 return false;
@@ -145,7 +101,7 @@ namespace UnityEditor.Search
         /// <param name="doNotCountNull">Ignore all yield return null results.</param>
         /// <param name="maxFetchTimeMs">The amount of time allowed to yield new results.</param>
         /// <returns>Returns true if there is still some results to fetch later or false if we've fetched everything remaining.</returns>
-        public bool FetchSome(List<SearchItem> items, int quantity, bool doNotCountNull, long maxFetchTimeMs)
+        public bool FetchSome(List<T> items, int quantity, bool doNotCountNull, long maxFetchTimeMs)
         {
             if (m_ItemsEnumerator.Count == 0)
                 return false;
@@ -173,7 +129,7 @@ namespace UnityEditor.Search
         /// <param name="items">The list of items to append new results to.</param>
         /// <param name="maxFetchTimeMs">The amount of time allowed to yield new results.</param>
         /// <returns>Returns true if there is still some results to fetch later or false if we've fetched everything remaining.</returns>
-        public bool FetchSome(List<SearchItem> items, long maxFetchTimeMs)
+        public bool FetchSome(List<T> items, long maxFetchTimeMs)
         {
             if (m_ItemsEnumerator.Count == 0)
                 return false;
@@ -191,12 +147,94 @@ namespace UnityEditor.Search
         }
     }
 
+
+    /// <summary>
+    /// An async search session tracks all incoming items found by a search provider that weren't returned right away after the search was initiated.
+    /// </summary>
+    class SearchSession : BaseAsyncIEnumerableHandler<SearchItem>
+    {
+        /// <summary>
+        /// This event is used to receive any async search result.
+        /// </summary>
+        public event Action<SearchContext, IEnumerable<SearchItem>> asyncItemReceived;
+
+        /// <summary>
+        /// This event is used to know when a search has started to fetch new search items.
+        /// </summary>
+        public event Action<SearchContext> sessionStarted;
+
+        /// <summary>
+        /// This event is used to know when a search has finished fetching items.
+        /// </summary>
+        public event Action<SearchContext> sessionEnded;
+
+        private SearchContext m_Context;
+
+        /// <summary>
+        /// Checks if this async search session is active.
+        /// </summary>
+        public bool searchInProgress { get; set; } = false;
+
+        public SearchSession(SearchContext context)
+        {
+            m_Context = context;
+        }
+
+        /// <summary>
+        /// Resolved a batch of items asynchronously.
+        /// </summary>
+        /// <param name="items"></param>
+        public override void SendItems(IEnumerable<SearchItem> items)
+        {
+            asyncItemReceived?.Invoke(m_Context, items);
+        }
+
+        /// <summary>
+        /// Hard reset an async search session.
+        /// </summary>
+        /// <param name="itemEnumerator">The enumerator that will yield new search results. This object can be an IEnumerator or IEnumerable</param>
+        /// <param name="maxFetchTimePerProviderMs">The amount of time allowed to yield new results.</param>
+        /// <remarks>Normally async search sessions are re-used per search provider.</remarks>
+        public void Reset(SearchContext context, object itemEnumerator, long maxFetchTimePerProviderMs = k_MaxTimePerUpdate)
+        {
+            // Remove and add the event handler in case it was already removed.
+            Stop();
+            searchInProgress = true;
+            m_Context = context;
+            maxFetchTimePerUpdate = maxFetchTimePerProviderMs;
+            if (itemEnumerator != null)
+            {
+                lock (this)
+                    m_ItemsEnumerator = new SearchEnumerator<SearchItem>(itemEnumerator);
+                Utils.tick += OnUpdate;
+            }
+        }
+
+        internal override void Start()
+        {
+            sessionStarted?.Invoke(m_Context);
+            base.Start();
+        }
+
+        /// <summary>
+        /// Stop the async search session and discard any new search results.
+        /// </summary>
+        public override void Stop()
+        {
+            if (searchInProgress)
+                sessionEnded?.Invoke(m_Context);
+
+            searchInProgress = false;
+            base.Stop();
+        }
+    }
+
     /// <summary>
     /// A MultiProviderAsyncSearchSession holds all the providers' async search sessions.
     /// </summary>
     class MultiProviderAsyncSearchSession
     {
-        private Dictionary<string, SearchSession> m_SearchSessions = new Dictionary<string, SearchSession>();
+        private ConcurrentDictionary<string, SearchSession> m_SearchSessions = new ConcurrentDictionary<string, SearchSession>();
 
         /// <summary>
         /// This event is used to receive any async search result.
@@ -228,10 +266,14 @@ namespace UnityEditor.Search
             if (!m_SearchSessions.TryGetValue(providerId, out var session))
             {
                 session = new SearchSession(context);
-                session.sessionStarted += OnProviderAsyncSessionStarted;
-                session.sessionEnded += OnProviderAsyncSessionEnded;
-                session.asyncItemReceived += OnProviderAsyncItemReceived;
-                m_SearchSessions.Add(providerId, session);
+                if (m_SearchSessions.TryAdd(providerId, session))
+                {
+                    session.sessionStarted += OnProviderAsyncSessionStarted;
+                    session.sessionEnded += OnProviderAsyncSessionEnded;
+                    session.asyncItemReceived += OnProviderAsyncItemReceived;
+                }
+                else
+                    throw new Exception($"Failed to add session for {providerId}");
             }
 
             return session;

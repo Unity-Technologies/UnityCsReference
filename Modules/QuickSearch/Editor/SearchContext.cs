@@ -46,7 +46,7 @@ namespace UnityEditor.Search
         {
             m_Providers = FilterProviders(providers);
             this.options = options;
-            this.searchText = searchText;
+            this.searchText = searchText ?? string.Empty;
 
             BeginSession();
         }
@@ -67,6 +67,11 @@ namespace UnityEditor.Search
         /// <param name="providers">The list of providers used to resolve the specified query.</param>
         public SearchContext(IEnumerable<SearchProvider> providers)
             : this(providers, string.Empty, SearchFlags.Default)
+        {
+        }
+
+        public SearchContext(SearchContext context)
+            : this(context.providers, context.searchText, context.options)
         {
         }
 
@@ -179,7 +184,7 @@ namespace UnityEditor.Search
         {
             get
             {
-                return options.HasFlag(SearchFlags.WantsMore);
+                return (options & SearchFlags.WantsMore) == SearchFlags.WantsMore;
             }
 
             set
@@ -369,7 +374,7 @@ namespace UnityEditor.Search
 
         private void BeginSession()
         {
-            if (options.HasFlag(SearchFlags.Debug))
+            if (options.HasAny(SearchFlags.Debug))
                 UnityEngine.Debug.Log($"Start search session {String.Join(", ", providers.Select(p=>p.id))} -> {searchText}");
 
             foreach (var p in m_Providers)
@@ -389,7 +394,7 @@ namespace UnityEditor.Search
             foreach (var p in m_Providers)
                 p.OnDisable();
 
-            if (options.HasFlag(SearchFlags.Debug))
+            if (options.HasAny(SearchFlags.Debug))
                 UnityEngine.Debug.Log($"End search session {string.Join(", ", providers.Select(p => p.id))}");
         }
 
@@ -506,7 +511,7 @@ namespace UnityEditor.Search
 
         public override string ToString()
         {
-            return $"{searchText} - {GetProviders().Count}";
+            return $"[{GetProviders().Count}, {options}] {searchText.Replace("\n", "")}";
         }
     }
 }

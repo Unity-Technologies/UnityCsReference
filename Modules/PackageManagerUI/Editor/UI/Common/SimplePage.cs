@@ -59,7 +59,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 RebuildOrderedVisualStates();
 
-                TriggerOnListUpdate(addOrUpdateList, removeList, addOrUpdateList.Any());
+                TriggerOnListUpdate(addOrUpdateList, removeList, capability.supportLocalReordering && addOrUpdateList.Any());
 
                 RefreshVisualStates();
             }

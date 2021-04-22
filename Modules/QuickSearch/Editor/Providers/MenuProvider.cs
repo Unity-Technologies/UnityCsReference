@@ -23,6 +23,7 @@ namespace UnityEditor.Search.Providers
         private const string disabledMenuExecutionWarning = "The menu you are trying to execute is disabled. It will not be executed.";
 
         private static string[] shortcutIds;
+        private static readonly QueryValidationOptions k_QueryEngineOptions = new QueryValidationOptions { validateFilters = true, skipNestedQueries = true };
         private static QueryEngine<MenuData> queryEngine = null;
         private static List<MenuData> menus;
 
@@ -35,7 +36,7 @@ namespace UnityEditor.Search.Providers
 
             System.Threading.Tasks.Task.Run(() => BuildMenus(itemNames));
 
-            queryEngine = new QueryEngine<MenuData>();
+            queryEngine = new QueryEngine<MenuData>(k_QueryEngineOptions);
             queryEngine.AddFilter("id", m => m.path);
             queryEngine.SetSearchDataCallback(m => m.words, s => Utils.FastToLower(s), StringComparison.Ordinal);
 
@@ -99,14 +100,14 @@ namespace UnityEditor.Search.Providers
             var query = queryEngine.Parse(context.searchQuery);
             if (!query.valid)
             {
-                context.AddSearchQueryErrors(query.errors.Select(e => new SearchQueryError(e.index, e.length, e.reason, context, provider)));
+                context.AddSearchQueryErrors(query.errors.Select(e => new SearchQueryError(e, context, provider)));
                 yield break;
             }
 
             while (menus == null)
                 yield return null;
 
-            foreach (var m in query.Apply(menus))
+            foreach (var m in query.Apply(menus, false))
                 yield return provider.CreateItem(context, m.path);
         }
 

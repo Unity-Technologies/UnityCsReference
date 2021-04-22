@@ -37,8 +37,7 @@ namespace UnityEditor.Search
     {
         static Dictionary<QueryNodeType, IQueryEnumerableFactory> s_EnumerableFactories;
 
-        [InitializeOnLoadMethod]
-        public static void Init()
+        static EnumerableCreator()
         {
             s_EnumerableFactories = new Dictionary<QueryNodeType, IQueryEnumerableFactory>();
             var factoryTypes = TypeCache.GetTypesWithAttribute<EnumerableCreatorAttribute>().Where(t => typeof(IQueryEnumerableFactory).IsAssignableFrom(t));

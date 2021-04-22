@@ -101,6 +101,8 @@ namespace UnityEditor.Search
         /// If skipIncompleteFilters is false, incomplete filters will generate errors when parsed.
         /// </summary>
         public bool skipIncompleteFilters;
+
+        internal bool skipNestedQueries;
     }
 
     class QueryEngineParserData
@@ -143,6 +145,9 @@ namespace UnityEditor.Search
             QueryRegexValues.k_PartialFilterFunctionPattern +
             QueryRegexValues.k_PartialFilterOperatorsPattern +
             QueryRegexValues.k_PartialFilterValuePattern, RegexOptions.Compiled);
+
+        Regex m_BooleanFilterRx = new Regex(QueryRegexValues.k_FilterNamePattern +
+            QueryRegexValues.k_FilterFunctionPattern, RegexOptions.Compiled);
 
         static readonly Dictionary<string, Func<IQueryNode>> k_CombiningTokenGenerators = new Dictionary<string, Func<IQueryNode>>
         {
@@ -257,6 +262,9 @@ namespace UnityEditor.Search
 
             BuildFilterRegex();
             BuildDefaultTypeParsers();
+
+            // Insert boolean filter matcher/consumer after normal filter
+            m_TokenConsumers.Insert(m_TokenConsumers.Count - 1, new QueryTokenHandler(MatchBooleanFilter, ConsumeBooleanFilter));
 
             // Insert consumer before the word consumer
             m_TokenConsumers.Insert(m_TokenConsumers.Count - 1, new QueryTokenHandler(MatchPartialFilter, ConsumePartialFilter));
@@ -544,6 +552,42 @@ namespace UnityEditor.Search
             return true;
         }
 
+        int MatchBooleanFilter(string text, int startIndex, int endIndex, ICollection<QueryError> errors, out StringView sv, out Match match, out bool matched)
+        {
+            sv = text.GetStringView();
+            match = m_BooleanFilterRx.Match(text, startIndex, endIndex - startIndex);
+            matched = false;
+
+            if (!match.Success)
+                return -1;
+
+            if (match.Groups.Count < 2)
+                return -1;
+
+            var filterType = match.Groups[1].Value;
+            if (!m_Filters.TryGetValue(filterType, out var filter))
+                return -1;
+
+            if (filter.type != typeof(bool))
+                return -1;
+
+            matched = true;
+            return match.Length;
+        }
+
+        bool ConsumeBooleanFilter(string text, int startIndex, int endIndex, StringView sv, Match match, ICollection<QueryError> errors, QueryEngineParserData userData)
+        {
+            var node = CreateBooleanFilterToken(match.Value, match, startIndex, errors);
+            if (node == null)
+                return false;
+
+            node.token = new QueryToken(match.Value, startIndex);
+            userData.nodesToStringPosition.Add(node, new QueryToken(startIndex, match.Length));
+            userData.expressionNodes.Add(node);
+            userData.tokens.Add(match.Value);
+            return true;
+        }
+
         int MatchPartialFilter(string text, int startIndex, int endIndex, ICollection<QueryError> errors, out StringView sv, out Match match, out bool matched)
         {
             sv = text.GetStringView();
@@ -604,7 +648,7 @@ namespace UnityEditor.Search
 
         protected override bool ConsumeNestedQuery(string text, int startIndex, int endIndex, StringView sv, Match match, ICollection<QueryError> errors, QueryEngineParserData userData)
         {
-            if (validationOptions.validateFilters)
+            if (validationOptions.validateFilters && !validationOptions.skipNestedQueries)
             {
                 if (m_NestedQueryHandler == null)
                 {
@@ -625,8 +669,15 @@ namespace UnityEditor.Search
             var nestedQueryString = queryString.Substring(1, queryString.Length - 2);
             nestedQueryString = nestedQueryString.Trim();
             var nestedQueryNode = new NestedQueryNode(nestedQueryString, m_NestedQueryHandler);
-            nestedQueryNode.token = new QueryToken(match.Value, startIndex);
-            userData.nodesToStringPosition.Add(nestedQueryNode, new QueryToken(startIndex + (string.IsNullOrEmpty(nestedQueryAggregator) ? 0 : nestedQueryAggregator.Length), queryString.Length));
+            nestedQueryNode.token = new QueryToken(startIndex + (string.IsNullOrEmpty(nestedQueryAggregator) ? 0 : nestedQueryAggregator.Length), queryString.Length);
+            userData.nodesToStringPosition.Add(nestedQueryNode, nestedQueryNode.token);
+            if (validationOptions.skipNestedQueries)
+            {
+                nestedQueryNode.skipped = true;
+                userData.expressionNodes.Add(nestedQueryNode);
+                return true;
+            }
+
             userData.tokens.Add(match.Value);
 
             if (string.IsNullOrEmpty(nestedQueryAggregator))
@@ -641,7 +692,8 @@ namespace UnityEditor.Search
                 }
 
                 var aggregatorNode = new AggregatorNode(nestedQueryAggregator, aggregator);
-                userData.nodesToStringPosition.Add(aggregatorNode, new QueryToken(startIndex, nestedQueryAggregator.Length));
+                aggregatorNode.token = new QueryToken(startIndex, nestedQueryAggregator.Length + nestedQueryNode.token.length);
+                userData.nodesToStringPosition.Add(aggregatorNode, aggregatorNode.token);
                 aggregatorNode.children.Add(nestedQueryNode);
                 nestedQueryNode.parent = aggregatorNode;
                 userData.expressionNodes.Add(aggregatorNode);
@@ -738,6 +790,11 @@ namespace UnityEditor.Search
 
             if (QueryEngineUtils.IsNestedQueryToken(filterValue))
             {
+                if (validationOptions.skipNestedQueries)
+                {
+                    return new InFilterNode(filter, op, filterValue, filterParam, token) {skipped = true};
+                }
+
                 if (validationOptions.validateFilters && m_NestedQueryHandler == null)
                 {
                     errors.Add(new QueryError(filterValueIndex, filterValue.Length, $"Cannot use a nested query without setting the handler first."));
@@ -780,6 +837,56 @@ namespace UnityEditor.Search
                 filterNode = new FilterNode(filter, op, filterValue, filterParam, token);
             }
 
+            return filterNode;
+        }
+
+        IQueryNode CreateBooleanFilterToken(string token, Match match, int index, ICollection<QueryError> errors)
+        {
+            if (match.Groups.Count != 3) // There is 3 groups
+            {
+                errors.Add(new QueryError(index, token.Length, $"Could not parse filter block \"{token}\"."));
+                return null;
+            }
+
+            var filterType = match.Groups[1].Value;
+            var filterParam = match.Groups[2].Value;
+            var filterTypeIndex = match.Groups[1].Index;
+
+            if (!string.IsNullOrEmpty(filterParam))
+            {
+                // Trim () around the group
+                filterParam = filterParam.Trim('(', ')');
+            }
+
+            if (!m_Filters.TryGetValue(filterType, out var filter))
+            {
+                // When skipping unknown filter, just return a noop. The graph will get simplified later.
+                if (validationOptions.skipUnknownFilters)
+                {
+                    return new FilterNode(filterType, null, null, filterParam, token) {skipped = true};
+                }
+
+                if (!HasDefaultHandler(!string.IsNullOrEmpty(filterParam)) && validationOptions.validateFilters)
+                {
+                    errors.Add(new QueryError(filterTypeIndex, filterType.Length, $"Unknown filter \"{filterType}\"."));
+                    return null;
+                }
+                if (string.IsNullOrEmpty(filterParam))
+                    filter = new DefaultFilter<TData>(filterType, m_DefaultFilterHandler ?? ((o, s, fo, value) => false));
+                else
+                    filter = new DefaultParamFilter<TData>(filterType, m_DefaultParamFilterHandler ?? ((o, s, param, fo, value) => false));
+            }
+
+            // Boolean filters default to equal
+            var filterOperator = "=";
+            if (!m_FilterOperators.ContainsKey(filterOperator))
+            {
+                errors.Add(new QueryError(index, token.Length, $"Boolean filter not supported."));
+                return null;
+            }
+            var op = m_FilterOperators[filterOperator];
+
+            IQueryNode filterNode = new FilterNode(filter, op, "true", filterParam, token);
             return filterNode;
         }
 
@@ -979,7 +1086,7 @@ namespace UnityEditor.Search
             return searchNode;
         }
 
-        static IQueryNode CombineNodesToTree(List<IQueryNode> expressionNodes, ICollection<QueryError> errors, NodesToStringPosition nodesToStringPosition)
+        IQueryNode CombineNodesToTree(List<IQueryNode> expressionNodes, ICollection<QueryError> errors, NodesToStringPosition nodesToStringPosition)
         {
             var count = expressionNodes.Count;
             if (count == 0)
@@ -1068,9 +1175,9 @@ namespace UnityEditor.Search
             }
         }
 
-        static void TransformAndOrToIntersectUnion(ref IQueryNode root, ICollection<QueryError> errors, NodesToStringPosition nodesToStringPosition)
+        void TransformAndOrToIntersectUnion(ref IQueryNode root, ICollection<QueryError> errors, NodesToStringPosition nodesToStringPosition)
         {
-            if (root.type != QueryNodeType.And && root.type != QueryNodeType.Or)
+            if ((root.type != QueryNodeType.And && root.type != QueryNodeType.Or) || validationOptions.skipNestedQueries)
                 return;
 
             var children = root.children.ToArray();
@@ -1587,6 +1694,17 @@ namespace UnityEditor.Search
             {
                 var options = m_Impl.validationOptions;
                 options.skipIncompleteFilters = value;
+                m_Impl.validationOptions = options;
+            }
+        }
+
+        internal bool skipNestedQueries
+        {
+            get => m_Impl.validationOptions.skipNestedQueries;
+            set
+            {
+                var options = m_Impl.validationOptions;
+                options.skipNestedQueries = value;
                 m_Impl.validationOptions = options;
             }
         }

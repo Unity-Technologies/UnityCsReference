@@ -4,11 +4,9 @@
 
 using System;
 using System.Collections.Concurrent;
-using UnityEditor;
 
 namespace UnityEditor.Search
 {
-    [InitializeOnLoad]
     static class Dispatcher
     {
         private static readonly ConcurrentQueue<Action> s_ExecutionQueue = new ConcurrentQueue<Action>();
@@ -21,6 +19,14 @@ namespace UnityEditor.Search
         public static void Enqueue(Action action)
         {
             s_ExecutionQueue.Enqueue(action);
+        }
+
+        public static bool ProcessOne()
+        {
+            if (!s_ExecutionQueue.TryDequeue(out var action))
+                return false;
+            action.Invoke();
+            return true;
         }
 
         static void Update()

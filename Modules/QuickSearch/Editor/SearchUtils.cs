@@ -8,9 +8,9 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using UnityEditor.Experimental.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEditor.Experimental.SceneManagement;
 
 namespace UnityEditor.Search
 {
@@ -106,6 +106,7 @@ namespace UnityEditor.Search
         /// <returns>Returns list of tokens and variations in lowercase</returns>
         public static IEnumerable<string> SplitFileEntryComponents(string path, char[] entrySeparators)
         {
+            path = Utils.RemoveInvalidCharsFromPath(path, '_');
             var name = Path.GetFileName(path);
             var nameTokens = name.Split(entrySeparators).Distinct().ToArray();
             var scc = nameTokens.SelectMany(s => SplitCamelCase(s)).Where(s => s.Length > 0).ToArray();
@@ -144,6 +145,23 @@ namespace UnityEditor.Search
             if (obj is Component c)
                 return GetTransformPath(c.gameObject.transform);
             return obj.name;
+        }
+
+        /// <summary>
+        /// Return a unique document key owning the object
+        /// </summary>
+        internal static ulong GetDocumentKey(UnityEngine.Object obj)
+        {
+            if (!obj)
+                return ulong.MaxValue;
+            if (obj is GameObject go)
+                return GetTransformPath(go.transform).GetHashCode64();
+            if (obj is Component c)
+                return GetTransformPath(c.gameObject.transform).GetHashCode64();
+            var assetPath = AssetDatabase.GetAssetPath(obj);
+            if (string.IsNullOrEmpty(assetPath))
+                return ulong.MaxValue;
+            return AssetDatabase.AssetPathToGUID(assetPath).GetHashCode64();
         }
 
         /// <summary>
@@ -318,7 +336,7 @@ namespace UnityEditor.Search
                 goRoots.AddRange(sceneRootObjects);
 
             return SceneModeUtility.GetObjects(goRoots.ToArray(), true)
-                .Where(o => !o.hideFlags.HasFlag(HideFlags.HideInHierarchy)).ToArray();
+                .Where(o => (o.hideFlags & HideFlags.HideInHierarchy) != HideFlags.HideInHierarchy).ToArray();
         }
 
         /// <summary>
@@ -344,7 +362,7 @@ namespace UnityEditor.Search
             }
 
             return SceneModeUtility.GetObjects(goRoots.ToArray(), true)
-                .Where(o => !o.hideFlags.HasFlag(HideFlags.HideInHierarchy));
+                .Where(o => (o.hideFlags & HideFlags.HideInHierarchy) != HideFlags.HideInHierarchy);
         }
 
         internal static ISet<string> GetReferences(UnityEngine.Object obj, int level = 1)

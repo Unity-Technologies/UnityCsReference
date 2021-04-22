@@ -162,6 +162,7 @@ namespace UnityEditor
             // Tell the main view its now in this window (quick hack to get platform-specific code to move its views to the right window)
             if (m_RootView)
                 m_RootView.SetWindowRecurse(this);
+
             Internal_SetTitle(m_Title);
 
             SetBackgroundColor(skinBackgroundColor);

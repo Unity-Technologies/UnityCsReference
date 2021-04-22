@@ -33,6 +33,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public bool requireUserLoggedIn;
         public bool requireNetwork;
         public bool supportFilters;
+        public bool supportLocalReordering;
         public Ordering[] orderingValues;
 
         public override string ToString()

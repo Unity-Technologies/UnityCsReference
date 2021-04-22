@@ -6,8 +6,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor.Experimental.SceneManagement;
-using UnityEditor.SceneManagement;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
 
@@ -18,7 +16,18 @@ namespace UnityEditor.Search.Providers
         private bool m_HierarchyChanged = true;
         private List<GameObject> m_GameObjects = null;
         private SceneQueryEngine m_SceneQueryEngine;
-        private ISearchView m_LastSearchView;
+
+        readonly struct GameObjectData
+        {
+            public readonly GameObject go;
+            public readonly ulong key;
+
+            public GameObjectData(GameObject go)
+            {
+                this.go = go;
+                this.key = SearchUtils.GetDocumentKey(go);
+            }
+        }
 
         public SceneProvider(string providerId, string filterId, string displayName)
             : base(providerId, displayName)
@@ -32,14 +41,15 @@ namespace UnityEditor.Search.Providers
                 Utils.IsFocusedWindowTypeName("SceneView") ||
                 Utils.IsFocusedWindowTypeName("SceneHierarchyWindow");
 
-            EditorSceneManager.activeSceneChangedInEditMode += (_, __) => InvalidateScene();
-            PrefabStage.prefabStageOpened += _ => InvalidateScene();
-            PrefabStage.prefabStageClosing += _ => InvalidateScene();
-            ObjectChangeEvents.changesPublished += OnObjectChanged;
+            SearchMonitor.sceneChanged += InvalidateScene;
+            SearchMonitor.documentsInvalidated += Refresh;
+
+            SearchMonitor.objectChanged += OnObjectChanged;
 
             supportsSyncViewSearch = true;
 
             toObject = (item, type) => ObjectFromItem(item, type);
+            toKey = (item) => ToKey(item);
 
             fetchItems = (context, items, provider) => SearchItems(context, provider);
 
@@ -119,18 +129,31 @@ namespace UnityEditor.Search.Providers
             trackSelection = (item, context) => PingItem(item);
         }
 
+        private void Refresh()
+        {
+            EditorApplication.delayCall -= SearchService.RefreshWindows;
+            EditorApplication.delayCall += SearchService.RefreshWindows;
+        }
+
+        private ulong ToKey(SearchItem item)
+        {
+            if (item.data is GameObjectData data)
+                return data.key;
+            return ulong.MaxValue;
+        }
+
         private void InvalidateScene()
         {
             m_HierarchyChanged = true;
-            m_LastSearchView?.Refresh();
+            Refresh();
         }
 
         private void InvalidateObject(int instanceId, RefreshFlags flags = RefreshFlags.Default)
         {
-            if (m_SceneQueryEngine.InvalidateObject(instanceId))
-                m_LastSearchView?.Refresh(flags);
-            else if (UnityEngine.Object.FindObjectFromInstanceID(instanceId) is Component c)
-                InvalidateObject(c.gameObject.GetInstanceID());
+            if (UnityEngine.Object.FindObjectFromInstanceID(instanceId) is Component c)
+                m_SceneQueryEngine.InvalidateObject(c.gameObject.GetInstanceID());
+            else
+                m_SceneQueryEngine.InvalidateObject(instanceId);
         }
 
         private void OnObjectChanged(ref ObjectChangeEventStream stream)
@@ -222,21 +245,28 @@ namespace UnityEditor.Search.Providers
 
                 new SearchAction(providerId, "show", null, "Show selected object(s)")
                 {
-                    enabled = (items) => SceneVisibilityManager.instance.IsHidden(items.First().ToObject<GameObject>()),
+                    enabled = (items) => IsHidden(items),
                     execute = (items) => SceneVisibilityManager.instance.Show(items.Select(i => i.ToObject<GameObject>()).Where(i => i).ToArray(), true)
                 },
 
                 new SearchAction(providerId, "hide", null, "Hide selected object(s)")
                 {
-                    enabled = (items) => !SceneVisibilityManager.instance.IsHidden(items.First().ToObject<GameObject>()),
+                    enabled = (items) => !IsHidden(items),
                     execute = (items) => SceneVisibilityManager.instance.Hide(items.Select(i => i.ToObject<GameObject>()).Where(i => i).ToArray(), true)
                 },
             };
         }
 
+        private static bool IsHidden(IReadOnlyCollection<SearchItem> items)
+        {
+            var go = items.First().ToObject<GameObject>();
+            if (!go)
+                return false;
+            return SceneVisibilityManager.instance.IsHidden(go);
+        }
+
         private IEnumerator SearchItems(SearchContext context, SearchProvider provider)
         {
-            m_LastSearchView = context.searchView;
             if (!string.IsNullOrEmpty(context.searchQuery))
             {
                 if (m_HierarchyChanged)
@@ -255,16 +285,15 @@ namespace UnityEditor.Search.Providers
                         .Where(obj => obj != null);
                 }
 
-                yield return m_SceneQueryEngine.Search(context, provider, subset).Select(gameObject =>
                 {
-                    if (!gameObject)
-                        return null;
-                    return AddResult(context, provider, gameObject.GetInstanceID().ToString(), 0, false);
-                });
+                    yield return m_SceneQueryEngine.Search(context, provider, subset)
+                        .Where(go => go)
+                        .Select(go => AddResult(context, provider, go));
+                }
             }
             else if (context.wantsMore && context.filterType != null && string.IsNullOrEmpty(context.searchQuery))
             {
-                yield return GameObject.FindObjectsOfType(context.filterType)
+                yield return UnityEngine.Object.FindObjectsOfType(context.filterType)
                     .Select(obj =>
                     {
                         if (obj is Component c)
@@ -272,15 +301,15 @@ namespace UnityEditor.Search.Providers
                         return obj as GameObject;
                     })
                     .Where(go => go)
-                    .Select(go => AddResult(context, provider, go.GetInstanceID().ToString(), 999, false));
+                    .Select(go => AddResult(context, provider, go));
             }
         }
 
-        private static SearchItem AddResult(SearchContext context, SearchProvider provider, string id, int score, bool useFuzzySearch)
+        public static SearchItem AddResult(SearchContext context, SearchProvider provider, GameObject go)
         {
-            string description = null;
-            var item = provider.CreateItem(context, id, score, null, description, null, null);
-            return SetItemDescriptionFormat(item, useFuzzySearch);
+            var instanceId = go.GetHashCode();
+            var item = provider.CreateItem(context, instanceId.ToString(), ~instanceId, null, null, null, new GameObjectData(go));
+            return SetItemDescriptionFormat(item, useFuzzySearch: false);
         }
 
         private static SearchItem SetItemDescriptionFormat(SearchItem item, bool useFuzzySearch)
@@ -309,19 +338,19 @@ namespace UnityEditor.Search.Providers
 
         private static void FrameObjects(UnityEngine.Object[] objects)
         {
-            Selection.instanceIDs = objects.Select(o => o.GetInstanceID()).ToArray();
+            Selection.instanceIDs = objects.Select(o => o.GetHashCode()).ToArray();
             if (SceneView.lastActiveSceneView != null)
                 SceneView.lastActiveSceneView.FrameSelected();
         }
 
-        private static GameObject ObjectFromItem(SearchItem item)
+        private static GameObject ObjectFromItem(in SearchItem item)
         {
-            var instanceID = Convert.ToInt32(item.id);
-            var obj = EditorUtility.InstanceIDToObject(instanceID) as GameObject;
-            return obj;
+            if (item.data is GameObjectData data)
+                return data.go;
+            return null;
         }
 
-        private static UnityEngine.Object ObjectFromItem(SearchItem item, Type type)
+        private static UnityEngine.Object ObjectFromItem(in SearchItem item, Type type)
         {
             var go = ObjectFromItem(item);
             if (!go)
