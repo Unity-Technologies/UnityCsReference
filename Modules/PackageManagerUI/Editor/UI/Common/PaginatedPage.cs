@@ -79,7 +79,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (addOrUpdateList.Any() || removeList.Any())
             {
-                TriggerOnListUpdate(addOrUpdateList, removeList, addOrUpdateList.Any());
+                TriggerOnListUpdate(addOrUpdateList, removeList, capability.supportLocalReordering && addOrUpdateList.Any());
 
                 RefreshVisualStates();
             }

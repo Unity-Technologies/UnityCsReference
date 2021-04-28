@@ -186,12 +186,17 @@ namespace UnityEditor.Search
         /// <returns>A filtered IEnumerable.</returns>
         public override IEnumerable<T> Apply(IEnumerable<T> data)
         {
+            return Apply(data, returnPayloadIfEmpty);
+        }
+
+        internal IEnumerable<T> Apply(IEnumerable<T> data, bool returnInputIfEmpty)
+        {
             if (!valid)
                 return new T[] {};
 
             if (evaluationGraph.empty)
             {
-                return returnPayloadIfEmpty ? data : new T[] {};
+                return returnInputIfEmpty ? data : new T[] {};
             }
 
             return graphHandler.Eval(data);

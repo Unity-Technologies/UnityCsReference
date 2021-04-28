@@ -115,12 +115,15 @@ namespace UnityEditor.Search
         public void Dispose()
         {
 
-            foreach (var enumerator in m_ItemsEnumerator)
+            using (new RaceConditionDetector(this))
             {
-                if (enumerator is IDisposable disposable)
-                    disposable.Dispose();
+                foreach (var enumerator in m_ItemsEnumerator)
+                {
+                    if (enumerator is IDisposable disposable)
+                        disposable.Dispose();
+                }
+                m_ItemsEnumerator.Clear();
             }
-            m_ItemsEnumerator.Clear();
         }
     }
 

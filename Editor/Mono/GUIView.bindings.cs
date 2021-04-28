@@ -73,6 +73,7 @@ namespace UnityEditor
         private extern void Internal_SetWantsMouseEnterLeaveWindow(bool wantIt);
         private extern void Internal_SetAutoRepaint(bool doit);
         private extern void Internal_SetWindow(ScriptableObject win);
+        private extern void Internal_UnsetWindow(ScriptableObject win);
         private extern void Internal_SetPosition(Rect windowPosition);
     }
 }

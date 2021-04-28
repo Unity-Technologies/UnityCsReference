@@ -3,9 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEditor;
 using UnityEngine;
 
 namespace UnityEditor.Search
@@ -34,34 +31,89 @@ namespace UnityEditor.Search
         private static bool s_DragToPosition = true;
         private static bool s_Dragged = false;
         private static bool s_PostPoneMove = false;
-        private static bool s_SelectAllOnMouseUp = true;
         private static double s_NextBlinkTime = 0;
         private static bool s_CursorBlinking;
         private static int s_RecentSearchIndex = -1;
         private static string m_CycledSearch;
         private static string m_LastSearch;
+        public static float s_CancelButtonWidth = 20f;
 
         public static int controlID { get; private set; } = -1;
 
+        public static bool IsMultiline(float height)
+        {
+            return height > 30f;
+        }
+
+        readonly struct TextUndoInfo
+        {
+            readonly public string text;
+            readonly public int cursorPos;
+
+            public TextUndoInfo(string text, int cursorPos)
+            {
+                this.text = text;
+                this.cursorPos = cursorPos;
+            }
+        }
+
+        static int s_UndoIndex = -1;
+        static TextUndoInfo[] s_UndoStack = new TextUndoInfo[10];
+        static double s_UndoLastTime = 0f;
+
         public static string Draw(Rect position, string text, GUIStyle style)
         {
-            using (new BlinkCursorScope(s_CursorBlinking, new Color(0, 0, 0, 0.01f)))
+            var evt = Event.current;
+            using (new BlinkCursorScope(s_CursorBlinking && HasKeyboardFocus(controlID), new Color(0, 0, 0, 0.01f)))
             {
                 bool selectAll = false;
-                if (!String.IsNullOrEmpty(m_CycledSearch) && (Event.current.type == EventType.Repaint || Event.current.type == EventType.Layout))
+                if (!String.IsNullOrEmpty(m_CycledSearch) && (evt.type == EventType.Repaint || evt.type == EventType.Layout))
                 {
                     text = m_CycledSearch;
                     m_CycledSearch = null;
                     selectAll = GUI.changed = true;
                 }
 
-                text = Draw(position, text, false, false, null, style ?? Styles.searchField);
+                if (GUI.changed || evt.isKey)
+                    SaveUndo(text);
+
+                text = Draw(position, text, IsMultiline(position.height), false, null, style ?? Styles.searchField);
 
                 if (selectAll)
                     GetTextEditor().SelectAll();
 
                 return text;
             }
+        }
+
+        private static void SaveUndo(string text)
+        {
+            var now = EditorApplication.timeSinceStartup;
+            if (now - s_UndoLastTime <= 1f)
+                return;
+
+            if (!string.IsNullOrEmpty(text) && (s_UndoIndex == -1 || s_UndoStack[s_UndoIndex].text != text))
+            {
+                s_UndoIndex = Utils.Wrap(s_UndoIndex + 1, s_UndoStack.Length);
+                s_UndoStack[s_UndoIndex] = new TextUndoInfo(text, GetTextEditor().cursorIndex);
+            }
+            s_UndoLastTime = now;
+        }
+
+        private static bool UndoEdit(TextEditor editor, int direction = 1)
+        {
+            s_UndoIndex = Utils.Wrap(s_UndoIndex - direction, s_UndoStack.Length);
+            if (s_UndoStack[s_UndoIndex].text == null)
+                return false;
+
+            editor.text = s_UndoStack[s_UndoIndex].text;
+            editor.cursorIndex = s_UndoStack[s_UndoIndex].cursorPos;
+            return true;
+        }
+
+        private static bool RedoEdit(TextEditor editor)
+        {
+            return UndoEdit(editor, -1);
         }
 
         public static string Draw(Rect position, string text, bool multiline, bool passwordField, string allowedletters, GUIStyle style)
@@ -118,15 +170,11 @@ namespace UnityEditor.Search
                             case CommandName.Cut:
                             case CommandName.Copy:
                                 if (editor.hasSelection)
-                                {
                                     evt.Use();
-                                }
                                 break;
                             case CommandName.Paste:
                                 if (editor.CanPaste())
-                                {
                                     evt.Use();
-                                }
                                 break;
                             case CommandName.SelectAll:
                             case CommandName.Delete:
@@ -174,13 +222,9 @@ namespace UnityEditor.Search
                                 // On Windows, Shift-Delete in text does a cut whereas on Mac, it does a delete.
                                 editor.BeginEditing(id, text, position, style, multiline, passwordField);
                                 if (SystemInfo.operatingSystemFamily == OperatingSystemFamily.MacOSX)
-                                {
                                     editor.Delete();
-                                }
                                 else
-                                {
                                     editor.Cut();
-                                }
                                 mayHaveChanged = true;
                                 evt.Use();
                                 break;
@@ -192,23 +236,12 @@ namespace UnityEditor.Search
                     {
                         if (s_Dragged && s_DragToPosition)
                         {
-                            //GUIUtility.keyboardControl = id;
-                            //editor.BeginEditing (id, text, position, style, multiline, passwordField);
                             editor.MoveSelectionToAltCursor();
                             mayHaveChanged = true;
                         }
                         else if (s_PostPoneMove)
                         {
                             editor.MoveCursorToPosition(evt.mousePosition);
-                        }
-                        else if (s_SelectAllOnMouseUp)
-                        {
-                            // If cursor is invisible, it's a selectable label, and we don't want to select all automatically
-                            if (GUI.skin.settings.cursorColor.a > 0)
-                            {
-                                editor.SelectAll();
-                            }
-                            s_SelectAllOnMouseUp = false;
                         }
 
                         editor.MouseDragSelectsWholeWords(false);
@@ -247,7 +280,6 @@ namespace UnityEditor.Search
                             else
                             {
                                 editor.MoveCursorToPosition(evt.mousePosition);
-                                s_SelectAllOnMouseUp = false;
                             }
                         }
                         else
@@ -255,11 +287,6 @@ namespace UnityEditor.Search
                             GUIUtility.keyboardControl = id;
                             editor.BeginEditing(id, text, position, style, multiline, passwordField);
                             editor.MoveCursorToPosition(evt.mousePosition);
-                            // If cursor is invisible, it's a selectable label, and we don't want to select all automatically
-                            if (GUI.skin.settings.cursorColor.a > 0)
-                            {
-                                s_SelectAllOnMouseUp = true;
-                            }
                         }
 
                         GUIUtility.hotControl = id;
@@ -285,7 +312,6 @@ namespace UnityEditor.Search
                             }
 
                             s_DragToPosition = false;
-                            s_SelectAllOnMouseUp = !editor.hasSelection;
                         }
                         s_Dragged = true;
                         evt.Use();
@@ -321,7 +347,23 @@ namespace UnityEditor.Search
                             break;
                         }
 
-                        if (evt.keyCode == KeyCode.Escape)
+                        if (s_UndoIndex != -1 && evt.keyCode == KeyCode.Z && (evt.command || evt.control))
+                        {
+                            if (editor.IsEditingControl(id) && UndoEdit(editor))
+                            {
+                                editor.EndEditing();
+                                mayHaveChanged = true;
+                            }
+                        }
+                        else if (s_UndoIndex != -1 && evt.keyCode == KeyCode.Y && (evt.command || evt.control))
+                        {
+                            if (editor.IsEditingControl(id) && RedoEdit(editor))
+                            {
+                                editor.EndEditing();
+                                mayHaveChanged = true;
+                            }
+                        }
+                        else if (evt.keyCode == KeyCode.Escape)
                         {
                             if (editor.IsEditingControl(id))
                             {
@@ -386,6 +428,12 @@ namespace UnityEditor.Search
                             }
                             else
                             {
+                                if (IsLineBreak(evt))
+                                {
+                                    editor.Insert('\n');
+                                    mayHaveChanged = true;
+                                }
+
                                 // If the composition string is not empty, then it's likely that even though we didn't add a printable
                                 // character to the string, we should refresh the GUI, to update the composition string.
                                 if (Input.compositionString != "")
@@ -402,7 +450,15 @@ namespace UnityEditor.Search
                     break;
                 case EventType.Repaint:
                     if (GUIUtility.hotControl == 0)
-                        EditorGUIUtility.AddCursorRect(position, MouseCursor.Text);
+                    {
+                        var cursorRect = position;
+                        if (!String.IsNullOrEmpty(text))
+                        {
+                            cursorRect = Styles.searchFieldBtn.margin.Remove(cursorRect);
+                            cursorRect.width -= s_CancelButtonWidth;
+                        }
+                        EditorGUIUtility.AddCursorRect(cursorRect, MouseCursor.Text);
+                    }
 
                     string drawText = editor.IsEditingControl(id) ? editor.text : text;
                     editor.position = position;
@@ -440,16 +496,29 @@ namespace UnityEditor.Search
 
         public static void MoveCursor(TextCursorPlacement moveCursor)
         {
+            MoveCursor(moveCursor, -1);
+        }
+
+        public static void MoveCursor(TextCursorPlacement moveCursor, int cursorInsertPosition)
+        {
             var te = GetTextEditor();
-            switch (moveCursor)
+
+            if (cursorInsertPosition >= 0)
             {
-                case TextCursorPlacement.MoveLineEnd: te.MoveLineEnd(); break;
-                case TextCursorPlacement.MoveLineStart: te.MoveLineStart(); break;
-                case TextCursorPlacement.MoveToEndOfPreviousWord: te.MoveToEndOfPreviousWord(); break;
-                case TextCursorPlacement.MoveToStartOfNextWord: te.MoveToStartOfNextWord(); break;
-                case TextCursorPlacement.MoveWordLeft: te.MoveWordLeft(); break;
-                case TextCursorPlacement.MoveWordRight: te.MoveWordRight(); break;
-                case TextCursorPlacement.MoveAutoComplete: MoveAutoComplete(te); break;
+                te.selectIndex = te.cursorIndex = cursorInsertPosition;
+            }
+            else
+            {
+                switch (moveCursor)
+                {
+                    case TextCursorPlacement.MoveLineEnd: te.MoveLineEnd(); break;
+                    case TextCursorPlacement.MoveLineStart: te.MoveLineStart(); break;
+                    case TextCursorPlacement.MoveToEndOfPreviousWord: te.MoveToEndOfPreviousWord(); break;
+                    case TextCursorPlacement.MoveToStartOfNextWord: te.MoveToStartOfNextWord(); break;
+                    case TextCursorPlacement.MoveWordLeft: te.MoveWordLeft(); break;
+                    case TextCursorPlacement.MoveWordRight: te.MoveWordRight(); break;
+                    case TextCursorPlacement.MoveAutoComplete: MoveAutoComplete(te); break;
+                }
             }
         }
 
@@ -465,7 +534,11 @@ namespace UnityEditor.Search
 
         public static void Focus()
         {
-            EditorGUI.FocusTextInControl(k_QuickSearchBoxName);
+            if (GUIUtility.keyboardControl != controlID)
+            {
+                EditorGUI.FocusTextInControl(k_QuickSearchBoxName);
+                GetTextEditor().SelectAll();
+            }
         }
 
         public static bool UpdateBlinkCursorState(double time)
@@ -485,7 +558,10 @@ namespace UnityEditor.Search
             if (evt.type != EventType.KeyDown)
                 return false;
 
-            if (evt.modifiers.HasFlag(EventModifiers.Alt))
+            if (IsLineBreak(evt))
+                return true;
+
+            if (evt.modifiers.HasAny(EventModifiers.Alt))
             {
                 if (evt.keyCode == KeyCode.DownArrow)
                 {
@@ -603,8 +679,17 @@ namespace UnityEditor.Search
             pm.ShowAsContext();
         }
 
+        private static bool IsLineBreak(Event evt)
+        {
+            if ((evt.control || evt.shift) && (evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter))
+                return true;
+            return false;
+        }
+
         private static bool MightBePrintableKey(Event evt, bool multiline)
         {
+            if (IsLineBreak(evt))
+                return true;
             if (evt.command || evt.control)
                 return false;
             if (evt.keyCode >= KeyCode.Mouse0 && evt.keyCode <= KeyCode.Mouse6)
@@ -697,6 +782,10 @@ namespace UnityEditor.Search
             DrawLineWithTooltip(errorIndex, errorIndex + errorLength, errorTooltip, Styles.Wiggle.wiggleWarning, Styles.Wiggle.wiggleTooltip);
         }
 
+        const float textTopBottomPadding = 4f;
+        const float minSinglelineTextHeight = 20f;
+        public const float searchFieldSingleLineHeight = minSinglelineTextHeight + textTopBottomPadding;
+
         private static void DrawLineWithTooltip(int lineStartIndex, int lineEndIndex, string tooltip, GUIStyle lineStyle, GUIStyle tooltipStyle)
         {
             if (Event.current.type != EventType.Repaint)
@@ -715,14 +804,24 @@ namespace UnityEditor.Search
                 return;
 
             startPosition.x = Mathf.Max(startPosition.x, visibleRect.x);
-            var tooltipRect = new Rect(te.position) { xMin = startPosition.x, xMax = endPosition.x };
+            var lineRect = new Rect(te.position) { xMin = startPosition.x, xMax = endPosition.x };
+            lineRect.yMin = startPosition.y + minSinglelineTextHeight;
+            lineRect.yMax = lineRect.yMin + lineStyle.fixedHeight;
 
-            var lineRect = new Rect(tooltipRect);
-            lineRect.yMax = visibleRect.yMax; // Offset the line so it is floating above the bottom of the search field wrt to padding.
-            lineRect.yMin = lineRect.yMax - lineStyle.fixedHeight;
+            lineStyle.Draw(lineRect, GUIContent.none, controlID);
 
-            lineStyle.Draw(lineRect, new GUIContent(""), controlID);
-            tooltipStyle.Draw(tooltipRect, new GUIContent("", null, tooltip), controlID);
+            var tooltipRect = new Rect(lineRect);
+            tooltipRect.yMin -= textTopBottomPadding;
+            tooltipRect.yMax += textTopBottomPadding;
+            tooltipStyle.Draw(tooltipRect, Utils.GUIContentTemp(string.Empty, tooltip), controlID);
+            EditorGUIUtility.AddCursorRect(tooltipRect, MouseCursor.Arrow);
+        }
+
+        internal static Rect GetRect(string text, float width, float padding)
+        {
+            var fieldWidth = width - padding;
+            var fieldHeight = Mathf.Max(minSinglelineTextHeight, Styles.searchField.CalcHeight(Utils.GUIContentTemp(text), fieldWidth));
+            return GUILayoutUtility.GetRect(fieldWidth, fieldHeight + textTopBottomPadding, Styles.searchField);
         }
     }
 }

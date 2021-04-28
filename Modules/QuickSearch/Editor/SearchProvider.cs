@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using UnityEngine;
 
 namespace UnityEditor.Search
@@ -187,16 +186,19 @@ namespace UnityEditor.Search
         /// <returns>The newly created search item attached to the current search provider.</returns>
         public SearchItem CreateItem(SearchContext context, string id, int score, string label, string description, Texture2D thumbnail, object data)
         {
-            if (context.options.HasFlag(SearchFlags.Debug))
+            if (context.options.HasAny(SearchFlags.Debug))
             {
                 // Debug sorting
                 description = $"DEBUG: id={id} - label={label} - description={description} - thumbnail={thumbnail} - data={data}";
                 label = $"{label ?? id} ({score})";
             }
 
+            var modifiedScore = score;
+            if (SearchSettings.searchItemFavorites.Contains(id))
+                modifiedScore = int.MinValue + score;
             return new SearchItem(id)
             {
-                score = score,
+                score = modifiedScore,
                 label = label,
                 description = description,
                 options = SearchItemOptions.Highlight | SearchItemOptions.Ellipsis,
@@ -352,6 +354,9 @@ namespace UnityEditor.Search
 
         /// <summary> Returns any valid Unity object held by the search item.</summary>
         public Func<SearchItem, Type, UnityEngine.Object> toObject;
+
+        /// <summary> Returns a document key in which the item is contained.</summary>
+        internal Func<SearchItem, ulong> toKey;
 
         /// <summary>
         /// Provider can return a list of words that will help the user complete his search query.

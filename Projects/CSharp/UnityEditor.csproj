@@ -5878,9 +5878,6 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\AssetIndexer.cs">
       <Link>Modules\QuickSearch\Editor\Indexing\AssetIndexer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\AssetPostprocessorIndexer.cs">
-      <Link>Modules\QuickSearch\Editor\Indexing\AssetPostprocessorIndexer.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\CustomIndexers.cs">
       <Link>Modules\QuickSearch\Editor\Indexing\CustomIndexers.cs</Link>
     </Compile>
@@ -5892,9 +5889,6 @@
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\ObjectIndexer.cs">
       <Link>Modules\QuickSearch\Editor\Indexing\ObjectIndexer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\SceneIndexer.cs">
-      <Link>Modules\QuickSearch\Editor\Indexing\SceneIndexer.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\SearchDatabase.cs">
       <Link>Modules\QuickSearch\Editor\Indexing\SearchDatabase.cs</Link>
@@ -6016,9 +6010,6 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\QueryEngine\QueryGraph.cs">
       <Link>Modules\QuickSearch\Editor\QueryEngine\QueryGraph.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\QueryEngine\QueryGraphViewer.cs">
-      <Link>Modules\QuickSearch\Editor\QueryEngine\QueryGraphViewer.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\QueryEngine\QueryNodes.cs">
       <Link>Modules\QuickSearch\Editor\QueryEngine\QueryNodes.cs</Link>
     </Compile>
@@ -6049,6 +6040,15 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchEnumerator.cs">
       <Link>Modules\QuickSearch\Editor\SearchEnumerator.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\ReflectionUtils.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\ReflectionUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\SearchItemQueryEngine.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\SearchItemQueryEngine.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\TaskEvaluatorManager.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\TaskEvaluatorManager.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchFlags.cs">
       <Link>Modules\QuickSearch\Editor\SearchFlags.cs</Link>
     </Compile>
@@ -6057,6 +6057,9 @@
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchList.cs">
       <Link>Modules\QuickSearch\Editor\SearchList.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchMonitor.cs">
+      <Link>Modules\QuickSearch\Editor\SearchMonitor.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchProvider.cs">
       <Link>Modules\QuickSearch\Editor\SearchProvider.cs</Link>
@@ -6081,6 +6084,9 @@
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchUtils.cs">
       <Link>Modules\QuickSearch\Editor\SearchUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Selectors\PropertySelectors.cs">
+      <Link>Modules\QuickSearch\Editor\Selectors\PropertySelectors.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Transactions\TimeRange.cs">
       <Link>Modules\QuickSearch\Editor\Transactions\TimeRange.cs</Link>
@@ -6136,14 +6142,23 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\UI\SearchResultView.cs">
       <Link>Modules\QuickSearch\Editor\UI\SearchResultView.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\UI\SplitterInfo.cs">
+      <Link>Modules\QuickSearch\Editor\UI\SplitterInfo.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\UI\Styles.cs">
       <Link>Modules\QuickSearch\Editor\UI\Styles.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\UI\VisualSplitter.cs">
       <Link>Modules\QuickSearch\Editor\UI\VisualSplitter.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\BinarySearchFinder.cs">
+      <Link>Modules\QuickSearch\Editor\Utilities\BinarySearchFinder.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\DebugTimer.cs">
       <Link>Modules\QuickSearch\Editor\Utilities\DebugTimer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\RaceConditionDetector.cs">
+      <Link>Modules\QuickSearch\Editor\Utilities\RaceConditionDetector.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\StringView.cs">
       <Link>Modules\QuickSearch\Editor\Utilities\StringView.cs</Link>

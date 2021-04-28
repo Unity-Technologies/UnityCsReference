@@ -104,4 +104,19 @@ namespace UnityEditor.Search
         /// </summary>
         OpenPicker = FocusContext | HidePanels | WantsMore
     }
+
+    static class SearchFlagsExtensions
+    {
+        public static bool HasAny(this SearchFlags flags, SearchFlags f) => (flags & f) != 0;
+        public static bool HasAll(this SearchFlags flags, SearchFlags all) => (flags & all) == all;
+
+        public static bool HasAny(this ShowDetailsOptions flags, ShowDetailsOptions f) => (flags & f) != 0;
+        public static bool HasAll(this ShowDetailsOptions flags, ShowDetailsOptions all) => (flags & all) == all;
+
+        public static bool HasAny(this SearchItemOptions flags, SearchItemOptions f) => (flags & f) != 0;
+        public static bool HasAll(this SearchItemOptions flags, SearchItemOptions all) => (flags & all) == all;
+
+        public static bool HasAny(this FetchPreviewOptions flags, FetchPreviewOptions f) => (flags & f) != 0;
+        public static bool HasAll(this FetchPreviewOptions flags, FetchPreviewOptions all) => (flags & all) == all;
+    }
 }

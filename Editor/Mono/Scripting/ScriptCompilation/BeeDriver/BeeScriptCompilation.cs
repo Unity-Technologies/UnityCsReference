@@ -147,7 +147,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public static CompilerMessage[] ParseCompilerOutput(NodeResult nodeResult)
         {
-            // future improvement opportunity: write a single parser that can parse warning, errors files from all tools that we use.
+            // TODO: future improvement opportunity: write a single parser that can parse warning, errors files from all tools that we use.
             var parser = nodeResult.annotation.StartsWith("ILPostProcess")
                 ? (CompilerOutputParserBase) new PostProcessorOutputParser()
                 : (CompilerOutputParserBase) new MicrosoftCSharpCompilerOutputParser();

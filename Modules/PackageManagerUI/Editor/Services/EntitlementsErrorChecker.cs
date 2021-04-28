@@ -39,25 +39,30 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private static void OnListOperation(IOperation operation)
         {
-            (operation as UpmListOperation).onProcessResult += (request) =>
+            var listOperation = operation as UpmListOperation;
+            if (listOperation.isOfflineMode)
             {
-                // Package Manager Window always seems to default to name ascending order
-                var packages = request.Result;
-                var entitlementErrorPackage = packages.Where(p => p.entitlements?.isAllowed == false
-                    || p.errors.Any(error => error.message.Contains("You do not have a subscription for this package")))
-                    .OrderBy(p => p.displayName ?? p.name)
-                    .FirstOrDefault();
-
-                if (entitlementErrorPackage != null)
+                listOperation.onProcessResult += (request) =>
                 {
-                    PackageManagerWindow.OpenPackageManager(entitlementErrorPackage.name);
-                }
+                    var upmClient = ServicesContainer.instance.Resolve<UpmClient>();
+                    upmClient.onListOperation -= OnListOperation;
 
-                instance.m_IsEditorStartUp = false;
-            };
+                    // Package Manager Window always seems to default to name ascending order
+                    var packages = request.Result;
 
-            var upmClient = ServicesContainer.instance.Resolve<UpmClient>();
-            upmClient.onListOperation -= OnListOperation;
+                    var entitlementErrorPackage = packages.Where(p => p.entitlements?.isAllowed == false
+                        || p.errors.Any(error => error.message.Contains("You do not have a subscription for this package")))
+                        .OrderBy(p => p.displayName ?? p.name)
+                        .FirstOrDefault();
+
+                    if (entitlementErrorPackage != null)
+                    {
+                        PackageManagerWindow.OpenPackageManager(entitlementErrorPackage.name);
+                    }
+
+                    instance.m_IsEditorStartUp = false;
+                };
+            }
         }
     }
 }

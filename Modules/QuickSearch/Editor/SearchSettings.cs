@@ -7,7 +7,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
 
@@ -77,6 +76,8 @@ namespace UnityEditor.Search
     static class SearchSettings
     {
         const string k_ProjectUserSettingsPath = "UserSettings/Search.settings";
+
+        const string k_ItemIconSizePrefKey = "Search.ItemIconSize";
         public const string settingsPreferencesKey = "Preferences/Search";
         public static readonly string globalSearchSettingsFolder = Path.Combine(InternalEditorUtility.unityPreferencesFolder, "Search").Replace("\\", "/");
 
@@ -86,15 +87,22 @@ namespace UnityEditor.Search
         public static bool wantsMore { get; set; }
         public static bool keepOpen { get; set; }
         public static string queryFolder { get; set; }
-        public static float itemIconSize { get; set; }
         public static bool onBoardingDoNotAskAgain { get; set; }
         public static bool showPackageIndexes { get; set; }
         public static bool showStatusBar { get; set; }
+        public static SearchQuerySortOrder savedSearchesSortOrder { get; set; }
+        public static bool showSavedSearchPanel { get; set; }
         public static Dictionary<string, string> scopes { get; private set; }
         public static Dictionary<string, SearchProviderSettings> providers { get; private set; }
+
+        // User editor pref
+        public static float itemIconSize { get; set; } = (float)DisplayMode.List;
+
         public const int k_RecentSearchMaxCount = 20;
         public static List<string> recentSearches = new List<string>(k_RecentSearchMaxCount);
-        public static SearchQuerySortOrder savedSearchesSortOrder { get; set; }
+
+        public static HashSet<string> searchItemFavorites = new HashSet<string>();
+        public static HashSet<string> searchQueryFavorites = new HashSet<string>();
 
         public static int debounceMs
         {
@@ -137,22 +145,28 @@ namespace UnityEditor.Search
             fetchPreview = ReadSetting(settings, nameof(fetchPreview), true);
             wantsMore = ReadSetting(settings, nameof(wantsMore), false);
             keepOpen = ReadSetting(settings, nameof(keepOpen), false);
-            itemIconSize = ReadSetting(settings, nameof(itemIconSize), 1.0f);
             queryFolder = ReadSetting(settings, nameof(queryFolder), "Assets");
             onBoardingDoNotAskAgain = ReadSetting(settings, nameof(onBoardingDoNotAskAgain), false);
             showPackageIndexes = ReadSetting(settings, nameof(showPackageIndexes), false);
             showStatusBar = ReadSetting(settings, nameof(showStatusBar), false);
             savedSearchesSortOrder = (SearchQuerySortOrder)ReadSetting(settings, nameof(savedSearchesSortOrder), 0);
+            showSavedSearchPanel = ReadSetting(settings, nameof(showSavedSearchPanel), false);
+
+            itemIconSize = EditorPrefs.GetFloat(k_ItemIconSizePrefKey, itemIconSize);
 
 
             var searches = ReadSetting<object[]>(settings, nameof(recentSearches));
             if (searches != null)
-            {
                 recentSearches = searches.Cast<string>().ToList();
-            }
+
+            var favoriteItems = ReadSetting<object[]>(settings, nameof(searchItemFavorites));
+            if (favoriteItems != null)
+                searchItemFavorites.UnionWith(favoriteItems.Cast<string>());
 
             scopes = ReadProperties<string>(settings, nameof(scopes));
             providers = ReadProviderSettings(settings, nameof(providers));
+
+            LoadFavorites();
         }
 
         public static void Save()
@@ -163,7 +177,6 @@ namespace UnityEditor.Search
                 [nameof(fetchPreview)] = fetchPreview,
                 [nameof(wantsMore)] = wantsMore,
                 [nameof(keepOpen)] = keepOpen,
-                [nameof(itemIconSize)] = itemIconSize,
                 [nameof(queryFolder)] = queryFolder,
                 [nameof(onBoardingDoNotAskAgain)] = onBoardingDoNotAskAgain,
                 [nameof(showPackageIndexes)] = showPackageIndexes,
@@ -171,11 +184,16 @@ namespace UnityEditor.Search
                 [nameof(scopes)] = scopes,
                 [nameof(providers)] = providers,
                 [nameof(recentSearches)] = recentSearches,
+                [nameof(searchItemFavorites)] = searchItemFavorites.ToList(),
                 [nameof(savedSearchesSortOrder)] = (int)savedSearchesSortOrder,
+                [nameof(showSavedSearchPanel)] = showSavedSearchPanel,
 
             };
 
             SJSON.Save(settings, k_ProjectUserSettingsPath);
+            SaveFavorites();
+
+            EditorPrefs.SetFloat(k_ItemIconSizePrefKey, itemIconSize);
         }
 
         public static void SetScopeValue(string prefix, int hash, string value)
@@ -647,6 +665,41 @@ namespace UnityEditor.Search
             public static GUIContent dockableContent = new GUIContent("Open Search as dockable window");
             public static GUIContent debugContent = new GUIContent("[DEV] Display additional debugging information");
             public static GUIContent debounceThreshold = new GUIContent("Select the typing debounce threshold (ms)");
+        }
+
+        public static void AddSearchFavorite(string searchText)
+        {
+            searchQueryFavorites.Add(searchText);
+            SaveFavorites();
+        }
+
+        public static void RemoveSearchFavorite(string searchText)
+        {
+            searchQueryFavorites.Remove(searchText);
+            SaveFavorites();
+        }
+
+        public static void AddItemFavorite(SearchItem item)
+        {
+            searchItemFavorites.Add(item.id);
+            SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchAddFavoriteItem, item.provider.id);
+        }
+
+        public static void RemoveItemFavorite(SearchItem item)
+        {
+            searchItemFavorites.Remove(item.id);
+            SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchRemoveFavoriteItem, item.provider.id);
+        }
+
+        public static void LoadFavorites()
+        {
+            var favoriteString = EditorPrefs.GetString("SearchQuery.Favorites", "");
+            searchQueryFavorites.UnionWith(favoriteString.Split(new string[] { ";;;" }, StringSplitOptions.RemoveEmptyEntries));
+        }
+
+        public static void SaveFavorites()
+        {
+            EditorPrefs.SetString("SearchQuery.Favorites", string.Join(";;;", searchQueryFavorites));
         }
     }
 }

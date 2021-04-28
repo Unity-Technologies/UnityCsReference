@@ -202,6 +202,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 page = new SimplePage(m_PackageDatabase, m_PackageFiltering, filterTab, new PageCapability
                 {
                     requireUserLoggedIn = false,
+                    supportLocalReordering = true,
                     requireNetwork = false,
                     orderingValues = new[]
                     {
@@ -216,6 +217,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     requireUserLoggedIn = false,
                     requireNetwork = false,
+                    supportLocalReordering = true,
                     orderingValues = new[]
                     {
                         new PageCapability.Ordering("Name", "displayName"),
@@ -230,6 +232,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     requireUserLoggedIn = false,
                     requireNetwork = false,
+                    supportLocalReordering = true,
                     orderingValues = new[]
                     {
                         new PageCapability.Ordering("Name", "displayName")

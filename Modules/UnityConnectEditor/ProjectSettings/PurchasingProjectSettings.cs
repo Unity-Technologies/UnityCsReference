@@ -339,9 +339,8 @@ namespace UnityEditor.Connect
             const string k_TemplatePath = "UXML/ServicesWindow/PurchasingProjectSettingsStateEnabled.uxml";
             const string k_BulletCharacter = "\u2022 ";
 
+            Label m_MigrationMessage;
             VisualElement m_ImportIapBlock;
-            VisualElement m_MigrateIapBlock;
-            Label m_MigratePackageVersionLabel;
             VisualElement m_IapOptionsBlock;
 
             //uss class names
@@ -349,19 +348,17 @@ namespace UnityEditor.Connect
             const string k_BulletContainerClass = "bullet-container";
 
             //uxml element names
+            const string k_MigrationMessage = "MigrateMessage";
             const string k_WelcomeToIapBlock = "WelcomeToIapBlock";
             const string k_ImportIapBlock = "ImportIapBlock";
-            const string k_MigrateIapBlock = "MigrateIapBlock";
             const string k_IapOptionsBlock = "IapOptionsBlock";
             const string k_ImportBtn = "ImportBtn";
             const string k_ReimportBtn = "ReimportBtn";
             const string k_UpdateBtn = "UpdateBtn";
-            const string k_MigrateBtn = "MigrateBtn";
             const string k_UpdateGooglePlayKeyBtn = "UpdateGooglePlayKeyBtn";
             const string k_GooglePlayLink = "GooglePlayLink";
             const string k_GooglePlayKeyEntry = "GooglePlayKeyEntry";
             const string k_GoToDashboardLink = "GoToDashboard";
-            const string k_MigrateVersionInfo = "MigrateVersionInfo";
 
             //Package Import status blocks
             const string k_UnimportedMode = "unimported-mode";
@@ -388,7 +385,6 @@ namespace UnityEditor.Connect
             const string k_KeyParsingExceptionMessage = "Exception occurred trying to parse Google Play Key and was not handled. Message: {0}";
 
             string packageMigrationHeadsup { get; set; }
-            string m_LatestPreMigrationPackageVersion;
             bool m_LookForAssetStoreImport;
             bool m_EligibleForMigration;
 
@@ -434,13 +430,14 @@ namespace UnityEditor.Connect
             {
                 LoadTemplateIntoScrollContainer(k_TemplatePath);
 
+                m_MigrationMessage = provider.rootVisualElement.Q<Label>(k_MigrationMessage);
                 m_ImportIapBlock = provider.rootVisualElement.Q(k_ImportIapBlock);
-                m_MigrateIapBlock = provider.rootVisualElement.Q(k_MigrateIapBlock);
                 m_IapOptionsBlock = provider.rootVisualElement.Q(k_IapOptionsBlock);
+
+                ToggleMigrateModeVisibility(m_MigrationMessage, m_EligibleForMigration);
 
                 SetupWelcomeIapBlock();
                 SetupImportIapBlock();
-                SetupMigrateIapBlock();
                 SetupIapOptionsBlock();
                 var scrollContainer = provider.rootVisualElement.Q(className: k_ScrollContainerClass);
                 scrollContainer.Add(ServicesUtils.SetupSupportedPlatformsBlock(GetSupportedPlatforms()));
@@ -451,7 +448,6 @@ namespace UnityEditor.Connect
 
                 // Prepare the package section and update the package information
                 PreparePackageSection(provider.rootVisualElement);
-                m_LatestPreMigrationPackageVersion = string.Empty;
                 UpdatePackageInformation();
             }
 
@@ -498,21 +494,6 @@ namespace UnityEditor.Connect
                 // The check for a newer version should be done only when the service is enabled, and at least once when entering the state ...
                 PurchasingService.instance.RequestNotifyOnVersionCheck(OnVersionCheckComplete);
                 PurchasingService.instance.GetLatestETag(PurchasingService.instance.OnGetLatestETag);
-            }
-
-            //Begin Migrate Block
-            void SetupMigrateIapBlock()
-            {
-                m_MigrateIapBlock.Q<Button>(k_MigrateBtn).clicked += InstallMigratePackage;
-
-                m_MigratePackageVersionLabel = m_MigrateIapBlock.Q<Label>(k_MigrateVersionInfo);
-                // Make sure version texts are upper case...
-                if (m_MigratePackageVersionLabel != null)
-                {
-                    m_MigratePackageVersionLabel.text = m_MigratePackageVersionLabel.text.ToUpper();
-                }
-
-                ToggleMigrateModeVisibility(m_MigrateIapBlock, m_EligibleForMigration);
             }
 
             void VerifyImportTag()
@@ -600,52 +581,20 @@ namespace UnityEditor.Connect
                 }
             }
 
-            protected override string GetUpdatablePackageVersion()
-            {
-                if (string.IsNullOrEmpty(m_LatestPreMigrationPackageVersion))
-                {
-                    return base.GetUpdatablePackageVersion();
-                }
-                else
-                {
-                    return m_LatestPreMigrationPackageVersion;
-                }
-            }
-
             protected override void OnSearchPackageFound(PackageManager.PackageInfo package)
             {
                 base.OnSearchPackageFound(package);
 
                 m_EligibleForMigration = false;
-                m_LatestPreMigrationPackageVersion = string.Empty;
                 if (TryGetMajorVersion(currentPackageVersion, out var currentMajorVer))
                 {
                     if (currentMajorVer <= 2)
                     {
-                        foreach (var version in package.versions.compatible.Reverse())
+                        if (TryGetMajorVersion(latestPackageVersion, out var majorVer))
                         {
-                            if (!IsPreviewVersion(version))
+                            if (majorVer >= 3)
                             {
-                                if (TryGetMajorVersion(version, out var majorVer))
-                                {
-                                    if (majorVer <= 2)
-                                    {
-                                        if (string.IsNullOrEmpty(m_LatestPreMigrationPackageVersion))
-                                        {
-                                            m_LatestPreMigrationPackageVersion = version;
-                                            break; //Should be the last version we need to test for, given Reverse order. Move if algorithm changes.
-                                        }
-                                    }
-                                    else if (majorVer >= 3)
-                                    {
-                                        if (!m_EligibleForMigration)
-                                        {
-                                            m_EligibleForMigration = true;
-
-                                            m_MigratePackageVersionLabel.text = latestPackageVersion;
-                                        }
-                                    }
-                                }
+                                m_EligibleForMigration = true;
                             }
                         }
                     }
@@ -665,7 +614,7 @@ namespace UnityEditor.Connect
                 }
 
                 VerifyImportTag();
-                ToggleMigrateModeVisibility(m_MigrateIapBlock, m_EligibleForMigration);
+                ToggleMigrateModeVisibility(m_MigrationMessage, m_EligibleForMigration);
             }
 
             bool TryGetMajorVersion(string versionName, out int majorVersion)
@@ -684,12 +633,16 @@ namespace UnityEditor.Connect
                 PurchasingService.instance.InstallUnityPackage(OnImportComplete);
             }
 
-            void InstallMigratePackage()
+            protected override string GetUpdatePackageMessage()
             {
-                var messageForDialog = L10n.Tr(packageMigrationHeadsup);
-                installPackageVersion = latestPackageVersion;
-
-                InstallPackage(messageForDialog);
+                if (m_EligibleForMigration)
+                {
+                    return L10n.Tr(packageMigrationHeadsup);
+                }
+                else
+                {
+                    return base.GetUpdatePackageMessage();
+                }
             }
 
             void OnImportComplete()

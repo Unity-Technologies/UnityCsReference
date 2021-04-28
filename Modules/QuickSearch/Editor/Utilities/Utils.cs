@@ -19,6 +19,7 @@ using UnityEditor.Connect;
 using UnityEditor.StyleSheets;
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("com.unity.quicksearch.tests")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("com.unity.search.extensions.editor")]
 
 namespace UnityEditor.Search
 {
@@ -30,6 +31,30 @@ namespace UnityEditor.Search
     {
 
         internal static readonly bool isDeveloperBuild = false;
+
+        struct RootDescriptor
+        {
+            public RootDescriptor(string root)
+            {
+                this.root = root;
+                absPath = CleanPath(new FileInfo(root).FullName);
+            }
+
+            public string root;
+            public string absPath;
+
+            public override string ToString()
+            {
+                return $"{root} -> {absPath}";
+            }
+        }
+
+        static RootDescriptor[] s_RootDescriptors;
+
+        static RootDescriptor[] rootDescriptors
+        {
+            get { return s_RootDescriptors ?? (s_RootDescriptors = GetAssetRootFolders().Select(root => new RootDescriptor(root)).OrderByDescending(desc => desc.absPath.Length).ToArray()); }
+        }
 
         private static UnityEngine.Object[] s_LastDraggedObjects;
 
@@ -107,7 +132,7 @@ namespace UnityEditor.Search
 
             //UnityEngine.Debug.Log($"Generate preview for {path}, {previewSize}, {previewOptions}");
 
-            if (previewOptions.HasFlag(FetchPreviewOptions.Normal))
+            if (previewOptions.HasAny(FetchPreviewOptions.Normal))
             {
                 if (assetType == typeof(AudioClip))
                     return GetAssetThumbnailFromPath(path);
@@ -130,7 +155,7 @@ namespace UnityEditor.Search
             if (obj == null)
                 return null;
 
-            if (previewOptions.HasFlag(FetchPreviewOptions.Large))
+            if (previewOptions.HasAny(FetchPreviewOptions.Large))
             {
                 var tex = AssetPreviewUpdater.CreatePreview(obj, null, path, (int)previewSize.x, (int)previewSize.y);
                 if (tex)
@@ -145,10 +170,25 @@ namespace UnityEditor.Search
             return AssetDatabase.GetMainAssetInstanceID(assetPath);
         }
 
+        internal static GUIContent GUIContentTemp(string text, string tooltip)
+        {
+            return GUIContent.Temp(text, tooltip);
+        }
+
+        internal static GUIContent GUIContentTemp(string text, Texture2D image)
+        {
+            return GUIContent.Temp(text, image);
+        }
+
+        internal static GUIContent GUIContentTemp(string text)
+        {
+            return GUIContent.Temp(text);
+        }
+
         internal static Texture2D GetAssetPreview(UnityEngine.Object obj, FetchPreviewOptions previewOptions)
         {
             var preview = AssetPreview.GetAssetPreview(obj);
-            if (preview == null || previewOptions.HasFlag(FetchPreviewOptions.Large))
+            if (preview == null || previewOptions.HasAny(FetchPreviewOptions.Large))
             {
                 var largePreview = AssetPreview.GetMiniThumbnail(obj);
                 if (preview == null || (largePreview != null && largePreview.width > preview.width))
@@ -165,6 +205,11 @@ namespace UnityEditor.Search
         internal static int Wrap(int index, int n)
         {
             return ((index % n) + n) % n;
+        }
+
+        internal static void SetCurrentViewWidth(float width)
+        {
+            EditorGUIUtility.currentViewWidth = width;
         }
 
         internal static void SelectObject(UnityEngine.Object obj, bool ping = false)
@@ -530,20 +575,28 @@ namespace UnityEditor.Search
             {
                 path = new FileInfo(path).FullName;
             }
-
             path = CleanPath(path);
-            return Application.dataPath == path || path.StartsWith(Application.dataPath + "/");
+            return rootDescriptors.Any(desc => path.StartsWith(desc.absPath));
         }
 
         internal static string GetPathUnderProject(string path)
         {
-            var cleanPath = CleanPath(path);
-            if (!Path.IsPathRooted(cleanPath) || !path.StartsWith(Application.dataPath))
+            path = CleanPath(path);
+            if (!Path.IsPathRooted(path))
             {
-                return cleanPath;
+                return path;
             }
 
-            return cleanPath.Substring(Application.dataPath.Length - 6);
+            foreach (var desc in rootDescriptors)
+            {
+                if (path.StartsWith(desc.absPath))
+                {
+                    var relativePath = path.Substring(desc.absPath.Length);
+                    return desc.root + relativePath;
+                }
+            }
+
+            return path;
         }
 
         internal static Texture2D GetSceneObjectPreview(GameObject obj, Vector2 previewSize, FetchPreviewOptions options, Texture2D defaultThumbnail)
@@ -553,7 +606,7 @@ namespace UnityEditor.Search
                 return sr.sprite.texture;
 
 
-            if (!options.HasFlag(FetchPreviewOptions.Large))
+            if (!options.HasAny(FetchPreviewOptions.Large))
             {
                 var preview = AssetPreview.GetAssetPreview(obj);
                 if (preview)
@@ -568,23 +621,30 @@ namespace UnityEditor.Search
 
         internal static bool TryGetNumber(object value, out double number)
         {
-            if (value is sbyte
-                || value is byte
-                || value is short
-                || value is ushort
-                || value is int
-                || value is uint
-                || value is long
-                || value is ulong
-                || value is float
-                || value is double
-                || value is decimal)
+            if (value == null)
+            {
+                number = double.NaN;
+                return false;
+            }
+
+            if (value is string s)
+            {
+                if (TryParse(s, out number))
+                    return true;
+                else
+                {
+                    number = double.NaN;
+                    return false;
+                }
+            }
+
+            if (value.GetType().IsPrimitive || value is decimal)
             {
                 number = Convert.ToDouble(value);
                 return true;
             }
 
-            return double.TryParse(Convert.ToString(value), out number);
+            return TryParse(Convert.ToString(value), out number);
         }
 
         internal static bool IsRunningTests()
@@ -619,9 +679,9 @@ namespace UnityEditor.Search
             }
         }
 
-        internal static void CallDelayed(EditorApplication.CallbackFunction callback, double seconds = 0)
+        internal static Action CallDelayed(EditorApplication.CallbackFunction callback, double seconds = 0)
         {
-            EditorApplication.CallDelayed(callback, seconds);
+            return EditorApplication.CallDelayed(callback, seconds);
         }
 
         internal static void SetFirstInspectedEditor(Editor editor)
@@ -728,5 +788,115 @@ namespace UnityEditor.Search
         {
             return AssetDatabase.GetAssetRootFolders();
         }
+
+        public static bool TryParse<T>(string expression, out T result)
+        {
+            expression = expression.Replace(',', '.');
+            expression = expression.TrimEnd('f');
+            expression = expression.ToLowerInvariant();
+
+            bool success = false;
+            result = default;
+            if (typeof(T) == typeof(float))
+            {
+                if (expression == "pi")
+                {
+                    success = true;
+                    result = (T)(object)(float)Math.PI;
+                }
+                else
+                {
+                    success = float.TryParse(expression, NumberStyles.Float, CultureInfo.InvariantCulture.NumberFormat, out var temp);
+                    result = (T)(object)temp;
+                }
+            }
+            else if (typeof(T) == typeof(int))
+            {
+                success = int.TryParse(expression, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out var temp);
+                result = (T)(object)temp;
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                if (expression == "pi")
+                {
+                    success = true;
+                    result = (T)(object)Math.PI;
+                }
+                else
+                {
+                    success = double.TryParse(expression, NumberStyles.Float, CultureInfo.InvariantCulture.NumberFormat, out var temp);
+                    result = (T)(object)temp;
+                }
+            }
+            else if (typeof(T) == typeof(long))
+            {
+                success = long.TryParse(expression, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out var temp);
+                result = (T)(object)temp;
+            }
+            return success;
+        }
+
+        private const string k_RevealInFinderLabel = "Open Containing Folder";
+        internal static string GetRevealInFinderLabel() { return k_RevealInFinderLabel; }
+
+        public static string TrimText(string text)
+        {
+            return text.Trim().Replace("\n", " ");
+        }
+
+        public static string TrimText(string text, int maxLength)
+        {
+            text = TrimText(text);
+            if (text.Length > maxLength)
+            {
+                text = Utils.StripHTML(text);
+                text = text.Substring(0, Math.Min(text.Length, maxLength) - 1) + "\u2026";
+            }
+            return text;
+        }
+
+        static readonly GUILayoutOption[] s_PanelViewLayoutOptions = new[] { GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(false) };
+        public static Vector2 BeginPanelView(Vector2 scrollPosition, GUIStyle panelStyle)
+        {
+            var verticalScrollbar = Styles.scrollbar;
+            GUIScrollGroup g = (GUIScrollGroup)GUILayoutUtility.BeginLayoutGroup(panelStyle, null, typeof(GUIScrollGroup));
+            if (Event.current.type == EventType.Layout)
+            {
+                g.resetCoords = true;
+                g.isVertical = true;
+                g.stretchWidth = 0;
+                g.stretchHeight = 1;
+                g.consideredForMargin = false;
+                g.verticalScrollbar = verticalScrollbar;
+                g.horizontalScrollbar = GUIStyle.none;
+                g.ApplyOptions(s_PanelViewLayoutOptions);
+            }
+            return EditorGUIInternal.DoBeginScrollViewForward(g.rect, scrollPosition,
+                new Rect(0, 0, g.clientWidth - Styles.scrollbarWidth, g.clientHeight), false, false,
+                GUIStyle.none, verticalScrollbar, panelStyle);
+        }
+
+        public static void EndPanelView()
+        {
+            EditorGUILayout.EndScrollView();
+        }
+
+        public static ulong GetHashCode64(this string strText)
+        {
+            if (string.IsNullOrEmpty(strText))
+                return 0;
+            var s1 = (ulong)strText.Substring(0, strText.Length / 2).GetHashCode();
+            var s2 = (ulong)strText.Substring(strText.Length / 2).GetHashCode();
+            return s1 << 32 | s2;
+        }
+
+        public static string RemoveInvalidCharsFromPath(string path, char repl = '/')
+        {
+            var invalidChars = Path.GetInvalidPathChars();
+            foreach (var c in invalidChars)
+                path = path.Replace(c, repl);
+            return path;
+        }
     }
+
 }

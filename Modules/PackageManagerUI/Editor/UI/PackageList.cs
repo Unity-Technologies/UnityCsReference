@@ -46,6 +46,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         [NonSerialized]
         private double m_Timestamp;
 
+        [NonSerialized]
+        private float m_LastVerticalScrollerValue = float.NegativeInfinity;
+
         public PackageList()
         {
             ResolveDependencies();
@@ -127,6 +130,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnScrollViewVerticalScrollerValueChanged(float value)
         {
+            if (Mathf.Abs(m_LastVerticalScrollerValue - value) < PackageItem.k_MainItemHeight / 2.0f)
+                return;
+
+            m_LastVerticalScrollerValue = value;
+            ForceDisplayOfVisibleItems();
+
             if (m_PackageFiltering.currentFilterTab != PackageFilterTab.AssetStore)
                 return;
 
@@ -135,8 +144,43 @@ namespace UnityEditor.PackageManager.UI.Internal
             EditorApplication.update += DelayedCheckPackageItemsBecomeVisible;
         }
 
+        private void ForceDisplayOfVisibleItems()
+        {
+            // Make sure all item are displayed properly
+            var scrollViewWorldBound = scrollView.worldBound;
+            foreach (var packageGroup in packageGroups)
+            {
+                var packageGroupWorldBound = packageGroup.worldBound;
+                if (packageGroupWorldBound.yMax < scrollViewWorldBound.yMin)
+                    continue;
+                if (packageGroupWorldBound.yMin > scrollViewWorldBound.yMax)
+                    break;
+
+                foreach (var item in packageGroup.packageItems)
+                {
+                    // Make sure selected item is shown
+                    if (!string.IsNullOrEmpty(item.visualState?.selectedVersionId))
+                    {
+                        item.IncrementVersion(VersionChangeType.Transform);
+                        continue;
+                    }
+
+                    var itemWorldBound = item.worldBound;
+                    if (itemWorldBound.yMax <= scrollViewWorldBound.yMin)
+                        continue;
+                    if (itemWorldBound.yMin >= scrollViewWorldBound.yMax)
+                        break;
+
+                    item.IncrementVersion(VersionChangeType.Transform);
+                }
+            }
+        }
+
         private void OnScrollViewGeometryChanged(GeometryChangedEvent evt)
         {
+            if (Mathf.Abs(evt.oldRect.height - evt.newRect.height) < PackageItem.k_MainItemHeight / 2.0f)
+                return;
+
             if (m_PackageFiltering.currentFilterTab != PackageFilterTab.AssetStore)
                 return;
 
@@ -156,10 +200,33 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void CheckPackageItemsBecomeVisible()
         {
-            foreach (var item in packageItems.Where(item => item?.package is PlaceholderPackage))
+            var scrollViewWorldBound = scrollView.worldBound;
+            foreach (var packageGroup in packageGroups)
             {
-                if (scrollView.worldBound.Contains(item.worldBound.min) || scrollView.worldBound.Contains(item.worldBound.max))
+                var packageGroupWorldBound = packageGroup.worldBound;
+                if (packageGroupWorldBound.yMax < scrollViewWorldBound.yMin)
+                    continue;
+                if (packageGroupWorldBound.yMin > scrollViewWorldBound.yMax)
+                    break;
+
+                foreach (var item in packageGroup.packageItems)
+                {
+                    // Make sure selected item becomes visible
+                    if (!string.IsNullOrEmpty(item.visualState?.selectedVersionId))
+                    {
+                        item.BecomesVisible();
+                        continue;
+                    }
+
+                    var itemWorldBound = item.worldBound;
+                    if (itemWorldBound.yMax <= scrollViewWorldBound.yMin)
+                        continue;
+
+                    if (itemWorldBound.yMin >= scrollViewWorldBound.yMax)
+                        break;
+
                     item.BecomesVisible();
+                }
             }
         }
 
