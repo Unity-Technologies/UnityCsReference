@@ -1219,13 +1219,6 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
             EditorGUI.showMixedValue = m_FilterMode.hasMultipleDifferentValues;
             FilterMode filter = (FilterMode)m_FilterMode.intValue;
-            if ((int)filter == -1)
-            {
-                if (m_FadeOut.intValue > 0 || m_ConvertToNormalMap.intValue > 0)
-                    filter = FilterMode.Trilinear;
-                else
-                    filter = FilterMode.Bilinear;
-            }
             filter = (FilterMode)EditorGUILayout.IntPopup(s_Styles.filterMode, (int)filter, s_Styles.filterModeOptions, m_FilterModeOptions);
             EditorGUI.showMixedValue = false;
             if (EditorGUI.EndChangeCheck())
@@ -1240,10 +1233,7 @@ namespace UnityEditor
             {
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.showMixedValue = m_Aniso.hasMultipleDifferentValues;
-                int aniso = m_Aniso.intValue;
-                if (aniso == -1)
-                    aniso = 1;
-                aniso = EditorGUILayout.IntSlider("Aniso Level", aniso, 0, 16);
+                int aniso = EditorGUILayout.IntSlider("Aniso Level", m_Aniso.intValue, 0, 16);
                 EditorGUI.showMixedValue = false;
                 if (EditorGUI.EndChangeCheck())
                     m_Aniso.intValue = aniso;

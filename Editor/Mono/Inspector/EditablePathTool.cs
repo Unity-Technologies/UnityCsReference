@@ -67,6 +67,8 @@ namespace UnityEditor
             if (Event.current.type == EventType.MouseMove)
                 SceneView.RepaintAll();
 
+            CacheColliderData();
+
             foreach (var data in m_EditablePaths)
             {
                 data.Update();

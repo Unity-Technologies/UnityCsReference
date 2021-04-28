@@ -16,13 +16,20 @@ namespace UnityEditor
 
         protected override void CollectEditablePaths(List<EditablePath2D> paths)
         {
+            var tempPath = new List<Vector2>();
+
             foreach (var collider in targets)
             {
                 if (!(collider is PolygonCollider2D polygon))
                     continue;
 
                 for (int i = 0, c = polygon.pathCount; i < c; i++)
-                    paths.Add(new PolygonColliderPath(polygon, i));
+                {
+                    // Only add paths that are valid.
+                    var pathLength = polygon.GetPath(i, tempPath);
+                    if (pathLength > 2)
+                        paths.Add(new PolygonColliderPath(polygon, i));
+                }
             }
         }
     }

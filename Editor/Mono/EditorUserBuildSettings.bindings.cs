@@ -630,6 +630,15 @@ namespace UnityEditor
             set;
         }
 
+        // Generate Nintendo Switch shader info for shader source visualization and profiling in NVN Graphics Debugger or Low-Level Graphics Debugger (LLGD)
+        public static extern bool generateNintendoSwitchShaderInfo
+        {
+            [NativeMethod("GetGenerateNintendoSwitchShaderInfo")]
+            get;
+            [NativeMethod("SetGenerateNintendoSwitchShaderInfo")]
+            set;
+        }
+
         // Enable shader debugging using NVN Graphics Debugger
         public static extern bool switchNVNShaderDebugging
         {
