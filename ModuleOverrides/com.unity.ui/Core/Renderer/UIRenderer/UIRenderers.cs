@@ -16,9 +16,6 @@ namespace UnityEngine.UIElements.UIR
         IsTextured = 2,
         IsDynamic = 3,
         IsSvgGradients = 4, // Gradient/Texture-less SVG do NOT use this flag
-        IsEdge = 5, // X and Y can grow/shrink according to displacement
-        IsEdgeNoShrinkX = 6,
-        IsEdgeNoShrinkY = 7,
         // The only use case outside the package is for GraphView edges. In order to preserve binary compatibility,
         // the value MUST not change, so calling it "Last" does not make sense if we cannot increase the value.
         // For this reason, this is being deprecated.
@@ -30,9 +27,10 @@ namespace UnityEngine.UIElements.UIR
     internal struct State
     {
         public Material material;
-        public Texture custom, font;
+        public Texture font;
         public float fontTexSDFScale;
         public TextureId texture;
+        public int stencilRef;
     }
 
     internal enum CommandType
@@ -216,8 +214,7 @@ namespace UnityEngine.UIElements.UIR
                     //The following lines are equivalent to
                     //Graphics.Blit(source, destination, state.material);
                     //except the vertex are at the specified depth
-                    var flipped = (indexOffset != 0);
-                    Blit(source, destination, UIRUtility.k_MeshPosZ, flipped);
+                    Blit(source, destination, UIRUtility.k_MeshPosZ);
                 }
                 break;
 
@@ -230,28 +227,20 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        private void Blit(Texture source, RenderTexture destination, float depth, bool flip = false)
+        private void Blit(Texture source, RenderTexture destination, float depth)
         {
             GL.PushMatrix();
             GL.LoadOrtho();
             RenderTexture.active = destination;
             state.material.SetTexture(k_ID_MainTex, source);
             state.material.SetPass(0);
+
+            // Clockwise winding: we don't support blit under a mask
             GL.Begin(GL.QUADS);
-            if (!flip)
-            {
-                GL.TexCoord2(0f, 0f); GL.Vertex3(0f, 0f, depth);
-                GL.TexCoord2(0f, 1f); GL.Vertex3(0f, 1f, depth);
-                GL.TexCoord2(1f, 1f); GL.Vertex3(1f, 1f, depth);
-                GL.TexCoord2(1f, 0f); GL.Vertex3(1f, 0f, depth);
-            }
-            else
-            {
-                GL.TexCoord2(0f, 0f); GL.Vertex3(0f, 0f, depth);
-                GL.TexCoord2(1f, 0f); GL.Vertex3(1f, 0f, depth);
-                GL.TexCoord2(1f, 1f); GL.Vertex3(1f, 1f, depth);
-                GL.TexCoord2(0f, 1f); GL.Vertex3(0f, 1f, depth);
-            }
+            GL.TexCoord2(0f, 0f); GL.Vertex3(0f, 0f, depth);
+            GL.TexCoord2(0f, 1f); GL.Vertex3(0f, 1f, depth);
+            GL.TexCoord2(1f, 1f); GL.Vertex3(1f, 1f, depth);
+            GL.TexCoord2(1f, 0f); GL.Vertex3(1f, 0f, depth);
             GL.End();
             GL.PopMatrix();
         }

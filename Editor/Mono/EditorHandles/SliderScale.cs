@@ -20,11 +20,29 @@ namespace UnityEditorInternal
             return DoAxis(id, scale, position, direction, rotation, size, snap, 0, 1);
         }
 
+        internal static Vector3 DoAxis(int id, Vector3 scale, int scaleItemIndex, Vector3 position, Vector3 direction, Quaternion rotation, float size, float snap, float handleOffset, float lineScale, Vector3 initialScale, bool constrainProportionsScaling)
+        {
+            // If constrainProportionsScaling enabled, transforms behave the same way as Cube Handle does
+            if (constrainProportionsScaling)
+            {
+                var value = DoAxis(id, scale.x, position, direction, rotation, size, EditorSnapSettings.scale, handleOffset, lineScale);
+                return initialScale * DoCenter(id, value, position, rotation, size, Handles.CubeHandleCap, snap);
+            }
+            else
+            {
+                scale[scaleItemIndex] = DoAxis(id, scale[scaleItemIndex], position, direction, rotation, size, snap, handleOffset, lineScale);
+            }
+
+            return scale;
+        }
+
         internal static float DoAxis(int id, float scale, Vector3 position, Vector3 direction, Quaternion rotation, float size, float snap, float handleOffset, float lineScale)
         {
+            if (GUIUtility.hotControl == id)
+                Handles.handleLength = size * scale / s_StartScale;
             var positionOffset = direction * size * handleOffset;
-            var s = GUIUtility.hotControl == id
-                ? size * scale / s_StartScale
+            var s = GUIUtility.hotControl == id || Handles.proportionalScale
+                ? Handles.handleLength
                 : size;
             var startPosition = position + positionOffset;
             var cubePosition = position + direction * (s * s_ScaleDrawLength * lineScale) + positionOffset;

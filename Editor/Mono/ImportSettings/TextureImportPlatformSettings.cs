@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using System;
 using System.Linq;
 using UnityEditor.Build;
 using System.Collections.Generic;
@@ -14,7 +15,6 @@ namespace UnityEditor
     {
         static class Styles
         {
-            static public readonly GUIContent defaultPlatform = EditorGUIUtility.TrTextContent("Default");
             static public readonly GUIContent overrideFor = EditorGUIUtility.TrTextContent("Override For {0}");
         }
 
@@ -145,19 +145,26 @@ namespace UnityEditor
             return validPlatforms.ToArray();
         }
 
+        [Obsolete("A single call to ShowPlatformSpecificSettings is deprecated. Please use ShowPlatformSpecificSettings for showing the platform settings, and BeginPlatformGrouping to show the platform selection")]
         internal static void ShowPlatformSpecificSettings(List<BaseTextureImportPlatformSettings> platformSettings)
         {
             BuildPlatform[] validPlatforms = GetBuildPlayerValidPlatforms();
             GUILayout.Space(10);
-            int shownTextureFormatPage = EditorGUILayout.BeginPlatformGrouping(validPlatforms, Styles.defaultPlatform);
-            BaseTextureImportPlatformSettings realPS = platformSettings[shownTextureFormatPage + 1];
+            int shownTextureFormatPage = EditorGUILayout.BeginPlatformGrouping(validPlatforms, EditorGUIUtility.TrTextContent("Default"));
+            ShowPlatformSpecificSettings(platformSettings, shownTextureFormatPage);
+        }
+
+        internal static void ShowPlatformSpecificSettings(List<BaseTextureImportPlatformSettings> platformSettings, int selected)
+        {
+            BaseTextureImportPlatformSettings realPS = platformSettings[selected + 1];
 
             if (!realPS.model.isDefault)
             {
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.showMixedValue = realPS.model.overriddenIsDifferent;
 
-                string title = string.Format(Styles.overrideFor.text, validPlatforms[shownTextureFormatPage].title.text);
+                BuildPlatform[] validPlatforms = GetBuildPlayerValidPlatforms();
+                string title = string.Format(Styles.overrideFor.text, validPlatforms[selected].title.text);
                 bool newOverride = EditorGUILayout.ToggleLeft(title, realPS.model.platformTextureSettings.overridden);
                 EditorGUI.showMixedValue = false;
                 if (EditorGUI.EndChangeCheck())

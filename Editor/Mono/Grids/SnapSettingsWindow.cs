@@ -13,6 +13,7 @@ namespace UnityEditor
         const float k_MinFieldWidth = 150;
         const float k_MinWindowWidth = 220;
         const float k_MinWindowHeight = 32;
+        static Vector3 m_InitialSnapMoveValue;
 
         [SerializeField]
         bool m_GridVisualFoldout = true;
@@ -56,18 +57,35 @@ namespace UnityEditor
         static bool gridValueLinked
         {
             get { return EditorPrefs.GetBool("SnapSettingsWindow.gridValueLinked", true); }
-            set { EditorPrefs.SetBool("SnapSettingsWindow.gridValueLinked", value); }
+            set
+            {
+                EditorPrefs.SetBool("SnapSettingsWindow.gridValueLinked", value);
+                if (value)
+                {
+                    float x = GridSettings.size.x;
+                    GridSettings.size = new Vector3(x, x, x);
+                }
+            }
         }
 
-        static bool snapValueLinked
+        static bool isSnapValueConstrainProportions
         {
             get { return EditorPrefs.GetBool("SnapSettingsWindow.snapValueLinked", true); }
-            set { EditorPrefs.SetBool("SnapSettingsWindow.snapValueLinked", value); }
+            set
+            {
+                EditorPrefs.SetBool("SnapSettingsWindow.snapValueLinked", value);
+                if (value)
+                {
+                    m_InitialSnapMoveValue = Vector3.one;
+                    EditorSnapSettings.move = EditorSnapSettings.move.x * Vector3.one;
+                }
+            }
         }
 
         void OnEnable()
         {
             minSize = new Vector2(k_MinWindowWidth, k_MinWindowHeight);
+            m_InitialSnapMoveValue = EditorSnapSettings.move;
         }
 
         public void OnGUI()
@@ -133,8 +151,8 @@ namespace UnityEditor
 
         void DoGridVisualSettings()
         {
-            Vector3 grid = GridSettings.size;
             bool linked = gridValueLinked;
+            Vector3 grid = linked ? GridSettings.size.x * Vector3.one  : GridSettings.size;
 
             EditorGUI.BeginChangeCheck();
             grid = EditorGUILayout.LinkedVector3Field(Contents.gridSize, grid, ref linked);
@@ -163,9 +181,13 @@ namespace UnityEditor
         void DoIncrementSnapSettings()
         {
             EditorGUI.BeginChangeCheck();
-            var linked = snapValueLinked;
-            EditorSnapSettings.move = EditorGUILayout.LinkedVector3Field(Contents.moveContent, EditorSnapSettings.move, ref linked);
-            snapValueLinked = linked;
+            var isConstrainProportions = isSnapValueConstrainProportions;
+            EditorSnapSettings.move = EditorGUILayout.LinkedVector3Field(Contents.moveContent, EditorSnapSettings.move,  m_InitialSnapMoveValue, ref isConstrainProportions);
+
+            // Change linked state only if it actually changed to update initial scale
+            if (isSnapValueConstrainProportions != isConstrainProportions)
+                isSnapValueConstrainProportions = isConstrainProportions;
+
             EditorSnapSettings.rotate = EditorGUILayout.FloatField(Contents.rotateValue, EditorSnapSettings.rotate);
             EditorSnapSettings.scale = EditorGUILayout.FloatField(Contents.scaleValue, EditorSnapSettings.scale);
 

@@ -48,6 +48,7 @@ namespace UnityEditor
 
         class SettingsContent
         {
+            public static readonly GUIContent frameTimingStatsWebGLWarning = EditorGUIUtility.TrTextContent("Frame timing stats are supported in WebGL 2 only. Uncheck 'Automatic Graphics API' if it's set and remove the WebGL 1 API.");
             public static readonly GUIContent lightmapEncodingWebGLWarning = EditorGUIUtility.TrTextContent("High quality lightmap encoding requires WebGL 2 only. Uncheck 'Automatic Graphics API' if it's set and remove the WebGL 1 API.");
             public static readonly GUIContent colorSpaceAndroidWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires OpenGL ES 3.0 or Vulkan, uncheck 'Automatic Graphics API' to remove OpenGL ES 2 API, Blit Type for non-SRP projects must be Always Blit or Auto");
             public static readonly GUIContent colorSpaceWebGLWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires WebGL 2, uncheck 'Automatic Graphics API' to remove WebGL 1 API. WARNING: If DXT sRGB is not supported by the browser, texture will be decompressed");
@@ -150,6 +151,7 @@ namespace UnityEditor
             public static readonly GUIContent cameraUsageDescription = EditorGUIUtility.TrTextContent("Camera Usage Description*", "String shown to the user when requesting permission to use the device camera. Written to the NSCameraUsageDescription field in Xcode project's info.plist file");
             public static readonly GUIContent locationUsageDescription = EditorGUIUtility.TrTextContent("Location Usage Description*", "String shown to the user when requesting permission to access the device location. Written to the NSLocationWhenInUseUsageDescription field in Xcode project's info.plist file.");
             public static readonly GUIContent microphoneUsageDescription = EditorGUIUtility.TrTextContent("Microphone Usage Description*", "String shown to the user when requesting to use the device microphone. Written to the NSMicrophoneUsageDescription field in Xcode project's info.plist file");
+            public static readonly GUIContent bluetoothUsageDescription = EditorGUIUtility.TrTextContent("Bluetooth Usage Description*", "String shown to the user when requesting to use the device bluetooth. Written to the NSBluetoothAlwaysUsageDescription field in Xcode project's info.plist file");
             public static readonly GUIContent muteOtherAudioSources = EditorGUIUtility.TrTextContent("Mute Other Audio Sources*");
             public static readonly GUIContent prepareIOSForRecording = EditorGUIUtility.TrTextContent("Prepare iOS for Recording");
             public static readonly GUIContent forceIOSSpeakersWhenRecording = EditorGUIUtility.TrTextContent("Force iOS Speakers when Recording");
@@ -279,6 +281,7 @@ namespace UnityEditor
         SerializedProperty m_CameraUsageDescription;
         SerializedProperty m_LocationUsageDescription;
         SerializedProperty m_MicrophoneUsageDescription;
+        SerializedProperty m_BluetoothUsageDescription;
 
         SerializedProperty m_IPhoneScriptCallOptimization;
         SerializedProperty m_AotOptions;
@@ -518,6 +521,7 @@ namespace UnityEditor
             m_CameraUsageDescription        = FindPropertyAssert("cameraUsageDescription");
             m_LocationUsageDescription      = FindPropertyAssert("locationUsageDescription");
             m_MicrophoneUsageDescription    = FindPropertyAssert("microphoneUsageDescription");
+            m_BluetoothUsageDescription     = FindPropertyAssert("bluetoothUsageDescription");
 
             m_EnableInternalProfiler        = FindPropertyAssert("enableInternalProfiler");
             m_ActionOnDotNetUnhandledException  = FindPropertyAssert("actionOnDotNetUnhandledException");
@@ -1366,11 +1370,11 @@ namespace UnityEditor
                 }
                 s_GraphicsDeviceLists[targetPlatform].DoLayoutList();
 
-                // ES3.1 options
-                OpenGLES31OptionsGUI(targetGroup, targetPlatform);
-
                 //@TODO: undo
             }
+
+            // ES3.1 options
+            OpenGLES31OptionsGUI(targetGroup, targetPlatform);
         }
 
         void GraphicsAPIsGUI(BuildTargetGroup targetGroup, BuildTarget target)
@@ -1984,9 +1988,17 @@ namespace UnityEditor
                     }
                 }
 
-                if (targetGroup == BuildTargetGroup.Standalone || targetGroup == BuildTargetGroup.WSA || (settingsExtension != null && settingsExtension.SupportsFrameTimingStatistics()))
+                if (targetGroup == BuildTargetGroup.Standalone || targetGroup == BuildTargetGroup.WSA || targetGroup == BuildTargetGroup.WebGL || (settingsExtension != null && settingsExtension.SupportsFrameTimingStatistics()))
                 {
                     PlayerSettings.enableFrameTimingStats = EditorGUILayout.Toggle(SettingsContent.enableFrameTimingStats, PlayerSettings.enableFrameTimingStats);
+                    if (PlayerSettings.enableFrameTimingStats && targetGroup == BuildTargetGroup.WebGL)
+                    {
+                        var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.WebGL);
+                        if (apis.Contains(GraphicsDeviceType.OpenGLES2))
+                        {
+                            EditorGUILayout.HelpBox(SettingsContent.frameTimingStatsWebGLWarning.text, MessageType.Warning);
+                        }
+                    }
                 }
 
                 if (hdrDisplaySupported)
@@ -2422,6 +2434,9 @@ namespace UnityEditor
             {
                 EditorGUILayout.PropertyField(m_CameraUsageDescription, SettingsContent.cameraUsageDescription);
                 EditorGUILayout.PropertyField(m_MicrophoneUsageDescription, SettingsContent.microphoneUsageDescription);
+
+                if (platform.defaultTarget == BuildTarget.StandaloneOSX)
+                    EditorGUILayout.PropertyField(m_BluetoothUsageDescription, SettingsContent.bluetoothUsageDescription);
 
                 if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS)
                     EditorGUILayout.PropertyField(m_LocationUsageDescription, SettingsContent.locationUsageDescription);

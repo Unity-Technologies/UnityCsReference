@@ -30,6 +30,8 @@ namespace UnityEditor
         // Color of the Z axis handle
         internal static PrefColor s_ZAxisColor = new PrefColor("Scene/Z Axis", 58f / 255, 122f / 255, 248f / 255, .93f);
         public static Color zAxisColor { get { return s_ZAxisColor; } }
+        // Color of the Constrain Proportions scale handles
+        internal static PrefColor constrainProportionsScaleHandleColor = new PrefColor("Scene/Constrain Proportions Scale Handle", 190f / 255, 190f / 255, 190f / 255, 1f);
         // Color of the center handle
         internal static PrefColor s_CenterColor = new PrefColor("Scene/Center Axis", .8f, .8f, .8f, .93f);
         public static Color centerColor { get { return s_CenterColor; } }
@@ -818,7 +820,12 @@ namespace UnityEditor
         // Make a Scene view scale handle
         public static Vector3 ScaleHandle(Vector3 scale, Vector3 position, Quaternion rotation, float size)
         {
-            return DoScaleHandle(scale, position, rotation, size);
+            return DoScaleHandle(scale, position, rotation, size, false);
+        }
+
+        internal static Vector3 ScaleHandle(Vector3 scale, Vector3 position, Quaternion rotation, float size, bool isProportionalScale)
+        {
+            return DoScaleHandle(scale, position, rotation, size, isProportionalScale);
         }
 
         ///*listonly*

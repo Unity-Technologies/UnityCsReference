@@ -30,6 +30,9 @@ namespace UnityEditor
 
             [NativeProperty("MicrophoneUsageDescription")]
             internal extern static string microphoneUsageDescription { get; set; }
+
+            [NativeProperty("BluetoothUsageDescription")]
+            internal extern static string bluetoothUsageDescription { get; set; }
         }
     }
 }

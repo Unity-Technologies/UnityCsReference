@@ -152,7 +152,7 @@ namespace UnityEditor
                     {
                         rect.x += 7;
                         bool oldVisible = Visible;
-                        Visible = GUI.Toggle(new Rect(rect.x, rect.y, 14, rect.height), Visible, GUIContent.none, s_Styles.groupFoldout);
+                        Visible = GUI.Toggle(new Rect(rect.x, rect.y, 14, rect.height), Visible, GUIContent.none, Styles.groupFoldout);
                         if (oldVisible ^ Visible)
                             EditorPrefs.SetBool(m_GroupSeparatorTitle, Visible);
 
@@ -438,8 +438,8 @@ namespace UnityEditor
                                 }
                                 else
                                 {
-                                    rect.y = rect.y + rect.height - s_Styles.resultsGridLabel.fixedHeight;
-                                    rect.height = s_Styles.resultsGridLabel.fixedHeight;
+                                    rect.y = rect.y + rect.height - Styles.resultsGridLabel.fixedHeight;
+                                    rect.height = Styles.resultsGridLabel.fixedHeight;
                                     clickedOnText = rect.Contains(evt.mousePosition);
                                 }
 
@@ -583,7 +583,7 @@ namespace UnityEditor
                 Rect rect = new Rect(startRect.x - adjustStart, startRect.y + shrinkHeight, texWidth * fraction, startRect.width - shrinkHeight * 2 + overflowHeight - 1);
                 rect.y = Mathf.Round(rect.y);
                 rect.height = Mathf.Ceil(rect.height);
-                s_Styles.subAssetBg.Draw(rect, GUIContent.none, false, false, false, false);
+                Styles.subAssetBg.Draw(rect, GUIContent.none, false, false, false, false);
 
                 // End
                 float scaledWidth = texWidth * fraction;
@@ -592,14 +592,14 @@ namespace UnityEditor
                 Rect rect2 = new Rect(endRect.xMax - scaledWidth + extendEnd, endRect.y + shrinkHeight, scaledWidth, rect.height);
                 rect2.y = Mathf.Round(rect2.y);
                 rect2.height = Mathf.Ceil(rect2.height);
-                GUIStyle endStyle = continued ? s_Styles.subAssetBgOpenEnded : s_Styles.subAssetBgCloseEnded;
+                GUIStyle endStyle = continued ? Styles.subAssetBgOpenEnded : Styles.subAssetBgCloseEnded;
                 endStyle.Draw(rect2, GUIContent.none, false, false, false, false);
 
                 // Middle
                 rect = new Rect(rect.xMax, rect.y, rect2.xMin - rect.xMax, rect.height);
                 rect.y = Mathf.Round(rect.y);
                 rect.height = Mathf.Ceil(rect.height);
-                s_Styles.subAssetBgMiddle.Draw(rect, GUIContent.none, false, false, false, false);
+                Styles.subAssetBgMiddle.Draw(rect, GUIContent.none, false, false, false, false);
             }
 
             void DrawSubAssetBackground(int beginIndex, int endIndex, float yOffset)
@@ -688,7 +688,7 @@ namespace UnityEditor
                 if (selected && assetReference.instanceID == m_Owner.m_State.m_LastClickedInstanceID)
                     m_LastClickedDrawTime = EditorApplication.timeSinceStartup;
 
-                Rect foldoutRect = new Rect(position.x + s_Styles.groupFoldout.margin.left, position.y, s_Styles.groupFoldout.padding.left, position.height); // ListMode foldout
+                Rect foldoutRect = new Rect(position.x + Styles.groupFoldout.margin.left, position.y, Styles.groupFoldout.padding.left, position.height); // ListMode foldout
                 if (showFoldout && !ListMode)
                 {
                     float fraction = position.height / 128f;
@@ -706,8 +706,7 @@ namespace UnityEditor
                         buttonHeight = 24f;
                     }
 
-                    foldoutRect = new Rect(position.xMax - buttonWidth * 0.5f, position.y + (position.height - s_Styles.resultsGridLabel.fixedHeight) * 0.5f - buttonWidth * 0.5f, buttonWidth, buttonHeight);
-                    //foldoutRect = new Rect(position.xMax - 16, position.yMax - 16 - s_Styles.resultsGridLabel.fixedHeight, 16, 16);   // bottom right corner
+                    foldoutRect = new Rect(position.xMax - buttonWidth * 0.5f, position.y + (position.height - Styles.resultsGridLabel.fixedHeight) * 0.5f - buttonWidth * 0.5f, buttonWidth, buttonHeight);
                 }
 
                 bool toggleState = false;
@@ -757,7 +756,7 @@ namespace UnityEditor
 
                 Rect labelRect = position;
                 if (!ListMode)
-                    labelRect = new Rect(position.x, position.yMax + 1 - s_Styles.resultsGridLabel.fixedHeight, position.width - 1, s_Styles.resultsGridLabel.fixedHeight);
+                    labelRect = new Rect(position.x, position.yMax + 1 - Styles.resultsGridLabel.fixedHeight, position.width - 1, Styles.resultsGridLabel.fixedHeight);
 
                 var vcPadding = VersionControlUtils.isVersionControlConnected && ListMode ? k_ListModeVersionControlOverlayPadding : 0;
 
@@ -811,17 +810,17 @@ namespace UnityEditor
                         }
 
                         if (selected)
-                            s_Styles.resultsLabel.Draw(position, GUIContent.none, false, false, selected, m_Owner.HasFocus());
+                            Styles.resultsLabel.Draw(position, GUIContent.none, false, false, selected, m_Owner.HasFocus());
 
                         if (isDropTarget)
-                            s_Styles.resultsLabel.Draw(position, GUIContent.none, true, true, false, false);
+                            Styles.resultsLabel.Draw(position, GUIContent.none, true, true, false, false);
 
                         DrawIconAndLabel(new Rect(contentStartX, position.y, position.width - contentStartX, position.height),
                             filterItem, labeltext, icon, selected, m_Owner.HasFocus());
 
                         // Foldout!
                         if (showFoldout)
-                            s_Styles.groupFoldout.Draw(foldoutRect, !ListMode, !ListMode, IsExpanded(assetReference.instanceID), false);
+                            Styles.groupFoldout.Draw(foldoutRect, !ListMode, !ListMode, IsExpanded(assetReference.instanceID), false);
                     }
                     else // Icon grid
                     {
@@ -862,7 +861,7 @@ namespace UnityEditor
                         }
 
                         float padding = (drawDropShadow) ? 2.0f : 0.0f; // the padding compensates for the drop shadow (so it doesn't get too close to the label text)
-                        position.height -= s_Styles.resultsGridLabel.fixedHeight + 2 * padding; // get icon rect (remove label height which is included in the position rect)
+                        position.height -= Styles.resultsGridLabel.fixedHeight + 2 * padding; // get icon rect (remove label height which is included in the position rect)
                         position.y += padding;
 
                         Rect actualImageDrawPosition = (m_Content.image == null) ? new Rect() : ActualImageDrawPosition(position, m_Content.image.width, m_Content.image.height);
@@ -889,7 +888,7 @@ namespace UnityEditor
 
                             // Draw static preview bg color as bg for small textures and non-square textures
                             if (drawDropShadow && filterItem.iconDrawStyle == IconDrawStyle.NonTexture)
-                                s_Styles.previewBg.Draw(actualImageDrawPosition, GUIContent.none, false, false, false, false);
+                                Styles.previewBg.Draw(actualImageDrawPosition, GUIContent.none, false, false, false, false);
                         }
 
                         var color = ProjectBrowser.GetAssetItemColor(assetReference.instanceID);
@@ -906,7 +905,7 @@ namespace UnityEditor
                                 if (alpha < 1f)
                                     GUI.color = new Color(GUI.color.r, GUI.color.g, GUI.color.b, alpha);
 
-                                s_Styles.resultsGrid.Draw(actualImageDrawPosition, m_Content, false, false, selected, m_Owner.HasFocus());
+                                Styles.resultsGrid.Draw(actualImageDrawPosition, m_Content, false, false, selected, m_Owner.HasFocus());
 
                                 if (alpha < 1f)
                                     GUI.color = orgColor2;
@@ -917,35 +916,35 @@ namespace UnityEditor
 
                             if (drawDropShadow)
                             {
-                                Rect borderPosition = new RectOffset(1, 1, 1, 1).Remove(s_Styles.textureIconDropShadow.border.Add(actualImageDrawPosition));
-                                s_Styles.textureIconDropShadow.Draw(borderPosition, GUIContent.none, false, false, selected || isDropTarget, m_Owner.HasFocus() || isRenaming || isDropTarget);
+                                Rect borderPosition = new RectOffset(1, 1, 1, 1).Remove(Styles.textureIconDropShadow.border.Add(actualImageDrawPosition));
+                                Styles.textureIconDropShadow.Draw(borderPosition, GUIContent.none, false, false, selected || isDropTarget, m_Owner.HasFocus() || isRenaming || isDropTarget);
                             }
 
                             // Draw label
                             if (!isRenaming)
                             {
                                 if (isDropTarget)
-                                    s_Styles.resultsLabel.Draw(new Rect(labelRect.x - 10, labelRect.y, labelRect.width + 20, labelRect.height), GUIContent.none, true, true, false, false);
+                                    Styles.resultsLabel.Draw(new Rect(labelRect.x - 10, labelRect.y, labelRect.width + 20, labelRect.height), GUIContent.none, true, true, false, false);
 
                                 labeltext = m_Owner.GetCroppedLabelText(assetReference, labeltext, position.width);
-                                var labelNewRect = s_Styles.resultsGridLabel.CalcSizeWithConstraints(GUIContent.Temp(labeltext), position.size);
+                                var labelNewRect = Styles.resultsGridLabel.CalcSizeWithConstraints(GUIContent.Temp(labeltext), position.size);
                                 labelRect.x = position.x + (position.width - labelNewRect.x) / 2.0f;
                                 labelRect.width = labelNewRect.x;
-                                s_Styles.resultsGridLabel.Draw(labelRect, labeltext, false, false, selected, m_Owner.HasFocus());
+                                Styles.resultsGridLabel.Draw(labelRect, labeltext, false, false, selected, m_Owner.HasFocus());
                             }
                         }
 
                         if (showFoldout)
                         {
-                            var style = s_Styles.subAssetExpandButton;
+                            var style = Styles.subAssetExpandButton;
 
                             if (foldoutRect.height <= 16)
                             {
-                                style = s_Styles.subAssetExpandButtonSmall;
+                                style = Styles.subAssetExpandButtonSmall;
                             }
                             else if (foldoutRect.height <= 24)
                             {
-                                style = s_Styles.subAssetExpandButtonMedium;
+                                style = Styles.subAssetExpandButtonMedium;
                             }
                             style.Draw(foldoutRect, !ListMode, !ListMode, IsExpanded(assetReference.instanceID), false);
                         }
@@ -966,7 +965,7 @@ namespace UnityEditor
                 {
                     if (ListMode)
                     {
-                        float iconOffset = vcPadding + k_IconWidth + k_SpaceBetweenIconAndText + s_Styles.resultsLabel.margin.left;
+                        float iconOffset = vcPadding + k_IconWidth + k_SpaceBetweenIconAndText + Styles.resultsLabel.margin.left;
                         labelRect.x = itemRect.x + iconOffset;
                         labelRect.width -= labelRect.x;
                     }
@@ -1472,7 +1471,7 @@ namespace UnityEditor
                 float vcPadding = s_VCEnabled ? k_ListModeVersionControlOverlayPadding : 0f;
                 using (new GUI.ColorScope(color))
                 {
-                    rect.xMin += s_Styles.resultsLabel.margin.left;
+                    rect.xMin += Styles.resultsLabel.margin.left;
 
                     // Reduce the label width to allow delegate drawing on the right.
                     float delegateDrawWidth = (k_ListModeExternalIconPadding * 2) + k_IconWidth;
@@ -1483,8 +1482,8 @@ namespace UnityEditor
                         labelRect.width = (rect.width - delegateDrawWidth);
                     }
 
-                    s_Styles.resultsLabel.padding.left = (int)(vcPadding + k_IconWidth + k_SpaceBetweenIconAndText);
-                    s_Styles.resultsLabel.Draw(labelRect, label, false, false, selected, focus);
+                    Styles.resultsLabel.padding.left = (int)(vcPadding + k_IconWidth + k_SpaceBetweenIconAndText);
+                    Styles.resultsLabel.Draw(labelRect, label, false, false, selected, focus);
 
                     Rect iconRect = rect;
                     iconRect.width = k_IconWidth;

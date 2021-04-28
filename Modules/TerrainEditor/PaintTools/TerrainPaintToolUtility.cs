@@ -4,7 +4,7 @@
 
 using UnityEngine;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
     internal class PaintTreesDetailsContext
     {

@@ -6,9 +6,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Experimental.TerrainAPI;
+using UnityEngine.TerrainTools;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
     internal class PaintTreesUtils
     {
@@ -344,7 +344,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             return "Paint Trees";
         }
 
-        public override string GetDesc()
+        public override string GetDescription()
         {
             return "Paints the selected tree prototype onto the terrain";
         }
@@ -359,7 +359,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 BrushTransform brushXform = TerrainPaintUtility.CalculateBrushTransform(terrain, editContext.raycastHit.textureCoord, brushSize, 0.0f);
                 PaintContext ctx = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushXform.GetBrushXYBounds(), 1);
-                TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainPaintUtilityEditor.BrushPreview.SourceRenderTexture, editContext.brushTexture, brushXform, TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial(), 0);
+                TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture, editContext.brushTexture, brushXform, TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial(), 0);
                 TerrainPaintUtility.ReleaseContextResources(ctx);
             }
         }

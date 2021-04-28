@@ -133,5 +133,8 @@ namespace UnityEditor
         [StaticAccessor("Selection", StaticAccessorType.DoubleColon)]
         [NativeName("SelectionCount")]
         public extern static int count { get; }
+
+        [NativeMethod("DoAllGOsHaveConstrainProportionsEnabled", true)]
+        internal static extern bool DoAllGOsHaveConstrainProportionsEnabled([NotNull] Object[] targetObjects);
     }
 }

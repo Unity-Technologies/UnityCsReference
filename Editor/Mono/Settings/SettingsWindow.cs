@@ -106,21 +106,8 @@ namespace UnityEditor
         {
             titleContent.image = EditorGUIUtility.IconContent("Settings").image;
 
-            Init();
+
             SetupUI();
-            RestoreSelection();
-
-            SettingsService.settingsProviderChanged -= OnSettingsProviderChanged;
-            SettingsService.settingsProviderChanged += OnSettingsProviderChanged;
-
-            SettingsService.repaintAllSettingsWindow -= OnRepaintAllWindows;
-            SettingsService.repaintAllSettingsWindow += OnRepaintAllWindows;
-
-            Undo.undoRedoPerformed -= OnUndoRedoPerformed;
-            Undo.undoRedoPerformed += OnUndoRedoPerformed;
-
-            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
-            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
         }
 
         internal void OnDisable()
@@ -144,9 +131,29 @@ namespace UnityEditor
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
         }
 
+        internal void InitProviders()
+        {
+            if (m_Providers != null)
+                return;
+            Init();
+            RestoreSelection();
+
+            SettingsService.settingsProviderChanged -= OnSettingsProviderChanged;
+            SettingsService.settingsProviderChanged += OnSettingsProviderChanged;
+
+            SettingsService.repaintAllSettingsWindow -= OnRepaintAllWindows;
+            SettingsService.repaintAllSettingsWindow += OnRepaintAllWindows;
+
+            Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+            Undo.undoRedoPerformed += OnUndoRedoPerformed;
+
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+        }
+
         internal void OnInspectorUpdate()
         {
-            m_TreeView.currentProvider?.OnInspectorUpdate();
+            m_TreeView?.currentProvider?.OnInspectorUpdate();
         }
 
         private void OnUndoRedoPerformed()
@@ -440,6 +447,9 @@ namespace UnityEditor
 
         private void DrawTreeView()
         {
+            if (m_TreeView == null)
+                InitProviders();
+
             var splitterRect = m_Splitter.GetSplitterRect(m_Splitter.Children().First());
             var splitterPos = splitterRect.xMax - (m_Splitter.splitSize / 2f);
             var treeWidth = splitterPos;
@@ -478,6 +488,7 @@ namespace UnityEditor
         {
             var settingsWindow = FindWindowByScope(scopes) ?? Create(scopes);
             settingsWindow.Show();
+            settingsWindow.InitProviders();
             settingsWindow.Focus();
 
             if (settingsPath != null)

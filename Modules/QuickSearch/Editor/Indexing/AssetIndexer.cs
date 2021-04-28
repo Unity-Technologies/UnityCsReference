@@ -89,7 +89,7 @@ namespace UnityEditor.Search
             var id = gid.ToString();
             var containerName = Path.GetFileNameWithoutExtension(containerPath);
             var objPathName = Utils.RemoveInvalidCharsFromPath($"{containerName}/{subObj.name}", ' ');
-            var subObjDocumentIndex = AddDocument(id, objPathName, containerPath, checkIfDocumentExists);
+            var subObjDocumentIndex = AddDocument(id, objPathName, containerPath, checkIfDocumentExists, SearchDocumentFlags.Nested | SearchDocumentFlags.Asset);
 
             IndexTypes(subObj.GetType(), subObjDocumentIndex);
             IndexProperty(subObjDocumentIndex, "is", "nested", saveKeyword: true, exact: true);
@@ -107,7 +107,7 @@ namespace UnityEditor.Search
         {
             int assetInstanceId = Utils.GetMainAssetInstanceID(path);
             var globalObjectId = GlobalObjectId.GetGlobalObjectIdSlow(assetInstanceId);
-            var documentIndex = AddDocument(globalObjectId.ToString(), null, path, checkIfDocumentExists);
+            var documentIndex = AddDocument(globalObjectId.ToString(), null, path, checkIfDocumentExists, SearchDocumentFlags.Asset);
             if (documentIndex < 0)
                 return;
 
@@ -273,14 +273,14 @@ namespace UnityEditor.Search
 
                 var id = gid.ToString();
                 var transformPath = SearchUtils.GetTransformPath(obj.transform);
-                var documentIndex = AddDocument(id, transformPath, containerPath, checkIfDocumentExists);
+                var documentIndex = AddDocument(id, transformPath, containerPath, checkIfDocumentExists, SearchDocumentFlags.Nested | SearchDocumentFlags.Object);
 
                 IndexNumber(documentIndex, "depth", GetObjectDepth(obj));
                 IndexWordComponents(documentIndex, Path.GetFileName(transformPath));
                 IndexProperty(documentIndex, "is", "nested", saveKeyword: true, exact: true);
                 IndexProperty(documentIndex, "from", type, saveKeyword: true, exact: true);
-                IndexProperty(documentIndex, type, containerName, saveKeyword: true);
-                IndexProperty(documentIndex, type, containerPath, exact: true, saveKeyword: true);
+                IndexProperty(documentIndex, type, containerName, saveKeyword: false);
+                IndexProperty(documentIndex, type, containerPath, exact: true, saveKeyword: false);
                 IndexGameObject(documentIndex, obj, options);
                 IndexCustomGameObjectProperties(id, documentIndex, obj);
             }
@@ -298,20 +298,24 @@ namespace UnityEditor.Search
             return depth;
         }
 
+        static void MergeObjects(IList<GameObject> objects, Transform transform, bool skipSelf)
+        {
+            if (!transform || !transform.gameObject || (transform.gameObject.hideFlags & (HideFlags.DontSave | HideFlags.HideInInspector)) != 0)
+                return;
+            if (!skipSelf || transform.childCount == 0)
+                objects.Add(transform.gameObject);
+            for (int c = 0, end = transform.childCount; c != end; ++c)
+                MergeObjects(objects, transform.GetChild(c), false);
+        }
+
         private void IndexPrefab(string prefabPath, bool checkIfDocumentExists)
         {
-            var prefabRoot = PrefabUtility.LoadPrefabContents(prefabPath);
+            var prefabRoot = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
             if (!prefabRoot)
                 return;
-            try
-            {
-                var objects = SceneModeUtility.GetObjects(new[] { prefabRoot }, true);
-                IndexObjects(objects, "prefab", prefabRoot.name, prefabPath, checkIfDocumentExists);
-            }
-            finally
-            {
-                PrefabUtility.UnloadPrefabContents(prefabRoot);
-            }
+            var objects = new List<GameObject>();
+            MergeObjects(objects, prefabRoot.transform, true);
+            IndexObjects(objects.ToArray(), "prefab", prefabRoot.name, prefabPath, checkIfDocumentExists);
         }
 
         private void IndexScene(string scenePath, bool checkIfDocumentExists)

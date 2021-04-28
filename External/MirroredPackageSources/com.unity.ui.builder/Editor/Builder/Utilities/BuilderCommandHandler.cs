@@ -420,6 +420,60 @@ namespace Unity.UI.Builder
             return true;
         }
 
+        public void UnpackTemplateContainer(VisualElement templateContainer)
+        {
+            if (templateContainer == null)
+            {
+                Debug.LogError("Template to unpack is null");
+                return;
+            }
+
+            var unpackedVE = new VisualElement();
+            var templateContainerParent = templateContainer.parent;
+            var templateContainerIndex = templateContainerParent.IndexOf(templateContainer);
+
+            // Create new unpacked element and add it in the hierarchy
+            unpackedVE.name = templateContainer.name;
+            templateContainerParent.Add(unpackedVE);
+            BuilderAssetUtilities.AddElementToAsset(m_PaneWindow.document, unpackedVE, templateContainerIndex + 1);
+
+            var linkedInstancedVTA = templateContainer.GetProperty(BuilderConstants.ElementLinkedInstancedVisualTreeAssetVEPropertyName) as VisualTreeAsset;
+            var linkedTA = templateContainer.GetProperty(BuilderConstants.ElementLinkedVisualElementAssetVEPropertyName) as TemplateAsset;
+            var linkedVTACopy = linkedInstancedVTA.DeepCopy();
+            var unpackedVEA = unpackedVE.GetVisualElementAsset();
+            var templateContainerVEA = templateContainer.GetVisualElementAsset();
+            var attributeOverrides = linkedTA.attributeOverrides;
+
+            // Apply attribute overrides to elements in the unpacked element
+            BuilderAssetUtilities.ApplyAttributeOverridesToTreeAsset(attributeOverrides, linkedVTACopy);
+
+            // Move attribute overrides to new template containers
+            BuilderAssetUtilities.CopyAttributeOverridesToChildTemplateAssets(attributeOverrides, linkedVTACopy);
+
+            // Apply stylesheets to new element + inline rules
+            BuilderAssetUtilities.AddStyleSheetsFromTreeAsset(unpackedVEA, linkedInstancedVTA);
+            unpackedVEA.ruleIndex = templateContainerVEA.ruleIndex;
+
+            BuilderAssetUtilities.TransferAssetToAsset(m_PaneWindow.document, unpackedVEA, linkedVTACopy, false);
+
+            m_Selection.NotifyOfHierarchyChange();
+            m_PaneWindow.OnEnableAfterAllSerialization();
+
+            // Keep hierarchy tree state in the new unpacked element
+            var hierarchy = Builder.ActiveWindow.hierarchy;
+            hierarchy.elementHierarchyView.CopyTreeViewItemStates(templateContainerVEA, unpackedVEA);
+
+            // Delete old template element
+            BuilderAssetUtilities.DeleteElementFromAsset(m_PaneWindow.document, templateContainer, false);
+            templateContainer.RemoveFromHierarchy();
+
+            m_Selection.ClearSelection(null, false);
+            unpackedVEA.Select();
+
+            m_Selection.NotifyOfHierarchyChange();
+            m_PaneWindow.OnEnableAfterAllSerialization();
+        }
+
         public void ClearCopyBuffer()
         {
             BuilderEditorUtility.systemCopyBuffer = null;

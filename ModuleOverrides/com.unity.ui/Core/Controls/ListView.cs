@@ -530,7 +530,7 @@ namespace UnityEngine.UIElements
                     return;
 
                 m_HorizontalScrollingEnabled = value;
-                m_ScrollView.SetScrollViewMode(value ? ScrollViewMode.VerticalAndHorizontal : ScrollViewMode.Vertical);
+                m_ScrollView.mode = (value ? ScrollViewMode.VerticalAndHorizontal : ScrollViewMode.Vertical);
             }
         }
 

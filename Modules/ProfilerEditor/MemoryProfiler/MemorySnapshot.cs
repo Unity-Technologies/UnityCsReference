@@ -297,7 +297,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
 
             unsafe
             {
-                value = new string('\0', stringLength);
+                value = new string('A', stringLength);
                 fixed(char* p = value)
                 {
                     char* begin = p;

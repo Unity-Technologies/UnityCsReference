@@ -529,23 +529,33 @@ namespace Unity.UI.Builder
                 parent = vta.GetRootUXMLElement();
 
             var nextOrderInDocument = (vta.visualElementAssets.Count + vta.templateAssets.Count) * BuilderConstants.VisualTreeAssetOrderIncrement;
+            var assetsList = new List<VisualElementAsset>();
+
+            assetsList.AddRange(other.visualElementAssets);
+            assetsList.AddRange(other.templateAssets);
+            assetsList = assetsList.OrderBy(x => x.orderInDocument).ToList();
+
+            foreach (var asset in assetsList)
+            {
+                if (other.IsRootUXMLElement(asset))
+                {
+                    continue;
+                }
+
+                ReinitElementWithNewParentAsset(
+                    vta, parent, other, otherIdToChildren, asset, ref nextOrderInDocument);
+            }
 
             foreach (var vea in other.visualElementAssets)
             {
                 if (other.IsRootUXMLElement(vea))
                     continue;
 
-                ReinitElementWithNewParentAsset(
-                    vta, parent, other, otherIdToChildren, vea, ref nextOrderInDocument);
-
                 vta.visualElementAssets.Add(vea);
             }
 
             foreach (var vea in other.templateAssets)
             {
-                ReinitElementWithNewParentAsset(
-                    vta, parent, other, otherIdToChildren, vea, ref nextOrderInDocument);
-
                 if (!vta.TemplateExists(vea.templateAlias))
                 {
                     vta.RegisterTemplate(vea.templateAlias, other.ResolveTemplate(vea.templateAlias));

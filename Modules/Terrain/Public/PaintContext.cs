@@ -8,9 +8,11 @@ using uei = UnityEngine.Internal;
 using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Profiling;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace UnityEngine.Experimental.TerrainAPI
+namespace UnityEngine.TerrainTools
 {
+    [MovedFrom("UnityEngine.Experimental.TerrainAPI")]
     public class PaintContext
     {
         // initialized by constructor
@@ -202,7 +204,7 @@ namespace UnityEngine.Experimental.TerrainAPI
             m_HeightWorldSpaceMax = m_HeightWorldSpaceMin + originTerrain.terrainData.size.y;
 
             // this filter limits the search to Terrains that overlap the pixel rect bounds
-            TerrainUtility.TerrainMap.TerrainFilter filterOverlap =
+            Predicate<Terrain> filterOverlap =
                 t =>
             {
                 // terrain bounds (in world space)
@@ -217,14 +219,13 @@ namespace UnityEngine.Experimental.TerrainAPI
             };
 
             // gather Terrains that pass the filter
-            TerrainUtility.TerrainMap terrainMap =
-                TerrainUtility.TerrainMap.CreateFromConnectedNeighbors(originTerrain, filterOverlap, false);
+            TerrainUtils.TerrainMap terrainMap = TerrainUtils.TerrainMap.CreateFromConnectedNeighbors(originTerrain, filterOverlap, false);
 
             // convert those Terrains into the TerrainTile list
             m_TerrainTiles = new List<TerrainTile>();
             if (terrainMap != null)
             {
-                foreach (var cur in terrainMap.m_terrainTiles)
+                foreach (var cur in terrainMap.terrainTiles)
                 {
                     var coord = cur.Key;
                     Terrain terrain = cur.Value;

@@ -31,7 +31,7 @@ namespace UnityEditor.IMGUI.Controls
         public event Action<int, int> columnsSwapped;
 
         public float height { get; set; } = DefaultGUI.defaultHeight;
-        public bool canSort { get; set; }
+        public bool canSort { get; set; } = true;
         protected int currentColumnIndex { get; private set; } = -1;
         protected bool allowDraggingColumnsToReorder { get; set; } = false;
 

@@ -20,8 +20,7 @@ namespace UnityEditor.Toolbars
         readonly VisualElement m_UIElementsRoot;
         readonly IMGUIContainer m_ImguiOverride;
 
-        static readonly GUIContent s_PlayButtonContextMenuItem =
-            EditorGUIUtility.TrTextContent("Create Game View On Play");
+        static readonly GUIContent s_PlayButtonContextMenuItem = EditorGUIUtility.TrTextContent("Create Game View On Play");
 
         public PlayModeButtons()
         {

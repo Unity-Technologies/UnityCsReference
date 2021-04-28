@@ -84,6 +84,8 @@ namespace UnityEditor
         private bool m_ShowLayoutOptions = false;
         private bool m_RawEditMode = false;
         private int m_TargetCount = 0;
+        ConstrainProportionsTransformScale m_ConstrainProportionsScale;
+        private bool isScaleDirty;
 
         private Dictionary<int, AnimBool> m_KeyboardControlIDs = new Dictionary<int, AnimBool>();
         private AnimatedValues.AnimBool m_ChangingAnchors = new AnimatedValues.AnimBool();
@@ -114,6 +116,8 @@ namespace UnityEditor
             if (m_RotationGUI == null)
                 m_RotationGUI = new TransformRotationGUI();
             m_RotationGUI.OnEnable(serializedObject.FindProperty("m_LocalRotation"), EditorGUIUtility.TrTextContent("Rotation"));
+
+            m_ConstrainProportionsScale = new ConstrainProportionsTransformScale(m_LocalScale.vector3Value);
 
             m_ShowLayoutOptions = EditorPrefs.GetBool(kShowAnchorPropsPrefName, false);
             m_RawEditMode = EditorPrefs.GetBool(kLockRectPrefName, false);
@@ -243,6 +247,8 @@ namespace UnityEditor
                 EditorGUIUtility.labelWidth = EditorGUIUtility.currentViewWidth - 212;
             }
 
+            serializedObject.Update();
+
             bool anyDriven = false;
             bool anyDrivenXPositionOrSize = false;
             bool anyDrivenYPositionOrSize = false;
@@ -271,8 +277,6 @@ namespace UnityEditor
                     EditorGUILayout.HelpBox("Some values in some or all objects are driven.", MessageType.None);
             }
 
-            serializedObject.Update();
-
             LayoutDropdownButton(anyWithoutParent);
 
             // Position and Size Delta
@@ -291,9 +295,64 @@ namespace UnityEditor
             s_ScaleDisabledMask[0] = targets.Any(x => ((x as RectTransform).drivenProperties & DrivenTransformProperties.ScaleX) != 0);
             s_ScaleDisabledMask[1] = targets.Any(x => ((x as RectTransform).drivenProperties & DrivenTransformProperties.ScaleY) != 0);
             s_ScaleDisabledMask[2] = targets.Any(x => ((x as RectTransform).drivenProperties & DrivenTransformProperties.ScaleZ) != 0);
-            Vector3FieldWithDisabledMash(EditorGUILayout.GetControlRect(), m_LocalScale, styles.transformScaleContent, s_ScaleDisabledMask);
+
+            Transform t = target as Transform;
+            if (t != null)
+            {
+                if (m_ConstrainProportionsScale.Initialize(serializedObject.targetObjects) && !s_ScaleDisabledMask.All(x => x))
+                {
+                    //AxisModified values [-1;2] : [none, x, y, z]
+                    int axisModified = -1;
+                    var mixedFields = ConstrainProportionsTransformScale.GetMixedValueFields(m_LocalScale);
+                    Vector3 scale = m_ConstrainProportionsScale.DoGUI(EditorGUILayout.GetControlRect(), styles.transformScaleContent, m_LocalScale.vector3Value, serializedObject.targetObjects, ref axisModified, m_LocalScale);
+                    var mixedFieldsAfterGUI = ConstrainProportionsTransformScale.GetMixedValueFields(m_LocalScale);
+
+                    if (scale != m_LocalScale.vector3Value || mixedFields != mixedFieldsAfterGUI)
+                    {
+                        if (serializedObject.targetObjectsCount > 1)
+                        {
+                            if (mixedFields != mixedFieldsAfterGUI)
+                            {
+                                axisModified = -1;
+                                for (int i = 0; i < 3; i++)
+                                {
+                                    if (ConstrainProportionsTransformScale.IsBit(mixedFields, i) && !ConstrainProportionsTransformScale.IsBit(mixedFieldsAfterGUI, i))
+                                    {
+                                        axisModified = i;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (axisModified != -1)
+                            {
+                                isScaleDirty = ConstrainProportionsTransformScale.HandleMultiSelectionScaleChanges(
+                                    m_LocalScale.vector3Value, scale,
+                                    m_ConstrainProportionsScale.constrainProportionsScale,
+                                    serializedObject.targetObjects, ref axisModified);
+                            }
+                        }
+
+                        if (scale != m_LocalScale.vector3Value)
+                            m_LocalScale.vector3Value = scale;
+                    }
+                }
+                else
+                {
+                    Vector3FieldWithDisabledMash(EditorGUILayout.GetControlRect(), m_LocalScale, styles.transformScaleContent, s_ScaleDisabledMask);
+                }
+            }
+
+            if (isScaleDirty)
+                serializedObject.Update();
 
             serializedObject.ApplyModifiedProperties();
+
+            if (isScaleDirty)
+            {
+                isScaleDirty = false;
+                OnForceReloadInspector();
+            }
         }
 
         // A Vector3 field where each of the x, y and z elements can be disabled.

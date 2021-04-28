@@ -3,9 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine.Scripting;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace UnityEngine.Experimental.TerrainAPI
+namespace UnityEngine
 {
+    [MovedFrom("UnityEngine.Experimental.TerrainAPI")]
     public static class TerrainCallbacks
     {
         public delegate void HeightmapChangedCallback(Terrain terrain, RectInt heightRegion, bool synched);

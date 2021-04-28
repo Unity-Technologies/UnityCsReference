@@ -393,5 +393,18 @@ namespace UnityEngine
         [NativeConditional("UNITY_EDITOR")]
         [FreeFunction("IsNonUniformScaleTransform", HasExplicitThis = true)]
         internal extern bool IsNonUniformScaleTransform();
+
+        [NativeConditional("UNITY_EDITOR")]
+        internal bool constrainProportionsScale
+        {
+            get => IsConstrainProportionsScale();
+            set => SetConstrainProportionsScale(value);
+        }
+
+        [NativeConditional("UNITY_EDITOR")]
+        private extern void SetConstrainProportionsScale(bool isLinked);
+
+        [NativeConditional("UNITY_EDITOR")]
+        private extern bool IsConstrainProportionsScale();
     }
 }

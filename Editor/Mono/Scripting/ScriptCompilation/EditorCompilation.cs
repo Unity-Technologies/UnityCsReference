@@ -971,7 +971,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         static SystemProcessRunnableProgram MakeScriptCompilationBuildProgram()
         {
-            var buildProgramAssembly = new NPath($"{EditorApplication.applicationContentsPath}/ScriptCompilationBuildProgram/ScriptCompilationBuildProgram.exe");
+            var buildProgramAssembly = new NPath($"{EditorApplication.applicationContentsPath}/Tools/BuildPipeline/ScriptCompilationBuildProgram.exe");
             return new SystemProcessRunnableProgram($"{EditorApplication.applicationContentsPath}/Tools/netcorerun/netcorerun{BeeScriptCompilation.ExecutableExtension}", buildProgramAssembly.InQuotes(SlashMode.Native));
         }
 

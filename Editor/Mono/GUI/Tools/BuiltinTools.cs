@@ -414,7 +414,7 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
 
             TransformManipulator.BeginManipulationHandling(true);
-            s_CurrentScale = Handles.ScaleHandle(s_CurrentScale, handlePosition, handleRotation, HandleUtility.GetHandleSize(handlePosition));
+            s_CurrentScale = Handles.ScaleHandle(s_CurrentScale, handlePosition, handleRotation, HandleUtility.GetHandleSize(handlePosition), Selection.DoAllGOsHaveConstrainProportionsEnabled(Selection.gameObjects));
             TransformManipulator.EndManipulationHandling();
 
             if (EditorGUI.EndChangeCheck() && !isStatic)

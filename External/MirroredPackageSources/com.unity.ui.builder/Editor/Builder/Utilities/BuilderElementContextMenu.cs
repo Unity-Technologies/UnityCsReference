@@ -207,6 +207,7 @@ namespace Unity.UI.Builder
             var showOpenInIsolationAction = isLinkedVEADirectChild;
             var showOpenInPlaceAction = showOpenInIsolationAction;
             var showSiblingOpenActions = !isLinkedOpenVTAActiveVTA && isLinkedInstancedVTAActiveVTA;
+            var showUnpackAction = isLinkedVEADirectChild;
 
             if (showOpenInBuilder || showReturnToParentAction || showOpenInIsolationAction || showOpenInPlaceAction || showSiblingOpenActions)
                 evt.menu.AppendSeparator();
@@ -256,6 +257,16 @@ namespace Unity.UI.Builder
                     {
                         document.GoToSubdocument(documentElement, paneWindow, activeOpenUXML.openSubDocumentParent);
                         BuilderHierarchyUtilities.OpenAsSubDocument(paneWindow, linkedInstancedVTA, linkedVEA);
+                    });
+            }
+
+            if (showUnpackAction)
+            {
+                evt.menu.AppendAction(
+                    BuilderConstants.ExplorerHierarchyUnpackTemplate,
+                    action =>
+                    {
+                        m_PaneWindow.commandHandler.UnpackTemplateContainer(documentElement);
                     });
             }
         }

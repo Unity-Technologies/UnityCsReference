@@ -16,12 +16,11 @@ namespace UnityEngine.UIElements.UIR
         static ProfilerMarker s_MarkerTessellateRect = new ProfilerMarker("TessellateRect");
         static ProfilerMarker s_MarkerTessellateBorder = new ProfilerMarker("TessellateBorder");
 
-        ///<summary>
+        /// <summary>
         /// Tessellates the border OR the content:
         /// If any of the left/right/top/bottom border parameters is greater than Epsilon, we tessellate ONLY a border.
         /// Otherwise we tessellate ONLY the content.
         /// </summary>
-        /// <param name="vertexFlags">Flags are only used for content, not for a border.</param>
         public static void TessellateRect(MeshGenerationContextUtils.RectangleParams rectParams, float posZ, MeshBuilder.AllocMeshData meshAlloc, bool computeUVs)
         {
             if (rectParams.rect.width < kEpsilon || rectParams.rect.height < kEpsilon)
@@ -35,8 +34,10 @@ namespace UnityEngine.UIElements.UIR
             rectParams.bottomRightRadius = Vector2.Min(rectParams.bottomRightRadius, halfSize);
             rectParams.bottomLeftRadius = Vector2.Min(rectParams.bottomLeftRadius, halfSize);
 
+            // Count the required triangles by calling the tessellation method with a "countOnly=true" flag, which skips
+            // tessellation and only update the vertex and index counts.
             UInt16 vertexCount = 0, indexCount = 0;
-            CountRectTriangles(ref rectParams, ref vertexCount, ref indexCount);
+            TessellateRectInternal(ref rectParams, 0, null, ref vertexCount, ref indexCount, true);
 
             var mesh = meshAlloc.Allocate(vertexCount, indexCount);
 
@@ -45,6 +46,33 @@ namespace UnityEngine.UIElements.UIR
             TessellateRectInternal(ref rectParams, posZ, mesh, ref vertexCount, ref indexCount);
             if (computeUVs)
                 ComputeUVs(rectParams.rect, rectParams.uv, mesh.uvRegion, mesh.m_Vertices);
+            Debug.Assert(vertexCount == mesh.vertexCount);
+            Debug.Assert(indexCount == mesh.indexCount);
+
+            s_MarkerTessellateRect.End();
+        }
+
+        /// <summary>
+        /// Specialized, faster method than <see cref="TessellateRect"> for a rectangular quad when
+        /// the rectangle does not have borders or rounded corners.
+        /// </summary>
+        public static void TessellateQuad(MeshGenerationContextUtils.RectangleParams rectParams, float posZ, MeshBuilder.AllocMeshData meshAlloc)
+        {
+            if (rectParams.rect.width < kEpsilon || rectParams.rect.height < kEpsilon)
+                return;
+
+            s_MarkerTessellateRect.Begin();
+
+            // Count the required triangles by calling the tessellation method with a "countOnly=true" flag, which skips
+            // tessellation and only update the vertex and index counts.
+            UInt16 vertexCount = 0, indexCount = 0;
+            TessellateQuad(rectParams.rect, Edges.All, rectParams.color, posZ, null, ref vertexCount, ref indexCount, true);
+
+            var mesh = meshAlloc.Allocate(vertexCount, indexCount);
+
+            vertexCount = 0;
+            indexCount = 0;
+            TessellateQuad(rectParams.rect, Edges.All, rectParams.color, posZ, mesh, ref vertexCount, ref indexCount, false);
             Debug.Assert(vertexCount == mesh.vertexCount);
             Debug.Assert(indexCount == mesh.indexCount);
 
@@ -82,13 +110,6 @@ namespace UnityEngine.UIElements.UIR
             s_MarkerTessellateBorder.End();
         }
 
-        private static void CountRectTriangles(ref MeshGenerationContextUtils.RectangleParams rectParams, ref UInt16 vertexCount, ref UInt16 indexCount)
-        {
-            // To count the required triangles, we call the tessellation method with a "countOnly=true" flag, which skips
-            // tessellation and only update the vertex and index counts.
-            TessellateRectInternal(ref rectParams, 0, null, ref vertexCount, ref indexCount, true);
-        }
-
         private static void CountBorderTriangles(ref MeshGenerationContextUtils.BorderParams border, ref UInt16 vertexCount, ref UInt16 indexCount)
         {
             // To count the required triangles, we call the tessellation method with a "countOnly=true" flag, which skips
@@ -98,14 +119,7 @@ namespace UnityEngine.UIElements.UIR
 
         private static void TessellateRectInternal(ref MeshGenerationContextUtils.RectangleParams rectParams, float posZ, MeshWriteData mesh, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly = false)
         {
-            if (!rectParams.HasRadius(kEpsilon))
-            {
-                TessellateQuad(rectParams.rect, 0, 0, 0, TessellationType.Content, rectParams.color, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
-            }
-            else
-            {
-                TessellateRoundedCorners(ref rectParams, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
-            }
+            TessellateRoundedCorners(ref rectParams, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
         }
 
         private static void TessellateBorderInternal(ref MeshGenerationContextUtils.BorderParams border, float posZ, MeshWriteData mesh, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly = false)
@@ -214,7 +228,7 @@ namespace UnityEngine.UIElements.UIR
                 // |     |
                 // |     |
                 // -------
-                TessellateQuad(rect, 0, 0, 0, TessellationType.Content, color, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
+                TessellateQuad(rect, Edges.Left | Edges.Top, color, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
                 return;
             }
 
@@ -226,18 +240,18 @@ namespace UnityEngine.UIElements.UIR
             // | B |    |
             // |   |    |
             // ----------
-            TessellateFilledFan(TessellationType.Content, cornerCenter, radius, 0, 0, color, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
+            TessellateFilledFan(cornerCenter, radius, Vector2.zero, 0, 0, color, color, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
             if (radius.x < rect.width)
             {
                 // A
                 subRect = new Rect(rect.x + radius.x, rect.y, rect.width - radius.x, rect.height);
-                TessellateQuad(subRect, 0,  0, 0, TessellationType.Content, color, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
+                TessellateQuad(subRect, Edges.Top, color, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
             }
             if (radius.y < rect.height)
             {
                 // B
                 subRect = new Rect(rect.x, rect.y + radius.y, radius.x < rect.width ? radius.x : rect.width, rect.height - radius.y);
-                TessellateQuad(subRect, 0, 0, 0, TessellationType.Content, color, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
+                TessellateQuad(subRect, Edges.Left, color, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
             }
         }
 
@@ -267,13 +281,13 @@ namespace UnityEngine.UIElements.UIR
                 {
                     // A
                     subRect = new Rect(rect.x, rect.y, leftWidth, rect.height);
-                    TessellateQuad(subRect, topWidth, leftWidth, topWidth, TessellationType.EdgeVertical, leftColor, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
+                    TessellateStraightBorder(subRect, Edges.Left, topWidth, leftColor, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
                 }
                 if (topWidth > kEpsilon)
                 {
                     // B
                     subRect = new Rect(rect.x, rect.y, rect.width, topWidth);
-                    TessellateQuad(subRect, leftWidth, leftWidth, topWidth, TessellationType.EdgeHorizontal, topColor, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
+                    TessellateStraightBorder(subRect, Edges.Top, leftWidth, topColor, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
                 }
                 return;
             }
@@ -292,10 +306,7 @@ namespace UnityEngine.UIElements.UIR
                 // |_____|
 
                 // A
-                if (leftColor.InternalEquals(topColor))
-                    TessellateFilledFan(TessellationType.EdgeCorner, cornerCenter, radius, leftWidth, topWidth, leftColor, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
-                else
-                    TessellateFilledFan(cornerCenter, radius, leftWidth, topWidth, leftColor, topColor, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
+                TessellateFilledFan(cornerCenter, radius, Vector2.zero, leftWidth, topWidth, leftColor, topColor, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
             }
             else if (LooseCompare(radius.x, leftWidth) > 0 && LooseCompare(radius.y, topWidth) > 0)
             {
@@ -311,10 +322,7 @@ namespace UnityEngine.UIElements.UIR
                 // |__|
 
                 // A
-                if (leftColor.InternalEquals(topColor))
-                    TessellateBorderedFan(cornerCenter, radius, leftWidth, topWidth, leftColor, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
-                else
-                    TessellateBorderedFan(cornerCenter, radius, leftWidth, topWidth, leftColor, topColor, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
+                TessellateBorderedFan(cornerCenter, radius, leftWidth, topWidth, leftColor, topColor, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
             }
             else
             {
@@ -330,102 +338,31 @@ namespace UnityEngine.UIElements.UIR
                 // | |
                 // |_|
                 subRect = new Rect(rect.x, rect.y, Mathf.Max(radius.x, leftWidth), Mathf.Max(radius.y, topWidth));
-                if (leftColor.InternalEquals(topColor))
-                    TessellateComplexBorderCorner(subRect, radius, leftWidth, topWidth, leftColor, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
-                else
-                    TessellateComplexBorderCorner(subRect, radius, leftWidth, topWidth, leftColor, topColor, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
+                TessellateComplexBorderCorner(subRect, radius, leftWidth, topWidth, leftColor, topColor, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
             }
 
             // Tessellate the straight outlines
             // E
             float cornerSize = Mathf.Max(radius.y, topWidth);
             subRect = new Rect(rect.x, rect.y + cornerSize, leftWidth, rect.height - cornerSize);
-            TessellateQuad(subRect, 0, leftWidth, topWidth, TessellationType.EdgeVertical, leftColor, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
+            TessellateStraightBorder(subRect, Edges.Left, 0.0f, leftColor, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
 
             // F
             cornerSize = Mathf.Max(radius.x, leftWidth);
             subRect = new Rect(rect.x + cornerSize, rect.y, rect.width - cornerSize, topWidth);
-            TessellateQuad(subRect, 0, leftWidth, topWidth, TessellationType.EdgeHorizontal, topColor, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
+            TessellateStraightBorder(subRect, Edges.Top, 0.0f, topColor, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
         }
 
-        enum TessellationType { EdgeHorizontal, EdgeVertical, EdgeCorner, Content }
-
-        // This method assumes that we are intersecting a top-left corner that has an ellipse shape with a line that
-        // goes through the origin and the ellipse quarter. The ellipse is touching the axes.
-        //
-        // o--x                -
-        // |\          *       |
-        // y \    *            |
-        //    i*               |
-        //   * \               b
-        //  *   \              |
-        // *     \             |
-        // |----------a--------\
-        //
-        // o: origin
-        // x: x axis increasing towards the right
-        // y: y axis increasing towards the bottom
-        // a: half width of the ellipse
-        // b: half height of the ellipse
-        // i: intersection point
-        static Vector2 IntersectEllipseWithLine(float a, float b, Vector2 dir)
+        internal enum Edges
         {
-            Debug.Assert(dir.x > 0 || dir.y > 0);
-
-            if (a < Mathf.Epsilon || b < Mathf.Epsilon)
-                return new Vector2(0, 0); // Degenerate case
-
-            if (dir.y < 0.001 * dir.x)
-                return new Vector2(a, 0); // The line is almost horizontal
-
-            if (dir.x < 0.001 * dir.y)
-                return new Vector2(0, b); // The line is almost vertical
-
-            float m = dir.y / dir.x; // slope of the line
-            float r = b / a;
-
-            // Ellipse equation: y = b - r*sqrt(a²-(x-a)²)
-            // Line equation: y = m*x
-
-            // We get x by substracting both equations and solving for x:
-            float x = b * (r + m - Mathf.Sqrt(2 * m * r)) / (m * m + r * r);
-
-            // We get y by substituting x in the line equation:
-            float y = m * x;
-
-            return new Vector2(x, y);
+            None   = 0,
+            Left   = 1 << 0,
+            Top    = 1 << 1,
+            Right  = 1 << 2,
+            Bottom = 1 << 3,
+            All = Left | Top | Right | Bottom
         }
-
-        // Let an ellipse centered at the origin, defined as:
-        // x = a*cos(theta)
-        // y = b*sin(theta)
-        // where theta goes from 0..Pi/2
-        //
-        // And a line going through the ellipse and the origin, this method returns the value of theta that allows to
-        // get the intersection point between the two.
-        //
-        // -            \
-        // |             i *
-        // |          *   \
-        // |      *        \
-        // b   *            \ y
-        // | *               \|
-        // |*              x--o
-        // \---------a--------|
-        //
-        // o: origin
-        // x: x axis increasing towards the left
-        // y: y axis increasing towards the top
-        // a: half width of the ellipse
-        // b: half height of the ellipse
-        // i: intersection point
-        static float GetCenteredEllipseLineIntersectionTheta(float a, float b, Vector2 dir)
-        {
-            // The slope of the line intersecting the ellipse at i is the same as any point of the line, so it is given by:
-            // y/x = (b * sin(theta)) / (a * cos(theta)) <=> (y * a) / (x * b) = tan(theta)
-            // Solving for theta, we get:
-            return Mathf.Atan2(dir.y * a, dir.x * b);
-        }
+        internal const int kMaxEdgeBit = 4;
 
         // The lines are defined by the following parametric equations:
         // Line A: p0 + (p1 - p0) * s
@@ -458,331 +395,112 @@ namespace UnityEngine.UIElements.UIR
             return 0;
         }
 
-        static void TessellateComplexBorderCorner(Rect rect, Vector2 radius, float leftWidth, float topWidth, Color32 color, float posZ, MeshWriteData mesh, ref UInt16 refVertexCount, ref UInt16 refIndexCount, bool countOnly)
+        unsafe private static void TessellateComplexBorderCorner(Rect rect, Vector2 radius, float leftWidth, float topWidth, Color32 leftColor, Color32 topColor, float posZ, MeshWriteData mesh, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
         {
             if (rect.width < kEpsilon || rect.height < kEpsilon)
                 return;
 
-            int widthDiff = LooseCompare(leftWidth, radius.x);
-            int heightDiff = LooseCompare(topWidth, radius.y);
+            var center = rect.position + radius;
+            var miterOffset = Vector2.zero;
 
-            Debug.Assert(widthDiff != heightDiff || widthDiff > 0 && heightDiff > 0);
+            // Find a miter offset that makes the diagonal line go toward the radius
+            float radiusRatio = radius.x / radius.y;
+            var topLeft = center - radius;
+            var innerCorner = new Vector2(leftWidth, topWidth);
 
-            UInt16 vertexCount = refVertexCount;
-            UInt16 indexCount = refIndexCount;
-            int fanTriangles = kSubdivisions - 1;
+            var intersection = IntersectLines(topLeft, innerCorner, new Vector2(0.0f, radius.y), radius);
+            if (intersection.x >= 0.0f && LooseCompare(intersection.x, leftWidth) <= 0)
+                miterOffset.x = Mathf.Min(0.0f, intersection.x - center.x);
 
-            if (countOnly)
+            intersection = IntersectLines(topLeft, innerCorner, new Vector2(radius.x, 0.0f), radius);
+            if (intersection.y >= 0.0f && LooseCompare(intersection.y, topWidth) <= 0)
+                miterOffset.y = Mathf.Min(0.0f, intersection.y - center.y);
+
+            TessellateFilledFan(center, radius, miterOffset, leftWidth, topWidth, leftColor, topColor, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
+
+            if (LooseCompare(rect.height, radius.y) > 0)
             {
-                int triangleCount = fanTriangles;
-                if (heightDiff != 0)
-                    triangleCount += 1;
-                if (widthDiff != 0)
-                    triangleCount += 1;
+                // Fill E
+                //      ________
+                //   -*   |     |
+                //  *     |     |
+                // *   A  |  F  |
+                // |      |     |
+                // |______|_____|
+                // |   |
+                // | E |
+                // |___|
 
-                vertexCount += (ushort)(triangleCount + 3);
-                indexCount += (ushort)(triangleCount * 3);
-
-                refIndexCount = indexCount;
-                refVertexCount = vertexCount;
-                return;
+                var subRect = new Rect(rect.x, rect.y + radius.y, leftWidth, rect.height - radius.y);
+                var offsets = stackalloc Vector2[4];
+                offsets[2] = new Vector2(radius.x - leftWidth + miterOffset.x, miterOffset.y);
+                TessellateQuad(subRect, Edges.Left | Edges.Right, offsets, leftColor, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
+            }
+            else if (miterOffset.y < -kEpsilon)
+            {
+                // Fill the gap Y caused by miter y-offset
+                //      ________
+                //   -*   |     |
+                //  *  A  |  F  |
+                // *     _|_____|
+                // |  __/ |
+                // | /  Y |
+                // |/_____|
+                var subRect = new Rect(rect.x, rect.y + radius.y + miterOffset.y, leftWidth, -miterOffset.y);
+                var offsets = stackalloc Vector2[4];
+                offsets[1] = new Vector2(radius.x + miterOffset.x, 0.0f);
+                TessellateQuad(subRect, Edges.Right, offsets, leftColor, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
             }
 
-            Color32 innerFlags = new Color32((byte)VertexFlags.IsEdge, 0, 0, 0);
-            Color32 outerFlags = new Color32((byte)VertexFlags.IsSolid, 0, 0, 0);
-            var widths = new Vector2(leftWidth, topWidth);
-
-            // Tessellate
+            if (LooseCompare(rect.width, radius.x) > 0)
             {
-                // inner-corner (top)
-                ushort innerTopIndex = vertexCount;
-                mesh.SetNextVertex(new Vertex { position = new Vector3(leftWidth, topWidth, posZ), tint = color, uv = widths, flags = innerFlags });
-                ++vertexCount;
+                // Fill F
+                //      ________
+                //   -*   |     |
+                //  *     |     |
+                // *   A  |  F  |
+                // |      |     |
+                // |______|_____|
+                // |   |
+                // | E |
+                // |___|
 
-                // inner-corner (left)
-                ushort innerLeftIndex = vertexCount;
-                mesh.SetNextVertex(new Vertex { position = new Vector3(leftWidth, topWidth, posZ), tint = color, uv = widths, flags = innerFlags });
-                ++vertexCount;
-
-                if (heightDiff < 0)
-                {
-                    // bottom-right
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(rect.xMax, rect.yMax, posZ), tint = color, uv = widths, flags = innerFlags });
-                    // bottom-left
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(0, rect.yMax, posZ), tint = color, flags = outerFlags });
-                    vertexCount += 2;
-
-                    mesh.SetNextIndex(innerLeftIndex);
-                    mesh.SetNextIndex((ushort)(vertexCount - 2));
-                    mesh.SetNextIndex((ushort)(vertexCount - 1));
-                    indexCount += 3;
-                }
-                else
-                {
-                    // bottom-left
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(0, rect.yMax, posZ), tint = color, flags = outerFlags });
-                    ++vertexCount;
-                }
-
-                if (heightDiff > 0)
-                {
-                    // fan left
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(0, radius.y, posZ), tint = color, flags = outerFlags });
-                    ++vertexCount;
-
-                    mesh.SetNextIndex(innerLeftIndex);
-                    mesh.SetNextIndex((ushort)(vertexCount - 2));
-                    mesh.SetNextIndex((ushort)(vertexCount - 1));
-                    indexCount += 3;
-                }
-
-                float deltaAngle = Mathf.PI * 0.5f / fanTriangles;
-                for (int i = 1; i < fanTriangles; ++i)
-                {
-                    float angle = i * deltaAngle;
-                    var p = new Vector2(radius.x - Mathf.Cos(angle) * radius.x, radius.y - Mathf.Sin(angle) * radius.y);
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = color, flags = outerFlags });
-                    ++vertexCount;
-
-                    mesh.SetNextIndex(innerLeftIndex);
-                    mesh.SetNextIndex((ushort)(vertexCount - 2));
-                    mesh.SetNextIndex((ushort)(vertexCount - 1));
-                    indexCount += 3;
-                }
-
-                if (widthDiff > 0)
-                {
-                    // fan top
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(radius.x, 0, posZ), tint = color, flags = outerFlags });
-                    ++vertexCount;
-
-                    mesh.SetNextIndex(innerLeftIndex);
-                    mesh.SetNextIndex((ushort)(vertexCount - 2));
-                    mesh.SetNextIndex((ushort)(vertexCount - 1));
-                    indexCount += 3;
-                }
-
-                {
-                    // top-right
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(rect.xMax, 0, posZ), tint = color, flags = outerFlags });
-                    ++vertexCount;
-
-                    mesh.SetNextIndex(innerTopIndex);
-                    mesh.SetNextIndex((ushort)(vertexCount - 2));
-                    mesh.SetNextIndex((ushort)(vertexCount - 1));
-                    indexCount += 3;
-                }
-
-                if (widthDiff < 0)
-                {
-                    // bottom-right
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(rect.xMax, rect.yMax, posZ), tint = color, uv = widths, flags = innerFlags });
-                    ++vertexCount;
-
-                    mesh.SetNextIndex(innerTopIndex);
-                    mesh.SetNextIndex((ushort)(vertexCount - 2));
-                    mesh.SetNextIndex((ushort)(vertexCount - 1));
-                    indexCount += 3;
-                }
+                var subRect = new Rect(rect.x + radius.x, rect.y, rect.width - radius.x, topWidth);
+                var offsets = stackalloc Vector2[4];
+                offsets[0] = new Vector2(miterOffset.x, radius.y - topWidth + miterOffset.y);
+                TessellateQuad(subRect, Edges.Top | Edges.Bottom, offsets, topColor, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
             }
+            else if (miterOffset.x < -kEpsilon)
+            {
+                // Fill the gap X caused by miter x-offset
+                //      ____
+                //   -*    /|
+                //  *  A  / |
+                // *     /  |
+                // |    / X |
+                // |___/____|
+                // |   |
+                // | E |
+                // |___|
 
-            refIndexCount = indexCount;
-            refVertexCount = vertexCount;
+                var subRect = new Rect(rect.x + radius.x + miterOffset.x, rect.y, -miterOffset.x, topWidth);
+                var offsets = stackalloc Vector2[4];
+                offsets[0] = new Vector2(leftWidth - (radius.x + miterOffset.x), 0.0f);
+                offsets[1] = new Vector2(0.0f, radius.y);
+                TessellateQuad(subRect, Edges.Bottom, offsets, topColor, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
+            }
         }
 
-        static void TessellateComplexBorderCorner(Rect rect, Vector2 radius, float leftWidth, float topWidth, Color32 leftColor, Color32 topColor, float posZ, MeshWriteData mesh, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
+        private static void TessellateQuad(Rect rect, Color32 color, float posZ, MeshWriteData mesh, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
         {
+            // Simple, non-smooted quads are tessellated with two triangles like so:
+            //    +-------+
+            //    |     / |
+            //    |   /   |
+            //    | /     |
+            //    +-------+
+
             if (rect.width < kEpsilon || rect.height < kEpsilon)
-                return;
-
-            int widthDiff = LooseCompare(leftWidth, radius.x);
-            int heightDiff = LooseCompare(topWidth, radius.y);
-
-            Debug.Assert(widthDiff != heightDiff || widthDiff > 0 && heightDiff > 0);
-
-            if (countOnly)
-            {
-                vertexCount += kSubdivisions; // fan
-                vertexCount += 2; // center, inner-corner
-                vertexCount += 3; // vertices on the boundary are doubled
-
-                int triangleCount = 2;
-                triangleCount += kSubdivisions - 1; // fan
-
-                if (widthDiff != 0)
-                {
-                    ++vertexCount;
-                    ++triangleCount;
-                }
-
-                if (heightDiff != 0)
-                {
-                    ++vertexCount;
-                    ++triangleCount;
-                }
-
-                indexCount += (UInt16)(triangleCount * 3);
-                return;
-            }
-
-            // Compute key points
-            Vector2 innerCorner = new Vector2(rect.x + leftWidth, rect.y + topWidth);
-            Vector2 outerCorner = new Vector2(rect.x, rect.y);
-            Vector2 ellipseLeft = new Vector2(rect.x, rect.y + radius.y);
-            Vector2 ellipseTop = new Vector2(rect.x + radius.x, rect.y);
-            Vector2 fanCorner = new Vector2(ellipseTop.x, ellipseLeft.y);
-            Vector2 tessCenter = IntersectLines(ellipseLeft, ellipseTop, innerCorner, outerCorner);
-            Vector2 outerIntersection = IntersectEllipseWithLine(radius.x, radius.y, innerCorner - outerCorner);
-            Vector2 topRight = new Vector2(rect.xMax, rect.y);
-            Vector2 bottomLeft = new Vector2(rect.x, rect.yMax);
-            Vector2 bottomRight = new Vector2(rect.xMax, rect.yMax);
-
-            // Partition fan triangles
-            float outerIntersectionAngle = GetCenteredEllipseLineIntersectionTheta(radius.x, radius.y, radius - outerIntersection);
-            outerIntersection.x += rect.x; // Note that we delayed this translation to be able to perform the previous calculation.
-            outerIntersection.y += rect.y;
-            int fanTriangles = kSubdivisions - 1;
-            int fanLeftTriangles = Mathf.Clamp(Mathf.RoundToInt(outerIntersectionAngle / (0.5f * Mathf.PI) * fanTriangles), 1, fanTriangles - 1);
-            int fanTopTriangles = fanTriangles - fanLeftTriangles;
-
-            Color32 innerFlags = new Color32((byte)VertexFlags.IsEdge, 0, 0, 0);
-            Color32 outerFlags = new Color32((byte)VertexFlags.IsSolid, 0, 0, 0);
-            var widths = new Vector2(leftWidth, topWidth);
-
-            // Tessellate left
-            {
-                ushort centerIndex = vertexCount;
-                mesh.SetNextVertex(new Vertex { position = new Vector3(tessCenter.x, tessCenter.y, posZ), tint = leftColor, flags = outerFlags });
-                mesh.SetNextVertex(new Vertex { position = new Vector3(innerCorner.x, innerCorner.y, posZ), tint = leftColor, uv = widths, flags = innerFlags });
-                vertexCount += 2;
-
-                if (heightDiff < 0)
-                {
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(bottomRight.x, bottomRight.y, posZ), tint = leftColor, uv = widths, flags = innerFlags });
-                    ++vertexCount;
-
-                    mesh.SetNextIndex(centerIndex);
-                    mesh.SetNextIndex((ushort)(vertexCount - 2));
-                    mesh.SetNextIndex((ushort)(vertexCount - 1));
-                    indexCount += 3;
-                }
-
-                {
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(bottomLeft.x, bottomLeft.y, posZ), tint = leftColor, flags = outerFlags });
-                    ++vertexCount;
-
-                    mesh.SetNextIndex(centerIndex);
-                    mesh.SetNextIndex((ushort)(vertexCount - 2));
-                    mesh.SetNextIndex((ushort)(vertexCount - 1));
-                    indexCount += 3;
-                }
-
-                if (heightDiff > 0)
-                {
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(ellipseLeft.x, ellipseLeft.y, posZ), tint = leftColor, flags = outerFlags });
-                    ++vertexCount;
-
-                    mesh.SetNextIndex(centerIndex);
-                    mesh.SetNextIndex((ushort)(vertexCount - 2));
-                    mesh.SetNextIndex((ushort)(vertexCount - 1));
-                    indexCount += 3;
-                }
-
-                float deltaAngle = outerIntersectionAngle / fanLeftTriangles;
-                for (int i = 1; i < fanLeftTriangles; ++i)
-                {
-                    float angle = i * deltaAngle;
-                    Vector2 p = fanCorner - new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = leftColor, flags = outerFlags });
-                    ++vertexCount;
-
-                    mesh.SetNextIndex(centerIndex);
-                    mesh.SetNextIndex((ushort)(vertexCount - 2));
-                    mesh.SetNextIndex((ushort)(vertexCount - 1));
-                    indexCount += 3;
-                }
-
-                {
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(outerIntersection.x, outerIntersection.y, posZ), tint = leftColor, flags = outerFlags });
-                    ++vertexCount;
-
-                    mesh.SetNextIndex(centerIndex);
-                    mesh.SetNextIndex((ushort)(vertexCount - 2));
-                    mesh.SetNextIndex((ushort)(vertexCount - 1));
-                    indexCount += 3;
-                }
-            }
-
-            // Tessellate top
-            {
-                ushort centerIndex = vertexCount;
-                mesh.SetNextVertex(new Vertex { position = new Vector3(tessCenter.x, tessCenter.y, posZ), tint = topColor, flags = outerFlags });
-                mesh.SetNextVertex(new Vertex { position = new Vector3(outerIntersection.x, outerIntersection.y, posZ), tint = topColor, flags = outerFlags });
-                vertexCount += 2;
-
-                float deltaAngle = (Mathf.PI * 0.5f - outerIntersectionAngle) / fanTopTriangles;
-                for (int i = 1; i < fanTopTriangles; ++i)
-                {
-                    float angle = outerIntersectionAngle + i * deltaAngle;
-                    Vector2 p = fanCorner - new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = topColor, flags = outerFlags });
-                    ++vertexCount;
-
-                    mesh.SetNextIndex(centerIndex);
-                    mesh.SetNextIndex((ushort)(vertexCount - 2));
-                    mesh.SetNextIndex((ushort)(vertexCount - 1));
-                    indexCount += 3;
-                }
-
-                if (widthDiff > 0)
-                {
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(ellipseTop.x, ellipseTop.y, posZ), tint = topColor, flags = outerFlags });
-                    ++vertexCount;
-
-                    mesh.SetNextIndex(centerIndex);
-                    mesh.SetNextIndex((ushort)(vertexCount - 2));
-                    mesh.SetNextIndex((ushort)(vertexCount - 1));
-                    indexCount += 3;
-                }
-
-                {
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(topRight.x, topRight.y, posZ), tint = topColor, flags = outerFlags });
-                    ++vertexCount;
-
-                    mesh.SetNextIndex(centerIndex);
-                    mesh.SetNextIndex((ushort)(vertexCount - 2));
-                    mesh.SetNextIndex((ushort)(vertexCount - 1));
-                    indexCount += 3;
-                }
-
-                if (widthDiff < 0)
-                {
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(bottomRight.x, bottomRight.y, posZ), tint = topColor, uv = widths, flags = innerFlags });
-                    ++vertexCount;
-
-                    mesh.SetNextIndex(centerIndex);
-                    mesh.SetNextIndex((ushort)(vertexCount - 2));
-                    mesh.SetNextIndex((ushort)(vertexCount - 1));
-                    indexCount += 3;
-                }
-
-                {
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(innerCorner.x, innerCorner.y, posZ), tint = topColor, uv = widths, flags = innerFlags });
-                    ++vertexCount;
-
-                    mesh.SetNextIndex(centerIndex);
-                    mesh.SetNextIndex((ushort)(vertexCount - 2));
-                    mesh.SetNextIndex((ushort)(vertexCount - 1));
-                    indexCount += 3;
-                }
-            }
-        }
-
-        private static void TessellateQuad(Rect rect, float miterOffset, float leftWidth, float topWidth, TessellationType tessellationType, Color32 color, float posZ, MeshWriteData mesh, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
-        {
-            if ((rect.width < kEpsilon || rect.height < kEpsilon) &&
-                // For vertical/horizontal edge tessellation, skip this check since quads may act as a ligature that fixes seams.
-                tessellationType != TessellationType.EdgeHorizontal && tessellationType != TessellationType.EdgeVertical)
                 return;
 
             if (countOnly)
@@ -797,45 +515,10 @@ namespace UnityEngine.UIElements.UIR
             Vector3 bottomLeft = new Vector3(rect.x, rect.yMax, posZ);
             Vector3 bottomRight = new Vector3(rect.xMax, rect.yMax, posZ);
 
-            var widths = new Vector2(leftWidth, topWidth);
-            Vector2 uvTopLeft, uvTopRight, uvBottomLeft, uvBottomRight;
-            Color32 flagsTopLeft, flagsTopRight, flagsBottomLeft, flagsBottomRight;
-            switch (tessellationType)
-            {
-                case TessellationType.EdgeHorizontal:
-                    bottomLeft.x += miterOffset;
-                    // The uvs contain the displacement from the vertically opposed corner.
-                    uvTopLeft = uvTopRight = Vector2.zero;
-                    uvBottomLeft = uvBottomRight = widths;
-                    flagsTopLeft = flagsTopRight = new Color32((byte)VertexFlags.IsSolid, 0, 0, 0);
-                    flagsBottomLeft = new Color32((byte)VertexFlags.IsEdge, 0, 0, 0);
-                    flagsBottomRight = new Color32((byte)VertexFlags.IsEdgeNoShrinkX, 0, 0, 0);
-                    break;
-                case TessellationType.EdgeVertical:
-                    topRight.y += miterOffset;
-                    // The uvs contain the displacement from the horizontally opposed corner.
-                    uvTopLeft = uvBottomLeft = Vector2.zero;
-                    uvTopRight = uvBottomRight = widths;
-                    flagsTopLeft = flagsBottomLeft = new Color32((byte)VertexFlags.IsSolid, 0, 0, 0);
-                    flagsTopRight = new Color32((byte)VertexFlags.IsEdge, 0, 0, 0);
-                    flagsBottomRight = new Color32((byte)VertexFlags.IsEdgeNoShrinkY, 0, 0, 0);
-                    break;
-                case TessellationType.EdgeCorner:
-                    uvTopLeft = uvTopRight = uvBottomLeft = uvBottomRight = Vector2.zero;
-                    flagsTopLeft = flagsTopRight = flagsBottomLeft = flagsBottomRight = new Color32((byte)VertexFlags.IsSolid, 0, 0, 0);
-                    break;
-                case TessellationType.Content:
-                    uvTopLeft = uvTopRight = uvBottomLeft = uvBottomRight = Vector2.zero; // UVs are computed later for content
-                    flagsTopLeft = flagsTopRight = flagsBottomLeft = flagsBottomRight = new Color32(0, 0, 0, 0); // Primed for later update by the chain build
-                    break;
-                default:
-                    throw new NotImplementedException();
-            }
-
-            mesh.SetNextVertex(new Vertex { position = topLeft, uv = uvTopLeft, tint = color, flags = flagsTopLeft });
-            mesh.SetNextVertex(new Vertex { position = topRight, uv = uvTopRight, tint = color, flags = flagsTopRight });
-            mesh.SetNextVertex(new Vertex { position = bottomLeft, uv = uvBottomLeft, tint = color, flags = flagsBottomLeft });
-            mesh.SetNextVertex(new Vertex { position = bottomRight, uv = uvBottomRight, tint = color, flags = flagsBottomRight });
+            mesh.SetNextVertex(new Vertex { position = topLeft, tint = color });
+            mesh.SetNextVertex(new Vertex { position = topRight, tint = color });
+            mesh.SetNextVertex(new Vertex { position = bottomLeft, tint = color });
+            mesh.SetNextVertex(new Vertex { position = bottomRight, tint = color });
 
             mesh.SetNextIndex((UInt16)(vertexCount + 0));
             mesh.SetNextIndex((UInt16)(vertexCount + 1));
@@ -848,257 +531,455 @@ namespace UnityEngine.UIElements.UIR
             indexCount += 6;
         }
 
-        static void TessellateFilledFan(Vector2 center, Vector2 radius, float leftWidth, float topWidth, Color32 leftColor, Color32 topColor, float posZ, MeshWriteData mesh, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
+        private static Edges[] s_AllEdges = { Edges.Left, Edges.Top, Edges.Right, Edges.Bottom };
+
+        unsafe private static void TessellateQuad(Rect rect, Edges smoothedEdges, Color32 color, float posZ, MeshWriteData mesh, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
         {
-            if (countOnly)
-            {
-                vertexCount += (UInt16)(kSubdivisions + 3);
-                indexCount += (UInt16)((kSubdivisions - 1) * 3);
-                return;
-            }
-
-            Color32 cornerFlags = new Color32((byte)VertexFlags.IsEdge, 0, 0, 0);
-            Color32 outerFlags = new Color32((byte)VertexFlags.IsSolid, 0, 0, 0);
-            var widths = new Vector2(leftWidth, topWidth);
-
-            // Partition the triangles
-            float splitAngle = GetCenteredEllipseLineIntersectionTheta(radius.x, radius.y, radius);
-            int triangles = kSubdivisions - 1;
-            int leftTriangles = Mathf.Clamp(Mathf.RoundToInt(splitAngle / (0.5f * Mathf.PI) * triangles), 1, triangles - 1);
-            int topTriangles = triangles - leftTriangles;
-
-            Vector2 p;
-            // Tessellate left
-            {
-                UInt16 cornerIndex = vertexCount;
-                p = new Vector2(center.x - radius.x, center.y);
-                mesh.SetNextVertex(new Vertex { position = new Vector3(center.x, center.y, posZ), tint = leftColor, flags = cornerFlags, uv = widths });
-                mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = leftColor, flags = outerFlags });
-                vertexCount += 2;
-
-                float deltaAngle = splitAngle / leftTriangles;
-                for (int i = 1; i <= leftTriangles; ++i)
-                {
-                    float angle = deltaAngle * i;
-                    p = center - new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = leftColor, flags = outerFlags });
-                    ++vertexCount;
-
-                    mesh.SetNextIndex(cornerIndex);
-                    mesh.SetNextIndex((UInt16)(vertexCount - 2));
-                    mesh.SetNextIndex((UInt16)(vertexCount - 1));
-                    indexCount += 3;
-                }
-            }
-
-            // Tessellate top
-            {
-                UInt16 cornerIndex = vertexCount;
-                mesh.SetNextVertex(new Vertex { position = new Vector3(center.x, center.y, posZ), tint = topColor, flags = cornerFlags, uv = widths });
-                mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = topColor, flags = outerFlags });
-                vertexCount += 2;
-
-                float deltaAngle = (Mathf.PI * 0.5f - splitAngle) / topTriangles;
-                for (int i = 1; i <= topTriangles; ++i)
-                {
-                    float angle = splitAngle + deltaAngle * i;
-                    p = center - new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = topColor, flags = outerFlags });
-                    ++vertexCount;
-
-                    mesh.SetNextIndex(cornerIndex);
-                    mesh.SetNextIndex((UInt16)(vertexCount - 2));
-                    mesh.SetNextIndex((UInt16)(vertexCount - 1));
-                    indexCount += 3;
-                }
-            }
+            TessellateQuad(rect, smoothedEdges, null, color, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
         }
 
-        private static void TessellateFilledFan(TessellationType tessellationType, Vector2 center, Vector2 radius, float leftWidth, float topWidth, Color32 color, float posZ, MeshWriteData mesh, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
+        private static int EdgesCount(Edges edges)
         {
-            if (countOnly)
+            int count = 0;
+            for (int i = 0; i < kMaxEdgeBit; ++i)
             {
-                vertexCount += (UInt16)(kSubdivisions + 1);
-                indexCount += (UInt16)((kSubdivisions - 1) * 3);
+                if ((((int)edges) & (1 << i)) != 0)
+                    ++count;
+            }
+            return count;
+        }
+
+        unsafe private static void TessellateQuad(Rect rect, Edges smoothedEdges, Vector2* offsets, Color32 color, float posZ, MeshWriteData mesh, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
+        {
+            // Quads with smoothed edges are tessellated as a fan like so:
+            //    +-------+
+            //    | \   / |
+            //    |   x   |
+            //    | /   \ |
+            //    +-------+
+            // Vertices are duplicated for each triangle, which allows for independant per-edge arc encodings.
+            // If a single edge is smoothed, there's a more optimized tessellation method used
+            // to avoid the extra geometry of the edge extrusion (see TessellateQuadSingleEdge).
+
+            if (rect.width < kEpsilon || rect.height < kEpsilon)
+                return;
+
+            if (smoothedEdges == Edges.None && offsets == null)
+            {
+                // Fallback to simpler case
+                TessellateQuad(rect, color, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
                 return;
             }
 
-            Color32 innerVertexFlags, outerVertexFlags;
-            if (tessellationType == TessellationType.EdgeCorner)
+            if (EdgesCount(smoothedEdges) == 1 && offsets == null)
             {
-                innerVertexFlags = new Color32((byte)VertexFlags.IsEdge, 0, 0, 0);
-                outerVertexFlags = new Color32((byte)VertexFlags.IsSolid, 0, 0, 0);
+                // We can optimize the single smoothed edge with only two triangles
+                TessellateQuadSingleEdge(rect, smoothedEdges, color, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
+                return;
+            }
+
+            if (countOnly)
+            {
+                vertexCount += 12;
+                indexCount += 12;
+                return;
+            }
+
+            const int kQuadsPointsLength = 4;
+            var quadPoints = stackalloc Vector3[kQuadsPointsLength];
+            quadPoints[0] = new Vector3(rect.xMin, rect.yMax, posZ);
+            quadPoints[1] = new Vector3(rect.xMin, rect.yMin, posZ);
+            quadPoints[2] = new Vector3(rect.xMax, rect.yMin, posZ);
+            quadPoints[3] = new Vector3(rect.xMax, rect.yMax, posZ);
+
+            var center = Vector3.zero;
+            if (offsets != null)
+            {
+                quadPoints[0] += (Vector3)offsets[0];
+                quadPoints[1] += (Vector3)offsets[1];
+                quadPoints[2] += (Vector3)offsets[2];
+                quadPoints[3] += (Vector3)offsets[3];
+
+                // Compute the centroid of the quad
+                center += quadPoints[0];
+                center += quadPoints[1];
+                center += quadPoints[2];
+                center += quadPoints[3];
+                center /= 4;
+                center.z = posZ;
+            }
+            else
+                center = new Vector3(rect.xMin + rect.width / 2, rect.yMin + rect.height / 2, posZ);
+
+            UInt16 currentIndex = vertexCount;
+            for (int i = 0; i < s_AllEdges.Length; ++i)
+            {
+                var currentEdge = s_AllEdges[i];
+                var p = quadPoints[i];
+                var q = quadPoints[(i + 1) % kQuadsPointsLength];
+                float radius = (((p + q) / 2.0f) - center).magnitude;
+
+                var v0 = new Vertex() { position = p, tint = color };
+                var v1 = new Vertex() { position = q, tint = color };
+                var v2 = new Vertex() { position = center, tint = color };
+                if ((smoothedEdges & currentEdge) == currentEdge)
+                    EncodeStraightArc(ref v0, ref v1, ref v2, radius);
+
+                mesh.SetNextVertex(v0);
+                mesh.SetNextVertex(v1);
+                mesh.SetNextVertex(v2);
+                mesh.SetNextIndex(currentIndex++);
+                mesh.SetNextIndex(currentIndex++);
+                mesh.SetNextIndex(currentIndex++);
+            }
+
+            vertexCount += 12;
+            indexCount += 12;
+        }
+
+        static void EncodeStraightArc(ref Vertex v0, ref Vertex v1, ref Vertex center, float radius)
+        {
+            // Give space for AA computations.
+            ExpandTriangle(ref v0.position, ref v1.position, center.position, 2.0f);
+
+            var mid = (v0.position + v1.position) / 2.0f;
+            var v = center.position - mid;
+
+            var c = v0.position + v;
+            v0.circle = new Vector4(c.x, c.y, radius, 0.0f);
+
+            c = v1.position + v;
+            v1.circle = new Vector4(c.x, c.y, radius, 0.0f);
+
+            center.circle = new Vector4(center.position.x, center.position.y, radius, 0.0f);
+
+            var arcFlags = new Color32(0, 0, 1, 0);
+            v0.flags = arcFlags;
+            v1.flags = arcFlags;
+            center.flags = arcFlags;
+        }
+
+        static void ExpandTriangle(ref Vector3 v0, ref Vector3 v1, Vector3 center, float factor)
+        {
+            v0 += (v0 - center).normalized * factor;
+            v1 += (v1 - center).normalized * factor;
+        }
+
+        private static void TessellateQuadSingleEdge(Rect rect, Edges smoothedEdge, Color32 color, float posZ, MeshWriteData mesh, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
+        {
+            if (countOnly)
+            {
+                vertexCount += 4;
+                indexCount += 6;
+                return;
+            }
+
+            var p0 = new Vector3(rect.x, rect.y, posZ);
+            var p1 = new Vector3(rect.x + rect.width, rect.y, posZ);
+            var p2 = new Vector3(rect.x + rect.width, rect.y + rect.height, posZ);
+            var p3 = new Vector3(rect.x, rect.y + rect.height, posZ);
+
+            // Add offset on smoothed edge to give more space for AA
+            var circleP0 = Vector4.zero;
+            var circleP1 = Vector4.zero;
+            var circleP2 = Vector4.zero;
+            var circleP3 = Vector4.zero;
+            switch (smoothedEdge)
+            {
+                case Edges.Left:
+                    p0.x -= 1; p3.x -= 1;
+                    circleP0 = circleP1 = new Vector4(p1.x, p1.y, rect.width, 0.0f);
+                    circleP2 = circleP3 = new Vector4(p2.x, p2.y, rect.width, 0.0f);
+                    break;
+                case Edges.Top:
+                    p0.y -= 1; p1.y -= 1;
+                    circleP0 = circleP3 = new Vector4(p3.x, p3.y, rect.height, 0.0f);
+                    circleP1 = circleP2 = new Vector4(p2.x, p2.y, rect.height, 0.0f);
+                    break;
+                case Edges.Right:
+                    p1.x += 1; p2.x += 1;
+                    circleP0 = circleP1 = new Vector4(p0.x, p0.y, rect.width, 0.0f);
+                    circleP2 = circleP3 = new Vector4(p3.x, p3.y, rect.width, 0.0f);
+                    break;
+                case Edges.Bottom:
+                    p2.y += 1; p3.y += 1;
+                    circleP0 = circleP3 = new Vector4(p0.x, p0.y, rect.height, 0.0f);
+                    circleP1 = circleP2 = new Vector4(p1.x, p1.y, rect.height, 0.0f);
+                    break;
+                default: break;
+            }
+
+            var arcFlags = new Color32(0, 0, 1, 0);
+
+            UInt16 baseIndex = vertexCount;
+            mesh.SetNextVertex(new Vertex() { position = p0, tint = color, flags = arcFlags, circle = circleP0 });
+            mesh.SetNextVertex(new Vertex() { position = p1, tint = color, flags = arcFlags, circle = circleP1 });
+            mesh.SetNextVertex(new Vertex() { position = p2, tint = color, flags = arcFlags, circle = circleP2 });
+            mesh.SetNextVertex(new Vertex() { position = p3, tint = color, flags = arcFlags, circle = circleP3 });
+
+            mesh.SetNextIndex((UInt16)(baseIndex));
+            mesh.SetNextIndex((UInt16)(baseIndex + 1));
+            mesh.SetNextIndex((UInt16)(baseIndex + 2));
+            mesh.SetNextIndex((UInt16)(baseIndex));
+            mesh.SetNextIndex((UInt16)(baseIndex + 2));
+            mesh.SetNextIndex((UInt16)(baseIndex + 3));
+
+            vertexCount += 4;
+            indexCount += 6;
+        }
+
+        static void TessellateStraightBorder(Rect rect, Edges smoothedEdge, float miterOffset, Color color, float posZ, MeshWriteData mesh, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
+        {
+            Debug.Assert(smoothedEdge == Edges.Left || smoothedEdge == Edges.Top);
+
+            if (rect.width < kEpsilon || rect.height < kEpsilon)
+                return;
+
+            if (countOnly)
+            {
+                vertexCount += 4;
+                indexCount += 6;
+                return;
+            }
+
+            var a = new Vector3(rect.xMin, rect.yMin, posZ);
+            var b = new Vector3(rect.xMax, rect.yMin, posZ);
+            var c = new Vector3(rect.xMax, rect.yMax, posZ);
+            var d = new Vector3(rect.xMin, rect.yMax, posZ);
+
+            // Inflate the geometry to give space to AA computations.
+            // Carefully inflate in the direction of the miter diagonal.
+            if (smoothedEdge == Edges.Left)
+            {
+                b.y += miterOffset;
+                var v = (b - a).normalized * 1.4142f;
+                a -= v;
+                b += v;
+                c.x += 1.0f;
+                d.x -= 1.0f;
+
+                // Arc center is on column x = rect.x + rect.width + 1
+                float x = rect.x + rect.width + 1.0f;
+                float outer = rect.width + 1.0f;
+                float inner = 1.0f;
+                var arcFlags = new Color32(0, 0, 1, 0);
+
+                mesh.SetNextVertex(new Vertex() { position = a, tint = color, flags = arcFlags, circle = new Vector4(x, a.y, outer, inner), uv = new Vector2(x, a.y) });
+                mesh.SetNextVertex(new Vertex() { position = b, tint = color, flags = arcFlags, circle = new Vector4(x, b.y, outer, inner), uv = new Vector2(x, b.y) });
+                mesh.SetNextVertex(new Vertex() { position = c, tint = color, flags = arcFlags, circle = new Vector4(x, c.y, outer, inner), uv = new Vector2(x, c.y) });
+                mesh.SetNextVertex(new Vertex() { position = d, tint = color, flags = arcFlags, circle = new Vector4(x, d.y, outer, inner), uv = new Vector2(x, d.y) });
             }
             else
             {
-                outerVertexFlags = innerVertexFlags = new Color32(0, 0, 0, 0); // Primed for later update by the chain builder
+                d.x += miterOffset;
+                var v = (d - a).normalized * 1.4142f;
+                a -= v;
+                d += v;
+                b.y -= 1;
+                c.y += 1;
+
+                // Arc center is on row y = rect.y + rect.height + 1
+                float y = rect.y + rect.height + 1.0f;
+                float outer = rect.height + 1.0f;
+                float inner = 1.0f;
+                var arcFlags = new Color32(0, 0, 1, 0);
+
+                mesh.SetNextVertex(new Vertex() { position = a, tint = color, flags = arcFlags, circle = new Vector4(a.x, y, outer, inner), uv = new Vector2(a.x, y) });
+                mesh.SetNextVertex(new Vertex() { position = b, tint = color, flags = arcFlags, circle = new Vector4(b.x, y, outer, inner), uv = new Vector2(b.x, y) });
+                mesh.SetNextVertex(new Vertex() { position = c, tint = color, flags = arcFlags, circle = new Vector4(c.x, y, outer, inner), uv = new Vector2(c.x, y) });
+                mesh.SetNextVertex(new Vertex() { position = d, tint = color, flags = arcFlags, circle = new Vector4(d.x, y, outer, inner), uv = new Vector2(d.x, y) });
             }
 
-            var widths = new Vector2(leftWidth, topWidth);
+            UInt16 currentIndex = vertexCount;
+            mesh.SetNextIndex((UInt16)(currentIndex));
+            mesh.SetNextIndex((UInt16)(currentIndex + 1));
+            mesh.SetNextIndex((UInt16)(currentIndex + 2));
+            mesh.SetNextIndex((UInt16)(currentIndex + 2));
+            mesh.SetNextIndex((UInt16)(currentIndex + 3));
+            mesh.SetNextIndex((UInt16)(currentIndex));
 
-            var p = new Vector2(center.x - radius.x, center.y);
+            vertexCount += 4;
+            indexCount += 6;
+        }
 
-            UInt16 indexOffset = vertexCount;
+        static void FillEllipseData(Vector2 ellipseCenter, Vector2 outerRad, Vector2 innerRad, ref Vertex vertex)
+        {
+            float r = Mathf.Min(outerRad.x, outerRad.y);
 
-            mesh.SetNextVertex(new Vertex() { position = new Vector3(center.x, center.y, posZ), tint = color, flags = innerVertexFlags, uv = widths });
-            mesh.SetNextVertex(new Vertex() { position = new Vector3(p.x, p.y, posZ), tint = color, flags = outerVertexFlags });
-            vertexCount += 2;
+            // Position of the POI relative to the center of the elipse
+            var position = (Vector2)vertex.position;
+            Vector2 relativePos = position - ellipseCenter;
 
-            for (int k = 1; k < kSubdivisions; ++k)
+            // Center should be offset by r when relativePos = radius (respectively for x and y)
+            var circleCenter = position - relativePos * r / outerRad;
+            vertex.circle = new Vector4(circleCenter.x, circleCenter.y, r, 0.0f);
+
+            // Now, do the same for the inner radius
+            r = Mathf.Min(innerRad.x, innerRad.y);
+            circleCenter = position - relativePos * r / innerRad;
+            vertex.uv = circleCenter;
+            vertex.circle.w = r;
+        }
+
+        static Vector3 GetInterpolatedEllipseData(Vector2 ellipseCenter, Vector2 radius, Vector2 position)
+        {
+            float r = Mathf.Min(radius.x, radius.y);
+
+            // Position of the POI relative to the center of the elipse
+            Vector2 relativePos = position - ellipseCenter;
+
+            // Center should be offset by r when relativePos = radius (respectively for x and y)
+            var circleCenter = position - relativePos * r / radius;
+
+            return new Vector3(circleCenter.x, circleCenter.y, r);
+        }
+
+        static Vector4 GetInterpolatedCircle(Vector2 p, ref Vertex v0, ref Vertex v1, ref Vertex v2)
+        {
+            // Interpolate using barycentric coordinates
+            float u, v, w;
+            ComputeBarycentricCoordinates(p, v0.position, v1.position, v2.position, out u, out v, out w);
+            return v0.circle * u + v1.circle * v + v2.circle * w;
+        }
+
+        static void ComputeBarycentricCoordinates(Vector2 p, Vector2 a, Vector2 b, Vector2 c, out float u, out float v, out float w)
+        {
+            // From Christer Ericson's Real-Time Collision Detection:
+            // https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates
+
+            // Compute barycentric coordinates (u, v, w) for point p with respect to triangle (a, b, c)
+            Vector2 v0 = b - a, v1 = c - a, v2 = p - a;
+            float d00 = Vector2.Dot(v0, v0);
+            float d01 = Vector2.Dot(v0, v1);
+            float d11 = Vector2.Dot(v1, v1);
+            float d20 = Vector2.Dot(v2, v0);
+            float d21 = Vector2.Dot(v2, v1);
+            float denom = d00 * d11 - d01 * d01;
+            v = (d11 * d20 - d01 * d21) / denom;
+            w = (d00 * d21 - d01 * d20) / denom;
+            u = 1.0f - v - w;
+        }
+
+        static void TessellateFilledFan(Vector2 center, Vector2 radius, Vector2 miterOffset, float leftWidth, float topWidth, Color32 leftColor, Color32 topColor, float posZ, MeshWriteData mesh, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
+        {
+            if (countOnly)
             {
-                float angle = (Mathf.PI * 0.5f) * ((float)k) / (kSubdivisions - 1);
-                p = center + new Vector2(-Mathf.Cos(angle), -Mathf.Sin(angle)) * radius;
-                mesh.SetNextVertex(new Vertex() { position = new Vector3(p.x, p.y, posZ), tint = color, flags = outerVertexFlags });
-                vertexCount++;
-
-                mesh.SetNextIndex((UInt16)(indexOffset + 0));
-                mesh.SetNextIndex((UInt16)(indexOffset + k));
-                mesh.SetNextIndex((UInt16)(indexOffset + k + 1));
-                indexCount += 3;
+                vertexCount += 6;
+                indexCount += 6;
+                return;
             }
 
-            indexOffset += (UInt16)(kSubdivisions + 1);
+            byte isArc = 1;
+            Color32 flags = new Color32((byte)VertexFlags.IsSolid, 0, isArc, 0);
+            float r = Mathf.Min(radius.x, radius.y); // This is arbitrary since we have a degree of freedom.
+
+            var bottomRight = new Vertex { flags = flags };
+            var bottomLeft = bottomRight;
+            var topLeft = bottomRight;
+            var topRight = bottomRight;
+
+            bottomRight.position = new Vector3(center.x, center.y, posZ);
+            bottomLeft.position = new Vector3(center.x - radius.x, center.y, posZ);
+            topLeft.position = new Vector3(center.x - radius.x, center.y - radius.y, posZ);
+            topRight.position = new Vector3(center.x, center.y - radius.y, posZ);
+
+            bottomRight.circle = new Vector4(center.x, center.y, r, 0.0f);
+            bottomLeft.circle = new Vector4(center.x - radius.x + r, center.y, r, 0.0f);
+            topLeft.circle = new Vector4(center.x - radius.x + r, center.y - radius.y + r, r, 0.0f);
+            topRight.circle = new Vector4(center.x, center.y - radius.y + r, r, 0.0f);
+
+            if (miterOffset != Vector2.zero)
+            {
+                var newPos = bottomRight.position + (Vector3)miterOffset;
+                bottomRight.circle = GetInterpolatedCircle(newPos, ref bottomRight, ref bottomLeft, ref topLeft);
+                bottomRight.position = newPos;
+            }
+
+            var topLeft2 = topLeft;
+            var bottomRight2 = bottomRight;
+
+            bottomRight.tint = leftColor;
+            bottomLeft.tint = leftColor;
+            topLeft2.tint = leftColor;
+
+            topLeft.tint = topColor;
+            topRight.tint = topColor;
+            bottomRight2.tint = topColor;
+
+            mesh.SetNextVertex(bottomRight);
+            mesh.SetNextVertex(bottomLeft);
+            mesh.SetNextVertex(topLeft2);
+            mesh.SetNextVertex(topLeft);
+            mesh.SetNextVertex(topRight);
+            mesh.SetNextVertex(bottomRight2);
+
+            mesh.SetNextIndex((ushort)(vertexCount + 0));
+            mesh.SetNextIndex((ushort)(vertexCount + 1));
+            mesh.SetNextIndex((ushort)(vertexCount + 2));
+            mesh.SetNextIndex((ushort)(vertexCount + 3));
+            mesh.SetNextIndex((ushort)(vertexCount + 4));
+            mesh.SetNextIndex((ushort)(vertexCount + 5));
+
+            vertexCount += 6;
+            indexCount += 6;
         }
 
         private static void TessellateBorderedFan(Vector2 center, Vector2 outerRadius, float leftWidth, float topWidth, Color32 leftColor, Color32 topColor, float posZ, MeshWriteData mesh, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
         {
             if (countOnly)
             {
-                vertexCount += (UInt16)(kSubdivisions * 2 + 2);
-                indexCount += (UInt16)((kSubdivisions - 1) * 6);
-                return;
-            }
-
-            Color32 innerVertexFlags = new Color32((byte)VertexFlags.IsEdge, 0, 0, 0);
-            Color32 outerVertexFlags = new Color32((byte)VertexFlags.IsSolid, 0, 0, 0);
-            Vector2 innerRadius = new Vector2(outerRadius.x - leftWidth, outerRadius.y - topWidth);
-            var widths = new Vector2(leftWidth, topWidth);
-
-            // Determine the inner/outer split angles
-            Vector2 splitDir = new Vector2(leftWidth, topWidth);
-            Vector2 outerIntersection = IntersectEllipseWithLine(outerRadius.x, outerRadius.y, splitDir);
-            Vector2 innerIntersection = IntersectEllipseWithLine(innerRadius.x, innerRadius.y, splitDir);
-            float outerSplitAngle = GetCenteredEllipseLineIntersectionTheta(outerRadius.x, outerRadius.y, outerRadius - outerIntersection);
-            float innerSplitAngle = GetCenteredEllipseLineIntersectionTheta(innerRadius.x, innerRadius.y, innerRadius - innerIntersection);
-
-            // Partition the quads
-            float partitionAngle = 0.5f * (outerSplitAngle + innerSplitAngle);
-            int quads = kSubdivisions - 1;
-            int leftQuads = Mathf.Clamp(Mathf.RoundToInt(partitionAngle * (2 / Mathf.PI) * quads), 1, quads - 1);
-            int topQuads = quads - leftQuads;
-
-            // Tessellate left
-            {
-                float outerDeltaAngle = outerSplitAngle / leftQuads;
-                float innerDeltaAngle = innerSplitAngle / leftQuads;
-
-                var p = new Vector2(center.x - outerRadius.x, center.y);
-                var q = new Vector2(center.x - innerRadius.x, center.y);
-
-                mesh.SetNextVertex(new Vertex { position = new Vector3(q.x, q.y, posZ), tint = leftColor, flags = innerVertexFlags, uv = widths });
-                mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = leftColor, flags = outerVertexFlags });
-                vertexCount += 2;
-
-                for (int i = 1; i <= leftQuads; ++i)
-                {
-                    float outerAngle = i * outerDeltaAngle;
-                    float innerAngle = i * innerDeltaAngle;
-                    p = center - new Vector2(Mathf.Cos(outerAngle), Mathf.Sin(outerAngle)) * outerRadius;
-                    q = center - new Vector2(Mathf.Cos(innerAngle), Mathf.Sin(innerAngle)) * innerRadius;
-
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(q.x, q.y, posZ), tint = leftColor, flags = innerVertexFlags, uv = widths });
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = leftColor, flags = outerVertexFlags });
-                    vertexCount += 2;
-
-                    mesh.SetNextIndex((UInt16)(vertexCount - 4));
-                    mesh.SetNextIndex((UInt16)(vertexCount - 3));
-                    mesh.SetNextIndex((UInt16)(vertexCount - 2));
-                    mesh.SetNextIndex((UInt16)(vertexCount - 3));
-                    mesh.SetNextIndex((UInt16)(vertexCount - 1));
-                    mesh.SetNextIndex((UInt16)(vertexCount - 2));
-                    indexCount += 6;
-                }
-            }
-
-            // Tessellate top
-            {
-                float outerDeltaAngle = (Mathf.PI / 2 - outerSplitAngle) / topQuads;
-                float innerDeltaAngle = (Mathf.PI / 2 - innerSplitAngle) / topQuads;
-                innerVertexFlags = outerVertexFlags = new Color32(0, 0, 0, 0); // Primed for later update by the chain builder
-                var p = center - new Vector2(Mathf.Cos(outerSplitAngle), Mathf.Sin(outerSplitAngle)) * outerRadius;
-                var q = center - new Vector2(Mathf.Cos(innerSplitAngle), Mathf.Sin(innerSplitAngle)) * innerRadius;
-
-                mesh.SetNextVertex(new Vertex { position = new Vector3(q.x, q.y, posZ), tint = topColor, flags = innerVertexFlags, uv = widths });
-                mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = topColor, flags = outerVertexFlags });
-                vertexCount += 2;
-
-                for (int i = 1; i <= topQuads; ++i)
-                {
-                    float outerAngle = outerSplitAngle + i * outerDeltaAngle;
-                    float innerAngle = innerSplitAngle + i * innerDeltaAngle;
-                    p = center - new Vector2(Mathf.Cos(outerAngle), Mathf.Sin(outerAngle)) * outerRadius;
-                    q = center - new Vector2(Mathf.Cos(innerAngle), Mathf.Sin(innerAngle)) * innerRadius;
-
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(q.x, q.y, posZ), tint = topColor, flags = innerVertexFlags, uv = widths });
-                    mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = topColor, flags = outerVertexFlags });
-                    vertexCount += 2;
-
-                    mesh.SetNextIndex((UInt16)(vertexCount - 4));
-                    mesh.SetNextIndex((UInt16)(vertexCount - 3));
-                    mesh.SetNextIndex((UInt16)(vertexCount - 2));
-                    mesh.SetNextIndex((UInt16)(vertexCount - 3));
-                    mesh.SetNextIndex((UInt16)(vertexCount - 1));
-                    mesh.SetNextIndex((UInt16)(vertexCount - 2));
-                    indexCount += 6;
-                }
-            }
-        }
-
-        private static void TessellateBorderedFan(Vector2 center, Vector2 radius, float leftWidth, float topWidth, Color32 color, float posZ, MeshWriteData mesh, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
-        {
-            if (countOnly)
-            {
-                vertexCount += (UInt16)(kSubdivisions * 2);
-                indexCount += (UInt16)((kSubdivisions - 1) * 6);
-                return;
-            }
-
-            Color32 innerVertexFlags = new Color32((byte)VertexFlags.IsEdge, 0, 0, 0);
-            Color32 outerVertexFlags = new Color32((byte)VertexFlags.IsSolid, 0, 0, 0);
-            var widths = new Vector2(leftWidth, topWidth);
-
-            var a = radius.x - leftWidth;
-            var b = radius.y - topWidth;
-            var p = new Vector2(center.x - radius.x, center.y);
-            var q = new Vector2(center.x - a, center.y);
-
-            UInt16 indexOffset = vertexCount;
-
-            mesh.SetNextVertex(new Vertex { position = new Vector3(q.x, q.y, posZ), tint = color, flags = innerVertexFlags, uv = widths });
-            mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = color, flags = outerVertexFlags });
-            vertexCount += 2;
-
-            for (int k = 1; k < kSubdivisions; ++k)
-            {
-                float percent = ((float)k) / (kSubdivisions - 1);
-                float angle = (Mathf.PI * 0.5f) * percent;
-                p = center + new Vector2(-Mathf.Cos(angle), -Mathf.Sin(angle)) * radius;
-                q = center + new Vector2(-a * Mathf.Cos(angle), -b * Mathf.Sin(angle));
-                mesh.SetNextVertex(new Vertex { position = new Vector3(q.x, q.y, posZ), tint = color, flags = innerVertexFlags, uv = widths });
-                mesh.SetNextVertex(new Vertex { position = new Vector3(p.x, p.y, posZ), tint = color, flags = outerVertexFlags });
-                vertexCount += 2;
-
-                int i = k * 2;
-                mesh.SetNextIndex((UInt16)(indexOffset + (i - 2)));
-                mesh.SetNextIndex((UInt16)(indexOffset + (i - 1)));
-                mesh.SetNextIndex((UInt16)(indexOffset + (i)));
-                mesh.SetNextIndex((UInt16)(indexOffset + (i - 1)));
-                mesh.SetNextIndex((UInt16)(indexOffset + (i + 1)));
-                mesh.SetNextIndex((UInt16)(indexOffset + (i)));
+                vertexCount += 6;
                 indexCount += 6;
+                return;
             }
+            Vector2 innerRadius = new Vector2(outerRadius.x - leftWidth, outerRadius.y - topWidth);
 
-            indexOffset += (UInt16)(kSubdivisions * 2);
+            var widths = new Vector2(leftWidth, topWidth);
+            byte isArc = 1;
+            Color32 flags = new Color32((byte)VertexFlags.IsSolid, 0, isArc, 0);
+
+            var bottomRight = new Vertex { flags = flags, uv = widths };
+            var bottomLeft = bottomRight;
+            var topLeft = bottomRight;
+            var topRight = bottomRight;
+
+            bottomRight.position = new Vector3(center.x, center.y, posZ);
+            bottomLeft.position = new Vector3(center.x - outerRadius.x, center.y, posZ);
+            topLeft.position = new Vector3(center.x - outerRadius.x, center.y - outerRadius.y, posZ);
+            topRight.position = new Vector3(center.x, center.y - outerRadius.y, posZ);
+
+            FillEllipseData(center, outerRadius, innerRadius, ref bottomRight);
+            FillEllipseData(center, outerRadius, innerRadius, ref bottomLeft);
+            FillEllipseData(center, outerRadius, innerRadius, ref topLeft);
+            FillEllipseData(center, outerRadius, innerRadius, ref topRight);
+
+            var topLeft2 = topLeft;
+            var bottomRight2 = bottomRight;
+
+            bottomRight.tint = leftColor;
+            bottomLeft.tint = leftColor;
+            topLeft2.tint = leftColor;
+
+            topLeft.tint = topColor;
+            topRight.tint = topColor;
+            bottomRight2.tint = topColor;
+
+            mesh.SetNextVertex(bottomRight);
+            mesh.SetNextVertex(bottomLeft);
+            mesh.SetNextVertex(topLeft2);
+            mesh.SetNextVertex(topLeft);
+            mesh.SetNextVertex(topRight);
+            mesh.SetNextVertex(bottomRight2);
+
+            mesh.SetNextIndex((ushort)(vertexCount + 0));
+            mesh.SetNextIndex((ushort)(vertexCount + 1));
+            mesh.SetNextIndex((ushort)(vertexCount + 2));
+            mesh.SetNextIndex((ushort)(vertexCount + 3));
+            mesh.SetNextIndex((ushort)(vertexCount + 4));
+            mesh.SetNextIndex((ushort)(vertexCount + 5));
+
+            vertexCount += 6;
+            indexCount += 6;
         }
 
         private static void MirrorVertices(Rect rect, NativeSlice<Vertex> vertices, int vertexStart, int vertexCount, bool flipHorizontal)
@@ -1109,7 +990,12 @@ namespace UnityEngine.UIElements.UIR
                 {
                     var vertex = vertices[vertexStart + i];
                     vertex.position.x = rect.xMax - (vertex.position.x - rect.xMax);
-                    vertex.uv.x = -vertex.uv.x;
+                    vertex.circle.x = rect.xMax - (vertex.circle.x - rect.xMax);
+                    if (vertex.circle.w > kEpsilon)
+                        // UV stores inner-circle's center
+                        vertex.uv.x = rect.xMax - (vertex.uv.x - rect.xMax);
+                    else
+                        vertex.uv.x = -vertex.uv.x;
                     vertices[vertexStart + i] = vertex;
                 }
             }
@@ -1119,7 +1005,12 @@ namespace UnityEngine.UIElements.UIR
                 {
                     var vertex = vertices[vertexStart + i];
                     vertex.position.y = rect.yMax - (vertex.position.y - rect.yMax);
-                    vertex.uv.y = -vertex.uv.y;
+                    vertex.circle.y = rect.yMax - (vertex.circle.y - rect.yMax);
+                    if (vertex.circle.w > kEpsilon)
+                        // UV stores inner-circle's center
+                        vertex.uv.y = rect.yMax - (vertex.uv.y - rect.yMax);
+                    else
+                        vertex.uv.y = -vertex.uv.y;
                     vertices[vertexStart + i] = vertex;
                 }
             }

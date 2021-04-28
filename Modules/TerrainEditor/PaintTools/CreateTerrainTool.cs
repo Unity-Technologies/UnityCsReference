@@ -5,10 +5,10 @@
 using System;
 using System.IO;
 using UnityEngine;
-using UnityEngine.Experimental.TerrainAPI;
+using UnityEngine.TerrainTools;
+using UnityEngine.TerrainUtils;
 
-
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
     internal class CreateTerrainTool : TerrainPaintTool<CreateTerrainTool>
     {
@@ -51,7 +51,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             return "Create Neighbor Terrains";
         }
 
-        public override string GetDesc()
+        public override string GetDescription()
         {
             return "Click the edges to create neighbor terrains";
         }
@@ -234,11 +234,11 @@ namespace UnityEditor.Experimental.TerrainAPI
             Handles.color = new Color(0.9f, 1.0f, 0.8f, 1.0f);
             Vector3 size = terrain.terrainData.size;
 
-            TerrainUtility.TerrainMap mapGroup = TerrainUtility.TerrainMap.CreateFromPlacement(terrain);
+            TerrainMap mapGroup = TerrainMap.CreateFromPlacement(terrain);
             if (mapGroup == null)
                 return;
 
-            foreach (TerrainUtility.TerrainMap.TileCoord coord in mapGroup.m_terrainTiles.Keys)
+            foreach (TerrainTileCoord coord in mapGroup.terrainTiles.Keys)
             {
                 int x = coord.tileX;
                 int y = coord.tileZ;

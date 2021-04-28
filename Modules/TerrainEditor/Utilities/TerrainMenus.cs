@@ -4,7 +4,7 @@
 
 using UnityEngine;
 using UnityEditor.SceneManagement;
-using UnityEditor.Experimental.TerrainAPI;
+using UnityEditor.TerrainTools;
 
 namespace UnityEditor
 {

@@ -4,10 +4,10 @@
 
 using UnityEngine;
 using UnityEditor;
-using UnityEngine.Experimental.TerrainAPI;
+using UnityEngine.TerrainTools;
 using UnityEditor.ShortcutManagement;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
     internal class SmoothHeightTool : TerrainPaintTool<SmoothHeightTool>
     {
@@ -45,7 +45,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             return toolName;
         }
 
-        public override string GetDesc()
+        public override string GetDescription()
         {
             return GetStyles().description.text;
         }
@@ -77,7 +77,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             mat.SetVector("_SmoothWeights", smoothWeights);
             TerrainPaintUtility.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
 
-            Graphics.Blit(paintContext.sourceRenderTexture, paintContext.destinationRenderTexture, mat, (int)TerrainPaintUtility.BuiltinPaintMaterialPasses.SmoothHeights);
+            Graphics.Blit(paintContext.sourceRenderTexture, paintContext.destinationRenderTexture, mat, (int)TerrainBuiltinPaintMaterialPasses.SmoothHeights);
         }
 
         public override void OnRenderBrushPreview(Terrain terrain, IOnSceneGUI editContext)
@@ -90,7 +90,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 BrushTransform brushXform = TerrainPaintUtility.CalculateBrushTransform(terrain, editContext.raycastHit.textureCoord, editContext.brushSize, 0.0f);
                 PaintContext ctx = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushXform.GetBrushXYBounds(), 1);
-                TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainPaintUtilityEditor.BrushPreview.SourceRenderTexture, editContext.brushTexture, brushXform, TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial(), 0);
+                TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture, editContext.brushTexture, brushXform, TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial(), 0);
                 TerrainPaintUtility.ReleaseContextResources(ctx);
             }
         }

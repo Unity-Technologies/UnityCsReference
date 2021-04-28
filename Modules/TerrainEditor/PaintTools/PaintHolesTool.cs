@@ -4,10 +4,10 @@
 
 using UnityEngine;
 using UnityEditor;
-using UnityEngine.Experimental.TerrainAPI;
+using UnityEngine.TerrainTools;
 using UnityEditor.ShortcutManagement;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
     internal class PaintHolesTool : TerrainPaintTool<PaintHolesTool>
     {
@@ -23,7 +23,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             return "Paint Holes";
         }
 
-        public override string GetDesc()
+        public override string GetDescription()
         {
             return "Left click to paint a hole.\n\nHold shift and left click to erase it.";
         }
@@ -44,7 +44,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 BrushTransform brushXform = TerrainPaintUtility.CalculateBrushTransform(terrain, editContext.raycastHit.textureCoord, editContext.brushSize, 0.0f);
                 PaintContext ctx = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushXform.GetBrushXYBounds(), 1);
-                TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainPaintUtilityEditor.BrushPreview.SourceRenderTexture, editContext.brushTexture, brushXform, TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial(), 0);
+                TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture, editContext.brushTexture, brushXform, TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial(), 0);
                 TerrainPaintUtility.ReleaseContextResources(ctx);
             }
         }
@@ -64,7 +64,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             TerrainPaintUtility.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
 
-            Graphics.Blit(paintContext.sourceRenderTexture, paintContext.destinationRenderTexture, mat, (int)TerrainPaintUtility.BuiltinPaintMaterialPasses.PaintHoles);
+            Graphics.Blit(paintContext.sourceRenderTexture, paintContext.destinationRenderTexture, mat, (int)TerrainBuiltinPaintMaterialPasses.PaintHoles);
 
             TerrainPaintUtility.EndPaintHoles(paintContext, "Terrain Paint - Paint Holes");
             return true;

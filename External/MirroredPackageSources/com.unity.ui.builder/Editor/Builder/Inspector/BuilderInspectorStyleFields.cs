@@ -1244,6 +1244,9 @@ namespace Unity.UI.Builder
                 m_Selection.NotifyOfStylingChange(selfNotify ? null : m_Inspector, styles);
                 m_Selection.NotifyOfHierarchyChange(m_Inspector, currentVisualElement, BuilderHierarchyChangeType.InlineStyle);
             }
+
+            // Update the contentHash of the stylesheet to refresh VisualElements in the document. See VisualElement.SetComputedStyle.
+            styleSheet.contentHash++;
         }
 
         // Style Updates

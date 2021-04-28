@@ -131,7 +131,7 @@ namespace UnityEditor.Search
             public Hash128 key;
             public string path;
             public long timestamp;
-            public bool timeout => TimeSpan.FromTicks(DateTime.Now.Ticks - timestamp).TotalSeconds > 30d;
+            public bool timeout => TimeSpan.FromTicks(DateTime.Now.Ticks - timestamp).TotalSeconds > 10d;
 
             public override string ToString()
             {
@@ -485,8 +485,18 @@ namespace UnityEditor.Search
                     {
                         if (availableState != OnDemandState.Failed)
                         {
-                            if (availableState != OnDemandState.Unavailable || !a.timeout)
+                            if (!a.timeout)
                                 unresolvedArtifacts.Add(a);
+                            else
+                            {
+                                // Check if the asset is still available (maybe it was deleted since last request)
+                                var resolvedPath = AssetDatabase.GUIDToAssetPath(a.guid);
+                                if (!string.IsNullOrEmpty(resolvedPath) && File.Exists(resolvedPath))
+                                {
+                                    a.timestamp = DateTime.Now.Ticks;
+                                    unresolvedArtifacts.Add(a);
+                                }
+                            }
                         }
                         else
                             ReportWarning(a, artifactIndexSuffix, availableState.ToString());

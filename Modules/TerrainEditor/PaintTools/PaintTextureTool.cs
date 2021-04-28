@@ -3,10 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEngine.Experimental.TerrainAPI;
+using UnityEngine.TerrainTools;
 using UnityEditor.ShortcutManagement;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
     [FilePathAttribute("Library/TerrainTools/PaintTexture", FilePathAttribute.Location.ProjectFolder)]
     internal class PaintTextureTool : TerrainPaintTool<PaintTextureTool>
@@ -35,7 +35,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             return toolName;
         }
 
-        public override string GetDesc()
+        public override string GetDescription()
         {
             return "Paints the selected material layer onto the terrain texture";
         }
@@ -62,7 +62,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             TerrainPaintUtility.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
 
-            Graphics.Blit(paintContext.sourceRenderTexture, paintContext.destinationRenderTexture, mat, (int)TerrainPaintUtility.BuiltinPaintMaterialPasses.PaintTexture);
+            Graphics.Blit(paintContext.sourceRenderTexture, paintContext.destinationRenderTexture, mat, (int)TerrainBuiltinPaintMaterialPasses.PaintTexture);
 
             TerrainPaintUtility.EndPaintTexture(paintContext, "Terrain Paint - Texture");
             return true;
@@ -78,7 +78,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 BrushTransform brushXform = TerrainPaintUtility.CalculateBrushTransform(terrain, editContext.raycastHit.textureCoord, editContext.brushSize, 0.0f);
                 PaintContext ctx = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushXform.GetBrushXYBounds(), 1);
-                TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainPaintUtilityEditor.BrushPreview.SourceRenderTexture, editContext.brushTexture, brushXform, TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial(), 0);
+                TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture, editContext.brushTexture, brushXform, TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial(), 0);
                 TerrainPaintUtility.ReleaseContextResources(ctx);
             }
         }

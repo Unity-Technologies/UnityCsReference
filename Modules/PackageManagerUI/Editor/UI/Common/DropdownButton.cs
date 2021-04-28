@@ -39,6 +39,17 @@ namespace UnityEditor.PackageManager.UI.Internal
         private Background? m_IconBackground;
         private VisualElement m_ImageIcon;
         public bool hasIcon => m_ImageIcon != null && (m_IconBackground != null || m_ImageIcon.classList.Any());
+
+        public string iconTooltip
+        {
+            get => m_ImageIcon?.tooltip ?? string.Empty;
+            set
+            {
+                if (m_ImageIcon != null)
+                    m_ImageIcon.tooltip = value;
+            }
+        }
+
         private void ShowImageIcon()
         {
             if (m_ImageIcon == null)

@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Runtime.CompilerServices;
+
 namespace UnityEngine.UIElements
 {
     internal static class UIRUtility
@@ -10,8 +12,16 @@ namespace UnityEngine.UIElements
         public static readonly string k_DefaultWorldSpaceShaderName = UIR.Shaders.k_RuntimeWorld;
 
         public const float k_ClearZ = 0.99f; // At the far plane like standard Unity rendering
-        public const float k_MeshPosZ = 0.0f; // The correct z value to use to draw a shape
-        public const float k_MaskPosZ = 1.0f; // The correct z value to use to mark a clipping shape
+        public const float k_MeshPosZ = 0.0f; // The correct z value to draw a shape
+        public const float k_MaskPosZ = 1.0f; // The correct z value to push/pop a mask
+        public const int k_MaxMaskDepth = 7; // Requires 3 bits in the stencil
+
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static bool ShapeWindingIsClockwise(int maskDepth, int stencilRef)
+        {
+            Debug.Assert(maskDepth == stencilRef || maskDepth == stencilRef + 1);
+            return maskDepth == stencilRef;
+        }
 
         public static Vector4 ToVector4(Rect rc)
         {

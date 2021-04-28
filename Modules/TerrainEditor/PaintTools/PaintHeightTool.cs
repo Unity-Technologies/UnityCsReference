@@ -4,10 +4,10 @@
 
 using UnityEngine;
 using UnityEditor;
-using UnityEngine.Experimental.TerrainAPI;
+using UnityEngine.TerrainTools;
 using UnityEditor.ShortcutManagement;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
     internal class PaintHeightTool : TerrainPaintTool<PaintHeightTool>
     {
@@ -41,7 +41,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             return toolName;
         }
 
-        public override string GetDesc()
+        public override string GetDescription()
         {
             return GetStyles().description.text;
         }
@@ -63,7 +63,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             TerrainPaintUtility.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
 
-            Graphics.Blit(paintContext.sourceRenderTexture, paintContext.destinationRenderTexture, mat, (int)TerrainPaintUtility.BuiltinPaintMaterialPasses.RaiseLowerHeight);
+            Graphics.Blit(paintContext.sourceRenderTexture, paintContext.destinationRenderTexture, mat, (int)TerrainBuiltinPaintMaterialPasses.RaiseLowerHeight);
         }
 
         public override void OnRenderBrushPreview(Terrain terrain, IOnSceneGUI editContext)
@@ -79,7 +79,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
                 Material material = TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial();
                 TerrainPaintUtilityEditor.DrawBrushPreview(
-                    paintContext, TerrainPaintUtilityEditor.BrushPreview.SourceRenderTexture, editContext.brushTexture, brushXform, material, 0);
+                    paintContext, TerrainBrushPreviewMode.SourceRenderTexture, editContext.brushTexture, brushXform, material, 0);
 
                 // draw result preview
                 {
@@ -90,7 +90,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
                     material.SetTexture("_HeightmapOrig", paintContext.sourceRenderTexture);
                     TerrainPaintUtilityEditor.DrawBrushPreview(
-                        paintContext, TerrainPaintUtilityEditor.BrushPreview.DestinationRenderTexture, editContext.brushTexture, brushXform, material, 1);
+                        paintContext, TerrainBrushPreviewMode.DestinationRenderTexture, editContext.brushTexture, brushXform, material, 1);
                 }
 
                 TerrainPaintUtility.ReleaseContextResources(paintContext);

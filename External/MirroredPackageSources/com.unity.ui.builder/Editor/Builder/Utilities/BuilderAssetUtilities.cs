@@ -213,23 +213,69 @@ namespace Unity.UI.Builder
             document.visualTreeAsset.ReparentElement(veaToReparent, veaNewParent, index);
         }
 
-        public static void DeleteElementFromAsset(BuilderDocument document, VisualElement ve)
+        public static void ApplyAttributeOverridesToTreeAsset(List<TemplateAsset.AttributeOverride> attributeOverrides, VisualTreeAsset visualTreeAsset)
+        {
+            foreach (var attributeOverride in attributeOverrides)
+            {
+                var overwrittenElements = visualTreeAsset.FindElementsByName(attributeOverride.m_ElementName);
+
+                foreach (var overwrittenElement in overwrittenElements)
+                {
+                    overwrittenElement.SetAttributeValue(attributeOverride.m_AttributeName, attributeOverride.m_Value);
+                }
+            }
+        }
+
+        public static void CopyAttributeOverridesToChildTemplateAssets(List<TemplateAsset.AttributeOverride> attributeOverrides, VisualTreeAsset visualTreeAsset)
+        {
+            foreach (var templateAsset in visualTreeAsset.templateAssets)
+            {
+                foreach (var attributeOverride in attributeOverrides)
+                {
+                    templateAsset.SetAttributeOverride(attributeOverride.m_ElementName, attributeOverride.m_AttributeName, attributeOverride.m_Value);
+                }
+            }
+        }
+
+        public static void AddStyleSheetsFromTreeAsset(VisualElementAsset visualElementAsset, VisualTreeAsset visualTreeAsset)
+        {
+            foreach (var styleSheet in visualTreeAsset.stylesheets)
+            {
+                var styleSheetPath = AssetDatabase.GetAssetPath(styleSheet);
+
+                visualElementAsset.AddStyleSheet(styleSheet);
+                visualElementAsset.AddStyleSheetPath(styleSheetPath);
+            }
+        }
+
+        public static void DeleteElementFromAsset(BuilderDocument document, VisualElement ve, bool registerUndo = true)
         {
             var vea = ve.GetVisualElementAsset();
             if (vea == null)
                 return;
 
-            Undo.RegisterCompleteObjectUndo(
-                document.visualTreeAsset, BuilderConstants.DeleteUIElementUndoMessage);
+            if (registerUndo)
+            {
+                Undo.RegisterCompleteObjectUndo(
+                    document.visualTreeAsset, BuilderConstants.DeleteUIElementUndoMessage);
+            }
+
+            foreach (var child in ve.Children())
+            {
+                DeleteElementFromAsset(document, child, false);
+            }
 
             document.visualTreeAsset.RemoveElement(vea);
         }
 
         public static void TransferAssetToAsset(
-            BuilderDocument document, VisualElementAsset parent, VisualTreeAsset otherVta)
+            BuilderDocument document, VisualElementAsset parent, VisualTreeAsset otherVta, bool registerUndo = true)
         {
-            Undo.RegisterCompleteObjectUndo(
-                document.visualTreeAsset, BuilderConstants.CreateUIElementUndoMessage);
+            if (registerUndo)
+            {
+                Undo.RegisterCompleteObjectUndo(
+                    document.visualTreeAsset, BuilderConstants.CreateUIElementUndoMessage);
+            }
 
             document.visualTreeAsset.Swallow(parent, otherVta);
         }

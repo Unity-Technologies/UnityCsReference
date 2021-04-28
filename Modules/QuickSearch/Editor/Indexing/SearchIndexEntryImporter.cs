@@ -30,7 +30,9 @@ namespace UnityEditor.Search
         // 9- Fix sub objects dependencies indexation
         // 10- Fix sub asset document name (could be an invalid path)
         // 11- Do not index objects with hide flags DontSave
-        public const int version = (11 << 18) ^ SearchIndexEntry.version;
+        // 12- Update the prefab content indexing
+        // 13- Improve scene search index artifacts combine.
+        public const int version = (13 << 18) ^ SearchIndexEntry.version;
 
         protected abstract IndexingOptions options { get; }
 
@@ -54,22 +56,19 @@ namespace UnityEditor.Search
                 var indexer = SearchDatabase.CreateIndexer(settings);
                 try
                 {
+                    ctx.DependsOnCustomDependency(GetType().GUID.ToString("N"));
+                    ctx.DependsOnCustomDependency(nameof(CustomObjectIndexerAttribute));
                     indexer.IndexDocument(ctx.assetPath, false);
+                    indexer.ApplyUnsorted();
                 }
                 catch (Exception ex)
                 {
                     ctx.LogImportError($"Failed to build search index for {ctx.assetPath}\n{ex}");
                 }
 
-                indexer.ApplyUnsorted();
-
                 var indexArtifactPath = ctx.GetResultPath($"{(int)options:X}.index".ToLowerInvariant());
                 using (var fileStream = new FileStream(indexArtifactPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read))
                     indexer.Write(fileStream);
-
-                ctx.DependsOnSourceAsset(Path.GetDirectoryName(ctx.assetPath).Replace("\\", "/"));
-                ctx.DependsOnCustomDependency(GetType().GUID.ToString("N"));
-                ctx.DependsOnCustomDependency(nameof(CustomObjectIndexerAttribute));
             }
             catch (Exception ex)
             {

@@ -117,7 +117,7 @@ namespace UnityEditor
             public static readonly int[] bakeBackendValues = { (int)LightingSettings.Lightmapper.Enlighten, (int)LightingSettings.Lightmapper.ProgressiveCPU, (int)LightingSettings.Lightmapper.ProgressiveGPU };
             public static readonly GUIContent[] bakeBackendStrings =
             {
-                EditorGUIUtility.TrTextContent("Enlighten (Deprecated)"),
+                EditorGUIUtility.TrTextContent("Enlighten"),
                 EditorGUIUtility.TrTextContent("Progressive CPU"),
                 EditorGUIUtility.TrTextContent("Progressive GPU (Preview)"),
             };
@@ -158,8 +158,9 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Mixed lights provide realtime direct lighting. Indirect lighting gets baked into lightmaps and light probes. Shadowmasks and light probes occlusion get generated for baked shadows. ")
             };
 
-            public static readonly GUIContent lightmapperNotSupportedWarning = EditorGUIUtility.TrTextContent("The Lightmapper is not supported by the current render pipeline. Fallback is ");
-            public static readonly GUIContent mixedModeNotSupportedWarning = EditorGUIUtility.TrTextContent("The Mixed mode is not supported by the current render pipeline. Fallback mode is ");
+            public static readonly GUIContent lightmapperNotSupportedWarning = EditorGUIUtility.TrTextContent("This lightmapper is not supported by the current Render Pipeline. The Editor will use ");
+            public static readonly GUIContent enlightenLightmapperWarning = EditorGUIUtility.TrTextContent("Use the Progressive Lightmapper for Baked GI in new projects. Use Enlighten Baked GI for backwards compatibility only.");
+            public static readonly GUIContent mixedModeNotSupportedWarning = EditorGUIUtility.TrTextContent("The Mixed mode is not supported by the current Render Pipeline. Fallback mode is ");
             public static readonly GUIContent directionalNotSupportedWarning = EditorGUIUtility.TrTextContent("Directional Mode is not supported. Fallback will be Non-Directional.");
             public static readonly GUIContent denoiserNotSupportedWarning = EditorGUIUtility.TrTextContent("The current hardware or system configuration does not support the selected denoiser. Select a different denoiser.");
 
@@ -885,7 +886,7 @@ namespace UnityEditor
             {
                 var menu = new GenericMenu();
 
-                for (int i = 0; i < Styles.bakeBackendValues.Length; i++)
+                for (int i = Styles.bakeBackendValues.Length - 1; i >= 0; i--)
                 {
                     int value = Styles.bakeBackendValues[i];
                     bool selected = (value == m_BakeBackend.intValue);
@@ -905,7 +906,11 @@ namespace UnityEditor
             if (!SupportedRenderingFeatures.IsLightmapperSupported(m_BakeBackend.intValue))
             {
                 string fallbackLightmapper = Styles.bakeBackendStrings[SupportedRenderingFeatures.FallbackLightmapper()].text;
-                EditorGUILayout.HelpBox(Styles.lightmapperNotSupportedWarning.text + fallbackLightmapper, MessageType.Warning);
+                EditorGUILayout.HelpBox(Styles.lightmapperNotSupportedWarning.text + fallbackLightmapper + " Lightmapper instead.", MessageType.Warning);
+            }
+            else if (m_BakeBackend.intValue == (int)LightingSettings.Lightmapper.Enlighten)
+            {
+                EditorGUILayout.HelpBox(Styles.enlightenLightmapperWarning.text, MessageType.Info);
             }
         }
 

@@ -344,7 +344,12 @@ namespace UnityEditor
 
         private void MenuSelection(object userData, string[] options, int selected)
         {
-            AddScriptToCustomOrder(m_DefaultTimeScripts[selected]);
+            var selectableScripts = userData as IList<MonoScript>;
+            if (selectableScripts == null)
+            {
+                return;
+            }
+            AddScriptToCustomOrder(selectableScripts[selected]);
         }
 
         private void AddScriptToCustomOrder(MonoScript script)
@@ -365,6 +370,7 @@ namespace UnityEditor
         {
             var length = m_DefaultTimeScripts.Count;
             var names = new List<string>(length);
+            var selectableScripts = new List<MonoScript>(length);
 
             for (var i = 0; i < length; ++i)
             {
@@ -377,6 +383,7 @@ namespace UnityEditor
                     continue;
 
                 names.Add(m_DefaultTimeScripts[i].GetClass().FullName); // todo: Localization with a proper database.
+                selectableScripts.Add(m_DefaultTimeScripts[i]);
             }
 
             if (names.Count == 0)
@@ -387,7 +394,7 @@ namespace UnityEditor
 
             var options = names.ToArray();
             var enabled = Enumerable.Repeat(true, options.Length).ToArray();
-            EditorUtility.DisplayCustomMenu(r, options, enabled, null, MenuSelection, null);
+            EditorUtility.DisplayCustomMenu(r, options, enabled, null, MenuSelection, selectableScripts);
         }
 
         private int RoundBasedOnContext(int val, int lowerBound, int upperBound)

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 
@@ -245,7 +246,7 @@ namespace Unity.UI.Builder
             // Remove temporary min-size element.
             m_Target.RemoveMinSizeSpecialElement();
 
-            BuilderStyleUtilities.SetInlineStyleValue(m_VisualTreeAsset, m_Target, styleName, value);
+            BuilderStyleUtilities.SetInlineStyleValue(m_VisualTreeAsset, m_Target, styleName, Mathf.Round(value));
         }
 
         protected void RemoveStyleSheetValue(string styleName)

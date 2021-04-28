@@ -39,10 +39,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             private List<T> CreateImplementedInstances<T>()
             {
-                var types = AppDomain.CurrentDomain.GetAssemblies()
-                    .SelectMany(s => s.GetTypes())
-                    .Where(p => p.IsClass && !p.IsAbstract && typeof(T).IsAssignableFrom(p));
-
+                var types = TypeCache.GetTypesDerivedFrom<T>();
                 var result = new List<T>();
                 foreach (var type in types)
                 {
@@ -56,9 +53,13 @@ namespace UnityEditor.PackageManager.UI.Internal
                             m_HandlerObjects[type] = instance;
                             result.Add((T)instance);
                         }
-                        catch (MissingMethodException e)
+                        catch (MissingMethodException missingMethodException)
                         {
-                            Debug.LogWarning($"[Package Manager Window] A default constructor for {type} is required for the package manager extension to function properly.\n{e.Message}");
+                            Debug.LogWarning($"[Package Manager Window] A default constructor for {type} is required for the package manager extension to function properly.\n{missingMethodException.Message}");
+                        }
+                        catch (Exception exception)
+                        {
+                            Debug.LogWarning($"[Package Manager Window] Exception caught while initializing {type}.\n{exception.Message}");
                         }
                     }
                 }

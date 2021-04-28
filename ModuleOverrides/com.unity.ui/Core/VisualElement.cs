@@ -348,7 +348,8 @@ namespace UnityEngine.UIElements
             {
                 return
                     (((m_RenderHints & RenderHints.GroupTransform) != 0) ? UsageHints.GroupTransform : 0) |
-                    (((m_RenderHints & RenderHints.BoneTransform) != 0) ? UsageHints.DynamicTransform : 0);
+                    (((m_RenderHints & RenderHints.BoneTransform) != 0) ? UsageHints.DynamicTransform : 0) |
+                    (((m_RenderHints & RenderHints.MaskContainer) != 0) ? UsageHints.MaskContainer : 0);
             }
             set
             {
@@ -363,6 +364,10 @@ namespace UnityEngine.UIElements
                 if ((value & UsageHints.DynamicTransform) != 0)
                     m_RenderHints |= RenderHints.BoneTransform;
                 else m_RenderHints &= ~RenderHints.BoneTransform;
+
+                if ((value & UsageHints.MaskContainer) != 0)
+                    m_RenderHints |= RenderHints.MaskContainer;
+                else m_RenderHints &= ~RenderHints.MaskContainer;
             }
         }
 

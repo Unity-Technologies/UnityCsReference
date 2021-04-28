@@ -18,6 +18,7 @@ namespace UnityEngine
         [NativeName("RenderAlignment")]
         extern public ParticleSystemRenderSpace alignment { get; set; }
         extern public ParticleSystemRenderMode renderMode { get; set; }
+        extern public ParticleSystemMeshDistribution meshDistribution { get; set; }
         extern public ParticleSystemSortMode sortMode { get; set; }
 
         extern public float lengthScale { get; set; }
@@ -54,6 +55,13 @@ namespace UnityEngine
         [FreeFunction(Name = "ParticleSystemRendererScriptBindings::SetMeshes", HasExplicitThis = true)]
         extern public void SetMeshes([NotNull] Mesh[] meshes, int size);
         public void SetMeshes(Mesh[] meshes) { SetMeshes(meshes, meshes.Length); }
+
+        [FreeFunction(Name = "ParticleSystemRendererScriptBindings::GetMeshWeightings", HasExplicitThis = true)]
+        extern public int GetMeshWeightings([NotNull][Out] float[] weightings);
+
+        [FreeFunction(Name = "ParticleSystemRendererScriptBindings::SetMeshWeightings", HasExplicitThis = true)]
+        extern public void SetMeshWeightings([NotNull] float[] weightings, int size);
+        public void SetMeshWeightings(float[] weightings) { SetMeshWeightings(weightings, weightings.Length); }
 
         extern public int meshCount { get; }
 

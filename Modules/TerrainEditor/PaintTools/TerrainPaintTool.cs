@@ -7,12 +7,15 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
+    [MovedFrom("UnityEditor.Experimental.TerrainAPI")]
     [Flags]
     public enum BrushGUIEditFlags
     {
+        None = 0,
         Select = 1,
         Inspect = 2,
         Size = 4,
@@ -21,6 +24,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         All = 15,
     }
 
+    [MovedFrom("UnityEditor.Experimental.TerrainAPI")]
     [Flags]
     public enum RepaintFlags
     {
@@ -28,6 +32,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         Scene = 2,
     }
 
+    [MovedFrom("UnityEditor.Experimental.TerrainAPI")]
     public interface IOnPaint
     {
         Texture brushTexture { get; }
@@ -42,6 +47,7 @@ namespace UnityEditor.Experimental.TerrainAPI
         void Repaint(RepaintFlags flags = RepaintFlags.UI);
     }
 
+    [MovedFrom("UnityEditor.Experimental.TerrainAPI")]
     public interface IOnSceneGUI
     {
         SceneView sceneView { get; }
@@ -55,18 +61,17 @@ namespace UnityEditor.Experimental.TerrainAPI
         void Repaint(RepaintFlags flags = RepaintFlags.UI);
     }
 
+    [MovedFrom("UnityEditor.Experimental.TerrainAPI")]
     public interface IOnInspectorGUI
     {
-        void ShowBrushesGUI(int spacing);
-        void ShowBrushesGUI(int spacing, BrushGUIEditFlags flags);
-        void ShowBrushesGUI(int spacing, BrushGUIEditFlags flags, int textureResolutionPerTile);
+        void ShowBrushesGUI(int spacing = 5, BrushGUIEditFlags flags = BrushGUIEditFlags.All, int textureResolutionPerTile = 0);
         void Repaint(RepaintFlags flags = RepaintFlags.UI);
     }
 
     internal interface ITerrainPaintTool
     {
         string GetName();
-        string GetDesc();
+        string GetDescription();
         void OnEnable();
         void OnDisable();
         void OnEnterToolMode();
@@ -77,10 +82,11 @@ namespace UnityEditor.Experimental.TerrainAPI
         bool OnPaint(Terrain terrain, IOnPaint editContext);
     }
 
+    [MovedFrom("UnityEditor.Experimental.TerrainAPI")]
     public abstract class TerrainPaintTool<T> : ScriptableSingleton<T>, ITerrainPaintTool where T : TerrainPaintTool<T>
     {
         public abstract string GetName();
-        public abstract string GetDesc();
+        public abstract string GetDescription();
         public virtual void OnEnable() {}
         public virtual void OnDisable() {}
         public virtual void OnEnterToolMode() {}
@@ -194,20 +200,14 @@ namespace UnityEditor.Experimental.TerrainAPI
     internal class OnInspectorGUIContext : IOnInspectorGUI
     {
         public OnInspectorGUIContext() {}
-        public void ShowBrushesGUI(int spacing) { ShowBrushesGUI(spacing, BrushGUIEditFlags.All); }
-        public void ShowBrushesGUI(int spacing, BrushGUIEditFlags flags)
-        {
-            TerrainInspector.s_activeTerrainInspectorInstance.ShowBrushes(
-                spacing,
-                (flags & BrushGUIEditFlags.Select) != 0,
-                (flags & BrushGUIEditFlags.Inspect) != 0,
-                (flags & BrushGUIEditFlags.Size) != 0,
-                (flags & BrushGUIEditFlags.Opacity) != 0,
-                0);
-        }
 
-        public void ShowBrushesGUI(int spacing, BrushGUIEditFlags flags, int textureResolutionPerTile)
+        public void ShowBrushesGUI(int spacing = 5, BrushGUIEditFlags flags = BrushGUIEditFlags.All, int textureResolutionPerTile = 0)
         {
+            if (flags == BrushGUIEditFlags.None)
+            {
+                return;
+            }
+
             TerrainInspector.s_activeTerrainInspectorInstance.ShowBrushes(
                 spacing,
                 (flags & BrushGUIEditFlags.Select) != 0,

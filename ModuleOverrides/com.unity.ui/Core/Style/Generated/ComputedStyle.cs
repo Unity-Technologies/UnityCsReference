@@ -151,7 +151,7 @@ namespace UnityEngine.UIElements
 
         public void ApplyProperties(StylePropertyReader reader, ref ComputedStyle parentStyle)
         {
-            for (var id = reader.propertyId; id != StylePropertyId.Unknown; id = reader.MoveNextProperty())
+            for (var id = reader.propertyId; reader.property != null; id = reader.MoveNextProperty())
             {
                 if (ApplyGlobalKeyword(reader, ref parentStyle))
                     continue;
@@ -387,6 +387,8 @@ namespace UnityEngine.UIElements
                         break;
                     case StylePropertyId.Custom:
                         ApplyCustomStyleProperty(reader);
+                        break;
+                    case StylePropertyId.Unknown:
                         break;
                     default:
                         Debug.LogAssertion($"Unknown property id {id}");

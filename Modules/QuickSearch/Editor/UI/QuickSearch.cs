@@ -1014,11 +1014,16 @@ namespace UnityEditor.Search
         {
             using (new GUILayout.HorizontalScope(Styles.statusBarBackground))
             {
-                var alwaysPrintError = m_FilteredItems.currentGroup == null || !string.IsNullOrEmpty(context.filterId) || m_FilteredItems.TotalCount == 0;
-                if (context.GetAllErrors().FirstOrDefault(e => alwaysPrintError || e.provider.id == m_FilteredItems.currentGroup) is SearchQueryError err)
+                var hasProgress = context.searchInProgress;
+                var ignoreErrors = m_FilteredItems.Count > 0 || hasProgress;
+                var currentGroup = m_FilteredItems.currentGroup;
+                var alwaysPrintError = currentGroup == null ||
+                    !string.IsNullOrEmpty(context.filterId) ||
+                    (m_FilteredItems.TotalCount == 0 && string.Equals("all", currentGroup, StringComparison.Ordinal));
+                if (!ignoreErrors && context.GetAllErrors().FirstOrDefault(e => alwaysPrintError || e.provider.type == m_FilteredItems.currentGroup) is SearchQueryError err)
                 {
                     var errStyle = err.type == SearchQueryErrorType.Error ? Styles.statusError : Styles.statusWarning;
-                    EditorGUILayout.LabelField(Utils.GUIContentTemp(err.reason, err.reason + '\n'), errStyle, GUILayout.ExpandWidth(true));
+                    EditorGUILayout.LabelField(Utils.GUIContentTemp(err.reason, $"({err.provider.name}) {err.reason}"), errStyle, GUILayout.ExpandWidth(true));
                 }
                 else if (SearchSettings.showStatusBar)
                 {
@@ -1066,7 +1071,6 @@ namespace UnityEditor.Search
                     m_ResultView.focusSelectedItem = true;
                 }
 
-                var hasProgress = context.searchInProgress;
                 if (hasProgress)
                 {
                     var searchInProgressRect = EditorGUILayout.GetControlRect(false,

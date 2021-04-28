@@ -146,7 +146,6 @@ namespace UnityEditor
                         // we go deeper
                         menuTree.AddChildSearch(new MenuItemOrderingNative(fullMenuName, originalName, priority, parentPriority));
                         GetModeMenuTreeRecursive(menuTree, children, menuItemsFromAttributes, addedMenuItemAttributes, fullMenuName + "/", originalName + "/", priority);
-                        continue;
                     }
                     else if (menu[k_MenuKeyChildren] is string wildCard && wildCard == "*")
                     {
@@ -479,12 +478,14 @@ namespace UnityEditor
         internal class MenuItemsTree<T>
             where T : class, IMenuItem
         {
-            private string key;
+            private readonly string key;
             private T value;
             private readonly int m_Priority;
 
             private readonly List<MenuItemsTree<T>> m_Children;
             public List<T> menuItemChildren => GetChildrenRecursively();
+            // This list is only sorted by name and priority recursively, it doesn't handle possible rename. So it might not seem ordered for a MenuItemsTree<MenuItemOrderingNative> of renamed items
+            // WARNING: that property is called until each menu item from attributes are added when building the item of s_MenusFromModeFile in GetModeMenuTree. That means the whole tree for each menu item, so it can get quite slow if there are a lot of menu items with a mode specified in the attribute
             public List<T> menuItemChildrenSorted => GetChildrenRecursively(true);
 
             public bool onlyLeafHaveValue { get; set; } = true;

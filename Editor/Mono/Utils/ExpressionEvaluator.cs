@@ -282,7 +282,7 @@ namespace UnityEditor
         // (newOperator) is right-associative and its precedence is less than (topOfStack)
         static bool NeedToPop(Stack<string> operatorStack, Operator newOperator)
         {
-            if (operatorStack.Count > 0)
+            if (operatorStack.Count > 0 && newOperator != null)
             {
                 Operator topOfStack = TokenToOperator(operatorStack.Peek());
                 if (topOfStack != null)

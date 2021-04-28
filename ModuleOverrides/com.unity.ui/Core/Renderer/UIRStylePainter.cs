@@ -15,6 +15,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
     {
         internal struct Entry
         {
+            // In an entry, the winding order is ALWAYS clockwise (front-facing).
+            // If needed, the winding order will be fixed when it's translated into a rendering command.
+            // The vertices and indices are stored in temp cpu-only memory.
             public NativeSlice<Vertex> vertices;
             public NativeSlice<UInt16> indices;
             public Material material; // Responsible for enabling immediate clipping
@@ -27,7 +30,14 @@ namespace UnityEngine.UIElements.UIR.Implementation
             public bool uvIsDisplacement;
             public bool isTextEntry;
             public bool isClipRegisterEntry;
-            public bool isStencilClipped;
+
+            // The stencil ref applies to the entry ONLY. For a given VisualElement, the value may differ between
+            // the entries (e.g. background vs content if the element is a mask and changes the ref).
+            public int stencilRef;
+            // The mask depth should equal ref or ref+1. It determines the winding order of the resulting command:
+            // stencilRef     => clockwise (front-facing)
+            // stencilRef + 1 => counter-clockwise (back-facing)
+            public int maskDepth;
         }
 
         internal struct ClosingInfo
@@ -41,7 +51,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             public NativeSlice<Vertex> clipperRegisterVertices;
             public NativeSlice<UInt16> clipperRegisterIndices;
             public int clipperRegisterIndexOffset;
-            public bool RestoreStencilClip; // Used when blitAndPopRenderTexture as the clipping is not propagated through the other render texture
+            public int maskStencilRef; // What's the stencil ref value used before pushing/popping the mask?
         }
 
         internal struct TempDataAlloc<T> : IDisposable where T : struct
@@ -108,7 +118,10 @@ namespace UnityEngine.UIElements.UIR.Implementation
         VectorImageManager m_VectorImageManager;
         Entry m_CurrentEntry;
         ClosingInfo m_ClosingInfo;
-        internal bool m_StencilClip = false;
+
+        int m_MaskDepth;
+        int m_StencilRef;
+
         BMPAlloc m_ClipRectID = UIRVEShaderInfoAllocator.infiniteClipRect;
         int m_SVGBackgroundEntryIndex = -1;
         TempDataAlloc<Vertex> m_VertsPool = new TempDataAlloc<Vertex>(8192);
@@ -151,7 +164,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
         {
             m_Owner = renderChain;
             meshGenerationContext = new MeshGenerationContext(this);
-            device = renderChain.device;
             m_Atlas = renderChain.atlas;
             m_VectorImageManager = renderChain.vectorImageManager;
             m_AllocRawVertsIndicesDelegate = AllocRawVertsIndices;
@@ -165,7 +177,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         public MeshGenerationContext meshGenerationContext { get; }
         public VisualElement currentElement { get; private set; }
-        public UIRenderDevice device { get; }
         public List<Entry> entries { get { return m_Entries; } }
         public ClosingInfo closingInfo { get { return m_ClosingInfo; } }
         public int totalVertices { get; private set; }
@@ -207,6 +218,16 @@ namespace UnityEngine.UIElements.UIR.Implementation
             m_SVGBackgroundEntryIndex = -1;
             currentElement.renderChainData.usesLegacyText = currentElement.renderChainData.disableNudging = false;
             currentElement.renderChainData.displacementUVStart = currentElement.renderChainData.displacementUVEnd = 0;
+
+            m_MaskDepth = 0;
+            m_StencilRef = 0;
+            VisualElement parent = currentElement.hierarchy.parent;
+            if (parent != null)
+            {
+                m_MaskDepth = parent.renderChainData.childrenMaskDepth;
+                m_StencilRef = parent.renderChainData.childrenStencilRef;
+            }
+
             bool isGroupTransform = (currentElement.renderHints & RenderHints.GroupTransform) != 0;
             if (isGroupTransform)
             {
@@ -216,16 +237,10 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 m_Entries.Add(new Entry() { customCommand = cmd });
                 m_ClosingInfo.needsClosing = m_ClosingInfo.popViewMatrix = true;
             }
-            if (currentElement.hierarchy.parent != null)
-            {
-                m_StencilClip = currentElement.hierarchy.parent.renderChainData.isStencilClipped;
-                m_ClipRectID = isGroupTransform ? UIRVEShaderInfoAllocator.infiniteClipRect : currentElement.hierarchy.parent.renderChainData.clipRectID;
-            }
+            if (parent != null)
+                m_ClipRectID = isGroupTransform ? UIRVEShaderInfoAllocator.infiniteClipRect : parent.renderChainData.clipRectID;
             else
-            {
-                m_StencilClip = false;
                 m_ClipRectID = UIRVEShaderInfoAllocator.infiniteClipRect;
-            }
 
             if (ve.subRenderTargetMode != VisualElement.RenderTargetMode.None)
             {
@@ -234,8 +249,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 cmd.type = CommandType.PushRenderTexture;
                 m_Entries.Add(new Entry() { customCommand = cmd });
                 m_ClosingInfo.needsClosing = m_ClosingInfo.blitAndPopRenderTexture = true;
-                m_ClosingInfo.RestoreStencilClip = m_StencilClip;
-                m_StencilClip = false;
+                if (m_MaskDepth > 0 || m_StencilRef > 0)
+                    Debug.LogError("The RenderTargetMode feature must not be used within a stencil mask.");
             }
 
             if (ve.defaultMaterial != null)
@@ -279,7 +294,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 material = material,
                 texture = texture,
                 clipRectID = m_ClipRectID,
-                isStencilClipped = m_StencilClip,
+                stencilRef = m_StencilRef,
+                maskDepth = m_MaskDepth,
                 addFlags = VertexFlags.IsSvgGradients
             };
 
@@ -310,7 +326,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 material = material,
                 uvIsDisplacement = (flags & MeshGenerationContext.MeshFlags.UVisDisplacement) == MeshGenerationContext.MeshFlags.UVisDisplacement,
                 clipRectID = m_ClipRectID,
-                isStencilClipped = m_StencilClip,
+                stencilRef = m_StencilRef,
+                maskDepth = m_MaskDepth,
                 addFlags = VertexFlags.IsSolid
             };
 
@@ -374,7 +391,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 Vector2 localOffset = TextNative.GetOffset(textSettings, textParams.rect);
                 m_CurrentEntry.isTextEntry = true;
                 m_CurrentEntry.clipRectID = m_ClipRectID;
-                m_CurrentEntry.isStencilClipped = m_StencilClip;
+                m_CurrentEntry.stencilRef = m_StencilRef;
+                m_CurrentEntry.maskDepth = m_MaskDepth;
                 MeshBuilder.MakeText(textVertices, localOffset,  new MeshBuilder.AllocMeshData() { alloc = m_AllocRawVertsIndicesDelegate });
                 m_CurrentEntry.font = textParams.font.material.mainTexture;
                 m_Entries.Add(m_CurrentEntry);
@@ -394,12 +412,13 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 if (textInfo.meshInfo[i].vertexCount == 0)
                     continue;
 
+                m_CurrentEntry.clipRectID = m_ClipRectID;
+                m_CurrentEntry.stencilRef = m_StencilRef;
+                m_CurrentEntry.maskDepth = m_MaskDepth;
+
                 if (textInfo.meshInfo[i].material.name.Contains("Sprite"))
                 {
                     // Assume a sprite asset
-                    m_CurrentEntry.clipRectID = m_ClipRectID;
-                    m_CurrentEntry.isStencilClipped = m_StencilClip;
-
                     var texture = textInfo.meshInfo[i].material.mainTexture;
                     TextureId id = TextureRegistry.instance.Acquire(texture);
                     m_CurrentEntry.texture = id;
@@ -414,8 +433,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 else
                 {
                     m_CurrentEntry.isTextEntry = true;
-                    m_CurrentEntry.clipRectID = m_ClipRectID;
-                    m_CurrentEntry.isStencilClipped = m_StencilClip;
                     m_CurrentEntry.fontTexSDFScale = textInfo.meshInfo[i].material.GetFloat(TextShaderUtilities.ID_GradientScale);
                     m_CurrentEntry.font = textInfo.meshInfo[i].material.mainTexture;
 
@@ -507,6 +524,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     out rectParams.bottomLeftRadius,
                     out rectParams.topRightRadius,
                     out rectParams.bottomRightRadius);
+
+                MeshGenerationContextUtils.AdjustBackgroundSizeForBorders(currentElement, ref rectParams.rect);
+
                 DrawRectangle(rectParams);
             }
 
@@ -582,6 +602,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
                 if (style.unityBackgroundImageTintColor != Color.clear)
                     rectParams.color = style.unityBackgroundImageTintColor;
+
+                MeshGenerationContextUtils.AdjustBackgroundSizeForBorders(currentElement, ref rectParams.rect);
+
                 DrawRectangle(rectParams);
             }
         }
@@ -631,9 +654,16 @@ namespace UnityEngine.UIElements.UIR.Implementation
             }
             else if (currentElement.renderChainData.clipMethod == ClipMethod.Stencil)
             {
+                if (m_MaskDepth > m_StencilRef) // We can't push a mask at ref+1.
+                {
+                    ++m_StencilRef;
+                    Debug.Assert(m_MaskDepth == m_StencilRef);
+                }
+                m_ClosingInfo.maskStencilRef = m_StencilRef;
                 if (UIRUtility.IsVectorImageBackground(currentElement))
                     GenerateStencilClipEntryForSVGBackground();
                 else GenerateStencilClipEntryForRoundedRectBackground();
+                ++m_MaskDepth;
             }
             m_ClipRectID = currentElement.renderChainData.clipRectID;
         }
@@ -859,7 +889,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
             }
 
             m_CurrentEntry.clipRectID = m_ClipRectID;
-            m_CurrentEntry.isStencilClipped = m_StencilClip;
+            m_CurrentEntry.stencilRef = m_StencilRef;
+            m_CurrentEntry.maskDepth = m_MaskDepth;
             m_CurrentEntry.isClipRegisterEntry = true;
 
             MeshBuilder.MakeSolidRect(rp, UIRUtility.k_MaskPosZ, new MeshBuilder.AllocMeshData() { alloc = m_AllocRawVertsIndicesDelegate });
@@ -868,7 +899,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 m_Entries.Add(m_CurrentEntry);
                 totalVertices += m_CurrentEntry.vertices.Length;
                 totalIndices += m_CurrentEntry.indices.Length;
-                m_StencilClip = true; // Draw operations following this one should be clipped if not already
                 m_ClosingInfo.needsClosing = true;
             }
             m_CurrentEntry = new Entry();
@@ -884,12 +914,12 @@ namespace UnityEngine.UIElements.UIR.Implementation
             Debug.Assert(svgEntry.vertices.Length > 0);
             Debug.Assert(svgEntry.indices.Length > 0);
 
-            m_StencilClip = true; // Draw operations following this one should be clipped if not already
             m_CurrentEntry.vertices = svgEntry.vertices;
             m_CurrentEntry.indices = svgEntry.indices;
             m_CurrentEntry.uvIsDisplacement = svgEntry.uvIsDisplacement;
             m_CurrentEntry.clipRectID = m_ClipRectID;
-            m_CurrentEntry.isStencilClipped = m_StencilClip;
+            m_CurrentEntry.stencilRef = m_StencilRef;
+            m_CurrentEntry.maskDepth = m_MaskDepth;
             m_CurrentEntry.isClipRegisterEntry = true;
             m_ClosingInfo.needsClosing = true;
 

@@ -1945,6 +1945,9 @@
     <Compile Include="..\..\Editor\Mono\Inspector\ComputeShaderInspector.cs">
       <Link>Editor\Mono\Inspector\ComputeShaderInspector.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\ConstrainProportionsTransformScale.cs">
+      <Link>Editor\Mono\Inspector\ConstrainProportionsTransformScale.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\ConstraintEditorBase.cs">
       <Link>Editor\Mono\Inspector\ConstraintEditorBase.cs</Link>
     </Compile>

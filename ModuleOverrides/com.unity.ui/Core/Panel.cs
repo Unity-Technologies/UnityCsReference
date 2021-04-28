@@ -75,7 +75,21 @@ namespace UnityEngine.UIElements
         /// A common use-case of this hint is a VisualElement that represents a "viewport" within which there are many <see cref="DynamicTransform"/> VisualElements that can move individually in addition to the "viewport" element also often changing its transformation. However, if the contents of the aforementioned "viewport" element are mostly static (not moving) then it is enough to use the <see cref="DynamicTransform"/> hint on that element instead of <see cref="GroupTransform"/>.
         /// Internally, an element hinted with <see cref="GroupTransform"/> will force a separate draw batch with its world transformation value, but in the same time it will avoid changing the transforms of all its descendants whenever a transformation change occurs on the <see cref="GroupTransform"/> element.
         /// </summary>
-        GroupTransform = 1 << 1
+        GroupTransform = 1 << 1,
+        /// <summary>
+        /// Marks a <see cref="VisualElement"/> that hosts non-rectangular descendants using the "overflow: hidden;"
+        /// style. Non-rectangular masks are implemented with the stencil. If applicable, the renderer breaks the batch
+        /// to preemptively set the stencil state, before and after drawing the descendants, so that the descendants
+        /// won't have to set them at the next masking level. When using this flag, consecutive stencil push/pop
+        /// operations are cheap and don't require modifying the stencil reference. As a result, the batch doesn't need
+        /// to be broken for each push/pop operation. Consecutive push/push or pop/pop operations are still expensive.
+        /// Avoid cases that involve many subtrees, where each subtree uses 2 or more levels of masking, to avoid
+        /// consecutive push/push or pop/pop operations.
+        /// </summary>
+        /// <remarks>
+        /// This flag is implicitly set on the root VisualElement, making single-level masks non-batch-breaking by default.
+        /// </remarks>
+        MaskContainer = 1 << 2,
     }
 
     [Flags]
@@ -84,7 +98,8 @@ namespace UnityEngine.UIElements
         None = 0,
         GroupTransform = 1 << 0, // Use uniform matrix to transform children
         BoneTransform = 1 << 1, // Use GPU buffer to store transform matrices
-        ClipWithScissors = 1 << 2 // If clipping is requested on this element, prefer scissoring
+        ClipWithScissors = 1 << 2, // If clipping is requested on this element, prefer scissoring
+        MaskContainer = 1 << 3, // Use to prevent the next nested masks from modifying the stencil ref
     }
 
     // For backwards compatibility with debugger in 2020.1

@@ -127,13 +127,20 @@ namespace UnityEditor
         static int[] s_DoScaleHandle_AxisDrawOrder = { 0, 1, 2 };
         static float s_CurrentMultiplier;
         static Vector3 s_InitialScale;
+        internal static float handleLength { get; set;}
+        internal static bool proportionalScale { get; set; }
 
         public static Vector3 DoScaleHandle(Vector3 scale, Vector3 position, Quaternion rotation, float size)
         {
-            return DoScaleHandle(ScaleHandleIds.@default, scale, position, rotation, size, ScaleHandleParam.Default);
+            return DoScaleHandle(ScaleHandleIds.@default, scale, position, rotation, size, ScaleHandleParam.Default, false);
         }
 
-        internal static Vector3 DoScaleHandle(ScaleHandleIds ids, Vector3 scale, Vector3 position, Quaternion rotation, float handleSize, ScaleHandleParam param)
+        internal static Vector3 DoScaleHandle(Vector3 scale, Vector3 position, Quaternion rotation, float size, bool isProportionalScale)
+        {
+            return DoScaleHandle(ScaleHandleIds.@default, scale, position, rotation, size, ScaleHandleParam.Default, isProportionalScale);
+        }
+
+        internal static Vector3 DoScaleHandle(ScaleHandleIds ids, Vector3 scale, Vector3 position, Quaternion rotation, float handleSize, ScaleHandleParam param, bool isProportionalScale = false)
         {
             // Calculate the camera view vector in Handle draw space
             // this handle the case where the matrix is skewed
@@ -161,8 +168,15 @@ namespace UnityEditor
             switch (Event.current.type)
             {
                 case EventType.MouseDown:
+                    s_InitialScale = scale == Vector3.zero ? Vector3.one : scale;
                     s_CurrentMultiplier = 1.0f;
-                    s_InitialScale = scale;
+                    break;
+                case EventType.MouseDrag:
+                    if (isProportionalScale)
+                        proportionalScale = true;
+                    break;
+                case EventType.MouseUp:
+                    proportionalScale = false;
                     break;
             }
 
@@ -170,6 +184,7 @@ namespace UnityEditor
             for (var ii = 0; ii < 3; ++ii)
             {
                 int i = s_DoScaleHandle_AxisDrawOrder[ii];
+                int axisIndex = i;
                 if (!param.ShouldShow(i))
                     continue;
 
@@ -191,7 +206,7 @@ namespace UnityEditor
                 var isThisAxisHot = isHot && id == GUIUtility.hotControl;
 
                 var axisDir = GetAxisVector(i);
-                var axisColor = GetColorByAxis(i);
+                var axisColor = isProportionalScale ? constrainProportionsScaleHandleColor : GetColorByAxis(i);
                 var offset = axisOffset[i];
                 var cameraLerp = id == GUIUtility.hotControl ? 0 : GetCameraViewLerpForWorldAxis(viewVectorDrawSpace, axisDir);
                 // If we are here and is hot, then this axis is hot and must be opaque
@@ -205,28 +220,36 @@ namespace UnityEditor
                     color = GetFadedAxisColor(color, cameraLerp, id);
 
                     if (isHot && !isThisAxisHot)
-                        color = s_DisabledHandleColor;
+                        color = isProportionalScale ? selectedColor : s_DisabledHandleColor;
+
                     if (isCenterIsHot)
                         color = selectedColor;
 
                     color = ToActiveColorSpace(color);
 
-                    scale[i] = UnityEditorInternal.SliderScale.DoAxis(
+                    if (isProportionalScale)
+                        axisIndex = 0;
+
+                    scale = UnityEditorInternal.SliderScale.DoAxis(
                         id,
-                        scale[i],
+                        scale,
+                        axisIndex,
                         position,
                         rotation * axisDir,
                         rotation,
-                        handleSize * param.axisSize[i],
+                        handleSize * param.axisSize[axisIndex],
                         EditorSnapSettings.scale,
                         offset,
-                        axisLineScale[i]);
+                        axisLineScale[axisIndex],
+                        s_InitialScale,
+                        isProportionalScale);
                 }
             }
 
             if (param.ShouldShow(ScaleHandleParam.Handle.XYZ) && (ids.xyz == GUIUtility.hotControl || !isHot))
             {
-                color = ToActiveColorSpace(centerColor);
+                color = isProportionalScale ? constrainProportionsScaleHandleColor : ToActiveColorSpace(centerColor);
+                proportionalScale = false;
                 EditorGUI.BeginChangeCheck();
                 s_CurrentMultiplier = ScaleValueHandle(ids.xyz, s_CurrentMultiplier, position, rotation, handleSize * param.xyzSize, CubeHandleCap, EditorSnapSettings.scale);
                 if (EditorGUI.EndChangeCheck())

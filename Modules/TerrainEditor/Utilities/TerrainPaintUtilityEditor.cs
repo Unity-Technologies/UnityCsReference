@@ -5,10 +5,18 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Experimental.TerrainAPI;
+using UnityEngine.TerrainTools;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
+    public enum TerrainBrushPreviewMode
+    {
+        SourceRenderTexture,
+        DestinationRenderTexture
+    }
+
+    [MovedFrom("UnityEditor.Experimental.TerrainAPI")]
     public static class TerrainPaintUtilityEditor
     {
         // This maintains the list of terrains we have touched in the current operation (and the current operation identifier, as an undo group)
@@ -91,7 +99,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             {
                 BrushTransform brushXform = TerrainPaintUtility.CalculateBrushTransform(terrain, hit.textureCoord, brushSize, 0.0f);
                 PaintContext ctx = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushXform.GetBrushXYBounds(), 1);
-                DrawBrushPreview(ctx, TerrainPaintUtilityEditor.BrushPreview.SourceRenderTexture, brushTexture, brushXform, GetDefaultBrushPreviewMaterial(), 0);
+                DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture, brushTexture, brushXform, GetDefaultBrushPreviewMaterial(), 0);
                 TerrainPaintUtility.ReleaseContextResources(ctx);
             }
         }
@@ -103,15 +111,9 @@ namespace UnityEditor.Experimental.TerrainAPI
             return m_BrushPreviewMaterial;
         }
 
-        public enum BrushPreview
-        {
-            SourceRenderTexture,
-            DestinationRenderTexture
-        }
-
         public static void DrawBrushPreview(
             PaintContext heightmapPC,
-            BrushPreview previewTexture,
+            TerrainBrushPreviewMode previewTexture,
             Texture brushTexture,                           // brush texture to apply
             BrushTransform brushXform,                      // brush transform that defines the brush UV space
             Material proceduralMaterial,                    // the material to render with (must support procedural quad-mesh generation)
@@ -148,7 +150,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             proceduralMaterial.SetVector("_QuadRez", new Vector4(quadsX, quadsY, vertexCount, vertSkip));
 
             // paint context pixels to heightmap uv:   uv = (pixels + 0.5) / width
-            Texture heightmapTexture = (previewTexture == BrushPreview.SourceRenderTexture) ? heightmapPC.sourceRenderTexture : heightmapPC.destinationRenderTexture;
+            Texture heightmapTexture = (previewTexture == TerrainBrushPreviewMode.SourceRenderTexture) ? heightmapPC.sourceRenderTexture : heightmapPC.destinationRenderTexture;
             float invWidth = 1.0f / heightmapTexture.width;
             float invHeight = 1.0f / heightmapTexture.height;
             proceduralMaterial.SetVector("_HeightmapUV_PCPixelsX",  new Vector4(invWidth, 0.0f, 0.0f, 0.0f));

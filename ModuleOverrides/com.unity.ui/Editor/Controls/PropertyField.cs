@@ -159,8 +159,31 @@ namespace UnityEditor.UIElements
 
         private void Reset(SerializedPropertyBindEvent evt)
         {
-            Clear();
+            if (m_SerializedProperty != null)
+            {
+                // if we already have a serialized property, determine if the property field can be reused without reset
+                // this is only supported for non propertydrawer types
+                if (m_ChildField != null && m_SerializedProperty.propertyType == evt.bindProperty.propertyType)
+                {
+                    var newField = CreateOrUpdateFieldFromProperty(evt.bindProperty, m_ChildField);
+                    // there was an issue where we weren't able to swap the bindings on the original field
+                    if (newField != m_ChildField)
+                    {
+                        m_ChildField.Unbind();
+                        var childIndex = IndexOf(m_ChildField);
+                        if (childIndex >= 0)
+                        {
+                            m_ChildField.RemoveFromHierarchy();
+                            m_ChildField = newField;
+                            hierarchy.Insert(childIndex, m_ChildField);
+                        }
+                    }
+                    return;
+                }
+            }
 
+            Clear();
+            m_ChildField = null;
             var bindProperty = evt.bindProperty;
             m_SerializedProperty = bindProperty;
             if (bindProperty == null)
@@ -189,7 +212,8 @@ namespace UnityEditor.UIElements
                 }
                 else
                 {
-                    customPropertyGUI = CreateFieldFromProperty(bindProperty);
+                    customPropertyGUI = CreateOrUpdateFieldFromProperty(bindProperty);
+                    m_ChildField = customPropertyGUI;
                 }
             }
 
@@ -319,6 +343,11 @@ namespace UnityEditor.UIElements
         }
 
         private List<PropertyField> m_ChildrenProperties;
+
+        /// <summary>
+        /// stores the child field if there is only a single child. Used for updating bindings when this field is rebound.
+        /// </summary>
+        private VisualElement m_ChildField;
         private VisualElement m_ChildrenContainer;
 
         void TrimChildrenContainerSize(int targetSize)
@@ -389,10 +418,10 @@ namespace UnityEditor.UIElements
             TrimChildrenContainerSize(propCount);
         }
 
-        private VisualElement CreateFoldout(SerializedProperty property)
+        private VisualElement CreateFoldout(SerializedProperty property, object originalField = null)
         {
             property = property.Copy();
-            var foldout = new Foldout();
+            var foldout = originalField != null && originalField is Foldout ? originalField as Foldout : new Foldout();
             bool hasCustomLabel = !string.IsNullOrEmpty(label);
             foldout.text = hasCustomLabel ? label : property.localizedDisplayName;
             foldout.value = property.isExpanded;
@@ -419,9 +448,13 @@ namespace UnityEditor.UIElements
             return foldout;
         }
 
-        private VisualElement ConfigureField<TField, TValue>(TField field, SerializedProperty property)
+        private VisualElement ConfigureField<TField, TValue>(TField field, SerializedProperty property, Func<TField> factory)
             where TField : BaseField<TValue>
         {
+            if (field == null)
+            {
+                field = factory();
+            }
             var propertyCopy = property.Copy();
             var fieldLabel = label ?? property.localizedDisplayName;
             field.bindingPath = property.propertyPath;
@@ -500,12 +533,12 @@ namespace UnityEditor.UIElements
             }
         }
 
-        private VisualElement CreateFieldFromProperty(SerializedProperty property)
+        private VisualElement CreateOrUpdateFieldFromProperty(SerializedProperty property, object originalField = null)
         {
             var propertyType = property.propertyType;
 
             if (EditorGUI.HasVisibleChildFields(property, true))
-                return CreateFoldout(property);
+                return CreateFoldout(property, originalField);
 
             TrimChildrenContainerSize(0);
             m_ChildrenContainer = null;
@@ -514,24 +547,27 @@ namespace UnityEditor.UIElements
             {
                 case SerializedPropertyType.Integer:
                     if (property.type == "long")
-                        return ConfigureField<LongField, long>(new LongField(), property);
-                    return ConfigureField<IntegerField, int>(new IntegerField(), property);
+                        return ConfigureField<LongField, long>(originalField as LongField, property, () => new LongField());
+                    return ConfigureField<IntegerField, int>(originalField as IntegerField, property, () => new IntegerField());
 
                 case SerializedPropertyType.Boolean:
-                    return ConfigureField<Toggle, bool>(new Toggle(), property);
+                    return ConfigureField<Toggle, bool>(originalField as Toggle, property, () => new Toggle());
 
                 case SerializedPropertyType.Float:
-                    return ConfigureField<FloatField, float>(new FloatField(), property);
+                    return ConfigureField<FloatField, float>(originalField as FloatField, property, () => new FloatField());
 
                 case SerializedPropertyType.String:
-                    return ConfigureField<TextField, string>(new TextField(), property);
+                    return ConfigureField<TextField, string>(originalField as TextField, property, () => new TextField());
 
                 case SerializedPropertyType.Color:
-                    return ConfigureField<ColorField, Color>(new ColorField(), property);
+                    return ConfigureField<ColorField, Color>(originalField as ColorField, property, () => new ColorField());
 
                 case SerializedPropertyType.ObjectReference:
                 {
-                    var field = new ObjectField();
+                    ObjectField field = originalField as ObjectField;
+                    if (field == null)
+                        field = new ObjectField();
+
                     Type requiredType = null;
 
                     // Checking if the target ExtendsANativeType() avoids a native error when
@@ -544,10 +580,10 @@ namespace UnityEditor.UIElements
                         requiredType = typeof(UnityEngine.Object);
 
                     field.objectType = requiredType;
-                    return ConfigureField<ObjectField, UnityEngine.Object>(field, property);
+                    return ConfigureField<ObjectField, UnityEngine.Object>(field, property, () => new ObjectField());
                 }
                 case SerializedPropertyType.LayerMask:
-                    return ConfigureField<LayerMaskField, int>(new LayerMaskField(), property);
+                    return ConfigureField<LayerMaskField, int>(originalField as LayerMaskField, property, () => new LayerMaskField());
 
                 case SerializedPropertyType.Enum:
                 {
@@ -556,61 +592,72 @@ namespace UnityEditor.UIElements
                     if (enumType != null && enumType.IsDefined(typeof(FlagsAttribute), false))
                     {
                         var enumData = EnumDataUtility.GetCachedEnumData(enumType);
-                        var field = new EnumFlagsField
+                        if (originalField != null && originalField is EnumFlagsField enumFlagsField)
+                        {
+                            enumFlagsField.choices = enumData.displayNames.ToList();
+                            enumFlagsField.value = (Enum)Enum.ToObject(enumType, property.intValue);
+                        }
+                        return ConfigureField<EnumFlagsField, Enum>(originalField as EnumFlagsField, property, () => new EnumFlagsField
                         {
                             choices = enumData.displayNames.ToList(),
                             value = (Enum)Enum.ToObject(enumType, property.intValue)
-                        };
-                        return ConfigureField<EnumFlagsField, Enum>(field, property);
+                        });
                     }
                     else
                     {
                         var popupEntries = enumType != null
                             ? EnumDataUtility.GetCachedEnumData(enumType).displayNames.ToList()
                             : property.enumDisplayNames.ToList();
-                        var field = new PopupField<string>(popupEntries, property.enumValueIndex)
+                        if (originalField != null && originalField is PopupField<string> popupField)
+                        {
+                            popupField.choices = popupEntries;
+                            popupField.index = property.enumValueIndex;
+                        }
+                        return ConfigureField<PopupField<string>, string>(originalField as PopupField<string>, property, () => new PopupField<string>(popupEntries, property.enumValueIndex)
                         {
                             index = property.enumValueIndex
-                        };
-                        return ConfigureField<PopupField<string>, string>(field, property);
+                        });
                     }
                 }
                 case SerializedPropertyType.Vector2:
-                    return ConfigureField<Vector2Field, Vector2>(new Vector2Field(), property);
+                    return ConfigureField<Vector2Field, Vector2>(originalField as Vector2Field, property, () => new Vector2Field());
 
                 case SerializedPropertyType.Vector3:
-                    return ConfigureField<Vector3Field, Vector3>(new Vector3Field(), property);
+                    return ConfigureField<Vector3Field, Vector3>(originalField as Vector3Field, property, () => new Vector3Field());
 
                 case SerializedPropertyType.Vector4:
-                    return ConfigureField<Vector4Field, Vector4>(new Vector4Field(), property);
+                    return ConfigureField<Vector4Field, Vector4>(originalField as Vector4Field, property, () => new Vector4Field());
 
                 case SerializedPropertyType.Rect:
-                    return ConfigureField<RectField, Rect>(new RectField(), property);
+                    return ConfigureField<RectField, Rect>(originalField as RectField, property, () => new RectField());
 
                 case SerializedPropertyType.ArraySize:
                 {
-                    var field = new IntegerField();
+                    IntegerField field = originalField as IntegerField;
+                    if (field == null)
+                        field = new IntegerField();
                     field.SetValueWithoutNotify(property.intValue); // This avoids the OnValueChanged/Rebind feedback loop.
                     field.isDelayed = true; // To match IMGUI. Also, focus is lost anyway due to the rebind.
                     field.RegisterValueChangedCallback((e) => { UpdateArrayFoldout(e, this, m_ParentPropertyField); });
-                    return ConfigureField<IntegerField, int>(field, property);
+                    return ConfigureField<IntegerField, int>(field, property, () => new IntegerField());
                 }
 
                 case SerializedPropertyType.Character:
                 {
-                    var field = new TextField();
-                    field.maxLength = 1;
-                    return ConfigureField<TextField, string>(field, property);
+                    TextField field = originalField as TextField;
+                    if (field != null)
+                        field.maxLength = 1;
+                    return ConfigureField<TextField, string>(field, property, () => new TextField { maxLength = 1 });
                 }
 
                 case SerializedPropertyType.AnimationCurve:
-                    return ConfigureField<CurveField, AnimationCurve>(new CurveField(), property);
+                    return ConfigureField<CurveField, AnimationCurve>(originalField as CurveField, property, () => new CurveField());
 
                 case SerializedPropertyType.Bounds:
-                    return ConfigureField<BoundsField, Bounds>(new BoundsField(), property);
+                    return ConfigureField<BoundsField, Bounds>(originalField as BoundsField, property, () => new BoundsField());
 
                 case SerializedPropertyType.Gradient:
-                    return ConfigureField<GradientField, Gradient>(new GradientField(), property);
+                    return ConfigureField<GradientField, Gradient>(originalField as GradientField, property, () => new GradientField());
 
                 case SerializedPropertyType.Quaternion:
                     return null;
@@ -620,16 +667,16 @@ namespace UnityEditor.UIElements
                     return null;
 
                 case SerializedPropertyType.Vector2Int:
-                    return ConfigureField<Vector2IntField, Vector2Int>(new Vector2IntField(), property);
+                    return ConfigureField<Vector2IntField, Vector2Int>(originalField as Vector2IntField, property, () => new Vector2IntField());
 
                 case SerializedPropertyType.Vector3Int:
-                    return ConfigureField<Vector3IntField, Vector3Int>(new Vector3IntField(), property);
+                    return ConfigureField<Vector3IntField, Vector3Int>(originalField as Vector3IntField, property, () => new Vector3IntField());
 
                 case SerializedPropertyType.RectInt:
-                    return ConfigureField<RectIntField, RectInt>(new RectIntField(), property);
+                    return ConfigureField<RectIntField, RectInt>(originalField as RectIntField, property, () => new RectIntField());
 
                 case SerializedPropertyType.BoundsInt:
-                    return ConfigureField<BoundsIntField, BoundsInt>(new BoundsIntField(), property);
+                    return ConfigureField<BoundsIntField, BoundsInt>(originalField as BoundsIntField, property, () => new BoundsIntField());
 
 
                 case SerializedPropertyType.Generic:

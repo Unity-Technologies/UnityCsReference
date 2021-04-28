@@ -116,7 +116,28 @@ namespace UnityEditor
                     validItemIDs.Add(itemID);
             }
 
-            base.RevealItems(validItemIDs.ToArray());
+            // Get existing expanded in hashset
+            HashSet<int> expandedSet = new HashSet<int>(expandedIDs);
+            int orgSize = expandedSet.Count;
+
+            IHierarchyProperty propertyIterator = CreateHierarchyProperty();
+            int[] ancestors = propertyIterator.FindAllAncestors(validItemIDs.ToArray());
+
+            // Add all parents above id
+            foreach (var itemID in ancestors)
+            {
+                expandedSet.Add(itemID);
+            }
+
+            if (orgSize != expandedSet.Count)
+            {
+                // Bulk set expanded ids (is sorted in SetExpandedIDs)
+                SetExpandedIDs(expandedSet.ToArray());
+
+                // Refresh immediately if any Item was expanded
+                if (m_NeedRefreshRows)
+                    FetchData();
+            }
         }
 
         override public bool IsRevealed(int id)

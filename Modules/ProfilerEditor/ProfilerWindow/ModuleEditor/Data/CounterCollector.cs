@@ -39,6 +39,28 @@ namespace UnityEditor.Profiling.ModuleEditor
             }
         }
 
+        public void LoadEditorCounters(out SortedDictionary<string, List<string>> systemCounters, out SortedDictionary<string, List<string>> userCounters)
+        {
+            userCounters = new SortedDictionary<string, List<string>>();
+            systemCounters = new SortedDictionary<string, List<string>>();
+
+            var availableCounterHandles = new List<ProfilerRecorderHandle>();
+            ProfilerRecorderHandle.GetAvailable(availableCounterHandles);
+            foreach (var availableCounterHandle in availableCounterHandles)
+            {
+                var markerInfo = ProfilerRecorderHandle.GetDescription(availableCounterHandle);
+                if ((markerInfo.Flags & MarkerFlags.Counter) == 0)
+                    continue;
+
+                var counterName = markerInfo.Name;
+                var categoryName = markerInfo.Category.Name;
+                if ((markerInfo.Flags & MarkerFlags.Script) != 0)
+                    AddToCountersCollection(categoryName, counterName, userCounters);
+                else
+                    AddToCountersCollection(categoryName, counterName, systemCounters);
+            }
+        }
+
         void AddToCountersCollection(string categoryName, string counterName, SortedDictionary<string, List<string>> collection)
         {
             if (collection.TryGetValue(categoryName, out List<string> counters))

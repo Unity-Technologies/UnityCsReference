@@ -194,6 +194,7 @@ namespace Unity.UI.Builder
         public static readonly string ExplorerHierarchyPaneOpenSubDocumentInPlace = "Open as Sub-Document In-Place";
         public static readonly string ExplorerHierarchyReturnToParentDocument = "Return to Parent Document";
         public static readonly string ExplorerHierarchyOpenInBuilder = "Open in UI Builder";
+        public static readonly string ExplorerHierarchyUnpackTemplate = "Unpack Template";
 
         // Explorer Messages
         public static readonly string ExplorerInExplorerNewClassSelectorInfoMessage = "Add new selector...";

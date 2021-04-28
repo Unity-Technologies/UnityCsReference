@@ -2,7 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.Scripting;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine.Tilemaps
 {
@@ -10,10 +13,27 @@ namespace UnityEngine.Tilemaps
     public class ITilemap
     {
         internal static ITilemap s_Instance;
+
         internal Tilemap m_Tilemap;
+        internal bool m_AddToList;
+        internal int m_RefreshCount;
+        internal NativeArray<Vector3Int> m_RefreshPos;
+
+        internal AtomicSafetyHandle m_Safety;
 
         internal ITilemap()
         {
+            m_Safety = AtomicSafetyHandle.Create();
+        }
+
+        ~ITilemap()
+        {
+            OnDisable();
+        }
+
+        void OnDisable()
+        {
+            AtomicSafetyHandle.Release(m_Safety);
         }
 
         internal void SetTilemapInstance(Tilemap tilemap)
@@ -61,7 +81,19 @@ namespace UnityEngine.Tilemaps
 
         public void RefreshTile(Vector3Int position)
         {
-            m_Tilemap.RefreshTile(position);
+            if (m_AddToList)
+            {
+                if (m_RefreshCount >= m_RefreshPos.Length)
+                {
+                    var refreshPos = new NativeArray<Vector3Int>(Math.Max(1, m_RefreshCount * 2), Allocator.Temp);
+                    NativeArray<Vector3Int>.Copy(m_RefreshPos, refreshPos, m_RefreshPos.Length);
+                    m_RefreshPos.Dispose();
+                    m_RefreshPos = refreshPos;
+                }
+                m_RefreshPos[m_RefreshCount++] = position;
+            }
+            else
+                m_Tilemap.RefreshTile(position);
         }
 
         public T GetComponent<T>()
@@ -74,6 +106,74 @@ namespace UnityEngine.Tilemaps
         {
             s_Instance = new ITilemap();
             return s_Instance;
+        }
+
+        [RequiredByNativeCode]
+        private static unsafe void FindAllRefreshPositions(ITilemap tilemap, int count, IntPtr oldTilesIntPtr, IntPtr newTilesIntPtr, IntPtr positionsIntPtr)
+        {
+            tilemap.m_AddToList = true;
+            if (tilemap.m_RefreshPos == null || !tilemap.m_RefreshPos.IsCreated || tilemap.m_RefreshPos.Length < count)
+                tilemap.m_RefreshPos = new NativeArray<Vector3Int>(Math.Max(16, count), Allocator.Temp);
+            tilemap.m_RefreshCount = 0;
+
+            var oldTilesPtr = oldTilesIntPtr.ToPointer();
+            var newTilesPtr = newTilesIntPtr.ToPointer();
+            var positionsPtr = positionsIntPtr.ToPointer();
+
+            var oldTilesIds = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(oldTilesPtr, count, Allocator.Invalid);
+            var newTilesIds = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(newTilesPtr, count, Allocator.Invalid);
+            var positions = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector3Int>(positionsPtr, count, Allocator.Invalid);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle<int>(ref oldTilesIds, tilemap.m_Safety);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle<int>(ref newTilesIds, tilemap.m_Safety);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle<Vector3Int>(ref positions, tilemap.m_Safety);
+
+            for (int i = 0; i < count; ++i)
+            {
+                var oldTileId = oldTilesIds[i];
+                var newTileId = newTilesIds[i];
+                var position = positions[i];
+                if (oldTileId != 0)
+                {
+                    var tile = (TileBase)Object.ForceLoadFromInstanceID(oldTileId);
+                    tile.RefreshTile(position, tilemap);
+                }
+                if (newTileId != 0)
+                {
+                    var tile = (TileBase)Object.ForceLoadFromInstanceID(newTileId);
+                    tile.RefreshTile(position, tilemap);
+                }
+            }
+
+            tilemap.m_Tilemap.RefreshTilesNative(tilemap.m_RefreshPos.m_Buffer, tilemap.m_RefreshCount);
+            tilemap.m_RefreshPos.Dispose();
+            tilemap.m_AddToList = false;
+        }
+
+        [RequiredByNativeCode]
+        private unsafe static void GetAllTileData(ITilemap tilemap, int count, IntPtr tilesIntPtr, IntPtr positionsIntPtr, IntPtr outTileDataIntPtr)
+        {
+            void* tilesPtr = tilesIntPtr.ToPointer();
+            void* positionsPtr = positionsIntPtr.ToPointer();
+            void* outTileDataPtr = outTileDataIntPtr.ToPointer();
+
+            var tiles = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(tilesPtr, count, Allocator.Invalid);
+            var positions = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector3Int>(positionsPtr, count, Allocator.Invalid);
+            var tileDataArray = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<TileData>(outTileDataPtr, count, Allocator.Invalid);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref tiles, tilemap.m_Safety);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref positions, tilemap.m_Safety);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref tileDataArray, tilemap.m_Safety);
+
+            for (int i = 0; i < count; ++i)
+            {
+                TileData tileData = default;
+                var tileId = tiles[i];
+                if (tileId != 0)
+                {
+                    TileBase tile = (TileBase)Object.ForceLoadFromInstanceID(tileId);
+                    tile.GetTileData(positions[i], tilemap, ref tileData);
+                }
+                tileDataArray[i] = tileData;
+            }
         }
     }
 }

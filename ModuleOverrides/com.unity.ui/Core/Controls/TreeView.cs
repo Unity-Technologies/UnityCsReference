@@ -367,6 +367,35 @@ namespace UnityEngine.UIElements
             m_ListView.ScrollToItem(index);
         }
 
+        internal void CopyExpandedStates(ITreeViewItem source, ITreeViewItem target)
+        {
+            if (IsExpanded(source.id))
+            {
+                ExpandItem(target.id);
+
+                if (source.children != null && source.children.Count() > 0)
+                {
+                    if (target.children == null || source.children.Count() != target.children.Count())
+                    {
+                        Debug.LogWarning("Source and target hierarchies are not the same");
+                        return;
+                    }
+
+                    for (int i = 0; i < source.children.Count(); i++)
+                    {
+                        var sourceChild = source.children.ElementAt(i);
+                        var targetchild = target.children.ElementAt(i);
+
+                        CopyExpandedStates(sourceChild, targetchild);
+                    }
+                }
+            }
+            else
+            {
+                CollapseItem(target.id);
+            }
+        }
+
         public bool IsExpanded(int id)
         {
             return m_ExpandedItemIds.Contains(id);

@@ -3,10 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEngine.Experimental.TerrainAPI;
+using UnityEngine.TerrainTools;
 using UnityEditor.ShortcutManagement;
 
-namespace UnityEditor.Experimental.TerrainAPI
+namespace UnityEditor.TerrainTools
 {
     [FilePath("Library/TerrainTools/SetHeight", FilePathAttribute.Location.ProjectFolder)]
     internal class SetHeightTool : TerrainPaintTool<SetHeightTool>
@@ -54,7 +54,7 @@ namespace UnityEditor.Experimental.TerrainAPI
             return toolName;
         }
 
-        public override string GetDesc()
+        public override string GetDescription()
         {
             return GetStyles().description.text;
         }
@@ -72,8 +72,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
                 Material material = TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial();
 
-                TerrainPaintUtilityEditor.DrawBrushPreview(
-                    paintContext, TerrainPaintUtilityEditor.BrushPreview.SourceRenderTexture, editContext.brushTexture, brushXform, material, 0);
+                TerrainPaintUtilityEditor.DrawBrushPreview(paintContext, TerrainBrushPreviewMode.SourceRenderTexture, editContext.brushTexture, brushXform, material, 0);
 
                 // draw result preview
                 {
@@ -84,8 +83,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
                     material.SetTexture("_HeightmapOrig", paintContext.sourceRenderTexture);
 
-                    TerrainPaintUtilityEditor.DrawBrushPreview(
-                        paintContext, TerrainPaintUtilityEditor.BrushPreview.DestinationRenderTexture, editContext.brushTexture, brushXform, material, 1);
+                    TerrainPaintUtilityEditor.DrawBrushPreview(paintContext, TerrainBrushPreviewMode.DestinationRenderTexture, editContext.brushTexture, brushXform, material, 1);
                 }
 
                 TerrainPaintUtility.ReleaseContextResources(paintContext);
@@ -104,7 +102,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             TerrainPaintUtility.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
 
-            Graphics.Blit(paintContext.sourceRenderTexture, paintContext.destinationRenderTexture, mat, (int)TerrainPaintUtility.BuiltinPaintMaterialPasses.SetHeights);
+            Graphics.Blit(paintContext.sourceRenderTexture, paintContext.destinationRenderTexture, mat, (int)TerrainBuiltinPaintMaterialPasses.SetHeights);
         }
 
         public override bool OnPaint(Terrain terrain, IOnPaint editContext)

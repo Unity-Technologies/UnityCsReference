@@ -5,21 +5,23 @@
 using System;
 using UnityEngine.Rendering;
 using uei = UnityEngine.Internal;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace UnityEngine.Experimental.TerrainAPI
+namespace UnityEngine.TerrainTools
 {
+    public enum TerrainBuiltinPaintMaterialPasses
+    {
+        RaiseLowerHeight = 0,
+        StampHeight,
+        SetHeights,
+        SmoothHeights,
+        PaintTexture,
+        PaintHoles
+    }
+
+    [MovedFrom("UnityEngine.Experimental.TerrainAPI")]
     public static class TerrainPaintUtility
     {
-        public enum BuiltinPaintMaterialPasses
-        {
-            RaiseLowerHeight = 0,
-            StampHeight,
-            SetHeights,
-            SmoothHeights,
-            PaintTexture,
-            PaintHoles
-        }
-
         private static Material s_BuiltinPaintMaterial = null;
         public static Material GetBuiltinPaintMaterial()
         {
@@ -117,7 +119,7 @@ namespace UnityEngine.Experimental.TerrainAPI
         // this function sets up material properties used by functions provided in TerrainTool.cginc
         public static void SetupTerrainToolMaterialProperties(
             PaintContext paintContext,
-            BrushTransform brushXform,     // the brush transform to terrain space (of paintContext.originTerrain)
+            in BrushTransform brushXform,     // the brush transform to terrain space (of paintContext.originTerrain)
             Material material)
         {
             // BrushUV = f(terrainSpace.xz) = f(g(pc.uv))

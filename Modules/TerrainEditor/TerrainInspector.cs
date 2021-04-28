@@ -13,9 +13,10 @@ using UnityEditor.AnimatedValues;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEditor.ShortcutManagement;
-using UnityEngine.Experimental.TerrainAPI;
-using UnityEditor.Experimental.TerrainAPI;
+using UnityEngine.TerrainTools;
+using UnityEditor.TerrainTools;
 using UnityEditor.Rendering;
+using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEditor
 {
@@ -31,8 +32,9 @@ namespace UnityEditor
         TerrainToolCount
     }
 
-    namespace Experimental.TerrainAPI
+    namespace TerrainTools
     {
+        [MovedFrom("UnityEditor.Experimental.TerrainAPI")]
         public class TerrainToolShortcutContext : IShortcutToolContext
         {
             internal TerrainToolShortcutContext(TerrainInspector editor)
@@ -53,6 +55,7 @@ namespace UnityEditor
             internal TerrainInspector terrainEditor { get; }
         }
 
+        [MovedFrom("UnityEditor.Experimental.TerrainAPI")]
         public static class TerrainInspectorUtility
         {
             public static void TerrainShaderValidationGUI(Material material)
@@ -63,9 +66,9 @@ namespace UnityEditor
                 bool isShaderValid;
                 bool.TryParse(material.GetTag("TerrainCompatible", false), out isShaderValid);
                 RenderPipelineAsset renderPipeline = GraphicsSettings.defaultRenderPipeline;
-                string shaderPath = renderPipeline?.defaultTerrainMaterial.shader.name;
+                string shaderPath = renderPipeline?.defaultTerrainMaterial?.shader.name;
                 string pipelineShaderTag = material.GetTag("RenderPipeline", false);
-                switch (renderPipeline?.name)
+                switch (renderPipeline?.GetType().Name)
                 {
                     case "HDRenderPipelineAsset":
                         isShaderValid = pipelineShaderTag.Equals("HDRenderPipeline") && isShaderValid;
@@ -73,10 +76,12 @@ namespace UnityEditor
                     case "UniversalRenderPipelineAsset":
                         isShaderValid = pipelineShaderTag.Equals("UniversalPipeline") && isShaderValid;
                         break;
-                    default:
+                    case null: // Default legacy render pipeline
                         shaderPath = "a shader from Nature/Terrain";
                         isShaderValid = pipelineShaderTag.Equals("") && isShaderValid;
                         break;
+                    default: // Custom SRP doesn't require a warning
+                        return;
                 }
 
                 if (!isShaderValid)
@@ -1521,7 +1526,7 @@ namespace UnityEditor
                 ITerrainPaintTool activeTool = GetActiveTool();
 
                 GUILayout.BeginVertical(EditorStyles.helpBox);
-                GUILayout.Label(activeTool.GetDesc(), EditorStyles.wordWrappedMiniLabel);
+                GUILayout.Label(activeTool.GetDescription(), EditorStyles.wordWrappedMiniLabel);
                 GUILayout.EndVertical();
                 EditorGUILayout.Space();
 
@@ -2023,8 +2028,8 @@ namespace UnityEditor
                 if (tool == (int)TerrainTool.CreateNeighbor)
                 {
                     GUILayout.Label(m_CreateTool.GetName());
-                    if (!string.IsNullOrEmpty(m_CreateTool.GetDesc()))
-                        GUILayout.Label(m_CreateTool.GetDesc(), EditorStyles.wordWrappedMiniLabel);
+                    if (!string.IsNullOrEmpty(m_CreateTool.GetDescription()))
+                        GUILayout.Label(m_CreateTool.GetDescription(), EditorStyles.wordWrappedMiniLabel);
                 }
                 else if (tool > (int)TerrainTool.Paint && tool < styles.toolIcons.Length)
                 {

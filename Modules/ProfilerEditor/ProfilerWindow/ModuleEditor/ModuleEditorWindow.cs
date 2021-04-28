@@ -29,16 +29,17 @@ namespace UnityEditor.Profiling.ModuleEditor
         [SerializeField] List<ModuleData> m_DeletedModules = new List<ModuleData>();
         bool m_ChangesHaveBeenConfirmed;
         [SerializeField] int m_LastModuleNameIndex = 1;
+        bool m_isConnectedToEditor;
 
         ModuleListViewController m_ModuleListViewController;
         ModuleDetailsViewController m_ModuleDetailsViewController;
 
         public event Action<ReadOnlyCollection<ModuleData>, ReadOnlyCollection<ModuleData>> onChangesConfirmed;
 
-        public static ModuleEditorWindow Present(List<ProfilerModuleBase> modules)
+        public static ModuleEditorWindow Present(List<ProfilerModuleBase> modules, bool isConnectedToEditor)
         {
             var window = GetWindowDontShow<ModuleEditorWindow>();
-            window.Initialize(modules);
+            window.Initialize(modules, isConnectedToEditor);
             window.ShowUtility();
             return window;
         }
@@ -55,7 +56,7 @@ namespace UnityEditor.Profiling.ModuleEditor
             return (moduleEditorWindow != null);
         }
 
-        void Initialize(List<ProfilerModuleBase> modules)
+        void Initialize(List<ProfilerModuleBase> modules, bool isConnectedToEditor)
         {
             if (m_IsInitialized)
             {
@@ -67,6 +68,7 @@ namespace UnityEditor.Profiling.ModuleEditor
             m_Modules = ModuleData.CreateDataRepresentationOfProfilerModules(modules);
             m_SelectedIndex = IndexOfFirstEditableModule();
             m_IsInitialized = true;
+            m_isConnectedToEditor = isConnectedToEditor;
 
             BuildWindow();
         }
@@ -110,7 +112,7 @@ namespace UnityEditor.Profiling.ModuleEditor
             m_ModuleListViewController.onCreateModule += CreateModule;
             m_ModuleListViewController.onModuleAtIndexSelected += OnModuleAtIndexSelected;
 
-            m_ModuleDetailsViewController = new ModuleDetailsViewController();
+            m_ModuleDetailsViewController = new ModuleDetailsViewController(m_isConnectedToEditor);
             m_ModuleDetailsViewController.ConfigureView(rootVisualElement);
             m_ModuleDetailsViewController.onDeleteModule += DeleteModule;
             m_ModuleDetailsViewController.onConfirmChanges += ConfirmChanges;

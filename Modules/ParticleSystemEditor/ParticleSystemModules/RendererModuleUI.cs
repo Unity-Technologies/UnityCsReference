@@ -29,8 +29,11 @@ namespace UnityEditor
 
         // From ParticleSystemRenderer
         SerializedProperty m_RenderMode;
+        SerializedProperty m_MeshDistribution;
         SerializedProperty[] m_Meshes = new SerializedProperty[k_MaxNumMeshes];
+        SerializedProperty[] m_MeshWeightings = new SerializedProperty[k_MaxNumMeshes];
         SerializedProperty[] m_ShownMeshes;
+        SerializedProperty[] m_ShownMeshWeightings;
 
         SerializedProperty m_MinParticleSize;   //< How small is a particle allowed to be on screen at least? 1 is entire viewport. 0.5 is half viewport.
         SerializedProperty m_MaxParticleSize;   //< How large is a particle allowed to be on screen at most? 1 is entire viewport. 0.5 is half viewport.
@@ -54,8 +57,8 @@ namespace UnityEditor
         SerializedProperty m_EnableGPUInstancing;
         SerializedProperty m_ApplyActiveColorSpace;
 
-
         ReorderableList m_VertexStreamsList;
+
         int m_NumTexCoords;
         int m_TexCoordChannelIndex;
         int m_NumInstancedStreams;
@@ -82,7 +85,8 @@ namespace UnityEditor
             public GUIContent renderMode = EditorGUIUtility.TrTextContent("Render Mode", "Defines the render mode of the particle renderer.");
             public GUIContent material = EditorGUIUtility.TrTextContent("Material", "Defines the material used to render particles.");
             public GUIContent trailMaterial = EditorGUIUtility.TrTextContent("Trail Material", "Defines the material used to render particle trails.");
-            public GUIContent mesh = EditorGUIUtility.TrTextContent("Mesh", "Defines the mesh that will be rendered as particle.");
+            public GUIContent meshes = EditorGUIUtility.TrTextContent("Meshes", "Specifies the Meshes to render for each particle. When using a non-uniform distribution, you can also specify the weightings for each Mesh.");
+            public GUIContent meshDistribution = EditorGUIUtility.TrTextContent("Mesh Distribution", "Specifies the method Unity uses to randomly assign Meshes to particles.");
             public GUIContent minParticleSize = EditorGUIUtility.TrTextContent("Min Particle Size", "How small is a particle allowed to be on screen at least? 1 is entire viewport. 0.5 is half viewport.");
             public GUIContent maxParticleSize = EditorGUIUtility.TrTextContent("Max Particle Size", "How large is a particle allowed to be on screen at most? 1 is entire viewport. 0.5 is half viewport.");
             public GUIContent cameraSpeedScale = EditorGUIUtility.TrTextContent("Camera Scale", "How much the camera speed is factored in when determining particle stretching.");
@@ -164,6 +168,12 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Visible Outside Mask")
             };
 
+            public GUIContent[] meshDistributionOptions = new GUIContent[]
+            {
+                EditorGUIUtility.TrTextContent("Uniform Random"),
+                EditorGUIUtility.TrTextContent("Non-uniform Random")
+            };
+
             private string[] vertexStreamsMenu = { "Position", "Normal", "Tangent", "Color", "UV/UV1", "UV/UV2", "UV/UV3", "UV/UV4", "UV/AnimBlend", "UV/AnimFrame", "Center", "VertexID", "Size/Size.x", "Size/Size.xy", "Size/Size.xyz", "Rotation/Rotation", "Rotation/Rotation3D", "Rotation/RotationSpeed", "Rotation/RotationSpeed3D", "Velocity", "Speed", "Lifetime/AgePercent", "Lifetime/InverseStartLifetime", "Random/Stable.x", "Random/Stable.xy", "Random/Stable.xyz", "Random/Stable.xyzw", "Random/Varying.x", "Random/Varying.xy", "Random/Varying.xyz", "Random/Varying.xyzw", "Custom/Custom1.x", "Custom/Custom1.xy", "Custom/Custom1.xyz", "Custom/Custom1.xyzw", "Custom/Custom2.x", "Custom/Custom2.xy", "Custom/Custom2.xyz", "Custom/Custom2.xyzw", "Noise/Sum.x", "Noise/Sum.xy", "Noise/Sum.xyz", "Noise/Impulse.x", "Noise/Impulse.xy", "Noise/Impulse.xyz", "MeshIndex" };
             public string[] vertexStreamsPacked = { "Position", "Normal", "Tangent", "Color", "UV", "UV2", "UV3", "UV4", "AnimBlend", "AnimFrame", "Center", "VertexID", "Size", "Size.xy", "Size.xyz", "Rotation", "Rotation3D", "RotationSpeed", "RotationSpeed3D", "Velocity", "Speed", "AgePercent", "InverseStartLifetime", "StableRandom.x", "StableRandom.xy", "StableRandom.xyz", "StableRandom.xyzw", "VariableRandom.x", "VariableRandom.xy", "VariableRandom.xyz", "VariableRandom.xyzw", "Custom1.x", "Custom1.xy", "Custom1.xyz", "Custom1.xyzw", "Custom2.x", "Custom2.xy", "Custom2.xyz", "Custom2.xyzw", "NoiseSum.x", "NoiseSum.xy", "NoiseSum.xyz", "NoiseImpulse.x", "NoiseImpulse.xy", "NoiseImpulse.xyz", "MeshIndex" }; // Keep in sync with enums in ParticleSystemRenderer.h and ParticleSystemEnums.cs
             public string[] vertexStreamPackedTypes = { "POSITION.xyz", "NORMAL.xyz", "TANGENT.xyzw", "COLOR.xyzw" }; // all other types are floats
@@ -205,6 +215,7 @@ namespace UnityEditor
             m_SortingLayerID = GetProperty0("m_SortingLayerID");
 
             m_RenderMode = GetProperty0("m_RenderMode");
+            m_MeshDistribution = GetProperty0("m_MeshDistribution");
             m_MinParticleSize = GetProperty0("m_MinParticleSize");
             m_MaxParticleSize = GetProperty0("m_MaxParticleSize");
             m_CameraVelocityScale = GetProperty0("m_CameraVelocityScale");
@@ -228,14 +239,25 @@ namespace UnityEditor
             m_Meshes[1] = GetProperty0("m_Mesh1");
             m_Meshes[2] = GetProperty0("m_Mesh2");
             m_Meshes[3] = GetProperty0("m_Mesh3");
+
+            m_MeshWeightings[0] = GetProperty0("m_MeshWeighting");
+            m_MeshWeightings[1] = GetProperty0("m_MeshWeighting1");
+            m_MeshWeightings[2] = GetProperty0("m_MeshWeighting2");
+            m_MeshWeightings[3] = GetProperty0("m_MeshWeighting3");
+
             List<SerializedProperty> shownMeshes = new List<SerializedProperty>();
+            List<SerializedProperty> shownMeshWeightings = new List<SerializedProperty>();
             for (int i = 0; i < m_Meshes.Length; ++i)
             {
                 // Always show the first mesh
                 if (i == 0 || m_Meshes[i].objectReferenceValue != null)
+                {
                     shownMeshes.Add(m_Meshes[i]);
+                    shownMeshWeightings.Add(m_MeshWeightings[i]);
+                }
             }
             m_ShownMeshes = shownMeshes.ToArray();
+            m_ShownMeshWeightings = shownMeshWeightings.ToArray();
 
             m_MaskInteraction = GetProperty0("m_MaskInteraction");
 
@@ -266,9 +288,8 @@ namespace UnityEditor
             {
                 if (renderMode == RenderMode.Mesh)
                 {
-                    EditorGUI.indentLevel++;
+                    GUIPopup(s_Texts.meshDistribution, m_MeshDistribution, s_Texts.meshDistributionOptions);
                     DoListOfMeshesGUI();
-                    EditorGUI.indentLevel--;
 
                     if (renderModeChanged && m_Meshes[0].objectReferenceInstanceIDValue == 0 && !m_Meshes[0].hasMultipleDifferentValues)
                         m_Meshes[0].objectReferenceValue = Resources.GetBuiltinResource(typeof(Mesh), "Cube.fbx");
@@ -444,7 +465,8 @@ namespace UnityEditor
 
         private void DoListOfMeshesGUI()
         {
-            GUIListOfObjectFields(s_Texts.mesh, m_ShownMeshes);
+            var additionalProperties = (m_MeshDistribution.hasMultipleDifferentValues || m_MeshDistribution.intValue == (int)ParticleSystemMeshDistribution.UniformRandom) ? null : m_ShownMeshWeightings;
+            GUIListOfObjectFields(s_Texts.meshes, m_ShownMeshes, additionalProperties);
 
             // Minus button
             Rect rect = GUILayoutUtility.GetRect(0, kSingleLineHeight); //GUILayoutUtility.GetLastRect();
@@ -457,8 +479,13 @@ namespace UnityEditor
                     m_ShownMeshes[m_ShownMeshes.Length - 1].objectReferenceValue = null;
 
                     List<SerializedProperty> shownMeshes = new List<SerializedProperty>(m_ShownMeshes);
+                    List<SerializedProperty> shownMeshWeightings = new List<SerializedProperty>(m_ShownMeshWeightings);
+
                     shownMeshes.RemoveAt(shownMeshes.Count - 1);
+                    shownMeshWeightings.RemoveAt(shownMeshWeightings.Count - 1);
+
                     m_ShownMeshes = shownMeshes.ToArray();
+                    m_ShownMeshWeightings = shownMeshWeightings.ToArray();
                 }
             }
 
@@ -469,8 +496,13 @@ namespace UnityEditor
                 if (PlusButton(rect))
                 {
                     List<SerializedProperty> shownMeshes = new List<SerializedProperty>(m_ShownMeshes);
+                    List<SerializedProperty> shownMeshWeightings = new List<SerializedProperty>(m_ShownMeshWeightings);
+
                     shownMeshes.Add(m_Meshes[shownMeshes.Count]);
+                    shownMeshWeightings.Add(m_MeshWeightings[shownMeshWeightings.Count]);
+
                     m_ShownMeshes = shownMeshes.ToArray();
+                    m_ShownMeshWeightings = shownMeshWeightings.ToArray();
                 }
             }
         }

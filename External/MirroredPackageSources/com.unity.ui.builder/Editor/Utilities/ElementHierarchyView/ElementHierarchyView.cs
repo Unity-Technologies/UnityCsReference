@@ -11,6 +11,8 @@ namespace Unity.UI.Builder
 {
     internal class ElementHierarchyView : VisualElement
     {
+        public const string k_PillName = "unity-builder-tree-class-pill";
+
         public bool hierarchyHasChanged { get; set; }
         public bool hasUnsavedChanges { get; set; }
         public BuilderExplorer.BuilderElementInfoVisibilityState elementInfoVisibilityState { get; set; }
@@ -119,6 +121,36 @@ namespace Unity.UI.Builder
             m_ContextMenuManipulator.RegisterCallbacksOnTarget(m_Container);
         }
 
+        public void CopyTreeViewItemStates(VisualElementAsset sourceVEA, VisualElementAsset targetVEA)
+        {
+            ITreeViewItem templateTreeItem = null;
+            ITreeViewItem unpackedElementTreeItem = null;
+
+            foreach (TreeViewItem<VisualElement> item in treeItems)
+            {
+                if (item == null || item.data == null)
+                {
+                    continue;
+                }
+
+                var elementAsset = item.data.GetVisualElementAsset();
+
+                if (elementAsset == sourceVEA)
+                {
+                    templateTreeItem = item;
+                }
+                else if (elementAsset == targetVEA)
+                {
+                    unpackedElementTreeItem = item;
+                }
+            }
+
+            if (templateTreeItem != null && unpackedElementTreeItem != null)
+            {
+                m_TreeView.CopyExpandedStates(templateTreeItem, unpackedElementTreeItem);
+            }
+        }
+
         void FillItem(VisualElement element, ITreeViewItem item)
         {
             var explorerItem = element as BuilderExplorerItem;
@@ -214,7 +246,7 @@ namespace Unity.UI.Builder
                         m_ClassPillTemplate.CloneTree(selectorLabelCont);
                         var pill = selectorLabelCont.contentContainer.ElementAt(selectorLabelCont.childCount - 1);
                         var pillLabel = pill.Q<Label>("class-name-label");
-                        pill.name = "unity-builder-tree-class-pill";
+                        pill.name = k_PillName;
                         pill.AddToClassList("unity-debugger-tree-item-pill");
                         pill.SetProperty(BuilderConstants.ExplorerStyleClassPillClassNameVEPropertyName, partStr);
                         pill.userData = documentElement;

@@ -32,6 +32,15 @@ namespace UnityEngine.Tilemaps
         }
 
         [RequiredByNativeCode]
+        private void GetTileAnimationDataRef(Vector3Int position, ITilemap tilemap, ref TileAnimationData tileAnimationData, ref bool hasAnimation)
+        {
+            hasAnimation = GetTileAnimationData(position, tilemap, ref tileAnimationData);
+        }
+
+        [RequiredByNativeCode]
         public virtual bool StartUp(Vector3Int position, ITilemap tilemap, GameObject go) { return false; }
+
+        [RequiredByNativeCode]
+        private void StartUpRef(Vector3Int position, ITilemap tilemap, GameObject go, ref bool startUpInvokedByUser) { startUpInvokedByUser = StartUp(position, tilemap, go); }
     }
 }

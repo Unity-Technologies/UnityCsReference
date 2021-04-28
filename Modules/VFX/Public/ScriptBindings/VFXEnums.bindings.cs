@@ -294,6 +294,9 @@ namespace UnityEngine.VFX
         SystemHasIndirectBuffer = 1 << 1,
         SystemReceivedEventGPU = 1 << 2,
         SystemHasStrips = 1 << 3,
+        SystemNeedsComputeBounds = 1 << 4,
+        SystemAutomaticBounds = 1 << 5,
+        SystemInWorldSpace = 1 << 6,
     }
 
     [Flags]

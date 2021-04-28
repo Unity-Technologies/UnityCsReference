@@ -60,6 +60,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Application.onInternetReachabilityChange += OnInternetReachabilityChange;
 
             refreshButton.SetIcon("refresh");
+            refreshButton.iconTooltip = L10n.Tr("Refresh list");
             refreshButton.clicked += () =>
             {
                 if (!EditorApplication.isPlaying)

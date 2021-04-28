@@ -124,6 +124,7 @@ namespace UnityEditor
             public static readonly GUIContent enableFilteringWhileLodGroupEditing = EditorGUIUtility.TrTextContent("Enable filtering while editing LOD groups", "If enabled, editing LOD groups will cause other objects in the scene view to be greyed out");
             public static readonly GUIContent handlesLineThickness = EditorGUIUtility.TrTextContent("Line Thickness", "Thickness of manipulator tool handle lines in UI points (0 = single pixel)");
             public static readonly GUIContent createObjectsAtWorldOrigin = EditorGUIUtility.TrTextContent("Create Objects at Origin", "Enable this preference to instantiate new 3D objects at World coordinates 0,0,0. Disable it to instantiate them at the Scene pivot (in front of the Scene view Camera).");
+            public static readonly GUIContent enableConstrainProportionsScalingForNewObjects = EditorGUIUtility.TrTextContent("Create Objects with Constrained Proportions scale on", "If enabled, scale in the transform component will be set to constrain proportions for new GameObjects by default");
         }
 
         class LanguageProperties
@@ -144,6 +145,7 @@ namespace UnityEditor
 
         private bool m_ReopenLastUsedProjectOnStartup;
         private bool m_EnableEditorAnalytics;
+        private bool m_AnalyticSettingChangedThisSession = false;
         private bool m_AutoSaveScenesBeforeBuilding;
         private ScriptChangesDuringPlayOptions m_ScriptCompilationDuringPlay;
         private bool m_DeveloperMode;
@@ -155,6 +157,7 @@ namespace UnityEditor
         private string[] m_CachedGpuDevices;
         private bool m_ContentScaleChangedThisSession;
         private int m_ContentScalePercentValue;
+        private bool m_EnableConstrainProportionsScalingForNewObjects;
         private string[] m_CustomScalingLabels = {"100%", "125%", "150%", "175%", "200%", "225%", "250%", "300%", "350%"};
         private int[] m_CustomScalingValues = { 100, 125, 150, 175, 200, 225, 250, 300, 350 };
 
@@ -464,7 +467,16 @@ namespace UnityEditor
             bool pro = UnityEngine.Application.HasProLicense();
             using (new EditorGUI.DisabledScope(!pro))
             {
+                bool enableEditorAnalyticsOld = m_EnableEditorAnalytics;
                 m_EnableEditorAnalytics = !EditorGUILayout.Toggle(GeneralProperties.disableEditorAnalytics, !m_EnableEditorAnalytics) || !pro && !m_EnableEditorAnalytics;
+                if (enableEditorAnalyticsOld != m_EnableEditorAnalytics)
+                {
+                    m_AnalyticSettingChangedThisSession = true;
+                }
+                if (m_AnalyticSettingChangedThisSession)
+                {
+                    EditorGUILayout.HelpBox(ExternalProperties.changingThisSettingRequiresRestart.text, MessageType.Warning);
+                }
             }
 
             m_AutoSaveScenesBeforeBuilding = EditorGUILayout.Toggle(GeneralProperties.autoSaveScenesBeforeBuilding, m_AutoSaveScenesBeforeBuilding);
@@ -756,6 +768,8 @@ namespace UnityEditor
 
             GUILayout.Label("General", EditorStyles.boldLabel);
             m_Create3DObjectsAtOrigin = EditorGUILayout.Toggle(SceneViewProperties.createObjectsAtWorldOrigin, m_Create3DObjectsAtOrigin);
+            m_EnableConstrainProportionsScalingForNewObjects = EditorGUILayout.Toggle(SceneViewProperties.enableConstrainProportionsScalingForNewObjects, m_EnableConstrainProportionsScalingForNewObjects);
+
 
             GUILayout.Label("Handles", EditorStyles.boldLabel);
             Handles.s_LineThickness.value = EditorGUILayout.IntSlider(SceneViewProperties.handlesLineThickness, (int)Handles.s_LineThickness.value, 0, 5);
@@ -1056,6 +1070,8 @@ namespace UnityEditor
             UnityEditor.Lightmapping.UpdateCachePath();
 
             EditorPrefs.SetBool("GraphSnapping", m_GraphSnapping);
+
+            EditorPrefs.SetBool("EnableConstrainProportionsTransformScale", m_EnableConstrainProportionsScalingForNewObjects);
         }
 
         private int CurrentEditorScalingValue
@@ -1126,6 +1142,8 @@ namespace UnityEditor
             m_Create3DObjectsAtOrigin = GOCreationCommands.s_PlaceObjectsAtWorldOrigin;
 
             m_GpuDevice = EditorPrefs.GetString("GpuDeviceName");
+
+            m_EnableConstrainProportionsScalingForNewObjects = EditorPrefs.GetBool("EnableConstrainProportionsTransformScale", false);
 
             if (EditorPrefs.HasKey(kContentScalePrefKey))
             {

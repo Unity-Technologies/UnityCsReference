@@ -19,7 +19,11 @@ namespace UnityEditor
             foreach (var collider in targets)
             {
                 if (collider is EdgeCollider2D edgeCollider2D)
-                    paths.Add(new EdgeColliderPath(edgeCollider2D));
+                {
+                    // Only add paths that are valid.
+                    if (edgeCollider2D.pointCount > 1)
+                        paths.Add(new EdgeColliderPath(edgeCollider2D));
+                }
             }
         }
     }

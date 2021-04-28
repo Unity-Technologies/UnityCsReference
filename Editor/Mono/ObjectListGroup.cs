@@ -181,7 +181,7 @@ namespace UnityEditor
                 // Draw dropshadow overlay
                 float fraction = position.width / 128f;
                 Rect dropShadowRect = new Rect(position.x - 4 * fraction, position.y - 2 * fraction, position.width + 8 * fraction, position.height + 12 * fraction - 0.5f);
-                s_Styles.iconDropShadow.Draw(dropShadowRect, GUIContent.none, false, false, selected || isDropTarget, m_Owner.HasFocus() || isRenaming || isDropTarget);
+                Styles.iconDropShadow.Draw(dropShadowRect, GUIContent.none, false, false, selected || isDropTarget, m_Owner.HasFocus() || isRenaming || isDropTarget);
             }
 
             protected void DrawHeaderBackground(Rect rect, bool firstHeader, bool expanded)
@@ -190,7 +190,7 @@ namespace UnityEditor
                     return;
 
                 // Draw the group bar background
-                (firstHeader ? s_Styles.groupHeaderTop : s_Styles.groupHeaderMiddle)?.Draw(rect, GUIContent.none,
+                (firstHeader ? Styles.groupHeaderTop : Styles.groupHeaderMiddle)?.Draw(rect, GUIContent.none,
                     rect.Contains(Event.current.mousePosition), false, expanded, false);
             }
 
@@ -217,15 +217,15 @@ namespace UnityEditor
                 if (collapsable)
                 {
                     bool oldVisible = Visible;
-                    Visible = GUI.Toggle(rect, Visible, GUIContent.none, s_Styles.groupFoldout);
+                    Visible = GUI.Toggle(rect, Visible, GUIContent.none, Styles.groupFoldout);
                     if (oldVisible ^ Visible)
                         visiblePreference = Visible;
                 }
 
                 // Draw title
-                GUIStyle textStyle = s_Styles.groupHeaderLabel;
+                GUIStyle textStyle = Styles.groupHeaderLabel;
                 if (collapsable)
-                    rect.x += s_Styles.groupFoldout.fixedWidth + foldoutSpacing;
+                    rect.x += Styles.groupFoldout.fixedWidth + foldoutSpacing;
                 rect.y += 1;
                 if (!string.IsNullOrEmpty(m_GroupSeparatorTitle))
                     GUI.Label(rect, m_GroupSeparatorTitle, textStyle);
@@ -243,12 +243,12 @@ namespace UnityEditor
                 const float rightMargin = 4f;
 
                 string label = ItemsAvailable + " Total";
-                Vector2 labelDims = s_Styles.groupHeaderLabelCount.CalcSize(new GUIContent(label));
+                Vector2 labelDims = Styles.groupHeaderLabelCount.CalcSize(new GUIContent(label));
                 if (labelDims.x < rect.width)
                     rect.x = m_Owner.GetVisibleWidth() - labelDims.x - rightMargin; // right align if room
                 rect.width = labelDims.x;
                 rect.y += 2; // better y pos for minilabel
-                GUI.Label(rect, label, s_Styles.groupHeaderLabelCount);
+                GUI.Label(rect, label, Styles.groupHeaderLabelCount);
             }
         }
     }

@@ -18,6 +18,13 @@ namespace UnityEngine
         None = 5                    // Don't render particles. (e.g. useful when using the Trail or Lights Module)
     }
 
+    // The mesh distribution options for particle systems
+    public enum ParticleSystemMeshDistribution
+    {
+        UniformRandom = 0,          // Each mesh has an equal change of being chosen.
+        NonUniformRandom = 1        // Each mesh has a weighting that affects how likely it is to be chosen.
+    }
+
     // The sorting mode for particle systems
     public enum ParticleSystemSortMode
     {

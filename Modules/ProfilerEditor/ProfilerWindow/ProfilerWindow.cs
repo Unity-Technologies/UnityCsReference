@@ -1403,7 +1403,7 @@ namespace UnityEditor
             }
             else
             {
-                moduleEditorWindow = ModuleEditorWindow.Present(m_Modules);
+                moduleEditorWindow = ModuleEditorWindow.Present(m_Modules, ConnectedToEditor);
                 moduleEditorWindow.onChangesConfirmed += OnModuleEditorChangesConfirmed;
             }
         }
@@ -1433,7 +1433,7 @@ namespace UnityEditor
             if (ModuleEditorWindow.TryGetOpenInstance(out var moduleEditorWindow))
             {
                 moduleEditorWindow.Close();
-                moduleEditorWindow = ModuleEditorWindow.Present(m_Modules);
+                moduleEditorWindow = ModuleEditorWindow.Present(m_Modules, ConnectedToEditor);
                 moduleEditorWindow.onChangesConfirmed += OnModuleEditorChangesConfirmed;
             }
         }

@@ -208,6 +208,7 @@ namespace UnityEditor
             public readonly Dictionary<TextureImporterShape, GUIContent[]> textureShapeOptionsDictionnary = new Dictionary<TextureImporterShape, GUIContent[]>();
             public readonly Dictionary<TextureImporterShape, int[]> textureShapeValuesDictionnary = new Dictionary<TextureImporterShape, int[]>();
 
+            public readonly GUIContent defaultPlatform = EditorGUIUtility.TrTextContent("Default");
 
             public readonly GUIContent filterMode = EditorGUIUtility.TrTextContent("Filter Mode");
             public readonly GUIContent[] filterModeOptions =
@@ -1341,10 +1342,16 @@ namespace UnityEditor
             // Filter mode, aniso, and wrap mode GUI
             TextureSettingsGUI();
 
+            BaseTextureImportPlatformSettings.InitPlatformSettings(m_PlatformSettings.ConvertAll<BaseTextureImportPlatformSettings>(x => x as BaseTextureImportPlatformSettings));
+            GUILayout.Space(10);
+
+            //Show platform grouping
+            int selectedPage = EditorGUILayout.BeginPlatformGrouping(BaseTextureImportPlatformSettings.GetBuildPlayerValidPlatforms(), s_Styles.defaultPlatform);
+
+            //Show platform settings
             using (var changed = new EditorGUI.ChangeCheckScope())
             {
-                BaseTextureImportPlatformSettings.InitPlatformSettings(m_PlatformSettings.ConvertAll<BaseTextureImportPlatformSettings>(x => x as BaseTextureImportPlatformSettings));
-                BaseTextureImportPlatformSettings.ShowPlatformSpecificSettings(m_PlatformSettings.ConvertAll<BaseTextureImportPlatformSettings>(x => x as BaseTextureImportPlatformSettings));
+                BaseTextureImportPlatformSettings.ShowPlatformSpecificSettings(m_PlatformSettings.ConvertAll<BaseTextureImportPlatformSettings>(x => x as BaseTextureImportPlatformSettings), selectedPage);
                 // Doing it this way is slow, but it ensure Presets get updated correctly whenever the UI is being changed.
                 if (changed.changed)
                 {

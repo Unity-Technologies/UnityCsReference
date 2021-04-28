@@ -8,6 +8,7 @@ using UnityEngine.Rendering;
 using Enum = System.Enum;
 using GetBoundsFunc = System.Func<UnityEngine.Bounds>;
 using Object = UnityEngine.Object;
+using System.Linq;
 
 namespace UnityEditor
 {
@@ -395,31 +396,50 @@ namespace UnityEditor
             return null;
         }
 
-        public void GUIListOfObjectFields(GUIContent label, SerializedProperty[] objectProps, params GUILayoutOption[] layoutOptions)
+        public void GUIListOfObjectFields(GUIContent label, SerializedProperty[] objectProps, SerializedProperty[] additionalProps, params GUILayoutOption[] layoutOptions)
         {
             int numObjects = objectProps.Length;
             Rect rect = GUILayoutUtility.GetRect(0, (kSingleLineHeight + 2) * numObjects, layoutOptions);
             rect.height = kSingleLineHeight;
 
-            float indent = 10f;
-            float floatFieldWidth = 35f;
-            float space = 10f;
-            float objectFieldWidth = rect.width - indent - floatFieldWidth - space * 2 - k_toggleWidth;
-
-            using (new PropertyGroupScope(objectProps))
+            var propsForScope = (additionalProps != null) ? objectProps.Concat(additionalProps).ToArray() : objectProps;
+            using (new PropertyGroupScope(propsForScope))
             {
                 PrefixLabel(rect, label);
 
+                float indent = EditorGUIUtility.labelWidth;
+                float space = 10f;
+                float objectFieldWidth = rect.width - indent - space * 2 - k_toggleWidth;
+
                 for (int i = 0; i < numObjects; ++i)
                 {
-                    SerializedProperty objectProp = objectProps[i];
+                    Rect r2 = new Rect(rect.x + indent, rect.y, objectFieldWidth, rect.height);
+                    Rect r3 = r2;
 
-                    Rect r2 = new Rect(rect.x + indent + floatFieldWidth + space, rect.y, objectFieldWidth, rect.height);
                     int id = GUIUtility.GetControlID(1235498, FocusType.Keyboard, r2);
 
+                    if (additionalProps != null)
+                    {
+                        EditorGUILayout.BeginHorizontal();
+                        r2.width -= 60.0f;
+                        r3.width = 55.0f;
+                        r3.x = r2.xMax + 5.0f;
+                    }
+
+                    SerializedProperty objectProp = objectProps[i];
                     EditorGUI.BeginProperty(r2, GUIContent.none, objectProp);
                     EditorGUI.DoObjectField(r2, r2, id, null, objectProp, null, true, ParticleSystemStyles.Get().objectField);
                     EditorGUI.EndProperty();
+
+                    if (additionalProps != null)
+                    {
+                        SerializedProperty additionalProp = additionalProps[i];
+                        EditorGUI.BeginProperty(r3, GUIContent.none, additionalProp);
+                        FloatDraggable(r3, additionalProp, 1.0f, 10.0f);
+                        EditorGUI.EndProperty();
+
+                        EditorGUILayout.EndHorizontal();
+                    }
 
                     rect.y += kSingleLineHeight + 2;
                 }

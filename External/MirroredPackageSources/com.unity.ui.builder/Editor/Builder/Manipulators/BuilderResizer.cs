@@ -117,8 +117,8 @@ namespace Unity.UI.Builder
                 -diff.y,
                 changeList);
 
-            style.height = m_ThisRectOnStartDrag.height - diff.y;
-            style.top = m_ThisRectOnStartDrag.y + diff.y;
+            style.height = Mathf.Round(m_ThisRectOnStartDrag.height - diff.y);
+            style.top = Mathf.Round(m_ThisRectOnStartDrag.y + diff.y);
         }
 
         void OnDragLeft(Vector2 diff, List<string> changeList)
@@ -130,8 +130,8 @@ namespace Unity.UI.Builder
                 -diff.x,
                 changeList);
 
-            style.width = m_ThisRectOnStartDrag.width - diff.x;
-            style.left = m_ThisRectOnStartDrag.x + diff.x;
+            style.width = Mathf.Round(m_ThisRectOnStartDrag.width - diff.x);
+            style.left = Mathf.Round(m_ThisRectOnStartDrag.x + diff.x);
         }
 
         void OnDragBottom(Vector2 diff, List<string> changeList)
@@ -143,7 +143,7 @@ namespace Unity.UI.Builder
                 diff.y,
                 changeList);
 
-            style.height = m_ThisRectOnStartDrag.height + diff.y;
+            style.height = Mathf.Round(m_ThisRectOnStartDrag.height + diff.y);
         }
 
         void OnDragRight(Vector2 diff, List<string> changeList)
@@ -155,7 +155,7 @@ namespace Unity.UI.Builder
                 diff.x,
                 changeList);
 
-            style.width = m_ThisRectOnStartDrag.width + diff.x;
+            style.width = Mathf.Round(m_ThisRectOnStartDrag.width + diff.x);
         }
 
         void NotifySelection()

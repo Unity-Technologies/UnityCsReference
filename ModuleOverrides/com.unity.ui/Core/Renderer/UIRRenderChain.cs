@@ -922,6 +922,7 @@ namespace UnityEngine.UIElements.UIR
             GUI.Label(rc, "Draw ranges\t: " + drawStats.drawRangeCount); rc.y += y_off;
             GUI.Label(rc, "Draw range calls\t: " + drawStats.drawRangeCallCount); rc.y += y_off;
             GUI.Label(rc, "Material sets\t: " + drawStats.materialSetCount); rc.y += y_off;
+            GUI.Label(rc, "Stencil changes\t: " + drawStats.stencilRefChanges); rc.y += y_off;
             GUI.Label(rc, "Immediate draws\t: " + drawStats.immediateDraws); rc.y += y_off;
             GUI.Label(rc, "Total triangles\t: " + (drawStats.totalIndices / 3)); rc.y += y_off;
         }
@@ -966,10 +967,15 @@ namespace UnityEngine.UIElements.UIR
         internal int hierarchyDepth; // 0 is for the root
         internal RenderDataDirtyTypes dirtiedValues;
         internal uint dirtyID;
-        internal Implementation.ClipMethod clipMethod;
         internal RenderChainCommand firstCommand, lastCommand; // Sequential for the same owner
         internal RenderChainCommand firstClosingCommand, lastClosingCommand; // Optional, sequential for the same owner, the presence of closing commands requires starting commands too, otherwise certain optimizations will become invalid
-        internal bool isInChain, isStencilClipped, isHierarchyHidden;
+        internal bool isInChain;
+        internal bool isHierarchyHidden;
+
+        internal Implementation.ClipMethod clipMethod; // Self
+        internal int childrenStencilRef;
+        internal int childrenMaskDepth;
+
         internal bool disableNudging, usesLegacyText;
         internal MeshHandle data, closingData;
         internal Matrix4x4 verticesSpace; // Transform describing the space which the vertices in 'data' are relative to

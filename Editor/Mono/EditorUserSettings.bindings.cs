@@ -70,6 +70,9 @@ namespace UnityEditor
         [NativeProperty("VCDebugCom")]
         internal static extern bool DebugCom { get; set; }
 
+        [NativeProperty("ArtifactGarbageCollection")]
+        public static extern bool artifactGarbageCollection { get; set; }
+
         public static extern SemanticMergeMode semanticMergeMode { get; set; }
 
         internal static extern void SoftReset();

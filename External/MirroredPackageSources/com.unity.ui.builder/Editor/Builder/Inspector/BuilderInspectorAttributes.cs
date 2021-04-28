@@ -221,16 +221,7 @@ namespace Unity.UI.Builder
         {
             if (currentVisualElement is ScrollView scrollView)
             {
-                if (attributeName == "mode")
-                {
-                    if (scrollView.ClassListContains(ScrollView.verticalVariantUssClassName))
-                        return ScrollViewMode.Vertical;
-                    else if (scrollView.ClassListContains(ScrollView.horizontalVariantUssClassName))
-                        return ScrollViewMode.Horizontal;
-                    else if (scrollView.ClassListContains(ScrollView.verticalHorizontalVariantUssClassName))
-                        return ScrollViewMode.VerticalAndHorizontal;
-                }
-                else if (attributeName == "show-horizontal-scroller")
+                if (attributeName == "show-horizontal-scroller")
                 {
                     return scrollView.horizontalScrollerVisibility != ScrollerVisibility.Hidden;
                 }

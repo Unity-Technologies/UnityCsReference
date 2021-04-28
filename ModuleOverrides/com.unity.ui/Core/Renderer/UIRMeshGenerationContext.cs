@@ -43,13 +43,10 @@ namespace UnityEngine.UIElements
         public Vector2 uv;
         internal Color32 xformClipPages; // Top-left of xform and clip pages: XY,XY
         internal Color32 ids; //XYZW (xform,clip,opacity,textcore)
-        internal Color32 flags; //X (flags) Y (textcore-dilate) ZW (unused)
+        internal Color32 flags; //X (flags) Y (textcore-dilate) Z (is-arc) W (unused)
         internal Color32 opacityPageSettingIndex; //XY (ZW SVG setting index)
+        internal Vector4 circle; // XY (center) Z (outer-radius) W (inner-radius, inner-center in uv)
         internal float textureId;
-
-        // For backward-compatibility. Before 2021.1, the ids and flags were merged
-        // in an idsFlags field where idsFlags.rgb contained the ids, and idsFlags.a held the flags.
-        internal Color32 idsFlags;
 
         // Winding order of vertices matters. CCW is for clipped meshes.
     }
@@ -746,6 +743,18 @@ namespace UnityEngine.UIElements
             bottomLeft = ConvertBorderRadiusPercentToPoints(borderRectSize, computedStyle.borderBottomLeftRadius);
             topRight = ConvertBorderRadiusPercentToPoints(borderRectSize, computedStyle.borderTopRightRadius);
             bottomRight = ConvertBorderRadiusPercentToPoints(borderRectSize, computedStyle.borderBottomRightRadius);
+        }
+
+        public static void AdjustBackgroundSizeForBorders(VisualElement visualElement, ref Rect rect)
+        {
+            var style = visualElement.computedStyle;
+
+            // If the border width allows it, slightly shrink the background size to avoid
+            // having both the border and background blending together after antialiasing.
+            if (style.borderLeftWidth >= 1.0f && style.borderLeftColor.a >= 1.0f) { rect.x += 0.5f; rect.width -= 0.5f; }
+            if (style.borderTopWidth >= 1.0f && style.borderTopColor.a >= 1.0f) { rect.y += 0.5f; rect.height -= 0.5f; }
+            if (style.borderRightWidth >= 1.0f && style.borderRightColor.a >= 1.0f) { rect.width -= 0.5f; }
+            if (style.borderBottomWidth >= 1.0f && style.borderBottomColor.a >= 1.0f) { rect.height -= 0.5f; }
         }
     }
 

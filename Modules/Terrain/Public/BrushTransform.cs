@@ -6,12 +6,14 @@ using System;
 using System.Collections.Generic;
 using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace UnityEngine.Experimental.TerrainAPI
+namespace UnityEngine.TerrainTools
 {
     // represents a linear 2D transform between brush UV space and some other target XY space
     //      xy = u * brushU + v * brushV + brushOrigin
     //      uv = x * targetX + y * targetY + targetOrigin
+    [MovedFrom("UnityEngine.Experimental.TerrainAPI")]
     public struct BrushTransform
     {
         public Vector2 brushOrigin { get; }     // brush UV origin, in XY space

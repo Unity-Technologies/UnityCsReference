@@ -57,6 +57,8 @@ namespace UnityEditor
         bool m_HDR;
         ColorSpace m_ColorSpace;
 
+        private bool m_DoubleClickDetected;
+
         // Fixed steps are only used if numSteps > 1
         public void Init(Gradient gradient, int numSteps, bool hdr, ColorSpace colorSpace)
         {
@@ -64,6 +66,7 @@ namespace UnityEditor
             m_NumSteps = numSteps;
             m_HDR = hdr;
             m_ColorSpace = colorSpace;
+            m_DoubleClickDetected = false;
 
             BuildArrays();
 
@@ -282,9 +285,8 @@ namespace UnityEditor
                         {
                             if (evt.clickCount == 2)
                             {
-                                GUIUtility.keyboardControl = id;
-                                ColorPicker.Show(GUIView.current, m_SelectedSwatch.m_Value, false, m_HDR);
-                                GUIUtility.ExitGUI();
+                                //Storing the double click state to open the color picker on Mouse up event so that the user has completed his interaction with swatch movement/drag.
+                                m_DoubleClickDetected = true;
                             }
                             break;
                         }
@@ -358,6 +360,13 @@ namespace UnityEditor
 
                         // Remove duplicate keys on mouse up so that we do not kill any keys during the drag
                         RemoveDuplicateOverlappingSwatches();
+                    }
+                    else if (m_DoubleClickDetected)
+                    {
+                        m_DoubleClickDetected = false;
+                        GUIUtility.keyboardControl = id;
+                        ColorPicker.Show(GUIView.current, m_SelectedSwatch.m_Value, false, m_HDR);
+                        GUIUtility.ExitGUI();
                     }
                     break;
 

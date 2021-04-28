@@ -2268,7 +2268,7 @@ namespace UnityEditor
         {
             bool changed;
             string allowedCharacters = value.isDouble ? s_AllowedCharactersForFloat : s_AllowedCharactersForInt;
-            if (draggable)
+            if (draggable && GUI.enabled)
             {
                 DragNumberValue(dragHotZone, id, ref value, dragSensitivity);
             }
@@ -4197,7 +4197,7 @@ namespace UnityEditor
         internal static Vector2 Vector2Field(Rect position, GUIContent label, Vector2 value, bool setWideMode)
         {
             int id = GUIUtility.GetControlID(s_FoldoutHash, FocusType.Keyboard, position);
-            position = MultiFieldPrefixLabel(position, id, label, 2, setWideMode);
+            position = MultiFieldPrefixLabel(position, id, label, 2, 0, setWideMode);
             position.height = kSingleLineHeight;
             return Vector2Field(position, value);
         }
@@ -4251,40 +4251,107 @@ namespace UnityEditor
             return value;
         }
 
-        internal static Vector3 LinkedVector3Field(Rect position, GUIContent label, Vector3 value, ref bool linked)
+        internal static Vector3 LinkedVector3Field(Rect position, GUIContent label, Vector3 value, ref bool proportionalScale)
         {
-            int id = GUIUtility.GetControlID(s_FoldoutHash, FocusType.Keyboard, position);
-            position = MultiFieldPrefixLabel(position, id, label, 3);
+            int axisModified = 0;// use X as default modified axis
+            return LinkedVector3Field(position, label, GUIContent.none, value, ref proportionalScale, value, 0, ref axisModified);
+        }
+
+        // Make an X, Y & Z field for entering a [[Vector3]], with a "lock"
+        internal static Vector3 LinkedVector3Field(Rect position, GUIContent label,  GUIContent toggleContent, Vector3 value, ref bool proportionalScale, Vector3 initialScale, uint mixedValues, ref int axisModified, SerializedProperty property = null, SerializedProperty proportionalScaleProperty = null)
+        {
+            GUIContent copy = label;
+            Rect fullLabelRect = position;
+            // If SerializedProperty is passed, make sure to call begin and end for property
+
+            // Since we have two separate properties to handle, make sure fields are not overlaping each other
+            // If only localScale property has override, make sure constrainProportionsScale property is in the layer behind
+            if (proportionalScaleProperty != null && property.prefabOverride && !proportionalScale)
+                label = BeginPropertyInternal(fullLabelRect, label, proportionalScaleProperty);
+
+            if (property != null)
+                label = BeginPropertyInternal(position, label, property);
+
+            SerializedProperty copiedProperty = property == null ? property : property.Copy();
             var toggle = EditorStyles.toggle.CalcSize(GUIContent.none);
+            int id = GUIUtility.GetControlID(s_FoldoutHash, FocusType.Keyboard, position);
+            position = MultiFieldPrefixLabel(position, id, label, 3, toggle.x + kDefaultSpacing, false);
             var toggleRect = position;
             toggleRect.width = toggle.x;
+            float toggleOffset = toggleRect.width + kDefaultSpacing;
+            toggleRect.x -= toggleOffset;
+            toggle.x -= toggleOffset;
             BeginChangeCheck();
             Styles.linkButton.alignment = TextAnchor.MiddleCenter;
-            linked = Toggle(toggleRect, linked, Styles.linkButton);
-            if (EndChangeCheck() && linked)
-                value = Vector3.one * value.x;
+
+            if (proportionalScaleProperty != null)
+            {
+                // If localScale property does not have override, make sure proportionalScale is in front layer
+                if (!property.prefabOverride || proportionalScale)
+                {
+                    // If proportional scaling is enabled, make sure to use full scale rect, to be able revert all axis and state at the same time,
+                    // otherwise rect size should match label size
+                    if (!proportionalScale)
+                        fullLabelRect.xMax = toggleRect.xMin;
+
+                    label = BeginPropertyInternal(fullLabelRect, label, proportionalScaleProperty);
+                }
+
+                BeginChangeCheck();
+                bool previousProportionalScale = proportionalScale;
+                proportionalScale = GUI.Toggle(toggleRect, proportionalScale, toggleContent, Styles.linkButton);
+                if (previousProportionalScale != proportionalScale)
+                    proportionalScaleProperty.boolValue = proportionalScale;
+                EndChangeCheck();
+
+                if (proportionalScale)
+                    EndProperty();
+            }
+            else
+            {
+                proportionalScale = GUI.Toggle(toggleRect, proportionalScale, toggleContent, Styles.linkButton);
+            }
+
             position.x += toggle.x + kDefaultSpacing;
             position.width -= toggle.x + kDefaultSpacing;
             position.height = kSingleLineHeight;
-            return LinkedVector3Field(position, value, linked);
+
+            var newValue = LinkedVector3Field(position, value, proportionalScale, mixedValues, initialScale, ref axisModified, copiedProperty);
+
+            if (property != null)
+                EndProperty();
+
+            if (proportionalScaleProperty != null && property.prefabOverride && !proportionalScale)
+                EndProperty();
+
+            return newValue;
+        }
+
+        static Vector3 LinkedVector3Field(Rect position, Vector3 value, bool proportionalScale)
+        {
+            int axisModified = 0;// Use X as default modified axis
+            return LinkedVector3Field(position, value, proportionalScale, 0, value, ref axisModified);
         }
 
         // Make an X, Y & Z field for entering a [[Vector3]].
-        static Vector3 LinkedVector3Field(Rect position, Vector3 value, bool linked)
+        static Vector3 LinkedVector3Field(Rect position, Vector3 value, bool proportionalScale, uint mixedValues, Vector3 initialScale, ref int axisModified, SerializedProperty property = null)
         {
+            Vector3 valueAfterChangeCheck = value;
             s_Vector3Floats[0] = value.x;
             s_Vector3Floats[1] = value.y;
             s_Vector3Floats[2] = value.z;
             position.height = kSingleLineHeight;
             BeginChangeCheck();
-            LockingMultiFloatFieldInternal(position, linked, s_XYZLabels, s_Vector3Floats);
+            LockingMultiFloatFieldInternal(position, proportionalScale, mixedValues, s_XYZLabels, s_Vector3Floats, new float[] {initialScale.x, initialScale.y, initialScale.z}, property, EditorGUI.CalcPrefixLabelWidth(s_XYZLabels[0]) + 3);
             if (EndChangeCheck())
             {
-                value.x = s_Vector3Floats[0];
-                value.y = s_Vector3Floats[1];
-                value.z = s_Vector3Floats[2];
+                valueAfterChangeCheck.x = s_Vector3Floats[0];
+                valueAfterChangeCheck.y = s_Vector3Floats[1];
+                valueAfterChangeCheck.z = s_Vector3Floats[2];
             }
-            return value;
+
+            return proportionalScale && valueAfterChangeCheck != value ?
+                ConstrainProportionsTransformScale.DoScaleProportions(valueAfterChangeCheck, value, initialScale, ref axisModified) : valueAfterChangeCheck;
         }
 
         // Make an X, Y field - not public (use PropertyField instead)
@@ -4736,6 +4803,11 @@ namespace UnityEditor
 
         static void LockingMultiFloatFieldInternal(Rect position, bool locked, GUIContent[] subLabels, float[] values, float prefixLabelWidth = -1)
         {
+            LockingMultiFloatFieldInternal(position, locked, 0, subLabels, values, null, null, prefixLabelWidth);
+        }
+
+        static void LockingMultiFloatFieldInternal(Rect position, bool locked, uint mixedValues, GUIContent[] subLabels, float[] values, float[] initialValues = null, SerializedProperty property = null, float prefixLabelWidth = -1)
+        {
             int eCount = values.Length;
             float w = (position.width - (eCount - 1) * EditorGUI.kSpacingSubLabel) / eCount;
             Rect nr = new Rect(position) {width = w};
@@ -4743,20 +4815,53 @@ namespace UnityEditor
             int l = EditorGUI.indentLevel;
             EditorGUI.indentLevel = 0;
             var guiEnabledState = GUI.enabled;
-            for (int i = 0; i < values.Length; i++)
-            {
-                EditorGUIUtility.labelWidth = GetLabelWidth(subLabels[i], prefixLabelWidth);
+            bool hasMixedValues = mixedValues != 0;
+            uint multiselectionLock = ConstrainProportionsTransformScale.GetMultiSelectionLockedFields(property?.serializedObject?.targetObjects);
 
-                if (locked && i > 0)
+            if (initialValues == null)
+                initialValues = values;
+
+            bool mixedValueState = EditorGUI.showMixedValue;
+
+            for (int i = 0; i < initialValues.Length; i++)
+            {
+                if (property != null)
+                    property.Next(true);
+                EditorGUIUtility.labelWidth = prefixLabelWidth > 0 ? prefixLabelWidth : EditorGUI.CalcPrefixLabelWidth(subLabels[i]);
+
+                if (guiEnabledState)
                 {
-                    GUI.enabled = false;
-                    values[i] = values[0];
+                    if (locked)
+                    {
+                        // If initial field value is 0, it must be locked not to break proportions
+                        GUI.enabled = !Mathf.Approximately(initialValues[i], 0) && (property != null && property.serializedObject.targetObjectsCount > 1 ? !ConstrainProportionsTransformScale.IsBit(multiselectionLock, i) : true);
+                    }
+                    else
+                    {
+                        GUI.enabled = true;
+                    }
                 }
 
-                values[i] = EditorGUI.FloatField(nr, subLabels[i], values[i]);
+                if (hasMixedValues)
+                    EditorGUI.showMixedValue = ConstrainProportionsTransformScale.IsBit(mixedValues, i);
+
+                if (property != null)
+                {
+                    EditorGUI.PropertyField(nr, property, subLabels[i]);
+                    values[i] = property.floatValue;
+                }
+                else
+                {
+                    values[i] = EditorGUI.FloatField(nr, subLabels[i], values[i]);
+                }
+
+                if (hasMixedValues)
+                    EditorGUI.showMixedValue = false;
+
                 nr.x += w + EditorGUI.kSpacingSubLabel;
             }
             GUI.enabled = guiEnabledState;
+            EditorGUI.showMixedValue = mixedValueState;
             EditorGUIUtility.labelWidth = t;
             EditorGUI.indentLevel = l;
         }
@@ -6144,7 +6249,6 @@ namespace UnityEditor
                 if (label != null) Highlighter.Handle(totalPosition, label.text);
             }
 
-            // DrawTextDebugHelpers (labelPosition);
             switch (Event.current.type)
             {
                 case EventType.Repaint:
@@ -6213,10 +6317,10 @@ namespace UnityEditor
 
         internal static Rect MultiFieldPrefixLabel(Rect totalPosition, int id, GUIContent label, int columns)
         {
-            return MultiFieldPrefixLabel(totalPosition, id, label, columns, false);
+            return MultiFieldPrefixLabel(totalPosition, id, label, columns, 0, false);
         }
 
-        internal static Rect MultiFieldPrefixLabel(Rect totalPosition, int id, GUIContent label, int columns, bool setWideMode)
+        internal static Rect MultiFieldPrefixLabel(Rect totalPosition, int id, GUIContent label, int columns, float labelWidthIndent, bool setWideMode)
         {
             if (!LabelHasContent(label))
             {
@@ -6225,7 +6329,7 @@ namespace UnityEditor
 
             if (EditorGUIUtility.wideMode || setWideMode)
             {
-                Rect labelPosition = new Rect(totalPosition.x + indent, totalPosition.y, EditorGUIUtility.labelWidth - indent, kSingleLineHeight);
+                Rect labelPosition = new Rect(totalPosition.x + indent, totalPosition.y, EditorGUIUtility.labelWidth - indent - labelWidthIndent, kSingleLineHeight);
                 Rect fieldPosition = totalPosition;
                 fieldPosition.xMin += EditorGUIUtility.labelWidth + kPrefixPaddingRight;
 
@@ -9763,11 +9867,19 @@ namespace UnityEditor
             return EditorGUI.Vector3Field(r, label, value);
         }
 
-        // Make an X, Y & Z field for entering a [[Vector3]], with a "lock" to set all values with just the X field.
-        internal static Vector3 LinkedVector3Field(GUIContent label, Vector3 value, ref bool linked, params GUILayoutOption[] options)
+        // Make an X, Y & Z field for entering a [[Vector3]], with a "lock"
+        internal static Vector3 LinkedVector3Field(GUIContent label, Vector3 value, ref bool proportionalScale, params GUILayoutOption[] options)
         {
             Rect r = s_LastRect = GetControlRect(true, EditorGUI.GetPropertyHeight(SerializedPropertyType.Vector3, label), EditorStyles.numberField, options);
-            return EditorGUI.LinkedVector3Field(r, label, value, ref linked);
+            return EditorGUI.LinkedVector3Field(r, label, value, ref proportionalScale);
+        }
+
+        // Make an X, Y & Z field for entering a [[Vector3]], with a "lock"
+        internal static Vector3 LinkedVector3Field(GUIContent label, Vector3 value, Vector3 initialValue, ref bool proportionalScale, params GUILayoutOption[] options)
+        {
+            Rect r = s_LastRect = GetControlRect(true, EditorGUI.GetPropertyHeight(SerializedPropertyType.Vector3, label), EditorStyles.numberField, options);
+            int axisModified = 0;// Use X as default modified axis
+            return EditorGUI.LinkedVector3Field(r, label, GUIContent.none, value, ref proportionalScale, initialValue, 0, ref axisModified, null);
         }
 
         // Make an X, Y, Z & W field for entering a [[Vector4]].

@@ -135,6 +135,7 @@ namespace UnityEditor.Profiling
             {
                 responder?.OnRestoreDefaultModules();
             }
+            Close();
         }
 
         VisualElement MakeListViewItem()

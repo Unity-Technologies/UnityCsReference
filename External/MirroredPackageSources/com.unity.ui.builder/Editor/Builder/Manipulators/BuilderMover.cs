@@ -92,8 +92,8 @@ namespace Unity.UI.Builder
             OnMove(TrackedStyle.Left, forceLeft, m_TargetRectOnStartDrag.x, diff.x, m_ScratchChangeList);
             OnMove(TrackedStyle.Bottom, false, m_TargetCorrectedBottomOnStartDrag, -diff.y, m_ScratchChangeList);
 
-            style.left = m_ThisRectOnStartDrag.x + diff.x;
-            style.top = m_ThisRectOnStartDrag.y + diff.y;
+            style.left = Mathf.Round(m_ThisRectOnStartDrag.x + diff.x);
+            style.top = Mathf.Round(m_ThisRectOnStartDrag.y + diff.y);
 
             m_Selection.NotifyOfStylingChange(this, m_ScratchChangeList);
             m_Selection.NotifyOfHierarchyChange(this, m_Target, BuilderHierarchyChangeType.InlineStyle);

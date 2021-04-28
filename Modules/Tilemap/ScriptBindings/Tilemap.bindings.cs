@@ -8,6 +8,8 @@ using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.U2D;
+using System.Collections.Generic;
+using Unity.Collections;
 
 namespace UnityEngine.Tilemaps
 {
@@ -164,6 +166,10 @@ namespace UnityEngine.Tilemaps
 
         [NativeMethod(Name = "RefreshTileAsset")]
         public extern void RefreshTile(Vector3Int position);
+
+        [FreeFunction(Name = "TilemapBindings::RefreshTileAssetsNative", HasExplicitThis = true)]
+        internal extern unsafe void RefreshTilesNative(void* positions, int count);
+
         [NativeMethod(Name = "RefreshAllTileAssets")]
         public extern void RefreshAllTiles();
 
@@ -277,6 +283,10 @@ namespace UnityEngine.Tilemaps
             [NativeMethod(Name = "GetRenderSize")]
             get;
         }
+
+        internal extern Object GetAnyTileAsset(Vector3Int position);
+        internal TileBase GetAnyTile(Vector3Int position) { return GetAnyTileAsset(position) as TileBase; }
+        internal T GetAnyTile<T>(Vector3Int position) where T : TileBase { return GetAnyTile(position) as T; }
 
         internal extern Object GetEditorPreviewTileAsset(Vector3Int position);
         public TileBase GetEditorPreviewTile(Vector3Int position) { return GetEditorPreviewTileAsset(position) as TileBase; }
@@ -464,19 +474,51 @@ namespace UnityEngine.Tilemaps
     [NativeType(Header = "Modules/Tilemap/TilemapScripting.h")]
     public partial struct TileData
     {
-        public Sprite sprite { get { return m_Sprite; } set { m_Sprite = value; } }
+        public Sprite sprite { get { return Object.ForceLoadFromInstanceID(m_Sprite) as Sprite; } set { m_Sprite = value != null ? value.GetInstanceID() : 0; } }
         public Color color { get { return m_Color; } set { m_Color = value; } }
         public Matrix4x4 transform { get { return m_Transform; } set { m_Transform = value; } }
-        public GameObject gameObject { get { return m_GameObject; } set { m_GameObject = value; } }
+        public GameObject gameObject { get { return Object.ForceLoadFromInstanceID(m_GameObject) as GameObject; } set { m_GameObject = value != null ? value.GetInstanceID() : 0;; } }
         public TileFlags flags { get { return m_Flags; } set { m_Flags = value; } }
         public Tile.ColliderType colliderType { get { return m_ColliderType; } set { m_ColliderType = value; } }
 
-        private Sprite m_Sprite;
+        private int m_Sprite;
         private Color m_Color;
         private Matrix4x4 m_Transform;
-        private GameObject m_GameObject;
+        private int m_GameObject;
         private TileFlags m_Flags;
         private Tile.ColliderType m_ColliderType;
+    }
+
+    [RequiredByNativeCode]
+    [StructLayoutAttribute(LayoutKind.Sequential)]
+    [NativeType(Header = "Modules/Tilemap/TilemapScripting.h")]
+    internal partial struct TileDataNative
+    {
+        public int sprite { get { return m_Sprite; } set { m_Sprite = value; } }
+        public Color color { get { return m_Color; } set { m_Color = value; } }
+        public Matrix4x4 transform { get { return m_Transform; } set { m_Transform = value; } }
+        public int gameObject { get { return m_GameObject; } set { m_GameObject = value; } }
+        public TileFlags flags { get { return m_Flags; } set { m_Flags = value; } }
+        public Tile.ColliderType colliderType { get { return m_ColliderType; } set { m_ColliderType = value; } }
+
+        private int m_Sprite;
+        private Color m_Color;
+        private Matrix4x4 m_Transform;
+        private int m_GameObject;
+        private TileFlags m_Flags;
+        private Tile.ColliderType m_ColliderType;
+
+        public static implicit operator TileDataNative(TileData td)
+        {
+            TileDataNative tileDataNative = default;
+            tileDataNative.sprite = td.sprite != null ? td.sprite.GetInstanceID() : 0;
+            tileDataNative.color = td.color;
+            tileDataNative.transform = td.transform;
+            tileDataNative.gameObject = td.gameObject != null ? td.gameObject.GetInstanceID() : 0;
+            tileDataNative.flags = td.flags;
+            tileDataNative.colliderType = td.colliderType;
+            return tileDataNative;
+        }
     }
 
     [RequiredByNativeCode]

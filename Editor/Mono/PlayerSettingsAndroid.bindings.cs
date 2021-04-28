@@ -32,6 +32,17 @@ namespace UnityEditor
         All = 0xffffffff,
     }
 
+    // Target devices.
+    public enum AndroidTargetDevices
+    {
+        // All devices. The Android aplication is allowed to run on all devices.
+        AllDevices = 0,
+        // Only run the Android aplication on mobile phones, tablets, and TV devices, not on any Chrome OS devices.
+        PhonesTabletsAndTVDevicesOnly = 1,
+        // Only run the Android application on Chrome OS devices, not on any Android mobile phones, tablets, or TV devices.
+        ChromeOSDevicesOnly = 2,
+    }
+
     // Supported Android SDK versions
     public enum AndroidSdkVersions
     {
@@ -291,6 +302,8 @@ namespace UnityEditor
                 [NativeMethod("SetBuildApkPerCpuArchitecture")]
                 set;
             }
+
+            public static extern AndroidTargetDevices androidTargetDevices { get; set; }
 
             // Android splash screen scale mode
             public static extern AndroidSplashScreenScale splashScreenScale

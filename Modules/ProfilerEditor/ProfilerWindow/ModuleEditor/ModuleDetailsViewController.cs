@@ -55,9 +55,16 @@ namespace UnityEditor.Profiling.ModuleEditor
         Button m_ConfirmButton;
         Label m_NoModuleSelectedLabel;
 
+        bool m_isConnectedToEditor;
+
         public event Action<ModuleData> onDeleteModule;
         public event Action onConfirmChanges;
         public event Action onModuleNameChanged;
+
+        public ModuleDetailsViewController(bool isConnectedToEditor)
+        {
+            m_isConnectedToEditor = isConnectedToEditor;
+        }
 
         public override void ConfigureView(VisualElement root)
         {
@@ -155,7 +162,12 @@ namespace UnityEditor.Profiling.ModuleEditor
             {
                 ProfilerMarkers.k_FetchCounters.Begin();
                 var counterCollector = new CounterCollector();
-                counterCollector.LoadCounters(out var unityCounters, out var userCounters);
+                SortedDictionary<string, List<string>> unityCounters;
+                SortedDictionary<string, List<string>> userCounters;
+                if (m_isConnectedToEditor)
+                    counterCollector.LoadEditorCounters(out unityCounters, out userCounters);
+                else
+                    counterCollector.LoadCounters(out unityCounters, out userCounters);
                 ProfilerMarkers.k_FetchCounters.End();
 
                 // Format counter data for display in tree view.

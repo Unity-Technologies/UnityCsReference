@@ -26,6 +26,8 @@ namespace UnityEditor
             public static GUIContent mode = EditorGUIUtility.TrTextContent("Mode");
 
             public static GUIContent cacheServer = EditorGUIUtility.TrTextContent("Cache Server (project specific)");
+            public static GUIContent assetPipeline = EditorGUIUtility.TrTextContent("Asset Pipeline (project specific)");
+            public static GUIContent artifactGarbageCollection = EditorGUIUtility.TrTextContent("Remove unused Artifacts on Restart", "By default, when you start the Editor, Unity removes unused artifact files in the Library folder, and removes their entries in the asset database. This is a form of \"garbage collection\". This setting allows you to turn off the asset database garbage collection, so that previous artifact revisions which are no longer used are still preserved after restarting the Editor. This is useful if you need to debug unexpected import results.");
             public static GUIContent cacheServerIPLabel = EditorGUIUtility.TrTextContent("IP address");
             public static GUIContent cacheServerNamespacePrefixLabel = EditorGUIUtility.TrTextContent("Namespace prefix", "The namespace used for looking up and storing values on the cache server");
             public static GUIContent cacheServerEnableDownloadLabel = EditorGUIUtility.TrTextContent("Download", "Enables downloads from the cache server.");
@@ -413,6 +415,8 @@ namespace UnityEditor
             index = Mathf.Clamp(m_DefaultBehaviorMode.intValue, 0, behaviorPopupList.Length - 1);
             CreatePopupMenu(Content.mode.text, behaviorPopupList, index, SetDefaultBehaviorMode);
 
+            DoAssetPipelineSettings();
+
             // CacheServer is part asset and preferences. Only show UI in case of Global Settings editing.
             if (m_IsGlobalSettings)
             {
@@ -592,6 +596,17 @@ namespace UnityEditor
             EditorGUI.indentLevel--;
 
             return EditorGUI.EndChangeCheck();
+        }
+
+        private void DoAssetPipelineSettings()
+        {
+            GUILayout.Label(Content.assetPipeline, EditorStyles.boldLabel);
+
+            EditorGUI.BeginChangeCheck();
+            bool enableArtifactGarbageCollection = EditorUserSettings.artifactGarbageCollection;
+            enableArtifactGarbageCollection = EditorGUILayout.Toggle(Content.artifactGarbageCollection, enableArtifactGarbageCollection);
+            if (EditorGUI.EndChangeCheck())
+                EditorUserSettings.artifactGarbageCollection = enableArtifactGarbageCollection;
         }
 
         private void DoCacheServerSettings()

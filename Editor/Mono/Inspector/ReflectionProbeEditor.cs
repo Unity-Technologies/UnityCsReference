@@ -463,7 +463,8 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(m_Importance, Styles.importanceText);
                 EditorGUILayout.PropertyField(m_IntensityMultiplier, Styles.intensityText);
 
-                if (Rendering.EditorGraphicsSettings.GetCurrentTierSettings().reflectionProbeBoxProjection == false)
+                // Only take graphic Tier settings into account when built-in render pipeline is active.
+                if (GraphicsSettings.currentRenderPipeline == null && Rendering.EditorGraphicsSettings.GetCurrentTierSettings().reflectionProbeBoxProjection == false)
                 {
                     using (new EditorGUI.DisabledScope(true))
                     {
@@ -477,7 +478,7 @@ namespace UnityEditor
 
                 bool isDeferredRenderingPath = SceneView.IsUsingDeferredRenderingPath();
                 bool isDeferredReflections = isDeferredRenderingPath && (UnityEngine.Rendering.GraphicsSettings.GetShaderMode(BuiltinShaderType.DeferredReflections) != BuiltinShaderMode.Disabled);
-                using (new EditorGUI.DisabledScope(!isDeferredReflections))
+                using (new EditorGUI.DisabledScope(!isDeferredReflections && !SupportedRenderingFeatures.active.reflectionProbesBlendDistance))
                 {
                     EditorGUILayout.PropertyField(m_BlendDistance, Styles.blendDistanceText);
                 }

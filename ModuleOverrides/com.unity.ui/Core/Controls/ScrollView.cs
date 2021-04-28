@@ -38,7 +38,8 @@ namespace UnityEngine.UIElements
     // "overflow:scroll" on the content-viewport and content-container is to not restrict measured elements in any direction.
 
     /// <summary>
-    /// Mode configuring the <see cref="ScrollView"/> for the intended usage.
+    /// Configurations of the <see cref="ScrollView"/> to influence the layout of its contents and how scrollbars appear.
+    /// <see cref="ScrollView.mode"/>
     /// </summary>
     /// <remarks>
     /// The default is <see cref="ScrollViewMode.Vertical"/>.
@@ -49,22 +50,26 @@ namespace UnityEngine.UIElements
         /// Configure <see cref="ScrollView"/> for vertical scrolling.
         /// </summary>
         /// <remarks>
-        /// Require elements with an height.
+        /// Requires elements with the height property explicitly defined. A ScrollView configured with this mode has the
+        /// <see cref="ScrollView.verticalVariantUssClassName"/> class in its class list.
         /// </remarks>
         Vertical,
         /// <summary>
         /// Configure <see cref="ScrollView"/> for horizontal scrolling.
         /// </summary>
         /// <remarks>
-        /// Require elements with a width.
-        /// If <see cref="ScrollView"/> is set to flex-grow or if it's parent is set to <see cref="FlexDirection.Row"/> elements height stretch else they require a height.
+        /// Requires elements with the width property explicitly defined. A ScrollView configured with this mode has the
+        /// <see cref="ScrollView.horizontalVariantUssClassName"/> class in its class list.
+        /// If <see cref="ScrollView"/> is set to flex-grow or if it's parent is set to <see cref="FlexDirection.Row"/>
+        /// elements height stretch else they require a height.
         /// </remarks>
         Horizontal,
         /// <summary>
         /// Configure <see cref="ScrollView"/> for vertical and horizontal scrolling.
         /// </summary>
         /// <remarks>
-        /// Require elements with an height.
+        /// Requires elements with the height property explicitly defined. A ScrollView configured with this mode has the
+        /// <see cref="ScrollView.verticalHorizontalVariantUssClassName"/> class in its class list.
         /// The difference with the vertical mode is that content will not wrap.
         /// </remarks>
         VerticalAndHorizontal
@@ -148,7 +153,7 @@ namespace UnityEngine.UIElements
                 base.Init(ve, bag, cc);
 
                 ScrollView scrollView = (ScrollView)ve;
-                scrollView.SetScrollViewMode(m_ScrollViewMode.GetValueFromBag(bag, cc));
+                scrollView.mode = m_ScrollViewMode.GetValueFromBag(bag, cc);
 
                 // Remove once showHorizontal and showVertical are fully deprecated.
 #pragma warning disable 618
@@ -708,14 +713,39 @@ namespace UnityEngine.UIElements
             scrollOffset = Vector2.zero;
         }
 
-        internal void SetScrollViewMode(ScrollViewMode scrollViewMode)
+        private ScrollViewMode m_Mode;
+
+        /// <summary>
+        /// Controls how the ScrollView allows the user to scroll the contents.
+        /// <seealso cref="ScrollViewMode"/>
+        /// </summary>
+        /// <remarks>
+        /// The default is <see cref="ScrollViewMode.Vertical"/>.
+        /// Writing to this property modifies the class list of the ScrollView according to the specified value of
+        /// <see cref="ScrollViewMode"/>. When the value changes, the class list matching the old value is removed and
+        /// the class list matching the new value is added.
+        /// </remarks>
+        public ScrollViewMode mode
         {
+            get => m_Mode;
+            set
+            {
+                if (m_Mode == value)
+                    return;
+                SetScrollViewMode(value);
+            }
+        }
+
+        private void SetScrollViewMode(ScrollViewMode mode)
+        {
+            m_Mode = mode;
+
             RemoveFromClassList(verticalVariantUssClassName);
             RemoveFromClassList(horizontalVariantUssClassName);
             RemoveFromClassList(verticalHorizontalVariantUssClassName);
             RemoveFromClassList(scrollVariantUssClassName);
 
-            switch (scrollViewMode)
+            switch (mode)
             {
                 case ScrollViewMode.Vertical:
                     AddToClassList(verticalVariantUssClassName);

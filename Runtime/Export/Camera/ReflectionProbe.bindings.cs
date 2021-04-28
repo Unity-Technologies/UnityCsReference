@@ -79,6 +79,10 @@ namespace UnityEngine
         public static extern bool BlendCubemap(Texture src, Texture dst, float blend, RenderTexture target);
 
         [StaticAccessor("GetReflectionProbes()")]
+        [NativeMethod("UpdateSampleData")]
+        public static extern void UpdateCachedState();
+
+        [StaticAccessor("GetReflectionProbes()")]
         public static extern int minBakedCubemapResolution { get; }
 
         [StaticAccessor("GetReflectionProbes()")]

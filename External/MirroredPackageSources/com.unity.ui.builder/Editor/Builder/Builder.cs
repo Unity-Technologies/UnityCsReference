@@ -16,6 +16,7 @@ namespace Unity.UI.Builder
         BuilderInspector m_Inspector;
         BuilderUxmlPreview m_UxmlPreview;
         BuilderUssPreview m_UssPreview;
+        BuilderHierarchy m_Hierarchy;
 
         HighlightOverlayPainter m_HighlightOverlayPainter;
 
@@ -24,6 +25,7 @@ namespace Unity.UI.Builder
         public BuilderToolbar toolbar => m_Toolbar;
         public VisualElement documentRootElement => m_Viewport.documentRootElement;
         public BuilderCanvas canvas => m_Viewport.canvas;
+        public BuilderHierarchy hierarchy => m_Hierarchy;
 
         public bool codePreviewVisible
         {
@@ -118,7 +120,9 @@ namespace Unity.UI.Builder
             var styleSheetsDragger = new BuilderStyleSheetsDragger(this, root, selection);
             var styleSheetsPane = new BuilderStyleSheets(this, m_Viewport, selection, classDragger, styleSheetsDragger, m_HighlightOverlayPainter, styleSheetsPaneTooltipPreview);
             var hierarchyDragger = new BuilderHierarchyDragger(this, root, selection, m_Viewport, m_Viewport.parentTracker) { builderStylesheetRoot = styleSheetsPane.container };
-            var hierarchy = new BuilderHierarchy(this, m_Viewport, selection, classDragger, hierarchyDragger, contextMenuManipulator, m_HighlightOverlayPainter);
+
+            m_Hierarchy = new BuilderHierarchy(this, m_Viewport, selection, classDragger, hierarchyDragger, contextMenuManipulator, m_HighlightOverlayPainter);
+
             var libraryDragger = new BuilderLibraryDragger(this, root, selection, m_Viewport, m_Viewport.parentTracker, hierarchy.container, libraryTooltipPreview) { builderStylesheetRoot = styleSheetsPane.container };
             m_Viewport.viewportDragger.builderHierarchyRoot = hierarchy.container;
             m_Library = new BuilderLibrary(this, m_Viewport, selection, libraryDragger, libraryTooltipPreview);
@@ -262,7 +266,7 @@ namespace Unity.UI.Builder
             {
                 ClearPersistentViewData();
                 m_Parent.Reload(this);
-                
+
                 var window = GetWindow<Builder>();
                 window.RepaintImmediately();
                 window.m_Viewport.FitCanvas();

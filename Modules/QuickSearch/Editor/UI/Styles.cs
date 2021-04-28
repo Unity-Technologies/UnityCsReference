@@ -406,8 +406,8 @@ namespace UnityEditor.Search
 
         public static readonly GUIStyle tipsSection = Utils.FromUSS("quick-search-tips-section");
 
-        public static readonly GUIStyle statusError = new GUIStyle("CN StatusError") { padding = new RectOffset(2, 2, 3, 3) };
-        public static readonly GUIStyle statusWarning = new GUIStyle("CN StatusWarn") { padding = new RectOffset(2, 2, 3, 3) };
+        public static readonly GUIStyle statusError = new GUIStyle("CN StatusError") { padding = new RectOffset(2, 2, 1, 1) };
+        public static readonly GUIStyle statusWarning = new GUIStyle("CN StatusWarn") { padding = new RectOffset(2, 2, 1, 1) };
 
         public static readonly GUIStyle toolbarButton = new GUIStyle("IconButton")
         {

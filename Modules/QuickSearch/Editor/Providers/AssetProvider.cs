@@ -21,6 +21,7 @@ namespace UnityEditor.Search.Providers
         {
             public readonly string path;
             private readonly string gidString;
+            public readonly SearchDocumentFlags flags;
 
             private GlobalObjectId m_GID;
             public GlobalObjectId gid
@@ -45,18 +46,70 @@ namespace UnityEditor.Search.Providers
                 }
             }
 
-            public AssetMetaInfo(string path, GlobalObjectId gid)
+            private string m_Source;
+            public string source
+            {
+                get
+                {
+                    if (m_Source == null)
+                        m_Source = AssetDatabase.GUIDToAssetPath(gid.assetGUID);
+                    return m_Source;
+                }
+            }
+
+            private bool m_HasType;
+            private Type m_Type;
+            public Type type
+            {
+                get
+                {
+                    if (!m_HasType)
+                    {
+                        if (source.EndsWith("prefab", StringComparison.OrdinalIgnoreCase))
+                            m_Type = AssetDatabase.GetTypeFromPathAndFileID(source, (long)gid.targetObjectId);
+                        else
+                            m_Type = AssetDatabase.GetMainAssetTypeAtPath(source);
+                        m_HasType = true;
+                    }
+                    return m_Type;
+                }
+            }
+
+            private Object m_Object;
+            public Object obj
+            {
+                get
+                {
+                    if (!m_Object)
+                    {
+                        m_Object = AssetDatabase.LoadMainAssetAtGUID(gid.assetGUID);
+                    }
+                    return m_Object;
+                }
+            }
+
+            public AssetMetaInfo(string path, GlobalObjectId gid, SearchDocumentFlags flags)
             {
                 this.path = path;
                 gidString = null;
                 m_GID = gid;
+                m_Source = null;
+                m_HasType = false;
+                m_Type = null;
+                m_Object = null;
+                this.flags = flags;
             }
 
-            public AssetMetaInfo(string path, string gid)
+            public AssetMetaInfo(string path, string gid, SearchDocumentFlags flags)
             {
                 this.path = path;
                 this.gidString = gid;
                 m_GID = default;
+                m_Source = null;
+                m_HasType = false;
+                m_Type = null;
+                m_Object = null;
+                this.flags = flags;
             }
         }
 
@@ -92,7 +145,7 @@ namespace UnityEditor.Search.Providers
                 supportsSyncViewSearch = true,
                 isEnabledForContextualSearch = () => Utils.IsFocusedWindowTypeName("ProjectBrowser"),
                 toObject = (item, type) => GetObject(item, type),
-                toKey = (item) => GetGID(item).assetGUID.ToString().GetHashCode64(),
+                toKey = (item) => GetInfo(item).source.GetHashCode64(),
                 fetchItems = (context, items, provider) => SearchAssets(context, provider),
                 fetchLabel = (item, context) => FetchLabel(item),
                 fetchDescription = (item, context) => FetchDescription(item),
@@ -108,19 +161,16 @@ namespace UnityEditor.Search.Providers
         private static Texture2D FetchPreview(SearchItem item, Vector2 size, FetchPreviewOptions options)
         {
             var info = GetInfo(item);
+            if (info.gid.assetGUID == default)
+                return null;
 
             if (item.preview && item.preview.width >= size.x && item.preview.height >= size.y)
                 return item.preview;
 
-            if (info.gid.identifierType != (int)IdentifierType.kSceneObject &&
-                info.gid.identifierType != (int)IdentifierType.kBuiltInAsset)
-            {
-                item.preview = Utils.GetAssetPreviewFromPath(info.path, size, options);
-                if (item.preview)
-                    return item.preview;
-            }
+            if (info.gid.identifierType == (int)IdentifierType.kSceneObject)
+                return AssetDatabase.GetCachedIcon(info.source) as Texture2D;
 
-            var obj = GetObject(item);
+            var obj = GlobalObjectId.GlobalObjectIdentifierToObjectSlow(info.gid);
             if (obj is GameObject go)
                 return (item.preview = Utils.GetSceneObjectPreview(go, size, options, item.thumbnail));
             else if (obj)
@@ -130,56 +180,62 @@ namespace UnityEditor.Search.Providers
                     return p;
             }
 
-            if (info.gid.assetGUID == default)
-                return null;
-
-            var sourceAssetPath = AssetDatabase.GUIDToAssetPath(info.gid.assetGUID);
-            return (item.preview = Utils.GetAssetPreviewFromPath(sourceAssetPath, size, options));
+            return (item.preview = Utils.GetAssetPreviewFromPath(info.source, size, options));
         }
 
-        private static Texture2D FetchThumbnail(SearchItem item)
+        private static Texture2D FetchThumbnail(in SearchItem item)
         {
             var info = GetInfo(item);
 
             if (item.thumbnail)
                 return item.thumbnail;
 
-            if (info.gid.identifierType != (int)IdentifierType.kSceneObject &&
-                info.gid.identifierType != (int)IdentifierType.kBuiltInAsset)
-                return Utils.GetAssetThumbnailFromPath(info.path);
+            return AssetPreview.GetMiniTypeThumbnail(info.type ?? typeof(GameObject));
+        }
 
-            var sourceAssetPath = AssetDatabase.GUIDToAssetPath(info.gid.assetGUID);
-            return Utils.GetAssetThumbnailFromPath(sourceAssetPath);
+        private static string TrimLabel(in string label, in bool trim)
+        {
+            if (!trim)
+                return label;
+            var dp = label.LastIndexOfAny(Path.GetInvalidFileNameChars());
+            if (dp > 0)
+                return label.Substring(dp);
+            return label;
         }
 
         private static string FetchLabel(SearchItem item)
         {
             var info = GetInfo(item);
+            var displayCompact = IsDisplayCompact(item);
 
             if (!string.IsNullOrEmpty(item.label))
                 return item.label;
 
-            if (info.gid.identifierType != (int)IdentifierType.kSceneObject)
-                return (item.label = Path.GetFileName(info.path));
-
-            return (item.label = info.path);
+            if (info.flags.HasAny(SearchDocumentFlags.Object))
+                return TrimLabel((item.label = info.path), displayCompact);
+            return (item.label = Path.GetFileName(info.path));
         }
 
         private static string FetchDescription(SearchItem item)
         {
             var info = GetInfo(item);
 
-            if (item.options.HasAny(SearchItemOptions.Compacted))
+            if (IsDisplayCompact(item))
                 return info.path;
 
             if (!string.IsNullOrEmpty(item.description))
                 return item.description;
 
-            var sourceAssetPath = AssetDatabase.GUIDToAssetPath(info.gid.assetGUID.ToString());
-            if (info.gid.identifierType != (int)IdentifierType.kSceneObject)
-                return (item.description = GetAssetDescription(sourceAssetPath) ?? info.path);
+            if (info.flags.HasAny(SearchDocumentFlags.Asset))
+                return (item.description = GetAssetDescription(info.source) ?? info.path);
+            return (item.description = $"Source: {GetAssetDescription(info.source) ?? info.path}");
+        }
 
-            return (item.description = $"Source: {GetAssetDescription(sourceAssetPath)}");
+        static bool IsDisplayCompact(in SearchItem item)
+        {
+            if (item.options.HasAny(SearchItemOptions.Compacted))
+                return true;
+            return item.context?.searchView?.displayMode == DisplayMode.Grid;
         }
 
         private static AssetMetaInfo GetInfo(SearchItem item)
@@ -205,26 +261,26 @@ namespace UnityEditor.Search.Providers
 
         private static Object GetObject(SearchItem item, Type type)
         {
-            var gid = GetGID(item);
+            var info = GetInfo(item);
 
-            var assetPath = AssetDatabase.GUIDToAssetPath(gid.assetGUID.ToString());
             if (typeof(AssetImporter).IsAssignableFrom(type))
             {
-                var importer = AssetImporter.GetAtPath(assetPath);
+                var importer = AssetImporter.GetAtPath(info.source);
                 if (importer)
                     return importer;
             }
 
-            if (gid.identifierType == (int)IdentifierType.kImportedAsset)
+            if (info.flags.HasAny(SearchDocumentFlags.Asset))
             {
-                var assetType = AssetDatabase.GetMainAssetTypeAtPath(assetPath);
+                var assetType = AssetDatabase.GetMainAssetTypeAtPath(info.source);
                 if (!type.IsAssignableFrom(assetType))
                     return null;
-                return AssetDatabase.LoadAssetAtPath(assetPath, type);
+                var obj = AssetDatabase.LoadAssetAtPath(info.source, type);
+                if (obj)
+                    return obj;
             }
 
-            return ToObjectType(GlobalObjectId.GlobalObjectIdentifierToObjectSlow(gid), type) ??
-                ToObjectType(AssetDatabase.LoadAssetAtPath(assetPath, type), type);
+            return ToObjectType(GlobalObjectId.GlobalObjectIdentifierToObjectSlow(info.gid), type);
         }
 
         private static Object ToObjectType(Object obj, Type type)
@@ -291,9 +347,9 @@ namespace UnityEditor.Search.Providers
                 Utils.StartDrag(new[] { GetObject(item) }, new[] { GetAssetPath(item) }, item.GetLabel(context, true));
         }
 
-        private static AssetMetaInfo CreateMetaInfo(string path, string gid)
+        private static AssetMetaInfo CreateMetaInfo(string path, string gid, SearchDocumentFlags flags)
         {
-            return new AssetMetaInfo(path, gid);
+            return new AssetMetaInfo(path, gid, flags);
         }
 
         private static IEnumerator SearchAssets(SearchContext context, SearchProvider provider)
@@ -306,7 +362,7 @@ namespace UnityEditor.Search.Providers
                 var guidPath = AssetDatabase.GUIDToAssetPath(searchQuery);
                 if (!string.IsNullOrEmpty(guidPath))
                 {
-                    var info = new AssetMetaInfo(guidPath, GetGID(guidPath));
+                    var info = new AssetMetaInfo(guidPath, GetGID(guidPath), SearchDocumentFlags.Asset);
                     yield return provider.CreateItem(context, info.gid.ToString(), -1, $"{Path.GetFileName(guidPath)} ({searchQuery})", null, null, info);
                 }
 
@@ -327,7 +383,7 @@ namespace UnityEditor.Search.Providers
                     // Perform a quick search on asset paths
                     var findOptions = FindOptions.Words | FindOptions.Regex | FindOptions.Glob | (context.wantsMore ? FindOptions.Fuzzy : FindOptions.None);
                     foreach (var e in FindProvider.Search(context, provider, findOptions))
-                        yield return CreateItem(context, provider, "Find", null, e.source, 998 + e.score, useGroupProvider: false);
+                        yield return CreateItem(context, provider, "Find", null, e.source, 998 + e.score, useGroupProvider: false, SearchDocumentFlags.Asset);
                 }
 
                 // Finally wait for indexes that are being built to end the search.
@@ -349,7 +405,7 @@ namespace UnityEditor.Search.Providers
             {
                 yield return AssetDatabase.FindAssets($"t:{context.filterType.Name}")
                     .Select(guid => AssetDatabase.GUIDToAssetPath(guid))
-                    .Select(path => CreateItem(context, provider, "More", null, path, 999, useGroupProvider: false));
+                    .Select(path => CreateItem(context, provider, "More", null, path, 999, useGroupProvider: false, SearchDocumentFlags.Asset));
             }
             else
             {
@@ -389,7 +445,7 @@ namespace UnityEditor.Search.Providers
                 .Select(e => CreateItem(context, provider, db, e, useGroupProvider));
         }
 
-        private static SearchItem CreateItem(SearchContext context, SearchProvider provider, SearchDatabase db, in SearchResult e, bool useGroupProvider)
+        private static SearchItem CreateItem(in SearchContext context, in SearchProvider provider, in SearchDatabase db, in SearchResult e, in bool useGroupProvider)
         {
             var score = e.score;
             var doc = db.index.GetDocument(e.index);
@@ -405,10 +461,13 @@ namespace UnityEditor.Search.Providers
                         score = (score >> 1) + sourceFilename.Length - w.Length;
                 }
             }
-            return CreateItem(context, provider, db.name, doc.id, doc.name, score, useGroupProvider);
+            return CreateItem(context, provider, db.name, doc.id, doc.name, score, useGroupProvider, doc.flags);
         }
 
-        public static SearchItem CreateItem(SearchContext context, SearchProvider provider, string dbName, string gid, string path, int itemScore, bool useGroupProvider = true)
+        public static SearchItem CreateItem(
+            in SearchContext context, in SearchProvider provider,
+            in string dbName, in string gid, in string path, in int itemScore,
+            in bool useGroupProvider, in SearchDocumentFlags flags)
         {
             string filename = null;
             if (context.options.HasAny(SearchFlags.Debug) && !string.IsNullOrEmpty(dbName))
@@ -418,7 +477,7 @@ namespace UnityEditor.Search.Providers
             }
 
             var groupProvider = useGroupProvider ? SearchUtils.CreateGroupProvider(provider, GetProviderGroupName(dbName, path), provider.priority, cacheProvider: true) : provider;
-            return groupProvider.CreateItem(context, gid ?? GetGID(path).ToString(), itemScore, filename, null, null, CreateMetaInfo(path, gid));
+            return groupProvider.CreateItem(context, gid ?? GetGID(path).ToString(), itemScore, filename, null, null, CreateMetaInfo(path, gid, flags));
         }
 
         private static string GetProviderGroupName(string dbName, string path)
@@ -433,8 +492,8 @@ namespace UnityEditor.Search.Providers
         [SearchSelector("path", provider: type)]
         public static string GetAssetPath(SearchItem item)
         {
-            var gid = GetGID(item);
-            return AssetDatabase.GUIDToAssetPath(gid.assetGUID);
+            var info = GetInfo(item);
+            return info.source;
         }
 
         public static string GetAssetPath(string id)
@@ -553,19 +612,21 @@ namespace UnityEditor.Search.Providers
         private static void SelectItem(SearchItem item)
         {
             var info = GetInfo(item);
-            if (info.gid.identifierType == (int)IdentifierType.kSceneObject)
+            var obj = GlobalObjectId.GlobalObjectIdentifierToObjectSlow(info.gid);
+            if (obj)
             {
                 EditorApplication.delayCall += () =>
                 {
                     if (!SelectObjectbyId(info.gid))
                     {
-                        if (EditorUtility.DisplayDialog("Container scene is not opened", $"Do you want to open container scene {AssetDatabase.GUIDToAssetPath(info.gid.assetGUID)}?", "Yes", "No"))
+                        if (EditorUtility.DisplayDialog("Container scene is not opened", $"Do you want to open container scene {info.source}?", "Yes", "No"))
                             OpenItem(item);
                     }
                 };
             }
-
-            Utils.FrameAssetFromPath(GetAssetPath(item));
+            else
+                Utils.FrameAssetFromPath(GetAssetPath(item));
+            item.preview = null;
         }
 
         private static void OpenItem(SearchItem item)
@@ -573,8 +634,7 @@ namespace UnityEditor.Search.Providers
             var info = GetInfo(item);
             if (info.gid.identifierType == (int)IdentifierType.kSceneObject)
             {
-                var containerPath = AssetDatabase.GUIDToAssetPath(info.gid.assetGUID);
-                var containerAsset = AssetDatabase.LoadAssetAtPath<Object>(containerPath);
+                var containerAsset = AssetDatabase.LoadAssetAtPath<Object>(info.source);
                 if (containerAsset != null)
                 {
                     AssetDatabase.OpenAsset(containerAsset);

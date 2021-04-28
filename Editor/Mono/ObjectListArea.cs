@@ -47,37 +47,31 @@ namespace UnityEditor
 
     internal partial class ObjectListArea
     {
-        class Styles
+        static class Styles
         {
-            public GUIStyle resultsLabel = GetStyle("OL ResultLabel");
-            public GUIStyle resultsGridLabel = GetStyle("ProjectBrowserGridLabel");
-            public GUIStyle resultsGrid = GetStyle("ObjectPickerResultsGrid");
-            public GUIStyle groupHeaderMiddle = GetStyle("ProjectBrowserHeaderBgMiddle");
-            public GUIStyle groupHeaderTop = GetStyle("ProjectBrowserHeaderBgTop");
-            public GUIStyle groupHeaderLabel = GetStyle("Label");
-            public GUIStyle groupHeaderLabelCount = GetStyle("MiniLabel");
-            public GUIStyle groupFoldout = GetStyle("IN Foldout");
-            public GUIStyle miniRenameField = GetStyle("OL MiniRenameField");
-            public GUIStyle ping = GetStyle("OL Ping");
-            public GUIStyle miniPing = GetStyle("OL MiniPing");
-            public GUIStyle iconDropShadow = GetStyle("ProjectBrowserIconDropShadow");
-            public GUIStyle textureIconDropShadow = GetStyle("ProjectBrowserTextureIconDropShadow");
-            public GUIStyle iconAreaBg = GetStyle("ProjectBrowserIconAreaBg");
-            public GUIStyle previewBg = GetStyle("ProjectBrowserPreviewBg");
-            public GUIStyle subAssetBg = GetStyle("ProjectBrowserSubAssetBg");
-            public GUIStyle subAssetBgOpenEnded = GetStyle("ProjectBrowserSubAssetBgOpenEnded");
-            public GUIStyle subAssetBgCloseEnded = GetStyle("ProjectBrowserSubAssetBgCloseEnded");
-            public GUIStyle subAssetBgMiddle = GetStyle("ProjectBrowserSubAssetBgMiddle");
-            public GUIStyle subAssetExpandButton = GetStyle("ProjectBrowserSubAssetExpandBtn");
-            public GUIStyle subAssetExpandButtonMedium = GetStyle("ProjectBrowserSubAssetExpandBtnMedium");
-            public GUIStyle subAssetExpandButtonSmall = GetStyle("ProjectBrowserSubAssetExpandBtnSmall");
-
-            static GUIStyle GetStyle(string styleName)
-            {
-                return styleName; // Implicit construction of GUIStyle
-            }
+            public static readonly GUIStyle resultsLabel = new GUIStyle("OL ResultLabel");
+            public static readonly GUIStyle resultsGridLabel = new GUIStyle("ProjectBrowserGridLabel");
+            public static readonly GUIStyle resultsGrid = new GUIStyle("ObjectPickerResultsGrid");
+            public static readonly GUIStyle groupHeaderMiddle = new GUIStyle("ProjectBrowserHeaderBgMiddle");
+            public static readonly GUIStyle groupHeaderTop = new GUIStyle("ProjectBrowserHeaderBgTop");
+            public static readonly GUIStyle groupHeaderLabel = new GUIStyle("Label");
+            public static readonly GUIStyle groupHeaderLabelCount = new GUIStyle("MiniLabel");
+            public static readonly GUIStyle groupFoldout = new GUIStyle("IN Foldout");
+            public static readonly GUIStyle miniRenameField = new GUIStyle("OL MiniRenameField");
+            public static readonly GUIStyle ping = new GUIStyle("OL Ping");
+            public static readonly GUIStyle miniPing = new GUIStyle("OL MiniPing");
+            public static readonly GUIStyle iconDropShadow = new GUIStyle("ProjectBrowserIconDropShadow");
+            public static readonly GUIStyle textureIconDropShadow = new GUIStyle("ProjectBrowserTextureIconDropShadow");
+            public static readonly GUIStyle iconAreaBg = new GUIStyle("ProjectBrowserIconAreaBg");
+            public static readonly GUIStyle previewBg = new GUIStyle("ProjectBrowserPreviewBg");
+            public static readonly GUIStyle subAssetBg = new GUIStyle("ProjectBrowserSubAssetBg");
+            public static readonly GUIStyle subAssetBgOpenEnded = new GUIStyle("ProjectBrowserSubAssetBgOpenEnded");
+            public static readonly GUIStyle subAssetBgCloseEnded = new GUIStyle("ProjectBrowserSubAssetBgCloseEnded");
+            public static readonly GUIStyle subAssetBgMiddle = new GUIStyle("ProjectBrowserSubAssetBgMiddle");
+            public static readonly GUIStyle subAssetExpandButton = new GUIStyle("ProjectBrowserSubAssetExpandBtn");
+            public static readonly GUIStyle subAssetExpandButtonMedium = new GUIStyle("ProjectBrowserSubAssetExpandBtnMedium");
+            public static readonly GUIStyle subAssetExpandButtonSmall = new GUIStyle("ProjectBrowserSubAssetExpandBtnSmall");
         }
-        static Styles s_Styles;
 
         // State persisted across assembly reloads
         ObjectListAreaState m_State;
@@ -347,9 +341,6 @@ namespace UnityEditor
 
         public void OnGUI(Rect position, int keyboardControlID)
         {
-            if (s_Styles == null)
-                s_Styles = new Styles();
-
             s_VCEnabled = VersionControlUtils.isVersionControlConnected;
 
             Event evt = Event.current;
@@ -359,7 +350,7 @@ namespace UnityEditor
             FrameLastClickedItemIfWanted();
 
             // Background
-            GUI.Label(m_TotalRect, GUIContent.none, s_Styles.iconAreaBg);
+            GUI.Label(m_TotalRect, GUIContent.none, Styles.iconAreaBg);
 
             // For keyboard focus handling (for Tab support and rendering of keyboard focus state)
             m_KeyboardControlID = keyboardControlID;
@@ -609,7 +600,7 @@ namespace UnityEditor
         {
             if (GetRenameOverlay().IsRenaming())
             {
-                GUIStyle renameStyle = (IsListMode() ? null : s_Styles.miniRenameField);
+                GUIStyle renameStyle = (IsListMode() ? null : Styles.miniRenameField);
                 if (!GetRenameOverlay().OnGUI(renameStyle))
                 {
                     RenameEnded();
@@ -936,9 +927,6 @@ namespace UnityEditor
         // Frames only local assets
         public bool Frame(int instanceID, bool frame, bool ping)
         {
-            if (s_Styles == null)
-                s_Styles = new Styles();
-
             int index = -1;
 
             // Check if it is an asset we are creating
@@ -1235,8 +1223,8 @@ namespace UnityEditor
 
         static Rect AdjustRectForFraming(Rect r)
         {
-            r.height += (s_Styles.resultsGridLabel.fixedHeight * 2);
-            r.y -= s_Styles.resultsGridLabel.fixedHeight;
+            r.height += (Styles.resultsGridLabel.fixedHeight * 2);
+            r.y -= Styles.resultsGridLabel.fixedHeight;
             return r;
         }
 
@@ -1299,7 +1287,7 @@ namespace UnityEditor
                     ClearCroppedLabelCache();
 
                 // Check if we need to crop
-                int characterCountVisible = s_Styles.resultsGridLabel.GetNumCharactersThatFitWithinWidth(fullText, cropWidth);
+                int characterCountVisible = Styles.resultsGridLabel.GetNumCharactersThatFitWithinWidth(fullText, cropWidth);
                 if (characterCountVisible == -1)
                 {
                     Repaint();
@@ -1353,9 +1341,6 @@ namespace UnityEditor
         // Pings only local assets
         public void BeginPing(int instanceID)
         {
-            if (s_Styles == null)
-                s_Styles = new Styles();
-
             // Check local assets
             int index =  m_LocalAssets.IndexOf(instanceID);
 
@@ -1395,7 +1380,7 @@ namespace UnityEditor
                 if (m_LocalAssets.ListMode)
                 {
                     const float iconWidth = 16;
-                    m_Ping.m_PingStyle = s_Styles.ping;
+                    m_Ping.m_PingStyle = Styles.ping;
                     Vector2 pingLabelSize = m_Ping.m_PingStyle.CalcSize(cont);
                     m_Ping.m_ContentRect.width = pingLabelSize.x + vcPadding + iconWidth;
                     m_Ping.m_ContentRect.height = pingLabelSize.y;
@@ -1412,17 +1397,17 @@ namespace UnityEditor
                 }
                 else
                 {
-                    m_Ping.m_PingStyle = s_Styles.miniPing;
+                    m_Ping.m_PingStyle = Styles.miniPing;
                     Vector2 pingLabelSize = m_Ping.m_PingStyle.CalcSize(cont);
                     m_Ping.m_ContentRect.width = pingLabelSize.x;
                     m_Ping.m_ContentRect.height = pingLabelSize.y;
                     m_Ping.m_ContentDraw = (Rect r) =>
                     {
                         // We need to temporary adjust style to render into content rect (org anchor is middle-centered)
-                        TextAnchor orgAnchor = s_Styles.resultsGridLabel.alignment;
-                        s_Styles.resultsGridLabel.alignment = TextAnchor.UpperLeft;
-                        s_Styles.resultsGridLabel.Draw(r, label, false, false, false, false);
-                        s_Styles.resultsGridLabel.alignment = orgAnchor;
+                        TextAnchor orgAnchor = Styles.resultsGridLabel.alignment;
+                        Styles.resultsGridLabel.alignment = TextAnchor.UpperLeft;
+                        Styles.resultsGridLabel.Draw(r, label, false, false, false, false);
+                        Styles.resultsGridLabel.alignment = orgAnchor;
                     };
                 }
                 Vector2 pos = CalculatePingPosition();
@@ -1465,7 +1450,7 @@ namespace UnityEditor
             {
                 // TODO: Find out why Y offset 3 is needed
                 float width = m_Ping.m_ContentRect.width;
-                return new Vector2(gridRect.center.x - width / 2f + m_Ping.m_PingStyle.padding.left, gridRect.yMax - s_Styles.resultsGridLabel.fixedHeight + 3);
+                return new Vector2(gridRect.center.x - width / 2f + m_Ping.m_PingStyle.padding.left, gridRect.yMax - Styles.resultsGridLabel.fixedHeight + 3);
             }
         }
     }

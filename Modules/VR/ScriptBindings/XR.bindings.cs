@@ -126,10 +126,10 @@ namespace UnityEngine.XR
         [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
         extern internal static float renderViewportScaleInternal { get; set; }
 
-        [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
+        [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
         extern public static float occlusionMaskScale { get; set; }
 
-        [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
+        [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
         extern public static bool useOcclusionMesh { get; set; }
 
         [NativeName("DeviceName")]

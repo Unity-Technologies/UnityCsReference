@@ -233,8 +233,13 @@ namespace UnityEditor.Modules
         protected virtual string GetArchitecture(BuildPostProcessArgs args) => EditorUserBuildSettings.GetPlatformSettings(BuildPipeline.GetBuildTargetName(args.target), "Architecture");
         private SystemProcessRunnableProgram MakePlayerBuildProgram(BuildPostProcessArgs args)
         {
-            var buildProgramAssembly = new NPath($"{BuildPipeline.GetBuildToolsDirectory(args.target)}/{GetPlatformNameForBuildProgram(args)}PlayerBuildProgram.exe");
-            return new SystemProcessRunnableProgram(NetCoreRunProgram.NetCoreRunPath, buildProgramAssembly.InQuotes(SlashMode.Native));
+            var buildProgramAssembly = new NPath($"{args.playerPackage}/{GetPlatformNameForBuildProgram(args)}PlayerBuildProgram.exe");
+            return new SystemProcessRunnableProgram(NetCoreRunProgram.NetCoreRunPath,
+                new[]
+                {
+                    buildProgramAssembly.InQuotes(SlashMode.Native),
+                    $"\"{EditorApplication.applicationContentsPath}/Tools/BuildPipeline\""
+                });
         }
 
         class PlayerBuildProgressAPI : ProgressAPI

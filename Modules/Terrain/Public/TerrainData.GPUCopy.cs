@@ -5,6 +5,7 @@
 using System;
 using CopyTextureSupport = UnityEngine.Rendering.CopyTextureSupport;
 using GraphicsDeviceType = UnityEngine.Rendering.GraphicsDeviceType;
+using UnityEngine;
 
 namespace UnityEngine
 {
@@ -33,7 +34,7 @@ namespace UnityEngine
                 throw new ArgumentOutOfRangeException("dest.y");
 
             Internal_CopyActiveRenderTextureToHeightmap(sourceRect, dest.x, dest.y, syncControl);
-            Experimental.TerrainAPI.TerrainCallbacks.InvokeHeightmapChangedCallback(this, new RectInt(dest.x, dest.y, sourceRect.width, sourceRect.height), syncControl == TerrainHeightmapSyncControl.HeightAndLod);
+            TerrainCallbacks.InvokeHeightmapChangedCallback(this, new RectInt(dest.x, dest.y, sourceRect.width, sourceRect.height), syncControl == TerrainHeightmapSyncControl.HeightAndLod);
         }
 
         public void DirtyHeightmapRegion(RectInt region, TerrainHeightmapSyncControl syncControl)
@@ -49,7 +50,7 @@ namespace UnityEngine
                 throw new ArgumentOutOfRangeException("region.height");
 
             Internal_DirtyHeightmapRegion(region.x, region.y, region.width, region.height, syncControl);
-            Experimental.TerrainAPI.TerrainCallbacks.InvokeHeightmapChangedCallback(this, region, syncControl == TerrainHeightmapSyncControl.HeightAndLod);
+            TerrainCallbacks.InvokeHeightmapChangedCallback(this, region, syncControl == TerrainHeightmapSyncControl.HeightAndLod);
         }
 
         public static string AlphamapTextureName => "alphamap";
@@ -151,7 +152,7 @@ namespace UnityEngine
                 Internal_ClearAlphamapDirtyRegion(textureIndex);
             }
 
-            Experimental.TerrainAPI.TerrainCallbacks.InvokeTextureChangedCallback(this, textureName, new RectInt(dest.x, dest.y, sourceRect.width, sourceRect.height), !allowDelayedCPUSync);
+            TerrainCallbacks.InvokeTextureChangedCallback(this, textureName, new RectInt(dest.x, dest.y, sourceRect.width, sourceRect.height), !allowDelayedCPUSync);
         }
 
         public void DirtyTextureRegion(string textureName, RectInt region, bool allowDelayedCPUSync)
@@ -196,7 +197,7 @@ namespace UnityEngine
             if (!allowDelayedCPUSync)
                 SyncTexture(textureName);
             else
-                Experimental.TerrainAPI.TerrainCallbacks.InvokeTextureChangedCallback(this, textureName, region, false);
+                TerrainCallbacks.InvokeTextureChangedCallback(this, textureName, region, false);
         }
 
         public void SyncTexture(string textureName)

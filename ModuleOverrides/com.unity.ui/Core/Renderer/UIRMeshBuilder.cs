@@ -42,8 +42,9 @@ namespace UnityEngine.UIElements.UIR
         internal static void MakeSolidRect(MeshGenerationContextUtils.RectangleParams rectParams, float posZ, AllocMeshData meshAlloc)
         {
             if (!rectParams.HasRadius(Tessellation.kEpsilon))
-                MakeQuad(rectParams.rect, Rect.zero, rectParams.color, posZ, meshAlloc);
-            else Tessellation.TessellateRect(rectParams, posZ, meshAlloc, false);
+                Tessellation.TessellateQuad(rectParams, posZ, meshAlloc);
+            else
+                Tessellation.TessellateRect(rectParams, posZ, meshAlloc, false);
         }
 
         internal static void MakeTexturedRect(MeshGenerationContextUtils.RectangleParams rectParams, float posZ, AllocMeshData meshAlloc)

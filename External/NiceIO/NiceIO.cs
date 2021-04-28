@@ -28,6 +28,7 @@ namespace NiceIO
     //niceio gets included willy nilly by various projects, and they end up adding NPath to their public API without realizing it, which can lead to
     //very annoying incompatibilities if you're using two projects that happen to do this. Let's make sure the default that it will not be public,
     //and in the one or two places that we want it to be public be explicit about doing so
+    [DebuggerDisplay("{" + nameof(_path) + "}")]
     internal class NPath
         : IComparable, IEquatable<NPath>
     {

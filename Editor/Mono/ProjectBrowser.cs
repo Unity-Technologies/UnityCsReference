@@ -191,7 +191,6 @@ namespace UnityEditor
         const float     k_MinWidthTwoColumns = 230f;
         static float    k_ToolbarHeight => EditorGUI.kWindowToolbarHeight;
         static float    k_BottomBarHeight => EditorGUI.kWindowToolbarHeight;
-        float           k_MinDirectoriesAreaWidth = 110;
         [SerializeField]
         float           m_DirectoriesAreaWidth = k_MinWidthTwoColumns / 2;
         const float     k_ResizerWidth = 5f;
@@ -2229,8 +2228,10 @@ namespace UnityEditor
                 return;
 
             // Handle folders vs. items splitter
+            const float minDirectoriesAreaWidth = 50f;
+            const float minAssetsAreaWidth = 50f;
             Rect dragRect = new Rect(m_DirectoriesAreaWidth, EditorGUI.kWindowToolbarHeight, k_ResizerWidth, height);
-            dragRect = EditorGUIUtility.HandleHorizontalSplitter(dragRect, position.width, k_MinDirectoriesAreaWidth, k_MinWidthTwoColumns - k_MinDirectoriesAreaWidth);
+            dragRect = EditorGUIUtility.HandleHorizontalSplitter(dragRect, position.width, minDirectoriesAreaWidth, minAssetsAreaWidth);
             m_DirectoriesAreaWidth = dragRect.x;
         }
 

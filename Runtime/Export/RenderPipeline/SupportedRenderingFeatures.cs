@@ -50,12 +50,13 @@ namespace UnityEngine.Rendering
 
         public LightmapsMode lightmapsModes { get; set; } =
             LightmapsMode.NonDirectional | LightmapsMode.CombinedDirectional;
-
+        public bool enlightenLightmapper { get; set; } = true;
         public bool enlighten { get; set; } = true;
         public bool lightProbeProxyVolumes { get; set; } = true;
         public bool motionVectors { get; set; } = true;
         public bool receiveShadows { get; set; } = true;
         public bool reflectionProbes { get; set; } = true;
+        public bool reflectionProbesBlendDistance { get; set; } = true;
         public bool rendererPriority { get; set; } = false;
         public bool rendersUIOverlay { get; set; }
         public bool overridesEnvironmentLighting { get; set; } = false;
@@ -224,8 +225,7 @@ namespace UnityEngine.Rendering
             var isSupported = (bool*)isSupportedPtr;
 
             // 0 = Enlighten
-            // If the lightmapper is Enlighten but Enlighten is disabled, the Enlighten bake backend is not supported.
-            *isSupported = ((lightmapper == 0) && !active.enlighten) ? false : true;
+            *isSupported = lightmapper != 0 || active.enlightenLightmapper;
         }
 
         [RequiredByNativeCode]

@@ -55,7 +55,7 @@ namespace UnityEditor.Search
         internal override IEnumerable<SearchResult> SearchWord(string word, SearchIndexOperator op, SearchResultCollection subset)
         {
             var baseScore = settings.baseScore;
-            var options = FindOptions.Words | FindOptions.Regex | FindOptions.Glob | FindOptions.Fuzzy;
+            var options = FindOptions.Words | FindOptions.Regex | FindOptions.Glob /* | FindOptions.Fuzzy*/;
             if (op == SearchIndexOperator.Equal)
                 options = FindOptions.Exact;
             var documents = subset != null ? subset.Select(r => GetDocument(r.index)) : GetDocuments(ignoreNulls: true);
@@ -322,12 +322,14 @@ namespace UnityEditor.Search
                     IndexNumber(documentIndex, fieldName, (double)p.floatValue);
                     break;
                 case SerializedPropertyType.String:
-                    if (!string.IsNullOrEmpty(p.stringValue) || p.stringValue.Length <= 16 || p.stringValue.LastIndexOf(' ') == -1)
-                        IndexProperty(documentIndex, fieldName, p.stringValue.ToLowerInvariant(), saveKeyword: false, exact: false);
+                    if (string.IsNullOrEmpty(p.stringValue) && p.stringValue.Length > 16 && p.stringValue.LastIndexOf(' ') != -1)
+                        return;
+                    IndexProperty(documentIndex, fieldName, p.stringValue.ToLowerInvariant(), saveKeyword: false, exact: false);
                     break;
                 case SerializedPropertyType.Enum:
-                    if (p.enumValueIndex >= 0 && p.type == "Enum")
-                        IndexProperty(documentIndex, fieldName, p.enumNames[p.enumValueIndex].Replace(" ", "").ToLowerInvariant(), saveKeyword: true, exact: false);
+                    if (p.enumValueIndex < 0 || p.type != "Enum")
+                        return;
+                    IndexProperty(documentIndex, fieldName, p.enumNames[p.enumValueIndex].Replace(" ", "").ToLowerInvariant(), saveKeyword: true, exact: false);
                     break;
                 case SerializedPropertyType.Color:
                     IndexerExtensions.IndexColor(fieldName, p.colorValue, this, documentIndex);
@@ -345,12 +347,15 @@ namespace UnityEditor.Search
                     IndexerExtensions.IndexVector(fieldName,  p.quaternionValue.eulerAngles, this, documentIndex);
                     break;
                 case SerializedPropertyType.ObjectReference:
-                    if (p.objectReferenceValue && !string.IsNullOrEmpty(p.objectReferenceValue.name))
-                        IndexProperty(documentIndex, fieldName, p.objectReferenceValue.name.ToLowerInvariant(), saveKeyword: false, exact: true);
+                    if (!p.objectReferenceValue || string.IsNullOrEmpty(p.objectReferenceValue.name))
+                        return;
+                    IndexProperty(documentIndex, fieldName, p.objectReferenceValue.name.ToLowerInvariant(), saveKeyword: false, exact: true);
                     break;
                 case SerializedPropertyType.Generic:
                     IndexProperty(documentIndex, "has", p.type.ToLowerInvariant(), saveKeyword: true, exact: true);
                     break;
+                default:
+                    return;
             }
 
             MapKeyword(fieldName + ":", $"{p.displayName} ({p.propertyType})");

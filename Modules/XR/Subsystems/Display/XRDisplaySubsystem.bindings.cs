@@ -53,6 +53,7 @@ namespace UnityEngine.XR
         extern public float zNear { get; set; }
         extern public float zFar { get; set; }
         extern public bool  sRGB { get; set; }
+        extern public float occlusionMaskScale { get; set;}
 
         public enum LateLatchNode
         {

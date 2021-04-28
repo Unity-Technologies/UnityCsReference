@@ -244,12 +244,12 @@ namespace UnityEngine.UIElements.UIR.Implementation
             bool isRootOfChange,                // MUST be true  on the root call.
             bool isPendingHierarchicalRepaint,  // MUST be false on the root call.
             bool inheritedClipRectIDChanged,    // MUST be false on the root call.
-            bool inheritedStencilClippedChanged,// MUST be false on the root call.
+            bool inheritedMaskingChanged,       // MUST be false on the root call.
             UIRenderDevice device,
             ref ChainBuilderStats stats)
         {
             bool upToDate = dirtyID == ve.renderChainData.dirtyID;
-            if (upToDate && !inheritedClipRectIDChanged && !inheritedStencilClippedChanged)
+            if (upToDate && !inheritedClipRectIDChanged && !inheritedMaskingChanged)
                 return;
 
             ve.renderChainData.dirtyID = dirtyID; // Prevent reprocessing of the same element in the same pass
@@ -262,7 +262,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             // Internal operations (done in this call) to do:
             bool mustUpdateClipRectID = hierarchical || isRootOfChange || inheritedClipRectIDChanged;
             bool mustUpdateClippingMethod = hierarchical || isRootOfChange;
-            bool mustUpdateStencilClippedFlag = hierarchical || isRootOfChange || inheritedStencilClippedChanged;
+            bool mustUpdateChildrenMasking = hierarchical || isRootOfChange || inheritedMaskingChanged;
 
             // External operations (done by recursion or postponed) to do:
             bool mustRepaintThis = false;
@@ -315,16 +315,15 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 ve.renderChainData.clipRectID = newClipRectID;
             }
 
+            bool maskingChanged = false;
             if (oldClippingMethod != newClippingMethod)
             {
                 ve.renderChainData.clipMethod = newClippingMethod;
 
                 if (oldClippingMethod == ClipMethod.Stencil || newClippingMethod == ClipMethod.Stencil)
                 {
-                    mustUpdateStencilClippedFlag = true;
-
-                    // Proper winding order must be used.
-                    mustRepaintHierarchy = true;
+                    maskingChanged = true;
+                    mustUpdateChildrenMasking = true;
                 }
 
                 if (oldClippingMethod == ClipMethod.Scissor || newClippingMethod == ClipMethod.Scissor)
@@ -345,19 +344,44 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 mustRepaintHierarchy = true;
             }
 
-            bool isStencilClippedChanged = false;
-            if (mustUpdateStencilClippedFlag)
+            if (mustUpdateChildrenMasking)
             {
-                bool oldStencilClipped = ve.renderChainData.isStencilClipped;
-                bool newStencilClipped = newClippingMethod == ClipMethod.Stencil || (parent != null && parent.renderChainData.isStencilClipped);
-                ve.renderChainData.isStencilClipped = newStencilClipped;
-                if (oldStencilClipped != newStencilClipped)
+                int newChildrenMaskDepth = 0;
+                int newChildrenStencilRef = 0;
+                if (parent != null)
                 {
-                    isStencilClippedChanged = true;
+                    newChildrenMaskDepth = parent.renderChainData.childrenMaskDepth;
+                    newChildrenStencilRef = parent.renderChainData.childrenStencilRef;
+                    if (newClippingMethod == ClipMethod.Stencil)
+                    {
+                        if (newChildrenMaskDepth > newChildrenStencilRef)
+                            ++newChildrenStencilRef;
+                        ++newChildrenMaskDepth;
+                    }
 
-                    // Our children MUST update their isStencilClipped flag
-                    mustRecurse = true;
+                    // When applying the MaskContainer hint, we skip because the last depth level because even though we
+                    // could technically increase the reference value, it would be useless since there won't be more
+                    // deeply nested masks that could benefit from it.
+                    if ((ve.renderHints & RenderHints.MaskContainer) == RenderHints.MaskContainer && newChildrenMaskDepth < UIRUtility.k_MaxMaskDepth)
+                        newChildrenStencilRef = newChildrenMaskDepth;
                 }
+
+                if (ve.renderChainData.childrenMaskDepth != newChildrenMaskDepth || ve.renderChainData.childrenStencilRef != newChildrenStencilRef)
+                    maskingChanged = true;
+
+                ve.renderChainData.childrenMaskDepth = newChildrenMaskDepth;
+                ve.renderChainData.childrenStencilRef = newChildrenStencilRef;
+            }
+
+            if (maskingChanged)
+            {
+                mustRecurse = true; // Our children must update their inherited state.
+
+                // These optimizations would allow to skip repainting the hierarchy:
+                // a) We could update the stencilRef in the commands without repainting
+                // b) The winding order could be reversed without repainting (when required)
+                // In the meantime, we have no other choice but to request a hierarchical repaint.
+                mustRepaintHierarchy = true;
             }
 
             if ((mustRepaintThis || mustRepaintHierarchy) && !isPendingHierarchicalRepaint)
@@ -384,7 +408,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                         false,
                         isPendingHierarchicalRepaint,
                         clipRectIDChanged,
-                        isStencilClippedChanged,
+                        maskingChanged,
                         device,
                         ref stats);
             }
@@ -655,8 +679,14 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 return ClipMethod.ShaderDiscard;
             }
 
-            if (ve.hierarchy.parent?.renderChainData.isStencilClipped == true)
-                return ClipMethod.ShaderDiscard; // Prevent nested stenciling for now, even if inaccurate
+            int inheritedMaskDepth = 0;
+            VisualElement parent = ve.hierarchy.parent;
+            if (parent != null)
+                inheritedMaskDepth = parent.renderChainData.childrenMaskDepth;
+
+            // We're already at the deepest level, we can't go any deeper.
+            if (inheritedMaskDepth == UIRUtility.k_MaxMaskDepth)
+                return ClipMethod.ShaderDiscard;
 
             // Stencil clipping is not yet supported in world-space rendering, fallback to a coarse shader discard for now
             return renderChain.drawInCameras ? ClipMethod.ShaderDiscard : ClipMethod.Stencil;
@@ -683,12 +713,13 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         internal static UIRStylePainter.ClosingInfo PaintElement(RenderChain renderChain, VisualElement ve, ref ChainBuilderStats stats)
         {
+            var device = renderChain.device;
             var isClippingWithStencil = ve.renderChainData.clipMethod == ClipMethod.Stencil;
             if ((IsElementSelfHidden(ve) && !isClippingWithStencil) || ve.renderChainData.isHierarchyHidden)
             {
                 if (ve.renderChainData.data != null)
                 {
-                    renderChain.painter.device.Free(ve.renderChainData.data);
+                    device.Free(ve.renderChainData.data);
                     ve.renderChainData.data = null;
                 }
                 if (ve.renderChainData.firstCommand != null)
@@ -741,13 +772,13 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
             MeshHandle data = ve.renderChainData.data;
 
-            if (painter.totalVertices > renderChain.device.maxVerticesPerPage)
+            if (painter.totalVertices > device.maxVerticesPerPage)
             {
-                Debug.LogError($"A {nameof(VisualElement)} must not allocate more than {renderChain.device.maxVerticesPerPage } vertices.");
+                Debug.LogError($"A {nameof(VisualElement)} must not allocate more than {device.maxVerticesPerPage } vertices.");
 
                 if (data != null)
                 {
-                    painter.device.Free(data);
+                    device.Free(data);
                     data = null;
                 }
 
@@ -767,7 +798,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 UInt16 indexOffset = 0;
 
                 if (painter.totalVertices > 0)
-                    UpdateOrAllocate(ref data, painter.totalVertices, painter.totalIndices, painter.device, out verts, out indices, out indexOffset, ref stats);
+                    UpdateOrAllocate(ref data, painter.totalVertices, painter.totalIndices, device, out verts, out indices, out indexOffset, ref stats);
 
                 int vertsFilled = 0, indicesFilled = 0;
 
@@ -845,14 +876,15 @@ namespace UnityEngine.UIElements.UIR.Implementation
                         int entryIndexCount = entry.indices.Length;
                         int entryIndexOffset = vertsFilled + indexOffset;
                         var targetIndicesSlice = indices.Slice(indicesFilled, entryIndexCount);
-                        if (entry.isClipRegisterEntry || !entry.isStencilClipped)
+
+                        if (UIRUtility.ShapeWindingIsClockwise(entry.maskDepth, entry.stencilRef))
                             CopyTriangleIndices(entry.indices, targetIndicesSlice, entryIndexOffset);
-                        else CopyTriangleIndicesFlipWindingOrder(entry.indices, targetIndicesSlice, entryIndexOffset); // Flip winding order if we're stencil-clipped
+                        else CopyTriangleIndicesFlipWindingOrder(entry.indices, targetIndicesSlice, entryIndexOffset);
 
                         if (entry.isClipRegisterEntry)
                             painter.LandClipRegisterMesh(targetVerticesSlice, targetIndicesSlice, entryIndexOffset);
 
-                        var cmd = InjectMeshDrawCommand(renderChain, ve, ref cmdPrev, ref cmdNext, data, entryIndexCount, indicesFilled, entry.material, entry.texture, entry.font);
+                        var cmd = InjectMeshDrawCommand(renderChain, ve, ref cmdPrev, ref cmdNext, data, entryIndexCount, indicesFilled, entry.material, entry.texture, entry.font, entry.stencilRef);
                         if (entry.isTextEntry && ve.renderChainData.usesLegacyText)
                         {
                             if (ve.renderChainData.textEntries == null)
@@ -864,7 +896,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
                             // Set font atlas texture gradient scale
                             cmd.state.fontTexSDFScale = entry.fontTexSDFScale;
                         }
-
 
                         vertsFilled += entry.vertices.Length;
                         indicesFilled += entryIndexCount;
@@ -887,7 +918,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             }
             else if (data != null)
             {
-                painter.device.Free(data);
+                device.Free(data);
                 data = null;
             }
             ve.renderChainData.data = data;
@@ -898,7 +929,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             if (painter.closingInfo.clipperRegisterIndices.Length == 0 && ve.renderChainData.closingData != null)
             {
                 // No more closing data needed, so free it now
-                painter.device.Free(ve.renderChainData.closingData);
+                device.Free(ve.renderChainData.closingData);
                 ve.renderChainData.closingData = null;
             }
 
@@ -930,7 +961,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
                         cmd.closing = true;
                         cmd.owner = ve;
                         cmd.state.material = GetBlitMaterial(ve.subRenderTargetMode);
-                        cmd.indexOffset = painter.closingInfo.RestoreStencilClip ? 1 : 0;
                         Debug.Assert(cmd.state.material != null);
                         InjectClosingCommandInBetween(renderChain, cmd, ref cmdPrev, ref cmdNext);
                     }
@@ -942,12 +972,13 @@ namespace UnityEngine.UIElements.UIR.Implementation
                         cmd.owner = ve;
                         InjectClosingCommandInBetween(renderChain, cmd, ref cmdPrev, ref cmdNext);
                     }
-                    painter.m_StencilClip = painter.closingInfo.RestoreStencilClip;
                 }
 
-
                 if (painter.closingInfo.clipperRegisterIndices.Length > 0)
-                    painter.LandClipUnregisterMeshDrawCommand(InjectClosingMeshDrawCommand(renderChain, ve, ref cmdPrev, ref cmdNext, null, 0, 0, null, TextureId.invalid, null)); // Placeholder command that will be filled actually later
+                {
+                    var cmd = InjectClosingMeshDrawCommand(renderChain, ve, ref cmdPrev, ref cmdNext, null, 0, 0, null, TextureId.invalid, null, painter.closingInfo.maskStencilRef);
+                    painter.LandClipUnregisterMeshDrawCommand(cmd); // Placeholder command that will be filled actually later
+                }
                 if (painter.closingInfo.popViewMatrix)
                 {
                     var cmd = renderChain.AllocCommand();
@@ -1025,7 +1056,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 // Due to device Update limitations, we cannot share the vertices of the registration mesh. It would be great
                 // if we can just point winding-flipped indices towards the same vertices as the registration mesh.
                 // For now, we duplicate the registration mesh entirely, wasting a bit of vertex memory
-                UpdateOrAllocate(ref ve.renderChainData.closingData, closingInfo.clipperRegisterVertices.Length, closingInfo.clipperRegisterIndices.Length, renderChain.painter.device, out verts, out indices, out indexOffset, ref stats);
+                UpdateOrAllocate(ref ve.renderChainData.closingData, closingInfo.clipperRegisterVertices.Length, closingInfo.clipperRegisterIndices.Length, renderChain.device, out verts, out indices, out indexOffset, ref stats);
                 verts.CopyFrom(closingInfo.clipperRegisterVertices);
                 CopyTriangleIndicesFlipWindingOrder(closingInfo.clipperRegisterIndices, indices, indexOffset - closingInfo.clipperRegisterIndexOffset);
                 closingInfo.clipUnregisterDrawCommand.mesh = ve.renderChainData.closingData;
@@ -1065,12 +1096,21 @@ namespace UnityEngine.UIElements.UIR.Implementation
             for (int i = 0; i < count; i++)
             {
                 Vertex v = source[i];
+
+                var circle = (Vector4)mat.MultiplyPoint3x4(new Vector3(v.circle.x, v.circle.y, 0));
+                circle.z = mat.MultiplyVector(new Vector3(v.circle.z, 0, 0)).magnitude;
+
+                var uv = v.uv;
+                if (v.circle.w > Tessellation.kEpsilon)
+                {
+                    // UV stores inner-circle's center
+                    uv = mat.MultiplyPoint3x4(new Vector3(v.uv.x, v.uv.y, 0));
+                    circle.w = mat.MultiplyVector(new Vector3(v.circle.w, 0, 0)).magnitude;
+                }
+
                 v.position = mat.MultiplyPoint3x4(v.position);
                 v.xformClipPages = xformClipPages;
                 v.ids = ids;
-                if (v.idsFlags.a != 0)
-                    // Backward-compatibility: GraphView may still use the old idsFlags for the edges
-                    v.flags.r = v.idsFlags.a;
                 v.flags.r += addFlags.r;
                 v.opacityPageSettingIndex.r = opacityPage.r;
                 v.opacityPageSettingIndex.g = opacityPage.g;
@@ -1079,6 +1119,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     v.opacityPageSettingIndex.b = textCoreSettingsPage.r;
                     v.opacityPageSettingIndex.a = textCoreSettingsPage.g;
                 }
+                v.circle = circle;
+                v.uv = uv;
                 v.textureId = textureId;
                 target[i] = v;
             }
@@ -1092,15 +1134,24 @@ namespace UnityEngine.UIElements.UIR.Implementation
             for (int i = 0; i < count; i++)
             {
                 Vertex v = source[i];
+
+                var circle = (Vector4)mat.MultiplyPoint3x4(new Vector3(v.circle.x, v.circle.y, 0));
+                circle.z = mat.MultiplyVector(new Vector3(v.circle.z, 0, 0)).magnitude;
+
+                var uv = v.uv;
+                if (v.circle.w > Tessellation.kEpsilon)
+                {
+                    // UV stores inner-circle's center
+                    uv = mat.MultiplyPoint3x4(new Vector3(v.uv.x, v.uv.y, 0));
+                    circle.w = mat.MultiplyVector(new Vector3(v.circle.w, 0, 0)).magnitude;
+                }
+
                 v.position = mat.MultiplyPoint3x4(v.position);
                 vec.x = v.uv.x;
                 vec.y = v.uv.y;
                 v.uv = mat.MultiplyVector(vec);
                 v.xformClipPages = xformClipPages;
                 v.ids = ids;
-                if (v.idsFlags.a != 0)
-                    // Backward-compatibility: GraphView may still use the old idsFlags for the edges
-                    v.flags.r = v.idsFlags.a;
                 v.flags.r += addFlags.r;
                 v.opacityPageSettingIndex.r = opacityPage.r;
                 v.opacityPageSettingIndex.g = opacityPage.g;
@@ -1109,6 +1160,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     v.opacityPageSettingIndex.b = textCoreSettingsPage.r;
                     v.opacityPageSettingIndex.a = textCoreSettingsPage.g;
                 }
+                v.circle = circle;
+                v.uv = uv;
                 v.textureId = textureId;
                 target[i] = v;
             }
@@ -1164,7 +1217,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             const float kMaxAllowedDeviation = 0.0001f;
             Matrix4x4 reconstructedNewTransform = nudgeTransform * ve.renderChainData.verticesSpace;
             float error;
-            error  = Mathf.Abs(newTransform.m00 - reconstructedNewTransform.m00);
+            error = Mathf.Abs(newTransform.m00 - reconstructedNewTransform.m00);
             error += Mathf.Abs(newTransform.m01 - reconstructedNewTransform.m01);
             error += Mathf.Abs(newTransform.m02 - reconstructedNewTransform.m02);
             error += Mathf.Abs(newTransform.m03 - reconstructedNewTransform.m03);
@@ -1214,14 +1267,35 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 newVerts[i] = v;
             }
 
+            for (int i = 0; i < vertCount; ++i)
+            {
+                Vertex v = newVerts[i];
+
+                var circle = (Vector4)nudgeTransform.MultiplyPoint3x4(new Vector3(v.circle.x, v.circle.y, 0));
+                circle.z = nudgeTransform.MultiplyVector(new Vector3(v.circle.z, 0, 0)).magnitude;
+
+                var uv = v.uv;
+                if (v.circle.w > Tessellation.kEpsilon)
+                {
+                    // UV stores inner-circle's center
+                    uv = nudgeTransform.MultiplyPoint3x4(new Vector3(v.uv.x, v.uv.y, 0));
+                    circle.w = nudgeTransform.MultiplyVector(new Vector3(v.circle.w, 0, 0)).magnitude;
+                }
+
+                v.circle = circle;
+                v.uv = uv;
+
+                newVerts[i] = v;
+            }
+
             return true;
         }
 
-        static RenderChainCommand InjectMeshDrawCommand(RenderChain renderChain, VisualElement ve, ref RenderChainCommand cmdPrev, ref RenderChainCommand cmdNext, MeshHandle mesh, int indexCount, int indexOffset, Material material, TextureId texture, Texture font)
+        static RenderChainCommand InjectMeshDrawCommand(RenderChain renderChain, VisualElement ve, ref RenderChainCommand cmdPrev, ref RenderChainCommand cmdNext, MeshHandle mesh, int indexCount, int indexOffset, Material material, TextureId texture, Texture font, int stencilRef)
         {
             var cmd = renderChain.AllocCommand();
             cmd.type = CommandType.Draw;
-            cmd.state = new State { material = material, texture = texture, font = font };
+            cmd.state = new State { material = material, texture = texture, font = font, stencilRef = stencilRef };
             cmd.mesh = mesh;
             cmd.indexOffset = indexOffset;
             cmd.indexCount = indexCount;
@@ -1230,12 +1304,12 @@ namespace UnityEngine.UIElements.UIR.Implementation
             return cmd;
         }
 
-        static RenderChainCommand InjectClosingMeshDrawCommand(RenderChain renderChain, VisualElement ve, ref RenderChainCommand cmdPrev, ref RenderChainCommand cmdNext, MeshHandle mesh, int indexCount, int indexOffset, Material material, TextureId texture, Texture font)
+        static RenderChainCommand InjectClosingMeshDrawCommand(RenderChain renderChain, VisualElement ve, ref RenderChainCommand cmdPrev, ref RenderChainCommand cmdNext, MeshHandle mesh, int indexCount, int indexOffset, Material material, TextureId texture, Texture font, int stencilRef)
         {
             var cmd = renderChain.AllocCommand();
             cmd.type = CommandType.Draw;
             cmd.closing = true;
-            cmd.state = new State { material = material, texture = texture, font = font };
+            cmd.state = new State { material = material, texture = texture, font = font, stencilRef = stencilRef };
             cmd.mesh = mesh;
             cmd.indexOffset = indexOffset;
             cmd.indexCount = indexCount;

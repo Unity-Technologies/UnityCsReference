@@ -104,6 +104,7 @@ namespace UnityEngine.UIElements
     /// possible to render UI defined in UXML documents in the Game view.
     /// </summary>
     [AddComponentMenu("UI Toolkit/UI Document"), ExecuteAlways, DisallowMultipleComponent]
+    [DefaultExecutionOrder(-100)] // UIDocument's OnEnable should run before user's OnEnable
     public sealed class UIDocument : MonoBehaviour
     {
         internal const string k_RootStyleClassName = "unity-ui-document__root";

@@ -1600,26 +1600,17 @@ namespace UnityEditor
             if (Event.current.type == EventType.Repaint)
                 AddCursorRect(dragRect, MouseCursor.SplitResizeLeftRight);
 
-            float newX = 0;
-
             // Drag splitter
             float deltaX = EditorGUI.MouseDeltaReader(dragRect, true).x;
             if (deltaX != 0f)
-            {
                 dragRect.x += deltaX;
-                newX = Mathf.Clamp(dragRect.x, minLeftSide, width - minRightSide);
-            }
+            float newX = Mathf.Clamp(dragRect.x, minLeftSide, width - minRightSide);
 
-            // We might need to move the splitter position if our area/window size
-            // has changed
+            // We might need to move the splitter position if our area/window size has changed
             if (dragRect.x > width - minRightSide)
                 newX = width - minRightSide;
 
-            if (newX > 0)
-            {
-                dragRect.x = newX;
-            }
-
+            dragRect.x = Mathf.Clamp(newX, minLeftSide, width - minRightSide);
             return dragRect;
         }
 

@@ -43,14 +43,12 @@ namespace UnityEditor
         // Tile Assets
         public override TileBase GetTile(Vector3Int position)
         {
-            var tile = m_Tilemap.GetEditorPreviewTile(position);
-            return tile ?? m_Tilemap.GetTile(position);
+            return m_Tilemap.GetAnyTile(position);
         }
 
         public override T GetTile<T>(Vector3Int position)
         {
-            var tile = m_Tilemap.GetEditorPreviewTile<T>(position);
-            return tile ?? m_Tilemap.GetTile<T>(position);
+            return m_Tilemap.GetAnyTile<T>(position);
         }
 
         // Called from native code - TilemapScripting.cpp
