@@ -48,10 +48,19 @@ namespace UnityEditor
         {
             public static readonly GUIContent browse = EditorGUIUtility.TrTextContent("Browse...");
             public static readonly GUIStyle clearBindingButton = new GUIStyle(GUI.skin.button);
+            public static readonly GUIStyle linkLabel;
+            public static readonly GUIStyle wrappedMiniLabel;
 
             static Styles()
             {
                 clearBindingButton.margin.top = 0;
+
+                linkLabel = new GUIStyle(EditorStyles.linkLabel);
+                linkLabel.fontSize = EditorStyles.miniLabel.fontSize;
+                linkLabel.wordWrap = true;
+
+                wrappedMiniLabel = new GUIStyle(EditorStyles.miniLabel);
+                wrappedMiniLabel.wordWrap = true;
             }
         }
 
@@ -70,7 +79,10 @@ namespace UnityEditor
             public static readonly GUIContent[] editorSkinOptions = { EditorGUIUtility.TrTextContent("Light"), EditorGUIUtility.TrTextContent("Dark") };
             public static readonly GUIContent enableAlphaNumericSorting = EditorGUIUtility.TrTextContent("Enable Alphanumeric Sorting");
             public static readonly GUIContent asyncShaderCompilation = EditorGUIUtility.TrTextContent("Asynchronous Shader Compilation");
-            public static readonly GUIContent codeCoverageEnabled = EditorGUIUtility.TrTextContent("Enable Code Coverage", "Check this to enable Code Coverage. Code Coverage lets you see how much of your code is executed when it is run. Note that Code Coverage lowers Editor performance.");
+            public static readonly GUIContent codeCoverageEnabled = EditorGUIUtility.TrTextContent("Enable Code Coverage", "Check this to enable Code Coverage. Code Coverage helps you see how much of your code has been executed. Note that Code Coverage can affect the Editor performance.");
+            public static readonly GUIContent codeCoverageInstallPkg = EditorGUIUtility.TrTextContent("Install Code Coverage package");
+            public static readonly GUIContent codeCoverageOpenPkgWindow = EditorGUIUtility.TrTextContent("Open Code Coverage window");
+            public static readonly GUIContent codeCoverageInstallingPkgText = EditorGUIUtility.TrTextContent("Installing Code Coverage package ...");
             public static readonly GUIContent applicationFrameThrottling = EditorGUIUtility.TrTextContent("Frame Throttling (milliseconds)", "The number of milliseconds the Editor can idle between frames.");
             public static readonly GUIContent inputMaxProcessTime = EditorGUIUtility.TrTextContent("Input Throttling (milliseconds)", "The maximum number of milliseconds the Editor will take to process user inputs.");
             public static readonly GUIContent interactionMode = EditorGUIUtility.TrTextContent("Interaction Mode", "Specifies how long the Editor can idle before it updates.");
@@ -206,8 +218,16 @@ namespace UnityEditor
         private static SystemLanguage[] m_stableLanguages = { SystemLanguage.English };
 
         private bool m_AllowAlphaNumericHierarchy = false;
+
         private bool m_EnableCodeCoverage = false;
-        private readonly string kCodeCoverageEnabledMessage = L10n.Tr("Code Coverage collection is enabled for this Unity session. Note that Code Coverage lowers Editor performance.");
+        private PackageManager.Requests.AddRequest m_AddCoveragePkgRequest = null;
+        private static readonly string s_CoveragePkgInstalledMessage = L10n.Tr("Enabling Code Coverage provides access to the Coverage API and can affect the Editor performance. You can use the Code Coverage package to gather and present code coverage information.\n* This setting moved to the Code Coverage package in Unity 2021.");
+        private static readonly string s_CoveragePkgNotInstalledMessage = L10n.Tr("Enabling Code Coverage provides access to the Coverage API and can affect the Editor performance. You can use the Code Coverage package to gather and present code coverage information. To install the Code Coverage package, click Install Code Coverage package.\n* This setting moved to the Code Coverage package in Unity 2021.");
+        private static readonly string s_CoveragePkgId = "com.unity.testtools.codecoverage";
+        private static readonly string s_CoveragePkgPath = $"Packages/{s_CoveragePkgId}";
+        private static readonly string s_CoverageWindowPath = "Window/Analysis/Code Coverage";
+        private static readonly Uri s_CoverageAPIDocUri = new Uri("https://docs.unity3d.com/2020.3/Documentation/ScriptReference/TestTools.Coverage.html");
+
         private bool m_Create3DObjectsAtOrigin = false;
         private float m_ProgressDialogDelay = 3.0f;
         private bool m_GraphSnapping;
@@ -641,17 +661,54 @@ namespace UnityEditor
                 }
             }
 
-            EditorGUI.BeginChangeCheck();
-            m_EnableCodeCoverage = EditorGUILayout.Toggle(GeneralProperties.codeCoverageEnabled, m_EnableCodeCoverage);
-            if (EditorGUI.EndChangeCheck())
+            using (new EditorGUI.DisabledScope(EditorApplication.isCompiling || m_AddCoveragePkgRequest != null))
             {
-                // This sets the CodeCoverageEnabled EditorPref in ScriptingCoverage::SetEnabled
-                Coverage.enabled = m_EnableCodeCoverage;
+                EditorGUI.BeginChangeCheck();
+                m_EnableCodeCoverage = EditorGUILayout.Toggle(GeneralProperties.codeCoverageEnabled, m_EnableCodeCoverage);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    // This sets the CodeCoverageEnabled EditorPref in ScriptingCoverage::SetEnabled
+                    Coverage.enabled = m_EnableCodeCoverage;
+                }
             }
 
             if (m_EnableCodeCoverage)
             {
-                EditorGUILayout.HelpBox(kCodeCoverageEnabledMessage, MessageType.Warning);
+                bool isCoveragePkgInstalled = PackageManager.PackageInfo.FindForAssetPath(s_CoveragePkgPath) != null;
+
+                HelpBoxWithLink(isCoveragePkgInstalled ? s_CoveragePkgInstalledMessage : s_CoveragePkgNotInstalledMessage,
+                    L10n.Tr("Read more"), () =>
+                    {
+                        System.Diagnostics.Process.Start(s_CoverageAPIDocUri.AbsoluteUri);
+                    });
+
+                if (m_AddCoveragePkgRequest != null)
+                {
+                    using (new EditorGUI.DisabledScope(true))
+                    {
+                        EditorGUILayout.LabelField(GeneralProperties.codeCoverageInstallingPkgText);
+                    }
+                }
+                else
+                {
+                    using (new EditorGUI.DisabledScope(EditorApplication.isCompiling))
+                    {
+                        if (!isCoveragePkgInstalled)
+                        {
+                            if (GUILayout.Button(GeneralProperties.codeCoverageInstallPkg))
+                            {
+                                m_AddCoveragePkgRequest = PackageManager.Client.Add(s_CoveragePkgId);
+                            }
+                        }
+                        else
+                        {
+                            if (GUILayout.Button(GeneralProperties.codeCoverageOpenPkgWindow))
+                            {
+                                EditorApplication.ExecuteMenuItem(s_CoverageWindowPath);
+                            }
+                        }
+                    }
+                }
             }
 
             if (Application.platform == RuntimePlatform.WindowsEditor)
@@ -676,6 +733,19 @@ namespace UnityEditor
             DrawInteractionModeOptions();
 
             DrawPackageManagerOptions();
+        }
+
+        private void HelpBoxWithLink(string message, string link, Action linkClicked)
+        {
+            GUILayout.BeginHorizontal(EditorStyles.helpBox);
+            GUILayout.Label(EditorGUIUtility.GetHelpIcon(MessageType.Info), GUILayout.ExpandWidth(false));
+            GUILayout.BeginVertical();
+            GUILayout.Label(message, Styles.wrappedMiniLabel);
+            if (GUILayout.Button(link, Styles.linkLabel))
+                linkClicked?.Invoke();
+            EditorGUIUtility.AddCursorRect(GUILayoutUtility.GetLastRect(), MouseCursor.Link);
+            GUILayout.EndVertical();
+            GUILayout.EndHorizontal();
         }
 
         enum InteractionMode

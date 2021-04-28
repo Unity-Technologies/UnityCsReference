@@ -435,7 +435,7 @@ namespace UnityEngine.UIElements.UIR
             // Commit new requests for atlases if any
             atlasManager?.Commit();
             vectorImageManager?.Commit();
-            shaderInfoAllocator.IssuePendingAtlasBlits();
+            shaderInfoAllocator.IssuePendingStorageChanges();
 
             device?.OnFrameRenderingBegin();
 

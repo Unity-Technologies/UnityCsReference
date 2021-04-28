@@ -1171,14 +1171,20 @@ namespace UnityEditorInternal
                             var oldActiveElement = m_ActiveElement;
                             var newActiveElement = targetIndex;
 
+                            // Array size may have changes so we need to recache array size for isOverMaxMultiEditLimit check
+                            _ = count;
+
                             // Retain expanded state after reordering properties
-                            if (m_SerializedObject != null && m_Elements != null)
+                            if (m_SerializedObject != null && m_Elements != null && !isOverMaxMultiEditLimit)
                             {
                                 SerializedProperty prop1 = m_Elements.GetArrayElementAtIndex(oldActiveElement);
                                 SerializedProperty prop2 = m_Elements.GetArrayElementAtIndex(newActiveElement);
                                 bool tempExpanded = prop1.isExpanded;
                                 prop1.isExpanded = prop2.isExpanded;
                                 prop2.isExpanded = tempExpanded;
+
+                                if (prop1.propertyType == SerializedPropertyType.Gradient || prop2.propertyType == SerializedPropertyType.Gradient)
+                                    GradientPreviewCache.ClearCache();
                             }
 
                             // update the active element, now that we've moved it

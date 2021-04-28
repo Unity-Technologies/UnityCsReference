@@ -370,6 +370,9 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRRepaintUpdater.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRRepaintUpdater.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRShaderInfoStorage.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRShaderInfoStorage.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRShaders.cs">
       <Link>External\MirroredPackageSources\com.unity.ui\Core\Renderer\UIRShaders.cs</Link>
     </Compile>

@@ -164,6 +164,12 @@ namespace UnityEngine.iOS
             [FreeFunction("IOSScripting::SetWantsSoftwareDimming")] set;
         }
 
+        extern public static bool iosAppOnMac
+        {
+            [NativeConditional("PLATFORM_IOS")]
+            [FreeFunction("IOSScripting::GetIosAppOnMac")] get;
+        }
+
         extern private static int deferSystemGesturesModeInternal
         {
             [NativeConditional("PLATFORM_IOS")]
