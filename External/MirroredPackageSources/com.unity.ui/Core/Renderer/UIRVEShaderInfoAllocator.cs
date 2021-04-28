@@ -60,7 +60,7 @@ namespace UnityEngine.UIElements.UIR
             m_Pages.Add(new Page() { x = firstPageX, y = firstPageY, freeSlots = kPageWidth * m_PageHeight - 1 });
         }
 
-        public BMPAlloc Allocate(UIRAtlasManager atlasManager)
+        public BMPAlloc Allocate(BaseShaderInfoStorage storage)
         {
             int pageCount = m_Pages.Count;
             for (int pageIndex = 0; pageIndex < pageCount; pageIndex++)
@@ -85,7 +85,7 @@ namespace UnityEngine.UIElements.UIR
             } // For each page
 
             RectInt uvRect;
-            if ((atlasManager == null) || !atlasManager.AllocateRect(kPageWidth * m_EntryWidth, m_PageHeight * m_EntryHeight, out uvRect))
+            if ((storage == null) || !storage.AllocateRect(kPageWidth * m_EntryWidth, m_PageHeight * m_EntryHeight, out uvRect))
                 return BMPAlloc.Invalid;
 
             m_AllocMap.Capacity += m_PageHeight;
@@ -149,11 +149,9 @@ namespace UnityEngine.UIElements.UIR
 
     internal struct UIRVEShaderInfoAllocator
     {
-        static readonly RectInt k_FirstPixelRect = new RectInt(0, 0, 1, 1);
-
-        UIRAtlasManager m_Atlas;
-        BitmapAllocator32 m_TransformAllocator, m_ClipRectAllocator, m_OpacityAllocator; // All allocators take pages from the same atlas
-        bool m_AtlasReallyCreated;
+        BaseShaderInfoStorage m_Storage;
+        BitmapAllocator32 m_TransformAllocator, m_ClipRectAllocator, m_OpacityAllocator; // All allocators take pages from the same storage
+        bool m_StorageReallyCreated;
 
         // Support for absence of vertex texturing
         bool m_VertexTexturingEnabled;
@@ -169,9 +167,10 @@ namespace UnityEngine.UIElements.UIR
         internal static readonly Vector2Int infiniteClipRectTexel = new Vector2Int(0, 32);
         internal static readonly Vector2Int fullOpacityTexel = new Vector2Int(32, 32);
 
-        internal static readonly Vector4 identityTransformRow0Value = new Vector4(1, 0, 0, 0);
-        internal static readonly Vector4 identityTransformRow1Value = new Vector4(0, 1, 0, 0);
-        internal static readonly Vector4 identityTransformRow2Value = new Vector4(0, 0, 1, 0);
+        internal static readonly Matrix4x4 identityTransformValue = Matrix4x4.identity;
+        internal static readonly Vector4 identityTransformRow0Value = identityTransformValue.GetRow(0);
+        internal static readonly Vector4 identityTransformRow1Value = identityTransformValue.GetRow(1);
+        internal static readonly Vector4 identityTransformRow2Value = identityTransformValue.GetRow(2);
         internal static readonly Vector4 infiniteClipRectValue = new Vector4(-float.MaxValue, -float.MaxValue, float.MaxValue, float.MaxValue);
         internal static readonly Vector4 fullOpacityValue = new Vector4(1, 1, 1, 1);
 
@@ -209,14 +208,15 @@ namespace UnityEngine.UIElements.UIR
         {
             get
             {
-                if (m_AtlasReallyCreated)
-                    return m_Atlas.atlas;
+                if (m_StorageReallyCreated)
+                    return m_Storage.texture;
                 return m_VertexTexturingEnabled ? UIRenderDevice.defaultShaderInfoTexFloat : UIRenderDevice.defaultShaderInfoTexARGB8;
             }
         }
-        public bool internalAtlasCreated { get { return m_AtlasReallyCreated; } } // For diagnostics really
 
-        public bool isReleased { get { return m_AtlasReallyCreated && m_Atlas?.IsReleased() == true; } }
+        public bool internalAtlasCreated { get { return m_StorageReallyCreated; } } // For diagnostics really
+
+        public bool isReleased { get { return m_StorageReallyCreated && m_Storage?.texture == null; } }
 
         public void Construct()
         {
@@ -245,19 +245,19 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        void ReallyCreateAtlas()
+        void ReallyCreateStorage()
         {
-            m_Atlas = new UIRAtlasManager(
-                m_VertexTexturingEnabled ? RenderTextureFormat.ARGBFloat : RenderTextureFormat.ARGB32, // If no vertex texturing, only store opacity in ARGB32
-                FilterMode.Point, // Filtering is never needed for this texture
-                Math.Max(pageWidth, pageHeight * 3), // Each transform row is stored vertically
-                64); // Because we want predictable placement of first pages, 64 will fit all three default allocs
+            // Because we want predictable placement of first pages, 64 will fit all default allocs
+            if (m_VertexTexturingEnabled)
+                m_Storage = new ShaderInfoStorageRGBAFloat(64);
+            else
+                m_Storage = new ShaderInfoStorageRGBA32(64); // If no vertex texturing, only store opacity in RGBA32
 
             // The order of allocation from the atlas below is important. See the comment at the beginning of Construct().
             RectInt rcTransform, rcClipRect, rcOpacity;
-            m_Atlas.AllocateRect(pageWidth * m_TransformAllocator.entryWidth, pageHeight * m_TransformAllocator.entryHeight, out rcTransform);
-            m_Atlas.AllocateRect(pageWidth * m_ClipRectAllocator.entryWidth, pageHeight * m_ClipRectAllocator.entryHeight, out rcClipRect);
-            m_Atlas.AllocateRect(pageWidth * m_OpacityAllocator.entryWidth, pageHeight * m_OpacityAllocator.entryHeight, out rcOpacity);
+            m_Storage.AllocateRect(pageWidth * m_TransformAllocator.entryWidth, pageHeight * m_TransformAllocator.entryHeight, out rcTransform);
+            m_Storage.AllocateRect(pageWidth * m_ClipRectAllocator.entryWidth, pageHeight * m_ClipRectAllocator.entryHeight, out rcClipRect);
+            m_Storage.AllocateRect(pageWidth * m_OpacityAllocator.entryWidth, pageHeight * m_OpacityAllocator.entryHeight, out rcOpacity);
 
             if (!AtlasRectMatchesPage(ref m_TransformAllocator, identityTransform, rcTransform))
                 throw new Exception("Atlas identity transform allocation failed unexpectedly");
@@ -268,49 +268,40 @@ namespace UnityEngine.UIElements.UIR
             if (!AtlasRectMatchesPage(ref m_OpacityAllocator, fullOpacity, rcOpacity))
                 throw new Exception("Atlas full opacity allocation failed unexpectedly");
 
-            var whiteTexel = UIRenderDevice.whiteTexel;
             if (m_VertexTexturingEnabled)
             {
-                var allocXY = AllocToTexelCoord(ref m_TransformAllocator, identityTransform);
-                m_Atlas.EnqueueBlit(whiteTexel, k_FirstPixelRect, allocXY.x, allocXY.y + 0, false, identityTransformRow0Value);
-                m_Atlas.EnqueueBlit(whiteTexel, k_FirstPixelRect, allocXY.x, allocXY.y + 1, false, identityTransformRow1Value);
-                m_Atlas.EnqueueBlit(whiteTexel, k_FirstPixelRect, allocXY.x, allocXY.y + 2, false, identityTransformRow2Value);
-
-                allocXY = AllocToTexelCoord(ref m_ClipRectAllocator, infiniteClipRect);
-                m_Atlas.EnqueueBlit(whiteTexel, k_FirstPixelRect, allocXY.x, allocXY.y, false, infiniteClipRectValue);
+                SetTransformValue(identityTransform, identityTransformValue);
+                SetClipRectValue(infiniteClipRect, infiniteClipRectValue);
             }
-            {
-                var allocXY = AllocToTexelCoord(ref m_OpacityAllocator, fullOpacity);
-                m_Atlas.EnqueueBlit(whiteTexel, k_FirstPixelRect, allocXY.x, allocXY.y, false, fullOpacityValue);
-            }
+            SetOpacityValue(fullOpacity, fullOpacityValue.w);
 
-            m_AtlasReallyCreated = true;
+            m_StorageReallyCreated = true;
         }
 
         public void Dispose()
         {
-            if (m_Atlas != null)
-                m_Atlas.Dispose();
-            m_Atlas = null;
+            if (m_Storage != null)
+                m_Storage.Dispose();
+            m_Storage = null;
             if (m_ClipRects.IsCreated)
                 m_ClipRects.Dispose();
             if (m_Transforms.IsCreated)
                 m_Transforms.Dispose();
-            m_AtlasReallyCreated = false;
+            m_StorageReallyCreated = false;
         }
 
-        public void IssuePendingAtlasBlits()
+        public void IssuePendingStorageChanges()
         {
-            m_Atlas?.Commit();
+            m_Storage?.UpdateTexture();
         }
 
         public BMPAlloc AllocTransform()
         {
-            if (!m_AtlasReallyCreated)
-                ReallyCreateAtlas();
+            if (!m_StorageReallyCreated)
+                ReallyCreateStorage();
 
             if (m_VertexTexturingEnabled)
-                return m_TransformAllocator.Allocate(m_Atlas);
+                return m_TransformAllocator.Allocate(m_Storage);
 
             var alloc = m_TransformAllocator.Allocate(null); // Don't want to allow new pages
 
@@ -323,11 +314,11 @@ namespace UnityEngine.UIElements.UIR
 
         public BMPAlloc AllocClipRect()
         {
-            if (!m_AtlasReallyCreated)
-                ReallyCreateAtlas();
+            if (!m_StorageReallyCreated)
+                ReallyCreateStorage();
 
             if (m_VertexTexturingEnabled)
-                return m_ClipRectAllocator.Allocate(m_Atlas);
+                return m_ClipRectAllocator.Allocate(m_Storage);
 
             var alloc = m_ClipRectAllocator.Allocate(null); // Don't want to allow new pages
 
@@ -340,10 +331,10 @@ namespace UnityEngine.UIElements.UIR
 
         public BMPAlloc AllocOpacity()
         {
-            if (!m_AtlasReallyCreated)
-                ReallyCreateAtlas();
+            if (!m_StorageReallyCreated)
+                ReallyCreateStorage();
 
-            return m_OpacityAllocator.Allocate(m_Atlas);
+            return m_OpacityAllocator.Allocate(m_Storage);
         }
 
         public void SetTransformValue(BMPAlloc alloc, Matrix4x4 xform)
@@ -352,9 +343,9 @@ namespace UnityEngine.UIElements.UIR
             if (m_VertexTexturingEnabled)
             {
                 var allocXY = AllocToTexelCoord(ref m_TransformAllocator, alloc);
-                m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, k_FirstPixelRect, allocXY.x, allocXY.y + 0, false, xform.GetRow(0));
-                m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, k_FirstPixelRect, allocXY.x, allocXY.y + 1, false, xform.GetRow(1));
-                m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, k_FirstPixelRect, allocXY.x, allocXY.y + 2, false, xform.GetRow(2));
+                m_Storage.SetTexel(allocXY.x, allocXY.y + 0, xform.GetRow(0));
+                m_Storage.SetTexel(allocXY.x, allocXY.y + 1, xform.GetRow(1));
+                m_Storage.SetTexel(allocXY.x, allocXY.y + 2, xform.GetRow(2));
             }
             else
                 m_Transforms[AllocToConstantBufferIndex(alloc)] = new Transform3x4()
@@ -371,7 +362,7 @@ namespace UnityEngine.UIElements.UIR
             if (m_VertexTexturingEnabled)
             {
                 var allocXY = AllocToTexelCoord(ref m_ClipRectAllocator, alloc);
-                m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, k_FirstPixelRect, allocXY.x, allocXY.y, false, clipRect);
+                m_Storage.SetTexel(allocXY.x, allocXY.y, clipRect);
             }
             else m_ClipRects[AllocToConstantBufferIndex(alloc)] = clipRect;
         }
@@ -380,7 +371,7 @@ namespace UnityEngine.UIElements.UIR
         {
             Debug.Assert(alloc.IsValid());
             var allocXY = AllocToTexelCoord(ref m_OpacityAllocator, alloc);
-            m_Atlas.EnqueueBlit(UIRenderDevice.whiteTexel, k_FirstPixelRect, allocXY.x, allocXY.y, false, new Color(1, 1, 1, opacity));
+            m_Storage.SetTexel(allocXY.x, allocXY.y, new Color(1, 1, 1, opacity));
         }
 
         public void FreeTransform(BMPAlloc alloc)

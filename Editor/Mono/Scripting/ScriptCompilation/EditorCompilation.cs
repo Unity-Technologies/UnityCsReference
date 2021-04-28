@@ -26,7 +26,18 @@ using IOException = System.IO.IOException;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
-    class EditorCompilation
+    internal interface IEditorCompilation
+    {
+        PrecompiledAssemblyProviderBase PrecompiledAssemblyProvider { get; set; }
+
+        ScriptAssembly[] GetAllScriptAssemblies(
+            EditorScriptCompilationOptions options,
+            PrecompiledAssembly[] unityAssembliesArg,
+            Dictionary<string, PrecompiledAssembly> precompiledAssembliesArg,
+            string[] defines);
+    }
+
+    class EditorCompilation : IEditorCompilation
     {
         public enum CompileStatus
         {
