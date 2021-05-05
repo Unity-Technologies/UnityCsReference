@@ -105,7 +105,7 @@ namespace UnityEngine.UIElements
             foreach (var record in matchRecords)
             {
                 int specificity = record.complexSelector.specificity;
-                if (record.sheet.isUnityStyleSheet)
+                if (record.sheet.isDefaultStyleSheet)
                     specificity = UnitySpecificity;
 
                 var properties = record.complexSelector.rule.properties;

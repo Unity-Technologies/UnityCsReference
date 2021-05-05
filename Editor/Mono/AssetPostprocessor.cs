@@ -167,7 +167,17 @@ namespace UnityEditor
         {
             m_ImportProcessors = new ArrayList();
             var analyticsEvent = new AssetPostProcessorAnalyticsData();
-            analyticsEvent.importActionId = ((int)Math.Floor(AssetImporter.GetAtPath(pathName).GetImportStartTime() * 1000)).ToString();
+
+            // This may happen if the processors are initialized outside a proper importer context. This is currently
+            // used by the TextureGenerator to be able to invoke the postprocessors on the generated texture.
+            if (AssetImporter.GetAtPath(pathName) != null)
+            {
+                analyticsEvent.importActionId = ((int)Math.Floor(AssetImporter.GetAtPath(pathName).GetImportStartTime() * 1000)).ToString();
+            }
+            else
+            {
+                analyticsEvent.importActionId = "None";
+            }
             s_AnalyticsEventsStack.Push(analyticsEvent);
 
             // @TODO: This is just a temporary workaround for the import settings.
@@ -396,7 +406,9 @@ namespace UnityEditor
                     var type = inst.GetType();
                     bool hasPreProcessMethod = type.GetMethod("OnPreprocessTexture", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null;
                     bool hasPostProcessMethod = (type.GetMethod("OnPostprocessTexture", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null) ||
-                        (type.GetMethod("OnPostprocessCubemap", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null);
+                        (type.GetMethod("OnPostprocessCubemap", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null) ||
+                        (type.GetMethod("OnPostprocessTexture3D", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null) ||
+                        (type.GetMethod("OnPostprocessTexture2DArray", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null);
                     uint version = inst.GetVersion();
                     if (hasPreProcessMethod || hasPostProcessMethod)
                     {
@@ -435,6 +447,20 @@ namespace UnityEditor
         {
             object[] args = { tex };
             CallPostProcessMethods("OnPostprocessCubemap", args);
+        }
+
+        [RequiredByNativeCode]
+        static void PostprocessTexture3D(Texture3D tex, string pathName)
+        {
+            object[] args = { tex };
+            CallPostProcessMethods("OnPostprocessTexture3D", args);
+        }
+
+        [RequiredByNativeCode]
+        static void PostprocessTexture2DArray(Texture2DArray tex, string pathName)
+        {
+            object[] args = { tex };
+            CallPostProcessMethods("OnPostprocessTexture2DArray", args);
         }
 
         [RequiredByNativeCode]
@@ -617,6 +643,11 @@ namespace UnityEditor
 
         static void CallPostProcessMethods(string methodName, object[] args)
         {
+            if (m_ImportProcessors == null)
+            {
+                throw new Exception("m_ImportProcessors is null, InitPostProcessors should be called before any of the post process methods are called.");
+            }
+
             if (IsAssetPostprocessorAnalyticsEnabled())
             {
                 int invocationCount = 0;

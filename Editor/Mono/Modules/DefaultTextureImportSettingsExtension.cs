@@ -21,6 +21,7 @@ namespace UnityEditor.Modules
         static readonly string[] kMaxTextureSizeStrings = { "32", "64", "128", "256", "512", "1024", "2048", "4096", "8192", "16384" };
         static readonly int[] kMaxTextureSizeValues = { 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384 };
         static readonly GUIContent maxSize = EditorGUIUtility.TrTextContent("Max Size", "Textures larger than this will be scaled down.");
+        static readonly string kMaxSizeOverrideString = L10n.Tr("Max texture size is overriden to {0} in Build Settings window.");
 
         static readonly string[] kResizeAlgorithmStrings = { "Mitchell", "Bilinear" };
         static readonly int[] kResizeAlgorithmValues = { (int)TextureResizeAlgorithm.Mitchell, (int)TextureResizeAlgorithm.Bilinear };
@@ -64,6 +65,11 @@ namespace UnityEditor.Modules
             {
                 editor.model.SetMaxTextureSizeForAll(maxTextureSize);
             }
+
+            // Show a note if max size is overriden globally by the user
+            var userMaxSizeOverride = EditorUserBuildSettings.overrideMaxTextureSize;
+            if (userMaxSizeOverride > 0 && userMaxSizeOverride < maxTextureSize)
+                EditorGUILayout.HelpBox(string.Format(kMaxSizeOverrideString, userMaxSizeOverride), MessageType.Info);
 
             // Resize Algorithm
             EditorGUI.BeginChangeCheck();

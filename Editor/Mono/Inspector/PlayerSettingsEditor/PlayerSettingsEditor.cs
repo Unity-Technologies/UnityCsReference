@@ -1883,7 +1883,7 @@ namespace UnityEditor
                 }
             }
 
-            if ((settingsExtension != null && settingsExtension.SupportsCustomNormalMapEncoding()) || !isPreset)
+            if ((settingsExtension != null && settingsExtension.SupportsCustomNormalMapEncoding()) && !isPreset)
             {
                 using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || Lightmapping.isRunning))
                 {

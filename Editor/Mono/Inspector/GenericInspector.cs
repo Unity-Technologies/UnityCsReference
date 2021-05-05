@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor
@@ -57,7 +58,7 @@ namespace UnityEditor
 
             // Update serialized object representation
             if (m_SerializedObject == null)
-                m_SerializedObject = new SerializedObject(targets, m_Context) {inspectorMode = inspectorMode};
+                m_SerializedObject = new SerializedObject(targets, m_Context) { inspectorMode = inspectorMode };
             else
             {
                 m_SerializedObject.Update();
@@ -180,19 +181,79 @@ namespace UnityEditor
             }
 
             EditorGUILayout.PropertyField(scriptProperty);
-
             if (!scriptLoaded)
             {
                 GUI.enabled = true;
-                ShowScriptNotLoadedWarning(IsAnyMonoBehaviourTargetPartOfPrefabInstance(this));
+                // if script is not loaded, this might also be because
+                // the asset is tied to an EditorClassIdentifier rather than a MonoScript
+                // (it happens when multiple types are defined in a C# script)
+                switch (ShowTypeFixup())
+                {
+                    case ShowTypeFixupResult.CantFindCandidate:
+                        ShowScriptNotLoadedWarning(IsAnyMonoBehaviourTargetPartOfPrefabInstance(this));
+                        break;
+                    case ShowTypeFixupResult.SelectedCandidate:
+                        serializedObject.ApplyModifiedProperties();
+                        EditorUtility.RequestScriptReload();
+                        return true;
+                }
             }
 
             GUI.enabled = oldGUIEnabled;
-
             if (serializedObject.ApplyModifiedProperties())
+            {
                 EditorUtility.ForceRebuildInspectors();
-
+            }
             return true;
+        }
+
+        static GUIContent s_fixupTypeContent = new GUIContent("Fix underlying type");
+        enum ShowTypeFixupResult
+        {
+            CantFindCandidate,
+            DisplayedCandidates,
+            SelectedCandidate
+        }
+        private ShowTypeFixupResult ShowTypeFixup()
+        {
+            var originalClassIdentifier = serializedObject.FindProperty("m_EditorClassIdentifier");
+            if (originalClassIdentifier == null)
+            {
+                return ShowTypeFixupResult.CantFindCandidate;
+            }
+            var assemblySepartor = originalClassIdentifier.stringValue?.IndexOf("::");
+            if (assemblySepartor == null || assemblySepartor == -1)
+            {
+                return ShowTypeFixupResult.CantFindCandidate;
+            }
+            var withoutAssembly = originalClassIdentifier.stringValue.Substring(assemblySepartor.Value + 2);
+            var potentialMatches = TypeCache.GetTypesDerivedFrom<ScriptableObject>().Where(c => c.FullName == withoutAssembly)
+                .Concat(TypeCache.GetTypesDerivedFrom<MonoBehaviour>().Where(c => c.FullName == withoutAssembly))
+                .Select(c => $"{c.Assembly.GetName().Name}::{c.FullName}")
+                .Where(c => c != originalClassIdentifier.stringValue)
+                .ToList();
+
+            if (potentialMatches.Count == 0)
+            {
+                return ShowTypeFixupResult.CantFindCandidate;
+            }
+
+            var buttons = new string[potentialMatches.Count + 1];
+            buttons[0] = "-";
+            for (int i = 0; i < potentialMatches.Count; i++)
+            {
+                buttons[i + 1] = potentialMatches[i];
+            }
+
+            EditorGUILayout.HelpBox("It seems that the underlying type has been moved in a different assembly. Please select the correct object type.", MessageType.Warning);
+            EditorGUI.BeginChangeCheck();
+            var value = EditorGUILayout.Popup(s_fixupTypeContent, 0, buttons);
+            if (EditorGUI.EndChangeCheck())
+            {
+                originalClassIdentifier.stringValue = buttons[value];
+                return ShowTypeFixupResult.SelectedCandidate;
+            }
+            return ShowTypeFixupResult.DisplayedCandidates;
         }
 
         private static bool CheckIfScriptLoaded(SerializedProperty scriptProperty)

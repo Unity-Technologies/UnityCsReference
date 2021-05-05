@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.UIElements;
@@ -19,13 +18,30 @@ namespace UnityEditor.PackageManager.UI.Internal
         private string m_CurrentStateClass;
 
         public IPackage package { get; private set; }
-        public VisualState visualState { get; set; }
+        public VisualState visualState { get; private set; }
 
-        public IPackageVersion targetVersion { get { return package?.versions.primary; } }
-        public VisualElement element { get { return this; } }
+        public IPackageVersion targetVersion => package?.versions.primary;
+        public VisualElement element => this;
 
-        [NonSerialized]
-        private bool m_FetchingDetail;
+        private bool m_VisibleInScrollView;
+        public bool visibleInScrollView
+        {
+            get => m_VisibleInScrollView;
+            set
+            {
+                if (value == m_VisibleInScrollView)
+                    return;
+
+                m_VisibleInScrollView = value;
+                RefreshState();
+                RefreshSpinner();
+                if (m_VisibleInScrollView)
+                {
+                    Refresh();
+                    IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint | VersionChangeType.Transform);
+                }
+            }
+        }
 
         internal PackageGroup packageGroup { get; set; }
 
@@ -53,7 +69,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             ResolveDependencies(pageManager, settingsProxy);
 
-            BuildUI();
+            BuildMainItem();
 
             UpdateExpanderUI(false);
 
@@ -61,47 +77,48 @@ namespace UnityEditor.PackageManager.UI.Internal
             UpdateVisualState(state);
         }
 
-        private void BuildUI()
+        private void BuildMainItem()
         {
             m_MainItem = new VisualElement {name = "mainItem"};
             m_MainItem.OnLeftClick(SelectMainItem);
             Add(m_MainItem);
 
-            // Main Item follows the `left, middle, right` layout.
-            var leftContainer = new VisualElement {name = "leftContainer", classList = {"left"}};
-            m_VersionLabel = new Label { name = "versionLabel", classList = { "version", "middle" } };
-            var rightContainer = new VisualElement { name = "rightContainer", classList = { "right" } };
+            m_LeftContainer = new VisualElement {name = "leftContainer", classList = {"left"}};
+            m_MainItem.Add(m_LeftContainer);
 
-            m_MainItem.Add(leftContainer);
-            m_MainItem.Add(m_VersionLabel);
-            m_MainItem.Add(rightContainer);
-
-            // Left container children
             m_ArrowExpander = new Toggle {name = "arrowExpander", classList = {"expander"}};
             m_ArrowExpander.RegisterValueChangedCallback(ToggleExpansion);
-            leftContainer.Add(m_ArrowExpander);
+            m_LeftContainer.Add(m_ArrowExpander);
 
             m_ExpanderHidden = new Label {name = "expanderHidden", classList = {"expanderHidden"}};
-            leftContainer.Add(m_ExpanderHidden);
+            m_LeftContainer.Add(m_ExpanderHidden);
 
             m_NameLabel = new Label {name = "packageName", classList = {"name"}};
-            leftContainer.Add(m_NameLabel);
+            m_LeftContainer.Add(m_NameLabel);
 
             m_EntitlementLabel = new Label {name = "entitlementLabel"};
             UIUtils.SetElementDisplay(m_EntitlementLabel, false);
-            leftContainer.Add(m_EntitlementLabel);
+            m_LeftContainer.Add(m_EntitlementLabel);
 
-            // Right contains children
+            m_VersionLabel = new Label {name = "versionLabel", classList = {"version", "middle"}};
+            m_MainItem.Add(m_VersionLabel);
+
+            m_RightContainer = new VisualElement {name = "rightContainer", classList = {"right"}};
+            m_MainItem.Add(m_RightContainer);
+
             m_TagContainer = new VisualElement {name = "tagContainer"};
-            rightContainer.Add(m_TagContainer);
+            m_RightContainer.Add(m_TagContainer);
 
-            m_Spinner = new LoadingSpinner {name = "packageSpinner"};
-            rightContainer.Add(m_Spinner);
+            m_Spinner = null;
 
             m_StateIcon = new VisualElement {name = "stateIcon", classList = {"status"}};
-            rightContainer.Add(m_StateIcon);
+            m_RightContainer.Add(m_StateIcon);
 
-            // Versions dropdown
+            m_VersionsContainer = null;
+        }
+
+        private void BuildVersions()
+        {
             m_VersionsContainer = new VisualElement {name = "versionsContainer"};
             Add(m_VersionsContainer);
 
@@ -113,87 +130,60 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_VersionsContainer.Add(m_SeeAllVersionsLabel);
         }
 
-        public void BecomesVisible()
-        {
-            if (m_FetchingDetail || !(package is PlaceholderPackage) || !package.Is(PackageType.AssetStore))
-                return;
-
-            m_FetchingDetail = true;
-            m_PageManager.FetchDetail(package, () => { m_FetchingDetail = false; });
-        }
-
         public void UpdateVisualState(VisualState newVisualState)
         {
-            var seeAllVersionsOld = visualState?.seeAllVersions ?? false;
-            var selectedVersionIdOld = visualState?.selectedVersionId ?? string.Empty;
+            if (targetVersion == null)
+                return;
 
+            Refresh(newVisualState);
+        }
+
+        public void Refresh(VisualState newVisualState = null)
+        {
+            var previousVisualState = visualState?.Clone() ?? new VisualState(package?.uniqueId, string.Empty);
             visualState = newVisualState?.Clone() ?? visualState ?? new VisualState(package?.uniqueId, string.Empty);
 
             EnableInClassList("invisible", !visualState.visible);
-
-            if (selectedVersion != null && visualState != null && selectedVersion != targetVersion)
-                visualState.seeAllVersions = visualState.seeAllVersions || !package.versions.key.Contains(selectedVersion);
-
-            var expansionChanged = UIUtils.IsElementVisible(m_VersionsContainer) != visualState.expanded;
-            if (expansionChanged)
-                UpdateExpanderUI(visualState.expanded);
-
-            var needRefreshVersions = expansionChanged || seeAllVersionsOld != visualState.seeAllVersions;
-            if (needRefreshVersions)
-                RefreshVersions();
-
-            if (needRefreshVersions || selectedVersionIdOld != visualState.selectedVersionId)
-                RefreshSelection();
-        }
-
-        internal void SetPackage(IPackage package)
-        {
-            m_FetchingDetail = false;
-
-            var displayVersion = package?.versions.primary;
-            if (displayVersion == null)
-                return;
-
-            // changing the package assigned to an item is not supported
-            if (this.package != null && this.package.uniqueId != package.uniqueId)
-                return;
-
-            var oldDisplayVersion = this.package?.versions.primary;
-            this.package = package;
-
-            // if the package gets updated while it's selected, we need to do some special handling
-            if (!string.IsNullOrEmpty(visualState?.selectedVersionId))
-            {
-                // if the primary version was selected but there is a new primary version
-                // select the new primary version to keep the main item selected
-                if (visualState.selectedVersionId == oldDisplayVersion?.uniqueId && oldDisplayVersion?.uniqueId != displayVersion.uniqueId)
-                    m_PageManager.SetSelected(package, displayVersion);
-            }
-
-            m_NameLabel.text = displayVersion.displayName;
-            m_NameLabel.ShowTextTooltipOnSizeChange();
-            m_VersionLabel.text = displayVersion.versionString;
-            m_VersionLabel.ShowTextTooltipOnSizeChange();
+            m_NameLabel.text = targetVersion?.displayName ?? string.Empty;
+            m_VersionLabel.text = targetVersion.versionString ?? string.Empty;
 
             var expandable = !package.Is(PackageType.BuiltIn);
             UIUtils.SetElementDisplay(m_ArrowExpander, expandable);
             UIUtils.SetElementDisplay(m_VersionLabel, expandable);
             UIUtils.SetElementDisplay(m_ExpanderHidden, !expandable);
+
             if (!expandable && UIUtils.IsElementVisible(m_VersionsContainer))
                 UpdateExpanderUI(false);
+            else
+                UpdateExpanderUI(visualState.expanded);
 
-            var showVersionList = !displayVersion.HasTag(PackageTag.BuiltIn) && !string.IsNullOrEmpty(package.displayName);
+            var showVersionList = !targetVersion.HasTag(PackageTag.BuiltIn) && !string.IsNullOrEmpty(package.displayName);
             UIUtils.SetElementDisplay(m_VersionList, showVersionList);
 
-            m_TagContainer.Clear();
-            var tagLabel = PackageTagLabel.CreateTagLabel(displayVersion);
-            if (tagLabel != null)
-                m_TagContainer.Add(tagLabel);
+            var version = selectedVersion;
+            if (version != null && version != targetVersion)
+                visualState.seeAllVersions = visualState.seeAllVersions || !package.versions.key.Contains(version);
 
             RefreshState();
-            RefreshVersions();
-            RefreshSelection();
+
+            var expansionChanged = previousVisualState.expanded != visualState.expanded;
+            var seeAllVersionsChanged = previousVisualState.seeAllVersions != visualState.seeAllVersions;
+            var needRefreshVersions = showVersionList && (expansionChanged || seeAllVersionsChanged);
+            if (needRefreshVersions)
+                RefreshVersions();
+
+            var selectedVersionIdOld = previousVisualState.selectedVersionId ?? string.Empty;
+            if (needRefreshVersions || selectedVersionIdOld != visualState.selectedVersionId)
+                RefreshSelection();
+
+            RefreshTags();
             RefreshEntitlement();
+        }
+
+        public void SetPackage(IPackage package)
+        {
+            this.package = package;
+            name = package?.displayName ?? package?.uniqueId ?? string.Empty;
         }
 
         public void RefreshState()
@@ -202,8 +192,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             var progress = package?.progress ?? PackageProgress.None;
             if (state != PackageState.InProgress || progress == PackageProgress.None)
             {
-                StopSpinner();
-
                 var stateClass = state != PackageState.None ? state.ToString().ToLower() : null;
                 if (!string.IsNullOrEmpty(m_CurrentStateClass))
                     m_StateIcon.RemoveFromClassList(m_CurrentStateClass);
@@ -212,12 +200,28 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_CurrentStateClass = stateClass;
 
                 m_StateIcon.tooltip = GetTooltipByState(state);
+                StopSpinner();
             }
             else
             {
                 StartSpinner();
-                m_Spinner.tooltip = GetTooltipByProgress(package.progress);
             }
+        }
+
+        private void RefreshSpinner()
+        {
+            if (!m_VisibleInScrollView)
+            {
+                StopSpinner();
+                return;
+            }
+
+            var state = package?.state ?? PackageState.None;
+            var progress = package?.progress ?? PackageProgress.None;
+            if (state != PackageState.InProgress || progress == PackageProgress.None)
+                StopSpinner();
+            else
+                StartSpinner();
         }
 
         private void RefreshVersions()
@@ -253,11 +257,23 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void RefreshSelection()
         {
-            var selectedVersion = this.selectedVersion;
-            EnableInClassList(k_SelectedClassName, selectedVersion != null);
-            m_MainItem.EnableInClassList(k_SelectedClassName, selectedVersion != null);
-            foreach (var version in versionItems)
-                version.EnableInClassList(k_SelectedClassName, selectedVersion == version.targetVersion);
+            var enable = selectedVersion != null;
+            EnableInClassList(k_SelectedClassName, enable);
+            m_MainItem.EnableInClassList(k_SelectedClassName, enable);
+            foreach (var versionItem in versionItems)
+                versionItem.EnableInClassList(k_SelectedClassName, selectedVersion == versionItem.targetVersion);
+        }
+
+        private void RefreshTags()
+        {
+            m_TagContainer.Clear();
+            var showTags = !package.Is(PackageType.AssetStore) && !package.Is(PackageType.BuiltIn);
+            if (showTags)
+            {
+                var tagLabel = PackageTagLabel.CreateTagLabel(targetVersion);
+                if (tagLabel != null)
+                    m_TagContainer.Add(tagLabel);
+            }
         }
 
         private void RefreshEntitlement()
@@ -294,7 +310,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal void UpdateExpanderUI(bool expanded)
         {
             m_MainItem.EnableInClassList(k_ExpandedClassName, expanded);
-            m_ArrowExpander.value = expanded;
+            m_ArrowExpander.SetValueWithoutNotify(expanded);
+
+            if (expanded && m_VersionsContainer == null)
+                BuildVersions();
+
             UIUtils.SetElementDisplay(m_VersionsContainer, expanded);
         }
 
@@ -306,13 +326,20 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void StartSpinner()
         {
+            if (m_Spinner == null)
+            {
+                m_Spinner = new LoadingSpinner {name = "packageSpinner"};
+                m_RightContainer.Add(m_Spinner);
+            }
+
             m_Spinner.Start();
+            m_Spinner.tooltip = GetTooltipByProgress(package.progress);
             UIUtils.SetElementDisplay(m_StateIcon, false);
         }
 
         private void StopSpinner()
         {
-            m_Spinner.Stop();
+            m_Spinner?.Stop();
             UIUtils.SetElementDisplay(m_StateIcon, true);
         }
 
@@ -328,6 +355,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private Label m_ExpanderHidden;
         private VisualElement m_VersionsContainer;
         private ScrollView m_VersionList;
+        private VisualElement m_LeftContainer;
+        private VisualElement m_RightContainer;
 
         private static readonly string[] k_TooltipsByState =
         {

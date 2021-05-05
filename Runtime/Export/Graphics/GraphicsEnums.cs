@@ -269,13 +269,14 @@ namespace UnityEngine
     {
         [System.Obsolete("Enum member Unknown has been deprecated.", false)]
         Unknown = 0,
+        [System.Obsolete("Use LandscapeLeft instead (UnityUpgradable) -> LandscapeLeft", true)]
+        Landscape = 3,
 
         Portrait = 1,
         PortraitUpsideDown = 2,
         LandscapeLeft = 3,
         LandscapeRight = 4,
         AutoRotation = 5,
-        Landscape = 3
     }
 
     public enum FilterMode

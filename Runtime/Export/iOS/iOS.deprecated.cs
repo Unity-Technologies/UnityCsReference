@@ -18,7 +18,7 @@ namespace UnityEngine
     //
 
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-    [Obsolete("iPhoneScreenOrientation enumeration is deprecated. Please use ScreenOrientation instead (UnityUpgradable) -> ScreenOrientation", true)]
+    [Obsolete("iPhoneScreenOrientation enumeration is deprecated. Please use ScreenOrientation instead (UnityUpgradable)", true)]
     public enum iPhoneScreenOrientation
     {
         Unknown,

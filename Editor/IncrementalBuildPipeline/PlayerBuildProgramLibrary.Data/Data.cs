@@ -8,10 +8,10 @@ namespace PlayerBuildProgramLibrary.Data
     {
         public string AssetPath;
         public string DestinationPath;
-
+        public string Architecture;
         public override string ToString()
         {
-            return $"'{AssetPath} -> '{DestinationPath}'";
+            return $"'{AssetPath} -> '{DestinationPath}' ({Architecture})";
         }
     }
 

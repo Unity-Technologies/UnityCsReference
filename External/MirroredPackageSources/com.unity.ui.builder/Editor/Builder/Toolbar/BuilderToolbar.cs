@@ -614,8 +614,11 @@ namespace Unity.UI.Builder
             {
                 element.styleSheets.Remove(m_LastCustomTheme);
             }
-            element.styleSheets.Remove(UIElementsEditorUtility.GetCommonDarkStyleSheet());
-            element.styleSheets.Remove(UIElementsEditorUtility.GetCommonLightStyleSheet());
+            // We verify whether the styles are loaded beforehand because calling GetCommonXXXStyleSheet() will load them unecessarily in this case
+            if (UIElementsEditorUtility.IsCommonDarkStyleSheetLoaded())
+                element.styleSheets.Remove(UIElementsEditorUtility.GetCommonDarkStyleSheet());
+            if (UIElementsEditorUtility.IsCommonLightStyleSheetLoaded())
+                element.styleSheets.Remove(UIElementsEditorUtility.GetCommonLightStyleSheet());
             m_Viewport.canvas.defaultBackgroundElement.style.display = DisplayStyle.Flex;
 
             StyleSheet themeStyleSheet = null;

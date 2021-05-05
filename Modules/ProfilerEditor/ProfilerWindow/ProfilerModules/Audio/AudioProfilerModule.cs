@@ -148,14 +148,13 @@ namespace UnityEditorInternal.Profiling
                         m_AudioProfilerDSPView = new AudioProfilerDSPView();
 
                     ProfilerProperty property = m_ProfilerWindow.CreateProperty();
-                    if (property != null)
-                        return;
-                    if (!property.frameDataReady)
-                        return;
-
-                    using (property)
+                    if (property != null &&
+                        property.frameDataReady)
                     {
-                        m_AudioProfilerDSPView.OnGUI(clippingRect, property, m_ShowInactiveDSPChains, m_HighlightAudibleDSPChains, ref m_DSPGraphZoomFactor, ref m_PaneScroll_AudioDSPRight);
+                        using (property)
+                        {
+                            m_AudioProfilerDSPView.OnGUI(clippingRect, property, m_ShowInactiveDSPChains, m_HighlightAudibleDSPChains, ref m_DSPGraphZoomFactor, ref m_PaneScroll_AudioDSPRight);
+                        }
                     }
 
                     GUI.EndScrollView();
@@ -249,6 +248,9 @@ namespace UnityEditorInternal.Profiling
                             if (sourceItems != null && sourceItems.Length > 0)
                             {
                                 var items = new List<AudioProfilerGroupInfoWrapper>();
+                                var parentMapping = new Dictionary<int, AudioProfilerGroupInfo>();
+                                foreach (var s in sourceItems)
+                                    parentMapping.Add(s.uniqueId, s);
                                 foreach (var s in sourceItems)
                                 {
                                     bool isGroup = (s.flags & AudioProfilerGroupInfoHelper.AUDIOPROFILER_FLAGS_GROUP) != 0;
@@ -256,7 +258,12 @@ namespace UnityEditorInternal.Profiling
                                         continue;
                                     if (m_ShowDetailedAudioPane == ProfilerAudioView.Groups && !isGroup)
                                         continue;
-                                    items.Add(new AudioProfilerGroupInfoWrapper(s, property.GetAudioProfilerNameByOffset(s.assetNameOffset), property.GetAudioProfilerNameByOffset(s.objectNameOffset), m_ShowDetailedAudioPane == ProfilerAudioView.Channels));
+                                    var wrapper = new AudioProfilerGroupInfoWrapper(s, property.GetAudioProfilerNameByOffset(s.assetNameOffset), property.GetAudioProfilerNameByOffset(s.objectNameOffset), m_ShowDetailedAudioPane == ProfilerAudioView.Channels);
+                                    if (parentMapping.TryGetValue(s.parentId, out var parent))
+                                        wrapper.parentName = property.GetAudioProfilerNameByOffset(parent.objectNameOffset);
+                                    else
+                                        wrapper.parentName = "ROOT";
+                                    items.Add(wrapper);
                                 }
                                 m_AudioProfilerGroupViewBackend.SetData(items);
                                 if (m_AudioProfilerGroupView == null)
@@ -273,7 +280,7 @@ namespace UnityEditorInternal.Profiling
                             }
                         }
                         if (m_AudioProfilerGroupView != null)
-                            m_AudioProfilerGroupView.OnGUI(treeRect, m_ShowDetailedAudioPane == ProfilerAudioView.Channels);
+                            m_AudioProfilerGroupView.OnGUI(treeRect, m_ShowDetailedAudioPane);
                     }
                 }
             }

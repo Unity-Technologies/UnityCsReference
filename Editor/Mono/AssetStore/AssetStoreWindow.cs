@@ -50,7 +50,7 @@ namespace UnityEditor
                 var lightStyleSheet = EditorGUIUtility.Load(EditorUIService.instance.GetUIToolkitDefaultCommonLightStyleSheetPath()) as StyleSheet;
                 var assetStoreStyleSheet = EditorGUIUtility.Load("StyleSheets/AssetStore/AssetStoreWindow.uss") as StyleSheet;
                 var styleSheet = CreateInstance<StyleSheet>();
-                styleSheet.isUnityStyleSheet = true;
+                styleSheet.isDefaultStyleSheet = true;
 
                 var resolver = new StyleSheets.StyleSheetResolver();
                 resolver.AddStyleSheets(lightStyleSheet, assetStoreStyleSheet);

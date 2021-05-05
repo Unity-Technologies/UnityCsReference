@@ -76,10 +76,10 @@ namespace UnityEditor
         [RequiredByNativeCode]
         static bool Internal_EditorApplicationWantsToQuit()
         {
-            if (wantsToQuit == null)
+            if (!m_WantsToQuitEvent.hasSubscribers)
                 return true;
 
-            foreach (Func<bool> continueQuit in wantsToQuit.GetInvocationList())
+            foreach (Func<bool> continueQuit in m_WantsToQuitEvent)
             {
                 try
                 {
@@ -119,7 +119,8 @@ namespace UnityEditor
             // Therefore it's important to deactivate it beforehand.
             VersionControlManager.Deactivate();
 
-            quitting?.Invoke();
+            foreach (var evt in m_QuittingEvent)
+                evt();
             editorApplicationQuit?.Invoke();
             ScriptCompilers.Cleanup();
         }
@@ -175,13 +176,26 @@ namespace UnityEditor
 
         // Delegate for generic updates.
         public static CallbackFunction update;
+
+        private static DelegateWithPerformanceTracker<CallbackFunction> m_UpdateEvent = new DelegateWithPerformanceTracker<CallbackFunction>($"{nameof(EditorApplication)}.{nameof(update)}");
         internal static event CallbackFunction tick;
 
-        public static event Func<bool> wantsToQuit;
+        public static event Func<bool> wantsToQuit
+        {
+            add => m_WantsToQuitEvent.Add(value);
+            remove => m_WantsToQuitEvent.Remove(value);
+        }
+        private static EventWithPerformanceTracker<Func<bool>> m_WantsToQuitEvent = new EventWithPerformanceTracker<Func<bool>>($"{nameof(EditorApplication)}.{nameof(wantsToQuit)}");
 
-        public static event Action quitting;
+        public static event Action quitting
+        {
+            add => m_QuittingEvent.Add(value);
+            remove => m_QuittingEvent.Remove(value);
+        }
+        private static EventWithPerformanceTracker<Action> m_QuittingEvent = new EventWithPerformanceTracker<Action>($"{nameof(EditorApplication)}.{nameof(quitting)}");
 
         public static CallbackFunction delayCall;
+        private static DelegateWithPerformanceTracker<CallbackFunction> m_DelayCallEvent = new DelegateWithPerformanceTracker<CallbackFunction>($"{nameof(EditorApplication)}.{nameof(delayCall)}");
 
         internal static Action CallDelayed(CallbackFunction action, double delaySeconds = 0.0f)
         {
@@ -202,12 +216,22 @@ namespace UnityEditor
         }
 
         // Each time an object is (or a group of objects are) created, renamed, parented, unparented or destroyed this callback is raised.
-        public static event Action hierarchyChanged;
+        public static event Action hierarchyChanged
+        {
+            add => m_HierarchyChangedEvent.Add(value);
+            remove => m_HierarchyChangedEvent.Remove(value);
+        }
+        private static EventWithPerformanceTracker<Action> m_HierarchyChangedEvent = new EventWithPerformanceTracker<Action>($"{nameof(EditorApplication)}.{nameof(hierarchyChanged)}");
 
         [Obsolete("Use EditorApplication.hierarchyChanged")]
         public static CallbackFunction hierarchyWindowChanged;
 
-        public static event Action projectChanged;
+        public static event Action projectChanged
+        {
+            add => m_ProjectChangedEvent.Add(value);
+            remove => m_ProjectChangedEvent.Remove(value);
+        }
+        private static EventWithPerformanceTracker<Action> m_ProjectChangedEvent = new EventWithPerformanceTracker<Action>($"{nameof(EditorApplication)}.{nameof(projectChanged)}");
 
         [Obsolete("Use EditorApplication.projectChanged")]
         public static CallbackFunction projectWindowChanged;
@@ -221,9 +245,19 @@ namespace UnityEditor
         // Delegate for changed keyboard modifier keys.
         public static CallbackFunction modifierKeysChanged;
 
-        public static event Action<PauseState> pauseStateChanged;
+        public static event Action<PauseState> pauseStateChanged
+        {
+            add => m_PauseStateChangedEvent.Add(value);
+            remove => m_PauseStateChangedEvent.Remove(value);
+        }
+        private static EventWithPerformanceTracker<Action<PauseState>> m_PauseStateChangedEvent = new EventWithPerformanceTracker<Action<PauseState>>($"{nameof(EditorApplication)}.{nameof(pauseStateChanged)}");
 
-        public static event Action<PlayModeStateChange> playModeStateChanged;
+        public static event Action<PlayModeStateChange> playModeStateChanged
+        {
+            add => m_PlayModeStateChangedEvent.Add(value);
+            remove => m_PlayModeStateChangedEvent.Remove(value);
+        }
+        private static EventWithPerformanceTracker<Action<PlayModeStateChange>> m_PlayModeStateChangedEvent = new EventWithPerformanceTracker<Action<PlayModeStateChange>>($"{nameof(EditorApplication)}.{nameof(playModeStateChanged)}");
 
         [Obsolete("Use EditorApplication.playModeStateChanged and/or EditorApplication.pauseStateChanged")]
         public static CallbackFunction playmodeStateChanged;
@@ -322,18 +356,8 @@ namespace UnityEditor
             if (update == null)
                 return;
 
-            if (Profiler.enabled && !ProfilerDriver.deepProfiling)
-            {
-                foreach (var cb in update.GetInvocationList())
-                {
-                    var marker = new ProfilerMarker(cb.Method.Name);
-                    marker.Begin();
-                    cb.DynamicInvoke(null);
-                    marker.End();
-                }
-            }
-            else
-                update();
+            foreach (var evt in m_UpdateEvent.UpdateAndInvoke(update))
+                evt();
         }
 
         [RequiredByNativeCode]
@@ -347,7 +371,8 @@ namespace UnityEditor
         {
             CallbackFunction delay = delayCall;
             delayCall = null;
-            delay?.Invoke();
+            foreach (var evt in m_DelayCallEvent.UpdateAndInvoke(delay))
+                evt();
         }
 
         internal static void Internal_SwitchSkin()
@@ -367,7 +392,8 @@ namespace UnityEditor
             hierarchyWindowChanged?.Invoke();
             #pragma warning restore 618
 
-            hierarchyChanged?.Invoke();
+            foreach (var evt in m_HierarchyChangedEvent)
+                evt();
         }
 
         [RequiredByNativeCode]
@@ -377,7 +403,8 @@ namespace UnityEditor
             projectWindowChanged?.Invoke();
             #pragma warning restore 618
 
-            projectChanged?.Invoke();
+            foreach (var evt in m_ProjectChangedEvent)
+                evt();
         }
 
         internal static void Internal_CallSearchHasChanged()
@@ -401,7 +428,8 @@ namespace UnityEditor
             playmodeStateChanged?.Invoke();
             #pragma warning restore 618
 
-            pauseStateChanged?.Invoke(state);
+            foreach (var evt in m_PauseStateChangedEvent)
+                evt(state);
         }
 
         static void Internal_PlayModeStateChanged(PlayModeStateChange state)
@@ -410,7 +438,8 @@ namespace UnityEditor
             playmodeStateChanged?.Invoke();
             #pragma warning restore 618
 
-            playModeStateChanged?.Invoke(state);
+            foreach (var evt in m_PlayModeStateChangedEvent)
+                evt(state);
         }
 
         static void Internal_CallKeyboardModifiersChanged()

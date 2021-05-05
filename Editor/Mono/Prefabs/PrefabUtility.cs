@@ -1916,10 +1916,12 @@ namespace UnityEditor
         // Called after prefab instances in the scene have been updated
         public delegate void PrefabInstanceUpdated(GameObject instance);
         public static PrefabInstanceUpdated prefabInstanceUpdated;
+        private static DelegateWithPerformanceTracker<PrefabInstanceUpdated> m_PrefabInstanceUpdated = new DelegateWithPerformanceTracker<PrefabInstanceUpdated>($"{nameof(PrefabUtility)}.{nameof(prefabInstanceUpdated)}");
+
         private static void Internal_CallPrefabInstanceUpdated(GameObject instance)
         {
-            if (prefabInstanceUpdated != null)
-                prefabInstanceUpdated(instance);
+            foreach (var evt in m_PrefabInstanceUpdated.UpdateAndInvoke(prefabInstanceUpdated))
+                evt(instance);
         }
 
         public static bool IsAddedGameObjectOverride(GameObject gameObject)

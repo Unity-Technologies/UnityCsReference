@@ -149,6 +149,13 @@ namespace UnityEditor
             }
 
             Place(go, parent, false);
+            var rectTransform = go.GetComponent<RectTransform>();
+
+            // If new parent is RectTransform, make sure its position and size matches child rect transforms
+            if (rectTransform != null && selected != null && selected.Length > 0)
+            {
+                CenterRectTransform(selected, rectTransform);
+            }
 
             if (parent == null && sibling != null)
             {
@@ -215,6 +222,43 @@ namespace UnityEditor
                 }
 
                 return true;
+            }
+        }
+
+        static void CenterRectTransform(Transform[] selected, RectTransform rectTransform)
+        {
+            Vector3 min = Vector3.zero;
+            Vector3 max = Vector3.zero;
+            bool hasRect = false;
+
+            foreach (var item in selected)
+            {
+                RectTransform rt = item.gameObject.GetComponent<RectTransform>();
+
+                if (rt)
+                {
+                    Vector3 pos = rt.localPosition;
+                    Vector3 scale = rt.localScale;
+                    Vector2 sizeDelta = rt.sizeDelta;
+
+                    if (!hasRect)
+                    {
+                        min = new Vector3(pos.x - sizeDelta.x * scale.x / 2, pos.y - sizeDelta.y * scale.y / 2, pos.z);
+                        max = new Vector3(pos.x + sizeDelta.x * scale.x / 2, pos.y + sizeDelta.y * scale.y / 2, pos.z);
+                        hasRect = true;
+                    }
+                    else
+                    {
+                        min = new Vector3(Math.Min(min.x, pos.x - sizeDelta.x * scale.x / 2), Math.Min(min.y, pos.y - sizeDelta.y * scale.y / 2), Math.Min(min.z, pos.z));
+                        max = new Vector3(Math.Max(max.x, pos.x + sizeDelta.x * scale.x / 2), Math.Max(max.y, pos.y + sizeDelta.y * scale.y / 2), Math.Max(max.z, pos.z));
+                    }
+                }
+            }
+
+            if (hasRect)
+            {
+                rectTransform.localPosition = new Vector3(min.x + (max.x - min.x) / 2, min.y + (max.y - min.y) / 2, min.z + (max.z - min.z) / 2);
+                rectTransform.sizeDelta = new Vector2(max.x - min.x, max.y - min.y);
             }
         }
 

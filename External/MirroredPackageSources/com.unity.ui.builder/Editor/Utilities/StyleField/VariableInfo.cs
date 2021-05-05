@@ -6,7 +6,7 @@ namespace Unity.UI.Builder
     {
         public string name { get; set; }
         public StylePropertyValue value { get; set; }
-        public bool isEditorVar => value.sheet ? value.sheet.isUnityStyleSheet : false;
+        public bool isEditorVar => value.sheet ? value.sheet.IsUnityEditorStyleSheet() : false;
         public string description { get; set; }
     }
 }

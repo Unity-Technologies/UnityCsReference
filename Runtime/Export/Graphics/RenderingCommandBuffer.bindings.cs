@@ -769,8 +769,18 @@ namespace UnityEngine.Rendering
         [FreeFunction("RenderingCommandBuffer_Bindings::EnableShaderKeyword", HasExplicitThis = true)]
         extern public void EnableShaderKeyword(string keyword);
 
+        [FreeFunction("RenderingCommandBuffer_Bindings::EnableShaderKeyword", HasExplicitThis = true)]
+        extern private void EnableGlobalKeyword(GlobalKeyword keyword);
+
+        public void EnableKeyword(GlobalKeyword keyword) { EnableGlobalKeyword(keyword); }
+
         [FreeFunction("RenderingCommandBuffer_Bindings::DisableShaderKeyword", HasExplicitThis = true)]
         extern public void DisableShaderKeyword(string keyword);
+
+        [FreeFunction("RenderingCommandBuffer_Bindings::DisableShaderKeyword", HasExplicitThis = true)]
+        extern private void DisableGlobalKeyword(GlobalKeyword keyword);
+
+        public void DisableKeyword(GlobalKeyword keyword) { DisableGlobalKeyword(keyword); }
 
         [FreeFunction("RenderingCommandBuffer_Bindings::SetViewMatrix", HasExplicitThis = true, ThrowsException = true)]
         extern public void SetViewMatrix(Matrix4x4 view);

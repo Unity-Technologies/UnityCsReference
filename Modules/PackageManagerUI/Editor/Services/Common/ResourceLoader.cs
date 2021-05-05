@@ -141,7 +141,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var styleSheet = ScriptableObject.CreateInstance<StyleSheet>();
             styleSheet.hideFlags = HideFlags.HideAndDontSave;
-            styleSheet.isUnityStyleSheet = true;
+            styleSheet.isDefaultStyleSheet = true;
 
             var resolver = new StyleSheets.StyleSheetResolver();
             resolver.AddStyleSheets(styleSheets);

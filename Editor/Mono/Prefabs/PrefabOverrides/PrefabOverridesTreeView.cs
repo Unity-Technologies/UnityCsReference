@@ -172,12 +172,15 @@ namespace UnityEditor
 
         internal void ComparisonPopupClosed(Object instanceObject)
         {
-            if (instanceObject is GameObject)
+            if (instanceObject != null && instanceObject is GameObject)
                 SyncTreeViewItemNameForGameObject((GameObject)instanceObject);
         }
 
         void SyncTreeViewItemNameForGameObject(GameObject gameObject)
         {
+            if (gameObject == null)
+                return;
+
             foreach (var item in GetRows())
             {
                 var poItem = item as PrefabOverridesTreeViewItem;

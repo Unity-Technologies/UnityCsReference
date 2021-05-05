@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -115,7 +116,8 @@ namespace UnityEditor
             {
                 try
                 {
-                    RuntimeHelpers.RunClassConstructor(type.TypeHandle);
+                    using (new EditorPerformanceMarker($"InitializeOnLoad {type.Name}", type).Auto())
+                        RuntimeHelpers.RunClassConstructor(type.TypeHandle);
                 }
                 catch (TypeInitializationException x)
                 {

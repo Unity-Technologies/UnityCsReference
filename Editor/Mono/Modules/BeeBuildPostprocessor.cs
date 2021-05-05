@@ -181,7 +181,7 @@ namespace UnityEditor.Modules
                     IsBuildOptionSet(args.report.summary.options,
                     BuildOptions.EnableDeepProfilingSupport),
                 Profile = IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup)),
-                ConfigurationName = PlayerSettings.GetIl2CppCompilerConfiguration(buildTargetGroup).ToString(), //Todo: "ReleasePlus"
+                ConfigurationName = Il2CppNativeCodeBuilderUtils.GetConfigurationName(PlayerSettings.GetIl2CppCompilerConfiguration(buildTargetGroup)),
                 GcWBarrierValidation = platformHasIncrementalGC && PlayerSettings.gcWBarrierValidation,
                 GcIncremental = platformHasIncrementalGC && PlayerSettings.gcIncremental &&
                     (apiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6 ||

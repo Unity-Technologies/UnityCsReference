@@ -28,6 +28,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Shaders/ComputeShader.h")]
     [NativeHeader("Runtime/Shaders/ShaderNameRegistry.h")]
     [NativeHeader("Runtime/Shaders/GpuPrograms/ShaderVariantCollection.h")]
+    [NativeHeader("Runtime/Shaders/Keywords/KeywordSpaceScriptBindings.h")]
     [NativeHeader("Runtime/Misc/ResourceManager.h")]
     public sealed partial class Shader : Object
     {
@@ -39,9 +40,24 @@ namespace UnityEngine
         extern public bool isSupported {[NativeMethod("IsSupported")] get; }
         extern public static string globalRenderPipeline { get; set; }
 
+        public static GlobalKeyword[] enabledGlobalKeywords { get { return GetEnabledGlobalKeywords(); } }
+        public static GlobalKeyword[] globalKeywords { get { return GetAllGlobalKeywords(); } }
+        extern public LocalKeywordSpace keywordSpace { get; }
+
+        [FreeFunction("keywords::GetEnabledGlobalKeywords")] extern internal static GlobalKeyword[] GetEnabledGlobalKeywords();
+        [FreeFunction("keywords::GetAllGlobalKeywords")] extern internal static GlobalKeyword[] GetAllGlobalKeywords();
+
         [FreeFunction("ShaderScripting::EnableKeyword")]    extern public static void EnableKeyword(string keyword);
         [FreeFunction("ShaderScripting::DisableKeyword")]   extern public static void DisableKeyword(string keyword);
         [FreeFunction("ShaderScripting::IsKeywordEnabled")] extern public static bool IsKeywordEnabled(string keyword);
+
+        [FreeFunction("ShaderScripting::EnableKeyword")]    extern internal static void EnableKeywordFast(GlobalKeyword keyword);
+        [FreeFunction("ShaderScripting::DisableKeyword")]   extern internal static void DisableKeywordFast(GlobalKeyword keyword);
+        [FreeFunction("ShaderScripting::IsKeywordEnabled")] extern internal static bool IsKeywordEnabledFast(GlobalKeyword keyword);
+
+        public static void EnableKeyword(in GlobalKeyword keyword)      { EnableKeywordFast(keyword); }
+        public static void DisableKeyword(in GlobalKeyword keyword)     { DisableKeywordFast(keyword); }
+        public static bool IsKeywordEnabled(in GlobalKeyword keyword)   { return IsKeywordEnabledFast(keyword); }
 
         extern public int renderQueue {[FreeFunction("ShaderScripting::GetRenderQueue", HasExplicitThis = true)] get; }
         extern internal DisableBatchingType disableBatching {[FreeFunction("ShaderScripting::GetDisableBatchingType", HasExplicitThis = true)] get; }
@@ -258,6 +274,18 @@ namespace UnityEngine
         extern public void EnableKeyword(string keyword);
         extern public void DisableKeyword(string keyword);
         extern public bool IsKeywordEnabled(string keyword);
+
+        [FreeFunction("MaterialScripting::EnableKeyword", HasExplicitThis = true)] extern private void EnableLocalKeyword(LocalKeyword keyword);
+        [FreeFunction("MaterialScripting::DisableKeyword", HasExplicitThis = true)] extern private void DisableLocalKeyword(LocalKeyword keyword);
+        [FreeFunction("MaterialScripting::IsKeywordEnabled", HasExplicitThis = true)] extern private bool IsLocalKeywordEnabled(LocalKeyword keyword);
+
+        public void EnableKeyword(in LocalKeyword keyword) { EnableLocalKeyword(keyword); }
+        public void DisableKeyword(in LocalKeyword keyword) { DisableLocalKeyword(keyword); }
+        public bool IsKeywordEnabled(in LocalKeyword keyword) { return IsLocalKeywordEnabled(keyword); }
+
+        [FreeFunction("MaterialScripting::GetEnabledKeywords", HasExplicitThis = true)] extern private LocalKeyword[] GetEnabledKeywords();
+        [FreeFunction("MaterialScripting::SetEnabledKeywords", HasExplicitThis = true)] extern private void SetEnabledKeywords(LocalKeyword[] keywords);
+        public LocalKeyword[] enabledKeywords { get { return GetEnabledKeywords(); } set { SetEnabledKeywords(value); } }
 
         extern public MaterialGlobalIlluminationFlags globalIlluminationFlags { get; set; }
         extern public bool doubleSidedGI { get; set; }
@@ -555,6 +583,8 @@ namespace UnityEngine
         [FreeFunction(Name = "ComputeShaderScripting::DispatchIndirect", HasExplicitThis = true)]
         extern private void Internal_DispatchIndirectGraphicsBuffer(int kernelIndex, [NotNull] GraphicsBuffer argsBuffer, uint argsOffset);
 
+        extern public LocalKeywordSpace keywordSpace { get; }
+
         [FreeFunction("ComputeShaderScripting::EnableKeyword", HasExplicitThis = true)]
         extern public void EnableKeyword(string keyword);
         [FreeFunction("ComputeShaderScripting::DisableKeyword", HasExplicitThis = true)]
@@ -562,12 +592,27 @@ namespace UnityEngine
         [FreeFunction("ComputeShaderScripting::IsKeywordEnabled", HasExplicitThis = true)]
         extern public bool IsKeywordEnabled(string keyword);
 
+        [FreeFunction("ComputeShaderScripting::EnableKeyword", HasExplicitThis = true)]
+        extern private void EnableLocalKeyword(LocalKeyword keyword);
+        [FreeFunction("ComputeShaderScripting::DisableKeyword", HasExplicitThis = true)]
+        extern private void DisableLocalKeyword(LocalKeyword keyword);
+        [FreeFunction("ComputeShaderScripting::IsKeywordEnabled", HasExplicitThis = true)]
+        extern private bool IsLocalKeywordEnabled(LocalKeyword keyword);
+
+        public void EnableKeyword(in LocalKeyword keyword) { EnableLocalKeyword(keyword); }
+        public void DisableKeyword(in LocalKeyword keyword) { DisableLocalKeyword(keyword); }
+        public bool IsKeywordEnabled(in LocalKeyword keyword) { return IsLocalKeywordEnabled(keyword); }
+
         [FreeFunction("ComputeShaderScripting::IsSupported", HasExplicitThis = true)]
         extern public bool IsSupported(int kernelIndex);
 
         [FreeFunction("ComputeShaderScripting::GetShaderKeywords", HasExplicitThis = true)] extern private string[] GetShaderKeywords();
         [FreeFunction("ComputeShaderScripting::SetShaderKeywords", HasExplicitThis = true)] extern private void SetShaderKeywords(string[] names);
         public string[] shaderKeywords { get { return GetShaderKeywords(); } set { SetShaderKeywords(value); } }
+
+        [FreeFunction("ComputeShaderScripting::GetEnabledKeywords", HasExplicitThis = true)] extern private LocalKeyword[] GetEnabledKeywords();
+        [FreeFunction("ComputeShaderScripting::SetEnabledKeywords", HasExplicitThis = true)] extern private void SetEnabledKeywords(LocalKeyword[] keywords);
+        public LocalKeyword[] enabledKeywords { get { return GetEnabledKeywords(); } set { SetEnabledKeywords(value); } }
     }
 }
 

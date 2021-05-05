@@ -39,6 +39,16 @@ namespace UnityEditor.Search
 
     abstract class QueryTokenizer<TUserData>
     {
+        protected enum TokenHandlerPriority
+        {
+            Empty = 0,
+            Group = 100,
+            Combining = 200,
+            Nested = 300,
+            Filter = 400,
+            Word = 500
+        }
+
         Regex m_FilterRx = new Regex(QueryRegexValues.k_FilterNamePattern +
             QueryRegexValues.k_FilterFunctionPattern +
             QueryRegexValues.k_FilterOperatorsPattern +
@@ -59,35 +69,110 @@ namespace UnityEditor.Search
         {
             public TokenMatcher matcher;
             public TokenConsumer consumer;
+            public int priority;
+            public int id;
 
-            public QueryTokenHandler(TokenMatcher matcher, TokenConsumer consumer)
+            public QueryTokenHandler(TokenMatcher matcher, TokenConsumer consumer, int priority)
             {
                 this.matcher = matcher;
                 this.consumer = consumer;
+                this.priority = priority;
+                this.id = 0;
             }
+
+            public QueryTokenHandler(TokenMatcher matcher, TokenConsumer consumer, TokenHandlerPriority priority)
+                : this(matcher, consumer, (int)priority)
+            {}
+
+            public QueryTokenHandler(TokenMatcher matcher, TokenConsumer consumer, int id, int priority)
+                : this(matcher, consumer, priority)
+            {
+                this.id = id;
+            }
+
+            public QueryTokenHandler(TokenMatcher matcher, TokenConsumer consumer, int id, TokenHandlerPriority priority)
+                : this(matcher, consumer, id, (int)priority)
+            {}
         }
 
         protected List<QueryTokenHandler> m_TokenConsumers;
 
         protected QueryTokenizer()
         {
-            // The order of regex in this list is important. Keep it like that unless you know what you are doing!
             m_TokenConsumers = new List<QueryTokenHandler>
             {
-                new QueryTokenHandler(MatchEmpty, ConsumeEmpty),
-                new QueryTokenHandler(MatchGroup, ConsumeGroup),
-                new QueryTokenHandler(MatchCombiningToken, ConsumeCombiningToken),
-                new QueryTokenHandler(MatchNestedQuery, ConsumeNestedQuery),
-                new QueryTokenHandler(MatchFilter, ConsumeFilter),
-                new QueryTokenHandler(MatchWord, ConsumeWord)
+                new QueryTokenHandler(MatchEmpty, ConsumeEmpty, TokenHandlerPriority.Empty),
+                new QueryTokenHandler(MatchGroup, ConsumeGroup, TokenHandlerPriority.Group),
+                new QueryTokenHandler(MatchCombiningToken, ConsumeCombiningToken, TokenHandlerPriority.Combining),
+                new QueryTokenHandler(MatchNestedQuery, ConsumeNestedQuery, TokenHandlerPriority.Nested),
+                new QueryTokenHandler(MatchFilter, ConsumeFilter, TokenHandlerPriority.Filter),
+                new QueryTokenHandler(MatchWord, ConsumeWord, TokenHandlerPriority.Word)
             };
+            m_TokenConsumers.Sort(QueryTokenHandlerComparer);
+        }
+
+        protected void AddQueryTokenHandler(QueryTokenHandler handler, bool sort = true)
+        {
+            m_TokenConsumers.Add(handler);
+
+            if (sort)
+                SortQueryTokenHandlers();
+        }
+
+        protected void RemoveQueryTokenHandlers(int id)
+        {
+            m_TokenConsumers.RemoveAll(handler => handler.id == id);
+        }
+
+        protected void SortQueryTokenHandlers()
+        {
+            m_TokenConsumers.Sort(QueryTokenHandlerComparer);
+        }
+
+        static int QueryTokenHandlerComparer(QueryTokenHandler x, QueryTokenHandler y)
+        {
+            return x.priority.CompareTo(y.priority);
         }
 
         public void BuildFilterRegex(List<string> operators)
         {
+            m_FilterRx = BuildFilterRegex(QueryRegexValues.k_FilterNamePattern, operators);
+        }
+
+        public static Regex BuildFilterRegex(string filterNamePattern, List<string> operators)
+        {
             var innerOperatorsPattern = $"{string.Join("|", operators)}";
             var filterOperatorsPattern = $"({innerOperatorsPattern})";
-            m_FilterRx = new Regex(QueryRegexValues.k_FilterNamePattern + QueryRegexValues.k_FilterFunctionPattern + filterOperatorsPattern + QueryRegexValues.k_FilterValuePattern, RegexOptions.Compiled);
+            return new Regex(filterNamePattern + QueryRegexValues.k_FilterFunctionPattern + filterOperatorsPattern + QueryRegexValues.k_FilterValuePattern, RegexOptions.Compiled);
+        }
+
+        public static Regex BuildBooleanFilterRegex(string filterNamePattern)
+        {
+            return new Regex(filterNamePattern + QueryRegexValues.k_FilterFunctionPattern, RegexOptions.Compiled);
+        }
+
+        public static Regex BuildPartialFilterRegex(string filterNamePattern, List<string> operators)
+        {
+            var innerOperatorsPattern = $"{string.Join("|", operators)}";
+            var partialOperatorsPattern = $"(?<op>{innerOperatorsPattern})?";
+            var filterPattern = filterNamePattern;
+            if (filterPattern.EndsWith(")"))
+                filterPattern = filterPattern.Substring(0, filterPattern.Length - 1);
+            var partialFilterNamePattern = $"{filterPattern}(?=\\(|(?:{innerOperatorsPattern})))";
+            return new Regex(partialFilterNamePattern + QueryRegexValues.k_PartialFilterFunctionPattern + partialOperatorsPattern + QueryRegexValues.k_PartialFilterValuePattern);
+        }
+
+        public static string BuildFilterNamePatternFromToken(string token)
+        {
+            return $"\\G({token})";
+        }
+
+        public static string BuildFilterNamePatternFromToken(Regex token)
+        {
+            var rxPattern = token.ToString();
+            if (!rxPattern.StartsWith("\\G"))
+                rxPattern = "\\G" + rxPattern;
+            return rxPattern;
         }
 
         public ParseState Parse(string text, int startIndex, int endIndex, ICollection<QueryError> errors, TUserData userData)
@@ -164,8 +249,13 @@ namespace UnityEditor.Search
 
         int MatchFilter(string text, int startIndex, int endIndex, ICollection<QueryError> errors, out StringView sv, out Match match, out bool matched)
         {
+            return MatchFilter(m_FilterRx, text, startIndex, endIndex, errors, out sv, out match, out matched);
+        }
+
+        protected static int MatchFilter(Regex filterRx, string text, int startIndex, int endIndex, ICollection<QueryError> errors, out StringView sv, out Match match, out bool matched)
+        {
             sv = text.GetStringView();
-            match = m_FilterRx.Match(text, startIndex, endIndex - startIndex);
+            match = filterRx.Match(text, startIndex, endIndex - startIndex);
 
             if (!match.Success)
             {

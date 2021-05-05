@@ -251,6 +251,8 @@ namespace UnityEditor
         [NativeProperty("VTOnly")]
         public extern bool vtOnly { get; set; }
 
+        internal extern bool ignoreMasterTextureLimit { get; set; }
+
         // Generate mip maps for the texture?
         public extern bool mipmapEnabled { get; set; }
         // Keep texture borders the same when generating mipmaps?

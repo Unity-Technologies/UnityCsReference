@@ -4,11 +4,20 @@ using System;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEditor.UIElements;
 
 namespace Unity.UI.Builder
 {
     internal static class StyleSheetExtensions
     {
+        public static bool IsUnityEditorStyleSheet(this StyleSheet styleSheet)
+        {
+            if ((UIElementsEditorUtility.IsCommonDarkStyleSheetLoaded() && styleSheet == UIElementsEditorUtility.GetCommonDarkStyleSheet())
+                || (UIElementsEditorUtility.IsCommonLightStyleSheetLoaded() && styleSheet == UIElementsEditorUtility.GetCommonLightStyleSheet()))
+                return true;
+            return false;
+        }
+
         public static StyleSheet DeepCopy(this StyleSheet styleSheet)
         {
             if (styleSheet == null)

@@ -139,6 +139,11 @@ namespace Unity.UI.Builder
         {
             m_CurrentCanvasTheme = canvasTheme;
             m_CurrentCanvasThemeStyleSheet = themeSheet;
+
+            if (themeSheet)
+            {
+                themeSheet.isDefaultStyleSheet = true;
+            }
             RefreshStyle(documentElement);
         }
 

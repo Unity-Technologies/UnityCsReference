@@ -999,7 +999,7 @@ namespace UnityEditor
                             {
                                 // Raise event with the info
                                 var window = GUIView.current is HostView hostView ? hostView.actualView : null;
-                                hyperLinkClicked(window, new HyperLinkClickedEventArgs(hyperLinkData));
+                                hyperLinkClicked(window, new UnityEditor.HyperLinkClickedEventArgs(hyperLinkData));
                             }
                         }
                         editor.MouseDragSelectsWholeWords(false);
@@ -1345,9 +1345,9 @@ namespace UnityEditor
             return false;
         }
 
-        public static event Action<EditorWindow, HyperLinkClickedEventArgs> hyperLinkClicked;
+        public static event Action<EditorWindow, UnityEditor.HyperLinkClickedEventArgs> hyperLinkClicked;
 
-        private static void EditorGUI_OpenFileOnHyperLinkClicked(EditorWindow window, HyperLinkClickedEventArgs args)
+        private static void EditorGUI_OpenFileOnHyperLinkClicked(EditorWindow window, UnityEditor.HyperLinkClickedEventArgs args)
         {
             string path;
             if (!args.hyperLinkData.TryGetValue("href", out path))
@@ -10816,6 +10816,11 @@ namespace UnityEditor
 
         internal static int BeginPlatformGrouping(BuildPlatform[] platforms, GUIContent defaultTab, GUIStyle style)
         {
+            return BeginPlatformGrouping(platforms, defaultTab, style, null);
+        }
+
+        internal static int BeginPlatformGrouping(BuildPlatform[] platforms, GUIContent defaultTab, GUIStyle style, Func<int, bool> showOverrideForPlatform)
+        {
             int selectedPlatform = -1;
             for (int i = 0; i < platforms.Length; i++)
             {
@@ -10863,6 +10868,20 @@ namespace UnityEditor
 
                 if (GUI.Toggle(buttonRect, selected == i, content, buttonStyle))
                     selected = i;
+                if (showOverrideForPlatform != null)
+                {
+                    if (showOverrideForPlatform(i))
+                    {
+                        var prevMargin = EditorGUIUtility.leftMarginCoord;
+                        var overrideRect = buttonRect;
+                        const int margin = 3;
+                        overrideRect.y += margin;
+                        overrideRect.height -= margin * 2;
+                        EditorGUIUtility.leftMarginCoord = overrideRect.x + margin;
+                        EditorGUI.DrawOverrideBackground(overrideRect);
+                        EditorGUIUtility.leftMarginCoord = prevMargin;
+                    }
+                }
             }
 
             // GUILayout.Space doesn't expand to available width, so use GetRect instead
@@ -11054,6 +11073,14 @@ namespace UnityEditor
         {
             Rect r = s_LastRect = GetControlRect(false, EditorGUI.kSingleLineHeight, style, options);
             return EditorGUI.AdvancedLazyPopup(r, displayedOption, selectedIndex, displayedOptionsFunc, style);
+        }
+
+        [Obsolete("(UnityUpgradable) -> UnityEditor.HyperLinkClickedEventArgs", true)]
+        internal class HyperLinkClickedEventArgs
+        {
+            [Obsolete("(UnityUpgradable) -> UnityEditor.HyperLinkClickedEventArgs.hyperLinkData", true)]
+            public Dictionary<string, string> hyperlinkInfos { get; private set; }
+            internal HyperLinkClickedEventArgs(Dictionary<string, string> hyperLinkData) {}
         }
     }
 }

@@ -6169,6 +6169,9 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\PackageManagerProvider.cs">
       <Link>Modules\QuickSearch\Editor\Providers\PackageManagerProvider.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\PerformanceProvider.cs">
+      <Link>Modules\QuickSearch\Editor\Providers\PerformanceProvider.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\SceneProvider.cs">
       <Link>Modules\QuickSearch\Editor\Providers\SceneProvider.cs</Link>
     </Compile>

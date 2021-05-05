@@ -52,7 +52,7 @@ namespace UnityEditor
         }
 
         internal const int kFloatingWindowTopBorderWidth = 2;
-        internal const float kTabHeight = 19;
+        internal const float kTabHeight = 19; // This constant is duplicated in native code. See ContainerWindow.cpp.
         internal const float kDockHeight = 39;
         internal const float kSideBorders = 1.0f;
         internal const float kBottomBorders = 2.0f;

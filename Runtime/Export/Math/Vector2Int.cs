@@ -4,15 +4,17 @@
 
 using System;
 using System.Globalization;
-using System.Runtime.InteropServices;
-using UnityEngine.Scripting;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
     // Representation of 2D vectors and points.
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
+    [NativeType("Runtime/Math/Vector2Int.h")]
     [Unity.IL2CPP.CompilerServices.Il2CppEagerStaticClassConstruction]
     public struct Vector2Int : IEquatable<Vector2Int>, IFormattable
     {

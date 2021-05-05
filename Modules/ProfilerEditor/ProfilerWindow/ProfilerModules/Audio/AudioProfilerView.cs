@@ -16,6 +16,7 @@ namespace UnityEditorInternal
         public AudioProfilerGroupInfo info;
         public string assetName;
         public string objectName;
+        public string parentName;
         public bool addToRoot;
 
         public AudioProfilerGroupInfoWrapper(AudioProfilerGroupInfo info, string assetName, string objectName, bool addToRoot)
@@ -43,13 +44,17 @@ namespace UnityEditorInternal
         public const int AUDIOPROFILER_FLAGS_OPENMEMORYPOINT = 0x00000800;
         public const int AUDIOPROFILER_FLAGS_OPENUSER        = 0x00001000;
         public const int AUDIOPROFILER_FLAGS_NONBLOCKING     = 0x00002000;
+        public const int AUDIOPROFILER_FLAGS_PRIORITY_SHIFT  = 23;
 
         public enum ColumnIndices
         {
             ObjectName,
             AssetName,
             Volume,
+            VULevel,
             Audibility,
+            Group,
+            Priority,
             PlayCount,
             Is3D,
             IsPaused,
@@ -93,7 +98,16 @@ namespace UnityEditorInternal
                     case ColumnIndices.ObjectName: res = a.objectName.CompareTo(b.objectName); break;
                     case ColumnIndices.AssetName: res = a.assetName.CompareTo(b.assetName); break;
                     case ColumnIndices.Volume: res = a.info.volume.CompareTo(b.info.volume); break;
+                    case ColumnIndices.VULevel: res = a.info.maxRMSLevelOrDuration.CompareTo(b.info.maxRMSLevelOrDuration); break;
                     case ColumnIndices.Audibility: res = a.info.audibility.CompareTo(b.info.audibility); break;
+                    case ColumnIndices.Group: res = a.parentName.CompareTo(b.parentName); break;
+                    case ColumnIndices.Priority:
+                    {
+                        int priority1 = (a.info.flags >> AUDIOPROFILER_FLAGS_PRIORITY_SHIFT) & 255;
+                        int priority2 = (b.info.flags >> AUDIOPROFILER_FLAGS_PRIORITY_SHIFT) & 255;
+                        res = priority1.CompareTo(priority2);
+                        break;
+                    }
                     case ColumnIndices.PlayCount: res = a.info.playCount.CompareTo(b.info.playCount); break;
                     case ColumnIndices.Is3D: res = (a.info.flags & AUDIOPROFILER_FLAGS_3D).CompareTo(b.info.flags & AUDIOPROFILER_FLAGS_3D) + (a.info.flags & AUDIOPROFILER_FLAGS_ISSPATIAL).CompareTo(b.info.flags & AUDIOPROFILER_FLAGS_ISSPATIAL) * 2; break;
                     case ColumnIndices.IsPaused: res = (a.info.flags & AUDIOPROFILER_FLAGS_PAUSED).CompareTo(b.info.flags & AUDIOPROFILER_FLAGS_PAUSED); break;
@@ -111,7 +125,7 @@ namespace UnityEditorInternal
                     case ColumnIndices.MinDist: res = a.info.minDist.CompareTo(b.info.minDist); break;
                     case ColumnIndices.MaxDist: res = a.info.maxDist.CompareTo(b.info.maxDist); break;
                     case ColumnIndices.Time: res = a.info.time.CompareTo(b.info.time); break;
-                    case ColumnIndices.Duration: res = a.info.duration.CompareTo(b.info.duration); break;
+                    case ColumnIndices.Duration: res = a.info.maxRMSLevelOrDuration.CompareTo(b.info.maxRMSLevelOrDuration); break;
                     case ColumnIndices.Frequency: res = a.info.frequency.CompareTo(b.info.frequency); break;
                 }
                 return (sortByDescendingOrder) ? -res : res;
@@ -128,7 +142,7 @@ namespace UnityEditorInternal
         {
             if (vol == 0.0f)
                 return "-\u221E dB";
-            return UnityString.Format("{0:0.00} dB", 20.0f * Mathf.Log10(vol));
+            return UnityString.Format("{0:F1} dB", 20.0f * Mathf.Log10(vol));
         }
 
         public static string GetColumnString(AudioProfilerGroupInfoWrapper info, ColumnIndices index)
@@ -140,7 +154,14 @@ namespace UnityEditorInternal
                 case ColumnIndices.ObjectName: return info.objectName;
                 case ColumnIndices.AssetName: return info.assetName;
                 case ColumnIndices.Volume: return FormatDb(info.info.volume);
-                case ColumnIndices.Audibility: return isGroup ? "" : FormatDb(info.info.audibility);
+                case ColumnIndices.VULevel: return (!isGroup || info.info.maxRMSLevelOrDuration <= 0.0f) ? "" : FormatDb(Mathf.Sqrt(info.info.maxRMSLevelOrDuration));
+                case ColumnIndices.Audibility: return FormatDb(info.info.audibility);
+                case ColumnIndices.Group: return info.parentName;
+                case ColumnIndices.Priority:
+                {
+                    int priority = (info.info.flags >> AUDIOPROFILER_FLAGS_PRIORITY_SHIFT) & 255;
+                    return isGroup ? "" : priority.ToString();
+                }
                 case ColumnIndices.PlayCount: return isGroup ? "" : info.info.playCount.ToString();
                 case ColumnIndices.Is3D: return isGroup ? "" : is3D ? ((info.info.flags & AUDIOPROFILER_FLAGS_ISSPATIAL) != 0 ? "Spatial" : "YES") : "NO";
                 case ColumnIndices.IsPaused: return isGroup ? "" : (info.info.flags & AUDIOPROFILER_FLAGS_PAUSED) != 0 ? "YES" : "NO";
@@ -158,7 +179,7 @@ namespace UnityEditorInternal
                 case ColumnIndices.MinDist: return isGroup ? "" : !is3D ? "N/A" : (info.info.minDist >= 1000.0f) ? UnityString.Format("{0:0.00} km", info.info.minDist * 0.001f) : UnityString.Format("{0:0.00} m", info.info.minDist);
                 case ColumnIndices.MaxDist: return isGroup ? "" : !is3D ? "N/A" : (info.info.maxDist >= 1000.0f) ? UnityString.Format("{0:0.00} km", info.info.maxDist * 0.001f) : UnityString.Format("{0:0.00} m", info.info.maxDist);
                 case ColumnIndices.Time: return isGroup ? "" : UnityString.Format("{0:0.00} s", info.info.time);
-                case ColumnIndices.Duration: return isGroup ? "" : UnityString.Format("{0:0.00} s", info.info.duration);
+                case ColumnIndices.Duration: return isGroup ? "" : UnityString.Format("{0:0.00} s", info.info.maxRMSLevelOrDuration);
                 case ColumnIndices.Frequency: return isGroup ? UnityString.Format("{0:0.00} x", info.info.frequency) : (info.info.frequency >= 1000.0f) ? UnityString.Format("{0:0.00} kHz", info.info.frequency * 0.001f) : UnityString.Format("{0:0.00} Hz", info.info.frequency);
             }
             return "Unknown";
@@ -177,6 +198,7 @@ namespace UnityEditorInternal
         public delegate void DataUpdateDelegate();
         public DataUpdateDelegate OnUpdate;
         public AudioProfilerGroupTreeViewState m_TreeViewState;
+        public ProfilerAudioView m_ViewType = ProfilerAudioView.Channels;
 
         public AudioProfilerGroupViewBackend(AudioProfilerGroupTreeViewState state)
         {
@@ -192,7 +214,11 @@ namespace UnityEditorInternal
 
         public void UpdateSorting()
         {
-            items.Sort(new AudioProfilerGroupInfoHelper.AudioProfilerGroupInfoComparer((AudioProfilerGroupInfoHelper.ColumnIndices)m_TreeViewState.selectedColumn, (AudioProfilerGroupInfoHelper.ColumnIndices)m_TreeViewState.prevSelectedColumn, m_TreeViewState.sortByDescendingOrder));
+            if (m_ViewType == ProfilerAudioView.Channels)
+                items.Sort(new AudioProfilerGroupInfoHelper.AudioProfilerGroupInfoComparer((AudioProfilerGroupInfoHelper.ColumnIndices)m_TreeViewState.selectedColumn, (AudioProfilerGroupInfoHelper.ColumnIndices)m_TreeViewState.prevSelectedColumn, m_TreeViewState.sortByDescendingOrder));
+            else
+                items.Sort(new AudioProfilerGroupInfoHelper.AudioProfilerGroupInfoComparer(0, 0, false));
+
             if (OnUpdate != null)
                 OnUpdate();
         }
@@ -258,9 +284,12 @@ namespace UnityEditorInternal
                 int numCols = AudioProfilerGroupInfoHelper.GetLastColumnIndex() + 1;
                 m_TreeViewState.columnWidths = new float[numCols];
                 for (int n = 2; n < numCols; n++)
-                    m_TreeViewState.columnWidths[n] = (n == 2 || n == 3 || (n >= 11 && n <= 16)) ? 75 : 60;
+                    m_TreeViewState.columnWidths[n] = (n >= 14 && n <= 19) ? 85 : 60;
                 m_TreeViewState.columnWidths[0] = 140;
                 m_TreeViewState.columnWidths[1] = 140;
+                m_TreeViewState.columnWidths[2] = 75;
+                m_TreeViewState.columnWidths[3] = 75;
+                m_TreeViewState.columnWidths[5] = 100;
             }
 
             m_TreeView = new TreeViewController(m_EditorWindow, m_TreeViewState);
@@ -299,15 +328,21 @@ namespace UnityEditorInternal
             }
         }
 
-        public void OnGUI(Rect rect, bool allowSorting)
+        public void OnGUI(Rect rect, ProfilerAudioView viewType)
         {
+            if (viewType != m_Backend.m_ViewType)
+            {
+                m_Backend.m_ViewType = viewType;
+                m_Backend.UpdateSorting();
+            }
+
             int keyboardControl = GUIUtility.GetControlID(FocusType.Keyboard, rect);
 
             Rect headerRect = new Rect(rect.x, rect.y, rect.width, m_HeaderStyle.fixedHeight);
 
             // Header
             GUI.Label(headerRect, "", m_HeaderStyle);
-            m_ColumnHeader.OnGUI(headerRect, allowSorting, m_HeaderStyle);
+            m_ColumnHeader.OnGUI(headerRect, viewType == ProfilerAudioView.Channels, m_HeaderStyle);
 
             // TreeView
             rect.y += headerRect.height;
@@ -320,7 +355,7 @@ namespace UnityEditorInternal
         {
             public AudioProfilerGroupInfoWrapper info { get; set; }
 
-            public AudioProfilerGroupTreeViewItem(int id, int depth, TreeViewItem parent, string displayName, AudioProfilerGroupInfoWrapper info)
+            public AudioProfilerGroupTreeViewItem(int id, int depth, AudioProfilerGroupTreeViewItem parent, string displayName, AudioProfilerGroupInfoWrapper info)
                 : base(id, depth, parent, displayName)
             {
                 this.info = info;
@@ -343,22 +378,15 @@ namespace UnityEditorInternal
 
             private void FillTreeItems(AudioProfilerGroupTreeViewItem parentNode, int depth, int parentId, List<AudioProfilerGroupInfoWrapper> items)
             {
-                int numChildren = 0;
                 foreach (var s in items)
-                    if (parentId == (s.addToRoot ? 0 : s.info.parentId))
-                        numChildren++;
-                if (numChildren > 0)
                 {
-                    parentNode.children = new List<TreeViewItem>(numChildren);
-
-                    foreach (var s in items)
+                    if (parentId == (s.addToRoot ? 0 : s.info.parentId))
                     {
-                        if (parentId == (s.addToRoot ? 0 : s.info.parentId))
-                        {
-                            var childNode = new AudioProfilerGroupTreeViewItem(s.info.uniqueId, s.addToRoot ? 1 : depth, parentNode, s.objectName, s);
-                            parentNode.children.Add(childNode);
-                            FillTreeItems(childNode, depth + 1, s.info.uniqueId, items);
-                        }
+                        if (parentNode.children == null)
+                            parentNode.children = new List<TreeViewItem>();
+                        var childNode = new AudioProfilerGroupTreeViewItem(s.info.uniqueId, s.addToRoot ? 1 : depth, parentNode, s.objectName, s);
+                        parentNode.children.Add(childNode);
+                        FillTreeItems(childNode, depth + 1, s.info.uniqueId, items);
                     }
                 }
             }
@@ -392,7 +420,7 @@ namespace UnityEditorInternal
             private AudioProfilerGroupTreeViewState m_TreeViewState;
             private AudioProfilerGroupViewBackend m_Backend;
 
-            string[] headers = new[] { "Object", "Asset", "Volume", "Audibility", "Plays", "3D", "Paused", "Muted", "Virtual", "OneShot", "Looped", "Distance", "MinDist", "MaxDist", "Time", "Duration", "Frequency", "Stream", "Compressed", "NonBlocking", "User", "Memory", "MemoryPoint" };
+            string[] headers = new[] { "Object", "Asset", "Volume", "VU Level", "Audibility", "Group", "Priority", "Plays", "3D", "Paused", "Muted", "Virtual", "OneShot", "Looped", "Distance", "MinDist", "MaxDist", "Time", "Duration", "Frequency", "Stream", "Compressed", "NonBlocking", "User", "Memory", "MemoryPoint" };
 
             public AudioProfilerGroupViewColumnHeader(AudioProfilerGroupTreeViewState state, AudioProfilerGroupViewBackend backend)
             {
@@ -422,7 +450,7 @@ namespace UnityEditorInternal
 
                     string title = headers[i];
                     if (allowSorting && i == m_TreeViewState.selectedColumn)
-                        title += m_TreeViewState.sortByDescendingOrder ? " \u25BC" : " \u25B2";
+                        title = (m_TreeViewState.sortByDescendingOrder ? "\u2191" : "\u2193") + title;
 
                     GUI.Box(columnRect, title, headerStyle);
 
@@ -1055,7 +1083,7 @@ namespace UnityEditorInternal
 
                     string title = headers[i];
                     if (allowSorting && i == m_TreeViewState.selectedColumn)
-                        title += m_TreeViewState.sortByDescendingOrder ? " \u25BC" : " \u25B2";
+                        title = (m_TreeViewState.sortByDescendingOrder ? "\u2191" : "\u2193") + title;
 
                     GUI.Box(columnRect, title, headerStyle);
 

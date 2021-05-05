@@ -311,11 +311,16 @@ namespace UnityEditor
         internal class ShaderPreloadEditor : Editor
         {
             SerializedProperty m_PreloadedShaders;
+            SerializedProperty m_PreloadShadersBatchTimeLimit;
+            bool m_DelayShaderPreload;
+            int m_PreloadShadersTimeLimit;
 
             public void OnEnable()
             {
                 m_PreloadedShaders = serializedObject.FindProperty("m_PreloadedShaders");
                 m_PreloadedShaders.isExpanded = true;
+                m_PreloadShadersBatchTimeLimit = serializedObject.FindProperty("m_PreloadShadersBatchTimeLimit");
+                LoadShaderPreloadingDelay();
             }
 
             public override void OnInspectorGUI()
@@ -325,6 +330,11 @@ namespace UnityEditor
                 serializedObject.ApplyModifiedProperties();
 
                 EditorGUILayout.PropertyField(m_PreloadedShaders, true);
+
+                m_DelayShaderPreload = EditorGUILayout.Toggle("Preload shaders after showing first scene", m_DelayShaderPreload);
+                if (m_DelayShaderPreload)
+                    m_PreloadShadersTimeLimit = EditorGUILayout.IntField("Preload time limit per frame (ms)", m_PreloadShadersTimeLimit);
+                SaveShaderPreloadingDelay();
 
                 EditorGUILayout.Space();
                 GUILayout.Label(
@@ -348,6 +358,21 @@ namespace UnityEditor
                 EditorGUILayout.EndHorizontal();
 
                 serializedObject.ApplyModifiedProperties();
+            }
+
+            void LoadShaderPreloadingDelay()
+            {
+                m_PreloadShadersTimeLimit = m_PreloadShadersBatchTimeLimit.intValue;
+                m_DelayShaderPreload = m_PreloadShadersTimeLimit >= 0;
+                if (!m_DelayShaderPreload)
+                    m_PreloadShadersTimeLimit = 0;
+            }
+
+            void SaveShaderPreloadingDelay()
+            {
+                var newVal = m_DelayShaderPreload ? m_PreloadShadersTimeLimit : -1;
+                if (m_PreloadShadersBatchTimeLimit.intValue != newVal)
+                    m_PreloadShadersBatchTimeLimit.intValue = newVal;
             }
 
             internal partial class Styles

@@ -399,7 +399,7 @@ namespace UnityEditor.UIElements.Debugger
                     continue;
 
                 string name = AssetDatabase.GetAssetPath(sheet);
-                if (string.IsNullOrEmpty(name) || sheet.isUnityStyleSheet)
+                if (string.IsNullOrEmpty(name) || sheet.isDefaultStyleSheet)
                     name = sheet.name;
 
                 void RecursivePrintStyleSheetNames(StyleSheet importedSheet)

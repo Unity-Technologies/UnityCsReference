@@ -2884,8 +2884,17 @@
     <Compile Include="..\..\Runtime\Export\Shaders\ComputeShader.bindings.cs">
       <Link>Runtime\Export\Shaders\ComputeShader.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Shaders\GlobalKeyword.bindings.cs">
+      <Link>Runtime\Export\Shaders\GlobalKeyword.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Shaders\HybridV2.bindings.cs">
       <Link>Runtime\Export\Shaders\HybridV2.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Shaders\LocalKeyword.bindings.cs">
+      <Link>Runtime\Export\Shaders\LocalKeyword.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Shaders\LocalKeywordSpace.bindings.cs">
+      <Link>Runtime\Export\Shaders\LocalKeywordSpace.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Shaders\PlatformKeywordSet.cs">
       <Link>Runtime\Export\Shaders\PlatformKeywordSet.cs</Link>

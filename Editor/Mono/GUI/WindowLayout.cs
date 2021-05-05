@@ -417,7 +417,27 @@ namespace UnityEditor
                 Directory.CreateDirectory(layoutsPreferencesPath);
 
             if (!Directory.Exists(layoutsModePreferencesPath))
-                Directory.CreateDirectory(layoutsModePreferencesPath);
+            {
+                // Make sure we have a valid default mode folder initialized with the proper default layouts.
+                if (layoutsDefaultModePreferencesPath == layoutsModePreferencesPath)
+                {
+                    // Backward compatibility: if the default layout folder doesn't exists but some layouts have been
+                    // saved be sure to copy them to the "default layout per mode folder".
+                    FileUtil.CopyFileOrDirectory(layoutResourcesPath, layoutsDefaultModePreferencesPath);
+                    var defaultModeUserLayouts = Directory.GetFiles(layoutsPreferencesPath, "*.wlt");
+                    foreach (var layoutPath in defaultModeUserLayouts)
+                    {
+                        var fileName = Path.GetFileName(layoutPath);
+                        var dst = Path.Combine(layoutsDefaultModePreferencesPath, fileName);
+                        if (!File.Exists(dst))
+                            FileUtil.CopyFileIfExists(layoutPath, dst, false);
+                    }
+                }
+                else
+                {
+                    Directory.CreateDirectory(layoutsModePreferencesPath);
+                }
+            }
 
             // Make sure we have the default layout file in the preferences folder
             if (!File.Exists(defaultLayoutPath))

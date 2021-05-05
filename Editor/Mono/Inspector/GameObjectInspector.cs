@@ -127,7 +127,6 @@ namespace UnityEditor
         bool m_PlayModeObjects;
         bool m_IsAsset;
         bool m_ImmutableSelf;
-        bool m_ImmutableSourceAsset;
         bool m_IsDisconnected;
         bool m_IsMissing;
         bool m_IsPrefabInstanceAnyRoot;
@@ -167,7 +166,6 @@ namespace UnityEditor
             m_PlayModeObjects = false;
             m_IsAsset = false;
             m_ImmutableSelf = false;
-            m_ImmutableSourceAsset = false;
             m_IsDisconnected = false;
             m_IsMissing = false;
             m_IsPrefabInstanceAnyRoot = true;
@@ -202,9 +200,6 @@ namespace UnityEditor
 
                 if (m_IsAsset && PrefabUtility.IsPartOfImmutablePrefab(go))
                     m_ImmutableSelf = true; // Conservative is true if any is true
-                GameObject originalSourceOrVariant = PrefabUtility.GetOriginalSourceOrVariantRoot(go);
-                if (originalSourceOrVariant != null && PrefabUtility.IsPartOfImmutablePrefab(originalSourceOrVariant))
-                    m_ImmutableSourceAsset = true; // Conservative is true if any is true
                 if (PrefabUtility.IsDisconnectedFromPrefabAsset(go))
                     m_IsDisconnected = true;
                 if (PrefabUtility.IsPrefabAssetMissing(go))
@@ -486,15 +481,12 @@ namespace UnityEditor
                         else
                         {
                             // Open non-Model Prefab
-                            using (new EditorGUI.DisabledScope(m_ImmutableSourceAsset))
+                            if (GUILayout.Button(m_OpenPrefabContent, EditorStyles.miniButtonLeft))
                             {
-                                if (GUILayout.Button(m_OpenPrefabContent, EditorStyles.miniButtonLeft))
-                                {
-                                    GameObject asset = PrefabUtility.GetOriginalSourceOrVariantRoot(target);
-                                    var prefabStageMode = PrefabStageUtility.GetPrefabStageModeFromModifierKeys();
-                                    PrefabStageUtility.OpenPrefab(AssetDatabase.GetAssetPath(asset), (GameObject)target, prefabStageMode, StageNavigationManager.Analytics.ChangeType.EnterViaInstanceInspectorOpenButton);
-                                    GUIUtility.ExitGUI();
-                                }
+                                GameObject asset = PrefabUtility.GetOriginalSourceOrVariantRoot(target);
+                                var prefabStageMode = PrefabStageUtility.GetPrefabStageModeFromModifierKeys();
+                                PrefabStageUtility.OpenPrefab(AssetDatabase.GetAssetPath(asset), (GameObject)target, prefabStageMode, StageNavigationManager.Analytics.ChangeType.EnterViaInstanceInspectorOpenButton);
+                                GUIUtility.ExitGUI();
                             }
                         }
                     }

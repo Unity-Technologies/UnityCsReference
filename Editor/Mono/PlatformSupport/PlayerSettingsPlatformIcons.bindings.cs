@@ -286,6 +286,18 @@ namespace UnityEditor
             if (platformIconProviders.ContainsKey(platform))
                 return;
             platformIconProviders[platform] = platformIconProvider;
+
+            // This forces icon structures to be initialized in PlayerSettings on Editor start if needed
+            // If we don't do this, the following might happen:
+            // * Create new project
+            // * ProjectSettings.asset will have its m_BuildTargetPlatformIcons structure empty
+            // * But once you build to Android/iOS/tvOS or any platform which uses IPlatformIconProvider, it will initialize m_BuildTargetPlatformIcons
+            // * Causing ProjectSettings.asset to change after you clicked build
+            // * This is bad for incremental builds, at least for the 2nd/sequential build, it will see that ProjectSettings.asset has changed and will start rebuilding resources
+            foreach (var kind in GetSupportedIconKindsForPlatform(platform))
+            {
+                GetPlatformIcons(platform, kind);
+            }
         }
 
         internal static PlatformIcon[] GetPlatformIconsFromStruct(PlatformIcon[] icons, PlatformIconKind kind, PlatformIconStruct[] serializedIcons)

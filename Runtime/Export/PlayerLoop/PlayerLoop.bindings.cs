@@ -294,6 +294,8 @@ namespace UnityEngine.PlayerLoop
         [RequiredByNativeCode]
         public struct ProfilerEndFrame {}
         [RequiredByNativeCode]
+        public struct GraphicsWarmupPreloadedShaders {}
+        [RequiredByNativeCode]
         public struct PlayerSendFramePostPresent {}
         [RequiredByNativeCode]
         public struct PhysicsSkinnedClothBeginUpdate {}

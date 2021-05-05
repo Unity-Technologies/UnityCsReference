@@ -16,6 +16,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal const string k_OtherPackageGroupName = "Other";
 
         internal const int k_DefaultPageSize = 25;
+        private const int k_MaxFetchItemCountPerFrame = 5;
 
         private static readonly RefreshOptions[] k_RefreshOptionsByTab =
         {
@@ -69,6 +70,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [NonSerialized]
         private Dictionary<string, PackageSelectionObject> m_PackageSelectionObjects = new Dictionary<string, PackageSelectionObject>();
+
+        [SerializeField]
+        private List<string> m_SerializedFetchDetailsQueue = new List<string>();
+
+        [NonSerialized]
+        private readonly List<string> m_CurrentFetchDetails = new List<string>();
+        [NonSerialized]
+        private Queue<string> m_FetchDetailsQueue = new Queue<string>();
 
         [NonSerialized]
         private ApplicationProxy m_Application;
@@ -129,6 +138,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SerializedRefreshErrorsValues = m_RefreshErrors.Values.ToArray();
 
             m_SerializedPackageSelectionInstanceIds = m_PackageSelectionObjects.Select(kp => kp.Value.GetInstanceID()).ToArray();
+
+            m_SerializedFetchDetailsQueue = m_FetchDetailsQueue.ToList();
         }
 
         public void OnAfterDeserialize()
@@ -146,6 +157,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             for (var i = 0; i < m_SerializedRefreshErrorsKeys.Length; i++)
                 m_RefreshErrors[m_SerializedRefreshErrorsKeys[i]] = m_SerializedRefreshErrorsValues[i];
+
+            m_FetchDetailsQueue = new Queue<string>(m_SerializedFetchDetailsQueue);
         }
 
         public virtual PackageSelectionObject GetPackageSelectionObject(IPackage package, IPackageVersion version = null, bool createIfNotFound = false)
@@ -458,6 +471,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnFilterChanged(PackageFilterTab filterTab)
         {
+            if (m_PackageFiltering.previousFilterTab == PackageFilterTab.AssetStore)
+                ClearFetchDetailsQueue();
+
             var page = GetPageFromTab(filterTab);
             if (GetRefreshTimestamp(page.tab) == 0)
                 Refresh(filterTab);
@@ -595,6 +611,17 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_AssetStoreClient.RefreshLocal();
         }
 
+        public virtual void CancelRefresh(PackageFilterTab? tab = null)
+        {
+            CancelRefresh(GetRefreshOptionsByTab(tab ?? m_PackageFiltering.currentFilterTab));
+        }
+
+        public virtual void CancelRefresh(RefreshOptions options)
+        {
+            if ((options & RefreshOptions.Purchased) != 0)
+                m_AssetStoreClient.CancelListPurchases();
+        }
+
         public virtual void Fetch(string uniqueId)
         {
             if (m_UnityConnect.isUserLoggedIn && long.TryParse(uniqueId, out var productId))
@@ -603,7 +630,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public virtual void FetchDetail(IPackage package, Action doneCallbackAction = null)
+        public virtual void FetchDetail(IPackage package, Action<IPackage> doneCallbackAction = null)
         {
             if (m_UnityConnect.isUserLoggedIn && long.TryParse(package?.uniqueId, out var productId))
             {
@@ -669,6 +696,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
             m_Selection.onSelectionChanged += OnEditorSelectionChanged;
+
+            EditorApplication.update += FetchDetailsFromQueue;
         }
 
         public void OnDisable()
@@ -693,6 +722,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
             m_Selection.onSelectionChanged -= OnEditorSelectionChanged;
+
+            EditorApplication.update -= FetchDetailsFromQueue;
         }
 
         public virtual void Reload()
@@ -701,6 +732,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             InitializeRefreshTimestamps();
 
             ClearPages();
+            ClearFetchDetailsQueue();
 
             m_RefreshErrors.Clear();
             m_RefreshOperationsInProgress.Clear();
@@ -855,6 +887,33 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var filterTab = tab ?? m_PackageFiltering.currentFilterTab;
             return IsInitialFetchingDone(GetRefreshOptionsByTab(filterTab));
+        }
+
+        public virtual void SetFetchDetailsQueue(IEnumerable<string> packageUniqueIds)
+        {
+            m_FetchDetailsQueue = new Queue<string>(packageUniqueIds.Where(p => !m_CurrentFetchDetails.Contains(p)));
+        }
+
+        public virtual void ClearFetchDetailsQueue()
+        {
+            m_FetchDetailsQueue.Clear();
+            m_CurrentFetchDetails.Clear();
+        }
+
+        private void FetchDetailsFromQueue()
+        {
+            if (m_FetchDetailsQueue.Count == 0 || !m_UnityConnect.isUserLoggedIn)
+                return;
+
+            for (var i = 0; i < k_MaxFetchItemCountPerFrame && m_FetchDetailsQueue.Any(); i++)
+            {
+                var packageId = m_FetchDetailsQueue.Dequeue();
+                if (long.TryParse(packageId, out var productId))
+                {
+                    m_CurrentFetchDetails.Add(packageId);
+                    m_AssetStoreClient.FetchDetail(productId, package => { m_CurrentFetchDetails.Remove(package.uniqueId); });
+                }
+            }
         }
     }
 }

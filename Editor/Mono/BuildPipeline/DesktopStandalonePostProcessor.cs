@@ -369,7 +369,6 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
             FileUtil.CopyFileOrDirectory(Path.Combine(il2cppSourceFolder, "libmono"), Path.Combine(il2cppTargetFolder, "libmono"));
         }
 
-        FileUtil.CopyFileOrDirectory(Path.GetDirectoryName(IL2CPPBuilder.GetMapFileParserPath()), Path.Combine(il2cppTargetFolder, "MapFileParser"));
         FileUtil.CopyFileOrDirectory(Path.Combine(il2cppSourceFolder, "il2cpp_root"), Path.Combine(il2cppTargetFolder, "il2cpp_root"));
 
         WriteIl2CppOutputProject(args, il2cppOutputProjectDirectory, il2cppPlatformProvider);

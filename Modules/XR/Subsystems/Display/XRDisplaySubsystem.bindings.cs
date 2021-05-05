@@ -112,6 +112,10 @@ namespace UnityEngine.XR
                 {
                     throw new ArgumentNullException("camera");
                 }
+                else if (camera.orthographic)
+                {
+                    throw new ArgumentException("Can't set camera projection to orthographic when XR is running and rendering to XR eye textures. Please check camera projection settings of camera components that  will be rendering to eye textures in your scene.", "camera");
+                }
                 else
                 {
                     throw new IndexOutOfRangeException("cullingPassIndex");

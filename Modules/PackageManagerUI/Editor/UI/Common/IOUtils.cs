@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.IO;
-using System.Linq;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {

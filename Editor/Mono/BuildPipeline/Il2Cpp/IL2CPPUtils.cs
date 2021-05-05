@@ -662,7 +662,6 @@ namespace UnityEditorInternal
                         arguments.Add(buildingArgument);
                 }
 
-                arguments.Add($"--map-file-parser={CommandLineFormatter.PrepareFileName(GetMapFileParserPath())}");
                 arguments.Add($"--generatedcppdir={CommandLineFormatter.PrepareFileName(GetCppOutputDirectory(il2cppBuildCacheSource))}");
                 arguments.Add($"--dotnetprofile=\"{IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup))}\"");
                 arguments.AddRange(IL2CPPUtils.GetDebuggerIL2CPPArguments(m_PlatformProvider, buildTargetGroup));
@@ -685,14 +684,6 @@ namespace UnityEditorInternal
         public static string GetCppOutputDirectory(string directory)
         {
             return Path.Combine(GetShortPathName(Path.GetFullPath(directory)), "il2cppOutput");
-        }
-
-        public static string GetMapFileParserPath()
-        {
-            return Path.GetFullPath(
-                Path.Combine(
-                    GetShortPathName(Path.GetFullPath(EditorApplication.applicationContentsPath)),
-                    Application.platform == RuntimePlatform.WindowsEditor ? @"Tools\MapFileParser\MapFileParser.exe" : @"Tools/MapFileParser/MapFileParser"));
         }
 
         private void ConvertPlayerDlltoCpp(Il2CppBuildPipelineData data)
@@ -747,7 +738,6 @@ namespace UnityEditorInternal
                 if (!arguments.Contains(buildingArgument))
                     arguments.Add(buildingArgument);
             }
-            arguments.Add($"--map-file-parser={CommandLineFormatter.PrepareFileName(GetMapFileParserPath())}");
 
             var additionalArgs = IL2CPPUtils.GetAdditionalArguments();
             if (!string.IsNullOrEmpty(additionalArgs))
@@ -905,7 +895,7 @@ namespace UnityEditorInternal
             get { return true; }
         }
 
-        // This is an opt-in setting, as most platforms will want to use native stacktrace mechanisms enabled by MapFileParser
+        // This is an opt-in setting, as most platforms will want to use native stacktrace mechanisms
         public virtual bool enableStackTraces
         {
             get { return false; }

@@ -324,7 +324,7 @@ namespace UnityEditor.Search
 
         public static void Reset()
         {
-            s_TransactionManager.ClearAll();
+            s_TransactionManager?.ClearAll();
         }
 
         private static void InvalidateObject(int instanceId)

@@ -37,8 +37,8 @@ namespace UnityEngine.UIElements.StyleSheets
 
         public static int Compare(SelectorMatchRecord a, SelectorMatchRecord b)
         {
-            if (a.sheet.isUnityStyleSheet != b.sheet.isUnityStyleSheet)
-                return a.sheet.isUnityStyleSheet ? -1 : 1;
+            if (a.sheet.isDefaultStyleSheet != b.sheet.isDefaultStyleSheet)
+                return a.sheet.isDefaultStyleSheet ? -1 : 1;
 
             int res = a.complexSelector.specificity.CompareTo(b.complexSelector.specificity);
 

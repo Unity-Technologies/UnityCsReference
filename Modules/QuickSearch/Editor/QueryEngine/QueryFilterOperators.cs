@@ -4,31 +4,40 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 
 namespace UnityEditor.Search
 {
-    internal interface IFilterHandlerDelegate
+    readonly struct FilterOperatorContext
     {
-        bool Invoke(object ev, object fv, StringComparison sc);
+        public readonly IQueryEngineFilter filter;
+
+        public FilterOperatorContext(IQueryEngineFilter filter)
+        {
+            this.filter = filter;
+        }
     }
 
-    internal class FilterHandlerDelegate<TLhs, TRhs> : IFilterHandlerDelegate
+    interface IFilterHandlerDelegate
     {
-        public Func<TLhs, TRhs, StringComparison, bool> handler { get; }
+        bool Invoke(FilterOperatorContext ctx, object ev, object fv, StringComparison sc);
+    }
 
-        public FilterHandlerDelegate(Func<TLhs, TRhs, StringComparison, bool> handler)
+    class FilterHandlerDelegate<TLhs, TRhs> : IFilterHandlerDelegate
+    {
+        public Func<FilterOperatorContext, TLhs, TRhs, StringComparison, bool> handler { get; }
+
+        public FilterHandlerDelegate(Func<FilterOperatorContext, TLhs, TRhs, StringComparison, bool> handler)
         {
             this.handler = handler;
         }
 
-        public bool Invoke(object ev, object fv, StringComparison sc)
+        public bool Invoke(FilterOperatorContext ctx, object ev, object fv, StringComparison sc)
         {
-            return handler((TLhs)ev, (TRhs)fv, sc);
+            return handler(ctx, (TLhs)ev, (TRhs)fv, sc);
         }
     }
 
-    internal readonly struct FilterOperatorTypes : IEquatable<FilterOperatorTypes>
+    readonly struct FilterOperatorTypes : IEquatable<FilterOperatorTypes>
     {
         public readonly Type leftHandSideType;
         public readonly Type rightHandSideType;
@@ -58,27 +67,66 @@ namespace UnityEditor.Search
         }
     }
 
-    internal class FilterOperator
+    /// <summary>
+    /// A QueryFilterOperator defines a boolean operator between a value returned by a filter and an operand inputted in the search query.
+    /// </summary>
+    public readonly struct QueryFilterOperator
     {
-        private IQueryEngineImplementation m_EngineImplementation;
+        readonly IQueryEngineImplementation m_EngineImplementation;
 
+        /// <summary>
+        /// The operator identifier.
+        /// </summary>
         public string token { get; }
-        public Dictionary<Type, Dictionary<Type, IFilterHandlerDelegate>> handlers { get; }
 
-        public FilterOperator(string token, IQueryEngineImplementation engine)
+        internal Dictionary<Type, Dictionary<Type, IFilterHandlerDelegate>> handlers { get; }
+
+        /// <summary>
+        /// Indicates if this <see cref="QueryFilterOperator"/> is valid.
+        /// </summary>
+        public bool valid => !string.IsNullOrEmpty(token);
+
+        internal static QueryFilterOperator invalid = new QueryFilterOperator(null, null);
+
+        internal QueryFilterOperator(string token, IQueryEngineImplementation engine)
         {
             this.token = token;
             handlers = new Dictionary<Type, Dictionary<Type, IFilterHandlerDelegate>>();
             m_EngineImplementation = engine;
         }
 
-        public FilterOperator AddHandler<TLhs, TRhs>(Func<TLhs, TRhs, bool> handler)
+        /// <summary>
+        /// Adds a custom filter operator handler.
+        /// </summary>
+        /// <typeparam name="TFilterVariable">The operator's left hand side type. This is the type returned by a filter handler.</typeparam>
+        /// <typeparam name="TFilterConstant">The operator's right hand side type.</typeparam>
+        /// <param name="handler">Callback to handle the operation. Takes a TFilterVariable (value returned by the filter handler, will vary for each element) and a TFilterConstant (right hand side value of the operator, which is constant), and returns a boolean indicating if the filter passes or not.</param>
+        public QueryFilterOperator AddHandler<TFilterVariable, TFilterConstant>(Func<TFilterVariable, TFilterConstant, bool> handler)
         {
-            return AddHandler((TLhs l, TRhs r, StringComparison sc) => handler(l, r));
+            return AddHandler((FilterOperatorContext ctx, TFilterVariable l, TFilterConstant r, StringComparison sc) => handler(l, r));
         }
 
-        public FilterOperator AddHandler<TLhs, TRhs>(Func<TLhs, TRhs, StringComparison, bool> handler)
+        /// <summary>
+        /// Adds a custom filter operator handler.
+        /// </summary>
+        /// <typeparam name="TFilterVariable">The operator's left hand side type. This is the type returned by a filter handler.</typeparam>
+        /// <typeparam name="TFilterConstant">The operator's right hand side type.</typeparam>
+        /// <param name="handler">Callback to handle the operation. Takes a TFilterVariable (value returned by the filter handler, will vary for each element), a TFilterConstant (right hand side value of the operator, which is constant), a StringComparison option and returns a boolean indicating if the filter passes or not.</param>
+        public QueryFilterOperator AddHandler<TFilterVariable, TFilterConstant>(Func<TFilterVariable, TFilterConstant, StringComparison, bool> handler)
         {
+            return AddHandler((FilterOperatorContext ctx, TFilterVariable l, TFilterConstant r, StringComparison sc) => handler(l, r, sc));
+        }
+
+        internal QueryFilterOperator AddHandler<TLhs, TRhs>(Func<FilterOperatorContext, TLhs, TRhs, bool> handler)
+        {
+            return AddHandler((FilterOperatorContext ctx, TLhs l, TRhs r, StringComparison sc) => handler(ctx, l, r));
+        }
+
+        internal QueryFilterOperator AddHandler<TLhs, TRhs>(Func<FilterOperatorContext, TLhs, TRhs, StringComparison, bool> handler)
+        {
+            if (!valid)
+                return this;
+
             var leftHandSideType = typeof(TLhs);
             var rightHandSideType = typeof(TRhs);
 
@@ -92,11 +140,18 @@ namespace UnityEditor.Search
             else
                 handlersByLeftHandSideType.Add(rightHandSideType, filterHandlerDelegate);
             m_EngineImplementation.AddFilterOperationGenerator<TRhs>();
+            // Enums are user defined but still simple enough to generate a parse function for them.
+            if (typeof(TRhs).IsEnum)
+            {
+                m_EngineImplementation.AddDefaultEnumTypeParser<TRhs>();
+            }
             return this;
         }
 
-        public Func<TLhs, TRhs, StringComparison, bool> GetHandler<TLhs, TRhs>()
+        internal Func<FilterOperatorContext, TLhs, TRhs, StringComparison, bool> GetHandler<TLhs, TRhs>()
         {
+            if (!valid)
+                return null;
             var lhsType = typeof(TLhs);
             var rhsType = typeof(TRhs);
             if (handlers.TryGetValue(lhsType, out var handlersByLeftHandSideType))
@@ -107,8 +162,10 @@ namespace UnityEditor.Search
             return null;
         }
 
-        public IFilterHandlerDelegate GetHandler(Type leftHandSideType, Type rightHandSideType)
+        internal IFilterHandlerDelegate GetHandler(Type leftHandSideType, Type rightHandSideType)
         {
+            if (!valid)
+                return null;
             if (handlers.TryGetValue(leftHandSideType, out var handlersByLeftHandSideType))
             {
                 if (handlersByLeftHandSideType.TryGetValue(rightHandSideType, out var filterHandlerDelegate))

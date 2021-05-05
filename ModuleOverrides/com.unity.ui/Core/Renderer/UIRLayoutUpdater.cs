@@ -21,8 +21,6 @@ namespace UnityEngine.UIElements
         private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
         public override ProfilerMarker profilerMarker => s_ProfilerMarker;
 
-        private bool m_HierarchyDisplayChanged;
-
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {
             if ((versionChangeType & (VersionChangeType.Layout | VersionChangeType.Hierarchy)) == 0)
@@ -56,7 +54,6 @@ namespace UnityEngine.UIElements
                 panel.duringLayoutPhase = true;
                 visualTree.yogaNode.CalculateLayout();
                 panel.duringLayoutPhase = false;
-                m_HierarchyDisplayChanged = false;
 
                 using (new EventDispatcherGate(visualTree.panel.dispatcher))
                 {
@@ -70,8 +67,12 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            if (m_HierarchyDisplayChanged)
-                visualTree.focusController.ReevaluateFocus();
+            // This call happens here for two reasons
+            // 1. Visibility style of the focused element may have changed (regardless of the layout having updated)
+            // 2. Display style of the focused element may have changed, but it's only manually propagated to children
+            //    as part of this updater.
+            // Note: this is a O(1) call
+            visualTree.focusController.ReevaluateFocus();
         }
 
         private void UpdateSubTree(VisualElement ve, int currentLayoutPass, bool isDisplayed = true)
@@ -105,8 +106,6 @@ namespace UnityEngine.UIElements
             isDisplayed &= ve.resolvedStyle.display != DisplayStyle.None;
             ve.isHierarchyDisplayed = isDisplayed;
 
-            if (wasHierarchyDisplayed != isDisplayed)
-                m_HierarchyDisplayChanged = true;
             if (changeType != 0)
                 ve.IncrementVersion(changeType);
 

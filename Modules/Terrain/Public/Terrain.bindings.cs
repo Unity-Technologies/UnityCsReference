@@ -202,6 +202,13 @@ namespace UnityEngine
         [NativeProperty("ActiveTerrainsScriptingArray")]
         extern public static Terrain[] activeTerrains { get; }
 
+        public static void GetActiveTerrains(List<Terrain> terrainList)
+        {
+            Internal_FillActiveTerrainList(terrainList);
+        }
+
+        extern private static void Internal_FillActiveTerrainList([NotNull] object terrainList);
+
         [UsedByNativeCode]
         extern public static GameObject CreateTerrainGameObject(TerrainData assignTerrain);
 

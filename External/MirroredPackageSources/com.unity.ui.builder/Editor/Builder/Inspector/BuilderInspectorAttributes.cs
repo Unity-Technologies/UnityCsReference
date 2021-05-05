@@ -223,10 +223,12 @@ namespace Unity.UI.Builder
             {
                 if (attributeName == "show-horizontal-scroller")
                 {
+// Use old API only if version is >= 2019_4 and <= 2020_3
                     return scrollView.horizontalScrollerVisibility != ScrollerVisibility.Hidden;
                 }
                 else if (attributeName == "show-vertical-scroller")
                 {
+// Use old API only if version is >= 2019_4 and <= 2020_3
                     return scrollView.verticalScrollerVisibility != ScrollerVisibility.Hidden;
                 }
             }

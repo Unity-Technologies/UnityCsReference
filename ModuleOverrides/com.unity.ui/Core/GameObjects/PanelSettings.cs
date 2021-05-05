@@ -521,7 +521,8 @@ namespace UnityEngine.UIElements
 
             if (themeUss != null)
             {
-                themeUss.isUnityStyleSheet = true;
+                // Ensure that isDefaultStyleSheet is set to true even though isDefaultStyleSheet is defaulted to true for ThemeStyleSheet.
+                themeUss.isDefaultStyleSheet = true;
                 root?.styleSheets.Add(themeUss);
             }
         }

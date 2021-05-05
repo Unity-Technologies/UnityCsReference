@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 
 namespace UnityEngine
 {
@@ -90,5 +91,13 @@ namespace UnityEngine
             get { return EditorScreen.brightness; }
             set { EditorScreen.brightness = value; }
         }
+
+        public virtual Vector2Int mainWindowPosition => EditorScreen.mainWindowPosition;
+
+        public virtual DisplayInfo mainWindowDisplayInfo => EditorScreen.mainWindowDisplayInfo;
+
+        public virtual void GetDisplayLayout(List<DisplayInfo> displayLayout) => EditorScreen.GetDisplayLayout(displayLayout);
+
+        public virtual AsyncOperation MoveMainWindowTo(in DisplayInfo display, Vector2Int position) => EditorScreen.MoveMainWindowTo(display, position);
     }
 }

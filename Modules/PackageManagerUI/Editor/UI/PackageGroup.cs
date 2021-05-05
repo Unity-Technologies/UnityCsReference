@@ -15,6 +15,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool expanded => headerCaret.value;
 
+        public bool isHidden { get; }
+
         public IEnumerable<PackageItem> packageItems => groupContainer.Children().Cast<PackageItem>();
 
         private ResourceLoader m_ResourceLoader;
@@ -48,7 +50,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             headerTag.pickingMode = PickingMode.Ignore;
             headerCaret.text = displayName;
 
-            if (hidden)
+            isHidden = hidden;
+            if (isHidden)
                 AddToClassList("hidden");
         }
 

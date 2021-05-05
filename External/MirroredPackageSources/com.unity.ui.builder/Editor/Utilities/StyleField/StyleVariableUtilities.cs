@@ -83,13 +83,13 @@ namespace Unity.UI.Builder
                             continue;
                         var propValue = varPair.Value;
 
-                        if (!editorExtensionMode && propValue.sheet.isUnityStyleSheet)
+                        if (!editorExtensionMode && propValue.sheet.IsUnityEditorStyleSheet())
                             continue;
                         if ((compatibleTypes == null || compatibleTypes.Contains(propValue.handle.valueType)) && !varName.StartsWith("--unity-theme") && !names.Contains(varName))
                         {
                             names.Add(varName);
                             string descr = null;
-                            if (propValue.sheet.isUnityStyleSheet)
+                            if (propValue.sheet.IsUnityEditorStyleSheet())
                             {
                                 editorVariableDescriptions.TryGetValue(varName, out descr);
                             }
@@ -146,12 +146,12 @@ namespace Unity.UI.Builder
                         var varName = varPair.Key;
                         var propValue = varPair.Value;
 
-                        if (!editorExtensionMode && propValue.sheet.isUnityStyleSheet)
+                        if (!editorExtensionMode && propValue.sheet.isDefaultStyleSheet)
                             continue;
                         if (varName == variableName)
                         {
                             string descr = null;
-                            if (propValue.sheet.isUnityStyleSheet)
+                            if (propValue.sheet.isDefaultStyleSheet)
                             {
                                 editorVariableDescriptions.TryGetValue(varName, out descr);
                             }

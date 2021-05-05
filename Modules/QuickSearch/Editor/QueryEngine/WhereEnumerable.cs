@@ -160,16 +160,16 @@ namespace UnityEditor.Search
             IParseResult parseResult = null;
             if (QueryEngineUtils.IsNestedQueryToken(node.filterValue))
             {
-                if (node.filter?.queryHandlerTransformer == null)
+                if (node.filter?.nestedQueryHandlerTransformer == null)
                 {
                     errors.Add(new QueryError(filterValueIndex, node.filterValue.Length, $"No nested query handler transformer set on filter \"{node.filter.token}\"."));
                     return null;
                 }
-                filterValueType = node.filter.queryHandlerTransformer.rightHandSideType;
+                filterValueType = node.filter.nestedQueryHandlerTransformer.rightHandSideType;
             }
             else
             {
-                parseResult = engine.ParseFilterValue(node.filterValue, node.filter, node.op, out filterValueType);
+                parseResult = engine.ParseFilterValue(node.filterValue, node.filter, in node.op, out filterValueType);
                 if (!parseResult.success)
                 {
                     errors.Add(new QueryError(filterValueIndex, node.filterValue.Length, $"The value \"{node.filterValue}\" could not be converted to any of the supported handler types."));
@@ -186,6 +186,7 @@ namespace UnityEditor.Search
 
             var generatorData = new FilterOperationGeneratorData
             {
+                filterName = node.filterId,
                 filterValue = node.filterValue,
                 filterValueParseResult = parseResult,
                 globalStringComparison = engine.globalStringComparison,
@@ -212,7 +213,7 @@ namespace UnityEditor.Search
                 return null;
             }
 
-            var transformType = node.filter.queryHandlerTransformer.rightHandSideType;
+            var transformType = node.filter.nestedQueryHandlerTransformer.rightHandSideType;
 
             var inFilterFunc = typeof(WhereEnumerableFactory)
                 .GetMethod("GenerateInFilterFunctionWithTypes", BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance)
@@ -233,7 +234,7 @@ namespace UnityEditor.Search
             var nestedQueryEnumerable = EnumerableCreator.Create<TNested>(node.children[0], null, errors, fastYielding);
             if (nestedQueryEnumerable == null)
                 return null;
-            var nestedQueryTransformer = node.filter.queryHandlerTransformer as NestedQueryHandlerTransformer<TNested, TTransform>;
+            var nestedQueryTransformer = node.filter.nestedQueryHandlerTransformer as NestedQueryHandlerTransformer<TNested, TTransform>;
             if (nestedQueryTransformer == null)
                 return null;
             var transformerFunction = nestedQueryTransformer.handler;

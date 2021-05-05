@@ -168,12 +168,11 @@ namespace UnityEditor
             buttonRect.width = kArrayValuePopupBtnWidth;
             if (GUI.Button(buttonRect, Styles.arrayValuePopupButton, EditorStyles.miniButton))
             {
-                var globalKeywords = ShaderUtil.GetShaderGlobalKeywords(s);
-                var localKeywords = ShaderUtil.GetShaderLocalKeywords(s);
+                var keywords = ShaderUtil.GetShaderLocalKeywords(s);
 
                 PopupWindowWithoutFocus.Show(
                     buttonRect,
-                    new KeywordsPopup(globalKeywords, localKeywords, 150.0f),
+                    new KeywordsPopup(keywords, 150.0f),
                     new[] { PopupLocation.Left, PopupLocation.Below, PopupLocation.Right });
             }
 
@@ -467,26 +466,22 @@ namespace UnityEditor
     internal class KeywordsPopup : PopupWindowContent
     {
         private Vector2 m_ScrollPos = Vector2.zero;
-        private string[] m_GlobalKeywords;
-        private string[] m_LocalKeywords;
-        private bool m_GlobalKeywordsExpended;
-        private bool m_LocalKeywordsExpended;
+        private string[] m_Keywords;
+        private bool m_KeywordsExpended;
         private float m_WindowWidth;
 
         private static readonly GUIStyle m_Style = EditorStyles.miniLabel;
 
-        public KeywordsPopup(string[] globalKeywords, string[] localKeywords, float windowWidth)
+        public KeywordsPopup(string[] keywords, float windowWidth)
         {
-            m_GlobalKeywords = globalKeywords;
-            m_LocalKeywords = localKeywords;
-            m_GlobalKeywordsExpended = true;
-            m_LocalKeywordsExpended = true;
+            m_Keywords = keywords;
+            m_KeywordsExpended = true;
             m_WindowWidth = windowWidth;
         }
 
         public override Vector2 GetWindowSize()
         {
-            var numValues = m_GlobalKeywords.Length + m_LocalKeywords.Length + 4;
+            var numValues = m_Keywords.Length + 4;
             var lineHeight = m_Style.lineHeight + m_Style.padding.vertical + m_Style.margin.top;
             return new Vector2(m_WindowWidth, Math.Min(lineHeight * numValues, 250.0f));
         }
@@ -495,8 +490,7 @@ namespace UnityEditor
         {
             m_ScrollPos = EditorGUILayout.BeginScrollView(m_ScrollPos);
 
-            m_GlobalKeywordsExpended = KeywordsFoldout(m_GlobalKeywordsExpended, "Global Keywords", m_GlobalKeywords);
-            m_LocalKeywordsExpended = KeywordsFoldout(m_LocalKeywordsExpended, "Local Keywords", m_LocalKeywords);
+            m_KeywordsExpended = KeywordsFoldout(m_KeywordsExpended, "Keywords", m_Keywords);
 
             EditorGUILayout.EndScrollView();
         }

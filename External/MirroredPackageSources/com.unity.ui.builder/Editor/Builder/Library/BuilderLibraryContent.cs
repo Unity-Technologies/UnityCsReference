@@ -259,6 +259,7 @@ namespace Unity.UI.Builder
                 new BuilderLibraryTreeItem("Float", nameof(FloatField), typeof(FloatField), () => new FloatField("Float Field") { value = 42.2f }),
                 new BuilderLibraryTreeItem("Long", nameof(LongField), typeof(LongField), () => new LongField("Long Field") { value = 42 }),
 
+                new BuilderLibraryTreeItem("Progress Bar", nameof(ProgressBar), typeof(ProgressBar), () => new ProgressBar() { title = "my-progress", value = 22 }),
 
                 new BuilderLibraryTreeItem("Vector2", nameof(Vector2Field), typeof(Vector2Field), () => new Vector2Field("Vec2 Field")),
                 new BuilderLibraryTreeItem("Vector3", nameof(Vector3Field), typeof(Vector3Field), () => new Vector3Field("Vec3 Field")),

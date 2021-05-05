@@ -52,7 +52,13 @@ namespace UnityEditor
     {
         public delegate void ObjectChangeEventsHandler(ref ObjectChangeEventStream stream);
 
-        public static event ObjectChangeEventsHandler changesPublished;
+        public static event ObjectChangeEventsHandler changesPublished
+        {
+            add => m_ChangesPublishedEvent.Add(value);
+            remove => m_ChangesPublishedEvent.Remove(value);
+        }
+
+        private static EventWithPerformanceTracker<ObjectChangeEventsHandler> m_ChangesPublishedEvent = new EventWithPerformanceTracker<ObjectChangeEventsHandler>($"{nameof(ObjectChangeEvents)}.{nameof(changesPublished)}");
 
         // TODO: Once Burst supports internal/external functions in static initializers, this can become
         //   static readonly int s_staticSafetyId = AtomicSafetyHandle.NewStaticSafetyId<ObjectChangeEventStream>();
@@ -71,8 +77,9 @@ namespace UnityEditor
         [RequiredByNativeCode(GenerateProxy = true)]
         static void InvokeChangeEvent(IntPtr events, int eventsCount, IntPtr payLoad, int payLoadLength)
         {
-            if (changesPublished == null || eventsCount == 0)
+            if (!m_ChangesPublishedEvent.hasSubscribers || eventsCount == 0)
                 return;
+
 
             var stream = new ObjectChangeEventStream(events, eventsCount, payLoad, payLoadLength);
 
@@ -80,8 +87,8 @@ namespace UnityEditor
             var ash2 = AtomicSafetyHandle.Create();
             InitStaticSafetyId(ref ash1, ref ash2);
             stream.OverrideSafetyHandle(ash1, ash2);
-
-            changesPublished.Invoke(ref stream);
+            foreach (var evt in m_ChangesPublishedEvent)
+                evt(ref stream);
 
             var result1 = AtomicSafetyHandle.EnforceAllBufferJobsHaveCompletedAndRelease(ash1);
             var result2 = AtomicSafetyHandle.EnforceAllBufferJobsHaveCompletedAndRelease(ash2);

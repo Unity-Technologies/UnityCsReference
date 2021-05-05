@@ -1494,10 +1494,12 @@ namespace UnityEditor
 
             EditorGUI.BeginChangeCheck();
 
+            bool realtimeGISupported = SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Realtime);
+
             // Show popup
             EditorGUI.showMixedValue = isMixed;
             EditorGUI.indentLevel += indent;
-            giFlags = (MaterialGlobalIlluminationFlags)EditorGUILayout.IntPopup(Styles.lightmapEmissiveLabel, (int)giFlags, Styles.lightmapEmissiveStrings, Styles.lightmapEmissiveValues);
+            giFlags = (MaterialGlobalIlluminationFlags)EditorGUILayout.IntPopup(realtimeGISupported ? Styles.lightmapEmissiveLabelRealtimeGISupport : Styles.lightmapEmissiveLabel, (int)giFlags, Styles.lightmapEmissiveStrings, Styles.lightmapEmissiveValues);
             EditorGUI.indentLevel -= indent;
             EditorGUI.showMixedValue = false;
 

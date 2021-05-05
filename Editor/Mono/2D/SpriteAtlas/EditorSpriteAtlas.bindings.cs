@@ -97,6 +97,8 @@ namespace UnityEditor.U2D
         extern public static void SetIsVariant([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas, bool value);
         extern public static void SetMasterAtlas([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas, SpriteAtlas value);
         extern public static void SetVariantScale([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas, float value);
+        extern public static bool IsIncludeInBuild([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas);
+        extern public static SpriteAtlas GetMasterAtlas([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas);
         extern internal static void CopyMasterAtlasSettings([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas);
         extern internal static string GetHash([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas);
         extern internal static Texture2D[] GetPreviewTextures([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas);

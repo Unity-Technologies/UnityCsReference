@@ -95,6 +95,9 @@ namespace UnityEditor
 
         internal void Init(Rect activatorRect, PopupWindowContent windowContent, PopupLocation[] locationPriorityOrder, ShowMode showMode, bool giveFocus)
         {
+            Vector2 oldOffset = GUIUtility.s_EditorScreenPointOffset;
+            GUIUtility.s_EditorScreenPointOffset = Vector2.zero;
+
             hideFlags = HideFlags.DontSave;
             wantsMouseMove = true;
             m_WindowContent = windowContent;
@@ -103,7 +106,10 @@ namespace UnityEditor
             m_ActivatorRect = GUIUtility.GUIToScreenRect(activatorRect);
             m_LastWantedSize = Vector2.zero;
             m_LocationPriorityOrder = locationPriorityOrder;
+
             ShowAsDropDown(m_ActivatorRect, m_WindowContent.GetWindowSize(), locationPriorityOrder, showMode, giveFocus);
+
+            GUIUtility.s_EditorScreenPointOffset = oldOffset;
         }
 
         internal void OnGUI()

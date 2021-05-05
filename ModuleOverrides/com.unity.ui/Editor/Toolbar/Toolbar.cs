@@ -25,10 +25,10 @@ namespace UnityEditor.UIElements
         static Toolbar()
         {
             s_ToolbarDarkStyleSheet = EditorGUIUtility.Load(UIElementsEditorUtility.GetStyleSheetPathForCurrentFont(s_ToolbarDarkStyleSheetPath)) as StyleSheet;
-            s_ToolbarDarkStyleSheet.isUnityStyleSheet = true;
+            s_ToolbarDarkStyleSheet.isDefaultStyleSheet = true;
 
             s_ToolbarLightStyleSheet = EditorGUIUtility.Load(UIElementsEditorUtility.GetStyleSheetPathForCurrentFont(s_ToolbarLightStyleSheetPath)) as StyleSheet;
-            s_ToolbarLightStyleSheet.isUnityStyleSheet = true;
+            s_ToolbarLightStyleSheet.isDefaultStyleSheet = true;
         }
 
         internal static void SetToolbarStyleSheet(VisualElement ve)

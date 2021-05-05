@@ -64,6 +64,8 @@ namespace UnityEditor
         [SerializeField]
         int  m_StreamingMipmapsPriority;
 
+        [SerializeField]
+        int m_IgnoreMasterTextureLimit;
 
         [SerializeField]
         int    m_NPOTScale;
@@ -300,6 +302,11 @@ namespace UnityEditor
             set { m_StreamingMipmapsPriority = value; }
         }
 
+        internal bool ignoreMasterTextureLimit
+        {
+            get { return m_IgnoreMasterTextureLimit != 0; }
+            set { m_IgnoreMasterTextureLimit = value ? 1 : 0; }
+        }
 
         public TextureImporterNPOTScale npotScale
         {

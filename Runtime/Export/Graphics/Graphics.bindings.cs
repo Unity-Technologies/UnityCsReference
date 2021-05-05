@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEditor;
 using UnityEngine.Bindings;
@@ -31,6 +32,58 @@ namespace UnityEngine
         Windowed = 3,
     }
 
+    [NativeType("Runtime/Graphics/RefreshRate.h")]
+    public struct RefreshRate : IEquatable<RefreshRate>
+    {
+        [RequiredMember]
+        public uint numerator;
+        [RequiredMember]
+        public uint denominator;
+
+        public double value
+        {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+            get => (double)numerator / (double)denominator;
+        }
+
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public bool Equals(RefreshRate other)
+        {
+            return numerator == other.numerator && denominator == other.denominator;
+        }
+    }
+
+    [UsedByNativeCode]
+    [NativeType("Runtime/Graphics/DisplayInfo.h")]
+    public struct DisplayInfo : IEquatable<DisplayInfo>
+    {
+        [RequiredMember]
+        internal ulong handle;
+        [RequiredMember]
+        public int width;
+        [RequiredMember]
+        public int height;
+        [RequiredMember]
+        public RefreshRate refreshRate;
+        [RequiredMember]
+        public RectInt workArea;
+        [RequiredMember]
+        public string name;
+
+        // Implement IEquatable<DisplayInfo> so that storing this struct
+        // in a dictionary doesn't result in multiple boxing operations
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public bool Equals(DisplayInfo other)
+        {
+            return handle == other.handle &&
+                width == other.width &&
+                height == other.height &&
+                refreshRate.Equals(other.refreshRate) &&
+                workArea.Equals(other.workArea) &&
+                name == other.name;
+        }
+    }
+
     public sealed partial class SleepTimeout
     {
         public const int NeverSleep = -1;
@@ -39,6 +92,7 @@ namespace UnityEngine
 
 
     [NativeHeader("Runtime/Graphics/ScreenManager.h")]
+    [NativeHeader("Runtime/Graphics/WindowLayout.h")]
     [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]
     [StaticAccessor("GetScreenManager()", StaticAccessorType.Dot)]
     internal sealed class EditorScreen
@@ -115,6 +169,47 @@ namespace UnityEngine
         {
             SetResolution(width, height, fullscreen, 0);
         }
+
+        public static Vector2Int mainWindowPosition
+        {
+            get
+            {
+                return GetMainWindowPosition();
+            }
+        }
+
+        public static DisplayInfo mainWindowDisplayInfo
+        {
+            get
+            {
+                return GetMainWindowDisplayInfo();
+            }
+        }
+
+        public static void GetDisplayLayout(List<DisplayInfo> displayLayout)
+        {
+            if (displayLayout == null)
+                throw new ArgumentNullException();
+
+            GetDisplayLayoutImpl(displayLayout);
+        }
+
+        public static AsyncOperation MoveMainWindowTo(in DisplayInfo display, Vector2Int position)
+        {
+            return MoveMainWindowImpl(display, position);
+        }
+
+        [FreeFunction("GetMainWindowPosition")]
+        extern static Vector2Int GetMainWindowPosition();
+
+        [FreeFunction("GetMainWindowDisplayInfo")]
+        extern static DisplayInfo GetMainWindowDisplayInfo();
+
+        [FreeFunction("GetDisplayLayout")]
+        extern static void GetDisplayLayoutImpl(List<DisplayInfo> displayLayout);
+
+        [FreeFunction("MoveMainWindow")]
+        extern static AsyncOperation MoveMainWindowImpl(in DisplayInfo display, Vector2Int position);
 
         extern public static Resolution[] resolutions {[FreeFunction("ScreenScripting::GetResolutions")] get; }
 
@@ -209,6 +304,11 @@ namespace UnityEngine
             get { return ShimManager.screenShim.brightness; }
             set { ShimManager.screenShim.brightness = value; }
         }
+
+        public static Vector2Int mainWindowPosition => EditorScreen.mainWindowPosition;
+        public static DisplayInfo mainWindowDisplayInfo => EditorScreen.mainWindowDisplayInfo;
+        public static void GetDisplayLayout(List<DisplayInfo> displayLayout) => EditorScreen.GetDisplayLayout(displayLayout);
+        public static AsyncOperation MoveMainWindowTo(in DisplayInfo display, Vector2Int position) => EditorScreen.MoveMainWindowTo(display, position);
     }
 }
 

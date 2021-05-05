@@ -430,7 +430,10 @@ namespace UnityEngine.TerrainTools
                 },
                 afterBlit: t =>
                 {
-                    t.terrain.terrainData.DirtyHeightmapRegion(t.clippedTerrainPixels, t.terrain.drawInstanced ? TerrainHeightmapSyncControl.None : TerrainHeightmapSyncControl.HeightOnly);
+                    var syncMethod = t.terrain.drawInstanced ?
+                        TerrainHeightmapSyncControl.None :          //keep the data on the GPU while painting
+                        TerrainHeightmapSyncControl.HeightAndLod;   //sync the heightmaps and the lod info each frame (is important to sync the Lod info so performance stays reasonable)
+                    t.terrain.terrainData.DirtyHeightmapRegion(t.clippedTerrainPixels, syncMethod);
                     OnTerrainPainted(t, ToolAction.PaintHeightmap);
                 });
         }

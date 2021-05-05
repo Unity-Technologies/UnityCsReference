@@ -127,6 +127,13 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("LZ4"),
                 EditorGUIUtility.TrTextContent("LZ4HC"),
             };
+
+            public static GUIStyle boldFoldout;
+
+            static Styles()
+            {
+                boldFoldout = new GUIStyle(EditorStyles.foldout) {fontStyle = FontStyle.Bold};
+            }
         }
 
 
@@ -275,6 +282,8 @@ namespace UnityEditor
             EditorGUIUtility.leftMarginCoord = prevMargin;
         }
 
+        SavedBool m_ShowOverrides;
+
         void AssetImportOverridesGui()
         {
             if (s_CurrOverrideMaxTextureSize < 0)
@@ -284,26 +293,39 @@ namespace UnityEditor
                 s_CurrOverrideTextureCompression = EditorUserBuildSettings.overrideTextureCompression;
             }
 
-            GUILayout.Space(5);
-            GUILayout.Label(styles.assetImportOverrides, styles.title);
-            var oldLabelWidth = EditorGUIUtility.labelWidth;
-            EditorGUIUtility.labelWidth = 125;
-            s_CurrOverrideMaxTextureSize = EditorGUILayout.IntPopup(
-                styles.maxTextureSize,
-                s_CurrOverrideMaxTextureSize,
-                styles.maxTextureSizeLabels,
-                styles.maxTextureSizeValues);
-            if (s_CurrOverrideMaxTextureSize != 0)
-                DrawOverrideLine();
+            if (m_ShowOverrides == null)
+                m_ShowOverrides = new SavedBool("BuildSettingsWindow.ShowImportOverrides", true);
 
-            s_CurrOverrideTextureCompression = (OverrideTextureCompression)EditorGUILayout.IntPopup(
-                styles.textureCompression,
-                (int)s_CurrOverrideTextureCompression,
-                styles.textureCompressionLabels,
-                styles.textureCompressionValues);
-            if (s_CurrOverrideTextureCompression != OverrideTextureCompression.NoOverride)
-                DrawOverrideLine();
-            EditorGUIUtility.labelWidth = oldLabelWidth;
+            GUILayout.Space(5);
+            m_ShowOverrides.value = EditorGUILayout.Foldout(m_ShowOverrides.value, styles.assetImportOverrides, true, Styles.boldFoldout);
+            if (m_ShowOverrides.value)
+            {
+                var oldLabelWidth = EditorGUIUtility.labelWidth;
+                EditorGUIUtility.labelWidth = 125;
+                s_CurrOverrideMaxTextureSize = EditorGUILayout.IntPopup(
+                    styles.maxTextureSize,
+                    s_CurrOverrideMaxTextureSize,
+                    styles.maxTextureSizeLabels,
+                    styles.maxTextureSizeValues);
+                if (s_CurrOverrideMaxTextureSize != 0)
+                    DrawOverrideLine();
+
+                s_CurrOverrideTextureCompression = (OverrideTextureCompression)EditorGUILayout.IntPopup(
+                    styles.textureCompression,
+                    (int)s_CurrOverrideTextureCompression,
+                    styles.textureCompressionLabels,
+                    styles.textureCompressionValues);
+                if (s_CurrOverrideTextureCompression != OverrideTextureCompression.NoOverride)
+                    DrawOverrideLine();
+                EditorGUIUtility.labelWidth = oldLabelWidth;
+            }
+            else
+            {
+                // when the settings are folded, but there are some overrides, then display the blue override
+                // indicator on the side of the foldout itself
+                if (s_CurrOverrideMaxTextureSize != 0 || s_CurrOverrideTextureCompression != OverrideTextureCompression.NoOverride)
+                    DrawOverrideLine();
+            }
         }
 
         void ActiveBuildTargetsGUI()

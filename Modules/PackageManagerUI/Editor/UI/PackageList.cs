@@ -41,13 +41,16 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         internal IEnumerable<PackageItem> packageItems => packageGroups.SelectMany(group => group.packageItems);
-        internal IEnumerable<PackageGroup> packageGroups => itemsList.Children().Cast<PackageGroup>();
+        internal IEnumerable<PackageGroup> packageGroups => itemsList.Children().OfType<PackageGroup>();
 
         [NonSerialized]
         private double m_Timestamp;
 
         [NonSerialized]
         private float m_LastVerticalScrollerValue = float.NegativeInfinity;
+
+        [NonSerialized]
+        private Vector2 m_LastScrollViewSize;
 
         public PackageList()
         {
@@ -61,6 +64,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             viewDataKey = "package-list-key";
             scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
             scrollView.viewDataKey = "package-list-scrollview-key";
+            scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
 
             loginButton.clickable.clicked += OnLoginClicked;
 
@@ -93,9 +97,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_PackageFiltering.onFilterTabChanged += OnFilterTabChanged;
 
-            // manually build the items on initialization to refresh the UI
-            OnListRebuild(m_PageManager.GetCurrentPage());
-
             var isDeveloperBuild = Unsupported.IsDeveloperBuild();
             if (!isDeveloperBuild)
             {
@@ -106,8 +107,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }
             }
 
-            scrollView.RegisterCallback<GeometryChangedEvent>(OnScrollViewGeometryChanged);
-            scrollView.verticalScroller.valueChanged += OnScrollViewVerticalScrollerValueChanged;
+            RegisterScrollEvents();
+
+            // manually build the items on initialization to refresh the UI
+            OnListRebuild(m_PageManager.GetCurrentPage());
         }
 
         public void OnDisable()
@@ -128,8 +131,21 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SettingsProxy.onSeeAllVersionsChanged -= OnSeeAllPackageVersionsChanged;
             m_PackageFiltering.onFilterTabChanged -= OnFilterTabChanged;
 
+            UnregisterScrollEvents();
+        }
+
+        private void RegisterScrollEvents()
+        {
+            scrollView.RegisterCallback<GeometryChangedEvent>(OnScrollViewGeometryChanged);
+            scrollView.verticalScroller.valueChanged += OnScrollViewVerticalScrollerValueChanged;
+            scrollView.verticalScroller.slider.visualInput.RegisterCallback<MouseUpEvent>(OnScrollViewVerticalScrollerMouseUp);
+        }
+
+        private void UnregisterScrollEvents()
+        {
             scrollView.UnregisterCallback<GeometryChangedEvent>(OnScrollViewGeometryChanged);
             scrollView.verticalScroller.valueChanged -= OnScrollViewVerticalScrollerValueChanged;
+            scrollView.verticalScroller.slider.visualInput.UnregisterCallback<MouseUpEvent>(OnScrollViewVerticalScrollerMouseUp);
         }
 
         private void OnPackageRefreshed(IPackage package)
@@ -145,12 +161,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_LastVerticalScrollerValue = value;
             ForceDisplayOfVisibleItems();
 
+            UpdateItemsVisibleInScrollView();
+
             if (m_PackageFiltering.currentFilterTab != PackageFilterTab.AssetStore)
                 return;
 
             m_Timestamp = EditorApplication.timeSinceStartup;
-            EditorApplication.update -= DelayedCheckPackageItemsBecomeVisible;
-            EditorApplication.update += DelayedCheckPackageItemsBecomeVisible;
+            EditorApplication.update -= DelayedCheckPackageItems;
+            EditorApplication.update += DelayedCheckPackageItems;
         }
 
         private void ForceDisplayOfVisibleItems()
@@ -190,25 +208,58 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (Mathf.Abs(evt.oldRect.height - evt.newRect.height) < PackageItem.k_MainItemHeight / 2.0f)
                 return;
 
+            if (evt.newRect.height - evt.oldRect.height > PackageItem.k_MainItemHeight / 2.0f ||
+                Mathf.Abs(evt.newRect.width - evt.oldRect.width) > 5.0f)
+            {
+                var yMin = scrollView.worldBound.yMin;
+                var yMax = scrollView.worldBound.yMax;
+                foreach (var item in packageItems)
+                {
+                    if (item.worldBound.yMax < yMin)
+                        continue;
+                    if (item.worldBound.yMin > yMax)
+                        break;
+
+                    item.visibleInScrollView = true;
+                }
+            }
+
+            if (Mathf.Abs(m_LastScrollViewSize.y - evt.newRect.height) < PackageItem.k_MainItemHeight / 2.0f)
+                return;
+
+            m_LastScrollViewSize.y = evt.newRect.height;
+
+            if (m_PackageFiltering.currentFilterTab == PackageFilterTab.AssetStore)
+            {
+                m_Timestamp = EditorApplication.timeSinceStartup;
+                EditorApplication.update -= DelayedCheckPackageItems;
+                EditorApplication.update += DelayedCheckPackageItems;
+            }
+        }
+
+        private void OnScrollViewVerticalScrollerMouseUp(MouseUpEvent evt)
+        {
             if (m_PackageFiltering.currentFilterTab != PackageFilterTab.AssetStore)
                 return;
 
             m_Timestamp = EditorApplication.timeSinceStartup;
-            EditorApplication.update -= DelayedCheckPackageItemsBecomeVisible;
-            EditorApplication.update += DelayedCheckPackageItemsBecomeVisible;
+            EditorApplication.update -= DelayedCheckPackageItems;
+            EditorApplication.update += DelayedCheckPackageItems;
         }
 
-        private void DelayedCheckPackageItemsBecomeVisible()
+        private void DelayedCheckPackageItems()
         {
             if (EditorApplication.timeSinceStartup - m_Timestamp <= k_DelayBeforeCheck)
                 return;
 
-            EditorApplication.update -= DelayedCheckPackageItemsBecomeVisible;
-            CheckPackageItemsBecomeVisible();
+            EditorApplication.update -= DelayedCheckPackageItems;
+            CheckPackageItems();
         }
 
-        private void CheckPackageItemsBecomeVisible()
+        private void CheckPackageItems()
         {
+            var fetchDetailsQueue = new List<string>();
+
             var scrollViewWorldBound = scrollView.worldBound;
             foreach (var packageGroup in packageGroups)
             {
@@ -223,7 +274,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                     // Make sure selected item becomes visible
                     if (!string.IsNullOrEmpty(item.visualState?.selectedVersionId))
                     {
-                        item.BecomesVisible();
+                        if (item.package is PlaceholderPackage)
+                            fetchDetailsQueue.Add(item.package.uniqueId);
+
                         continue;
                     }
 
@@ -234,9 +287,12 @@ namespace UnityEditor.PackageManager.UI.Internal
                     if (itemWorldBound.yMin >= scrollViewWorldBound.yMax)
                         break;
 
-                    item.BecomesVisible();
+                    if (item.package is PlaceholderPackage)
+                        fetchDetailsQueue.Add(item.package.uniqueId);
                 }
             }
+
+            m_PageManager.SetFetchDetailsQueue(fetchDetailsQueue);
         }
 
         private PackageItem GetPackageItem(string packageUniqueId)
@@ -553,6 +609,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnListRebuild(IPage page)
         {
+            UnregisterScrollEvents();
+
             itemsList.Clear();
             m_PackageItemsLookup.Clear();
 
@@ -563,10 +621,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                 group.RefreshHeaderVisibility();
 
             RefreshList(true);
+
+            RegisterScrollEvents();
         }
 
         private void OnListUpdate(IPage page, IEnumerable<IPackage> addedOrUpdated, IEnumerable<IPackage> removed, bool reorder)
         {
+            UnregisterScrollEvents();
+
             addedOrUpdated = addedOrUpdated ?? Enumerable.Empty<IPackage>();
             removed = removed ?? Enumerable.Empty<IPackage>();
 
@@ -586,22 +648,22 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (reorder)
             {
-                // re-order if there are any added or updated items
-                foreach (var group in packageGroups)
-                    group.ClearPackageItems();
-
-                foreach (var state in page.visualStates)
+                if (packageGroups.Any(group => !group.isHidden))
                 {
-                    var packageItem = GetPackageItem(state.packageUniqueId);
+                    // re-order if there are any added or updated items
+                    foreach (var group in packageGroups)
+                        group.ClearPackageItems();
 
-                    // For when user switch account and packageList gets refreshed
-                    if (packageItem == null)
-                        continue;
+                    foreach (var state in page.visualStates)
+                    {
+                        var packageItem = GetPackageItem(state.packageUniqueId);
 
-                    packageItem.packageGroup.AddPackageItem(packageItem);
+                        // For when user switch account and packageList gets refreshed
+                        packageItem?.packageGroup.AddPackageItem(packageItem);
+                    }
+
+                    m_PackageItemsLookup = packageItems.ToDictionary(item => item.package.uniqueId, item => item);
                 }
-
-                m_PackageItemsLookup = packageItems.ToDictionary(item => item.package.uniqueId, item => item);
             }
 
             if (itemsRemoved || itemsAdded)
@@ -615,6 +677,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 ReorderGroups();
             }
+
+            RegisterScrollEvents();
         }
 
         internal bool SelectNext(bool reverseOrder)
@@ -661,6 +725,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnFilterTabChanged(PackageFilterTab filterTab)
         {
+            if (m_PackageFiltering.previousFilterTab == PackageFilterTab.AssetStore)
+                m_PageManager.CancelRefresh();
+
+            UpdateItemsVisibleInScrollView();
+
             // Check if groups have changed only for InProject tab
             if (filterTab == PackageFilterTab.InProject && m_PageManager.IsInitialFetchingDone(PackageFilterTab.InProject))
             {
@@ -740,6 +809,13 @@ namespace UnityEditor.PackageManager.UI.Internal
                     packageToSelect.UpdateVisualState(null);
                 }
             }
+        }
+
+        private void UpdateItemsVisibleInScrollView()
+        {
+            var bound = scrollView.worldBound;
+            foreach (var item in packageItems)
+                item.visibleInScrollView = bound.Contains(item.worldBound.min) || bound.Contains(item.worldBound.max);
         }
 
         private VisualElementCache cache { get; set; }

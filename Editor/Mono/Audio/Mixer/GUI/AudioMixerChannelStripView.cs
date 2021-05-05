@@ -624,7 +624,7 @@ namespace UnityEditor
                     if (GUIUtility.hotControl == m_EffectInteractionControlID)
                     {
                         // Detect direction of drag to decide if we want to adjust value or move effect
-                        if (HasFocus() && m_WaitingForDragEvent)
+                        if (HasFocus() && m_WaitingForDragEvent && (evt.delta.x != 0 || evt.delta.y != 0))
                         {
                             m_ChangingWetMixIndex = -1;
                             if (effectIndex < p.group.effects.Length)

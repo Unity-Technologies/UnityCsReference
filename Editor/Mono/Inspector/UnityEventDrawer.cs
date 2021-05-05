@@ -296,7 +296,7 @@ namespace UnityEditorInternal
                         buttonContent = GUIContent.Temp(buttonLabel.ToString());
                     }
 
-                    if (GUI.Button(functionRect, buttonContent, EditorStyles.popup))
+                    if (EditorGUI.DropdownButton(functionRect, buttonContent, FocusType.Passive, EditorStyles.popup))
                         BuildPopupList(listenerTarget.objectReferenceValue, m_DummyEvent, pListener).DropDown(functionRect);
                 }
                 EditorGUI.EndProperty();

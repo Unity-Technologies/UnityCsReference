@@ -192,7 +192,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ListOperation.Start(queryArgs);
         }
 
-        public void FetchDetail(long productId, Action doneCallbackAction = null)
+        public void CancelListPurchases()
+        {
+            m_ListOperation?.Stop();
+        }
+
+        public void FetchDetail(long productId, Action<IPackage> doneCallbackAction = null)
         {
             m_AssetStoreRestAPI.GetProductDetail(productId, productDetail =>
             {
@@ -228,7 +233,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (package != null)
                     onPackagesChanged?.Invoke(new[] { package });
 
-                doneCallbackAction?.Invoke();
+                doneCallbackAction?.Invoke(package);
             });
         }
 
@@ -242,7 +247,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             foreach (var id in productIds)
             {
-                FetchDetail(id, () =>
+                FetchDetail(id, package =>
                 {
                     countProduct--;
                     if (countProduct == 0)

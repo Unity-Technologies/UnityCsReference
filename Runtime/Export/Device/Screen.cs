@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
+
 namespace UnityEngine.Device
 {
     public static class Screen
@@ -94,5 +96,9 @@ namespace UnityEngine.Device
             SetResolution(width, height, fullscreen, 0);
         }
 
+        public static Vector2Int mainWindowPosition => ShimManager.screenShim.mainWindowPosition;
+        public static DisplayInfo mainWindowDisplayInfo => ShimManager.screenShim.mainWindowDisplayInfo;
+        public static void GetDisplayLayout(List<DisplayInfo> displayLayout) => ShimManager.screenShim.GetDisplayLayout(displayLayout);
+        public static AsyncOperation MoveMainWindowTo(in DisplayInfo display, Vector2Int position) => ShimManager.screenShim.MoveMainWindowTo(display, position);
     }
 }

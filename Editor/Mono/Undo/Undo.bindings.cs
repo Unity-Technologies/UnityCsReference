@@ -228,11 +228,13 @@ namespace UnityEditor
         public delegate void UndoRedoCallback();
 
         public static UndoRedoCallback undoRedoPerformed;
+        private static DelegateWithPerformanceTracker<UndoRedoCallback> m_UndoRedoPerformedEvent = new DelegateWithPerformanceTracker<UndoRedoCallback>($"{nameof(Undo)}.{nameof(undoRedoPerformed)}");
 
         // Called when about to flush undo recording
         public delegate void WillFlushUndoRecord();
 
         public static WillFlushUndoRecord willFlushUndoRecord;
+        private static DelegateWithPerformanceTracker<WillFlushUndoRecord> m_WillFlushUndoRecordEvent = new DelegateWithPerformanceTracker<WillFlushUndoRecord>($"{nameof(Undo)}.{nameof(willFlushUndoRecord)}");
 
         [StaticAccessor("GetPropertyUndoManager()", StaticAccessorType.Dot)]
         [NativeMethod("Flush")]
@@ -245,18 +247,18 @@ namespace UnityEditor
         public delegate UndoPropertyModification[] PostprocessModifications(UndoPropertyModification[] modifications);
 
         public static PostprocessModifications postprocessModifications;
+        private static DelegateWithPerformanceTracker<PostprocessModifications> m_PostprocessModificationsEvent = new DelegateWithPerformanceTracker<PostprocessModifications>($"{nameof(Undo)}.{nameof(postprocessModifications)}");
 
         internal static UndoPropertyModification[] InvokePostprocessModifications(UndoPropertyModification[] modifications)
         {
             if (postprocessModifications == null)
                 return modifications;
 
-            var delegates = postprocessModifications.GetInvocationList();
             var remainingModifications = modifications;
 
-            for (int i = 0, n = delegates.Length; i < n; ++i)
+            foreach (var deleg in m_PostprocessModificationsEvent.UpdateAndInvoke(postprocessModifications))
             {
-                remainingModifications = ((Undo.PostprocessModifications)delegates[i]).Invoke(remainingModifications);
+                remainingModifications = deleg.Invoke(remainingModifications);
             }
 
             return remainingModifications;
@@ -264,14 +266,14 @@ namespace UnityEditor
 
         private static void Internal_CallWillFlushUndoRecord()
         {
-            if (willFlushUndoRecord != null)
-                willFlushUndoRecord();
+            foreach (var evt in m_WillFlushUndoRecordEvent.UpdateAndInvoke(willFlushUndoRecord))
+                evt();
         }
 
         private static void Internal_CallUndoRedoPerformed()
         {
-            if (undoRedoPerformed != null)
-                undoRedoPerformed();
+            foreach (var evt in m_UndoRedoPerformedEvent.UpdateAndInvoke(undoRedoPerformed))
+                evt();
         }
 
         [StaticAccessor("GetUndoManager()", StaticAccessorType.Dot)]

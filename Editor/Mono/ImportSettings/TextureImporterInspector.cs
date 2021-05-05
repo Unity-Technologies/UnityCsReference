@@ -1346,7 +1346,17 @@ namespace UnityEditor
             GUILayout.Space(10);
 
             //Show platform grouping
-            int selectedPage = EditorGUILayout.BeginPlatformGrouping(BaseTextureImportPlatformSettings.GetBuildPlayerValidPlatforms(), s_Styles.defaultPlatform);
+            int selectedPage = EditorGUILayout.BeginPlatformGrouping(BaseTextureImportPlatformSettings.GetBuildPlayerValidPlatforms(), s_Styles.defaultPlatform, EditorStyles.frameBox, idx =>
+            {
+                var ps = m_PlatformSettings[idx + 1];
+                var model = ps.model;
+                if (model.isDefault)
+                    return false;
+                if (model.overriddenIsDifferent || model.allAreOverridden)
+                    return true;
+                return false;
+            });
+
 
             //Show platform settings
             using (var changed = new EditorGUI.ChangeCheckScope())

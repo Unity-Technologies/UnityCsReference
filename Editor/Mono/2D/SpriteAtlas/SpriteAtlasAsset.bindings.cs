@@ -26,6 +26,8 @@ namespace UnityEditor.U2D
         extern public void SetIsVariant(bool value);
         extern public void SetMasterAtlas(SpriteAtlas atlas);
         extern public void SetIncludeInBuild(bool value);
+        extern public bool IsIncludeInBuild();
+        extern public SpriteAtlas GetMasterAtlas();
         extern public void SetVariantScale(float value);
         extern public void SetPlatformSettings(TextureImporterPlatformSettings src);
         extern public TextureImporterPlatformSettings GetPlatformSettings(string buildTarget);

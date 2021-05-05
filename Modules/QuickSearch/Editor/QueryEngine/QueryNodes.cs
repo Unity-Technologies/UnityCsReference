@@ -168,7 +168,7 @@ namespace UnityEditor.Search
     class FilterNode : IFilterNode, ICopyableNode
     {
         public IFilter filter;
-        public FilterOperator op;
+        public QueryFilterOperator op;
 
         public IQueryNode parent { get; set; }
         public virtual QueryNodeType type => QueryNodeType.Filter;
@@ -192,8 +192,8 @@ namespace UnityEditor.Search
             identifier = filterString;
         }
 
-        public FilterNode(IFilter filter, FilterOperator op, string filterValue, string paramValue, string filterString)
-            : this(filter?.token, op?.token, filterValue, paramValue, filterString)
+        public FilterNode(IFilter filter, string filterId, in QueryFilterOperator op, string filterValue, string paramValue, string filterString)
+            : this(filterId, op.token, filterValue, paramValue, filterString)
         {
             this.filter = filter;
             this.op = op;
@@ -466,12 +466,12 @@ namespace UnityEditor.Search
         public override List<IQueryNode> children { get; } = new List<IQueryNode>();
         public override bool leaf => children.Count == 0;
 
-        public InFilterNode(IFilter filter, FilterOperator op, string filterValue, string paramValue, string filterString)
-            : base(filter, op, filterValue, paramValue, filterString) {}
+        public InFilterNode(IFilter filter, string filterId, in QueryFilterOperator op, string filterValue, string paramValue, string filterString)
+            : base(filter, filterId, in op, filterValue, paramValue, filterString) {}
 
         public override IQueryNode Copy()
         {
-            var selfNode = new InFilterNode(filter, op, filterValue, paramValue, identifier);
+            var selfNode = new InFilterNode(filter, filterId, in op, filterValue, paramValue, identifier);
 
             selfNode.children.Clear();
 

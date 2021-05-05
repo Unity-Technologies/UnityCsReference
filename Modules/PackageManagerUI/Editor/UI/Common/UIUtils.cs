@@ -34,7 +34,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public static bool IsElementVisible(VisualElement element)
         {
-            return element.resolvedStyle.visibility == Visibility.Visible && element.resolvedStyle.display != DisplayStyle.None;
+            return element?.resolvedStyle.visibility == Visibility.Visible && element.resolvedStyle.display != DisplayStyle.None;
         }
 
         public static VisualElement FindNextSibling(VisualElement element, bool reverseOrder, Func<VisualElement, bool> matchFunc = null)

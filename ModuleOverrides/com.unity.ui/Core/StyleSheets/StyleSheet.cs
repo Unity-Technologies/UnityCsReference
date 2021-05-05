@@ -117,7 +117,23 @@ namespace UnityEngine.UIElements
         internal TableType orderedClassSelectors;
 
         [NonSerialized]
-        internal bool isUnityStyleSheet;
+        private bool m_IsDefaultStyleSheet;
+
+        internal bool isDefaultStyleSheet
+        {
+            get { return m_IsDefaultStyleSheet; }
+            set
+            {
+                m_IsDefaultStyleSheet = value;
+                if (flattenedRecursiveImports != null)
+                {
+                    foreach (var importedStyleSheet in flattenedRecursiveImports)
+                    {
+                        importedStyleSheet.isDefaultStyleSheet = value;
+                    }
+                }
+            }
+        }
 
         static string kCustomPropertyMarker = "--";
 
@@ -156,7 +172,7 @@ namespace UnityEngine.UIElements
             return value;
         }
 
-        void OnEnable()
+        internal virtual void OnEnable()
         {
             SetupReferences();
         }
@@ -178,6 +194,7 @@ namespace UnityEngine.UIElements
                 if (importedStyleSheet == null)
                     continue;
 
+                importedStyleSheet.isDefaultStyleSheet = isDefaultStyleSheet;
                 FlattenImportedStyleSheetsRecursive(importedStyleSheet);
                 m_FlattenedImportedStyleSheets.Add(importedStyleSheet);
             }

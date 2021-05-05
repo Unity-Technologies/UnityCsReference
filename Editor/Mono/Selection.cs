@@ -12,6 +12,7 @@ namespace UnityEditor
     public sealed partial class Selection
     {
         public static System.Action selectionChanged;
+        private static DelegateWithPerformanceTracker<System.Action> m_SelectionChangedEvent = new DelegateWithPerformanceTracker<System.Action>($"{nameof(Selection)}.{nameof(selectionChanged)}");
         internal static event System.Action<int> selectedObjectWasDestroyed;
 
         private static void Internal_SelectedObjectWasDestroyed(int instanceID)
@@ -22,8 +23,8 @@ namespace UnityEditor
 
         private static void Internal_CallSelectionChanged()
         {
-            if (selectionChanged != null)
-                selectionChanged();
+            foreach (var evt in m_SelectionChangedEvent.UpdateAndInvoke(selectionChanged))
+                evt();
         }
 
         public static bool Contains(Object obj) { return Contains(obj.GetInstanceID()); }

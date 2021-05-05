@@ -224,8 +224,13 @@ namespace UnityEditorInternal
             Event evt = Event.current;
             EventType evtType = evt.GetTypeForControl(m_chartControlID);
 
-            if (evtType == EventType.MouseDown && chartRect.Contains(evt.mousePosition) && selected != null)
+            // Handle chart selection.
+            if (!active && evtType == EventType.MouseDown && chartRect.Contains(evt.mousePosition) && selected != null)
+            {
                 ChartSelected();
+                // Selecting a chart blocks further interaction, such as selecting a frame. Only the selected chart can be interacted with.
+                GUIUtility.ExitGUI();
+            }
 
             if (evtType == EventType.Repaint)
                 lastChartRect = r;

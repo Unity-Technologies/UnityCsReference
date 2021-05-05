@@ -242,6 +242,10 @@ namespace UnityEditor
             {
                 diagnosticSwitch.persistentValue = EditorGUI.TextField(rowRect, labelText, (string)diagnosticSwitch.persistentValue);
             }
+            else if (diagnosticSwitch.value is float)
+            {
+                diagnosticSwitch.persistentValue = EditorGUI.FloatField(rowRect, labelText, (float)diagnosticSwitch.persistentValue);
+            }
             else
             {
                 var redStyle = new GUIStyle();

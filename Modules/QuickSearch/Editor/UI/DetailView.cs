@@ -129,11 +129,14 @@ namespace UnityEditor.Search
             using (new EditorGUILayout.HorizontalScope(EditorStyles.inspectorFullWidthMargins))
             {
                 DrawActions(selection, actions.Where(a => fixedActions.Contains(a.id)));
-                if (remainingActions.Length > 2)
+                if (remainingActions.Length > 3)
                     DrawMoreMenu(selection, remainingActions);
             }
-            if (remainingActions.Length <= 2)
-                DrawActions(selection, remainingActions);
+            if (remainingActions.Length <= 3)
+            {
+                using (new EditorGUILayout.VerticalScope(EditorStyles.inspectorFullWidthMargins))
+                    DrawActions(selection, remainingActions);
+            }
 
             GUILayout.Space(2);
         }

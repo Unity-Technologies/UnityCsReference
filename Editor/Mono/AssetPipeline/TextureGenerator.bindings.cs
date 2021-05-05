@@ -41,7 +41,7 @@ namespace UnityEditor.AssetImporters
     public struct TextureGenerationOutput
     {
         [NativeName("texture")]
-        private Texture2D m_Texture;
+        private Texture m_Texture;
         [NativeName("importInspectorWarnings")]
         private string m_ImportInspectorWarnings;
         [NativeName("importWarnings")]
@@ -51,7 +51,7 @@ namespace UnityEditor.AssetImporters
         [NativeName("sprites")]
         private Sprite[] m_Sprites;
 
-        public Texture2D texture { get { return m_Texture; } }
+        public Texture2D texture { get { return m_Texture as Texture2D; } }
         public string importInspectorWarnings { get { return m_ImportInspectorWarnings; } }
         public string[] importWarnings { get { return m_ImportWarnings; } }
         public Texture2D thumbNail { get { return m_ThumbNail; } }

@@ -30,7 +30,7 @@ namespace UnityEditorInternal
         public float minDist;
         public float maxDist;
         public float time;
-        public float duration;
+        public float maxRMSLevelOrDuration;
         public float frequency;
     }
 

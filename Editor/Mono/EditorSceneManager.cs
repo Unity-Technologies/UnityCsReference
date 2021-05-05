@@ -19,7 +19,13 @@ namespace UnityEditor.SceneManagement
     {
         internal static UnityAction<Scene, NewSceneMode> sceneWasCreated;
         internal static UnityAction<Scene, OpenSceneMode> sceneWasOpened;
-        public static event UnityAction<Scene, Scene> activeSceneChangedInEditMode;
+        public static event UnityAction<Scene, Scene> activeSceneChangedInEditMode
+        {
+            add => m_ActiveSceneChangedInEditModeEvent.Add(value);
+            remove => m_ActiveSceneChangedInEditModeEvent.Remove(value);
+        }
+
+        private static EventWithPerformanceTracker<UnityAction<Scene, Scene>> m_ActiveSceneChangedInEditModeEvent = new EventWithPerformanceTracker<UnityAction<Scene, Scene>>($"{nameof(EditorSceneManager)}.{nameof(activeSceneChangedInEditMode)}");
 
         private static void PlayModeStateChangedCallback(PlayModeStateChange state)
         {
@@ -108,9 +114,9 @@ namespace UnityEditor.SceneManagement
         [RequiredByNativeCode]
         private static void Internal_ActiveSceneChangedInEditor(Scene previousActiveScene, Scene newActiveScene)
         {
-            if (activeSceneChangedInEditMode != null)
+            foreach (var evt in m_ActiveSceneChangedInEditModeEvent)
             {
-                activeSceneChangedInEditMode(previousActiveScene, newActiveScene);
+                evt(previousActiveScene, newActiveScene);
             }
         }
 
