@@ -1343,14 +1343,19 @@ namespace UnityEditor.Connect
 
             void InstallUpdatePackage()
             {
-                var messageForDialog = L10n.Tr(packageInstallationHeadsup);
                 installPackageVersion = GetUpdatablePackageVersion();
+                InstallPackage(GetUpdatePackageMessage());
+            }
+
+            protected virtual string GetUpdatePackageMessage()
+            {
+                var messageForDialog = L10n.Tr(packageInstallationHeadsup);
                 if ((duplicateInstallWarning != null) && assetStorePackageInstalled)
                 {
                     messageForDialog = L10n.Tr(duplicateInstallWarning);
                 }
 
-                InstallPackage(messageForDialog);
+                return messageForDialog;
             }
 
             protected void InstallPackage(string messageForDialog)

@@ -5001,7 +5001,7 @@ namespace UnityEditor
 
                 if (!iconProperty.hasMultipleDifferentValues)
                 {
-                    icon = EditorGUIUtility.GetSkinnedIcon(AssetPreview.GetMiniThumbnail(targets[0]));
+                    icon = AssetPreview.GetMiniThumbnail(targets[0]);
                 }
                 if (icon == null)
                 {
@@ -5234,7 +5234,7 @@ namespace UnityEditor
 
             if (evt.type == EventType.Repaint)
             {
-                var icon = EditorGUIUtility.GetSkinnedIcon(AssetPreview.GetMiniThumbnail(targetObjs[0]));
+                var icon = AssetPreview.GetMiniThumbnail(targetObjs[0]);
                 GUIStyle.none.Draw(iconRect, EditorGUIUtility.TempContent(icon), iconRect.Contains(Event.current.mousePosition), false, false, false);
 
                 if (isAddedComponentAndEventIsRepaint)
