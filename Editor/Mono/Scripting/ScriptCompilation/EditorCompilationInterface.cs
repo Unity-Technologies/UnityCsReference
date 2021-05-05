@@ -328,6 +328,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
+        public static void DirtyChangedAssemblyDefinition(string assemblyName)
+        {
+            EmitExceptionAsError(() => Instance.DirtyChangedAssemblyDefinition(assemblyName));
+        }
+
+        [RequiredByNativeCode]
         public static void DeleteUnusedAssemblies()
         {
             EmitExceptionAsError(() => Instance.DeleteUnusedAssemblies());

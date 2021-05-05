@@ -12,9 +12,23 @@ namespace UnityEditor
 {
     internal class SkyboxPanoramicShaderGUI : ShaderGUI
     {
+        class Styles
+        {
+            public static GUIContent Get3DLayoutContent(MaterialProperty property)
+            {
+                if (s_Stereo3DLayoutContent == null)
+                    s_Stereo3DLayoutContent = EditorGUIUtility.TrTextContent(
+                        property.displayName,
+                        "Layout of 3D content in the source. Only meaningful when stereoscopic render is used.");
+
+                return s_Stereo3DLayoutContent;
+            }
+
+            private static GUIContent s_Stereo3DLayoutContent;
+        }
+
         readonly AnimBool m_ShowLatLongLayout = new AnimBool();
         readonly AnimBool m_ShowMirrorOnBack = new AnimBool();
-        readonly AnimBool m_Show3DControl = new AnimBool();
 
         bool m_Initialized = false;
 
@@ -24,7 +38,6 @@ namespace UnityEditor
             {
                 m_ShowLatLongLayout.valueChanged.AddListener(materialEditor.Repaint);
                 m_ShowMirrorOnBack.valueChanged.AddListener(materialEditor.Repaint);
-                m_Show3DControl.valueChanged.AddListener(materialEditor.Repaint);
                 m_Initialized = true;
             }
 
@@ -48,20 +61,7 @@ namespace UnityEditor
                     EditorGUI.indentLevel--;
                 }
                 EditorGUILayout.EndFadeGroup();
-
-                // Show 3D settings if VR support is enabled on ANY platform.
-                m_Show3DControl.value = false;
-                foreach (BuildPlatform cur in BuildPlatforms.instance.buildPlatforms)
-                {
-                    if (UnityEditorInternal.VR.VREditor.GetVREnabledOnTargetGroup(cur.targetGroup))
-                    {
-                        m_Show3DControl.value = true;
-                        break;
-                    }
-                }
-                if (EditorGUILayout.BeginFadeGroup(m_Show3DControl.faded))
-                    ShowProp(materialEditor, FindProperty("_Layout", props));
-                EditorGUILayout.EndFadeGroup();
+                ShowProp(materialEditor, FindProperty("_Layout", props), Styles.Get3DLayoutContent);
             }
             EditorGUILayout.EndFadeGroup();
 
@@ -69,9 +69,15 @@ namespace UnityEditor
             materialEditor.PropertiesDefaultGUI(new MaterialProperty[0]);
         }
 
-        private float ShowProp(MaterialEditor materialEditor, MaterialProperty prop)
+        private delegate GUIContent ContentGenerator(MaterialProperty property);
+        private float ShowProp(
+            MaterialEditor materialEditor, MaterialProperty prop,
+            ContentGenerator contentGenerator = null)
         {
-            materialEditor.ShaderProperty(prop, prop.displayName);
+            if (contentGenerator != null)
+                materialEditor.ShaderProperty(prop, contentGenerator(prop));
+            else
+                materialEditor.ShaderProperty(prop, prop.displayName);
             return prop.floatValue;
         }
     }

@@ -16,6 +16,7 @@ using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Profiling;
+using static UnityEditor.Scripting.ScriptCompilation.EditorBuildRules;
 using CompilerMessage = UnityEditor.Scripting.Compilers.CompilerMessage;
 using CompilerMessageType = UnityEditor.Scripting.Compilers.CompilerMessageType;
 using Directory = System.IO.Directory;
@@ -167,6 +168,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
         HashSet<string> runScriptUpdaterAssemblies = new HashSet<string>();
         bool recompileAllScriptsOnNextTick;
         CustomScriptAssembly[] customScriptAssemblies = new CustomScriptAssembly[0];
+        Dictionary<string, CustomScriptAssembly> filePathToCustomScriptAssemblies = new Dictionary<string, CustomScriptAssembly>();
+
         List<CustomScriptAssemblyReference> customScriptAssemblyReferences = new List<CustomScriptAssemblyReference>();
         Dictionary<string, EditorBuildRules.TargetAssembly> customTargetAssemblies = new Dictionary<string, EditorBuildRules.TargetAssembly>(); // TargetAssemblies for customScriptAssemblies.
         PrecompiledAssembly[] unityAssemblies;
@@ -388,6 +391,19 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
         }
 
+        public void DirtyChangedAssemblyDefinition(string assemblyName)
+        {
+            CustomScriptAssembly customScriptAssembly;
+            if (!filePathToCustomScriptAssemblies.TryGetValue(assemblyName, out customScriptAssembly))
+            {
+                DirtyAllScripts();
+                return;
+            }
+
+            TargetAssembly customTargetAssembly = GetCustomTargetAssemblyFromName(customScriptAssembly.Name);
+            dirtyTargetAssemblies.Add(customTargetAssembly);
+        }
+
         public void DirtyRemovedScript(string path)
         {
             allScripts.Remove(path);
@@ -552,7 +568,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             EditorBuildRules.TargetAssembly targetAssembly;
 
-            if (name.EndsWith(".dll"))
+            if (name.EndsWith(".dll", StringComparison.Ordinal))
             {
                 customTargetAssemblies.TryGetValue(name, out targetAssembly);
             }
@@ -1130,6 +1146,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public Exception[] SetAllCustomScriptAssemblyJsonContents(string[] paths, string[] contents, string[] guids)
         {
             var assemblies = new List<CustomScriptAssembly>();
+            var filePathToAssembly = new Dictionary<string, CustomScriptAssembly>();
             var assemblyLowercaseNamesLookup = new Dictionary<string, CustomScriptAssembly>();
             var exceptions = new List<Exception>();
             var guidsToAssemblies = new Dictionary<string, CustomScriptAssembly>();
@@ -1230,6 +1247,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     {
                         assemblyLowercaseNamesLookup[lowerCaseName] = loadedCustomScriptAssembly;
                         assemblies.Add(loadedCustomScriptAssembly);
+                        filePathToAssembly.Add(loadedCustomScriptAssembly.FilePath, loadedCustomScriptAssembly);
 
                         List<string> duplicateFilePaths;
                         if (!prefixToFilePathLookup.TryGetValue(loadedCustomScriptAssembly.PathPrefix, out duplicateFilePaths))
@@ -1302,6 +1320,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             customScriptAssemblies = assemblies.ToArray();
+            filePathToCustomScriptAssemblies = filePathToAssembly;
 
             var updateCustomTargetAssembliesExceptions = UpdateCustomTargetAssemblies();
             exceptions.AddRange(updateCustomTargetAssembliesExceptions);
