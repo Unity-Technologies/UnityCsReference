@@ -47,11 +47,11 @@ namespace UnityEditor
             public readonly GUIContent cameraContent =
                 EditorGUIUtility.TrTextContent("Camera", "Camera where the images will be drawn, behind (Back Plane) or in front of (Front Plane) of the scene.");
             public readonly GUIContent textureContent =
-                EditorGUIUtility.TrTextContent("Target Texture", "RenderTexture where the images will be drawn.  RenderTextures can be created under the Assets folder and then used on other objects.");
+                EditorGUIUtility.TrTextContent("Target Texture", "RenderTexture where the images will be drawn. RenderTextures can be created under the Assets folder and then used on other objects.");
             public readonly GUIContent alphaContent =
                 EditorGUIUtility.TrTextContent("Alpha", "A value less than 1.0 will reveal the content behind the video.");
             public readonly GUIContent camera3DLayout =
-                EditorGUIUtility.TrTextContent("3D Layout", "Layout of 3D content in the source video.");
+                EditorGUIUtility.TrTextContent("3D Layout", "Layout of 3D content in the source video. Only meaningful when stereoscopic render is used.");
             public readonly GUIContent audioOutputModeContent =
                 EditorGUIUtility.TrTextContent("Audio Output Mode", "Where the audio in the movie will be output.");
             public readonly GUIContent audioSourceContent =
@@ -414,15 +414,7 @@ namespace UnityEditor
             {
                 EditorGUILayout.PropertyField(m_TargetCamera, s_Styles.cameraContent);
                 EditorGUILayout.Slider(m_TargetCameraAlpha, 0.0f, 1.0f, s_Styles.alphaContent);
-                // If VR is enabled in PlayerSettings on ANY platform, show the 3D layout option
-                foreach (BuildPlatform cur in BuildPlatforms.instance.buildPlatforms)
-                {
-                    if (UnityEditorInternal.VR.VREditor.GetVREnabledOnTargetGroup(cur.targetGroup))
-                    {
-                        EditorGUILayout.PropertyField(m_TargetCamera3DLayout, s_Styles.camera3DLayout);
-                        break;
-                    }
-                }
+                EditorGUILayout.PropertyField(m_TargetCamera3DLayout, s_Styles.camera3DLayout);
             }
             EditorGUILayout.EndFadeGroup();
 

@@ -525,6 +525,9 @@ namespace UnityEditor
 
             customRenderPipeline.objectReferenceValue = EditorGUILayout.ObjectField(customRenderPipeline.objectReferenceValue, typeof(RenderPipelineAsset), false);
 
+            if (!usingSRP && customRenderPipeline.objectReferenceValue != null)
+                EditorGUILayout.HelpBox("Missing a Scriptable Render Pipeline in Graphics: \"Scriptable Render Pipeline Settings\" to use Scriptable Render Pipeline from Quality: \"Custom Render Pipeline\".", MessageType.Warning);
+
             if (!usingSRP)
                 EditorGUILayout.PropertyField(pixelLightCountProperty);
 

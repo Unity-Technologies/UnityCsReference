@@ -990,7 +990,6 @@ namespace UnityEditor
                         dragObject.transform.parent = parent;
                     dragObject.hideFlags = 0;
                     Undo.RegisterCreatedObjectUndo(dragObject, "Place " + dragObject.name);
-                    EditorUtility.SetDirty(dragObject);
                     DragAndDrop.AcceptDrag();
                     Selection.activeObject = dragObject;
                     HandleUtility.ignoreRaySnapObjects = null;
