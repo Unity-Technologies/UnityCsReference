@@ -219,7 +219,7 @@ namespace UnityEditor
                     {
                         var handler = ScriptAttributeUtility.GetHandler(prop);
                         EditorGUI.indentLevel = prop.depth + relIndent;
-                        position.height = handler.GetHeight(prop, null, false);
+                        position.height = handler.GetHeight(prop, null, UseReorderabelListControl(prop) && includeChildren);
 
                         if (position.Overlaps(visibleArea))
                         {

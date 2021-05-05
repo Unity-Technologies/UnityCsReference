@@ -28,8 +28,7 @@ namespace UnityEditorInternal
         SerializedProperty m_OriginalProperty;
         SerializedProperty m_ArraySize;
 
-        int m_lastArraySize = -1;
-        int m_lastTargetHash = -1;
+        int m_LastArraySize = -1;
         internal SerializedProperty Property
         {
             get
@@ -43,27 +42,19 @@ namespace UnityEditorInternal
 
                 if (m_ReorderableList != null)
                 {
+                    bool versionChanged = !SerializedProperty.VersionEquals(m_ReorderableList.serializedProperty, m_OriginalProperty);
+
                     m_ReorderableList.serializedProperty = m_OriginalProperty;
-                    int targetHash = GetTargetHash(m_ReorderableList.serializedProperty.serializedObject);
-                    if (m_lastArraySize != m_ArraySize.intValue || m_lastTargetHash != targetHash)
+
+                    if (versionChanged || m_ArraySize != null && m_LastArraySize != m_ArraySize.intValue)
                     {
                         m_ReorderableList.ClearCacheRecursive();
-                        m_lastArraySize = m_ArraySize.intValue;
-                        m_lastTargetHash = targetHash;
                         ReorderableList.InvalidateParentCaches(m_ReorderableList.serializedProperty.propertyPath);
+
+                        if (m_ArraySize != null) m_LastArraySize = m_ArraySize.intValue;
                     }
                 }
             }
-        }
-
-        int GetTargetHash(SerializedObject obj)
-        {
-            int hash = 0;
-            for (int i = 0; i < obj.targetObjectsCount; i++)
-            {
-                hash ^= obj.targetObjects[i].GetInstanceID();
-            }
-            return hash;
         }
 
         public static string GetPropertyIdentifier(SerializedProperty serializedProperty)
