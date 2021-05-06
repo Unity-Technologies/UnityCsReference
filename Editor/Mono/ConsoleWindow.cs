@@ -126,6 +126,7 @@ namespace UnityEditor
         StringBuilder m_CopyString;
         private int m_ActiveInstanceID = 0;
         bool m_DevBuild;
+        int m_CallstackTextStart = 0;
 
         Vector2 m_TextScroll = Vector2.zero;
 
@@ -433,6 +434,7 @@ namespace UnityEditor
             if (entry != null)
             {
                 m_ActiveText = entry.message;
+                m_CallstackTextStart = entry.callstackTextStartUTF16;
                 // ping object referred by the log entry
                 if (m_ActiveInstanceID != entry.instanceID)
                 {
@@ -443,6 +445,7 @@ namespace UnityEditor
             }
             else
             {
+                m_CallstackTextStart = 0;
                 m_ActiveText = string.Empty;
                 m_ActiveInstanceID = 0;
                 m_ListView.row = -1;
@@ -748,7 +751,7 @@ namespace UnityEditor
             // Display active text (We want word wrapped text with a vertical scrollbar)
             m_TextScroll = GUILayout.BeginScrollView(m_TextScroll, Constants.Box);
 
-            string stackWithHyperlinks = StacktraceWithHyperlinks(m_ActiveText);
+            string stackWithHyperlinks = StacktraceWithHyperlinks(m_ActiveText, m_CallstackTextStart);
             float height = Constants.MessageStyle.CalcHeight(GUIContent.Temp(stackWithHyperlinks), position.width);
             EditorGUILayout.SelectableLabel(stackWithHyperlinks, Constants.MessageStyle, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true), GUILayout.MinHeight(height + 10));
 
@@ -809,10 +812,11 @@ namespace UnityEditor
             }
         }
 
-        internal static string StacktraceWithHyperlinks(string stacktraceText)
+        internal static string StacktraceWithHyperlinks(string stacktraceText, int callstackTextStart)
         {
             StringBuilder textWithHyperlinks = new StringBuilder();
-            var lines = stacktraceText.Split(new string[] {"\n"}, StringSplitOptions.None);
+            textWithHyperlinks.Append(stacktraceText.Substring(0, callstackTextStart));
+            var lines = stacktraceText.Substring(callstackTextStart).Split(new string[] { "\n" }, StringSplitOptions.None);
             for (int i = 0; i < lines.Length; ++i)
             {
                 string textBeforeFilePath = ") (at ";

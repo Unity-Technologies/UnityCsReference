@@ -23,6 +23,7 @@ namespace UnityEditor
         public int instanceID;
         public int identifier;
         public int globalLineIndex;
+        public int callstackTextStartUTF16;
         internal static extern void RemoveLogEntriesByMode(int mode);
     }
 
