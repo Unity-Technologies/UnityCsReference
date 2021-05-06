@@ -117,6 +117,11 @@ namespace UnityEditor.UIElements
             choices = new List<TValueChoice>();
 
             RegisterCallback<PointerDownEvent>(OnPointerDownEvent);
+            RegisterCallback<MouseDownEvent>(e =>
+            {
+                if (e.button == (int) MouseButton.LeftMouse)
+                    e.StopPropagation();
+            });
         }
 
         void OnPointerDownEvent(PointerDownEvent evt)

@@ -156,6 +156,11 @@ namespace UnityEditor.UIElements
             Initialize(defaultValue);
 
             RegisterCallback<PointerDownEvent>(OnPointerDownEvent);
+            RegisterCallback<MouseDownEvent>(e =>
+            {
+                if (e.button == (int) MouseButton.LeftMouse)
+                    e.StopPropagation();
+            });
         }
 
         /// <summary>
