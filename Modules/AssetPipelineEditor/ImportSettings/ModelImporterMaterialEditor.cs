@@ -343,7 +343,7 @@ namespace UnityEditor
                             return false;
                         }
 
-                        destinationPath = FileUtil.GetProjectRelativePath(destinationPath);
+                        string assetPath = FileUtil.GetProjectRelativePath(destinationPath);
 
                         //Where all the required embedded materials are not in the asset database, we need to reimport them
                         if (!AllEmbeddedMaterialsAreImported())
@@ -354,11 +354,29 @@ namespace UnityEditor
                                 return false;
                         }
 
+                        if (!assetPath.StartsWith("Assets"))
+                        {
+                            // Destination could be a package. Need to get assetPath instead of relativePath
+                            // The GUID isn't known yet so can't find it from that
+                            foreach (var package in PackageManager.PackageInfo.GetAll())
+                            {
+                                destinationPath = FileUtil.NiceWinPath(destinationPath);
+                                if (destinationPath.StartsWith(package.resolvedPath))
+                                {
+                                    assetPath = package.assetPath + destinationPath.Substring(package.resolvedPath.Length);
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (string.IsNullOrEmpty(assetPath))
+                            return false;
+
                         try
                         {
                             // batch the extraction of the textures
                             AssetDatabase.StartAssetEditing();
-                            PrefabUtility.ExtractMaterialsFromAsset(targets, destinationPath);
+                            PrefabUtility.ExtractMaterialsFromAsset(targets, assetPath);
                         }
                         finally
                         {

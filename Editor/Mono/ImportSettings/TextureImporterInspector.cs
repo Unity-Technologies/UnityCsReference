@@ -113,6 +113,11 @@ namespace UnityEditor
         [SerializeField]
         internal List<TextureImportPlatformSettings> m_PlatformSettings;
 
+        TextureInspector textureInspector
+        {
+            get => (TextureInspector)preview;
+        }
+
         internal static readonly TextureImporterFormat[] kFormatsWithCompressionSettings =
         {
             TextureImporterFormat.DXT1Crunched,
@@ -1214,13 +1219,6 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
             EditorGUI.showMixedValue = m_FilterMode.hasMultipleDifferentValues;
             FilterMode filter = (FilterMode)m_FilterMode.intValue;
-            if ((int)filter == -1)
-            {
-                if (m_FadeOut.intValue > 0 || m_ConvertToNormalMap.intValue > 0)
-                    filter = FilterMode.Trilinear;
-                else
-                    filter = FilterMode.Bilinear;
-            }
             filter = (FilterMode)EditorGUILayout.IntPopup(s_Styles.filterMode, (int)filter, s_Styles.filterModeOptions, m_FilterModeOptions);
             EditorGUI.showMixedValue = false;
             if (EditorGUI.EndChangeCheck())
@@ -1235,10 +1233,7 @@ namespace UnityEditor
             {
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.showMixedValue = m_Aniso.hasMultipleDifferentValues;
-                int aniso = m_Aniso.intValue;
-                if (aniso == -1)
-                    aniso = 1;
-                aniso = EditorGUILayout.IntSlider("Aniso Level", aniso, 0, 16);
+                int aniso = EditorGUILayout.IntSlider("Aniso Level", m_Aniso.intValue, 0, 16);
                 EditorGUI.showMixedValue = false;
                 if (EditorGUI.EndChangeCheck())
                     m_Aniso.intValue = aniso;
@@ -1517,6 +1512,7 @@ namespace UnityEditor
         protected override void Apply()
         {
             base.Apply();
+            RefreshPreviewChannelSelection();
             BaseTextureImportPlatformSettings.ApplyPlatformSettings(m_PlatformSettings.ConvertAll<BaseTextureImportPlatformSettings>(x => x as BaseTextureImportPlatformSettings));
         }
 
@@ -1526,9 +1522,38 @@ namespace UnityEditor
 
             //Drawing texture previewers for VT only textures will have generated texture tile request.
             //We need to update the VT system to actually stream these tiles into VRAM and render the textures correctly.
-            var ti = preview as TextureInspector;
-            if (ti != null && ti.hasTargetUsingVTMaterial)
+            if (textureInspector != null && textureInspector.hasTargetUsingVTMaterial)
                 VirtualTexturing.System.Update();
+        }
+
+        private void RefreshPreviewChannelSelection()
+        {
+            //If the Preview is null or NOT the TextureInspector (e.g. ObjectPreview) then return, we do not need to refresh the preview channel selection
+            if (!(preview is TextureInspector))
+                return;
+
+            string platformName = BuildPipeline.GetBuildTargetName(EditorUserBuildSettings.activeBuildTarget);
+            for (int i = 0; i < targets.Length; i++)
+            {
+                //Is preview currently Alpha-only format? Skip if not.
+                bool wasAlphaOnlyTextureFormat = textureInspector.targets[i] is Texture2D texture && TextureUtil.IsAlphaOnlyTextureFormat(texture.format);
+                if (!wasAlphaOnlyTextureFormat)
+                    continue;
+
+                //Get the Texture Importer
+                TextureImporter t = (TextureImporter)targets[i];
+
+                //Are we about to set the preview to an Alpha-only format?
+                TextureImporterFormat textureImporterFormat = t.GetPlatformTextureSettings(platformName).format;
+                TextureFormat textureFormat = textureImporterFormat == TextureImporterFormat.Automatic ? (TextureFormat)t.GetAutomaticFormat(platformName) : (TextureFormat)textureImporterFormat;
+
+                //Where the preview is no-longer alpha only, reset all previews to RGB - Note: It is not possible to mix channel selection in TextureInspector.
+                if (!TextureUtil.IsAlphaOnlyTextureFormat(textureFormat))
+                {
+                    textureInspector.m_PreviewMode = TextureInspector.PreviewMode.RGB;
+                    break;
+                }
+            }
         }
     }
 }

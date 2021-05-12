@@ -1134,7 +1134,7 @@ namespace UnityEditor
             {
                 menu.AddDisabledItem(Styles.setOriginLabel);
             }
-            else if (selectedObject && selectedObject.GetInstanceID() != GetDefaultParentForSession(selectedObject.scene.guid))
+            else if (selectedObject && (selectedObject.GetInstanceID() != GetDefaultParentForSession(selectedObject.scene.guid) || EditorSceneManager.GetActiveScene().guid != selectedObject.scene.guid))
             {
                 menu.AddItem(Styles.setOriginLabel, false, () =>
                 {
@@ -1609,12 +1609,17 @@ namespace UnityEditor
             GameObjectTreeViewGUI.UpdateActiveParentObjectValuesForScene(sceneGUID, id);
         }
 
-        internal static void SetDefaultParentObject(bool toggle)
+        internal static void SetDefaultParentObject(bool toggle, GameObject defaultParentObject = null)
         {
             UnityEngine.GameObject lastSelectedObject = null;
             int id = 0;
 
-            if (Selection.objects.Length > 0)
+            if (defaultParentObject != null)
+            {
+                lastSelectedObject = defaultParentObject;
+                id = lastSelectedObject.GetInstanceID();
+            }
+            else if (Selection.objects.Length > 0)
             {
                 lastSelectedObject = Selection.objects[Selection.objects.Length - 1] as GameObject;
                 if (lastSelectedObject != null && !PrefabStageUtility.IsGameObjectThePrefabRootInAnyPrefabStage(lastSelectedObject))
@@ -1622,6 +1627,7 @@ namespace UnityEditor
             }
 
             var sceneGUID = "";
+            Scene scene;
 
             if (lastSelectedObject)
             {
@@ -1631,30 +1637,56 @@ namespace UnityEditor
                     return;
 
                 sceneGUID = lastSelectedObject.scene.guid;
+                scene = lastSelectedObject.scene;
             }
             else
-                sceneGUID = EditorSceneManager.GetActiveScene().guid;
+            {
+                scene = EditorSceneManager.GetActiveScene();
+                sceneGUID = scene.guid;
+            }
 
             int currentlySetID = GetDefaultParentForSession(sceneGUID);
-            if (toggle && currentlySetID != 0)
+
+            var objectInstanceID = lastSelectedObject ? lastSelectedObject.GetInstanceID() : 0;
+            var isPrefabStage = PrefabStageUtility.IsPrefabStageScene(scene);
+
+            // if we're toggling an object that is already the default parent object in an inactive scene,
+            // we set the active scene and leave the same object as the active parent
+            // this is to avoid confusion because active parent objects are not highlighted in inactive scenes
+            if (toggle && currentlySetID == objectInstanceID && sceneGUID != EditorSceneManager.GetActiveScene().guid && !isPrefabStage)
+            {
+                EditorSceneManager.SetActiveScene(scene);
+                return;
+            }
+
+            // we check if we're toggling inside the active scene
+            // if yes - we deactivate the current active parent object
+            // if not - we allow setting a new parent object immediately without unsetting the previous object first
+            // (it gets overriden on the first shortcut click)
+            if (toggle && currentlySetID != 0 && (sceneGUID == EditorSceneManager.GetActiveScene().guid || isPrefabStage))
             {
                 if (lastSelectedObject == null)
                     return;
 
                 id = 0;
             }
+            {
+                if (!isPrefabStage)
+                    EditorSceneManager.SetActiveScene(scene);
+            }
             UpdateSessionStateInfoAndActiveParentObjectValuesForScene(sceneGUID, id);
         }
 
-        internal static void ClearDefaultParentObject()
+        internal static void ClearDefaultParentObject(string sceneGUID = "")
         {
             UnityEngine.GameObject lastSelectedObject = null;
-            var sceneGUID = "";
 
-            if (Selection.objects.Length > 0)
+            if (sceneGUID == "")
             {
-                lastSelectedObject = Selection.objects[Selection.objects.Length - 1] as GameObject;
-
+                if (Selection.objects.Length > 0)
+                {
+                    lastSelectedObject = Selection.objects[Selection.objects.Length - 1] as GameObject;
+                }
                 if (lastSelectedObject)
                     sceneGUID = lastSelectedObject.scene.guid;
                 else
