@@ -3,7 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using UnityEditorInternal.Profiling;
+using Unity.Profiling.Editor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -27,14 +27,14 @@ namespace UnityEditor.Profiling
 
         // Data
         bool m_IsInitialized;
-        List<ProfilerModuleBase> m_Modules;
+        List<ProfilerModule> m_Modules;
 
         // UI
         ListView m_ModulesListView;
 
         public IResponder responder { get; set; }
 
-        public static bool TryPresentIfNoOpenInstances(Rect buttonRect, List<ProfilerModuleBase> modules, out ProfilerModulesDropdownWindow window)
+        public static bool TryPresentIfNoOpenInstances(Rect buttonRect, List<ProfilerModule> modules, out ProfilerModulesDropdownWindow window)
         {
             /* Due to differences in the timing of Editor window destruction across platforms, we cannot easily detect if the window was just destroyed due to being unfocussed with EditorWindow.HasOpenInstances alone. We need to detect this situation in the case of clicking the dropdown control whilst the window is open - this should close the window. Following the advice of the Editor team, this timer pattern is copied from LayerSettingsWindow as this is how they work around the issue. realtimeSinceStartUp is not used since it is set to 0 when entering/exiting playmode, we assume an increasing time when comparing time.
              */
@@ -57,7 +57,7 @@ namespace UnityEditor.Profiling
             return true;
         }
 
-        void Initialize(List<ProfilerModuleBase> modules)
+        void Initialize(List<ProfilerModule> modules)
         {
             if (m_IsInitialized)
             {
@@ -180,12 +180,12 @@ namespace UnityEditor.Profiling
                 Add(m_Label);
             }
 
-            public void ConfigureWithModule(ProfilerModuleBase module)
+            public void ConfigureWithModule(ProfilerModule module)
             {
                 bool isActive = module.active;
                 SetActive(isActive);
 
-                m_Label.text = module.localizedName;
+                m_Label.text = module.DisplayName;
             }
 
             public void SetActive(bool active)

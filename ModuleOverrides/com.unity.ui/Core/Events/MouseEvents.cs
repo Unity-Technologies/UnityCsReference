@@ -393,10 +393,39 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Mouse down event.
+    /// This event is sent when a mouse button is pressed.
     /// </summary>
+    /// <remarks>
+    /// The mouse down event is sent to a visual element when a mouse button is pressed inside the element.
+    /// A MouseDownEvent uses the default mouse event propagation path: it trickles down, bubbles up
+    /// and can be cancelled.
+    /// Disabled elements won't receive this event by default.
+    /// </remarks>
     public class MouseDownEvent : MouseEventBase<MouseDownEvent>
     {
+        /// <summary>
+        /// Resets the event members to their initial values.
+        /// </summary>
+        protected override void Init()
+        {
+            base.Init();
+            LocalInit();
+        }
+
+        void LocalInit()
+        {
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable |
+                EventPropagation.SkipDisabledElements;
+        }
+
+        /// <summary>
+        /// Constructor. Avoid creating new event instances. Instead, use GetPooled() to get an instance from a pool of reusable event instances.
+        /// </summary>
+        public MouseDownEvent()
+        {
+            LocalInit();
+        }
+
         /// <summary>
         /// Gets an event from the event pool and initializes it with the given values. Use this function instead of creating new events. Events obtained using this method need to be released back to the pool. You can use `Dispose()` to release them.
         /// </summary>
@@ -432,10 +461,39 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Mouse up event.
+    /// This event is sent when a mouse button is released.
     /// </summary>
+    /// <remarks>
+    /// The mouse up event is sent to a visual element when a mouse button is released inside the element.
+    /// A MouseUpEvent uses the default mouse event propagation path: it trickles down, bubbles up
+    /// and can be cancelled.
+    /// Disabled elements won't receive this event by default.
+    /// </remarks>
     public class MouseUpEvent : MouseEventBase<MouseUpEvent>
     {
+        /// <summary>
+        /// Resets the event members to their initial values.
+        /// </summary>
+        protected override void Init()
+        {
+            base.Init();
+            LocalInit();
+        }
+
+        void LocalInit()
+        {
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable |
+                EventPropagation.SkipDisabledElements;
+        }
+
+        /// <summary>
+        /// Constructor. Avoid creating new event instances. Instead, use GetPooled() to get an instance from a pool of reusable event instances.
+        /// </summary>
+        public MouseUpEvent()
+        {
+            LocalInit();
+        }
+
         /// <summary>
         /// Gets an event from the event pool and initializes it with the given values. Use this function instead of creating new events. Events obtained using this method need to be released back to the pool. You can use `Dispose()` to release them.
         /// </summary>
@@ -477,10 +535,43 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Mouse move event.
+    /// This event is sent when the mouse moves.
     /// </summary>
+    /// <remarks>
+    /// The mouse move event is sent to the visual element under the current mouse position whenever the mouse position has changed.
+    /// A MouseMoveEvent uses the default mouse event propagation path: it trickles down, bubbles up
+    /// and can be cancelled.
+    /// Disabled elements receive this event by default.
+    /// </remarks>
+    /// <seealso cref="MouseEnterEvent"/>
+    /// <seealso cref="MouseLeaveEvent"/>
+    /// <seealso cref="MouseOverEvent"/>
+    /// <seealso cref="MouseOutEvent"/>
     public class MouseMoveEvent : MouseEventBase<MouseMoveEvent>
     {
+        /// <summary>
+        /// Resets the event members to their initial values.
+        /// </summary>
+        protected override void Init()
+        {
+            base.Init();
+            LocalInit();
+        }
+
+        void LocalInit()
+        {
+            // Trickles down, bubbles up and can be cancelled. Disabled elements receive this event by default.
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable;
+        }
+
+        /// <summary>
+        /// Constructor. Avoid creating new event instances. Instead, use GetPooled() to get an instance from a pool of reusable event instances.
+        /// </summary>
+        public MouseMoveEvent()
+        {
+            LocalInit();
+        }
+
         /// <summary>
         /// Gets an event from the event pool and initializes it with the given values. Use this function instead of creating new events. Events obtained using this method need to be released back to the pool. You can use `Dispose()` to release them.
         /// </summary>
@@ -515,8 +606,14 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Mouse wheel event.
+    /// This event is sent when the mouse wheel moves.
     /// </summary>
+    /// <remarks>
+    /// The mouse wheel event is sent to the visual element under the mouse when the mouse scroll wheel value changes.
+    /// A WheelEvent uses the default mouse event propagation path: it trickles down, bubbles up
+    /// and can be cancelled.
+    /// Disabled elements won't receive this event by default.
+    /// </remarks>
     public class WheelEvent : MouseEventBase<WheelEvent>
     {
         /// <summary>
@@ -559,6 +656,8 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable |
+                EventPropagation.SkipDisabledElements;
             delta = Vector3.zero;
         }
 

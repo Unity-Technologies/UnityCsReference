@@ -180,6 +180,13 @@ namespace UnityEditor
             ((IEditorWindowModel)this).onSplitterGUIHandler = HandleSplitView;
         }
 
+        internal void ReplaceTab(EditorWindow originalWindow, EditorWindow newWindow)
+        {
+            int idx = m_Panes.IndexOf(originalWindow);
+            AddTab(idx, newWindow);
+            RemoveTab(originalWindow);
+        }
+
         public void AddTab(EditorWindow pane, bool sendPaneEvents = true)
         {
             AddTab(m_Panes.Count, pane, sendPaneEvents);

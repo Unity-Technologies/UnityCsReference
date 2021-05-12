@@ -335,6 +335,11 @@ namespace UnityEditor
             return FindAllInstancesOfPrefab_internal(prefabRoot, scene.handle);
         }
 
+        public static void MergePrefabInstance(GameObject instanceRoot)
+        {
+            MergePrefabInstance_internal(instanceRoot);
+        }
+
         public static void RevertPrefabInstance(GameObject instanceRoot, InteractionMode action)
         {
             ThrowExceptionIfNotValidPrefabInstanceObject(instanceRoot, false);
@@ -1006,6 +1011,8 @@ namespace UnityEditor
             if (!PrefabUtility.IsAddedComponentOverride(component))
                 throw new ArgumentException("Cannot revert added component. Component is not an added component override on a Prefab instance.", nameof(component));
 
+            var prefabInstanceGameObject = component.gameObject;
+
             if (action == InteractionMode.UserAction)
             {
                 string dependentComponents = string.Join(
@@ -1029,6 +1036,9 @@ namespace UnityEditor
             }
             else
                 Object.DestroyImmediate(component);
+
+            // Remerge the prefab instance to make any suppressed components show up if no longer suppressed
+            PrefabUtility.MergePrefabInstance_internal(prefabInstanceGameObject);
         }
 
         private static bool IsPrefabInstanceObjectOf(Object instance, Object source)
@@ -1974,6 +1984,14 @@ namespace UnityEditor
                 savingPrefab(gameObject, path);
         }
 
+        internal static event Action prefabInstanceModificationCacheCleared;
+        [RequiredByNativeCode]
+        static void Internal_PrefabInstanceModificationCacheCleared()
+        {
+            if (prefabInstanceModificationCacheCleared != null)
+                prefabInstanceModificationCacheCleared();
+        }
+
         internal enum SaveVerb
         {
             Save,
@@ -2194,6 +2212,22 @@ namespace UnityEditor
 
             SerializedObject innermostInstanceSO = new SerializedObject(innermostInstance);
             return innermostInstanceSO.FindProperty(property.propertyPath).isDefaultOverride;
+        }
+
+        internal static bool HasPrefabInstanceNonDefaultOverrides_CachedForUI(GameObject gameObject)
+        {
+            if (gameObject == null)
+                throw new ArgumentNullException(nameof(gameObject));
+
+            return HasPrefabInstanceNonDefaultOverrides_CachedForUI_Internal(gameObject);
+        }
+
+        internal static void ClearPrefabInstanceNonDefaultOverridesCache(GameObject gameObject)
+        {
+            if (gameObject == null)
+                throw new ArgumentNullException(nameof(gameObject));
+
+            ClearPrefabInstanceNonDefaultOverridesCache_Internal(gameObject);
         }
 
         // Same as IsPropertyOverrideDefaultOverrideComparedToAnySource, but checks if it's the case for all overrides

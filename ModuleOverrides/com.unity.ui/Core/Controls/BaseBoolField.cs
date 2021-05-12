@@ -12,6 +12,8 @@ namespace UnityEngine.UIElements
         protected Label m_Label;
         protected readonly VisualElement m_CheckMark;
 
+        internal Clickable m_Clickable;
+
         /// <summary>
         /// Creates a <see cref="BaseBoolField"/> with a Label and a default manipulator.
         /// </summary>
@@ -31,7 +33,7 @@ namespace UnityEngine.UIElements
 
             // Set-up the label and text...
             text = null;
-            this.AddManipulator(new Clickable(OnClickEvent));
+            this.AddManipulator(m_Clickable = new Clickable(OnClickEvent));
 
             RegisterCallback<NavigationSubmitEvent>(OnNavigationSubmit);
             RegisterCallback<KeyDownEvent>(OnKeyDown);

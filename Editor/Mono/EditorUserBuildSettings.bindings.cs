@@ -18,6 +18,13 @@ namespace UnityEditor
             ForceUncompressed = 1,
             ForceFastCompressor = 2,
         }
+
+        [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+        public enum Il2CppCodeGeneration
+        {
+            OptimizeSpeed = 0,
+            OptimizeSize = 1
+        }
     }
 
     /// Target PS4 build platform.
@@ -394,7 +401,7 @@ namespace UnityEditor
         // Android platform options.
         public static extern MobileTextureSubtarget androidBuildSubtarget
         {
-            [NativeMethod("GetSelectedAndroidBuildSubtarget")]
+            [NativeMethod("GetSelectedAndroidBuildTextureSubtarget")]
             get;
             [NativeMethod("SetSelectedAndroidBuildSubtarget")]
             set;
@@ -589,6 +596,8 @@ namespace UnityEditor
 
         // Enables a development build.
         public static extern bool development { get; set; }
+
+        public static extern Build.Il2CppCodeGeneration il2CppCodeGeneration { get; set; }
 
         [Obsolete("Building with pre-built Engine option is no longer supported.", true)]
         public static bool webGLUsePreBuiltUnityEngine

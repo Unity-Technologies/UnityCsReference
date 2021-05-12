@@ -85,7 +85,6 @@ namespace UnityEditor.UIElements
 
             public enum Level
             {
-                Info,
                 Warning,
                 Fatal,
             }
@@ -210,9 +209,6 @@ namespace UnityEditor.UIElements
                 {
                     switch (error.level)
                     {
-                        case Error.Level.Info:
-                            Debug.LogFormat(obj, error.ToString());
-                            break;
                         case Error.Level.Warning:
                             Debug.LogWarningFormat(obj, error.ToString());
                             break;
@@ -227,9 +223,6 @@ namespace UnityEditor.UIElements
                 {
                     switch (error.level)
                     {
-                        case Error.Level.Info:
-                            Debug.Log(error.ToString());
-                            break;
                         case Error.Level.Warning:
                             Debug.LogWarning(error.ToString());
                             break;
@@ -295,6 +288,24 @@ namespace UnityEditor.UIElements
         // This variable is overriden during editor tests
         internal static DefaultLogger logger = new DefaultLogger();
 
+        void LogWarning(VisualTreeAsset asset, ImportErrorType errorType, ImportErrorCode code, object context, IXmlLineInfo xmlLineInfo)
+        {
+            // If we ever want to use the AssetDatabase error reporting APIs, use m_Context.LogImportWarning() here
+            logger.LogError(errorType, code, context, Error.Level.Warning, xmlLineInfo);
+
+            if (asset != null)
+                asset.importedWithWarnings = true;
+        }
+
+        void LogError(VisualTreeAsset asset, ImportErrorType errorType, ImportErrorCode code, object context, IXmlLineInfo xmlLineInfo)
+        {
+            // If we ever want to use the AssetDatabase error reporting APIs, use m_Context.LogImportError() here
+            logger.LogError(errorType, code, context, Error.Level.Fatal, xmlLineInfo);
+
+            if (asset != null)
+                asset.importedWithErrors = true;
+        }
+
         void ImportXml(string xmlPath, out VisualTreeAsset vta)
         {
             var h = new Hash128();
@@ -322,7 +333,7 @@ namespace UnityEditor.UIElements
             }
             catch (Exception e)
             {
-                logger.LogError(ImportErrorType.Syntax, ImportErrorCode.InvalidXml, e, Error.Level.Fatal, null);
+                LogError(vta, ImportErrorType.Syntax, ImportErrorCode.InvalidXml, e, null);
                 return;
             }
 
@@ -345,7 +356,7 @@ namespace UnityEditor.UIElements
             }
             catch (Exception e)
             {
-                logger.LogError(ImportErrorType.Syntax, ImportErrorCode.InvalidXml, e, Error.Level.Fatal, null);
+                LogError(vta, ImportErrorType.Syntax, ImportErrorCode.InvalidXml, e, null);
                 return;
             }
 
@@ -359,10 +370,18 @@ namespace UnityEditor.UIElements
             {
                 foreach (var e in m_Errors)
                 {
+                    var msg = e.ToString();
                     if (e.isWarning)
-                        m_Context.LogImportWarning(e.ToString(), e.assetPath, e.line);
+                        m_Context.LogImportWarning(msg, e.assetPath, e.line);
                     else
-                        m_Context.LogImportError(e.ToString(), e.assetPath, e.line);
+                        m_Context.LogImportError(msg, e.assetPath, e.line);
+
+                    LogWarning(
+                        vta,
+                        ImportErrorType.Semantic,
+                        ImportErrorCode.InvalidCssInStyleAttribute,
+                        msg,
+                        null);
                 }
             }
 
@@ -394,10 +413,10 @@ namespace UnityEditor.UIElements
             XElement elt = doc.Root;
             if (!string.Equals(elt.Name.LocalName, k_RootNode, k_Comparison))
             {
-                logger.LogError(ImportErrorType.Semantic,
+                LogError(vta,
+                    ImportErrorType.Semantic,
                     ImportErrorCode.InvalidRootElement,
                     elt.Name,
-                    Error.Level.Fatal,
                     elt);
                 return;
             }
@@ -428,19 +447,19 @@ namespace UnityEditor.UIElements
                         name = xAttribute.Value;
                         if (String.IsNullOrEmpty(name))
                         {
-                            logger.LogError(ImportErrorType.Semantic,
+                            LogError(vta,
+                                ImportErrorType.Semantic,
                                 ImportErrorCode.TemplateHasEmptyName,
                                 child,
-                                Error.Level.Fatal,
                                 child
                             );
                         }
                         break;
                     default:
-                        logger.LogError(ImportErrorType.Semantic,
+                        LogError(vta,
+                            ImportErrorType.Semantic,
                             ImportErrorCode.UnknownAttribute,
                             xAttribute.Name.LocalName,
-                            Error.Level.Fatal,
                             child
                         );
                         break;
@@ -449,10 +468,10 @@ namespace UnityEditor.UIElements
 
             if (hasPath == hasSrc)
             {
-                logger.LogError(ImportErrorType.Semantic,
+                LogError(vta,
+                    ImportErrorType.Semantic,
                     hasPath ? ImportErrorCode.TemplateSrcAndPathBothSpecified : ImportErrorCode.TemplateMissingPathOrSrcAttribute,
                     null,
-                    Error.Level.Fatal,
                     elt
                 );
                 return;
@@ -463,10 +482,10 @@ namespace UnityEditor.UIElements
 
             if (vta.TemplateExists(name))
             {
-                logger.LogError(ImportErrorType.Semantic,
+                LogError(vta,
+                    ImportErrorType.Semantic,
                     ImportErrorCode.DuplicateTemplateName,
                     name,
-                    Error.Level.Fatal,
                     elt
                 );
                 return;
@@ -490,7 +509,7 @@ namespace UnityEditor.UIElements
 
                 if (result != URIValidationResult.OK)
                 {
-                    logger.LogError(ImportErrorType.Semantic, ConvertErrorCode(result), response.errorToken, Error.Level.Fatal, elt);
+                    LogError(vta, ImportErrorType.Semantic, ConvertErrorCode(result), response.errorToken, elt);
                 }
                 else
                 {
@@ -510,7 +529,7 @@ namespace UnityEditor.UIElements
                     }
                     else
                     {
-                        logger.LogError(ImportErrorType.Semantic, ImportErrorCode.ReferenceInvalidAssetType, projectRelativePath, Error.Level.Fatal, elt);
+                        LogError(vta, ImportErrorType.Semantic, ImportErrorCode.ReferenceInvalidAssetType, projectRelativePath, elt);
                     }
                 }
             }
@@ -716,9 +735,9 @@ namespace UnityEditor.UIElements
                     if (child.Name.LocalName == k_TemplateNode)
                         LoadTemplateNode(vta, elt, child);
                     else if (child.Name.LocalName == k_StyleReferenceNode)
-                        LoadStyleReferenceNode(vea, child);
+                        LoadStyleReferenceNode(vea, child, vta);
                     else if (templateAsset != null && child.Name.LocalName == k_AttributeOverridesNode)
-                        LoadAttributeOverridesNode(templateAsset, child);
+                        LoadAttributeOverridesNode(templateAsset, child, vta);
                     else
                     {
                         ++orderInDocument;
@@ -728,7 +747,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        void LoadStyleReferenceNode(VisualElementAsset vea, XElement styleElt)
+        void LoadStyleReferenceNode(VisualElementAsset vea, XElement styleElt, VisualTreeAsset vta)
         {
             XAttribute pathAttr = styleElt.Attribute(k_GenericPathAttr);
             bool hasPath = pathAttr != null && !String.IsNullOrEmpty(pathAttr.Value);
@@ -738,7 +757,11 @@ namespace UnityEditor.UIElements
 
             if (hasPath == hasSrc)
             {
-                logger.LogError(ImportErrorType.Semantic, hasPath ? ImportErrorCode.StyleReferenceSrcAndPathBothSpecified : ImportErrorCode.StyleReferenceEmptyOrMissingPathOrSrcAttr, null, Error.Level.Warning, styleElt);
+                LogWarning(vta,
+                    ImportErrorType.Semantic,
+                    hasPath ? ImportErrorCode.StyleReferenceSrcAndPathBothSpecified : ImportErrorCode.StyleReferenceEmptyOrMissingPathOrSrcAttr,
+                    null,
+                    styleElt);
                 return;
             }
 
@@ -754,7 +777,7 @@ namespace UnityEditor.UIElements
 
                 if (result != URIValidationResult.OK)
                 {
-                    logger.LogError(ImportErrorType.Semantic, ConvertErrorCode(result), errorMessage, Error.Level.Fatal, styleElt);
+                    LogError(vta, ImportErrorType.Semantic, ConvertErrorCode(result), errorMessage, styleElt);
                 }
                 else
                 {
@@ -766,18 +789,18 @@ namespace UnityEditor.UIElements
                     }
                     else
                     {
-                        logger.LogError(ImportErrorType.Semantic, ImportErrorCode.ReferenceInvalidAssetType, projectRelativePath, Error.Level.Fatal, styleElt);
+                        LogError(vta, ImportErrorType.Semantic, ImportErrorCode.ReferenceInvalidAssetType, projectRelativePath, styleElt);
                     }
                 }
             }
         }
 
-        void LoadAttributeOverridesNode(TemplateAsset templateAsset, XElement attributeOverridesElt)
+        void LoadAttributeOverridesNode(TemplateAsset templateAsset, XElement attributeOverridesElt, VisualTreeAsset vta)
         {
             var elementNameAttr = attributeOverridesElt.Attribute(k_AttributeOverridesElementNameAttr);
             if (elementNameAttr == null || String.IsNullOrEmpty(elementNameAttr.Value))
             {
-                logger.LogError(ImportErrorType.Semantic, ImportErrorCode.AttributeOverridesMissingElementNameAttr, null, Error.Level.Warning, attributeOverridesElt);
+                LogWarning(vta, ImportErrorType.Semantic, ImportErrorCode.AttributeOverridesMissingElementNameAttr, null, attributeOverridesElt);
                 return;
             }
 
@@ -791,7 +814,7 @@ namespace UnityEditor.UIElements
                     attributeName == k_StyleAttr ||
                     attributeName == nameof(VisualElement.name))
                 {
-                    logger.LogError(ImportErrorType.Semantic, ImportErrorCode.AttributeOverridesInvalidAttr, attributeName, Error.Level.Warning, attributeOverridesElt);
+                    LogWarning(vta, ImportErrorType.Semantic, ImportErrorCode.AttributeOverridesInvalidAttr, attributeName, attributeOverridesElt);
                     continue;
                 }
 
@@ -825,16 +848,22 @@ namespace UnityEditor.UIElements
                 XAttribute sourceAttr = elt.Attribute(k_TemplateInstanceSourceAttr);
                 if (sourceAttr == null || String.IsNullOrEmpty(sourceAttr.Value))
                 {
-                    logger.LogError(ImportErrorType.Semantic, ImportErrorCode.TemplateInstanceHasEmptySource, null,
-                        Error.Level.Fatal, elt);
+                    LogError(visualTreeAsset,
+                        ImportErrorType.Semantic,
+                        ImportErrorCode.TemplateInstanceHasEmptySource,
+                        null,
+                        elt);
                     return null;
                 }
 
                 string templateName = sourceAttr.Value;
                 if (!visualTreeAsset.TemplateExists(templateName))
                 {
-                    logger.LogError(ImportErrorType.Semantic, ImportErrorCode.UnknownTemplate, templateName,
-                        Error.Level.Fatal, elt);
+                    LogError(visualTreeAsset,
+                        ImportErrorType.Semantic,
+                        ImportErrorCode.UnknownTemplate,
+                        templateName,
+                        elt);
                     return null;
                 }
 
@@ -867,29 +896,29 @@ namespace UnityEditor.UIElements
                         }
                         if (vta.contentContainerId != 0)
                         {
-                            logger.LogError(ImportErrorType.Semantic, ImportErrorCode.DuplicateContentContainer, null, Error.Level.Fatal, elt);
+                            LogError(vta, ImportErrorType.Semantic, ImportErrorCode.DuplicateContentContainer, null, elt);
                             continue;
                         }
                         vta.contentContainerId = res.id;
                         continue;
                     case k_SlotDefinitionAttr:
-                        logger.LogError(ImportErrorType.Syntax, ImportErrorCode.SlotsAreExperimental, null, Error.Level.Warning, elt);
+                        LogWarning(vta, ImportErrorType.Syntax, ImportErrorCode.SlotsAreExperimental, null, elt);
                         if (String.IsNullOrEmpty(xattr.Value))
-                            logger.LogError(ImportErrorType.Semantic, ImportErrorCode.SlotDefinitionHasEmptyName, null, Error.Level.Fatal, elt);
+                            LogError(vta, ImportErrorType.Semantic, ImportErrorCode.SlotDefinitionHasEmptyName, null, elt);
                         else if (!vta.AddSlotDefinition(xattr.Value, res.id))
-                            logger.LogError(ImportErrorType.Semantic, ImportErrorCode.DuplicateSlotDefinition, xattr.Value, Error.Level.Fatal, elt);
+                            LogError(vta, ImportErrorType.Semantic, ImportErrorCode.DuplicateSlotDefinition, xattr.Value, elt);
                         continue;
                     case k_SlotUsageAttr:
-                        logger.LogError(ImportErrorType.Syntax, ImportErrorCode.SlotsAreExperimental, null, Error.Level.Warning, elt);
+                        LogWarning(vta, ImportErrorType.Syntax, ImportErrorCode.SlotsAreExperimental, null, elt);
                         var templateAsset = parent as TemplateAsset;
                         if (templateAsset == null)
                         {
-                            logger.LogError(ImportErrorType.Semantic, ImportErrorCode.SlotUsageInNonTemplate, parent, Error.Level.Fatal, elt);
+                            LogError(vta, ImportErrorType.Semantic, ImportErrorCode.SlotUsageInNonTemplate, parent, elt);
                             continue;
                         }
                         if (string.IsNullOrEmpty(xattr.Value))
                         {
-                            logger.LogError(ImportErrorType.Semantic, ImportErrorCode.SlotUsageHasEmptyName, null, Error.Level.Fatal, elt);
+                            LogError(vta, ImportErrorType.Semantic, ImportErrorCode.SlotUsageHasEmptyName, null, elt);
                             continue;
                         }
                         templateAsset.AddSlotUsage(xattr.Value, res.id);
@@ -899,21 +928,21 @@ namespace UnityEditor.UIElements
                         ExCSS.StyleSheet parsed = new Parser().Parse("* { " + xattr.Value + " }");
                         if (parsed.Errors.Count != 0)
                         {
-                            logger.LogError(
+                            LogWarning(
+                                vta,
                                 ImportErrorType.Semantic,
                                 ImportErrorCode.InvalidCssInStyleAttribute,
                                 parsed.Errors.Aggregate("", (s, error) => s + error.ToString() + "\n"),
-                                Error.Level.Warning,
                                 xattr);
                             continue;
                         }
                         if (parsed.StyleRules.Count != 1)
                         {
-                            logger.LogError(
+                            LogWarning(
+                                vta,
                                 ImportErrorType.Semantic,
                                 ImportErrorCode.InvalidCssInStyleAttribute,
                                 "Expected one style rule, found " + parsed.StyleRules.Count,
-                                Error.Level.Warning,
                                 xattr);
                             continue;
                         }

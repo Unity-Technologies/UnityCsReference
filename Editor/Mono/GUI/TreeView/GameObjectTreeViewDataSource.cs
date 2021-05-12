@@ -241,7 +241,7 @@ namespace UnityEditor
             return property;
         }
 
-        bool ShouldShowSceneHeaders()
+        internal bool ShouldShowSceneHeaders()
         {
             // Don't show headers if there's a single scene and it's a preview scene.
             return (scenes == null || scenes.Length != 1 || !EditorSceneManager.IsPreviewScene(scenes[0]));

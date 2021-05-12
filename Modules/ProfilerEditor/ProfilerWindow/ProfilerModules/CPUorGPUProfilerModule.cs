@@ -4,14 +4,13 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Profiling.Editor;
 using Unity.Profiling.LowLevel;
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.Profiling;
 using UnityEditor.IMGUI.Controls;
 using Unity.Profiling;
-using UnityEditor.MPE;
-using UnityEditorInternal.Profiling;
 using UnityEditorInternal;
 
 namespace UnityEditor.Profiling
@@ -76,9 +75,9 @@ namespace UnityEditorInternal.Profiling
                 }
             }
         }
-        IProfilerWindowController IProfilerFrameTimeViewSampleSelectionControllerInternal.profilerWindow => m_ProfilerWindow;
+        IProfilerWindowController IProfilerFrameTimeViewSampleSelectionControllerInternal.profilerWindow => ProfilerWindow;
 
-        protected CPUOrGPUProfilerModule(IProfilerWindowController profilerWindow,  string name, string localizedName, string iconName) : base(profilerWindow, name, localizedName, iconName, Chart.ChartType.StackedFill)
+        protected CPUOrGPUProfilerModule() : base(ProfilerModuleChartType.StackedTimeArea)
         {
             // check that the selection is still valid and wasn't badly deserialized on Domain Reload
             if (selection != null && (selection.markerPathDepth <= 0 || selection.rawSampleIndices == null))
@@ -87,7 +86,7 @@ namespace UnityEditorInternal.Profiling
 
         protected bool fetchData
         {
-            get { return !(m_ProfilerWindow == null || m_ProfilerWindow.ProfilerWindowOverheadIsAffectingProfilingRecordingData()) || updateViewLive; }
+            get { return !(ProfilerWindow == null || ProfilerWindow.ProfilerWindowOverheadIsAffectingProfilingRecordingData()) || updateViewLive; }
         }
 
         protected const string k_MainThreadName = "Main Thread";
@@ -95,7 +94,6 @@ namespace UnityEditorInternal.Profiling
         const string k_ViewTypeSettingsKey = "ViewType";
         const string k_HierarchyViewSettingsKeyPrefix = "HierarchyView.";
 
-        protected abstract string ModuleName { get; }
         protected abstract string SettingsKeyPrefix { get; }
         string ViewTypeSettingsKey { get { return SettingsKeyPrefix + k_ViewTypeSettingsKey; } }
         string HierarchyViewSettingsKeyPrefix { get { return SettingsKeyPrefix + k_HierarchyViewSettingsKeyPrefix; } }
@@ -187,14 +185,14 @@ namespace UnityEditorInternal.Profiling
                 if (ViewType != ProfilerViewType.Timeline && m_HierarchyOverruledThreadFromSelection && hierarchyThreadIndex >= 0)
                     return m_FrameDataHierarchyView.threadIndex;
 
-                if (selection != null && m_ProfilerWindow.selectedFrameIndex >= 0)
-                    return selection.GetThreadIndex((int)m_ProfilerWindow.selectedFrameIndex);
+                if (selection != null && ProfilerWindow.selectedFrameIndex >= 0)
+                    return selection.GetThreadIndex((int)ProfilerWindow.selectedFrameIndex);
 
                 return hierarchyThreadIndex;
             }
             set
             {
-                if (m_ProfilerWindow.selectedFrameIndex < 0)
+                if (ProfilerWindow.selectedFrameIndex < 0)
                 {
                     throw new InvalidOperationException($"Can't set {nameof(focusedThreadIndex)} while it is not showing any frame data {nameof(FrameDataView)}.");
                 }
@@ -204,9 +202,9 @@ namespace UnityEditorInternal.Profiling
 
                 using (var iter = new ProfilerFrameDataIterator())
                 {
-                    var threadCount = iter.GetThreadCount((int)m_ProfilerWindow.selectedFrameIndex);
+                    var threadCount = iter.GetThreadCount((int)ProfilerWindow.selectedFrameIndex);
                     if (value >= threadCount)
-                        throw new ArgumentOutOfRangeException("value", $"The chosen thread index {value} is out of range of valid thread indices in this frame. Frame index: {m_ProfilerWindow.selectedFrameIndex}, thread count: {threadCount}.");
+                        throw new ArgumentOutOfRangeException("value", $"The chosen thread index {value} is out of range of valid thread indices in this frame. Frame index: {ProfilerWindow.selectedFrameIndex}, thread count: {threadCount}.");
                     m_HierarchyOverruledThreadFromSelection = true;
 
                     // Frame the thread. This is independent of the checks below, as it only relates to Timeline view.
@@ -216,7 +214,7 @@ namespace UnityEditorInternal.Profiling
                     // only reload frame data if the thread index to focus is different to the thread index of the currently shown frame data view.
                     if (value != m_FrameDataHierarchyView.threadIndex)
                     {
-                        using (var dataView = new RawFrameDataView((int)m_ProfilerWindow.selectedFrameIndex, value))
+                        using (var dataView = new RawFrameDataView((int)ProfilerWindow.selectedFrameIndex, value))
                         {
                             var frameDataView = GetFrameDataView(dataView.threadGroupName, dataView.threadName, dataView.threadId);
 
@@ -252,13 +250,13 @@ namespace UnityEditorInternal.Profiling
             set { CPUOrGPUViewTypeChanged(value); }
         }
 
-        public override void OnEnable()
+        internal override void OnEnable()
         {
             base.OnEnable();
             if (m_FrameDataHierarchyView == null)
                 m_FrameDataHierarchyView = new ProfilerFrameDataHierarchyView(HierarchyViewSettingsKeyPrefix);
 
-            m_FrameDataHierarchyView.OnEnable(this, m_ProfilerWindow, false);
+            m_FrameDataHierarchyView.OnEnable(this, ProfilerWindow, false);
 
             // safety guarding against event registration leaks due to an imbalance of OnEnable/OnDisable Calls, by deregistering first
             m_FrameDataHierarchyView.viewTypeChanged -= CPUOrGPUViewTypeChanged;
@@ -282,13 +280,13 @@ namespace UnityEditorInternal.Profiling
             TryRestoringSelection();
         }
 
-        protected override void OnSelected()
+        private protected override void OnSelected()
         {
             base.OnSelected();
             TryRestoringSelection();
         }
 
-        public override void SaveViewSettings()
+        internal override void SaveViewSettings()
         {
             base.SaveViewSettings();
             EditorPrefs.SetInt(ViewTypeSettingsKey, (int)m_ViewType);
@@ -296,7 +294,7 @@ namespace UnityEditorInternal.Profiling
             m_FrameDataHierarchyView?.SaveViewSettings();
         }
 
-        public override void OnDisable()
+        internal override void OnDisable()
         {
             SaveViewSettings();
             base.OnDisable();
@@ -361,7 +359,7 @@ namespace UnityEditorInternal.Profiling
 
         public override void DrawDetailsView(Rect position)
         {
-            CurrentFrameIndex = (int)m_ProfilerWindow.selectedFrameIndex;
+            CurrentFrameIndex = (int)ProfilerWindow.selectedFrameIndex;
             m_FrameDataHierarchyView.DoGUI(fetchData ? GetFrameDataView() : null, fetchData, ref updateViewLive, m_ViewType);
         }
 
@@ -375,7 +373,7 @@ namespace UnityEditorInternal.Profiling
             var viewMode = HierarchyFrameDataView.ViewModes.Default;
             if (m_ViewType == ProfilerViewType.Hierarchy)
                 viewMode |= HierarchyFrameDataView.ViewModes.MergeSamplesWithTheSameName;
-            return m_ProfilerWindow.GetFrameDataView(threadGroupName, threadName, threadId, viewMode | GetFilteringMode(), m_FrameDataHierarchyView.sortedProfilerColumn, m_FrameDataHierarchyView.sortedProfilerColumnAscending);
+            return ProfilerWindow.GetFrameDataView(threadGroupName, threadName, threadId, viewMode | GetFilteringMode(), m_FrameDataHierarchyView.sortedProfilerColumn, m_FrameDataHierarchyView.sortedProfilerColumnAscending);
         }
 
         HierarchyFrameDataView GetFrameDataView(int threadIndex)
@@ -383,7 +381,7 @@ namespace UnityEditorInternal.Profiling
             var viewMode = HierarchyFrameDataView.ViewModes.Default;
             if (m_ViewType == ProfilerViewType.Hierarchy)
                 viewMode |= HierarchyFrameDataView.ViewModes.MergeSamplesWithTheSameName;
-            return m_ProfilerWindow.GetFrameDataView(threadIndex, viewMode | GetFilteringMode(), m_FrameDataHierarchyView.sortedProfilerColumn, m_FrameDataHierarchyView.sortedProfilerColumnAscending);
+            return ProfilerWindow.GetFrameDataView(threadIndex, viewMode | GetFilteringMode(), m_FrameDataHierarchyView.sortedProfilerColumn, m_FrameDataHierarchyView.sortedProfilerColumnAscending);
         }
 
         protected virtual HierarchyFrameDataView.ViewModes GetFilteringMode()
@@ -590,9 +588,9 @@ namespace UnityEditorInternal.Profiling
         int IProfilerFrameTimeViewSampleSelectionControllerInternal.GetActiveVisibleFrameIndexOrLatestFrameForSettingTheSelection() => GetActiveVisibleFrameIndexOrLatestFrameForSettingTheSelection();
         int GetActiveVisibleFrameIndexOrLatestFrameForSettingTheSelection()
         {
-            if (m_ProfilerWindow == null)
+            if (ProfilerWindow == null)
                 return FrameDataView.invalidOrCurrentFrameIndex;
-            var currentFrame = (int)m_ProfilerWindow.selectedFrameIndex;
+            var currentFrame = (int)ProfilerWindow.selectedFrameIndex;
             return currentFrame == FrameDataView.invalidOrCurrentFrameIndex ? ProfilerDriver.lastFrameIndex : currentFrame;
         }
 
@@ -618,8 +616,8 @@ namespace UnityEditorInternal.Profiling
         {
             if (selectionToSet != null)
             {
-                if (selectionToSet.safeFrameIndex != m_ProfilerWindow.selectedFrameIndex)
-                    m_ProfilerWindow.SetActiveVisibleFrameIndex(selectionToSet.safeFrameIndex != FrameDataView.invalidOrCurrentFrameIndex ? (int)selectionToSet.safeFrameIndex : ProfilerDriver.lastFrameIndex);
+                if (selectionToSet.safeFrameIndex != ProfilerWindow.selectedFrameIndex)
+                    ProfilerWindow.SetActiveVisibleFrameIndex(selectionToSet.safeFrameIndex != FrameDataView.invalidOrCurrentFrameIndex ? (int)selectionToSet.safeFrameIndex : ProfilerDriver.lastFrameIndex);
                 if (string.IsNullOrEmpty(selectionToSet.legacyMarkerPath))
                 {
                     var frameDataView = GetFrameDataView(selectionToSet.threadGroupName, selectionToSet.threadName, selectionToSet.threadId);
@@ -676,7 +674,7 @@ namespace UnityEditorInternal.Profiling
                 {
                     using (k_ApplyValidSelectionMarker.Auto())
                     {
-                        var currentFrame = m_ProfilerWindow.selectedFrameIndex;
+                        var currentFrame = ProfilerWindow.selectedFrameIndex;
                         if (selection.frameIndexIsSafe && selection.safeFrameIndex == currentFrame)
                         {
                             var treeViewID = ProfilerFrameDataHierarchyView.invalidTreeViewId;
@@ -743,7 +741,7 @@ namespace UnityEditorInternal.Profiling
 
         protected int GetThreadIndexInCurrentFrameToApplySelectionFromAnotherFrame(ProfilerTimeSampleSelection selection)
         {
-            var currentFrame = (int)m_ProfilerWindow.selectedFrameIndex;
+            var currentFrame = (int)ProfilerWindow.selectedFrameIndex;
             return selection.GetThreadIndex(currentFrame);
         }
 
@@ -784,7 +782,7 @@ namespace UnityEditorInternal.Profiling
                     // This method here should not cause the Profiler Window to toggle on the "Current Frame" toggle.
                     throw new ArgumentOutOfRangeException("frameIndex", "frameIndex can't be below 0");
 
-                m_ProfilerWindow.SetActiveVisibleFrameIndex(frameIndex);
+                ProfilerWindow.SetActiveVisibleFrameIndex(frameIndex);
                 var frameData = GetFrameDataView(threadIndex);
 
                 var sampleIdPath = new List<int>();
@@ -947,7 +945,7 @@ namespace UnityEditorInternal.Profiling
             return RawFrameDataView.invalidSampleIndex;
         }
 
-        public override void Clear()
+        internal override void Clear()
         {
             base.Clear();
             m_CurrentFrameIndex = FrameDataView.invalidOrCurrentFrameIndex;
@@ -957,7 +955,7 @@ namespace UnityEditorInternal.Profiling
 
         public void Repaint()
         {
-            m_ProfilerWindow.Repaint();
+            ProfilerWindow.Repaint();
         }
 
         static readonly ProfilerMarker k_GetItemNameScriptingSimplificationMarker = new ProfilerMarker($"{nameof(CPUOrGPUProfilerModule)}.{nameof(GetItemName)} Scripting Name Simplification");

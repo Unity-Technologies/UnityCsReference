@@ -33,8 +33,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         internal static void ProcessOnOpacityChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, ref ChainBuilderStats stats)
         {
+            bool hierarchical = (ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.OpacityHierarchy) != 0;
             stats.recursiveOpacityUpdates++;
-            DepthFirstOnOpacityChanged(renderChain, ve.hierarchy.parent != null ? ve.hierarchy.parent.renderChainData.compositeOpacity : 1.0f, ve, dirtyID, ref stats);
+            DepthFirstOnOpacityChanged(renderChain, ve.hierarchy.parent != null ? ve.hierarchy.parent.renderChainData.compositeOpacity : 1.0f, ve, dirtyID, hierarchical, ref stats);
         }
 
         internal static void ProcessOnTransformOrSizeChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, ref ChainBuilderStats stats)
@@ -415,7 +416,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
         }
 
         static void DepthFirstOnOpacityChanged(RenderChain renderChain, float parentCompositeOpacity, VisualElement ve,
-            uint dirtyID, ref ChainBuilderStats stats, bool isDoingFullVertexRegeneration = false)
+            uint dirtyID, bool hierarchical, ref ChainBuilderStats stats, bool isDoingFullVertexRegeneration = false)
         {
             if (dirtyID == ve.renderChainData.dirtyID)
                 return;
@@ -483,13 +484,13 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 renderChain.UIEOnVisualsChanged(ve, false); // Changed opacity ID, must update vertices.. we don't do it hierarchical here since our children will go through this too
             }
 
-            if (compositeOpacityChanged || changedOpacityID)
+            if (compositeOpacityChanged || changedOpacityID || hierarchical)
             {
                 // Recurse on children
                 int childrenCount = ve.hierarchy.childCount;
                 for (int i = 0; i < childrenCount; i++)
                 {
-                    DepthFirstOnOpacityChanged(renderChain, newOpacity, ve.hierarchy[i], dirtyID, ref stats,
+                    DepthFirstOnOpacityChanged(renderChain, newOpacity, ve.hierarchy[i], dirtyID, hierarchical, ref stats,
                         isDoingFullVertexRegeneration);
                 }
             }

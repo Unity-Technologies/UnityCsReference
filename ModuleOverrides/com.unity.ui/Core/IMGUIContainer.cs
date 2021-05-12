@@ -535,7 +535,7 @@ namespace UnityEngine.UIElements
         private void DoIMGUIRepaint()
         {
             var offset = elementPanel.repaintData.currentOffset;
-            m_CachedClippingRect = ComputeAAAlignedBound(worldClip, offset);
+            m_CachedClippingRect = ComputeAAAlignedBound(worldClipImmediate, offset);
             m_CachedTransform = offset * worldTransform;
 
             HandleIMGUIEvent(elementPanel.repaintData.repaintEvent, m_CachedTransform, m_CachedClippingRect, onGUIHandler, true);
@@ -855,7 +855,7 @@ namespace UnityEngine.UIElements
             clipRect = container.GetCurrentClipRect();
 
             transform = container.worldTransform;
-            if (evt.rawType == EventType.Repaint
+            if (evt?.rawType == EventType.Repaint
                 && container.elementPanel != null)
             {
                 // during repaint, we must use in case the current transform is not relative to Panel

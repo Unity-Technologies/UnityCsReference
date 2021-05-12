@@ -50,6 +50,7 @@ namespace UnityEngine.UIElements
             evt.target = targetOverride;
             evt.currentTarget = targetOverride;
             evt.propagationPhase = PropagationPhase.AtTarget;
+            evt.skipDisabledElements = false;
 
             targetOverride.HandleEvent(evt);
 

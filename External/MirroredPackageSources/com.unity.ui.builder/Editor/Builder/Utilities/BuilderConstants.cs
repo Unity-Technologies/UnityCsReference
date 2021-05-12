@@ -138,7 +138,7 @@ namespace Unity.UI.Builder
         public static readonly string ContextMenuUnsetAllMessage = "Unset All";
         public static readonly string ContextMenuViewVariableMessage = "View Variable";
         public static readonly string ContextMenuSetVariableMessage = "Set Variable";
-        public static readonly string FontCannotBeNoneMessage = "UI Builder: Font and FontAsset cannot both be set to none.";
+        public static readonly string FontCannotBeNoneMessage = "UI Builder: Font cannot be set to none.";
         public static readonly string InspectorClassPillDoubleClickToCreate = "Double-click to create new USS selector.";
         public static readonly string InspectorClassPillDoubleClickToSelect = "Double-click to select and edit USS selector.";
         public static readonly string InspectorLocalStylesSectionTitleForSelector = "Styles";

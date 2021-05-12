@@ -465,13 +465,13 @@ namespace UnityEditor
         {
             expression = expression.Replace(',', '.');
             expression = expression.TrimEnd('f');
-            expression = expression.ToLowerInvariant();
+            var expressionLowerCase = expression.ToLowerInvariant();
 
             bool success = false;
             result = default;
             if (typeof(T) == typeof(float))
             {
-                if (expression == "pi")
+                if (expressionLowerCase == "pi")
                 {
                     success = true;
                     result = (T)(object)(float)Math.PI;
@@ -489,7 +489,7 @@ namespace UnityEditor
             }
             else if (typeof(T) == typeof(double))
             {
-                if (expression == "pi")
+                if (expressionLowerCase == "pi")
                 {
                     success = true;
                     result = (T)(object)Math.PI;

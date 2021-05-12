@@ -3,33 +3,33 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Profiling.Editor;
 using UnityEditor;
 using UnityEngine.Profiling;
 
 namespace UnityEditorInternal.Profiling
 {
     [Serializable]
+    [ProfilerModuleMetadata("UI Details", typeof(LocalizationResource), IconPath = "Profiler.UIDetails")]
     internal class UIDetailsProfilerModule : UIProfilerModule
     {
-        const string k_IconName = "Profiler.UIDetails";
         const int k_DefaultOrderIndex = 11;
-        static readonly string k_UnLocalizedName = "UI Details";
-        static readonly string k_Name = LocalizationDatabase.GetLocalizedString(k_UnLocalizedName);
+        const ProfilerModuleChartType k_ChartType = ProfilerModuleChartType.Line;
 
-        public UIDetailsProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_UnLocalizedName, k_Name, k_IconName, Chart.ChartType.Line) {}
+        public UIDetailsProfilerModule() : base(k_ChartType) {}
 
-        public override ProfilerArea area => ProfilerArea.UIDetails;
+        internal override ProfilerArea area => ProfilerArea.UIDetails;
         public override bool usesCounters => false;
 
-        protected override int defaultOrderIndex => k_DefaultOrderIndex;
-        protected override string legacyPreferenceKey => "ProfilerChartUIDetails";
+        private protected override int defaultOrderIndex => k_DefaultOrderIndex;
+        private protected override string legacyPreferenceKey => "ProfilerChartUIDetails";
 
         UISystemProfilerChart UISystemProfilerChart => m_Chart as UISystemProfilerChart;
 
-        protected override ProfilerChart InstantiateChart(float defaultChartScale, float chartMaximumScaleInterpolationValue)
+        private protected override ProfilerChart InstantiateChart(float defaultChartScale, float chartMaximumScaleInterpolationValue)
         {
             // [Coverity Defect 53724] Intentionally not calling the base class here to instantiate a custom chart type.
-            m_Chart = new UISystemProfilerChart(m_ChartType, defaultChartScale, chartMaximumScaleInterpolationValue, m_ChartCounters.Count, k_Name, name, m_IconName);
+            m_Chart = new UISystemProfilerChart(k_ChartType, defaultChartScale, chartMaximumScaleInterpolationValue, m_LegacyChartCounters.Count, DisplayName, DisplayName, IconPath);
             return m_Chart;
         }
     }

@@ -84,6 +84,8 @@ namespace UnityEngine.UIElements
 
                 evt.dispatch = true;
                 evt.target = capturingElement;
+                var skipDisabledElements = evt.skipDisabledElements;
+                evt.skipDisabledElements = false;
                 (capturingElement as CallbackEventHandler)?.HandleEventAtTargetPhase(evt);
                 // Do further processing with a target computed the usual way.
                 // However, if IsSentExclusivelyToCapturingElement, the only thing remaining to do is ExecuteDefaultAction,
@@ -91,6 +93,7 @@ namespace UnityEngine.UIElements
                 if ((captureBehavior & EventBehavior.IsSentExclusivelyToCapturingElement) != EventBehavior.IsSentExclusivelyToCapturingElement)
                 {
                     evt.target = null;
+                    evt.skipDisabledElements = skipDisabledElements;
                 }
 
                 evt.currentTarget = null;

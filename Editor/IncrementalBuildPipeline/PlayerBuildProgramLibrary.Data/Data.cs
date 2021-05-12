@@ -60,6 +60,7 @@ namespace PlayerBuildProgramLibrary.Data
     public class Il2CppConfig
     {
         public bool EnableDeepProfilingSupport;
+        public bool EnableFullGenericSharing;
         public string Profile;
 
         public string ConfigurationName;

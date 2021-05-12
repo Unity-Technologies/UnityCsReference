@@ -207,7 +207,7 @@ namespace UnityEditor.UIElements.Bindings
             if (fieldLabelElement != null)
             {
                 fieldLabelElement.userData = property.Copy();
-                fieldLabelElement.RegisterCallback<MouseUpEvent>(RightClickFieldMenuEvent);
+                fieldLabelElement.RegisterCallback<MouseUpEvent>(RightClickFieldMenuEvent, InvokePolicy.IncludeDisabled);
             }
         }
 
@@ -230,7 +230,13 @@ namespace UnityEditor.UIElements.Bindings
             if (property == null)
                 return;
 
+            var wasEnabled = GUI.enabled;
+            if (!label.enabledInHierarchy)
+                GUI.enabled = false;
+
             var menu = EditorGUI.FillPropertyContextMenu(property);
+            GUI.enabled = wasEnabled;
+
             var menuPosition = new Vector2(label.layout.xMin, label.layout.height);
             menuPosition = label.LocalToWorld(menuPosition);
             var menuRect = new Rect(menuPosition, Vector2.zero);

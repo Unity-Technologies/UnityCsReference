@@ -23,11 +23,27 @@ namespace Unity.IO.LowLevel.Unsafe
         public long Size;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    unsafe public struct ReadCommandArray
+    {
+        public ReadCommand* ReadCommands;
+        public int CommandCount;
+    }
+
     [RequiredByNativeCode]
     public enum FileState
     {
         Absent = 0,
         Exists = 1
+    }
+
+    // Keep in sync with AsyncReadManagerManagedApi.h
+    public enum FileStatus
+    {
+        Closed = 0,
+        Pending = 1,
+        Open = 2,
+        OpenFailed = 3
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -56,7 +72,8 @@ namespace Unity.IO.LowLevel.Unsafe
         Complete = 0,
         InProgress = 1,
         Failed = 2,
-        Truncated = 4
+        Truncated = 4,
+        Canceled = 5
     }
 
     [RequiredByNativeCode]
@@ -65,6 +82,56 @@ namespace Unity.IO.LowLevel.Unsafe
         PriorityLow = 0,
         PriorityHigh = 1
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public readonly struct FileHandle
+    {
+        [NativeDisableUnsafePtrRestriction]
+        internal readonly IntPtr fileCommandPtr;
+        internal readonly int version;
+
+        public FileStatus Status
+        {
+            get
+            {
+                if (!IsFileHandleValid(this))
+                    throw new InvalidOperationException("FileHandle.Status cannot be called on a closed FileHandle");
+                return GetFileStatus_Internal(this);
+            }
+        }
+
+        public JobHandle JobHandle
+        {
+            get
+            {
+                if (!IsFileHandleValid(this))
+                    throw new InvalidOperationException("FileHandle.JobHandle cannot be called on a closed FileHandle");
+                return GetJobHandle_Internal(this);
+            }
+        }
+
+        public bool IsValid()
+        {
+            return IsFileHandleValid(this);
+        }
+
+        public JobHandle Close(JobHandle dependency = new JobHandle())
+        {
+            if (!IsFileHandleValid(this))
+                throw new InvalidOperationException("FileHandle.Close cannot be called twice on the same FileHandle");
+            return AsyncReadManager.CloseFileAsync(this, dependency);
+        }
+
+        [FreeFunction("AsyncReadManagerManaged::IsFileHandleValid")]
+        private extern static bool IsFileHandleValid(in FileHandle handle);
+
+        [FreeFunction("AsyncReadManagerManaged::GetFileStatusFromManagedHandle")]
+        private extern static FileStatus GetFileStatus_Internal(in FileHandle handle);
+
+        [FreeFunction("AsyncReadManagerManaged::GetJobFenceFromManagedHandle")]
+        private extern static JobHandle GetJobHandle_Internal(in FileHandle handle);
+    }
+
     public struct ReadHandle : IDisposable
     {
         [NativeDisableUnsafePtrRestriction]
@@ -85,6 +152,17 @@ namespace Unity.IO.LowLevel.Unsafe
             ReleaseReadHandle(this);
         }
 
+        public void Cancel()
+        {
+            if (!IsReadHandleValid(this))
+                throw new InvalidOperationException("ReadHandle.Cancel cannot be called on a disposed ReadHandle");
+            CancelInternal(this);
+        }
+
+        [FreeFunction("AsyncReadManagerManaged::CancelReadRequest")]
+        private extern static void CancelInternal(ReadHandle handle);
+
+
         public JobHandle JobHandle
         {
             get
@@ -99,11 +177,20 @@ namespace Unity.IO.LowLevel.Unsafe
             get
             {
                 if (!IsReadHandleValid(this))
-                    throw new InvalidOperationException("ReadHandle.Status cannot be called after the ReadHandle has been disposed");
+                    throw new InvalidOperationException("Cannot use a ReadHandle that has been disposed");
                 return GetReadStatus(this);
             }
         }
 
+        public long ReadCount
+        {
+            get
+            {
+                if (!IsReadHandleValid(this))
+                    throw new InvalidOperationException("Cannot use a ReadHandle that has been disposed");
+                return GetReadCount(this);
+            }
+        }
         public long GetBytesRead()
         {
             if (!IsReadHandleValid(this))
@@ -118,9 +205,20 @@ namespace Unity.IO.LowLevel.Unsafe
             return GetBytesReadForCommand(this, readCommandIndex);
         }
 
+        public unsafe ulong* GetBytesReadArray()
+        {
+            if (!IsReadHandleValid(this))
+                throw new InvalidOperationException("ReadHandle.GetBytesReadArray cannot be called after the ReadHandle has been disposed");
+            return GetBytesReadArray(this);
+        }
+
         [ThreadAndSerializationSafe()]
         [FreeFunction("AsyncReadManagerManaged::GetReadStatus", IsThreadSafe = true)]
         private extern static ReadStatus GetReadStatus(ReadHandle handle);
+
+        [ThreadAndSerializationSafe()]
+        [FreeFunction("AsyncReadManagerManaged::GetReadCount", IsThreadSafe = true)]
+        private extern static long GetReadCount(ReadHandle handle);
 
         [ThreadAndSerializationSafe()]
         [FreeFunction("AsyncReadManagerManaged::GetBytesRead", IsThreadSafe = true)]
@@ -129,6 +227,10 @@ namespace Unity.IO.LowLevel.Unsafe
         [ThreadAndSerializationSafe()]
         [FreeFunction("AsyncReadManagerManaged::GetBytesReadForCommand", IsThreadSafe = true)]
         private extern static long GetBytesReadForCommand(ReadHandle handle, uint readCommandIndex);
+
+        [ThreadAndSerializationSafe()]
+        [FreeFunction("AsyncReadManagerManaged::GetBytesReadArray", IsThreadSafe = true)]
+        private extern static unsafe ulong* GetBytesReadArray(ReadHandle handle);
 
         [ThreadAndSerializationSafe()]
         [FreeFunction("AsyncReadManagerManaged::ReleaseReadHandle", IsThreadSafe = true)]
@@ -159,8 +261,54 @@ namespace Unity.IO.LowLevel.Unsafe
         private extern unsafe static ReadHandle GetFileInfoInternal(string filename, void* cmd);
         public static ReadHandle GetFileInfo(string filename, FileInfoResult* result)
         {
+            if (result == null)
+            {
+                throw new NullReferenceException("GetFileInfo must have a valid FileInfoResult to write into.");
+            }
             return GetFileInfoInternal(filename, result);
         }
+
+        [ThreadAndSerializationSafe()]
+        [FreeFunction("AsyncReadManagerManaged::ReadWithHandles_NativePtr", IsThreadSafe = true)]
+        private extern static unsafe ReadHandle ReadWithHandlesInternal_NativePtr(in FileHandle fileHandle, void* readCmdArray, JobHandle dependency);
+
+        [ThreadAndSerializationSafe()]
+        [FreeFunction("AsyncReadManagerManaged::ReadWithHandles_NativeCopy", IsThreadSafe = true)]
+        private extern static unsafe ReadHandle ReadWithHandlesInternal_NativeCopy(in FileHandle fileHandle, void* readCmdArray);
+
+        public static ReadHandle ReadDeferred(in FileHandle fileHandle, ReadCommandArray* readCmdArray, JobHandle dependency)
+        {
+            if (!fileHandle.IsValid())
+                throw new InvalidOperationException("FileHandle is invalid and may not be read from.");
+            return ReadWithHandlesInternal_NativePtr(fileHandle, readCmdArray, dependency);
+        }
+
+        public static ReadHandle Read(in FileHandle fileHandle, ReadCommandArray readCmdArray)
+        {
+            if (!fileHandle.IsValid())
+                throw new InvalidOperationException("FileHandle is invalid and may not be read from.");
+            return ReadWithHandlesInternal_NativeCopy(fileHandle, UnsafeUtility.AddressOf(ref readCmdArray));
+        }
+
+        [ThreadAndSerializationSafe()]
+        [FreeFunction("AsyncReadManagerManaged::ScheduleOpenRequest", IsThreadSafe = true)]
+        private extern static FileHandle OpenFileAsync_Internal(string fileName);
+
+
+        public static FileHandle OpenFileAsync(string fileName)
+        {
+            if (fileName.Length == 0)
+                throw new InvalidOperationException("FileName is empty");
+            return OpenFileAsync_Internal(fileName);
+        }
+
+        [ThreadAndSerializationSafe()]
+        [FreeFunction("AsyncReadManagerManaged::ScheduleCloseRequest", IsThreadSafe = true)]
+        internal extern static JobHandle CloseFileAsync(in FileHandle fileHandle, JobHandle dependency);
+
+        [ThreadAndSerializationSafe()]
+        [FreeFunction("AsyncReadManagerManaged::ScheduleCloseCachedFileRequest", IsThreadSafe = true)]
+        public extern static JobHandle CloseCachedFileAsync(string fileName, JobHandle dependency = new JobHandle());
     }
 
     [NativeHeader("Runtime/File/AsyncReadManagerMetrics.h")]

@@ -357,7 +357,9 @@ namespace UnityEditor.Search
 
             if (m_PreviewTexture)
             {
-                var previewHeight = Math.Min(!IsBuiltInIcon(m_PreviewTexture) ? m_PreviewTexture.height : 64f, 256);
+                if (IsBuiltInIcon(m_PreviewTexture))
+                    return;
+                var previewHeight = Math.Min(m_PreviewTexture.height, 256);
                 var textureRect = EditorGUILayout.GetControlRect(false, previewHeight,
                     Styles.largePreview, GUILayout.MaxWidth(size), GUILayout.Height(previewHeight));
                 if (Event.current.type == EventType.Repaint)
@@ -367,7 +369,10 @@ namespace UnityEditor.Search
 
         private static bool IsBuiltInIcon(Texture icon)
         {
-            return AssetDatabase.GetAssetPath(icon) == "Library/unity editor resources";
+            var resPath = AssetDatabase.GetAssetPath(icon);
+            return string.Equals(resPath, "Library/unity editor resources", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(resPath, "resources/unity_builtin_extra", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(resPath, "library/unity default resources", StringComparison.OrdinalIgnoreCase);
         }
 
         private bool SkipGeneratedPreview()

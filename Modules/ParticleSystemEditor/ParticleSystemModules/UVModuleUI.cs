@@ -197,7 +197,7 @@ namespace UnityEditor
                 // add plus button to first element
                 if (i == 0)
                 {
-                    if (GUILayout.Button(GUIContent.none, "OL Plus", GUILayout.Width(16)))
+                    if (GUILayout.Button(s_AddItem, "OL Plus", GUILayout.Width(16)))
                     {
                         m_Sprites.InsertArrayElementAtIndex(m_Sprites.arraySize);
                         SerializedProperty newSpriteData = m_Sprites.GetArrayElementAtIndex(m_Sprites.arraySize - 1);
@@ -208,7 +208,7 @@ namespace UnityEditor
                 // add minus button to all other elements
                 else
                 {
-                    if (GUILayout.Button(GUIContent.none, "OL Minus", GUILayout.Width(16)))
+                    if (GUILayout.Button(s_RemoveItem, "OL Minus", GUILayout.Width(16)))
                         m_Sprites.DeleteArrayElementAtIndex(i);
                 }
 

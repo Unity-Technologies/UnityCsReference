@@ -3,13 +3,13 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Profiling.Editor;
 using UnityEditor;
 using UnityEditor.Profiling;
 using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Profiling;
 using System.Collections.Generic;
-using UnityEngine.UIElements;
 
 namespace UnityEditorInternal.Profiling
 {
@@ -17,6 +17,7 @@ namespace UnityEditorInternal.Profiling
     // TODO: refactor: rename to CpuProfilerModule
     // together with CPUOrGPUProfilerModule and GpuProfilerModule
     // in a PR that doesn't affect performance so that the sample names can be fixed as well without loosing comparability in Performance tests.
+    [ProfilerModuleMetadata("CPU Usage", typeof(LocalizationResource), IconPath = "Profiler.CPU")]
     internal class CPUProfilerModule : CPUOrGPUProfilerModule
     {
         static class Styles
@@ -26,12 +27,10 @@ namespace UnityEditorInternal.Profiling
         }
 
         const string k_SettingsKeyPrefix = "Profiler.CPUProfilerModule.";
-        const string k_IconName = "Profiler.CPU";
         const int k_DefaultOrderIndex = 0;
 
-        protected override string ModuleName => k_UnlocalizedName;
-        internal const string k_UnlocalizedName = "CPU Usage";
-        static readonly string k_Name = LocalizationDatabase.GetLocalizedString(k_UnlocalizedName);
+        // ProfilerWindow exposes this as a const value via ProfilerWindow.cpuModuleName, so we need to define it as const.
+        internal const string k_Identifier = "UnityEditorInternal.Profiling.CPUProfilerModule, UnityEditor.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
 
         static class Content
         {
@@ -44,13 +43,11 @@ namespace UnityEditorInternal.Profiling
         [SerializeField]
         ProfilerTimelineGUI m_TimelineGUI;
 
-        public CPUProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_UnlocalizedName, k_Name, k_IconName) {}
-
-        public override ProfilerArea area => ProfilerArea.CPU;
+        internal override ProfilerArea area => ProfilerArea.CPU;
         public override bool usesCounters => false;
 
-        protected override int defaultOrderIndex => k_DefaultOrderIndex;
-        protected override string legacyPreferenceKey => "ProfilerChartCPU";
+        private protected override int defaultOrderIndex => k_DefaultOrderIndex;
+        private protected override string legacyPreferenceKey => "ProfilerChartCPU";
         protected override string SettingsKeyPrefix => k_SettingsKeyPrefix;
         protected override ProfilerViewType DefaultViewTypeSetting => ProfilerViewType.Timeline;
 
@@ -66,12 +63,12 @@ namespace UnityEditorInternal.Profiling
         [NonSerialized]
         string m_LastThreadName = "";
 
-        public override void OnEnable()
+        internal override void OnEnable()
         {
             base.OnEnable();
 
             m_TimelineGUI = new ProfilerTimelineGUI();
-            m_TimelineGUI.OnEnable(this, m_ProfilerWindow, false);
+            m_TimelineGUI.OnEnable(this, ProfilerWindow, false);
             // safety guarding against event registration leaks due to an imbalance of OnEnable/OnDisable Calls, by deregistering first
             m_TimelineGUI.viewTypeChanged -= CPUOrGPUViewTypeChanged;
             m_TimelineGUI.viewTypeChanged += CPUOrGPUViewTypeChanged;
@@ -80,7 +77,7 @@ namespace UnityEditorInternal.Profiling
             UpdateSelectionHighlightLabel();
         }
 
-        public override void OnDisable()
+        internal override void OnDisable()
         {
             base.OnDisable();
             if (m_TimelineGUI != null)
@@ -90,7 +87,7 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
-        public override void DrawChartOverlay(Rect chartRect)
+        private protected override void DrawChartOverlay(Rect chartRect)
         {
             // Show selected property name
             if (selection == null)
@@ -125,7 +122,7 @@ namespace UnityEditorInternal.Profiling
                     ProfilerWindowAnalytics.RecordViewKeyboardEvent(ProfilerWindowAnalytics.profilerCPUModuleTimeline);
                 if (Event.current.isMouse && position.Contains(Event.current.mousePosition))
                     ProfilerWindowAnalytics.RecordViewMouseEvent(ProfilerWindowAnalytics.profilerCPUModuleTimeline);
-                CurrentFrameIndex = (int)m_ProfilerWindow.selectedFrameIndex;
+                CurrentFrameIndex = (int)ProfilerWindow.selectedFrameIndex;
                 m_TimelineGUI.DoGUI(CurrentFrameIndex, position, fetchData, ref updateViewLive);
             }
             else
@@ -138,7 +135,7 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
-        public override void Rebuild()
+        internal override void Rebuild()
         {
             base.Rebuild();
             m_TimelineGUI.ReInitialize();
@@ -448,14 +445,14 @@ namespace UnityEditorInternal.Profiling
             return RawFrameDataView.invalidSampleIndex;
         }
 
-        protected override ProfilerChart InstantiateChart(float defaultChartScale, float chartMaximumScaleInterpolationValue)
+        private protected override ProfilerChart InstantiateChart(float defaultChartScale, float chartMaximumScaleInterpolationValue)
         {
             var chart = base.InstantiateChart(defaultChartScale, chartMaximumScaleInterpolationValue);
             chart.SetOnSeriesToggleCallback(OnChartSeriesToggled);
             return chart;
         }
 
-        protected override void ApplyActiveState()
+        private protected override void ApplyActiveState()
         {
             // Opening/closing CPU chart should not set the CPU area as that would set Profiler.enabled.
         }
@@ -471,12 +468,12 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
-        protected override void UpdateChartOverlay(int firstEmptyFrame, int firstFrame, int frameCount)
+        private protected override void UpdateChartOverlay(int firstEmptyFrame, int firstFrame, int frameCount)
         {
             base.UpdateChartOverlay(firstEmptyFrame, firstFrame, frameCount);
 
             string selectedName = ProfilerDriver.selectedPropertyPath;
-            var selectedModule = m_ProfilerWindow.selectedModule;
+            var selectedModule = ProfilerWindow.selectedModule;
             bool hasCPUOverlay = (selectedName != string.Empty) && this.Equals(selectedModule);
             if (hasCPUOverlay)
             {

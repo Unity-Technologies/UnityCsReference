@@ -710,7 +710,7 @@ namespace UnityEngine.UIElements
             /// <param name="comp">Sorting criteria.</param>
             public void Sort(Comparison<VisualElement> comp)
             {
-                if (childCount > 0)
+                if (childCount > 1)
                 {
                     m_Owner.m_Children.Sort(comp);
 

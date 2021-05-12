@@ -90,7 +90,7 @@ namespace UnityEditor.UIElements
         void UpdateStyleMargins()
         {
             RectOffset margins = editorWindowModel.viewMargins;
-            IStyle style = editorWindowModel.window.rootVisualElement.style;
+            IStyle style = editorWindowModel.window.baseRootVisualElement.style;
             style.top = margins.top;
             style.bottom = margins.bottom;
             style.left = margins.left;
@@ -125,7 +125,7 @@ namespace UnityEditor.UIElements
                 m_Panel.enableAssetReload = EditorPrefs.GetBool(m_LiveReloadPreferenceKey, editorWindowModel.window is GameView);
             }
 
-            var root = window.rootVisualElement;
+            var root = window.baseRootVisualElement;
             root.visualTreeAssetTracker = m_LiveReloadVisualTreeAssetTracker;
             if (root.hierarchy.parent != m_Panel.visualTree)
             {
@@ -149,7 +149,7 @@ namespace UnityEditor.UIElements
             if (!m_WindowRegistered)
                 return;
 
-            var root = editorWindowModel.window.rootVisualElement;
+            var root = editorWindowModel.window.baseRootVisualElement;
             if (root.hierarchy.parent == m_Panel.visualTree)
             {
                 RemoveRootElement(root);

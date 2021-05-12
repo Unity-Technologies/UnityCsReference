@@ -17,11 +17,6 @@ namespace Unity.UI.Builder
         static VisualElement CloneSetupRecursively(VisualTreeAsset vta, VisualElementAsset root,
             Dictionary<int, List<VisualElementAsset>> idToChildren, CreationContext context)
         {
-            var resolvedSheets = new List<StyleSheet>();
-            foreach (var sheetPath in root.stylesheetPaths)
-                resolvedSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(sheetPath));
-            root.stylesheets = resolvedSheets;
-
             var ve = VisualTreeAsset.Create(root, context);
 
             // Linking the new element with its VisualElementAsset.

@@ -359,8 +359,8 @@ namespace UnityEditor.Search
             imagePosition = ImagePosition.TextOnly
         };
 
-        public static readonly GUIContent searchFavoriteButtonContent = new GUIContent(string.Empty, EditorGUIUtility.FindTexture("Favorite Icon"), "Mark search query as favorite");
-        public static readonly GUIContent searchFavoriteOnButtonContent = new GUIContent(string.Empty, EditorGUIUtility.FindTexture("Favorite On Icon"), "Remove search query from Favorites");
+        public static readonly GUIContent searchFavoriteButtonContent = new GUIContent(string.Empty, EditorGUIUtility.FindTexture("Favorite Icon"), "Mark as Favorite");
+        public static readonly GUIContent searchFavoriteOnButtonContent = new GUIContent(string.Empty, EditorGUIUtility.FindTexture("Favorite On Icon"), "Remove as Favorite");
         public static readonly GUIContent saveQueryButtonContent = new GUIContent(string.Empty, EditorGUIUtility.FindTexture("SaveAs"), "Save search query as an asset.");
         public static readonly GUIContent previewInspectorButtonContent = new GUIContent(string.Empty, EditorGUIUtility.FindTexture("UnityEditor.InspectorWindow"), "Open Preview Inspector");
 

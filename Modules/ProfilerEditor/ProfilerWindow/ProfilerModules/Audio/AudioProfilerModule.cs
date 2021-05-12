@@ -4,20 +4,18 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Profiling.Editor;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Profiling;
-using UnityEditor.Profiling;
 
 namespace UnityEditorInternal.Profiling
 {
     [Serializable]
+    [ProfilerModuleMetadata("Audio", typeof(LocalizationResource), IconPath = "Profiler.Audio")]
     internal class AudioProfilerModule : ProfilerModuleBase
     {
-        const string k_IconName = "Profiler.Audio";
         const int k_DefaultOrderIndex = 4;
-        static readonly string k_UnLocalizedName = "Audio";
-        static readonly string k_Name = LocalizationDatabase.GetLocalizedString(k_UnLocalizedName);
 
         Vector2 m_PaneScroll_AudioChannels = Vector2.zero;
         Vector2 m_PaneScroll_AudioDSPLeft = Vector2.zero;
@@ -60,15 +58,13 @@ namespace UnityEditorInternal.Profiling
         const string k_AudioProfilerGroupTreeViewStateSettingsKey = "Profiler.MemoryProfilerModule.AudioProfilerGroupTreeViewState";
         const string k_AudioProfilerClipTreeViewStateSettingsKey = "Profiler.MemoryProfilerModule.AudioProfilerClipTreeViewState";
 
-        public AudioProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_UnLocalizedName, k_Name, k_IconName) {}
-
-        public override ProfilerArea area => ProfilerArea.Audio;
+        internal override ProfilerArea area => ProfilerArea.Audio;
         public override bool usesCounters => false;
 
-        protected override int defaultOrderIndex => k_DefaultOrderIndex;
-        protected override string legacyPreferenceKey => "ProfilerChartAudio";
+        private protected override int defaultOrderIndex => k_DefaultOrderIndex;
+        private protected override string legacyPreferenceKey => "ProfilerChartAudio";
 
-        public override void OnEnable()
+        internal override void OnEnable()
         {
             base.OnEnable();
 
@@ -96,7 +92,7 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
-        public override void SaveViewSettings()
+        internal override void SaveViewSettings()
         {
             base.SaveViewSettings();
             EditorPrefs.SetInt(k_ViewTypeSettingsKey, (int)m_ShowDetailedAudioPane);
@@ -147,7 +143,7 @@ namespace UnityEditorInternal.Profiling
                     if (m_AudioProfilerDSPView == null)
                         m_AudioProfilerDSPView = new AudioProfilerDSPView();
 
-                    ProfilerProperty property = m_ProfilerWindow.CreateProperty();
+                    ProfilerProperty property = ProfilerWindow.CreateProperty();
                     if (property != null &&
                         property.frameDataReady)
                     {
@@ -159,7 +155,7 @@ namespace UnityEditorInternal.Profiling
 
                     GUI.EndScrollView();
 
-                    m_ProfilerWindow.Repaint();
+                    ProfilerWindow.Repaint();
                 }
                 else if (m_ShowDetailedAudioPane == ProfilerAudioView.Clips)
                 {
@@ -175,7 +171,7 @@ namespace UnityEditorInternal.Profiling
                     if (m_AudioProfilerClipViewBackend == null)
                         m_AudioProfilerClipViewBackend = new AudioProfilerClipViewBackend(m_AudioProfilerClipTreeViewState);
 
-                    ProfilerProperty property = m_ProfilerWindow.CreateProperty();
+                    ProfilerProperty property = ProfilerWindow.CreateProperty();
                     if (property == null)
                         return;
                     if (!property.frameDataReady)
@@ -183,7 +179,7 @@ namespace UnityEditorInternal.Profiling
 
                     using (property)
                     {
-                        var currentFrame = m_ProfilerWindow.GetActiveVisibleFrameIndex();
+                        var currentFrame = ProfilerWindow.GetActiveVisibleFrameIndex();
                         if (currentFrame == -1 || m_LastAudioProfilerFrame != currentFrame)
                         {
                             m_LastAudioProfilerFrame = currentFrame;
@@ -198,7 +194,7 @@ namespace UnityEditorInternal.Profiling
                                 m_AudioProfilerClipViewBackend.SetData(items);
                                 if (m_AudioProfilerClipView == null)
                                 {
-                                    m_AudioProfilerClipView = new AudioProfilerClipView(m_ProfilerWindow as EditorWindow, m_AudioProfilerClipTreeViewState);
+                                    m_AudioProfilerClipView = new AudioProfilerClipView(ProfilerWindow as EditorWindow, m_AudioProfilerClipTreeViewState);
                                     m_AudioProfilerClipView.Init(treeRect, m_AudioProfilerClipViewBackend);
                                 }
                             }
@@ -232,7 +228,7 @@ namespace UnityEditorInternal.Profiling
                     if (m_AudioProfilerGroupViewBackend == null)
                         m_AudioProfilerGroupViewBackend = new AudioProfilerGroupViewBackend(m_AudioProfilerGroupTreeViewState);
 
-                    ProfilerProperty property = m_ProfilerWindow.CreateProperty();
+                    ProfilerProperty property = ProfilerWindow.CreateProperty();
                     if (property == null)
                         return;
                     if (!property.frameDataReady)
@@ -240,7 +236,7 @@ namespace UnityEditorInternal.Profiling
 
                     using (property)
                     {
-                        var currentFrame = m_ProfilerWindow.GetActiveVisibleFrameIndex();
+                        var currentFrame = ProfilerWindow.GetActiveVisibleFrameIndex();
                         if (currentFrame == -1 || m_LastAudioProfilerFrame != currentFrame)
                         {
                             m_LastAudioProfilerFrame = currentFrame;
@@ -268,7 +264,7 @@ namespace UnityEditorInternal.Profiling
                                 m_AudioProfilerGroupViewBackend.SetData(items);
                                 if (m_AudioProfilerGroupView == null)
                                 {
-                                    m_AudioProfilerGroupView = new AudioProfilerGroupView(m_ProfilerWindow as EditorWindow, m_AudioProfilerGroupTreeViewState);
+                                    m_AudioProfilerGroupView = new AudioProfilerGroupView(ProfilerWindow as EditorWindow, m_AudioProfilerGroupTreeViewState);
                                     m_AudioProfilerGroupView.Init(treeRect, m_AudioProfilerGroupViewBackend);
                                 }
                             }
@@ -311,7 +307,7 @@ namespace UnityEditorInternal.Profiling
             var rightRect = new Rect(statsRect.xMax, totalRect.y, totalRect.width - statsRect.width, totalRect.height);
 
             // STATS
-            var content = ProfilerDriver.GetOverviewText(area, m_ProfilerWindow.GetActiveVisibleFrameIndex());
+            var content = ProfilerDriver.GetOverviewText(area, ProfilerWindow.GetActiveVisibleFrameIndex());
             var textSize = EditorStyles.wordWrappedLabel.CalcSize(GUIContent.Temp(content));
             scrollPos = GUI.BeginScrollView(statsRect, scrollPos, new Rect(0, 0, textSize.x, textSize.y));
             GUI.Label(new Rect(3, 3, textSize.x, textSize.y), content, EditorStyles.wordWrappedLabel);

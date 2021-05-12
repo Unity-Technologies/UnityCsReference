@@ -107,7 +107,7 @@ namespace UnityEditor
         /// Make a field for a generic mask.
         /// This version also gives you back which flags were changed and what they were changed to.
         /// This is useful if you want to make the same change to multiple objects.
-        internal static int DoMaskField(Rect position, int controlID, int mask, string[] flagNames, int[] flagValues, GUIStyle style, out int changedFlags, out bool changedToValue)
+        internal static int DoMaskField(Rect position, int controlID, int mask, string[] flagNames, int[] flagValues, GUIStyle style, out int changedFlags, out bool changedToValue, bool unsignedType = false)
         {
             mask = MaskCallbackInfo.GetSelectedValueForControl(controlID, mask, out changedFlags, out changedToValue);
 
@@ -115,7 +115,7 @@ namespace UnityEditor
             string[] optionNames;
             int[] optionMaskValues;
             int[] selectedOptions;
-            GetMenuOptions(mask, flagNames, flagValues, out buttonText, out optionNames, out optionMaskValues, out selectedOptions);
+            GetMenuOptions(mask, flagNames, flagValues, out buttonText, out optionNames, out optionMaskValues, out selectedOptions, unsignedType);
 
             Event evt = Event.current;
             if (evt.type == EventType.Repaint)
@@ -186,10 +186,16 @@ namespace UnityEditor
         }
 
         internal static void GetMenuOptions(int mask, string[] flagNames, int[] flagValues,
-            out string buttonText, out string[] optionNames, out int[] optionMaskValues, out int[] selectedOptions)
+            out string buttonText, out string[] optionNames, out int[] optionMaskValues, out int[] selectedOptions, bool isUnsignedType = false)
         {
+            int everythingValue = int.MaxValue;
+            if (isUnsignedType)
+            {
+                everythingValue = ~0;
+            }
+
             bool hasNothingName = (flagValues[0] == 0);
-            bool hasEverythingName = (flagValues[flagValues.Length - 1] == int.MaxValue);
+            bool hasEverythingName = (flagValues[flagValues.Length - 1] == everythingValue);
 
             var nothingName = (hasNothingName ? flagNames[0] : "Nothing");
             var everythingName = (hasEverythingName ? flagNames[flagValues.Length - 1] : "Everything");
@@ -197,7 +203,7 @@ namespace UnityEditor
             var optionCount = flagNames.Length + (hasNothingName ? 0 : 1) + (hasEverythingName ? 0 : 1);
             var flagCount = flagNames.Length - (hasNothingName ? 1 : 0) - (hasEverythingName ? 1 : 0);
 
-            // These indices refer to flags that are not 0 and int.MaxValue
+            // These indices refer to flags that are not 0 and everythingValue
             var flagStartIndex = (hasNothingName ? 1 : 0);
             var flagEndIndex = flagStartIndex + flagCount;
 
@@ -205,7 +211,7 @@ namespace UnityEditor
             buttonText = "Mixed...";
             if (mask == 0)
                 buttonText = nothingName;
-            else if (mask == int.MaxValue)
+            else if (mask == everythingValue)
                 buttonText = everythingName;
             else
             {
@@ -226,14 +232,14 @@ namespace UnityEditor
                 optionNames[optionIndex] = flagNames[flagIndex];
             }
 
-            var flagMask = 0; // Disjunction of all flags (except 0 and int.MaxValue)
+            var flagMask = 0; // Disjunction of all flags (except 0 and everythingValue)
             var intermediateMask = 0; // Mask used to compute new mask value for each options
 
             // Selected options
             s_SelectedOptionsSet.Clear();
             if (mask == 0)
                 s_SelectedOptionsSet.Add(0);
-            if (mask == int.MaxValue)
+            if (mask == everythingValue)
                 s_SelectedOptionsSet.Add(1);
             for (var flagIndex = flagStartIndex; flagIndex < flagEndIndex; flagIndex++)
             {
@@ -257,7 +263,7 @@ namespace UnityEditor
             // Option mask values
             optionMaskValues = GetBuffer(s_OptionValues, optionCount);
             optionMaskValues[0] = 0;
-            optionMaskValues[1] = int.MaxValue;
+            optionMaskValues[1] = everythingValue;
             if (EditorGUI.showMixedValue)
                 intermediateMask = 0;
             for (var flagIndex = flagStartIndex; flagIndex < flagEndIndex; flagIndex++)
@@ -267,9 +273,9 @@ namespace UnityEditor
                 var flagSet = ((intermediateMask & flagValue) == flagValue);
                 var newMask = (flagSet ? intermediateMask & ~flagValue : intermediateMask | flagValue);
 
-                // If all flag options are selected the mask becomes int.MaxValue to be consistent with the "Everything" option
+                // If all flag options are selected the mask becomes everythingValue to be consistent with the "Everything" option
                 if (newMask == flagMask)
-                    newMask = int.MaxValue;
+                    newMask = everythingValue;
 
                 optionMaskValues[optionIndex] = newMask;
             }

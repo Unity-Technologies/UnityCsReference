@@ -118,6 +118,12 @@ namespace UnityEditor
         {
             if (m_TreeView != null && reloadTreeView)
             {
+                if (!m_TreeView.IsValidTargetPrefabInstance())
+                {
+                    editorWindow.Close();
+                    return;
+                }
+
                 m_TreeView.Reload();
                 m_TreeView.CullNonExistingItemsFromSelection();
             }

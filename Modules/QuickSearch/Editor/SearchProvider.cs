@@ -158,7 +158,7 @@ namespace UnityEditor.Search
             this.id = id;
             type = id;
             active = true;
-            name = displayName;
+            name = displayName ?? SearchUtils.ToPascalWithSpaces(id);
             actions = new List<SearchAction>();
             fetchItems = fetchItemsHandler ?? ((context, items, provider) => null);
             fetchThumbnail = (item, context) => item.thumbnail ?? Icons.quicksearch;

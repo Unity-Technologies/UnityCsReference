@@ -59,17 +59,17 @@ namespace Unity.Jobs
         // They are scheduled when you call JobHandle.ScheduleBatchedJobs or JobHandle.Complete();
         // This is done for performance reasons since scheduling individual jobs results in expensive Semaphore.Signal calls
         // By scheduling many jobs at the same time delayed this cost will instead be paid only once per ScheduleBatchedJobs calls.
-        [NativeMethod(IsFreeFunction = true)]
+        [NativeMethod("ScheduleBatchedScriptingJobs", IsFreeFunction = true, IsThreadSafe = true)]
         public static extern  void ScheduleBatchedJobs();
 
-        [NativeMethod(IsFreeFunction = true)]
+        [NativeMethod("ScheduleBatchedScriptingJobsAndComplete", IsFreeFunction = true, IsThreadSafe = true, ThrowsException = true)]
         static extern void      ScheduleBatchedJobsAndComplete(ref JobHandle job);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [NativeMethod("ScheduleBatchedScriptingJobsAndIsCompleted", IsFreeFunction = true, IsThreadSafe = true, ThrowsException = true)]
         static extern bool      ScheduleBatchedJobsAndIsCompleted(ref JobHandle job);
 
-        [NativeMethod(IsFreeFunction = true)]
-        unsafe extern static void ScheduleBatchedJobsAndCompleteAll(void* jobs, int count);
+        [NativeMethod("ScheduleBatchedScriptingJobsAndCompleteAll", IsFreeFunction = true, IsThreadSafe = true, ThrowsException = true)]
+        static extern unsafe void ScheduleBatchedJobsAndCompleteAll(void* jobs, int count);
 
 
         public static JobHandle CombineDependencies(JobHandle job0, JobHandle job1)
@@ -92,16 +92,16 @@ namespace Unity.Jobs
             return CombineDependenciesInternalPtr(jobs.GetUnsafeReadOnlyPtr(), jobs.Length);
         }
 
-        [NativeMethod(IsFreeFunction = true)]
+        [NativeMethod(IsFreeFunction = true, IsThreadSafe = true, ThrowsException = true)]
         static extern JobHandle CombineDependenciesInternal2(ref JobHandle job0, ref JobHandle job1);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [NativeMethod(IsFreeFunction = true, IsThreadSafe = true, ThrowsException = true)]
         static extern JobHandle CombineDependenciesInternal3(ref JobHandle job0, ref JobHandle job1, ref JobHandle job2);
 
-        [NativeMethod(IsFreeFunction = true)]
-        unsafe internal static extern JobHandle CombineDependenciesInternalPtr(void* jobs, int count);
+        [NativeMethod(IsFreeFunction = true, IsThreadSafe = true, ThrowsException = true)]
+        internal static extern unsafe JobHandle CombineDependenciesInternalPtr(void* jobs, int count);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [NativeMethod(IsFreeFunction = true, IsThreadSafe = true)]
         public static extern bool CheckFenceIsDependencyOrDidSyncFence(JobHandle jobHandle, JobHandle dependsOn);
     }
 }

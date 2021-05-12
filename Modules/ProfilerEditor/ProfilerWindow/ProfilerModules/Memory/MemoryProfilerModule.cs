@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Unity.Profiling;
+using Unity.Profiling.Editor;
 using UnityEditor;
 using UnityEditor.Profiling;
 using UnityEngine;
@@ -14,6 +15,7 @@ using UnityEngine.Profiling;
 namespace UnityEditorInternal.Profiling
 {
     [Serializable]
+    [ProfilerModuleMetadata("Memory", typeof(LocalizationResource), IconPath = "Profiler.Memory")]
     internal class MemoryProfilerModule : ProfilerModuleBase
     {
         internal static class Styles
@@ -23,10 +25,7 @@ namespace UnityEditorInternal.Profiling
             public static readonly GUIContent memoryUsageInEditorDisclaimer = EditorGUIUtility.TrTextContent("Memory usage in the Editor is not the same as it would be in a Player.");
         }
 
-        const string k_IconName = "Profiler.Memory";
         const int k_DefaultOrderIndex = 3;
-        static readonly string k_UnLocalizedName = "Memory";
-        static readonly string k_Name = LocalizationDatabase.GetLocalizedString(k_UnLocalizedName);
 
         static readonly float[] k_SplitterMinSizes = new[] { 450f, 50f };
         static readonly string[] k_DefaultMemoryAreaCounterNames =
@@ -62,24 +61,22 @@ namespace UnityEditorInternal.Profiling
         MemoryTreeListClickable m_MemoryListView;
         bool m_GatherObjectReferences = true;
 
-        public MemoryProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_UnLocalizedName, k_Name, k_IconName) {}
-
-        public override ProfilerArea area => ProfilerArea.Memory;
-        protected override int defaultOrderIndex => k_DefaultOrderIndex;
-        protected override string legacyPreferenceKey => "ProfilerChartMemory";
+        internal override ProfilerArea area => ProfilerArea.Memory;
+        private protected override int defaultOrderIndex => k_DefaultOrderIndex;
+        private protected override string legacyPreferenceKey => "ProfilerChartMemory";
 
         bool wantsMemoryRefresh { get { return m_MemoryListView.RequiresRefresh; } }
 
-        public override void OnEnable()
+        internal override void OnEnable()
         {
             base.OnEnable();
 
             instance = new WeakReference(this);
 
             if (m_ReferenceListView == null)
-                m_ReferenceListView = new MemoryTreeList(m_ProfilerWindow, null);
+                m_ReferenceListView = new MemoryTreeList(ProfilerWindow, null);
             if (m_MemoryListView == null)
-                m_MemoryListView = new MemoryTreeListClickable(m_ProfilerWindow, m_ReferenceListView);
+                m_MemoryListView = new MemoryTreeListClickable(ProfilerWindow, m_ReferenceListView);
             if (m_ViewSplit == null || !m_ViewSplit.IsValid())
                 m_ViewSplit = SplitterState.FromRelative(new[] { EditorPrefs.GetFloat(k_SplitterRelative0SettingsKey, 70f), EditorPrefs.GetFloat(k_SplitterRelative1SettingsKey, 30f) }, k_SplitterMinSizes, null);
 
@@ -87,7 +84,7 @@ namespace UnityEditorInternal.Profiling
             m_GatherObjectReferences = EditorPrefs.GetBool(k_GatherObjectReferencesSettingsKey, true);
         }
 
-        public override void SaveViewSettings()
+        internal override void SaveViewSettings()
         {
             base.SaveViewSettings();
             EditorPrefs.SetInt(k_ViewTypeSettingsKey, (int)m_ShowDetailedMemoryPane);
@@ -99,7 +96,7 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
-        public override void OnNativePlatformSupportModuleChanged()
+        internal override void OnNativePlatformSupportModuleChanged()
         {
             base.OnNativePlatformSupportModuleChanged();
 
@@ -117,12 +114,12 @@ namespace UnityEditorInternal.Profiling
 
             if (m_ShowDetailedMemoryPane == ProfilerMemoryView.Detailed)
             {
-                if (GUILayout.Button(GUIContent.Temp(UnityString.Format(Styles.takeSample.text, m_ProfilerWindow.ConnectedTargetName), Styles.takeSample.tooltip), EditorStyles.toolbarButton))
+                if (GUILayout.Button(GUIContent.Temp(UnityString.Format(Styles.takeSample.text, ProfilerWindow.ConnectedTargetName), Styles.takeSample.tooltip), EditorStyles.toolbarButton))
                     RefreshMemoryData();
 
                 m_GatherObjectReferences = GUILayout.Toggle(m_GatherObjectReferences, Styles.gatherObjectReferences, EditorStyles.toolbarButton);
 
-                if (m_ProfilerWindow.ConnectedToEditor)
+                if (ProfilerWindow.ConnectedToEditor)
                     GUILayout.Label(Styles.memoryUsageInEditorDisclaimer, EditorStyles.toolbarButton);
             }
 
@@ -174,7 +171,7 @@ namespace UnityEditorInternal.Profiling
         {
             string activeText = string.Empty;
 
-            using (var f = ProfilerDriver.GetRawFrameDataView(m_ProfilerWindow.GetActiveVisibleFrameIndex(), 0))
+            using (var f = ProfilerDriver.GetRawFrameDataView(ProfilerWindow.GetActiveVisibleFrameIndex(), 0))
             {
                 if (f.valid)
                 {
@@ -228,7 +225,7 @@ namespace UnityEditorInternal.Profiling
                     else
                     {
                         // Old data compatibility.
-                        activeText = ProfilerDriver.GetOverviewText(ProfilerArea.Memory, m_ProfilerWindow.GetActiveVisibleFrameIndex());
+                        activeText = ProfilerDriver.GetOverviewText(ProfilerArea.Memory, ProfilerWindow.GetActiveVisibleFrameIndex());
                     }
                 }
             }

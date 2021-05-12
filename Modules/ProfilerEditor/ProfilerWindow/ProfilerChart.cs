@@ -4,8 +4,8 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Profiling.Editor;
 using UnityEditor;
-using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.Profiling;
 
@@ -23,7 +23,7 @@ namespace UnityEditorInternal
             new GUIContent("", EditorGUIUtility.LoadIcon("console.warnicon.sml"), L10n.Tr("Collecting GPU Profiler data might have overhead. Close graph if you don't need its data"));
 
         public ProfilerArea m_Area;
-        public ChartType m_Type;
+        public ProfilerModuleChartType m_Type;
         public float m_DataScale;
         public ChartViewData m_Data;
         public ChartSeriesViewData[] m_Series;
@@ -39,7 +39,7 @@ namespace UnityEditorInternal
         string m_IconName;
         float m_MaximumScaleInterpolationValue;
 
-        public ProfilerChart(ProfilerArea area, ChartType type, float dataScale, float maximumScaleInterpolationValue, int seriesCount, string name, string localizedName, string iconName) : base()
+        public ProfilerChart(ProfilerArea area, ProfilerModuleChartType type, float dataScale, float maximumScaleInterpolationValue, int seriesCount, string name, string localizedName, string iconName) : base()
         {
             Debug.Assert(seriesCount <= k_MaximumSeriesCount);
 
@@ -79,7 +79,7 @@ namespace UnityEditorInternal
             SetChartSettingsNameAndUpdateAllPreferences(chartSettingsPreferenceKey);
         }
 
-        protected override void DoLegendGUI(Rect position, ChartType type, ChartViewData cdata, EventType evtType, bool active)
+        protected override void DoLegendGUI(Rect position, ProfilerModuleChartType type, ChartViewData cdata, EventType evtType, bool active)
         {
             base.DoLegendGUI(position, type, cdata, evtType, active);
 
@@ -165,7 +165,7 @@ namespace UnityEditorInternal
                 if (maxValue > totalMaxValue)
                     totalMaxValue = maxValue;
 
-                if (m_Type == ChartType.Line)
+                if (m_Type == ProfilerModuleChartType.Line)
                 {
                     // Scale line charts so they never hit the top. Scale them slightly differently for each line
                     // so that in "no stuff changing" case they will not end up being exactly the same.
@@ -174,7 +174,7 @@ namespace UnityEditorInternal
                 }
             }
 
-            if (m_SharedScale && m_Type == ChartType.Line)
+            if (m_SharedScale && m_Type == ProfilerModuleChartType.Line)
             {
                 // For some charts, every line is scaled individually, so every data series gets their own range based on their own max scale.
                 // For charts that share their scale (like the Networking charts) all series get adjusted to the total max of the chart.
@@ -214,7 +214,7 @@ namespace UnityEditorInternal
 
         public void UpdateScaleValuesIfNecessary(int firstEmptyFrame, int firstFrame, int frameCount)
         {
-            if (m_Type == ChartType.StackedFill)
+            if (m_Type == ProfilerModuleChartType.StackedTimeArea)
             {
                 ComputeChartScaleValue(firstEmptyFrame, firstFrame, frameCount);
             }
@@ -256,15 +256,15 @@ namespace UnityEditorInternal
             m_Data.UpdateChartGrid(timeMax);
         }
 
-        public void ConfigureChartSeries(int historySize, List<ProfilerCounterData> counters)
+        public void ConfigureChartSeries(int historySize, ProfilerCounterDescriptor[] counters)
         {
             var chartAreaColors = ProfilerColors.chartAreaColors;
             var categories = new HashSet<string>();
-            for (int i = 0; i < counters.Count; ++i)
+            for (int i = 0; i < counters.Length; ++i)
             {
                 var counter = counters[i];
-                var category = counter.m_Category;
-                m_Series[i] = new ChartSeriesViewData(counter.m_Name, category, historySize, chartAreaColors[i % chartAreaColors.Length]);
+                var category = counter.CategoryName;
+                m_Series[i] = new ChartSeriesViewData(counter.Name, category, historySize, chartAreaColors[i % chartAreaColors.Length]);
                 categories.Add(category);
             }
 

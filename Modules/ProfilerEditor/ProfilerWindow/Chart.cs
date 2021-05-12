@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Profiling.Editor;
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.Profiling;
@@ -42,12 +43,6 @@ namespace UnityEditorInternal
         public void DeleteSettings()
         {
             DeleteChartsSettings();
-        }
-
-        internal enum ChartType
-        {
-            StackedFill,
-            Line,
         }
 
         static class Styles
@@ -179,7 +174,7 @@ namespace UnityEditorInternal
             m_chartControlID = 0;
         }
 
-        protected virtual void DoLegendGUI(Rect position, ChartType type, ChartViewData cdata, EventType evtType, bool active)
+        protected virtual void DoLegendGUI(Rect position, ProfilerModuleChartType type, ChartViewData cdata, EventType evtType, bool active)
         {
             if (Event.current.type == EventType.Repaint)
                 Styles.legendBackground.Draw(position, GUIContent.none, false, false, active, false);
@@ -209,7 +204,7 @@ namespace UnityEditorInternal
             DoSeriesList(position, m_chartControlID, type, cdata);
         }
 
-        public int DoGUI(Rect chartRect, ChartType type, int selectedFrame, ChartViewData cdata, bool active)
+        public int DoGUI(Rect chartRect, ProfilerModuleChartType type, int selectedFrame, ChartViewData cdata, bool active)
         {
             if (cdata == null)
                 return selectedFrame;
@@ -250,7 +245,7 @@ namespace UnityEditorInternal
                 Styles.rightPane.Draw(r, false, false, active, false);
 
                 r.height -= 1.0f; // do not draw the bottom pixel
-                if (type == ChartType.StackedFill)
+                if (type == ProfilerModuleChartType.StackedTimeArea)
                     DrawChartStacked(selectedFrame, cdata, r, active);
                 else
                     DrawChartLine(selectedFrame, cdata, r, active);
@@ -316,7 +311,7 @@ namespace UnityEditorInternal
 
             DrawSelectedFrame(selectedFrame, cdata, r);
 
-            DrawLabels(r, cdata, selectedFrame, ChartType.Line);
+            DrawLabels(r, cdata, selectedFrame, ProfilerModuleChartType.Line);
         }
 
         List<int> m_cachedFramesWithSeparatorLines = new List<int>();
@@ -424,7 +419,7 @@ namespace UnityEditorInternal
             DrawSelectedFrame(selectedFrame, cdata, r);
 
             DrawGridStacked(r, cdata);
-            DrawLabels(r, cdata, selectedFrame, ChartType.StackedFill);
+            DrawLabels(r, cdata, selectedFrame, ProfilerModuleChartType.StackedTimeArea);
         }
 
         internal static void DoLabel(float x, float y, string text, float alignment)
@@ -483,7 +478,7 @@ namespace UnityEditorInternal
         private readonly List<int> m_OverlappingLabels = new List<int>(16);
         private readonly List<float> m_SelectedFrameValues = new List<float>(16);
 
-        private void DrawLabels(Rect chartPosition, ChartViewData data, int selectedFrame, ChartType chartType)
+        private void DrawLabels(Rect chartPosition, ChartViewData data, int selectedFrame, ProfilerModuleChartType chartType)
         {
             if (data.selectedLabels == null || Event.current.type != EventType.Repaint)
                 return;
@@ -505,7 +500,7 @@ namespace UnityEditorInternal
 
             // get values of all series and cumulative value of all enabled stacks
             m_SelectedFrameValues.Clear();
-            var stacked = chartType == ChartType.StackedFill;
+            var stacked = chartType == ProfilerModuleChartType.StackedTimeArea;
             var numLabels = 0;
 
             for (int s = 0; s < data.numSeries; ++s)
@@ -918,7 +913,7 @@ namespace UnityEditorInternal
             GL.End();
         }
 
-        protected virtual Rect DoSeriesList(Rect position, int chartControlID, ChartType chartType, ChartViewData cdata)
+        protected virtual Rect DoSeriesList(Rect position, int chartControlID, ProfilerModuleChartType chartType, ChartViewData cdata)
         {
             Rect elementPosition = position;
             Event evt = Event.current;
@@ -962,7 +957,7 @@ namespace UnityEditorInternal
                 if (i == m_DragItemIndex)
                     controlPosition.y = mousePosition.y - m_DragDownPos.y;
 
-                if (chartType == ChartType.StackedFill)
+                if (chartType == ProfilerModuleChartType.StackedTimeArea)
                 {
                     Rect dragHandlePosition = controlPosition;
                     dragHandlePosition.xMin = dragHandlePosition.xMax - elementPosition.height;

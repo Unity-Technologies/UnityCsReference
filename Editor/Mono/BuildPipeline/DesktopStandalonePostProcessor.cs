@@ -561,13 +561,15 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
 
     protected virtual string GetVariationName(BuildPostProcessArgs args, string platformString)
     {
-        var configurationString = GetDevelopment(args) ? "development" : "nondevelopment";
-
         var scriptingBackend = "mono";
         if (UseIl2Cpp && !IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildTargetGroup.Standalone))
             scriptingBackend = "il2cpp";
 
-        return $"{platformString}_{configurationString}_{scriptingBackend}";
+        return string.Format("{0}_{1}_{2}_{3}",
+            platformString,
+            IsServerBuild(args) ? "server" : "player",
+            GetDevelopment(args) ? "development" : "nondevelopment",
+            scriptingBackend);
     }
 
     protected static string GetPathSafeProductName(BuildPostProcessArgs args)

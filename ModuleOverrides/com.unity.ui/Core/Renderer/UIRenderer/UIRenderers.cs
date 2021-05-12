@@ -130,7 +130,7 @@ namespace UnityEngine.UIElements.UIR
                     Utility.ProfileImmediateRendererBegin();
                     try
                     {
-                        using (new GUIClip.ParentClipScope(owner.worldTransform, owner.worldClip))
+                        using (new GUIClip.ParentClipScope(owner.worldTransform, owner.worldClipImmediate))
                             callback();
                     }
                     catch (Exception e)

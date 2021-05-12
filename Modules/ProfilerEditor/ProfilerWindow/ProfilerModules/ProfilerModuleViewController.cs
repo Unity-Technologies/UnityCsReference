@@ -18,7 +18,9 @@ namespace Unity.Profiling.Editor
             ProfilerWindow = profilerWindow;
         }
 
-        public VisualElement View
+        public bool Disposed { get; private set; }
+
+        internal VisualElement View
         {
             get
             {
@@ -28,8 +30,6 @@ namespace Unity.Profiling.Editor
                 return m_View;
             }
         }
-
-        public bool Disposed { get; private set; }
 
         protected ProfilerWindow ProfilerWindow { get; }
 

@@ -52,7 +52,7 @@ namespace UnityEditor.SceneTemplate
 
                 // Prepare the sceneView region the
                 const int tabHeight = 19; // Taken from DockArea, which is internal, and the value is also internal.
-                var cameraRect = sceneView.cameraRect;
+                var cameraRect = sceneView.cameraViewport;
                 var offsetPosition = sceneView.position.position + cameraRect.position + new Vector2(0, tabHeight);
                 var region = new Rect(offsetPosition, cameraRect.size);
 

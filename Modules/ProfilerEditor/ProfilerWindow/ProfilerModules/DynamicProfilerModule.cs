@@ -4,7 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEditorInternal;
+using Unity.Profiling.Editor;
 using UnityEditorInternal.Profiling;
 using UnityEngine;
 
@@ -13,16 +13,24 @@ namespace UnityEditor.Profiling
     [Serializable]
     internal class DynamicProfilerModule : ProfilerModuleBase
     {
-        const string k_IconName = "Profiler.Custom";
+        public const string iconPath = "Profiler.Custom";
 
-        public DynamicProfilerModule(IProfilerWindowController profilerWindow, string name) : base(profilerWindow, name, null, k_IconName) {}
+        Action m_LegacyInitialization;
 
-        public static DynamicProfilerModule CreateFromSerializedData(SerializedData serializedData, IProfilerWindowController profilerWindow)
+        public void Initialize(InitializationArgs args, List<ProfilerCounterData> chartCounters, List<ProfilerCounterData> detailCounters)
         {
-            var name = serializedData.m_Name;
-            var module = new DynamicProfilerModule(profilerWindow, name);
-            module.SetCounters(serializedData.m_ChartCounters, serializedData.m_DetailCounters);
-            return module;
+            m_LegacyInitialization = () =>
+            {
+                SetCounters(chartCounters, detailCounters);
+            };
+            Initialize(args);
+        }
+
+        internal override void LegacyModuleInitialize()
+        {
+            base.LegacyModuleInitialize();
+            m_LegacyInitialization.Invoke();
+            m_LegacyInitialization = null;
         }
 
         public override void DrawToolbar(Rect position)
@@ -39,9 +47,9 @@ namespace UnityEditor.Profiling
         {
             return new SerializedData()
             {
-                m_Name = name,
-                m_ChartCounters = m_ChartCounters,
-                m_DetailCounters = m_DetailCounters,
+                m_Name = DisplayName,
+                m_ChartCounters = m_LegacyChartCounters,
+                m_DetailCounters = m_LegacyDetailCounters,
             };
         }
 
@@ -69,7 +77,7 @@ namespace UnityEditor.Profiling
                 m_Modules.Add(module);
             }
 
-            public static SerializedDataCollection FromDynamicProfilerModulesInCollection(List<ProfilerModuleBase> modules)
+            public static SerializedDataCollection FromDynamicProfilerModulesInCollection(List<ProfilerModule> modules)
             {
                 var serializableCollection = new SerializedDataCollection();
                 foreach (var module in modules)

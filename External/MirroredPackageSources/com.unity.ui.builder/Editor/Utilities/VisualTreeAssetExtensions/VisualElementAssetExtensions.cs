@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Text;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEditor;
 
 namespace Unity.UI.Builder
 {
@@ -19,7 +20,16 @@ namespace Unity.UI.Builder
         
         public static List<string> GetStyleSheetPaths(this VisualElementAsset vea)
         {
-            return vea.stylesheetPaths;
+            List<string> ret = new List<string>();
+
+            foreach (var sheet in vea.stylesheets)
+            {
+                var path = AssetDatabase.GetAssetPath(sheet);
+
+                if (!string.IsNullOrEmpty(path))
+                    ret.Add(path);
+            }
+            return ret;
         }
 
         public static bool HasParent(this VisualElementAsset vea)

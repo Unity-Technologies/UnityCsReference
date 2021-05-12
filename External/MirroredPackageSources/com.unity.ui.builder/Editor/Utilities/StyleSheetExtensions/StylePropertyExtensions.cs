@@ -28,6 +28,7 @@ namespace Unity.UI.Builder
             var newValue = new StyleValueHandle(index, type);
             newValues.Add(newValue);
             property.values = newValues.ToArray();
+            styleSheet.UpdateContentHash();
 
             return newValue;
         }
@@ -82,6 +83,7 @@ namespace Unity.UI.Builder
 
             return newValue;
         }
+
 
         internal static StyleValueHandle AddValue(this StyleSheet styleSheet, StyleProperty property, Color value)
         {

@@ -10,7 +10,8 @@ namespace UnityEditor.Toolbars
     {
         const string k_UxmlPath = "UXML/Toolbars/";
         const string k_StyleSheetsPath = "StyleSheets/Toolbars/";
-        internal const string stripElementClassName = "unity-editor-toolbar__button-strip-element";
+        internal const string buttonStripClassName = "unity-editor-toolbar__button-strip";
+        internal const string stripElementClassName = buttonStripClassName + "-element";
         internal const string leftStripElementClassName = stripElementClassName + "--left";
         internal const string middleStripElementClassName = stripElementClassName + "--middle";
         internal const string rightStripElementClassName = stripElementClassName + "--right";
@@ -18,6 +19,7 @@ namespace UnityEditor.Toolbars
 
         public static void SetupChildrenAsButtonStrip(VisualElement root)
         {
+            root.AddToClassList(buttonStripClassName);
             int count = root.hierarchy.childCount;
             for (var i = 0; i < count; ++i)
             {

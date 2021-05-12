@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityObject = UnityEngine.Object;
+using UnityEditor.Overlays;
 
 
 namespace UnityEditor
@@ -70,12 +71,10 @@ namespace UnityEditor
         Vector3 m_GradientStartPoint;
         Vector3 m_GradientEndPoint;
 
-        OverlayWindow m_ConstraintEditingOverlayWindow;
-        OverlayWindow m_SelfAndInterCollisionEditingOverlayWindow;
-
         const float kDisabledValue = float.MaxValue;
 
         static Texture2D s_ColorTexture = null;
+        static ClothInspector s_Inspector;
 
         public static PrefColor s_BrushColor = new PrefColor("Cloth/Brush Color 2", 0.0f / 255.0f, 0.0f / 255.0f, 0.0f / 255.0f, 51.0f / 255.0f);
         public static PrefColor s_SelfAndInterCollisionParticleColor = new PrefColor("Cloth/Self or Inter Collision Particle Color 2", 145.0f / 255.0f, 244.0f / 255.0f, 139.0f / 255.0f, 0.5f);
@@ -513,9 +512,6 @@ namespace UnityEditor
 
             m_SelfCollisionDistance = serializedObject.FindProperty("m_SelfCollisionDistance");
             m_SelfCollisionStiffness = serializedObject.FindProperty("m_SelfCollisionStiffness");
-
-            m_ConstraintEditingOverlayWindow = new OverlayWindow(EditorGUIUtility.TrTextContent("Cloth Constraints"), ConstraintEditing, (int)SceneViewOverlay.Ordering.ClothConstraints, null, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
-            m_SelfAndInterCollisionEditingOverlayWindow = new OverlayWindow(Styles.clothSelfCollisionAndInterCollision, SelfAndInterCollisionEditing, (int)SceneViewOverlay.Ordering.ClothSelfAndInterCollision, null, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
         }
 
         float GetCoefficient(ClothSkinningCoefficient coefficient)
@@ -1628,6 +1624,8 @@ namespace UnityEditor
             if (Selection.gameObjects.Length > 1)
                 return;
 
+            s_Inspector = this;
+
             if (Event.current.type == EventType.Repaint)
                 DrawConstraints();
 
@@ -1653,8 +1651,6 @@ namespace UnityEditor
                 EditorStyles.selectionRect.Draw(EditorGUIExt.FromToRect(m_SelectStartPoint, m_SelectMousePoint),
                     GUIContent.none, false, false, false, false);
             Handles.EndGUI();
-
-            SceneViewOverlay.ShowWindow(m_ConstraintEditingOverlayWindow);
         }
 
         void OnSceneEditSelfAndInterCollisionParticlesGUI()
@@ -1663,7 +1659,8 @@ namespace UnityEditor
             if (Selection.gameObjects.Length > 1)
                 return;
 
-            var evt = Event.current;
+            s_Inspector = this;
+            Event evt = Event.current;
 
             if (evt.type == EventType.Repaint)
                 DrawSelfAndInterCollisionParticles();
@@ -1678,8 +1675,6 @@ namespace UnityEditor
             if (m_RectSelecting && state.CollToolMode == CollToolMode.Select && evt.type == EventType.Repaint)
                 EditorStyles.selectionRect.Draw(EditorGUIExt.FromToRect(m_SelectStartPoint, m_SelectMousePoint), GUIContent.none, false, false, false, false);
             Handles.EndGUI();
-
-            SceneViewOverlay.ShowWindow(m_SelfAndInterCollisionEditingOverlayWindow);
         }
 
         public void VisualizationMenuSetMaxDistanceMode()
@@ -1749,7 +1744,7 @@ namespace UnityEditor
             return false;
         }
 
-        void ConstraintEditing(UnityObject unused, SceneView sceneView)
+        void ConstraintEditing()
         {
             GUILayout.BeginVertical(GUILayout.Width(Styles.clothEditorWindowWidth));
             GUILayout.BeginHorizontal();
@@ -1860,7 +1855,7 @@ namespace UnityEditor
             }
         }
 
-        void SelfAndInterCollisionEditing(UnityObject unused, SceneView sceneView)
+        void SelfAndInterCollisionEditing()
         {
             GUILayout.BeginVertical(GUILayout.Width(Styles.clothEditorWindowWidth));
             GUILayout.BeginHorizontal();
@@ -1941,6 +1936,34 @@ namespace UnityEditor
             }
 
             GUILayout.EndVertical();
+        }
+
+        [Overlay(typeof(SceneView), "Scene View/Cloth Constraints", "unity-sceneview-clothconstraints", "Cloth Constraints")]
+        class SceneViewClothConstraintsOverlay : TransientSceneViewOverlay
+        {
+            public override bool visible
+            {
+                get { return s_Inspector != null && s_Inspector.editingConstraints; }
+            }
+
+            public override void OnGUI()
+            {
+                s_Inspector.ConstraintEditing();
+            }
+        }
+
+        [Overlay(typeof(SceneView), "Scene View/Cloth Collisions", "unity-sceneview-clothcollision", "Cloth Self-Collision and Inter-Collision")]
+        class SceneViewClothCollisionsOverlay : TransientSceneViewOverlay
+        {
+            public override bool visible
+            {
+                get { return s_Inspector != null && s_Inspector.editingSelfAndInterCollisionParticles; }
+            }
+
+            public override void OnGUI()
+            {
+                s_Inspector.SelfAndInterCollisionEditing();
+            }
         }
     }
 }

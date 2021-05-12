@@ -82,6 +82,9 @@ namespace UnityEditor.AssetImporters
         [NativeName("DependsOnSourceAsset")]
         private extern void DependsOnSourceAssetInternalGUID(GUID guid);
 
+        [NativeName("GetFolderEntries")]
+        internal extern GUID[] GetFolderEntries(GUID folder);
+
         internal void DependsOnImportedAsset(string path)
         {
             if (string.IsNullOrEmpty(path))

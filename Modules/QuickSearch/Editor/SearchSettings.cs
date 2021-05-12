@@ -79,7 +79,6 @@ namespace UnityEditor.Search
 
         const string k_ItemIconSizePrefKey = "Search.ItemIconSize";
         public const string settingsPreferencesKey = "Preferences/Search";
-        public static readonly string globalSearchSettingsFolder = Path.Combine(InternalEditorUtility.unityPreferencesFolder, "Search").Replace("\\", "/");
 
         // Per project settings
         public static bool trackSelection { get; set; }

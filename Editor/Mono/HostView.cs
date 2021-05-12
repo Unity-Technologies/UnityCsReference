@@ -5,13 +5,16 @@
 using UnityEngine;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using UnityEditor.Profiling;
 using System.Linq;
-using UnityEditor.ShortcutManagement;
+using UnityEditor.Overlays;
 using UnityEditor.StyleSheets;
 using UnityEditor.UIElements;
 using UnityEditorInternal;
+using Directory = UnityEditor.ShortcutManagement.Directory;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -790,6 +793,17 @@ namespace UnityEditor
         {
             if (menu.GetItemCount() != 0)
                 menu.AddSeparator("");
+
+            if (window is ISupportsOverlays)
+            {
+                OverlayPresetManager.GenerateMenu(menu, "Overlays/Presets/", window);
+                foreach (var overlay in window.overlayCanvas.overlays)
+                {
+                    if (overlay.userControlledVisibility)
+                        menu.AddItem(new GUIContent($"Overlays/{overlay.displayName}"), overlay.displayed,
+                            o => ((Overlay)o).displayed = !((Overlay)o).displayed, overlay);
+                }
+            }
 
             if (window && Unsupported.IsDeveloperMode())
             {

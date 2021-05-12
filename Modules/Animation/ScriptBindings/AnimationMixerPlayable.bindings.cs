@@ -23,16 +23,22 @@ namespace UnityEngine.Animations
         static readonly AnimationMixerPlayable m_NullPlayable = new AnimationMixerPlayable(PlayableHandle.Null);
         public static AnimationMixerPlayable Null { get { return m_NullPlayable; } }
 
-        public static AnimationMixerPlayable Create(PlayableGraph graph, int inputCount = 0, bool normalizeWeights = false)
+        [Obsolete("normalizeWeights is obsolete. It has no effect and will be removed.")]
+        public static AnimationMixerPlayable Create(PlayableGraph graph, int inputCount, bool normalizeWeights)
         {
-            var handle = CreateHandle(graph, inputCount, normalizeWeights);
+            return Create(graph, inputCount);
+        }
+
+        public static AnimationMixerPlayable Create(PlayableGraph graph, int inputCount = 0)
+        {
+            var handle = CreateHandle(graph, inputCount);
             return new AnimationMixerPlayable(handle);
         }
 
-        private static PlayableHandle CreateHandle(PlayableGraph graph, int inputCount = 0, bool normalizeWeights = false)
+        private static PlayableHandle CreateHandle(PlayableGraph graph, int inputCount = 0)
         {
             PlayableHandle handle = PlayableHandle.Null;
-            if (!CreateHandleInternal(graph, normalizeWeights, ref handle))
+            if (!CreateHandleInternal(graph, ref handle))
                 return PlayableHandle.Null;
             handle.SetInputCount(inputCount);
             return handle;
@@ -70,6 +76,6 @@ namespace UnityEngine.Animations
         }
 
         [NativeThrows]
-        extern private static bool CreateHandleInternal(PlayableGraph graph, bool normalizeWeights, ref PlayableHandle handle);
+        extern private static bool CreateHandleInternal(PlayableGraph graph, ref PlayableHandle handle);
     }
 }

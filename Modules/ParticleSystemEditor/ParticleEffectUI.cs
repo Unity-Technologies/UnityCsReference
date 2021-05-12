@@ -5,9 +5,11 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using UnityEditor.Overlays;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.SceneManagement;
 
 // The ParticleEffectUI displays one or more ParticleSystemUIs.
 
@@ -20,10 +22,10 @@ namespace UnityEditor
         Editor customEditor { get; }
     }
 
-
     internal class ParticleEffectUI
     {
         public ParticleEffectUIOwner m_Owner;               // Can be InspectorWindow or ParticleSystemWindow
+        static ParticleEffectUI s_EffectUi;
         public ParticleSystemUI[] m_Emitters;               // Contains UI for all ParticleSystem children of the root ParticleSystem for this effect
         bool m_EmittersActiveInHierarchy;
         ParticleSystemCurveEditor m_ParticleSystemCurveEditor; // The curve editor used by ParticleSystem modules
@@ -393,7 +395,11 @@ namespace UnityEditor
             m_ParticleSystemCurveEditor.OnDisable();
             Tools.s_Hidden = false; // The collisionmodule might have hidden the tools
 
+            if (s_EffectUi == this)
+                s_EffectUi = null;
+
             SetShowOnlySelectedMode(false);
+
 
             PlayModeView.RepaintAll();
             SceneView.RepaintAll();
@@ -504,23 +510,13 @@ namespace UnityEditor
             return m_ParticleSystemCurveEditor;
         }
 
-        private void SceneViewGUICallback(Object target, SceneView sceneView)
-        {
-            PlayStopGUI();
-        }
-
-        OverlayWindow m_OverlayWindow;
-
         public void OnSceneViewGUI()
         {
-            if (m_OverlayWindow == null)
-            {
-                m_OverlayWindow = new OverlayWindow(ParticleSystemInspector.playBackTitle, SceneViewGUICallback, (int)SceneViewOverlay.Ordering.ParticleEffect, null, SceneViewOverlay.WindowDisplayOption.OneWindowPerTitle);
-            }
-
             ParticleSystem root = ParticleSystemEditorUtils.GetRoot(m_SelectedParticleSystems[0]);
             if (root && root.gameObject.activeInHierarchy)
-                SceneViewOverlay.ShowWindow(m_OverlayWindow);
+                s_EffectUi = this;
+            else
+                s_EffectUi = null;
 
             foreach (ParticleSystemUI e in m_Emitters)
                 e.OnSceneViewGUI();
@@ -1222,5 +1218,24 @@ namespace UnityEditor
                 }
             }
         }
+
+        [Overlay(typeof(SceneView), k_OverlayId, k_DisplayName)]
+        class SceneViewParticleOverlay : TransientSceneViewOverlay
+        {
+            const string k_OverlayId = "Scene View/Particles";
+            const string k_DisplayName = "Particles";
+
+            public override bool visible
+            {
+                get { return s_EffectUi != null; }
+            }
+
+            public override void OnGUI()
+            {
+                if (s_EffectUi == null)
+                    return;
+                s_EffectUi.PlayStopGUI();
+            }
+        }
     }
-} // namespace UnityEditor
+}

@@ -723,6 +723,11 @@ namespace UnityEditor
             return 20.0f;
         }
 
+        static float renderingViewHeight
+        {
+            get { return Camera.current == null ? Screen.height : Camera.current.pixelHeight; }
+        }
+
         // Convert world space point to a 2D GUI position.
         public static Vector2 WorldToGUIPoint(Vector3 world)
         {
@@ -732,19 +737,19 @@ namespace UnityEditor
         // Convert world space point to a 2D GUI position.
         public static Vector3 WorldToGUIPointWithDepth(Vector3 world)
         {
-            return WorldToGUIPointWithDepth(world, Camera.current, Handles.matrix, Screen.height);
+            return WorldToGUIPointWithDepth(Camera.current, world);
         }
 
         // Convert world space point to a 2D GUI position.
         // Use this version in critical loops.
-        internal static Vector3 WorldToGUIPointWithDepth(Vector3 world, Camera camera, Matrix4x4 matrixHandles, float screenHeight)
+        public static Vector3 WorldToGUIPointWithDepth(Camera camera, Vector3 world)
         {
-            world = matrixHandles.MultiplyPoint(world);
+            world = Handles.matrix.MultiplyPoint(world);
 
             if (camera)
             {
                 Vector3 pos = camera.WorldToScreenPoint(world);
-                pos.y = screenHeight - pos.y;
+                pos.y = camera.pixelHeight - pos.y;
                 Vector2 points = EditorGUIUtility.PixelsToPoints(pos);
                 points = GUIClip.Clip(points);
                 return new Vector3(points.x, points.y, pos.z);
@@ -757,7 +762,7 @@ namespace UnityEditor
         {
             var unclippedPosition = GUIClip.Unclip(guiPoint);
             var screenPixelPos = EditorGUIUtility.PointsToPixels(unclippedPosition);
-            screenPixelPos.y = Screen.height - screenPixelPos.y;
+            screenPixelPos.y = renderingViewHeight - screenPixelPos.y;
             return screenPixelPos;
         }
 
@@ -770,6 +775,10 @@ namespace UnityEditor
         private static Ray GUIPointToWorldRayPrecise(Vector2 position, float startZ = float.NegativeInfinity)
         {
             Camera camera = Camera.current;
+
+            if (!camera && SceneView.lastActiveSceneView != null)
+                camera = SceneView.lastActiveSceneView.camera;
+
             if (!camera)
             {
                 Debug.LogError("Unable to convert GUI point to world ray if a camera has not been set up!");
@@ -952,7 +961,7 @@ namespace UnityEditor
             int layers = cam.cullingMask;
             position = GUIClip.Unclip(position);
             position = EditorGUIUtility.PointsToPixels(position);
-            position.y = Screen.height - position.y - cam.pixelRect.yMin;
+            position.y = cam.pixelHeight - position.y - cam.pixelRect.yMin;
 
             materialIndex = -1; // default
             GameObject picked = null;
@@ -1311,6 +1320,10 @@ namespace UnityEditor
         public static object RaySnap(Ray ray)
         {
             Camera cam = Camera.current;
+
+            if (cam == null)
+                return null;
+
             ulong sceneCullingMask = cam.sceneCullingMask;
             int layerCullingMask = cam.cullingMask;
 

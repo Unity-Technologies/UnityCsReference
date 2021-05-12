@@ -3,11 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using UnityEditor;
+using Unity.Profiling.Editor;
 using UnityEditorInternal;
-using UnityEditor.Profiling;
 using UnityEditorInternal.Profiling;
-using UnityEngine.Profiling;
 using System;
 
 namespace UnityEditor.Profiling
@@ -19,7 +17,7 @@ namespace UnityEditor.Profiling
         internal static int GetActiveVisibleFrameIndex(this IProfilerWindowController controller) => (int)controller.selectedFrameIndex;
         internal static void SetActiveVisibleFrameIndex(this IProfilerWindowController controller, int frame) => controller.selectedFrameIndex = frame;
         // used by Tests/PerformanceTests/Profiler to avoid brittle tests due to reflection
-        internal static T GetProfilerModuleByType<T>(this IProfilerWindowController controller) where T : ProfilerModuleBase => controller.GetProfilerModuleByType(typeof(T)) as T;
+        internal static T GetProfilerModuleByType<T>(this IProfilerWindowController controller) where T : ProfilerModule => controller.GetProfilerModuleByType(typeof(T)) as T;
 
 
         // selects first occurence of this sample in the given frame and thread (and optionally given the markerNamePath leading up to it or a (grand, (grand)...) parent of it)

@@ -6,7 +6,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.Toolbars
 {
-    [EditorToolbarElement("Tools/Builtin Tools", typeof(DefaultMainToolbar))]
+    [EditorToolbarElement("Tools/Builtin Tools")]
     sealed class BuiltinToolsStrip : VisualElement
     {
         public BuiltinToolsStrip()

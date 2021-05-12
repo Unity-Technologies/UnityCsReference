@@ -101,7 +101,7 @@ namespace UnityEditor.CrashReporting
             }
             catch (Exception ex)
             {
-                Debug.LogWarningFormat("Exception occurred attempting to connect to Unity Performance Reporting service.  Native symbols will not be uploaded for this build. Exception details:\n{0}\n{1}", ex.ToString(), ex.StackTrace);
+                Debug.LogWarningFormat("Exception occurred attempting to connect to Unity Cloud Diagnostics service.  Native symbols will not be uploaded for this build. Exception details:\n{0}\n{1}", ex.ToString(), ex.StackTrace);
             }
 
             ServicePointManager.ServerCertificateValidationCallback = originalCallback;

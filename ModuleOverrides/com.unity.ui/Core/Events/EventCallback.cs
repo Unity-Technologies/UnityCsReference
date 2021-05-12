@@ -25,11 +25,13 @@ namespace UnityEngine.UIElements
 
     internal abstract class EventCallbackFunctorBase
     {
-        public CallbackPhase phase { get; private set; }
+        public CallbackPhase phase { get; }
+        public InvokePolicy invokePolicy { get; }
 
-        protected EventCallbackFunctorBase(CallbackPhase phase)
+        protected EventCallbackFunctorBase(CallbackPhase phase, InvokePolicy invokePolicy)
         {
             this.phase = phase;
+            this.invokePolicy = invokePolicy;
         }
 
         public abstract void Invoke(EventBase evt);
@@ -60,7 +62,7 @@ namespace UnityEngine.UIElements
         readonly EventCallback<TEventType> m_Callback;
         readonly long m_EventTypeId;
 
-        public EventCallbackFunctor(EventCallback<TEventType> callback, CallbackPhase phase) : base(phase)
+        public EventCallbackFunctor(EventCallback<TEventType> callback, CallbackPhase phase, InvokePolicy invokePolicy = default) : base(phase, invokePolicy)
         {
             m_Callback = callback;
             m_EventTypeId = EventBase<TEventType>.TypeId();
@@ -96,7 +98,7 @@ namespace UnityEngine.UIElements
 
         internal TCallbackArgs userArgs { get; set; }
 
-        public EventCallbackFunctor(EventCallback<TEventType, TCallbackArgs> callback, TCallbackArgs userArgs, CallbackPhase phase) : base(phase)
+        public EventCallbackFunctor(EventCallback<TEventType, TCallbackArgs> callback, TCallbackArgs userArgs, CallbackPhase phase, InvokePolicy invokePolicy) : base(phase, invokePolicy)
         {
             this.userArgs = userArgs;
             m_Callback = callback;

@@ -819,7 +819,7 @@ namespace UnityEngine.UIElements
             {
                 var child = root.hierarchy[i];
                 var result = PerformPick(child, point, picked);
-                if (returnedChild == null && result != null && result.visible)
+                if (returnedChild == null && result != null)
                 {
                     if (picked == null)
                     {
@@ -830,7 +830,7 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            if (root.enabledInHierarchy && root.visible && root.pickingMode == PickingMode.Position && containsPoint)
+            if (root.visible && root.pickingMode == PickingMode.Position && containsPoint)
             {
                 picked?.Add(root);
                 if (returnedChild == null)

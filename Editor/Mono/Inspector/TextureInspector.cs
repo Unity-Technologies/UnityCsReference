@@ -602,7 +602,7 @@ namespace UnityEditor
 
                     if (TextureUtil.HasAlphaTextureFormat(format))
                     {
-                        if (mode == TextureUsageMode.Default) // all other texture usage modes don't displayable alpha
+                        if (mode == TextureUsageMode.Default || mode == TextureUsageMode.SingleChannelAlpha) // all other texture usage modes don't displayable alpha
                             hasAlpha = true;
                     }
                 }

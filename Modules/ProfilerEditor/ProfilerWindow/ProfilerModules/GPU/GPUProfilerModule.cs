@@ -4,8 +4,8 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Profiling.Editor;
 using UnityEditor;
-using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.Profiling;
 
@@ -15,6 +15,7 @@ namespace UnityEditorInternal.Profiling
     // TODO: refactor: rename to GpuProfilerModule
     // together with CPUOrGPUProfilerModule and CpuProfilerModule
     // in a PR that doesn't affect performance so that the sample names can be fixed as well without loosing comparability in Performance tests.
+    [ProfilerModuleMetadata("GPU Usage", typeof(LocalizationResource), IconPath = "Profiler.GPU")]
     internal class GPUProfilerModule : CPUOrGPUProfilerModule
     {
         const string k_SettingsKeyPrefix = "Profiler.GPUProfilerModule.";
@@ -47,26 +48,22 @@ namespace UnityEditorInternal.Profiling
             {GpuProfilingStatisticsAvailabilityStates.NotSupportedWithMetal , k_GpuProfilingNotSupportedWithMetal},
             };
 
-        const string k_IconName = "Profiler.GPU";
         const int k_DefaultOrderIndex = 1;
-        protected override string ModuleName => k_UnlocalizedName;
-        internal const string k_UnlocalizedName = "GPU Usage";
-        static readonly string k_Name = LocalizationDatabase.GetLocalizedString(k_UnlocalizedName);
+        // ProfilerWindow exposes this as a const value via ProfilerWindow.gpuModuleName, so we need to define it as const.
+        internal const string k_Identifier = "UnityEditorInternal.Profiling.GPUProfilerModule, UnityEditor.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
 
-        public GPUProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_UnlocalizedName, k_Name, k_IconName) {}
-
-        public override ProfilerArea area => ProfilerArea.GPU;
+        internal override ProfilerArea area => ProfilerArea.GPU;
         public override bool usesCounters => false;
 
-        protected override int defaultOrderIndex => k_DefaultOrderIndex;
-        protected override string legacyPreferenceKey => "ProfilerChartGPU";
+        private protected override int defaultOrderIndex => k_DefaultOrderIndex;
+        private protected override string legacyPreferenceKey => "ProfilerChartGPU";
 
         internal override ProfilerViewType ViewType
         {
             set
             {
                 if (value == ProfilerViewType.Timeline)
-                    throw new ArgumentException($"{ModuleName} does not implement a {nameof(ProfilerViewType.Timeline)} view.");
+                    throw new ArgumentException($"{DisplayName} does not implement a {nameof(ProfilerViewType.Timeline)} view.");
                 CPUOrGPUViewTypeChanged(value);
             }
         }
@@ -106,10 +103,10 @@ namespace UnityEditorInternal.Profiling
             return s_StatisticsAvailabilityStateReason[state];
         }
 
-        public override void OnEnable()
+        internal override void OnEnable()
         {
             base.OnEnable();
-            m_FrameDataHierarchyView.OnEnable(this, m_ProfilerWindow, true);
+            m_FrameDataHierarchyView.OnEnable(this, ProfilerWindow, true);
             m_FrameDataHierarchyView.dataAvailabilityMessage = null;
             if (m_ViewType == ProfilerViewType.Timeline)
                 m_ViewType = ProfilerViewType.Hierarchy;
@@ -117,7 +114,7 @@ namespace UnityEditorInternal.Profiling
 
         public override void DrawDetailsView(Rect position)
         {
-            var selectedFrameIndex = (int)m_ProfilerWindow.selectedFrameIndex;
+            var selectedFrameIndex = (int)ProfilerWindow.selectedFrameIndex;
             if (selectedFrameIndex >= ProfilerDriver.firstFrameIndex && selectedFrameIndex <= ProfilerDriver.lastFrameIndex)
             {
                 GpuProfilingStatisticsAvailabilityStates state = (GpuProfilingStatisticsAvailabilityStates)ProfilerDriver.GetGpuStatisticsAvailabilityState(selectedFrameIndex);
@@ -134,19 +131,19 @@ namespace UnityEditorInternal.Profiling
             base.DrawDetailsView(position);
         }
 
-        protected override ProfilerChart InstantiateChart(float defaultChartScale, float chartMaximumScaleInterpolationValue)
+        private protected override ProfilerChart InstantiateChart(float defaultChartScale, float chartMaximumScaleInterpolationValue)
         {
             var chart = base.InstantiateChart(defaultChartScale, chartMaximumScaleInterpolationValue);
             chart.statisticsAvailabilityMessage = GetStatisticsAvailabilityStateReason;
             return chart;
         }
 
-        protected override bool ReadActiveState()
+        private protected override bool ReadActiveState()
         {
             return SessionState.GetBool(activeStatePreferenceKey, false);
         }
 
-        protected override void SaveActiveState()
+        private protected override void SaveActiveState()
         {
             SessionState.SetBool(activeStatePreferenceKey, active);
         }

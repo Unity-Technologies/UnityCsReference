@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using UnityEditorInternal.Profiling;
+using Unity.Profiling.Editor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -36,7 +36,7 @@ namespace UnityEditor.Profiling.ModuleEditor
 
         public event Action<ReadOnlyCollection<ModuleData>, ReadOnlyCollection<ModuleData>> onChangesConfirmed;
 
-        public static ModuleEditorWindow Present(List<ProfilerModuleBase> modules, bool isConnectedToEditor)
+        public static ModuleEditorWindow Present(List<ProfilerModule> modules, bool isConnectedToEditor)
         {
             var window = GetWindowDontShow<ModuleEditorWindow>();
             window.Initialize(modules, isConnectedToEditor);
@@ -56,7 +56,7 @@ namespace UnityEditor.Profiling.ModuleEditor
             return (moduleEditorWindow != null);
         }
 
-        void Initialize(List<ProfilerModuleBase> modules, bool isConnectedToEditor)
+        void Initialize(List<ProfilerModule> modules, bool isConnectedToEditor)
         {
             if (m_IsInitialized)
             {
@@ -147,7 +147,8 @@ namespace UnityEditor.Profiling.ModuleEditor
                 break;
             }
 
-            var module = new ModuleData(moduleName, moduleName, true, true);
+            var identifier = moduleName; // Dynamic modules use their name as identifier.
+            var module = new ModuleData(identifier, moduleName, true, true);
             m_Modules.Add(module);
             m_CreatedModules.Add(module);
 
@@ -283,23 +284,23 @@ namespace UnityEditor.Profiling.ModuleEditor
         {
             localizedErrorDescription = null;
 
-            var names = new List<string>(m_Modules.Count);
+            var identifiers = new List<string>(m_Modules.Count);
             foreach (var module in m_Modules)
             {
-                // Is there a duplicate name?
-                var name = module.name;
-                if (!names.Contains(name))
+                // Is there a duplicate identifier? Because dynamic modules use their user-typed name as their identifier, we are checking that none of the other user-created dynamic modules have the same name. Type-defined Profiler modules will never clash because they use their assembly-qualified type name as identifier (which the user cannot type in here due to character limits). This is why we then use the module's name in the error message below.
+                var moduleIdentifier = module.identifier;
+                if (!identifiers.Contains(moduleIdentifier))
                 {
-                    names.Add(module.name);
+                    identifiers.Add(moduleIdentifier);
                 }
                 else
                 {
-                    localizedErrorDescription = LocalizationDatabase.GetLocalizedString($"There are two modules called '{name}'. Module names must be unique.");
+                    localizedErrorDescription = LocalizationDatabase.GetLocalizedString($"There are two modules called '{module.name}'. Module names must be unique.");
                     break;
                 }
 
                 // Is the name valid?
-                if (string.IsNullOrEmpty(name))
+                if (string.IsNullOrEmpty(module.name))
                 {
                     localizedErrorDescription = LocalizationDatabase.GetLocalizedString($"All modules must have a name.");
                     break;
@@ -308,7 +309,7 @@ namespace UnityEditor.Profiling.ModuleEditor
                 // Does the module have at least one counter?
                 if (module.chartCounters.Count == 0)
                 {
-                    localizedErrorDescription = LocalizationDatabase.GetLocalizedString($"The module '{name}' has no counters. All modules must have at least one counter.");
+                    localizedErrorDescription = LocalizationDatabase.GetLocalizedString($"The module '{module.name}' has no counters. All modules must have at least one counter.");
                 }
             }
 

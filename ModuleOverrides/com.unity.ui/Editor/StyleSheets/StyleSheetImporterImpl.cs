@@ -828,8 +828,8 @@ namespace UnityEditor.UIElements.StyleSheets
                 }
             }
 
-            bool success = !m_Errors.hasErrors;
-            if (success)
+            bool hasErrors = m_Errors.hasErrors;
+            if (!hasErrors)
             {
                 m_Builder.BuildTo(asset);
 
@@ -855,7 +855,7 @@ namespace UnityEditor.UIElements.StyleSheets
                         if (importResult != URIValidationResult.OK)
                         {
                             var(code, message) = ConvertErrorCode(importResult);
-                            m_Errors.AddSemanticError(code, string.Format(message, errorToken), m_CurrentLine);
+                            m_Errors.AddSemanticWarning(code, string.Format(message, errorToken), m_CurrentLine);
                         }
                         else
                         {
@@ -896,7 +896,11 @@ namespace UnityEditor.UIElements.StyleSheets
                 OnImportSuccess(asset);
             }
 
-            if (!success || m_Errors.hasWarning)
+            bool hasWarnings = m_Errors.hasWarning;
+            asset.importedWithErrors = hasErrors;
+            asset.importedWithWarnings = hasWarnings;
+
+            if (hasErrors || hasWarnings)
             {
                 OnImportError(m_Errors);
             }

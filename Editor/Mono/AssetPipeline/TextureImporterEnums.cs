@@ -27,6 +27,9 @@ namespace UnityEditor
         // Baked lightmap without any encoding
         BakedLightmapFullHDR = 8,
         RealtimeLightmapRGBM = 9,
+        NormalmapASTCnm = 10,
+        SingleChannelRed = 11,
+        SingleChannelAlpha = 12,
     }
 
     // Imported texture format for [[TextureImporter]].

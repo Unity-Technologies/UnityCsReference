@@ -95,22 +95,47 @@ namespace UnityEditor
             get { return Event.current != null && EditorGUI.actionKey; }
         }
 
+        internal static Action<Vector3> moveChanged;
+        internal static Action<float> rotateChanged;
+        internal static Action<float> scaleChanged;
+
         public static Vector3 move
         {
             get { return instance.snapSettings.snapValue; }
-            set { instance.snapSettings.snapValue = value; }
+            set
+            {
+                if (instance.snapSettings.snapValue != value)
+                {
+                    instance.snapSettings.snapValue = value;
+                    moveChanged?.Invoke(value);
+                }
+            }
         }
 
         public static float rotate
         {
             get { return instance.snapSettings.rotation; }
-            set { instance.snapSettings.rotation = value; }
+            set
+            {
+                if (instance.snapSettings.rotation != value)
+                {
+                    instance.snapSettings.rotation = value;
+                    rotateChanged?.Invoke(value);
+                }
+            }
         }
 
         public static float scale
         {
             get { return instance.snapSettings.scale; }
-            set { instance.snapSettings.scale = value; }
+            set
+            {
+                if (instance.snapSettings.scale != value)
+                {
+                    instance.snapSettings.scale = value;
+                    scaleChanged?.Invoke(value);
+                }
+            }
         }
 
         public static void ResetSnapSettings()

@@ -20,7 +20,6 @@ namespace UnityEditor.Snap
         {
             GridSettings.sizeMultiplier++;
             SceneView.RepaintAll();
-            SnapSettingsWindow.RepaintAll();
         }
 
         [Shortcut("Grid/Decrease Grid Size", typeof(SceneView), KeyCode.LeftBracket, ShortcutModifiers.Action)]
@@ -28,7 +27,6 @@ namespace UnityEditor.Snap
         {
             GridSettings.sizeMultiplier--;
             SceneView.RepaintAll();
-            SnapSettingsWindow.RepaintAll();
         }
 
         [Shortcut("Grid/Reset Grid", typeof(SceneView))]
@@ -37,7 +35,6 @@ namespace UnityEditor.Snap
             MenuNudgePerspectiveReset();
             GridSettings.ResetGridSettings();
             SceneView.RepaintAll();
-            SnapSettingsWindow.RepaintAll();
         }
 
         [Shortcut("Grid/Nudge Grid Backward", typeof(SceneView))]
@@ -95,12 +92,6 @@ namespace UnityEditor.Snap
             SceneView sv = SceneView.lastActiveSceneView;
             sv.ResetGridPivot();
             sv.Repaint();
-        }
-
-        [Shortcut("Grid/Push To Grid", typeof(SceneView), KeyCode.Backslash, ShortcutModifiers.Action)]
-        internal static void PushToGrid()
-        {
-            SnapSettingsWindow.SnapSelectionToGrid();
         }
     }
 }

@@ -175,8 +175,14 @@ namespace UnityEditor.Search
                     description = tempDescription;
             }
 
-            if (tempDescription == null && m_Value != null)
-                return value.ToString();
+            if (tempDescription == null)
+            {
+                if (m_Value != null)
+                    return value.ToString();
+
+                if (options.HasAny(SearchItemOptions.Compacted))
+                    return GetLabel(context, stripHTML);
+            }
 
             if (!stripHTML || string.IsNullOrEmpty(tempDescription))
                 return tempDescription;

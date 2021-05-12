@@ -845,6 +845,7 @@ namespace UnityEditor.Search
             if (filterCallback != null)
                 filteredItems = filteredItems.Where(item => filterCallback(item));
             m_FilteredItems.AddItems(filteredItems);
+            Utils.tick -= UpdateAsyncResults;
             Utils.tick += UpdateAsyncResults;
         }
 
@@ -918,7 +919,7 @@ namespace UnityEditor.Search
         {
             SearchSettings.wantsMore = context.wantsMore = !context?.wantsMore ?? false;
             SendEvent(SearchAnalytics.GenericEventType.PreferenceChanged, nameof(context.wantsMore), context.wantsMore.ToString());
-            Refresh();
+            Refresh(RefreshFlags.StructureChanged);
         }
 
         private void ToggleDebugQuery()
@@ -1010,6 +1011,12 @@ namespace UnityEditor.Search
             return $"{Math.Round(timeMs)} ms";
         }
 
+        private IEnumerable<SearchQueryError> GetAllVisbileErrors()
+        {
+            var visibleProviders = m_FilteredItems.EnumerateGroups().Select(g => g.id).ToArray();
+            return context.GetAllErrors().Where(e => visibleProviders.Contains(e.provider.type));
+        }
+
         private void DrawStatusBar()
         {
             using (new GUILayout.HorizontalScope(Styles.statusBarBackground))
@@ -1020,7 +1027,7 @@ namespace UnityEditor.Search
                 var alwaysPrintError = currentGroup == null ||
                     !string.IsNullOrEmpty(context.filterId) ||
                     (m_FilteredItems.TotalCount == 0 && string.Equals("all", currentGroup, StringComparison.Ordinal));
-                if (!ignoreErrors && context.GetAllErrors().FirstOrDefault(e => alwaysPrintError || e.provider.type == m_FilteredItems.currentGroup) is SearchQueryError err)
+                if (!ignoreErrors && GetAllVisbileErrors().FirstOrDefault(e => alwaysPrintError || e.provider.type == m_FilteredItems.currentGroup) is SearchQueryError err)
                 {
                     var errStyle = err.type == SearchQueryErrorType.Error ? Styles.statusError : Styles.statusWarning;
                     EditorGUILayout.LabelField(Utils.GUIContentTemp(err.reason, $"({err.provider.name}) {err.reason}"), errStyle, GUILayout.ExpandWidth(true));
@@ -1662,7 +1669,7 @@ namespace UnityEditor.Search
 
             List<SearchQueryError> errors;
             if (m_FilteredItems.currentGroup == (m_FilteredItems as IGroup)?.id)
-                errors = context.GetAllErrors().ToList();
+                errors = GetAllVisbileErrors().ToList();
             else
                 errors = context.GetErrorsByProvider(m_FilteredItems.currentGroup).ToList();
 

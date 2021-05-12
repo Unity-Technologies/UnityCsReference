@@ -11,53 +11,50 @@ using UnityEditorInternal;
 using EditorNavMeshBuilder = UnityEditor.AI.NavMeshBuilder;
 using Object = UnityEngine.Object;
 using System.Globalization;
+using UnityEditor.Overlays;
 
 namespace UnityEditor
 {
     [EditorWindowTitle(title = "Navigation", icon = "Navigation")]
     internal class NavMeshEditorWindow : EditorWindow, IHasCustomMenu
     {
-        private static NavMeshEditorWindow s_NavMeshEditorWindow;
+        static NavMeshEditorWindow s_NavMeshEditorWindow;
 
         // Scene based bake configuration
-        private SerializedObject m_SettingsObject;
-        private SerializedProperty m_AgentRadius;
-        private SerializedProperty m_AgentHeight;
-        private SerializedProperty m_AgentSlope;
-        private SerializedProperty m_AgentClimb;
-        private SerializedProperty m_LedgeDropHeight;
-        private SerializedProperty m_MaxJumpAcrossDistance;
+        SerializedObject m_SettingsObject;
+        SerializedProperty m_AgentRadius;
+        SerializedProperty m_AgentHeight;
+        SerializedProperty m_AgentSlope;
+        SerializedProperty m_AgentClimb;
+        SerializedProperty m_LedgeDropHeight;
+        SerializedProperty m_MaxJumpAcrossDistance;
 
         // .. advanced
-        private SerializedProperty m_MinRegionArea;
-        private SerializedProperty m_ManualCellSize;
-        private SerializedProperty m_CellSize;
-        private SerializedProperty m_AccuratePlacement;
+        SerializedProperty m_MinRegionArea;
+        SerializedProperty m_ManualCellSize;
+        SerializedProperty m_CellSize;
+        SerializedProperty m_AccuratePlacement;
 
         // Project based configuration
-        private SerializedObject m_NavMeshProjectSettingsObject;
-        private SerializedProperty m_Areas;
+        SerializedObject m_NavMeshProjectSettingsObject;
+        SerializedProperty m_Areas;
 
-        private SerializedProperty m_Agents;
-        private SerializedProperty m_SettingNames;
+        SerializedProperty m_Agents;
+        SerializedProperty m_SettingNames;
 
-        private const string kRootPath = "m_BuildSettings.";
+        const string kRootPath = "m_BuildSettings.";
 
         static Styles s_Styles;
 
-        private Vector2 m_ScrollPos = Vector2.zero;
-        private int m_SelectedNavMeshAgentCount = 0;
-        private int m_SelectedNavMeshObstacleCount = 0;
-        private bool m_Advanced;
-        private bool m_HasPendingAgentDebugInfo = false;
-        private bool m_HasRepaintedForPendingAgentDebugInfo = false;
+        Vector2 m_ScrollPos = Vector2.zero;
+        int m_SelectedNavMeshAgentCount;
+        int m_SelectedNavMeshObstacleCount;
+        bool m_Advanced;
+        bool m_HasPendingAgentDebugInfo;
+        bool m_HasRepaintedForPendingAgentDebugInfo;
 
-        private ReorderableList m_AreasList = null;
-        private ReorderableList m_AgentsList = null;
-
-        OverlayWindow m_DisplayControlsOverlayWindow;
-        OverlayWindow m_DisplayAgentControlsOverlayWindow;
-        OverlayWindow m_DisplayObstacleControlsOverlayWindow;
+        ReorderableList m_AreasList;
+        ReorderableList m_AgentsList;
 
         enum Mode
         {
@@ -70,7 +67,7 @@ namespace UnityEditor
         Mode m_Mode = Mode.ObjectSettings;
         bool m_BecameVisibleCalled = false;
 
-        private class Styles
+        class Styles
         {
             // Agents tab
             public readonly GUIContent m_AgentNameContent = EditorGUIUtility.TrTextContent("Name", "The identifier for a set of values of the agent characteristics.");
@@ -156,19 +153,13 @@ namespace UnityEditor
             titleContent = GetLocalizedTitleContent();
             s_NavMeshEditorWindow = this;
             EditorApplication.searchChanged += Repaint;
-            SceneView.duringSceneGui += OnSceneViewGUI;
 
             UpdateSelectedAgentAndObstacleState();
 
             Repaint();
-
-
-            m_DisplayControlsOverlayWindow = new OverlayWindow(EditorGUIUtility.TrTextContent("Navmesh Display"), DisplayControls, (int)SceneViewOverlay.Ordering.NavMesh, null, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
-            m_DisplayAgentControlsOverlayWindow = new OverlayWindow(EditorGUIUtility.TrTextContent("Agent Display"), DisplayAgentControls, (int)SceneViewOverlay.Ordering.NavMesh, null, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
-            m_DisplayObstacleControlsOverlayWindow = new OverlayWindow(EditorGUIUtility.TrTextContent("Obstacle Display"), DisplayObstacleControls, (int)SceneViewOverlay.Ordering.NavMesh, null, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
         }
 
-        private void InitProjectSettings()
+        void InitProjectSettings()
         {
             if (m_NavMeshProjectSettingsObject == null)
             {
@@ -249,7 +240,6 @@ namespace UnityEditor
         {
             s_NavMeshEditorWindow = null;
             EditorApplication.searchChanged -= Repaint;
-            SceneView.duringSceneGui -= OnSceneViewGUI;
         }
 
         void UpdateSelectedAgentAndObstacleState()
@@ -475,27 +465,7 @@ namespace UnityEditor
             PlayModeView.RepaintAll();
         }
 
-        public void OnSceneViewGUI(SceneView sceneView)
-        {
-            if (NavMeshVisualizationSettings.showNavigation == 0)
-                return;
-
-            SceneViewOverlay.ShowWindow(m_DisplayControlsOverlayWindow);
-
-            // Display Agent display only if there are selected NavMeshAgents.
-            if (m_SelectedNavMeshAgentCount > 0)
-            {
-                SceneViewOverlay.ShowWindow(m_DisplayAgentControlsOverlayWindow);
-            }
-
-            // Display Obstacle display only if there are selected NavMeshObstacles.
-            if (m_SelectedNavMeshObstacleCount > 0)
-            {
-                SceneViewOverlay.ShowWindow(m_DisplayObstacleControlsOverlayWindow);
-            }
-        }
-
-        static void DisplayControls(Object target, SceneView sceneView)
+        static void DisplayControls()
         {
             EditorGUIUtility.labelWidth = 150;
             var bRepaint = false;
@@ -577,7 +547,7 @@ namespace UnityEditor
             }
         }
 
-        static void DisplayAgentControls(Object target, SceneView sceneView)
+        static void DisplayAgentControls()
         {
             EditorGUIUtility.labelWidth = 150;
             var bRepaint = false;
@@ -646,7 +616,7 @@ namespace UnityEditor
                 RepaintSceneAndGameViews();
         }
 
-        static void DisplayObstacleControls(Object target, SceneView sceneView)
+        static void DisplayObstacleControls()
         {
             EditorGUIUtility.labelWidth = 150;
             var bRepaint = false;
@@ -1059,6 +1029,57 @@ namespace UnityEditor
             GUILayout.EndHorizontal();
 
             EditorGUILayout.Space();
+        }
+
+        [Overlay(typeof(SceneView), k_OverlayID, k_DisplayName)]
+        class SceneViewNavMeshOverlay : TransientSceneViewOverlay
+        {
+            const string k_OverlayID = "Scene View/Navmesh Display";
+            const string k_DisplayName = "Nav Mesh";
+
+            public override bool visible
+            {
+                get { return NavMeshVisualizationSettings.showNavigation != 0; }
+            }
+
+            public override void OnGUI()
+            {
+                DisplayControls();
+            }
+        }
+
+        [Overlay(typeof(SceneView), k_OverlayID, k_DisplayName)]
+        class SceneViewAgentOverlay : TransientSceneViewOverlay
+        {
+            const string k_OverlayID = "Scene View/Agent Display";
+            const string k_DisplayName = "Nav Mesh Agents";
+
+            public override bool visible
+            {
+                get { return NavMeshVisualizationSettings.showNavigation != 0 && s_NavMeshEditorWindow != null && s_NavMeshEditorWindow.m_SelectedNavMeshAgentCount > 0; }
+            }
+
+            public override void OnGUI()
+            {
+                DisplayAgentControls();
+            }
+        }
+
+        [Overlay(typeof(SceneView), k_OverlayID, k_DisplayName)]
+        class SceneViewObstacleOverlay : TransientSceneViewOverlay
+        {
+            const string k_OverlayID = "Scene View/Obstacle Display";
+            const string k_DisplayName = "Nav Mesh Obstacles";
+
+            public override bool visible
+            {
+                get { return NavMeshVisualizationSettings.showNavigation != 0 && s_NavMeshEditorWindow != null && s_NavMeshEditorWindow.m_SelectedNavMeshObstacleCount > 0; }
+            }
+
+            public override void OnGUI()
+            {
+                DisplayObstacleControls();
+            }
         }
     }
 }

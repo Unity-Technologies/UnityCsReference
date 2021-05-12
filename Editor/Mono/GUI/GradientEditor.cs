@@ -126,12 +126,12 @@ namespace UnityEditor
             Rect texCoordsRect = new Rect(0, 0, r2.width / backgroundTexture.width, r2.height / backgroundTexture.height);
             GUI.DrawTextureWithTexCoords(r2, backgroundTexture, texCoordsRect, false);
 
+            // Outline for Gradinet Texture, used to be Frame over texture.
+            GUI.Box(position, GUIContent.none);
+
             // Gradient texture
             if (gradientTexture != null)
                 GUI.DrawTexture(r2, gradientTexture, ScaleMode.StretchToFill, true);
-
-            // Frame over texture
-            GUI.Label(position, GUIContent.none, EditorStyles.colorPickerBox);
 
             // HDR label
             float maxColorComponent = GetMaxColorComponent(gradient);

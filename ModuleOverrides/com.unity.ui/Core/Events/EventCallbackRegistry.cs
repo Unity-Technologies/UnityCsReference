@@ -17,7 +17,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         NoTrickleDown = 0,
         /// <summary>
-        /// The event handler should be executed during the AtTarget and BubbleUp phases.
+        /// The event handler should be executed during the AtTarget and TrickleDown phases.
         /// </summary>
         TrickleDown = 1
     }
@@ -26,6 +26,12 @@ namespace UnityEngine.UIElements
     {
         TargetAndBubbleUp = 1 << 0,
         TrickleDownAndTarget = 1 << 1
+    }
+
+    internal enum InvokePolicy
+    {
+        Default = default,
+        IncludeDisabled
     }
 
     internal class EventCallbackListPool
@@ -258,7 +264,7 @@ namespace UnityEngine.UIElements
             return callbackList.Remove(eventTypeId, callback, callbackPhase);
         }
 
-        public void RegisterCallback<TEventType>(EventCallback<TEventType> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
+        public void RegisterCallback<TEventType>(EventCallback<TEventType> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown, InvokePolicy invokePolicy = default) where TEventType : EventBase<TEventType>, new()
         {
             if (callback == null)
                 throw new ArgumentException("callback parameter is null");
@@ -270,11 +276,11 @@ namespace UnityEngine.UIElements
             if (callbackList == null || callbackList.Contains(eventTypeId, callback, callbackPhase) == false)
             {
                 callbackList = GetCallbackListForWriting();
-                callbackList.Add(new EventCallbackFunctor<TEventType>(callback, callbackPhase));
+                callbackList.Add(new EventCallbackFunctor<TEventType>(callback, callbackPhase, invokePolicy));
             }
         }
 
-        public void RegisterCallback<TEventType, TCallbackArgs>(EventCallback<TEventType, TCallbackArgs> callback, TCallbackArgs userArgs, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
+        public void RegisterCallback<TEventType, TCallbackArgs>(EventCallback<TEventType, TCallbackArgs> callback, TCallbackArgs userArgs, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown, InvokePolicy invokePolicy = default) where TEventType : EventBase<TEventType>, new()
         {
             if (callback == null)
                 throw new ArgumentException("callback parameter is null");
@@ -293,7 +299,7 @@ namespace UnityEngine.UIElements
                 }
             }
             callbackList = GetCallbackListForWriting();
-            callbackList.Add(new EventCallbackFunctor<TEventType, TCallbackArgs>(callback, userArgs, callbackPhase));
+            callbackList.Add(new EventCallbackFunctor<TEventType, TCallbackArgs>(callback, userArgs, callbackPhase, invokePolicy));
         }
 
         public bool UnregisterCallback<TEventType>(EventCallback<TEventType> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
@@ -310,7 +316,7 @@ namespace UnityEngine.UIElements
 
         internal bool TryGetUserArgs<TEventType, TCallbackArgs>(EventCallback<TEventType, TCallbackArgs> callback, TrickleDown useTrickleDown, out TCallbackArgs userArgs) where TEventType : EventBase<TEventType>, new()
         {
-            userArgs = default(TCallbackArgs);
+            userArgs = default;
 
             if (callback == null)
                 return false;
@@ -341,6 +347,12 @@ namespace UnityEngine.UIElements
             {
                 if (evt.isImmediatePropagationStopped)
                     break;
+
+                if (evt.skipDisabledElements && evt.currentTarget is VisualElement ve && !ve.enabledInHierarchy &&
+                    m_Callbacks[i].invokePolicy != InvokePolicy.IncludeDisabled)
+                {
+                    continue;
+                }
 
                 m_Callbacks[i].Invoke(evt);
             }

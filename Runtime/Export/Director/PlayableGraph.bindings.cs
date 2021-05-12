@@ -139,6 +139,9 @@ namespace UnityEngine.Playables
         [FreeFunction("PlayableGraphBindings::GetRootPlayableCount", HasExplicitThis = true, ThrowsException = true)]
         extern public int GetRootPlayableCount();
 
+        [FreeFunction("PlayableGraphBindings::SynchronizeEvaluation", HasExplicitThis = true, ThrowsException = true)]
+        extern internal void SynchronizeEvaluation(PlayableGraph playable);
+
         [FreeFunction("PlayableGraphBindings::GetOutputCount", HasExplicitThis = true, ThrowsException = true)]
         extern public int GetOutputCount();
 
@@ -153,6 +156,18 @@ namespace UnityEngine.Playables
 
         [FreeFunction("PlayableGraphBindings::DestroyOutputInternal", HasExplicitThis = true, ThrowsException = true)]
         extern internal void DestroyOutputInternal(PlayableOutputHandle handle);
+
+        [FreeFunction("PlayableGraphBindings::IsMatchFrameRateEnabled", HasExplicitThis = true, ThrowsException = true)]
+        extern internal bool IsMatchFrameRateEnabled();
+
+        [FreeFunction("PlayableGraphBindings::EnableMatchFrameRate", HasExplicitThis = true, ThrowsException = true)]
+        extern internal void EnableMatchFrameRate(FrameRate frameRate);
+
+        [FreeFunction("PlayableGraphBindings::DisableMatchFrameRate", HasExplicitThis = true, ThrowsException = true)]
+        extern internal void DisableMatchFrameRate();
+
+        [FreeFunction("PlayableGraphBindings::GetFrameRate", HasExplicitThis = true, ThrowsException = true)]
+        extern internal FrameRate GetFrameRate();
 
         [FreeFunction("PlayableGraphBindings::GetOutputInternal", HasExplicitThis = true, ThrowsException = true)]
         extern private bool GetOutputInternal(int index, out PlayableOutputHandle handle);

@@ -4,6 +4,8 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEditor.Overlays;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -41,7 +43,6 @@ namespace UnityEditor.Toolbars
         public const string elementIconClassName = elementClassName + "__icon";
         public const string elementLabelClassName = elementClassName + "__label";
 
-        [SerializeField]
         List<string> m_AddedElementIds = new List<string>();
 
         readonly List<ToolbarElement> m_LoadedElements = new List<ToolbarElement>();
@@ -79,12 +80,32 @@ namespace UnityEditor.Toolbars
             AddElement(id, true);
         }
 
+        public void AddElement(string id, VisualElement ve)
+        {
+            if (ContainsElement(id))
+                return;
+
+            m_AddedElementIds.Add(id);
+
+            ve.AddToClassList(elementClassName);
+            var element = new ToolbarElement(id, ve);
+            root.Add(ve);
+            m_LoadedElements.Add(element);
+
+            if (ve is IEditorToolbarContext visualWithContext)
+            {
+                visualWithContext.context = m_Context;
+            }
+        }
+
         void AddElement(string id, bool load)
         {
             if (!EditorToolbarManager.instance.Exists(id))
-                throw new ArgumentException($"Trying to add the id '{id}' to the toolbar {GetType().FullName}. " +
-                    $"No element with that Id was registered using the EditorToolbarElement attribute.",
-                    nameof(id));
+            {
+                Debug.LogError($"Trying to add the id '{id}' to the toolbar {GetType().FullName}. " +
+                    "No element with that Id was registered using the EditorToolbarElement attribute.");
+                return;
+            }
 
             if (ContainsElement(id))
                 return;

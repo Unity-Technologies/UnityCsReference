@@ -97,6 +97,14 @@ namespace UnityEditor
 
         public bool hasModifications { get; set; }
 
+        public bool IsValidTargetPrefabInstance()
+        {
+            if (m_PrefabInstanceRoot == null)
+                return false;
+
+            return PrefabUtility.GetPrefabInstanceStatus(m_PrefabInstanceRoot) == PrefabInstanceStatus.Connected;
+        }
+
         public PrefabOverridesTreeView(GameObject selectedGameObject, TreeViewState state, PrefabOverridesWindow window) : base(state)
         {
             m_SelectedGameObject = selectedGameObject;

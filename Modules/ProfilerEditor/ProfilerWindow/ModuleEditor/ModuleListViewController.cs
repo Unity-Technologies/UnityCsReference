@@ -110,11 +110,10 @@ namespace UnityEditor.Profiling.ModuleEditor
 
         void OnListViewItemMoved(ItemMoveArgs<object> args)
         {
-            var minimumIndex = Math.Min(args.previousIndex, args.newIndex);
-            var maximumIndex = Math.Max(args.previousIndex, args.newIndex);
-            for (int i = minimumIndex; i <= maximumIndex; i++)
+            // We can no longer rely on modules having a defined order index. Therefore, when any module is reordered, we should update the order index on them all.
+            // Module reordering will be moved closer to the chart view or dropdown list in the future and can be removed from the Module Editor.
+            foreach (var module in m_Modules)
             {
-                var module = m_Modules[i];
                 module.SetUpdatedEditedStateForOrderIndexChange();
             }
         }

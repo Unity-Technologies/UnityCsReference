@@ -33,6 +33,8 @@ namespace UnityEditor
         static public float k_SpaceBetweenModules = 5;
 
         public static readonly GUIStyle s_ControlRectStyle = new GUIStyle { margin = new RectOffset(0, 0, 2, 2) };
+        public static readonly GUIContent s_AddItem = EditorGUIUtility.TrTextContent(string.Empty, "Add Item");
+        public static readonly GUIContent s_RemoveItem = EditorGUIUtility.TrTextContent(string.Empty, "Remove Item");
 
         // Alternative to BeginProperty when dealing with properties that should be logically combined but are not parent child properties.
         public class PropertyGroupScope : GUI.Scope
@@ -105,12 +107,12 @@ namespace UnityEditor
 
         protected static bool PlusButton(Rect position)
         {
-            return GUI.Button(new Rect(position.x - 2, position.y - 2, 12, 13), GUIContent.none, "OL Plus");
+            return GUI.Button(new Rect(position.x - 2, position.y - 2, 12, 13),  s_AddItem, "OL Plus");
         }
 
         protected static bool MinusButton(Rect position)
         {
-            return GUI.Button(new Rect(position.x - 2, position.y - 2, 12, 13), GUIContent.none, "OL Minus");
+            return GUI.Button(new Rect(position.x - 2, position.y - 2, 12, 13), s_RemoveItem, "OL Minus");
         }
 
         private static float FloatDraggable(Rect rect, SerializedProperty floatProp, float remap, float dragWidth)
@@ -408,8 +410,7 @@ namespace UnityEditor
                 PrefixLabel(rect, label);
 
                 float indent = EditorGUIUtility.labelWidth;
-                float space = 10f;
-                float objectFieldWidth = rect.width - indent - space * 2 - k_toggleWidth;
+                float objectFieldWidth = rect.width - indent;
 
                 for (int i = 0; i < numObjects; ++i)
                 {

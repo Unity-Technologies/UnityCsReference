@@ -428,8 +428,11 @@ namespace UnityEditor.UIElements
             foldout.bindingPath = property.propertyPath;
             foldout.name = "unity-foldout-" + property.propertyPath;
 
-            // Get Foldout label.
+            // Make PropertyField foldout react even when disabled, like EditorGUILayout.Foldout.
             var foldoutToggle = foldout.Q<Toggle>(className: Foldout.toggleUssClassName);
+            foldoutToggle.m_Clickable.acceptClicksIfDisabled = true;
+
+            // Get Foldout label.
             var foldoutLabel = foldoutToggle.Q<Label>(className: Toggle.textUssClassName);
             if (hasCustomLabel)
             {

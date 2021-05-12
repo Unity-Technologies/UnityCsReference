@@ -139,9 +139,9 @@ namespace UnityEditor
         {
             var primitive = m_Primitives.GetArrayElementAtIndex(index);
 
+            rect.height = kSingleLineHeight;
             Rect objectRect = new Rect(rect.x, rect.y, rect.width - EditorGUI.kSpacing - ParticleSystemStyles.Get().plus.fixedWidth, rect.height);
-            EditorGUI.ObjectField(objectRect, primitive, null, GUIContent.none, ParticleSystemStyles.Get().objectField);
-
+            GUIObject(objectRect, GUIContent.none, primitive, null);
             if (primitive.objectReferenceValue == null)
             {
                 Rect buttonRect = new Rect(objectRect.xMax + EditorGUI.kSpacing, rect.y + 4, ParticleSystemStyles.Get().plus.fixedWidth, rect.height);

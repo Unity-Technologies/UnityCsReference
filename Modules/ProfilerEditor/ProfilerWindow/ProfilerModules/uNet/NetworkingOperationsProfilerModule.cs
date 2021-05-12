@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 
+using Unity.Profiling.Editor;
 using UnityEditor;
 using UnityEditor.Profiling;
 using UnityEditor.StyleSheets;
@@ -14,12 +15,10 @@ using UnityEngine.Profiling;
 namespace UnityEditorInternal.Profiling
 {
     [Serializable]
+    [ProfilerModuleMetadata("Network Operations", typeof(LocalizationResource), IconPath = "Profiler.NetworkOperations")]
     internal class NetworkingOperationsProfilerModule : ProfilerModuleBase
     {
-        const string k_IconName = "Profiler.NetworkOperations";
         const int k_DefaultOrderIndex = 9;
-        static readonly string k_UnLocalizedName = "Network Operations";
-        static readonly string k_Name = LocalizationDatabase.GetLocalizedString(k_UnLocalizedName);
 
         [SerializeField]
         SplitterState m_NetworkSplit;
@@ -27,7 +26,7 @@ namespace UnityEditorInternal.Profiling
         static SVC<Color> s_SeparatorColor = new SVC<Color>("--theme-profiler-border-color-darker", Color.black);
         static List<ProfilerCounterData> s_CounterData = new List<ProfilerCounterData>();
 
-        public NetworkingOperationsProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow,  k_UnLocalizedName, k_Name, k_IconName)
+        public NetworkingOperationsProfilerModule() : base()
         {
             InitCounterOverride();
         }
@@ -70,20 +69,20 @@ namespace UnityEditorInternal.Profiling
             return base.CollectDefaultChartCounters();
         }
 
-        public override ProfilerArea area => ProfilerArea.NetworkOperations;
+        internal override ProfilerArea area => ProfilerArea.NetworkOperations;
         public override bool usesCounters => false;
 
-        protected override int defaultOrderIndex => k_DefaultOrderIndex;
-        protected override string legacyPreferenceKey => "ProfilerChartNetworkOperations";
+        private protected override int defaultOrderIndex => k_DefaultOrderIndex;
+        private protected override string legacyPreferenceKey => "ProfilerChartNetworkOperations";
 
-        protected override ProfilerChart InstantiateChart(float defaultChartScale, float chartMaximumScaleInterpolationValue)
+        private protected override ProfilerChart InstantiateChart(float defaultChartScale, float chartMaximumScaleInterpolationValue)
         {
             var chart = base.InstantiateChart(defaultChartScale, chartMaximumScaleInterpolationValue);
             chart.m_SharedScale = true;
             return chart;
         }
 
-        public override void OnEnable()
+        internal override void OnEnable()
         {
             base.OnEnable();
 
@@ -99,7 +98,7 @@ namespace UnityEditorInternal.Profiling
         public override void DrawDetailsView(Rect position)
         {
             if (NetworkingOperationsProfilerOverrides.drawDetailsViewOverride != null)
-                NetworkingOperationsProfilerOverrides.drawDetailsViewOverride.Invoke(position, m_ProfilerWindow.GetActiveVisibleFrameIndex());
+                NetworkingOperationsProfilerOverrides.drawDetailsViewOverride.Invoke(position, ProfilerWindow.GetActiveVisibleFrameIndex());
             else
                 DrawNetworkOperationsPane(position);
         }
@@ -116,7 +115,7 @@ namespace UnityEditorInternal.Profiling
         {
             SplitterGUILayout.BeginHorizontalSplit(m_NetworkSplit);
             var overviewLabel = GUIContent.Temp(ProfilerDriver.GetOverviewText(area,
-                m_ProfilerWindow.GetActiveVisibleFrameIndex()));
+                ProfilerWindow.GetActiveVisibleFrameIndex()));
             var labelRect = GUILayoutUtility.GetRect(overviewLabel, EditorStyles.wordWrappedLabel);
 
             GUI.Label(labelRect, overviewLabel, EditorStyles.wordWrappedLabel);

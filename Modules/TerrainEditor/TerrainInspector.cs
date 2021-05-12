@@ -2318,7 +2318,7 @@ namespace UnityEditor
                 activeTool.OnSceneGUI(lastActiveTerrain, onSceneGUIEditContext.Set(sceneView, hitValidTerrain, raycastHit, brushTexture, m_Strength, brushSize, id));
 
                 var mousePos = Event.current.mousePosition;
-                var cameraRect = sceneView.cameraRect;
+                var cameraRect = sceneView.cameraViewport;
                 cameraRect.y = 0;
                 var isMouseInSceneView = cameraRect.Contains(mousePos);
                 if (EditorGUIUtility.hotControl == id || (isMouseInSceneView && EditorGUIUtility.hotControl == 0))

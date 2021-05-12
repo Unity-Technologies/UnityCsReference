@@ -32,7 +32,8 @@ namespace UnityEditor.Search
         // 11- Do not index objects with hide flags DontSave
         // 12- Update the prefab content indexing
         // 13- Improve scene search index artifacts combine.
-        public const int version = (13 << 18) ^ SearchIndexEntry.version;
+        // 14- Fix sub asset property indexing if option is disabled.
+        public const int version = (14 << 18) ^ SearchIndexEntry.version;
 
         protected abstract IndexingOptions options { get; }
 

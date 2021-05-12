@@ -15,6 +15,30 @@ namespace UnityEngine.UIElements
     [Serializable]
     public class VisualTreeAsset : ScriptableObject
     {
+        [SerializeField]
+        bool m_ImportedWithErrors;
+
+        /// <summary>
+        /// Whether there were errors encountered while importing the UXML File
+        /// </summary>
+        public bool importedWithErrors
+        {
+            get { return m_ImportedWithErrors; }
+            internal set { m_ImportedWithErrors = value; }
+        }
+
+        [SerializeField]
+        bool m_ImportedWithWarnings;
+
+        /// <summary>
+        /// Whether there were warnings encountered while importing the UXML File
+        /// </summary>
+        public bool importedWithWarnings
+        {
+            get { return m_ImportedWithWarnings; }
+            internal set { m_ImportedWithWarnings = value; }
+        }
+
         internal int GetNextChildSerialNumber()
         {
             int n = m_VisualElementAssets?.Count ?? 0;

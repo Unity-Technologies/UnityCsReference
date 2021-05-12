@@ -4,12 +4,16 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using UnityEditor.Profiling;
 using UnityEngine;
+using System.Text;
+using Unity.Profiling;
 using UnityEngine.Scripting;
+using Debug = UnityEngine.Debug;
 
 namespace UnityEditor
 {
@@ -109,19 +113,47 @@ namespace UnityEditor
             m_subClasses.Clear();
         }
 
+        static ProfilerMarkerWithStringData _profilerMarkerProcessInitializeOnLoadAttributes = ProfilerMarkerWithStringData.Create("ProcessInitializeOnLoadAttribute", "Type");
+        static ProfilerMarkerWithStringData _profilerMarkerProcessInitializeOnLoadMethodAttributes = ProfilerMarkerWithStringData.Create("ProcessInitializeOnLoadMethodAttribute", "MethodInfo");
+
         [RequiredByNativeCode]
         private static void ProcessInitializeOnLoadAttributes(Type[] types)
         {
-            foreach (Type type in types)
+            bool reportTimes = (bool)Debug.GetDiagnosticSwitch("EnableDomainReloadTimings").value;
+            foreach (var type in types)
             {
-                try
+                using (new EditorPerformanceMarker($"InitializeOnLoad {type.Name}", type).Auto())
+                using (_profilerMarkerProcessInitializeOnLoadAttributes.Auto(reportTimes, () => type.AssemblyQualifiedName))
                 {
-                    using (new EditorPerformanceMarker($"InitializeOnLoad {type.Name}", type).Auto())
+                    try
+                    {
                         RuntimeHelpers.RunClassConstructor(type.TypeHandle);
+                    }
+                    catch (TypeInitializationException x)
+                    {
+                        Debug.LogError(x.InnerException);
+                    }
                 }
-                catch (TypeInitializationException x)
+            }
+        }
+
+        [RequiredByNativeCode]
+        private static void ProcessInitializeOnLoadMethodAttributes()
+        {
+            bool reportTimes = (bool)Debug.GetDiagnosticSwitch("EnableDomainReloadTimings").value;
+            foreach (var method in TypeCache.GetMethodsWithAttribute<InitializeOnLoadMethodAttribute>())
+            {
+                using (new EditorPerformanceMarker($"InitializeOnLoad {method.DeclaringType?.Name}.{method.Name}", method.DeclaringType).Auto())
+                using (_profilerMarkerProcessInitializeOnLoadMethodAttributes.Auto(reportTimes, () => $"{method.DeclaringType?.FullName}::{method.Name}"))
                 {
-                    Debug.LogError(x.InnerException);
+                    try
+                    {
+                        method.Invoke(null, null);
+                    }
+                    catch (Exception x)
+                    {
+                        Debug.LogError(x);
+                    }
                 }
             }
         }

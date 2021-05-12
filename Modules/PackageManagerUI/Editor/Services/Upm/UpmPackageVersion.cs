@@ -257,8 +257,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public static bool IsRequestedButOverriddenVersion(IPackage package, IPackageVersion version)
         {
-            return !string.IsNullOrEmpty(version?.versionString) &&
+            var isVersionInProjectManifest =
+                !string.IsNullOrEmpty(version?.versionString) &&
                 version.versionString == package?.versions.primary.packageInfo?.projectDependenciesEntry;
+
+            return isVersionInProjectManifest && !version.isInstalled;
         }
     }
 }

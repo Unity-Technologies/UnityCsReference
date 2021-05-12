@@ -217,7 +217,7 @@ namespace UnityEditor.Profiling
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern void GetAllCategories(List<ProfilerCategoryInfo> categoryInfoList);
 
-        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        [NativeMethod(Name = "profiling::FrameDataView::GetBuiltinMarkerCategoryColor", IsFreeFunction = true, IsThreadSafe = true, ThrowsException = true)]
         internal static extern UnityEngine.Color32 GetMarkerCategoryColor(ushort category);
 
         [StructLayout(LayoutKind.Sequential)]

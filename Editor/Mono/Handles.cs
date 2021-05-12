@@ -1472,12 +1472,14 @@ namespace UnityEditor
         // Set the current camera so all Handles and Gizmos are draw with its settings.
         public static void SetCamera(Rect position, Camera camera)
         {
-            Rect screenRect = GUIClip.Unclip(position);
-
-            screenRect = EditorGUIUtility.PointsToPixels(screenRect);
-
-            Rect cameraRect = new Rect(screenRect.xMin, Screen.height - screenRect.yMax, screenRect.width, screenRect.height);
-            camera.pixelRect = cameraRect;
+            if (camera.targetTexture == null)
+            {
+                Rect screenRect = GUIClip.Unclip(position);
+                screenRect = EditorGUIUtility.PointsToPixels(screenRect);
+                Rect cameraRect = new Rect(screenRect.xMin, Screen.height - screenRect.yMax, screenRect.width,
+                    screenRect.height);
+                camera.pixelRect = cameraRect;
+            }
 
             Event evt = Event.current;
 

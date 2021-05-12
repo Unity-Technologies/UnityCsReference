@@ -201,40 +201,8 @@ namespace Unity.UI.Builder
             return foundList;
         }
 
-        public static void ConvertAllAssetReferencesToPaths(this VisualTreeAsset vta)
+        public static void UpdateUsingEntries(this VisualTreeAsset vta)
         {
-            var sheets = new HashSet<StyleSheet>();
-            foreach (var asset in vta.visualElementAssets)
-            {
-                sheets.Clear();
-
-                foreach (var styleSheet in asset.stylesheets)
-                    sheets.Add(styleSheet);
-
-                foreach (var sheetPath in asset.stylesheetPaths)
-                {
-                    var sheetAsset = BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(sheetPath);
-                    if (sheetAsset == null)
-                    {
-                        sheetAsset = Resources.Load<StyleSheet>(sheetPath);
-                        if (sheetAsset == null)
-                            continue;
-                    }
-
-                    sheets.Add(sheetAsset);
-                }
-
-                asset.stylesheetPaths.Clear();
-                foreach (var sheet in sheets)
-                {
-                    var path = AssetDatabase.GetAssetPath(sheet);
-                    if (string.IsNullOrEmpty(path))
-                        continue;
-
-                    asset.stylesheetPaths.Add(path);
-                }
-            }
-
             var fieldInfo = UsingsListFieldInfo;
             if (fieldInfo != null)
             {
@@ -660,10 +628,6 @@ namespace Unity.UI.Builder
 
         public static void AssignStyleSheetFromAssetToElement(this VisualTreeAsset vta, VisualElementAsset asset, VisualElement element)
         {
-            if (asset.hasStylesheetPaths)
-                for (int i = 0; i < asset.stylesheetPaths.Count; i++)
-                    element.AddStyleSheetPath(asset.stylesheetPaths[i]);
-
             if (asset.hasStylesheets)
                 for (int i = 0; i < asset.stylesheets.Count; ++i)
                     if (asset.stylesheets[i] != null)

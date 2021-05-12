@@ -405,6 +405,8 @@ namespace UnityEditor
                     // this works because built-in types will only ever have serialized references to other built-in types, which this window's filter expects as unqualified names
                     if (requiredType == null)
                         m_RequiredTypes[i] = s_MatchPPtrTypeName.Match(property.type).Groups[1].Value;
+                    else
+                        requiredTypes[i] = requiredType;
                 }
             }
 

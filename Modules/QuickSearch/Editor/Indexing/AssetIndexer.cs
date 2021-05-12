@@ -94,13 +94,15 @@ namespace UnityEditor.Search
             IndexTypes(subObj.GetType(), subObjDocumentIndex);
             IndexProperty(subObjDocumentIndex, "is", "nested", saveKeyword: true, exact: true);
             IndexProperty(subObjDocumentIndex, "is", "subasset", saveKeyword: true, exact: true);
-            AddProperty("ref", containerPath.ToLowerInvariant(), subObjDocumentIndex);
+            if (settings.options.dependencies)
+                AddProperty("ref", containerPath.ToLowerInvariant(), subObjDocumentIndex);
 
             if (hasCustomIndexers)
                 IndexCustomProperties(id, subObjDocumentIndex, subObj);
 
             IndexWordComponents(subObjDocumentIndex, subObj.name);
-            IndexObject(subObjDocumentIndex, subObj, settings.options.dependencies);
+            if (settings.options.properties)
+                IndexObject(subObjDocumentIndex, subObj, settings.options.dependencies);
         }
 
         public override void IndexDocument(string path, bool checkIfDocumentExists)

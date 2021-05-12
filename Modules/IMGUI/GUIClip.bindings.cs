@@ -75,7 +75,12 @@ namespace UnityEngine
         [FreeFunction("GetGUIState().m_CanvasGUIState.m_GUIClipState.GetParentTransform")]
         internal static extern Matrix4x4 GetParentMatrix();
 
-        internal static extern void Internal_PushParentClip(Matrix4x4 objectTransform, Rect clipRect);
+        internal static void Internal_PushParentClip(Matrix4x4 objectTransform, Rect clipRect)
+        {
+            Internal_PushParentClip(objectTransform, objectTransform, clipRect);
+        }
+
+        internal static extern void Internal_PushParentClip(Matrix4x4 renderTransform, Matrix4x4 inputTransform, Rect clipRect);
 
         internal static extern void Internal_PopParentClip();
     }

@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 using UnityEditor.AnimatedValues;
+using UnityEditor.Overlays;
 
 namespace UnityEditor
 {
@@ -21,14 +22,13 @@ namespace UnityEditor
         private SavedBool m_ColorFoldout;
         private SavedBool m_RenderingFoldout;
 
-
-        bool m_PickAdded = false;
         bool m_MouseLeaveListenerAdded = false;
         bool m_SceneViewListenerAdded = false;
-        OverlayWindow m_OverlayWindow;
+
+        static PhysicsDebugWindow s_Window;
+
         private static class Style
         {
-            public static readonly GUIContent physicsDebug          = EditorGUIUtility.TrTextContent("Physics Debug");
             public static readonly GUIContent staticColor           = EditorGUIUtility.TrTextContent("Static Colliders");
             public static readonly GUIContent triggerColor          = EditorGUIUtility.TrTextContent("Triggers");
             public static readonly GUIContent rigidbodyColor        = EditorGUIUtility.TrTextContent("Rigidbodies");
@@ -88,29 +88,22 @@ namespace UnityEditor
             m_ShowColliderTypeFoldout = new SavedBool("PhysicsDebugWindow.ShowColliderType", false);
             m_ColorFoldout = new SavedBool("PhysicsDebugWindow.ShowColorFoldout", false);
             m_RenderingFoldout = new SavedBool("PhysicsDebugWindow.ShowRenderingFoldout", false);
-            m_OverlayWindow = new OverlayWindow(Style.physicsDebug, DisplayControls, (int)SceneViewOverlay.Ordering.PhysicsDebug, null,
-                SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
+            SceneView.duringSceneGui += OnSceneGUI;
+            SetPickingEnabled(PhysicsVisualizationSettings.showCollisionGeometry
+                && PhysicsVisualizationSettings.enableMouseSelect);
         }
 
         public void OnDisable()
         {
-            // This this to catch domain reloading that happens when we transition between Edit and Play modes
-            if (m_SceneViewListenerAdded)
-                OnBecameInvisible();
+            SceneView.duringSceneGui -= OnSceneGUI;
+            SetPickingEnabled(false);
         }
 
-        void AddPicker()
+        static void SetPickingEnabled(bool enabled)
         {
-            if (!m_PickAdded)
-                HandleUtility.pickClosestGameObjectDelegate += PhysicsVisualizationSettings.PickClosestGameObject;
-            m_PickAdded = true;
-        }
-
-        void RemovePicker()
-        {
-            if (m_PickAdded)
-                HandleUtility.pickClosestGameObjectDelegate -= PhysicsVisualizationSettings.PickClosestGameObject;
-            m_PickAdded = false;
+            HandleUtility.pickClosestGameObjectDelegate = enabled
+                ? PhysicsVisualizationSettings.PickClosestGameObject
+                : (HandleUtility.PickClosestGameObjectFunc)null;
         }
 
         void OnBecameVisible()
@@ -118,36 +111,29 @@ namespace UnityEditor
             if (!m_SceneViewListenerAdded)
             {
                 PhysicsVisualizationSettings.InitDebugDraw();
-                SceneView.duringSceneGui += OnSceneViewGUI;
                 m_SceneViewListenerAdded = true;
             }
 
             RepaintSceneAndGameViews();
+            s_Window = this;
         }
 
         void OnBecameInvisible()
         {
-            RemovePicker();
-
             if (m_SceneViewListenerAdded)
             {
-                SceneView.duringSceneGui -= OnSceneViewGUI;
                 PhysicsVisualizationSettings.DeinitDebugDraw();
                 m_SceneViewListenerAdded = false;
             }
 
             RepaintSceneAndGameViews();
+            s_Window = null;
         }
 
         static void RepaintSceneAndGameViews()
         {
             SceneView.RepaintAll();
             GameView.RepaintAll();
-        }
-
-        void OnSceneViewGUI(SceneView view)
-        {
-            SceneViewOverlay.ShowWindow(m_OverlayWindow);
         }
 
         void AddMouseLeaveListener()
@@ -171,6 +157,35 @@ namespace UnityEditor
                     PhysicsVisualizationSettings.ClearMouseHighlight();
                 }
             }
+        }
+
+        void OnSceneGUI(SceneView view)
+        {
+            var dirtyCount = PhysicsVisualizationSettings.dirtyCount;
+            Vector2 mousePos = Event.current.mousePosition;
+            Rect sceneViewOnly = new Rect(0, EditorGUI.kWindowToolbarHeight, view.position.width, view.position.height - EditorGUI.kWindowToolbarHeight);
+            bool mouseInSceneView = sceneViewOnly.Contains(Event.current.mousePosition);
+
+            bool allowInteraction = PhysicsVisualizationSettings.showCollisionGeometry && PhysicsVisualizationSettings.enableMouseSelect && mouseInSceneView;
+
+            if (allowInteraction)
+            {
+                AddMouseLeaveListener();
+
+                // mouse-over highlight
+                if (Event.current.type == EventType.MouseMove)
+                    PhysicsVisualizationSettings.UpdateMouseHighlight(HandleUtility.GUIPointToScreenPixelCoordinate(mousePos));
+
+                if (Event.current.type == EventType.MouseDrag)
+                    PhysicsVisualizationSettings.ClearMouseHighlight();
+            }
+            else
+            {
+                PhysicsVisualizationSettings.ClearMouseHighlight();
+            }
+
+            if (dirtyCount != PhysicsVisualizationSettings.dirtyCount)
+                RepaintSceneAndGameViews();
         }
 
         void OnGUI()
@@ -371,48 +386,36 @@ namespace UnityEditor
                 RepaintSceneAndGameViews();
         }
 
-        void DisplayControls(UnityEngine.Object o, SceneView view)
+        [Overlay(typeof(SceneView), k_OverlayId, k_DisplayName)]
+        class SceneViewPhysicsDebuggerOverlay : TransientSceneViewOverlay
         {
-            var dirtyCount = PhysicsVisualizationSettings.dirtyCount;
+            const string k_OverlayId = "Scene View/Physics Debugger";
+            const string k_DisplayName = "Physics Debug";
+            public override bool visible => s_Window != null;
 
-            PhysicsVisualizationSettings.showCollisionGeometry = EditorGUILayout.Toggle(Style.showCollisionGeometry
-                , PhysicsVisualizationSettings.showCollisionGeometry);
-
-            PhysicsVisualizationSettings.enableMouseSelect = EditorGUILayout.Toggle(Style.enableMouseSelect
-                , PhysicsVisualizationSettings.enableMouseSelect);
-
-            if (PhysicsVisualizationSettings.devOptions)
+            public override void OnGUI()
             {
-                PhysicsVisualizationSettings.useSceneCam = EditorGUILayout.Toggle(Style.useSceneCam
-                    , PhysicsVisualizationSettings.useSceneCam);
+                var dirtyCount = PhysicsVisualizationSettings.dirtyCount;
+
+                EditorGUI.BeginChangeCheck();
+                PhysicsVisualizationSettings.showCollisionGeometry = EditorGUILayout.Toggle(Style.showCollisionGeometry
+                    , PhysicsVisualizationSettings.showCollisionGeometry);
+                using (new EditorGUI.DisabledScope(!PhysicsVisualizationSettings.showCollisionGeometry))
+                {
+                    PhysicsVisualizationSettings.enableMouseSelect = EditorGUILayout.Toggle(Style.enableMouseSelect, PhysicsVisualizationSettings.enableMouseSelect);
+                }
+                if (EditorGUI.EndChangeCheck())
+                    SetPickingEnabled(PhysicsVisualizationSettings.showCollisionGeometry && PhysicsVisualizationSettings.enableMouseSelect);
+
+                if (PhysicsVisualizationSettings.devOptions)
+                {
+                    PhysicsVisualizationSettings.useSceneCam = EditorGUILayout.Toggle(Style.useSceneCam
+                        , PhysicsVisualizationSettings.useSceneCam);
+                }
+
+                if (dirtyCount != PhysicsVisualizationSettings.dirtyCount)
+                    RepaintSceneAndGameViews();
             }
-
-            Vector2 mousePos = Event.current.mousePosition;
-            Rect sceneViewOnly = new Rect(0, EditorGUI.kWindowToolbarHeight, view.position.width, view.position.height - EditorGUI.kWindowToolbarHeight);
-            bool mouseInSceneView = sceneViewOnly.Contains(Event.current.mousePosition);
-
-            bool allowInteraction = PhysicsVisualizationSettings.showCollisionGeometry && PhysicsVisualizationSettings.enableMouseSelect && mouseInSceneView;
-
-            if (allowInteraction)
-            {
-                AddPicker();
-                AddMouseLeaveListener();
-
-                // mouse-over highlight
-                if (Event.current.type == EventType.MouseMove)
-                    PhysicsVisualizationSettings.UpdateMouseHighlight(HandleUtility.GUIPointToScreenPixelCoordinate(mousePos));
-
-                if (Event.current.type == EventType.MouseDrag)
-                    PhysicsVisualizationSettings.ClearMouseHighlight();
-            }
-            else
-            {
-                RemovePicker();
-                PhysicsVisualizationSettings.ClearMouseHighlight();
-            }
-
-            if (dirtyCount != PhysicsVisualizationSettings.dirtyCount)
-                RepaintSceneAndGameViews();
         }
     }
 }

@@ -52,10 +52,12 @@ namespace UnityEditor.Search.Providers
                 get
                 {
                     if (m_Source == null)
-                        m_Source = AssetDatabase.GUIDToAssetPath(gid.assetGUID);
+                        m_Source = AssetDatabase.GUIDToAssetPath(guid);
                     return m_Source;
                 }
             }
+
+            public string guid => gid.assetGUID.ToString();
 
             private bool m_HasType;
             private Type m_Type;
@@ -145,7 +147,7 @@ namespace UnityEditor.Search.Providers
                 supportsSyncViewSearch = true,
                 isEnabledForContextualSearch = () => Utils.IsFocusedWindowTypeName("ProjectBrowser"),
                 toObject = (item, type) => GetObject(item, type),
-                toKey = (item) => GetInfo(item).source.GetHashCode64(),
+                toKey = (item) => GetDocumentKey(item),
                 fetchItems = (context, items, provider) => SearchAssets(context, provider),
                 fetchLabel = (item, context) => FetchLabel(item),
                 fetchDescription = (item, context) => FetchDescription(item),
@@ -156,6 +158,11 @@ namespace UnityEditor.Search.Providers
                 fetchPropositions = (context, options) => FetchPropositions(context, options),
                 fetchColumns = (context, items) => AssetSelectors.Enumerate(items)
             };
+        }
+
+        private static ulong GetDocumentKey(SearchItem item)
+        {
+            return GetInfo(item).guid.GetHashCode64();
         }
 
         private static Texture2D FetchPreview(SearchItem item, Vector2 size, FetchPreviewOptions options)

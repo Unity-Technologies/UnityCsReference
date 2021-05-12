@@ -38,7 +38,7 @@ namespace UnityEditor
 
         public static event Action pickingChanged;
 
-        internal static event Action currentStageIsolated;
+        internal static event Action<bool> currentStageIsIsolated;
 
         private readonly static List<GameObject> m_RootBuffer = new List<GameObject>();
 
@@ -579,7 +579,7 @@ namespace UnityEditor
         private void IsolateCurrentStage()
         {
             SceneVisibilityState.isolation = true;
-            currentStageIsolated?.Invoke();
+            currentStageIsIsolated?.Invoke(true);
         }
 
         public void ExitIsolation()
@@ -591,6 +591,7 @@ namespace UnityEditor
         private static void RevertIsolationCurrentStage()
         {
             SceneVisibilityState.isolation = false;
+            currentStageIsIsolated?.Invoke(false);
         }
 
         //SHORTCUTS

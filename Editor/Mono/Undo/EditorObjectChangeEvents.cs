@@ -206,15 +206,25 @@ namespace UnityEditor
     public struct DestroyGameObjectHierarchyEventArgs
     {
         public int instanceId => m_InstanceId;
+        public int parentInstanceId => m_ParentInstanceId;
         public Scene scene => m_Scene;
 
         public DestroyGameObjectHierarchyEventArgs(int instanceId, Scene scene)
         {
             m_InstanceId = instanceId;
+            m_ParentInstanceId = 0;
+            m_Scene = scene;
+        }
+
+        public DestroyGameObjectHierarchyEventArgs(int instanceId, int parentInstanceId, Scene scene)
+        {
+            m_InstanceId = instanceId;
+            m_ParentInstanceId = parentInstanceId;
             m_Scene = scene;
         }
 
         private int m_InstanceId;
+        private int m_ParentInstanceId;
         private Scene m_Scene;
     }
 

@@ -11,6 +11,7 @@ using Unity.Collections;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEngine.Scripting.APIUpdating;
+using Unity.Profiling;
 
 namespace UnityEngine.Profiling
 {
@@ -99,7 +100,7 @@ namespace UnityEngine.Profiling
 
 
         [Conditional("ENABLE_PROFILER")]
-        [FreeFunction("profiler_set_area_enabled")]
+        [FreeFunction("ProfilerBindings::profiler_set_area_enabled")]
         public extern static void SetAreaEnabled(ProfilerArea area, bool enabled);
 
         // TODO
@@ -114,7 +115,7 @@ namespace UnityEngine.Profiling
 
 
         [NativeConditional("ENABLE_PROFILER")]
-        [FreeFunction("profiler_is_area_enabled")]
+        [FreeFunction("ProfilerBindings::profiler_is_area_enabled")]
         public extern static bool GetAreaEnabled(ProfilerArea area);
 
         // Displays the recorded profiledata in the profiler.
@@ -383,5 +384,50 @@ namespace UnityEngine.Profiling
         [NativeMethod(Name = "ProfilerBindings::Internal_EmitGlobalMetaData_Native", IsFreeFunction = true, IsThreadSafe = true)]
         [NativeConditional("ENABLE_PROFILER")]
         static extern unsafe void Internal_EmitGlobalMetaData_Native(void* id, int idLen, int tag, IntPtr data, int count, int elementSize, bool frameData);
+
+        [Conditional("ENABLE_PROFILER")]
+        public static void SetCategoryEnabled(ProfilerCategory category, bool enabled)
+        {
+            if (category == ProfilerCategory.Any)
+                throw new ArgumentException("Argument should be a valid category", "category");
+
+            Internal_SetCategoryEnabled((ushort)category, enabled);
+        }
+
+        public static bool IsCategoryEnabled(ProfilerCategory category)
+        {
+            if (category == ProfilerCategory.Any)
+                throw new ArgumentException("Argument should be a valid category", "category");
+
+            return Internal_IsCategoryEnabled((ushort)category);
+        }
+
+        [NativeHeader("Runtime/Profiler/ProfilerManager.h")]
+        [NativeMethod(Name = "GetCategoriesCount")]
+        [StaticAccessor("profiling::GetProfilerManagerPtr()", StaticAccessorType.Arrow)]
+        [NativeConditional("ENABLE_PROFILER")]
+        public static extern uint GetCategoriesCount();
+
+        [Conditional("ENABLE_PROFILER")]
+        public static void GetAllCategories(ProfilerCategory[] categories)
+        {
+            for (int i = 0; i < Math.Min(GetCategoriesCount(), categories.Length); i++)
+                categories[i] = new ProfilerCategory((ushort)i);
+        }
+
+        [Conditional("ENABLE_PROFILER")]
+        public static void GetAllCategories(NativeArray<ProfilerCategory> categories)
+        {
+            for (int i = 0; i < Math.Min(GetCategoriesCount(), categories.Length); i++)
+                categories[i] = new ProfilerCategory((ushort)i);
+        }
+
+        [NativeMethod(Name = "profiler_set_category_enable", IsFreeFunction = true, IsThreadSafe = true)]
+        [NativeConditional("ENABLE_PROFILER")]
+        private extern static void Internal_SetCategoryEnabled(ushort categoryId, bool enabled);
+
+        [NativeMethod(Name = "profiler_is_category_enabled", IsFreeFunction = true, IsThreadSafe = true)]
+        [NativeConditional("ENABLE_PROFILER")]
+        private extern static bool Internal_IsCategoryEnabled(ushort categoryId);
     }
 }

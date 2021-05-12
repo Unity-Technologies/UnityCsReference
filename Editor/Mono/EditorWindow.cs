@@ -6,13 +6,13 @@ using UnityEngine;
 using System.Linq;
 using System;
 using System.Collections.Generic;
+using UnityEditor.Overlays;
+using UnityEditor.ShortcutManagement;
 using UnityEngine.Scripting;
 using UnityEngine.Internal;
-
 using SerializableJsonDictionary = UnityEditor.UIElements.SerializableJsonDictionary;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
-using Object = System.Object;
 
 namespace UnityEditor
 {
@@ -46,11 +46,58 @@ namespace UnityEditor
         internal Rect m_Pos = new Rect(0, 0, 320, 550);
 
         private VisualElement m_UIRootElement;
-        public VisualElement rootVisualElement => m_UIRootElement ?? (m_UIRootElement = CreateRoot());
+
+        internal VisualElement baseRootVisualElement => m_UIRootElement == null
+        ? m_UIRootElement = CreateRoot()
+            : m_UIRootElement;
+
+        public VisualElement rootVisualElement
+        {
+            get
+            {
+                if (this is ISupportsOverlays)
+                {
+                    if (!overlayCanvas.initialized)
+                    {
+                        var ve = overlayCanvas.rootVisualElement;
+                        baseRootVisualElement.Add(ve);
+                        overlayCanvas.Initialize(this);
+                    }
+
+                    return overlayCanvas.windowRoot;
+                }
+                return baseRootVisualElement;
+            }
+        }
 
         [HideInInspector]
         [SerializeField]
         private SerializableJsonDictionary m_ViewDataDictionary;
+
+        [HideInInspector]
+        [SerializeField]
+        OverlayCanvas m_OverlayCanvas = new OverlayCanvas();
+
+        internal OverlayCanvas overlayCanvas => m_OverlayCanvas;
+
+        [HideInInspector]
+        [SerializeField]
+        string m_LastOverlayPresetName;
+
+        internal event Action lastOverlayPresetNameChanged;
+
+        internal string lastOverlayPresetName
+        {
+            get => m_LastOverlayPresetName;
+            set
+            {
+                if (m_LastOverlayPresetName == value)
+                    return;
+
+                m_LastOverlayPresetName = value;
+                lastOverlayPresetNameChanged?.Invoke();
+            }
+        }
 
         private bool m_EnableViewDataPersistence;
 
@@ -791,6 +838,7 @@ namespace UnityEditor
         public static T CreateWindow<T>(string title, params System.Type[] desiredDockNextTo) where T : EditorWindow
         {
             T win = CreateInstance<T>();
+
             if (title != null)
                 win.titleContent =  new GUIContent(title);
 
@@ -1154,17 +1202,21 @@ namespace UnityEditor
             UpdateWindowMenuListing();
         }
 
-        private void __internalAwake()
+        void __internalAwake()
         {
             hideFlags = HideFlags.DontSave; // Can't be HideAndDontSave, as that would make scriptable wizard GUI be disabled
         }
 
-        private void OnEnableINTERNAL()
+        [InitializeOnLoadMethod]
+        static void Initialize()
         {
+            s_ShortcutContext = new OverlayShortcutContext();
+            EditorApplication.delayCall += () => ShortcutIntegration.instance.contextManager.RegisterToolContext(s_ShortcutContext);
         }
 
         private void OnDisableINTERNAL()
         {
+            m_OverlayCanvas.OnContainerWindowDisabled();
             SaveViewDataToDisk();
         }
 
@@ -1250,6 +1302,72 @@ namespace UnityEditor
             EditorUIService.instance.AddDefaultEditorStyleSheets(root);
             root.style.overflow = UnityEngine.UIElements.Overflow.Hidden;
             return root;
+        }
+
+        static OverlayShortcutContext s_ShortcutContext = new OverlayShortcutContext();
+
+        internal class OverlayShortcutContext : IShortcutToolContext
+        {
+            public EditorWindow editorWindow;
+            public bool active
+            {
+                get
+                {
+                    var focusedWindow = EditorWindow.focusedWindow;
+                    if (focusedWindow != null)
+                    {
+                        if (focusedWindow is ISupportsOverlays)
+                        {
+                            editorWindow = focusedWindow;
+                            return true;
+                        }
+                    }
+
+                    editorWindow = null;
+                    return false;
+                }
+            }
+        }
+
+        [Shortcut("Overlays/Toggle All Overlays", typeof(OverlayShortcutContext), KeyCode.Space, ShortcutModifiers.Action)]
+        static void ToggleAllOverlays(ShortcutArguments args)
+        {
+            if (!(args.context is OverlayShortcutContext context))
+                return;
+            var canvas = context.editorWindow.overlayCanvas;
+            canvas.SetOverlaysEnabled(!canvas.overlaysEnabled);
+        }
+
+        [Shortcut("Overlays/Hide Overlay", typeof(OverlayShortcutContext))]
+        static void HideOverlay(ShortcutArguments args)
+        {
+            var context = args.context as OverlayShortcutContext;
+            context.editorWindow.overlayCanvas.HideHoveredOverlay();
+        }
+
+        [Shortcut("Overlays/Show Overlay Menu", typeof(OverlayShortcutContext), KeyCode.Space)]
+        static void ShowOverlayMenu(ShortcutArguments args)
+        {
+            var context = args.context as OverlayShortcutContext;
+            if (context.editorWindow.overlayCanvas.IsOverlayMenuVisible())
+                context.editorWindow.overlayCanvas.HideOverlayMenu();
+            else
+                context.editorWindow.overlayCanvas.ShowOverlayMenu();
+        }
+
+        public bool TryGetOverlay(string id, out Overlay match)
+        {
+            foreach (var overlay in overlayCanvas.overlays)
+            {
+                if (overlay.id == id)
+                {
+                    match = overlay;
+                    return true;
+                }
+            }
+
+            match = null;
+            return false;
         }
     }
 

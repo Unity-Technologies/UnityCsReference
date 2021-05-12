@@ -637,6 +637,7 @@ namespace UnityEngine.UIElements
                 var hashCode = rect.GetHashCode();
                 hashCode = (hashCode * 397) ^ (text != null ? text.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ (font != null ? font.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ (fontDefinition != null ? fontDefinition.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ fontSize;
                 hashCode = (hashCode * 397) ^ (int)fontStyle;
                 hashCode = (hashCode * 397) ^ fontColor.GetHashCode();
@@ -649,6 +650,9 @@ namespace UnityEngine.UIElements
                 hashCode = (hashCode * 397) ^ textOverflow.GetHashCode();
                 hashCode = (hashCode * 397) ^ textOverflowPosition.GetHashCode();
                 hashCode = (hashCode * 397) ^ overflow.GetHashCode();
+                hashCode = (hashCode * 397) ^ letterSpacing.GetHashCode();
+                hashCode = (hashCode * 397) ^ wordSpacing.GetHashCode();
+                hashCode = (hashCode * 397) ^ paragraphSpacing.GetHashCode();
                 return hashCode;
             }
 

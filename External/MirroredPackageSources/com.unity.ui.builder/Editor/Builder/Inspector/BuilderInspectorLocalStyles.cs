@@ -27,7 +27,7 @@ namespace Unity.UI.Builder
             m_LocalStylesSection = m_Inspector.Q<PersistedFoldout>("inspector-local-styles-foldout");
 
             // We need to hide new Text Asset style property fields in any Unity version older than 2021.1.
-            m_LocalStylesSection.Query(className: "unity-builder-font-asset-property-container").ForEach(e => e.style.display = DisplayStyle.None);
+            m_LocalStylesSection.Query(className: "unity-builder-no-font-asset-property-container").ForEach(e => e.style.display = DisplayStyle.None);
 
             var styleCategories = m_LocalStylesSection.Query<PersistedFoldout>(
                 className: "unity-builder-inspector__style-category-foldout").ToList();

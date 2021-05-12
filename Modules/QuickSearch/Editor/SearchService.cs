@@ -68,7 +68,7 @@ namespace UnityEditor.Search
             if (!Utils.IsMainProcess())
                 return;
 
-            if (SearchDatabase.EnumeratePaths(SearchDatabase.IndexLocation.assets).Count() == 0)
+            if (!SearchDatabase.EnumeratePaths(SearchDatabase.IndexLocation.assets).Any())
                 SearchDatabase.CreateDefaultIndex();
 
             SearchSettings.onBoardingDoNotAskAgain = true;
@@ -370,7 +370,7 @@ namespace UnityEditor.Search
                 options);
         }
 
-        // <summary>
+        /// <summary>
         /// Execute a search request and callback for every incoming items and when the search is completed.
         /// The user is responsible for disposing of the search context.
         /// </summary>

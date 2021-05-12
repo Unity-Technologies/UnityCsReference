@@ -12,12 +12,13 @@ namespace UnityEditor
     {
         const float k_GridSizeMin = .0001f;
         const float k_GridSizeMax = 1024f;
-        const float k_DefaultGridSize = 1.0f;
         const int k_DefaultMultiplier = 0;
 
-        static SavedFloat s_GridSizeX = new SavedFloat("GridSizeX", k_DefaultGridSize);
-        static SavedFloat s_GridSizeY = new SavedFloat("GridSizeY", k_DefaultGridSize);
-        static SavedFloat s_GridSizeZ = new SavedFloat("GridSizeZ", k_DefaultGridSize);
+        public const float defaultGridSize = 1.0f;
+
+        static SavedFloat s_GridSizeX = new SavedFloat("GridSizeX", defaultGridSize);
+        static SavedFloat s_GridSizeY = new SavedFloat("GridSizeY", defaultGridSize);
+        static SavedFloat s_GridSizeZ = new SavedFloat("GridSizeZ", defaultGridSize);
         static SavedInt s_GridMultiplier = new SavedInt("GridMultiplier", k_DefaultMultiplier);
 
         static Vector3 rawSize
@@ -70,18 +71,19 @@ namespace UnityEditor
 
         public static void ResetGridSettings()
         {
-            size = new Vector3(k_DefaultGridSize, k_DefaultGridSize, k_DefaultGridSize);
+            size = new Vector3(defaultGridSize, defaultGridSize, defaultGridSize);
         }
     }
 
     [System.Serializable]
     class SceneViewGrid
     {
-        const float k_DefaultGridOpacity = .5f;
-        const GridRenderAxis k_DefaultRenderAxis = GridRenderAxis.Y;
-        const bool k_DefaultShowGrid = true;
+        public const float defaultGridOpacity = .5f;
+        public const GridRenderAxis defaultRenderAxis = GridRenderAxis.Y;
+        public const bool defaultShowGrid = true;
 
         internal event Action<bool> gridVisibilityChanged = delegate(bool b) {};
+        internal event Action<GridRenderAxis> gridRenderAxisChanged = delegate(GridRenderAxis axis) {};
 
         internal enum GridRenderAxis
         {
@@ -156,17 +158,17 @@ namespace UnityEditor
         Grid zGrid = new Grid();
 
         [SerializeField]
-        bool m_ShowGrid = k_DefaultShowGrid;
+        bool m_ShowGrid = defaultShowGrid;
 
         [SerializeField]
-        GridRenderAxis m_GridAxis = k_DefaultRenderAxis;
+        GridRenderAxis m_GridAxis = defaultRenderAxis;
 
         [SerializeField]
-        float m_gridOpacity = k_DefaultGridOpacity;
+        float m_gridOpacity = defaultGridOpacity;
 
         internal bool showGrid
         {
-            get { return m_ShowGrid; }
+            get => m_ShowGrid;
             set
             {
                 if (value == m_ShowGrid)
@@ -178,14 +180,19 @@ namespace UnityEditor
 
         internal float gridOpacity
         {
-            get { return m_gridOpacity; }
-            set { m_gridOpacity = Mathf.Clamp01(value); }
+            get => m_gridOpacity;
+            set => m_gridOpacity = Mathf.Clamp01(value);
         }
 
         internal GridRenderAxis gridAxis
         {
-            get { return m_GridAxis; }
-            set { m_GridAxis = value; }
+            get => m_GridAxis;
+            set
+            {
+                if (m_GridAxis == value) return;
+                m_GridAxis = value;
+                gridRenderAxisChanged(value);
+            }
         }
 
         internal Grid activeGrid
@@ -420,9 +427,9 @@ namespace UnityEditor
 
         internal void Reset()
         {
-            gridOpacity = k_DefaultGridOpacity;
-            showGrid = k_DefaultShowGrid;
-            gridAxis = k_DefaultRenderAxis;
+            gridOpacity = defaultGridOpacity;
+            showGrid = defaultShowGrid;
+            gridAxis = defaultRenderAxis;
         }
     }
 } // namespace

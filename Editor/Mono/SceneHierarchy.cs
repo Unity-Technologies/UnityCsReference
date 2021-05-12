@@ -265,7 +265,6 @@ namespace UnityEditor
             var dataSource = new GameObjectTreeViewDataSource(m_TreeView, m_CurrenRootInstanceID, showRootItem, rootItemIsCollapsable);
             var dragging = new GameObjectsTreeViewDragging(m_TreeView);
             var gui = new GameObjectTreeViewGUI(m_TreeView, false);
-            m_TreeView.Init(treeViewRect, dataSource, gui, dragging);
 
             dataSource.searchMode = m_SearchMode;
             dataSource.searchString = m_SearchFilter;
@@ -274,6 +273,8 @@ namespace UnityEditor
             dragging.parentForDraggedObjectsOutsideItems = m_CustomParentForNewGameObjects;
             dragging.SetCustomDragHandler(m_CustomDragHandler);
             gui.renameEnded += ItemRenameEnded;
+
+            m_TreeView.Init(treeViewRect, dataSource, gui, dragging);
 
             m_TreeView.ReloadData();
         }

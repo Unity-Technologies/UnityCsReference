@@ -146,6 +146,9 @@ namespace UnityEditor
             internal ArrayList m_ImportProcessors = null;
         }
 
+        const string kCameraPostprocessorDependencyName = "postprocessor/camera";
+        const string kLightPostprocessorDependencyName = "postprocessor/light";
+
         static ArrayList m_PostprocessStack = null;
         static ArrayList m_ImportProcessors = null;
         static Type[] m_PostprocessorClasses = null;
@@ -154,6 +157,8 @@ namespace UnityEditor
         static string m_AudioProcessorsHashString = null;
         static string m_SpeedTreeProcessorsHashString = null;
         static string m_PrefabProcessorsHashString = null;
+        static string m_CameraProcessorsHashString = null;
+        static string m_LightProcessorsHashString = null;
 
         static Type[] GetCachedAssetPostprocessorClasses()
         {
@@ -366,6 +371,22 @@ namespace UnityEditor
         {
             object[] args = { material };
             CallPostProcessMethods("OnPostprocessMaterial", args);
+        }
+
+        [RequiredByNativeCode]
+        static void PreprocessCameraDescription(AssetImportContext assetImportContext, CameraDescription description, Camera camera, AnimationClip[] animations)
+        {
+            assetImportContext.DependsOnCustomDependency(kCameraPostprocessorDependencyName);
+            object[] args = { description, camera, animations };
+            CallPostProcessMethods("OnPreprocessCameraDescription", args);
+        }
+
+        [RequiredByNativeCode]
+        static void PreprocessLightDescription(AssetImportContext assetImportContext, LightDescription description, Light light, AnimationClip[] animations)
+        {
+            assetImportContext.DependsOnCustomDependency(kLightPostprocessorDependencyName);
+            object[] args = { description, light, animations };
+            CallPostProcessMethods("OnPreprocessLightDescription", args);
         }
 
         [RequiredByNativeCode]
@@ -609,6 +630,58 @@ namespace UnityEditor
 
             m_SpeedTreeProcessorsHashString = BuildHashString(versionsByType);
             return m_SpeedTreeProcessorsHashString;
+        }
+
+        [InitializeOnLoadMethod]
+        static void RefreshCustomDependencies()
+        {
+            AssetDatabase.RegisterCustomDependency(kCameraPostprocessorDependencyName, Hash128.Compute(GetCameraProcessorsHashString()));
+            AssetDatabase.RegisterCustomDependency(kLightPostprocessorDependencyName, Hash128.Compute(GetLightProcessorsHashString()));
+        }
+
+        static void GetProcessorHashString(string methodName, ref string hashString)
+        {
+            if (hashString != null)
+                return;
+
+            var versionsByType = new SortedList<string, uint>();
+
+            foreach (var assetPostprocessorClass in GetCachedAssetPostprocessorClasses())
+            {
+                try
+                {
+                    if (assetPostprocessorClass.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null)
+                    {
+                        var inst = Activator.CreateInstance(assetPostprocessorClass) as AssetPostprocessor;
+                        uint version = inst.GetVersion();
+                        versionsByType.Add(assetPostprocessorClass.FullName, version);
+                    }
+                }
+                catch (MissingMethodException)
+                {
+                    LogPostProcessorMissingDefaultConstructor(assetPostprocessorClass);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
+            }
+
+            hashString = BuildHashString(versionsByType);
+        }
+
+        [RequiredByNativeCode]
+        static string GetCameraProcessorsHashString()
+        {
+            GetProcessorHashString("OnPreprocessCameraDescription", ref m_CameraProcessorsHashString);
+            return m_CameraProcessorsHashString;
+        }
+
+        [RequiredByNativeCode]
+        static string GetLightProcessorsHashString()
+        {
+            GetProcessorHashString("OnPreprocessLightDescription", ref m_LightProcessorsHashString);
+            return m_LightProcessorsHashString;
         }
 
         static bool IsAssetPostprocessorAnalyticsEnabled()

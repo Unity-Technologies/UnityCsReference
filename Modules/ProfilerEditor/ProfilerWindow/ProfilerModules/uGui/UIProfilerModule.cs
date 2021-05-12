@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Profiling.Editor;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Profiling;
@@ -10,19 +11,19 @@ using UnityEngine.Profiling;
 namespace UnityEditorInternal.Profiling
 {
     [Serializable]
+    [ProfilerModuleMetadata("UI", typeof(LocalizationResource), IconPath = "Profiler.UI")]
     internal class UIProfilerModule : ProfilerModuleBase
     {
-        const string k_IconName = "Profiler.UI";
         const int k_DefaultOrderIndex = 10;
-        static readonly string k_UnLocalizedName = "UI";
-        static readonly string k_Name = LocalizationDatabase.GetLocalizedString(k_UnLocalizedName);
 
         protected static WeakReference instance;
         [SerializeField]
         UISystemProfiler m_UISystemProfiler;
 
-        public UIProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_UnLocalizedName, k_Name, k_IconName, Chart.ChartType.StackedFill) {}
-        protected UIProfilerModule(IProfilerWindowController profilerWindow, string name, string localizedName, string iconName, Chart.ChartType chartType) : base(profilerWindow, name, localizedName, iconName, chartType) {}  // Used by UIDetailsProfilerModule
+        public UIProfilerModule() : base(ProfilerModuleChartType.StackedTimeArea) {}
+
+        // Used by UIDetailsProfilerModule
+        protected UIProfilerModule(ProfilerModuleChartType defaultChartType) : base(defaultChartType) {}
 
         static UISystemProfiler sharedUISystemProfiler
         {
@@ -32,13 +33,13 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
-        public override ProfilerArea area => ProfilerArea.UI;
+        internal override ProfilerArea area => ProfilerArea.UI;
         public override bool usesCounters => false;
 
-        protected override int defaultOrderIndex => k_DefaultOrderIndex;
-        protected override string legacyPreferenceKey => "ProfilerChartUI";
+        private protected override int defaultOrderIndex => k_DefaultOrderIndex;
+        private protected override string legacyPreferenceKey => "ProfilerChartUI";
 
-        public override void OnEnable()
+        internal override void OnEnable()
         {
             if (this.GetType() == typeof(UIProfilerModule))
             {
@@ -51,7 +52,7 @@ namespace UnityEditorInternal.Profiling
                 m_UISystemProfiler = new UISystemProfiler();
         }
 
-        public override void OnDisable()
+        internal override void OnDisable()
         {
             base.OnDisable();
             if (m_UISystemProfiler != null)
@@ -68,7 +69,7 @@ namespace UnityEditorInternal.Profiling
 
         public override void DrawDetailsView(Rect position)
         {
-            sharedUISystemProfiler?.DrawUIPane(m_ProfilerWindow);
+            sharedUISystemProfiler?.DrawUIPane(ProfilerWindow);
         }
     }
 }

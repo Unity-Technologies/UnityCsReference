@@ -38,6 +38,7 @@ namespace Unity.UI.Builder
 
         public static int AddValueToArray(this StyleSheet styleSheet, StyleValueKeyword value)
         {
+            styleSheet.UpdateContentHash();
             return (int)value;
         }
 
@@ -46,6 +47,7 @@ namespace Unity.UI.Builder
             var floats = styleSheet.floats.ToList();
             floats.Add(value);
             styleSheet.floats = floats.ToArray();
+            styleSheet.UpdateContentHash();
 
             return floats.Count - 1;
         }
@@ -55,6 +57,7 @@ namespace Unity.UI.Builder
             var dimensions = styleSheet.dimensions.ToList();
             dimensions.Add(value);
             styleSheet.dimensions = dimensions.ToArray();
+            styleSheet.UpdateContentHash();
 
             return dimensions.Count - 1;
         }
@@ -64,6 +67,7 @@ namespace Unity.UI.Builder
             var colors = styleSheet.colors.ToList();
             colors.Add(value);
             styleSheet.colors = colors.ToArray();
+            styleSheet.UpdateContentHash();
 
             return colors.Count - 1;
         }
@@ -73,6 +77,7 @@ namespace Unity.UI.Builder
             var strings = styleSheet.strings.ToList();
             strings.Add(value);
             styleSheet.strings = strings.ToArray();
+            styleSheet.UpdateContentHash();
 
             return strings.Count - 1;
         }
@@ -82,6 +87,7 @@ namespace Unity.UI.Builder
             var assets = styleSheet.assets.ToList();
             assets.Add(value);
             styleSheet.assets = assets.ToArray();
+            styleSheet.UpdateContentHash();
 
             return assets.Count - 1;
         }
@@ -95,6 +101,7 @@ namespace Unity.UI.Builder
             var values = styleSheet.strings.ToList();
             values.Add(strValue);
             styleSheet.strings = values.ToArray();
+            styleSheet.UpdateContentHash();
 
             return values.Count - 1;
         }
@@ -246,6 +253,7 @@ namespace Unity.UI.Builder
             Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
 
             styleSheet.floats[valueHandle.valueIndex] = value;
+            styleSheet.UpdateContentHash();
         }
 
         public static void SetValue(this StyleSheet styleSheet, StyleValueHandle valueHandle, Dimension value)
@@ -254,6 +262,7 @@ namespace Unity.UI.Builder
             Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
 
             styleSheet.dimensions[valueHandle.valueIndex] = value;
+            styleSheet.UpdateContentHash();
         }
 
         public static void SetValue(this StyleSheet styleSheet, StyleValueHandle valueHandle, Color value)
@@ -262,6 +271,7 @@ namespace Unity.UI.Builder
             Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
 
             styleSheet.colors[valueHandle.valueIndex] = value;
+            styleSheet.UpdateContentHash();
         }
 
         public static void SetValue(this StyleSheet styleSheet, StyleValueHandle valueHandle, string value)
@@ -270,6 +280,7 @@ namespace Unity.UI.Builder
             Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
 
             styleSheet.strings[valueHandle.valueIndex] = value;
+            styleSheet.UpdateContentHash();
         }
 
         public static void SetValue(this StyleSheet styleSheet, StyleValueHandle valueHandle, Object value)
@@ -286,6 +297,7 @@ namespace Unity.UI.Builder
             {
                 styleSheet.assets[valueHandle.valueIndex] = value;
             }
+            styleSheet.UpdateContentHash();
         }
 
         public static void SetValue(this StyleSheet styleSheet, StyleValueHandle valueHandle, Enum value)
@@ -296,6 +308,7 @@ namespace Unity.UI.Builder
             var newEnumStr = value.ToString();
             var strValue = BuilderNameUtilities.ConvertCamelToDash(newEnumStr);
             styleSheet.strings[valueHandle.valueIndex] = strValue;
+            styleSheet.UpdateContentHash();
         }
     }
 }

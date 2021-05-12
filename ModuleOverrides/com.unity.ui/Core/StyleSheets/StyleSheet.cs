@@ -33,6 +33,30 @@ namespace UnityEngine.UIElements
     public class StyleSheet : ScriptableObject
     {
         [SerializeField]
+        bool m_ImportedWithErrors;
+
+        /// <summary>
+        /// Whether there were errors encountered while importing the StyleSheet
+        /// </summary>
+        public bool importedWithErrors
+        {
+            get { return m_ImportedWithErrors; }
+            internal set { m_ImportedWithErrors = value; }
+        }
+
+        [SerializeField]
+        bool m_ImportedWithWarnings;
+
+        /// <summary>
+        /// Whether there were warnings encountered while importing the StyleSheet
+        /// </summary>
+        public bool importedWithWarnings
+        {
+            get { return m_ImportedWithWarnings; }
+            internal set { m_ImportedWithWarnings = value; }
+        }
+
+        [SerializeField]
         StyleRule[] m_Rules;
 
         internal StyleRule[] rules

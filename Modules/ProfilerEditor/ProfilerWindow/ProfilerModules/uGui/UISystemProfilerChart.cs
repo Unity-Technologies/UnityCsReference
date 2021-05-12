@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using Unity.Profiling.Editor;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Profiling;
@@ -16,7 +17,7 @@ namespace UnityEditor
 
         public bool showMarkers = true;
 
-        public UISystemProfilerChart(Chart.ChartType type, float dataScale, float maximumScaleInterpolationValue, int seriesCount, string name, string localizedName, string iconName) : base(ProfilerArea.UIDetails, type, dataScale, maximumScaleInterpolationValue, seriesCount, name, localizedName, iconName)
+        public UISystemProfilerChart(ProfilerModuleChartType type, float dataScale, float maximumScaleInterpolationValue, int seriesCount, string name, string localizedName, string iconName) : base(ProfilerArea.UIDetails, type, dataScale, maximumScaleInterpolationValue, seriesCount, name, localizedName, iconName)
         {
         }
 
@@ -88,7 +89,7 @@ namespace UnityEditor
             GUI.contentColor = cc;
         }
 
-        protected override Rect DoSeriesList(Rect position, int chartControlID, ChartType chartType, ChartViewData cdata)
+        protected override Rect DoSeriesList(Rect position, int chartControlID, ProfilerModuleChartType chartType, ChartViewData cdata)
         {
             Rect elementPosition = base.DoSeriesList(position, chartControlID, chartType, cdata);
             GUIContent label = EditorGUIUtility.TempContent("Markers");

@@ -843,7 +843,7 @@ namespace UnityEditor.Search.Providers
             SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchOpen, "SearchAssetStore");
             var storeContext = SearchService.CreateContext(SearchService.GetProvider(k_ProviderId));
             var qs = QuickSearch.Create(storeContext, topic: "asset store");
-            qs.itemIconSize = (int)DisplayMode.Limit;
+            qs.itemIconSize = (int)DisplayMode.Grid;
             qs.SetSearchText(string.Empty);
             qs.ShowWindow();
         }

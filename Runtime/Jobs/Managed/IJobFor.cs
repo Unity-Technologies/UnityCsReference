@@ -18,14 +18,7 @@ namespace Unity.Jobs
     {
         internal struct ForJobStruct<T> where T : struct, IJobFor
         {
-            public static IntPtr                            jobReflectionData;
-
-            public static IntPtr Initialize()
-            {
-                if (jobReflectionData == IntPtr.Zero)
-                    jobReflectionData = JobsUtility.CreateJobReflectionData(typeof(T), (ExecuteJobFunction)Execute);
-                return jobReflectionData;
-            }
+            public static readonly IntPtr jobReflectionData = JobsUtility.CreateJobReflectionData(typeof(T), (ExecuteJobFunction)Execute);
 
             public delegate void ExecuteJobFunction(ref T data, IntPtr additionalPtr, IntPtr bufferRangePatchData, ref JobRanges ranges, int jobIndex);
 
@@ -49,19 +42,19 @@ namespace Unity.Jobs
 
         unsafe public static JobHandle Schedule<T>(this T jobData, int arrayLength, JobHandle dependency) where T : struct, IJobFor
         {
-            var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), ForJobStruct<T>.Initialize(), dependency, ScheduleMode.Single);
+            var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), ForJobStruct<T>.jobReflectionData, dependency, ScheduleMode.Single);
             return JobsUtility.ScheduleParallelFor(ref scheduleParams, arrayLength, arrayLength);
         }
 
         unsafe public static JobHandle ScheduleParallel<T>(this T jobData, int arrayLength, int innerloopBatchCount, JobHandle dependency) where T : struct, IJobFor
         {
-            var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), ForJobStruct<T>.Initialize(), dependency, ScheduleMode.Parallel);
+            var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), ForJobStruct<T>.jobReflectionData, dependency, ScheduleMode.Parallel);
             return JobsUtility.ScheduleParallelFor(ref scheduleParams, arrayLength, innerloopBatchCount);
         }
 
         unsafe public static void Run<T>(this T jobData, int arrayLength) where T : struct, IJobFor
         {
-            var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), ForJobStruct<T>.Initialize(), new JobHandle(), ScheduleMode.Run);
+            var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), ForJobStruct<T>.jobReflectionData, new JobHandle(), ScheduleMode.Run);
             JobsUtility.ScheduleParallelFor(ref scheduleParams, arrayLength, arrayLength);
         }
     }

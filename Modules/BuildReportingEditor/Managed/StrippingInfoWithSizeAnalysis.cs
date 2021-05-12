@@ -78,13 +78,15 @@ namespace UnityEditor.Build.Reporting
         protected Dictionary<string, int> assemblySizes = new Dictionary<string, int>();
         protected Dictionary<string, int> objectSizes = new Dictionary<string, int>();
 
+        protected virtual string MethodMapPath => "Temp/StagingArea/Data/il2cppOutput/Symbols/MethodMap.tsv";
+
         public void Analyze()
         {
             var doSourceCodeAnalysis = Unsupported.IsDeveloperMode();
 
             var symbolArtifacts = GetSymbolArtifacts();
             var moduleArtifacts = GetModuleArtifacts();
-            var assemblyArtifacts = GetIl2CPPAssemblyMapArtifacts("Temp/StagingArea/Data/il2cppOutput/Symbols/MethodMap.tsv");
+            var assemblyArtifacts = GetIl2CPPAssemblyMapArtifacts(MethodMapPath);
 
             int moduleAccounted = 0;
 

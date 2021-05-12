@@ -16,6 +16,9 @@ namespace UnityEngine.UIElements
 
     /// <summary>
     /// Navigation events abstract base class.
+    ///
+    /// By default, navigation events trickle down and bubble up. They are cancellable, and disabled elements won't
+    /// receive these events.
     /// </summary>
     /// <typeparam name="T"></typeparam>
     public abstract class NavigationEventBase<T> : EventBase<T>, INavigationEvent where T : NavigationEventBase<T>, new()
@@ -36,7 +39,8 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable;
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable |
+                EventPropagation.SkipDisabledElements;
             propagateToIMGUI = false;
         }
     }

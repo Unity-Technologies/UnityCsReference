@@ -469,7 +469,7 @@ namespace UnityEditor
             GUIListOfObjectFields(s_Texts.meshes, m_ShownMeshes, additionalProperties);
 
             // Minus button
-            Rect rect = GUILayoutUtility.GetRect(0, kSingleLineHeight); //GUILayoutUtility.GetLastRect();
+            Rect rect = GetControlRect((int)EditorGUI.kSingleLineHeight);
             rect.x = rect.xMax - kPlusAddRemoveButtonWidth * 2 - kPlusAddRemoveButtonSpacing;
             rect.width = kPlusAddRemoveButtonWidth;
             if (m_ShownMeshes.Length > 1)

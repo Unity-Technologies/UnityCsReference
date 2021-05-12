@@ -361,11 +361,17 @@
     <Compile Include="..\..\Editor\Mono\AssetPipeline\BumpMapSettings.bindings.cs">
       <Link>Editor\Mono\AssetPipeline\BumpMapSettings.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\AssetPipeline\CameraDescription.bindings.cs">
+      <Link>Editor\Mono\AssetPipeline\CameraDescription.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\AssetPipeline\ComputeShaderImporter.bindings.cs">
       <Link>Editor\Mono\AssetPipeline\ComputeShaderImporter.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\AssetPipeline\IHVImageFormatImporter.bindings.cs">
       <Link>Editor\Mono\AssetPipeline\IHVImageFormatImporter.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\AssetPipeline\LightDescription.bindings.cs">
+      <Link>Editor\Mono\AssetPipeline\LightDescription.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\AssetPipeline\LocalCacheServer.cs">
       <Link>Editor\Mono\AssetPipeline\LocalCacheServer.cs</Link>
@@ -1432,11 +1438,11 @@
     <Compile Include="..\..\Editor\Mono\GUI\Tools\EditorToolManager.cs">
       <Link>Editor\Mono\GUI\Tools\EditorToolManager.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\GUI\Tools\EditorToolSettingsOverlay.cs">
+      <Link>Editor\Mono\GUI\Tools\EditorToolSettingsOverlay.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\Tools\EditorToolUtility.cs">
       <Link>Editor\Mono\GUI\Tools\EditorToolUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\Tools\EditorToolWindow.cs">
-      <Link>Editor\Mono\GUI\Tools\EditorToolWindow.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\Tools\EditorTools.deprecated.cs">
       <Link>Editor\Mono\GUI\Tools\EditorTools.deprecated.cs</Link>
@@ -1630,17 +1636,11 @@
     <Compile Include="..\..\Editor\Mono\Grids\EditorSnap.cs">
       <Link>Editor\Mono\Grids\EditorSnap.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Grids\GridSettingsWindow.cs">
-      <Link>Editor\Mono\Grids\GridSettingsWindow.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Grids\GridShortcuts.cs">
       <Link>Editor\Mono\Grids\GridShortcuts.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Grids\SnapSettings.cs">
       <Link>Editor\Mono\Grids\SnapSettings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Grids\SnapSettingsWindow.cs">
-      <Link>Editor\Mono\Grids\SnapSettingsWindow.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\HandleUtility.bindings.cs">
       <Link>Editor\Mono\HandleUtility.bindings.cs</Link>
@@ -1911,6 +1911,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\CameraEditorUtils.cs">
       <Link>Editor\Mono\Inspector\CameraEditorUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\CameraOverlay.cs">
+      <Link>Editor\Mono\Inspector\CameraOverlay.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\CanvasEditor.cs">
       <Link>Editor\Mono\Inspector\CanvasEditor.cs</Link>
@@ -2524,6 +2527,60 @@
     <Compile Include="..\..\Editor\Mono\ObjectTreeForSelector.cs">
       <Link>Editor\Mono\ObjectTreeForSelector.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Overlays\ICreateToolbar.cs">
+      <Link>Editor\Mono\Overlays\ICreateToolbar.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Overlays\IMGUIOverlay.cs">
+      <Link>Editor\Mono\Overlays\IMGUIOverlay.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Overlays\Overlay.cs">
+      <Link>Editor\Mono\Overlays\Overlay.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Overlays\OverlayAttribute.cs">
+      <Link>Editor\Mono\Overlays\OverlayAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Overlays\OverlayCanvas.cs">
+      <Link>Editor\Mono\Overlays\OverlayCanvas.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Overlays\OverlayContainer.cs">
+      <Link>Editor\Mono\Overlays\OverlayContainer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Overlays\OverlayDragger.cs">
+      <Link>Editor\Mono\Overlays\OverlayDragger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Overlays\OverlayDropZone.cs">
+      <Link>Editor\Mono\Overlays\OverlayDropZone.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Overlays\OverlayMenu.cs">
+      <Link>Editor\Mono\Overlays\OverlayMenu.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Overlays\OverlayMenuItem.cs">
+      <Link>Editor\Mono\Overlays\OverlayMenuItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Overlays\OverlayPlacement.cs">
+      <Link>Editor\Mono\Overlays\OverlayPlacement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Overlays\OverlayPopup.cs">
+      <Link>Editor\Mono\Overlays\OverlayPopup.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Overlays\OverlayPopupWindow.cs">
+      <Link>Editor\Mono\Overlays\OverlayPopupWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Overlays\OverlayPreset.cs">
+      <Link>Editor\Mono\Overlays\OverlayPreset.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Overlays\OverlayPresetManager.cs">
+      <Link>Editor\Mono\Overlays\OverlayPresetManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Overlays\OverlayUtilities.cs">
+      <Link>Editor\Mono\Overlays\OverlayUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Overlays\SaveOverlayPreset.cs">
+      <Link>Editor\Mono\Overlays\SaveOverlayPreset.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Overlays\ToolbarOverlay.cs">
+      <Link>Editor\Mono\Overlays\ToolbarOverlay.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\PackageManagerUtilityInternal.cs">
       <Link>Editor\Mono\PackageManagerUtilityInternal.cs</Link>
     </Compile>
@@ -2646,6 +2703,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Prefabs\PrefabImporterEditor.cs">
       <Link>Editor\Mono\Prefabs\PrefabImporterEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Prefabs\PrefabInstanceChangedListener.cs">
+      <Link>Editor\Mono\Prefabs\PrefabInstanceChangedListener.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Prefabs\PrefabOverrides\PrefabOverride.cs">
       <Link>Editor\Mono\Prefabs\PrefabOverrides\PrefabOverride.cs</Link>
@@ -2902,14 +2962,14 @@
     <Compile Include="..\..\Editor\Mono\SceneView\RectSelection.cs">
       <Link>Editor\Mono\SceneView\RectSelection.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\SceneView\SceneOrientationGizmo.cs">
+      <Link>Editor\Mono\SceneView\SceneOrientationGizmo.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\SceneView\SceneView.cs">
       <Link>Editor\Mono\SceneView\SceneView.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\SceneView\SceneViewGrid.cs">
       <Link>Editor\Mono\SceneView\SceneViewGrid.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\SceneView\SceneViewLightingOverlays.cs">
-      <Link>Editor\Mono\SceneView\SceneViewLightingOverlays.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\SceneView\SceneViewMotion.cs">
       <Link>Editor\Mono\SceneView\SceneViewMotion.cs</Link>
@@ -2917,11 +2977,17 @@
     <Compile Include="..\..\Editor\Mono\SceneView\SceneViewOverlay.cs">
       <Link>Editor\Mono\SceneView\SceneViewOverlay.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\SceneView\SceneViewOverlays.cs">
+      <Link>Editor\Mono\SceneView\SceneViewOverlays.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\SceneView\SceneViewPicking.cs">
       <Link>Editor\Mono\SceneView\SceneViewPicking.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\SceneView\SceneViewStageHandling.cs">
       <Link>Editor\Mono\SceneView\SceneViewStageHandling.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\SceneView\SceneViewToolbars.cs">
+      <Link>Editor\Mono\SceneView\SceneViewToolbars.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\SceneView\SceneVisibilityState.bindings.cs">
       <Link>Editor\Mono\SceneView\SceneVisibilityState.bindings.cs</Link>
@@ -5926,6 +5992,9 @@
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerCounterData.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerCounterData.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerCounterDescriptor.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerCounterDescriptor.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerDetailedCallsView.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerDetailedCallsView.cs</Link>
     </Compile>
@@ -5946,6 +6015,9 @@
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerFrameViewBase.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerFrameViewBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModuleTypeValidator.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModuleTypeValidator.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModulesDropdownWindow.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModulesDropdownWindow.cs</Link>
@@ -6013,8 +6085,17 @@
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\PhysX\PhysicsProfilerModule.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\PhysX\PhysicsProfilerModule.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\ProfilerModule.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\ProfilerModule.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\ProfilerModuleBase.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\ProfilerModuleBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\ProfilerModuleChartType.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\ProfilerModuleChartType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\ProfilerModuleMetadataAttribute.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\ProfilerModuleMetadataAttribute.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\ProfilerModuleViewController.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\ProfilerModuleViewController.cs</Link>
@@ -6024,6 +6105,9 @@
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\SampleSelection.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\SampleSelection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\StandardDetailsViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\StandardDetailsViewController.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Video\VideoProfilerModule.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Video\VideoProfilerModule.cs</Link>
@@ -7150,8 +7234,8 @@
     <Compile Include="..\..\Modules\UIServiceEditor\EditorToolbar\ToolbarElements\AccountDropdown.cs">
       <Link>Modules\UIServiceEditor\EditorToolbar\ToolbarElements\AccountDropdown.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIServiceEditor\EditorToolbar\ToolbarElements\ActiveToolSettings.cs">
-      <Link>Modules\UIServiceEditor\EditorToolbar\ToolbarElements\ActiveToolSettings.cs</Link>
+    <Compile Include="..\..\Modules\UIServiceEditor\EditorToolbar\ToolbarElements\BuiltinToolSettings.cs">
+      <Link>Modules\UIServiceEditor\EditorToolbar\ToolbarElements\BuiltinToolSettings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIServiceEditor\EditorToolbar\ToolbarElements\BuiltinTools.cs">
       <Link>Modules\UIServiceEditor\EditorToolbar\ToolbarElements\BuiltinTools.cs</Link>
@@ -7186,6 +7270,15 @@
     <Compile Include="..\..\Modules\UIServiceEditor\EditorUIService.cs">
       <Link>Modules\UIServiceEditor\EditorUIService.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIServiceEditor\GridAndSnap\GridSettingsWindow.cs">
+      <Link>Modules\UIServiceEditor\GridAndSnap\GridSettingsWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIServiceEditor\GridAndSnap\LinkedVector3Field.cs">
+      <Link>Modules\UIServiceEditor\GridAndSnap\LinkedVector3Field.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIServiceEditor\GridAndSnap\SnapSettingsWindow.cs">
+      <Link>Modules\UIServiceEditor\GridAndSnap\SnapSettingsWindow.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIServiceEditor\Progress\ProgressElement.cs">
       <Link>Modules\UIServiceEditor\Progress\ProgressElement.cs</Link>
     </Compile>
@@ -7194,6 +7287,15 @@
     </Compile>
     <Compile Include="..\..\Modules\UIServiceEditor\SafeMode\SafeModeToolbarWindow.cs">
       <Link>Modules\UIServiceEditor\SafeMode\SafeModeToolbarWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIServiceEditor\SceneView\DropdownToggle.cs">
+      <Link>Modules\UIServiceEditor\SceneView\DropdownToggle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIServiceEditor\SceneView\SceneViewLightingOverlays.cs">
+      <Link>Modules\UIServiceEditor\SceneView\SceneViewLightingOverlays.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIServiceEditor\SceneView\SceneViewToolbarElements.cs">
+      <Link>Modules\UIServiceEditor\SceneView\SceneViewToolbarElements.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIServiceEditor\ShortcutManager\ShortcutManagerWindowView.cs">
       <Link>Modules\UIServiceEditor\ShortcutManager\ShortcutManagerWindowView.cs</Link>
@@ -7382,7 +7484,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\..\artifacts\UnityEditor.dll\Debug</OutputPath>
-    <DefineConstants>COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_HUB_LICENSE;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_BJM_API;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_EDITOR_LINUX;UNITY_GAMECORE_API;UNITY_GAMECORE_SCARLETT_API;UNITY_GAMECORE_XBOXONE_API;UNITY_IPHONE_API;UNITY_LUMIN_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API;USE_SEARCH_MODULE</DefineConstants>
+    <DefineConstants>COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_HUB_LICENSE;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_BJM_API;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_EDITOR_LINUX;UNITY_GAMECORE_API;UNITY_GAMECORE_SCARLETT_API;UNITY_GAMECORE_XBOXONE_API;UNITY_IPHONE_API;UNITY_LUMIN_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API;USE_SEARCH_MODULE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <NoWarn>0169;0649;0626</NoWarn>
@@ -7412,7 +7514,7 @@
       <HintPath>..\..\External\ExCSS\builds\builds\lib\net35\ExCSS.Unity.dll</HintPath>
     </Reference>
     <Reference Include="Bee.BeeDriver">
-      <HintPath>..\..\artifacts\Stevedore\bee-libraries_a959\Bee.BeeDriver.dll</HintPath>
+      <HintPath>..\..\artifacts\Stevedore\bee-libraries_d828\Bee.BeeDriver.dll</HintPath>
     </Reference>
     <ProjectReference Include="UnityEngine.csproj">
       <Project>{F0499708-3EB6-4026-8362-97E6FFC4E7C8}</Project>

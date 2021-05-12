@@ -304,7 +304,7 @@ namespace UnityEditor
                         continue;
 
                     var instanceId = assetToInstanceId(reformattedPath);
-                    if (instanceId <= 0)
+                    if (instanceId == 0)
                         continue;
 
                     if (instanceIdSet.Add(instanceId))

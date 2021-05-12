@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Profiling;
+using Unity.Profiling.Editor;
 using UnityEngine;
 using UnityEditor.Profiling;
 using UnityEditor;
@@ -13,15 +14,13 @@ using UnityEngine.Profiling;
 namespace UnityEditorInternal.Profiling
 {
     [Serializable]
+    [ProfilerModuleMetadata("Virtual Texturing", typeof(LocalizationResource), IconPath = "Profiler.VirtualTexturing")]
     internal class VirtualTexturingProfilerModule : ProfilerModuleBase
     {
         [SerializeReference]
         VirtualTexturingProfilerView m_VTProfilerView;
 
-        const string k_IconName = "Profiler.VirtualTexturing";
         const int k_DefaultOrderIndex = 13;
-        static readonly string k_UnLocalizedName = "Virtual Texturing";
-        static readonly string k_Name = LocalizationDatabase.GetLocalizedString(k_UnLocalizedName);
         static readonly string k_VTCountersCategoryName = ProfilerCategory.VirtualTexturing.Name;
 
         static readonly string[] k_VirtualTexturingCounterNames =
@@ -33,12 +32,10 @@ namespace UnityEditorInternal.Profiling
             "Missing Disk Data"
         };
 
-        public VirtualTexturingProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_UnLocalizedName, k_Name, k_IconName, Chart.ChartType.Line) {}
+        internal override ProfilerArea area => ProfilerArea.VirtualTexturing;
+        private protected override int defaultOrderIndex => k_DefaultOrderIndex;
 
-        public override ProfilerArea area => ProfilerArea.VirtualTexturing;
-        protected override int defaultOrderIndex => k_DefaultOrderIndex;
-
-        public override void OnEnable()
+        internal override void OnEnable()
         {
             base.OnEnable();
             if (m_VTProfilerView == null)
@@ -53,7 +50,7 @@ namespace UnityEditorInternal.Profiling
 
         public override void DrawDetailsView(Rect position)
         {
-            m_VTProfilerView?.DrawUIPane(m_ProfilerWindow);
+            m_VTProfilerView?.DrawUIPane(ProfilerWindow);
         }
 
         protected override List<ProfilerCounterData> CollectDefaultChartCounters()

@@ -3,32 +3,38 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor.EditorTools;
+using UnityEditor.Overlays;
+using UnityEditor.Snap;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Toolbars
 {
-    [EditorToolbarElement("Tools/Snap Settings", typeof(DefaultMainToolbar))]
-    sealed class SnapSettings : VisualElement
+    [EditorToolbarElement("Tools/Snap Settings")]
+    sealed class SnapSettingsElement : DropdownToggle
     {
-        readonly EditorToolbarToggle m_GridSnapEnabledToggle;
-
-        public SnapSettings()
+        public SnapSettingsElement()
         {
             name = "SnapSettings";
+            tooltip = L10n.Tr(
+                "Toggle Grid Snapping on and off. Available when you set tool handle rotation to Global.");
 
-            m_GridSnapEnabledToggle = new EditorToolbarToggle
+            this.RegisterValueChangedCallback(delegate(ChangeEvent<bool> evt)
             {
-                name = "SnappingToggle",
-                tooltip = L10n.Tr("Toggle Grid Snapping on and off. Available when you set tool handle rotation to Global."),
-            };
+                EditorSnapSettings.gridSnapEnabled = evt.newValue;
+            });
 
-            m_GridSnapEnabledToggle.RegisterValueChangedCallback(OnGridSnapEnableValueChanged);
             UpdateGridSnapEnableState();
             UpdateGridSnapEnableValue();
-            Add(m_GridSnapEnabledToggle);
 
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+            SceneViewToolbarElements.AddStyleSheets(this);
+        }
+
+        void OnClickableOnclicked()
+        {
+            OverlayPopupWindow.ShowOverlayPopup<SnapSettingsWindow>(this, new Vector2(300, 66));
         }
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
@@ -36,6 +42,7 @@ namespace UnityEditor.Toolbars
             Tools.pivotRotationChanged += UpdateGridSnapEnableState;
             EditorSnapSettings.gridSnapEnabledChanged += UpdateGridSnapEnableValue;
             ToolManager.activeToolChanged += UpdateGridSnapEnableState;
+            dropdownButton.clicked += OnClickableOnclicked;
         }
 
         void OnDetachFromPanel(DetachFromPanelEvent evt)
@@ -43,21 +50,17 @@ namespace UnityEditor.Toolbars
             Tools.pivotRotationChanged -= UpdateGridSnapEnableState;
             EditorSnapSettings.gridSnapEnabledChanged -= UpdateGridSnapEnableValue;
             ToolManager.activeToolChanged -= UpdateGridSnapEnableState;
+            dropdownButton.clicked -= OnClickableOnclicked;
         }
 
         void UpdateGridSnapEnableState()
         {
-            m_GridSnapEnabledToggle.SetEnabled(EditorSnapSettings.activeToolGridSnapEnabled);
-        }
-
-        void OnGridSnapEnableValueChanged(ChangeEvent<bool> evt)
-        {
-            EditorSnapSettings.gridSnapEnabled = !EditorSnapSettings.gridSnapEnabled;
+            SetEnabled(EditorSnapSettings.activeToolGridSnapEnabled);
         }
 
         void UpdateGridSnapEnableValue()
         {
-            m_GridSnapEnabledToggle.SetValueWithoutNotify(EditorSnapSettings.gridSnapEnabled);
+            SetValueWithoutNotify(EditorSnapSettings.gridSnapEnabled);
         }
     }
 }

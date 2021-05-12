@@ -571,7 +571,7 @@ namespace Unity.UI.Builder
 
         public void PostLoadDocumentStyleSheetCleanup()
         {
-            m_VisualTreeAsset.ConvertAllAssetReferencesToPaths();
+            m_VisualTreeAsset.UpdateUsingEntries();
 
             m_OpenUSSFiles.Clear();
 
@@ -720,7 +720,7 @@ namespace Unity.UI.Builder
         {
             // Very important we convert asset references to paths here after a restore.
             if (m_VisualTreeAsset != null)
-                m_VisualTreeAsset.ConvertAllAssetReferencesToPaths();
+                m_VisualTreeAsset.UpdateUsingEntries();
         }
 
         //
@@ -912,7 +912,7 @@ namespace Unity.UI.Builder
             {
                 // To get all the selection markers into the new assets.
                 m_VisualTreeAssetBackup.DeepOverwrite(m_VisualTreeAsset);
-                m_VisualTreeAsset.ConvertAllAssetReferencesToPaths();
+                m_VisualTreeAsset.UpdateUsingEntries();
             }
             return needsFullRefresh;
         }

@@ -80,13 +80,13 @@ namespace Unity.Jobs.LowLevel.Unsafe
         [NativeMethod(IsFreeFunction = true, IsThreadSafe = true)]
         public static extern bool GetWorkStealingRange(ref JobRanges ranges, int jobIndex, out int beginIndex, out int endIndex);
 
-        [FreeFunction("ScheduleManagedJob", ThrowsException = true)]
+        [FreeFunction("ScheduleManagedJob", ThrowsException = true, IsThreadSafe = true)]
         public static extern JobHandle Schedule(ref JobScheduleParameters parameters);
 
-        [FreeFunction("ScheduleManagedJobParallelFor", ThrowsException = true)]
+        [FreeFunction("ScheduleManagedJobParallelFor", ThrowsException = true, IsThreadSafe = true)]
         public static extern JobHandle ScheduleParallelFor(ref JobScheduleParameters parameters, int arrayLength, int innerloopBatchCount);
 
-        [FreeFunction("ScheduleManagedJobParallelForDeferArraySize", ThrowsException = true)]
+        [FreeFunction("ScheduleManagedJobParallelForDeferArraySize", ThrowsException = true, IsThreadSafe = true)]
         unsafe public static extern JobHandle ScheduleParallelForDeferArraySize(ref JobScheduleParameters parameters, int innerloopBatchCount, void* listData, void* listDataAtomicSafetyHandle);
 
         [FreeFunction("ScheduleManagedJobParallelForTransform", ThrowsException = true)]
@@ -99,7 +99,7 @@ namespace Unity.Jobs.LowLevel.Unsafe
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         unsafe public static extern void PatchBufferMinMaxRanges(IntPtr bufferRangePatchData, void* jobdata, int startIndex, int rangeSize);
 
-        [FreeFunction(ThrowsException = true)]
+        [FreeFunction(ThrowsException = true, IsThreadSafe = true)]
         private static extern IntPtr CreateJobReflectionData(Type wrapperJobType, Type userJobType, object managedJobFunction0, object managedJobFunction1, object managedJobFunction2);
 
         [Obsolete("JobType is obsolete. The parameter should be removed. (UnityUpgradable) -> !1")]

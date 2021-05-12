@@ -5,6 +5,8 @@
 using System;
 using System.Collections.Generic;
 
+using Unity.Profiling.Editor;
+
 using UnityEditor;
 using UnityEditor.Profiling;
 
@@ -14,16 +16,14 @@ using UnityEngine.Profiling;
 namespace UnityEditorInternal.Profiling
 {
     [Serializable]
+    [ProfilerModuleMetadata("Network Messages", typeof(LocalizationResource), IconPath = "Profiler.NetworkMessages")]
     internal class NetworkingMessagesProfilerModule : ProfilerModuleBase
     {
-        const string k_IconName = "Profiler.NetworkMessages";
         const int k_DefaultOrderIndex = 8;
-        static readonly string k_UnLocalizedName = "Network Messages";
-        static readonly string k_Name = LocalizationDatabase.GetLocalizedString(k_UnLocalizedName);
 
         static List<ProfilerCounterData> s_CounterData = new List<ProfilerCounterData>();
 
-        public NetworkingMessagesProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow,  k_UnLocalizedName, k_Name, k_IconName)
+        public NetworkingMessagesProfilerModule() : base()
         {
             InitCounterOverride();
         }
@@ -66,13 +66,13 @@ namespace UnityEditorInternal.Profiling
             return base.CollectDefaultChartCounters();
         }
 
-        public override ProfilerArea area => ProfilerArea.NetworkMessages;
+        internal override ProfilerArea area => ProfilerArea.NetworkMessages;
         public override bool usesCounters => false;
 
-        protected override int defaultOrderIndex => k_DefaultOrderIndex;
-        protected override string legacyPreferenceKey => "ProfilerChartNetworkMessages";
+        private protected override int defaultOrderIndex => k_DefaultOrderIndex;
+        private protected override string legacyPreferenceKey => "ProfilerChartNetworkMessages";
 
-        protected override ProfilerChart InstantiateChart(float defaultChartScale, float chartMaximumScaleInterpolationValue)
+        private protected override ProfilerChart InstantiateChart(float defaultChartScale, float chartMaximumScaleInterpolationValue)
         {
             var chart = base.InstantiateChart(defaultChartScale, chartMaximumScaleInterpolationValue);
             chart.m_SharedScale = true;
@@ -87,7 +87,7 @@ namespace UnityEditorInternal.Profiling
         public override void DrawDetailsView(Rect position)
         {
             if (NetworkingMessagesProfilerOverrides.drawDetailsViewOverride != null)
-                NetworkingMessagesProfilerOverrides.drawDetailsViewOverride.Invoke(position, m_ProfilerWindow.GetActiveVisibleFrameIndex());
+                NetworkingMessagesProfilerOverrides.drawDetailsViewOverride.Invoke(position, ProfilerWindow.GetActiveVisibleFrameIndex());
             else
                 DrawDetailsViewText(position);
         }

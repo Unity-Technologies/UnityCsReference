@@ -12,21 +12,23 @@ namespace UnityEditor
     {
         const int k_DefaultSnapMultiplier = 2048;
         const float k_DefaultSnapValue = .25f;
-        const float k_DefaultRotation = 15f;
-        const float k_DefaultScale = 1f;
         const float k_MinSnapValue = 0f;
 
+        public static readonly Vector3 defaultMove = new Vector3(k_DefaultSnapValue, k_DefaultSnapValue, k_DefaultSnapValue);
+        public const float defaultRotation = 15f;
+        public const float defaultScale = 1f;
+
         [SerializeField]
-        Vector3 m_SnapValue = new Vector3(k_DefaultSnapValue, k_DefaultSnapValue, k_DefaultSnapValue);
+        Vector3 m_SnapValue = defaultMove;
 
         [SerializeField]
         Vector3Int m_SnapMultiplier = new Vector3Int(k_DefaultSnapMultiplier, k_DefaultSnapMultiplier, k_DefaultSnapMultiplier);
 
         [SerializeField]
-        float m_Rotation = k_DefaultRotation;
+        float m_Rotation = defaultRotation;
 
         [SerializeField]
-        float m_Scale = k_DefaultScale;
+        float m_Scale = defaultScale;
 
         internal Vector3 snapValue
         {

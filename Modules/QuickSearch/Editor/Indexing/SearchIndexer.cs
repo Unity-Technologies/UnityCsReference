@@ -1020,7 +1020,6 @@ namespace UnityEditor.Search
                         m_UnusedDocumentIndexes.Push(idi);
                         m_IndexByDocuments.Remove(m_Documents[idi].id);
                         m_Documents[idi] = default;
-                        removeDocIndexes.Add(idi);
                     }
                     indexes = new List<SearchIndexEntry>(m_Indexes.Where(i =>
                     {

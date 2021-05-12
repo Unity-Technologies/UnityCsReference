@@ -9,7 +9,6 @@ namespace UnityEditor
 {
     class DefaultMainToolbar : MainToolbarVisual
     {
-        EditorToolbar m_LeftToolbar;
         EditorToolbar m_CenterToolbar;
         EditorToolbar m_RightToolbar;
 
@@ -19,11 +18,6 @@ namespace UnityEditor
             VisualElement root = new VisualElement();
             root.style.flexGrow = 1;
             visualTree.CloneTree(root);
-
-            m_LeftToolbar = new EditorToolbar(this, root.Q("ToolbarZoneLeftAlign"),
-                "Tools/Builtin Tools",
-                "Tools/Tool Settings",
-                "Tools/Snap Settings");
 
             m_CenterToolbar = new EditorToolbar(this, root.Q("ToolbarZonePlayMode"),
                 "Editor Utility/Play Mode");

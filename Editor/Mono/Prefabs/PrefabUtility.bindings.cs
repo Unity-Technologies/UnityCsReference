@@ -49,6 +49,12 @@ namespace UnityEditor
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         extern internal static bool HasObjectOverride(Object componentOrGameObject, bool includeDefaultOverrides = false);
 
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        extern internal static bool HasPrefabInstanceNonDefaultOverrides_CachedForUI_Internal(GameObject gameObject);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        extern internal static void ClearPrefabInstanceNonDefaultOverridesCache_Internal(GameObject gameObject);
+
         // Extract all modifications that are applied to the prefab instance compared to the parent prefab.
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         extern public static PropertyModification[] GetPropertyModifications(Object targetPrefab);
@@ -74,6 +80,10 @@ namespace UnityEditor
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]
         extern public static void MergeAllPrefabInstances(Object targetObject);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        [NativeThrows]
+        extern private static void MergePrefabInstance_internal([NotNull] Object gameObjectOrComponent);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]

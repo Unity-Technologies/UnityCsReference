@@ -34,13 +34,20 @@ namespace UnityEditor.Search
             if (string.IsNullOrEmpty(reportPath))
                 return;
 
-            var window = CreateWindow<SearchReportWindow>();
+            var window = CreateInstance<SearchReportWindow>();
             window.m_WindowId = GUID.Generate().ToString();
-            window.position = Utils.GetMainWindowCenteredPosition(new Vector2(760f, 500f));
-            window.minSize = new Vector2(100f, 100f);
-            window.InitializeReport(reportPath);
-            SearchAnalytics.SendEvent(window.m_WindowId, SearchAnalytics.GenericEventType.ReportViewOpen);
-            window.Show();
+            try
+            {
+                window.InitializeReport(reportPath);
+                window.position = Utils.GetMainWindowCenteredPosition(new Vector2(760f, 500f));
+                window.Show();
+                SearchAnalytics.SendEvent(window.m_WindowId, SearchAnalytics.GenericEventType.ReportViewOpen);
+            }
+            catch
+            {
+                Debug.LogError($"Failed to load search report <a>{reportPath}</a>. Make sure <a>{reportPath}</a> is a valid JSON search table report (*.{SearchReport.extension})");
+                DestroyImmediate(window);
+            }
         }
 
         private void InitializeReport(string path)

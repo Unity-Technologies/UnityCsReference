@@ -156,7 +156,17 @@ namespace UnityEngine.UIElements
         protected override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
+            ProcessEvent(evt);
+        }
 
+        internal override void ExecuteDefaultActionDisabled(EventBase evt)
+        {
+            base.ExecuteDefaultActionDisabled(evt);
+            ProcessEvent(evt);
+        }
+
+        private void ProcessEvent(EventBase evt)
+        {
             if (evt != null && evt.target == evt.leafTarget)
             {
                 focusController?.SwitchFocusOnEvent(evt);
@@ -513,6 +523,30 @@ namespace UnityEngine.UIElements
                 if (!currentFocus.isHierarchyDisplayed || !currentFocus.visible)
                     currentFocus.Blur();
             }
+        }
+
+        internal bool GetFocusableParentForPointerEvent(Focusable target, out Focusable effectiveTarget)
+        {
+            // The goal of this method is to simulate the fact that focus is applied across full parent hierarchy.
+            // If a disabled element is clicked, it shouldn't be focused, but we should still allow its non-disabled
+            // parent chain to receive focus if it doesn't already have it.
+            // This is the way IMGUIContainer behaves, as mentioned in commit 59b2a9c05b781ea8291f7bbe5f133d35383dccc6
+            // on unity/unity Github.
+            // If target isn't focusable, then this is like clicking in the background, and we should unset focus.
+            if (target == null || !target.focusable)
+            {
+                effectiveTarget = target;
+                return target != null;
+            }
+            // If target is disabled, first enabled focusable parent will receive focus.
+            effectiveTarget = target;
+            while (effectiveTarget is VisualElement ve && (!ve.enabledInHierarchy || !ve.focusable) &&
+                   ve.hierarchy.parent != null)
+            {
+                effectiveTarget = ve.hierarchy.parent;
+            }
+            // However, if previously focused element is a child of that parent, don't modify focus.
+            return !IsFocused(effectiveTarget);
         }
 
         /// <summary>

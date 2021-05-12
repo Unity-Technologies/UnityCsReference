@@ -99,6 +99,7 @@ namespace UnityEngine.UIElements
                 new Foldout.UxmlFactory(),
                 new BindableElement.UxmlFactory(),
                 new TextElement.UxmlFactory(),
+                new ButtonStripField.UxmlFactory()
             };
 
             foreach (var factory in factories)

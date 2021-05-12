@@ -4,7 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEditor;
+using Unity.Profiling.Editor;
 using UnityEditor.Profiling;
 using UnityEditorInternal.Profiling;
 using UnityEngine.Profiling;
@@ -21,8 +21,8 @@ namespace UnityEditorInternal
     internal interface IProfilerWindowController
     {
         long selectedFrameIndex { get; set; }
-        ProfilerModuleBase selectedModule { get; set; }
-        ProfilerModuleBase GetProfilerModuleByType(Type T);
+        ProfilerModule selectedModule { get; set; }
+        ProfilerModule GetProfilerModuleByType(Type T);
 
         event Action frameDataViewAboutToBeDisposed;
 
@@ -42,7 +42,7 @@ namespace UnityEditorInternal
         ProfilerProperty CreateProperty();
         ProfilerProperty CreateProperty(int sortType);
 
-        void CloseModule(ProfilerModuleBase module);
+        void CloseModule(ProfilerModule module);
 
         void SetAreasInUse(IEnumerable<ProfilerArea> areas, bool inUse);
         void Repaint();

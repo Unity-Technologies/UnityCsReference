@@ -19,10 +19,14 @@ namespace Unity.Profiling
     {
         [FieldOffset(0)]
         readonly ushort m_CategoryId;
-
         public ProfilerCategory(string categoryName)
         {
-            m_CategoryId = ProfilerUnsafeUtility.GetCategoryByName(categoryName);
+            m_CategoryId = ProfilerUnsafeUtility.CreateCategory(categoryName, ProfilerCategoryColor.Scripts);
+        }
+
+        public ProfilerCategory(string categoryName, ProfilerCategoryColor color)
+        {
+            m_CategoryId = ProfilerUnsafeUtility.CreateCategory(categoryName, color);
         }
 
         internal ProfilerCategory(ushort category)
@@ -134,5 +138,26 @@ namespace Unity.Profiling
     {
         None = 0,
         Builtin = 1 << 0
+    }
+
+    public enum ProfilerCategoryColor : ushort
+    {
+        Render = 0,
+        Scripts,
+        BurstJobs,
+        Other,
+        Physics,
+        Animation,
+        Audio,
+        AudioJob,
+        AudioUpdateJob,
+        Lighting,
+        GC,
+        VSync,
+        Memory,
+        Internal,
+        UI,
+        Build,
+        Input,
     }
 }

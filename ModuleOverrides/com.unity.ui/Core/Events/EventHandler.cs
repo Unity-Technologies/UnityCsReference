@@ -53,7 +53,7 @@ namespace UnityEngine.UIElements
                 m_CallbackRegistry = new EventCallbackRegistry();
             }
 
-            m_CallbackRegistry.RegisterCallback<TEventType>(callback, useTrickleDown);
+            m_CallbackRegistry.RegisterCallback(callback, useTrickleDown, default);
 
             GlobalCallbackRegistry.RegisterListeners<TEventType>(this, callback, useTrickleDown);
         }
@@ -71,7 +71,19 @@ namespace UnityEngine.UIElements
                 m_CallbackRegistry = new EventCallbackRegistry();
             }
 
-            m_CallbackRegistry.RegisterCallback<TEventType, TUserArgsType>(callback, userArgs, useTrickleDown);
+            m_CallbackRegistry.RegisterCallback(callback, userArgs, useTrickleDown, default);
+
+            GlobalCallbackRegistry.RegisterListeners<TEventType>(this, callback, useTrickleDown);
+        }
+
+        internal void RegisterCallback<TEventType>(EventCallback<TEventType> callback, InvokePolicy invokePolicy, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
+        {
+            if (m_CallbackRegistry == null)
+            {
+                m_CallbackRegistry = new EventCallbackRegistry();
+            }
+
+            m_CallbackRegistry.RegisterCallback(callback, useTrickleDown, invokePolicy);
 
             GlobalCallbackRegistry.RegisterListeners<TEventType>(this, callback, useTrickleDown);
         }
@@ -163,7 +175,10 @@ namespace UnityEngine.UIElements
                     {
                         using (new EventDebuggerLogExecuteDefaultAction(evt))
                         {
-                            ExecuteDefaultActionAtTarget(evt);
+                            if (evt.skipDisabledElements && this is VisualElement ve && !ve.enabledInHierarchy)
+                                ExecuteDefaultActionDisabledAtTarget(evt);
+                            else
+                                ExecuteDefaultActionAtTarget(evt);
                         }
                     }
                     break;
@@ -175,7 +190,10 @@ namespace UnityEngine.UIElements
                     {
                         using (new EventDebuggerLogExecuteDefaultAction(evt))
                         {
-                            ExecuteDefaultAction(evt);
+                            if (evt.skipDisabledElements && this is VisualElement ve && !ve.enabledInHierarchy)
+                                ExecuteDefaultActionDisabled(evt);
+                            else
+                                ExecuteDefaultAction(evt);
                         }
                     }
                     break;
@@ -228,5 +246,8 @@ namespace UnityEngine.UIElements
         /// </remarks>
         /// <param name="evt">The event instance.</param>
         protected virtual void ExecuteDefaultAction(EventBase evt) {}
+
+        internal virtual void ExecuteDefaultActionDisabledAtTarget(EventBase evt) {}
+        internal virtual void ExecuteDefaultActionDisabled(EventBase evt) {}
     }
 }

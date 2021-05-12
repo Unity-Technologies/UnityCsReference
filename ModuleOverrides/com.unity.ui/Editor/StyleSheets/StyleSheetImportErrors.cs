@@ -97,6 +97,18 @@ namespace UnityEditor.UIElements.StyleSheets
             );
         }
 
+        public void AddSemanticWarning(StyleSheetImportErrorCode code, string message, int line)
+        {
+            m_Errors.Add(new StyleSheetImportError(
+                StyleSheetImportErrorType.Semantic,
+                code,
+                assetPath,
+                message,
+                line,
+                isWarning: true)
+            );
+        }
+
         public void AddInternalError(string message, int line = -1)
         {
             m_Errors.Add(new StyleSheetImportError(

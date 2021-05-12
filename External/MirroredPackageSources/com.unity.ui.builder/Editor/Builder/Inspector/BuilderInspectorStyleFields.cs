@@ -1281,9 +1281,6 @@ namespace Unity.UI.Builder
                 m_Selection.NotifyOfStylingChange(selfNotify ? null : m_Inspector, styles);
                 m_Selection.NotifyOfHierarchyChange(m_Inspector, currentVisualElement, BuilderHierarchyChangeType.InlineStyle);
             }
-
-            // Update the contentHash of the stylesheet to refresh VisualElements in the document. See VisualElement.SetComputedStyle.
-            styleSheet.contentHash++;
         }
 
         // Style Updates
@@ -1757,7 +1754,7 @@ namespace Unity.UI.Builder
         void OnFieldValueChangeFont(ChangeEvent<Object> e, string styleName)
         {
             var field = e.target as ObjectField;
-            if (e.newValue == null)
+            if (e.newValue == null && field.objectType == typeof(Font))
             {
                 Debug.Log(BuilderConstants.FontCannotBeNoneMessage);
                 field.SetValueWithoutNotify(e.previousValue);
@@ -1971,6 +1968,10 @@ namespace Unity.UI.Builder
 
         static public Font GetComputedStyleFontValue(object val)
         {
+            // Since StyleFont has two implicit constructors, it can't implicitly cast null into a StyleFont.
+            if (val == null)
+                return null;
+
             if (val is Font font)
                 return font;
 

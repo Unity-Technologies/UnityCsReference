@@ -279,12 +279,16 @@ namespace UnityEditor.Search
                 var next = p.NextVisible(true);
                 while (next)
                 {
-                    var fieldName = p.displayName.Replace("m_", "").Replace(" ", "").ToLowerInvariant();
-                    if (p.propertyPath[p.propertyPath.Length - 1] != ']')
-                        IndexProperty(documentIndex, fieldName, p);
-
-                    if (dependencies)
-                        AddReference(documentIndex, p);
+                    if (p.isValid)
+                    {
+                        var fieldName = p.displayName.Replace("m_", "").Replace(" ", "").ToLowerInvariant();
+                        if (p.propertyPath[p.propertyPath.Length - 1] != ']')
+                        {
+                            IndexProperty(documentIndex, fieldName, p);
+                            if (dependencies)
+                                AddReference(documentIndex, p);
+                        }
+                    }
 
                     next = p.NextVisible(ShouldIndexChildren(p, recursive));
                 }
@@ -293,6 +297,21 @@ namespace UnityEditor.Search
 
         private bool ShouldIndexChildren(SerializedProperty p, bool recursive)
         {
+            // Degenerative built-in types to skip.
+            if (p.propertyType == SerializedPropertyType.Generic)
+            {
+                switch (p.type)
+                {
+                    case "SerializedProperties":
+                    case "VFXPropertySheetSerializedBase":
+                    case "ComputeShaderCompilationContext":
+                        return false;
+                }
+            }
+
+            if (p.depth > 2 && !recursive)
+                return false;
+
             if ((p.isArray || p.isFixedBuffer) && !recursive)
                 return false;
 
@@ -301,13 +320,12 @@ namespace UnityEditor.Search
                 p.propertyType == SerializedPropertyType.Vector4)
                 return false;
 
-            return true;
+            return p.hasVisibleChildren;
         }
 
         private void IndexProperty(int documentIndex, string fieldName, SerializedProperty p)
         {
-
-            if (p.isArray && p.propertyType != SerializedPropertyType.String)
+            if (p.depth <= 1 && p.isArray && p.propertyType != SerializedPropertyType.String)
                 IndexNumber(documentIndex, fieldName, p.arraySize);
 
             switch (p.propertyType)
@@ -322,6 +340,8 @@ namespace UnityEditor.Search
                     IndexNumber(documentIndex, fieldName, (double)p.floatValue);
                     break;
                 case SerializedPropertyType.String:
+                    if (p.depth > 1)
+                        return;
                     if (string.IsNullOrEmpty(p.stringValue) && p.stringValue.Length > 16 && p.stringValue.LastIndexOf(' ') != -1)
                         return;
                     IndexProperty(documentIndex, fieldName, p.stringValue.ToLowerInvariant(), saveKeyword: false, exact: false);
@@ -332,18 +352,28 @@ namespace UnityEditor.Search
                     IndexProperty(documentIndex, fieldName, p.enumNames[p.enumValueIndex].Replace(" ", "").ToLowerInvariant(), saveKeyword: true, exact: false);
                     break;
                 case SerializedPropertyType.Color:
+                    if (p.depth > 1)
+                        return;
                     IndexerExtensions.IndexColor(fieldName, p.colorValue, this, documentIndex);
                     break;
                 case SerializedPropertyType.Vector2:
+                    if (p.depth > 1)
+                        return;
                     IndexerExtensions.IndexVector(fieldName, p.vector2Value, this, documentIndex);
                     break;
                 case SerializedPropertyType.Vector3:
+                    if (p.depth > 1)
+                        return;
                     IndexerExtensions.IndexVector(fieldName, p.vector3Value, this, documentIndex);
                     break;
                 case SerializedPropertyType.Vector4:
+                    if (p.depth > 1)
+                        return;
                     IndexerExtensions.IndexVector(fieldName, p.vector4Value, this, documentIndex);
                     break;
                 case SerializedPropertyType.Quaternion:
+                    if (p.depth > 1)
+                        return;
                     IndexerExtensions.IndexVector(fieldName,  p.quaternionValue.eulerAngles, this, documentIndex);
                     break;
                 case SerializedPropertyType.ObjectReference:
@@ -357,6 +387,7 @@ namespace UnityEditor.Search
                 default:
                     return;
             }
+
 
             MapKeyword(fieldName + ":", $"{p.displayName} ({p.propertyType})");
         }

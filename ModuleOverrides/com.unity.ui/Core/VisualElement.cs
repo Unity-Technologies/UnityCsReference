@@ -823,6 +823,7 @@ namespace UnityEngine.UIElements
 
         private Rect m_WorldClip = Rect.zero;
         private Rect m_WorldClipMinusGroup = Rect.zero;
+        private Rect m_WorldClipImmediate = Rect.zero;
         private bool m_WorldClipIsInfinite = false;
         internal Rect worldClip
         {
@@ -847,6 +848,18 @@ namespace UnityEngine.UIElements
                     isWorldClipDirty = false;
                 }
                 return m_WorldClipMinusGroup;
+            }
+        }
+        internal Rect worldClipImmediate
+        {
+            get
+            {
+                if (isWorldClipDirty)
+                {
+                    UpdateWorldClip();
+                    isWorldClipDirty = false;
+                }
+                return m_WorldClipImmediate;
             }
         }
 
@@ -881,6 +894,7 @@ namespace UnityEngine.UIElements
             if (hierarchy.parent != null)
             {
                 m_WorldClip = hierarchy.parent.worldClip;
+                m_WorldClipImmediate = hierarchy.parent.worldClipImmediate;
 
                 bool parentWorldClipIsInfinite = hierarchy.parent.worldClipIsInfinite;
                 if (hierarchy.parent != renderChainData.groupTransformAncestor) // Accessing render data here?
@@ -902,6 +916,7 @@ namespace UnityEngine.UIElements
 
                     m_WorldClip = parentWorldClipIsInfinite ? wb : CombineClipRects(wb, m_WorldClip);
                     m_WorldClipMinusGroup = parentWorldClipIsInfinite ? wb : CombineClipRects(wb, m_WorldClipMinusGroup);
+                    m_WorldClipImmediate = CombineClipRects(wb, m_WorldClipImmediate);
 
                     m_WorldClipIsInfinite = false;
                 }
@@ -912,7 +927,7 @@ namespace UnityEngine.UIElements
             }
             else
             {
-                m_WorldClipMinusGroup = m_WorldClip = (panel != null) ? panel.visualTree.rect : s_InfiniteRect;;
+                m_WorldClipImmediate = m_WorldClipMinusGroup = m_WorldClip = (panel != null) ? panel.visualTree.rect : s_InfiniteRect;;
                 m_WorldClipIsInfinite = true;
             }
         }

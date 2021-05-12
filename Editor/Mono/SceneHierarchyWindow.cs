@@ -66,6 +66,13 @@ namespace UnityEditor
             titleContent = GetLocalizedTitleContent();
             wantsLessLayoutEvents = true;
             wantsMouseEnterLeaveWindow = true;
+
+            PrefabUtility.prefabInstanceModificationCacheCleared += OnPrefabInstanceModificationCacheCleared;
+        }
+
+        private void OnPrefabInstanceModificationCacheCleared()
+        {
+            Repaint();
         }
 
         public override void OnDisable()
@@ -76,6 +83,8 @@ namespace UnityEditor
 
             m_SceneHierarchy.OnDisable();
             m_StageHandling.OnDisable();
+
+            PrefabUtility.prefabInstanceModificationCacheCleared -= OnPrefabInstanceModificationCacheCleared;
         }
 
         void OnDestroy()

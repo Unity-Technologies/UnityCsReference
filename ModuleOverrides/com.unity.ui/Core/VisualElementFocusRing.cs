@@ -111,6 +111,7 @@ namespace UnityEngine.UIElements
         }
 
         readonly VisualElement root;
+        private FocusController focusController => root.focusController;
 
         /// <summary>
         /// The focus order for elements having 0 has a focusIndex.
@@ -340,8 +341,8 @@ namespace UnityEngine.UIElements
 
             if (e.eventTypeId == PointerDownEvent.TypeId())
             {
-                if (e.target is Focusable focusable)
-                    return VisualElementFocusChangeTarget.GetPooled(focusable);
+                if (focusController.GetFocusableParentForPointerEvent(e.target as Focusable, out var target))
+                    return VisualElementFocusChangeTarget.GetPooled(target);
             }
 
             if (currentFocusable is IMGUIContainer && e.imguiEvent != null)

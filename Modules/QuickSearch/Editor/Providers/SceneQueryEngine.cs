@@ -106,7 +106,6 @@ namespace UnityEditor.Search.Providers
 
         class GOD
         {
-            public string id;
             public string path;
             public string tag;
             public string[] types;
@@ -129,7 +128,7 @@ namespace UnityEditor.Search.Providers
         public SceneQueryEngine(List<GameObject> gameObjects)
         {
             m_GameObjects = gameObjects;
-            m_QueryEngine.AddFilter("id", GetId);
+            m_QueryEngine.AddFilter<int>("id", GetId);
             m_QueryEngine.AddFilter("path", GetPath);
             m_QueryEngine.AddFilter("tag", GetTag);
             m_QueryEngine.AddFilter("layer", GetLayer);
@@ -298,14 +297,12 @@ namespace UnityEditor.Search.Providers
             return ParserUtils.ReplaceSelectorInExpr(queryStr, (selector, cleanedSelector) => $"p({cleanedSelector})", k_HashPropertyFilterFunctionRegex);
         }
 
-        public string GetId(GameObject go)
+        public bool GetId(GameObject go, string op, int instanceId)
         {
-            var god = GetGOD(go);
+            if (instanceId == go.GetInstanceID())
+                return true;
 
-            if (god.id == null)
-                god.id = go.GetInstanceID().ToString();
-
-            return god.id;
+            return UnityEngine.Object.FindObjectFromInstanceID(instanceId) is Component c && c.gameObject == go;
         }
 
         public string GetPath(GameObject go)
@@ -627,6 +624,7 @@ namespace UnityEditor.Search.Providers
 
             if (!string.IsNullOrEmpty(refValue) && !refs.Contains(refValue))
                 AddReference(p.objectReferenceValue, refValue, refs);
+            refs.Add(p.objectReferenceValue.GetInstanceID().ToString());
 
             // Add custom object cases
             if (p.objectReferenceValue is Material material)

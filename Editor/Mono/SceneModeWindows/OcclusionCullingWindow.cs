@@ -8,6 +8,7 @@ using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
 using System.IO;
+using UnityEditor.Overlays;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
@@ -67,8 +68,6 @@ namespace UnityEditor
             if (s_IsVisible == true) return;
 
             s_IsVisible = true;
-
-            SceneView.duringSceneGui += OnSceneViewGUI;
             StaticOcclusionCullingVisualization.showOcclusionCulling = true;
             SceneView.RepaintAll();
         }
@@ -77,7 +76,6 @@ namespace UnityEditor
         {
             s_IsVisible = false;
 
-            SceneView.duringSceneGui -= OnSceneViewGUI;
             StaticOcclusionCullingVisualization.showOcclusionCulling = false;
             SceneView.RepaintAll();
         }
@@ -95,7 +93,6 @@ namespace UnityEditor
             autoRepaintOnSceneChange = true;
             EditorApplication.searchChanged += Repaint;
             Repaint();
-            m_OverlayWindow = new OverlayWindow(EditorGUIUtility.TrTextContent("Occlusion Culling"), DisplayControls, (int)SceneViewOverlay.Ordering.OcclusionCulling, null, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
         }
 
         void OnDisable()
@@ -425,15 +422,6 @@ namespace UnityEditor
             SummaryGUI();
         }
 
-        OverlayWindow m_OverlayWindow;
-        public void OnSceneViewGUI(SceneView sceneView)
-        {
-            if (!StaticOcclusionCullingVisualization.showOcclusionCulling)
-                return;
-
-            SceneViewOverlay.ShowWindow(m_OverlayWindow);
-        }
-
         void OnDidOpenScene()
         {
             StaticOcclusionCulling.InvalidatePrevisualisationData();
@@ -488,12 +476,9 @@ namespace UnityEditor
             return m_PreVis;
         }
 
-        void DisplayControls(Object target, SceneView sceneView)
+        void DisplayControls()
         {
-            if (!sceneView)
-                return;
-
-            if (!StaticOcclusionCullingVisualization.showOcclusionCulling)
+            if (!s_IsVisible)
                 return;
 
             bool temp;
@@ -586,6 +571,34 @@ namespace UnityEditor
                         StaticOcclusionCullingVisualization.showGeometryCulling = temp;
                         SceneView.RepaintAll();
                     }
+                }
+            }
+        }
+
+        [Overlay(typeof(SceneView), k_OverlayId, k_DisplayName)]
+        class SceneViewOcclusionCullingOverlay : TransientSceneViewOverlay
+        {
+            const string k_OverlayId = "Scene View/Occlusion Culling";
+            const string k_DisplayName = "Occlusion Culling";
+
+            OcclusionCullingWindow m_Window;
+
+            public override bool visible
+            {
+                get { return s_IsVisible && StaticOcclusionCullingVisualization.showOcclusionCulling; }
+            }
+
+            public override void OnGUI()
+            {
+                if (m_Window == null)
+                {
+                    var wins = Resources.FindObjectsOfTypeAll(typeof(OcclusionCullingWindow)) as OcclusionCullingWindow[];
+                    m_Window = wins.Length > 0 ? wins[0] : null;
+                }
+
+                if (m_Window != null)
+                {
+                    m_Window.DisplayControls();
                 }
             }
         }

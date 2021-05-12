@@ -479,7 +479,7 @@ namespace UnityEditor.TerrainTools
         {
             float patchUVSize = 1.0f / terrainData.detailPatchCount;
             int heightmapRes = terrainData.heightmapResolution;
-            var sceneViewRect = SceneView.lastActiveSceneView.cameraRect;
+            var sceneViewRect = SceneView.lastActiveSceneView.cameraViewport;
             sceneViewRect.y = 0;
 
             var projectedPointsWithDepth = new List<Vector4>(m_CachedClampedPatches.Length);
@@ -542,7 +542,7 @@ namespace UnityEditor.TerrainTools
             }
             detailMinMaxHeight = new Vector2(minHeight, maxHeight);
 
-            var sceneViewRect = SceneView.currentDrawingSceneView.cameraRect;
+            var sceneViewRect = SceneView.currentDrawingSceneView.cameraViewport;
             sceneViewRect.y = 0;
 
             var patchUVSize = 1.0f / terrainData.detailPatchCount;
@@ -673,7 +673,7 @@ namespace UnityEditor.TerrainTools
 
             if (mouseOnPatchIndex >= 0 && m_ShowTooManyDetailText)
             {
-                var sceneViewRect = SceneView.lastActiveSceneView.cameraRect;
+                var sceneViewRect = SceneView.lastActiveSceneView.cameraViewport;
                 sceneViewRect.y = 0;
 
                 var textSize = EditorStyles.tooltip.CalcSize(s_Styles.tooManyDetails);

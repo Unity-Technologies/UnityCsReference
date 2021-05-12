@@ -3,27 +3,23 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEditor;
+using Unity.Profiling.Editor;
 using UnityEngine;
 using UnityEngine.Profiling;
 
 namespace UnityEditorInternal.Profiling
 {
     [Serializable]
+    [ProfilerModuleMetadata("Video", typeof(LocalizationResource), IconPath = "Profiler.Video")]
     internal class VideoProfilerModule : ProfilerModuleBase
     {
-        const string k_IconName = "Profiler.Video";
         const int k_DefaultOrderIndex = 5;
-        static readonly string k_UnLocalizedName = "Video";
-        static readonly string k_Name = LocalizationDatabase.GetLocalizedString(k_UnLocalizedName);
 
-        public VideoProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_UnLocalizedName, k_Name, k_IconName) {}
-
-        public override ProfilerArea area => ProfilerArea.Video;
+        internal override ProfilerArea area => ProfilerArea.Video;
         public override bool usesCounters => false;
 
-        protected override int defaultOrderIndex => k_DefaultOrderIndex;
-        protected override string legacyPreferenceKey => "ProfilerChartVideo";
+        private protected override int defaultOrderIndex => k_DefaultOrderIndex;
+        private protected override string legacyPreferenceKey => "ProfilerChartVideo";
 
         public override void DrawToolbar(Rect position)
         {

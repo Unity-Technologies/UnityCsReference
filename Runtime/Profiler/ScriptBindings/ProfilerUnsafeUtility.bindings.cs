@@ -29,6 +29,7 @@ namespace Unity.Profiling.LowLevel.Unsafe
     public readonly unsafe struct ProfilerCategoryDescription
     {
         [FieldOffset(0)]  public readonly ushort Id;
+        [FieldOffset(2)]  public readonly ushort Flags;
         [FieldOffset(4)]  public readonly Color32 Color;
         [FieldOffset(8)]  readonly int reserved0;
         [FieldOffset(12)] public readonly int NameUtf8Len;
@@ -66,10 +67,21 @@ namespace Unity.Profiling.LowLevel.Unsafe
         internal const ushort CategoryAny = 0xFFFF;
 
         [ThreadSafe]
-        internal static extern ushort GetCategoryByName(string name);
+        internal static extern ushort CreateCategory(string name, ProfilerCategoryColor colorIndex);
+
         // Burst shadow
         [ThreadSafe]
-        internal static extern unsafe ushort GetCategoryByName__Unmanaged(byte* name, int nameLen);
+        internal static extern unsafe ushort CreateCategory__Unmanaged(byte* name, int nameLen, ProfilerCategoryColor colorIndex);
+
+        // 256 : Aggressive inlining
+        [MethodImpl(256)]
+        public static unsafe ushort CreateCategory(char* name, int nameLen, ProfilerCategoryColor colorIndex)
+        {
+            return CreateCategory_Unsafe(name, nameLen, colorIndex);
+        }
+
+        [ThreadSafe]
+        static extern unsafe ushort CreateCategory_Unsafe(char* name, int nameLen, ProfilerCategoryColor colorIndex);
 
         // 256 : Aggressive inlining
         [MethodImpl(256)]
@@ -83,6 +95,9 @@ namespace Unity.Profiling.LowLevel.Unsafe
 
         [ThreadSafe]
         public static extern ProfilerCategoryDescription GetCategoryDescription(ushort categoryId);
+
+        [ThreadSafe]
+        internal static extern Color32 GetCategoryColor(ProfilerCategoryColor colorIndex);
 
         [ThreadSafe]
         public static extern IntPtr CreateMarker(string name, ushort categoryId, MarkerFlags flags, int metadataCount);

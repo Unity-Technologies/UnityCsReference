@@ -249,7 +249,12 @@ namespace UnityEditorInternal
             }
 
             if (runInformation.performEngineStripping)
-                UpdateBuildReport(ReadLinkerToEditorData(tempStripPath), runInformation);
+            {
+                var strippingInfo = runInformation.BuildReportData;
+
+                if (strippingInfo != null)
+                    UpdateBuildReport(ReadLinkerToEditorData(tempStripPath), strippingInfo);
+            }
 
             // keep unstripped files for debugging purposes
             var tempUnstrippedPath = GetFullPath(Path.Combine(managedAssemblyFolderPath, "tempUnstripped"));
@@ -371,13 +376,8 @@ namespace UnityEditorInternal
             return path;
         }
 
-        private static void UpdateBuildReport(LinkerToEditorData dataFromLinker, UnityLinkerRunInformation runInformation)
+        internal static void UpdateBuildReport(LinkerToEditorData dataFromLinker, StrippingInfo strippingInfo)
         {
-            var strippingInfo = runInformation.BuildReportData;
-
-            if (strippingInfo == null)
-                return;
-
             foreach (var moduleInfo in dataFromLinker.report.modules)
             {
                 strippingInfo.AddModule(moduleInfo.name);

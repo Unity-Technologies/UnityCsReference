@@ -710,6 +710,9 @@ namespace UnityEditorInternal
             if (m_BuildForMonoRuntime)
                 arguments.Add("--mono-runtime");
 
+            if (EditorUserBuildSettings.il2CppCodeGeneration == Il2CppCodeGeneration.OptimizeSize)
+                arguments.Add("--generics-option=EnableFullSharing");
+
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(m_PlatformProvider.target);
             var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup);
             arguments.Add(string.Format("--dotnetprofile=\"{0}\"", IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(apiCompatibilityLevel)));

@@ -18,14 +18,7 @@ namespace Unity.Jobs
     {
         internal struct JobStruct<T> where T : struct, IJob
         {
-            public static IntPtr                    jobReflectionData;
-
-            public static IntPtr Initialize()
-            {
-                if (jobReflectionData == IntPtr.Zero)
-                    jobReflectionData = JobsUtility.CreateJobReflectionData(typeof(T), (ExecuteJobFunction)Execute);
-                return jobReflectionData;
-            }
+            public static readonly IntPtr jobReflectionData = JobsUtility.CreateJobReflectionData(typeof(T), (ExecuteJobFunction)Execute);
 
             public delegate void ExecuteJobFunction(ref T data, IntPtr additionalPtr, IntPtr bufferRangePatchData, ref JobRanges ranges, int jobIndex);
             public static void Execute(ref T data, IntPtr additionalPtr, IntPtr bufferRangePatchData, ref JobRanges ranges, int jobIndex)
@@ -36,13 +29,13 @@ namespace Unity.Jobs
 
         unsafe public static JobHandle Schedule<T>(this T jobData, JobHandle dependsOn = new JobHandle()) where T : struct, IJob
         {
-            var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), JobStruct<T>.Initialize(), dependsOn, ScheduleMode.Single);
+            var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), JobStruct<T>.jobReflectionData, dependsOn, ScheduleMode.Single);
             return JobsUtility.Schedule(ref scheduleParams);
         }
 
         unsafe public static void Run<T>(this T jobData) where T : struct, IJob
         {
-            var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), JobStruct<T>.Initialize(), new JobHandle(), ScheduleMode.Run);
+            var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), JobStruct<T>.jobReflectionData, new JobHandle(), ScheduleMode.Run);
             JobsUtility.Schedule(ref scheduleParams);
         }
     }

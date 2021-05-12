@@ -32,6 +32,7 @@ namespace UnityEngine.UIElements
             Bubbles = 1,
             TricklesDown = 2,
             Cancellable = 4,
+            SkipDisabledElements = 8,
         }
 
         [Flags]
@@ -159,6 +160,22 @@ namespace UnityEngine.UIElements
                 else
                 {
                     propagation &= ~EventPropagation.TricklesDown;
+                }
+            }
+        }
+
+        internal bool skipDisabledElements
+        {
+            get { return (propagation & EventPropagation.SkipDisabledElements) != 0; }
+            set
+            {
+                if (value)
+                {
+                    propagation |= EventPropagation.SkipDisabledElements;
+                }
+                else
+                {
+                    propagation &= ~EventPropagation.SkipDisabledElements;
                 }
             }
         }

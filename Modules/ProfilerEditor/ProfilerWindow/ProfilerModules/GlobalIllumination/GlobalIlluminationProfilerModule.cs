@@ -3,31 +3,28 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Profiling.Editor;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Profiling;
-using UnityEngine.Rendering;
 
 namespace UnityEditorInternal.Profiling
 {
     [Serializable]
+    [ProfilerModuleMetadata("Realtime GI", typeof(LocalizationResource), IconPath = "Profiler.GlobalIllumination")]
     internal class GlobalIlluminationProfilerModule : ProfilerModuleBase
     {
-        const string k_IconName = "Profiler.GlobalIllumination";
         const int k_DefaultOrderIndex = 12;
-        static readonly string k_UnLocalizedName = "Realtime GI";
-        static readonly string k_Name = LocalizationDatabase.GetLocalizedString(k_UnLocalizedName);
         static readonly string k_RealtimeGINotSupported = LocalizationDatabase.GetLocalizedString("Realtime GI was not supported.");
         static readonly string k_RealtimeGINotEnabled = LocalizationDatabase.GetLocalizedString("Realtime GI was not enabled.");
 
-        public GlobalIlluminationProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_UnLocalizedName, k_Name, k_IconName, Chart.ChartType.StackedFill) {}
+        public GlobalIlluminationProfilerModule() : base(ProfilerModuleChartType.StackedTimeArea) {}
 
-        public override ProfilerArea area => ProfilerArea.GlobalIllumination;
+        internal override ProfilerArea area => ProfilerArea.GlobalIllumination;
         public override bool usesCounters => false;
 
-        protected override int defaultOrderIndex => k_DefaultOrderIndex;
-        protected override string legacyPreferenceKey => "ProfilerChartGlobalIllumination";
-
+        private protected override int defaultOrderIndex => k_DefaultOrderIndex;
+        private protected override string legacyPreferenceKey => "ProfilerChartGlobalIllumination";
 
         static string GetStatisticsAvailabilityStateReason(int statisticsAvailabilityState)
         {
@@ -45,7 +42,7 @@ namespace UnityEditorInternal.Profiling
             return null;
         }
 
-        protected override ProfilerChart InstantiateChart(float defaultChartScale, float chartMaximumScaleInterpolationValue)
+        private protected override ProfilerChart InstantiateChart(float defaultChartScale, float chartMaximumScaleInterpolationValue)
         {
             var chart = base.InstantiateChart(defaultChartScale, chartMaximumScaleInterpolationValue);
             chart.statisticsAvailabilityMessage = GetStatisticsAvailabilityStateReason;
@@ -59,7 +56,7 @@ namespace UnityEditorInternal.Profiling
 
         public override void DrawDetailsView(Rect position)
         {
-            var selectedFrameIndex = (int)m_ProfilerWindow.selectedFrameIndex;
+            var selectedFrameIndex = (int)ProfilerWindow.selectedFrameIndex;
             if (selectedFrameIndex >= ProfilerDriver.firstFrameIndex && selectedFrameIndex <= ProfilerDriver.lastFrameIndex)
             {
                 var state = (GlobalIlluminationProfilingStatisticsAvailabilityStates)ProfilerDriver.GetStatisticsAvailabilityState(ProfilerArea.GlobalIllumination, selectedFrameIndex);

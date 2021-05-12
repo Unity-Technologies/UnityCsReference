@@ -357,10 +357,11 @@ namespace UnityEditor
 
         void DrawPlaneElementCallback(Rect rect, int index, bool isActive, bool isFocused)
         {
+            rect.height = kSingleLineHeight;
             var plane = m_Planes.GetArrayElementAtIndex(index);
 
             Rect objectRect = new Rect(rect.x, rect.y, rect.width - EditorGUI.kSpacing - ParticleSystemStyles.Get().plus.fixedWidth, rect.height);
-            EditorGUI.ObjectField(objectRect, plane, null, GUIContent.none, ParticleSystemStyles.Get().objectField);
+            GUIObject(objectRect, GUIContent.none, plane, null);
 
             if (plane.objectReferenceValue == null)
             {

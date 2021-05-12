@@ -167,6 +167,8 @@ namespace UnityEditor
 
             public static readonly GUIStyle command = "AppCommand";
             public static readonly GUIStyle dropdown = "Dropdown";
+            public static readonly GUIStyle buttonLeft = "ButtonLeft";
+            public static readonly GUIStyle buttonRight = "ButtonRight";
 
             public static GUIContent[] s_PivotIcons = new GUIContent[]
             {
@@ -267,34 +269,43 @@ namespace UnityEditor
             return new Rect(pos.x, 4, pos.width, s_ButtonRect.height);
         }
 
-        internal static void DoBuiltinToolSettings(Rect rect)
+        internal static void DoBuiltinToolSettings()
         {
-            DoBuiltinToolSettings(rect, "ButtonLeft", "ButtonRight");
-        }
+            EditorGUI.BeginChangeCheck();
+            Vector2 width = Styles.buttonRight.CalcSize(Styles.s_PivotRotation[1]);
+            GUILayout.BeginHorizontal();
 
-        internal static void DoBuiltinToolSettings(Rect rect, GUIStyle buttonLeftStyle, GUIStyle buttonRightStyle)
-        {
             GUI.SetNextControlName("ToolbarToolPivotPositionButton");
-            Tools.pivotMode = (PivotMode)EditorGUI.CycleButton(new Rect(rect.x, rect.y, rect.width / 2, rect.height), (int)Tools.pivotMode, Styles.s_PivotIcons, buttonLeftStyle);
-            if (Tools.current == Tool.Scale && Selection.transforms.Length < 2)
-                GUI.enabled = false;
-            GUI.SetNextControlName("ToolbarToolPivotOrientationButton");
-            PivotRotation tempPivot = (PivotRotation)EditorGUI.CycleButton(new Rect(rect.x + rect.width / 2, rect.y, rect.width / 2, rect.height), (int)Tools.pivotRotation, Styles.s_PivotRotation, buttonRightStyle);
-            if (Tools.pivotRotation != tempPivot)
+            Tools.pivotMode = (PivotMode)EditorGUILayout.CycleButton(
+                (int)Tools.pivotMode,
+                Styles.s_PivotIcons,
+                Styles.buttonLeft,
+                GUILayout.Width(width.x));
+
+            using (new EditorGUI.DisabledScope(Tools.current == Tool.Scale && Selection.transforms.Length < 2))
             {
-                Tools.pivotRotation = tempPivot;
-                if (tempPivot == PivotRotation.Global)
-                    Tools.ResetGlobalHandleRotation();
+                GUI.SetNextControlName("ToolbarToolPivotOrientationButton");
+
+                PivotRotation tempPivot = (PivotRotation)EditorGUILayout.CycleButton(
+                    (int)Tools.pivotRotation,
+                    Styles.s_PivotRotation,
+                    Styles.buttonRight,
+                    GUILayout.Width(width.x));
+
+                if (Tools.pivotRotation != tempPivot)
+                {
+                    Tools.pivotRotation = tempPivot;
+                    if (tempPivot == PivotRotation.Global)
+                        Tools.ResetGlobalHandleRotation();
+                }
             }
 
-            if (Tools.current == Tool.Scale)
-                GUI.enabled = true;
-
-            if (GUI.changed)
+            GUILayout.EndHorizontal();
+            if (EditorGUI.EndChangeCheck())
                 Tools.RepaintAllToolViews();
         }
 
-        internal static void DoContextualToolbarOverlay(UnityEngine.Object target, SceneView sceneView)
+        internal static void DoContextualToolbarOverlay()
         {
             GUILayout.BeginHorizontal(GUIStyle.none, GUILayout.MinWidth(210), GUILayout.Height(30));
 

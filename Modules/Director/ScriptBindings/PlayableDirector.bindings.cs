@@ -48,6 +48,8 @@ namespace UnityEngine.Playables
             EvaluateNextFrame();
         }
 
+        internal void Play(FrameRate frameRate) => PlayOnFrame(frameRate);
+
         public void Play(PlayableAsset asset)
         {
             if (asset == null)
@@ -80,6 +82,8 @@ namespace UnityEngine.Playables
         // Bindings methods.
         [NativeThrows]
         extern public void Evaluate();
+        [NativeThrows]
+        extern private void PlayOnFrame(FrameRate frameRate);
         [NativeThrows]
         extern public void Play();
         extern public void Stop();

@@ -126,7 +126,7 @@ namespace UnityEditor
             public override void UpdateAssets()
             {
                 // Set up our builtin list
-                if (m_FilteredHierarchy.hierarchyType == HierarchyType.Assets)
+                if (m_FilteredHierarchy?.hierarchyType == HierarchyType.Assets)
                     m_ActiveBuiltinList = m_CurrentBuiltinResources;
                 else
                     m_ActiveBuiltinList = new BuiltinResource[0];   // The Scene tab does not display builtin resources

@@ -10,11 +10,13 @@ namespace UnityEditor
     {
         Matrix4x4 m_WorldToClip;
         Rect m_Viewport;
+        float m_ScreenHeight;
 
         public CameraProjectionCache(Camera camera)
         {
             m_WorldToClip = camera.projectionMatrix * camera.worldToCameraMatrix;
             m_Viewport = camera.pixelRect;
+            m_ScreenHeight = GUIClip.visibleRect.height * EditorGUIUtility.pixelsPerPoint;
         }
 
         public Vector2 WorldToScreenPoint(Vector3 worldPoint)
@@ -34,13 +36,13 @@ namespace UnityEditor
         public Vector2 GUIToScreenPoint(Vector2 guiPoint)
         {
             var pixels = EditorGUIUtility.PointsToPixels(guiPoint);
-            pixels.y = m_Viewport.height - pixels.y;
+            pixels.y = m_ScreenHeight - pixels.y;
             return pixels;
         }
 
         public Vector2 ScreenToGUIPoint(Vector2 screenPoint)
         {
-            screenPoint.y = Screen.height - screenPoint.y;
+            screenPoint.y = m_ScreenHeight - screenPoint.y;
             return GUIClip.Clip(EditorGUIUtility.PixelsToPoints(screenPoint));
         }
     }

@@ -38,6 +38,7 @@ namespace UnityEditor
             public static GUIStyle sceneHeaderBg = "SceneTopBarBg";
             public static SVC<float> sceneHeaderWidth = new SVC<float>("SceneTopBarBg", "border-bottom-width", 1f);
             public static GUIStyle rightArrow = "ArrowNavigationRight";
+            public static GUIStyle overridesHoverHighlight = "HoverHighlight";
             public static GUIStyle hoveredItemBackgroundStyle = "WhiteBackground";
             public static Color hoveredBackgroundColor =
                 EditorResources.GetStyle("game-object-tree-view").GetColor("-unity-object-tree-hovered-color");
@@ -135,6 +136,12 @@ namespace UnityEditor
             m_PrevScollPos = m_TreeView.state.scrollPos.y;
             m_PrevTotalHeight = m_TreeView.GetTotalRect().height;
             k_BaseIndent = SceneVisibilityHierarchyGUI.utilityBarWidth;
+
+            if (!dataSource.ShouldShowSceneHeaders())
+            {
+                k_BaseIndent += indentWidth;// Add an extra indent to match GameObjects under a SceneHeader as this makes room for additional UI.
+            }
+
             s_ActiveParentObjectPerSceneGUID = new Dictionary<string, int>();
             GetActiveParentObjectValuesFromSessionInfo();
 
@@ -412,6 +419,36 @@ namespace UnityEditor
             SceneVisibilityHierarchyGUI.DoItemGUI(rect, goItem, selected && !IsRenaming(item.id), m_TreeView.hoveredItem == goItem, focused, isDragging);
         }
 
+        private void HandlePrefabInstanceOverrideStatus(GameObjectTreeViewItem goItem, Rect rect, bool selected, bool focused)
+        {
+            GameObject go = goItem.objectPPTR as GameObject;
+            if (!go)
+                return;
+
+            if (PrefabUtility.IsOutermostPrefabInstanceRoot(go) && PrefabUtility.HasPrefabInstanceNonDefaultOverrides_CachedForUI(go))
+            {
+                Rect overridesMarkerRect = new Rect(rect.x + SceneVisibilityHierarchyGUI.utilityBarWidth, rect.y + 1, 2, rect.height - 2);
+
+                Color clr = (selected && focused) ? EditorGUI.k_OverrideMarginColorSelected : EditorGUI.k_OverrideMarginColor;
+
+                EditorGUI.DrawRect(overridesMarkerRect, clr);
+            }
+        }
+
+        static GameObject[] GetOutermostPrefabInstancesFromSelection()
+        {
+            var gos = new List<GameObject>();
+            var gameObjects = Selection.gameObjects;
+            for (int i = 0; i < gameObjects.Length; i++)
+            {
+                var go = gameObjects[i];
+                if (go != null && PrefabUtility.IsPartOfNonAssetPrefabInstance(go) && PrefabUtility.IsOutermostPrefabInstanceRoot(go))
+                    gos.Add(go);
+            }
+
+            return gos.ToArray();
+        }
+
         protected override void OnAdditionalGUI(Rect rect, int row, TreeViewItem item, bool selected, bool focused)
         {
             GameObjectTreeViewItem goItem = item as GameObjectTreeViewItem;
@@ -431,6 +468,8 @@ namespace UnityEditor
                 {
                     SubSceneGUI.DrawVerticalLine(rect, k_BaseIndent, k_IndentWidth, (GameObject)goItem.objectPPTR);
                 }
+
+                HandlePrefabInstanceOverrideStatus(goItem, rect, selected, focused);
             }
 
             if (SceneHierarchy.s_Debug)

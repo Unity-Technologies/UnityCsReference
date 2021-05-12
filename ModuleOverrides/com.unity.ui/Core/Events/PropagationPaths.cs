@@ -61,27 +61,23 @@ namespace UnityEngine.UIElements
 
             while (elem.hierarchy.parent != null)
             {
-                if (elem.hierarchy.parent.enabledInHierarchy)
+                elem = elem.hierarchy.parent;
+                if (elem.isCompositeRoot)
                 {
-                    if (elem.hierarchy.parent.isCompositeRoot)
+                    // Callback for elem must be called at the Target phase.
+                    paths.targetElements.Add(elem);
+                }
+                else
+                {
+                    if ((pathTypesRequested & Type.TrickleDown) == Type.TrickleDown && elem.HasTrickleDownHandlers())
                     {
-                        // Callback for elem.hierarchy.parent must be called at the Target phase.
-                        paths.targetElements.Add(elem.hierarchy.parent);
+                        paths.trickleDownPath.Add(elem);
                     }
-                    else
+                    if ((pathTypesRequested & Type.BubbleUp) == Type.BubbleUp && elem.HasBubbleUpHandlers())
                     {
-                        if ((pathTypesRequested & Type.TrickleDown) == Type.TrickleDown && elem.hierarchy.parent.HasTrickleDownHandlers())
-                        {
-                            paths.trickleDownPath.Add(elem.hierarchy.parent);
-                        }
-
-                        if ((pathTypesRequested & Type.BubbleUp) == Type.BubbleUp && elem.hierarchy.parent.HasBubbleUpHandlers())
-                        {
-                            paths.bubbleUpPath.Add(elem.hierarchy.parent);
-                        }
+                        paths.bubbleUpPath.Add(elem);
                     }
                 }
-                elem = elem.hierarchy.parent;
             }
             return paths;
         }

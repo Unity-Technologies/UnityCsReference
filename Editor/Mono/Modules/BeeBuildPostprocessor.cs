@@ -13,7 +13,6 @@ using PlayerBuildProgramLibrary.Data;
 using UnityEditor.Build;
 using UnityEditor.CrashReporting;
 using UnityEditor.Scripting;
-using UnityEditor.Scripting.Compilers;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEditor.Utils;
 using UnityEditorInternal;
@@ -33,6 +32,8 @@ namespace UnityEditor.Modules
         }
 
         protected BeeDriver Driver { get; private set; }
+        protected virtual IPluginImporterExtension GetPluginImpExtension() => new EditorPluginImporterExtension();
+
         PlayerBuildProgressAPI progressAPI = null;
 
 
@@ -52,8 +53,7 @@ namespace UnityEditor.Modules
         private IEnumerable<Plugin> GetPluginsFor(BuildTarget target)
         {
             var buildTargetName = BuildPipeline.GetBuildTargetName(target);
-            IPluginImporterExtension pluginImpExtension = new DesktopPluginImporterExtension();
-
+            var pluginImpExtension = GetPluginImpExtension();
             foreach (PluginImporter imp in PluginImporter.GetImporters(target))
             {
                 if (!IsPluginCompatibleWithCurrentBuild(target, imp))
@@ -157,6 +157,12 @@ namespace UnityEditor.Modules
 
         private static bool IsBuildOptionSet(BuildOptions options, BuildOptions flag) => (options & flag) != 0;
 
+        protected virtual string Il2CppBuildConfigurationNameFor(BuildPostProcessArgs args)
+        {
+            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(args.target);
+            return Il2CppNativeCodeBuilderUtils.GetConfigurationName(PlayerSettings.GetIl2CppCompilerConfiguration(buildTargetGroup));
+        }
+
         Il2CppConfig Il2CppConfigFor(BuildPostProcessArgs args)
         {
             if (!GetUseIl2Cpp(args))
@@ -180,8 +186,9 @@ namespace UnityEditor.Modules
                 EnableDeepProfilingSupport = GetDevelopment(args) &&
                     IsBuildOptionSet(args.report.summary.options,
                     BuildOptions.EnableDeepProfilingSupport),
+                EnableFullGenericSharing = EditorUserBuildSettings.il2CppCodeGeneration == Il2CppCodeGeneration.OptimizeSize,
                 Profile = IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup)),
-                ConfigurationName = Il2CppNativeCodeBuilderUtils.GetConfigurationName(PlayerSettings.GetIl2CppCompilerConfiguration(buildTargetGroup)),
+                ConfigurationName = Il2CppBuildConfigurationNameFor(args),
                 GcWBarrierValidation = platformHasIncrementalGC && PlayerSettings.gcWBarrierValidation,
                 GcIncremental = platformHasIncrementalGC && PlayerSettings.gcIncremental &&
                     (apiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6 ||
@@ -231,6 +238,9 @@ namespace UnityEditor.Modules
 
         protected virtual string GetPlatformNameForBuildProgram(BuildPostProcessArgs args) => args.target.ToString();
         protected virtual string GetArchitecture(BuildPostProcessArgs args) => EditorUserBuildSettings.GetPlatformSettings(BuildPipeline.GetBuildTargetName(args.target), "Architecture");
+
+        protected Dictionary<string, Action<NodeResult>> ResultProcessors { get; } = new Dictionary<string, Action<NodeResult>>();
+
         private SystemProcessRunnableProgram MakePlayerBuildProgram(BuildPostProcessArgs args)
         {
             var buildProgramAssembly = new NPath($"{args.playerPackage}/{GetPlatformNameForBuildProgram(args)}PlayerBuildProgram.exe");
@@ -306,38 +316,66 @@ namespace UnityEditor.Modules
             }
         }
 
+        void Il2CPPResultProcessor(NodeResult node)
+        {
+            if (node.exitcode != 0)
+                // IL2cpp reports nice errors, but the output file node will just point to the profiler output, which
+                // is not useful error reporting. So just dump the output directly.
+                Debug.LogError(node.stdout);
+        }
+
+        void UnityLinkerResultProcessor(NodeResult node)
+        {
+            if (node.exitcode != 0 && node.stdout.Contains("UnityEditor"))
+                Debug.LogError($"UnityEditor.dll assembly is referenced by user code, but this is not allowed.");
+            else
+                DefaultResultProcessor(node);
+        }
+
+        public BeeBuildPostprocessor()
+        {
+            ResultProcessors["IL2CPP_CodeGen"] = Il2CPPResultProcessor;
+            ResultProcessors["UnityLinker"] = UnityLinkerResultProcessor;
+        }
+
+        protected void DefaultResultProcessor(NodeResult node, bool printErrors = true, bool printWarnings = true)
+        {
+            var output = node.outputfile;
+            if (string.IsNullOrEmpty(output))
+                output = node.outputdirectory;
+
+            var lines = (node.stdout ?? string.Empty).Split(new[] {'\r', '\n'},
+                StringSplitOptions.RemoveEmptyEntries);
+
+            if (printErrors)
+            {
+                var errorKey = "error:";
+                foreach (var error in lines.Where(l =>
+                    l.StartsWith(errorKey, StringComparison.InvariantCultureIgnoreCase)))
+                    Debug.LogError($"{output}: {error.Substring(errorKey.Length).TrimStart()}");
+            }
+
+            if (printWarnings)
+            {
+                var warningKey = "warning:";
+                foreach (var warning in lines.Where(l =>
+                    l.StartsWith(warningKey, StringComparison.InvariantCultureIgnoreCase)))
+                    Debug.LogWarning($"{output}: {warning.Substring(warningKey.Length).TrimStart()}");
+            }
+
+            if (node.exitcode != 0)
+                Debug.LogError($"Building {output} failed with output:\n{node.stdout}");
+        }
+
         void ReportBuildResults(BeeDriverResult result)
         {
-            var parser = new MicrosoftCSharpCompilerOutputParser();
             foreach (var node in result.NodeResults)
             {
-                var output = node.outputfile;
-                if (string.IsNullOrEmpty(output))
-                    output = node.outputdirectory;
-
-                if (node.exitcode != 0)
-                {
-                    if (node.annotation.StartsWith("UnityLinker ") && node.stdout.Contains("UnityEditor"))
-                        Debug.LogError($"UnityEditor.dll assembly is referenced by user code, but this is not allowed.");
-                    else if (node.annotation.StartsWith("IL2CPP_CodeGen"))
-                    {
-                        // IL2cpp reports nice errors, but the output file node will just point to the profiler output, which
-                        // is not useful error reporting. So just dump the output directly.
-                        Debug.LogError(node.stdout);
-                    }
-                    else
-                        Debug.LogError($"Building {output} failed with output:\n{node.stdout}");
-                }
-
-                var lines = (node.stdout ?? string.Empty).Split(new[] {'\r', '\n'},
-                    StringSplitOptions.RemoveEmptyEntries);
-
-                var errorKey = "error:";
-                foreach (var error in lines.Where(l => l.StartsWith(errorKey, StringComparison.InvariantCultureIgnoreCase)))
-                    Debug.LogError($"{output}: {error.Substring(errorKey.Length).TrimStart()}");
-                var warningKey = "warning:";
-                foreach (var warning in lines.Where(l => l.StartsWith(warningKey, StringComparison.InvariantCultureIgnoreCase)))
-                    Debug.LogWarning($"{output}: {warning.Substring(warningKey.Length).TrimStart()}");
+                var annotationAction = node.annotation.Split(' ')[0];
+                if (ResultProcessors.TryGetValue(annotationAction, out var processor))
+                    processor(node);
+                else
+                    DefaultResultProcessor(node);
             }
 
             foreach (var resultBeeDriverMessage in result.BeeDriverMessages)
@@ -411,7 +449,8 @@ namespace UnityEditor.Modules
                     }
                     args.report.EndBuildStep(buildStep);
 
-                    PostProcessCompletedBuild(args);
+                    if (result.Success)
+                        PostProcessCompletedBuild(args);
                     ReportBuildResults(result);
 
                     buildStep = args.report.BeginBuildStep("Report output files");
@@ -449,6 +488,9 @@ namespace UnityEditor.Modules
 
         protected static bool GetInstallingIntoBuildsFolder(BuildPostProcessArgs args) =>
             IsBuildOptionSet(args.options, BuildOptions.InstallInBuildFolder);
+
+        protected static bool GetServer(BuildPostProcessArgs args) =>
+            IsBuildOptionSet(args.options, BuildOptions.EnableHeadlessMode);
 
         protected static bool ShouldAppendBuild(BuildPostProcessArgs args) =>
             IsBuildOptionSet(args.options, BuildOptions.AcceptExternalModificationsToPlayer);

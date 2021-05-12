@@ -4,6 +4,7 @@
 
 using System;
 using Unity.Profiling;
+using Unity.Profiling.Editor;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Profiling;
@@ -14,6 +15,7 @@ using UnityEditor.Profiling;
 namespace UnityEditorInternal.Profiling
 {
     [Serializable]
+    [ProfilerModuleMetadata("Rendering", typeof(LocalizationResource), IconPath = "Profiler.Rendering")]
     internal class RenderingProfilerModule : ProfilerModuleBase
     {
         internal static class Styles
@@ -22,10 +24,7 @@ namespace UnityEditorInternal.Profiling
             public static readonly GUIContent noFrameDebugger = EditorGUIUtility.TrTextContent("Frame Debugger", "Open Frame Debugger (Current frame needs to be selected)");
         }
 
-        const string k_IconName = "Profiler.Rendering";
         const int k_DefaultOrderIndex = 2;
-        static readonly string k_UnLocalizedName = "Rendering";
-        static readonly string k_Name = LocalizationDatabase.GetLocalizedString(k_UnLocalizedName);
         static readonly string k_RenderCountersCategoryName = ProfilerCategory.Render.Name;
         static readonly ProfilerCounterData[] k_DefaultRenderAreaCounterNames =
         {
@@ -51,11 +50,9 @@ namespace UnityEditorInternal.Profiling
             },
         };
 
-        public RenderingProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_UnLocalizedName, k_Name, k_IconName) {}
-
-        public override ProfilerArea area => ProfilerArea.Rendering;
-        protected override int defaultOrderIndex => k_DefaultOrderIndex;
-        protected override string legacyPreferenceKey => "ProfilerChartRendering";
+        internal override ProfilerArea area => ProfilerArea.Rendering;
+        private protected override int defaultOrderIndex => k_DefaultOrderIndex;
+        private protected override string legacyPreferenceKey => "ProfilerChartRendering";
 
         public override void DrawToolbar(Rect position)
         {
@@ -77,7 +74,7 @@ namespace UnityEditorInternal.Profiling
         {
             string activeText = string.Empty;
 
-            using (var f = ProfilerDriver.GetRawFrameDataView(m_ProfilerWindow.GetActiveVisibleFrameIndex(), 0))
+            using (var f = ProfilerDriver.GetRawFrameDataView(ProfilerWindow.GetActiveVisibleFrameIndex(), 0))
             {
                 if (f.valid)
                 {
@@ -106,7 +103,7 @@ namespace UnityEditorInternal.Profiling
                     else
                     {
                         // Old data compatibility.
-                        activeText = ProfilerDriver.GetOverviewText(ProfilerArea.Rendering, m_ProfilerWindow.GetActiveVisibleFrameIndex());
+                        activeText = ProfilerDriver.GetOverviewText(ProfilerArea.Rendering, ProfilerWindow.GetActiveVisibleFrameIndex());
                     }
                 }
             }

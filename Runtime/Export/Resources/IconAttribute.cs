@@ -7,9 +7,8 @@ using System.Diagnostics;
 
 namespace UnityEngine
 {
-    // todo Make public when UI for EditorToolContext is exposed
     [Conditional("UNITY_EDITOR"), AttributeUsage(AttributeTargets.Class, Inherited = true, AllowMultiple = false)]
-    class IconAttribute : Attribute
+    public class IconAttribute : Attribute
     {
         string m_IconPath;
 

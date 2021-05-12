@@ -36,6 +36,24 @@ namespace UnityEngine.UIElements
         /// </summary>
         public Vector2 lastMousePosition { get; private set; }
 
+        private bool m_AcceptClicksIfDisabled;
+
+        internal bool acceptClicksIfDisabled
+        {
+            get => m_AcceptClicksIfDisabled;
+            set
+            {
+                if (m_AcceptClicksIfDisabled == value)
+                    return;
+                UnregisterCallbacksFromTarget();
+                m_AcceptClicksIfDisabled = value;
+                RegisterCallbacksOnTarget();
+            }
+        }
+
+        private InvokePolicy invokePolicy =>
+            acceptClicksIfDisabled ? InvokePolicy.IncludeDisabled : InvokePolicy.Default;
+
         private IVisualElementScheduledItem m_Repeater;
 
         /// <summary>
@@ -98,16 +116,16 @@ namespace UnityEngine.UIElements
         /// </summary>
         protected override void RegisterCallbacksOnTarget()
         {
-            target.RegisterCallback<MouseDownEvent>(OnMouseDown);
-            target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
-            target.RegisterCallback<MouseUpEvent>(OnMouseUp);
-            target.RegisterCallback<MouseCaptureOutEvent>(OnMouseCaptureOut);
+            target.RegisterCallback<MouseDownEvent>(OnMouseDown, invokePolicy);
+            target.RegisterCallback<MouseMoveEvent>(OnMouseMove, invokePolicy);
+            target.RegisterCallback<MouseUpEvent>(OnMouseUp, invokePolicy);
+            target.RegisterCallback<MouseCaptureOutEvent>(OnMouseCaptureOut, invokePolicy);
 
-            target.RegisterCallback<PointerDownEvent>(OnPointerDown);
-            target.RegisterCallback<PointerMoveEvent>(OnPointerMove);
-            target.RegisterCallback<PointerUpEvent>(OnPointerUp);
-            target.RegisterCallback<PointerCancelEvent>(OnPointerCancel);
-            target.RegisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOut);
+            target.RegisterCallback<PointerDownEvent>(OnPointerDown, invokePolicy);
+            target.RegisterCallback<PointerMoveEvent>(OnPointerMove, invokePolicy);
+            target.RegisterCallback<PointerUpEvent>(OnPointerUp, invokePolicy);
+            target.RegisterCallback<PointerCancelEvent>(OnPointerCancel, invokePolicy);
+            target.RegisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOut, invokePolicy);
         }
 
         /// <summary>

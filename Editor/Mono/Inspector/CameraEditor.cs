@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -12,6 +13,7 @@ using UnityEngine.Experimental.Rendering;
 using AnimatedBool = UnityEditor.AnimatedValues.AnimBool;
 using UnityEngine.Scripting;
 using UnityEditor.Modules;
+using UnityEditor.Overlays;
 using UnityEditorInternal.VR;
 using Object = UnityEngine.Object;
 
@@ -453,6 +455,26 @@ namespace UnityEditor
 
         private Camera camera { get { return target as Camera; } }
 
+        private Camera m_PreviewCamera;
+
+        [Obsolete("Preview camera is obsolete, use Overlays to create a Camera preview.")]
+        protected Camera previewCamera
+        {
+            get
+            {
+                if (m_PreviewCamera == null)
+                {
+                    // Only log a warning once when creating the camera so that we don't flood the console with
+                    // redundant logs.
+                    Debug.LogWarning("Preview camera is obsolete, use Overlays to create a Camera preview.");
+                    m_PreviewCamera = EditorUtility.CreateGameObjectWithHideFlags("Preview Camera", HideFlags.HideAndDontSave, typeof(Camera), typeof(Skybox)).GetComponent<Camera>();
+                }
+                m_PreviewCamera.enabled = false;
+                return m_PreviewCamera;
+            }
+        }
+
+
         private static bool IsDeferredRenderingPath(RenderingPath rp) { return rp == RenderingPath.DeferredLighting || rp == RenderingPath.DeferredShading; }
 
         private bool wantDeferredRendering
@@ -466,25 +488,6 @@ namespace UnityEditor
         }
 
         enum ProjectionType { Perspective, Orthographic }
-
-        private Camera m_PreviewCamera;
-        protected Camera previewCamera
-        {
-            get
-            {
-                if (m_PreviewCamera == null)
-                    m_PreviewCamera = EditorUtility.CreateGameObjectWithHideFlags("Preview Camera", HideFlags.HideAndDontSave, typeof(Camera), typeof(Skybox)).GetComponent<Camera>();
-                m_PreviewCamera.enabled = false;
-                return m_PreviewCamera;
-            }
-        }
-
-        private RenderTexture m_PreviewTexture;
-
-        int m_QualitySettingsAntiAliasing = -1;
-
-        // should match color in GizmosDrawers.cpp
-        private const float kPreviewNormalizedSize = 0.2f;
 
         private bool m_CommandBuffersShown = true;
 
@@ -520,8 +523,6 @@ namespace UnityEditor
             SubsystemManager.GetSubsystemDescriptors(displayDescriptors);
         }
 
-        Dictionary<Camera, OverlayWindow> m_OverlayWindows = new Dictionary<Camera, OverlayWindow>();
-
         public void OnEnable()
         {
             settings.OnEnable();
@@ -537,15 +538,12 @@ namespace UnityEditor
 
             SubsystemManager.GetSubsystemDescriptors(displayDescriptors);
             SubsystemManager.afterReloadSubsystems += OnReloadSubsystemsComplete;
+        }
 
-            SceneView.duringSceneGui += DuringSceneGUI;
-
-            foreach (var camera in targets)
-            {
-                m_OverlayWindows[(Camera)camera] = new OverlayWindow(new GUIContent(camera.name), OnOverlayGUI,
-                    (int)SceneViewOverlay.Ordering.Camera, camera,
-                    SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
-            }
+        public void OnDestroy()
+        {
+            if (m_PreviewCamera != null)
+                DestroyImmediate(m_PreviewCamera.gameObject, true);
         }
 
         public void OnDisable()
@@ -553,13 +551,6 @@ namespace UnityEditor
             m_ShowBGColorOptions.valueChanged.RemoveListener(Repaint);
             m_ShowOrthoOptions.valueChanged.RemoveListener(Repaint);
             m_ShowTargetEyeOption.valueChanged.RemoveListener(Repaint);
-            SceneView.duringSceneGui -= DuringSceneGUI;
-        }
-
-        public void OnDestroy()
-        {
-            if (m_PreviewCamera != null)
-                DestroyImmediate(m_PreviewCamera.gameObject, true);
         }
 
         private void DepthTextureModeGUI()
@@ -734,127 +725,11 @@ namespace UnityEditor
             serializedObject.ApplyModifiedProperties();
         }
 
+        // marked obsolete @karlh 2021/02/13
+        [Obsolete("OnOverlayGUI is obsolete, use Overlay to create a preview.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual void OnOverlayGUI(Object target, SceneView sceneView)
         {
-            if (target == null) return;
-
-            var c = (Camera)target;
-
-            // Do not render the Camera Preview overlay if the target camera GameObject is not part of the objects the SceneView is rendering
-            if (!sceneView.IsGameObjectInThisSceneView(c.gameObject))
-                return;
-
-            Vector2 previewSize = c.targetTexture ? new Vector2(c.targetTexture.width, c.targetTexture.height) : PlayModeView.GetMainPlayModeViewTargetSize();
-
-            if (previewSize.x < 0f)
-            {
-                // Fallback to Scene View of not a valid game view size
-                previewSize.x = sceneView.position.width;
-                previewSize.y = sceneView.position.height;
-            }
-
-            // Apply normalizedviewport rect of camera
-            Rect normalizedViewPortRect = c.rect;
-            // clamp normalized rect in [0,1]
-            normalizedViewPortRect.xMin = Math.Max(normalizedViewPortRect.xMin, 0f);
-            normalizedViewPortRect.yMin = Math.Max(normalizedViewPortRect.yMin, 0f);
-            normalizedViewPortRect.xMax = Math.Min(normalizedViewPortRect.xMax, 1f);
-            normalizedViewPortRect.yMax = Math.Min(normalizedViewPortRect.yMax, 1f);
-
-            previewSize.x *= Mathf.Max(normalizedViewPortRect.width, 0f);
-            previewSize.y *= Mathf.Max(normalizedViewPortRect.height, 0f);
-
-            // Prevent using invalid previewSize
-            if (previewSize.x < 1f || previewSize.y < 1f)
-                return;
-
-            float aspect = previewSize.x / previewSize.y;
-
-            // Scale down (fit to scene view)
-            previewSize.y = kPreviewNormalizedSize * sceneView.position.height;
-            previewSize.x = previewSize.y * aspect;
-            if (previewSize.y > sceneView.position.height * 0.5f)
-            {
-                previewSize.y = sceneView.position.height * 0.5f;
-                previewSize.x = previewSize.y * aspect;
-            }
-            if (previewSize.x > sceneView.position.width * 0.5f)
-            {
-                previewSize.x = sceneView.position.width * 0.5f;
-                previewSize.y = previewSize.x / aspect;
-            }
-
-            // Get and reserve rect
-            Rect cameraRect = GUILayoutUtility.GetRect(previewSize.x, previewSize.y);
-            cameraRect.width = Mathf.Floor(cameraRect.width);
-
-            if (Event.current.type == EventType.Repaint)
-            {
-                Graphics.DrawTexture(cameraRect, Texture2D.whiteTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, Color.black);
-            }
-
-            var properWidth = cameraRect.height * aspect;
-            cameraRect.x += (cameraRect.width - properWidth) * 0.5f;
-            cameraRect.width = properWidth;
-
-
-            if (Event.current.type == EventType.Repaint)
-            {
-                // setup camera and render
-                previewCamera.CopyFrom(c);
-
-                // make sure the preview camera is rendering the same stage as the SceneView is
-                if (sceneView.overrideSceneCullingMask != 0)
-                    previewCamera.overrideSceneCullingMask = sceneView.overrideSceneCullingMask;
-                else
-                    previewCamera.scene = sceneView.customScene;
-
-                // also make sure to sync any Skybox component on the preview camera
-                var dstSkybox = previewCamera.GetComponent<Skybox>();
-                if (dstSkybox)
-                {
-                    var srcSkybox = c.GetComponent<Skybox>();
-                    if (srcSkybox && srcSkybox.enabled)
-                    {
-                        dstSkybox.enabled = true;
-                        dstSkybox.material = srcSkybox.material;
-                    }
-                    else
-                    {
-                        dstSkybox.enabled = false;
-                    }
-                }
-
-                var previewTexture = GetPreviewTextureWithSizeAndAA((int)cameraRect.width, (int)cameraRect.height);
-                previewCamera.targetTexture = previewTexture;
-                previewCamera.pixelRect = new Rect(0, 0, cameraRect.width, cameraRect.height);
-
-                Handles.EmitGUIGeometryForCamera(c, previewCamera);
-
-                if (c.usePhysicalProperties)
-                {
-                    // when sensor size is reduced, the previous frame is still visible behing so we need to clear the texture before rendering.
-                    RenderTexture rt = RenderTexture.active;
-                    RenderTexture.active = previewTexture;
-                    GL.Clear(false, true, Color.clear);
-                    RenderTexture.active = rt;
-                }
-
-                previewCamera.Render();
-                Graphics.DrawTexture(cameraRect, previewTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, EditorGUIUtility.GUITextureBlit2SRGBMaterial);
-            }
-        }
-
-        private RenderTexture GetPreviewTextureWithSizeAndAA(int width, int height)
-        {
-            int antiAliasing = Mathf.Max(1, QualitySettings.antiAliasing);
-            if (m_PreviewTexture == null || m_PreviewTexture.width != width || m_PreviewTexture.height != height || m_PreviewTexture.antiAliasing != antiAliasing)
-            {
-                m_PreviewTexture = new RenderTexture(width, height, 24, SystemInfo.GetGraphicsFormat(DefaultFormat.LDR));
-                m_QualitySettingsAntiAliasing = QualitySettings.antiAliasing;
-                m_PreviewTexture.antiAliasing = antiAliasing;
-            }
-            return m_PreviewTexture;
         }
 
         [RequiredByNativeCode]
@@ -883,7 +758,7 @@ namespace UnityEditor
             CameraEditorUtils.DrawFrustumGizmo(camera);
         }
 
-        private static Vector2 s_PreviousMainPlayModeViewTargetSize;
+        static Vector2 s_PreviousMainPlayModeViewTargetSize;
 
         public virtual void OnSceneGUI()
         {
@@ -903,18 +778,6 @@ namespace UnityEditor
             }
 
             CameraEditorUtils.HandleFrustum(c, referenceTargetIndex);
-        }
-
-        void DuringSceneGUI(SceneView sceneView)
-        {
-            if (!target)
-                return;
-            var c = (Camera)target;
-
-            if (!CameraEditorUtils.IsViewportRectValidToRender(c.rect))
-                return;
-
-            SceneViewOverlay.ShowWindow(m_OverlayWindows[c]);
         }
     }
 }

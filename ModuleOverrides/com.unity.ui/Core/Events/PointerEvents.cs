@@ -765,6 +765,7 @@ namespace UnityEngine.UIElements
     ///
     /// A PointerDownEvent uses the default pointer event propagation path: it trickles down, bubbles up and
     /// can be cancelled.
+    /// Disabled elements won't receive this event by default.
     ///
     /// See <see cref="PointerEventBase{T}"/> to see how PointerDownEvent relates to other pointer events.
     /// </remarks>
@@ -781,6 +782,8 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable |
+                EventPropagation.SkipDisabledElements;
             ((IPointerEventInternal)this).triggeredByOS = true;
             ((IPointerEventInternal)this).recomputeTopElementUnderPointer = true;
         }
@@ -824,6 +827,7 @@ namespace UnityEngine.UIElements
     ///
     /// A PointerMoveEvent uses the default pointer event propagation path: it trickles down, bubbles up and
     /// can be cancelled.
+    /// Disabled elements receive this event by default.
     ///
     /// See <see cref="PointerEventBase{T}"/> to see how PointerMoveEvent relates to other pointer events.
     /// </remarks>
@@ -845,6 +849,7 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable;
             ((IPointerEventInternal)this).triggeredByOS = true;
             ((IPointerEventInternal)this).recomputeTopElementUnderPointer = true;
             isHandledByDraggable = false;
@@ -901,6 +906,7 @@ namespace UnityEngine.UIElements
     ///
     /// A PointerStationaryEvent uses the default pointer event propagation path: it trickles down, bubbles up
     /// and can be cancelled.
+    /// Disabled elements receive this event by default.
     ///
     /// See <see cref="PointerEventBase{T}"/> to see how PointerStationaryEvent relates to other pointer events.
     /// </remarks>
@@ -917,6 +923,7 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable;
             ((IPointerEventInternal)this).triggeredByOS = true;
             ((IPointerEventInternal)this).recomputeTopElementUnderPointer = true;
         }
@@ -938,6 +945,7 @@ namespace UnityEngine.UIElements
     ///
     /// A PointerUpEvent uses the default pointer event propagation path: it is trickled down, bubbled up
     /// and can be cancelled.
+    /// Disabled elements won't receive this event by default.
     ///
     /// See <see cref="PointerEventBase{T}"/> to see how PointerUpEvent relates to other pointer events.
     /// </remarks>
@@ -954,6 +962,8 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable |
+                EventPropagation.SkipDisabledElements;
             ((IPointerEventInternal)this).triggeredByOS = true;
             ((IPointerEventInternal)this).recomputeTopElementUnderPointer = true;
         }
@@ -995,6 +1005,7 @@ namespace UnityEngine.UIElements
     /// </summary>
     /// <remarks>
     /// A PointerCancelEvent can trickle down or bubble up, but cannot be cancelled.
+    /// Disabled elements won't receive this event by default.
     ///
     /// See <see cref="PointerEventBase{T}"/> to see how PointerCancelEvent relates to other pointer events.
     /// </remarks>
@@ -1011,7 +1022,8 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown;
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
+                EventPropagation.SkipDisabledElements;
             ((IPointerEventInternal)this).triggeredByOS = true;
             ((IPointerEventInternal)this).recomputeTopElementUnderPointer = true;
         }
@@ -1056,12 +1068,36 @@ namespace UnityEngine.UIElements
     ///
     /// A ClickEvent uses the default pointer event propagation path: it trickles down, bubbles up
     /// and can be cancelled.
+    /// Disabled elements won't receive this event by default.
     ///
     /// See <see cref="PointerEventBase{T}"/> to see how ClickEvent relates to other pointer events.
     ///
     /// </remarks>
     public sealed class ClickEvent : PointerEventBase<ClickEvent>
     {
+        /// <summary>
+        /// Resets the event members to their initial values.
+        /// </summary>
+        protected override void Init()
+        {
+            base.Init();
+            LocalInit();
+        }
+
+        void LocalInit()
+        {
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable |
+                EventPropagation.SkipDisabledElements;
+        }
+
+        /// <summary>
+        /// Constructor. Avoid creating new event instances. Instead, use GetPooled() to get an instance from a pool of reusable event instances.
+        /// </summary>
+        public ClickEvent()
+        {
+            LocalInit();
+        }
+
         internal static ClickEvent GetPooled(PointerUpEvent pointerEvent, int clickCount)
         {
             var evt = PointerEventBase<ClickEvent>.GetPooled((IPointerEvent)pointerEvent);

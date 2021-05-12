@@ -629,14 +629,25 @@ namespace UnityEngine.UIElements
                 generateVisualContent += OnGenerateVisualContent;
             }
 
-            DropdownMenuAction.Status CutCopyActionStatus(DropdownMenuAction a)
+            DropdownMenuAction.Status CutActionStatus(DropdownMenuAction a)
             {
-                return (editorEngine.hasSelection && !isPasswordField) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
+                return enabledInHierarchy && editorEngine.hasSelection && !isPasswordField
+                    ? DropdownMenuAction.Status.Normal
+                    : DropdownMenuAction.Status.Disabled;
+            }
+
+            DropdownMenuAction.Status CopyActionStatus(DropdownMenuAction a)
+            {
+                return (!enabledInHierarchy || editorEngine.hasSelection) && !isPasswordField
+                    ? DropdownMenuAction.Status.Normal
+                    : DropdownMenuAction.Status.Disabled;
             }
 
             DropdownMenuAction.Status PasteActionStatus(DropdownMenuAction a)
             {
-                return (editorEngine.CanPaste() ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+                return enabledInHierarchy
+                    ? editorEngine.CanPaste() ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled
+                    : DropdownMenuAction.Status.Hidden;
             }
 
             void ProcessMenuCommand(string command)
@@ -902,9 +913,9 @@ namespace UnityEngine.UIElements
                 {
                     if (!isReadOnly)
                     {
-                        evt.menu.AppendAction("Cut", Cut, CutCopyActionStatus);
+                        evt.menu.AppendAction("Cut", Cut, CutActionStatus);
                     }
-                    evt.menu.AppendAction("Copy", Copy, CutCopyActionStatus);
+                    evt.menu.AppendAction("Copy", Copy, CopyActionStatus);
                     if (!isReadOnly)
                     {
                         evt.menu.AppendAction("Paste", Paste, PasteActionStatus);
@@ -942,10 +953,20 @@ namespace UnityEngine.UIElements
                 return TextUtilities.MeasureVisualElementTextSize(this, textToUse, desiredWidth, widthMode, desiredHeight, heightMode, m_TextHandle);
             }
 
+            internal override void ExecuteDefaultActionDisabledAtTarget(EventBase evt)
+            {
+                base.ExecuteDefaultActionDisabledAtTarget(evt);
+                ProcessEventAtTarget(evt);
+            }
+
             protected override void ExecuteDefaultActionAtTarget(EventBase evt)
             {
                 base.ExecuteDefaultActionAtTarget(evt);
+                ProcessEventAtTarget(evt);
+            }
 
+            private void ProcessEventAtTarget(EventBase evt)
+            {
                 elementPanel?.contextualMenuManager?.DisplayMenuIfEventMatches(evt, this);
 
                 if (evt?.eventTypeId == ContextualMenuPopulateEvent.TypeId())

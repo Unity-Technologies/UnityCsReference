@@ -312,7 +312,6 @@ namespace UnityEditor
             var go = ObjectFactory.CreateGameObject("Directional Light", typeof(Light));
 
             go.GetComponent<Light>().type = LightType.Directional;
-            go.GetComponent<Light>().intensity = 1f;
             go.GetComponent<Transform>().SetLocalEulerAngles(new Vector3(50, -30, 0), RotationOrder.OrderZXY);
 
             Place(go, parent);

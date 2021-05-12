@@ -411,7 +411,7 @@ namespace UnityEditor.Search
 
                 loadTask.Report(++step, step + 1);
                 if (!index.LoadBytes(fileBytes))
-                    Debug.LogError($"Failed to load {indexPath}.", this);
+                    Debug.LogError($"Failed to load {indexPath}.");
 
                 var deletedAssets = new HashSet<string>();
                 foreach (var d in index.GetDocuments())
@@ -592,8 +592,9 @@ namespace UnityEditor.Search
             task.Report("Combining indexes...", -1f);
 
             combineIndexer.Start();
-            foreach (var a in artifacts)
+            for (int i = 0; i < artifacts.Length; ++i)
             {
+                IndexArtifact a = artifacts[i];
                 if (task.Canceled())
                     return null;
 

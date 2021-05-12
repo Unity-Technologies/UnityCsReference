@@ -6,45 +6,35 @@ using System;
 using UnityEngine;
 using UnityEditor.EditorTools;
 using UnityEditor.SceneManagement;
+using UnityEditor.Overlays;
+using UnityEditor.Toolbars;
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
-    [CustomEditor(typeof(ManipulationTool<>), true)]
-    class ManipulationToolCustomEditor : Editor
+    // This serves as the default tool setting implementation.
+    [CustomEditor(typeof(EditorTool), true)]
+    class ManipulationToolCustomEditor : Editor, ICreateHorizontalToolbar, ICreateVerticalToolbar
     {
-        const float k_PivotButtonsWidth = 128f;
-        const float k_Padding = 4;
-        GUIContent m_HandlePositionAndRotation = EditorGUIUtility.TrTextContent("Handle Position and Rotation");
+        VisualElement m_RootVisualElement;
+        EditorToolbar m_Toolbar;
 
-        public override void OnInspectorGUI()
+        public VisualElement CreateHorizontalToolbarContent() => CreateInspectorGUI();
+
+        public VisualElement CreateVerticalToolbarContent() => CreateInspectorGUI();
+
+        public override VisualElement CreateInspectorGUI()
         {
-            var labelWidth = Mathf.Max(EditorGUIUtility.labelWidth, EditorStyles.label.CalcSize(m_HandlePositionAndRotation).x + k_Padding);
-
-            Rect m_Rect = new Rect(k_Padding, k_Padding, labelWidth, EditorGUIUtility.singleLineHeight);
-
-            m_Rect = EditorToolGUI.GetToolbarEntryRect(m_Rect);
-
-            GUI.Label(m_Rect, m_HandlePositionAndRotation);
-
-            m_Rect.x += m_Rect.width;
-
-            m_Rect.width = k_PivotButtonsWidth;
-
-            m_Rect = EditorToolGUI.GetToolbarEntryRect(m_Rect);
-
-            EditorToolGUI.DoBuiltinToolSettings(m_Rect);
+            m_Toolbar = OverlayUtilities.CreateToolbar(
+                m_RootVisualElement = new VisualElement() { name = "toolbar-overlay" },
+                null,
+                "Tool Settings/Pivot Mode",
+                "Tool Settings/Pivot Rotation");
+            return m_RootVisualElement;
         }
     }
 
-    [CustomEditor(typeof(ViewModeTool))]
-    class ViewModeToolCustomEditor : Editor
-    {
-        public override void OnInspectorGUI()
-        {
-        }
-    }
-
-    internal abstract class ManipulationTool<T> : EditorTool where T : EditorTool
+    abstract class ManipulationTool<T> : EditorTool where T : EditorTool
     {
         public override void OnToolGUI(EditorWindow window)
         {
@@ -55,7 +45,6 @@ namespace UnityEditor
 
             if (!StageUtility.IsGameObjectRenderedByCameraAndPartOfEditableScene(Selection.activeTransform.gameObject, Camera.current))
                 return;
-
 
             GUIContent disabledLabel;
             bool isDisabled = ShouldToolGUIBeDisabled(out disabledLabel);

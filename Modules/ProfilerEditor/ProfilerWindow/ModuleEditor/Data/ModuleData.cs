@@ -3,7 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using UnityEditorInternal.Profiling;
+using Unity.Profiling.Editor;
 using UnityEngine;
 
 namespace UnityEditor.Profiling.ModuleEditor
@@ -14,18 +14,15 @@ namespace UnityEditor.Profiling.ModuleEditor
         public const int k_MaximumChartCountersCount = UnityEditorInternal.ProfilerChart.k_MaximumSeriesCount;
 
         [SerializeField] string m_Name;
-        [SerializeField] string m_LocalizedName;
         [SerializeField] List<ProfilerCounterData> m_ChartCounters = new List<ProfilerCounterData>();
-        [SerializeField] List<ProfilerCounterData> m_DetailCounters = new List<ProfilerCounterData>();
         [SerializeField] bool m_IsEditable;
-        [SerializeField] string m_CurrentProfilerModuleName;
         [SerializeField] EditedState m_EditedState;
 
-        public ModuleData(string name, string localizedName, bool isEditable, bool newlyCreatedModule = false)
+        public ModuleData(string identifier, string name, bool isEditable, bool newlyCreatedModule = false)
         {
+            this.identifier = identifier;
+            currentProfilerModuleIdentifier = identifier;
             m_Name = name;
-            m_LocalizedName = localizedName;
-            m_CurrentProfilerModuleName = m_Name;
             m_IsEditable = isEditable;
             m_EditedState = (newlyCreatedModule) ? EditedState.Created : EditedState.NoChanges;
         }
@@ -33,14 +30,17 @@ namespace UnityEditor.Profiling.ModuleEditor
         public bool isEditable => m_IsEditable;
         public EditedState editedState => m_EditedState;
         public string name => m_Name;
-        public string localizedName => m_LocalizedName;
-        public string currentProfilerModuleName => m_CurrentProfilerModuleName;
+        public string localizedName => name;
         public List<ProfilerCounterData> chartCounters => m_ChartCounters;
         // We currently don't allow users to specify detail counters in the UI. Instead we mirror the chart counters in the details view.
         public List<ProfilerCounterData> detailCounters => m_ChartCounters;
         public bool hasMaximumChartCounters => m_ChartCounters.Count >= k_MaximumChartCountersCount;
 
-        public static List<ModuleData> CreateDataRepresentationOfProfilerModules(List<ProfilerModuleBase> modules)
+        public string identifier { get; private set; }
+
+        public string currentProfilerModuleIdentifier { get; }
+
+        public static List<ModuleData> CreateDataRepresentationOfProfilerModules(List<ProfilerModule> modules)
         {
             var moduleDatas = new List<ModuleData>(modules.Count);
             for (int i = 0; i < modules.Count; i++)
@@ -53,16 +53,13 @@ namespace UnityEditor.Profiling.ModuleEditor
             return moduleDatas;
         }
 
-        static ModuleData CreateWithProfilerModule(ProfilerModuleBase module)
+        static ModuleData CreateWithProfilerModule(ProfilerModule module)
         {
             var isEditable = module is DynamicProfilerModule;
-            var moduleData = new ModuleData(module.name, module.localizedName, isEditable);
+            var moduleData = new ModuleData(module.Identifier, module.DisplayName, isEditable);
 
-            var chartCounters = new List<ProfilerCounterData>(module.chartCounters);
+            var chartCounters = new List<ProfilerCounterData>(ProfilerCounterDataUtility.ConvertToLegacyCounterDatas(module.ChartCounters));
             moduleData.m_ChartCounters = chartCounters;
-
-            var detailCounters = new List<ProfilerCounterData>(module.detailCounters);
-            moduleData.m_DetailCounters = detailCounters;
 
             return moduleData;
         }
@@ -70,7 +67,7 @@ namespace UnityEditor.Profiling.ModuleEditor
         public void SetName(string name)
         {
             m_Name = name;
-            m_LocalizedName = name;
+            identifier = name; // Dynamic modules use their name as identifier.
             SetUpdatedEditedStateIfNoChanges();
         }
 

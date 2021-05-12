@@ -3,27 +3,23 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEditor;
+using Unity.Profiling.Editor;
 using UnityEngine;
 using UnityEngine.Profiling;
 
 namespace UnityEditorInternal.Profiling
 {
     [Serializable]
+    [ProfilerModuleMetadata("Physics", typeof(LocalizationResource), IconPath = "Profiler.Physics")]
     internal class PhysicsProfilerModule : ProfilerModuleBase
     {
-        const string k_IconName = "Profiler.Physics";
         const int k_DefaultOrderIndex = 6;
-        static readonly string k_UnLocalizedName = "Physics";
-        static readonly string k_Name = LocalizationDatabase.GetLocalizedString(k_UnLocalizedName);
 
-        public PhysicsProfilerModule(IProfilerWindowController profilerWindow) : base(profilerWindow, k_UnLocalizedName, k_Name, k_IconName) {}
-
-        public override ProfilerArea area => ProfilerArea.Physics;
+        internal override ProfilerArea area => ProfilerArea.Physics;
         public override bool usesCounters => false;
 
-        protected override int defaultOrderIndex => k_DefaultOrderIndex;
-        protected override string legacyPreferenceKey => "ProfilerChartPhysics";
+        private protected override int defaultOrderIndex => k_DefaultOrderIndex;
+        private protected override string legacyPreferenceKey => "ProfilerChartPhysics";
 
         public override void DrawToolbar(Rect position)
         {

@@ -117,8 +117,9 @@ namespace UnityEditor
         {
             SerializedProperty forceField = m_InfluenceList.GetArrayElementAtIndex(index);
 
+            rect.height = kSingleLineHeight;
             Rect objectRect = new Rect(rect.x, rect.y, rect.width - EditorGUI.kSpacing - ParticleSystemStyles.Get().plus.fixedWidth, rect.height);
-            EditorGUI.ObjectField(objectRect, forceField, null, GUIContent.none, ParticleSystemStyles.Get().objectField);
+            GUIObject(objectRect, GUIContent.none, forceField, null);
 
             if (forceField.objectReferenceValue == null)
             {
