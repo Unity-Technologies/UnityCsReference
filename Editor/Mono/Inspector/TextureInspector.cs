@@ -321,14 +321,13 @@ namespace UnityEditor
 
             foreach (Texture tex in targets)
             {
-                if (m_Aniso.intValue != -1 && !anisoDiffer)
+                if (!anisoDiffer)
                     TextureUtil.SetAnisoLevelNoDirty(tex, m_Aniso.intValue);
-                if (m_FilterMode.intValue != -1 && !filterDiffer)
+
+                if (!filterDiffer)
                     TextureUtil.SetFilterModeNoDirty(tex, (FilterMode)m_FilterMode.intValue);
 
-                // NB i am not sure if it is *possible* to have -1 in there and if it make sense to pass -1 to SetWrapModeNoDirty
-                // NB but this is how TextureImporter checks things and who am i to argue
-                if ((m_WrapU.intValue != -1 || m_WrapV.intValue != -1 || m_WrapW.intValue != -1) && !wrapDiffer)
+                if (!wrapDiffer)
                     TextureUtil.SetWrapModeNoDirty(tex, (TextureWrapMode)m_WrapU.intValue, (TextureWrapMode)m_WrapV.intValue, (TextureWrapMode)m_WrapW.intValue);
             }
         }

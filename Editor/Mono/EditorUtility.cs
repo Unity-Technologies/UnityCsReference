@@ -11,6 +11,7 @@ using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Internal;
+using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -695,6 +696,25 @@ namespace UnityEditor
             {
                 _SbPool.Push(sb);
             }
+        }
+
+        public static void SetDefaultParentObject(GameObject defaultParentObject)
+        {
+            defaultParentObject = !PrefabStageUtility.IsGameObjectThePrefabRootInAnyPrefabStage(defaultParentObject) ? defaultParentObject : null;
+            SceneHierarchy.SetDefaultParentObject(false, defaultParentObject);
+        }
+
+        public static void ClearDefaultParentObject(Scene scene)
+        {
+            if (scene != null)
+                SceneHierarchy.ClearDefaultParentObject(scene.guid);
+            else
+                SceneHierarchy.ClearDefaultParentObject("");
+        }
+
+        public static void ClearDefaultParentObject()
+        {
+            SceneHierarchy.ClearDefaultParentObject();
         }
     }
 }

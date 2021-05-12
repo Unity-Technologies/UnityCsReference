@@ -108,6 +108,9 @@ namespace UnityEditor.UIElements
 
                         try
                         {
+                    if (!m_SerializedProperty.isValid)
+                        return;
+                    
                             EditorGUI.BeginChangeCheck();
                             m_SerializedProperty.serializedObject.Update();
 

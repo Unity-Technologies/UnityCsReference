@@ -220,18 +220,35 @@ namespace UnityEditor.PackageManager.UI
         {
             var oldLocalInfos = m_LocalInfos;
             m_LocalInfos = new Dictionary<string, AssetStoreLocalInfo>();
-            var addedOrUpdatedLocalInfos = new List<AssetStoreLocalInfo>();
             foreach (var info in localInfos)
             {
                 var id = info?.id;
                 if (string.IsNullOrEmpty(id))
                     continue;
 
-                m_LocalInfos[info.id] = info;
+                if (m_LocalInfos.TryGetValue(id, out var existingInfo))
+                {
+                    try
+                    {
+                        if (long.Parse(existingInfo.versionId) >= long.Parse(info.versionId))
+                            continue;
+                    }
+                    catch (Exception)
+                    {
+                        var warningMessage = L10n.Tr("Multiple versions of the same package found on disk and we could not determine which one to take. Please remove one of the following files:\n");
+                        Debug.LogWarning($"{warningMessage}{existingInfo.packagePath}\n{info.packagePath}");
+                        continue;
+                    }
+                }
+                m_LocalInfos[id] = info;
+            }
 
-                var oldInfo = oldLocalInfos.Get(id);
+            var addedOrUpdatedLocalInfos = new List<AssetStoreLocalInfo>();
+            foreach (var info in m_LocalInfos.Values)
+            {
+                var oldInfo = oldLocalInfos.Get(info.id);
                 if (oldInfo != null)
-                    oldLocalInfos.Remove(id);
+                    oldLocalInfos.Remove(info.id);
 
                 var localInfoUpdated = oldInfo == null || oldInfo.versionId != info.versionId ||
                     oldInfo.versionString != info.versionString || oldInfo.packagePath != info.packagePath;
