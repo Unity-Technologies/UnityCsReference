@@ -4,6 +4,8 @@
 
 using UnityEngine;
 using UnityEditorInternal;
+using UnityEngine.U2D;
+using UnityEditor.U2D;
 
 namespace UnityEditor
 {
@@ -229,13 +231,29 @@ namespace UnityEditor
                 Sprite sprite = prop.objectReferenceValue as Sprite;
                 if (sprite != null)
                 {
+                    // Find the sprite atlas asset for this texture, if it has one
+                    var spriteAtlas = SpriteEditorExtension.GetActiveAtlas(sprite);
+                    if (spriteAtlas != null)
+                    {
+                        if (spriteAtlas.GetPackingSettings().enableTightPacking)
+                        {
+                            EditorGUILayout.HelpBox("Tightly packed Sprite Atlases are not supported.", MessageType.Error, true);
+                            break;
+                        }
+                    }
+
                     if (texture == null)
                     {
                         texture = sprite.GetTextureForPlayMode();
                     }
                     else if (texture != sprite.GetTextureForPlayMode())
                     {
-                        EditorGUILayout.HelpBox("All Sprites must share the same texture. Either pack all Sprites into one Texture by setting the Packing Tag, or use a Multiple Mode Sprite.", MessageType.Error, true);
+                        if (EditorSettings.spritePackerMode == SpritePackerMode.Disabled)
+                            EditorGUILayout.HelpBox("To use multiple sprites, enable the Sprite Packer Mode in the Editor Project Settings, and create a Texture Atlas.", MessageType.Error, true);
+                        else if (EditorSettings.spritePackerMode == SpritePackerMode.SpriteAtlasV2 || EditorSettings.spritePackerMode == SpritePackerMode.AlwaysOnAtlas || EditorSettings.spritePackerMode == SpritePackerMode.BuildTimeOnlyAtlas)
+                            EditorGUILayout.HelpBox("All Sprites must share the same Texture Atlas. Also check that all your sprites fit onto 1 texture of the Sprite Atlas.", MessageType.Error, true);
+                        else
+                            EditorGUILayout.HelpBox("All Sprites must share the same texture. Either pack all Sprites into one Texture by setting the Packing Tag, or use a Multiple Mode Sprite.", MessageType.Error, true);
                         break;
                     }
                     else if (sprite.border != Vector4.zero)
