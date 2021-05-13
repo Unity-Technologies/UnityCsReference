@@ -64,11 +64,13 @@ namespace UnityEditor.Toolbars
         void OnPivotModeChanged()
         {
             m_PivotModeButton.value = (int)Tools.pivotMode;
+            SceneView.RepaintAll();
         }
 
         void OnPivotRotationChanged()
         {
             m_PivotRotationButton.value = (int)Tools.pivotRotation;
+            SceneView.RepaintAll();
         }
     }
 }

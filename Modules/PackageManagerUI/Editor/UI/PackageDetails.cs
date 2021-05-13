@@ -1264,14 +1264,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!downloadInProgress && !m_Application.isInternetReachable)
                 return;
 
+            var isUpdate = package.state == PackageState.UpdateAvailable;
+
             m_PackageDatabase.Download(package);
             RefreshDownloadStatesButtons();
 
             var operation = m_AssetStoreDownloadManager.GetDownloadOperation(displayVersion.packageUniqueId);
             downloadProgress.UpdateProgress(operation);
 
-
-            PackageManagerWindowAnalytics.SendEvent("startDownload", package.uniqueId);
+            var eventName = isUpdate ? "startDownloadUpdate" : "startDownloadNew";
+            PackageManagerWindowAnalytics.SendEvent(eventName, package.uniqueId);
         }
 
         private void CancelClick()
