@@ -373,6 +373,14 @@ namespace UnityEditor
                         evt.Use();
                     }
                     break;
+                case EventType.ValidateCommand:
+                    if (evt.commandName == EventCommandNames.UndoRedoPerformed)
+                    {
+                        CloseWindow();
+                        GUI.changed = true;
+                        evt.Use();
+                    }
+                    break;
             }
         }
     }

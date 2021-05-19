@@ -219,12 +219,13 @@ namespace UnityEditor
                     break;
 
                 case EventType.Repaint:
-                    if (m_TargetIndex != -1 && editorIndex == m_TargetIndex &&
+                    if (DragAndDrop.visualMode != DragAndDropVisualMode.None && DragAndDrop.visualMode != DragAndDropVisualMode.Rejected &&
                         (targetRect.Contains(evt.mousePosition) ||
+                         editorIndex == m_BottomAreaDropIndex &&
                          m_BottomArea.Contains(GUIClip.UnclipToWindow(evt.mousePosition)) &&
                          m_BottomAreaDropIndex == editors.Length - 1))
                     {
-                        Styles.insertionMarker.Draw(GetMarkerRect(targetRect, markerY, m_TargetAbove), false, false, false, false);
+                        Styles.insertionMarker.Draw(GetMarkerRect(targetRect), false, false, false, false);
                     }
                     break;
             }
@@ -320,7 +321,7 @@ namespace UnityEditor
             }
         }
 
-        private static Rect GetTargetRect(Rect contentRect)
+        private Rect GetTargetRect(Rect contentRect)
         {
             var targetHeight = 9f;
             var yPos = contentRect.yMax - targetHeight * .75f;
@@ -328,12 +329,10 @@ namespace UnityEditor
             return new Rect(contentRect.x, yPos + uiDragTargetHeight / (targetHeight * .25f), contentRect.width, uiDragTargetHeight);
         }
 
-        private static Rect GetMarkerRect(Rect targetRect, float markerY, bool targetAbove)
+        private static Rect GetMarkerRect(Rect targetRect)
         {
-            var markerRect = new Rect(targetRect);
-            if (!targetAbove)
-                markerRect.y += 2f;
-
+            var markerRect = targetRect;
+            markerRect.y += 3;
             return markerRect;
         }
 
