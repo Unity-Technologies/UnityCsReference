@@ -77,6 +77,12 @@ namespace UnityEditorInternal
                 copyEvents.Add(new AnimationWindowEventClipboard(allEvents[explicitIndex]));
             }
             var data = new AnimationWindowEventsClipboard {events = copyEvents.ToArray()};
+
+            // Animation keyframes right now do not go through regular clipboard machinery,
+            // so when copying Events, make sure Keyframes are cleared from the clipboard, or things
+            // get confusing.
+            AnimationWindowState.ClearKeyframeClipboard();
+
             Clipboard.SetCustomValue(data);
         }
 

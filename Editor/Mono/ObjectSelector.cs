@@ -916,6 +916,12 @@ namespace UnityEditor
             // Must be after gui so search field can use the Escape event if it has focus
             if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape)
                 Cancel();
+            else if (Event.current.commandName == EventCommandNames.UndoRedoPerformed && Selection.activeObject == null)
+            {
+                Close();
+                GUI.changed = true;
+                GUIUtility.ExitGUI();
+            }
         }
 
         void OnObjectTreeGUI()

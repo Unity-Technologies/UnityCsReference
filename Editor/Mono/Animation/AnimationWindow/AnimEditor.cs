@@ -4,12 +4,9 @@
 
 using System;
 using UnityEngine;
-using UnityEditor;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEditor.ShortcutManagement;
 using UnityEditorInternal;
-using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -1272,9 +1269,6 @@ namespace UnityEditor
 
         void HandleMainAreaCopyPaste(int controlID)
         {
-            if (GUIUtility.keyboardControl != controlID)
-                return;
-
             var evt = Event.current;
             var type = evt.GetTypeForControl(controlID);
             if (type != EventType.ValidateCommand && type != EventType.ExecuteCommand)
@@ -1282,6 +1276,11 @@ namespace UnityEditor
 
             if (evt.commandName == EventCommandNames.Copy)
             {
+                // If events timeline has selected events right now then bail out; copying of
+                // these will get processed later by AnimationEventTimeLine.
+                if (m_Events.HasSelectedEvents)
+                    return;
+
                 if (type == EventType.ExecuteCommand)
                 {
                     if (m_State.showCurveEditor)
@@ -1294,9 +1293,17 @@ namespace UnityEditor
             {
                 if (type == EventType.ExecuteCommand)
                 {
-                    SaveCurveEditorKeySelection();
-                    m_State.PasteKeys();
-                    UpdateSelectedKeysToCurveEditor();
+                    // If clipboard contains events right now then paste those.
+                    if (AnimationWindowEventsClipboard.CanPaste())
+                    {
+                        m_Events.PasteEvents(m_State.activeRootGameObject, m_State.activeAnimationClip, m_State.currentTime);
+                    }
+                    else
+                    {
+                        SaveCurveEditorKeySelection();
+                        m_State.PasteKeys();
+                        UpdateSelectedKeysToCurveEditor();
+                    }
 
                     // data is scheduled for an update, bail out now to avoid using out of date data.
                     EditorGUIUtility.ExitGUI();

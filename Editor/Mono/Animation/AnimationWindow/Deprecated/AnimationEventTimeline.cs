@@ -31,9 +31,9 @@ namespace UnityEditor
 
         private bool m_DirtyTooltip = false;
         private int m_HoverEvent = -1;
-        // Rects used for checking mouse-move state changes
         private string m_InstantTooltipText = null;
         private Vector2 m_InstantTooltipPoint = Vector2.zero;
+        private bool m_HasSelectedEvents;
 
         public AnimationEventTimeLine(EditorWindow owner)
         {
@@ -71,6 +71,8 @@ namespace UnityEditor
                 m_Selected = selected;
             }
         }
+
+        internal bool HasSelectedEvents => m_HasSelectedEvents;
 
         public void AddEvent(float time, GameObject gameObject, AnimationClip animationClip)
         {
@@ -142,7 +144,7 @@ namespace UnityEditor
             AnimationWindowEventsClipboard.CopyEvents(allEvents, selected, explicitIndex);
         }
 
-        void PasteEvents(GameObject animated, AnimationClip clip, float time)
+        internal void PasteEvents(GameObject animated, AnimationClip clip, float time)
         {
             var oldEvents = AnimationUtility.GetAnimationEvents(clip);
             var newEvents = AnimationWindowEventsClipboard.AddPastedEvents(oldEvents, time, out var selected);
@@ -226,6 +228,7 @@ namespace UnityEditor
                 }
 
                 bool[] selectedEvents = new bool[events.Length];
+                m_HasSelectedEvents = false;
 
                 Object[] selectedObjects = Selection.objects;
                 foreach (Object selectedObject in selectedObjects)
@@ -236,6 +239,7 @@ namespace UnityEditor
                         if (awe.eventIndex >= 0 && awe.eventIndex < selectedEvents.Length)
                         {
                             selectedEvents[awe.eventIndex] = true;
+                            m_HasSelectedEvents = true;
                         }
                     }
                 }
