@@ -665,6 +665,9 @@ namespace UnityEditor
 
             settings.DrawProjection();
 
+            if (displaySubsystemPresent && targetEyeValue != (int)StereoTargetEyeMask.None && c.orthographic && c.targetTexture == null)
+                GUILayout.Label(EditorGUIUtility.TrTextContent("Orthographic projection is not supported when running in XR.", "One or more XR Plug-in providers were detected in your project. Using Orthographic projection is not supported when running in XR and enabling this may cause problems.", EditorGUIUtility.warningIcon));
+
             settings.DrawClippingPlanes();
 
             settings.DrawNormalizedViewPort();

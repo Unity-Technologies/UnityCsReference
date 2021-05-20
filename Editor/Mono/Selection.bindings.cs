@@ -2,12 +2,15 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEngine.Bindings;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
     // SelectionMode can be used to tweak the selection returned by Selection.GetTransforms.
+    [Flags]
     public enum SelectionMode
     {
         // Return the whole selection.
@@ -26,7 +29,8 @@ namespace UnityEditor
         DeepAssets = 32,
         // Return a selection that only contains top level selection of all visible assets
         //TopLevelAssets = 64,
-        // renamed to Editable
+        // Renamed to Editable
+        [Obsolete("'OnlyUserModifiable' is obsolete. Use 'Editable' instead. (UnityUpgradeable) -> Editable", true)]
         OnlyUserModifiable = 8
     }
 

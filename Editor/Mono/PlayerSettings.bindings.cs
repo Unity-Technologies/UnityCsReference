@@ -830,6 +830,14 @@ namespace UnityEditor
             set {}
         }
 
+        public static extern bool suppressCommonWarnings
+        {
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+            get;
+            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
+            set;
+        }
+
         public static extern bool allowUnsafeCode
         {
             [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]

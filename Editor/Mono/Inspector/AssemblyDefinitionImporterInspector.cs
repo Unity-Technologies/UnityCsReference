@@ -169,6 +169,10 @@ namespace UnityEditor
         public override void OnEnable()
         {
             base.OnEnable();
+
+            //Ensure UIElements handles the IMGUI container with margins
+            alwaysAllowExpansion = true;
+
             m_AssemblyName = extraDataSerializedObject.FindProperty("assemblyName");
             InitializeReorderableLists();
             m_SemVersionRanges = new VersionRangesFactory<SemVersion>();
@@ -200,6 +204,10 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
+            EditorGUILayout.Space(4);
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.Space(18);
+            EditorGUILayout.BeginVertical();
             if (initializeException != null)
             {
                 ShowLoadErrorExceptionGUI(initializeException);
@@ -383,6 +391,8 @@ namespace UnityEditor
             extraDataSerializedObject.ApplyModifiedProperties();
 
             ApplyRevertGUI();
+            EditorGUILayout.EndVertical();
+            EditorGUILayout.EndHorizontal();
         }
 
         protected override void Apply()

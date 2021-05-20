@@ -24,6 +24,7 @@ namespace UnityEditor.Compilation
     public class ScriptCompilerOptions
     {
         public bool AllowUnsafeCode { get; set; }
+        internal string[] AdditionalCompilerArguments { get; set; }
         public ApiCompatibilityLevel ApiCompatibilityLevel { get; set; }
         public string[] ResponseFiles { get; set; }
 
