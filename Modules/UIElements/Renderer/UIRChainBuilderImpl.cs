@@ -591,15 +591,16 @@ namespace UnityEngine.UIElements.UIR.Implementation
             if (!ve.ShouldClip())
                 return ClipMethod.NotClipped;
 
+            // Even though GroupTransform does not formally imply the use of scissors, we prefer to use them because
+            // this way, we can avoid updating nested clipping rects.
+            bool preferScissors = (ve.renderHints & (RenderHints.GroupTransform | RenderHints.ClipWithScissors)) != 0;
+            ClipMethod rectClipMethod = preferScissors ? ClipMethod.Scissor : ClipMethod.ShaderDiscard;
+
             if (!UIRUtility.IsRoundRect(ve) && !UIRUtility.IsVectorImageBackground(ve))
-            {
-                if ((ve.renderHints & (RenderHints.GroupTransform | RenderHints.ClipWithScissors)) != 0)
-                    return ClipMethod.Scissor;
-                return ClipMethod.ShaderDiscard;
-            }
+                return rectClipMethod;
 
             if (ve.hierarchy.parent?.renderChainData.isStencilClipped == true)
-                return ClipMethod.ShaderDiscard; // Prevent nested stenciling for now, even if inaccurate
+                return rectClipMethod; // Prevent nested stenciling for now, even if inaccurate
 
             return ClipMethod.Stencil;
         }

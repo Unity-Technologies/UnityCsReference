@@ -435,7 +435,8 @@ namespace UnityEditor
             SerializedObject prefabSourceSerializedObject = new SerializedObject(prefabSourceObject);
 
             // Cache SerializedObjects used.
-            List<SerializedObject> serializedObjects = new List<SerializedObject>();
+            var serializedObjects = new List<SerializedObject>();
+            var changedObjects = new HashSet<SerializedObject>();
 
             bool isObjectOnRootInAsset = IsObjectOnRootInAsset(prefabInstanceObject, assetPath);
 
@@ -471,7 +472,7 @@ namespace UnityEditor
             if (!property.hasVisibleChildren)
             {
                 if (property.prefabOverride)
-                    ApplySingleProperty(property, prefabSourceSerializedObject, assetPath, isObjectOnRootInAsset, true, allowApplyDefaultOverride, serializedObjects, action);
+                    ApplySingleProperty(property, prefabSourceSerializedObject, assetPath, isObjectOnRootInAsset, true, allowApplyDefaultOverride, serializedObjects, changedObjects, action);
             }
             else
             {
@@ -497,7 +498,7 @@ namespace UnityEditor
                     // NOTE: all property modifications are leafs except in the context of managed references.
                     // Managed references can be overriden (and have visible children).
                     if (property.prefabOverride && (property.propertyType == SerializedPropertyType.ManagedReference || !property.hasVisibleChildren))
-                        ApplySingleProperty(property, prefabSourceSerializedObject, assetPath, isObjectOnRootInAsset, false, allowApplyDefaultOverride, serializedObjects, action);
+                        ApplySingleProperty(property, prefabSourceSerializedObject, assetPath, isObjectOnRootInAsset, false, allowApplyDefaultOverride, serializedObjects, changedObjects, action);
                 }
             }
 
@@ -506,14 +507,30 @@ namespace UnityEditor
 
             try
             {
-                // Write modified value to prefab source object.
-                for (int i = 0; i < serializedObjects.Count; i++)
+                Action<SerializedObject> saveIfChanged = (SerializedObject serializedObject) =>
                 {
-                    if (serializedObjects[i].ApplyModifiedProperties())
-                        SaveChangesToPrefabFileIfPersistent(serializedObjects[i]);
+                    if (changedObjects.Contains(serializedObject) && serializedObject.ApplyModifiedProperties())
+                    {
+                        SaveChangesToPrefabFileIfPersistent(serializedObject);
 
-                    if (action == InteractionMode.UserAction)
-                        Undo.FlushUndoRecordObjects(); // flush'es ensure that SavePrefab() on undo/redo on the source happens in the right order
+                        if (action == InteractionMode.UserAction)
+                        {
+                            Undo.FlushUndoRecordObjects(); // flush'es ensure that SavePrefab() on undo/redo on the source happens in the right order
+                        }
+                    }
+                };
+
+                // Case 1292519
+                // The Prefab to which the changes are applied is added first in serializedObjects by ApplySingleProperty - it must be saved first
+                // The rest of the objects are collected in reverse dependency order in ApplySingleProperty - starting from the instance where the changes are made down to the original Prefab
+                // Apply the changes and save them in dependency order (reversed array order) to make sure dependent values are saved after the values they depend upon
+                if (serializedObjects.Count > 0)
+                {
+                    saveIfChanged(serializedObjects[0]);
+                    for (int i = serializedObjects.Count - 1; i > 0; i--)
+                    {
+                        saveIfChanged(serializedObjects[i]);
+                    }
                 }
             }
             finally
@@ -622,6 +639,7 @@ namespace UnityEditor
             bool singlePropertyOnly,
             bool allowApplyDefaultOverride,
             List<SerializedObject> serializedObjects,
+            HashSet<SerializedObject> changedObjects,
             InteractionMode action)
         {
             if (!allowApplyDefaultOverride && isObjectOnRootInAsset && IsPropertyOverrideDefaultOverrideComparedToAnySource(instanceProperty))
@@ -649,6 +667,8 @@ namespace UnityEditor
                 if (instanceArrayProperty != null)
                 {
                     prefabSourceSerializedObject.CopyFromSerializedProperty(instanceArrayProperty);
+                    changedObjects.Add(prefabSourceSerializedObject);
+
                     sourceProperty = prefabSourceSerializedObject.FindProperty(instanceProperty.propertyPath);
                     if (sourceProperty == null)
                     {
@@ -665,6 +685,7 @@ namespace UnityEditor
 
             // Copy overridden property value to asset
             prefabSourceSerializedObject.CopyFromSerializedProperty(instanceProperty);
+            changedObjects.Add(prefabSourceSerializedObject);
 
             // Abort if property has reference to object in scene.
             if (sourceProperty.propertyType == SerializedPropertyType.ObjectReference)
@@ -713,18 +734,24 @@ namespace UnityEditor
                     outerPrefabSerializedObject = serializedObjects[sourceIndex];
                 }
 
-                // Case 1172835: When applying a new array size to an inner Prefab, this change won't yet have propogated to the outer Prefabs.
+                // Case 1172835: When applying a new array size to an inner Prefab, this change won't yet have propagated to the outer Prefabs.
                 // This means properties inside the array may not yet exist here.
                 // To handle this, we first copy the serialized value (which correctly handles array size changes)
                 // before we clear the overrides below (by setting outerPrefabProp.prefabOverride = false).
                 var propertyType = instanceProperty.propertyType;
                 if (propertyType == SerializedPropertyType.ArraySize)
+                {
+                    // Do not add outerPrefabSerializedObject to changedObjects
+                    // CopyFromSerializedProperty is necessary to make "index" propertyPaths out of original bounds valid to be able to clear dangling prefabOverrides
+                    // as noted in the comment for Case 1172835, but it should not be applied/saved if there are no prefabOverrides
                     outerPrefabSerializedObject.CopyFromSerializedProperty(instanceProperty);
+                }
 
                 SerializedProperty outerPrefabProp = outerPrefabSerializedObject.FindProperty(instanceProperty.propertyPath);
                 if (outerPrefabProp != null && outerPrefabProp.prefabOverride)
                 {
                     outerPrefabProp.prefabOverride = false;
+                    changedObjects.Add(outerPrefabSerializedObject);
                 }
                 if (outerPrefabProp == null)
                     Debug.LogError($"ApplySingleProperty clear overrides error: SerializedProperty could not be found for {instanceProperty.propertyPath}. Please report a bug.");

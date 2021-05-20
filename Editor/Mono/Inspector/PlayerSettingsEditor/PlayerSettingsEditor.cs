@@ -19,6 +19,7 @@ using GraphicsDeviceType = UnityEngine.Rendering.GraphicsDeviceType;
 using VR = UnityEditorInternal.VR;
 using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 using UnityEngine.Rendering;
+using UnityEditor.Compilation;
 
 // ************************************* READ BEFORE EDITING **************************************
 //
@@ -133,7 +134,7 @@ namespace UnityEditor
             public static readonly GUIContent metalAPIValidation = EditorGUIUtility.TrTextContent("Metal API Validation*");
             public static readonly GUIContent metalFramebufferOnly = EditorGUIUtility.TrTextContent("Metal Write-Only Backbuffer", "Set framebufferOnly flag on backbuffer. This prevents readback from backbuffer but enables some driver optimizations.");
             public static readonly GUIContent framebufferDepthMemorylessMode = EditorGUIUtility.TrTextContent("Memoryless Depth", "Memoryless mode of framebuffer depth");
-            public static readonly GUIContent[] memorylessModeNames = { EditorGUIUtility.TrTextContent("Unused"), EditorGUIUtility.TrTextContent("Forced"), EditorGUIUtility.TrTextContent("Automatic")};
+            public static readonly GUIContent[] memorylessModeNames = { EditorGUIUtility.TrTextContent("Unused"), EditorGUIUtility.TrTextContent("Forced"), EditorGUIUtility.TrTextContent("Automatic") };
             public static readonly GUIContent vulkanEnableSetSRGBWrite = EditorGUIUtility.TrTextContent("SRGB Write Mode*", "If set, enables Graphics.SetSRGBWrite() for toggling sRGB write mode during the frame but may decrease performance especially on tiled GPUs.");
             public static readonly GUIContent vulkanNumSwapchainBuffers = EditorGUIUtility.TrTextContent("Number of swapchain buffers*");
             public static readonly GUIContent vulkanEnableLateAcquireNextImage = EditorGUIUtility.TrTextContent("Acquire swapchain image late as possible*", "If set, renders to a staging image to delay acquiring the swapchain buffer.");
@@ -148,6 +149,7 @@ namespace UnityEditor
             public static readonly GUIContent useOnDemandResources = EditorGUIUtility.TrTextContent("Use on-demand resources*");
             public static readonly GUIContent gcIncremental = EditorGUIUtility.TrTextContent("Use incremental GC", "With incremental Garbage Collection, the Garbage Collector will try to time-slice the collection task into multiple steps, to avoid long GC times preventing content from running smoothly.");
             public static readonly GUIContent assemblyVersionValidation = EditorGUIUtility.TrTextContent("Assembly Version Validation", "When Mono Resolves types from a assembly that is Strong Named, versions have to match with the one already loaded.");
+            public static readonly GUIContent assemblyVersionValidationEditorOnly = EditorGUIUtility.TrTextContent("Assembly Version Validation (editor only)", "When Mono Resolves types from a assembly that is Strong Named, versions have to match with the one already loaded.");
             public static readonly GUIContent accelerometerFrequency = EditorGUIUtility.TrTextContent("Accelerometer Frequency*");
             public static readonly GUIContent cameraUsageDescription = EditorGUIUtility.TrTextContent("Camera Usage Description*", "String shown to the user when requesting permission to use the device camera. Written to the NSCameraUsageDescription field in Xcode project's info.plist file");
             public static readonly GUIContent locationUsageDescription = EditorGUIUtility.TrTextContent("Location Usage Description*", "String shown to the user when requesting permission to access the device location. Written to the NSLocationWhenInUseUsageDescription field in Xcode project's info.plist file.");
@@ -165,7 +167,8 @@ namespace UnityEditor
             public static readonly GUIContent require32 = EditorGUIUtility.TrTextContent("Require ES3.2");
             public static readonly GUIContent skinOnGPU = EditorGUIUtility.TrTextContent("GPU Skinning*", "Use DX11/ES3 GPU Skinning");
             public static readonly GUIContent skinOnGPUCompute = EditorGUIUtility.TrTextContent("Compute Skinning*", "Use Compute pipeline for Skinning");
-            public static readonly GUIContent scriptingDefineSymbols = EditorGUIUtility.TrTextContent("Scripting Define Symbols");
+            public static readonly GUIContent scriptingDefineSymbols = EditorGUIUtility.TrTextContent("Scripting Define Symbols", "Preprocessor defines passed to the C# script compiler.");
+            public static readonly GUIContent suppressCommonWarnings = EditorGUIUtility.TrTextContent("Suppress Common Warnings", "Suppresses C# warnings CS0169 and CS0649.");
             public static readonly GUIContent scriptingBackend = EditorGUIUtility.TrTextContent("Scripting Backend");
             public static readonly GUIContent managedStrippingLevel = EditorGUIUtility.TrTextContent("Managed Stripping Level", "If scripting backend is IL2CPP, managed stripping can't be disabled.");
             public static readonly GUIContent il2cppCompilerConfiguration = EditorGUIUtility.TrTextContent("C++ Compiler Configuration");
@@ -185,7 +188,7 @@ namespace UnityEditor
             public static readonly GUIContent activeInputHandling = EditorGUIUtility.TrTextContent("Active Input Handling*");
             public static readonly GUIContent[] activeInputHandlingOptions = new GUIContent[] { EditorGUIUtility.TrTextContent("Input Manager (Old)"), EditorGUIUtility.TrTextContent("Input System Package (New)"), EditorGUIUtility.TrTextContent("Both") };
             public static readonly GUIContent lightmapEncodingLabel = EditorGUIUtility.TrTextContent("Lightmap Encoding", "Affects the encoding scheme and compression format of the lightmaps.");
-            public static readonly GUIContent[] lightmapEncodingNames = { EditorGUIUtility.TrTextContent("Low Quality"), EditorGUIUtility.TrTextContent("Normal Quality"), EditorGUIUtility.TrTextContent("High Quality")};
+            public static readonly GUIContent[] lightmapEncodingNames = { EditorGUIUtility.TrTextContent("Low Quality"), EditorGUIUtility.TrTextContent("Normal Quality"), EditorGUIUtility.TrTextContent("High Quality") };
             public static readonly GUIContent lightmapStreamingEnabled = EditorGUIUtility.TrTextContent("Lightmap Streaming Enabled", "Only load larger lightmap mipmaps as needed to render the current game cameras. Requires texture streaming to be enabled in quality settings. This value is applied to the light map textures as they are generated.");
             public static readonly GUIContent lightmapStreamingPriority = EditorGUIUtility.TrTextContent("Streaming Priority", "Lightmap mipmap streaming priority when there's contention for resources. Positive numbers represent higher priority. Valid range is -128 to 127. This value is applied to the light map textures as they are generated.");
             public static readonly GUIContent lightmapQualityAndroidWarning = EditorGUIUtility.TrTextContent("The selected Lightmap Encoding requires OpenGL ES 3.0 or Vulkan. Uncheck 'Automatic Graphics API' and remove OpenGL ES 2 API");
@@ -348,6 +351,9 @@ namespace UnityEditor
         // Legacy
         SerializedProperty m_LegacyClampBlendShapeWeights;
 
+        // Scripting
+        SerializedProperty m_SuppressCommonWarnings;
+
         // Localization Cache
         string m_LocalizedTargetName;
 
@@ -448,6 +454,7 @@ namespace UnityEditor
             m_EnableInputSystem             = FindPropertyAssert("enableNativePlatformBackendsForNewInputSystem");
             m_DisableInputManager           = FindPropertyAssert("disableOldInputManagerSupport");
 
+            m_SuppressCommonWarnings        = FindPropertyAssert("suppressCommonWarnings");
             m_AllowUnsafeCode               = FindPropertyAssert("allowUnsafeCode");
             m_GCIncremental                 = FindPropertyAssert("gcIncremental");
             m_AssemblyVersionValidation = FindPropertyAssert("assemblyVersionValidation");
@@ -900,10 +907,10 @@ namespace UnityEditor
 
                             GUILayout.Label(SettingsContent.allowedOrientationTitle, EditorStyles.boldLabel);
 
-                            bool somethingAllowed =     m_AllowedAutoRotateToPortrait.boolValue
-                                ||  m_AllowedAutoRotateToPortraitUpsideDown.boolValue
-                                ||  m_AllowedAutoRotateToLandscapeRight.boolValue
-                                ||  m_AllowedAutoRotateToLandscapeLeft.boolValue;
+                            bool somethingAllowed = m_AllowedAutoRotateToPortrait.boolValue
+                                || m_AllowedAutoRotateToPortraitUpsideDown.boolValue
+                                || m_AllowedAutoRotateToLandscapeRight.boolValue
+                                || m_AllowedAutoRotateToLandscapeLeft.boolValue;
 
                             if (!somethingAllowed)
                             {
@@ -911,10 +918,10 @@ namespace UnityEditor
                                 Debug.LogError("All orientations are disabled. Allowing portrait");
                             }
 
-                            EditorGUILayout.PropertyField(m_AllowedAutoRotateToPortrait,            SettingsContent.allowedAutoRotateToPortrait);
-                            EditorGUILayout.PropertyField(m_AllowedAutoRotateToPortraitUpsideDown,  SettingsContent.allowedAutoRotateToPortraitUpsideDown);
-                            EditorGUILayout.PropertyField(m_AllowedAutoRotateToLandscapeRight,          SettingsContent.allowedAutoRotateToLandscapeRight);
-                            EditorGUILayout.PropertyField(m_AllowedAutoRotateToLandscapeLeft,           SettingsContent.allowedAutoRotateToLandscapeLeft);
+                            EditorGUILayout.PropertyField(m_AllowedAutoRotateToPortrait, SettingsContent.allowedAutoRotateToPortrait);
+                            EditorGUILayout.PropertyField(m_AllowedAutoRotateToPortraitUpsideDown, SettingsContent.allowedAutoRotateToPortraitUpsideDown);
+                            EditorGUILayout.PropertyField(m_AllowedAutoRotateToLandscapeRight, SettingsContent.allowedAutoRotateToLandscapeRight);
+                            EditorGUILayout.PropertyField(m_AllowedAutoRotateToLandscapeLeft, SettingsContent.allowedAutoRotateToLandscapeLeft);
 
                             EditorGUI.indentLevel--;
                         }
@@ -1443,7 +1450,7 @@ namespace UnityEditor
         {
             using (new EditorGUI.DisabledScope(true))
             {
-                EditorGUI.Popup(EditorGUILayout.GetControlRect(true), uiString, 0, new GUIContent[] {selected});
+                EditorGUI.Popup(EditorGUILayout.GetControlRect(true), uiString, 0, new GUIContent[] { selected });
             }
         }
 
@@ -1589,7 +1596,7 @@ namespace UnityEditor
                 if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS)
                     EditorGUILayout.PropertyField(m_MetalForceHardShadows, SettingsContent.metalForceHardShadows);
 
-                int[] memorylessModeValues = {0, 1, 2};
+                int[] memorylessModeValues = { 0, 1, 2 };
                 BuildEnumPopup(m_FramebufferDepthMemorylessMode, SettingsContent.framebufferDepthMemorylessMode, memorylessModeValues, SettingsContent.memorylessModeNames);
             }
 
@@ -1766,7 +1773,7 @@ namespace UnityEditor
                 {
                     EditorGUI.BeginChangeCheck();
                     LightmapEncodingQuality encodingQuality = PlayerSettings.GetLightmapEncodingQualityForPlatformGroup(targetGroup);
-                    LightmapEncodingQuality[] lightmapEncodingValues = {LightmapEncodingQuality.Low, LightmapEncodingQuality.Normal, LightmapEncodingQuality.High};
+                    LightmapEncodingQuality[] lightmapEncodingValues = { LightmapEncodingQuality.Low, LightmapEncodingQuality.Normal, LightmapEncodingQuality.High };
                     LightmapEncodingQuality newEncodingQuality = BuildEnumPopup(SettingsContent.lightmapEncodingLabel, encodingQuality, lightmapEncodingValues, SettingsContent.lightmapEncodingNames);
                     if (EditorGUI.EndChangeCheck() && encodingQuality != newEncodingQuality)
                     {
@@ -1855,7 +1862,7 @@ namespace UnityEditor
                             D3DHDRDisplayBitDepth bitDepth = PlayerSettings.D3DHDRBitDepth;
                             D3DHDRDisplayBitDepth[] bitDepthValues = { D3DHDRDisplayBitDepth.D3DHDRDisplayBitDepth10, D3DHDRDisplayBitDepth.D3DHDRDisplayBitDepth16 };
                             GUIContent HDRBitDepthLabel = EditorGUIUtility.TrTextContent("Swap Chain Bit Depth", "Affects the bit depth of the final swap chain format and color space.");
-                            GUIContent[] HDRBitDepthNames = { EditorGUIUtility.TrTextContent("Bit Depth 10"),  EditorGUIUtility.TrTextContent("Bit Depth 16")};
+                            GUIContent[] HDRBitDepthNames = { EditorGUIUtility.TrTextContent("Bit Depth 10"), EditorGUIUtility.TrTextContent("Bit Depth 16") };
 
                             bitDepth = BuildEnumPopup(HDRBitDepthLabel, bitDepth, bitDepthValues, HDRBitDepthNames);
                             if (EditorGUI.EndChangeCheck())
@@ -2092,10 +2099,8 @@ namespace UnityEditor
                     }
                 }
 
-                using (new EditorGUI.DisabledScope(PlayerSettings.GetScriptingBackend(targetGroup) != ScriptingImplementation.Mono2x))
-                {
-                    EditorGUILayout.PropertyField(m_AssemblyVersionValidation, SettingsContent.assemblyVersionValidation);
-                }
+                EditorGUILayout.PropertyField(m_AssemblyVersionValidation,
+                    (PlayerSettings.GetScriptingBackend(targetGroup) != ScriptingImplementation.Mono2x) ? SettingsContent.assemblyVersionValidationEditorOnly : SettingsContent.assemblyVersionValidation);
             }
 
             bool showPrivacyPermissions =
@@ -2166,6 +2171,18 @@ namespace UnityEditor
                 {
                     Undo.RecordObject(this.target, SettingsContent.undoChangedScriptingDefineString);
                     PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, scriptDefines);
+                }
+            }
+
+            // Suppress common warnings
+            EditorGUI.BeginChangeCheck();
+            EditorGUILayout.PropertyField(m_SuppressCommonWarnings, SettingsContent.suppressCommonWarnings);
+            if (EditorGUI.EndChangeCheck())
+            {
+                if (PlayerSettings.suppressCommonWarnings != m_SuppressCommonWarnings.boolValue)
+                {
+                    PlayerSettings.suppressCommonWarnings = m_SuppressCommonWarnings.boolValue;
+                    CompilationPipeline.RequestScriptCompilation();
                 }
             }
 

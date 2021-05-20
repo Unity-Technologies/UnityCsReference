@@ -44,10 +44,13 @@ namespace UnityEditor.Scripting.Compilers
             var arguments = new List<string>
             {
                 "/target:library",
-                "/nowarn:0169",
-                "/nowarn:0649",
                 "/out:" + assemblyOutputPath
             };
+
+            if (assembly.CompilerOptions.AdditionalCompilerArguments != null)
+            {
+                arguments.AddRange(assembly.CompilerOptions.AdditionalCompilerArguments);
+            }
 
             if (assembly.CompilerOptions.AllowUnsafeCode)
             {
