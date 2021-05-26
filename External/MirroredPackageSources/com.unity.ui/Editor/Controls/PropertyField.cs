@@ -100,8 +100,10 @@ namespace UnityEditor.UIElements
             if (handler.hasPropertyDrawer)
             {
                 var customPropertyGUI = handler.propertyDrawer.CreatePropertyGUI(m_SerializedProperty);
+
                 if (customPropertyGUI == null)
                 {
+                    GUIContent customLabel = string.IsNullOrEmpty(label) ? null : new GUIContent(label);
                     customPropertyGUI = new IMGUIContainer(() =>
                     {
                         var originalWideMode = InspectorElement.SetWideModeForWidth(this);
@@ -114,7 +116,7 @@ namespace UnityEditor.UIElements
                             EditorGUI.BeginChangeCheck();
                             m_SerializedProperty.serializedObject.Update();
 
-                            EditorGUILayout.PropertyField(m_SerializedProperty, true);
+                            EditorGUILayout.PropertyField(m_SerializedProperty, customLabel, true);
 
                             m_SerializedProperty.serializedObject.ApplyModifiedProperties();
                             if (EditorGUI.EndChangeCheck())

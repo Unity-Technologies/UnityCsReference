@@ -2,25 +2,29 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-//using UnityEngine;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using Unity.Profiling;
 
 namespace UnityEngine
 {
     public sealed partial class StaticBatchingUtility
     {
+        internal static ProfilerMarker s_CombineMarker = new ProfilerMarker("StaticBatching.Combine");
+        internal static ProfilerMarker s_SortMarker = new ProfilerMarker("StaticBatching.SortObjects");
+        internal static ProfilerMarker s_MakeBatchMarker = new ProfilerMarker("StaticBatching.MakeBatch");
+
         static public void Combine(GameObject staticBatchRoot)
         {
-            InternalStaticBatchingUtility.CombineRoot(staticBatchRoot, null);
+            using (s_CombineMarker.Auto())
+                InternalStaticBatchingUtility.CombineRoot(staticBatchRoot, null);
         }
 
         static public void Combine(GameObject[] gos, GameObject staticBatchRoot)
         {
-            InternalStaticBatchingUtility.CombineGameObjects(gos, staticBatchRoot, false, null);
+            using (s_CombineMarker.Auto())
+                InternalStaticBatchingUtility.CombineGameObjects(gos, staticBatchRoot, false, null);
         }
     }
 
@@ -57,20 +61,43 @@ namespace UnityEngine
             CombineGameObjects(gos, staticBatchRoot, isEditorPostprocessScene, sorter);
         }
 
-        public static GameObject[] SortGameObjectsForStaticbatching(GameObject[] gos, StaticBatcherGOSorter sorter)
+        static uint GetMeshFormatHash(Mesh mesh)
         {
-            gos = gos.OrderBy(x =>
+            if (mesh == null)
+                return 0;
+            uint res = 1;
+            var count = mesh.vertexAttributeCount;
+            for (var i = 0; i < count; ++i)
             {
-                Renderer aRenderer = StaticBatcherGOSorter.GetRenderer(x);
-                return sorter.GetMaterialId(aRenderer);
-            }).ThenBy(y =>
+                var attr = mesh.GetVertexAttribute(i);
+                uint bits = (uint)(attr.attribute) | ((uint)(attr.format) << 4) | ((uint)attr.dimension << 8);
+                res = res * 2654435761 + bits; // constant from Knuth's multiplicative hash
+            }
+            return res;
+        }
+
+        static GameObject[] SortGameObjectsForStaticBatching(GameObject[] gos, StaticBatcherGOSorter sorter)
+        {
+            // Note: LINQ sorting *looks* like it would be less efficient than e.g. Array.Sort,
+            // but it's actually much faster -- internally it computes sorting keys for GOs
+            // basically once; whereas Array.Sort would be calling the comparison operator
+            // many times.
+            gos = gos.OrderBy(g =>
+            {
+                var r = StaticBatcherGOSorter.GetRenderer(g);
+                return sorter.GetMaterialId(r);
+            }).ThenBy(g =>
                 {
-                    Renderer aRenderer = StaticBatcherGOSorter.GetRenderer(y);
-                    return sorter.GetLightmapIndex(aRenderer);
-                }).ThenBy(z =>
+                    var r = StaticBatcherGOSorter.GetRenderer(g);
+                    return sorter.GetLightmapIndex(r);
+                }).ThenBy(g =>
                 {
-                    Renderer aRenderer = StaticBatcherGOSorter.GetRenderer(z);
-                    return sorter.GetRendererId(aRenderer);
+                    var mesh = StaticBatcherGOSorter.GetMesh(g);
+                    return GetMeshFormatHash(mesh);
+                }).ThenBy(g =>
+                {
+                    var r = StaticBatcherGOSorter.GetRenderer(g);
+                    return sorter.GetRendererId(r);
                 }).ToArray();
             return gos;
         }
@@ -89,8 +116,10 @@ namespace UnityEngine
             int verticesInBatch = 0;
             List<MeshSubsetCombineUtility.MeshContainer> meshes = new List<MeshSubsetCombineUtility.MeshContainer>();
 
-            gos = SortGameObjectsForStaticbatching(gos, sorter ?? new StaticBatcherGOSorter());
+            using (StaticBatchingUtility.s_SortMarker.Auto())
+                gos = SortGameObjectsForStaticBatching(gos, sorter ?? new StaticBatcherGOSorter());
 
+            uint prevMeshFormatHash = 0;
             foreach (GameObject go in gos)
             {
                 MeshFilter filter = go.GetComponent(typeof(MeshFilter)) as MeshFilter;
@@ -102,6 +131,9 @@ namespace UnityEngine
                 // reject if has no mesh or (mesh not readable and not called from Editor PostprocessScene.cs)
                 // Editor is allowed to modify meshes even if they are marked as read-only e.g. Applicatiopn.LoadLevel() called from a script inside the editor player
                 if (instanceMesh == null || (!isEditorPostprocessScene && !instanceMesh.canAccess))
+                    continue;
+
+                if (!StaticBatchingHelper.IsMeshBatchable(instanceMesh))
                     continue;
 
                 Renderer renderer = filter.GetComponent<Renderer>();
@@ -140,13 +172,17 @@ namespace UnityEngine
                     }
                 }
 
-                // check if we have enough space inside the current batch
-                if (verticesInBatch + vertexCount > MaxVerticesInBatch)
+                var meshFormatHash = GetMeshFormatHash(instanceMesh);
+
+                // flush previous batch if it got large enough, or the mesh vertex format has changed
+                if (verticesInBatch + vertexCount > MaxVerticesInBatch || meshFormatHash != prevMeshFormatHash)
                 {
                     MakeBatch(meshes, staticBatchRootTransform, batchIndex++);
                     meshes.Clear();
                     verticesInBatch = 0;
                 }
+
+                prevMeshFormatHash = meshFormatHash;
 
                 MeshSubsetCombineUtility.MeshInstance instance = new MeshSubsetCombineUtility.MeshInstance();
                 instance.meshInstanceID = instanceMesh.GetInstanceID();
@@ -209,47 +245,51 @@ namespace UnityEngine
             if (meshes.Count < 2)
                 return;
 
-            List<MeshSubsetCombineUtility.MeshInstance> meshInstances = new List<MeshSubsetCombineUtility.MeshInstance>();
-            List<MeshSubsetCombineUtility.SubMeshInstance> allSubMeshInstances = new List<MeshSubsetCombineUtility.SubMeshInstance>();
-            foreach (MeshSubsetCombineUtility.MeshContainer mesh in meshes)
+            using (StaticBatchingUtility.s_MakeBatchMarker.Auto())
             {
-                meshInstances.Add(mesh.instance);
-                allSubMeshInstances.AddRange(mesh.subMeshInstances);
-            }
-
-            string combinedMeshName = CombinedMeshPrefix;
-            combinedMeshName += " (root: " + ((staticBatchRootTransform != null) ? staticBatchRootTransform.name : "scene") + ")";
-            if (batchIndex > 0)
-                combinedMeshName += " " + (batchIndex + 1);
-
-            Mesh combinedMesh = StaticBatchingHelper.InternalCombineVertices(meshInstances.ToArray(), combinedMeshName);
-            StaticBatchingHelper.InternalCombineIndices(allSubMeshInstances.ToArray(), combinedMesh);
-            int totalSubMeshCount = 0;
-
-            foreach (MeshSubsetCombineUtility.MeshContainer mesh in meshes)
-            {
-                // Changing the mesh resets the static batch info, so we have to assign sharedMesh first
-                MeshFilter filter = (MeshFilter)mesh.gameObject.GetComponent(typeof(MeshFilter));
-                filter.sharedMesh = combinedMesh;
-
-                int subMeshCount = mesh.subMeshInstances.Count;
-                Renderer renderer = mesh.gameObject.GetComponent<Renderer>();
-                renderer.SetStaticBatchInfo(totalSubMeshCount, subMeshCount);
-                renderer.staticBatchRootTransform = staticBatchRootTransform;
-
-                // For some reason if GOs were created dynamically
-                // then we need to toggle renderer to avoid caching old geometry
-                renderer.enabled = false;
-                renderer.enabled = true;
-
-                // Remove additionalVertexStreams and enlightenVertexStream, all their data has been copied into the combined mesh.
-                MeshRenderer meshRenderer = renderer as MeshRenderer;
-                if (meshRenderer != null)
+                List<MeshSubsetCombineUtility.MeshInstance> meshInstances = new List<MeshSubsetCombineUtility.MeshInstance>();
+                List<MeshSubsetCombineUtility.SubMeshInstance> allSubMeshInstances = new List<MeshSubsetCombineUtility.SubMeshInstance>();
+                foreach (MeshSubsetCombineUtility.MeshContainer mesh in meshes)
                 {
-                    meshRenderer.additionalVertexStreams = null;
-                    meshRenderer.enlightenVertexStream = null;
+                    meshInstances.Add(mesh.instance);
+                    allSubMeshInstances.AddRange(mesh.subMeshInstances);
                 }
-                totalSubMeshCount += subMeshCount;
+
+                string combinedMeshName = CombinedMeshPrefix;
+                combinedMeshName += " (root: " + ((staticBatchRootTransform != null) ? staticBatchRootTransform.name : "scene") + ")";
+                if (batchIndex > 0)
+                    combinedMeshName += " " + (batchIndex + 1);
+
+                Mesh combinedMesh = StaticBatchingHelper.InternalCombineVertices(meshInstances.ToArray(), combinedMeshName);
+                StaticBatchingHelper.InternalCombineIndices(allSubMeshInstances.ToArray(), combinedMesh);
+                int totalSubMeshCount = 0;
+
+                foreach (MeshSubsetCombineUtility.MeshContainer mesh in meshes)
+                {
+                    // Changing the mesh resets the static batch info, so we have to assign sharedMesh first
+                    MeshFilter filter = (MeshFilter)mesh.gameObject.GetComponent(typeof(MeshFilter));
+                    filter.sharedMesh = combinedMesh;
+
+                    int subMeshCount = mesh.subMeshInstances.Count;
+                    Renderer renderer = mesh.gameObject.GetComponent<Renderer>();
+                    renderer.SetStaticBatchInfo(totalSubMeshCount, subMeshCount);
+                    renderer.staticBatchRootTransform = staticBatchRootTransform;
+
+                    // For some reason if GOs were created dynamically
+                    // then we need to toggle renderer to avoid caching old geometry
+                    renderer.enabled = false;
+                    renderer.enabled = true;
+
+                    // Remove additionalVertexStreams and enlightenVertexStream, all their data has been copied into the combined mesh.
+                    MeshRenderer meshRenderer = renderer as MeshRenderer;
+                    if (meshRenderer != null)
+                    {
+                        meshRenderer.additionalVertexStreams = null;
+                        meshRenderer.enlightenVertexStream = null;
+                    }
+
+                    totalSubMeshCount += subMeshCount;
+                }
             }
         }
 
@@ -279,6 +319,16 @@ namespace UnityEngine
                     return null;
 
                 return filter.GetComponent<Renderer>();
+            }
+
+            public static Mesh GetMesh(GameObject go)
+            {
+                if (go == null)
+                    return null;
+                var filter = go.GetComponent<MeshFilter>();
+                if (filter == null)
+                    return null;
+                return filter.sharedMesh;
             }
 
             public virtual long GetRendererId(Renderer renderer)
