@@ -72,6 +72,10 @@ namespace UnityEditor
             m_PlayModeView.m_Parent.SetAsStartView();
             m_PlayModeView.m_Parent.SetAsLastPlayModeView();
 
+            //GameView should be actively focussed If Playmode is entered in maximized state - case 1252097
+            if (m_PlayModeView.maximized)
+                m_PlayModeView.m_Parent.Focus();
+
             Toolbar.RepaintToolbar();
         }
 

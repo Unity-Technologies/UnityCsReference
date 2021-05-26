@@ -81,7 +81,7 @@ namespace UnityEditor.PackageManager.UI
 
         public virtual string GetParentDirectory(string directoryPath) => new NPath(directoryPath).Parent.ToString(SlashMode.Native);
 
-        public virtual bool IsDirectoryEmpty(string directoryPath) => new NPath(directoryPath).Contents().Any();
+        public virtual bool IsDirectoryEmpty(string directoryPath) => new NPath(directoryPath).Contents().Length == 0;
 
         public virtual bool DirectoryExists(string directoryPath) => new NPath(directoryPath).DirectoryExists();
 

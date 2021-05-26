@@ -3,9 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor.Build;
 using System.Text;
+using UnityEditorInternal;
 using UnityEngine.SceneManagement;
 
 namespace UnityEditor
@@ -19,50 +21,56 @@ namespace UnityEditor
             PlayerSettings.GetBatchingForPlatform(EditorUserBuildSettings.activeBuildTarget, out staticBatching, out dynamicBatching);
             if (staticBatching != 0)
             {
-                InternalStaticBatchingUtility.Combine(null, true, true, new EditorStaticBatcherGOSorter(scene));
+                using (StaticBatchingUtility.s_CombineMarker.Auto())
+                    InternalStaticBatchingUtility.Combine(null, true, true, new EditorStaticBatcherGOSorter(scene));
             }
         }
 
         internal class EditorStaticBatcherGOSorter : InternalStaticBatchingUtility.StaticBatcherGOSorter
         {
-            Scene scene;
+            readonly ulong scenePathHash;
 
             public EditorStaticBatcherGOSorter(Scene scene)
             {
-                this.scene = scene;
+                scenePathHash = Hash128.Compute(AssetDatabase.AssetPathToGUID(scene.path)).u64_0;
             }
 
-            private static long GetStableHash(UnityEngine.Object instance, string guid)
+            Dictionary<int, ulong> assetHashCache = new Dictionary<int, ulong>();
+            ulong GetStableAssetHash(UnityEngine.Object obj)
             {
-                var lfid = UnityEditor.Unsupported.GetFileIDHint(instance);
+                if (obj == null)
+                    return 0;
+                int id = obj.GetInstanceID();
+                if (assetHashCache.TryGetValue(id, out var hash))
+                    return hash;
+                if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(id, out var guid, out long _))
+                    guid = string.Empty;
+                hash = Hash128.Compute(guid).u64_0;
+                assetHashCache.Add(id, hash);
+                return hash;
+            }
 
-                using (var md5Hash = System.Security.Cryptography.MD5.Create())
-                {
-                    var bytes = Encoding.ASCII.GetBytes(guid);
-                    md5Hash.TransformBlock(bytes, 0, bytes.Length, null, 0);
-                    bytes = BitConverter.GetBytes(lfid);
-                    md5Hash.TransformFinalBlock(bytes, 0, bytes.Length);
-                    return BitConverter.ToInt64(md5Hash.Hash, 0);
-                }
+            static long GetStableHash(UnityEngine.Object obj, ulong assetHash)
+            {
+                var fileIdHint = Unsupported.GetFileIDHint(obj);
+                return (long)(fileIdHint * 1181783497276652981UL + assetHash);
             }
 
             public override long GetMaterialId(Renderer renderer)
             {
-                if (renderer == null || renderer.sharedMaterial == null)
+                if (renderer == null)
                     return 0;
-
-                string path = AssetDatabase.GetAssetPath(renderer.sharedMaterial);
-                string guid = AssetDatabase.AssetPathToGUID(path);
-                return GetStableHash(renderer.sharedMaterial, guid);
+                var mat = renderer.sharedMaterial;
+                if (mat == null)
+                    return 0;
+                return GetStableHash(mat, GetStableAssetHash(mat));
             }
 
             public override long GetRendererId(Renderer renderer)
             {
                 if (renderer == null)
                     return -1;
-
-                string guid = AssetDatabase.AssetPathToGUID(scene.path);
-                return GetStableHash(renderer, guid);
+                return GetStableHash(renderer, scenePathHash);
             }
         }
     }

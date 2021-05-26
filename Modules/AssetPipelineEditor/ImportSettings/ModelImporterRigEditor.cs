@@ -55,6 +55,9 @@ namespace UnityEditor
         SerializedProperty m_HumanBoneArray;
         [CacheProperty("m_HumanDescription.m_Skeleton")]
         SerializedProperty m_Skeleton;
+
+        [CacheProperty]
+        SerializedProperty m_AutoGenerateAvatarMappingIfUnspecified;
 #pragma warning restore 0649
 
         private static bool importMessageFoldout = false;
@@ -300,7 +303,14 @@ namespace UnityEditor
                         Rect r = EditorGUILayout.GetControlRect(true, EditorGUI.kSingleLineHeight, EditorStyles.popup);
                         var value = (ModelImporterAvatarSetup)EditorGUI.EnumPopup(r, propertyField.content, (ModelImporterAvatarSetup)m_AvatarSetup.intValue, e => (ModelImporterAvatarSetup)e != ModelImporterAvatarSetup.NoAvatar);
                         if (change.changed)
+                        {
                             m_AvatarSetup.intValue = (int)value;
+
+                            //Case 1213138 - When changing avatar setup value, we must reset the human, skeleton & auto-mapping to their default values.
+                            //NB: This fix will be defunct once we have a reference-based solution for copying avatars.
+                            AvatarSetupTool.ClearAll(m_HumanBoneArray, m_Skeleton);
+                            m_AutoGenerateAvatarMappingIfUnspecified.boolValue = true;
+                        }
                     }
 
                     EditorGUI.showMixedValue = false;

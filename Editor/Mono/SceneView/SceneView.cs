@@ -2706,7 +2706,18 @@ namespace UnityEditor
         public Vector3 pivot { get { return m_Position.value; } set { m_Position.value = value; } }
 
         // The direction of the scene view.
-        public Quaternion rotation { get { return m_Rotation.value; } set { m_Rotation.value = value; } }
+        public Quaternion rotation
+        {
+            get => m_2DMode ? Quaternion.identity : m_Rotation.value;
+
+            set
+            {
+                if (m_2DMode)
+                    Debug.LogWarning("SceneView rotation is fixed to identity when in 2D mode. This will be an error in future versions of Unity.");
+                else
+                    m_Rotation.value = value;
+            }
+        }
 
         static float ValidateSceneSize(float value)
         {
@@ -2877,7 +2888,7 @@ namespace UnityEditor
             SceneVisibilityManager.instance.enableSceneVisibility = m_SceneVisActive;
             ResetIfNaN();
 
-            m_Camera.transform.rotation = m_Rotation.value;
+            m_Camera.transform.rotation = m_2DMode ? Quaternion.identity : m_Rotation.value;
 
             float fov = m_Ortho.Fade(perspectiveFov, 0);
 

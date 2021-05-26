@@ -192,7 +192,7 @@ namespace UnityEditor
 
         override public void OnInspectorGUI(InitialModuleUI initial)
         {
-            GUIFloat(s_Texts.duration, m_LengthInSec, "f2");
+            GUIFloat(s_Texts.duration, m_LengthInSec);
 
             EditorGUI.BeginChangeCheck();
             bool looping = GUIToggle(s_Texts.looping, m_Looping);

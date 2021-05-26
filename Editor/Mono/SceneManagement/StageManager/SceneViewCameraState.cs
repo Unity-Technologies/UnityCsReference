@@ -41,7 +41,8 @@ namespace UnityEditor
             view.sceneViewState = new SceneView.SceneViewState(sceneViewState);
             view.in2DMode = in2DMode;
             view.pivot = pivot;
-            view.rotation = rotation;
+            if (!view.in2DMode)
+                view.rotation = rotation;
             view.size = size;
             view.orthographic = orthographic;
             view.SkipFading();
