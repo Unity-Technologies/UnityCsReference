@@ -65,9 +65,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             if (!string.IsNullOrEmpty(warningMessage) &&
-                EditorUtility.DisplayDialog(L10n.Tr("Unity Package Manager"),
+                !EditorUtility.DisplayDialog(L10n.Tr("Unity Package Manager"),
                     warningMessage + L10n.Tr(" Are you sure you want to continue?"),
-                    L10n.Tr("No"), L10n.Tr("Yes")))
+                    L10n.Tr("Yes"), L10n.Tr("No")))
             {
                 return;
             }
@@ -94,7 +94,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (m_Sample.isImported)
             {
                 importStatus.AddToClassList("imported");
-                importButton.text = L10n.Tr("Import again");
+                importButton.text = L10n.Tr("Reimport");
             }
             else if (m_Sample.previousImports.Count != 0)
             {

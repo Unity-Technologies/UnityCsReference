@@ -11,19 +11,24 @@ using ExperimentalMemoryProfiler = UnityEngine.Profiling.Memory.Experimental.Mem
 
 namespace UnityEditor.Profiling.Memory.Experimental
 {
-    // !!!!! NOTE: Keep in sync with Runtime\Profiler\MemorySnapshots.cpp
     public class PackedMemorySnapshot : IDisposable
     {
-        static readonly UInt32 kMinSupportedVersion = 8;
-        static readonly UInt32 kCurrentVersion = 10;
+        // !!!!! NOTE: Keep in sync with Runtime/Profiler/MemorySnapshots.h/.cpp
+        internal enum FormatHistory : uint
+        {
+            SnapshotMinSupportedFormatVersion = 8, //Added metadata to file, min supported version for capture
+            NativeConnectionsAsInstanceIdsVersion = 10, //native object collection reworked, added new gchandleIndex array to native objects for fast managed object access
+            ProfileTargetInfoAndMemStatsVersion = 11, //added profile target info and memory summary struct
+            MemLabelSizeAndHeapIdVersion = 12 //current version, added gc heap / vm heap identification encoded within each heap address and memory label size reporting
+        };
 
         public static PackedMemorySnapshot Load(string path)
         {
             MemorySnapshotFileReader reader = new MemorySnapshotFileReader(path);
 
-            UInt32 ver = reader.GetDataSingle(EntryType.Metadata_Version, ConversionFunctions.ToUInt32);
+            uint ver = reader.GetDataSingle(EntryType.Metadata_Version, ConversionFunctions.ToUInt32);
 
-            if (ver < kMinSupportedVersion)
+            if (ver < (uint)FormatHistory.SnapshotMinSupportedFormatVersion)
             {
                 throw new Exception(string.Format("Memory snapshot at {0}, is using an older format version: {1}", new object[] { reader.GetFilePath(), ver.ToString() }));
             }
@@ -45,8 +50,8 @@ namespace UnityEditor.Profiling.Memory.Experimental
                 return false;
             }
 
-            //snapshot version will always be the current one for convertion operations
-            writer.WriteEntry(EntryType.Metadata_Version, kCurrentVersion);
+            //snapshot version will always be the remap connections version as that is the last change affecting this format
+            writer.WriteEntry(EntryType.Metadata_Version, (uint)FormatHistory.NativeConnectionsAsInstanceIdsVersion);
 
             //timestamp with conversion date
             writer.WriteEntry(EntryType.Metadata_RecordDate, (ulong)DateTime.Now.Ticks);
@@ -75,7 +80,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
             for (int i = 0; i < snapshot.managedHeapSections.Length; ++i)
             {
                 var heapSection = snapshot.managedHeapSections[i];
-                writer.WriteEntry(EntryType.ManagedHeapSections_StartAddress, heapSection.startAddress);
+                writer.WriteEntry(EntryType.ManagedHeapSections_StartAddress, heapSection.m_StartAddress);
                 writer.WriteEntryArray(EntryType.ManagedHeapSections_Bytes, heapSection.m_Bytes);
             }
 
@@ -210,14 +215,14 @@ namespace UnityEditor.Profiling.Memory.Experimental
             connections = new ConnectionEntries(m_Reader);
             fieldDescriptions = new FieldDescriptionEntries(m_Reader);
             gcHandles = new GCHandleEntries(m_Reader);
-            managedHeapSections = new ManagedMemorySectionEntries(m_Reader, EntryType.ManagedHeapSections_StartAddress);
-            managedStacks = new ManagedMemorySectionEntries(m_Reader, EntryType.ManagedStacks_StartAddress);
+            managedHeapSections = new ManagedMemorySectionEntries(m_Reader, EntryType.ManagedHeapSections_StartAddress, version >= (uint)FormatHistory.MemLabelSizeAndHeapIdVersion);
+            managedStacks = new ManagedMemorySectionEntries(m_Reader, EntryType.ManagedStacks_StartAddress, false);
             nativeAllocations = new NativeAllocationEntries(m_Reader);
             nativeAllocationSites = new NativeAllocationSiteEntries(m_Reader);
             nativeCallstackSymbols = new NativeCallstackSymbolEntries(m_Reader);
             nativeMemoryLabels = new NativeMemoryLabelEntries(m_Reader);
             nativeMemoryRegions = new NativeMemoryRegionEntries(m_Reader);
-            nativeObjects = new NativeObjectEntries(m_Reader, version == kCurrentVersion);
+            nativeObjects = new NativeObjectEntries(m_Reader, version >= (uint)FormatHistory.NativeConnectionsAsInstanceIdsVersion);
             nativeRootReferences = new NativeRootReferenceEntries(m_Reader);
             nativeTypes = new NativeTypeEntries(m_Reader);
             typeDescriptions = new TypeDescriptionEntries(m_Reader);
@@ -292,7 +297,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
 
             unsafe
             {
-                value = new string('\0', stringLength);
+                value = new string('A', stringLength);
                 fixed(char* p = value)
                 {
                     char* begin = p;
