@@ -551,11 +551,12 @@ namespace UnityEditor
             if (PrefabUtility.GetPrefabInstanceStatus(go) != PrefabInstanceStatus.Connected)
                 return;
 
-            // We can't simply check if the go is part of an immutable prefab, since that would check the asset of the
-            // outermost prefab this go is part of. Instead we have to check original source or variant root
-            // - the same one that would get opened if clicking the arrow.
             var source = PrefabUtility.GetOriginalSourceOrVariantRoot(go);
-            if (source == null || PrefabUtility.IsPartOfImmutablePrefab(source))
+            if (source == null)
+                return;
+
+            // Don't show buttons for model prefabs but allow buttons for other immutables
+            if (PrefabUtility.IsPartOfModelPrefab(source))
                 return;
 
             item.showPrefabModeButton = true;
