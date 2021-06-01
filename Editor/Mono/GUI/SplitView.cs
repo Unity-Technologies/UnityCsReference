@@ -457,6 +457,7 @@ namespace UnityEditor
             Reflow();
             RecalcMinMaxAndReflowAll(this);
             newDockArea.MakeVistaDWMHappyDance();
+            dropWindow.Focus();
             return true;
         }
 
