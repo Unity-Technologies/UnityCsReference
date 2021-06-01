@@ -38,6 +38,7 @@ namespace UnityEditor
             }
 
             // Grab this as the offset to the top of the drag target.
+            GUILayout.Space(5);
             base.OnInspectorGUI();
 
             if (targets.Length == 1)

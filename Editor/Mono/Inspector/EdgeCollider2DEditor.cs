@@ -42,6 +42,7 @@ namespace UnityEditor
         public override void OnInspectorGUI()
         {
             BeginColliderInspector();
+            GUILayout.Space(5);
             base.OnInspectorGUI();
 
             EditorGUILayout.PropertyField(m_EdgeRadius);

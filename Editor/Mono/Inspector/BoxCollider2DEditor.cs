@@ -55,6 +55,7 @@ namespace UnityEditor
             else
                 EditorGUILayout.EditorToolbarForTarget(EditorGUIUtility.TrTempContent("Edit Collider"), target);
 
+            GUILayout.Space(5);
             base.OnInspectorGUI();
 
             EditorGUILayout.PropertyField(m_Size);
