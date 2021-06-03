@@ -156,6 +156,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 "System.Numerics.dll",
                 "System.Numerics.Vectors.dll",
                 "System.Net.Http.dll",
+                "System.IO.Compression.dll",
                 "Microsoft.CSharp.dll",
                 "System.Data.dll",
             };

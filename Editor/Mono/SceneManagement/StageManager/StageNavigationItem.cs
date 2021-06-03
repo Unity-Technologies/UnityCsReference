@@ -17,7 +17,6 @@ namespace UnityEditor.SceneManagement
         internal static StageNavigationItem CreatePrefabStage(string prefabAssetPath) { return new StageNavigationItem(prefabAssetPath); }
 
         string m_PrefabAssetPath;   // main state that are used when stage is in memory
-        string m_PrefabAssetGUID;   // only used for serializing to fix if asset was moved while Unity was closed
         Texture2D m_PrefabIcon;     // we cache prefab icon so we can show the right icon for stages where the prefab has been deleted
 
         StageNavigationItem() {}
@@ -30,7 +29,6 @@ namespace UnityEditor.SceneManagement
         public bool setSelectionAndScrollWhenBecomingCurrentStage { get; set; } = true;  // transient state since it is set every time we switch stage
         public bool isMainStage { get { return !isPrefabStage; } }
         public bool isPrefabStage { get { return !string.IsNullOrEmpty(m_PrefabAssetPath); } }
-        public string prefabAssetGUID { get { return m_PrefabAssetGUID; } }
         public Texture2D prefabIcon { get { return m_PrefabIcon; } }
 
         public PrefabStage prefabStage
@@ -75,23 +73,25 @@ namespace UnityEditor.SceneManagement
                 throw new ArgumentNullException("prefabAssetPath");
 
             m_PrefabAssetPath = prefabAssetPath;
-            m_PrefabAssetGUID = AssetDatabase.AssetPathToGUID(prefabAssetPath);
-            if (string.IsNullOrEmpty(m_PrefabAssetGUID))
+            if (string.IsNullOrEmpty(m_PrefabAssetPath))
                 throw new ArgumentException("Prefab Asset not found when creating Stage.", prefabAssetPath);
 
             m_PrefabIcon = (Texture2D)AssetDatabase.GetCachedIcon(prefabAssetPath);
         }
 
-        public void SyncAssetPathFromAssetGUID()
+        public void OnAssetsChangedOnHDD(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
         {
-            Assert.IsTrue(isPrefabStage);
+            if (!isPrefabStage)
+                return;
 
-            // This method handles moved prefabs
-            // We want to keep the old asset path if the prefab could not be found because we
-            // then can save the prefab to the same path if needed
-            var currentAssetPath = AssetDatabase.GUIDToAssetPath(m_PrefabAssetGUID);
-            if (!string.IsNullOrEmpty(currentAssetPath))
-                m_PrefabAssetPath = currentAssetPath;
+            for (int i = 0; i < movedFromAssetPaths.Length; ++i)
+            {
+                if (movedFromAssetPaths[i].Equals(m_PrefabAssetPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    m_PrefabAssetPath = movedAssets[i]; // Prefab was moved (update cached path)
+                    break;
+                }
+            }
         }
 
         public override string ToString()

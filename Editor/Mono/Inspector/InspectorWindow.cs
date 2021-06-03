@@ -1630,20 +1630,35 @@ namespace UnityEditor
                     prefabComponentIndex++;
                 }
 
-                if (ShouldCullEditor(editors, editorIndex))
-                {
-                    editors[editorIndex].isInspectorDirty = false;
-                    continue;
-                }
-
                 var editor = editors[editorIndex];
                 Object editorTarget = editor.targets[0];
 
-                string editorTitle = ObjectNames.GetInspectorTitle(editorTarget);
-                EditorElement editorContainer;
+                if (ShouldCullEditor(editors, editorIndex))
+                {
+                    editors[editorIndex].isInspectorDirty = false;
+                    // Adds an empty IMGUIContainer to prevent infinite repainting (case 1264833).
+                    // EXCEPT for the ParticleSystemRenderer, because it prevents the ParticleSystem inspector
+                    // from working correctly when setting the Material for its renderer (case 1308966).
+                    EditorElement culledEditorContainer;
+                    if (!(editor.target is ParticleSystemRenderer) && (mapping == null || !mapping.TryGetValue(editor.target.GetInstanceID(),
+                        out culledEditorContainer)))
+                    {
+                        string editorTitle = editorTarget == null
+                            ? "Nothing Selected"
+                            : ObjectNames.GetInspectorTitle(editorTarget);
+                        culledEditorContainer =
+                            new EditorElement(editorIndex, this, true) { name = editorTitle };
+                        editorsElement.Add(culledEditorContainer as VisualElement);
+                    }
+
+                    continue;
+                }
 
                 try
                 {
+                    EditorElement editorContainer;
+                    string editorTitle = ObjectNames.GetInspectorTitle(editorTarget);
+
                     if (mapping == null || !mapping.TryGetValue(editors[editorIndex].target.GetInstanceID(), out editorContainer))
                     {
                         editorContainer = new EditorElement(editorIndex, this) { name = editorTitle };
@@ -2101,6 +2116,17 @@ namespace UnityEditor
 
                 if (ShouldCullEditor(editors, newEditorsIndex))
                 {
+                    // Reinit culled when editor is culled to avoid NullPointerException (case 1281347)
+                    // EXCEPT for the ParticleSystemRenderer, because it prevents the ParticleSystem inspector
+                    // from working correctly when setting the Material for its renderer (case 1308966).
+                    if (!(ed.target is ParticleSystemRenderer))
+                    {
+                        currentElement.ReinitCulled(newEditorsIndex);
+
+                        // We need to move forward as the current element is the culled one, so we're not really
+                        // interested in it.
+                        ++previousEditorsIndex;
+                    }
                     ++newEditorsIndex;
                     continue;
                 }

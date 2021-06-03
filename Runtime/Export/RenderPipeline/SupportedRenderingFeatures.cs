@@ -65,6 +65,8 @@ namespace UnityEngine.Rendering
         public bool editableMaterialRenderQueue { get; set; } = true;
         public bool overridesLODBias { get; set; } = false;
         public bool overridesMaximumLODLevel { get; set; } = false;
+        public bool autoAmbientProbeBaking { get; set; } = true;
+        public bool autoDefaultReflectionProbeBaking { get; set; } = true;
 
         internal static unsafe MixedLightingMode FallbackMixedLightingMode()
         {
@@ -208,6 +210,20 @@ namespace UnityEngine.Rendering
             // 0 = Enlighten
             // if the lightmapper is Enlighten but Enlighten is deprecated and the project isn't upgraded, it's not supported
             *isSupported = ((lightmapper == 0) && !active.enlighten && !GraphicsSettings.AllowEnlightenSupportForUpgradedProject()) ? false : true;
+        }
+
+        [RequiredByNativeCode]
+        internal static unsafe void IsAutoAmbientProbeBakingSupported(IntPtr isSupportedPtr)
+        {
+            var isSupported = (bool*)isSupportedPtr;
+            *isSupported = active.autoAmbientProbeBaking;
+        }
+
+        [RequiredByNativeCode]
+        internal static unsafe void IsAutoDefaultReflectionProbeBakingSupported(IntPtr isSupportedPtr)
+        {
+            var isSupported = (bool*)isSupportedPtr;
+            *isSupported = active.autoDefaultReflectionProbeBaking;
         }
 
         internal static unsafe int FallbackLightmapper()

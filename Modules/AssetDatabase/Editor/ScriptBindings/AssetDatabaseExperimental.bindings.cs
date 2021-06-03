@@ -117,6 +117,15 @@ namespace UnityEditor.Experimental
         [FreeFunction()]
         public extern static void RefreshCacheServerNamespacePrefix();
 
+        [FreeFunction("AssetDatabase::IsCacheServerEnabled")]
+        public extern static bool IsCacheServerEnabled();
+        [FreeFunction("AssetDatabase::GetCacheServerNamespacePrefix")]
+        public extern static string GetCacheServerNamespacePrefix();
+        [FreeFunction("AssetDatabase::GetCacheServerEnableDownload")]
+        public extern static bool GetCacheServerEnableDownload();
+        [FreeFunction("AssetDatabase::GetCacheServerEnableUpload")]
+        public extern static bool GetCacheServerEnableUpload();
+
         [FreeFunction("CacheServerCountersResetDeltas")]
         private extern static void CacheServerCountersResetDeltas();
 

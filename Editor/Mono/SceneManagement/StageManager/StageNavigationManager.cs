@@ -318,7 +318,7 @@ namespace UnityEditor.SceneManagement
         {
             if (newStage.isPrefabStage && !newStage.prefabAssetExists)
             {
-                Debug.LogError("Cannot switch to new stage! Prefab asset does not exist: " + (!string.IsNullOrEmpty(newStage.prefabAssetPath) ? newStage.prefabAssetPath : newStage.prefabAssetGUID));
+                Debug.LogError("Cannot switch to new stage! Prefab asset does not exist: " + newStage.prefabAssetPath);
                 {
                     return false;
                 }

@@ -57,14 +57,14 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
         if (ModuleManager.IsPlatformSupportLoadedByBuildTarget(selectedTarget))
             return selectedTarget;
         if (RuntimePlatform.WindowsEditor == Application.platform && ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneWindows))
-            return BuildTarget.StandaloneWindows;
+            return BuildTarget.StandaloneWindows64;
         if (RuntimePlatform.OSXEditor == Application.platform && ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneOSX))
             return BuildTarget.StandaloneOSX;
         if (ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneOSX))
             return BuildTarget.StandaloneOSX;
         if (ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneLinux64))
             return BuildTarget.StandaloneLinux64;
-        return BuildTarget.StandaloneWindows;
+        return BuildTarget.StandaloneWindows64;
     }
 
     private static Dictionary<GUIContent, BuildTarget> GetArchitecturesForPlatform(BuildTarget target)
@@ -75,8 +75,8 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
             case BuildTarget.StandaloneWindows64:
                 return new Dictionary<GUIContent, BuildTarget>()
                 {
-                    { EditorGUIUtility.TrTextContent("x86"), BuildTarget.StandaloneWindows },
                     { EditorGUIUtility.TrTextContent("x86_64"), BuildTarget.StandaloneWindows64 },
+                    { EditorGUIUtility.TrTextContent("x86"), BuildTarget.StandaloneWindows },
                 };
             case BuildTarget.StandaloneLinux64:
                 return new Dictionary<GUIContent, BuildTarget>()
@@ -94,7 +94,7 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
         {
             case BuildTarget.StandaloneWindows:
             case BuildTarget.StandaloneWindows64:
-                return BuildTarget.StandaloneWindows;
+                return BuildTarget.StandaloneWindows64;
                 // Deprecated
 #pragma warning disable 612, 618
             case BuildTarget.StandaloneLinux:
