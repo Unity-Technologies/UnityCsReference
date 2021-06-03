@@ -417,7 +417,7 @@ namespace UnityEditor.Search
             report.showPackageIndexes = SearchSettings.showPackageIndexes;
             report.debounceMs = SearchSettings.debounceMs;
             report.savedSearchesSortOrder = SearchSettings.savedSearchesSortOrder.ToString();
-            report.savedSearchesCount = SearchQuery.savedQueries.Count();
+            report.savedSearchesCount = SearchQueryAsset.savedQueries.Count();
             report.sessionQueryCount = sessionQueryCount;
             report.sessionQuerySearchExecutionCount = sessionQuerySearchExecutionCount;
             report.sessionSearchOpenWindow = sessionSearchOpenWindow;

@@ -10,8 +10,6 @@ namespace UnityEditor
 {
     internal class SpeedTree8ShaderGUI : ShaderGUI
     {
-        bool m_FirstTimeApply = true;
-
         private static class Styles
         {
             public static GUIContent colorText = EditorGUIUtility.TrTextContent("Color", "Color (RGB) and Opacity (A)");
@@ -39,15 +37,6 @@ namespace UnityEditor
 
         public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] properties)
         {
-            if (m_FirstTimeApply)
-            {
-                foreach (var obj in materialEditor.targets)
-                {
-                    MaterialChanged((Material)obj);
-                }
-                m_FirstTimeApply = false;
-            }
-
             // Use default labelWidth
             EditorGUIUtility.labelWidth = 0.0f;
 
@@ -112,7 +101,7 @@ namespace UnityEditor
                 foreach (var obj in materialEditor.targets)
                 {
                     Material mat = (Material)obj;
-                    MaterialChanged(mat);
+                    ValidateMaterial(mat);
                 }
             }
 
@@ -146,7 +135,7 @@ namespace UnityEditor
             }
         }
 
-        static void MaterialChanged(Material material)
+        public override void ValidateMaterial(Material material)
         {
             SetKeyword(material, "EFFECT_EXTRA_TEX", material.GetTexture("_ExtraTex"));
         }

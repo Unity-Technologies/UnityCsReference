@@ -444,6 +444,9 @@ namespace UnityEditorInternal
         internal static extern ushort GetConnectionPort(int guid);
 
         [StaticAccessor("EditorProfilerConnection::Get()", StaticAccessorType.Dot)]
+        internal static extern string GetConnectionIP(int guid);
+
+        [StaticAccessor("EditorProfilerConnection::Get()", StaticAccessorType.Dot)]
         static public extern bool IsIdentifierConnectable(int guid);
 
         [StaticAccessor("EditorProfilerConnection::Get()", StaticAccessorType.Dot)]
@@ -451,6 +454,9 @@ namespace UnityEditorInternal
 
         [StaticAccessor("EditorProfilerConnection::Get()", StaticAccessorType.Dot)]
         static internal extern bool IsDeepProfilingSupported(int guid);
+
+        [StaticAccessor("EditorProfilerConnection::Get()", StaticAccessorType.Dot)]
+        static internal extern string GetProjectName(int guid);
 
         [StaticAccessor("EditorProfilerConnection::Get()", StaticAccessorType.Dot)]
         static internal extern bool IsConnectionEditor();

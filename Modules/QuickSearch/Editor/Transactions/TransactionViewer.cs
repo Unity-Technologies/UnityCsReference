@@ -57,7 +57,7 @@ namespace UnityEditor.Search
 
             m_TransactionListView  = new UnityEngine.UIElements.ListView();
             m_TransactionListView.itemsSource = Transactions;
-            m_TransactionListView.itemHeight = k_TransactionRowHeight;
+            m_TransactionListView.fixedItemHeight = k_TransactionRowHeight;
             m_TransactionListView.makeItem = MakeRowItem;
             m_TransactionListView.bindItem = BindRowItem;
             m_TransactionListView.style.flexGrow = 1.0f;
@@ -107,7 +107,7 @@ namespace UnityEditor.Search
                 Transactions.AddRange(transactions);
             }
 
-            EditorApplication.delayCall += listViewElement.Refresh;
+            EditorApplication.delayCall += listViewElement.Rebuild;
         }
 
         static VisualElement MakeRowItem()

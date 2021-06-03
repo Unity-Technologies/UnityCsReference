@@ -17,7 +17,7 @@ namespace UnityEngine.UIElements
         const int kMaxValidateLayoutCount = 5;
 
 
-        private static readonly string s_Description = "UIR Update Layout";
+        private static readonly string s_Description = "Update Layout";
         private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
         public override ProfilerMarker profilerMarker => s_ProfilerMarker;
 
@@ -78,13 +78,18 @@ namespace UnityEngine.UIElements
         private void UpdateSubTree(VisualElement ve, int currentLayoutPass, bool isDisplayed = true)
         {
             Rect yogaLayoutRect = new Rect(ve.yogaNode.LayoutX, ve.yogaNode.LayoutY, ve.yogaNode.LayoutWidth, ve.yogaNode.LayoutHeight);
-            Rect yogaPaddingRect = new Rect(
+            // This is not the "real" padding rect: it may differ in size and position because the borders are ignored.
+            // Alone, it cannot be used to identify padding size changes, because the bottom and right values depend on the
+            // layout rect width/height. A change in layout rect width/height with a corresponding variation in
+            // right/bottom values may yield the same pseudoPaddingRect. Fortunately, the layout rect size and padding rect
+            // size change trigger the same code path which explains why we haven't seen any issue with this so far.
+            Rect yogaPseudoPaddingRect = new Rect(
                 ve.yogaNode.LayoutPaddingLeft,
                 ve.yogaNode.LayoutPaddingTop,
                 ve.yogaNode.LayoutWidth - (ve.yogaNode.LayoutPaddingLeft + ve.yogaNode.LayoutPaddingRight),
                 ve.yogaNode.LayoutHeight - (ve.yogaNode.LayoutPaddingTop + ve.yogaNode.LayoutPaddingBottom));
             Rect lastLayoutRect = ve.lastLayout;
-            Rect lastPaddingRect = ve.lastPadding;
+            Rect lastPseudoPaddingRect = ve.lastPseudoPadding;
             bool wasHierarchyDisplayed = ve.isHierarchyDisplayed;
 
             VersionChangeType changeType = 0;
@@ -92,14 +97,14 @@ namespace UnityEngine.UIElements
             // - Size:    to update the clipping rect, when required
             // - Repaint: to update the geometry inside the new rect
             bool layoutSizeChanged = lastLayoutRect.size != yogaLayoutRect.size;
-            bool paddingSizeChanged = lastPaddingRect.size != yogaPaddingRect.size;
-            if (layoutSizeChanged || paddingSizeChanged)
+            bool pseudoPaddingSizeChanged = lastPseudoPaddingRect.size != yogaPseudoPaddingRect.size;
+            if (layoutSizeChanged || pseudoPaddingSizeChanged)
                 changeType |= VersionChangeType.Size | VersionChangeType.Repaint;
 
             // Changing the layout/padding position should trigger the following version change:
             // - Transform: to draw the element and content at the right position
             bool layoutPositionChanged = yogaLayoutRect.position != lastLayoutRect.position;
-            bool paddingPositionChanged = yogaPaddingRect.position != lastPaddingRect.position;
+            bool paddingPositionChanged = yogaPseudoPaddingRect.position != lastPseudoPaddingRect.position;
             if (layoutPositionChanged || paddingPositionChanged)
                 changeType |= VersionChangeType.Transform;
 
@@ -110,7 +115,7 @@ namespace UnityEngine.UIElements
                 ve.IncrementVersion(changeType);
 
             ve.lastLayout = yogaLayoutRect;
-            ve.lastPadding = yogaPaddingRect;
+            ve.lastPseudoPadding = yogaPseudoPaddingRect;
 
             // ignore clean sub trees
             bool hasNewLayout = ve.yogaNode.HasNewLayout;

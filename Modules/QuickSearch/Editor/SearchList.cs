@@ -598,6 +598,19 @@ namespace UnityEditor.Search
             m_Groups.Sort((lhs, rhs) => lhs.priority.CompareTo(rhs.priority));
         }
 
+        public IGroup AddGroup(SearchProvider searchProvider)
+        {
+            var itemGroup = m_Groups.Find(g => string.Equals(g.id, searchProvider.id, StringComparison.Ordinal));
+            if (itemGroup != null)
+                return itemGroup;
+            itemGroup = new Group(searchProvider.id, searchProvider.name, searchProvider.priority);
+            m_Groups.Add(itemGroup);
+            m_Groups.Sort((lhs, rhs) => lhs.priority.CompareTo(rhs.priority));
+            if (!string.IsNullOrEmpty(m_CurrentGroupId))
+                m_CurrentGroupIndex = m_Groups.FindIndex(g => g.id == m_CurrentGroupId);
+            return itemGroup;
+        }
+
         public override void AddItems(IEnumerable<SearchItem> items)
         {
             // Initialize groups on first results
@@ -606,16 +619,7 @@ namespace UnityEditor.Search
 
             foreach (var item in items)
             {
-                var itemGroup = m_Groups.Find(g => g.id == item.provider.id);
-                if (itemGroup == null)
-                {
-                    itemGroup = new Group(item.provider.id, item.provider.name, item.provider.priority);
-                    m_Groups.Add(itemGroup);
-                    m_Groups.Sort((lhs, rhs) => lhs.priority.CompareTo(rhs.priority));
-                    if (!string.IsNullOrEmpty(m_CurrentGroupId))
-                        m_CurrentGroupIndex = m_Groups.FindIndex(g => g.id == m_CurrentGroupId);
-                }
-
+                var itemGroup = AddGroup(item.provider);
                 if (itemGroup.Add(item))
                     m_TotalCount++;
             }

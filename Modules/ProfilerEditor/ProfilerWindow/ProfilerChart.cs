@@ -35,9 +35,11 @@ namespace UnityEditorInternal
 
         string m_Name;
         string m_LocalizedName;
-        string m_Tooltip;
         string m_IconName;
         float m_MaximumScaleInterpolationValue;
+
+        public bool ShowGrid { get; set; }
+        public string Tooltip { get; set; }
 
         public ProfilerChart(ProfilerArea area, ProfilerModuleChartType type, float dataScale, float maximumScaleInterpolationValue, int seriesCount, string name, string localizedName, string iconName) : base()
         {
@@ -54,9 +56,10 @@ namespace UnityEditorInternal
             m_Name = name;
             m_LocalizedName = localizedName;
             m_IconName = iconName;
+            ShowGrid = true;
 
             var localizedTooltipFormat = LocalizationDatabase.GetLocalizedString("A chart showing performance counters related to '{0}'.");
-            m_Tooltip = string.Format(localizedTooltipFormat, m_LocalizedName);
+            Tooltip = string.Format(localizedTooltipFormat, m_LocalizedName);
         }
 
         string ChartSettingsPreferenceKey => string.Format(k_ProfilerChartSettingsPreferenceKeyFormat, m_Name);
@@ -128,7 +131,7 @@ namespace UnityEditorInternal
 
             if (legendHeaderLabel == null)
             {
-                legendHeaderLabel = new GUIContent(m_LocalizedName, EditorGUIUtility.LoadIconRequired(m_IconName), m_Tooltip);
+                legendHeaderLabel = new GUIContent(m_LocalizedName, EditorGUIUtility.LoadIconRequired(m_IconName), Tooltip);
             }
 
             return DoGUI(chartRect, m_Type, currentFrame, m_Data, active);
@@ -253,7 +256,7 @@ namespace UnityEditorInternal
 
             for (int k = 0; k < m_Data.numSeries; ++k)
                 m_Data.series[k].rangeAxis = new Vector2(0f, timeMax);
-            m_Data.UpdateChartGrid(timeMax);
+            m_Data.UpdateChartGrid(timeMax, ShowGrid);
         }
 
         public void ConfigureChartSeries(int historySize, ProfilerCounterDescriptor[] counters)

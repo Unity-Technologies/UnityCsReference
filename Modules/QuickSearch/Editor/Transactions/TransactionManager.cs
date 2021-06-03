@@ -573,7 +573,6 @@ namespace UnityEditor.Search
 
         void FixHeader()
         {
-            // TODO: Make sure it's the right asset type
             if (!ValidateHeader())
             {
                 ClearAll().Wait();

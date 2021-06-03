@@ -88,15 +88,20 @@ namespace UnityEditor.PackageManager.UI.Internal
             return label;
         }
 
-        private string GetNameText(DependencyInfo dependency)
+        private string GetNameText(DependencyInfo dependency, IPackage package, IPackageVersion version)
         {
-            m_PackageDatabase.GetPackageAndVersion(dependency, out var package, out var packageVersion);
-            return packageVersion?.displayName ?? package?.displayName ?? dependency.name;
+            return version?.displayName ?? package?.displayName ?? dependency.name;
         }
 
-        private string GetStatusText(DependencyInfo dependency)
+        private string GetVersionText(DependencyInfo dependency, IPackage package)
         {
-            var installedVersion = m_PackageDatabase.GetPackage(dependency.name)?.versions.installed;
+            if (package == null || package.Is(PackageType.BuiltIn) || package.Is(PackageType.Feature))
+                return string.Empty;
+            return dependency.version.ToString();
+        }
+
+        private string GetStatusText(DependencyInfo dependency, IPackageVersion installedVersion)
+        {
             if (installedVersion == null)
                 return string.Empty;
 
@@ -114,9 +119,15 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void SetPackageVersion(IPackageVersion version)
         {
+            if (!m_SettingsProxy.enablePackageDependencies || version?.HasTag(PackageTag.Feature) == true)
+            {
+                UIUtils.SetElementDisplay(this, false);
+                return;
+            }
+
             var dependencies = version?.dependencies;
             var reverseDependencies = m_PackageDatabase.GetReverseDependencies(version);
-            var showDependency = m_SettingsProxy.enablePackageDependencies && (dependencies != null || reverseDependencies != null);
+            var showDependency = dependencies != null || reverseDependencies != null;
             UIUtils.SetElementDisplay(this, showDependency);
             if (!showDependency)
                 return;
@@ -142,11 +153,17 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             foreach (var dependency in dependencies)
             {
-                dependenciesNames.Add(BuildSelectableLabel(GetNameText(dependency), "text"));
-                dependenciesVersions.Add(BuildSelectableLabel(dependency.version, "text"));
-                dependenciesStatuses.Add(BuildLabel(GetStatusText(dependency), "text"));
+                m_PackageDatabase.GetPackageAndVersion(dependency, out var package, out var version);
 
-                var dependencyLowWidthItem = new PackageDependencySampleItemLowWidth(GetNameText(dependency), dependency.version.ToString(), BuildLabel(GetStatusText(dependency), "text"));
+                var nameText = GetNameText(dependency, package, version);
+                var versionText = GetVersionText(dependency, package);
+                var statusText = GetStatusText(dependency, package?.versions.installed);
+
+                dependenciesNames.Add(BuildSelectableLabel(nameText, "text"));
+                dependenciesVersions.Add(BuildSelectableLabel(versionText, "text"));
+                dependenciesStatuses.Add(BuildLabel(statusText, "text"));
+
+                var dependencyLowWidthItem = new PackageDependencySampleItemLowWidth(nameText, versionText, BuildLabel(statusText, "text"));
                 dependenciesListLowWidth.Add(dependencyLowWidthItem);
             }
         }
@@ -167,10 +184,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             foreach (var version in reverseDependencies)
             {
-                reverseDependenciesNames.Add(BuildSelectableLabel(version.displayName ?? string.Empty, "text"));
-                reverseDependenciesVersions.Add(BuildSelectableLabel(version.version.ToString(), "text"));
+                var nameText = version.displayName ?? string.Empty;
+                var versionText = version.HasTag(PackageTag.Feature | PackageTag.BuiltIn) ? string.Empty : version.version.ToString();
 
-                var reverseDependencyLowWidthItem = new PackageDependencySampleItemLowWidth(version.displayName ?? string.Empty, version.version.ToString(), null);
+                reverseDependenciesNames.Add(BuildSelectableLabel(nameText, "text"));
+                reverseDependenciesVersions.Add(BuildSelectableLabel(versionText, "text"));
+
+                var reverseDependencyLowWidthItem = new PackageDependencySampleItemLowWidth(nameText, versionText, null);
                 reverseDependenciesListLowWidth.Add(reverseDependencyLowWidthItem);
             }
         }

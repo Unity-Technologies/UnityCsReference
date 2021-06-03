@@ -467,7 +467,7 @@ namespace UnityEditor
     {
         private Vector2 m_ScrollPos = Vector2.zero;
         private string[] m_Keywords;
-        private bool m_KeywordsExpended;
+        private bool m_KeywordsExpanded;
         private float m_WindowWidth;
 
         private static readonly GUIStyle m_Style = EditorStyles.miniLabel;
@@ -475,7 +475,7 @@ namespace UnityEditor
         public KeywordsPopup(string[] keywords, float windowWidth)
         {
             m_Keywords = keywords;
-            m_KeywordsExpended = true;
+            m_KeywordsExpanded = true;
             m_WindowWidth = windowWidth;
         }
 
@@ -490,16 +490,16 @@ namespace UnityEditor
         {
             m_ScrollPos = EditorGUILayout.BeginScrollView(m_ScrollPos);
 
-            m_KeywordsExpended = KeywordsFoldout(m_KeywordsExpended, "Keywords", m_Keywords);
+            m_KeywordsExpanded = KeywordsFoldout(m_KeywordsExpanded, "Keywords", m_Keywords);
 
             EditorGUILayout.EndScrollView();
         }
 
-        private bool KeywordsFoldout(bool expended, string name, string[] values)
+        private bool KeywordsFoldout(bool expanded, string name, string[] values)
         {
-            expended = EditorGUILayout.Foldout(expended, name, true, m_Style);
+            expanded = EditorGUILayout.Foldout(expanded, name, true, m_Style);
 
-            if (expended)
+            if (expanded)
             {
                 EditorGUI.indentLevel++;
                 for (int i = 0; i < values.Length; ++i)
@@ -509,7 +509,7 @@ namespace UnityEditor
                 EditorGUI.indentLevel--;
             }
 
-            return expended;
+            return expanded;
         }
     }
 

@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -22,6 +21,18 @@ namespace UnityEditor.PackageManager.UI.Internal
         private UpmVersionList m_VersionList;
 
         public override IVersionList versions => m_VersionList;
+
+        protected override string descriptor
+        {
+            get
+            {
+                if (Is(PackageType.Feature))
+                    return L10n.Tr("feature");
+                if (Is(PackageType.BuiltIn))
+                    return L10n.Tr("built-in package");
+                return L10n.Tr("package");
+            }
+        }
 
         public UpmPackage(string name, bool isDiscoverable, PackageType type)
         {
@@ -42,13 +53,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_IsDiscoverable = isDiscoverable;
             m_VersionList = new UpmVersionList(info, isInstalled, isUnityPackage);
             m_Type = versions.primary.HasTag(PackageTag.BuiltIn) ? PackageType.BuiltIn : PackageType.Installable;
+            _ = info.type == "feature" ? m_Type |= PackageType.Feature : m_Type &= ~PackageType.Feature;
 
             RefreshUnityType();
         }
 
         internal void UpdateVersions(IEnumerable<UpmPackageVersion> updatedVersions)
         {
-            m_VersionList = new UpmVersionList(updatedVersions, m_VersionList.lifecycleVersion, m_VersionList.lifecycleNextVersion);
+            m_VersionList = new UpmVersionList(updatedVersions, m_VersionList.lifecycleVersionString, m_VersionList.lifecycleNextVersion);
             RefreshUnityType();
             ClearErrors();
         }

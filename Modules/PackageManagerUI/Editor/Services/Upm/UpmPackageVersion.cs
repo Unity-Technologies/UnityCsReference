@@ -173,6 +173,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_Tag = PackageTag.Bundled | PackageTag.VersionLocked;
                     if (m_PackageInfo.type == "module")
                         m_Tag |= PackageTag.BuiltIn;
+                    else if (m_PackageInfo.type == "feature")
+                        m_Tag |= PackageTag.Feature;
                     break;
 
                 case PackageSource.Embedded:

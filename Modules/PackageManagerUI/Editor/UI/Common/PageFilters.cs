@@ -26,7 +26,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public List<string> statuses
         {
             get { return m_statuses; }
-            set { if (value == null) m_statuses = new List<string>(); else m_statuses = value;}
+            set { if (value == null) m_statuses = new List<string>(); else m_statuses = value; }
         }
 
         public List<string> categories

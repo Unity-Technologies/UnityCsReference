@@ -2,20 +2,18 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Toolbars
 {
     [EditorToolbarElement("Services/Cloud", typeof(DefaultMainToolbar))]
-    sealed class CloudButton : ToolbarButton
+    sealed class CloudButton : EditorToolbarButton
     {
-        public CloudButton()
+        public CloudButton() : base(OpenCloudWindow)
         {
             name = "Cloud";
 
-            EditorToolbarUtility.AddIconElement(this);
-            clicked += OpenCloudWindow;
+            icon = EditorGUIUtility.FindTexture("CloudConnect");
             tooltip = L10n.Tr("Manage services");
 
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
@@ -37,7 +35,7 @@ namespace UnityEditor.Toolbars
             style.display = MPE.ProcessService.level == MPE.ProcessLevel.Main ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
-        void OpenCloudWindow()
+        static void OpenCloudWindow()
         {
             Connect.ServicesEditorWindow.ShowServicesWindow();
         }

@@ -8,6 +8,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor.Compilation;
+using UnityEditorInternal;
+using UnityEngine;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
@@ -151,7 +153,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
             ScriptAssemblySettings settings,
             CompilationAssemblies assemblies,
             TargetAssemblyType onlyIncludeType = TargetAssemblyType.Undefined,
-            Func<TargetAssembly, bool> targetAssemblyCondition = null)
+            Func<TargetAssembly, bool> targetAssemblyCondition = null,
+            ICompilationSetupWarningTracker warningSink = null)
         {
             if (allSourceFiles == null || allSourceFiles.Count == 0)
                 return new ScriptAssembly[0];
@@ -188,7 +191,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 dirtyTargetAssembly.SourceFiles.Add(AssetPath.Combine(projectDirectory, scriptFile));
             }
 
-            return ToScriptAssemblies(targetAssemblyFiles, settings, assemblies);
+            return ToScriptAssemblies(targetAssemblyFiles, settings, assemblies, warningSink);
         }
 
         internal class DirtyTargetAssembly
@@ -221,7 +224,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         internal static ScriptAssembly[] ToScriptAssemblies(
             IDictionary<TargetAssembly, DirtyTargetAssembly> targetAssemblies,
             ScriptAssemblySettings settings,
-            CompilationAssemblies assemblies)
+            CompilationAssemblies assemblies, ICompilationSetupWarningTracker warningSink)
         {
             var scriptAssemblies = new ScriptAssembly[targetAssemblies.Count];
 
@@ -293,7 +296,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             foreach (var entry in targetAssemblies)
             {
                 var scriptAssembly = scriptAssemblies[index++];
-                AddScriptAssemblyReferences(ref scriptAssembly, entry.Key, settings, assemblies, targetToScriptAssembly);
+                AddScriptAssemblyReferences(ref scriptAssembly, entry.Key, settings, assemblies, targetToScriptAssembly, warningSink);
 
                 if (UnityCodeGenHelpers.IsCodeGen(entry.Key.Filename)
                     ||  UnityCodeGenHelpers.IsCodeGenTest(entry.Key.Filename)
@@ -351,7 +354,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         internal static void AddScriptAssemblyReferences(ref ScriptAssembly scriptAssembly, TargetAssembly targetAssembly, ScriptAssemblySettings settings,
             CompilationAssemblies assemblies,
-            IDictionary<TargetAssembly, ScriptAssembly> targetToScriptAssembly)
+            IDictionary<TargetAssembly, ScriptAssembly> targetToScriptAssembly, ICompilationSetupWarningTracker warningSink)
         {
             var scriptAssemblyReferences = new List<ScriptAssembly>(targetAssembly.References.Count);
             var references = new List<string>();
@@ -413,6 +416,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             // Add pre-compiled assemblies as references
             var allPrecompiledAssemblies = assemblies.PrecompiledAssemblies ?? new Dictionary<string, PrecompiledAssembly>(0);
             List<PrecompiledAssembly> precompiledReferences = new List<PrecompiledAssembly>(allPrecompiledAssemblies.Count);
+            var explicitPrecompiledReferences = new List<PrecompiledAssembly>(targetAssembly.ExplicitPrecompiledReferences.Count);
 
             if ((targetAssembly.Flags & AssemblyFlags.ExplicitReferences) == AssemblyFlags.ExplicitReferences)
             {
@@ -428,7 +432,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     PrecompiledAssembly assembly;
                     if (allPrecompiledAssemblies.TryGetValue(explicitPrecompiledReference, out assembly))
                     {
-                        precompiledReferences.Add(assembly);
+                        explicitPrecompiledReferences.Add(assembly);
                     }
                 }
             }
@@ -445,7 +449,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             AddTestRunnerPrecompiledReferences(targetAssembly, allPrecompiledAssemblies, ref precompiledReferences);
 
-            var precompiledReferenceNames = GetPrecompiledReferences(scriptAssembly, targetAssembly.Type, settings.CompilationOptions, targetAssembly.editorCompatibility, precompiledReferences.ToArray());
+            var precompiledReferenceNames = GetPrecompiledReferences(scriptAssembly, targetAssembly.Type, settings.CompilationOptions, targetAssembly.editorCompatibility, precompiledReferences, explicitPrecompiledReferences, warningSink);
             references.AddRange(precompiledReferenceNames);
 
             if (buildingForEditor && assemblies.EditorAssemblyReferences != null)
@@ -555,7 +559,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return references;
         }
 
-        public static List<string> GetPrecompiledReferences(ScriptAssembly scriptAssembly, TargetAssemblyType targetAssemblyType, EditorScriptCompilationOptions options, EditorCompatibility editorCompatibility, PrecompiledAssembly[] precompiledAssemblies)
+        public static List<string> GetPrecompiledReferences(ScriptAssembly scriptAssembly, TargetAssemblyType targetAssemblyType, EditorScriptCompilationOptions options, EditorCompatibility editorCompatibility, IEnumerable<PrecompiledAssembly> implicitPrecompiledAssemblies, IEnumerable<PrecompiledAssembly> explicitPrecompiledAssemblies, ICompilationSetupWarningTracker warningSink)
         {
             var references = new List<string>();
 
@@ -563,18 +567,39 @@ namespace UnityEditor.Scripting.ScriptCompilation
             bool assemblyEditorOnly = (scriptAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly;
             bool isCustomAssembly = (targetAssemblyType & TargetAssemblyType.Custom) == TargetAssemblyType.Custom;
 
-            if (precompiledAssemblies != null)
-                foreach (var precompiledAssembly in precompiledAssemblies)
-                {
-                    bool compiledAssemblyEditorOnly = (precompiledAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly;
+            void AddReferenceIfMatchBuildTargetAndEditorFlag(PrecompiledAssembly precompiledAssembly, bool explicitReference)
+            {
+                bool compiledAssemblyEditorOnly = (precompiledAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly;
 
-                    // Add all pre-compiled runtime assemblies as references to all script assemblies. Don't add pre-compiled editor assemblies as dependencies to runtime assemblies.
-                    if (!compiledAssemblyEditorOnly || assemblyEditorOnly || (isCustomAssembly && buildingForEditor && editorCompatibility == EditorCompatibility.CompatibleWithEditor))
+                // Add all pre-compiled runtime assemblies as references to all script assemblies. Don't add pre-compiled editor assemblies as dependencies to runtime assemblies.
+                if (!compiledAssemblyEditorOnly || assemblyEditorOnly || (isCustomAssembly && buildingForEditor && editorCompatibility == EditorCompatibility.CompatibleWithEditor))
+                {
+                    if (IsPrecompiledAssemblyCompatibleWithBuildTarget(precompiledAssembly, scriptAssembly.BuildTarget))
                     {
-                        if (IsPrecompiledAssemblyCompatibleWithBuildTarget(precompiledAssembly, scriptAssembly.BuildTarget))
-                            references.Add(precompiledAssembly.Path);
+                        references.Add(precompiledAssembly.Path);
                     }
+                    // we don't warn on build target mismatch, as this is actually a common pattern (an asmdef with multiple references to different "target-specific" assemblies with the same symbols - e.g. foo.XboxOne.dll, foo.PS5.dll, foo.WebGL.dll)
                 }
+                else if (explicitReference && !string.IsNullOrEmpty(scriptAssembly.AsmDefPath))
+                {
+                    warningSink?.AddAssetWarning(scriptAssembly.AsmDefPath, $"{scriptAssembly.Filename}: can't add reference to {precompiledAssembly.Path} as it is an editor-only assembly");
+                }
+            }
+
+            if (implicitPrecompiledAssemblies != null)
+            {
+                foreach (var precompiledAssembly in implicitPrecompiledAssemblies)
+                {
+                    AddReferenceIfMatchBuildTargetAndEditorFlag(precompiledAssembly, false);
+                }
+            }
+            if (explicitPrecompiledAssemblies != null)
+            {
+                foreach (var precompiledAssembly in explicitPrecompiledAssemblies)
+                {
+                    AddReferenceIfMatchBuildTargetAndEditorFlag(precompiledAssembly, true);
+                }
+            }
 
             return references;
         }

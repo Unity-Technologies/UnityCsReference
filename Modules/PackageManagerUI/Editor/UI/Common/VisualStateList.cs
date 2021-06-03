@@ -34,14 +34,20 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void Rebuild(IEnumerable<string> packageUniqueIds)
         {
-            var newVisualStates = packageUniqueIds.Select(id => GetVisualState(id) ?? new VisualState(id, string.Empty)).ToList();
+            var newVisualStates = packageUniqueIds.Select(id => GetVisualState(id) ?? new VisualState(id, string.Empty, false)).ToList();
             m_OrderedVisualStates = newVisualStates;
             SetupLookupTable();
         }
 
-        public void Rebuild(IEnumerable<Tuple<string, string>> packageUniqueIdAndGroups)
+        public void Rebuild(IEnumerable<Tuple<string, string, bool>> orderedPackageIdGroupsAndDefaultLockedStates)
         {
-            var newVisualStates = packageUniqueIdAndGroups.Select(t => GetVisualState(t.Item1) ?? new VisualState(t.Item1, t.Item2)).ToList();
+            var newVisualStates = orderedPackageIdGroupsAndDefaultLockedStates.Select(t =>
+            {
+                var visualState = GetVisualState(t.Item1) ?? new VisualState(t.Item1, t.Item2, t.Item3);
+                visualState.groupName = t.Item2;
+                visualState.lockedByDefault = t.Item3;
+                return visualState;
+            }).ToList();
             m_OrderedVisualStates = newVisualStates;
             SetupLookupTable();
         }

@@ -327,6 +327,26 @@ namespace UnityEngine
             if (fence.IsFencePending())
                 WaitOnGPUFenceImpl(fence.m_Ptr, GraphicsFence.TranslateSynchronizationStageToFlags(stage));
         }
+
+        internal static void ValidateCopyBuffer(GraphicsBuffer source, GraphicsBuffer dest)
+        {
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (dest == null) throw new ArgumentNullException(nameof(dest));
+            var sourceSize = (long)source.count * source.stride;
+            var destSize = (long)dest.count * dest.stride;
+            if (sourceSize != destSize)
+                throw new ArgumentException($"CopyBuffer source and destination buffers must be the same size, source was {sourceSize} bytes, dest was {destSize} bytes");
+            if ((source.target & GraphicsBuffer.Target.CopySource) == 0)
+                throw new ArgumentException($"CopyBuffer source must have {nameof(GraphicsBuffer.Target.CopySource)} target", nameof(source));
+            if ((dest.target & GraphicsBuffer.Target.CopyDestination) == 0)
+                throw new ArgumentException($"CopyBuffer destination must have {nameof(GraphicsBuffer.Target.CopyDestination)} target", nameof(dest));
+        }
+
+        public static void CopyBuffer(GraphicsBuffer source, GraphicsBuffer dest)
+        {
+            ValidateCopyBuffer(source, dest);
+            CopyBufferImpl(source, dest);
+        }
     }
 }
 

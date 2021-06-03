@@ -26,8 +26,8 @@ namespace UnityEditor
             public readonly GUIContent cross = EditorGUIUtility.TextContent("x");
             public readonly GUIContent antiAliasing = EditorGUIUtility.TrTextContent("Anti-aliasing", "Number of anti-aliasing samples.");
             public readonly GUIContent colorFormat = EditorGUIUtility.TrTextContent("Color Format", "Format of the color buffer.");
-            public readonly GUIContent depthBuffer = EditorGUIUtility.TrTextContent("Depth Buffer", "Format of the depth buffer.");
-            public readonly GUIContent enableCompatibleFormat = EditorGUIUtility.TrTextContent("Enable Compatible Color Format", "Lets the color format be changed to compatible and supported formats for the target platform automatically, if the target platform doesn't support the input format.");
+            public readonly GUIContent depthStencilFormat = EditorGUIUtility.TrTextContent("Depth Stencil Format", "Format of the depth stencil buffer.");
+            public readonly GUIContent enableCompatibleFormat = EditorGUIUtility.TrTextContent("Enable Compatible Format", "Lets the color and depth stencil formats be changed to compatible and supported formats for the target platform automatically, if the target platform doesn't support the input format.");
             public readonly GUIContent dimension = EditorGUIUtility.TrTextContent("Dimension", "Is the texture 2D, Cube or 3D?");
             public readonly GUIContent enableMipmaps = EditorGUIUtility.TrTextContent("Enable Mip Maps", "This render texture will have Mip Maps.");
             public readonly GUIContent bindMS = EditorGUIUtility.TrTextContent("Bind multisampled", "If enabled, the texture will not go through an AA resolve if bound to a shader.");
@@ -66,7 +66,7 @@ namespace UnityEditor
         SerializedProperty m_Height;
         SerializedProperty m_Depth;
         SerializedProperty m_ColorFormat;
-        SerializedProperty m_DepthFormat;
+        SerializedProperty m_DepthStencilFormat;
         SerializedProperty m_EnableCompatibleFormat;
         SerializedProperty m_AntiAliasing;
         SerializedProperty m_EnableMipmaps;
@@ -83,7 +83,7 @@ namespace UnityEditor
             m_Depth = serializedObject.FindProperty("m_VolumeDepth");
             m_AntiAliasing = serializedObject.FindProperty("m_AntiAliasing");
             m_ColorFormat = serializedObject.FindProperty("m_ColorFormat");
-            m_DepthFormat = serializedObject.FindProperty("m_DepthFormat");
+            m_DepthStencilFormat = serializedObject.FindProperty("m_DepthStencilFormat");
             m_EnableCompatibleFormat = serializedObject.FindProperty("m_EnableCompatibleFormat");
             m_EnableMipmaps = serializedObject.FindProperty("m_MipMap");
             m_AutoGeneratesMipmaps = serializedObject.FindProperty("m_GenerateMips");
@@ -119,30 +119,53 @@ namespace UnityEditor
             if ((guiElements & GUIElements.RenderTargetAAGUI) != 0)
                 EditorGUILayout.IntPopup(m_AntiAliasing, styles.renderTextureAntiAliasing, styles.renderTextureAntiAliasingValues, styles.antiAliasing);
 
-            GraphicsFormat format = (GraphicsFormat)m_ColorFormat.intValue;
-            GraphicsFormat compatibleFormat = SystemInfo.GetCompatibleFormat(format, FormatUsage.Render);
+            GraphicsFormat colorFormat = (GraphicsFormat)m_ColorFormat.intValue;
+            GraphicsFormat compatibleColorFormat = SystemInfo.GetCompatibleFormat(colorFormat, FormatUsage.Render);
 
-            using (new EditorGUI.DisabledScope(compatibleFormat == GraphicsFormat.None))
+            GraphicsFormat depthStencilFormat = (GraphicsFormat)m_DepthStencilFormat.intValue;
+            bool isDepthStencilUnused = depthStencilFormat == GraphicsFormat.None;
+            bool isDepthStencilFormatIncompatible = !isDepthStencilUnused && SystemInfo.GetCompatibleFormat(depthStencilFormat, FormatUsage.Render) == GraphicsFormat.None;
+            GraphicsFormat compatibleDepthStencilFormat = (isDepthStencilUnused) ? GraphicsFormat.None :
+                GraphicsFormatUtility.GetDepthStencilFormat(GraphicsFormatUtility.GetDepthBits(depthStencilFormat), (GraphicsFormatUtility.IsStencilFormat(depthStencilFormat)) ? 8 : 0);
+
+            // If no fallbacks are found for the color AND depth stencil buffer, disable the EnableCompatibleFormat field
+            // If only one of the two fails, checkbox can still be interacted with
+            using (new EditorGUI.DisabledScope(compatibleColorFormat == GraphicsFormat.None && compatibleDepthStencilFormat == GraphicsFormat.None))
                 EditorGUILayout.PropertyField(m_EnableCompatibleFormat, styles.enableCompatibleFormat);
 
             EditorGUILayout.PropertyField(m_ColorFormat, styles.colorFormat);
             m_sRGB.boolValue = GraphicsFormatUtility.IsSRGBFormat((GraphicsFormat)m_ColorFormat.intValue);
 
-            if (compatibleFormat != format)
+            if (compatibleColorFormat != colorFormat)
             {
-                string text = string.Format("Format {0} is not supported on this platform. ", format.ToString());
-                if (compatibleFormat != GraphicsFormat.None)
+                string text = string.Format("Format {0} is not supported on this platform. ", colorFormat.ToString());
+                if (compatibleColorFormat != GraphicsFormat.None)
                 {
                     if (m_EnableCompatibleFormat.boolValue)
-                        text += string.Format("Using {0} as a compatible format.", compatibleFormat.ToString());
+                        text += string.Format("Using {0} as a compatible format.", compatibleColorFormat.ToString());
                     else
-                        text += string.Format("You may enable Compatible Color Format to fallback automatically to a platform specific compatible format, {0} on this device.", compatibleFormat.ToString());
+                        text += string.Format("You may enable Compatible Format to fallback automatically to a platform specific compatible format, {0} on this device.", compatibleColorFormat.ToString());
                 }
-                EditorGUILayout.HelpBox(text, m_EnableCompatibleFormat.boolValue && compatibleFormat != GraphicsFormat.None ? MessageType.Warning : MessageType.Error);
+                EditorGUILayout.HelpBox(text, m_EnableCompatibleFormat.boolValue && compatibleColorFormat != GraphicsFormat.None ? MessageType.Warning : MessageType.Error);
             }
 
             if ((guiElements & GUIElements.RenderTargetDepthGUI) != 0)
-                EditorGUILayout.PropertyField(m_DepthFormat, styles.depthBuffer);
+            {
+                EditorGUILayout.PropertyField(m_DepthStencilFormat, styles.depthStencilFormat);
+
+                if (isDepthStencilFormatIncompatible && depthStencilFormat != compatibleDepthStencilFormat)
+                {
+                    string text = string.Format("Format {0} is not supported on this platform. ", depthStencilFormat.ToString());
+                    if (compatibleDepthStencilFormat != GraphicsFormat.None)
+                    {
+                        if (m_EnableCompatibleFormat.boolValue)
+                            text += string.Format("Using {0} as a compatible format.", compatibleDepthStencilFormat.ToString());
+                        else
+                            text += string.Format("You may enable Compatible Format to fallback automatically to a platform specific compatible format, {0} on this device.", compatibleDepthStencilFormat.ToString());
+                    }
+                    EditorGUILayout.HelpBox(text, m_EnableCompatibleFormat.boolValue && compatibleDepthStencilFormat != GraphicsFormat.None ? MessageType.Warning : MessageType.Error);
+                }
+            }
 
             using (new EditorGUI.DisabledScope(isTexture3D))
             {
@@ -305,7 +328,7 @@ namespace UnityEditor
             if (GraphicsFormatUtility.IsDepthFormat((GraphicsFormat)m_ColorFormat.enumValueIndex))
                 return true;
 
-            return m_DepthFormat.enumValueIndex != 0;
+            return m_DepthStencilFormat.enumValueIndex != 0;
         }
 
         override protected float GetExposureValueForTexture(Texture t)

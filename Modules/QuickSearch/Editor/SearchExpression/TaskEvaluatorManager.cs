@@ -46,7 +46,6 @@ namespace UnityEditor.Search
             var yieldSignal = new EventWaitHandle(false, EventResetMode.AutoReset);
             var task = Task.Run(() =>
             {
-                Thread.CurrentThread.Name = expression.name;
                 var enumerable = expression.Execute(c, SearchExpressionExecutionFlags.ThreadedEvaluation);
                 foreach (var searchItem in enumerable)
                 {

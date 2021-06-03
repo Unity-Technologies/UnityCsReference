@@ -69,7 +69,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void SetPackageVersion(IPackageVersion version)
         {
-            var samples = version.isInstalled ? m_PackageDatabase.GetSamples(version) : Enumerable.Empty<Sample>();
+            var samples = version.isInstalled || version.HasTag(PackageTag.Feature) ? m_PackageDatabase.GetSamples(version) : Enumerable.Empty<Sample>();
             if (samples?.Any() != true)
             {
                 UIUtils.SetElementDisplay(this, false);

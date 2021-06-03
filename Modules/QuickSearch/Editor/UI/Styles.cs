@@ -211,7 +211,7 @@ namespace UnityEditor.Search
             wordWrap = true,
             margin = new RectOffset(4, 4, 10, 4),
             padding = new RectOffset(4, 4, 4, 4),
-            fontSize = Math.Max(11, itemLabel.fontSize + 2),
+            fontSize = Math.Max(11, itemLabel.fontSize),
             alignment = TextAnchor.MiddleLeft
         };
 
@@ -362,7 +362,9 @@ namespace UnityEditor.Search
         public static readonly GUIContent searchFavoriteButtonContent = new GUIContent(string.Empty, EditorGUIUtility.FindTexture("Favorite Icon"), "Mark as Favorite");
         public static readonly GUIContent searchFavoriteOnButtonContent = new GUIContent(string.Empty, EditorGUIUtility.FindTexture("Favorite On Icon"), "Remove as Favorite");
         public static readonly GUIContent saveQueryButtonContent = new GUIContent(string.Empty, EditorGUIUtility.FindTexture("SaveAs"), "Save search query as an asset.");
-        public static readonly GUIContent previewInspectorButtonContent = new GUIContent(string.Empty, EditorGUIUtility.FindTexture("UnityEditor.InspectorWindow"), "Open Preview Inspector");
+        public static readonly GUIContent previewInspectorContent = new GUIContent("Inspector", EditorGUIUtility.FindTexture("UnityEditor.InspectorWindow"), "Open Inspector");
+        public static readonly GUIContent previewInspectorButtonContent = new GUIContent(string.Empty, EditorGUIUtility.FindTexture("UnityEditor.InspectorWindow"), "Open Inspector");
+        public static readonly GUIContent sortButtonContent = new GUIContent(string.Empty, EditorGUIUtility.FindTexture("UnityEditor/Filter Icon"), "Change Saved Searches sorting order");
 
         public static readonly GUIContent syncSearchButtonContent = new GUIContent(string.Empty, EditorGUIUtility.LoadIcon("QuickSearch/SyncSearch"), "Synchronize search fields (Ctrl + K)");
         public static readonly GUIContent syncSearchOnButtonContent = new GUIContent(string.Empty, EditorGUIUtility.LoadIcon("QuickSearch/SyncSearch On"), "Synchronize search fields (Ctrl + K)");
@@ -374,6 +376,7 @@ namespace UnityEditor.Search
         public static readonly GUIContent searchTipsSaveSearches = new GUIContent("Save Searches you use often", EditorGUIUtility.FindTexture("SaveAs"));
         public static readonly GUIContent searchTipsPreviewInspector = new GUIContent("Enable the Preview Inspector to edit search results in place", EditorGUIUtility.LoadIcon("UnityEditor.InspectorWindow"));
         public static readonly GUIContent searchTipsSync = new GUIContent("Enable sync to keep other Editor search fields populated ", EditorGUIUtility.LoadIcon("QuickSearch/SyncSearch On"));
+        public static readonly GUIContent sideBarPanelContent = new GUIContent(string.Empty, Utils.LoadIcon("ShowPanels"), "Open Saved Searches Panel");
 
         public static readonly GUIContent[] searchTipIcons =
         {
@@ -419,16 +422,35 @@ namespace UnityEditor.Search
             alignment = TextAnchor.MiddleCenter
         };
 
-        public static readonly GUIStyle savedSearchItem = Utils.FromUSS(new GUIStyle()
+        public static readonly GUIStyle savedSearchesHeaderButton = new GUIStyle("IconButton")
         {
-            wordWrap = false,
-            stretchWidth = false,
-            stretchHeight = false,
-            clipping = TextClipping.Overflow
-        }, "quick-search-saved-search-item");
-        public static readonly GUIStyle savedSearchItemSelected = Utils.FromUSS(savedSearchItem, "quick-search-saved-search-item-selected");
+            margin = new RectOffset(2, 2, 4, 4),
+            padding = new RectOffset(0, 0, 0, 0),
+            fixedWidth = 23f,
+            fixedHeight = 23f,
+            imagePosition = ImagePosition.ImageOnly,
+            alignment = TextAnchor.MiddleCenter
+        };
+
+        public static readonly GUIStyle toolbarDropdownButton = new GUIStyle("ToolbarCreateAddNewDropDown")
+        {
+            margin = new RectOffset(2, 2, 0, 0),
+            padding = new RectOffset(2, 0, 0, 0),
+            fixedWidth = 32f,
+            fixedHeight = 24f,
+            imagePosition = ImagePosition.ImageOnly,
+            alignment = TextAnchor.MiddleLeft
+        };
+
+        public static GUIStyle toolbarSearchField = new GUIStyle(EditorStyles.toolbarSearchField)
+        {
+            margin = new RectOffset(4, 4, 4, 4)
+        };
+
         public static readonly GUIStyle panelHeader = Utils.FromUSS(new GUIStyle() {
-            wordWrap = true,
+            margin = new RectOffset(4, 4, 2, 3),
+            padding = new RectOffset(4, 4, 6, 2),
+            wordWrap = false,
             stretchWidth = true,
             clipping = TextClipping.Clip
         }, "quick-search-panel-header");
@@ -474,14 +496,19 @@ namespace UnityEditor.Search
         {
             fixedWidth = 16,
             fixedHeight = 16,
-            margin = new RectOffset(0, 2, 2, 2),
+            margin = new RectOffset(0, 2, 3, 2),
             padding = new RectOffset(0, 0, 0, 0),
-            alignment = TextAnchor.MiddleCenter
+            alignment = TextAnchor.MiddleCenter,
+            imagePosition = ImagePosition.ImageOnly,
+        };
+
+        public static readonly GUIStyle statusBarPrefsButton = new GUIStyle(statusBarButton)
+        {
+            margin = new RectOffset(0, 2, 2, 2),
         };
 
         public static readonly GUIStyle searchInProgressButton = new GUIStyle(statusBarButton)
         {
-            imagePosition = ImagePosition.ImageOnly,
             alignment = TextAnchor.MiddleLeft,
             contentOffset = new Vector2(-1, 0),
             padding = new RectOffset(2, 2, 2, 2),
@@ -609,5 +636,36 @@ namespace UnityEditor.Search
 
         public static readonly GUIContent tableSaveButtonContent = new GUIContent("Save", EditorGUIUtility.LoadIconRequired("SaveAs"), "Save current table configuration");
         public static readonly GUIContent tableDeleteButtonContent = EditorGUIUtility.IconContent("Grid.EraserTool", "|Delete table configuration");
+
+        public static class QueryBuilder
+        {
+            public static readonly Color labelColor;
+            public static readonly Color splitterColor;
+            public static readonly GUIStyle label;
+
+            public static GUIContent createContent = EditorGUIUtility.IconContent("CreateAddNew");
+            public static GUIStyle addNewDropDown = new GUIStyle("ToolbarCreateAddNewDropDown")
+            {
+                fixedWidth = 32f,
+                fixedHeight = 0,
+                padding = new RectOffset(0, 0, 0, 0),
+                margin = new RectOffset(2, 2, 4, 4)
+            };
+
+            static QueryBuilder()
+            {
+                ColorUtility.TryParseHtmlString("#202427", out labelColor);
+                splitterColor = new Color(labelColor.r, labelColor.g, labelColor.b, 0.5f);
+
+                label = new GUIStyle("ToolbarLabel")
+                {
+                    richText = true,
+                    alignment = TextAnchor.MiddleLeft,
+                    margin = new RectOffset(6, 6, 0, 0),
+                    normal = new GUIStyleState { textColor = labelColor },
+                    hover = new GUIStyleState { textColor = labelColor }
+                };
+            }
+        }
     }
 }

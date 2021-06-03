@@ -69,4 +69,10 @@ namespace UnityEditorInternal
     {
         extern internal static Texture GetTextureForPlayMode([NotNull] this Sprite sprite);
     }
+
+    [StaticAccessor("SpriteUtilityBindings", StaticAccessorType.DoubleColon)]
+    public static class SpriteMaskUtility
+    {
+        extern public static void EnableDebugMode(bool enable);
+    }
 }

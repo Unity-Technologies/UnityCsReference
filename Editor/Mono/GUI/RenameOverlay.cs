@@ -332,7 +332,7 @@ namespace UnityEditor
 
         void RemoveMessage()
         {
-            TooltipView.Close();
+            TooltipView.ForceClose();
         }
     }
 

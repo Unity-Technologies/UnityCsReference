@@ -43,7 +43,8 @@ namespace UnityEngine.UIElements.StyleSheets.Syntax
         Percentage, // <percentage>
         Color, // <color>
         Resource, // <resource>
-        Url // <url>
+        Url, // <url>
+        Angle, //<angle>
     }
 
     // In order of precedence

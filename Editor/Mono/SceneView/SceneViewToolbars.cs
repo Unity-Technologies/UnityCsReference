@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor.Overlays;
-using UnityEditor.Toolbars;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -14,31 +13,43 @@ namespace UnityEditor
     class TransformToolsOverlayToolBar : ToolbarOverlay
     {
         const string k_Id = "unity-transform-toolbar";
+        public TransformToolsOverlayToolBar() : base("Tools/Builtin Tools") {}
+    }
 
-        protected override void PopulateToolbar(EditorToolbar toolbar)
+    [Overlay(typeof(EditorWindow), k_Id, "Component Tools", true)]
+    [Icon("Icons/Overlays/StandardTools.png")]
+    class ComponentToolsOverlayToolBar : ToolbarOverlay
+    {
+        const string k_Id = "unity-component-tools";
+        public ComponentToolsOverlayToolBar() : base("Tools/Component Tools") {}
+
+        public override VisualElement CreatePanelContent()
         {
-            toolbar.AddElement("Tools/Builtin Tools");
+            var ve = base.CreatePanelContent();
+            //Ensuring constant size of the text area
+            var titleElement = rootVisualElement.Q<Label>(Overlay.headerTitle);
+            titleElement.style.minWidth = 110;
+
+            return ve;
         }
     }
 
-    [Overlay(typeof(SceneView), k_Id, "SceneView toolbar", true)]
+    [Overlay(typeof(SceneView), k_Id, "View Options", true)]
     [Icon("Icons/Overlays/ViewOptions.png")]
     class SceneViewToolBar : ToolbarOverlay
     {
         const string k_Id = "unity-scene-view-toolbar";
-        protected override void PopulateToolbar(EditorToolbar toolbar)
-        {
-            toolbar.AddElement("SceneView/Camera Mode");
-            toolbar.AddElement("SceneView/2D");
-            toolbar.AddElement("SceneView/Lighting");
-            toolbar.AddElement("SceneView/Audio");
-            toolbar.AddElement("SceneView/Fx");
-            toolbar.AddElement("SceneView/Scene Visibility");
-            toolbar.AddElement("SceneView/Render Doc");
-            toolbar.AddElement("SceneView/Metal Capture");
-            toolbar.AddElement("SceneView/Scene Camera");
-            toolbar.AddElement("SceneView/Gizmos");
-        }
+        public SceneViewToolBar() : base(
+            "SceneView/Camera Mode",
+            "SceneView/2D",
+            "SceneView/Lighting",
+            "SceneView/Audio",
+            "SceneView/Fx",
+            "SceneView/Scene Visibility",
+            "SceneView/Render Doc",
+            "SceneView/Metal Capture",
+            "SceneView/Scene Camera",
+            "SceneView/Gizmos") {}
     }
 
     [Overlay(typeof(EditorWindow), k_Id, "Search", true)]
@@ -63,17 +74,16 @@ namespace UnityEditor
         public VisualElement CreateHorizontalToolbarContent() => CreatePanelContent();
     }
 
-    [Overlay(typeof(SceneView), k_Id, "Grid and Snap toolbar", true)]
+    [Overlay(typeof(SceneView), k_Id, "Grid and Snap", true)]
     [Icon("Icons/Overlays/GridAndSnap.png")]
     class GridAndSnapToolBar : ToolbarOverlay
     {
         const string k_Id = "unity-grid-and-snap-toolbar";
-        protected override void PopulateToolbar(EditorToolbar toolbar)
-        {
-            toolbar.AddElement("SceneView/Grids");
-            toolbar.AddElement("Tools/Snap Settings");
-            toolbar.AddElement("SceneView/Snap Increment");
-        }
+
+        public GridAndSnapToolBar() : base(
+            "SceneView/Grids",
+            "Tools/Snap Settings",
+            "SceneView/Snap Increment") {}
     }
 }
 // namespace

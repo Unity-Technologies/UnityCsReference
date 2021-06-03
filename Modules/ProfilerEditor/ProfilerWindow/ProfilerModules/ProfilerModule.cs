@@ -13,9 +13,8 @@ using UnityEngine.UIElements;
 
 namespace Unity.Profiling.Editor
 {
-    // TODO Make public as part of Extensibility API.
     [Serializable]
-    internal abstract partial class ProfilerModule
+    public abstract partial class ProfilerModule
     {
         // The identifier must be serialized as it is used by the ProfilerWindow to identify a deserialized module prior to calling Initialize() on it.
         [SerializeField] string m_Identifier;
@@ -164,7 +163,7 @@ namespace Unity.Profiling.Editor
     }
 
     // All legacy elements of the module that have been copied over from ProfilerModuleBase and may not be applicable going forward. Over time we can rework this.
-    internal abstract partial class ProfilerModule
+    public abstract partial class ProfilerModule
     {
         internal const int k_UndefinedOrderIndex = int.MaxValue;
 

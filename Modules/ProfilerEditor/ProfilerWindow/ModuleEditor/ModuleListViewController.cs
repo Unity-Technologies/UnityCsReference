@@ -40,11 +40,7 @@ namespace UnityEditor.Profiling.ModuleEditor
             m_ListView.bindItem = BindListViewItem;
             m_ListView.selectionType = SelectionType.Single;
             m_ListView.reorderable = true;
-            var dragAndDropController = m_ListView.GetDragAndDropController();
-            if (dragAndDropController != null)
-            {
-                dragAndDropController.onItemMoved += OnListViewItemMoved;
-            }
+            m_ListView.itemIndexChanged += OnListViewItemMoved;
             m_ListView.onSelectionChange += OnListViewSelectionChange;
             m_ListView.itemsSource = m_Modules;
 
@@ -59,20 +55,13 @@ namespace UnityEditor.Profiling.ModuleEditor
 
         public void Refresh()
         {
-            m_ListView.Refresh();
+            m_ListView.Rebuild();
         }
 
         public void RefreshSelectedListItem()
         {
             var index = m_ListView.selectedIndex;
-            foreach (var recycledItem in m_ListView.Pool)
-            {
-                if (recycledItem.index == index)
-                {
-                    m_ListView.bindItem(recycledItem.element, recycledItem.index);
-                    break;
-                }
-            }
+            m_ListView.RefreshItem(index);
         }
 
         protected override void CollectViewElements(VisualElement root)
@@ -108,7 +97,7 @@ namespace UnityEditor.Profiling.ModuleEditor
             onModuleAtIndexSelected.Invoke(selectedModule, selectedIndex);
         }
 
-        void OnListViewItemMoved(ItemMoveArgs<object> args)
+        void OnListViewItemMoved(int previousIndex, int newIndex)
         {
             // We can no longer rely on modules having a defined order index. Therefore, when any module is reordered, we should update the order index on them all.
             // Module reordering will be moved closer to the chart view or dropdown list in the future and can be removed from the Module Editor.

@@ -227,7 +227,6 @@ namespace UnityEditor
 
         internal bool isPingingObject { get; set; } = false;
 
-
         Scene m_CustomScene;
         protected internal Scene customScene
         {
@@ -1798,7 +1797,7 @@ namespace UnityEditor
 
             if (m_SceneTargetTexture == null)
             {
-                m_SceneTargetTexture = new RenderTexture(0, 0, 24, format)
+                m_SceneTargetTexture = new RenderTexture(0, 0, format, SystemInfo.GetGraphicsFormat(DefaultFormat.DepthStencil))
                 {
                     name = "SceneView RT",
                     antiAliasing = 1,
@@ -3198,7 +3197,7 @@ namespace UnityEditor
                         var parent = defaultParentObject != null ? defaultParentObject : customParentForDraggedObjects;
 
                         GameObject go = HandleUtility.PickGameObject(Event.current.mousePosition, true);
-                        DragAndDrop.visualMode = DragAndDropService.Drop(DragAndDropService.kSceneDropDstId, go, pivot, Event.current.mousePosition, parent, isPerform);
+                        DragAndDrop.visualMode = DragAndDrop.Drop(DragAndDropWindowTarget.sceneView, go, pivot, Event.current.mousePosition, parent, isPerform);
                     }
 
                     if (isPerform && DragAndDrop.visualMode != DragAndDropVisualMode.None)

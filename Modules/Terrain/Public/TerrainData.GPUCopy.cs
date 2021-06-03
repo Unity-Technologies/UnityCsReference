@@ -111,7 +111,7 @@ namespace UnityEngine
                 if (dstTexture.mipmapCount > 1)
                 {
                     // Composes mip0 in a RT with full mipchain.
-                    var tmp = RenderTexture.GetTemporary(new RenderTextureDescriptor(dstTexture.width, dstTexture.height, source.format)
+                    var tmp = RenderTexture.GetTemporary(new RenderTextureDescriptor(dstTexture.width, dstTexture.height, source.graphicsFormat, source.depthStencilFormat)
                     {
                         sRGB = false,
                         useMipMap = true,

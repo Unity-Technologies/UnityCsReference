@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+using Unity.Profiling;
 
 namespace UnityEngine.UIElements
 {
@@ -14,6 +16,9 @@ namespace UnityEngine.UIElements
     /// </remarks>
     public abstract class ImmediateModeElement : VisualElement
     {
+        static readonly Dictionary<Type, ProfilerMarker> s_Markers = new Dictionary<Type, ProfilerMarker>();
+        readonly ProfilerMarker m_ImmediateRepaintMarker;
+
         // If true, skip callback when outside the viewport
         private bool m_CullingEnabled = false;
         /// <summary>
@@ -31,11 +36,25 @@ namespace UnityEngine.UIElements
         public ImmediateModeElement()
         {
             generateVisualContent += OnGenerateVisualContent;
+            var type = GetType();
+            if (!s_Markers.TryGetValue(type, out m_ImmediateRepaintMarker))
+            {
+                m_ImmediateRepaintMarker = new ProfilerMarker($"{typeName}.{nameof(ImmediateRepaint)}");
+                s_Markers[type] = m_ImmediateRepaintMarker;
+            }
         }
 
         private void OnGenerateVisualContent(MeshGenerationContext mgc)
         {
-            mgc.painter.DrawImmediate(ImmediateRepaint, cullingEnabled);
+            mgc.painter.DrawImmediate(CallImmediateRepaint, cullingEnabled);
+        }
+
+        void CallImmediateRepaint()
+        {
+            using (m_ImmediateRepaintMarker.Auto())
+            {
+                ImmediateRepaint();
+            }
         }
 
         /// <summary>

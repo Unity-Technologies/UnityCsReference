@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace UnityEngine.UIElements
@@ -13,7 +12,7 @@ namespace UnityEngine.UIElements
         internal struct DragPosition : IEquatable<DragPosition>
         {
             public int insertAtIndex;
-            public ListView.RecycledItem recycledItem;
+            public ReusableCollectionItem recycledItem;
             public DragAndDropPosition dragAndDropPosition;
 
             public bool Equals(DragPosition other)
@@ -42,59 +41,53 @@ namespace UnityEngine.UIElements
 
         private DragPosition m_LastDragPosition;
 
-        private readonly VisualElement m_DragHoverBar;
-        private readonly List<VisualElement> m_PickedElements = new List<VisualElement>();
+        private VisualElement m_DragHoverBar;
 
-        public const int k_EmptyIndex = -1;
         private const int k_AutoScrollAreaSize = 5;
         private const int k_BetweenElementsAreaSize = 5;
         private const int k_PanSpeed = 20;
         private const int k_DragHoverBarHeight = 2;
 
-        private ListView targetListView
+        protected BaseVerticalCollectionView targetListView
         {
-            get { return m_Target as ListView; }
+            get { return m_Target as BaseVerticalCollectionView; }
         }
 
-        private ScrollView targetScrollView
+        protected ScrollView targetScrollView
         {
-            get { return targetListView.m_ScrollView; }
+            get { return targetListView.scrollView; }
         }
 
-        public IListViewDragAndDropController dragAndDropController { get; set; }
+        public ICollectionDragAndDropController dragAndDropController { get; set; }
 
-        public ListViewDragger(ListView listView) : base(listView)
-        {
-            m_DragHoverBar = new VisualElement();
-            m_DragHoverBar.AddToClassList(ListView.dragHoverBarUssClassName);
-            m_DragHoverBar.style.width = targetListView.localBound.width;
-            m_DragHoverBar.style.visibility = Visibility.Hidden;
-            m_DragHoverBar.pickingMode = PickingMode.Ignore;
-
-            targetListView.RegisterCallback<GeometryChangedEvent>(e =>
-            {
-                m_DragHoverBar.style.width = targetListView.localBound.width;
-            });
-            targetListView.m_ScrollView.contentViewport.Add(m_DragHoverBar);
-        }
+        public ListViewDragger(BaseVerticalCollectionView listView)
+            : base(listView) {}
 
         protected override bool CanStartDrag(Vector3 pointerPosition)
         {
             if (dragAndDropController == null)
                 return false;
 
-            if (!targetListView.selectedItems.Any())
-                return false;
-
             if (!targetScrollView.contentContainer.worldBound.Contains(pointerPosition))
                 return false;
 
-            return dragAndDropController.CanStartDrag(targetListView.selectedItems);
+            if (targetListView.selectedItems.Any())
+                return dragAndDropController.CanStartDrag(targetListView.selectedIndices);
+
+            var recycledItem = GetRecycledItem(pointerPosition);
+            return recycledItem != null && dragAndDropController.CanStartDrag(new[] { recycledItem.index });
         }
 
         protected override StartDragArgs StartDrag(Vector3 pointerPosition)
         {
-            return dragAndDropController.SetupDragAndDrop(targetListView.selectedItems);
+            if (targetListView.selectedItems.Any())
+                return dragAndDropController.SetupDragAndDrop(targetListView.selectedIndices);
+
+            var recycledItem = GetRecycledItem(pointerPosition);
+            if (recycledItem == null)
+                return default;
+
+            return dragAndDropController.SetupDragAndDrop(new[] { recycledItem.index });
         }
 
         protected override DragVisualMode UpdateDrag(Vector3 pointerPosition)
@@ -148,23 +141,45 @@ namespace UnityEngine.UIElements
             if (m_LastDragPosition.Equals(dragPosition))
                 return;
 
+            if (m_DragHoverBar == null)
+            {
+                m_DragHoverBar = new VisualElement();
+                m_DragHoverBar.AddToClassList(BaseVerticalCollectionView.dragHoverBarUssClassName);
+                m_DragHoverBar.style.width = targetListView.localBound.width;
+                m_DragHoverBar.style.visibility = Visibility.Hidden;
+                m_DragHoverBar.pickingMode = PickingMode.Ignore;
+
+                targetListView.RegisterCallback<GeometryChangedEvent>(e =>
+                {
+                    m_DragHoverBar.style.width = targetListView.localBound.width;
+                });
+                targetScrollView.contentViewport.Add(m_DragHoverBar);
+            }
+
             ClearDragAndDropUI();
             m_LastDragPosition = dragPosition;
             switch (dragPosition.dragAndDropPosition)
             {
                 case DragAndDropPosition.OverItem:
-                    dragPosition.recycledItem.element.AddToClassList(ListView.itemDragHoverUssClassName);
+                    dragPosition.recycledItem.rootElement.AddToClassList(BaseVerticalCollectionView.itemDragHoverUssClassName);
                     break;
                 case DragAndDropPosition.BetweenItems:
                     if (dragPosition.insertAtIndex == 0)
                         PlaceHoverBarAt(0);
                     else
-                        PlaceHoverBarAtElement(targetListView.GetRecycledItemFromIndex(dragPosition.insertAtIndex - 1).element);
+                    {
+                        var item = targetListView.GetRecycledItemFromIndex(dragPosition.insertAtIndex - 1);
+                        item ??= targetListView.GetRecycledItemFromIndex(dragPosition.insertAtIndex);
+                        PlaceHoverBarAtElement(item.rootElement);
+                    }
+
                     break;
                 case DragAndDropPosition.OutsideItems:
                     var recycledItem = targetListView.GetRecycledItemFromIndex(targetListView.itemsSource.Count - 1);
                     if (recycledItem != null)
-                        PlaceHoverBarAtElement(recycledItem.element);
+                        PlaceHoverBarAtElement(recycledItem.rootElement);
+                    else if (targetListView.sourceIncludesArraySize && targetListView.itemsSource.Count > 0)
+                        PlaceHoverBarAtElement(targetListView.GetRecycledItemFromIndex(0).rootElement);
                     else
                         PlaceHoverBarAt(0);
                     break;
@@ -175,13 +190,21 @@ namespace UnityEngine.UIElements
             }
         }
 
-        protected bool TryGetDragPosition(Vector2 pointerPosition, ref DragPosition dragPosition)
+        protected virtual bool TryGetDragPosition(Vector2 pointerPosition, ref DragPosition dragPosition)
         {
             var recycledItem = GetRecycledItem(pointerPosition);
             if (recycledItem != null)
             {
+                // Skip array size item
+                if (targetListView.sourceIncludesArraySize && recycledItem.index == 0)
+                {
+                    dragPosition.insertAtIndex = recycledItem.index + 1;
+                    dragPosition.dragAndDropPosition = DragAndDropPosition.BetweenItems;
+                    return true;
+                }
+
                 //Below an item
-                if (recycledItem.element.worldBound.yMax - pointerPosition.y < k_BetweenElementsAreaSize)
+                if (recycledItem.rootElement.worldBound.yMax - pointerPosition.y < k_BetweenElementsAreaSize)
                 {
                     dragPosition.insertAtIndex = recycledItem.index + 1;
                     dragPosition.dragAndDropPosition = DragAndDropPosition.BetweenItems;
@@ -189,17 +212,17 @@ namespace UnityEngine.UIElements
                 }
 
                 //Upon an item
-                if (pointerPosition.y - recycledItem.element.worldBound.yMin > k_BetweenElementsAreaSize)
+                if (pointerPosition.y - recycledItem.rootElement.worldBound.yMin > k_BetweenElementsAreaSize)
                 {
                     var scrollOffset = targetScrollView.scrollOffset;
-                    targetScrollView.ScrollTo(recycledItem.element);
+                    targetScrollView.ScrollTo(recycledItem.rootElement);
                     if (scrollOffset != targetScrollView.scrollOffset)
                     {
                         return TryGetDragPosition(pointerPosition, ref dragPosition);
                     }
 
                     dragPosition.recycledItem = recycledItem;
-                    dragPosition.insertAtIndex = k_EmptyIndex;
+                    dragPosition.insertAtIndex = recycledItem.index;
                     dragPosition.dragAndDropPosition = DragAndDropPosition.OverItem;
                     return true;
                 }
@@ -226,13 +249,14 @@ namespace UnityEngine.UIElements
             object target = null;
             var recycledItem = dragPosition.recycledItem;
             if (recycledItem != null)
-                target = targetListView.itemsSource[recycledItem.index];
+                target = targetListView.viewController.GetItemForIndex(recycledItem.index);
 
             return new ListDragAndDropArgs
             {
                 target = target,
                 insertAtIndex = dragPosition.insertAtIndex,
-                dragAndDropPosition = dragPosition.dragAndDropPosition
+                dragAndDropPosition = dragPosition.dragAndDropPosition,
+                dragAndDropData = useDragEvents ? DragAndDropUtility.dragAndDrop.data : dragAndDropClient.data,
             };
         }
 
@@ -252,19 +276,20 @@ namespace UnityEngine.UIElements
         protected override void ClearDragAndDropUI()
         {
             m_LastDragPosition = new DragPosition();
-            foreach (var item in targetListView.Pool)
+            foreach (var item in targetListView.activeItems)
             {
-                item.element.RemoveFromClassList(ListView.itemDragHoverUssClassName);
+                item.rootElement.RemoveFromClassList(BaseVerticalCollectionView.itemDragHoverUssClassName);
             }
 
-            m_DragHoverBar.style.visibility = Visibility.Hidden;
+            if (m_DragHoverBar != null)
+                m_DragHoverBar.style.visibility = Visibility.Hidden;
         }
 
-        private ListView.RecycledItem GetRecycledItem(Vector3 pointerPosition)
+        protected ReusableCollectionItem GetRecycledItem(Vector3 pointerPosition)
         {
-            foreach (var recycledItem in targetListView.Pool)
+            foreach (var recycledItem in targetListView.activeItems)
             {
-                if (recycledItem.element.worldBound.Contains(pointerPosition))
+                if (recycledItem.rootElement.worldBound.Contains(pointerPosition))
                     return recycledItem;
             }
 
@@ -274,9 +299,9 @@ namespace UnityEngine.UIElements
 
     internal static class ListViewDraggerExtension
     {
-        public static ListView.RecycledItem GetRecycledItemFromIndex(this ListView listView, int index)
+        public static ReusableCollectionItem GetRecycledItemFromIndex(this BaseVerticalCollectionView listView, int index)
         {
-            foreach (var recycledItem in listView.Pool)
+            foreach (var recycledItem in listView.activeItems)
             {
                 if (recycledItem.index.Equals(index))
                     return recycledItem;

@@ -43,6 +43,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public static bool FastStartsWith(string str, string prefix, string prefixLowercase)
         {
+            if (str == null || prefix == null)
+            {
+                return false;
+            }
+
             int strLength = str.Length;
             int prefixLength = prefix.Length;
 

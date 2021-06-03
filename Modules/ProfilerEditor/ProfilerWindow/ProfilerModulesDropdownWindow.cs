@@ -79,7 +79,7 @@ namespace UnityEditor.Profiling
             rootVisualElement.AddToClassList(themeUssClass);
 
             m_ModulesListView = rootVisualElement.Q<ListView>(k_UssSelector_ListView);
-            m_ModulesListView.itemHeight = k_ListViewItemHeight;
+            m_ModulesListView.fixedItemHeight = k_ListViewItemHeight;
             m_ModulesListView.makeItem = MakeListViewItem;
             m_ModulesListView.bindItem = BindListViewItem;
             m_ModulesListView.selectionType = SelectionType.Single;
@@ -112,7 +112,7 @@ namespace UnityEditor.Profiling
 
             var selectedModule = m_Modules[selectedIndex];
             selectedModule.ToggleActive();
-            m_ModulesListView.Refresh();
+            m_ModulesListView.Rebuild();
             m_ModulesListView.ClearSelection();
 
             responder?.OnModuleActiveStateChanged();

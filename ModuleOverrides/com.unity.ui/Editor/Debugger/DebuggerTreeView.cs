@@ -33,7 +33,7 @@ namespace UnityEditor.UIElements.Debugger
 
         private IList<ITreeViewItem> m_TreeRootItems = new List<ITreeViewItem>();
 
-        private TreeView m_TreeView;
+        private InternalTreeView m_TreeView;
         private HighlightOverlayPainter m_TreeViewHoverOverlay;
 
         private VisualElement m_Container;
@@ -181,7 +181,7 @@ namespace UnityEditor.UIElements.Debugger
             // Clear selection which would otherwise persist via view data persistence.
             m_TreeView?.ClearSelection();
 
-            m_TreeView = new TreeView(m_TreeRootItems, 20, makeItem, FillItem);
+            m_TreeView = new InternalTreeView(m_TreeRootItems, 20, makeItem, FillItem);
             m_TreeView.style.flexGrow = 1;
             m_TreeView.horizontalScrollingEnabled = true;
             m_TreeView.onSelectionChange += items =>

@@ -46,12 +46,12 @@ namespace UnityEditor.Toolbars
         List<string> m_AddedElementIds = new List<string>();
 
         readonly List<ToolbarElement> m_LoadedElements = new List<ToolbarElement>();
-        readonly object m_Context;
+        readonly EditorWindow m_Context;
         VisualElement m_Root;
 
         public VisualElement root => m_Root;
 
-        public EditorToolbar(object context, VisualElement root, params string[] idAddedByDefault)
+        public EditorToolbar(EditorWindow context, VisualElement root, params string[] idAddedByDefault)
         {
             m_Context = context;
             m_Root = root;
@@ -92,10 +92,8 @@ namespace UnityEditor.Toolbars
             root.Add(ve);
             m_LoadedElements.Add(element);
 
-            if (ve is IEditorToolbarContext visualWithContext)
-            {
-                visualWithContext.context = m_Context;
-            }
+            if (ve is IAccessContainerWindow visualWithContext)
+                visualWithContext.containerWindow = m_Context;
         }
 
         void AddElement(string id, bool load)
@@ -142,9 +140,9 @@ namespace UnityEditor.Toolbars
                 root.Add(visual);
                 m_LoadedElements.Add(element);
 
-                if (visual is IEditorToolbarContext visualWithContext)
+                if (visual is IAccessContainerWindow visualWithContext)
                 {
-                    visualWithContext.context = m_Context;
+                    visualWithContext.containerWindow = m_Context;
                 }
                 return true;
             }

@@ -38,7 +38,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var currentTime = EditorApplication.timeSinceStartup;
                 var deltaTime = currentTime - spinner.m_LastRotationTime;
 
-                spinner.transformOrigin = Vector3.zero;
+                spinner.style.transformOrigin = new TransformOrigin(0, 0, 0);
                 spinner.transform.rotation = Quaternion.Euler(0, 0, spinner.m_Rotation);
                 spinner.m_Rotation += (int)(k_RotationSpeed * deltaTime);
                 spinner.m_Rotation %= 360;

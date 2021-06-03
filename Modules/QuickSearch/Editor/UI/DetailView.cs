@@ -75,7 +75,7 @@ namespace UnityEditor.Search
                 if (Event.current.type == EventType.Layout)
                     SetupEditors(selection, showOptions);
 
-                GUILayout.Label("Preview Inspector", Styles.panelHeader);
+                GUILayout.Label(Styles.previewInspectorContent, Styles.panelHeader);
 
                 if (selectionCount == 0)
                     return;

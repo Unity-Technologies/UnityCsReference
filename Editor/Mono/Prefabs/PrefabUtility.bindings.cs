@@ -41,6 +41,10 @@ namespace UnityEditor
         extern internal static Object GetPrefabAssetHandle(Object assetComponentOrGameObject);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        [NativeThrows]
+        extern public static bool HasManagedReferencesWithMissingTypes(Object assetComponentOrGameObject);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         extern internal static GameObject GetPrefabInstanceRootGameObject(Object instanceComponentOrGameObject);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]

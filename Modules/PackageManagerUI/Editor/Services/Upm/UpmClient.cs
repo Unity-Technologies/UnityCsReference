@@ -21,6 +21,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual event Action<IOperation> onRemoveOperation = delegate {};
         public virtual event Action<IOperation> onAddOperation = delegate {};
         public virtual event Action<IOperation> onEmbedOperation = delegate {};
+        public virtual event Action<UpmAddAndRemoveOperation> onAddAndRemoveOperation = delegate {};
 
         public virtual event Action<IEnumerable<IPackage>> onPackagesChanged = delegate {};
         public virtual event Action<string, IPackage> onProductPackageChanged = delegate {};
@@ -45,6 +46,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private UpmAddOperation m_AddOperation;
         private UpmAddOperation addOperation => CreateOperation(ref m_AddOperation);
+        [SerializeField]
+        private UpmAddAndRemoveOperation m_AddAndRemoveOperation;
+        private UpmAddAndRemoveOperation addAndRemoveOperation => CreateOperation(ref m_AddAndRemoveOperation);
         [SerializeField]
         private UpmRemoveOperation m_RemoveOperation;
         private UpmRemoveOperation removeOperation => CreateOperation(ref m_RemoveOperation);
@@ -100,6 +104,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AddOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
             m_RemoveOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
             m_EmbedOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
+            m_AddAndRemoveOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
         }
 
         public virtual bool IsAnyExperimentalPackagesInUse()
@@ -124,7 +129,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual bool isAddRemoveOrEmbedInProgress
         {
-            get { return addOperation.isInProgress || removeOperation.isInProgress || embedOperation.isInProgress; }
+            get { return addOperation.isInProgress || removeOperation.isInProgress || addAndRemoveOperation.isInProgress || embedOperation.isInProgress; }
         }
 
         public virtual bool IsEmbedInProgress(string packageName)
@@ -134,12 +139,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual bool IsRemoveInProgress(string packageName)
         {
-            return removeOperation.isInProgress && removeOperation.packageName == packageName;
+            return (removeOperation.isInProgress && removeOperation.packageName == packageName)
+                || (addAndRemoveOperation.isInProgress && addAndRemoveOperation.packagesNamesToRemove.Contains(packageName));
         }
 
         public virtual bool IsAddInProgress(string packageId)
         {
-            return addOperation.isInProgress && addOperation.packageId == packageId;
+            return (addOperation.isInProgress && addOperation.packageId == packageId)
+                || (addAndRemoveOperation.isInProgress && addAndRemoveOperation.packageIdsToAdd.Contains(packageId));;
         }
 
         public virtual void AddById(string packageId)
@@ -214,6 +221,52 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             addOperation.AddByUrlOrPath(url, PackageTag.Git);
             SetupAddOperation();
+        }
+
+        public virtual void AddAndResetDependencies(string packageId, IEnumerable<string> dependencyPackagesNames)
+        {
+            if (isAddRemoveOrEmbedInProgress)
+                return;
+            addAndRemoveOperation.AddAndResetDependencies(packageId, dependencyPackagesNames);
+            SetupAddAndRemoveOperation();
+        }
+
+        public virtual void ResetDependencies(string packageId, IEnumerable<string> dependencyPackagesNames)
+        {
+            if (isAddRemoveOrEmbedInProgress)
+                return;
+            addAndRemoveOperation.ResetDependencies(packageId, dependencyPackagesNames);
+            SetupAddAndRemoveOperation();
+        }
+
+        private void SetupAddAndRemoveOperation()
+        {
+            addAndRemoveOperation.onProcessResult += OnProcessAddAndRemoveResult;
+            addAndRemoveOperation.onOperationError += (op, error) =>
+            {
+                var packageIds = addAndRemoveOperation.packageIdsToAdd.Concat(addAndRemoveOperation.packagesNamesToRemove);
+                Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] Error adding/removing packages: {0}."), string.Join(",", packageIds.ToArray())));
+            };
+            onAddAndRemoveOperation?.Invoke(addAndRemoveOperation);
+        }
+
+        private void OnProcessAddAndRemoveResult(Request<PackageCollection> request)
+        {
+            PackageManagerExtensions.ExtensionCallback(() =>
+            {
+                foreach (var packageInfo in addAndRemoveOperation.packagesNamesToRemove.Select(name => m_UpmCache.GetInstalledPackageInfo(name)).Where(p => p != null))
+                    foreach (var extension in PackageManagerExtensions.Extensions)
+                        extension.OnPackageRemoved(packageInfo);
+            });
+
+            m_UpmCache.SetInstalledPackageInfos(request.Result);
+
+            PackageManagerExtensions.ExtensionCallback(() =>
+            {
+                foreach (var packageInfo in addAndRemoveOperation.packageIdsToAdd.Select(id => m_UpmCache.GetInstalledPackageInfoById(id)).Where(p => p != null))
+                    foreach (var extension in PackageManagerExtensions.Extensions)
+                        extension.OnPackageAddedOrUpdated(packageInfo);
+            });
         }
 
         public virtual void List(bool offlineMode = false)
@@ -612,6 +665,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (removeOperation.isInProgress)
                 SetupRemoveOperation();
 
+            if (addAndRemoveOperation.isInProgress)
+                SetupAddAndRemoveOperation();
+
             if (searchOperation.isInProgress)
                 SearchAll();
 
@@ -667,7 +723,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return isUnityRegistry;
         }
 
-        public virtual bool IsUnityUrl(string url)
+        public static bool IsUnityUrl(string url)
         {
             if (string.IsNullOrEmpty(url))
                 return false;
@@ -686,7 +742,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         private T CreateOperation<T>(ref T operation) where T : UpmBaseOperation, new()
         {
             if (operation != null)
+            {
+                operation.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
                 return operation;
+            }
 
             operation = new T();
             operation.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);

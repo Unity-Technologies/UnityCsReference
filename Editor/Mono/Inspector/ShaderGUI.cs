@@ -4,6 +4,7 @@
 
 using System;
 using UnityEngine;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
@@ -36,6 +37,10 @@ namespace UnityEditor
         virtual public void AssignNewShaderToMaterial(Material material, Shader oldShader, Shader newShader)
         {
             material.shader = newShader;
+        }
+
+        virtual public void ValidateMaterial(Material material)
+        {
         }
 
         // Utility methods
@@ -81,6 +86,13 @@ namespace UnityEditor
         {
             Type customEditorType = ExtractCustomEditorType(customEditorName);
             return customEditorType != null ? (Activator.CreateInstance(customEditorType) as ShaderGUI) : null;
+        }
+
+        [RequiredByNativeCode]
+        internal static void ValidateMaterial(Material material)
+        {
+            string customEditor = ShaderUtil.GetCurrentCustomEditor(material.shader);
+            CreateShaderGUI(customEditor)?.ValidateMaterial(material);
         }
     }
 } // namespace UnityEditor

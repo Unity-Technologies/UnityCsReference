@@ -53,6 +53,11 @@ namespace UnityEngine.UIElements
             return ve.computedStyle.backgroundImage.vectorImage != null;
         }
 
+        public static bool IsElementSelfHidden(VisualElement ve)
+        {
+            return ve.resolvedStyle.visibility == Visibility.Hidden;
+        }
+
         public static void Destroy(Object obj)
         {
             if (obj == null)

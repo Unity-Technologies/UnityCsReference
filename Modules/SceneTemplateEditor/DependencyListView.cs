@@ -384,7 +384,7 @@ namespace UnityEditor.SceneTemplate
             }
 
             UpdateListSorting(false);
-            listView?.Refresh();
+            listView?.Rebuild();
             UpdateListViewSize();
             UpdateGlobalCloneToggle();
         }
@@ -447,7 +447,7 @@ namespace UnityEditor.SceneTemplate
         {
             m_FilteredItems.Sort(m_DependencyComparer);
             if (refreshListView)
-                listView?.Refresh();
+                listView?.Rebuild();
         }
 
         void UpdateHeader()

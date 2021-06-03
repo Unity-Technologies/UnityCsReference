@@ -23,6 +23,7 @@ namespace UnityEditor
         static class Styles
         {
             public static string missingScriptMessage = L10n.Tr("The associated script can not be loaded.\nPlease fix any compile errors\nand assign a valid script.");
+            public static string missingSerializeReferenceInstanceMessage = L10n.Tr("This object contains SerializeReference types which are missing.\nFor more information see SerializationUtility.HasManagedReferencesWithMissingTypes.");
             public static string missingScriptMessageForPrefabInstance = L10n.Tr("The associated script can not be loaded.\nPlease fix any compile errors\nand open Prefab Mode and assign a valid script to the Prefab Asset.");
         }
 
@@ -35,7 +36,11 @@ namespace UnityEditor
             if (behaviour != null && AudioUtil.HasAudioCallback(behaviour) && AudioUtil.GetCustomFilterChannelCount(behaviour) > 0)
                 return false;
 
-            if (ObjectIsMonoBehaviourOrScriptableObject(target))
+            if (ObjectIsMonoBehaviourOrScriptableObjectWithoutScript(target))
+                return false;
+
+            var scriptableObject = target as ScriptableObject;
+            if ((behaviour != null || scriptableObject != null) && SerializationUtility.HasManagedReferencesWithMissingTypes(target))
                 return false;
 
             if (isDirty)
@@ -207,6 +212,18 @@ namespace UnityEditor
             return true;
         }
 
+        public bool ShowMissingSerializeReferenceWarningBoxIfRequired()
+        {
+            var monoBehaviour = target as MonoBehaviour;
+            var scriptableObject = target as ScriptableObject;
+            if ((monoBehaviour != null || scriptableObject != null) && SerializationUtility.HasManagedReferencesWithMissingTypes(target))
+            {
+                EditorGUILayout.HelpBox(Styles.missingSerializeReferenceInstanceMessage, MessageType.Warning, true);
+                return true;
+            }
+            return false;
+        }
+
         static GUIContent s_fixupTypeContent = new GUIContent("Fix underlying type");
         enum ShowTypeFixupResult
         {
@@ -291,10 +308,11 @@ namespace UnityEditor
                 preview.Cleanup();
         }
 
-        internal static bool ObjectIsMonoBehaviourOrScriptableObject(Object obj)
+        internal static bool ObjectIsMonoBehaviourOrScriptableObjectWithoutScript(Object obj)
         {
-            if (obj) // This test for native reference state first.
+            if (obj)
             {
+                // When script is present the type will be a derived class instead
                 return obj.GetType() == typeof(MonoBehaviour) || obj.GetType() == typeof(ScriptableObject);
             }
             return obj is MonoBehaviour || obj is ScriptableObject;
@@ -302,8 +320,15 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
-            if (ObjectIsMonoBehaviourOrScriptableObject(target) && MissingMonoBehaviourGUI())
-                return;
+            if (ObjectIsMonoBehaviourOrScriptableObjectWithoutScript(target))
+            {
+                if (MissingMonoBehaviourGUI())
+                    return;
+            }
+            else
+            {
+                ShowMissingSerializeReferenceWarningBoxIfRequired();
+            }
 
             base.OnInspectorGUI();
         }

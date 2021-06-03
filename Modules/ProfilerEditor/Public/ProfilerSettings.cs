@@ -24,9 +24,12 @@ namespace UnityEditor.Profiling
         public const string k_DefaultRecordStateSettingKey = k_SettingsPrefix + "DefaultRecordState";
         public const string k_DefaultTargetModeSettingKey = k_SettingsPrefix + "DefaultTargetMode";
         public const string k_ShowStatsLabelsOnCurrentFrameSettingKey = k_SettingsPrefix + "ShowStatsLabelsOnCurrentFrame";
+        public const string k_CustomConnectionID = k_SettingsPrefix + "CustomConnectionID";
 
         public const int kMinFrameCount = 300;
         public const int kMaxFrameCount = 2000;
+
+        private const int kMaxCustomIDLength = 26;
 
         [SerializeField]
         private static int m_FrameCount = 0;
@@ -87,10 +90,29 @@ namespace UnityEditor.Profiling
             set { EditorPrefs.SetInt(k_DefaultTargetModeSettingKey, (int)value); }
         }
 
+        public static string customConnectionID
+        {
+            get => EditorPrefs.GetString(k_CustomConnectionID, "");
+            set
+            {
+                if (value.Length > kMaxCustomIDLength)
+                {
+                    value = value.Substring(0, kMaxCustomIDLength);
+                    Debug.LogWarning($"Custom Connection ID is capped at {kMaxCustomIDLength} characters in length.");
+                }
+                EditorPrefs.SetString(k_CustomConnectionID, value);
+            }
+        }
+
         public static void Refresh()
         {
             // Reset all cached values to force fetching it from the settings registry.
             m_FrameCount = 0;
+        }
+
+        public static bool ValidCustomConnectionID(string id)
+        {
+            return !id.Contains("\"") && !id.Contains("*") && id.Length <= kMaxCustomIDLength;
         }
     }
 }

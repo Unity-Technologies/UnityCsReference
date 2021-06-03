@@ -443,6 +443,7 @@ namespace UnityEditor.Audio
 
         public void OnSubAssetChanged()
         {
+            AssetDatabase.SaveAssets();
             AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(this));
         }
 

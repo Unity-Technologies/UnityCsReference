@@ -4,8 +4,7 @@
 
 namespace Unity.Profiling.Editor
 {
-    // TODO This type will be made public as part of the Extensibility API.
-    internal enum ProfilerModuleChartType
+    public enum ProfilerModuleChartType
     {
         Line = 0,
         StackedTimeArea, // Legacy. Stacked charts were originally only built for use with time, e.g. they show an FPS grid and don't scale appropriately for other units.

@@ -17,12 +17,15 @@ namespace UnityEngine
             [NativeMethod(IsThreadSafe = true)] static extern bool HasVertexAttribute(IntPtr self, VertexAttribute attr);
             [NativeMethod(IsThreadSafe = true)] static extern int GetVertexAttributeDimension(IntPtr self, VertexAttribute attr);
             [NativeMethod(IsThreadSafe = true)] static extern VertexAttributeFormat GetVertexAttributeFormat(IntPtr self, VertexAttribute attr);
+            [NativeMethod(IsThreadSafe = true)] static extern int GetVertexAttributeStream(IntPtr self, VertexAttribute attr);
+            [NativeMethod(IsThreadSafe = true)] static extern int GetVertexAttributeOffset(IntPtr self, VertexAttribute attr);
 
             [NativeMethod(IsThreadSafe = true)] static extern int GetVertexCount(IntPtr self);
             [NativeMethod(IsThreadSafe = true)] static extern int GetVertexBufferCount(IntPtr self);
 
             [NativeMethod(IsThreadSafe = true)] static extern IntPtr GetVertexDataPtr(IntPtr self, int stream);
             [NativeMethod(IsThreadSafe = true)] static extern ulong GetVertexDataSize(IntPtr self, int stream);
+            [NativeMethod(IsThreadSafe = true)] static extern int GetVertexBufferStride(IntPtr self, int stream);
 
             [NativeMethod(IsThreadSafe = true)] static extern void CopyAttributeIntoPtr(IntPtr self, VertexAttribute attr, VertexAttributeFormat format, int dim, IntPtr dst);
             [NativeMethod(IsThreadSafe = true)] static extern void CopyIndicesIntoPtr(IntPtr self, int submesh, bool applyBaseVertex, int dstStride, IntPtr dst);

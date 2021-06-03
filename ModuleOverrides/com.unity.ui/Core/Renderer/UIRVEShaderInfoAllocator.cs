@@ -154,7 +154,7 @@ namespace UnityEngine.UIElements.UIR
     internal struct UIRVEShaderInfoAllocator
     {
         BaseShaderInfoStorage m_Storage;
-        BitmapAllocator32 m_TransformAllocator, m_ClipRectAllocator, m_OpacityAllocator, m_TextSettingsAllocator; // All allocators take pages from the same storage
+        BitmapAllocator32 m_TransformAllocator, m_ClipRectAllocator, m_OpacityAllocator, m_ColorAllocator, m_TextSettingsAllocator; // All allocators take pages from the same storage
         bool m_StorageReallyCreated;
 
         // Support for absence of vertex texturing
@@ -170,6 +170,7 @@ namespace UnityEngine.UIElements.UIR
         internal static readonly Vector2Int identityTransformTexel = new Vector2Int(0, 0);
         internal static readonly Vector2Int infiniteClipRectTexel = new Vector2Int(0, 32);
         internal static readonly Vector2Int fullOpacityTexel = new Vector2Int(32, 32);
+        internal static readonly Vector2Int clearColorTexel = new Vector2Int(0, 40);
         internal static readonly Vector2Int defaultTextCoreSettingsTexel = new Vector2Int(32, 0);
 
         internal static readonly Matrix4x4 identityTransformValue = Matrix4x4.identity;
@@ -178,7 +179,9 @@ namespace UnityEngine.UIElements.UIR
         internal static readonly Vector4 identityTransformRow2Value = identityTransformValue.GetRow(2);
         internal static readonly Vector4 infiniteClipRectValue = new Vector4(-float.MaxValue, -float.MaxValue, float.MaxValue, float.MaxValue);
         internal static readonly Vector4 fullOpacityValue = new Vector4(1, 1, 1, 1);
+        internal static readonly Vector4 clearColorValue = new Vector4(0, 0, 0, 0);
         internal static readonly TextCoreSettings defaultTextCoreSettingsValue = new TextCoreSettings() {
+            faceColor = Color.white,
             outlineColor = Color.clear,
             outlineWidth = 0.0f,
             underlayColor = Color.clear,
@@ -188,7 +191,7 @@ namespace UnityEngine.UIElements.UIR
 
         // Default allocations. All their members are 0 including "owned"
 #pragma warning disable 649
-        public static readonly BMPAlloc identityTransform, infiniteClipRect, fullOpacity, defaultTextCoreSettings;
+        public static readonly BMPAlloc identityTransform, infiniteClipRect, fullOpacity, clearColor, defaultTextCoreSettings;
 #pragma warning restore 649
 
         static Vector2Int AllocToTexelCoord(ref BitmapAllocator32 allocator, BMPAlloc alloc)
@@ -232,14 +235,16 @@ namespace UnityEngine.UIElements.UIR
             // The default allocs refer to four startup pages to be allocated as below from the atlas
             // once the atlas is used for the first time. The page coordinates correspond to the atlas's
             // internal algorithm's results. If that algorithm changes, the new results must be put here to match
-            m_OpacityAllocator = m_ClipRectAllocator = m_TransformAllocator = m_TextSettingsAllocator = new BitmapAllocator32();
+            m_OpacityAllocator = m_ColorAllocator = m_ClipRectAllocator = m_TransformAllocator = m_TextSettingsAllocator = new BitmapAllocator32();
             m_TransformAllocator.Construct(pageHeight, 1, 3);
             m_TransformAllocator.ForceFirstAlloc((ushort)identityTransformTexel.x, (ushort)identityTransformTexel.y);
             m_ClipRectAllocator.Construct(pageHeight);
             m_ClipRectAllocator.ForceFirstAlloc((ushort)infiniteClipRectTexel.x, (ushort)infiniteClipRectTexel.y);
             m_OpacityAllocator.Construct(pageHeight);
             m_OpacityAllocator.ForceFirstAlloc((ushort)fullOpacityTexel.x, (ushort)fullOpacityTexel.y);
-            m_TextSettingsAllocator.Construct(pageHeight, 1, 3);
+            m_ColorAllocator.Construct(pageHeight);
+            m_ColorAllocator.ForceFirstAlloc((ushort)clearColorTexel.x, (ushort)clearColorTexel.y);
+            m_TextSettingsAllocator.Construct(pageHeight, 1, 4);
             m_TextSettingsAllocator.ForceFirstAlloc((ushort)defaultTextCoreSettingsTexel.x, (ushort)defaultTextCoreSettingsTexel.y);
 
             m_VertexTexturingEnabled = UIRenderDevice.vertexTexturingIsAvailable;
@@ -265,10 +270,11 @@ namespace UnityEngine.UIElements.UIR
                 m_Storage = new ShaderInfoStorageRGBA32(64); // If no vertex texturing, only store opacity in RGBA32
 
             // The order of allocation from the atlas below is important. See the comment at the beginning of Construct().
-            RectInt rcTransform, rcClipRect, rcOpacity, rcTextCoreSettings;
+            RectInt rcTransform, rcClipRect, rcOpacity, rcColor, rcTextCoreSettings;
             m_Storage.AllocateRect(pageWidth * m_TransformAllocator.entryWidth, pageHeight * m_TransformAllocator.entryHeight, out rcTransform);
             m_Storage.AllocateRect(pageWidth * m_ClipRectAllocator.entryWidth, pageHeight * m_ClipRectAllocator.entryHeight, out rcClipRect);
             m_Storage.AllocateRect(pageWidth * m_OpacityAllocator.entryWidth, pageHeight * m_OpacityAllocator.entryHeight, out rcOpacity);
+            m_Storage.AllocateRect(pageWidth * m_ColorAllocator.entryWidth, pageHeight * m_ColorAllocator.entryHeight, out rcColor);
             m_Storage.AllocateRect(pageWidth * m_TextSettingsAllocator.entryWidth, pageHeight * m_TextSettingsAllocator.entryHeight, out rcTextCoreSettings);
 
             if (!AtlasRectMatchesPage(ref m_TransformAllocator, identityTransform, rcTransform))
@@ -280,6 +286,9 @@ namespace UnityEngine.UIElements.UIR
             if (!AtlasRectMatchesPage(ref m_OpacityAllocator, fullOpacity, rcOpacity))
                 throw new Exception("Atlas full opacity allocation failed unexpectedly");
 
+            if (!AtlasRectMatchesPage(ref m_ColorAllocator, clearColor, rcColor))
+                throw new Exception("Atlas clear color allocation failed unexpectedly");
+
             if (!AtlasRectMatchesPage(ref m_TextSettingsAllocator, defaultTextCoreSettings, rcTextCoreSettings))
                 throw new Exception("Atlas text setting allocation failed unexpectedly");
 
@@ -290,6 +299,7 @@ namespace UnityEngine.UIElements.UIR
             }
             {
                 SetOpacityValue(fullOpacity, fullOpacityValue.w);
+                SetColorValue(clearColor, clearColorValue);
                 SetTextCoreSettingValue(defaultTextCoreSettings, defaultTextCoreSettingsValue);
             }
 
@@ -355,6 +365,14 @@ namespace UnityEngine.UIElements.UIR
             return m_OpacityAllocator.Allocate(m_Storage);
         }
 
+        public BMPAlloc AllocColor()
+        {
+            if (!m_StorageReallyCreated)
+                ReallyCreateStorage();
+
+            return m_ColorAllocator.Allocate(m_Storage);
+        }
+
         public BMPAlloc AllocTextCoreSettings(TextCoreSettings settings)
         {
             if (!m_StorageReallyCreated)
@@ -400,15 +418,23 @@ namespace UnityEngine.UIElements.UIR
             m_Storage.SetTexel(allocXY.x, allocXY.y, new Color(1, 1, 1, opacity));
         }
 
+        public void SetColorValue(BMPAlloc alloc, Color color)
+        {
+            Debug.Assert(alloc.IsValid());
+            var allocXY = AllocToTexelCoord(ref m_ColorAllocator, alloc);
+            m_Storage.SetTexel(allocXY.x, allocXY.y, color);
+        }
+
         public void SetTextCoreSettingValue(BMPAlloc alloc, TextCoreSettings settings)
         {
             Debug.Assert(alloc.IsValid());
 
             var allocXY = AllocToTexelCoord(ref m_TextSettingsAllocator, alloc);
             var settingValues = new Color(-settings.underlayOffset.x, settings.underlayOffset.y, settings.underlaySoftness, settings.outlineWidth);
-            m_Storage.SetTexel(allocXY.x, allocXY.y + 0, settings.outlineColor);
-            m_Storage.SetTexel(allocXY.x, allocXY.y + 1, settings.underlayColor);
-            m_Storage.SetTexel(allocXY.x, allocXY.y + 2, settingValues);
+            m_Storage.SetTexel(allocXY.x, allocXY.y + 0, settings.faceColor);
+            m_Storage.SetTexel(allocXY.x, allocXY.y + 1, settings.outlineColor);
+            m_Storage.SetTexel(allocXY.x, allocXY.y + 2, settings.underlayColor);
+            m_Storage.SetTexel(allocXY.x, allocXY.y + 3, settingValues);
         }
 
         public void FreeTransform(BMPAlloc alloc)
@@ -427,6 +453,12 @@ namespace UnityEngine.UIElements.UIR
         {
             Debug.Assert(alloc.IsValid());
             m_OpacityAllocator.Free(alloc);
+        }
+
+        public void FreeColor(BMPAlloc alloc)
+        {
+            Debug.Assert(alloc.IsValid());
+            m_ColorAllocator.Free(alloc);
         }
 
         public void FreeTextCoreSettings(BMPAlloc alloc)
@@ -458,6 +490,14 @@ namespace UnityEngine.UIElements.UIR
             Debug.Assert(pageWidth == 32 && pageHeight == 8); // Match the bit-shift values below for fast integer division
             UInt16 x, y;
             m_OpacityAllocator.GetAllocPageAtlasLocation(alloc.page, out x, out y);
+            return new Color32((byte)(x >> 5), (byte)(y >> 3), (byte)(alloc.pageLine * pageWidth + alloc.bitIndex), 0);
+        }
+
+        public Color32 ColorAllocToVertexData(BMPAlloc alloc)
+        {
+            Debug.Assert(pageWidth == 32 && pageHeight == 8); // Match the bit-shift values below for fast integer division
+            UInt16 x, y;
+            m_ColorAllocator.GetAllocPageAtlasLocation(alloc.page, out x, out y);
             return new Color32((byte)(x >> 5), (byte)(y >> 3), (byte)(alloc.pageLine * pageWidth + alloc.bitIndex), 0);
         }
 

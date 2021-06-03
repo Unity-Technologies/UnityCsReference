@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -523,6 +524,25 @@ namespace UnityEditor.UIElements
             return field;
         }
 
+        VisualElement ConfigureListView(ListView listView, SerializedProperty property)
+        {
+            var propertyCopy = property.Copy();
+            listView.reorderMode = ListViewReorderMode.Animated;
+            listView.showBorder = true;
+            listView.showAddRemoveFooter = true;
+            listView.showBoundCollectionSize = true;
+            listView.showFoldoutHeader = true;
+            listView.headerTitle = string.IsNullOrEmpty(label) ? propertyCopy.localizedDisplayName : label;
+            listView.virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight;
+            listView.userData = propertyCopy;
+            listView.showAlternatingRowBackgrounds = AlternatingRowBackground.None;
+            listView.bindingPath = property.propertyPath;
+            listView.viewDataKey = property.propertyPath;
+            listView.name = "unity-list-" + property.propertyPath;
+            listView.Bind(property.serializedObject);
+            return listView;
+        }
+
         private void OnCustomStyleResolved(CustomStyleResolvedEvent evt)
         {
             if (evt.customStyle.TryGetValue(s_LabelWidthRatioProperty, out var labelWidthRatio))
@@ -683,6 +703,10 @@ namespace UnityEditor.UIElements
 
 
                 case SerializedPropertyType.Generic:
+                    return property.isArray
+                        ? ConfigureListView(new ListView(), property)
+                        : null;
+
                 default:
                     return null;
             }

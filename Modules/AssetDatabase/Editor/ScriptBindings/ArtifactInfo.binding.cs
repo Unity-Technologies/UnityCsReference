@@ -22,26 +22,33 @@ namespace UnityEditor
         private string m_EditorRevision;
         private ulong m_ImportTimeMicroseconds;
         private long m_ImportedTimestamp;
-        private string m_UserName;
-        private string m_ImportIpAddress;
+        private bool m_ImportedFromCacheServer;
+        private string m_ImporterClassName;
 
         public string assetPath { get { return m_AssetPath; } }
         public string editorRevision { get { return m_EditorRevision; } }
         public ulong importTimeMicroseconds { get { return m_ImportTimeMicroseconds; } }
         public long importedTimestamp { get { return m_ImportedTimestamp; } }
-        public string userName { get { return m_UserName; } }
-        public string importIpAddress { get { return m_ImportIpAddress; } }
+        public bool importedFromCacheServer { get { return m_ImportedFromCacheServer; } }
+        public string importerClassName { get { return m_ImporterClassName; } }
     }
 
     [NativeHeader("Modules/AssetDatabase/Editor/V2/ArtifactInfo.h")]
     [StructLayout(LayoutKind.Sequential)]
     internal struct ArtifactInfoProducedFiles
     {
+        public static string kStorageInline = "Inline";
+        public static string kStorageLibrary = "Library";
+
         private string m_Extension;
         private string m_LibraryPath;
+        private string m_Storage;
+        private int m_InlineStorage;
 
         public string extension { get { return m_Extension; } }
         public string libraryPath { get { return m_LibraryPath; } }
+        public string storage {  get { return m_Storage; } }
+        public int inlineStorage {  get { return m_InlineStorage; } }
     }
 
     [NativeHeader("Modules/AssetDatabase/Editor/V2/ArtifactInfo.h")]
@@ -66,6 +73,7 @@ namespace UnityEditor
     [StructLayout(LayoutKind.Sequential)]
     internal class ArtifactInfo : IDisposable
     {
+        private static readonly string kInvalidArtifactID = "00000000000000000000000000000000";
         private IntPtr m_Ptr;
 
         private string m_ArtifactID;
@@ -95,6 +103,11 @@ namespace UnityEditor
             }
         }
 
+        private bool IsValid()
+        {
+            return !string.IsNullOrEmpty(artifactID) && string.CompareOrdinal(artifactID, kInvalidArtifactID) != 0;
+        }
+
         private static extern IntPtr Internal_Create();
 
         private static extern void Internal_Destroy(IntPtr ptr);
@@ -120,6 +133,9 @@ namespace UnityEditor
         [FreeFunction("ArtifactInfoBindings::CreateDependencies_Internal")]
         private static extern int CreateDependencies_Internal(ArtifactInfo self);
 
+        [FreeFunction("ArtifactInfoBindings::GetDependencyCount_Internal")]
+        private static extern int GetDependencyCount_Internal(ArtifactInfo self);
+
         internal string artifactID
         {
             get
@@ -132,8 +148,41 @@ namespace UnityEditor
         internal ArtifactKey artifactKey { get { return GetArtifactKey_Internal(this); } }
         internal bool isCurrentArtifact { get { return GetIsCurrentArtifact_Internal(this); } }
 
-        internal ArtifactInfoImportStats importStats { get { return GetImportStats_Internal(this); } }
-        internal ArtifactInfoProducedFiles[] producedFiles { get { return GetProducedFiles_Internal(this); } }
+        private ArtifactInfoImportStats m_ImportStats;
+
+        internal ArtifactInfoImportStats importStats
+        {
+            get
+            {
+                if (!IsValid())
+                {
+                    Debug.LogError("ArtifactInfo has not been initialized. Please ensure its creation is done via AssetDatabase.GetArtifactInfos");
+                    return default(ArtifactInfoImportStats);
+                }
+
+                if (m_ImportStats.assetPath == null)
+                    m_ImportStats = GetImportStats_Internal(this);
+                return m_ImportStats;
+            }
+        }
+
+        private ArtifactInfoProducedFiles[] m_ProducedFiles;
+
+        internal ArtifactInfoProducedFiles[] producedFiles
+        {
+            get
+            {
+                if (!IsValid())
+                {
+                    Debug.LogError("ArtifactInfo has not been initialized. Please ensure its creation is done via AssetDatabase.GetArtifactInfos");
+                    return null;
+                }
+
+                if (m_ProducedFiles == null)
+                    m_ProducedFiles = GetProducedFiles_Internal(this);
+                return m_ProducedFiles;
+            }
+        }
 
         private Dictionary<string, ArtifactInfoDependency> m_Dependencies;
 
@@ -141,7 +190,7 @@ namespace UnityEditor
         {
             get
             {
-                if (artifactID == string.Empty)
+                if (!IsValid())
                 {
                     Debug.LogError("ArtifactInfo has not been initialized. Please ensure its creation is done via AssetDatabase.GetArtifactInfos");
                     return null;
@@ -164,6 +213,24 @@ namespace UnityEditor
                 }
 
                 return m_Dependencies;
+            }
+        }
+
+        private int m_DependencyCount = 0;
+
+        internal int dependencyCount
+        {
+            get
+            {
+                if (!IsValid())
+                {
+                    Debug.LogError("ArtifactInfo has not been initialized. Please ensure its creation is done via AssetDatabase.GetArtifactInfos");
+                    return -1;
+                }
+
+                if (m_DependencyCount == 0)
+                    m_DependencyCount = GetDependencyCount_Internal(this);
+                return m_DependencyCount;
             }
         }
     }

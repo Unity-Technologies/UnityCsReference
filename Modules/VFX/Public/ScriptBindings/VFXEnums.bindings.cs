@@ -199,6 +199,7 @@ namespace UnityEngine.VFX
         MeshIndexFormat,
 
         // Buffer
+        BufferStride,
         BufferCount,
 
         TextureWidth,
@@ -297,6 +298,7 @@ namespace UnityEngine.VFX
         SystemNeedsComputeBounds = 1 << 4,
         SystemAutomaticBounds = 1 << 5,
         SystemInWorldSpace = 1 << 6,
+        SystemHasDirectLink = 1 << 7
     }
 
     [Flags]

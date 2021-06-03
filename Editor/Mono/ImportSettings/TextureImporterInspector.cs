@@ -56,6 +56,7 @@ namespace UnityEditor
             StreamingMipmaps = 1 << 10,
             SingleChannelComponent = 1 << 11,
             PngGamma = 1 << 12,
+            VTOnly = 1 << 13,
             ElementsAtlas = 1 << 14,
         }
 
@@ -271,6 +272,7 @@ namespace UnityEditor
             public readonly GUIContent readWrite = EditorGUIUtility.TrTextContent("Read/Write", "Enable to be able to access the raw pixel data from code.");
             public readonly GUIContent streamingMipmaps = EditorGUIUtility.TrTextContent("Streaming Mipmaps", "Only load larger mipmaps as needed to render the current game cameras. Requires texture streaming to be enabled in quality settings.");
             public readonly GUIContent streamingMipmapsPriority = EditorGUIUtility.TrTextContent("Mip Map Priority", "Mip map streaming priority when there's contention for resources. Positive numbers represent higher priority. Valid range is -128 to 127.");
+            public readonly GUIContent vtOnly = EditorGUIUtility.TrTextContent("Virtual Texture Only", "Texture is optimized for use as a virtual texture and can only be used as a virtual texture.");
 
             public readonly GUIContent alphaSource = EditorGUIUtility.TrTextContent("Alpha Source", "How is the alpha generated for the imported texture.");
             public readonly GUIContent[] alphaSourceOptions =
@@ -426,6 +428,7 @@ namespace UnityEditor
         SerializedProperty m_StreamingMipmaps;
         SerializedProperty m_StreamingMipmapsPriority;
 
+        SerializedProperty m_VTOnly;
         SerializedProperty m_sRGBTexture;
         SerializedProperty m_EnableMipMap;
         SerializedProperty m_MipMapMode;
@@ -489,6 +492,7 @@ namespace UnityEditor
             m_IsReadable = serializedObject.FindProperty("m_IsReadable");
             m_StreamingMipmaps = serializedObject.FindProperty("m_StreamingMipmaps");
             m_StreamingMipmapsPriority = serializedObject.FindProperty("m_StreamingMipmapsPriority");
+            m_VTOnly = serializedObject.FindProperty("m_VTOnly");
             m_sRGBTexture = serializedObject.FindProperty("m_sRGBTexture");
             m_EnableMipMap = serializedObject.FindProperty("m_EnableMipMap");
             m_MipMapMode = serializedObject.FindProperty("m_MipMapMode");
@@ -546,10 +550,12 @@ namespace UnityEditor
             m_TextureTypeGUIElements[(int)TextureImporterType.Default]      = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.ColorSpace | TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.PngGamma | TextureInspectorGUIElement.CubeMapConvolution | TextureInspectorGUIElement.CubeMapping | TextureInspectorGUIElement.ElementsAtlas,
                 TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps
                 | TextureInspectorGUIElement.StreamingMipmaps
+                | TextureInspectorGUIElement.VTOnly
                 , shapeCapsAll);
             m_TextureTypeGUIElements[(int)TextureImporterType.NormalMap]    = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.NormalMap | TextureInspectorGUIElement.PngGamma | TextureInspectorGUIElement.CubeMapping | TextureInspectorGUIElement.ElementsAtlas,
                 TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps
                 | TextureInspectorGUIElement.StreamingMipmaps
+                | TextureInspectorGUIElement.VTOnly
                 , shapeCapsAll);
             m_TextureTypeGUIElements[(int)TextureImporterType.Sprite]       = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.Sprite,
                 TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.PngGamma | TextureInspectorGUIElement.MipMaps | TextureInspectorGUIElement.ColorSpace,
@@ -584,6 +590,7 @@ namespace UnityEditor
             m_GUIElementMethods.Add(TextureInspectorGUIElement.PowerOfTwo, this.POTScaleGUI);
             m_GUIElementMethods.Add(TextureInspectorGUIElement.Readable, this.ReadableGUI);
             m_GUIElementMethods.Add(TextureInspectorGUIElement.StreamingMipmaps, this.StreamingMipmapsGUI);
+            m_GUIElementMethods.Add(TextureInspectorGUIElement.VTOnly, this.VTOnlyGUI);
             m_GUIElementMethods.Add(TextureInspectorGUIElement.ColorSpace, this.ColorSpaceGUI);
             m_GUIElementMethods.Add(TextureInspectorGUIElement.AlphaHandling, this.AlphaHandlingGUI);
             m_GUIElementMethods.Add(TextureInspectorGUIElement.PngGamma, this.PngGammaGUI);
@@ -610,6 +617,7 @@ namespace UnityEditor
             m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.PowerOfTwo);
             m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.Readable);
             m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.StreamingMipmaps);
+            m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.VTOnly);
             m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.MipMaps);
 
             UnityEngine.Debug.Assert(m_GUIElementsDisplayOrder.Count == (Enum.GetValues(typeof(TextureInspectorGUIElement)).Length - 1), "Some GUIElement are not present in the list."); // -1 because TextureInspectorGUIElement.None
@@ -667,6 +675,7 @@ namespace UnityEditor
             m_IsReadable.intValue = settings.readable ? 1 : 0;
             m_StreamingMipmaps.intValue = settings.streamingMipmaps ? 1 : 0;
             m_StreamingMipmapsPriority.intValue = settings.streamingMipmapsPriority;
+            m_VTOnly.intValue = settings.vtOnly ? 1 : 0;
             m_EnableMipMap.intValue = settings.mipmapEnabled ? 1 : 0;
             m_sRGBTexture.intValue = settings.sRGBTexture ? 1 : 0;
             m_MipMapMode.intValue = (int)settings.mipmapFilter;
@@ -746,6 +755,8 @@ namespace UnityEditor
             if (!m_StreamingMipmapsPriority.hasMultipleDifferentValues)
                 settings.streamingMipmapsPriority = m_StreamingMipmapsPriority.intValue;
 
+            if (!m_VTOnly.hasMultipleDifferentValues)
+                settings.vtOnly = m_VTOnly.intValue > 0;
 
             if (!m_sRGBTexture.hasMultipleDifferentValues)
                 settings.sRGBTexture = m_sRGBTexture.intValue > 0;
@@ -964,6 +975,16 @@ namespace UnityEditor
             }
         }
 
+
+        void VTOnlyGUI(TextureInspectorGUIElement guiElements)
+        {
+            // only 2D shape supports VT right now
+            var shape = (TextureImporterShape)m_TextureShape.intValue;
+            var shapeHasVT = shape == TextureImporterShape.Texture2D;
+            if (!shapeHasVT)
+                return;
+            ToggleFromInt(m_VTOnly, s_Styles.vtOnly);
+        }
 
 
         void AlphaHandlingGUI(TextureInspectorGUIElement guiElements)
@@ -1184,6 +1205,22 @@ namespace UnityEditor
 
         bool m_ShowPerAxisWrapModes = false;
 
+        private bool TargetsHaveNPOTTextures()
+        {
+            foreach (var target in targets)
+            {
+                int w = -1, h = -1;
+                var imp = (TextureImporter)target;
+                imp.GetWidthAndHeight(ref w, ref h);
+                if (!Mathf.IsPowerOfTwo(w) || !Mathf.IsPowerOfTwo(h))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         void TextureSettingsGUI()
         {
             // Wrap mode
@@ -1196,19 +1233,7 @@ namespace UnityEditor
                 (m_WrapU.intValue == (int)TextureWrapMode.Repeat || m_WrapV.intValue == (int)TextureWrapMode.Repeat) &&
                 !ShaderUtil.hardwareSupportsFullNPOT)
             {
-                bool displayWarning = false;
-                foreach (var target in targets)
-                {
-                    int w = -1, h = -1;
-                    var imp = (TextureImporter)target;
-                    imp.GetWidthAndHeight(ref w, ref h);
-                    if (!Mathf.IsPowerOfTwo(w) || !Mathf.IsPowerOfTwo(h))
-                    {
-                        displayWarning = true;
-                        break;
-                    }
-                }
-
+                bool displayWarning = TargetsHaveNPOTTextures();
                 if (displayWarning)
                 {
                     GUIContent c = EditorGUIUtility.TrTextContent("Graphics device doesn't support Repeat wrap mode on NPOT textures. Falling back to Clamp.");
@@ -1378,6 +1403,31 @@ namespace UnityEditor
             UpdateImportWarning();
             if (!string.IsNullOrEmpty(m_ImportWarning))
                 EditorGUILayout.HelpBox(m_ImportWarning, MessageType.Warning);
+
+            if (!m_TextureShape.hasMultipleDifferentValues && !m_EnableMipMap.hasMultipleDifferentValues && !m_NPOTScale.hasMultipleDifferentValues)
+            {
+                // To avoid complexity of combinations of settings (e.g., tex1 is rescaled to POT with mipmap enabled, tex2 is NPOT with mipmap disabled, then all is fine but we would still get warnings)
+                // we only show the warnings for a single texture (or a group with the same values)
+
+                if (m_TextureShape.intValue == (int)TextureImporterShape.Texture2D && m_EnableMipMap.boolValue && m_NPOTScale.intValue == (int)TextureImporterNPOTScale.None && TargetsHaveNPOTTextures())
+                {
+                    BuildTarget buildTarget = EditorUserBuildSettings.activeBuildTarget;
+                    UnityEngine.Rendering.GraphicsDeviceType[] activeTargetGraphicsAPIs = PlayerSettings.GetGraphicsAPIs(buildTarget);
+                    if (Array.Exists(activeTargetGraphicsAPIs, api => api == UnityEngine.Rendering.GraphicsDeviceType.OpenGLES2))
+                    {
+                        GUIContent c;
+                        if (buildTarget == BuildTarget.WebGL)
+                            c = EditorGUIUtility.TrTextContent("NPOT textures are not fully supported on WebGL1. On these devices, mipmapping will be disabled.");
+                        else if (buildTarget == BuildTarget.Android)
+                            c = EditorGUIUtility.TrTextContent("Some Android devices running on OpenGLES2 may not support NPOT textures. If this is the case, mipmapping will be disabled.");
+                        else
+                            c = EditorGUIUtility.TrTextContent("Some devices running on OpenGLES2 may not support NPOT textures. If this is the case, mipmapping will be disabled.");
+
+                        EditorGUILayout.HelpBox(c.text, MessageType.Warning, true);
+                    }
+                }
+            }
+
 
             GUI.enabled = wasEnabled;
         }

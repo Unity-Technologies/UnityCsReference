@@ -16,6 +16,7 @@ namespace UnityEditor
         static class Styles
         {
             public static GUIContent missingScriptsHelpText = EditorGUIUtility.TrTextContent("Prefab has missing scripts. Open Prefab to fix the issue.");
+            public static GUIContent missingSerializeReferenceHelpText = EditorGUIUtility.TrTextContent("Prefab has missing SerializeReference Types. Open Prefab to fix the issue. Changing the Prefab directly will cause those types to be lost.");
             public static GUIContent multiSelectionMissingScriptsHelpText = EditorGUIUtility.TrTextContent("Some of the selected Prefabs have missing scripts and needs to be fixed before editing them. Click to Open Prefab to fix the issue.");
             public static GUIContent savingFailedHelpText = EditorGUIUtility.TrTextContent("Saving has failed. Check the Console window to get more insight into what needs to be fixed on the Prefab Asset.\n\nOpen Prefab to fix the issue.");
             public static GUIContent baseContent = EditorGUIUtility.TrTextContent("Base");
@@ -28,6 +29,7 @@ namespace UnityEditor
         double m_NextUpdate;
         List<string> m_PrefabsWithMissingScript = new List<string>();
         bool m_SavingHasFailed;
+        bool m_ContainsMissingSerializeReferenceType;
 
         struct TrackedAsset
         {
@@ -75,11 +77,17 @@ namespace UnityEditor
         {
             base.Awake();
 
+            m_ContainsMissingSerializeReferenceType = false;
             foreach (var prefabAssetRoot in assetTargets)
             {
                 if (PrefabUtility.HasInvalidComponent(prefabAssetRoot))
                 {
                     m_PrefabsWithMissingScript.Add(AssetDatabase.GetAssetPath(prefabAssetRoot));
+                }
+
+                if (PrefabUtility.IsPartOfPrefabAsset(prefabAssetRoot) && PrefabUtility.HasManagedReferencesWithMissingTypes(prefabAssetRoot))
+                {
+                    m_ContainsMissingSerializeReferenceType = true;
                 }
             }
             m_PrefabsWithMissingScript.Sort();
@@ -317,6 +325,10 @@ namespace UnityEditor
             else if (m_SavingHasFailed)
             {
                 EditorGUILayout.HelpBox(Styles.savingFailedHelpText.text, MessageType.Warning, true);
+            }
+            else if (m_ContainsMissingSerializeReferenceType)
+            {
+                EditorGUILayout.HelpBox(Styles.missingSerializeReferenceHelpText.text, MessageType.Warning, true);
             }
         }
     }

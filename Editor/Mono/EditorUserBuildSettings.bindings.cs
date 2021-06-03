@@ -281,6 +281,15 @@ namespace UnityEditor
         internal bool triggerGraphicsDebuggersConfigUpdate;
     }
 
+    [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+    public enum EmbeddedLinuxArchitecture
+    {
+        Arm64 = 0,
+        Arm32 = 1,
+        X64 = 2,
+        X86 = 3,
+    }
+
     [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]
     [StaticAccessor("GetEditorUserBuildSettings()", StaticAccessorType.Dot)]
     public partial class EditorUserBuildSettings : Object
@@ -293,6 +302,15 @@ namespace UnityEditor
 
         // The currently selected build target group.
         public static extern BuildTargetGroup selectedBuildTargetGroup { get; set; }
+
+        // Embedded Linux Architecture
+        public static extern EmbeddedLinuxArchitecture selectedEmbeddedLinuxArchitecture
+        {
+            [NativeMethod("GetSelectedEmbeddedLinuxArchitecture")]
+            get;
+            [NativeMethod("SetSelectedEmbeddedLinuxArchitecture")]
+            set;
+        }
 
         // The currently selected target for a standalone build.
         public static extern BuildTarget selectedStandaloneTarget

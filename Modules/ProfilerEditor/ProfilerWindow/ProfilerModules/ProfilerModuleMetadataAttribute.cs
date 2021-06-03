@@ -6,9 +6,8 @@ using System;
 
 namespace Unity.Profiling.Editor
 {
-    // TODO Make public as part of Extensibility API.
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
-    internal partial class ProfilerModuleMetadataAttribute : Attribute
+    public partial class ProfilerModuleMetadataAttribute : Attribute
     {
         public ProfilerModuleMetadataAttribute(string displayName)
         {
@@ -20,7 +19,7 @@ namespace Unity.Profiling.Editor
         public string IconPath { get; set; } = "Profiler.Custom";
     }
 
-    internal partial class ProfilerModuleMetadataAttribute : Attribute
+    public partial class ProfilerModuleMetadataAttribute : Attribute
     {
         // Internally we localize module names using this constructor.
         internal ProfilerModuleMetadataAttribute(string displayNameKey, Type localizationResourceType)

@@ -126,7 +126,7 @@ namespace UnityEditor
             if (selectedIndex == -1)
                 selectedIndex = Array.FindIndex(elements, e => e.id == ExternalVersionControl.Generic);
             var content = new GUIContent(elements[selectedIndex].content);
-            EditorSettingsInspector.CreatePopupMenu(null, title, content, elements, selectedIndex, func);
+            EditorSettingsInspector.CreatePopupMenu(null, new GUIContent(title), content, elements, selectedIndex, func);
         }
 
         private void SetVersionControlSystem(object data)

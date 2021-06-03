@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEditor.AI;
@@ -18,6 +19,9 @@ namespace UnityEditor
     [EditorWindowTitle(title = "Navigation", icon = "Navigation")]
     internal class NavMeshEditorWindow : EditorWindow, IHasCustomMenu
     {
+        const string k_NavigationPackageId = "com.unity.ai.navigation";
+        static string s_NavigationPackagePath = $"Packages/{k_NavigationPackageId}/package.json";
+
         static NavMeshEditorWindow s_NavMeshEditorWindow;
 
         // Scene based bake configuration
@@ -52,6 +56,7 @@ namespace UnityEditor
         bool m_Advanced;
         bool m_HasPendingAgentDebugInfo;
         bool m_HasRepaintedForPendingAgentDebugInfo;
+        bool m_NavigationPackageInstalled;
 
         ReorderableList m_AreasList;
         ReorderableList m_AgentsList;
@@ -65,10 +70,12 @@ namespace UnityEditor
         }
 
         Mode m_Mode = Mode.ObjectSettings;
-        bool m_BecameVisibleCalled = false;
+        bool m_BecameVisibleCalled;
 
         class Styles
         {
+            public readonly GUIStyle m_WebLinkLabel;
+
             // Agents tab
             public readonly GUIContent m_AgentNameContent = EditorGUIUtility.TrTextContent("Name", "The identifier for a set of values of the agent characteristics.");
             public readonly GUIContent m_AgentRadiusContent = EditorGUIUtility.TrTextContent("Radius", "The minimum distance to the walls where the navigation mesh can exist.");
@@ -88,7 +95,9 @@ namespace UnityEditor
             public readonly GUIContent m_BakeMinRegionAreaContent = EditorGUIUtility.TrTextContent("Min Region Area", "Minimum area that a navmesh region can be.");
             public readonly GUIContent m_BakePlacementContent = EditorGUIUtility.TrTextContent("Height Mesh", "Generate an accurate height mesh for precise agent placement (slower).");
 
-            public readonly GUIContent m_LearnAboutComponent = EditorGUIUtility.TrTextContent("Learn instead about the component workflow.", "Components available for building and using navmesh data for different agent types.");
+            public readonly GUIContent m_ComponentWorkflowNotInstalledNotice = EditorGUIUtility.TrTextContent("To try an experimental, component-based workflow for configuring NavMeshes, install the AI Navigation package.");
+            public readonly GUIContent m_ComponentWorkflowInstalledNotice = EditorGUIUtility.TrTextContent("The AI Navigation package is installed. It allows you to configure NavMeshes using an experimental, component-based workflow.");
+            public readonly GUIContent m_ComponentWorfklowWebLinklabel = EditorGUIUtility.TrTextContent("For details, visit the Unity manual");
 
             public readonly GUIContent m_AgentSizeHeader = EditorGUIUtility.TrTextContent("Baked Agent Size");
             public readonly GUIContent m_OffmeshHeader = EditorGUIUtility.TrTextContent("Generated Off Mesh Links");
@@ -105,6 +114,13 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Bake", "Navmesh bake settings."),
                 EditorGUIUtility.TrTextContent("Object", "Bake settings for the currently selected object."),
             };
+
+            public Styles()
+            {
+                m_WebLinkLabel = new GUIStyle(EditorStyles.linkLabel);
+                m_WebLinkLabel.fontSize = EditorStyles.miniLabel.fontSize;
+                m_WebLinkLabel.wordWrap = true;
+            }
         }
 
         [MenuItem("Window/AI/Navigation", false, 1)]
@@ -153,6 +169,8 @@ namespace UnityEditor
             titleContent = GetLocalizedTitleContent();
             s_NavMeshEditorWindow = this;
             EditorApplication.searchChanged += Repaint;
+
+            m_NavigationPackageInstalled = IsNavigationPackageInstalled();
 
             UpdateSelectedAgentAndObstacleState();
 
@@ -435,6 +453,12 @@ namespace UnityEditor
                     AgentSettings();
                     break;
             }
+
+            if (m_NavigationPackageInstalled)
+                ComponentBasedWorkflowNotice(s_Styles.m_ComponentWorkflowInstalledNotice);
+            else
+                ComponentBasedWorkflowNotice(s_Styles.m_ComponentWorkflowNotInstalledNotice);
+
             EditorGUILayout.EndScrollView();
         }
 
@@ -680,7 +704,37 @@ namespace UnityEditor
                 GameObjectUtility.SetNavMeshArea(go, area);
         }
 
-        private static void ObjectSettings()
+        private static void ComponentBasedWorkflowNotice(GUIContent message)
+        {
+            EditorGUILayout.Space();
+            GUILayout.FlexibleSpace();
+
+            GUILayout.BeginHorizontal(EditorStyles.helpBox);
+            GUILayout.Label(EditorGUIUtility.GetHelpIcon(MessageType.Info), GUILayout.ExpandWidth(false));
+            GUILayout.BeginVertical();
+            GUILayout.Label(message, EditorStyles.wordWrappedMiniLabel);
+
+            GUILayout.BeginHorizontal();
+
+            GUILayout.FlexibleSpace();
+
+            if (GUILayout.Button(s_Styles.m_ComponentWorfklowWebLinklabel, s_Styles.m_WebLinkLabel))
+                Help.BrowseURL($"https://docs.unity3d.com/{Application.unityVersionVer}.{Application.unityVersionMaj}/Documentation/Manual/NavMesh-BuildingComponents.html");
+            EditorGUIUtility.AddCursorRect(GUILayoutUtility.GetLastRect(), MouseCursor.Link);
+            GUILayout.EndHorizontal();
+
+            GUILayout.EndVertical();
+            GUILayout.EndHorizontal();
+        }
+
+        private static bool IsNavigationPackageInstalled()
+        {
+            var packagePath = Path.GetFullPath(s_NavigationPackagePath);
+
+            return !String.IsNullOrEmpty(packagePath) && File.Exists(packagePath);
+        }
+
+        private void ObjectSettings()
         {
             bool emptySelection = true;
             GameObject[] gos;
@@ -705,18 +759,8 @@ namespace UnityEditor
                 GUILayout.Label("Select a MeshRenderer or a Terrain from the scene.", EditorStyles.helpBox);
         }
 
-        private static void ComponentBasedWorkflowButton()
-        {
-            GUILayout.BeginHorizontal();
-            if (EditorGUILayout.LinkButton(s_Styles.m_LearnAboutComponent))
-                Help.BrowseURL("https://github.com/Unity-Technologies/NavMeshComponents");
-            GUILayout.EndHorizontal();
-        }
-
         private static void ObjectSettings(Object[] components, GameObject[] gos)
         {
-            ComponentBasedWorkflowButton();
-
             EditorGUILayout.MultiSelectionObjectTitleBar(components);
 
             using (var so = new SerializedObject(gos))
@@ -768,8 +812,6 @@ namespace UnityEditor
 
         private void SceneBakeSettings()
         {
-            ComponentBasedWorkflowButton();
-
             if (m_SettingsObject == null || m_SettingsObject.targetObject == null)
                 InitSceneBakeSettings();
 

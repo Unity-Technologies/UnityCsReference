@@ -7,32 +7,32 @@ using UnityEditor.Connect;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
+using System.Linq;
 
 namespace UnityEditor.Toolbars
 {
     [EditorToolbarElement("Services/Account", typeof(DefaultMainToolbar))]
-    sealed class AccountDropdown : ToolbarButton
+    sealed class AccountDropdown : EditorToolbarDropdown
     {
-        private readonly TextElement m_TextElement;
-        private readonly VisualElement m_ArrowElement;
-        private bool m_LoggedIn;
+        readonly TextElement m_TextElement;
+        readonly VisualElement m_ArrowElement;
+        private readonly VisualElement m_AccountIconElement;
+        bool m_LoggedIn;
 
         public AccountDropdown()
         {
             name = "AccountDropdown";
+            text = L10n.Tr("Sign in");
 
-            m_TextElement = new TextElement();
-            m_TextElement.AddToClassList(EditorToolbar.elementLabelClassName);
-            m_TextElement.text = L10n.Tr("Sign in");
+            m_AccountIconElement = this.Q<Image>(className: EditorToolbar.elementIconClassName);
+            m_AccountIconElement.AddToClassList("unity-icon-account");
+
+            m_TextElement = this.Q<TextElement>(className: EditorToolbar.elementLabelClassName);
             m_TextElement.style.flexGrow = 1;
             m_TextElement.style.whiteSpace = WhiteSpace.NoWrap;
             m_TextElement.style.unityTextOverflowPosition = TextOverflowPosition.End;
 
-            m_ArrowElement = new VisualElement();
-            m_ArrowElement.AddToClassList("unity-icon-arrow");
-
-            Add(m_TextElement);
-            Add(m_ArrowElement);
+            m_ArrowElement = this.Q(className: arrowClassName);
 
             clicked += () =>
             {
@@ -74,9 +74,12 @@ namespace UnityEditor.Toolbars
 
         void Refresh()
         {
+            m_AccountIconElement.style.display = m_LoggedIn ? DisplayStyle.Flex : DisplayStyle.None;
+            m_AccountIconElement.style.visibility = m_LoggedIn ? Visibility.Visible : Visibility.Hidden;
+
             if (m_LoggedIn)
             {
-                m_TextElement.text = UnityConnect.instance.userInfo.displayName;
+                m_TextElement.text = GetUserInitials(UnityConnect.instance.userInfo.displayName);
                 m_TextElement.style.maxWidth = 80;
                 m_TextElement.style.textOverflow = TextOverflow.Ellipsis;
                 m_TextElement.style.unityTextAlign = TextAnchor.MiddleLeft;
@@ -85,7 +88,7 @@ namespace UnityEditor.Toolbars
             }
             else
             {
-                m_TextElement.text = L10n.Tr("Sign in");
+                text = L10n.Tr("Sign in");
                 m_TextElement.style.maxWidth = InitialStyle.maxWidth;
                 m_TextElement.style.textOverflow = TextOverflow.Clip;
                 m_TextElement.style.unityTextAlign = TextAnchor.MiddleCenter;
@@ -107,7 +110,7 @@ namespace UnityEditor.Toolbars
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("My account"));
             }
 
-            var name = $"{L10n.Tr("Sign out")} {m_TextElement.text}";
+            var name = $"{L10n.Tr("Sign out")} {UnityConnect.instance.userInfo.displayName}";
             menu.AddItem(new GUIContent(name), false, () => UnityConnect.instance.Logout());
 
             if (!Application.HasProLicense())
@@ -120,6 +123,16 @@ namespace UnityEditor.Toolbars
             }
 
             menu.DropDown(dropDownRect, true);
+        }
+
+        internal static string GetUserInitials(string name)
+        {
+            var nameElements = name?.Split(' ').Where(x => !string.IsNullOrEmpty(x)).ToArray() ?? new string[0];
+            if (nameElements.Length > 1)
+                return $"{ nameElements[0][0] }{ nameElements[nameElements.Length - 1][0] }";
+            else if (nameElements.Length == 1)
+                return $"{ nameElements[0][0] }";
+            return string.Empty;
         }
 
     }

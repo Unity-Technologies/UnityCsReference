@@ -75,6 +75,8 @@ namespace UnityEditor
 
         public static extern SemanticMergeMode semanticMergeMode { get; set; }
 
+        public static extern int desiredImportWorkerCount { get; set; }
+
         internal static extern void SoftReset();
     }
 }

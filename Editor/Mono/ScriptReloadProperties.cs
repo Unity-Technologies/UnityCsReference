@@ -46,6 +46,7 @@ namespace UnityEditor
         public string EditorGUI_DelayedTextEditor_content;
         public string EditorGUI_DelayedControlThatHadFocusValue;
 
+        [RequiredByNativeCode]
         static ScriptReloadProperties Store()
         {
             ScriptReloadProperties obj = CreateInstance<ScriptReloadProperties>();
@@ -54,6 +55,7 @@ namespace UnityEditor
             return obj;
         }
 
+        [RequiredByNativeCode]
         static void Load(ScriptReloadProperties properties)
         {
             properties.ManagedLoad();

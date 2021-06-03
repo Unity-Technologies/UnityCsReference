@@ -274,6 +274,12 @@ namespace UnityEditor.Search
         Func<TData, TFilter> m_GetDataCallback;
         Func<TData, string, TFilter, bool> m_FilterResolver;
 
+        public Filter(string token, IEnumerable<string> supportedOperatorType, QueryEngineImpl<TData> queryEngine)
+            : base(token, supportedOperatorType, false, queryEngine)
+        {
+            m_GetDataCallback = data => default;
+        }
+
         public Filter(string token, IEnumerable<string> supportedOperatorType, Func<TData, TFilter> getDataCallback, QueryEngineImpl<TData> queryEngine)
             : base(token, supportedOperatorType, false, queryEngine)
         {
@@ -328,6 +334,12 @@ namespace UnityEditor.Search
         Func<TData, TParam, TFilter> m_GetDataCallback;
         Func<TData, TParam, string, TFilter, bool> m_FilterResolver;
         Func<string, TParam> m_ParameterTransformer;
+
+        public Filter(string token, IEnumerable<string> supportedOperatorType, QueryEngineImpl<TData> queryEngine)
+            : base(token, supportedOperatorType, false, queryEngine)
+        {
+            m_GetDataCallback = (data, param) => default;
+        }
 
         public Filter(string token, IEnumerable<string> supportedOperatorType, Func<TData, TParam, TFilter> getDataCallback, QueryEngineImpl<TData> queryEngine)
             : base(token, supportedOperatorType, false, queryEngine)
@@ -412,6 +424,12 @@ namespace UnityEditor.Search
 
         public override bool usesRegularExpressionToken => true;
 
+        public RegexFilter(Regex token, IEnumerable<string> supportedOperatorType, QueryEngineImpl<TData> queryEngine)
+            : base(token, supportedOperatorType, false, queryEngine)
+        {
+            m_GetDataCallback = (data, s) => default;
+        }
+
         public RegexFilter(Regex token, IEnumerable<string> supportedOperatorType, Func<TData, string, TFilter> getDataCallback, QueryEngineImpl<TData> queryEngine)
             : base(token, supportedOperatorType, false, queryEngine)
         {
@@ -467,6 +485,12 @@ namespace UnityEditor.Search
         Func<TData, string, TParam, TFilter> m_GetDataCallback;
         Func<TData, string, TParam, string, TFilter, bool> m_FilterResolver;
         Func<string, TParam> m_ParameterTransformer;
+
+        public RegexFilter(Regex token, IEnumerable<string> supportedOperatorType, QueryEngineImpl<TData> queryEngine)
+            : base(token, supportedOperatorType, false, queryEngine)
+        {
+            m_GetDataCallback = (data, s, p) => default;
+        }
 
         public RegexFilter(Regex token, IEnumerable<string> supportedOperatorType, Func<TData, string, TParam, TFilter> getDataCallback, QueryEngineImpl<TData> queryEngine)
             : base(token, supportedOperatorType, false, queryEngine)

@@ -19,6 +19,7 @@ namespace UnityEngine.Rendering
         [System.Obsolete("Shader keyword type BuiltinAutoStripped is no longer used. Use BuiltinDefault instead. (UnityUpgradable) -> BuiltinDefault")]
         BuiltinAutoStripped = (1 << 3) | BuiltinDefault,
         UserDefined = (1 << 4),
+        Plugin = (1 << 5),
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -99,6 +100,8 @@ namespace UnityEngine.Rendering
         }
 
         public int index { get { return (int)m_Index; } }
+
+        public override string ToString() { return m_Name; }
 
         internal string m_Name;
         internal uint m_Index;

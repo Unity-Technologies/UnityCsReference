@@ -189,6 +189,38 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
+    /// Specifies the alignment keywords for <see cref="TransformOrigin"/>.
+    /// </summary>
+    public enum TransformOriginOffset
+    {
+        /// <summary>
+        /// The origin of the transform operation is is set to the left of the element.
+        /// </summary>
+        Left = 1,
+
+        /// <summary>
+        /// The origin of the transform operation is set to the right of the element.
+        /// </summary>
+        Right = 2,
+
+        /// <summary>
+        /// The origin of the transform operation is set to the top of the element.
+        /// </summary>
+        Top = 3,
+
+        /// <summary>
+        /// The origin of the transform operation set to the bottom of the element.
+        /// </summary>
+        Bottom = 4,
+
+        /// <summary>
+        /// The origin of the transform operation is set to the center of the element.
+        /// </summary>
+        Center = 5,
+    }
+
+
+    /// <summary>
     /// Specifies whether or not a VisualElement is visible.
     /// </summary>
     public enum Visibility

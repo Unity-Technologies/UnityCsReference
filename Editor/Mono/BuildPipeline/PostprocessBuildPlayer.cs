@@ -13,10 +13,13 @@ using UnityEditorInternal;
 using System;
 using System.Text.RegularExpressions;
 using Mono.Cecil;
+using NiceIO;
+using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEditor.Modules;
 using UnityEditor.DeploymentTargets;
 using UnityEngine.Scripting;
+using Debug = UnityEngine.Debug;
 
 namespace UnityEditor
 {
@@ -111,21 +114,34 @@ namespace UnityEditor
             return installedPlugins;
         }
 
-        internal static void InstallStreamingAssets(string stagingAreaDataPath)
-        {
+        internal static void InstallStreamingAssets(string stagingAreaDataPath) =>
             InstallStreamingAssets(stagingAreaDataPath, null);
-        }
 
-        internal static void InstallStreamingAssets(string stagingAreaDataPath, BuildReport report)
+        internal static void InstallStreamingAssets(string stagingAreaDataPath, BuildReport report) =>
+            InstallStreamingAssets(stagingAreaDataPath, "StreamingAssets", report);
+
+        internal static void InstallStreamingAssets(string stagingAreaDataPath, string streamingAssetsFolderName, BuildReport report)
         {
             if (Directory.Exists(StreamingAssets))
             {
-                var outputPath = Path.Combine(stagingAreaDataPath, "StreamingAssets");
+                var outputPath = Path.Combine(stagingAreaDataPath, streamingAssetsFolderName);
                 FileUtil.CopyDirectoryRecursiveForPostprocess(StreamingAssets, outputPath, true);
-                if (report != null)
+                report?.RecordFilesAddedRecursive(outputPath, CommonRoles.streamingAsset);
+            }
+
+            foreach (var(dst, src) in BuildPlayerContext.ActiveInstance.StreamingAssets)
+            {
+                NPath targetPlayerPath = $"{stagingAreaDataPath}/{streamingAssetsFolderName}/{dst}";
+                if (targetPlayerPath.Exists())
                 {
-                    report.RecordFilesAddedRecursive(outputPath, CommonRoles.streamingAsset);
+                    var errorMessage =
+                        "error: Callback provided streaming assets file conflicts with file already present in project." +
+                        $" Project file 'StreamingAssets/{dst}'. Callback provided file '{src}'.";
+                    Debug.LogError(errorMessage);
+                    throw new BuildFailedException(errorMessage);
                 }
+                FileUtil.UnityFileCopy(src.ToString(), targetPlayerPath.EnsureParentDirectoryExists().ToString());
+                report?.RecordFileAdded(targetPlayerPath.ToString(SlashMode.Native), CommonRoles.streamingAsset);
             }
         }
 

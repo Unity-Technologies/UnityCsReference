@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -132,10 +133,13 @@ namespace Unity.UI.Builder
         public static VisualElementAsset AddElementToAsset(
             BuilderDocument document, VisualElement ve,
             Func<VisualTreeAsset, VisualElementAsset, VisualElement, VisualElementAsset> makeVisualElementAsset,
-            int index = -1)
+            int index = -1, bool registerUndo = true)
         {
-            Undo.RegisterCompleteObjectUndo(
-                document.visualTreeAsset, BuilderConstants.CreateUIElementUndoMessage);
+            if (registerUndo)
+            {
+                Undo.RegisterCompleteObjectUndo(
+                    document.visualTreeAsset, BuilderConstants.CreateUIElementUndoMessage);
+            }
 
             var veParent = ve.parent;
             VisualElementAsset veaParent = null;
@@ -412,6 +416,73 @@ namespace Unity.UI.Builder
                 return BuilderConstants.ToolbarUnsavedFileDisplayMessage + extension;
 
             return Path.GetFileName(assetPath) + (hasUnsavedChanges ? BuilderConstants.ToolbarUnsavedFileSuffix : "");
+        }
+
+        public static TemplateContainer GetVisualElementRootTemplate(VisualElement visualElement)
+        {
+            TemplateContainer templateContainerParent = null;
+            var parent = visualElement.parent;
+
+            while (parent != null)
+            {
+                if (parent is TemplateContainer && parent.GetVisualElementAsset() != null)
+                {
+                    templateContainerParent = parent as TemplateContainer;
+                    break;
+                }
+
+                parent = parent.parent;
+            }
+
+            return templateContainerParent;
+        }
+
+        public static bool HasAttributeOverrideInRootTemplate(VisualElement visualElement, string attributeName)
+        {
+            var templateContainer = GetVisualElementRootTemplate(visualElement);
+            var templateAsset = templateContainer?.GetVisualElementAsset() as TemplateAsset;
+
+            return templateAsset?.attributeOverrides.Count(x => x.m_ElementName == visualElement.name && x.m_AttributeName == attributeName) > 0;
+        }
+
+        public static List<TemplateAsset.AttributeOverride> GetAccumulatedAttributeOverrides(VisualElement visualElement)
+        {
+            VisualElement parent = visualElement.parent;
+            List<TemplateAsset.AttributeOverride> attributeOverrides = new List<TemplateAsset.AttributeOverride>();
+
+            while (parent != null)
+            {
+                if (parent is TemplateContainer)
+                {
+                    TemplateAsset templateAsset;
+                    if (parent.HasProperty(VisualTreeAsset.LinkedVEAInTemplatePropertyName))
+                    {
+                        templateAsset = parent.GetProperty(VisualTreeAsset.LinkedVEAInTemplatePropertyName) as TemplateAsset;
+                    }
+                    else
+                    {
+                        templateAsset = parent.GetVisualElementAsset() as TemplateAsset;
+                    }
+
+                    if (templateAsset != null)
+                    {
+                        attributeOverrides.AddRange(templateAsset.attributeOverrides);
+                    }
+
+                    // We reached the root template
+                    if (parent.GetVisualElementAsset() != null)
+                    {
+                        break;
+                    }
+                }
+
+                parent = parent.parent;
+            }
+
+            // Parent attribute overrides have higher priority
+            attributeOverrides.Reverse();
+
+            return attributeOverrides;
         }
     }
 }

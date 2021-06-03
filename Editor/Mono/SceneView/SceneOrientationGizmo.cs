@@ -13,14 +13,15 @@ using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
 [Overlay(typeof(SceneView), "Orientation", true)]
-[Icon("Icons/Overlays/OrientationOverlay.png")]
+[Icon("Icons/Overlays/OrientationGizmo.png")]
 sealed class SceneOrientationGizmo : IMGUIOverlay
 {
     static readonly Color k_PickingClearColor = Color.magenta;
     const int kRotationSize = 100;
     const float kRotationLockedAlpha = 0.4f;
     const int kPerspOrthoLabelHeight = 16;
-    const string k_ShowOnlyContentClass = "overlay-show-only-content";
+    const string k_ShowOrientationHeader = "overlay-show-orientation-header";
+    const string k_ShowOrientationBackground = "overlay-show-orientation-background";
 
     static Quaternion[] kDirectionRotations =
     {
@@ -36,19 +37,40 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
     { "Right", "Top", "Front", "Left", "Bottom", "Back", "Iso", "Persp", "2D" };
 
     internal static string[] kMenuDirNames =
-    { "Free", "Right", "Top", "Front", "Left", "Bottom", "Back", "", "Perspective" };
+    { "Free", "Right", "Top", "Front", "Left", "Bottom", "Back", "", "Perspective", "", "Show background" };
 
     static readonly GUIContent[] s_HandleAxisLabels =
     {
         new GUIContent("x"), new GUIContent("y"), new GUIContent("z")
     };
 
+
+    bool showBackGround
+    {
+        get
+        {
+            if (!EditorPrefs.HasKey(k_ShowOrientationBackground))
+                showBackGround = false;
+
+            return EditorPrefs.GetBool(k_ShowOrientationBackground);
+        }
+        set
+        {
+            if (EditorPrefs.HasKey(k_ShowOrientationBackground))
+            {
+                var currentValue = EditorPrefs.GetBool(k_ShowOrientationBackground);
+                if (currentValue == value) return;
+            }
+
+            EditorPrefs.SetBool(k_ShowOrientationBackground, value);
+            UpdateHeaderAndBackground();
+        }
+    }
+
     int[] m_ViewDirectionControlIDs;
     int m_CenterButtonControlID;
     int m_RotationLockControlID;
     int m_PerspectiveIsoControlID;
-    bool m_MouseOnOverlay;
-    bool m_MouseCaptured;
     RenderTexture m_RenderTexture;
     Camera m_Camera;
 
@@ -76,7 +98,10 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
 
     float fadedVisibility
     {
-        get { return m_Visible.faded * fadedRotationLock; }
+        get
+        {
+            return m_Visible.faded * fadedRotationLock;
+        }
     }
 
     static class Styles
@@ -92,44 +117,31 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
     public SceneOrientationGizmo()
     {
         collapsedChanged += OnCollapsedChanged;
-        rootVisualElement.RegisterCallback<MouseEnterEvent>(OnMouseEnter);
-        rootVisualElement.RegisterCallback<MouseLeaveEvent>(OnMouseLeave);
-        rootVisualElement.RegisterCallback<MouseCaptureEvent>(OnMouseCapture);
-        rootVisualElement.RegisterCallback<MouseCaptureOutEvent>(OnMouseCaptureOut);
     }
 
     void OnCollapsedChanged(bool collapsed)
     {
-        UpdateShowOnlyContent();
+        UpdateHeaderAndBackground();
     }
 
-    void OnMouseEnter(MouseEnterEvent evt)
+    const string k_OrientationVisibilityOff = "orientation-visibility-off";
+    void UpdateOverlayDisplay(bool visibility)
     {
-        m_MouseOnOverlay = true;
-        UpdateShowOnlyContent();
+        m_HasMenuEntry = visibility;
+        rootVisualElement.EnableInClassList(k_OrientationVisibilityOff, !visibility);
     }
 
-    void OnMouseLeave(MouseLeaveEvent evt)
+    void UpdateHeaderAndBackground()
     {
-        m_MouseOnOverlay = false;
-        UpdateShowOnlyContent();
-    }
+        var headerElement = rootVisualElement.Q(className: "overlay-header");
+        if (headerElement != null)
+            if (!collapsed)
+                headerElement.BringToFront();
+            else
+                headerElement.SendToBack();
 
-    private void OnMouseCaptureOut(MouseCaptureOutEvent evt)
-    {
-        m_MouseCaptured = false;
-        UpdateShowOnlyContent();
-    }
-
-    private void OnMouseCapture(MouseCaptureEvent evt)
-    {
-        m_MouseCaptured = true;
-        UpdateShowOnlyContent();
-    }
-
-    void UpdateShowOnlyContent()
-    {
-        rootVisualElement.EnableInClassList(k_ShowOnlyContentClass, !m_MouseOnOverlay && !collapsed && !m_MouseCaptured);
+        rootVisualElement.EnableInClassList(k_ShowOrientationHeader, !collapsed);
+        rootVisualElement.EnableInClassList(k_ShowOrientationBackground, !collapsed && !showBackGround);
     }
 
     internal void SkipFading()
@@ -189,6 +201,8 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
             m_RotationLockControlID = GUIUtility.GetPermanentControlID();
             m_PerspectiveIsoControlID = GUIUtility.GetPermanentControlID();
         }
+
+        UpdateHeaderAndBackground();
     }
 
     public override void OnWillBeDestroyed()
@@ -287,12 +301,15 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
 
     void DisplayContextMenu(Rect buttonOrCursorRect, SceneView view)
     {
-        int[] selectedItems = new int[view.orthographic ? 1 : 2];
+        int[] selectedItems = new int[view.orthographic ? 2 : 3];
         selectedItems[0] = currentDir >= 6 ? 0 : currentDir + 1;
+
+        selectedItems[1] = showBackGround ? 10 : 0;
+
         if (!view.orthographic)
-            selectedItems[1] = 8;
-        EditorUtility.DisplayCustomMenu(buttonOrCursorRect, kMenuDirNames, selectedItems, ContextMenuDelegate,
-            view);
+            selectedItems[2] = 8;
+
+        EditorUtility.DisplayCustomMenu(buttonOrCursorRect, kMenuDirNames, selectedItems, ContextMenuDelegate, view);
         GUIUtility.ExitGUI();
     }
 
@@ -320,15 +337,7 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
         }
         else if (selected == 10)
         {
-            ViewSetUnityDefault(view);
-        }
-        else if (selected == 11)
-        {
-            ViewSetMayaDefault(view);
-        }
-        else if (selected == 12)
-        {
-            ViewSetMaxDefault(view);
+            showBackGround = !showBackGround;
         }
     }
 
@@ -756,9 +765,15 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
 
         // Fade whole Scene View Gizmo in / out when switching 2D mode.
         if (newVisible == 8)
+        {
+            UpdateOverlayDisplay(false);
             m_Visible.speed = 0.3f;
+        }
         else
+        {
+            UpdateOverlayDisplay(true);
             m_Visible.speed = 2f;
+        }
 
         m_Visible.target = (newVisible != 8);
     }

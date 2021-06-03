@@ -70,7 +70,14 @@ namespace UnityEditor
                 if (endpos > pos)
                 {
                     string token = searchString.Substring(pos, endpos - pos);
-                    if (CheckForKeyWords(token, filter, q1 - pos, q2 - pos))
+
+                    if (q1 != -1)
+                        q1 -= pos;
+
+                    if (q2 != -1)
+                        q2 -= pos;
+
+                    if (CheckForKeyWords(token, filter, q1, q2))
                         parsed = true;
                     else
                         filter.nameFilter += (string.IsNullOrEmpty(filter.nameFilter) ? "" : " ") + token; // force single space between name tokens
@@ -183,11 +190,11 @@ namespace UnityEditor
                 else
                 {
                     string assetPath;
-                    if (quote1 != -1 && quote2 != -1)
+                    if (quote1 >= 0 && quote2 >= 0)
                     {
                         int startIndex = quote1 + 1;
                         int count = quote2 - quote1 - 1;
-                        if (count < 0 || quote2 == -1)
+                        if (count < 0)
                             count = searchString.Length - startIndex;
 
                         // Strip filepath from quotes, don't prefix with Assets/, we need to support Packages/ (https://fogbugz.unity3d.com/f/cases/1161019/)
@@ -217,11 +224,11 @@ namespace UnityEditor
             if (index == 0)
             {
                 string globValue = searchString.Substring(5);
-                if (quote1 != -1 && quote2 != -1)
+                if (quote1 >= 0 && quote2 >= 0)
                 {
                     int startIndex = quote1 + 1;
                     int count = quote2 - quote1 - 1;
-                    if (count < 0 || quote2 == -1)
+                    if (count < 0)
                         count = searchString.Length - startIndex;
                     globValue = searchString.Substring(startIndex, count);
                 }

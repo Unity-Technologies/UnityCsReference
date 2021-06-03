@@ -85,6 +85,13 @@ namespace UnityEditor.DeviceSimulation
             m_OverlayTexture = overlayTexture;
             m_DeviceInfo = deviceInfo;
             m_ScreenSimulation = screenSimulation;
+            if (m_InputManagerBackend != null)
+            {
+                if (deviceInfo.IsAndroidDevice())
+                    m_InputManagerBackend.resetDeltaTimeWhenStationary = true;
+                else if (deviceInfo.IsiOSDevice())
+                    m_InputManagerBackend.resetDeltaTimeWhenStationary = false;
+            }
             CancelAllTouches();
         }
 

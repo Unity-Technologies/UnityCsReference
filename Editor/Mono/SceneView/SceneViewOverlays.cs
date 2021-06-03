@@ -47,18 +47,6 @@ namespace UnityEditor
                 }
             }
         }
-
-        [Overlay(typeof(SceneView), k_OverlayID, k_DisplayName)]
-        [Icon("Icons/Overlays/ToolsToggle.png")]
-        class SceneViewToolsOverlay : IMGUIOverlay
-        {
-            const string k_OverlayID = "Scene View/Component Tools";
-            const string k_DisplayName = "Component Tools";
-            public override void OnGUI()
-            {
-                EditorToolGUI.DoContextualToolbarOverlay();
-            }
-        }
     }
 }
 // namespace

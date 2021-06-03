@@ -11,6 +11,7 @@ using Object = UnityEngine.Object;
 namespace UnityEditor
 {
     //To be removed once Experimental namespace is deleted.
+    [Obsolete("DataWatchHandle is no longer supported and will be removed soon", true)]
     class DataWatchHandle : IDataWatchHandle
     {
         public readonly int id;
@@ -48,6 +49,7 @@ namespace UnityEditor
         }
     }
 
+    [Obsolete("IDataWatchService is no longer supported and will be removed soon", true)]
     internal class DataWatchService : IDataWatchService
     {
         public static DataWatchService sharedInstance = new DataWatchService();

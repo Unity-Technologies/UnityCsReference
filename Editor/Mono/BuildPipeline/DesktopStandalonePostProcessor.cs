@@ -28,17 +28,17 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
 
     public override string PrepareForBuild(BuildOptions options, BuildTarget target)
     {
+        var buildTarget = NamedBuildTarget.FromBuildTargetGroup(BuildPipeline.GetBuildTargetGroup(target));
+
         if (!m_HasMonoPlayers)
         {
-            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(target);
-            if (PlayerSettings.GetScriptingBackend(buildTargetGroup) != ScriptingImplementation.IL2CPP)
+            if (PlayerSettings.GetScriptingBackend(buildTarget) != ScriptingImplementation.IL2CPP)
                 return "Currently selected scripting backend (Mono) is not installed.";
         }
 
         if (!m_HasIl2CppPlayers)
         {
-            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(target);
-            if (PlayerSettings.GetScriptingBackend(buildTargetGroup) == ScriptingImplementation.IL2CPP)
+            if (PlayerSettings.GetScriptingBackend(buildTarget) == ScriptingImplementation.IL2CPP)
                 return "Currently selected scripting backend (IL2CPP) is not installed.";
         }
 
@@ -265,7 +265,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
             else
             {
                 var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(args.target);
-                var managedStrippingLevel = PlayerSettings.GetManagedStrippingLevel(buildTargetGroup);
+                var managedStrippingLevel = PlayerSettings.GetManagedStrippingLevel(NamedBuildTarget.FromBuildTargetGroup(buildTargetGroup));
                 AssemblyStripper.StripForMonoBackend(args.target, args.usedClassRegistry, managedStrippingLevel, args.report);
             }
 

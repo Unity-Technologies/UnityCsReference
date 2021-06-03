@@ -31,6 +31,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual event Action<IEnumerable<VisualState>> onVisualStateChange = delegate {};
         public virtual event Action<IPage, IEnumerable<IPackage>, IEnumerable<IPackage>, bool> onListUpdate = delegate {};
         public virtual event Action<IPage> onListRebuild = delegate {};
+        public virtual event Action<IPage> onSubPageAdded = delegate {};
 
         public virtual event Action onRefreshOperationStart = delegate {};
         public virtual event Action onRefreshOperationFinish = delegate {};
@@ -319,6 +320,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             page.onVisualStateChange += TriggerOnVisualStateChange;
             page.onListUpdate += TriggerOnPageUpdate;
             page.onListRebuild += TriggerOnPageRebuild;
+            page.onSubPageAdded += TriggerOnSubPageAdded;
         }
 
         private void UnregisterPageEvents(IPage page)
@@ -327,6 +329,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             page.onVisualStateChange -= TriggerOnVisualStateChange;
             page.onListUpdate -= TriggerOnPageUpdate;
             page.onListRebuild -= TriggerOnPageRebuild;
+            page.onSubPageAdded -= TriggerOnSubPageAdded;
         }
 
         private void OnPageSelectionChanged(IPackageVersion version)
@@ -349,6 +352,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void TriggerOnPageRebuild(IPage page)
         {
             onListRebuild?.Invoke(page);
+        }
+
+        private void TriggerOnSubPageAdded(IPage page)
+        {
+            onSubPageAdded?.Invoke(page);
         }
 
         public virtual IPage GetCurrentPage()
@@ -453,15 +461,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             return PackageFilterTab.MyRegistries;
         }
 
-        private void OnInstalledOrUninstalled(IPackage package, IPackageVersion installedVersion = null)
+        private void OnInstalledOrUninstalled(IPackage package)
         {
             if (package != null)
-                SetSelected(package, installedVersion);
-        }
-
-        private void OnUninstalled(IPackage package)
-        {
-            OnInstalledOrUninstalled(package);
+                SetSelected(package, package.versions.installed);
         }
 
         private void OnSearchTextChanged(string searchText)
@@ -475,6 +478,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 ClearFetchDetailsQueue();
 
             var page = GetPageFromTab(filterTab);
+
+            page.ResetUserUnlockedState();
+
             if (GetRefreshTimestamp(page.tab) == 0)
                 Refresh(filterTab);
             page.Rebuild();
@@ -482,7 +488,15 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             // When the filter tab is changed, on a page level, the selection hasn't changed because selection is kept for each filter
             // However, the active selection is still changed if you look at package manager as a whole
-            OnPageSelectionChanged(page.GetSelectedVersion());
+            // If the package has been re-locked, change the selected version back to the package's primary version
+            IPackage selectedPackage;
+            IPackageVersion selectedVersion;
+            page.GetSelectedPackageAndVersion(out selectedPackage, out selectedVersion);
+
+            var versionToSelect = GetVisualState(selectedPackage)?.isLocked == true ? selectedPackage?.versions.primary
+                : selectedVersion;
+
+            OnPageSelectionChanged(versionToSelect);
 
             if (m_PackageFiltering.previousFilterTab != null)
             {
@@ -675,6 +689,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             InitializeRefreshTimestamps();
             InitializeSelectionObjects();
+            InitializeSubPages();
 
             m_UpmClient.onListOperation += OnRefreshOperation;
             m_UpmClient.onSearchAllOperation += OnRefreshOperation;
@@ -685,8 +700,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreClient.onProductListFetched += OnProductListFetched;
             m_AssetStoreClient.onProductFetched += OnProductFetched;
 
-            m_PackageDatabase.onInstallSuccess += OnInstalledOrUninstalled;
-            m_PackageDatabase.onUninstallSuccess += OnUninstalled;
+            m_PackageDatabase.onInstallOrUninstallSuccess += OnInstalledOrUninstalled;
             m_PackageDatabase.onPackagesChanged += OnPackagesChanged;
 
             m_PackageFiltering.onFilterTabChanged += OnFilterChanged;
@@ -711,8 +725,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreClient.onProductListFetched -= OnProductListFetched;
             m_AssetStoreClient.onProductFetched -= OnProductFetched;
 
-            m_PackageDatabase.onInstallSuccess -= OnInstalledOrUninstalled;
-            m_PackageDatabase.onUninstallSuccess -= OnUninstalled;
+            m_PackageDatabase.onInstallOrUninstallSuccess -= OnInstalledOrUninstalled;
             m_PackageDatabase.onPackagesChanged -= OnPackagesChanged;
 
             m_PackageFiltering.onFilterTabChanged -= OnFilterChanged;
@@ -733,6 +746,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             ClearPages();
             ClearFetchDetailsQueue();
+
+            InitializeSubPages();
 
             m_RefreshErrors.Clear();
             m_RefreshOperationsInProgress.Clear();
@@ -761,6 +776,34 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (packageSelectionObject != null)
                     m_PackageSelectionObjects[packageSelectionObject.versionUniqueId] = packageSelectionObject;
             }
+        }
+
+        private void InitializeSubPages()
+        {
+            Func<IPackage, bool> filterAllPackages = (package) => true;
+            Func<IPackage, string> groupPackagesAndFeatures = (package) =>
+            {
+                if (package?.Is(PackageType.Feature) == true)
+                    return L10n.Tr("Features");
+                return L10n.Tr("Packages");
+            };
+
+            Func<IPackage, string> groupPackagesWithAuthorAndFeatures = (package) =>
+            {
+                if (package?.Is(PackageType.Feature) == true && package.Is(PackageType.Unity))
+                    return L10n.Tr("Features");
+                return string.Format(L10n.Tr("Packages - {0}"), BasePage.GetDefaultGroupName(PackageFilterTab.InProject, package));
+            };
+
+            AddSubPage(PackageFilterTab.UnityRegistry, "all", L10n.Tr("All"), 0, filterAllPackages, groupPackagesAndFeatures);
+            AddSubPage(PackageFilterTab.InProject, "all", L10n.Tr("All"), 0, filterAllPackages, groupPackagesWithAuthorAndFeatures);
+        }
+
+        public SubPage AddSubPage(PackageFilterTab tab, string name, string displayName, int priority = 0, Func<IPackage, bool> filterFunction = null, Func<IPackage, string> groupNameFunction = null, Func<string, string, int> compareGroupFunction = null)
+        {
+            var subPage = new SubPage(tab, name, displayName, priority, filterFunction, groupNameFunction, compareGroupFunction);
+            GetPage(tab).AddSubPage(subPage);
+            return subPage;
         }
 
         private void ClearPages()
@@ -914,6 +957,11 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_AssetStoreClient.FetchDetail(productId, package => { m_CurrentFetchDetails.Remove(package.uniqueId); });
                 }
             }
+        }
+
+        public virtual void SetPackagesUserUnlockedState(IEnumerable<string> packageUniqueIds, bool unlocked)
+        {
+            GetCurrentPage().SetPackagesUserUnlockedState(packageUniqueIds, unlocked);
         }
     }
 }

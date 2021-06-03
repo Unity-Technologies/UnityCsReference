@@ -5,7 +5,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
@@ -18,7 +17,7 @@ namespace UnityEditor.UIElements.Debugger
         [SerializeField]
         UIElementsEventsDebuggerImpl m_DebuggerImpl;
 
-        [MenuItem("Window/UI Toolkit/Events Debugger", false, 3010, true)]
+        [MenuItem("Window/UI Toolkit/Event Debugger", false, 3010)]
         public static void ShowUIElementsEventDebugger()
         {
             var window = EditorWindow.GetWindow<UIElementsEventsDebugger>();
@@ -36,9 +35,7 @@ namespace UnityEditor.UIElements.Debugger
 
         void OnDisable()
         {
-            m_DebuggerImpl.ClearLogs();
             m_DebuggerImpl.OnDisable();
-            m_DebuggerImpl = null;
         }
     }
 
@@ -51,6 +48,28 @@ namespace UnityEditor.UIElements.Debugger
         const string k_EventsDurationLabelName = "eventsHistogramDurationLabel";
         const string k_EventsDurationLengthName = "eventsHistogramDurationLength";
         const int k_DefaultMaxLogLines = 5000;
+
+        const string k_RegisteredEventCallbacksPrefix = "Registered Event Callbacks for ";
+
+        public enum HistogramDurationMode
+        {
+            // Average duration spent handling each event type
+            AverageTime,
+            // Total duration spent handling each event type
+            TotalTime
+        }
+
+        // Event playback speed, divide by 10f before using
+        public readonly List<string> m_PlaybackSpeeds = new List<string>
+        {
+            "0.1x", // 0.1x (slowest)
+            "0.2x",
+            "0.5x",
+            "1x", // 1x (normal)
+            "2x",
+            "5x",
+            "10x" // 10x (fastest)
+        };
 
         Label m_EventPropagationPaths;
         Label m_EventBaseInfo;
@@ -70,16 +89,34 @@ namespace UnityEditor.UIElements.Debugger
         [SerializeField]
         int m_MaxLogLineCount;
         [SerializeField]
-        bool m_DisplayHistogram;
+        HistogramDurationMode m_DisplayHistogramDurationMode;
         [SerializeField]
-        bool m_DisplayRegisteredEventCallbacks;
+        float m_PlaybackSpeed;
+
+        [Serializable]
+        struct EventTypeFilterStateStruct
+        {
+            public long key;
+            public bool value;
+        }
+
+        public bool GetStateValue(long key, bool defaultValue)
+        {
+            if (m_StateList == null)
+                return false;
+
+            if (m_StateList.Exists(x => x.key == key))
+                return m_StateList.Find(x => x.key == key).value;
+            return defaultValue;
+        }
+
+        [SerializeField]
+        List<EventTypeFilterStateStruct> m_StateList;
 
         EventTypeSearchField m_EventTypeFilter;
         ToolbarSearchField m_CallbackTypeFilter;
         Label m_LogCountLabel;
         Label m_SelectionCountLabel;
-        Toggle m_HistogramToggle;
-        Toggle m_RegisteredEventCallbacksToggle;
         List<EventLogLine> m_SelectedEvents;
         IntegerField m_MaxLogLinesField;
         ToolbarMenu m_SettingsMenu;
@@ -88,13 +125,15 @@ namespace UnityEditor.UIElements.Debugger
 
         ToolbarToggle m_TogglePlayback;
         ToolbarButton m_DecreasePlaybackSpeedButton;
-        TextField m_PlaybackSpeedTextField;
         ToolbarButton m_IncreasePlaybackSpeedButton;
         ToolbarButton m_SaveReplayButton;
         ToolbarButton m_LoadReplayButton;
         ToolbarButton m_StartPlaybackButton;
         ToolbarButton m_StopPlaybackButton;
         Label m_PlaybackLabel;
+        EnumField m_DisplayHistogramAverageEnum;
+        DropdownField m_PlaybackSpeedDropdown;
+        Label m_EventRegistrationTitle;
 
         Dictionary<ulong, long> m_EventTimestampDictionary = new Dictionary<ulong, long>();
         VisualElement rootVisualElement;
@@ -104,59 +143,67 @@ namespace UnityEditor.UIElements.Debugger
 
         readonly EventDebugger m_Debugger = new EventDebugger();
 
-        void DisplayHistogram(ScrollView scrollView)
+        void DisplayHistogram()
         {
-            if (scrollView == null)
+            if (m_EventsHistogramScrollView == null)
                 return;
 
             // Clear the ScrollView
-            scrollView.Clear();
-
-            if (!m_DisplayHistogram)
-                return;
+            m_EventsHistogramScrollView.Clear();
 
             if (panel == null)
+                return;
+
+            var childrenList = m_EventsHistogramScrollView.Children().ToList();
+            foreach (var child in childrenList)
+                child.RemoveFromHierarchy();
+
+            var histogramValue = m_Debugger.ComputeHistogram(m_SelectedEvents?.Select(x => x.eventBase).ToList() ??
+                m_Log.lines.Select(x => x.eventBase).ToList());
+            if (histogramValue == null)
+                return;
+
+            long maxDuration = 0;
+            float maxAverageDuration = 0f;
+            foreach (var key in histogramValue.Keys)
             {
-                m_HistogramToggle.text = "Histogram - No Panel Selected";
+                if (maxDuration < histogramValue[key].duration)
+                    maxDuration = histogramValue[key].duration;
+                if (maxAverageDuration < histogramValue[key].duration / (float)histogramValue[key].count)
+                    maxAverageDuration = histogramValue[key].duration / (float)histogramValue[key].count;
             }
-            else
+
+            foreach (var key in histogramValue.Keys)
             {
-                m_HistogramToggle.text = "Histogram";
-
-                var histogramValue = m_Debugger.ComputeHistogram(m_SelectedEvents?.Select(x => x.eventBase).ToList() ??
-                    m_Log.lines.Select(x => x.eventBase).ToList());
-                if (histogramValue == null)
-                    return;
-
-                var childrenList = scrollView.Children().ToList();
-                foreach (var child in childrenList)
-                    child.RemoveFromHierarchy();
-
-                long maxDuration = 0;
-                foreach (var key in histogramValue.Keys)
+                float adjustedDuration, adjustedPercentDuration;
+                if (m_DisplayHistogramDurationMode == HistogramDurationMode.AverageTime)
                 {
-                    if (maxDuration < histogramValue[key])
-                        maxDuration = histogramValue[key];
+                    adjustedDuration = histogramValue[key].duration / (float)histogramValue[key].count;
+                    adjustedPercentDuration = adjustedDuration / maxAverageDuration;
+                }
+                else
+                {
+                    adjustedDuration = histogramValue[key].duration;
+                    adjustedPercentDuration = adjustedDuration / maxDuration;
                 }
 
-                foreach (var key in histogramValue.Keys)
-                    AddHistogramEntry(scrollView, key, histogramValue[key], histogramValue[key] / (float)maxDuration);
-
-                var eventsHistogramTitleContainer = rootVisualElement.MandatoryQ("eventsHistogramTitleContainer");
-                var eventsHistogramTotal = eventsHistogramTitleContainer.MandatoryQ<Label>("eventsHistogramTotal");
-                eventsHistogramTotal.text = $"{histogramValue.Count} elements";
+                AddHistogramEntry(m_EventsHistogramScrollView, key, adjustedDuration, adjustedPercentDuration * 100f);
             }
+
+            var eventsHistogramTitleHeader = rootVisualElement.MandatoryQ("eventsHistogramTitleHeader");
+            var eventsHistogramTotal = eventsHistogramTitleHeader.MandatoryQ<Label>("eventsHistogramTotal");
+            eventsHistogramTotal.text = $"{histogramValue.Count} event type{(histogramValue.Count > 1 ? "s" : "")}";
         }
 
-        static void AddHistogramEntry(VisualElement root, string name, long duration, float percent)
+        static void AddHistogramEntry(VisualElement root, string name, float duration, float percent)
         {
             var container = new VisualElement() { name = k_EventsContainerName };
             var labelName = new Label(name) { name = k_EventsLabelName };
             var durationGraph = new VisualElement() { name = k_EventsDurationName };
-            float durationLength = duration / 1000.0f;
-            var labelNameDuration = new Label(name) { name = k_EventsDurationLabelName, text = durationLength + "ms" };
+            float durationLength = duration / 1000f;
+            var labelNameDuration = new Label(name) { name = k_EventsDurationLabelName, text = durationLength.ToString("0.#####") + "ms" };
             var durationGraphLength = new VisualElement() { name = k_EventsDurationLengthName };
-            durationGraphLength.style.position = Position.Absolute;
+            durationGraphLength.StretchToParentSize();
             durationGraph.Add(durationGraphLength);
             durationGraph.Add(labelNameDuration);
 
@@ -167,16 +214,16 @@ namespace UnityEditor.UIElements.Debugger
 
             durationGraphLength.style.top = 1.0f;
             durationGraphLength.style.left = 0.0f;
-            durationGraphLength.style.height = 18.0f;
-            durationGraphLength.style.width = 300.0f * percent;
+            durationGraphLength.style.width = Length.Percent(percent);
         }
 
         void InitializeRegisteredCallbacksBinding()
         {
-            m_EventRegistrationsListView.itemHeight = 18;
+            m_EventRegistrationsListView.fixedItemHeight = 18;
             m_EventRegistrationsListView.makeItem += () =>
             {
                 var lineContainer = new VisualElement { pickingMode = PickingMode.Position };
+                lineContainer.AddToClassList("line-container");
                 lineContainer.RegisterCallback<ClickEvent>(OnCallbackLineClick);
                 lineContainer.RegisterCallback<MouseOverEvent>(OnCallbackMouseOver);
 
@@ -262,9 +309,9 @@ namespace UnityEditor.UIElements.Debugger
 
             m_RegisteredEventCallbacksDataSource.Clear();
 
-            if (!m_DisplayRegisteredEventCallbacks || !GlobalCallbackRegistry.IsEventDebuggerConnected)
+            if (!GlobalCallbackRegistry.IsEventDebuggerConnected)
             {
-                listView.Refresh();
+                listView.Rebuild();
                 return;
             }
 
@@ -323,10 +370,15 @@ namespace UnityEditor.UIElements.Debugger
 
             listView.itemsSource = m_RegisteredEventCallbacksDataSource;
 
+            var choiceCount = m_EventTypeFilter.GetSelectedCount();
+            var choiceCountString = $"{choiceCount} event type{(choiceCount > 1 ? "s" : "")}";
+
+            m_EventRegistrationTitle.text = k_RegisteredEventCallbacksPrefix + choiceCountString + (panel == null ? " - [No Panel Selected]" : "");
+
             var nbEvents = m_EventTypeFilter.State.Count(s => s.Key > 0);
             var nbFilteredEvents = m_EventTypeFilter.State.Count(s => s.Key > 0 && s.Value);
-            var eventsRegistrationTitleContainer = rootVisualElement.MandatoryQ("eventsRegistrationTitleContainer");
-            var eventsRegistrationTotals = eventsRegistrationTitleContainer.MandatoryQ<Label>("eventsRegistrationTotals");
+            var eventsRegistrationSearchContainer = rootVisualElement.MandatoryQ("eventsRegistrationSearchContainer");
+            var eventsRegistrationTotals = eventsRegistrationSearchContainer.MandatoryQ<Label>("eventsRegistrationTotals");
             eventsRegistrationTotals.text =
                 $"{nbListeners} listener{(nbListeners > 1 ? "s" : "")}, {nbCallbacks} callback{(nbCallbacks > 1 ? "s" : "")}" +
                 (nbFilteredEvents < nbEvents ? $" (filter: {nbFilteredEvents} event{(nbFilteredEvents > 1 ? "s" : "")})" : string.Empty);
@@ -356,7 +408,7 @@ namespace UnityEditor.UIElements.Debugger
             if (template != null)
                 template.CloneTree(rootVisualElement);
 
-            var toolbar = rootVisualElement.MandatoryQ<Toolbar>("toolbar");
+            var toolbar = rootVisualElement.MandatoryQ<Toolbar>("searchToolbar");
             m_Toolbar = toolbar;
 
             base.Initialize(debuggerWindow);
@@ -372,22 +424,15 @@ namespace UnityEditor.UIElements.Debugger
             m_EventTypeFilter.RegisterCallback<ChangeEvent<string>>(OnFilterChange);
             m_SuspendListeningToggle = rootVisualElement.MandatoryQ<ToolbarToggle>("suspend");
             m_SuspendListeningToggle.RegisterValueChangedCallback(SuspendListening);
-            var refreshButton = rootVisualElement.MandatoryQ<ToolbarButton>("refresh");
-            refreshButton.clickable.clicked += Refresh;
             var clearLogsButton = rootVisualElement.MandatoryQ<ToolbarButton>("clear-logs");
             clearLogsButton.clickable.clicked += ClearLogs;
 
             var eventReplayToolbar = rootVisualElement.MandatoryQ<Toolbar>("eventReplayToolbar");
+            var eventFileToolbar = rootVisualElement.MandatoryQ<Toolbar>("eventFileToolbar");
             m_DecreasePlaybackSpeedButton = eventReplayToolbar.MandatoryQ<ToolbarButton>("decrease-playback-speed");
             m_DecreasePlaybackSpeedButton.clickable.clicked += DecreasePlaybackSpeed;
             m_IncreasePlaybackSpeedButton = eventReplayToolbar.MandatoryQ<ToolbarButton>("increase-playback-speed");
             m_IncreasePlaybackSpeedButton.clickable.clicked += IncreasePlaybackSpeed;
-            m_PlaybackSpeedTextField = eventReplayToolbar.MandatoryQ<TextField>("playback-speed");
-            m_PlaybackSpeedTextField.RegisterValueChangedCallback(UpdatePlaybackSpeed);
-            m_SaveReplayButton = eventReplayToolbar.MandatoryQ<ToolbarButton>("save-replay");
-            m_SaveReplayButton.clickable.clicked += SaveReplaySessionFromSelection;
-            m_LoadReplayButton = eventReplayToolbar.MandatoryQ<ToolbarButton>("load-replay");
-            m_LoadReplayButton.clickable.clicked += LoadReplaySession;
             m_TogglePlayback = eventReplayToolbar.MandatoryQ<ToolbarToggle>("pause-resume-playback");
             m_TogglePlayback.RegisterValueChangedCallback(TogglePlayback);
             m_PlaybackLabel = eventReplayToolbar.MandatoryQ<Label>("replay-selected-events");
@@ -396,13 +441,18 @@ namespace UnityEditor.UIElements.Debugger
             m_StartPlaybackButton.clickable.clicked += OnReplayStart;
             m_StopPlaybackButton = eventReplayToolbar.MandatoryQ<ToolbarButton>("stop-playback");
             m_StopPlaybackButton.clickable.clicked += OnReplayCompleted;
+            m_SaveReplayButton = eventFileToolbar.MandatoryQ<ToolbarButton>("save-replay");
+            m_SaveReplayButton.clickable.clicked += SaveReplaySessionFromSelection;
+            m_LoadReplayButton = eventFileToolbar.MandatoryQ<ToolbarButton>("load-replay");
+            m_LoadReplayButton.clickable.clicked += LoadReplaySession;
             UpdatePlaybackButtons();
 
             var infoContainer = rootVisualElement.MandatoryQ("eventInfoContainer");
+            var playbackContainer = rootVisualElement.MandatoryQ("eventPlaybackContainer");
             m_LogCountLabel = infoContainer.MandatoryQ<Label>("log-count");
             m_SelectionCountLabel = infoContainer.MandatoryQ<Label>("selection-count");
 
-            m_MaxLogLinesField = infoContainer.MandatoryQ<IntegerField>("maxLogLinesField");
+            m_MaxLogLinesField = playbackContainer.MandatoryQ<IntegerField>("maxLogLinesField");
             m_MaxLogLinesField.RegisterValueChangedCallback(e =>
             {
                 // Minimum 1 line if max log lines is enabled
@@ -411,7 +461,7 @@ namespace UnityEditor.UIElements.Debugger
                 DoMaxLogLines();
             });
 
-            m_SettingsMenu = infoContainer.Q<ToolbarMenu>("settings-menu");
+            m_SettingsMenu = playbackContainer.Q<ToolbarMenu>("settings-menu");
             SetupSettingsMenu();
 
             m_EventPropagationPaths = (Label)rootVisualElement.MandatoryQ("eventPropagationPaths");
@@ -423,11 +473,20 @@ namespace UnityEditor.UIElements.Debugger
             m_EventsLog.onSelectionChange += OnEventsLogSelectionChanged;
             m_EventsLog.RegisterCallback<FocusOutEvent>(OnListFocusedOut, TrickleDown.TrickleDown);
 
-            m_HistogramToggle = rootVisualElement.MandatoryQ<Toggle>("eventsHistogramTitle");
-            m_HistogramToggle.RegisterValueChangedCallback((e) =>
+            m_DisplayHistogramAverageEnum = rootVisualElement.MandatoryQ<EnumField>("eventsHistogramDurationType");
+            m_DisplayHistogramAverageEnum.Init(HistogramDurationMode.AverageTime);
+            m_DisplayHistogramAverageEnum.RegisterValueChangedCallback(e =>
             {
-                m_DisplayHistogram = e.newValue;
-                DisplayHistogram(m_EventsHistogramScrollView);
+                m_DisplayHistogramDurationMode = (HistogramDurationMode)e.newValue;
+                DisplayHistogram();
+            });
+
+            m_PlaybackSpeedDropdown = eventReplayToolbar.MandatoryQ<DropdownField>("playback-speed-dropdown");
+            m_PlaybackSpeedDropdown.choices = m_PlaybackSpeeds;
+            m_PlaybackSpeedDropdown.RegisterValueChangedCallback(e =>
+            {
+                m_PlaybackSpeed = float.Parse(e.newValue.Trim('x'));
+                UpdatePlaybackSpeed();
             });
 
             m_Log = new EventLog();
@@ -443,45 +502,61 @@ namespace UnityEditor.UIElements.Debugger
             var eventBaseInfoScrollView = (ScrollView)rootVisualElement.MandatoryQ("eventbaseInfoScrollView");
             eventBaseInfoScrollView.StretchToParentSize();
 
-            m_RegisteredEventCallbacksToggle = rootVisualElement.MandatoryQ<Toggle>("eventsRegistrationTitle");
-            m_RegisteredEventCallbacksToggle.RegisterValueChangedCallback((e) =>
-            {
-                m_DisplayRegisteredEventCallbacks = e.newValue;
-                DisplayRegisteredEventCallbacks();
-            });
-
             m_CallbackTypeFilter = rootVisualElement.MandatoryQ<ToolbarSearchField>("filter-registered-callback");
             m_CallbackTypeFilter.RegisterCallback<ChangeEvent<string>>(OnRegisteredCallbackFilterChange);
             m_CallbackTypeFilter.tooltip = "Type in element name, type or id to filter callbacks.";
 
             m_EventRegistrationsListView = rootVisualElement.MandatoryQ<ListView>("eventsRegistrationsListView");
+            m_EventRegistrationsListView.StretchToParentSize();
             InitializeRegisteredCallbacksBinding();
             DisplayRegisteredEventCallbacks();
-            m_EventRegistrationsListView.StretchToParentSize();
 
             m_EventsHistogramScrollView = (ScrollView)rootVisualElement.MandatoryQ("eventsHistogramScrollView");
             m_EventsHistogramScrollView.horizontalScrollerVisibility = ScrollerVisibility.Auto;
             m_EventsHistogramScrollView.verticalScrollerVisibility = ScrollerVisibility.Auto;
-            DisplayHistogram(m_EventsHistogramScrollView);
             m_EventsHistogramScrollView.StretchToParentSize();
+            DisplayHistogram();
+
+            m_PlaybackSpeed = 1f;
+            UpdatePlaybackSpeed();
 
             m_AutoScroll = true;
             m_MaxLogLines = false;
             m_MaxLogLineCount = k_DefaultMaxLogLines;
             m_MaxLogLinesField.value = m_MaxLogLineCount;
-            m_DisplayHistogram = true;
-            m_HistogramToggle.value = m_DisplayHistogram;
-            m_DisplayRegisteredEventCallbacks = true;
-            m_RegisteredEventCallbacksToggle.value = m_DisplayRegisteredEventCallbacks;
 
             m_HighlightOverlay = new HighlightOverlayPainter();
             m_RepaintOverlay = new RepaintOverlayPainter();
 
+            m_EventRegistrationTitle = rootVisualElement.MandatoryQ<Label>("eventsRegistrationTitle");
+
             DoMaxLogLines();
+
+            var isProSkin = EditorGUIUtility.isProSkin;
+
+            var eventsTitle = rootVisualElement.MandatoryQ("eventsTitle");
+            var eventCallbacksTitle = rootVisualElement.MandatoryQ("eventCallbacksTitle");
+            var eventPropagationPathsTitle = rootVisualElement.MandatoryQ("eventPropagationPathsTitle");
+            var eventbaseInfoTitle = rootVisualElement.MandatoryQ("eventbaseInfoTitle");
+            var eventsRegistrationTitleContainer = rootVisualElement.MandatoryQ("eventsRegistrationTitleContainer");
+            var eventsRegistrationSearchContainer = rootVisualElement.MandatoryQ("eventsRegistrationSearchContainer");
+            var eventsHistogramTitleContainer = rootVisualElement.MandatoryQ("eventsHistogramTitleContainer");
+
+            eventsTitle.EnableInClassList("light", !isProSkin);
+            eventCallbacksTitle.EnableInClassList("light", !isProSkin);
+            eventPropagationPathsTitle.EnableInClassList("light", !isProSkin);
+            eventbaseInfoTitle.EnableInClassList("light", !isProSkin);
+            eventsRegistrationTitleContainer.EnableInClassList("light", !isProSkin);
+            eventsRegistrationSearchContainer.EnableInClassList("light", !isProSkin);
+            eventsHistogramTitleContainer.EnableInClassList("light", !isProSkin);
 
             GlobalCallbackRegistry.IsEventDebuggerConnected = true;
 
             EditorApplication.update += EditorUpdate;
+
+            if (m_StateList != null && m_StateList.Count > 0)
+                m_EventTypeFilter.SetState(m_StateList
+                    .ToDictionary(c => c.key, c => c.value));
         }
 
         void SuspendListening(ChangeEvent<bool> evt)
@@ -571,16 +646,15 @@ namespace UnityEditor.UIElements.Debugger
             m_Debugger.panelDebug?.MarkDebugContainerDirtyRepaint();
         }
 
-        float[] m_PlaybackSpeeds = { 0.1f, 0.2f, 0.5f, 1.0f, 2.0f, 5.0f, 10f };
-
         void DecreasePlaybackSpeed()
         {
-            var i = m_PlaybackSpeeds.Length - 1;
+            var i = m_PlaybackSpeeds.Count - 1;
             for (; i >= 0; i--)
             {
-                if (m_PlaybackSpeeds[i] < m_Debugger.playbackSpeed)
+                var playbackSpeed = float.Parse(m_PlaybackSpeeds[i].Trim('x'));
+                if (playbackSpeed < m_Debugger.playbackSpeed)
                 {
-                    UpdatePlaybackSpeed(m_PlaybackSpeeds[i]);
+                    UpdatePlaybackSpeed(playbackSpeed);
                     break;
                 }
             }
@@ -589,11 +663,12 @@ namespace UnityEditor.UIElements.Debugger
         void IncreasePlaybackSpeed()
         {
             var i = 0;
-            for (; i < m_PlaybackSpeeds.Length; i++)
+            for (; i < m_PlaybackSpeeds.Count; i++)
             {
-                if (m_PlaybackSpeeds[i] > m_Debugger.playbackSpeed)
+                var playbackSpeed = float.Parse(m_PlaybackSpeeds[i].Trim('x'));
+                if (playbackSpeed > m_Debugger.playbackSpeed)
                 {
-                    UpdatePlaybackSpeed(m_PlaybackSpeeds[i]);
+                    UpdatePlaybackSpeed(playbackSpeed);
                     break;
                 }
             }
@@ -640,36 +715,31 @@ namespace UnityEditor.UIElements.Debugger
                 return;
 
             m_Debugger.isPlaybackPaused = evt.newValue;
-            if (m_Debugger.isPlaybackPaused)
-                m_PlaybackLabel.text = m_PlaybackLabel.text.Replace("Replaying", "Paused");
-            else
-                m_PlaybackLabel.text = m_PlaybackLabel.text.Replace("Paused", "Replaying");
+            m_PlaybackLabel.text = m_Debugger.isPlaybackPaused ?
+                m_PlaybackLabel.text.Replace("Event", "Paused") :
+                m_PlaybackLabel.text.Replace("Paused", "Event");
         }
 
         void RefreshFromReplay(int i, int count)
         {
-            m_PlaybackLabel.text = $"{(m_Debugger.isPlaybackPaused ? "Paused" : "Replaying")} {i}/{count}...";
+            m_PlaybackLabel.text = $"{(m_Debugger.isPlaybackPaused ? "Paused" : "Event")}: {i} / {count}...";
             Refresh();
         }
 
-        void UpdatePlaybackSpeed(ChangeEvent<string> changeEvent)
+        void UpdatePlaybackSpeed()
         {
-            if (!float.TryParse(changeEvent.newValue, out float result))
-                return;
-
-            UpdatePlaybackSpeed(result);
+            UpdatePlaybackSpeed(m_PlaybackSpeed);
         }
 
         void UpdatePlaybackSpeed(float playbackSpeed)
         {
-            var slowest = m_PlaybackSpeeds[0];
-            var fastest = m_PlaybackSpeeds[m_PlaybackSpeeds.Length - 1];
-            var newValue = Mathf.Max(slowest, Mathf.Min(fastest, playbackSpeed));
+            var slowest = float.Parse(m_PlaybackSpeeds[0].Trim('x'));
+            var fastest = float.Parse(m_PlaybackSpeeds[m_PlaybackSpeeds.Count - 1].Trim('x'));
 
-            m_Debugger.playbackSpeed = newValue;
-            m_PlaybackSpeedTextField.SetValueWithoutNotify(m_Debugger.playbackSpeed.ToString("F1"));
-            m_DecreasePlaybackSpeedButton.SetEnabled(newValue > slowest);
-            m_IncreasePlaybackSpeedButton.SetEnabled(newValue < fastest);
+            m_Debugger.playbackSpeed = playbackSpeed;
+            m_PlaybackSpeedDropdown.SetValueWithoutNotify(m_Debugger.playbackSpeed + "x");
+            m_DecreasePlaybackSpeedButton.SetEnabled(playbackSpeed > slowest);
+            m_IncreasePlaybackSpeedButton.SetEnabled(playbackSpeed < fastest);
         }
 
         void SaveReplaySessionFromSelection()
@@ -707,7 +777,7 @@ namespace UnityEditor.UIElements.Debugger
 
             if (matchingIndex >= 0)
             {
-                m_EventRegistrationsListView.Refresh();
+                m_EventRegistrationsListView.Rebuild();
                 m_EventRegistrationsListView.ScrollToItem(matchingIndex);
             }
         }
@@ -735,7 +805,7 @@ namespace UnityEditor.UIElements.Debugger
             if (panel == null)
             {
                 m_EventsLog.itemsSource = ToList();
-                m_EventsLog.Refresh();
+                m_EventsLog.Rebuild();
                 return;
             }
 
@@ -743,7 +813,7 @@ namespace UnityEditor.UIElements.Debugger
             if (calls == null)
             {
                 m_EventsLog.itemsSource = ToList();
-                m_EventsLog.Refresh();
+                m_EventsLog.Rebuild();
                 return;
             }
 
@@ -819,7 +889,7 @@ namespace UnityEditor.UIElements.Debugger
                 ClearEventBaseInfo();
             }
 
-            DisplayHistogram(m_EventsHistogramScrollView);
+            DisplayHistogram();
         }
 
         void ClearEventBaseInfo()
@@ -941,6 +1011,8 @@ namespace UnityEditor.UIElements.Debugger
             if (e.newValue != null)
                 return;
 
+            m_StateList = m_EventTypeFilter.State.Select(pair => new EventTypeFilterStateStruct {key = pair.Key, value = pair.Value}).ToList();
+
             m_Debugger.UpdateModificationCount();
             Refresh();
             BuildEventsLog();
@@ -962,7 +1034,7 @@ namespace UnityEditor.UIElements.Debugger
                 }
             }
 
-            m_EventRegistrationsListView.Refresh();
+            m_EventRegistrationsListView.Rebuild();
             m_EventCallbacksScrollView.Clear();
         }
 
@@ -989,6 +1061,10 @@ namespace UnityEditor.UIElements.Debugger
                     phase.AddToClassList("phase");
                     Label duration = new Label();
                     duration.AddToClassList("duration");
+
+                    var isProSkin = EditorGUIUtility.isProSkin;
+                    phase.EnableInClassList("light", !isProSkin);
+                    duration.EnableInClassList("light", !isProSkin);
 
                     timeStamp.AddToClassList("log-line-item");
                     handler.AddToClassList("log-line-item");
@@ -1036,6 +1112,10 @@ namespace UnityEditor.UIElements.Debugger
                 phase.AddToClassList("phase");
                 Label duration = new Label();
                 duration.AddToClassList("duration");
+
+                var isProSkin = EditorGUIUtility.isProSkin;
+                phase.EnableInClassList("light", !isProSkin);
+                duration.EnableInClassList("light", !isProSkin);
 
                 timeStamp.AddToClassList("log-line-item");
                 handler.AddToClassList("log-line-item");
@@ -1149,7 +1229,7 @@ namespace UnityEditor.UIElements.Debugger
                 m_EventsLog.itemsSource = ToList();
             }
 
-            m_EventsLog.itemHeight = 15;
+            m_EventsLog.fixedItemHeight = 15;
             m_EventsLog.bindItem = (target, index) =>
             {
                 var line = m_Log.lines[index + m_StartIndex];
@@ -1188,7 +1268,7 @@ namespace UnityEditor.UIElements.Debugger
                 return container;
             };
 
-            m_EventsLog.Refresh();
+            m_EventsLog.Rebuild();
             DoAutoScroll();
         }
 
@@ -1253,10 +1333,6 @@ namespace UnityEditor.UIElements.Debugger
 
             DisplayRegisteredEventCallbacks();
             Refresh();
-
-            var erTitle = rootVisualElement.MandatoryQ<Toggle>("eventsRegistrationTitle");
-            const string prefix = "Registered Event Callbacks";
-            erTitle.text = panel != null ? prefix + " in " + ((Panel)panel).name : prefix + " [No Panel Selected]";
         }
 
         public override void Refresh()
@@ -1271,7 +1347,7 @@ namespace UnityEditor.UIElements.Debugger
             UpdateLogCount();
             UpdateSelectionCount();
             UpdatePlaybackButtons();
-            DisplayHistogram(m_EventsHistogramScrollView);
+            DisplayHistogram();
         }
 
         void OnGenerateVisualContent(MeshGenerationContext context)
@@ -1299,6 +1375,12 @@ namespace UnityEditor.UIElements.Debugger
 
         void UpdatePlaybackButtons()
         {
+            var isProSkin = EditorGUIUtility.isProSkin;
+            m_DecreasePlaybackSpeedButton.EnableInClassList("light", !isProSkin);
+            m_IncreasePlaybackSpeedButton.EnableInClassList("light", !isProSkin);
+            m_SaveReplayButton.EnableInClassList("light", !isProSkin);
+            m_LoadReplayButton.EnableInClassList("light", !isProSkin);
+
             var anySelected = m_SelectedEvents != null && m_SelectedEvents.Any();
             m_TogglePlayback?.SetEnabled(m_Debugger.isReplaying);
             m_StopPlaybackButton?.SetEnabled(m_Debugger.isReplaying);

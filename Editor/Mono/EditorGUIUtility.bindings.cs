@@ -124,7 +124,7 @@ namespace UnityEditor
         public static void RenderGameViewCameras(RenderTexture target, int targetDisplay, Rect screenRect, Vector2 mousePosition, bool gizmos) {}
 
         internal static extern Object GetScript(string scriptClass);
-        internal static extern void SetIconForObject(Object obj, Texture2D icon);
+        public static extern void SetIconForObject([NotNull] Object obj, Texture2D icon);
         [NativeThrows]
         internal static extern Object GetBuiltinExtraResource(Type type, string path);
         internal static extern BuiltinResource[] GetBuiltinResourceList(int classID);
@@ -145,8 +145,7 @@ namespace UnityEditor
         // while keeping both internal.
         internal static extern void SetDefaultFont(Font font);
 
-        // Remember to call CopyMonoScriptIconToImporters when data should be copied to mono importer and mono assembly importer.
-        internal static extern Texture2D GetIconForObject(Object obj);
+        public static extern Texture2D GetIconForObject([NotNull] Object obj);
 
         // Render all ingame cameras bound to a specific Display.
         internal static extern void RenderPlayModeViewCamerasInternal(RenderTexture target, int targetDisplay, Vector2 mousePosition, bool gizmos, bool renderIMGUI);

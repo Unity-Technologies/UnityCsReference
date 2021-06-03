@@ -15,7 +15,15 @@ namespace UnityEngine.Rendering
         internal static RenderPipelineAsset s_CurrentPipelineAsset;
         static List<Camera> s_Cameras = new List<Camera>();
 
-        public static RenderPipeline currentPipeline { get; private set; }
+        private static string s_currentPipelineType;
+        static string s_builtinPipelineName = "Built-in Pipeline";
+
+        private static RenderPipeline s_currentPipeline = null;
+        public static RenderPipeline currentPipeline
+        {
+            get => s_currentPipeline;
+            private set { s_currentPipelineType = (value != null) ? value.GetType().ToString() : s_builtinPipelineName; s_currentPipeline = value; }
+        }
 
         public static event Action<ScriptableRenderContext, List<Camera>> beginContextRendering;
         public static event Action<ScriptableRenderContext, List<Camera>> endContextRendering;
@@ -24,8 +32,7 @@ namespace UnityEngine.Rendering
         public static event Action<ScriptableRenderContext, Camera[]> endFrameRendering;
         public static event Action<ScriptableRenderContext, Camera> endCameraRendering;
 
-        internal static event Action activeRenderPipelineTypeChanged;
-        static bool hasRPTypeChanged = false;
+        public static event Action activeRenderPipelineTypeChanged;
 
         internal static void BeginContextRendering(ScriptableRenderContext context, List<Camera> cameras)
         {
@@ -49,10 +56,10 @@ namespace UnityEngine.Rendering
             endCameraRendering?.Invoke(context, camera);
         }
 
+        [RequiredByNativeCode]
         internal static void OnActiveRenderPipelineTypeChanged()
         {
             activeRenderPipelineTypeChanged?.Invoke();
-            hasRPTypeChanged = false;
         }
 
         [RequiredByNativeCode]
@@ -61,24 +68,11 @@ namespace UnityEngine.Rendering
             bool hasRPAssetChanged = !ReferenceEquals(s_CurrentPipelineAsset, pipelineAsset);
             if (hasRPAssetChanged)
             {
-                Type previousType = s_CurrentPipelineAsset ? s_CurrentPipelineAsset.GetType() : null;
-
                 // Required because when switching to a RenderPipeline asset for the first time
                 // it will call OnValidate on the new asset before cleaning up the old one. Thus we
                 // reset the rebuild in order to cleanup properly.
                 CleanupRenderPipeline();
                 s_CurrentPipelineAsset = pipelineAsset;
-
-                Type currentType = pipelineAsset ? pipelineAsset.GetType() : null;
-                if (currentType != previousType)
-                {
-                    hasRPTypeChanged = true;
-
-                    // In the specific case of assigning the Built-in RP, we need to trigger immediately the event as we don't step through PrepareRenderPipeline()
-                    // Otherwise, when we assign a new RP, we wait for the new RP to be created so that the user can pull some information
-                    if (pipelineAsset == null)
-                        OnActiveRenderPipelineTypeChanged();
-                }
             }
         }
 
@@ -92,6 +86,12 @@ namespace UnityEngine.Rendering
                 currentPipeline = null;
                 SupportedRenderingFeatures.active = new SupportedRenderingFeatures();
             }
+        }
+
+        [RequiredByNativeCode]
+        static string GetCurrentPipelineAssetType()
+        {
+            return s_currentPipelineType;
         }
 
         [RequiredByNativeCode]
@@ -124,9 +124,6 @@ namespace UnityEngine.Rendering
             {
                 currentPipeline = s_CurrentPipelineAsset.InternalCreatePipeline();
             }
-
-            if (hasRPTypeChanged)
-                OnActiveRenderPipelineTypeChanged();
         }
     }
 }

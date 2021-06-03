@@ -73,9 +73,13 @@ namespace UnityEngine.UIElements.StyleSheets
             {"padding-top", StylePropertyId.PaddingTop},
             {"position", StylePropertyId.Position},
             {"right", StylePropertyId.Right},
+            {"rotate", StylePropertyId.Rotate},
+            {"scale", StylePropertyId.Scale},
             {"text-overflow", StylePropertyId.TextOverflow},
             {"text-shadow", StylePropertyId.TextShadow},
             {"top", StylePropertyId.Top},
+            {"transform-origin", StylePropertyId.TransformOrigin},
+            {"translate", StylePropertyId.Translate},
             {"-unity-background-image-tint-color", StylePropertyId.UnityBackgroundImageTintColor},
             {"-unity-background-scale-mode", StylePropertyId.UnityBackgroundScaleMode},
             {"-unity-font", StylePropertyId.UnityFont},
@@ -268,6 +272,22 @@ namespace UnityEngine.UIElements.StyleSheets
                         return (int)TextOverflowPosition.Middle;
                     else if (string.Equals(value, "end", StringComparison.OrdinalIgnoreCase))
                         return (int)TextOverflowPosition.End;
+                    else
+                        return 0;
+                }
+
+                case StyleEnumType.TransformOriginOffset:
+                {
+                    if (string.Equals(value, "left", StringComparison.OrdinalIgnoreCase))
+                        return (int)TransformOriginOffset.Left;
+                    else if (string.Equals(value, "right", StringComparison.OrdinalIgnoreCase))
+                        return (int)TransformOriginOffset.Right;
+                    else if (string.Equals(value, "top", StringComparison.OrdinalIgnoreCase))
+                        return (int)TransformOriginOffset.Top;
+                    else if (string.Equals(value, "bottom", StringComparison.OrdinalIgnoreCase))
+                        return (int)TransformOriginOffset.Bottom;
+                    else if (string.Equals(value, "center", StringComparison.OrdinalIgnoreCase))
+                        return (int)TransformOriginOffset.Center;
                     else
                         return 0;
                 }

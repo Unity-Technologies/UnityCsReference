@@ -161,6 +161,8 @@ namespace UnityEditor.EditorTools
             m_AttributeType = attributeType;
         }
 
+        public int Count => availableEditorTypeAssociations.Length;
+
         EditorTypeAssociation[] availableEditorTypeAssociations
         {
             get

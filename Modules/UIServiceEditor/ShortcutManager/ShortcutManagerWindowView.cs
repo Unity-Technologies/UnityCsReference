@@ -65,12 +65,12 @@ namespace UnityEditor.ShortcutManagement
         public void RefreshCategoryList()
         {
             m_CategoryTreeView.selectedIndex = m_ViewController.selectedCategoryIndex;
-            m_CategoryTreeView.Refresh();
+            m_CategoryTreeView.Rebuild();
         }
 
         public void RefreshShortcutList()
         {
-            m_ShortcutsTable.Refresh();
+            m_ShortcutsTable.Rebuild();
             m_HorizontalColumnDragger.RequestUpdatePositions();
         }
 
@@ -595,7 +595,7 @@ namespace UnityEditor.ShortcutManagement
             m_EditingBindings = null;
             //TODO: this refresh causes issues when trying to double click another binding, while a binding is being edited.
             if (refresh)
-                m_ShortcutsTable.Refresh();
+                m_ShortcutsTable.Rebuild();
 
             // Rows are recreated when exiting the text field
             // Request update of positions to ensure rows match the column headers
@@ -655,7 +655,7 @@ namespace UnityEditor.ShortcutManagement
         void ShortcutTableRightClickDown(MouseDownEvent evt)
         {
             var slider = m_ShortcutsTable.Q<Scroller>(className: Scroller.verticalVariantUssClassName);
-            var clickedIndex = (int)((evt.localMousePosition.y + slider.value) / m_ShortcutsTable.resolvedItemHeight);
+            var clickedIndex = (int)((evt.localMousePosition.y + slider.value) / m_ShortcutsTable.ResolveItemHeight());
 
             if (evt.button != (int)MouseButton.RightMouse)
                 return;
@@ -799,6 +799,7 @@ namespace UnityEditor.ShortcutManagement
             {
                 bottomRow = new[]
                 {
+                    new KeyDef(KeyCode.LeftControl, "Control"),
                     new KeyDef(KeyCode.LeftAlt, "Option"),
                     new KeyDef(KeyCode.LeftCommand, "Command"),
                     new KeyDef(KeyCode.Space),

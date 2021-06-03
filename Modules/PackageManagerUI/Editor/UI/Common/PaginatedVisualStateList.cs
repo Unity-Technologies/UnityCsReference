@@ -42,13 +42,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void AddRange(IEnumerable<string> packageUniqueIds)
         {
-            m_OrderedVisualStates.AddRange(packageUniqueIds.Select(id => GetVisualState(id) ?? new VisualState(id, string.Empty)));
+            m_OrderedVisualStates.AddRange(packageUniqueIds.Select(id => GetVisualState(id) ?? new VisualState(id, string.Empty, false)));
             SetupLookupTable();
         }
 
         public void AddExtraItem(string packageUniqueId)
         {
-            m_ExtraVisualStates.Add(new VisualState(packageUniqueId, string.Empty));
+            m_ExtraVisualStates.Add(new VisualState(packageUniqueId, string.Empty, false));
         }
 
         public void ClearExtraItems()

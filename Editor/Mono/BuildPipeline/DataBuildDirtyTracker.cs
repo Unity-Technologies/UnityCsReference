@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Linq;
 using NiceIO;
 using UnityEditor.Build.Reporting;
-using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -43,6 +42,7 @@ namespace UnityEditor.Mono.BuildPipeline
             public BuildDataInputFile[] scenes;
             public BuildDataInputFile[] inputFiles;
             public BuildOptions buildOptions;
+            public string unityVersion;
 
             // These options could impact the cache data files.
             public static BuildOptions BuildOptionsMask = BuildOptions.CompressWithLz4 |
@@ -89,6 +89,12 @@ namespace UnityEditor.Mono.BuildPipeline
 
         bool DoCheckDirty()
         {
+            if (Application.unityVersion != buildData.unityVersion)
+            {
+                Console.WriteLine($"Rebuiding Data files because they were build with a different Unity version {Application.unityVersion} vs {buildData.unityVersion}");
+                return true;
+            }
+
             if (!scenes.SequenceEqual(buildData.scenes.Select(f => f.path)))
             {
                 Console.WriteLine("Rebuiding Data files because the scene list is dirty");
@@ -132,7 +138,8 @@ namespace UnityEditor.Mono.BuildPipeline
             {
                 scenes = inputScenes.ToArray(),
                 inputFiles = inputFiles.ToArray(),
-                buildOptions = report.summary.options & BuildData.BuildOptionsMask
+                buildOptions = report.summary.options & BuildData.BuildOptionsMask,
+                unityVersion = Application.unityVersion
             };
             buildDataPath.ToNPath().WriteAllText(JsonUtility.ToJson(buildData));
         }

@@ -169,6 +169,40 @@ namespace UnityEngine.Networking
             return null;
         }
 
+        internal static NativeArray<byte> InternalGetNativeArray(DownloadHandler dh, ref NativeArray<byte> nativeArray)
+        {
+            unsafe
+            {
+                int length;
+                byte* bytes = InternalGetByteArray(dh, out length);
+                if (nativeArray.IsCreated)
+                {
+                    // allow partial data to be accessed, recreate array if changed
+                    if (nativeArray.Length == length)
+                        return nativeArray;
+                    DisposeNativeArray(ref nativeArray);
+                }
+                CreateNativeArrayForNativeData(ref nativeArray, bytes, length);
+                return nativeArray;
+            }
+        }
+
+        internal static void DisposeNativeArray(ref NativeArray<byte> data)
+        {
+            if (!data.IsCreated)
+                return;
+            var safety = NativeArrayUnsafeUtility.GetAtomicSafetyHandle(data);
+            AtomicSafetyHandle.Release(safety);
+            data = default;
+        }
+
+        internal static unsafe void CreateNativeArrayForNativeData(ref NativeArray<byte> data, byte* bytes, int length)
+        {
+            data = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<byte>(bytes, length, Allocator.Persistent);
+            var safety = AtomicSafetyHandle.Create();
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref data, safety);
+        }
+
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -191,42 +225,13 @@ namespace UnityEngine.Networking
 
         protected override NativeArray<byte> GetNativeData()
         {
-            unsafe
-            {
-                int length;
-                byte* bytes = InternalGetByteArray(this, out length);
-                if (m_NativeData.IsCreated)
-                {
-                    // allow partial data to be accessed, recreate array if changed
-                    if (m_NativeData.Length == length)
-                        return m_NativeData;
-                    DisposeNativeArray(ref m_NativeData);
-                }
-                CreateNativeArrayForNativeData(ref m_NativeData, bytes, length);
-                return m_NativeData;
-            }
+            return InternalGetNativeArray(this, ref m_NativeData);
         }
 
         public override void Dispose()
         {
             DisposeNativeArray(ref m_NativeData);
             base.Dispose();
-        }
-
-        internal static unsafe void CreateNativeArrayForNativeData(ref NativeArray<byte> data, byte* bytes, int length)
-        {
-            data = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<byte>(bytes, length, Allocator.Persistent);
-            var safety = AtomicSafetyHandle.Create();
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref data, safety);
-        }
-
-        internal static void DisposeNativeArray(ref NativeArray<byte> data)
-        {
-            if (!data.IsCreated)
-                return;
-            var safety = NativeArrayUnsafeUtility.GetAtomicSafetyHandle(data);
-            AtomicSafetyHandle.Release(safety);
-            data = default;
         }
 
         public static string GetContent(UnityWebRequest www)

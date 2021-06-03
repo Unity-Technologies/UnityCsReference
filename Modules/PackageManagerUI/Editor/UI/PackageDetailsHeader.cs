@@ -4,6 +4,8 @@
 
 using System.Globalization;
 using UnityEngine.UIElements;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
@@ -24,13 +26,43 @@ namespace UnityEditor.PackageManager.UI.Internal
             PackageTag.ReleaseCandidate
         };
 
+        internal enum InfoBoxState
+        {
+            PreRelease,
+            Experimental,
+            ReleaseCandidate,
+            ScopedRegistry
+        }
+
+        private string infoBoxUrl => $"https://docs.unity3d.com/{m_Application?.shortUnityVersion}";
+
+        private static readonly string[] k_InfoBoxReadMoreUrl =
+        {
+            "/Documentation/Manual/pack-prerelease.html",
+            "/Documentation/Manual/pack-experimental.html",
+            "/Documentation/Manual/pack-releasecandidate.html",
+            "/Documentation/Manual/upm-scoped.html"
+        };
+
+        private static readonly string[] k_InfoBoxReadMoreText =
+        {
+            L10n.Tr("Pre-release packages are in the process of becoming stable and will be available as production-ready by the end of this LTS release. We recommend using these only for testing purposes and to give us direct feedback until then."),
+            L10n.Tr("Experimental packages are new packages or experiments on mature packages in the early stages of development. Experimental packages are not supported by Unity."),
+            L10n.Tr("Release Candidate (RC) versions of a package will transition to Released with the current editor release. RCs are supported by Unity"),
+            L10n.Tr("This package is hosted on a Scoped Registry.")
+        };
+
         private ResourceLoader m_ResourceLoader;
         private ApplicationProxy m_Application;
+        private PageManager m_PageManager;
+        private PackageDatabase m_PackageDatabase;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
             m_ResourceLoader = container.Resolve<ResourceLoader>();
             m_Application = container.Resolve<ApplicationProxy>();
+            m_PageManager = container.Resolve<PageManager>();
+            m_PackageDatabase = container.Resolve<PackageDatabase>();
         }
 
         private IPackage m_Package;
@@ -45,9 +77,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             cache = new VisualElementCache(root);
 
             detailAuthorLink.clickable.clicked += AuthorClick;
+            scopedRegistryInfoBox.Q<Button>().clickable.clicked += OnInfoBoxClickMore;
         }
 
-        public void Refresh(IPackage package, IPackageVersion version)
+        public void Refresh(IPackage package, IPackageVersion version, IEnumerable<IPackageVersion> featureSets)
         {
             m_Package = package;
             m_Version = version;
@@ -55,10 +88,122 @@ namespace UnityEditor.PackageManager.UI.Internal
             detailTitle.SetValueWithoutNotify(m_Version.displayName);
             detailsLinks.Refresh(m_Package, m_Version);
 
+            RefreshFeatureSetElements(featureSets);
+
             RefreshAuthor();
             RefreshTags();
             RefreshVersionLabel();
             RefreshVersionInfoIcon();
+            RefreshRegistry();
+
+            RefreshEmbeddedFeatureSetWarningBox();
+        }
+
+        private void RefreshFeatureSetElements(IEnumerable<IPackageVersion> featureSets)
+        {
+            RefreshUsedInFeatureSetMessage(featureSets);
+            RefreshFeatureSetDependentVersionDifferentInfoBox(featureSets);
+            RefreshLockIcons(featureSets);
+        }
+
+        private void RefreshLockIcons(IEnumerable<IPackageVersion> featureSets)
+        {
+            if (featureSets?.Any() == true)
+            {
+                var visualState = m_PageManager.GetVisualState(m_Package);
+                if (visualState?.isLocked == true)
+                {
+                    lockedIcon.RemoveFromClassList("unlocked");
+                    lockedIcon.AddToClassList("locked");
+                    lockedIcon.tooltip = L10n.Tr("This package is locked because it's part of a feature set. Click unlock button to be able to make changes");
+                }
+                else
+                {
+                    lockedIcon.AddToClassList("unlocked");
+                    lockedIcon.RemoveFromClassList("locked");
+                    lockedIcon.tooltip = string.Empty;
+                }
+                UIUtils.SetElementDisplay(lockedIcon, true);
+            }
+            else
+                UIUtils.SetElementDisplay(lockedIcon, false);
+        }
+
+        private static Button CreateLink(IPackageVersion version)
+        {
+            var featureSetLink = new Button(() => { PackageManagerWindow.OpenPackageManager(version.name); });
+            featureSetLink.AddClasses("link featureSetLink");
+            featureSetLink.text = version.displayName;
+            return featureSetLink;
+        }
+
+        internal void RefreshUsedInFeatureSetMessage(IEnumerable<IPackageVersion> featureSets)
+        {
+            usedInFeatureSetMessageContainer.Clear();
+            var featureSetsCount = featureSets?.Count() ?? 0;
+
+            if (featureSetsCount > 0)
+            {
+                var element = new VisualElement {name = "usedInFeatureSetIconAndMessageContainer"};
+                var icon = new VisualElement {name = "featureSetIcon"};
+                element.Add(icon);
+
+                var message = new Label {name = "usedInFeatureSetMessageLabel"};
+                message.text = string.Format(L10n.Tr("This {0} is installed as part of "), m_Package.GetDescriptor());
+
+                element.Add(message);
+                usedInFeatureSetMessageContainer.Add(element);
+
+                usedInFeatureSetMessageContainer.Add(CreateLink(featureSets.FirstOrDefault()));
+
+                if (featureSetsCount > 2)
+                {
+                    var remaining = featureSets.Skip(1);
+                    remaining.Take(featureSetsCount - 2).Aggregate(usedInFeatureSetMessageContainer, (current, next) =>
+                    {
+                        var comma = new Label(", ");
+                        comma.style.marginLeft = 0;
+                        comma.style.paddingLeft = 0;
+
+                        current.Add(comma);
+                        current.Add(CreateLink(next));
+                        return current;
+                    });
+                }
+                if (featureSetsCount > 1)
+                {
+                    var and = new Label(L10n.Tr(" and "));
+                    and.style.marginLeft = 0;
+                    and.style.paddingLeft = 0;
+
+                    usedInFeatureSetMessageContainer.Add(and);
+                    usedInFeatureSetMessageContainer.Add(CreateLink(featureSets.LastOrDefault()));
+                    usedInFeatureSetMessageContainer.Add(new Label(L10n.Tr(" Features.")));
+                }
+                else
+                {
+                    usedInFeatureSetMessageContainer.Add(new Label(L10n.Tr(" Feature.")));
+                }
+            }
+        }
+
+        private void RefreshFeatureSetDependentVersionDifferentInfoBox(IEnumerable<IPackageVersion> featureSets)
+        {
+            var featureSetsCount = featureSets?.Count() ?? 0;
+
+            // if the installed version is the Feature Set version and the user is viewing a different version
+            if (featureSetsCount > 0 && m_Package?.versions.installed != null && m_Package.versions.installed.version == m_Package.versions.lifecycleVersion?.version
+                && m_Version != m_Package.versions.installed)
+            {
+                featureSetDependentVersionDifferentInfoBox.text = featureSetsCount > 1 ?
+                    string.Format(L10n.Tr("This Package is part of the {0} Features, therefore we recommend keeping the version {1} installed. Changing to a different version may affect the Features' performance."), string.Join(", ", featureSets.Select(f => f.displayName)), m_Package.versions.installed.versionString)
+                    : string.Format(L10n.Tr("This Package is part of the {0} Feature, therefore we recommend keeping the version {1} installed. Changing to a different version may affect the Feature's performance."), featureSets.FirstOrDefault().displayName, m_Package.versions.installed.versionString);
+                UIUtils.SetElementDisplay(featureSetDependentVersionDifferentInfoBox, true);
+            }
+            else
+            {
+                UIUtils.SetElementDisplay(featureSetDependentVersionDifferentInfoBox, false);
+            }
         }
 
         private void RefreshAuthor()
@@ -119,11 +264,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void RefreshVersionLabel()
         {
             var versionString = m_Version.versionString;
+            var showVersionLabel = !m_Package.Is(PackageType.BuiltIn) && !m_Package.Is(PackageType.Feature) && !string.IsNullOrEmpty(versionString);
+            UIUtils.SetElementDisplay(detailVersion, showVersionLabel);
+            if (!showVersionLabel)
+                return;
+
             var releaseDateString = m_Version.publishedDate?.ToString("MMMM dd, yyyy", CultureInfo.CreateSpecificCulture("en-US"));
             detailVersion.SetValueWithoutNotify(string.IsNullOrEmpty(releaseDateString)
                 ? string.Format(L10n.Tr("Version {0}"), versionString)
                 : string.Format(L10n.Tr("Version {0} - {1}"), versionString, releaseDateString));
-            UIUtils.SetElementDisplay(detailVersion, !m_Package.Is(PackageType.BuiltIn) && !string.IsNullOrEmpty(versionString));
         }
 
         private void RefreshVersionInfoIcon()
@@ -146,6 +295,52 @@ namespace UnityEditor.PackageManager.UI.Internal
                     L10n.Tr("At least one other package depends on version {0} of this package."), installedVersionString);
         }
 
+        private void RefreshRegistry()
+        {
+            var registry = m_Version.packageInfo?.registry;
+            var showRegistry = registry != null;
+            UIUtils.SetElementDisplay(detailRegistryContainer, showRegistry);
+            if (showRegistry)
+            {
+                scopedRegistryInfoBox.text = k_InfoBoxReadMoreText[(int)InfoBoxState.ScopedRegistry];
+                UIUtils.SetElementDisplay(scopedRegistryInfoBox, !registry.isDefault);
+                detailRegistryName.text = registry.isDefault ? "Unity" : registry.name;
+                detailRegistryName.tooltip = registry.url;
+            }
+            if (m_Version.HasTag(PackageTag.Experimental))
+            {
+                scopedRegistryInfoBox.text = k_InfoBoxReadMoreText[(int)InfoBoxState.Experimental];
+                UIUtils.SetElementDisplay(scopedRegistryInfoBox, true);
+            }
+            else if (m_Version.HasTag(PackageTag.PreRelease))
+            {
+                scopedRegistryInfoBox.text = k_InfoBoxReadMoreText[(int)InfoBoxState.PreRelease];
+                UIUtils.SetElementDisplay(scopedRegistryInfoBox, true);
+            }
+            else if (m_Version.HasTag(PackageTag.ReleaseCandidate))
+            {
+                scopedRegistryInfoBox.text = k_InfoBoxReadMoreText[(int)InfoBoxState.ReleaseCandidate];
+                UIUtils.SetElementDisplay(scopedRegistryInfoBox, true);
+            }
+        }
+
+        private void RefreshEmbeddedFeatureSetWarningBox()
+        {
+            UIUtils.SetElementDisplay(embeddedFeatureSetWarningBox, m_Package.Is(PackageType.Feature) && m_Version.HasTag(PackageTag.Custom));
+        }
+
+        private void OnInfoBoxClickMore()
+        {
+            if (m_Version.HasTag(PackageTag.PreRelease))
+                m_Application.OpenURL($"{infoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.PreRelease]}");
+            else if (m_Version.HasTag(PackageTag.Experimental))
+                m_Application.OpenURL($"{infoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.Experimental]}");
+            else if (m_Version.HasTag(PackageTag.ReleaseCandidate))
+                m_Application.OpenURL($"{infoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.ReleaseCandidate]}");
+            else if (m_Package.Is(PackageType.ScopedRegistry))
+                m_Application.OpenURL($"{infoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.ScopedRegistry]}");
+        }
+
         private VisualElementCache cache { get; set; }
 
         private SelectableLabel detailTitle => cache.Get<SelectableLabel>("detailTitle");
@@ -160,5 +355,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         private PackageDetailsLinks detailsLinks => cache.Get<PackageDetailsLinks>("detailLinksContainer");
 
         internal PackageTagLabel GetTagLabel(string tag) => cache.Get<PackageTagLabel>("tag" + tag);
+
+        private VisualElement detailRegistryContainer => cache.Get<VisualElement>("detailRegistryContainer");
+        private HelpBox scopedRegistryInfoBox => cache.Get<HelpBox>("scopedRegistryInfoBox");
+        private Label detailRegistryName => cache.Get<Label>("detailRegistryName");
+
+        private VisualElement usedInFeatureSetMessageContainer => cache.Get<VisualElement>("usedInFeatureSetMessageContainer");
+        private HelpBox featureSetDependentVersionDifferentInfoBox => cache.Get<HelpBox>("featureSetDependentVersionDifferentInfoBox");
+        private VisualElement lockedIcon => cache.Get<VisualElement>("lockedIcon");
+        private HelpBox embeddedFeatureSetWarningBox => cache.Get<HelpBox>("embeddedFeatureSetWarningBox");
     }
 }

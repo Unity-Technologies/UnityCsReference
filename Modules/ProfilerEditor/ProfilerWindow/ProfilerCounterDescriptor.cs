@@ -4,9 +4,8 @@
 
 namespace Unity.Profiling.Editor
 {
-    // TODO This type will be made public as part of the Extensibility API.
     [System.Serializable]
-    internal struct ProfilerCounterDescriptor
+    public readonly struct ProfilerCounterDescriptor
     {
         public ProfilerCounterDescriptor(string name, ProfilerCategory category) : this(name, category.Name) {}
         public ProfilerCounterDescriptor(string name, string categoryName)
@@ -15,8 +14,8 @@ namespace Unity.Profiling.Editor
             CategoryName = categoryName;
         }
 
-        public string Name;
-        public string CategoryName;
+        public readonly string Name { get; }
+        public readonly string CategoryName { get; }
 
         public override string ToString() => $"{Name} ({CategoryName})";
     }

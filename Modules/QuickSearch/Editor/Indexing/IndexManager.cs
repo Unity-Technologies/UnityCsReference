@@ -188,7 +188,7 @@ namespace UnityEditor.Search
                         i++;
                 }
             }
-            m_ListViewIndexSettings.ListView.Refresh();
+            m_ListViewIndexSettings.ListView.Rebuild();
             m_ListViewIndexSettings.SetSelection(indexToSelectToggle);
             m_ListViewIndexSettings.UpdateListView();
 
@@ -369,17 +369,17 @@ namespace UnityEditor.Search
             m_SavedIndexData.style.paddingTop = 23; //tab size
             m_IndexDetailsElementScrollView.Add(m_SavedIndexData);
 
-            m_DependenciesListView = new UIToolkitListView() { itemHeight = 20, makeItem = () => { return new Label(); }, bindItem = (e, i) => { e.Q<Label>().text = (string)(m_DependenciesListView.itemsSource[i]); } };
+            m_DependenciesListView = new UIToolkitListView() { fixedItemHeight = 20, makeItem = () => { return new Label(); }, bindItem = (e, i) => { e.Q<Label>().text = (string)(m_DependenciesListView.itemsSource[i]); } };
             m_DependenciesListView.AddToClassList("PreviewListView");
             m_DependenciesListView.onSelectionChange += PingAsset;
             m_SavedIndexData.Add(m_DependenciesListView);
 
-            m_DocumentsListView = new UIToolkitListView() { itemHeight = 20, makeItem = () => { return new Label(); }, bindItem = (e, i) => { e.Q<Label>().text = (string)(m_DocumentsListView.itemsSource[i]); } };
+            m_DocumentsListView = new UIToolkitListView() { fixedItemHeight = 20, makeItem = () => { return new Label(); }, bindItem = (e, i) => { e.Q<Label>().text = (string)(m_DocumentsListView.itemsSource[i]); } };
             m_DocumentsListView.AddToClassList("PreviewListView");
             m_DocumentsListView.onSelectionChange += PingAsset;
             m_SavedIndexData.Add(m_DocumentsListView);
 
-            m_KeywordsListView = new UIToolkitListView() { itemHeight = 20, makeItem = () => { return new Label(); }, bindItem = (e, i) => { e.Q<Label>().text = (string)(m_KeywordsListView.itemsSource[i]); } };
+            m_KeywordsListView = new UIToolkitListView() { fixedItemHeight = 20, makeItem = () => { return new Label(); }, bindItem = (e, i) => { e.Q<Label>().text = (string)(m_KeywordsListView.itemsSource[i]); } };
             m_KeywordsListView.AddToClassList("PreviewListView");
             m_SavedIndexData.Add(m_KeywordsListView);
 
@@ -404,7 +404,7 @@ namespace UnityEditor.Search
         {
             if (selectedItemAsset != null && sb.GetInstanceID() == selectedItemAsset.GetInstanceID())
                 UpdatePreviewCheckIfNeedDelay();
-            m_ListViewIndexSettings.ListView.Refresh();
+            m_ListViewIndexSettings.ListView.Rebuild();
         }
 
         private void CreateOptionsVisualElements()
@@ -426,7 +426,7 @@ namespace UnityEditor.Search
                 {
                     case "disabled":
                         toggle.tooltip = "Toggles this index off so search does not use it";
-                        toggle.RegisterValueChangedCallback(evt => m_ListViewIndexSettings.ListView.Refresh());
+                        toggle.RegisterValueChangedCallback(evt => m_ListViewIndexSettings.ListView.Rebuild());
                         break;
                     case "types":
                         toggle.tooltip = "Include object type information in this index";
@@ -623,7 +623,7 @@ namespace UnityEditor.Search
                 m_IndexSettingsAssets[selectedIndex] = (SearchDatabase)AssetDatabase.LoadAssetAtPath(selectedItemPath, typeof(SearchDatabase));
 
                 m_IndexNameTextField.SetValueWithoutNotify(selectedItem.name); // Update the textfield with the file name
-                m_ListViewIndexSettings.ListView.Refresh();
+                m_ListViewIndexSettings.ListView.Rebuild();
                 UpdateDetailsForNewOrExistingSettings();
                 UpdateUnsavedChanges(false);
             }
@@ -668,7 +668,7 @@ namespace UnityEditor.Search
             {
                 UpdateUnsavedChanges(false);
                 SearchDatabase.ImportAsset(selectedItemPath);
-                m_ListViewIndexSettings.ListView.Refresh();
+                m_ListViewIndexSettings.ListView.Rebuild();
                 UpdatePreviewCheckIfNeedDelay();
             }
         }
@@ -1435,7 +1435,7 @@ namespace UnityEditor.Search
 
         internal void UpdateListViewOnAdd()
         {
-            ListView.Refresh();
+            ListView.Rebuild();
             SetSelection(itemsSource.Count - 1);
             UpdateListView();
             m_Window.UpdateUnsavedChanges(true);
@@ -1445,7 +1445,7 @@ namespace UnityEditor.Search
         {
             if (selectedIndex > 0 || itemsSource.Count == 0) // if == 0 and 0 then we need to go to -1
                 SetSelection(selectedIndex - 1);
-            ListView.Refresh();
+            ListView.Rebuild();
             UpdateListView();
         }
 

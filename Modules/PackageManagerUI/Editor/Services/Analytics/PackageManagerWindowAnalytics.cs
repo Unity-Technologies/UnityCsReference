@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -35,15 +36,23 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!string.IsNullOrEmpty(packageId))
                 packageId = Regex.Replace(packageId, "(?<package>[^@]+)@(?<protocol>[^:]+):.+", "${package}@${protocol}");
 
-            var packageFiltering = ServicesContainer.instance.Resolve<PackageFiltering>();
-            var settingsProxy = ServicesContainer.instance.Resolve<PackageManagerProjectSettingsProxy>();
+            var servicesContainer = ServicesContainer.instance;
+            var packageFiltering = servicesContainer.Resolve<PackageFiltering>();
+            var settingsProxy = servicesContainer.Resolve<PackageManagerProjectSettingsProxy>();
+
+            // Add the name of the sub page into the filter name for now
+            var filterName = packageFiltering.currentFilterTab.ToString();
+            var page = servicesContainer.Resolve<PageManager>().GetCurrentPage();
+            var subPage = page.subPages.Skip(1).Any() ? page.currentSubPage : null;
+            if (!string.IsNullOrEmpty(subPage?.name))
+                filterName += "/" + subPage.name;
 
             var parameters = new PackageManagerWindowAnalytics
             {
                 action = action,
                 package_id = packageId ?? string.Empty,
                 search_text = packageFiltering.currentSearchText,
-                filter_name = packageFiltering.currentFilterTab.ToString(),
+                filter_name = filterName,
                 window_docked = EditorWindow.GetWindowDontShow<PackageManagerWindow>()?.docked ?? false,
                 dependencies_visible = settingsProxy.enablePackageDependencies,
                 preview_visible = settingsProxy.enablePreReleasePackages,

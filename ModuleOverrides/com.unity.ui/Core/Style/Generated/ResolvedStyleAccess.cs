@@ -63,8 +63,12 @@ namespace UnityEngine.UIElements
         float IResolvedStyle.paddingTop => yogaNode.LayoutPaddingTop;
         Position IResolvedStyle.position => computedStyle.position;
         float IResolvedStyle.right => yogaNode.LayoutRight;
+        Rotate IResolvedStyle.rotate => computedStyle.rotate;
+        Scale IResolvedStyle.scale => computedStyle.scale;
         TextOverflow IResolvedStyle.textOverflow => computedStyle.textOverflow;
         float IResolvedStyle.top => yogaNode.LayoutY;
+        Vector3 IResolvedStyle.transformOrigin => ResolveTransformOrigin();
+        Vector3 IResolvedStyle.translate => ResolveTranslate();
         Color IResolvedStyle.unityBackgroundImageTintColor => computedStyle.unityBackgroundImageTintColor;
         ScaleMode IResolvedStyle.unityBackgroundScaleMode => computedStyle.unityBackgroundScaleMode;
         Font IResolvedStyle.unityFont => computedStyle.unityFont;

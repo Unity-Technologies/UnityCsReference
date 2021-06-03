@@ -5,6 +5,8 @@
 using UnityEngine;
 using System.Linq;
 using UnityEngine.Rendering;
+using UnityEngine.U2D;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -32,6 +34,17 @@ namespace UnityEditor
             public static readonly GUIContent SelectObjects = EditorGUIUtility.TextContent("");
             public static readonly GUIContent SelectObjectsButton = EditorGUIUtility.TrTextContentWithIcon("", "Find References in Scene", "UnityEditor.FindDependencies");
 
+            public static readonly GUIContent LightCookieSprite = EditorGUIUtility.TrTextContent("Sprite");
+            public static readonly GUIContent FallOff = EditorGUIUtility.TrTextContent("Falloff");
+            public static readonly GUIContent FallOffStrength = EditorGUIUtility.TrTextContent("Falloff Strength");
+            public static readonly GUIContent TargetSortingLayer = EditorGUIUtility.TrTextContent("Target Sorting Layer");
+            public static readonly GUIContent All = EditorGUIUtility.TrTextContent("All");
+            public static readonly GUIContent None = EditorGUIUtility.TrTextContent("None");
+            public static readonly GUIContent Mixed = EditorGUIUtility.TrTextContent("Mixed...");
+            public static readonly GUIContent ShadowIntensityEnabled = EditorGUIUtility.TrTextContent("Shadow");
+            public static readonly GUIContent ShadowIntensity = EditorGUIUtility.TrTextContent("Shadow Strength");
+            public static readonly GUIContent Light2DParametric = EditorGUIUtility.TrTextContentWithIcon("Parametric", "Parametric Lights have been deprecated. To continue, upgrade your Parametric Lights to Freeform Lights to enjoy similar light functionality.", MessageType.Warning);
+
             public static readonly GUIContent[] LightmapBakeTypeTitles = { EditorGUIUtility.TrTextContent("Realtime"), EditorGUIUtility.TrTextContent("Mixed"), EditorGUIUtility.TrTextContent("Baked") };
             public static readonly int[] LightmapBakeTypeValues = { (int)LightmapBakeType.Realtime, (int)LightmapBakeType.Mixed, (int)LightmapBakeType.Baked };
 
@@ -40,16 +53,20 @@ namespace UnityEditor
 
             public static readonly GUIContent[] LightShapeTitles = { EditorGUIUtility.TrTextContent("Rectangle"), EditorGUIUtility.TrTextContent("Disc") };
             public static readonly int[] LightShapeValues = { (int)LightType.Rectangle, (int)LightType.Disc };
+
+            public static readonly GUIContent[] Light2DTypeTitles = { EditorGUIUtility.TrTextContent("Freeform"), EditorGUIUtility.TrTextContent("Sprite"), EditorGUIUtility.TrTextContent("Spot"), EditorGUIUtility.TrTextContent("Global") };
+            public static readonly int[] Light2DTypeValues = Enumerable.Range(0, Light2DTypeTitles.Length).ToArray();
         }
 
         public virtual LightingExplorerTab[] GetContentTabs()
         {
             return new[]
             {
-                new LightingExplorerTab("Lights", GetLights, GetLightColumns),
-                new LightingExplorerTab("Reflection Probes", GetReflectionProbes, GetReflectionProbeColumns),
-                new LightingExplorerTab("Light Probes", GetLightProbes, GetLightProbeColumns),
-                new LightingExplorerTab("Static Emissives", GetEmissives, GetEmissivesColumns)
+                new LightingExplorerTab("Lights", GetLights, GetLightColumns, true),
+                new LightingExplorerTab("2D Lights", Get2DLights, Get2DLightColumns, true),
+                new LightingExplorerTab("Reflection Probes", GetReflectionProbes, GetReflectionProbeColumns, true),
+                new LightingExplorerTab("Light Probes", GetLightProbes, GetLightProbeColumns, true),
+                new LightingExplorerTab("Static Emissives", GetEmissives, GetEmissivesColumns, false)
             };
         }
 
@@ -64,6 +81,159 @@ namespace UnityEditor
         protected virtual UnityEngine.Object[] GetLights()
         {
             return Resources.FindObjectsOfTypeAll<Light>();
+        }
+
+        protected virtual UnityEngine.Object[] Get2DLights()
+        {
+            return Resources.FindObjectsOfTypeAll<Light2DBase>();
+        }
+
+        protected virtual  LightingExplorerTableColumn[] Get2DLightColumns()
+        {
+            return new[]
+            {
+                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Checkbox, Styles.Enabled, "m_Enabled", 50), // 0: Enabled
+                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Name, Styles.Name, null, 200), // 1: Name
+                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Enum, Styles.Type, "m_LightType", 100, (r, prop, dep) => // 2
+                {
+                    if (prop != null)
+                    {
+                        if (prop.intValue != (int)Light2DType.Parametric)
+                        {
+                            EditorGUI.BeginProperty(r, GUIContent.none, prop);
+                            EditorGUI.BeginChangeCheck();
+                            int lightType = EditorGUI.IntPopup(r, prop.intValue - 1, Styles.Light2DTypeTitles, Styles.Light2DTypeValues);
+                            if (EditorGUI.EndChangeCheck())
+                                prop.intValue = lightType + 1;
+                            EditorGUI.EndProperty();
+                        }
+                        else
+                        {
+                            EditorGUI.LabelField(r, Styles.Light2DParametric);
+                        }
+                    }
+                }), // 2: LightType
+                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Color, Styles.Color, "m_Color", 100, (r, prop, dep) => // 3
+                {
+                    if (prop != null)
+                        EditorGUI.PropertyField(r, prop, GUIContent.none);
+                }), // 3: Color
+                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Custom, Styles.LightCookieSprite, "m_LightCookieSprite", 70, (r, prop, dep) => // 4
+                {
+                    if (prop != null)
+                    {
+                        var hasSpriteField = dep.Length > 0 && (dep[0].enumValueIndex == (int)Light2DType.Sprite);
+                        if (hasSpriteField)
+                        {
+                            EditorGUI.BeginProperty(r, GUIContent.none, prop);
+                            EditorGUI.BeginChangeCheck();
+                            var sprite = EditorGUI.ObjectField(r, prop.objectReferenceValue, typeof(Sprite), false);
+                            if (EditorGUI.EndChangeCheck())
+                                prop.objectReferenceValue = sprite;
+                            EditorGUI.EndProperty();
+                        }
+                    }
+                }, null, null, new[] { 2 }), // 4: Sprite
+                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Float, Styles.Intensity, "m_Intensity", 60, (r, prop, dep) => // 5
+                {
+                    if (prop != null)
+                    {
+                        EditorGUI.BeginProperty(r, GUIContent.none, prop);
+                        EditorGUI.BeginChangeCheck();
+                        var intensity = EditorGUI.FloatField(r, prop.floatValue);
+                        if (EditorGUI.EndChangeCheck())
+                            prop.floatValue = intensity < 0f ? 0f : intensity;
+                        EditorGUI.EndProperty();
+                    }
+                }), // 5: Intensity
+                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Float, Styles.FallOff, "m_ShapeLightFalloffSize", 60, (r, prop, dep) => // 6
+                {
+                    if (prop != null)
+                    {
+                        var hasFalloff = dep.Length > 0 && (dep[0].enumValueIndex == (int)Light2DType.Freeform);
+                        if (hasFalloff)
+                        {
+                            EditorGUI.BeginProperty(r, GUIContent.none, prop);
+                            EditorGUI.BeginChangeCheck();
+                            var falloff = EditorGUI.FloatField(r, prop.floatValue);
+                            if (EditorGUI.EndChangeCheck())
+                                prop.floatValue = falloff < 0f ? 0f : falloff;
+                            EditorGUI.EndProperty();
+                        }
+                    }
+                }, null, null, new[] { 2 }),  // 6: Falloff
+                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Float, Styles.FallOffStrength, "m_FalloffIntensity", 120, (r, prop, dep) => // 7
+                {
+                    if (prop != null)
+                    {
+                        var hasFalloff = dep.Length > 0 && (dep[0].enumValueIndex == (int)Light2DType.Freeform || dep[0].enumValueIndex == (int)Light2DType.Point);
+                        if (hasFalloff)
+                        {
+                            EditorGUI.BeginProperty(r, GUIContent.none, prop);
+                            EditorGUI.BeginChangeCheck();
+                            var newValue = EditorGUI.Slider(r, prop.floatValue, 0f, 1f);
+                            if (EditorGUI.EndChangeCheck())
+                                prop.floatValue = Mathf.Clamp01(newValue);
+                            EditorGUI.EndProperty();
+                        }
+                    }
+                }, null, null, new[] { 2 }),  // 7: Falloff intensity
+                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Name, Styles.TargetSortingLayer, "m_ApplyToSortingLayers", 120, // 8
+                    (r, prop, dep) =>
+                    {
+                        if (prop != null && prop.isArray)
+                        {
+                            var allSortingLayers = SortingLayer.layers;
+
+                            var propArraySize = prop.arraySize;
+                            if (propArraySize == allSortingLayers.Length)
+                                EditorGUI.LabelField(r, Styles.All);
+                            else if (propArraySize == 1)
+                                EditorGUI.LabelField(r, SortingLayer.IDToName(prop.GetArrayElementAtIndex(0).intValue));
+                            else if (propArraySize == 0)
+                                EditorGUI.LabelField(r, Styles.None);
+                            else
+                                EditorGUI.LabelField(r, Styles.Mixed);
+                        }
+                    }), // 8: Target Sorting Layer
+                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Custom, Styles.ShadowIntensityEnabled, "m_ShadowIntensityEnabled", 50, (r, prop, dep) => // 9
+                {
+                    if (prop != null)
+                    {
+                        var hasShadow = dep.Length > 0 && (dep[0].enumValueIndex != (int)Light2DType.Global);
+                        if (hasShadow)
+                        {
+                            float off = Mathf.Max(0.0f, ((r.width / 2) - 8));
+                            r.x += off;
+                            r.width -= off;
+                            EditorGUI.PropertyField(r, prop, GUIContent.none);
+                        }
+                    }
+                }, null, null, new[] { 2 }), // 9: Shadow Intensity Enabled
+                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Custom, Styles.ShadowIntensity, "m_ShadowIntensity", 140, (r, prop, dep) => // 10
+                {
+                    if (prop != null)
+                    {
+                        var hasShadow = dep.Length > 0 && (dep[0].enumValueIndex != (int)Light2DType.Global);
+                        if (hasShadow)
+                        {
+                            var shadowIntensityEnabled = dep[1].boolValue;
+
+                            EditorGUI.BeginDisabled(!shadowIntensityEnabled);
+                            EditorGUI.BeginChangeCheck();
+                            var shadowIntensityProp = dep[0].serializedObject.FindProperty("m_ShadowIntensity");
+
+                            var newShadowIntensity = EditorGUI.Slider(r, shadowIntensityProp.floatValue, 0f, 1f);
+                            if (EditorGUI.EndChangeCheck())
+                            {
+                                shadowIntensityProp.floatValue = Mathf.Clamp01(newShadowIntensity);
+                            }
+
+                            EditorGUI.EndDisabled();
+                        }
+                    }
+                } , null, null, new[] { 2, 9 })// 10: Shadow Intensity
+            };
         }
 
         protected virtual LightingExplorerTableColumn[] GetLightColumns()

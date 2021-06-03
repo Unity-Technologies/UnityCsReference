@@ -24,7 +24,7 @@ namespace UnityEditor.Search.Providers
 
         private static IEnumerable<SearchItem> Search(SearchContext context)
         {
-            var queryItems = SearchQuery.GetAllSearchQueryItems(context);
+            var queryItems = SearchQueryAsset.GetAllSearchQueryItems(context);
             if (string.IsNullOrEmpty(context.searchQuery))
             {
                 foreach (var qi in queryItems)
@@ -35,7 +35,7 @@ namespace UnityEditor.Search.Providers
                 foreach (var qi in queryItems)
                 {
                     if (SearchUtils.MatchSearchGroups(context, qi.label, true) ||
-                        SearchUtils.MatchSearchGroups(context, ((SearchQuery)qi.data).text, true))
+                        SearchUtils.MatchSearchGroups(context, ((SearchQueryAsset)qi.data).text, true))
                     {
                         yield return qi;
                     }
@@ -55,7 +55,7 @@ namespace UnityEditor.Search.Providers
                 },
                 new SearchAction(type, "select", null, "Select search query", (item) =>
                 {
-                    var queryPath = AssetDatabase.GetAssetPath((SearchQuery)item.data);
+                    var queryPath = AssetDatabase.GetAssetPath((SearchQueryAsset)item.data);
                     if (!string.IsNullOrEmpty(queryPath))
                         Utils.FrameAssetFromPath(queryPath);
                 })
@@ -64,7 +64,7 @@ namespace UnityEditor.Search.Providers
 
         private static void ExecuteQuery(SearchItem item)
         {
-            if (item.context.searchView is QuickSearch qs && item.data is SearchQuery query)
+            if (item.context.searchView is QuickSearch qs && item.data is SearchQueryAsset query)
                 qs.ExecuteSearchQuery(query);
         }
     }

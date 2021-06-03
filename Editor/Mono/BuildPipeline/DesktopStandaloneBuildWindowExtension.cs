@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.Modules;
+using UnityEditor.Build;
 using UnityEngine;
 
 internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWindowExtension
@@ -200,7 +201,7 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
 
     public override bool EnabledBuildButton()
     {
-        if (PlayerSettings.GetScriptingBackend(BuildTargetGroup.Standalone) == ScriptingImplementation.Mono2x)
+        if (PlayerSettings.GetScriptingBackend(NamedBuildTarget.Standalone) == ScriptingImplementation.Mono2x)
             return true;
 
         return string.IsNullOrEmpty(GetCannotBuildPlayerInCurrentSetupError());
@@ -208,7 +209,7 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
 
     protected virtual string GetCannotBuildPlayerInCurrentSetupError()
     {
-        if (PlayerSettings.GetScriptingBackend(BuildTargetGroup.Standalone) != ScriptingImplementation.IL2CPP)
+        if (PlayerSettings.GetScriptingBackend(NamedBuildTarget.Standalone) != ScriptingImplementation.IL2CPP)
         {
             if (!m_HasMonoPlayers)
                 return "Currently selected scripting backend (Mono) is not installed.";

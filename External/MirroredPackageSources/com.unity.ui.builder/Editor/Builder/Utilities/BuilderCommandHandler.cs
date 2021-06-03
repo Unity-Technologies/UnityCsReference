@@ -419,8 +419,76 @@ namespace Unity.UI.Builder
 
             return true;
         }
+        
+        public void CreateTemplateFromHierarchy(VisualElement ve, VisualTreeAsset vta, string path = "")
+        {
+            var veas = new List<VisualElementAsset>();
+            var vea = ve.GetVisualElementAsset();
 
-        public void UnpackTemplateContainer(VisualElement templateContainer)
+            veas.Add(vea);
+
+            if (string.IsNullOrEmpty(path))
+            {
+                path = BuilderDialogsUtility.DisplaySaveFileDialog("Save UXML", null, ve.name, "uxml");
+
+                if (string.IsNullOrEmpty(path))
+                {
+                    // Save dialog cancelled
+                    return;
+                }
+            }
+
+            if (path == m_PaneWindow.document.activeOpenUXMLFile.uxmlPath)
+            {
+                // Path is the same as the active open uxml file. Abort!
+                BuilderDialogsUtility.DisplayDialog(
+                    BuilderConstants.InvalidCreateTemplatePathTitle,
+                    BuilderConstants.InvalidCreateTemplatePathMessage,
+                    BuilderConstants.DialogOkOption);
+
+                return;
+            }
+
+            var uxml = VisualTreeAssetToUXML.GenerateUXML(vta, null, veas);
+
+            if (!m_PaneWindow.document.SaveNewTemplateFileFromHierarchy(path, uxml))
+            {
+                // New template wasn't saved
+                return;
+            }
+
+            var parent = ve.parent;
+            var parentVEA = parent.GetVisualElementAsset();
+            var index = parent.IndexOf(ve);
+
+            // Delete old element
+            BuilderAssetUtilities.DeleteElementFromAsset(m_PaneWindow.document, ve);
+            ve.RemoveFromHierarchy();
+
+            // Replace with new template
+            var newTemplateVTA = EditorGUIUtility.Load(path) as VisualTreeAsset;
+            var newTemplateContainer = newTemplateVTA.CloneTree();
+            newTemplateContainer.SetProperty(BuilderConstants.LibraryItemLinkedTemplateContainerPathVEPropertyName, path);
+            newTemplateContainer.name = newTemplateVTA.name;
+
+            parent.Insert(index, newTemplateContainer);
+
+            BuilderAssetUtilities.AddElementToAsset(m_PaneWindow.document, newTemplateContainer, (inVta, inParent, ve) =>
+            {
+                var vea = inVta.AddTemplateInstance(inParent, path) as VisualElementAsset;
+                vea.AddProperty("name", newTemplateVTA.name);
+                ve.SetProperty(BuilderConstants.ElementLinkedInstancedVisualTreeAssetVEPropertyName, newTemplateVTA);
+                return vea;
+            }, index);
+
+            m_Selection.Select(null, newTemplateContainer);
+
+            // Refresh
+            m_Selection.NotifyOfHierarchyChange();
+            m_PaneWindow.OnEnableAfterAllSerialization();
+        }
+
+        public void UnpackTemplateContainer(VisualElement templateContainer, bool unpackCompletely = false)
         {
             if (templateContainer == null)
             {
@@ -428,47 +496,85 @@ namespace Unity.UI.Builder
                 return;
             }
 
-            var unpackedVE = new VisualElement();
-            var templateContainerParent = templateContainer.parent;
-            var templateContainerIndex = templateContainerParent.IndexOf(templateContainer);
+            var elementsToUnpack = new List<VisualElement>();
+            var rootVEA = templateContainer.GetVisualElementAsset();
+            var isRootElement = true;
+            VisualElementAsset rootUnpackedVEA = null;
+            elementsToUnpack.Add(templateContainer);
 
-            // Create new unpacked element and add it in the hierarchy
-            unpackedVE.name = templateContainer.name;
-            templateContainerParent.Add(unpackedVE);
-            BuilderAssetUtilities.AddElementToAsset(m_PaneWindow.document, unpackedVE, templateContainerIndex + 1);
+            while (elementsToUnpack.Count > 0)
+            {
+                var elementToUnpack = elementsToUnpack[0];
+                var unpackedVE = new VisualElement();
+                var templateContainerParent = elementToUnpack.parent;
+                var templateContainerIndex = templateContainerParent.IndexOf(elementToUnpack);
 
-            var linkedInstancedVTA = templateContainer.GetProperty(BuilderConstants.ElementLinkedInstancedVisualTreeAssetVEPropertyName) as VisualTreeAsset;
-            var linkedTA = templateContainer.GetProperty(BuilderConstants.ElementLinkedVisualElementAssetVEPropertyName) as TemplateAsset;
-            var linkedVTACopy = linkedInstancedVTA.DeepCopy();
-            var unpackedVEA = unpackedVE.GetVisualElementAsset();
-            var templateContainerVEA = templateContainer.GetVisualElementAsset();
-            var attributeOverrides = linkedTA.attributeOverrides;
+                // Create new unpacked element and add it in the hierarchy
+                templateContainerParent.Add(unpackedVE);
+                BuilderAssetUtilities.AddElementToAsset(m_PaneWindow.document, unpackedVE, templateContainerIndex + 1);
 
-            // Apply attribute overrides to elements in the unpacked element
-            BuilderAssetUtilities.ApplyAttributeOverridesToTreeAsset(attributeOverrides, linkedVTACopy);
+                var linkedInstancedVTA = elementToUnpack.GetProperty(BuilderConstants.ElementLinkedInstancedVisualTreeAssetVEPropertyName) as VisualTreeAsset;
+                var linkedTA = elementToUnpack.GetProperty(BuilderConstants.ElementLinkedVisualElementAssetVEPropertyName) as TemplateAsset;
+                var linkedVTACopy = linkedInstancedVTA.DeepCopy();
+                var unpackedVEA = unpackedVE.GetVisualElementAsset();
+                var templateContainerVEA = elementToUnpack.GetVisualElementAsset();
+                var attributeOverrides = linkedTA.attributeOverrides;
 
-            // Move attribute overrides to new template containers
-            BuilderAssetUtilities.CopyAttributeOverridesToChildTemplateAssets(attributeOverrides, linkedVTACopy);
+                var attributes = elementToUnpack.GetOverriddenAttributes();
+                foreach (var attribute in attributes)
+                {
+                    unpackedVEA.SetAttributeValue(attribute.Key, attribute.Value);
+                }
 
-            // Apply stylesheets to new element + inline rules
-            BuilderAssetUtilities.AddStyleSheetsFromTreeAsset(unpackedVEA, linkedInstancedVTA);
-            unpackedVEA.ruleIndex = templateContainerVEA.ruleIndex;
+                if (isRootElement)
+                {
+                    rootUnpackedVEA = unpackedVEA;
+                }
 
-            BuilderAssetUtilities.TransferAssetToAsset(m_PaneWindow.document, unpackedVEA, linkedVTACopy, false);
+                // Apply attribute overrides to elements in the unpacked element
+                BuilderAssetUtilities.ApplyAttributeOverridesToTreeAsset(attributeOverrides, linkedVTACopy);
+
+                // Move attribute overrides to new template containers
+                BuilderAssetUtilities.CopyAttributeOverridesToChildTemplateAssets(attributeOverrides, linkedVTACopy);
+
+                // Apply stylesheets to new element + inline rules
+                BuilderAssetUtilities.AddStyleSheetsFromTreeAsset(unpackedVEA, linkedInstancedVTA);
+                unpackedVEA.ruleIndex = templateContainerVEA.ruleIndex;
+
+                BuilderAssetUtilities.TransferAssetToAsset(m_PaneWindow.document, unpackedVEA, linkedVTACopy, false);
+
+                elementsToUnpack.Remove(elementToUnpack);
+
+                if (elementToUnpack != templateContainer)
+                {
+                    BuilderAssetUtilities.DeleteElementFromAsset(m_PaneWindow.document, elementToUnpack, false);
+                    elementToUnpack.RemoveFromHierarchy();
+                }
+
+                if (unpackCompletely && elementsToUnpack.Count == 0)
+                {
+                    VisualElement tree = new VisualElement();
+                    m_PaneWindow.document.activeOpenUXMLFile.visualTreeAsset.LinkedCloneTree(tree);
+                    var newElement = tree.Query<VisualElement>().Where(x => x.GetVisualElementAsset() == rootUnpackedVEA).First();
+                    var newTemplates = newElement.Query<TemplateContainer>().Where(x => x.GetVisualElementAsset() != null).ToList();
+                    elementsToUnpack.AddRange(newTemplates);
+                    isRootElement = false;
+                }
+            }
 
             m_Selection.NotifyOfHierarchyChange();
             m_PaneWindow.OnEnableAfterAllSerialization();
 
             // Keep hierarchy tree state in the new unpacked element
             var hierarchy = Builder.ActiveWindow.hierarchy;
-            hierarchy.elementHierarchyView.CopyTreeViewItemStates(templateContainerVEA, unpackedVEA);
+            hierarchy.elementHierarchyView.CopyTreeViewItemStates(rootVEA, rootUnpackedVEA);
 
             // Delete old template element
             BuilderAssetUtilities.DeleteElementFromAsset(m_PaneWindow.document, templateContainer, false);
             templateContainer.RemoveFromHierarchy();
 
-            m_Selection.ClearSelection(null, false);
-            unpackedVEA.Select();
+            m_Selection.ClearSelection(null);
+            rootUnpackedVEA.Select();
 
             m_Selection.NotifyOfHierarchyChange();
             m_PaneWindow.OnEnableAfterAllSerialization();

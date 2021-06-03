@@ -236,7 +236,7 @@ namespace UnityEditor.Search
 
             searchQueryOffset = searchText.Length - searchQuery.Length;
             searchQuery = searchQuery.TrimEnd();
-            var tokens = searchQuery.ToLowerInvariant().Split(' ').ToArray();
+            var tokens = Utils.Simplify(searchQuery).ToLowerInvariant().Split(' ').ToArray();
             searchWords = tokens.Where(t => t.IndexOf(':') == -1).ToArray();
             textFilters = tokens.Where(t => t.IndexOf(':') != -1).ToArray();
         }

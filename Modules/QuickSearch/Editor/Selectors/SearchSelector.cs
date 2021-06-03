@@ -213,7 +213,10 @@ namespace UnityEditor.Search
             if (string.IsNullOrEmpty(selectorName))
                 return null;
 
+            using (var view = SearchMonitor.GetView())
             {
+                if (view.TryLoadProperty(item.key, selectorName, out var recordKey, out var cv, out suggestedSelectorName))
+                    return cv;
 
                 string localSuggestedSelectorName = null;
                 string providerType = item.provider.type;
@@ -240,6 +243,7 @@ namespace UnityEditor.Search
                 if (!string.IsNullOrEmpty(localSuggestedSelectorName))
                     suggestedSelectorName = localSuggestedSelectorName;
 
+                view.StoreProperty(recordKey, itemValue, suggestedSelectorName);
 
                 return itemValue;
             }

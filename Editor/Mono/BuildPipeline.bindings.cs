@@ -11,6 +11,7 @@ using UnityEditor.Build.Reporting;
 using Mono.Cecil;
 using UnityEditor.Scripting.ScriptCompilation;
 using System.Runtime.InteropServices;
+using UnityEditor.Build;
 using UnityEngine.Scripting;
 
 namespace UnityEditor
@@ -69,13 +70,15 @@ namespace UnityEditor
         //Set the player to try to connect to the host
         ConnectToHost = 1 << 12,
 
+        //custom connection id
+        CustomConnectionID = 1 << 13,
+
         // Headless Mode
         EnableHeadlessMode = 1 << 14,
 
         // Build scripts only
         BuildScriptsOnly = 1 << 15,
 
-        // Patches the application package without recreating it, applicable to platforms like Android where app packaging is involved
         PatchPackage = 1 << 16,
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -198,6 +201,8 @@ namespace UnityEditor
         public string[] addressableNames;
     }
 
+    // NB! Keep in sync with BuildPlayerOptionsManagedStruct in Editor/Src/BuildPipeline/BuildPlayerOptions.h
+    [StructLayout(LayoutKind.Sequential)]
     public struct BuildPlayerOptions
     {
         public string[] scenes {get; set; }
@@ -276,6 +281,14 @@ namespace UnityEditor
 
         [FreeFunction]
         public extern static CanAppendBuild BuildCanBeAppended(BuildTarget target, string location);
+
+        [RequiredByNativeCode]
+        internal static BuildPlayerContext PreparePlayerBuild(BuildPlayerOptions buildPlayerOptions)
+        {
+            var buildPlayerContext = new BuildPlayerContext(buildPlayerOptions);
+            BuildPipelineInterfaces.PreparePlayerBuild(buildPlayerContext);
+            return buildPlayerContext;
+        }
 
         public static BuildReport BuildPlayer(EditorBuildSettingsScene[] levels, string locationPathName, BuildTarget target, BuildOptions options)
         {

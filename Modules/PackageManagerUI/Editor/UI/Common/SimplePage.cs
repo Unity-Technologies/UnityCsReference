@@ -21,6 +21,24 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override IEnumerable<VisualState> visualStates => m_VisualStateList;
 
+        private List<SubPage> m_SubPages;
+        public override IEnumerable<SubPage> subPages => m_SubPages ?? Enumerable.Empty<SubPage>();
+
+        [SerializeField]
+        private string m_SelectedSubPageName;
+        public override SubPage currentSubPage
+        {
+            get => subPages.FirstOrDefault(page => page.name == m_SelectedSubPageName) ?? subPages.FirstOrDefault();
+            set
+            {
+                var newSelectedSubpageName = value?.name ?? string.Empty;
+                if (m_SelectedSubPageName == newSelectedSubpageName)
+                    return;
+                m_SelectedSubPageName = newSelectedSubpageName;
+                Rebuild();
+            }
+        }
+
         [NonSerialized]
         private PackageFiltering m_PackageFiltering;
         public void ResolveDependencies(PackageDatabase packageDatabase, PackageFiltering packageFiltering)
@@ -65,6 +83,44 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
+        public override void SetPackagesUserUnlockedState(IEnumerable<string> packageUniqueIds, bool unlocked)
+        {
+            var visualStates = new HashSet<VisualState>();
+
+            foreach (var packageUniqueId in packageUniqueIds)
+            {
+                var visualState = m_VisualStateList.GetVisualState(packageUniqueId);
+                if (visualState != null && visualState.userUnlocked != unlocked)
+                {
+                    visualState.userUnlocked = unlocked;
+                    visualStates.Add(visualState);
+                }
+            }
+            TriggerOnVisualStateChange(visualStates);
+        }
+
+        public override void ResetUserUnlockedState()
+        {
+            var unlockedVisualStates = visualStates.Where(v => v.userUnlocked);
+            foreach (var visualState in unlockedVisualStates)
+            {
+                visualState.userUnlocked = false;
+                visualState.expanded = false;
+            }
+            TriggerOnVisualStateChange(unlockedVisualStates);
+        }
+
+        public override void SetSelected(string packageUniqueId, string versionUniqueId)
+        {
+            if (!string.IsNullOrEmpty(packageUniqueId) && subPages.Any())
+            {
+                var package = m_PackageDatabase.GetPackage(packageUniqueId);
+                if (currentSubPage?.filter?.Invoke(package) != true)
+                    currentSubPage = subPages.FirstOrDefault(p => p.filter?.Invoke(package) == true);
+            }
+            base.SetSelected(packageUniqueId, versionUniqueId);
+        }
+
         public override void Rebuild()
         {
             RebuildOrderedVisualStates();
@@ -74,8 +130,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RebuildOrderedVisualStates()
         {
+            var subPage = currentSubPage;
             var packages = m_PackageDatabase.allPackages
-                .Where(p => m_PackageFiltering.FilterByCurrentTab(p));
+                .Where(p => m_PackageFiltering.FilterByCurrentTab(p) && (subPage?.filter?.Invoke(p) ?? true));
 
             var orderBy = m_Filters?.orderBy ?? string.Empty;
             var isReversOrder = m_Filters?.isReverseOrder ?? false;
@@ -122,8 +179,15 @@ namespace UnityEditor.PackageManager.UI.Internal
                 orderedPackages = !isReversOrder? packages.OrderBy(p => p.versions.primary?.displayName ?? p.name) : packages.OrderByDescending(p => p.versions.primary?.displayName ?? p.name);
             }
 
-            var orderedPackageIdAndGroups = orderedPackages.Select(p => new Tuple<string, string>(p.uniqueId, GetGroupName(p)));
-            m_VisualStateList.Rebuild(orderedPackageIdAndGroups);
+            var orderedPackageIdGroupsAndDefaultLockedStates = orderedPackages.Select(p => new Tuple<string, string, bool>(p.uniqueId, GetGroupName(p),
+                GetDefaultLockState(p)));
+            m_VisualStateList.Rebuild(orderedPackageIdGroupsAndDefaultLockedStates);
+        }
+
+        public override bool GetDefaultLockState(IPackage package)
+        {
+            return package.versions.installed?.isDirectDependency != true &&
+                m_PackageDatabase.GetFeatureDependents(package.versions.installed)?.Any() == true;
         }
 
         private void RefreshVisualStates()
@@ -174,6 +238,22 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override void Load(IPackage package, IPackageVersion version = null)
         {
             // do nothing, as for a single page we have a complete/known list and there's no more to load
+        }
+
+        public override void AddSubPage(SubPage subPage)
+        {
+            if (subPage == null || subPages.Any(page => page.name == subPage.name))
+                return;
+            if (m_SubPages == null)
+                m_SubPages = new List<SubPage>();
+            m_SubPages.Add(subPage);
+            m_SubPages.Sort((p1, p2) => p1.priority - p2.priority);
+            TriggerOnSubPageAdded();
+        }
+
+        public override string GetGroupName(IPackage package)
+        {
+            return currentSubPage?.getGroupName?.Invoke(package) ?? base.GetGroupName(package);
         }
     }
 }

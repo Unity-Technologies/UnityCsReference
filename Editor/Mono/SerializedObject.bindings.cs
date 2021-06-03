@@ -197,6 +197,12 @@ namespace UnityEditor
             get;
         }
 
+        internal extern uint objectVersion
+        {
+            [NativeMethod("GetObjectVersion")]
+            get;
+        }
+
         public extern bool forceChildVisibility
         {
             [NativeMethod("GetForceChildVisibiltyFlag")]

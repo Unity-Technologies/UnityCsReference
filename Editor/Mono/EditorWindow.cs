@@ -1329,7 +1329,8 @@ namespace UnityEditor
             }
         }
 
-        [Shortcut("Overlays/Toggle All Overlays", typeof(OverlayShortcutContext), KeyCode.Space, ShortcutModifiers.Action)]
+
+        [Shortcut("Overlays/Toggle All Overlays", typeof(OverlayShortcutContext), KeyCode.BackQuote)]
         static void ToggleAllOverlays(ShortcutArguments args)
         {
             if (!(args.context is OverlayShortcutContext context))

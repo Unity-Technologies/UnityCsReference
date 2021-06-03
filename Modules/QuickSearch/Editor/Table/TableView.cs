@@ -56,6 +56,7 @@ namespace UnityEditor.Search
 
             if (m_PropertyTable != null)
             {
+                using (SearchMonitor.GetView())
                 {
                     m_PropertyTable.OnGUI(screenRect);
                 }

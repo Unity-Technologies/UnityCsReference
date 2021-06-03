@@ -34,6 +34,10 @@ namespace UnityEditor.EditorTools
         [SerializeField]
         List<ComponentEditor> m_ComponentContexts = new List<ComponentEditor>();
 
+        internal static IEnumerable<ComponentEditor> componentContexts => instance.m_ComponentContexts;
+
+        internal static int availableComponentContextCount => instance.m_ComponentContexts.Count;
+
         [SerializeField]
         EditorToolContext m_ActiveToolContext;
 
@@ -42,7 +46,12 @@ namespace UnityEditor.EditorTools
             get
             {
                 if (instance.m_ActiveToolContext == null)
+                {
                     instance.m_ActiveToolContext = GetSingleton<GameObjectToolContext>();
+                    ToolManager.ActiveContextDidChange();
+                    instance.m_ActiveToolContext.OnActivated();
+                }
+
                 return instance.m_ActiveToolContext;
             }
 
@@ -72,7 +81,6 @@ namespace UnityEditor.EditorTools
 
                 ToolManager.ActiveContextWillChange();
                 instance.m_ActiveToolContext = ctx;
-                ToolManager.ActiveContextDidChange();
 
                 ctx.OnActivated();
 
@@ -89,6 +97,8 @@ namespace UnityEditor.EditorTools
 
                 // If resolved is null at this point, the setter for activeTool will substitute an instance of NoneTool for us.
                 ToolManager.SetActiveTool(resolved);
+
+                ToolManager.ActiveContextDidChange();
 
                 s_ChangingActiveContext = false;
             }
@@ -222,6 +232,8 @@ namespace UnityEditor.EditorTools
 
         [SerializeField]
         ComponentToolCache m_PreviousComponentToolCache;
+
+        internal static event Action availableComponentToolsChanged;
 
         void SaveComponentTool()
         {
@@ -443,7 +455,10 @@ namespace UnityEditor.EditorTools
 
         public static void RestorePreviousPersistentTool()
         {
-            var last = GetLastTool(x => x && !EditorToolUtility.IsCustomEditorTool(x.GetType()));
+            var last = GetLastTool(x =>
+            {
+                return x && EditorToolUtility.IsManipulationTool(EditorToolUtility.GetEnumWithEditorTool(x));
+            });
 
             if (last != null)
                 activeTool = last;
@@ -512,6 +527,8 @@ namespace UnityEditor.EditorTools
                     RestorePreviousPersistentTool();
                 }
             }
+
+            availableComponentToolsChanged?.Invoke();
         }
 
         // Used by tests

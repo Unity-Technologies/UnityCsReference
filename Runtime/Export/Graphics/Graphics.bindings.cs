@@ -364,7 +364,9 @@ namespace UnityEngine
     {
         Immutable = 0,
         Dynamic,
+        [Obsolete("ComputeBufferMode.Circular is deprecated (legacy mode)")]
         Circular,
+        [Obsolete("ComputeBufferMode.StreamOut is deprecated (internal use only)")]
         StreamOut,
         SubUpdates,
     }
@@ -429,6 +431,8 @@ namespace UnityEngine
         [FreeFunction("CopyTexture")] extern private static void CopyTexture_Region(Texture src, int srcElement, int srcMip, int srcX, int srcY, int srcWidth, int srcHeight, Texture dst, int dstElement, int dstMip, int dstX, int dstY);
         [FreeFunction("ConvertTexture")] extern private static bool ConvertTexture_Full(Texture src, Texture dst);
         [FreeFunction("ConvertTexture")] extern private static bool ConvertTexture_Slice(Texture src, int srcElement, Texture dst, int dstElement);
+
+        [FreeFunction("GraphicsScripting::CopyBuffer", ThrowsException = true)] static extern void CopyBufferImpl([NotNull] GraphicsBuffer source, [NotNull] GraphicsBuffer dest);
 
         [FreeFunction("GraphicsScripting::DrawMeshNow")] extern private static void Internal_DrawMeshNow1([NotNull("NullExceptionObject")] Mesh mesh, int subsetIndex, Vector3 position, Quaternion rotation);
         [FreeFunction("GraphicsScripting::DrawMeshNow")] extern private static void Internal_DrawMeshNow2([NotNull("NullExceptionObject")] Mesh mesh, int subsetIndex, Matrix4x4 matrix);

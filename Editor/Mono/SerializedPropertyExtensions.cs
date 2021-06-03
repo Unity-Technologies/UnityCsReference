@@ -137,6 +137,37 @@ namespace UnityEditor
             }
         }
 
+        public static void SetMapValue(this SerializedProperty map, string key, string[] value)
+        {
+            Assert.IsTrue(map.type == "map" && !map.serializedObject.isEditingMultipleObjects);
+            if (map.TryGetMapEntry(key, out var entry))
+            {
+                var secondProperty = entry.FindPropertyRelative("second");
+                Assert.IsTrue(secondProperty.isArray);
+
+                secondProperty.arraySize = value.Length;
+                for (int i = 0; i < secondProperty.arraySize; ++i)
+                {
+                    secondProperty.GetArrayElementAtIndex(i).stringValue = value[i];
+                }
+            }
+            else
+            {
+                var index = map.arraySize;
+                map.arraySize += 1;
+                var element = map.GetArrayElementAtIndex(index);
+
+                element.FindPropertyRelative("first").stringValue = key;
+                var secondProperty = element.FindPropertyRelative("second");
+
+                secondProperty.arraySize = value.Length;
+                for (int i = 0; i < secondProperty.arraySize; ++i)
+                {
+                    secondProperty.GetArrayElementAtIndex(i).stringValue = value[i];
+                }
+            }
+        }
+
         public static void SetMapValue(this SerializedProperty map, string key, string elementMapKey, string elementMapValue)
         {
             Assert.IsTrue(map.type == "map" && !map.serializedObject.isEditingMultipleObjects);

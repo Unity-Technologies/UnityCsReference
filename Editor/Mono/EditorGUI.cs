@@ -49,6 +49,10 @@ namespace UnityEditor
         private static double s_FoldoutDestTime;
         private static int s_DragUpdatedOverID = 0;
 
+        private const int kSearchFieldTextLimit = 1024;
+        private static bool s_SearchFieldTextLimitApproved = false;
+        private static int s_SavekeyboardControl = 0;
+
         private static readonly int s_FoldoutHash = "Foldout".GetHashCode();
         private static readonly int s_TagFieldHash = "s_TagFieldHash".GetHashCode();
         private static readonly int s_PPtrHash = "s_PPtrHash".GetHashCode();
@@ -733,6 +737,20 @@ namespace UnityEditor
             style.Draw(position, content, false, false, false, false);
         }
 
+        private static string ValidateTextLimit(String editorText)
+        {
+            string title = "Search String Character Limit Exceeded";
+            string fullMessage = string.Format("You have entered {0} characters. The character limit is {1} characters because of risk of Editor slowdown. Please confirm that you would like to continue (not recommended) or clear the field", editorText.Length, kSearchFieldTextLimit);
+            bool selectedContinueOption = EditorUtility.DisplayDialog(title, fullMessage, "Continue", "Cancel");
+            if (selectedContinueOption)
+                s_SearchFieldTextLimitApproved = true;
+            else
+                editorText = editorText.Substring(0, kSearchFieldTextLimit);
+
+            GUIUtility.SetKeyboardControlToLastControlId();
+            return editorText;
+        }
+
         static bool IsPrintableChar(char c)
         {
             if (c < 32)
@@ -829,7 +847,7 @@ namespace UnityEditor
 
         // Should we select all text from the current field when the mouse goes up?
         // (We need to keep track of this to support both SwipeSelection & initial click selects all)
-        internal static string DoTextField(RecycledTextEditor editor, int id, Rect position, string text, GUIStyle style, string allowedletters, out bool changed, bool reset, bool multiline, bool passwordField, GUIStyle cancelButtonStyle)
+        internal static string DoTextField(RecycledTextEditor editor, int id, Rect position, string text, GUIStyle style, string allowedletters, out bool changed, bool reset, bool multiline, bool passwordField, GUIStyle cancelButtonStyle, bool checkTextLimit = false)
         {
             Event evt = Event.current;
 
@@ -1283,6 +1301,22 @@ namespace UnityEditor
             }
             if (changed)
             {
+                if (GUIUtility.keyboardControl != s_SavekeyboardControl)
+                {
+                    s_SavekeyboardControl = GUIUtility.keyboardControl;
+                    s_SearchFieldTextLimitApproved = false;
+                }
+                if (editor.text.Length > kSearchFieldTextLimit && checkTextLimit)
+                {
+                    if ((evt.control || evt.command || evt.commandName == EventCommandNames.Paste) && !s_SearchFieldTextLimitApproved)
+                    {
+                        editor.text = ValidateTextLimit(editor.text);
+                    }
+                    else if (editor.text.Length == kSearchFieldTextLimit + 1 && evt.keyCode != KeyCode.Backspace && !s_SearchFieldTextLimitApproved)
+                    {
+                        editor.text = ValidateTextLimit(editor.text);
+                    }
+                }
                 GUI.changed = true;
                 return editor.text;
             }
@@ -1570,7 +1604,7 @@ namespace UnityEditor
 
                     if (interactionRect.Contains(evt.mousePosition))
                     {
-                        DragAndDrop.visualMode = DragAndDropService.Drop(DragAndDropService.kInspectorDropDstId, targetObjs, false);
+                        DragAndDrop.visualMode = DragAndDrop.Drop(DragAndDropWindowTarget.inspector, targetObjs, false);
                         Event.current.Use();
                     }
                     break;
@@ -1578,7 +1612,7 @@ namespace UnityEditor
                 case EventType.DragPerform:
                     if (interactionRect.Contains(evt.mousePosition))
                     {
-                        DragAndDrop.visualMode = DragAndDropService.Drop(DragAndDropService.kInspectorDropDstId, targetObjs, true);
+                        DragAndDrop.visualMode = DragAndDrop.Drop(DragAndDropWindowTarget.inspector, targetObjs, true);
                         DragAndDrop.AcceptDrag();
                         Event.current.Use();
                     }
@@ -1771,7 +1805,7 @@ namespace UnityEditor
                 s_RecycledEditor.text = text = "";
                 GUI.changed = true;
             }
-            text = DoTextField(s_RecycledEditor, id, textRect, text, searchFieldStyle, null, out dummy, false, false, false, cancelButtonStyle);
+            text = DoTextField(s_RecycledEditor, id, textRect, text, searchFieldStyle, null, out dummy, false, false, false, cancelButtonStyle, true);
             GUI.Button(buttonRect, GUIContent.none, cancelButtonStyle);
 
             return text;
@@ -2761,6 +2795,9 @@ namespace UnityEditor
 
         internal static GenericMenu FillPropertyContextMenu(SerializedProperty property, SerializedProperty linkedProperty = null, GenericMenu menu = null)
         {
+            if (property == null)
+                return null;
+
             if (linkedProperty != null && linkedProperty.serializedObject != property.serializedObject)
                 linkedProperty = null;
 
@@ -2801,39 +2838,69 @@ namespace UnityEditor
                     TargetChoiceHandler.AddSetToValueOfTargetMenuItems(pm, propertyWithPath, TargetChoiceHandler.SetToValueOfTarget);
                 }
 
-                if (property.prefabOverride)
-                {
-                    Object targetObject = property.serializedObject.targetObject;
+                Object targetObject = property.serializedObject.targetObject;
 
+                var shouldDisplayPrefabContextMenuItems = property.prefabOverride;
+
+                // Only display the custom apply/revert menu for GameObjects/Components that are not part of a Prefab instance & variant.
+                var shouldDisplayApplyRevertProviderContextMenuItems = targetObject is IApplyRevertPropertyContextMenuItemProvider
+                    && PrefabUtility.GetPrefabInstanceHandle(targetObject) == null;
+
+                if (shouldDisplayPrefabContextMenuItems || shouldDisplayApplyRevertProviderContextMenuItems)
+                {
                     SerializedProperty[] properties;
                     if (linkedProperty == null)
                         properties = new SerializedProperty[] { propertyWithPath };
                     else
                         properties = new SerializedProperty[] { propertyWithPath, linkedPropertyWithPath };
 
-                    PrefabUtility.HandleApplyRevertMenuItems(
-                        null,
-                        targetObject,
-                        (menuItemContent, sourceObject) =>
+                    if (shouldDisplayApplyRevertProviderContextMenuItems)
+                    {
+                        var provider = targetObject as IApplyRevertPropertyContextMenuItemProvider;
+                        if (provider.TryGetApplyMethodForFieldName(propertyWithPath, out Action<SerializedProperty> applyMethod))
                         {
-                            // Add apply menu item for this apply target.
-                            TargetChoiceHandler.PropertyAndSourcePathInfo info = new TargetChoiceHandler.PropertyAndSourcePathInfo();
-                            info.properties = properties;
-                            info.assetPath = AssetDatabase.GetAssetPath(sourceObject);
-                            GameObject rootObject = PrefabUtility.GetRootGameObject(sourceObject);
-                            if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject) || EditorUtility.IsPersistent(targetObject))
-                                pm.AddDisabledItem(menuItemContent);
-                            else
-                                pm.AddItem(menuItemContent, false, TargetChoiceHandler.ApplyPrefabPropertyOverride, info);
-                        },
-                        (menuItemContent) =>
+                            pm.AddItem(
+                                new GUIContent() { text = $"Apply override to '{provider.GetSourceName(targetObject as Component)}' {provider.GetSourceTerm()}" },
+                                false,
+                                (o) => applyMethod(propertyWithPath),
+                                properties);
+                        }
+
+                        if (provider.TryGetRevertMethodForFieldName(propertyWithPath, out Action<SerializedProperty> revertMethod))
                         {
-                            // Add revert menu item.
-                            pm.AddItem(menuItemContent, false, TargetChoiceHandler.RevertPrefabPropertyOverride, properties);
-                        },
-                        false,
-                        property.serializedObject.targetObjectsCount
-                    );
+                            pm.AddItem(
+                                new GUIContent() { text = $"Revert {provider.GetSourceTerm()} override" },
+                                false,
+                                (o) => revertMethod(propertyWithPath),
+                                properties);
+                        }
+                    }
+                    else if (shouldDisplayPrefabContextMenuItems)
+                    {
+                        PrefabUtility.HandleApplyRevertMenuItems(
+                            null,
+                            targetObject,
+                            (menuItemContent, sourceObject) =>
+                            {
+                                // Add apply menu item for this apply target.
+                                TargetChoiceHandler.PropertyAndSourcePathInfo info = new TargetChoiceHandler.PropertyAndSourcePathInfo();
+                                info.properties = properties;
+                                info.assetPath = AssetDatabase.GetAssetPath(sourceObject);
+                                GameObject rootObject = PrefabUtility.GetRootGameObject(sourceObject);
+                                if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject) || EditorUtility.IsPersistent(targetObject))
+                                    pm.AddDisabledItem(menuItemContent);
+                                else
+                                    pm.AddItem(menuItemContent, false, TargetChoiceHandler.ApplyPrefabPropertyOverride, info);
+                            },
+                            (menuItemContent) =>
+                            {
+                                // Add revert menu item.
+                                pm.AddItem(menuItemContent, false, TargetChoiceHandler.RevertPrefabPropertyOverride, properties);
+                            },
+                            false,
+                            property.serializedObject.targetObjectsCount
+                        );
+                    }
                 }
             }
 
@@ -7037,7 +7104,7 @@ namespace UnityEditor
                     return false;
             }
 
-            if (!isUIElements && PropertyHandler.UseReorderabelListControl(property)) return false;
+            if (PropertyHandler.UseReorderabelListControl(property)) return false;
 
             return property.hasVisibleChildren;
         }

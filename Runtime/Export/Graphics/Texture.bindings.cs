@@ -54,7 +54,7 @@ namespace UnityEngine
         extern public FilterMode filterMode { get; set; }
         extern public int anisoLevel { get; set; }
         extern public float mipMapBias { get; set; }
-        extern public Vector2 texelSize { [NativeName("GetNpotTexelSize")] get; }
+        extern public Vector2 texelSize { [NativeName("GetTexelSize")] get; }
         extern public IntPtr GetNativeTexturePtr();
         [Obsolete("Use GetNativeTexturePtr instead.", false)]
         public int GetNativeTextureID() { return (int)GetNativeTexturePtr(); }
@@ -661,6 +661,7 @@ namespace UnityEngine
     {
         override extern public int width { get; set; }
         override extern public int height { get; set; }
+
         override extern public TextureDimension dimension { get; set; }
 
         [NativeProperty("ColorFormat")]             extern public new GraphicsFormat graphicsFormat { get; set; }
@@ -669,6 +670,7 @@ namespace UnityEngine
         [NativeProperty("VRUsage")]                 extern public VRTextureUsage vrUsage { get; set; }
         [NativeProperty("Memoryless")]              extern public RenderTextureMemoryless memorylessMode { get; set; }
 
+
         public RenderTextureFormat format
         {
             get { return GraphicsFormatUtility.GetRenderTextureFormat(graphicsFormat); }
@@ -676,6 +678,9 @@ namespace UnityEngine
         }
 
         extern public GraphicsFormat stencilFormat { get; set; }
+
+        extern public GraphicsFormat depthStencilFormat { get; set; }
+
         extern public bool autoGenerateMips { get; set; }
         extern public int volumeDepth { get; set; }
         extern public int antiAliasing { get; set; }
@@ -697,6 +702,10 @@ namespace UnityEngine
         extern private RenderBuffer GetColorBuffer();
         [FreeFunction(Name = "RenderTextureScripting::GetDepthBuffer", HasExplicitThis = true)]
         extern private RenderBuffer GetDepthBuffer();
+
+        extern private void SetMipMapCount(int count);
+
+        extern private void SetShadowSamplingMode(Rendering.ShadowSamplingMode samplingMode);
 
         public RenderBuffer colorBuffer { get { return GetColorBuffer(); } }
         public RenderBuffer depthBuffer { get { return GetDepthBuffer(); } }

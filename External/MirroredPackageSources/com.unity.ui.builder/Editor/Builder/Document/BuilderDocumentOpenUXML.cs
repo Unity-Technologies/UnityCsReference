@@ -495,6 +495,63 @@ namespace Unity.UI.Builder
             }
         }
 
+        internal bool SaveNewTemplateFileFromHierarchy(string newTemplatePath, string uxml)
+        {
+            var isReplacingFile = File.Exists(newTemplatePath);
+            bool isReplacingFileInHierarchy = false;
+
+            if (isReplacingFile)
+            {
+                var replacedVTA = EditorGUIUtility.Load(newTemplatePath) as VisualTreeAsset;
+                isReplacingFileInHierarchy = replacedVTA.TemplateExists(m_VisualTreeAsset);
+
+                if (isReplacingFileInHierarchy && hasUnsavedChanges)
+                {
+                    // If we are replacing an element in the hierarchy and there is unsaved changes,
+                    // we need to save to make sure we don't lose any elements
+                    var saveUnsavedChanges = BuilderDialogsUtility.DisplayDialog(
+                        BuilderConstants.SaveDialogSaveChangesPromptTitle,
+                        BuilderConstants.SaveDialogReplaceWithNewTemplateMessage,
+                        BuilderConstants.DialogSaveActionOption,
+                        BuilderConstants.DialogCancelOption);
+
+                    if (saveUnsavedChanges)
+                    {
+                        var wasDocumentSaved = SaveUnsavedChanges();
+
+                        if (!wasDocumentSaved)
+                        {
+                            // Save failed
+                            Debug.LogError("Saving the current template failed. New template will not be created.");
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        // Save cancelled
+                        return false;
+                    }
+                }
+            }
+
+            if (isReplacingFileInHierarchy)
+            {
+                // This is necessary to make sure we don't show the external changes popup
+                // since we are creating a new template
+                m_DocumentBeingSavedExplicitly = true;
+            }
+
+            File.WriteAllText(newTemplatePath, uxml);
+            AssetDatabase.Refresh();
+
+            if (isReplacingFileInHierarchy)
+            {
+                m_DocumentBeingSavedExplicitly = false;
+            }
+
+            return true;
+        }
+
         public bool CheckForUnsavedChanges(bool assetModifiedExternally = false)
         {
             if (!hasUnsavedChanges)

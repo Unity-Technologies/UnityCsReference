@@ -8,8 +8,7 @@ using UnityEngine.UIElements;
 
 namespace Unity.Profiling.Editor
 {
-    // TODO This type will be made public as part of the Extensibility API.
-    internal abstract class ProfilerModuleViewController : IDisposable
+    public abstract class ProfilerModuleViewController : IDisposable
     {
         VisualElement m_View;
 

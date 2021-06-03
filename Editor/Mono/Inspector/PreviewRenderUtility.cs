@@ -306,7 +306,7 @@ namespace UnityEditor
                 // garbage collected each N frames, and in the editor we might be wildly resizing
                 // the inspector, thus using up tons of memory.
                 GraphicsFormat format = camera.allowHDR ? GraphicsFormat.R16G16B16A16_SFloat : GraphicsFormat.R8G8B8A8_UNorm;
-                m_RenderTexture = new RenderTexture(rtWidth, rtHeight, 32, format);
+                m_RenderTexture = new RenderTexture(rtWidth, rtHeight, format, SystemInfo.GetGraphicsFormat(DefaultFormat.DepthStencil));
                 m_RenderTexture.hideFlags = HideFlags.HideAndDontSave;
 
                 camera.targetTexture = m_RenderTexture;

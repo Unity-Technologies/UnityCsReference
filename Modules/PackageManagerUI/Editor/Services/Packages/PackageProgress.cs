@@ -12,6 +12,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         Pausing,
         Resuming,
         Installing,
+        Resetting,
         Removing
     }
 }

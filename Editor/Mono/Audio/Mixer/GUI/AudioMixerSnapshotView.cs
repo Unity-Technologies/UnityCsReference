@@ -201,6 +201,11 @@ namespace UnityEditor
 
         public void NameChanged(int index, string newName)
         {
+            if (newName.Equals(m_Snapshots[index].name))
+            {
+                return;
+            }
+
             Undo.RecordObject(m_Snapshots[index], "Rename snapshot");
             newName = DeduplicateNewName(index, newName);
             m_Snapshots[index].name = newName;
@@ -246,6 +251,7 @@ namespace UnityEditor
 
         public void EndDragChild(ReorderableList list)
         {
+            Undo.RecordObject(m_Controller, "Drag");
             m_Snapshots = m_ReorderableListWithRenameAndScrollView.list.list as List<AudioMixerSnapshotController>;
             SaveToBackend();
         }

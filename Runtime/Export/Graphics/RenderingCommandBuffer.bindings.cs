@@ -427,7 +427,7 @@ namespace UnityEngine.Rendering
         [FreeFunction("RenderingCommandBuffer_Bindings::SetComputeBufferParam", HasExplicitThis = true)]
         extern private void Internal_SetComputeBufferParam([NotNull] ComputeShader computeShader, int kernelIndex, int nameID, ComputeBuffer buffer);
 
-        [FreeFunction("RenderingCommandBuffer_Bindings::SetComputeGraphicsBufferParam", HasExplicitThis = true)]
+        [FreeFunction("RenderingCommandBuffer_Bindings::SetComputeBufferParam", HasExplicitThis = true)]
         extern private void Internal_SetComputeGraphicsBufferParam([NotNull] ComputeShader computeShader, int kernelIndex, int nameID, GraphicsBuffer buffer);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::SetComputeConstantBufferParam", HasExplicitThis = true)]
@@ -518,6 +518,9 @@ namespace UnityEngine.Rendering
 
         [NativeMethod("AddDrawRenderer")]
         extern private void Internal_DrawRenderer([NotNull] Renderer renderer, Material material, int submeshIndex, int shaderPass);
+
+        [NativeMethod("AddDrawRendererList")]
+        extern private void Internal_DrawRendererList(RendererUtils.RendererList rendererList);
 
         private void Internal_DrawRenderer(Renderer renderer, Material material, int submeshIndex)
         {
@@ -771,16 +774,39 @@ namespace UnityEngine.Rendering
 
         [FreeFunction("RenderingCommandBuffer_Bindings::EnableShaderKeyword", HasExplicitThis = true)]
         extern private void EnableGlobalKeyword(GlobalKeyword keyword);
+        [FreeFunction("RenderingCommandBuffer_Bindings::EnableMaterialKeyword", HasExplicitThis = true)]
+        extern private void EnableMaterialKeyword(Material material, LocalKeyword keyword);
+        [FreeFunction("RenderingCommandBuffer_Bindings::EnableComputeKeyword", HasExplicitThis = true)]
+        extern private void EnableComputeKeyword(ComputeShader computeShader, LocalKeyword keyword);
 
-        public void EnableKeyword(GlobalKeyword keyword) { EnableGlobalKeyword(keyword); }
+        public void EnableKeyword(in GlobalKeyword keyword) { EnableGlobalKeyword(keyword); }
+        public void EnableKeyword(Material material, in LocalKeyword keyword) { EnableMaterialKeyword(material, keyword); }
+        public void EnableKeyword(ComputeShader computeShader, in LocalKeyword keyword) { EnableComputeKeyword(computeShader, keyword); }
 
         [FreeFunction("RenderingCommandBuffer_Bindings::DisableShaderKeyword", HasExplicitThis = true)]
         extern public void DisableShaderKeyword(string keyword);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::DisableShaderKeyword", HasExplicitThis = true)]
         extern private void DisableGlobalKeyword(GlobalKeyword keyword);
+        [FreeFunction("RenderingCommandBuffer_Bindings::DisableMaterialKeyword", HasExplicitThis = true)]
+        extern private void DisableMaterialKeyword(Material material, LocalKeyword keyword);
+        [FreeFunction("RenderingCommandBuffer_Bindings::DisableComputeKeyword", HasExplicitThis = true)]
+        extern private void DisableComputeKeyword(ComputeShader computeShader, LocalKeyword keyword);
 
-        public void DisableKeyword(GlobalKeyword keyword) { DisableGlobalKeyword(keyword); }
+        public void DisableKeyword(in GlobalKeyword keyword) { DisableGlobalKeyword(keyword); }
+        public void DisableKeyword(Material material, in LocalKeyword keyword) { DisableMaterialKeyword(material, keyword); }
+        public void DisableKeyword(ComputeShader computeShader, in LocalKeyword keyword) { DisableComputeKeyword(computeShader, keyword); }
+
+        [FreeFunction("RenderingCommandBuffer_Bindings::SetShaderKeyword", HasExplicitThis = true)]
+        extern private void SetGlobalKeyword(GlobalKeyword keyword, bool value);
+        [FreeFunction("RenderingCommandBuffer_Bindings::SetMaterialKeyword", HasExplicitThis = true)]
+        extern private void SetMaterialKeyword(Material material, LocalKeyword keyword, bool value);
+        [FreeFunction("RenderingCommandBuffer_Bindings::SetComputeKeyword", HasExplicitThis = true)]
+        extern private void SetComputeKeyword(ComputeShader computeShader, LocalKeyword keyword, bool value);
+
+        public void SetKeyword(in GlobalKeyword keyword, bool value) { SetGlobalKeyword(keyword, value); }
+        public void SetKeyword(Material material, in LocalKeyword keyword, bool value) { SetMaterialKeyword(material, keyword, value); }
+        public void SetKeyword(ComputeShader computeShader, in LocalKeyword keyword, bool value) { SetComputeKeyword(computeShader, keyword, value); }
 
         [FreeFunction("RenderingCommandBuffer_Bindings::SetViewMatrix", HasExplicitThis = true, ThrowsException = true)]
         extern public void SetViewMatrix(Matrix4x4 view);
@@ -1142,15 +1168,13 @@ namespace UnityEngine.Rendering
             InternalSetComputeBufferCounterValue(buffer, counterValue);
         }
 
-        [System.Security.SecurityCritical] // to prevent accidentally making this public in the future
-        [FreeFunction(Name = "RenderingCommandBuffer_Bindings::InternalSetComputeBufferNativeData", HasExplicitThis = true, ThrowsException = true)]
+        [FreeFunction(Name = "RenderingCommandBuffer_Bindings::InternalSetGraphicsBufferNativeData", HasExplicitThis = true, ThrowsException = true)]
         extern private void InternalSetComputeBufferNativeData([NotNull] ComputeBuffer buffer, IntPtr data, int nativeBufferStartIndex, int graphicsBufferStartIndex, int count, int elemSize);
 
-        [System.Security.SecurityCritical] // to prevent accidentally making this public in the future
-        [FreeFunction(Name = "RenderingCommandBuffer_Bindings::InternalSetComputeBufferData", HasExplicitThis = true, ThrowsException = true)]
-        extern private void InternalSetComputeBufferData([NotNull] ComputeBuffer buffer, Array data, int managedBufferStartIndex, int graphicsBufferStartIndex, int count, int elemSize);
+        [FreeFunction(Name = "RenderingCommandBuffer_Bindings::InternalSetGraphicsBufferData", HasExplicitThis = true, ThrowsException = true)]
+        extern void InternalSetComputeBufferData([NotNull] ComputeBuffer buffer, Array data, int managedBufferStartIndex, int graphicsBufferStartIndex, int count, int elemSize);
 
-        [FreeFunction(Name = "RenderingCommandBuffer_Bindings::InternalSetComputeBufferCounterValue", HasExplicitThis = true)]
+        [FreeFunction(Name = "RenderingCommandBuffer_Bindings::InternalSetGraphicsBufferCounterValue", HasExplicitThis = true)]
         extern private void InternalSetComputeBufferCounterValue([NotNull] ComputeBuffer buffer, uint counterValue);
 
         // Set buffer data.
@@ -1247,7 +1271,6 @@ namespace UnityEngine.Rendering
             InternalSetGraphicsBufferCounterValue(buffer, counterValue);
         }
 
-        [System.Security.SecurityCritical] // to prevent accidentally making this public in the future
         [FreeFunction(Name = "RenderingCommandBuffer_Bindings::InternalSetGraphicsBufferNativeData", HasExplicitThis = true, ThrowsException = true)]
         extern private void InternalSetGraphicsBufferNativeData([NotNull] GraphicsBuffer buffer, IntPtr data, int nativeBufferStartIndex, int graphicsBufferStartIndex, int count, int elemSize);
 
@@ -1257,5 +1280,8 @@ namespace UnityEngine.Rendering
 
         [FreeFunction(Name = "RenderingCommandBuffer_Bindings::InternalSetGraphicsBufferCounterValue", HasExplicitThis = true)]
         extern private void InternalSetGraphicsBufferCounterValue([NotNull] GraphicsBuffer buffer, uint counterValue);
+
+        [FreeFunction(Name = "RenderingCommandBuffer_Bindings::CopyBuffer", HasExplicitThis = true, ThrowsException = true)]
+        extern void CopyBufferImpl([NotNull] GraphicsBuffer source, [NotNull] GraphicsBuffer dest);
     }
 }

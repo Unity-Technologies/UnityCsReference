@@ -256,17 +256,21 @@ namespace UnityEditor
             {
                 Shader oldShader = material.shader;
                 Undo.RecordObject(material, "Assign shader");
-                if (m_CustomShaderGUI != null)
+
+                BeginNoApplyMaterialPropertyDrawers();
                 {
-                    m_CustomShaderGUI.AssignNewShaderToMaterial(material, oldShader, newShader);
+                    if (m_CustomShaderGUI != null)
+                        m_CustomShaderGUI.AssignNewShaderToMaterial(material, oldShader, newShader);
+                    else
+                        material.shader = newShader;
                 }
-                else
-                {
-                    material.shader = newShader;
-                }
+                EndNoApplyMaterialPropertyDrawers();
 
                 EditorMaterialUtility.ResetDefaultTextures(material, false);
-                ApplyMaterialPropertyDrawers(material);
+                if (m_CustomShaderGUI != null)
+                    m_CustomShaderGUI.ValidateMaterial(material);
+                else
+                    ApplyMaterialPropertyDrawers(material);
             }
 
             if (updateMaterialEditors)
@@ -568,6 +572,11 @@ namespace UnityEditor
                 // Show Material properties
                 if (PropertiesGUI())
                 {
+                    foreach (Material material in targets)
+                    {
+                        if (m_CustomShaderGUI != null)
+                            m_CustomShaderGUI.ValidateMaterial(material);
+                    }
                     PropertiesChanged();
                 }
             }
@@ -1637,6 +1646,15 @@ namespace UnityEditor
             return ShaderUtil.GetMaterialProperties(mats);
         }
 
+        public static string[] GetMaterialPropertyNames(Object[] mats)
+        {
+            if (mats == null)
+                throw new ArgumentNullException("mats");
+            if (Array.IndexOf(mats, null) >= 0)
+                throw new ArgumentException("List of materials contains null");
+            return ShaderUtil.GetMaterialPropertyNames(mats);
+        }
+
         public static MaterialProperty GetMaterialProperty(Object[] mats, string name)
         {
             if (mats == null)
@@ -1940,12 +1958,15 @@ namespace UnityEditor
                     return;
 
                 var shader = target.shader;
-                var props = GetMaterialProperties(targets);
-                for (var i = 0; i < props.Length; i++)
+                var propNames = GetMaterialPropertyNames(targets);
+                for (var i = 0; i < propNames.Length; i++)
                 {
-                    MaterialPropertyHandler handler = MaterialPropertyHandler.GetHandler(shader, props[i].name);
+                    MaterialPropertyHandler handler = MaterialPropertyHandler.GetHandler(shader, propNames[i]);
                     if (handler != null && handler.propertyDrawer != null)
-                        handler.propertyDrawer.Apply(props[i]);
+                    {
+                        var prop = GetMaterialProperty(targets, i);
+                        handler.propertyDrawer.Apply(prop);
+                    }
                 }
             }
         }

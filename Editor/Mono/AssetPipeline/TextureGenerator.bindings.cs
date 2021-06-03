@@ -52,6 +52,7 @@ namespace UnityEditor.AssetImporters
         private Sprite[] m_Sprites;
 
         public Texture2D texture { get { return m_Texture as Texture2D; } }
+        public Texture output { get { return m_Texture; } }
         public string importInspectorWarnings { get { return m_ImportInspectorWarnings; } }
         public string[] importWarnings { get { return m_ImportWarnings; } }
         public Texture2D thumbNail { get { return m_ThumbNail; } }

@@ -721,7 +721,22 @@ namespace UnityEditor.ShortcutManagement
         {
             var keycombination = KeyCombination.FromKeyboardInput(keyCode, modifiers);
             List<ShortcutEntry> entries;
-            if (m_KeyBindingRootToBoundEntries.TryGetValue(keycombination, out entries))
+            bool foundEntries = m_KeyBindingRootToBoundEntries.TryGetValue(keycombination, out entries);
+
+            if (Application.platform != RuntimePlatform.OSXEditor && (keycombination.modifiers & ShortcutModifiers.Action) != 0)
+            {
+                var altkeycombination = new KeyCombination(keycombination.keyCode,
+                    (keycombination.modifiers & ~ShortcutModifiers.Action) | ShortcutModifiers.Control);
+
+                if (m_KeyBindingRootToBoundEntries.TryGetValue(altkeycombination, out List<ShortcutEntry> additionalEntries))
+                {
+                    foundEntries = true;
+                    if (entries == null) entries = new List<ShortcutEntry>();
+                    entries.AddRange(additionalEntries);
+                }
+            }
+
+            if (foundEntries)
             {
                 foreach (var entry in entries)
                 {
@@ -773,7 +788,7 @@ namespace UnityEditor.ShortcutManagement
                     return EventModifiers.Alt;
                 case KeyCode.LeftControl:
                 case KeyCode.RightControl:
-                    return SystemInfo.operatingSystemFamily == OperatingSystemFamily.MacOSX ? EventModifiers.None : EventModifiers.Control;
+                    return EventModifiers.Control;
                 case KeyCode.LeftCommand:
                 case KeyCode.RightCommand:
                     return SystemInfo.operatingSystemFamily == OperatingSystemFamily.MacOSX ? EventModifiers.Command : EventModifiers.None;

@@ -55,6 +55,117 @@ namespace UnityEditor.Search
         }
     }
 
+    struct SearchMonitorView : IDisposable
+    {
+        static ConcurrentDictionary<int, SearchMonitorView> s_PropertyDatabaseViews = new ConcurrentDictionary<int, SearchMonitorView>();
+        internal PropertyDatabaseView propertyDatabaseView { get; }
+        internal PropertyDatabaseView propertyAliasesView { get; }
+
+        bool m_Disposed;
+        bool m_NeedsDispose;
+
+        public SearchMonitorView(PropertyDatabase propertyDatabase, PropertyDatabase propertyAliases, bool delayedSync = false)
+        {
+            m_Disposed = false;
+            if (s_PropertyDatabaseViews.TryGetValue(Thread.CurrentThread.ManagedThreadId, out var currentViews))
+            {
+                propertyDatabaseView = currentViews.propertyDatabaseView;
+                propertyAliasesView = currentViews.propertyAliasesView;
+                m_NeedsDispose = false;
+            }
+            else
+            {
+                propertyDatabaseView = propertyDatabase.GetView(delayedSync);
+                propertyAliasesView = propertyAliases.GetView(delayedSync);
+                m_NeedsDispose = true;
+                s_PropertyDatabaseViews.TryAdd(Thread.CurrentThread.ManagedThreadId, this);
+            }
+        }
+
+        public void Dispose()
+        {
+            if (m_Disposed || !m_NeedsDispose)
+                return;
+
+            s_PropertyDatabaseViews.TryRemove(Thread.CurrentThread.ManagedThreadId, out _);
+            propertyDatabaseView.Dispose();
+            propertyAliasesView.Dispose();
+            m_Disposed = true;
+        }
+
+        public bool TryLoadProperty(ulong documentKey, string propertyName, out PropertyDatabaseRecordKey recordKey, out object value, out string alias)
+        {
+            var propertyHash = PropertyDatabase.CreatePropertyHash(propertyName);
+            recordKey = PropertyDatabase.CreateRecordKey(documentKey, propertyHash);
+            if (!propertyAliasesView.TryLoad(recordKey, out object aliasObj))
+            {
+                value = null;
+                alias = propertyName;
+                SearchMonitor.Log($"<color=red>Failed</color> to load {propertyName} without alias", recordKey, propertyName);
+                return false;
+            }
+
+            alias = (aliasObj as string) ?? propertyName;
+            if (propertyDatabaseView.TryLoad(recordKey, out value))
+            {
+                SearchMonitor.Log($"Load property {propertyName}", recordKey, value);
+                return true;
+            }
+
+            SearchMonitor.Log($"<color=red>Failed</color> to load property {propertyName}", recordKey, propertyName);
+            return false;
+        }
+
+        public bool TryLoadProperty(PropertyDatabaseRecordKey recordKey, out object data)
+        {
+            if (propertyDatabaseView.TryLoad(recordKey, out data))
+            {
+                SearchMonitor.Log("Load property", recordKey, data);
+                return true;
+            }
+
+            SearchMonitor.Log("<color=red>Failed</color> to load property", recordKey);
+            return false;
+        }
+
+        public void StoreProperty(PropertyDatabaseRecordKey recordKey, object value)
+        {
+            propertyDatabaseView.Store(recordKey, value);
+            SearchMonitor.Log("Store property", recordKey, value);
+        }
+
+        public void StoreProperty(PropertyDatabaseRecordKey recordKey, object value, string alias)
+        {
+            StoreProperty(recordKey, value);
+            StoreAlias(recordKey, alias);
+        }
+
+        public bool TryLoadAlias(PropertyDatabaseRecordKey recordKey, out string alias)
+        {
+            if (!propertyAliasesView.TryLoad(recordKey, out object aliasObj))
+            {
+                SearchMonitor.Log("<color=red>Failed</color> to load alias", recordKey);
+                alias = null;
+                return false;
+            }
+            alias = aliasObj as string;
+            SearchMonitor.Log("Load alias", recordKey, alias);
+            return alias != null;
+        }
+
+        public void StoreAlias(PropertyDatabaseRecordKey key, string alias)
+        {
+            propertyAliasesView.Store(key, alias);
+            SearchMonitor.Log("Store alias", key, alias);
+        }
+
+        public void InvalidateDocument(ulong documentKey)
+        {
+            SearchMonitor.Log("Invalidate document", documentKey);
+            propertyDatabaseView.Invalidate(documentKey);
+            propertyAliasesView.Invalidate(documentKey);
+        }
+    }
 
     [InitializeOnLoad]
     static class SearchMonitor
@@ -78,6 +189,8 @@ namespace UnityEditor.Search
 
         const string k_TransactionDatabasePath = "Library/Search/transactions.db";
         static TransactionManager s_TransactionManager;
+        private static PropertyDatabase propertyDatabase;
+        private static PropertyDatabase propertyAliases;
 
         static readonly object s_ContentRefreshedLock = new object();
         static event Action<string[], string[], string[]> s_ContentRefreshed;
@@ -125,6 +238,8 @@ namespace UnityEditor.Search
             s_TransactionManager = new TransactionManager(k_TransactionDatabasePath);
             s_TransactionManager.Init();
 
+            propertyDatabase = new PropertyDatabase("Library/Search/propertyDatabase.db", true);
+            propertyAliases = new PropertyDatabase("Library/Search/propertyAliases.db", true);
 
             EditorApplication.quitting += OnQuitting;
             AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
@@ -180,12 +295,26 @@ namespace UnityEditor.Search
             }
         }
 
+        public static Task TriggerPropertyDatabaseBackgroundUpdate()
+        {
+            return Task.WhenAll(propertyDatabase.TriggerPropertyDatabaseBackgroundUpdate(), propertyAliases.TriggerPropertyDatabaseBackgroundUpdate());
+        }
+
 
         public static void PrintInfo()
         {
             var sb = new StringBuilder();
+            sb.Append(propertyDatabase.GetInfo());
+            sb.Append(propertyAliases.GetInfo());
             sb.Append(s_TransactionManager.GetInfo());
             Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, sb.ToString());
+        }
+
+        public static SearchMonitorView GetView(bool delayedSync = false)
+        {
+            if (!s_Initialize)
+                Init();
+            return new SearchMonitorView(propertyDatabase, propertyAliases, delayedSync);
         }
 
 
@@ -324,6 +453,8 @@ namespace UnityEditor.Search
 
         public static void Reset()
         {
+            propertyDatabase?.Clear();
+            propertyAliases?.Clear();
             s_TransactionManager?.ClearAll();
         }
 
@@ -348,6 +479,11 @@ namespace UnityEditor.Search
 
         private static void InvalidateDocuments()
         {
+            using (var view = GetView(true))
+            {
+                foreach (var k in s_DocumentsToInvalidate)
+                    view.InvalidateDocument(k);
+            }
             s_DocumentsToInvalidate.Clear();
             s_DelayedInvalidateOff = null;
             documentsInvalidated?.Invoke();
@@ -357,6 +493,12 @@ namespace UnityEditor.Search
         public static void Log(string message, ulong documentKey = 0UL)
         {
             Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, $"{message}: <b>{documentKey}</b>");
+        }
+
+        [System.Diagnostics.Conditional("DEBUG_SEARCH_MONITOR")]
+        public static void Log(string message, PropertyDatabaseRecordKey recordKey, object value = null)
+        {
+            Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, $"{message}: <b>{recordKey.documentKey}</b>, {recordKey.propertyKey}={value}");
         }
 
     }

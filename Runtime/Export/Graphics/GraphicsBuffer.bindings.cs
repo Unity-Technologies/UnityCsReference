@@ -3,10 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
-using System.Collections;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -15,10 +13,9 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine
 {
-    // Data buffer to hold data for vertex/index buffers.
+    // Note: both C# ComputeBuffer and GraphicsBuffer
+    // use C++ GraphicsBuffer as an implementation object.
     [UsedByNativeCode]
-    [NativeHeader("Runtime/GfxDevice/GfxBuffer.h")]
-    [NativeHeader("Runtime/Shaders/ComputeShader.h")]
     [NativeHeader("Runtime/Shaders/GraphicsBuffer.h")]
     [NativeHeader("Runtime/Export/Graphics/GraphicsBuffer.bindings.h")]
     public sealed class GraphicsBuffer : IDisposable
@@ -27,13 +24,13 @@ namespace UnityEngine
         internal IntPtr m_Ptr;
 #pragma warning restore 414
 
-        // IDisposable implementation, with Release() for explicit cleanup.
-
         [Flags]
         public enum Target
         {
             Vertex            = 1 << 0,
             Index             = 1 << 1,
+            CopySource        = 1 << 2,
+            CopyDestination   = 1 << 3,
             Structured        = 1 << 4,
             Raw               = 1 << 5,
             Append            = 1 << 6,
@@ -47,14 +44,13 @@ namespace UnityEngine
             Dispose(false);
         }
 
-        //*undocumented*
         public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
 
-        private void Dispose(bool disposing)
+        void Dispose(bool disposing)
         {
             if (disposing)
             {
@@ -63,27 +59,29 @@ namespace UnityEngine
             }
             else if (m_Ptr != IntPtr.Zero)
             {
-                // We cannot call DestroyBuffer through GC - it is scripting_api and requires main thread, prefer leak instead of a crash
-                Debug.LogWarning("GarbageCollector disposing of GraphicsBuffer. Please use GraphicsBuffer.Release() or .Dispose() to manually release the buffer.");
+                Debug.LogWarning($"GarbageCollector disposing of GraphicsBuffer allocated in {GetFileName()} at line {GetLineNumber()}. Please use GraphicsBuffer.Release() or .Dispose() to manually release the buffer.");
             }
 
             m_Ptr = IntPtr.Zero;
         }
 
-        private static bool RequiresCompute(Target target)
+        static bool RequiresCompute(Target target)
         {
-            int iTarget = (int)target;
-            int vbIbMask = (int)(Target.Vertex | Target.Index);
+            var requiresComputeMask = Target.Structured | Target.Raw | Target.Append | Target.Counter | Target.IndirectArguments;
+            return (target & requiresComputeMask) != 0;
+        }
 
-            // Compute support is required if target contains any flag that is not Vertex or Index
-            return (iTarget & vbIbMask) != iTarget;
+        static bool IsVertexIndexOrCopyOnly(Target target)
+        {
+            var mask = Target.Vertex | Target.Index | Target.CopySource | Target.CopyDestination;
+            return (target & mask) == target;
         }
 
         [FreeFunction("GraphicsBuffer_Bindings::InitBuffer")]
-        extern private static IntPtr InitBuffer(Target target, int count, int stride);
+        static extern IntPtr InitBuffer(Target target, int count, int stride);
 
         [FreeFunction("GraphicsBuffer_Bindings::DestroyBuffer")]
-        extern private static void DestroyBuffer(GraphicsBuffer buf);
+        static extern void DestroyBuffer(GraphicsBuffer buf);
 
         // Create a Graphics Buffer.
         public GraphicsBuffer(Target target, int count, int stride)
@@ -107,7 +105,7 @@ namespace UnityEngine
             {
                 throw new ArgumentException("Attempting to create an index buffer with an invalid stride: " + stride, "stride");
             }
-            else if (RequiresCompute(target) && stride % 4 != 0)
+            else if (!IsVertexIndexOrCopyOnly(target) && stride % 4 != 0)
             {
                 throw new ArgumentException("Stride must be a multiple of 4 unless the buffer is only used as a vertex buffer and/or index buffer ", "stride");
             }
@@ -120,6 +118,8 @@ namespace UnityEngine
             }
 
             m_Ptr = InitBuffer(target, count, stride);
+
+            SaveCallstack(2);
         }
 
         // Release a Graphics Buffer.
@@ -128,16 +128,21 @@ namespace UnityEngine
             Dispose();
         }
 
+        [FreeFunction("GraphicsBuffer_Bindings::IsValidBuffer")]
+        static extern bool IsValidBuffer(GraphicsBuffer buf);
+
         public bool IsValid()
         {
-            return m_Ptr != IntPtr.Zero;
+            return m_Ptr != IntPtr.Zero && IsValidBuffer(this);
         }
 
         // Number of elements in the buffer (RO).
-        extern public int count { get; }
+        public extern int count { get; }
 
         // Size of one element in the buffer (RO).
-        extern public int stride { get; }
+        public extern int stride { get; }
+
+        public extern Target target { get; }
 
         // Set buffer data.
         [System.Security.SecuritySafeCritical] // due to Marshal.SizeOf
@@ -281,8 +286,10 @@ namespace UnityEngine
         [FreeFunction(Name = "GraphicsBuffer_Bindings::InternalGetNativeBufferPtr", HasExplicitThis = true)]
         extern public IntPtr GetNativeBufferPtr();
 
+        public string name { set => SetName(value); }
+
         [FreeFunction(Name = "GraphicsBuffer_Bindings::SetName", HasExplicitThis = true)]
-        extern private void SetName(string name);
+        extern void SetName(string name);
 
         // Set counter value of append/consume buffer.
         extern public void SetCounterValue(uint counterValue);
@@ -316,5 +323,15 @@ namespace UnityEngine
         {
             CopyCountGG(src, dst, dstOffsetBytes);
         }
+
+        [ThreadSafe] extern string GetFileName();
+        [ThreadSafe] extern int GetLineNumber();
+        internal void SaveCallstack(int stackDepth)
+        {
+            var frame = new StackFrame(stackDepth, true);
+            SetAllocationData(frame.GetFileName(), frame.GetFileLineNumber());
+        }
+
+        extern void SetAllocationData(string fileName, int lineNumber);
     }
 }

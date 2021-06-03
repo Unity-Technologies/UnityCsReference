@@ -178,7 +178,6 @@ namespace UnityEditor.Search
                     return expr;
             }
 
-            // TODO: this is an error : we were not able to parse the root expression
             throw new SearchExpressionParseException($"Expression `{args.text}` cannot be parsed.\n" +
                 $"{string.Join("\n", args.context.GetAllErrors().Select(e => e.reason))}".Trim(), args.text.startIndex, args.text.Length);
         }

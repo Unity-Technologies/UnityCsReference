@@ -70,7 +70,7 @@ namespace UnityEditor.Search.Providers
                 options |= FindOptions.Packages | FindOptions.Fuzzy;
 
             foreach (var e in Search(context, provider, options))
-                yield return AssetProvider.CreateItem(context, provider, "Find", null, e.source, e.score, useGroupProvider: false, e.flags);
+                yield return AssetProvider.CreateItem("Files", context, provider, null, e.source, e.score, e.flags);
         }
 
         public static IEnumerable<SearchDocument> Search(SearchContext context, SearchProvider provider, FindOptions options)

@@ -316,7 +316,7 @@ namespace UnityEditorInternal
                 File.Copy(file, Paths.Combine(destinationFolder, Path.GetFileName(file)), true);
         }
 
-        internal static string ApiCompatibilityLevelToDotNetProfileArgument(ApiCompatibilityLevel compatibilityLevel)
+        internal static string ApiCompatibilityLevelToDotNetProfileArgument(ApiCompatibilityLevel compatibilityLevel, BuildTarget target)
         {
             switch (compatibilityLevel)
             {
@@ -328,7 +328,7 @@ namespace UnityEditorInternal
 
                 case ApiCompatibilityLevel.NET_4_6:
                 case ApiCompatibilityLevel.NET_Standard_2_0:
-                    return "unityaot";
+                    return "unityaot-" + BuildTargetDiscovery.GetPlatformProfileSuffix(target);
 
                 default:
                     throw new NotSupportedException(string.Format("ApiCompatibilityLevel.{0} is not supported by IL2CPP!", compatibilityLevel));
@@ -663,7 +663,7 @@ namespace UnityEditorInternal
                 }
 
                 arguments.Add($"--generatedcppdir={CommandLineFormatter.PrepareFileName(GetCppOutputDirectory(il2cppBuildCacheSource))}");
-                arguments.Add($"--dotnetprofile=\"{IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup))}\"");
+                arguments.Add($"--dotnetprofile=\"{IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup), m_PlatformProvider.target)}\"");
                 arguments.AddRange(IL2CPPUtils.GetDebuggerIL2CPPArguments(m_PlatformProvider, buildTargetGroup));
                 Action<ProcessStartInfo> setupStartInfo = il2CppNativeCodeBuilder.SetupStartInfo;
 
@@ -715,7 +715,7 @@ namespace UnityEditorInternal
 
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(m_PlatformProvider.target);
             var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup);
-            arguments.Add(string.Format("--dotnetprofile=\"{0}\"", IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(apiCompatibilityLevel)));
+            arguments.Add(string.Format("--dotnetprofile=\"{0}\"", IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(apiCompatibilityLevel, m_PlatformProvider.target)));
 
 
             var il2CppNativeCodeBuilder = m_PlatformProvider.CreateIl2CppNativeCodeBuilder();

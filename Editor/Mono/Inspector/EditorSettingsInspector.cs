@@ -24,6 +24,9 @@ namespace UnityEditor
             public static GUIContent joystickSource = EditorGUIUtility.TrTextContent("Joystick Source");
 
             public static GUIContent mode = EditorGUIUtility.TrTextContent("Mode");
+            public static GUIContent refresh = EditorGUIUtility.TrTextContent("Refresh");
+            public static GUIContent refreshImportMode = EditorGUIUtility.TrTextContent("Import mode", "During an asset database refresh this mode determines if the imports are done: Entirely inside the editor process (In Process). In one or more worker processes potentially in parallel by importer queue index (Out of process by queue).");
+            public static GUIContent desiredImportWorkerCount = EditorGUIUtility.TrTextContent("Desired worker count", "The desired number of import worker processes to keep around and ready for importing. The actual number of worker processes on the system can be both lower or higher that this, but the system will seek towards this number.");
 
             public static GUIContent cacheServer = EditorGUIUtility.TrTextContent("Cache Server (project specific)");
             public static GUIContent assetPipeline = EditorGUIUtility.TrTextContent("Asset Pipeline (project specific)");
@@ -33,7 +36,7 @@ namespace UnityEditor
             public static GUIContent cacheServerEnableDownloadLabel = EditorGUIUtility.TrTextContent("Download", "Enables downloads from the cache server.");
             public static GUIContent cacheServerEnableUploadLabel = EditorGUIUtility.TrTextContent("Upload", "Enables uploads to the cache server.");
             public static GUIContent cacheServerEnableTlsLabel = EditorGUIUtility.TrTextContent("TLS/SSL", "Enabled encryption on the cache server connection.");
-            public static GUIContent cacheServerEnableAuthLabel = EditorGUIUtility.TrTextContent("Authentication", "Enable authentication for cache server. Also forces TLS/SSL encryption.");
+            public static GUIContent cacheServerEnableAuthLabel = EditorGUIUtility.TrTextContent("Authentication (using Unity ID)", "Enable authentication for cache server using Unity ID. Also forces TLS/SSL encryption.");
             public static GUIContent cacheServerAuthUserLabel = EditorGUIUtility.TrTextContent("User");
             public static GUIContent cacheServerAuthPasswordLabel = EditorGUIUtility.TrTextContent("Password");
             public static readonly GUIContent cacheServerLearnMore = new GUIContent("Learn more...", "Go to cacheserver documentation.");
@@ -172,6 +175,12 @@ namespace UnityEditor
             new PopupElement("Disabled"),
         };
 
+        private PopupElement[] refreshImportModePopupList =
+        {
+            new PopupElement("In process"),
+            new PopupElement("Out of process by queue"),
+        };
+
         private PopupElement[] cacheServerAuthMode =
         {
             new PopupElement("Basic")
@@ -244,6 +253,9 @@ namespace UnityEditor
         SerializedProperty m_ProjectGenerationRootNamespace;
 
         bool m_IsGlobalSettings;
+
+        const string kRefreshImportModeKeyArgs = "-refreshImportMode";
+        const string kDesiredImportWorkerCountKeyArgs = "-desiredWorkerCount";
 
         enum CacheServerConnectionState { Unknown, Success, Failure }
         private CacheServerConnectionState m_CacheServerConnectionState;
@@ -424,6 +436,8 @@ namespace UnityEditor
                 GUI.enabled = true;
 
                 DoCacheServerSettings();
+
+                DoRefreshModeSettings();
 
                 GUI.enabled = wasEnabled;
             }
@@ -724,7 +738,64 @@ namespace UnityEditor
                             EditorSettings.cacheServerEnableTls = enableTls;
                     }
 
+                    EditorGUI.BeginChangeCheck();
+                    enableAuth = EditorGUILayout.Toggle(Content.cacheServerEnableAuthLabel, enableAuth);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        EditorSettings.cacheServerEnableAuth = enableAuth;
+                        if (enableAuth)
+                        {
+                            EditorSettings.cacheServerEnableTls = true;
+                        }
+                    }
                 }
+            }
+        }
+
+        private static string GetCommandLineOverride(string key)
+        {
+            string address = null;
+            var argv = Environment.GetCommandLineArgs();
+            var index = Array.IndexOf(argv, key);
+            if (index >= 0 && argv.Length > index + 1)
+                address = argv[index + 1];
+
+            return address;
+        }
+
+        private void DoRefreshModeSettings()
+        {
+            Assert.IsTrue(m_IsGlobalSettings);
+            GUILayout.Space(10);
+
+            GUILayout.Label(Content.refresh, EditorStyles.boldLabel);
+
+            var overrideMode = GetCommandLineOverride(kRefreshImportModeKeyArgs);
+            if (overrideMode != null)
+            {
+                EditorGUILayout.HelpBox($"Refresh Import mode to {overrideMode} via command line argument. To use the mode specified here please restart Unity without the -refreshImportMode command line argument.", MessageType.Info, true);
+            }
+
+            int index = Mathf.Clamp((int)EditorSettings.refreshImportMode, 0, refreshImportModePopupList.Length - 1);
+            CreatePopupMenu(serializedObject, Content.refreshImportMode, refreshImportModePopupList[index].content, refreshImportModePopupList, index, SetRefreshImportMode);
+
+            var overrideCount = GetCommandLineOverride(kDesiredImportWorkerCountKeyArgs);
+            if (overrideCount != null)
+            {
+                EditorGUILayout.HelpBox($"Desired import worker count forced to {overrideCount} via command line argument. To use the worker count specified here please restart Unity without the -desiredWorkerCount command line argument.", MessageType.Info, true);
+            }
+
+            var oldCount = EditorUserSettings.desiredImportWorkerCount;
+            var newCount = EditorGUILayout.IntField(Content.desiredImportWorkerCount, oldCount);
+
+            // This max worker count is enforced here and in EditorUserSettings.cpp
+            // Please keep them in sync.
+            const int maxWorkerCount = 128;
+
+            newCount = Mathf.Clamp(newCount, 0, maxWorkerCount);
+            if (oldCount != newCount)
+            {
+                EditorUserSettings.desiredImportWorkerCount = newCount;
             }
         }
 
@@ -875,13 +946,13 @@ namespace UnityEditor
 
         private void CreatePopupMenu(string title, PopupElement[] elements, int selectedIndex, GenericMenu.MenuFunction2 func)
         {
-            CreatePopupMenu(serializedObject, title, elements[selectedIndex].content, elements, selectedIndex, func);
+            CreatePopupMenu(serializedObject, new GUIContent(title), elements[selectedIndex].content, elements, selectedIndex, func);
         }
 
-        internal static void CreatePopupMenu(SerializedObject obj, string title, GUIContent content, PopupElement[] elements, int selectedIndex, GenericMenu.MenuFunction2 func)
+        internal static void CreatePopupMenu(SerializedObject obj, GUIContent titleContent, GUIContent content, PopupElement[] elements, int selectedIndex, GenericMenu.MenuFunction2 func)
         {
             var popupRect = GUILayoutUtility.GetRect(content, EditorStyles.popup);
-            popupRect = EditorGUI.PrefixLabel(popupRect, 0, new GUIContent(title));
+            popupRect = EditorGUI.PrefixLabel(popupRect, 0, titleContent);
             if (EditorGUI.DropdownButton(popupRect, content, FocusType.Passive, EditorStyles.popup))
             {
                 DoPopup(popupRect, elements, selectedIndex, data =>
@@ -957,6 +1028,11 @@ namespace UnityEditor
                     UnityEditor.U2D.SpriteAtlasImporter.MigrateAllSpriteAtlases();
                 }
             }
+        }
+
+        private void SetRefreshImportMode(object data)
+        {
+            EditorSettings.refreshImportMode = (AssetDatabase.RefreshImportMode)data;
         }
 
         private void SetCacheServerMode(object data)

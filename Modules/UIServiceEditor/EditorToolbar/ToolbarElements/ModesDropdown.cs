@@ -2,23 +2,19 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Toolbars
 {
     [EditorToolbarElement("Editor Utility/Modes", typeof(DefaultMainToolbar))]
-    sealed class ModesDropdown : ToolbarButton
+    sealed class ModesDropdown : EditorToolbarDropdown
     {
-        readonly TextElement m_Label;
-
         public ModesDropdown()
         {
             name = "ModesDropdown";
 
             clicked += OpenModesDropdown;
-            m_Label = EditorToolbarUtility.MakeDropdown(this);
 
             style.display = DisplayStyle.None;
 
@@ -53,7 +49,7 @@ namespace UnityEditor.Toolbars
 
         void UpdateContent()
         {
-            m_Label.text = ModeService.modeNames[ModeService.currentIndex];
+            text = ModeService.modeNames[ModeService.currentIndex];
         }
 
         void OpenModesDropdown()

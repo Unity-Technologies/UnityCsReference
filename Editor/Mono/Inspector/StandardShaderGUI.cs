@@ -90,8 +90,6 @@ namespace UnityEditor
         MaterialEditor m_MaterialEditor;
         WorkflowMode m_WorkflowMode = WorkflowMode.Specular;
 
-        bool m_FirstTimeApply = true;
-
         public void FindProperties(MaterialProperty[] props)
         {
             blendMode = FindProperty("_Mode", props);
@@ -133,15 +131,6 @@ namespace UnityEditor
             FindProperties(props); // MaterialProperties can be animated so we do not cache them but fetch them every event to ensure animated values are updated correctly
             m_MaterialEditor = materialEditor;
             Material material = materialEditor.target as Material;
-
-            // Make sure that needed setup (ie keywords/renderqueue) are set up if we're switching some existing
-            // material to a standard shader.
-            // Do this before any GUI code has been issued to prevent layout issues in subsequent GUILayout statements (case 780071)
-            if (m_FirstTimeApply)
-            {
-                MaterialChanged(material, m_WorkflowMode, false);
-                m_FirstTimeApply = false;
-            }
 
             ShaderPropertiesGUI(material);
         }
@@ -204,11 +193,11 @@ namespace UnityEditor
             m_MaterialEditor.DoubleSidedGIField();
         }
 
-        internal void DetermineWorkflow(MaterialProperty[] props)
+        internal void DetermineWorkflow(Material material)
         {
-            if (FindProperty("_SpecGlossMap", props, false) != null && FindProperty("_SpecColor", props, false) != null)
+            if (material.HasProperty("_SpecGlossMap") && material.HasProperty("_SpecColor"))
                 m_WorkflowMode = WorkflowMode.Specular;
-            else if (FindProperty("_MetallicGlossMap", props, false) != null && FindProperty("_Metallic", props, false) != null)
+            if (material.HasProperty("_MetallicGlossMap") && material.HasProperty("_Metallic"))
                 m_WorkflowMode = WorkflowMode.Metallic;
             else
                 m_WorkflowMode = WorkflowMode.Dielectric;
@@ -244,8 +233,7 @@ namespace UnityEditor
             }
             material.SetFloat("_Mode", (float)blendMode);
 
-            DetermineWorkflow(MaterialEditor.GetMaterialProperties(new Material[] { material }));
-            MaterialChanged(material, m_WorkflowMode, true);
+            SetupMaterialWithBlendMode(material, blendMode, true);
         }
 
         bool BlendModePopup()
@@ -443,6 +431,12 @@ namespace UnityEditor
             SetupMaterialWithBlendMode(material, (BlendMode)material.GetFloat("_Mode"), overrideRenderQueue);
 
             SetMaterialKeywords(material, workflowMode);
+        }
+
+        override public void ValidateMaterial(Material material)
+        {
+            DetermineWorkflow(material);
+            MaterialChanged(material, m_WorkflowMode, false);
         }
 
         static void SetKeyword(Material m, string keyword, bool state)

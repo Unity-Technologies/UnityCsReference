@@ -436,10 +436,14 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     m_CurrentEntry.fontTexSDFScale = textInfo.meshInfo[i].material.GetFloat(TextShaderUtilities.ID_GradientScale);
                     m_CurrentEntry.font = textInfo.meshInfo[i].material.mainTexture;
 
+                    bool isDynamicColor = RenderEvents.NeedsColorID(currentElement);
+
                     MeshBuilder.MakeText(
                         textInfo.meshInfo[i],
                         textParams.rect.min,
-                        new MeshBuilder.AllocMeshData() { alloc = m_AllocRawVertsIndicesDelegate });
+                        new MeshBuilder.AllocMeshData() { alloc = m_AllocRawVertsIndicesDelegate },
+                        VertexFlags.IsText,
+                        isDynamicColor);
                 }
                 m_Entries.Add(m_CurrentEntry);
                 totalVertices += m_CurrentEntry.vertices.Length;
@@ -469,7 +473,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             else if (rectParams.sprite != null)
                 DrawSprite(rectParams);
             else if (rectParams.texture != null)
-                MeshBuilder.MakeTexturedRect(rectParams, UIRUtility.k_MeshPosZ, meshAlloc);
+                MeshBuilder.MakeTexturedRect(rectParams, UIRUtility.k_MeshPosZ, meshAlloc, rectParams.colorPage);
             else
                 MeshBuilder.MakeSolidRect(rectParams, UIRUtility.k_MeshPosZ, meshAlloc);
         }
@@ -488,8 +492,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             {
                 alloc = m_AllocThroughDrawMeshDelegate,
                 material = borderParams.material,
-                texture = null,
-                flags = MeshGenerationContext.MeshFlags.UVisDisplacement
+                texture = null
             });
         }
 
@@ -517,6 +520,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 {
                     rect = GUIUtility.AlignRectToDevice(currentElement.rect),
                     color = style.backgroundColor,
+                    colorPage = ColorPage.Init(m_Owner, currentElement.renderChainData.backgroundColorID),
                     playmodeTintColor = currentElement.panel.contextType == ContextType.Editor ? UIElementsUtility.editorPlayModeTintColor : Color.white
                 };
                 MeshGenerationContextUtils.GetVisualElementRadii(currentElement,
@@ -600,8 +604,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     rectParams.bottomSlice = Mathf.RoundToInt(slices.w);
                 }
 
-                if (style.unityBackgroundImageTintColor != Color.clear)
-                    rectParams.color = style.unityBackgroundImageTintColor;
+                rectParams.color = style.unityBackgroundImageTintColor;
+                rectParams.colorPage = ColorPage.Init(m_Owner, currentElement.renderChainData.tintColorID);
 
                 MeshGenerationContextUtils.AdjustBackgroundSizeForBorders(currentElement, ref rectParams.rect);
 
@@ -630,6 +634,10 @@ namespace UnityEngine.UIElements.UIR.Implementation
                         topWidth = style.borderTopWidth,
                         rightWidth = style.borderRightWidth,
                         bottomWidth = style.borderBottomWidth,
+                        leftColorPage = ColorPage.Init(m_Owner, currentElement.renderChainData.borderLeftColorID),
+                        topColorPage = ColorPage.Init(m_Owner, currentElement.renderChainData.borderTopColorID),
+                        rightColorPage = ColorPage.Init(m_Owner, currentElement.renderChainData.borderRightColorID),
+                        bottomColorPage = ColorPage.Init(m_Owner, currentElement.renderChainData.borderBottomColorID),
                         playmodeTintColor = currentElement.panel.contextType == ContextType.Editor ? UIElementsUtility.editorPlayModeTintColor : Color.white
                     };
                     MeshGenerationContextUtils.GetVisualElementRadii(currentElement,
@@ -668,10 +676,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
             m_ClipRectID = currentElement.renderChainData.clipRectID;
         }
 
-        private UInt16[] AdjustSpriteWinding(Sprite sprite)
+        private UInt16[] AdjustSpriteWinding(Vector2[] vertices, ushort[] indices)
         {
-            var vertices = sprite.vertices;
-            var indices = sprite.triangles;
             var newIndices = new UInt16[indices.Length];
 
             for (int i = 0; i < indices.Length; i += 3)
@@ -717,27 +723,27 @@ namespace UnityEngine.UIElements.UIR.Implementation
             };
 
             // Remap vertices inside rect
-            var bounds = sprite.bounds;
-            var spriteMin = (Vector2)bounds.min;
-            var spriteSize = (Vector2)bounds.size;
+            var spriteVertices = sprite.vertices;
+            var spriteIndices = sprite.triangles;
+            var spriteUV = sprite.uv;
 
             var vertexCount = sprite.vertices.Length;
             var vertices = new Vertex[vertexCount];
-            var indices = AdjustSpriteWinding(sprite);
+            var indices = AdjustSpriteWinding(spriteVertices, spriteIndices);
 
             var mwd = meshAlloc.Allocate((uint)vertices.Length, (uint)indices.Length);
             var uvRegion = mwd.uvRegion;
 
             for (int i = 0; i < vertexCount; ++i)
             {
-                var v = sprite.vertices[i];
+                var v = spriteVertices[i];
                 v -= rectParams.spriteGeomRect.position;
                 v /= rectParams.spriteGeomRect.size;
                 v.y = 1.0f - v.y;
                 v *= rectParams.rect.size;
                 v += rectParams.rect.position;
 
-                var uv = sprite.uv[i];
+                var uv = spriteUV[i];
                 uv *= uvRegion.size;
                 uv += uvRegion.position;
 
@@ -948,7 +954,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
         NativeArray<Vertex> m_DudVerts;
         NativeArray<UInt16> m_DudIndices;
         NativeSlice<Vertex> m_MeshDataVerts;
-        Color32 m_XFormClipPages, m_IDs, m_Flags, m_OpacityPagesSettingsIndex;
+        Color32 m_XFormClipPages, m_IDs, m_Flags, m_OpacityColorPages;
 
         public MeshGenerationContext meshGenerationContext { get; }
 
@@ -976,7 +982,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             m_XFormClipPages = oldVertexData[first].xformClipPages;
             m_IDs = oldVertexData[first].ids;
             m_Flags = oldVertexData[first].flags;
-            m_OpacityPagesSettingsIndex = oldVertexData[first].opacityPageSettingIndex;
+            m_OpacityColorPages = oldVertexData[first].opacityColorPages;
         }
 
         public void End()
@@ -1034,7 +1040,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
                 Vector2 localOffset = TextNative.GetOffset(textSettings, textParams.rect);
                 MeshBuilder.UpdateText(textVertices, localOffset, m_CurrentElement.renderChainData.verticesSpace,
-                    m_XFormClipPages, m_IDs, m_Flags, m_OpacityPagesSettingsIndex,
+                    m_XFormClipPages, m_IDs, m_Flags, m_OpacityColorPages,
                     m_MeshDataVerts.Slice(textEntry.firstVertex, textEntry.vertexCount));
                 textEntry.command.state.font = textParams.font.material.mainTexture;
             }

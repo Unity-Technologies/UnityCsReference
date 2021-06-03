@@ -165,7 +165,7 @@ namespace Unity.UI.Builder
         {
             if (m_Popup != null)
             {
-                m_Popup.listView.itemHeight = m_ItemHeight;
+                m_Popup.listView.fixedItemHeight = m_ItemHeight;
                 m_Popup.listView.makeItem = m_MakeItem;
                 m_Popup.listView.bindItem = m_BindItem;
                 m_Popup.anchoredControl = textField;
@@ -444,7 +444,7 @@ namespace Unity.UI.Builder
                 {
                     using (var evt = KeyDownEvent.GetPooled(e.character, e.keyCode, e.modifiers))
                     {
-                        evt.target = popup.listView.m_ScrollView.contentContainer;
+                        evt.target = popup.listView.scrollView.contentContainer;
                         popup.listView.SendEvent(evt);
                     }
                 }
@@ -508,12 +508,12 @@ namespace Unity.UI.Builder
             const int minListViewHeight = 160;
 
             base.AdjustGeometry();
-            listView.style.minHeight = Math.Min(minListViewHeight, listView.itemHeight * (listView.itemsSource != null ? listView.itemsSource.Count : 0));
+            listView.style.minHeight = Math.Min(minListViewHeight, listView.fixedItemHeight * (listView.itemsSource != null ? listView.itemsSource.Count : 0));
         }
 
         public void Refresh()
         {
-            listView.Refresh();
+            listView.Rebuild();
 
             listView.ClearSelection();
             m_ResultLabel.text = (listView.itemsSource != null ? listView.itemsSource.Count : 0) + " found";

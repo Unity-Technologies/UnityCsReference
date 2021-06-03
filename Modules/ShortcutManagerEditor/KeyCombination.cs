@@ -99,8 +99,8 @@ namespace UnityEditor.ShortcutManagement
             }
             else if (Application.platform == RuntimePlatform.OSXEditor && (eventModifiers & EventModifiers.Command) != 0)
                 modifiers |= ShortcutModifiers.Action;
-            else if (Application.platform != RuntimePlatform.OSXEditor && (eventModifiers & EventModifiers.Control) != 0)
-                modifiers |= ShortcutModifiers.Action;
+            else if ((eventModifiers & EventModifiers.Control) != 0)
+                modifiers |= Application.platform == RuntimePlatform.OSXEditor ? ShortcutModifiers.Control : ShortcutModifiers.Action;
 
             return modifiers;
         }
@@ -108,6 +108,7 @@ namespace UnityEditor.ShortcutManagement
         public bool alt => (modifiers & ShortcutModifiers.Alt) == ShortcutModifiers.Alt;
         public bool action => (modifiers & ShortcutModifiers.Action) == ShortcutModifiers.Action;
         public bool shift => (modifiers & ShortcutModifiers.Shift) == ShortcutModifiers.Shift;
+        public bool control => (modifiers & ShortcutModifiers.Control) == ShortcutModifiers.Control;
 
         internal Event ToKeyboardEvent()
         {
@@ -115,7 +116,7 @@ namespace UnityEditor.ShortcutManagement
             e.type = EventType.KeyDown;
             e.alt = alt;
             e.command = action && Application.platform == RuntimePlatform.OSXEditor;
-            e.control = action && Application.platform != RuntimePlatform.OSXEditor;
+            e.control = action && Application.platform != RuntimePlatform.OSXEditor || control;
             e.shift = shift;
             e.keyCode = keyCode;
             return e;
@@ -159,6 +160,8 @@ namespace UnityEditor.ShortcutManagement
                 builder.Append("#");
             if ((modifiers & ShortcutModifiers.Action) != 0)
                 builder.Append("%");
+            if ((modifiers & ShortcutModifiers.Control) != 0)
+                builder.Append("^");
             if (modifiers == ShortcutModifiers.None)
                 builder.Append("_");
 
@@ -216,6 +219,11 @@ namespace UnityEditor.ShortcutManagement
 
                     case '#':
                         modifiers |= ShortcutModifiers.Shift;
+                        startIndex++;
+                        break;
+
+                    case '^':
+                        modifiers |= ShortcutModifiers.Control;
                         startIndex++;
                         break;
 
@@ -283,10 +291,12 @@ namespace UnityEditor.ShortcutManagement
                     builder.Append("⇧");
                 if ((modifiers & ShortcutModifiers.Action) != 0)
                     builder.Append("⌘");
+                if ((modifiers & ShortcutModifiers.Control) != 0)
+                    builder.Append("^");
             }
             else
             {
-                if ((modifiers & ShortcutModifiers.Action) != 0)
+                if ((modifiers & ShortcutModifiers.Action | modifiers & ShortcutModifiers.Control) != 0)
                     builder.Append("Ctrl+");
                 if ((modifiers & ShortcutModifiers.Alt) != 0)
                     builder.Append("Alt+");
@@ -425,7 +435,23 @@ namespace UnityEditor.ShortcutManagement
 
         public bool Equals(KeyCombination other)
         {
-            return m_KeyCode == other.m_KeyCode && m_Modifiers == other.m_Modifiers;
+            bool modifiersMatch;
+            if (Application.platform != RuntimePlatform.OSXEditor)
+            {
+                const ShortcutModifiers controlMergeMask = ShortcutModifiers.Action | ShortcutModifiers.Control;
+                bool thisHasControl = (modifiers & controlMergeMask) != 0;
+                bool otherHasControl = (other.modifiers & controlMergeMask) != 0;
+                ShortcutModifiers thisModifiers = m_Modifiers & ~controlMergeMask;
+                ShortcutModifiers otherModifiers = other.m_Modifiers & ~controlMergeMask;
+
+                modifiersMatch = thisModifiers == otherModifiers && thisHasControl == otherHasControl;
+            }
+            else
+            {
+                modifiersMatch = m_Modifiers == other.m_Modifiers;
+            }
+
+            return m_KeyCode == other.m_KeyCode && modifiersMatch;
         }
 
         public override bool Equals(object obj)

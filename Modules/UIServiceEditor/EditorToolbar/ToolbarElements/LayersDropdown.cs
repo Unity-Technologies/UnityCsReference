@@ -2,21 +2,18 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Toolbars
 {
     [EditorToolbarElement("Editor Utility/Layers", typeof(DefaultMainToolbar))]
-    sealed class LayersDropdown : ToolbarButton
+    sealed class LayersDropdown : EditorToolbarDropdown
     {
         public LayersDropdown()
         {
             name = "LayersDropdown";
             tooltip = L10n.Tr("Which layers are visible in the Scene views");
-
-            EditorToolbarUtility.MakeDropdown(this).text = L10n.Tr("Layers");
+            text = L10n.Tr("Layers");
             clicked += () => LayerVisibilityWindow.ShowAtPosition(worldBound);
 
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);

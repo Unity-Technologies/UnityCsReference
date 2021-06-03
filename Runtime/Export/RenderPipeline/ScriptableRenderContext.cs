@@ -308,5 +308,36 @@ namespace UnityEngine.Rendering
         {
             return !left.Equals(right);
         }
+
+        // RendererList public API
+        public unsafe RendererUtils.RendererList CreateRendererList(RendererUtils.RendererListDesc desc)
+        {
+            Validate();
+            RendererUtils.RendererListParams param = RendererUtils.RendererListParams.Create(desc);
+
+            if (param.stateBlock == null)
+                return CreateRendererList_Internal(param.cullingResult.ptr, ref param.drawSettings, ref param.filteringSettings, ShaderTagId.none, false, IntPtr.Zero, IntPtr.Zero, 0);
+            else
+            {
+                var renderType = new ShaderTagId();
+                var renderStateBlock = param.stateBlock.Value;
+                RenderStateBlock* stateBlockPtr = &renderStateBlock;
+                {
+                    return CreateRendererList_Internal(param.cullingResult.ptr, ref param.drawSettings, ref param.filteringSettings, ShaderTagId.none, false, (IntPtr)(&renderType), (IntPtr)stateBlockPtr, 1);
+                }
+            }
+        }
+
+        public unsafe void PrepareRendererListsAsync(List<RendererUtils.RendererList> rendererLists)
+        {
+            Validate();
+            PrepareRendererListsAsync_Internal(rendererLists);
+        }
+
+        public RendererUtils.RendererListStatus QueryRendererListStatus(RendererUtils.RendererList rendererList)
+        {
+            Validate();
+            return QueryRendererListStatus_Internal(rendererList);
+        }
     }
 }

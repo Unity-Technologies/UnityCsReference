@@ -26,6 +26,7 @@ namespace UnityEditor
         private UISystemPreviewWindow m_DetachedPreview;
 
         private int currentFrame = 0;
+        private bool m_IsPreviewDetached = false;
 
         private Material m_CompositeOverdrawMaterial;
         private Material m_PreviewTextureMaterial;
@@ -71,6 +72,11 @@ namespace UnityEditor
             {
                 GUILayout.BeginHorizontal(); // Horizontal render
                 SplitterGUILayout.BeginHorizontalSplit(m_TreePreviewHorizontalSplitState);
+                if (m_IsPreviewDetached)
+                {
+                    m_TreeViewControl.multiColumnHeader.ResizeToFit();
+                    m_IsPreviewDetached = false;
+                }
             }
 
             var treeRect = EditorGUILayout.GetControlRect(GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
@@ -113,6 +119,8 @@ namespace UnityEditor
                             m_DetachedPreview = EditorWindow.GetWindow<UISystemPreviewWindow>();
                             m_DetachedPreview.profiler = this;
                             m_DetachedPreview.Show();
+                            m_IsPreviewDetached = true;
+                            m_TreeViewControl.multiColumnHeader.ResizeToFit();
                         }
                         DrawPreviewToolbarButtons();
                     }

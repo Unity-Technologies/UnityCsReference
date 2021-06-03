@@ -275,6 +275,13 @@ namespace UnityEditor
         [FreeFunction("GetPlayerSettingsPtr")]
         private static extern UnityEngine.Object InternalGetPlayerSettingsObject();
 
+        internal static void ValidateBuildTargetNameParameter(string buildTargetName, bool unknownIsValid = false)
+        {
+            // The empty string is the valid form of BuildTargetGroup.Unknown, so don't throw an execption for that case.
+            if (BuildPipeline.GetBuildTargetGroupByName(buildTargetName) == BuildTargetGroup.Unknown && (!unknownIsValid || buildTargetName != ""))
+                throw new ArgumentException($"The provided target platform group name ({buildTargetName}) is not valid.");
+        }
+
         internal static SerializedObject GetSerializedObject()
         {
             if (_serializedObject == null)
@@ -614,11 +621,11 @@ namespace UnityEditor
         public static extern Texture2D virtualRealitySplashScreen { get; set; }
 
         // The bundle identifier of the iPhone application.
-        [Obsolete("iPhoneBundleIdentifier is deprecated. Use PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.iOS) instead.")]
+        [Obsolete("iPhoneBundleIdentifier is deprecated. Use PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.iOS) instead.")]
         public static string iPhoneBundleIdentifier
         {
-            get { return GetApplicationIdentifier(BuildTargetGroup.iOS); }
-            set { SetApplicationIdentifier(BuildTargetGroup.iOS, value); }
+            get { return GetApplicationIdentifier(NamedBuildTarget.iOS); }
+            set { SetApplicationIdentifier(NamedBuildTarget.iOS, value); }
         }
 
         // Note: If an empty list is returned, no icons are assigned specifically to the specified platform at this point,
@@ -637,7 +644,7 @@ namespace UnityEditor
 
         internal static void SetIconsForPlatform(string platform, Texture2D[] icons, IconKind[] kinds)
         {
-            foreach (IconKind kind in GetSupportedIconKindsForPlatform(platform))
+            foreach (IconKind kind in GetIconKindsForPlatform(platform).Distinct())
             {
                 List<Texture2D> iconsForKind = new List<Texture2D>();
                 for (int i = 0; i < icons.Length; i++)
@@ -671,26 +678,13 @@ namespace UnityEditor
         [NativeMethod("GetPlatformIconKinds")]
         internal static extern IconKind[] GetIconKindsForPlatform(string platform);
 
-        internal static IconKind[] GetSupportedIconKindsForPlatform(string platform)
-        {
-            List<IconKind> distinctKinds = new List<IconKind>();
-            IconKind[] kinds = PlayerSettings.GetIconKindsForPlatform(platform);
-
-            foreach (var kind in kinds)
-                if (!distinctKinds.Contains(kind))
-                    distinctKinds.Add(kind);
-
-            return distinctKinds.ToArray();
-        }
-
         public static extern UnityEngine.Object[] GetPreloadedAssets();
 
         public static extern void SetPreloadedAssets(UnityEngine.Object[] assets);
 
         internal static string GetPlatformName(BuildTargetGroup targetGroup)
         {
-            BuildPlatform platform = BuildPlatforms.instance.GetValidPlatforms().Find(p => p.targetGroup == targetGroup);
-            return (platform == null ? string.Empty : platform.name);
+            return BuildPipeline.GetBuildTargetGroupName(targetGroup);
         }
 
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
@@ -764,16 +758,6 @@ namespace UnityEditor
             set;
         }
 
-        // Get user-specified symbols for script compilation for the given build target group.
-        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
-        [NativeMethod("GetUserScriptingDefineSymbolsForGroup")]
-        public static extern string GetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup);
-
-        public static void GetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup, out string[] defines)
-        {
-            defines = GetScriptingDefineSymbolsForGroup(targetGroup).Split(';');
-        }
-
         internal static readonly char[] defineSplits = new[] { ';', ',', ' ' };
 
         internal static string[] ConvertScriptingDefineStringToArray(string defines)
@@ -814,89 +798,309 @@ namespace UnityEditor
             return joined.ToString();
         }
 
+        // TargetGroup no longer defines the entire build targets space. Now build targets are better
+        // identified by a string key (wrapped into NamedBuildTarget), so all the following methods are being replaced.
+        // We need to mark them as obsolete once (if) BuildTargetGroup is completely removed.
+
+        // [Obsolete("Use GetScriptingDefineSymbols(NamedBuildTarget buildTarget) instead")]
+        public static string GetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup) =>
+            GetScriptingDefineSymbols(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
+
+        // [Obsolete("Use GetScriptingDefineSymbols(NamedBuildTarget buildTarget, out string[] defines) instead")]
+        public static void GetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup, out string[] defines) =>
+            defines = GetScriptingDefineSymbolsForGroup(targetGroup).Split(';');
+
+        // [Obsolete("Use SetScriptingDefineSymbols(NamedBuildTarget buildTarget, string defines) instead")]
+        public static void SetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup, string defines) =>
+            SetScriptingDefineSymbols(NamedBuildTarget.FromBuildTargetGroup(targetGroup), defines);
+
+        // [Obsolete("Use SetScriptingDefineSymbols(NamedBuildTarget buildTarget, string[] defines) instead")]
+        public static void SetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup, string[] defines) =>
+            SetScriptingDefineSymbols(NamedBuildTarget.FromBuildTargetGroup(targetGroup), defines);
+
+        // [Obsolete("Use GetAdditionalCompilerArguments(NamedBuildTarget buildTarget) instead")]
+        public static string[] GetAdditionalCompilerArgumentsForGroup(BuildTargetGroup targetGroup) =>
+            GetAdditionalCompilerArguments(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
+
+        // [Obsolete("Use SetAdditionalCompilerArguments(NamedBuildTarget buildTarget, string[] additionalCompilerArguments) instead")]
+        public static void SetAdditionalCompilerArgumentsForGroup(BuildTargetGroup targetGroup, string[] additionalCompilerArguments) =>
+            SetAdditionalCompilerArguments(NamedBuildTarget.FromBuildTargetGroup(targetGroup), additionalCompilerArguments);
+
+        // [Obsolete("Use GetArchitecture(NamedBuildTarget buildTarget) instead")]
+        public static int GetArchitecture(BuildTargetGroup targetGroup) =>
+            GetArchitecture(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
+
+        // [Obsolete("Use SetArchitecture(NamedBuildTarget buildTarget, int architecture) instead")]
+        public static void SetArchitecture(BuildTargetGroup targetGroup, int architecture) =>
+            SetArchitecture(NamedBuildTarget.FromBuildTargetGroup(targetGroup), architecture);
+
+        // [Obsolete("Use GetScriptingBackend(NamedBuildTarget buildTarget) instead")]
+        public static ScriptingImplementation GetScriptingBackend(BuildTargetGroup targetGroup) =>
+            GetScriptingBackend(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
+
+        // [Obsolete("Use SetScriptingBackend(NamedBuildTarget buildTarget, ScriptingImplementation backend) instead")]
+        public static void SetScriptingBackend(BuildTargetGroup targetGroup, ScriptingImplementation backend) =>
+            SetScriptingBackend(NamedBuildTarget.FromBuildTargetGroup(targetGroup), backend);
+
+        // [Obsolete("Use GetDefaultScriptingBackend(NamedBuildTarget buildTarget) instead")]
+        public static ScriptingImplementation GetDefaultScriptingBackend(BuildTargetGroup targetGroup) =>
+            GetDefaultScriptingBackend(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
+
+        // [Obsolete("Use GetApplicationIdentifier(NamedBuildTarget buildTarget) instead")]
+        public static string GetApplicationIdentifier(BuildTargetGroup targetGroup) =>
+            GetApplicationIdentifier(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
+
+        // [Obsolete("Use SetApplicationIdentifier(NamedBuildTarget buildTarget, string identifier) instead")]
+        public static void SetApplicationIdentifier(BuildTargetGroup targetGroup, string identifier) =>
+            SetApplicationIdentifier(NamedBuildTarget.FromBuildTargetGroup(targetGroup), identifier);
+
+        // [Obsolete("Use GetIl2CppCompilerConfiguration(NamedBuildTarget buildTarget) instead")]
+        public static Il2CppCompilerConfiguration GetIl2CppCompilerConfiguration(BuildTargetGroup targetGroup) =>
+            GetIl2CppCompilerConfiguration(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
+
+        // [Obsolete("Use SetIl2CppCompilerConfiguration(NamedBuildTarget buildTarget, Il2CppCompilerConfiguration configuration) instead")]
+        public static void SetIl2CppCompilerConfiguration(BuildTargetGroup targetGroup, Il2CppCompilerConfiguration configuration) =>
+            SetIl2CppCompilerConfiguration(NamedBuildTarget.FromBuildTargetGroup(targetGroup), configuration);
+
+        // [Obsolete("Use GetIncrementalIl2CppBuild(NamedBuildTarget buildTarget) instead")]
+        public static bool GetIncrementalIl2CppBuild(BuildTargetGroup targetGroup) =>
+            GetIncrementalIl2CppBuild(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
+
+        // [Obsolete("Use SetIncrementalIl2CppBuild(NamedBuildTarget buildTarget, bool enabled) instead")]
+        public static void SetIncrementalIl2CppBuild(BuildTargetGroup targetGroup, bool enabled) =>
+            SetIncrementalIl2CppBuild(NamedBuildTarget.FromBuildTargetGroup(targetGroup), enabled);
+
+        // [Obsolete("Use SetManagedStrippingLevel(NamedBuildTarget buildTarget, ManagedStrippingLevel level) instead")]
+        public static void SetManagedStrippingLevel(BuildTargetGroup targetGroup, ManagedStrippingLevel level) =>
+            SetManagedStrippingLevel(NamedBuildTarget.FromBuildTargetGroup(targetGroup), level);
+
+        // [Obsolete("Use GetManagedStrippingLevel(NamedBuildTarget buildTarget) instead")]
+        public static ManagedStrippingLevel GetManagedStrippingLevel(BuildTargetGroup targetGroup) =>
+            GetManagedStrippingLevel(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
+
+        // [Obsolete("Use GetApiCompatibilityLevel(NamedBuildTarget buildTarget) instead")]
+        public static ApiCompatibilityLevel GetApiCompatibilityLevel(BuildTargetGroup buildTargetGroup) =>
+            GetApiCompatibilityLevel(NamedBuildTarget.FromBuildTargetGroup(buildTargetGroup));
+
+        // [Obsolete("Use SetApiCompatibilityLevel(NamedBuildTarget buildTarget, ApiCompatibilityLevel value) instead")]
+        public static void SetApiCompatibilityLevel(BuildTargetGroup buildTargetGroup, ApiCompatibilityLevel value) =>
+            SetApiCompatibilityLevel(NamedBuildTarget.FromBuildTargetGroup(buildTargetGroup), value);
+
+        // [Obsolete("Use GetMobileMTRendering(NamedBuildTarget buildTarget) instead")]
+        public static bool GetMobileMTRendering(BuildTargetGroup targetGroup) =>
+            GetMobileMTRendering(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
+
+        // [Obsolete("Use SetMobileMTRendering(NamedBuildTarget buildTarget, bool enable) instead")]
+        public static void SetMobileMTRendering(BuildTargetGroup targetGroup, bool enable) =>
+            SetMobileMTRendering(NamedBuildTarget.FromBuildTargetGroup(targetGroup), enable);
+
+        // [Obsolete("Use GetNormalMapEncoding(NamedBuildTarget buildTarget) instead")]
+        public static NormalMapEncoding GetNormalMapEncoding(BuildTargetGroup platform) =>
+            GetNormalMapEncoding(NamedBuildTarget.FromBuildTargetGroup(platform));
+
+        // [Obsolete("Use SetNormalMapEncoding(NamedBuildTarget buildTarget, NormalMapEncoding encoding) instead")]
+        public static void SetNormalMapEncoding(BuildTargetGroup platform, NormalMapEncoding encoding) =>
+            SetNormalMapEncoding(NamedBuildTarget.FromBuildTargetGroup(platform), encoding);
+
+
+        // Get user-specified symbols for script compilation for the given build target name.
+        [NativeThrows]
+        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+        [NativeMethod("GetUserScriptingDefineSymbols")]
+        private static extern string GetScriptingDefineSymbolsInternal(string buildTargetName);
+        public static string GetScriptingDefineSymbols(NamedBuildTarget buildTarget) => GetScriptingDefineSymbolsInternal(buildTarget.TargetName);
+        public static void GetScriptingDefineSymbols(NamedBuildTarget buildTarget, out string[] defines) => defines = GetScriptingDefineSymbols(buildTarget).Split(';');
+
         // Set user-specified symbols for script compilation for the given build target group.
-        public static void SetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup, string defines)
+        public static void SetScriptingDefineSymbols(NamedBuildTarget buildTarget, string defines)
         {
             if (!string.IsNullOrEmpty(defines))
                 defines = string.Join(";", defines.Split(defineSplits, StringSplitOptions.RemoveEmptyEntries));
-            SetScriptingDefineSymbolsForGroupInternal(targetGroup, defines);
+
+            SetScriptingDefineSymbolsInternal(buildTarget.TargetName, defines);
         }
 
-        public static void SetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup, string[] defines)
+        public static void SetScriptingDefineSymbols(NamedBuildTarget buildTarget, string[] defines)
         {
             if (defines == null)
                 throw new ArgumentNullException(nameof(defines));
 
-            SetScriptingDefineSymbolsForGroup(targetGroup, ConvertScriptingDefineArrayToString(defines));
+            SetScriptingDefineSymbols(buildTarget, ConvertScriptingDefineArrayToString(defines));
         }
 
+        [NativeThrows]
         [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
-        [NativeMethod("SetUserScriptingDefineSymbolsForGroup")]
-        private static extern void SetScriptingDefineSymbolsForGroupInternal(BuildTargetGroup targetGroup, string defines);
+        [NativeMethod("SetUserScriptingDefineSymbols")]
+        private static extern void SetScriptingDefineSymbolsInternal(string buildTargetName, string defines);
 
+        [NativeThrows]
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
-        [NativeMethod("GetAdditionalCompilerArgumentsForGroup")]
-        public static extern string[] GetAdditionalCompilerArgumentsForGroup(BuildTargetGroup targetGroup);
+        [NativeMethod("GetAdditionalCompilerArguments")]
+        private static extern string[] GetAdditionalCompilerArgumentsInternal(string buildTargetName);
+        public static string[] GetAdditionalCompilerArguments(NamedBuildTarget buildTarget) =>
+            GetAdditionalCompilerArgumentsInternal(buildTarget.TargetName);
 
-        public static void SetAdditionalCompilerArgumentsForGroup(BuildTargetGroup targetGroup, string[] additionalCompilerArguments)
+        public static void SetAdditionalCompilerArguments(NamedBuildTarget buildTarget, string[] additionalCompilerArguments)
         {
             if (additionalCompilerArguments == null)
                 throw new ArgumentNullException(nameof(additionalCompilerArguments));
 
-            SetAdditionalCompilerArgumentsForGroupInternal(targetGroup, additionalCompilerArguments);
+            SetAdditionalCompilerArgumentsInternal(buildTarget.TargetName, additionalCompilerArguments);
         }
 
+        [NativeThrows]
         [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
-        [NativeMethod("SetAdditionalCompilerArgumentsForGroup")]
-        private static extern void SetAdditionalCompilerArgumentsForGroupInternal(BuildTargetGroup targetGroup, string[] additionalCompilerArguments);
+        [NativeMethod("SetAdditionalCompilerArguments")]
+        private static extern void SetAdditionalCompilerArgumentsInternal(string buildTargetName, string[] additionalCompilerArguments);
 
+        [NativeThrows]
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
         [NativeMethod("GetPlatformArchitecture")]
-        public static extern int GetArchitecture(BuildTargetGroup targetGroup);
+        private static extern int GetArchitectureInternal(string buildTargetName);
+        public static int GetArchitecture(NamedBuildTarget buildTarget) => GetArchitectureInternal(buildTarget.TargetName);
 
+        [NativeThrows]
         [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
         [NativeMethod("SetPlatformArchitecture")]
-        public static extern void SetArchitecture(BuildTargetGroup targetGroup, int architecture);
+        private static extern void SetArchitectureInternal(string buildTargetName, int architecture);
+        public static void SetArchitecture(NamedBuildTarget buildTarget, int architecture) =>
+            SetArchitectureInternal(buildTarget.TargetName, architecture);
 
+        [NativeThrows]
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
         [NativeMethod("GetPlatformScriptingBackend")]
-        public static extern ScriptingImplementation GetScriptingBackend(BuildTargetGroup targetGroup);
+        private static extern ScriptingImplementation GetScriptingBackendInternal(string buildTargetName);
+        public static ScriptingImplementation GetScriptingBackend(NamedBuildTarget buildTarget) =>
+            GetScriptingBackendInternal(buildTarget.TargetName);
+
+        [NativeThrows]
+        [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
+        [NativeMethod("SetPlatformScriptingBackend")]
+        private static extern void SetScriptingBackendInternal(string buildTargetName, ScriptingImplementation backend);
+        public static void SetScriptingBackend(NamedBuildTarget buildTarget, ScriptingImplementation backend) =>
+            SetScriptingBackendInternal(buildTarget.TargetName, backend);
+
+        [FreeFunction("GetDefaultScriptingBackendForGroup")]
+        internal static extern ScriptingImplementation GetDefaultScriptingBackendForGroup(BuildTargetGroup targetGroup);
+        public static ScriptingImplementation GetDefaultScriptingBackend(NamedBuildTarget buildTarget)
+        {
+            ValidateBuildTargetNameParameter(buildTarget.TargetName, true);
+            return GetDefaultScriptingBackendForGroup(BuildPipeline.GetBuildTargetGroupByName(buildTarget.TargetName));
+        }
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
         internal static extern string SanitizeApplicationIdentifier(string name, BuildTargetGroup targetGroup);
 
+        [NativeThrows]
         [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
-        public static extern void SetApplicationIdentifier(BuildTargetGroup targetGroup, string identifier);
+        [NativeMethod("SetApplicationIdentifier")]
+        private static extern void SetApplicationIdentifierInternal(string buildTargetName, string identifier);
+        public static void SetApplicationIdentifier(NamedBuildTarget buildTarget, string identifier) =>
+            SetApplicationIdentifierInternal(buildTarget.TargetName, identifier);
 
+        [NativeThrows]
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
-        public static extern string GetApplicationIdentifier(BuildTargetGroup targetGroup);
+        [NativeMethod("GetApplicationIdentifier")]
+        private static extern string GetApplicationIdentifierInternal(string buildTargetName);
+        public static string GetApplicationIdentifier(NamedBuildTarget buildTarget) =>
+            GetApplicationIdentifierInternal(buildTarget.TargetName);
 
-        [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
-        [NativeMethod("SetApplicationBuildNumber")]
-        internal static extern void SetBuildNumber(BuildTargetGroup targetGroup, string buildNumber);
-
+        [NativeThrows]
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
         [NativeMethod("GetApplicationBuildNumber")]
-        internal static extern string GetBuildNumber(BuildTargetGroup targetGroup);
+        internal static extern string GetBuildNumber(string buildTargetName);
 
+        [NativeThrows]
         [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
-        [NativeMethod("SetPlatformScriptingBackend")]
-        public static extern void SetScriptingBackend(BuildTargetGroup targetGroup, ScriptingImplementation backend);
+        [NativeMethod("SetApplicationBuildNumber")]
+        internal static extern void SetBuildNumber(string buildTargetName, string buildNumber);
 
-        [FreeFunction("GetDefaultScriptingBackendForGroup")]
-        public static extern ScriptingImplementation GetDefaultScriptingBackend(BuildTargetGroup targetGroup);
+        [NativeThrows]
+        [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
+        [NativeMethod("SetIl2CppCompilerConfiguration")]
+        private static extern void SetIl2CppCompilerConfigurationInternal(string buildTargetName, Il2CppCompilerConfiguration configuration);
 
-        public static void SetIl2CppCompilerConfiguration(BuildTargetGroup targetGroup, Il2CppCompilerConfiguration configuration)
+        [NativeThrows]
+        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+        [NativeMethod("GetIl2CppCompilerConfiguration")]
+        private static extern Il2CppCompilerConfiguration GetIl2CppCompilerConfigurationInternal(string buildTargetName);
+        public static Il2CppCompilerConfiguration GetIl2CppCompilerConfiguration(NamedBuildTarget buildTarget) =>
+            GetIl2CppCompilerConfigurationInternal(buildTarget.TargetName);
+
+        public static void SetIl2CppCompilerConfiguration(NamedBuildTarget buildTarget, Il2CppCompilerConfiguration configuration)
         {
-            var scriptingImpl = ModuleManager.GetScriptingImplementations(targetGroup);
+            var scriptingImpl = ModuleManager.GetScriptingImplementations(BuildPipeline.GetBuildTargetGroupByName(buildTarget.TargetName));
             if (scriptingImpl != null && !scriptingImpl.AllowIL2CPPCompilerConfigurationSelection())
             {
-                Debug.LogWarning($"The C++ compiler configuration option does not apply to the {targetGroup} platform as it is configured. Set the configuration in the generated IDE project instead.");
+                Debug.LogWarning($"The C++ compiler configuration option does not apply to the {buildTarget.TargetName} platform as it is configured. Set the configuration in the generated IDE project instead.");
                 return;
             }
 
-            SetIl2CppCompilerConfigurationInternal(targetGroup, configuration);
+            SetIl2CppCompilerConfigurationInternal(buildTarget.TargetName, configuration);
         }
+
+        [NativeThrows]
+        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+        [NativeMethod("GetPlatformIncrementalIl2CppBuild")]
+        private static extern bool GetIncrementalIl2CppBuildInternal(string buildTargetName);
+        public static bool GetIncrementalIl2CppBuild(NamedBuildTarget buildTarget) => GetIncrementalIl2CppBuildInternal(buildTarget.TargetName);
+
+        [NativeThrows]
+        [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
+        [NativeMethod("SetPlatformIncrementalIl2CppBuild")]
+        private static extern void SetIncrementalIl2CppBuildInternal(string buildTargetName, bool enabled);
+        public static void SetIncrementalIl2CppBuild(NamedBuildTarget buildTarget, bool enabled) =>
+            SetIncrementalIl2CppBuildInternal(buildTarget.TargetName, enabled);
+
+        [NativeThrows]
+        [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
+        [NativeMethod("SetManagedStrippingLevel")]
+        private static extern void SetManagedStrippingLevelInternal(string buildTargetName, ManagedStrippingLevel level);
+        public static void SetManagedStrippingLevel(NamedBuildTarget buildTarget, ManagedStrippingLevel level) =>
+            SetManagedStrippingLevelInternal(buildTarget.TargetName, level);
+
+        [NativeThrows]
+        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+        [NativeMethod("GetManagedStrippingLevel")]
+        private static extern ManagedStrippingLevel GetManagedStrippingLevelInternal(string buildTargetName);
+        public static ManagedStrippingLevel GetManagedStrippingLevel(NamedBuildTarget buildTarget) => GetManagedStrippingLevelInternal(buildTarget.TargetName);
+
+        [NativeThrows]
+        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+        [NativeMethod("GetApiCompatibilityLevel")]
+        private static extern ApiCompatibilityLevel GetApiCompatibilityLevelInternal(string buildTargetName);
+        public static ApiCompatibilityLevel GetApiCompatibilityLevel(NamedBuildTarget buildTarget) => GetApiCompatibilityLevelInternal(buildTarget.TargetName);
+
+        [NativeThrows]
+        [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
+        [NativeMethod("SetApiCompatibilityLevel")]
+        private static extern void SetApiCompatibilityLevelInternal(string buildTargetName, ApiCompatibilityLevel value);
+        public static void SetApiCompatibilityLevel(NamedBuildTarget buildTarget, ApiCompatibilityLevel value) =>
+            SetApiCompatibilityLevelInternal(buildTarget.TargetName, value);
+
+        [NativeThrows]
+        [NativeMethod("SetMobileMTRendering")]
+        private static extern void SetMobileMTRenderingInternal(string buildTargetName, bool enable);
+        public static void SetMobileMTRendering(NamedBuildTarget buildTarget, bool enable) =>
+            SetMobileMTRenderingInternal(buildTarget.TargetName, enable);
+
+        [NativeThrows]
+        [NativeMethod("GetMobileMTRendering")]
+        private static extern bool GetMobileMTRenderingInternal(string buildTargetName);
+        public static bool GetMobileMTRendering(NamedBuildTarget buildTarget) => GetMobileMTRenderingInternal(buildTarget.TargetName);
+
+        [NativeThrows]
+        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+        [NativeMethod("GetNormalMapEncoding")]
+        private static extern NormalMapEncoding GetNormalMapEncodingInternal(string buildTargetName);
+        public static NormalMapEncoding GetNormalMapEncoding(NamedBuildTarget buildTarget) => GetNormalMapEncodingInternal(buildTarget.TargetName);
+
+        [NativeThrows]
+        [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
+        [NativeMethod("SetNormalMapEncoding")]
+        private static extern void SetNormalMapEncodingInternal(string buildTargetName, NormalMapEncoding encoding);
+        public static void SetNormalMapEncoding(NamedBuildTarget buildTarget, NormalMapEncoding encoding) =>
+            SetNormalMapEncodingInternal(buildTarget.TargetName, encoding);
 
         public static extern bool assemblyVersionValidation
         {
@@ -906,21 +1110,6 @@ namespace UnityEditor
             [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
             set;
         }
-
-        [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
-        [NativeMethod("SetIl2CppCompilerConfiguration")]
-        private static extern void SetIl2CppCompilerConfigurationInternal(BuildTargetGroup targetGroup, Il2CppCompilerConfiguration configuration);
-
-        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
-        public static extern Il2CppCompilerConfiguration GetIl2CppCompilerConfiguration(BuildTargetGroup targetGroup);
-
-        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
-        [NativeMethod("GetPlatformIncrementalIl2CppBuild")]
-        public static extern bool GetIncrementalIl2CppBuild(BuildTargetGroup targetGroup);
-
-        [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
-        [NativeMethod("SetPlatformIncrementalIl2CppBuild")]
-        public static extern void SetIncrementalIl2CppBuild(BuildTargetGroup targetGroup, bool enabled);
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnly().additionalIl2CppArgs")]
         [NativeMethod("c_str")]
@@ -1199,13 +1388,6 @@ namespace UnityEditor
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         public static extern StrippingLevel strippingLevel { get; set; }
 
-        [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
-        public static extern void SetManagedStrippingLevel(BuildTargetGroup targetGroup, ManagedStrippingLevel level);
-
-        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
-        public static extern ManagedStrippingLevel GetManagedStrippingLevel(BuildTargetGroup targetGroup);
-
-
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
         internal static extern void ReinitialiseShaderCompiler(string platformSDKEnvVar, string EnvVarValue);
 
@@ -1250,12 +1432,6 @@ namespace UnityEditor
             set { SetApiCompatibilityLevel(EditorUserBuildSettings.activeBuildTargetGroup, value); }
         }
 
-        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
-        public static extern ApiCompatibilityLevel GetApiCompatibilityLevel(BuildTargetGroup buildTargetGroup);
-
-        [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
-        public static extern void SetApiCompatibilityLevel(BuildTargetGroup buildTargetGroup, ApiCompatibilityLevel value);
-
         // Should unused [[Mesh]] components be excluded from game build?
         public static extern bool stripUnusedMeshComponents { get; set; }
 
@@ -1279,10 +1455,6 @@ namespace UnityEditor
 
         // Is multi-threaded rendering enabled?
         public static extern bool MTRendering { get; set; }
-
-        public static extern void SetMobileMTRendering(BuildTargetGroup targetGroup, bool enable);
-
-        public static extern bool GetMobileMTRendering(BuildTargetGroup targetGroup);
 
         [NativeMethod("GetStackTraceType")]
         public static extern StackTraceLogType GetStackTraceLogType(LogType logType);
@@ -1362,11 +1534,6 @@ namespace UnityEditor
         [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
         public static extern void SetShaderPrecisionModel(ShaderPrecisionModel model);
 
-        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
-        public static extern NormalMapEncoding GetNormalMapEncoding(BuildTargetGroup platform);
-
-        [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
-        public static extern void SetNormalMapEncoding(BuildTargetGroup platform, NormalMapEncoding encoding);
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
         internal static extern TextureCompressionFormat GetDefaultTextureCompressionFormat(BuildTargetGroup platform);

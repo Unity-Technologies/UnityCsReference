@@ -4,6 +4,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -33,12 +35,12 @@ namespace UnityEditor.Toolbars
                         continue;
                     }
 
-                    m_IdToDefinition.Add(attr.id, new ToolbarElementDefinition(id, type, attr.targetContexts));
+                    m_IdToDefinition.Add(attr.id, new ToolbarElementDefinition(id, type, attr.targetWindows));
                 }
             }
         }
 
-        public bool TryCreateElementFromId(object context, string id, out VisualElement element)
+        public bool TryCreateElementFromId(EditorWindow context, string id, out VisualElement element)
         {
             if (m_IdToDefinition.TryGetValue(id, out ToolbarElementDefinition definition))
             {
@@ -51,7 +53,9 @@ namespace UnityEditor.Toolbars
                 {
                     foreach (var c in definition.targetContexts)
                     {
-                        if (c.IsInstanceOfType(context))
+                        //The main toolbar isn't a window but we support DefaultMainToolbar as a valid context for adding elements
+                        if (context == null && (c == null || typeof(MainToolbarVisual).IsAssignableFrom(c))
+                            || c.IsInstanceOfType(context))
                         {
                             inProperContext = true;
                         }
@@ -60,9 +64,22 @@ namespace UnityEditor.Toolbars
 
                 if (inProperContext)
                 {
-                    element = (VisualElement)Activator.CreateInstance(definition.elementType);
-                    element.AddToClassList(EditorToolbar.elementClassName);
-                    return true;
+                    try
+                    {
+                        const BindingFlags flags =  BindingFlags.Instance |
+                            BindingFlags.Public |
+                            BindingFlags.NonPublic |
+                            BindingFlags.CreateInstance;
+
+                        element = (VisualElement)Activator.CreateInstance(definition.elementType, flags, (Binder)null,
+                            null, (CultureInfo)null, (object[])null);
+                        element.AddToClassList(EditorToolbar.elementClassName);
+                        return true;
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogError($"Failed creating toolbar element from ID \"{id}\".\n{e}");
+                    }
                 }
             }
 

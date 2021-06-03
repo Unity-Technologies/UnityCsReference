@@ -19,6 +19,7 @@ namespace UnityEditor.UIElements.StyleSheets
     static class URIHelpers
     {
         private const string k_ProjectScheme = "project";
+        private const string k_ProjectSchemeEmptyHint = k_ProjectScheme + "://?";
         private const string k_AssetDatabaseHost = "database";
         static readonly Uri s_ProjectRootUri = new UriBuilder(k_ProjectScheme, "").Uri;
         static readonly Uri s_ThemeUri = new UriBuilder(ThemeRegistry.kThemeScheme, "").Uri;
@@ -188,10 +189,35 @@ namespace UnityEditor.UIElements.StyleSheets
                     var resolvedAssetReference = container.o;
                     response.resolvedQueryAsset = resolvedAssetReference;
 
+                    // empty paths are resolved to the input assetPath, which is not an issue here
+                    // since the GUID parameter takes precedence
+                    // this case happens with compact asset URIs, and we don't want to warn users
+                    var hasEmptyPathHint = originalPath.StartsWith("?", StringComparison.Ordinal) ||
+                        originalPath.StartsWith(k_ProjectSchemeEmptyHint, StringComparison.Ordinal);
+
                     if (!resolvedAssetReference)
                     {
                         // could not resolve asset reference from query
-                        if (AssetExistsAtPath(response.resolvedProjectRelativePath))
+
+                        var pathFromGuid = AssetDatabase.GUIDToAssetPath(query.guid);
+
+                        if (!string.IsNullOrEmpty(pathFromGuid))
+                        {
+                            // but that's just because the ADB can't return the asset at the moment
+                            // e.g. during GatherDependenciesFromSourceFile
+                            if (pathFromGuid != response.resolvedProjectRelativePath)
+                            {
+                                if (!hasEmptyPathHint)
+                                {
+                                    response.warningMessage = string.Format(
+                                        L10n.Tr(
+                                            "Asset reference to GUID '{0}' resolved to '{2}', but URL path hints at '{1}'. Update the URL '{3}' to remove this warning."),
+                                        query.guid, response.resolvedProjectRelativePath, pathFromGuid, originalPath);
+                                }
+                                response.resolvedProjectRelativePath = pathFromGuid;
+                            }
+                        }
+                        else if (AssetExistsAtPath(response.resolvedProjectRelativePath))
                         {
                             // but the path points to a valid asset, so let's use that
                             response.warningMessage = string.Format(
@@ -214,11 +240,11 @@ namespace UnityEditor.UIElements.StyleSheets
                         // warn users about any inconsistencies
 
                         var realAssetPath = AssetDatabase.GetAssetPath(resolvedAssetReference);
-                        if (!string.IsNullOrEmpty(response.resolvedProjectRelativePath) &&
+                        if (!hasEmptyPathHint &&
+                            !string.IsNullOrEmpty(response.resolvedProjectRelativePath) &&
                             realAssetPath != response.resolvedProjectRelativePath)
                         {
                             // URL path differs from real path (from GUID)
-
                             if (AssetExistsAtPath(response.resolvedProjectRelativePath))
                             {
                                 // URL path points to some other asset -> warn the user

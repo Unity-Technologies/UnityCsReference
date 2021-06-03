@@ -1043,7 +1043,19 @@ namespace UnityEditor
 
             var isPrefabPart = PrefabUtility.IsPartOfNonAssetPrefabInstance(go);
             if (isPrefabPart)
+            {
                 prefabBase = PrefabUtility.GetOutermostPrefabInstanceRoot(go).transform;
+
+                if (go.transform.parent == null || go.transform.parent.gameObject == null)
+                    return null;
+
+                var parentgo = go.transform.parent.gameObject;
+                //The current go is part of a prefab and its parent is part of another prefab
+                //this avoid to select the parent prefab instead of the current one
+                if (PrefabUtility.IsPartOfNonAssetPrefabInstance(parentgo) &&
+                    prefabBase != PrefabUtility.GetOutermostPrefabInstanceRoot(parentgo).transform)
+                    return null;
+            }
 
             // Walk up the hierarchy to find the outermost prefab instance root that is not marked as non-pickable, or
             // alternatively a GameObject with the SelectionBaseAttribute assigned.
@@ -1316,6 +1328,20 @@ namespace UnityEditor
         internal static Transform[] ignoreRaySnapObjects = null;
         static RaycastHit[] s_RaySnapHits = new RaycastHit[100];
 
+        static bool TryRaySnap(Ray ray, out RaycastHit resultHit)
+        {
+            object result = RaySnap(ray);
+            if (result == null)
+            {
+                resultHit = default(RaycastHit);
+                resultHit.distance = Mathf.Infinity;
+                return false;
+            }
+
+            resultHit = (RaycastHit)result;
+            return true;
+        }
+
         // Casts /ray/ against the scene.
         public static object RaySnap(Ray ray)
         {
@@ -1429,11 +1455,15 @@ namespace UnityEditor
         public static bool PlaceObject(Vector2 guiPosition, out Vector3 position, out Vector3 normal)
         {
             Ray ray = GUIPointToWorldRay(guiPosition);
-            object hit = RaySnap(ray);
-            bool objectIntersected = hit != null;
-            float bestDistance = objectIntersected ? ((RaycastHit)hit).distance : Mathf.Infinity;
-            position = objectIntersected ? ray.GetPoint(((RaycastHit)hit).distance) : Vector3.zero;
-            normal = objectIntersected ? ((RaycastHit)hit).normal : Vector3.up;
+            //1- Trying to snap on scene object -> TryRaySnap
+            //2- If no object has been found for placement,
+            //fallback to place object on the scene grids -> TryPlaceOnGrid
+            RaycastHit hit;
+            bool positionFound = TryRaySnap(ray, out hit) || TryPlaceOnGrid(ray, out hit);
+
+            float bestDistance = positionFound ? hit.distance : Mathf.Infinity;
+            position = positionFound ? ray.GetPoint(hit.distance) : Vector3.zero;
+            normal = positionFound ? hit.normal : Vector3.up;
 
             if (placeObjectCustomPasses != null)
             {
@@ -1446,7 +1476,7 @@ namespace UnityEditor
                         var dst = Vector3.Distance(ray.origin, pos);
                         if (dst < bestDistance)
                         {
-                            objectIntersected = true;
+                            positionFound = true;
                             bestDistance = dst;
                             position = pos;
                             normal = nrm;
@@ -1455,7 +1485,61 @@ namespace UnityEditor
                 }
             }
 
-            return objectIntersected;
+            return positionFound;
+        }
+
+        static bool TryPlaceOnGrid(Ray ray, out RaycastHit resultHit)
+        {
+            resultHit = default(RaycastHit);
+            resultHit.distance = Mathf.Infinity;
+            resultHit.normal = Vector3.up;
+
+            Plane targetPlane;
+            if (!TryGetPlane(out targetPlane))
+                return false;
+
+            float hitDistance;
+            if (targetPlane.Raycast(ray, out hitDistance))
+            {
+                resultHit.distance = hitDistance;
+                resultHit.normal = targetPlane.normal;
+                return true;
+            }
+
+            return false;
+        }
+
+        static bool TryGetPlane(out Plane plane)
+        {
+            plane = new Plane();
+
+            var sceneView = SceneView.lastActiveSceneView;
+            var cameraTransform = sceneView.camera.transform;
+            if (SceneView.lastActiveSceneView.showGrid)
+            {
+                var axis = sceneView.sceneViewGrids.gridAxis;
+                var point = sceneView.sceneViewGrids.GetPivot(axis);
+
+                var normal = sceneView.in2DMode ?
+                    Vector3.forward :
+                    new Vector3(
+                    axis == SceneViewGrid.GridRenderAxis.X ? 1 : 0,
+                    axis == SceneViewGrid.GridRenderAxis.Y ? 1 : 0,
+                    axis == SceneViewGrid.GridRenderAxis.Z ? 1 : 0
+                    );
+
+                //Invert normal if camera is facing the other side of the plane
+                if (Vector3.Dot(cameraTransform.forward, normal) > 0)
+                    normal *= -1f;
+
+                plane = new Plane(normal, point);
+
+                //If the camera if on the right side of the plane, return this plane
+                if (plane.GetSide(cameraTransform.position))
+                    return true;
+            }
+
+            return false;
         }
 
         // Repaint the current view

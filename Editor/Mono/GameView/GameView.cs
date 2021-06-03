@@ -556,7 +556,7 @@ namespace UnityEditor
                     prevSizeGroupType = (int)currentSizeGroupType;
                 }
 
-                if (FrameDebuggerUtility.IsLocalEnabled())
+                if (FrameDebugger.IsLocalEnabled())
                 {
                     GUILayout.FlexibleSpace();
                     Color oldCol = GUI.color;

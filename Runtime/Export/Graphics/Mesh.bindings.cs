@@ -108,6 +108,10 @@ namespace UnityEngine
         extern public int GetVertexAttributeDimension(VertexAttribute attr);
         [FreeFunction(Name = "MeshScripting::GetChannelFormat", HasExplicitThis = true)]
         extern public VertexAttributeFormat GetVertexAttributeFormat(VertexAttribute attr);
+        [FreeFunction(Name = "MeshScripting::GetChannelStream", HasExplicitThis = true)]
+        public extern int GetVertexAttributeStream(VertexAttribute attr);
+        [FreeFunction(Name = "MeshScripting::GetChannelOffset", HasExplicitThis = true)]
+        public extern int GetVertexAttributeOffset(VertexAttribute attr);
 
         [FreeFunction(Name = "SetMeshComponentFromArrayFromScript", HasExplicitThis = true)]
         extern private void SetArrayForChannelImpl(VertexAttribute channel, VertexAttributeFormat format, int dim, System.Array values, int arraySize, int valuesStart, int valuesCount, UnityEngine.Rendering.MeshUpdateFlags flags);
@@ -127,6 +131,8 @@ namespace UnityEngine
         {
             [FreeFunction(Name = "MeshScripting::GetVertexBufferCount", HasExplicitThis = true)] get;
         }
+        [FreeFunction(Name = "MeshScripting::GetVertexBufferStride", HasExplicitThis = true)]
+        public extern int GetVertexBufferStride(int stream);
 
         [NativeThrows]
         [FreeFunction(Name = "MeshScripting::GetNativeVertexBufferPtr", HasExplicitThis = true)]
@@ -134,6 +140,14 @@ namespace UnityEngine
 
         [FreeFunction(Name = "MeshScripting::GetNativeIndexBufferPtr", HasExplicitThis = true)]
         extern public IntPtr GetNativeIndexBufferPtr();
+
+        [FreeFunction(Name = "MeshScripting::GetVertexBufferPtr", HasExplicitThis = true, ThrowsException = true)]
+        extern GraphicsBuffer GetVertexBufferImpl(int index);
+        [FreeFunction(Name = "MeshScripting::GetIndexBufferPtr", HasExplicitThis = true, ThrowsException = true)]
+        extern GraphicsBuffer GetIndexBufferImpl();
+
+        public extern GraphicsBuffer.Target vertexBufferTarget { get; set; }
+        public extern GraphicsBuffer.Target indexBufferTarget { get; set; }
 
         // blend shapes
 
@@ -280,20 +294,5 @@ namespace UnityEngine
         extern internal static void InternalCombineIndices(MeshSubsetCombineUtility.SubMeshInstance[] submeshes, Mesh combinedMesh);
         [FreeFunction("IsMeshBatchable")]
         extern internal static bool IsMeshBatchable(Mesh mesh);
-    }
-
-    [NativeHeader("Runtime/Graphics/Mesh/MeshScriptBindings.h")]
-    internal struct MeshGraphicsTestHelper
-    {
-        [FreeFunction("MeshGraphicsTestHelper::InternalEnableComputeBufferBindings")]
-        extern internal static void InternalEnableComputeBufferBindings([NotNull] Mesh mesh);
-        [FreeFunction("MeshGraphicsTestHelper::InternalEnableComputeBufferBindingsSkinned")]
-        extern internal static void InternalEnableComputeBufferBindingsSkinned([NotNull] SkinnedMeshRenderer mesh);
-        [FreeFunction("MeshGraphicsTestHelper::InternalAssignComputeBuffer")]
-        extern internal static bool InternalAssignComputeBuffer([NotNull] Mesh mesh, [NotNull] ComputeShader shader, int kernelIndex, int iboTargetID, int vboTargetID);
-        [FreeFunction("MeshGraphicsTestHelper::InternalAssignComputeBufferSkinned")]
-        extern internal static bool InternalAssignComputeBufferSkinned([NotNull] SkinnedMeshRenderer mesh, [NotNull] ComputeShader shader, int kernelIndex, int vboTargetID);
-        [FreeFunction("MeshGraphicsTestHelper::InternalSetChannelInfo")]
-        extern internal static bool InternalSetChannelInfo([NotNull] Mesh mesh, [NotNull] ComputeShader shader, int kernelIndex, int vertexStrideID, int positionOffsetID, int normalOffsetID, int uvOffsetID, int colorOffsetID);
     }
 }

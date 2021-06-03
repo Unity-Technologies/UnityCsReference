@@ -264,9 +264,9 @@ namespace UnityEditor
 
         internal PlatformIcon[] GetPlatformIcons(BuildTargetGroup platform, PlatformIconKind kind, ref BuildTargetIcons[] allIcons)
         {
-            var platformName = PlayerSettings.GetPlatformName(platform);
-            var serializedIcons = PlayerSettings.GetPlatformIconsFromTargetIcons(platformName, kind.kind, allIcons);
-            var provider = PlayerSettings.GetPlatformIconProvider(platform);
+            var namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(platform);
+            var serializedIcons = PlayerSettings.GetPlatformIconsFromTargetIcons(namedBuildTarget.TargetName, kind.kind, allIcons);
+            var provider = PlayerSettings.GetPlatformIconProvider(namedBuildTarget);
 
             if (m_RequiredIcons == null)
                 m_RequiredIcons = new Dictionary<PlatformIconKind, PlatformIcon[]>();
@@ -284,7 +284,7 @@ namespace UnityEditor
             if (serializedIcons.Length <= 0)
             {
                 // Map legacy icons to required icons
-                ImportLegacyIcons(platformName, kind, icons, m_AllLegacyIcons);
+                ImportLegacyIcons(namedBuildTarget.TargetName, kind, icons, m_AllLegacyIcons);
                 // Serialize required icons
                 SetPlatformIcons(platform, kind, icons, ref allIcons);
 
@@ -303,8 +303,8 @@ namespace UnityEditor
 
         void SetIconsForPlatform(BuildTargetGroup targetGroup, PlatformIcon[] icons, PlatformIconKind kind, ref BuildTargetIcons[] allIcons)
         {
-            var platform = PlayerSettings.GetPlatformName(targetGroup);
-            var platformIconProvider = PlayerSettings.GetPlatformIconProvider(targetGroup);
+            var namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(targetGroup);
+            var platformIconProvider = PlayerSettings.GetPlatformIconProvider(namedBuildTarget);
             if (platformIconProvider == null)
                 return;
 
@@ -328,7 +328,7 @@ namespace UnityEditor
                 iconStructs = new PlatformIconStruct[0];
             else if (requiredIconCount != icons.Length)
             {
-                throw new InvalidOperationException($"Attempting to set an incorrect number of icons for {platform} {kind} kind, it requires {requiredIconCount} icons but trying to assign {icons.Length}.");
+                throw new InvalidOperationException($"Attempting to set an incorrect number of icons for {namedBuildTarget} {kind} kind, it requires {requiredIconCount} icons but trying to assign {icons.Length}.");
             }
             else
             {
@@ -337,7 +337,7 @@ namespace UnityEditor
                     ).ToArray<PlatformIconStruct>();
             }
 
-            allIcons = PlayerSettings.SetIconsForPlatformForTargetIcons(platform, iconStructs, kind.kind, allIcons);
+            allIcons = PlayerSettings.SetIconsForPlatformForTargetIcons(namedBuildTarget.TargetName, iconStructs, kind.kind, allIcons);
         }
 
         void SetPlatformIcons(BuildTargetGroup targetGroup, PlatformIconKind kind, PlatformIcon[] icons, ref BuildTargetIcons[] allIcons)
@@ -549,7 +549,7 @@ namespace UnityEditor
             {
                 int labelHeight = 20;
 
-                foreach (var kind in PlayerSettings.GetSupportedIconKindsForPlatform(iconFieldGroup.targetGroup))
+                foreach (var kind in PlayerSettings.GetSupportedIconKinds(NamedBuildTarget.FromBuildTargetGroup(iconFieldGroup.targetGroup)))
                 {
                     iconFieldGroup.SetPlatformIcons(GetPlatformIcons(iconFieldGroup.targetGroup, kind, ref m_AllIcons), kind);
                 }

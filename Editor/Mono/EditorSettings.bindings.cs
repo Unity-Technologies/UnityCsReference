@@ -259,6 +259,9 @@ namespace UnityEditor
         public static extern CacheServerMode cacheServerMode { get; set; }
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        public static extern AssetDatabase.RefreshImportMode refreshImportMode { get; set; }
+
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern string cacheServerEndpoint { get; set; }
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]

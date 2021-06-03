@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -195,7 +195,11 @@ namespace UnityEditor
                     rootDepth++;
 
                     // Find parent treeView item
-                    var parentPath = Directory.GetParent(rootPath).Name;
+                    var parentPath = Path.GetDirectoryName(rootPath);
+                    // Mono Upgrade note: Directory.GetParent now attempts to resolve the full path as part of the call. This causes Unity's
+                    // path remapping to be triggered which causes Package paths to get remapped to PackageCache.
+                    if (String.IsNullOrEmpty(parentPath))
+                        parentPath = Directory.GetParent(rootPath).Name;
                     if (parentPath != projectPath)
                     {
                         if (!m_RootsTreeViewItem.TryGetValue(parentPath, out parentItem))

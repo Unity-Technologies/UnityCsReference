@@ -430,7 +430,7 @@ namespace UnityEditor.Experimental.GraphView
                 {
                     m_TipElement.transform.rotation = Quaternion.Euler(new Vector3(0, 0, tipAngle));
                     m_TipElement.transform.position = new Vector3(tipTranslate.x, tipTranslate.y, 0);
-                    m_TipElement.transformOrigin = Vector3.zero; // Using the internal property while the style is not implemented
+                    m_TipElement.style.transformOrigin = new TransformOrigin(0, 0, 0);
                 }
                 m_CurrentTipAngle = tipAngle;
             }

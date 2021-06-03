@@ -17,6 +17,7 @@ namespace UnityEngine.UIElements.UIR
         public uint recursiveClipUpdates, recursiveClipUpdatesExpanded, nonRecursiveClipUpdates;
         public uint recursiveTransformUpdates, recursiveTransformUpdatesExpanded;
         public uint recursiveOpacityUpdates, recursiveOpacityUpdatesExpanded;
+        public uint colorUpdates, colorUpdatesExpanded;
         public uint recursiveVisualUpdates, recursiveVisualUpdatesExpanded, nonRecursiveVisualUpdates;
         public uint dirtyProcessed;
         public uint nudgeTransformed, boneTransformed, skipTransformed, visualUpdateTransformed;
@@ -30,10 +31,17 @@ namespace UnityEngine.UIElements.UIR
     {
         struct DepthOrderedDirtyTracking // Depth then register-time order
         {
+            // For each depth level, we keep a double linked list of VisualElements that are dirty for some reason.
+            // The actual reason is stored in renderChainData.dirtiedValues.
             public List<VisualElement> heads, tails; // Indexed by VE hierarchy depth
-            public int[] minDepths, maxDepths;
+
+            // The following two arrays store, for each dirty type class, the range of depth levels
+            // where we have elements that are dirty with that dirty type class.
+            public int[] minDepths, maxDepths; // Indexed per dirty type class
+
             public uint dirtyID; // A monotonically increasing ID used to avoid double processing of some elements
 
+            // As the depth of the hierarchy grows, we need to enlarge as many double linked lists
             public void EnsureFits(int maxDepth)
             {
                 while (heads.Count <= maxDepth)
@@ -43,10 +51,11 @@ namespace UnityEngine.UIElements.UIR
                 }
             }
 
-            public void RegisterDirty(VisualElement ve, RenderDataDirtyTypes dirtyTypes, int dirtyTypeClassIndex)
+            public void RegisterDirty(VisualElement ve, RenderDataDirtyTypes dirtyTypes, RenderDataDirtyTypeClasses dirtyTypeClass)
             {
                 Debug.Assert(dirtyTypes != 0);
                 int depth = ve.renderChainData.hierarchyDepth;
+                int dirtyTypeClassIndex = (int)dirtyTypeClass;
                 minDepths[dirtyTypeClassIndex] = depth < minDepths[dirtyTypeClassIndex] ? depth : minDepths[dirtyTypeClassIndex];
                 maxDepths[dirtyTypeClassIndex] = depth > maxDepths[dirtyTypeClassIndex] ? depth : maxDepths[dirtyTypeClassIndex];
                 if (ve.renderChainData.dirtiedValues != 0)
@@ -169,9 +178,9 @@ namespace UnityEngine.UIElements.UIR
 
         // Profiling
         static ProfilerMarker s_MarkerProcess = new ProfilerMarker("RenderChain.Process");
-        static ProfilerMarker s_MarkerRender = new ProfilerMarker("RenderChain.Draw");
         static ProfilerMarker s_MarkerClipProcessing = new ProfilerMarker("RenderChain.UpdateClips");
         static ProfilerMarker s_MarkerOpacityProcessing = new ProfilerMarker("RenderChain.UpdateOpacity");
+        static ProfilerMarker s_MarkerColorsProcessing = new ProfilerMarker("RenderChain.UpdateColors");
         static ProfilerMarker s_MarkerTransformProcessing = new ProfilerMarker("RenderChain.UpdateTransforms");
         static ProfilerMarker s_MarkerVisualsProcessing = new ProfilerMarker("RenderChain.UpdateVisuals");
         static ProfilerMarker s_MarkerTextRegen = new ProfilerMarker("RenderChain.RegenText");
@@ -341,6 +350,29 @@ namespace UnityEngine.UIElements.UIR
             s_MarkerOpacityProcessing.End();
 
             m_DirtyTracker.dirtyID++;
+            dirtyClass = (int)RenderDataDirtyTypeClasses.Color;
+            dirtyFlags = RenderDataDirtyTypes.Color;
+            clearDirty = ~dirtyFlags;
+            s_MarkerColorsProcessing.Begin();
+            for (int depth = m_DirtyTracker.minDepths[dirtyClass]; depth <= m_DirtyTracker.maxDepths[dirtyClass]; depth++)
+            {
+                VisualElement ve = m_DirtyTracker.heads[depth];
+                while (ve != null)
+                {
+                    VisualElement veNext = ve.renderChainData.nextDirty;
+                    if ((ve.renderChainData.dirtiedValues & dirtyFlags) != 0)
+                    {
+                        if (ve.renderChainData.isInChain && ve.renderChainData.dirtyID != m_DirtyTracker.dirtyID)
+                            Implementation.RenderEvents.ProcessOnColorChanged(this, ve, m_DirtyTracker.dirtyID, ref m_Stats);
+                        m_DirtyTracker.ClearDirty(ve, clearDirty);
+                    }
+                    ve = veNext;
+                    m_Stats.dirtyProcessed++;
+                }
+            }
+            s_MarkerColorsProcessing.End();
+
+            m_DirtyTracker.dirtyID++;
             dirtyClass = (int)RenderDataDirtyTypeClasses.TransformSize;
             dirtyFlags = RenderDataDirtyTypes.Transform | RenderDataDirtyTypes.ClipRectSize;
             clearDirty = ~dirtyFlags;
@@ -421,8 +453,6 @@ namespace UnityEngine.UIElements.UIR
 
         public void Render()
         {
-            s_MarkerRender.Begin();
-
             Material standardMaterial = GetStandardMaterial();
             panel.InvokeUpdateMaterial(standardMaterial);
 
@@ -446,8 +476,6 @@ namespace UnityEngine.UIElements.UIR
                     //m_BlockDirtyRegistration = false;
                 }
             }
-
-            s_MarkerRender.End();
 
             if (immediateException != null)
             {
@@ -498,8 +526,11 @@ namespace UnityEngine.UIElements.UIR
         }
 
         #region UIElements event handling callbacks
-        public void UIEOnChildAdded(VisualElement parent, VisualElement ve, int index)
+        public void UIEOnChildAdded(VisualElement ve)
         {
+            VisualElement parent = ve.hierarchy.parent;
+            int index = parent != null ? parent.IndexOf(ve) : 0;
+
             if (m_BlockDirtyRegistration)
                 throw new InvalidOperationException("VisualElements cannot be added to an active visual tree during generateVisualContent callback execution nor during visual tree rendering");
             if (parent != null && !parent.renderChainData.isInChain)
@@ -511,6 +542,7 @@ namespace UnityEngine.UIElements.UIR
             UIEOnClippingChanged(ve, true);
             UIEOnOpacityChanged(ve);
             UIEOnVisualsChanged(ve, true);
+            ve.MarkRenderHintsClean();
 
             m_StatsElementsAdded += addedCount;
         }
@@ -547,6 +579,18 @@ namespace UnityEngine.UIElements.UIR
             m_LastGroupTransformElementScale.Remove(ve);
         }
 
+        public void UIEOnRenderHintsChanged(VisualElement ve)
+        {
+            if (ve.renderChainData.isInChain)
+            {
+                if (m_BlockDirtyRegistration)
+                    throw new InvalidOperationException("Render Hints cannot change under an active visual tree during generateVisualContent callback execution nor during visual tree rendering");
+
+                UIEOnChildRemoving(ve);
+                UIEOnChildAdded(ve);
+            }
+        }
+
         public void UIEOnClippingChanged(VisualElement ve, bool hierarchical)
         {
             if (ve.renderChainData.isInChain)
@@ -554,7 +598,7 @@ namespace UnityEngine.UIElements.UIR
                 if (m_BlockDirtyRegistration)
                     throw new InvalidOperationException("VisualElements cannot change clipping state under an active visual tree during generateVisualContent callback execution nor during visual tree rendering");
 
-                m_DirtyTracker.RegisterDirty(ve, RenderDataDirtyTypes.Clipping | (hierarchical ? RenderDataDirtyTypes.ClippingHierarchy : 0), (int)RenderDataDirtyTypeClasses.Clipping);
+                m_DirtyTracker.RegisterDirty(ve, RenderDataDirtyTypes.Clipping | (hierarchical ? RenderDataDirtyTypes.ClippingHierarchy : 0), RenderDataDirtyTypeClasses.Clipping);
             }
         }
 
@@ -565,7 +609,18 @@ namespace UnityEngine.UIElements.UIR
                 if (m_BlockDirtyRegistration)
                     throw new InvalidOperationException("VisualElements cannot change opacity under an active visual tree during generateVisualContent callback execution nor during visual tree rendering");
 
-                m_DirtyTracker.RegisterDirty(ve, RenderDataDirtyTypes.Opacity | (hierarchical ? RenderDataDirtyTypes.OpacityHierarchy : 0), (int)RenderDataDirtyTypeClasses.Opacity);
+                m_DirtyTracker.RegisterDirty(ve, RenderDataDirtyTypes.Opacity | (hierarchical ? RenderDataDirtyTypes.OpacityHierarchy : 0), RenderDataDirtyTypeClasses.Opacity);
+            }
+        }
+
+        public void UIEOnColorChanged(VisualElement ve)
+        {
+            if (ve.renderChainData.isInChain)
+            {
+                if (m_BlockDirtyRegistration)
+                    throw new InvalidOperationException("VisualElements cannot change background color under an active visual tree during generateVisualContent callback execution nor during visual tree rendering");
+
+                m_DirtyTracker.RegisterDirty(ve, RenderDataDirtyTypes.Color, RenderDataDirtyTypeClasses.Color);
             }
         }
 
@@ -579,7 +634,7 @@ namespace UnityEngine.UIElements.UIR
                 RenderDataDirtyTypes flags =
                     (transformChanged ? RenderDataDirtyTypes.Transform : RenderDataDirtyTypes.None) |
                     (clipRectSizeChanged ? RenderDataDirtyTypes.ClipRectSize : RenderDataDirtyTypes.None);
-                m_DirtyTracker.RegisterDirty(ve, flags, (int)RenderDataDirtyTypeClasses.TransformSize);
+                m_DirtyTracker.RegisterDirty(ve, flags, RenderDataDirtyTypeClasses.TransformSize);
             }
         }
 
@@ -590,7 +645,7 @@ namespace UnityEngine.UIElements.UIR
                 if (m_BlockDirtyRegistration)
                     throw new InvalidOperationException("VisualElements cannot be marked for dirty repaint under an active visual tree during generateVisualContent callback execution nor during visual tree rendering");
 
-                m_DirtyTracker.RegisterDirty(ve, RenderDataDirtyTypes.Visuals | (hierarchical ? RenderDataDirtyTypes.VisualsHierarchy : 0), (int)RenderDataDirtyTypeClasses.Visuals);
+                m_DirtyTracker.RegisterDirty(ve, RenderDataDirtyTypes.Visuals | (hierarchical ? RenderDataDirtyTypes.VisualsHierarchy : 0), RenderDataDirtyTypeClasses.Visuals);
             }
         }
 
@@ -948,13 +1003,15 @@ namespace UnityEngine.UIElements.UIR
         Visuals = 1 << 4,            // The visuals of the VE need to be repainted.
         VisualsHierarchy = 1 << 5,   // Same as above, but applies to all descendants too.
         Opacity = 1 << 6,            // The opacity of the VE needs to be updated.
-        OpacityHierarchy = 1 << 7    // Same as above, but applies to all descendants too.
+        OpacityHierarchy = 1 << 7,   // Same as above, but applies to all descendants too.
+        Color = 1 << 8,              // The background color of the VE needs to be updated.
     }
 
     internal enum RenderDataDirtyTypeClasses
     {
         Clipping,
         Opacity,
+        Color,
         TransformSize,
         Visuals,
 
@@ -973,6 +1030,8 @@ namespace UnityEngine.UIElements.UIR
         internal RenderChainCommand firstClosingCommand, lastClosingCommand; // Optional, sequential for the same owner, the presence of closing commands requires starting commands too, otherwise certain optimizations will become invalid
         internal bool isInChain;
         internal bool isHierarchyHidden;
+        internal bool localFlipsWinding;
+        internal bool worldFlipsWinding;
 
         internal Implementation.ClipMethod clipMethod; // Self
         internal int childrenStencilRef;
@@ -983,7 +1042,9 @@ namespace UnityEngine.UIElements.UIR
         internal Matrix4x4 verticesSpace; // Transform describing the space which the vertices in 'data' are relative to
         internal int displacementUVStart, displacementUVEnd;
         internal BMPAlloc transformID, clipRectID, opacityID, textCoreSettingsID;
+        internal BMPAlloc backgroundColorID, borderLeftColorID, borderTopColorID, borderRightColorID, borderBottomColorID, tintColorID;
         internal float compositeOpacity;
+        internal Color backgroundColor;
 
         // Text update acceleration
         internal VisualElement prevText, nextText;

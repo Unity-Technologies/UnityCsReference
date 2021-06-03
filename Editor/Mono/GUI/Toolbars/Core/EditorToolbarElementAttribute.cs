@@ -7,20 +7,20 @@ using System;
 namespace UnityEditor.Toolbars
 {
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
-    class EditorToolbarElementAttribute : Attribute
+    public sealed class EditorToolbarElementAttribute : Attribute
     {
         public string id { get; }
-        public Type[] targetContexts { get; }
+        public Type[] targetWindows { get; }
 
-        public EditorToolbarElementAttribute(string id, params Type[] targetContexts)
+        public EditorToolbarElementAttribute(string id, params Type[] targetWindows)
         {
             this.id = id;
-            this.targetContexts = targetContexts;
+            this.targetWindows = targetWindows;
         }
     }
 
-    interface IEditorToolbarContext
+    public interface IAccessContainerWindow
     {
-        object context { get; set; }
+        EditorWindow containerWindow { get; set; }
     }
 }

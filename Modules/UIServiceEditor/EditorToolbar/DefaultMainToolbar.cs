@@ -19,11 +19,11 @@ namespace UnityEditor
             root.style.flexGrow = 1;
             visualTree.CloneTree(root);
 
-            m_CenterToolbar = new EditorToolbar(this, root.Q("ToolbarZonePlayMode"),
+            m_CenterToolbar = new EditorToolbar(null, root.Q("ToolbarZonePlayMode"),
                 "Editor Utility/Play Mode");
 
             var rightContainer = root.Q("ToolbarZoneRightAlign");
-            m_RightToolbar = new EditorToolbar(this, rightContainer,
+            m_RightToolbar = new EditorToolbar(null, rightContainer,
                 "Editor Utility/Layout",
                 "Editor Utility/Layers",
                 "Services/Account",

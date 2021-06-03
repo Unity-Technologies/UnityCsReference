@@ -327,7 +327,7 @@ namespace UnityEditor
             if (!m_TargetTexture)
             {
                 m_CurrentColorSpace = QualitySettings.activeColorSpace;
-                m_TargetTexture = new RenderTexture(0, 0, 24, format);
+                m_TargetTexture = new RenderTexture(0, 0, format, SystemInfo.GetGraphicsFormat(DefaultFormat.DepthStencil));
                 m_TargetTexture.name = name + " RT";
                 m_TargetTexture.filterMode = textureFilterMode;
                 m_TargetTexture.hideFlags = textureHideFlags;

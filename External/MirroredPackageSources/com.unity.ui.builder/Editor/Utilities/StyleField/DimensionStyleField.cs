@@ -25,6 +25,26 @@ namespace Unity.UI.Builder
 
         IntegerField m_DraggerIntegerField;
 
+        float m_DragStep = 1;
+
+        public float dragStep
+        {
+            get
+            {
+                return m_DragStep;
+            }
+
+            set
+            {
+                if (m_DragStep == value)
+                    return;
+                m_DragStep = value;
+                UpdateDragger();
+            }
+        }
+
+        public List<string> units => m_Units;
+
         public float length
         {
             get => innerValue;
@@ -155,9 +175,13 @@ namespace Unity.UI.Builder
         protected override void RefreshChildFields()
         {
             textField.SetValueWithoutNotify(GetTextFromValue());
-            m_DraggerIntegerField?.SetValueWithoutNotify(Mathf.RoundToInt(innerValue));
-
+            UpdateDragger();
             optionsPopup.SetValueWithoutNotify(GetOptionFromValue());
+        }
+
+        void UpdateDragger()
+        {
+            m_DraggerIntegerField?.SetValueWithoutNotify(Mathf.RoundToInt(innerValue / m_DragStep));
         }
 
         void OnDraggerFieldUpdate(ChangeEvent<int> evt)
@@ -165,7 +189,7 @@ namespace Unity.UI.Builder
             if (isKeyword)
                 option = defaultUnit;
 
-            value = evt.newValue.ToString();
+            value = (evt.newValue * m_DragStep).ToString();
 
             evt.StopImmediatePropagation();
             evt.PreventDefault();

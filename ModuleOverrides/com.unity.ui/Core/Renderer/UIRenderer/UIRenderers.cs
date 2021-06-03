@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Profiling;
 
 namespace UnityEngine.UIElements.UIR
 {
@@ -92,6 +93,8 @@ namespace UnityEngine.UIElements.UIR
         internal Action callback; // Immediate render command only
         private static readonly int k_ID_MainTex = Shader.PropertyToID("_MainTex");
 
+        static ProfilerMarker s_ImmediateOverheadMarker = new ProfilerMarker("UIR.ImmediateOverhead");
+
         internal void Reset()
         {
             owner = null;
@@ -122,32 +125,43 @@ namespace UnityEngine.UIElements.UIR
                     if (immediateException != null)
                         break;
 
+                    s_ImmediateOverheadMarker.Begin();
                     Matrix4x4 oldProjection = Utility.GetUnityProjectionMatrix();
                     bool hasScissor = drawParams.scissor.Count > 1; // We always expect the "unbound" scissor rectangle to exists
                     if (hasScissor)
                         Utility.DisableScissor(); // Disable scissor since most IMGUI code assume it's inactive
 
-                    Utility.ProfileImmediateRendererBegin();
-                    try
+                    using (new GUIClip.ParentClipScope(owner.worldTransform, owner.worldClipImmediate))
                     {
-                        using (new GUIClip.ParentClipScope(owner.worldTransform, owner.worldClipImmediate))
+                        s_ImmediateOverheadMarker.End();
+                        try
+                        {
                             callback();
-                    }
-                    catch (Exception e)
-                    {
-                        immediateException = e;
+                        }
+                        catch (Exception e)
+                        {
+                            immediateException = e;
+                        }
+                        s_ImmediateOverheadMarker.Begin();
                     }
 
                     GL.modelview = drawParams.view.Peek().transform;
                     GL.LoadProjectionMatrix(oldProjection);
-                    Utility.ProfileImmediateRendererEnd();
 
                     if (hasScissor)
                         Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(drawParams.scissor.Peek(), pixelsPerPoint));
+
+                    s_ImmediateOverheadMarker.End();
                     break;
                 }
                 case CommandType.PushView:
-                    var vt = new ViewTransform() { transform = owner.worldTransform, clipRect = RectToClipSpace(owner.worldClip) };
+                    var parent = owner.hierarchy.parent;
+                    Vector4 clipRect;
+                    if (parent != null)
+                        clipRect = RectToClipSpace(parent.worldClip);
+                    else
+                        clipRect = UIRUtility.ToVector4(DrawParams.k_FullNormalizedRect);
+                    var vt = new ViewTransform() { transform = owner.worldTransform, clipRect = clipRect };
                     drawParams.view.Push(vt);
                     GL.modelview = vt.transform;
                     break;

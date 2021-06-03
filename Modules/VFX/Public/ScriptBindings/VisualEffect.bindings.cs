@@ -173,6 +173,7 @@ namespace UnityEngine.VFX
         [FreeFunction(Name = "VisualEffectBindings::HasValueFromScript<Gradient*>", HasExplicitThis = true)] extern public bool HasGradient(int nameID);
         [FreeFunction(Name = "VisualEffectBindings::HasValueFromScript<Mesh*>", HasExplicitThis = true)] extern public bool HasMesh(int nameID);
         [FreeFunction(Name = "VisualEffectBindings::HasValueFromScript<SkinnedMeshRenderer*>", HasExplicitThis = true)] extern public bool HasSkinnedMeshRenderer(int nameID);
+        [FreeFunction(Name = "VisualEffectBindings::HasValueFromScript<GraphicsBuffer*>", HasExplicitThis = true)] extern public bool HasGraphicsBuffer(int nameID);
 
         // Value setters
         [FreeFunction(Name = "VisualEffectBindings::SetValueFromScript<bool>", HasExplicitThis = true)] extern public void SetBool(int nameID, bool b);
@@ -188,7 +189,7 @@ namespace UnityEngine.VFX
         [FreeFunction(Name = "VisualEffectBindings::SetValueFromScript<Gradient*>", HasExplicitThis = true)] extern public void SetGradient(int nameID, [NotNull] Gradient g);
         [FreeFunction(Name = "VisualEffectBindings::SetValueFromScript<Mesh*>", HasExplicitThis = true)] extern public void SetMesh(int nameID, [NotNull] Mesh m);
         [FreeFunction(Name = "VisualEffectBindings::SetValueFromScript<SkinnedMeshRenderer*>", HasExplicitThis = true)] extern public void SetSkinnedMeshRenderer(int nameID, SkinnedMeshRenderer m);
-
+        [FreeFunction(Name = "VisualEffectBindings::SetValueFromScript<GraphicsBuffer*>", HasExplicitThis = true)] extern public void SetGraphicsBuffer(int nameID, GraphicsBuffer g);
         // Value getters
         [FreeFunction(Name = "VisualEffectBindings::GetValueFromScript<bool>", HasExplicitThis = true)] extern public bool GetBool(int nameID);
         [FreeFunction(Name = "VisualEffectBindings::GetValueFromScript<int>", HasExplicitThis = true)] extern public int GetInt(int nameID);
@@ -201,6 +202,13 @@ namespace UnityEngine.VFX
         [FreeFunction(Name = "VisualEffectBindings::GetValueFromScript<Texture*>", HasExplicitThis = true)] extern public Texture GetTexture(int nameID);
         [FreeFunction(Name = "VisualEffectBindings::GetValueFromScript<Mesh*>", HasExplicitThis = true)] extern public Mesh GetMesh(int nameID);
         [FreeFunction(Name = "VisualEffectBindings::GetValueFromScript<SkinnedMeshRenderer*>", HasExplicitThis = true)] extern public SkinnedMeshRenderer GetSkinnedMeshRenderer(int nameID);
+
+        //The internal bindings function is using GraphicsBuffer*.
+        //Thus, this function will return a new GraphicsBuffer instead of the original scripting reference.
+        //This behavior isn't safe (we can potentially keep a reference on the source ScriptingObjectPtr).
+        //In consequence, this getter is internal and only used for debug purpose of editor test.
+        [FreeFunction(Name = "VisualEffectBindings::GetValueFromScript<GraphicsBuffer*>", HasExplicitThis = true)] extern internal GraphicsBuffer GetGraphicsBuffer(int nameID);
+
         public Gradient GetGradient(int nameID)
         {
             var gradient = new Gradient();
@@ -319,6 +327,11 @@ namespace UnityEngine.VFX
             return HasSkinnedMeshRenderer(Shader.PropertyToID(name));
         }
 
+        public bool HasGraphicsBuffer(string name)
+        {
+            return HasGraphicsBuffer(Shader.PropertyToID(name));
+        }
+
         public bool HasBool(string name)
         {
             return HasBool(Shader.PropertyToID(name));
@@ -385,6 +398,11 @@ namespace UnityEngine.VFX
             SetSkinnedMeshRenderer(Shader.PropertyToID(name), m);
         }
 
+        public void SetGraphicsBuffer(string name, GraphicsBuffer g)
+        {
+            SetGraphicsBuffer(Shader.PropertyToID(name), g);
+        }
+
         public void SetBool(string name, bool b)
         {
             SetBool(Shader.PropertyToID(name), b);
@@ -439,6 +457,11 @@ namespace UnityEngine.VFX
         public SkinnedMeshRenderer GetSkinnedMeshRenderer(string name)
         {
             return GetSkinnedMeshRenderer(Shader.PropertyToID(name));
+        }
+
+        internal GraphicsBuffer GetGraphicsBuffer(string name)
+        {
+            return GetGraphicsBuffer(Shader.PropertyToID(name));
         }
 
         public bool GetBool(string name)

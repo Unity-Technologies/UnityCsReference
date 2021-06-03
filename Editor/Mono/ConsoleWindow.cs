@@ -17,6 +17,9 @@ namespace UnityEditor
     internal class ConsoleWindow : EditorWindow, IHasCustomMenu
     {
         internal delegate void EntryDoubleClickedDelegate(LogEntry entry);
+        private static bool m_UseMonospaceFont;
+        private static Font m_MonospaceFont;
+        private static int m_DefaultFontSize;
 
         //TODO: move this out of here
         internal class Constants
@@ -55,6 +58,7 @@ namespace UnityEditor
             public static readonly GUIContent ErrorPause = EditorGUIUtility.TrTextContent("Error Pause", "Pause Play Mode on error");
             public static readonly GUIContent StopForAssert = EditorGUIUtility.TrTextContent("Stop for Assert");
             public static readonly GUIContent StopForError = EditorGUIUtility.TrTextContent("Stop for Error");
+            public static readonly GUIContent UseMonospaceFont = EditorGUIUtility.TrTextContent("Use Monospace font");
 
             public static int LogStyleLineCount
             {
@@ -104,9 +108,14 @@ namespace UnityEditor
                 // If the console window isn't open OnEnable() won't trigger so it will end up with 0 lines,
                 // so we always make sure we read it up when we initialize here.
                 LogStyleLineCount = EditorPrefs.GetInt("ConsoleWindowLogLineCount", 2);
+
+                m_MonospaceFont = EditorGUIUtility.Load("Fonts/RobotoMono/RobotoMono-Regular.ttf") as Font;
+                m_UseMonospaceFont = HasFlag(ConsoleFlags.UseMonospaceFont);
+                m_DefaultFontSize = LogStyle.fontSize;
+                SetFont();
             }
 
-            private static void UpdateLogStyleFixedHeights()
+            internal static void UpdateLogStyleFixedHeights()
             {
                 // Whenever we change the line height count or the styles are set we need to update the fixed height
                 // of the following GuiStyles so the entries do not get cropped incorrectly.
@@ -143,12 +152,13 @@ namespace UnityEditor
 
         int ms_LVHeight = 0;
 
-        class ConsoleAttachToPlayerState : GeneralConnectionState
+        internal class ConsoleAttachToPlayerState : GeneralConnectionState
         {
             static class Content
             {
-                public static GUIContent PlayerLogging = EditorGUIUtility.TrTextContent("Player Logging");
-                public static GUIContent FullLog = EditorGUIUtility.TrTextContent("Full Log (Developer Mode Only)");
+                public static string PlayerLogging = L10n.Tr("Player Logging");
+                public static string FullLog = L10n.Tr("Full Log [Developer Mode Only]");
+                public static string Logging = L10n.Tr("Logging");
             }
 
             public ConsoleAttachToPlayerState(EditorWindow parentWindow, Action<string, EditorConnectionTarget?> connectedCallback = null) : base(parentWindow, connectedCallback)
@@ -178,17 +188,12 @@ namespace UnityEditor
                 PlayerConnectionLogReceiver.instance.State = IsLoggingFullLog() ? PlayerConnectionLogReceiver.ConnectionState.CleanLog : PlayerConnectionLogReceiver.ConnectionState.FullLog;
             }
 
-            public override void AddItemsToMenu(GenericMenu menu, Rect position)
+            public override void AddItemsToMenu(ConnectionTreeViewWindow view, Rect position, Func<bool> disabler = null)
             {
                 // option to turn logging and the connection on or of
-                menu.AddItem(Content.PlayerLogging, IsConnected(), PlayerLoggingOptionSelected);
-                if (IsConnected())
-                {
-                    // All other options but the first are only available if logging is enabled
-                    menu.AddItem(Content.FullLog, IsLoggingFullLog(), FullLogOptionSelected);
-                    menu.AddSeparator("");
-                    base.AddItemsToMenu(menu, position);
-                }
+                view.AddItem(new ConnectionDropDownItem(Content.PlayerLogging, -2, Content.Logging, ConnectionDropDownItem.ConnectionMajorGroup.Logging, IsConnected, PlayerLoggingOptionSelected, null));
+                view.AddItem(new ConnectionDropDownItem(Content.FullLog, -2, Content.Logging, ConnectionDropDownItem.ConnectionMajorGroup.Logging, IsLoggingFullLog, FullLogOptionSelected, () => PlayerConnectionLogReceiver.instance.State == PlayerConnectionLogReceiver.ConnectionState.Disconnected));
+                base.AddItemsToMenu(view, position, () => PlayerConnectionLogReceiver.instance.State == PlayerConnectionLogReceiver.ConnectionState.Disconnected);
             }
         }
 
@@ -236,6 +241,7 @@ namespace UnityEditor
             ShowTimestamp = 1 << 10,
             ClearOnBuild = 1 << 11,
             ClearOnRecompile = 1 << 12,
+            UseMonospaceFont = 1 << 13,
         }
 
         static ConsoleWindow ms_ConsoleWindow = null;
@@ -901,7 +907,41 @@ namespace UnityEditor
                 menu.AddItem(new GUIContent(string.Format("Log Entry/{0} {1}", i, lineString)), i == Constants.LogStyleLineCount, SetLogLineCount, i);
             }
 
+            menu.AddItem(Constants.UseMonospaceFont, m_UseMonospaceFont, OnFontButtonValueChange);
+
             AddStackTraceLoggingMenu(menu);
+        }
+
+        private static void OnFontButtonValueChange()
+        {
+            m_UseMonospaceFont = !m_UseMonospaceFont;
+            SetFlag(ConsoleFlags.UseMonospaceFont, m_UseMonospaceFont);
+            SetFont();
+        }
+
+        private static void SetFont()
+        {
+            var styles = new[]
+            {
+                Constants.LogStyle,
+                Constants.LogSmallStyle,
+                Constants.WarningStyle,
+                Constants.WarningSmallStyle,
+                Constants.ErrorStyle,
+                Constants.ErrorSmallStyle,
+                Constants.MessageStyle,
+            };
+
+            Font font = m_UseMonospaceFont ? m_MonospaceFont : null;
+
+            foreach (var style in styles)
+            {
+                style.font = font;
+                style.fontSize = m_DefaultFontSize;
+            }
+
+            // Make sure to update the fixed height so the entries do not get cropped incorrectly.
+            Constants.UpdateLogStyleFixedHeights();
         }
 
         private void SetTimestamp()

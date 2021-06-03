@@ -459,6 +459,9 @@ namespace UnityEngine.Events
             if (method == null)
                 return null;
 
+            if (!method.IsStatic && target == null)
+                return null;
+
             var targetObject = method.IsStatic ? null : target;
 
             switch (m_Mode)

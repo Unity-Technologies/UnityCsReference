@@ -147,39 +147,6 @@ namespace UnityEditor
             return true;
         }
 
-        // this is implemented as a static map so that it can survive a garbage collection on the PluginImporter and not get lost
-        private static Dictionary<string, System.Predicate<string>> s_shouldOverridePredicateMap = new Dictionary<string, System.Predicate<string>>();
-        internal void SetShouldOverridePredicate(System.Predicate<string> shouldOverridePredicate)
-        {
-            if (shouldOverridePredicate != null)
-            {
-                s_shouldOverridePredicateMap[assetPath] = shouldOverridePredicate;
-            }
-            else
-            {
-                if (s_shouldOverridePredicateMap.ContainsKey(assetPath))
-                    s_shouldOverridePredicateMap.Remove(assetPath);
-            }
-        }
-
-        [RequiredByNativeCode]
-        private bool InvokeShouldOverridePredicate()
-        {
-            if (s_shouldOverridePredicateMap.ContainsKey(assetPath))
-            {
-                try
-                {
-                    return s_shouldOverridePredicateMap[assetPath](assetPath);
-                }
-                catch (System.Exception)
-                {
-                    UnityEngine.Debug.LogWarning("Exception occurred while invoking ShouldOverridePredicate for " + assetPath);
-                }
-            }
-
-            return false;
-        }
-
         public void SetExcludeFromAnyPlatform(BuildTarget platform, bool excludedFromAny)
         {
             SetExcludeFromAnyPlatform(BuildPipeline.GetBuildTargetName(platform), excludedFromAny);
@@ -265,14 +232,14 @@ namespace UnityEditor
             SetPlatformData(BuildPipeline.GetBuildTargetName(platform), key, value);
         }
 
-        public string GetPlatformData(BuildTarget platform, string key)
-        {
-            return GetPlatformData(BuildPipeline.GetBuildTargetName(platform), key);
-        }
+        public extern string GetPlatformData(BuildTarget platform, string key);
 
         extern public void SetPlatformData(string platformName, string key, string value);
 
-        extern public string GetPlatformData(string platformName, string key);
+        public string GetPlatformData(string platformName, string key)
+        {
+            return GetPlatformData(BuildPipeline.GetBuildTargetByName(platformName), key);
+        }
 
         extern public void SetEditorData(string key, string value);
 
@@ -290,5 +257,8 @@ namespace UnityEditor
         }
 
         extern public static  PluginImporter[] GetAllImporters();
+
+        public extern void SetIcon([NotNull] string className, Texture2D icon);
+        public extern Texture2D GetIcon([NotNull] string className);
     }
 }

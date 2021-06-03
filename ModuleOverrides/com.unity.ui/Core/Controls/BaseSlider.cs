@@ -76,6 +76,15 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal void SetHighValueWithoutNotify(TValueType newHighValue)
+        {
+            m_HighValue = newHighValue;
+            var newValue = clamped ? GetClampedValue(value) : value;
+            SetValueWithoutNotify(newValue);
+            UpdateDragElementPosition();
+            SaveViewData();
+        }
+
         /// <summary>
         /// This is the range from the minimum value to the maximum value of the slider.
         /// </summary>

@@ -381,6 +381,52 @@ namespace UnityEditor.UIElements.Debugger
                 if (childCount == 3)
                     Add(m_SpecificityLabel);
             }
+            else if (val is Rotate rotate)
+            {
+                FloatField floatField = GetOrCreateFields<FloatField, float>(m_PropertyName, 0);
+                if (!IsFocused(floatField))
+                    floatField.SetValueWithoutNotify(rotate.angle.value);
+                Add(m_SpecificityLabel);
+                SetSpecificity(specificity);
+            }
+            else if (val is Scale scale)
+            {
+                Vector3Field vector3Field = GetOrCreateFields<Vector3Field, Vector3>(m_PropertyName, 0);
+                if (!IsFocused(vector3Field))
+                    vector3Field.SetValueWithoutNotify(scale.value);
+                Add(m_SpecificityLabel);
+                SetSpecificity(specificity);
+            }
+            else if (val is Translate translate)
+            {
+                StyleLengthField fieldx = GetOrCreateFields<StyleLengthField, StyleLength>(m_PropertyName, 0);
+                if (!IsFocused(fieldx))
+                    fieldx.SetValueWithoutNotify(translate.x);
+                StyleLengthField fieldy = GetOrCreateFields<StyleLengthField, StyleLength>("y", 1);
+                if (!IsFocused(fieldy))
+                    fieldy.SetValueWithoutNotify(translate.x);
+                FloatField floatField = GetOrCreateFields<FloatField, float>("z", 2);
+                if (!IsFocused(floatField))
+                    floatField.SetValueWithoutNotify(translate.z);
+                Add(m_SpecificityLabel);
+                SetSpecificity(specificity);
+                SetEnabled(false);
+            }
+            else if (val is TransformOrigin transformOrigin)
+            {
+                StyleLengthField fieldx = GetOrCreateFields<StyleLengthField, StyleLength>(m_PropertyName, 0);
+                if (!IsFocused(fieldx))
+                    fieldx.SetValueWithoutNotify(transformOrigin.x);
+                StyleLengthField fieldy = GetOrCreateFields<StyleLengthField, StyleLength>("y", 1);
+                if (!IsFocused(fieldy))
+                    fieldy.SetValueWithoutNotify(transformOrigin.x);
+                FloatField floatField = GetOrCreateFields<FloatField, float>("z", 2);
+                if (!IsFocused(floatField))
+                    floatField.SetValueWithoutNotify(transformOrigin.z);
+                Add(m_SpecificityLabel);
+                SetSpecificity(specificity);
+                SetEnabled(false);
+            }
             else
             {
                 // Enum
@@ -534,6 +580,14 @@ namespace UnityEditor.UIElements.Debugger
                     OverflowInternal newV = (OverflowInternal)newValue;
                     Overflow v = newV == OverflowInternal.Hidden ? Overflow.Hidden : Overflow.Visible;
                     val = new StyleEnum<Overflow>(v);
+                }
+                else if (val is Scale scale && newValue is Vector3 newScale)
+                {
+                    val = new StyleScale(new Scale(newScale));
+                }
+                else if (val is Rotate rotate && newValue is float newAngle)
+                {
+                    val = new StyleRotate(new Rotate(newAngle));
                 }
                 else
                 {

@@ -41,9 +41,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             var movedFromExtractorPath = EditorApplication.applicationContentsPath + $"/Tools/ScriptUpdater/ApiUpdater.MovedFromExtractor.exe";
-            var dotNetRuntimePath = EditorApplication.applicationContentsPath + $"/NetCoreRuntime";
             var dotNetSdkRoslynPath = EditorApplication.applicationContentsPath + $"/DotNetSdkRoslyn";
-            var netcorerunPath = EditorApplication.applicationContentsPath + $"/Tools/netcorerun/netcorerun{ExecutableExtension}";
 
             var localization = "en-US";
             if (LocalizationDatabase.currentEditorLanguage != SystemLanguage.English && EditorPrefs.GetBool("Editor.kEnableCompilerMessagesLocalization", false))
@@ -52,7 +50,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             beeDriver.DataForBuildProgram.Add(new ScriptCompilationData
             {
                 OutputDirectory = outputDirectory,
-                DotnetRuntimePath = dotNetRuntimePath,
+                DotnetRuntimePath = NetCoreProgram.DotNetRuntimePath.ToString(),
                 DotnetRoslynPath = dotNetSdkRoslynPath,
                 MovedFromExtractorPath = movedFromExtractorPath,
                 Assemblies = cachedAssemblies,

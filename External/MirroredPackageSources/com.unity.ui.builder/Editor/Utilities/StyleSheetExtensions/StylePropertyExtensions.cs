@@ -84,7 +84,6 @@ namespace Unity.UI.Builder
             return newValue;
         }
 
-
         internal static StyleValueHandle AddValue(this StyleSheet styleSheet, StyleProperty property, Color value)
         {
             // Undo/Redo

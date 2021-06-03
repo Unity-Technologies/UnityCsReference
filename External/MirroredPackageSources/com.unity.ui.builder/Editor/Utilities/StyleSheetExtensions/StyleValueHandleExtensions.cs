@@ -142,6 +142,97 @@ namespace Unity.UI.Builder
             return styleSheet.strings[valueHandle.valueIndex];
         }
 
+        public static BuilderTransformOrigin GetTransformOrigin(this StyleSheet styleSheet, StyleProperty styleProperty)
+        {
+            int valCount = styleProperty.values.Length;
+
+            if (valCount > 0)
+            {
+                var val1 = new StylePropertyValue() { handle = styleProperty.values[0], sheet = styleSheet };
+                var val2 = valCount > 1 ? new StylePropertyValue() { handle = styleProperty.values[1], sheet = styleSheet } : new StylePropertyValue();
+                var zval = valCount > 2 ? new StylePropertyValue() { handle = styleProperty.values[2], sheet = styleSheet } : new StylePropertyValue();
+
+                return new BuilderTransformOrigin(StylePropertyReader.ReadTransformOrigin(valCount, val1, val2, zval));
+            }
+            else
+            {
+
+                return new BuilderTransformOrigin
+                {
+                    x = new Dimension(0f, Dimension.Unit.Percent),
+                    y = new Dimension(0f, Dimension.Unit.Percent)
+                };
+            }
+        }
+
+        public static BuilderTranslate GetTranslate(this StyleSheet styleSheet, StyleProperty styleProperty)
+        {
+            int valCount = styleProperty.values.Length;
+
+            if (valCount > 0)
+            {
+                var xval = new StylePropertyValue() { handle = styleProperty.values[0], sheet = styleSheet };
+                var yval = valCount > 1 ? new StylePropertyValue() { handle = styleProperty.values[1], sheet = styleSheet } : default;
+                var zval = valCount > 2 ? new StylePropertyValue() { handle = styleProperty.values[2], sheet = styleSheet } : default;
+
+                return new BuilderTranslate(StylePropertyReader.ReadTranslate(valCount, xval, yval, zval));
+            }
+            else
+            {
+
+                return new BuilderTranslate
+                {
+                    x = new Dimension(0f, Dimension.Unit.Percent),
+                    y = new Dimension(0f, Dimension.Unit.Percent)
+                };
+            }
+        }
+
+        public static BuilderRotate GetRotate(this StyleSheet styleSheet, StyleProperty styleProperty)
+        {
+            int valCount = styleProperty.values.Length;
+
+            if (valCount > 0)
+            {
+                var val1 = new StylePropertyValue() { handle = styleProperty.values[0], sheet = styleSheet };
+                var val2 = valCount > 1 ? new StylePropertyValue() { handle = styleProperty.values[1], sheet = styleSheet } : default;
+                var val3 = valCount > 2 ? new StylePropertyValue() { handle = styleProperty.values[2], sheet = styleSheet } : default;
+                var val4 = valCount > 3 ? new StylePropertyValue() { handle = styleProperty.values[3], sheet = styleSheet } : default;
+
+                return new BuilderRotate(StylePropertyReader.ReadRotate(valCount, val1, val2, val3, val4));
+            }
+            else
+            {
+
+                return new BuilderRotate
+                {
+                    x = new Dimension(0f, Dimension.Unit.Degree)
+                };
+            }
+        }
+
+        public static BuilderScale GetScale(this StyleSheet styleSheet, StyleProperty styleProperty)
+        {
+            int valCount = styleProperty.values.Length;
+
+            if (valCount > 0)
+            {
+                var val1 = new StylePropertyValue() { handle = styleProperty.values[0], sheet = styleSheet };
+                var val2 = valCount > 1 ? new StylePropertyValue() { handle = styleProperty.values[1], sheet = styleSheet } : default;
+                var zval = valCount > 2 ? new StylePropertyValue() { handle = styleProperty.values[2], sheet = styleSheet } : default;
+
+                return new BuilderScale(StylePropertyReader.ReadScale(valCount, val1, val2, zval));
+            }
+            else
+            {
+
+                return new BuilderScale
+                {
+                    value = Vector3.one
+                };
+            }
+        }
+
         public static BuilderTextShadow GetTextShadow(this StyleSheet styleSheet, StyleProperty styleProperty)
         {
             Dimension offsetX = new Dimension(0f, Dimension.Unit.Pixel);
@@ -210,7 +301,6 @@ namespace Unity.UI.Builder
                 color = color
             };
         }
-
 
         public static Object GetAsset(this StyleSheet styleSheet, StyleValueHandle valueHandle)
         {

@@ -53,11 +53,13 @@ namespace UnityEngine
 
         [FreeFunction("ShaderScripting::EnableKeyword")]    extern internal static void EnableKeywordFast(GlobalKeyword keyword);
         [FreeFunction("ShaderScripting::DisableKeyword")]   extern internal static void DisableKeywordFast(GlobalKeyword keyword);
+        [FreeFunction("ShaderScripting::SetKeyword")]       extern internal static void SetKeywordFast(GlobalKeyword keyword, bool value);
         [FreeFunction("ShaderScripting::IsKeywordEnabled")] extern internal static bool IsKeywordEnabledFast(GlobalKeyword keyword);
 
-        public static void EnableKeyword(in GlobalKeyword keyword)      { EnableKeywordFast(keyword); }
-        public static void DisableKeyword(in GlobalKeyword keyword)     { DisableKeywordFast(keyword); }
-        public static bool IsKeywordEnabled(in GlobalKeyword keyword)   { return IsKeywordEnabledFast(keyword); }
+        public static void EnableKeyword(in GlobalKeyword keyword)          { EnableKeywordFast(keyword); }
+        public static void DisableKeyword(in GlobalKeyword keyword)         { DisableKeywordFast(keyword); }
+        public static void SetKeyword(in GlobalKeyword keyword, bool value) { SetKeywordFast(keyword, value); }
+        public static bool IsKeywordEnabled(in GlobalKeyword keyword)       { return IsKeywordEnabledFast(keyword); }
 
         extern public int renderQueue {[FreeFunction("ShaderScripting::GetRenderQueue", HasExplicitThis = true)] get; }
         extern internal DisableBatchingType disableBatching {[FreeFunction("ShaderScripting::GetDisableBatchingType", HasExplicitThis = true)] get; }
@@ -277,10 +279,12 @@ namespace UnityEngine
 
         [FreeFunction("MaterialScripting::EnableKeyword", HasExplicitThis = true)] extern private void EnableLocalKeyword(LocalKeyword keyword);
         [FreeFunction("MaterialScripting::DisableKeyword", HasExplicitThis = true)] extern private void DisableLocalKeyword(LocalKeyword keyword);
+        [FreeFunction("MaterialScripting::SetKeyword", HasExplicitThis = true)] extern private void SetLocalKeyword(LocalKeyword keyword, bool value);
         [FreeFunction("MaterialScripting::IsKeywordEnabled", HasExplicitThis = true)] extern private bool IsLocalKeywordEnabled(LocalKeyword keyword);
 
         public void EnableKeyword(in LocalKeyword keyword) { EnableLocalKeyword(keyword); }
         public void DisableKeyword(in LocalKeyword keyword) { DisableLocalKeyword(keyword); }
+        public void SetKeyword(in LocalKeyword keyword, bool value) { SetLocalKeyword(keyword, value); }
         public bool IsKeywordEnabled(in LocalKeyword keyword) { return IsLocalKeywordEnabled(keyword); }
 
         [FreeFunction("MaterialScripting::GetEnabledKeywords", HasExplicitThis = true)] extern private LocalKeyword[] GetEnabledKeywords();
@@ -357,10 +361,10 @@ namespace UnityEngine
         [NativeName("SetMatrixFromScript")]  extern private void SetMatrixImpl(int name, Matrix4x4 value);
         [NativeName("SetTextureFromScript")] extern private void SetTextureImpl(int name, Texture value);
         [NativeName("SetRenderTextureFromScript")] extern private void SetRenderTextureImpl(int name, RenderTexture value, Rendering.RenderTextureSubElement element);
-        [NativeName("SetBufferFromScript")]  extern private void SetBufferImpl(int name, ComputeBuffer value);
-        [NativeName("SetGraphicsBufferFromScript")] extern private void SetGraphicsBufferImpl(int name, GraphicsBuffer value);
+        [NativeName("SetBufferFromScript")] extern private void SetBufferImpl(int name, ComputeBuffer value);
+        [NativeName("SetBufferFromScript")] extern private void SetGraphicsBufferImpl(int name, GraphicsBuffer value);
         [NativeName("SetConstantBufferFromScript")] extern private void SetConstantBufferImpl(int name, ComputeBuffer value, int offset, int size);
-        [NativeName("SetConstantGraphicsBufferFromScript")] extern private void SetConstantGraphicsBufferImpl(int name, GraphicsBuffer value, int offset, int size);
+        [NativeName("SetConstantBufferFromScript")] extern private void SetConstantGraphicsBufferImpl(int name, GraphicsBuffer value, int offset, int size);
 
         [NativeName("GetIntFromScript")]     extern private int       GetIntImpl(int name);
         [NativeName("GetFloatFromScript")]   extern private float     GetFloatImpl(int name);
@@ -432,9 +436,9 @@ namespace UnityEngine
         [NativeName("SetTextureFromScript"), ThreadSafe] extern private void SetTextureImpl(int name, [NotNull] Texture value);
         [NativeName("SetRenderTextureFromScript"), ThreadSafe] extern private void SetRenderTextureImpl(int name, [NotNull] RenderTexture value, RenderTextureSubElement element);
         [NativeName("SetBufferFromScript"), ThreadSafe]  extern private void SetBufferImpl(int name, ComputeBuffer value);
-        [NativeName("SetGraphicsBufferFromScript"), ThreadSafe]  extern private void SetGraphicsBufferImpl(int name, GraphicsBuffer value);
+        [NativeName("SetBufferFromScript"), ThreadSafe]  extern private void SetGraphicsBufferImpl(int name, GraphicsBuffer value);
         [NativeName("SetConstantBufferFromScript"), ThreadSafe] extern private void SetConstantBufferImpl(int name, ComputeBuffer value, int offset, int size);
-        [NativeName("SetConstantGraphicsBufferFromScript"), ThreadSafe] extern private void SetConstantGraphicsBufferImpl(int name, GraphicsBuffer value, int offset, int size);
+        [NativeName("SetConstantBufferFromScript"), ThreadSafe] extern private void SetConstantGraphicsBufferImpl(int name, GraphicsBuffer value, int offset, int size);
 
         [NativeName("SetFloatArrayFromScript"), ThreadSafe]  extern private void SetFloatArrayImpl(int name, float[] values, int count);
         [NativeName("SetVectorArrayFromScript"), ThreadSafe] extern private void SetVectorArrayImpl(int name, Vector4[] values, int count);
@@ -596,11 +600,14 @@ namespace UnityEngine
         extern private void EnableLocalKeyword(LocalKeyword keyword);
         [FreeFunction("ComputeShaderScripting::DisableKeyword", HasExplicitThis = true)]
         extern private void DisableLocalKeyword(LocalKeyword keyword);
+        [FreeFunction("ComputeShaderScripting::SetKeyword", HasExplicitThis = true)]
+        extern private void SetLocalKeyword(LocalKeyword keyword, bool value);
         [FreeFunction("ComputeShaderScripting::IsKeywordEnabled", HasExplicitThis = true)]
         extern private bool IsLocalKeywordEnabled(LocalKeyword keyword);
 
         public void EnableKeyword(in LocalKeyword keyword) { EnableLocalKeyword(keyword); }
         public void DisableKeyword(in LocalKeyword keyword) { DisableLocalKeyword(keyword); }
+        public void SetKeyword(in LocalKeyword keyword, bool value) { SetLocalKeyword(keyword, value); }
         public bool IsKeywordEnabled(in LocalKeyword keyword) { return IsLocalKeywordEnabled(keyword); }
 
         [FreeFunction("ComputeShaderScripting::IsSupported", HasExplicitThis = true)]

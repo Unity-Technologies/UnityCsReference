@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using UnityEditor.Experimental;
+using UnityEditor.IMGUI.Controls;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -22,6 +23,7 @@ namespace UnityEditor
         [SerializeField] private SettingsScope m_Scope;
         [SerializeField] public float m_SplitterFlex = 0.2f;
         [SerializeField] private string m_SearchText;
+        [SerializeField] private TreeViewState m_TreeViewState;
 
         private SettingsProvider[] m_Providers;
         private SettingsTreeView m_TreeView;
@@ -83,6 +85,11 @@ namespace UnityEditor
         internal void SelectProviderByName(string name)
         {
             m_TreeView.FocusSelection(name.GetHashCode());
+        }
+
+        internal void OnLostFocus()
+        {
+            m_TreeView?.currentProvider?.FocusLost();
         }
 
         internal void FilterProviders(string search)
@@ -232,11 +239,11 @@ namespace UnityEditor
                 }
             }
 
-            m_TreeView = new SettingsTreeView(m_Providers);
-            m_TreeView.currentProviderChanged += ProviderChanged;
+            m_TreeViewState = m_TreeViewState ?? new TreeViewState();
+            m_TreeView = new SettingsTreeView(m_TreeViewState, m_Providers);
             m_TreeView.searchString = m_SearchText = m_SearchText ?? string.Empty;
-
             RestoreSelection();
+            m_TreeView.currentProviderChanged += ProviderChanged;
         }
 
         private void WarnAgainstDuplicates()

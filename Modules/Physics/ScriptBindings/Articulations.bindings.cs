@@ -190,11 +190,45 @@ namespace UnityEngine
         extern public float angularDamping { get; set; }
         extern public float jointFriction { get; set; }
 
-        extern public void AddForce(Vector3 force);
-        extern public void AddRelativeForce(Vector3 force);
-        extern public void AddTorque(Vector3 torque);
-        extern public void AddRelativeTorque(Vector3 torque);
-        extern public void AddForceAtPosition(Vector3 force, Vector3 position);
+        extern public void AddForce(Vector3 force, [DefaultValue("ForceMode.Force")] ForceMode mode);
+
+        [ExcludeFromDocs]
+        public void AddForce(Vector3 force)
+        {
+            AddForce(force, ForceMode.Force);
+        }
+
+        extern public void AddRelativeForce(Vector3 force, [DefaultValue("ForceMode.Force")] ForceMode mode);
+
+        [ExcludeFromDocs]
+        public void AddRelativeForce(Vector3 force)
+        {
+            AddRelativeForce(force, ForceMode.Force);
+        }
+
+        extern public void AddTorque(Vector3 torque, [DefaultValue("ForceMode.Force")] ForceMode mode);
+
+        [ExcludeFromDocs]
+        public void AddTorque(Vector3 torque)
+        {
+            AddTorque(torque, ForceMode.Force);
+        }
+
+        extern public void AddRelativeTorque(Vector3 torque, [DefaultValue("ForceMode.Force")] ForceMode mode);
+
+        [ExcludeFromDocs]
+        public void AddRelativeTorque(Vector3 torque)
+        {
+            AddRelativeTorque(torque, ForceMode.Force);
+        }
+
+        extern public void AddForceAtPosition(Vector3 force, Vector3 position, [DefaultValue("ForceMode.Force")] ForceMode mode);
+
+        [ExcludeFromDocs]
+        public void AddForceAtPosition(Vector3 force, Vector3 position)
+        {
+            AddForceAtPosition(force, position, ForceMode.Force);
+        }
 
         extern public Vector3 velocity { get; set; }
         extern public Vector3 angularVelocity { get; set; }

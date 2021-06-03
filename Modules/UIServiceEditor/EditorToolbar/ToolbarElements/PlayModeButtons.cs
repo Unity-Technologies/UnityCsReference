@@ -16,7 +16,7 @@ namespace UnityEditor.Toolbars
 
         readonly EditorToolbarToggle m_PlayButton;
         readonly EditorToolbarToggle m_PauseButton;
-        readonly Button m_StepButton;
+        readonly EditorToolbarButton m_StepButton;
         readonly VisualElement m_UIElementsRoot;
         readonly IMGUIContainer m_ImguiOverride;
 
@@ -29,17 +29,27 @@ namespace UnityEditor.Toolbars
             Add(m_UIElementsRoot = new VisualElement());
             m_UIElementsRoot.style.flexDirection = FlexDirection.Row;
 
-            m_UIElementsRoot.Add(m_PlayButton = new EditorToolbarToggle {name = "Play"});
+            m_UIElementsRoot.Add(m_PlayButton = new EditorToolbarToggle
+            {
+                name = "Play",
+                onIcon = EditorGUIUtility.FindTexture("PlayButton On"),
+                offIcon = EditorGUIUtility.FindTexture("PlayButton"),
+            });
             m_PlayButton.RegisterCallback<MouseDownEvent>(evt => OnPlayButtonRMBClick(evt));
             m_PlayButton.RegisterValueChangedCallback(OnPlayButtonValueChanged);
 
-            m_UIElementsRoot.Add(m_PauseButton = new EditorToolbarToggle { name = "Pause" });
+            m_UIElementsRoot.Add(m_PauseButton = new EditorToolbarToggle
+            {
+                name = "Pause",
+                onIcon = EditorGUIUtility.FindTexture("PauseButton On"),
+                offIcon = EditorGUIUtility.FindTexture("PauseButton"),
+            });
             m_PauseButton.RegisterValueChangedCallback(OnPauseButtonValueChanged);
 
-            m_UIElementsRoot.Add(m_StepButton = new ToolbarButton { name = "Step" });
-            EditorToolbarUtility.AddIconElement(m_StepButton);
+            m_UIElementsRoot.Add(m_StepButton = new EditorToolbarButton { name = "Step" });
             m_StepButton.clickable.activators.Add(new ManipulatorActivationFilter {button = MouseButton.RightMouse});
             m_StepButton.clicked += OnStepButtonClicked;
+            m_StepButton.icon = EditorGUIUtility.FindTexture("StepButton");
 
             EditorToolbarUtility.SetupChildrenAsButtonStrip(m_UIElementsRoot);
 

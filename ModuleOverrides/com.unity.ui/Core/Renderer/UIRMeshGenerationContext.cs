@@ -42,9 +42,9 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public Vector2 uv;
         internal Color32 xformClipPages; // Top-left of xform and clip pages: XY,XY
-        internal Color32 ids; //XYZW (xform,clip,opacity,textcore)
-        internal Color32 flags; //X (flags) Y (textcore-dilate) Z (is-arc) W (unused)
-        internal Color32 opacityPageSettingIndex; //XY (ZW SVG setting index)
+        internal Color32 ids; //XYZW (xform,clip,opacity,color/textcore)
+        internal Color32 flags; //X (flags) Y (textcore-dilate) Z (is-arc) W (is-dynamic-color)
+        internal Color32 opacityColorPages; //XY (opacity) ZW (color, textcore or SVG setting)
         internal Vector4 circle; // XY (center) Z (outer-radius) W (inner-radius, inner-center in uv)
         internal float textureId;
 
@@ -224,6 +224,21 @@ namespace UnityEngine.UIElements
         internal int currentIndex, currentVertex;
     }
 
+    internal struct ColorPage
+    {
+        public bool isValid;
+        public Color32 pageAndID;
+
+        public static ColorPage Init(UIR.RenderChain renderChain, UIR.BMPAlloc alloc)
+        {
+            bool isValid = alloc.IsValid();
+            return new ColorPage() {
+                isValid = isValid,
+                pageAndID = isValid ? renderChain.shaderInfoAllocator.ColorAllocToVertexData(alloc) : new Color32()
+            };
+        }
+    }
+
     internal static class MeshGenerationContextUtils
     {
         public struct BorderParams
@@ -247,6 +262,12 @@ namespace UnityEngine.UIElements
             public Vector2 bottomLeftRadius;
 
             public Material material;
+
+            // The color allocations
+            internal ColorPage leftColorPage;
+            internal ColorPage topColorPage;
+            internal ColorPage rightColorPage;
+            internal ColorPage bottomColorPage;
         }
 
         public struct RectangleParams
@@ -273,6 +294,9 @@ namespace UnityEngine.UIElements
 
             // Cached sprite geometry, which is expensive to evaluate.
             internal Rect spriteGeomRect;
+
+            // The color allocation
+            internal ColorPage colorPage;
 
             internal MeshGenerationContext.MeshFlags meshFlags;
 

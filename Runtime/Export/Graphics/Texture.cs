@@ -22,7 +22,6 @@ namespace UnityEngine
 
         private GraphicsFormat _graphicsFormat;// { get; set; }
 
-
         public GraphicsFormat graphicsFormat
         {
             get { return _graphicsFormat; }
@@ -36,6 +35,8 @@ namespace UnityEngine
 
         public GraphicsFormat stencilFormat { get; set; }
 
+        public GraphicsFormat depthStencilFormat { get; set; }
+
         public RenderTextureFormat colorFormat
         {
             get { return GraphicsFormatUtility.GetRenderTextureFormat(graphicsFormat); }
@@ -46,22 +47,17 @@ namespace UnityEngine
         {
             get { return GraphicsFormatUtility.IsSRGBFormat(graphicsFormat); }
             set { graphicsFormat = GraphicsFormatUtility.GetGraphicsFormat(colorFormat, value); }
+            // The code below does not work (while it feels like it should)
+            // This is because it does not take the project settings into account (unlike GraphicsFormatUtility.GetGraphicsFormat) and so we don't have the fallback kicking in (problem when some formats are not supported)
+            // We should fix this once we do a cleanup of colorspace management inside Unity
+            //set { graphicsFormat = (value) ? GraphicsFormatUtility.GetSRGBFormat(graphicsFormat)  : GraphicsFormatUtility.GetLinearFormat(graphicsFormat); }
         }
 
-        private int _depthBufferBits;
-        private static int[] depthFormatBits = new int[] { 0, 16, 24 };
+
         public int depthBufferBits
         {
-            get { return depthFormatBits[_depthBufferBits]; }
-            set
-            {
-                if (value <= 0)
-                    _depthBufferBits = 0;
-                else if (value <= 16)
-                    _depthBufferBits = 1;
-                else
-                    _depthBufferBits = 2;
-            }
+            get { return GraphicsFormatUtility.GetDepthBits(depthStencilFormat); }
+            set { depthStencilFormat = GraphicsFormatUtility.GetDepthStencilFormat(value); }
         }
 
         public Rendering.TextureDimension dimension { get; set; }
@@ -72,7 +68,7 @@ namespace UnityEngine
         public RenderTextureMemoryless memoryless { get; set; }
 
         public RenderTextureDescriptor(int width, int height)
-            : this(width, height, SystemInfo.GetGraphicsFormat(DefaultFormat.LDR), 0, Texture.GenerateAllMips)
+            : this(width, height, RenderTextureFormat.Default)
         {
         }
 
@@ -82,7 +78,7 @@ namespace UnityEngine
         }
 
         public RenderTextureDescriptor(int width, int height, RenderTextureFormat colorFormat, int depthBufferBits)
-            : this(width, height, SystemInfo.GetCompatibleFormat(GraphicsFormatUtility.GetGraphicsFormat(colorFormat, false), FormatUsage.Render), depthBufferBits)
+            : this(width, height, colorFormat, depthBufferBits, Texture.GenerateAllMips)
         {
         }
 
@@ -106,7 +102,36 @@ namespace UnityEngine
             volumeDepth = 1;
             msaaSamples = 1;
             this.graphicsFormat = colorFormat;
-            this.depthBufferBits = depthBufferBits;
+            this.depthStencilFormat = GetDepthStencilFormatLegacy(depthBufferBits, colorFormat);
+            this.mipCount = mipCount;
+            dimension = Rendering.TextureDimension.Tex2D;
+            shadowSamplingMode =  Rendering.ShadowSamplingMode.None;
+            vrUsage = VRTextureUsage.None;
+            memoryless = RenderTextureMemoryless.None;
+        }
+
+        private static GraphicsFormat GetDepthStencilFormatLegacy(int depthBits, GraphicsFormat colorFormat)
+        {
+            return (colorFormat == GraphicsFormat.ShadowAuto) ?
+                GraphicsFormatUtility.GetDepthStencilFormat(depthBits, 0)
+                : GraphicsFormatUtility.GetDepthStencilFormat(depthBits);
+        }
+
+        [uei.ExcludeFromDocs]
+        public RenderTextureDescriptor(int width, int height, GraphicsFormat colorFormat, GraphicsFormat depthStencilFormat) : this(width, height, colorFormat, depthStencilFormat, Texture.GenerateAllMips)
+        {
+        }
+
+        [uei.ExcludeFromDocs]
+        public RenderTextureDescriptor(int width, int height, GraphicsFormat colorFormat, GraphicsFormat depthStencilFormat, int mipCount) : this()
+        {
+            _flags = RenderTextureCreationFlags.AutoGenerateMips | RenderTextureCreationFlags.AllowVerticalFlip; // Set before graphicsFormat to avoid erasing the flag set by graphicsFormat
+            this.width = width;
+            this.height = height;
+            volumeDepth = 1;
+            msaaSamples = 1;
+            this.graphicsFormat = colorFormat;
+            this.depthStencilFormat = depthStencilFormat;
             this.mipCount = mipCount;
             dimension = Rendering.TextureDimension.Tex2D;
             shadowSamplingMode = Rendering.ShadowSamplingMode.None;
@@ -195,14 +220,8 @@ namespace UnityEngine
 
         [uei.ExcludeFromDocs]
         public RenderTexture(int width, int height, int depth, GraphicsFormat format)
+            : this(width, height, depth, format, Texture.GenerateAllMips)
         {
-            if (!ValidateFormat(format, FormatUsage.Render))
-                return;
-
-            Internal_Create(this);
-            this.width = width; this.height = height; this.depth = depth; this.graphicsFormat = format;
-
-            SetSRGBReadWrite(GraphicsFormatUtility.IsSRGBFormat(format));
         }
 
         [uei.ExcludeFromDocs]
@@ -214,34 +233,82 @@ namespace UnityEngine
                 return;
 
             Internal_Create(this);
-            this.width = width; this.height = height; this.depth = depth; this.graphicsFormat = format;
-
-            descriptor = new RenderTextureDescriptor(width, height, format, depth, mipCount);
+            this.depthStencilFormat = GetDepthStencilFormatLegacy(depth, format);
+            this.width = width; this.height = height; this.graphicsFormat = format; SetMipMapCount(mipCount);
 
             SetSRGBReadWrite(GraphicsFormatUtility.IsSRGBFormat(format));
         }
 
-        public RenderTexture(int width, int height, int depth, [uei.DefaultValue("RenderTextureFormat.Default")] RenderTextureFormat format, [uei.DefaultValue("RenderTextureReadWrite.Default")] RenderTextureReadWrite readWrite)
-            : this(width, height, depth, GetCompatibleFormat(format, readWrite))
+        [uei.ExcludeFromDocs]
+        public RenderTexture(int width, int height, GraphicsFormat colorFormat, GraphicsFormat depthStencilFormat, int mipCount)
         {
+            // Note: the code duplication here is because you can't set a descriptor with
+            // zero width/height, which our own code (and possibly existing user code) relies on.
+            if (!ValidateFormat(colorFormat, FormatUsage.Render))
+                return;
+
+            Internal_Create(this);
+            this.width = width; this.height = height; this.depthStencilFormat = depthStencilFormat;  this.graphicsFormat = colorFormat; SetMipMapCount(mipCount);
+
+            SetSRGBReadWrite(GraphicsFormatUtility.IsSRGBFormat(colorFormat));
+        }
+
+        [uei.ExcludeFromDocs]
+        public RenderTexture(int width, int height, GraphicsFormat colorFormat, GraphicsFormat depthStencilFormat)
+            : this(width, height, colorFormat, depthStencilFormat, Texture.GenerateAllMips)
+        {
+        }
+
+        public RenderTexture(int width, int height, int depth, [uei.DefaultValue("RenderTextureFormat.Default")] RenderTextureFormat format, [uei.DefaultValue("RenderTextureReadWrite.Default")] RenderTextureReadWrite readWrite)
+        {
+            Initialize(width, height, depth, format, readWrite, Texture.GenerateAllMips);
         }
 
         [uei.ExcludeFromDocs]
         public RenderTexture(int width, int height, int depth, RenderTextureFormat format)
-            : this(width, height, depth, GetCompatibleFormat(format, RenderTextureReadWrite.Default))
+            : this(width, height, depth, format, Texture.GenerateAllMips)
         {
         }
 
         [uei.ExcludeFromDocs]
         public RenderTexture(int width, int height, int depth)
-            : this(width, height, depth, GetCompatibleFormat(RenderTextureFormat.Default, RenderTextureReadWrite.Default))
+            : this(width, height, depth, RenderTextureFormat.Default)
         {
         }
 
         [uei.ExcludeFromDocs]
         public RenderTexture(int width, int height, int depth, RenderTextureFormat format, int mipCount)
-            : this(width, height, depth, GetCompatibleFormat(format, RenderTextureReadWrite.Default), mipCount)
         {
+            Initialize(width, height, depth, format, RenderTextureReadWrite.Default, mipCount);
+        }
+
+        private void Initialize(int width, int height, int depth, RenderTextureFormat format, RenderTextureReadWrite readWrite, int mipCount)
+        {
+            GraphicsFormat colorFormat = GetCompatibleFormat(format, readWrite);
+
+            GraphicsFormat depthStencilFormat = GetDepthStencilFormatLegacy(depth, colorFormat);
+
+            // Note: the code duplication here is because you can't set a descriptor with
+            // zero width/height, which our own code (and possibly existing user code) relies on.
+            if (!ValidateFormat(colorFormat, FormatUsage.Render))
+                return;
+
+            Internal_Create(this);
+            this.width = width; this.height = height; this.depthStencilFormat = depthStencilFormat; this.graphicsFormat = colorFormat;
+
+            SetMipMapCount(mipCount);
+            SetSRGBReadWrite(GraphicsFormatUtility.IsSRGBFormat(colorFormat));
+            if (format == RenderTextureFormat.Shadowmap)
+            {
+                SetShadowSamplingMode(Rendering.ShadowSamplingMode.CompareDepths);
+            }
+        }
+
+        private static GraphicsFormat GetDepthStencilFormatLegacy(int depthBits, GraphicsFormat colorFormat)
+        {
+            return (colorFormat == GraphicsFormat.ShadowAuto) ?
+                GraphicsFormatUtility.GetDepthStencilFormat(depthBits, 0)
+                : GraphicsFormatUtility.GetDepthStencilFormat(depthBits);
         }
 
         public RenderTextureDescriptor descriptor
@@ -253,8 +320,13 @@ namespace UnityEngine
 
         private static void ValidateRenderTextureDesc(RenderTextureDescriptor desc)
         {
-            if (!SystemInfo.IsFormatSupported(desc.graphicsFormat, FormatUsage.Render))
-                throw new ArgumentException("RenderTextureDesc graphicsFormat must be a supported GraphicsFormat. " + desc.graphicsFormat + " is not supported.", "desc.graphicsFormat");
+            if (desc.graphicsFormat == GraphicsFormat.None && desc.depthStencilFormat == GraphicsFormat.None)
+                throw new ArgumentException("RenderTextureDesc graphicsFormat and depthStencilFormat cannot both be None.");
+            if (desc.graphicsFormat != GraphicsFormat.None && !SystemInfo.IsFormatSupported(desc.graphicsFormat, FormatUsage.Render))
+                throw new ArgumentException("RenderTextureDesc graphicsFormat must be a supported GraphicsFormat. " + desc.graphicsFormat + " is not supported on this platform.", "desc.graphicsFormat");
+            if (desc.depthStencilFormat != GraphicsFormat.None &&
+                !(GraphicsFormatUtility.IsDepthFormat(desc.depthStencilFormat) || GraphicsFormatUtility.IsStencilFormat(desc.depthStencilFormat)))
+                throw new ArgumentException("RenderTextureDesc depthStencilFormat must be a supported depth/stencil GraphicsFormat. " + desc.depthStencilFormat + " is not supported on this platform.", "desc.depthStencilFormat");
             if (desc.width <= 0)
                 throw new ArgumentException("RenderTextureDesc width must be greater than zero.", "desc.width");
             if (desc.height <= 0)
@@ -263,8 +335,10 @@ namespace UnityEngine
                 throw new ArgumentException("RenderTextureDesc volumeDepth must be greater than zero.", "desc.volumeDepth");
             if (desc.msaaSamples != 1 && desc.msaaSamples != 2 && desc.msaaSamples != 4 && desc.msaaSamples != 8)
                 throw new ArgumentException("RenderTextureDesc msaaSamples must be 1, 2, 4, or 8.", "desc.msaaSamples");
-            if (desc.depthBufferBits != 0 && desc.depthBufferBits != 16 && desc.depthBufferBits != 24)
-                throw new ArgumentException("RenderTextureDesc depthBufferBits must be 0, 16, or 24.", "desc.depthBufferBits");
+
+            if (desc.graphicsFormat != GraphicsFormat.ShadowAuto && desc.graphicsFormat != GraphicsFormat.DepthAuto
+                && (GraphicsFormatUtility.IsDepthFormat(desc.graphicsFormat) || GraphicsFormatUtility.IsStencilFormat(desc.graphicsFormat)))
+                throw new ArgumentException("RenderTextureDesc graphicsFormat must not be a depth/stencil format. " + desc.graphicsFormat + " is not supported.", "desc.graphicsFormat");
         }
     }
 
@@ -296,15 +370,20 @@ namespace UnityEngine
         // to keep things sane we will do internal methods WITH default args and do overloads that simply call it
 
         private static RenderTexture GetTemporaryImpl(int width, int height, int depthBuffer,
-            GraphicsFormat format,
+            GraphicsFormat colorFormat,
             int antiAliasing = 1, RenderTextureMemoryless memorylessMode = RenderTextureMemoryless.None,
             VRTextureUsage vrUsage = VRTextureUsage.None, bool useDynamicScale = false)
         {
-            RenderTextureDescriptor desc = new RenderTextureDescriptor(width, height, format, depthBuffer);
+            RenderTextureDescriptor desc = new RenderTextureDescriptor(width, height, colorFormat, GetDepthStencilFormatLegacy(depthBuffer, colorFormat));
             desc.msaaSamples = antiAliasing;
             desc.memoryless = memorylessMode;
             desc.vrUsage = vrUsage;
             desc.useDynamicScale = useDynamicScale;
+
+            if (colorFormat == GraphicsFormat.ShadowAuto)
+            {
+                desc.shadowSamplingMode = Rendering.ShadowSamplingMode.CompareDepths;
+            }
 
             return GetTemporary(desc);
         }
@@ -353,7 +432,7 @@ namespace UnityEngine
             [uei.DefaultValue("VRTextureUsage.None")] VRTextureUsage vrUsage, [uei.DefaultValue("false")] bool useDynamicScale
         )
         {
-            return GetTemporaryImpl(width, height, depthBuffer, GraphicsFormatUtility.GetGraphicsFormat(format, readWrite), antiAliasing, memorylessMode, vrUsage, useDynamicScale);
+            return GetTemporaryImpl(width, height, depthBuffer, GetCompatibleFormat(format, readWrite), antiAliasing, memorylessMode, vrUsage, useDynamicScale);
         }
 
         // the rest will be excluded from docs (to "pretend" we have one method with default args)
@@ -477,6 +556,13 @@ namespace UnityEngine
 
         internal bool ValidateFormat(GraphicsFormat format, FormatUsage usage)
         {
+            //The auto formats are allowed to set as RenderTexture color format.
+            if (usage != FormatUsage.Render && (format == GraphicsFormat.ShadowAuto || format == GraphicsFormat.DepthAuto))
+            {
+                Debug.LogWarning(String.Format("'{0}' is not allowed because it is an auto format and not an exact format. Use GraphicsFormatUtility.GetDepthStencilFormat to get an exact depth/stencil format.", format.ToString()), this);
+                return false;
+            }
+
             if (SystemInfo.IsFormatSupported(format, usage))
             {
                 return true;
@@ -503,9 +589,33 @@ namespace UnityEngine
 
     public partial class Texture2D : Texture
     {
+        internal bool ValidateFormat(TextureFormat format, int width, int height)
+        {
+            bool isValid = ValidateFormat(format);
+            if (isValid)
+            {
+                bool requireSquarePOT = (TextureFormat.PVRTC_RGB2 <= format && format <= TextureFormat.PVRTC_RGBA4);
+                if (requireSquarePOT && !(width == height && Mathf.IsPowerOfTwo(width)))
+                    throw new UnityException(String.Format("'{0}' demands texture to be square and have power-of-two dimensions", format.ToString()));
+            }
+            return isValid;
+        }
+
+        internal bool ValidateFormat(GraphicsFormat format, int width, int height)
+        {
+            bool isValid = ValidateFormat(format, FormatUsage.Sample);
+            if (isValid)
+            {
+                bool requireSquarePOT = GraphicsFormatUtility.IsPVRTCFormat(format);
+                if (requireSquarePOT && !(width == height && Mathf.IsPowerOfTwo(width)))
+                    throw new UnityException(String.Format("'{0}' demands texture to be square and have power-of-two dimensions", format.ToString()));
+            }
+            return isValid;
+        }
+
         internal Texture2D(int width, int height, GraphicsFormat format, TextureCreationFlags flags, int mipCount, IntPtr nativeTex)
         {
-            if (ValidateFormat(format, FormatUsage.Sample))
+            if (ValidateFormat(format, width, height))
                 Internal_Create(this, width, height, mipCount, format, flags, nativeTex);
         }
 
@@ -529,7 +639,7 @@ namespace UnityEngine
 
         internal Texture2D(int width, int height, TextureFormat textureFormat, int mipCount, bool linear, IntPtr nativeTex)
         {
-            if (!ValidateFormat(textureFormat))
+            if (!ValidateFormat(textureFormat, width, height))
                 return;
 
             GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, !linear);
@@ -823,6 +933,30 @@ namespace UnityEngine
 
     public sealed partial class Cubemap : Texture
     {
+        internal bool ValidateFormat(TextureFormat format, int width)
+        {
+            bool isValid = ValidateFormat(format);
+            if (isValid)
+            {
+                bool requireSquarePOT = (TextureFormat.PVRTC_RGB2 <= format && format <= TextureFormat.PVRTC_RGBA4);
+                if (requireSquarePOT && !Mathf.IsPowerOfTwo(width))
+                    throw new UnityException(String.Format("'{0}' demands texture to have power-of-two dimensions", format.ToString()));
+            }
+            return isValid;
+        }
+
+        internal bool ValidateFormat(GraphicsFormat format, int width)
+        {
+            bool isValid = ValidateFormat(format, FormatUsage.Sample);
+            if (isValid)
+            {
+                bool requireSquarePOT = GraphicsFormatUtility.IsPVRTCFormat(format);
+                if (requireSquarePOT && !Mathf.IsPowerOfTwo(width))
+                    throw new UnityException(String.Format("'{0}' demands texture to have power-of-two dimensions", format.ToString()));
+            }
+            return isValid;
+        }
+
         [uei.ExcludeFromDocs]
         public Cubemap(int width, DefaultFormat format, TextureCreationFlags flags)
             : this(width, SystemInfo.GetGraphicsFormat(format), flags)
@@ -833,7 +967,7 @@ namespace UnityEngine
         [RequiredByNativeCode] // used to create builtin textures
         public Cubemap(int width, GraphicsFormat format, TextureCreationFlags flags)
         {
-            if (ValidateFormat(format, FormatUsage.Sample))
+            if (ValidateFormat(format, width))
                 Internal_Create(this, width, Texture.GenerateAllMips, format, flags, IntPtr.Zero);
         }
 
@@ -845,7 +979,7 @@ namespace UnityEngine
         [uei.ExcludeFromDocs]
         public Cubemap(int width, GraphicsFormat format, TextureCreationFlags flags, int mipCount)
         {
-            if (!ValidateFormat(format, FormatUsage.Sample))
+            if (!ValidateFormat(format, width))
                 return;
 
             ValidateIsNotCrunched(flags); // Script created Crunched Cubemaps not supported
@@ -855,7 +989,7 @@ namespace UnityEngine
 
         internal Cubemap(int width, TextureFormat textureFormat, int mipCount, IntPtr nativeTex)
         {
-            if (!ValidateFormat(textureFormat))
+            if (!ValidateFormat(textureFormat, width))
                 return;
 
             GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, false);
@@ -1119,6 +1253,30 @@ namespace UnityEngine
 
     public sealed partial class Texture2DArray : Texture
     {
+        internal bool ValidateFormat(TextureFormat format, int width, int height)
+        {
+            bool isValid = ValidateFormat(format);
+            if (isValid)
+            {
+                bool requireSquarePOT = (TextureFormat.PVRTC_RGB2 <= format && format <= TextureFormat.PVRTC_RGBA4);
+                if (requireSquarePOT && !(width == height && Mathf.IsPowerOfTwo(width)))
+                    throw new UnityException(String.Format("'{0}' demands texture to be square and have power-of-two dimensions", format.ToString()));
+            }
+            return isValid;
+        }
+
+        internal bool ValidateFormat(GraphicsFormat format, int width, int height)
+        {
+            bool isValid = ValidateFormat(format, FormatUsage.Sample);
+            if (isValid)
+            {
+                bool requireSquarePOT = GraphicsFormatUtility.IsPVRTCFormat(format);
+                if (requireSquarePOT && !(width == height && Mathf.IsPowerOfTwo(width)))
+                    throw new UnityException(String.Format("'{0}' demands texture to be square and have power-of-two dimensions", format.ToString()));
+            }
+            return isValid;
+        }
+
         [uei.ExcludeFromDocs]
         public Texture2DArray(int width, int height, int depth, DefaultFormat format, TextureCreationFlags flags)
             : this(width, height, depth, SystemInfo.GetGraphicsFormat(format), flags)
@@ -1135,15 +1293,16 @@ namespace UnityEngine
         [uei.ExcludeFromDocs]
         public Texture2DArray(int width, int height, int depth, GraphicsFormat format, TextureCreationFlags flags, int mipCount)
         {
-            if (!ValidateFormat(format, FormatUsage.Sample))
+            if (!ValidateFormat(format, width, height))
                 return;
+
             ValidateIsNotCrunched(flags);
             Internal_Create(this, width, height, depth, mipCount, format, flags);
         }
 
         public Texture2DArray(int width, int height, int depth, TextureFormat textureFormat, int mipCount, bool linear)
         {
-            if (!ValidateFormat(textureFormat))
+            if (!ValidateFormat(textureFormat, width, height))
                 return;
 
             GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, !linear);

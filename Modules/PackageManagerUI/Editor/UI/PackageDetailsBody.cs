@@ -14,30 +14,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private const string k_EmptyDescriptionClass = "empty";
 
-        internal enum InfoBoxState
-        {
-            PreRelease,
-            Experimental,
-            ReleaseCandidate,
-            ScopedRegistry
-        }
-
-        private static readonly string[] k_InfoBoxReadMoreUrl =
-        {
-            "/Documentation/Manual/pack-prerelease.html",
-            "/Documentation/Manual/pack-experimental.html",
-            "/Documentation/Manual/pack-releasecandidate.html",
-            "/Documentation/Manual/upm-scoped.html"
-        };
-
-        private static readonly string[] k_InfoBoxReadMoreText =
-        {
-            L10n.Tr("Pre-release packages are in the process of becoming stable and will be available as production-ready by the end of this LTS release. We recommend using these only for testing purposes and to give us direct feedback until then."),
-            L10n.Tr("Experimental packages are new packages or experiments on mature packages in the early stages of development. Experimental packages are not supported by Unity."),
-            L10n.Tr("Release Candidate (RC) versions of a package will transition to Released with the current editor release. RCs are supported by Unity"),
-            L10n.Tr("This package is hosted on a Scoped Registry.")
-        };
-
         private ResourceLoader m_ResourceLoader;
         private ApplicationProxy m_Application;
         private PackageDatabase m_PackageDatabase;
@@ -50,8 +26,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
             m_PackageDatabase = container.Resolve<PackageDatabase>();
         }
-
-        private string infoBoxUrl => $"https://docs.unity3d.com/{m_Application?.shortUnityVersion}";
 
         internal bool descriptionExpanded => m_DescriptionExpanded;
         private bool m_DescriptionExpanded;
@@ -70,7 +44,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             detailDescMore.clickable.clicked += DescMoreClick;
             detailDescLess.clickable.clicked += DescLessClick;
             detailDesc.RegisterCallback<GeometryChangedEvent>(DescriptionGeometryChangeEvent);
-            scopedRegistryInfoBox.Q<Button>().clickable.clicked += OnInfoBoxClickMore;
         }
 
         public void OnEnable()
@@ -96,7 +69,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             RefreshDependencies();
             RefreshLabels();
             RefreshDescription();
-            RefreshRegistry();
             RefreshReleaseDetails();
             RefreshSizeAndSupportedUnityVersions();
             RefreshPurchasedDate();
@@ -105,6 +77,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshDependencies()
         {
+            featureDependencies.SetPackageVersion(m_Version);
             dependencies.SetPackageVersion(m_Version);
         }
 
@@ -131,18 +104,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 detailLabels.Add(new Label(L10n.Tr("(None)")));
 
             UIUtils.SetElementDisplay(detailLabelsContainer, hasLabels || isAssetStorePackage);
-        }
-
-        private void OnInfoBoxClickMore()
-        {
-            if (m_Version.HasTag(PackageTag.PreRelease))
-                m_Application.OpenURL($"{infoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.PreRelease]}");
-            else if (m_Version.HasTag(PackageTag.Experimental))
-                m_Application.OpenURL($"{infoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.Experimental]}");
-            else if (m_Version.HasTag(PackageTag.ReleaseCandidate))
-                m_Application.OpenURL($"{infoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.ReleaseCandidate]}");
-            else if (m_Package.Is(PackageType.ScopedRegistry))
-                m_Application.OpenURL($"{infoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.ScopedRegistry]}");
         }
 
         private void DescMoreClick()
@@ -201,35 +162,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(detailDescMore, false);
             UIUtils.SetElementDisplay(detailDescLess, false);
             m_DescriptionExpanded = !m_Package.Is(PackageType.AssetStore);
-        }
-
-        private void RefreshRegistry()
-        {
-            var registry = m_Version.packageInfo?.registry;
-            var showRegistry = registry != null;
-            UIUtils.SetElementDisplay(detailRegistryContainer, showRegistry);
-            if (showRegistry)
-            {
-                scopedRegistryInfoBox.text = k_InfoBoxReadMoreText[(int)InfoBoxState.ScopedRegistry];
-                UIUtils.SetElementDisplay(scopedRegistryInfoBox, !registry.isDefault);
-                detailRegistryName.text = registry.isDefault ? "Unity" : registry.name;
-                detailRegistryName.tooltip = registry.url;
-            }
-            if (m_Version.HasTag(PackageTag.Experimental))
-            {
-                scopedRegistryInfoBox.text = k_InfoBoxReadMoreText[(int)InfoBoxState.Experimental];
-                UIUtils.SetElementDisplay(scopedRegistryInfoBox, true);
-            }
-            else if (m_Version.HasTag(PackageTag.PreRelease))
-            {
-                scopedRegistryInfoBox.text = k_InfoBoxReadMoreText[(int)InfoBoxState.PreRelease];
-                UIUtils.SetElementDisplay(scopedRegistryInfoBox, true);
-            }
-            else if (m_Version.HasTag(PackageTag.ReleaseCandidate))
-            {
-                scopedRegistryInfoBox.text = k_InfoBoxReadMoreText[(int)InfoBoxState.ReleaseCandidate];
-                UIUtils.SetElementDisplay(scopedRegistryInfoBox, true);
-            }
         }
 
         private void RefreshPurchasedDate()
@@ -334,10 +266,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private Button detailDescMore => cache.Get<Button>("detailDescMore");
         private Button detailDescLess => cache.Get<Button>("detailDescLess");
 
-        private VisualElement detailRegistryContainer => cache.Get<VisualElement>("detailRegistryContainer");
-        private HelpBox scopedRegistryInfoBox => cache.Get<HelpBox>("scopedRegistryInfoBox");
-        private Label detailRegistryName => cache.Get<Label>("detailRegistryName");
-
         private HelpBox disabledInfoBox => cache.Get<HelpBox>("disabledInfoBox");
 
         private VisualElement detailSourcePathContainer => cache.Get<VisualElement>("detailSourcePathContainer");
@@ -361,5 +289,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private PackageSampleList sampleList => cache.Get<PackageSampleList>("detailSampleList");
         private PackageDependencies dependencies => cache.Get<PackageDependencies>("detailDependencies");
         private PackageDetailsImages detailsImages => cache.Get<PackageDetailsImages>("detailImagesContainer");
+
+        private FeatureDependencies featureDependencies => cache.Get<FeatureDependencies>("featureDependencies");
     }
 }

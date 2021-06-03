@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor.EditorTools;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Toolbars
@@ -19,9 +20,20 @@ namespace UnityEditor.Toolbars
             Add(new ToolButton(Tool.Scale));
             Add(new ToolButton(Tool.Rect));
             Add(new ToolButton(Tool.Transform));
-            Add(new LastCustomToolButton());
 
             EditorToolbarUtility.SetupChildrenAsButtonStrip(this);
+
+            var customToolButton = new LastCustomToolButton();
+            customToolButton.AddToClassList(EditorToolbarUtility.aloneStripElementClassName);
+            Add(customToolButton);
+
+            // Only show the contexts dropdown if there are non-builtin contexts available
+            if (EditorToolUtility.toolContextsInProject > 1)
+            {
+                var contexts = new ToolContextButton();
+                contexts.AddToClassList(EditorToolbarUtility.aloneStripElementClassName);
+                Insert(0, contexts);
+            }
         }
     }
 }

@@ -24,6 +24,12 @@ namespace UnityEditor.Build
         void OnPreprocessBuild(BuildTarget target, string path);
     }
 
+    public abstract class BuildPlayerProcessor : IOrderedCallback
+    {
+        public virtual int callbackOrder => 0;
+        public abstract void PrepareForBuild(BuildPlayerContext buildPlayerContext);
+    }
+
     public interface IPreprocessBuildWithReport : IOrderedCallback
     {
         void OnPreprocessBuild(BuildReport report);
@@ -95,6 +101,8 @@ namespace UnityEditor.Build
             public List<IPostprocessBuild> buildPostprocessors;
             public List<IProcessScene> sceneProcessors;
 #pragma warning restore 618
+
+            public List<BuildPlayerProcessor> buildPlayerProcessors;
 
             public List<IPreprocessBuildWithReport> buildPreprocessorsWithReport;
             public List<IPostprocessBuildWithReport> buildPostprocessorsWithReport;
@@ -219,6 +227,7 @@ namespace UnityEditor.Build
 
                 if (findBuildProcessors)
                 {
+                    AddToListIfTypeImplementsInterface(t, ref instance, ref processors.buildPlayerProcessors);
                     AddToListIfTypeImplementsInterface(t, ref instance, ref processors.buildPreprocessors);
                     AddToListIfTypeImplementsInterface(t, ref instance, ref processors.buildPreprocessorsWithReport);
                     AddToListIfTypeImplementsInterface(t, ref instance, ref processors.buildPostprocessors);
@@ -276,6 +285,7 @@ namespace UnityEditor.Build
                         AddToList(new AttributeCallbackWrapper(m), ref processors.sceneProcessorsWithReport);
             }
 
+            processors.buildPlayerProcessors?.Sort(CompareICallbackOrder);
             if (processors.buildPreprocessors != null)
                 processors.buildPreprocessors.Sort(CompareICallbackOrder);
             if (processors.buildPreprocessorsWithReport != null)
@@ -405,6 +415,12 @@ namespace UnityEditor.Build
             }
 
             return true;
+        }
+
+        internal static void PreparePlayerBuild(BuildPlayerContext context)
+        {
+            foreach (var p in processors.buildPlayerProcessors ?? new List<BuildPlayerProcessor>())
+                p.PrepareForBuild(context);
         }
 
         [RequiredByNativeCode]
@@ -556,6 +572,7 @@ namespace UnityEditor.Build
         internal static void CleanupBuildCallbacks()
         {
             processors.buildTargetProcessors = null;
+            processors.buildPlayerProcessors = null;
             processors.buildPreprocessors = null;
             processors.buildPostprocessors = null;
             processors.sceneProcessors = null;

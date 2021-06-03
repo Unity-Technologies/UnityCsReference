@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -13,15 +12,20 @@ namespace UnityEditor.UIElements.Bindings
 {
     class ListViewSerializedObjectBinding : SerializedObjectBindingBase
     {
-        ListView listView { get { return boundElement as ListView; } set { boundElement = value; } }
+        ListView listView
+        {
+            get { return boundElement as ListView; }
+            set { boundElement = value; }
+        }
 
         SerializedObjectList m_DataList;
 
         SerializedProperty m_ArraySize;
         int m_ListViewArraySize;
 
-        private bool makeItemSet;
-        private bool bindItemSet;
+        bool m_MakeItemSet;
+        bool m_BindItemSet;
+        bool m_UnbindItemSet;
 
         public static void CreateBind(ListView listView,
             SerializedObjectBindingContext context,
@@ -38,9 +42,10 @@ namespace UnityEditor.UIElements.Bindings
             boundProperty = prop;
             boundPropertyPath = prop.propertyPath;
 
-            m_DataList = new SerializedObjectList(prop, listView.showBoundCollectionSize);
+            m_DataList = new SerializedObjectList(prop, listView.sourceIncludesArraySize);
             m_ArraySize = m_DataList.ArraySize;
             m_ListViewArraySize = m_DataList.ArraySize.intValue;
+            m_LastSourceIncludesArraySize = listView.sourceIncludesArraySize;
             SetListView(listView);
         }
 
@@ -48,38 +53,44 @@ namespace UnityEditor.UIElements.Bindings
         {
             if (listView != null)
             {
-                if (bindItemSet)
+                if (m_BindItemSet)
                     listView.bindItem = null;
-                if (makeItemSet)
+                if (m_MakeItemSet)
                     listView.makeItem = null;
+                if (m_UnbindItemSet)
+                    listView.unbindItem = null;
 
                 listView.itemsSource = null;
-                listView.Refresh();
-
+                listView.SetViewController(null);
                 listView.SetDragAndDropController(null);
             }
 
+            listView = lv;
 
-            this.listView = lv;
-
-            makeItemSet = bindItemSet = false;
+            m_MakeItemSet = m_BindItemSet = m_UnbindItemSet = false;
             if (listView != null)
             {
                 if (listView.makeItem == null)
                 {
                     listView.makeItem = () => MakeListViewItem();
-                    makeItemSet = true;
+                    m_MakeItemSet = true;
                 }
 
                 if (listView.bindItem == null)
                 {
                     listView.bindItem = (v, i) => BindListViewItem(v, i);
-                    bindItemSet = true;
+                    m_BindItemSet = true;
                 }
 
-                listView.itemsSource = m_DataList;
+                if (listView.unbindItem == null)
+                {
+                    listView.unbindItem = (v, i) => UnbindListViewItem(v, i);
+                    m_UnbindItemSet = true;
+                }
 
+                listView.SetViewController(new EditorListViewController());
                 listView.SetDragAndDropController(new SerializedObjectListReorderableDragAndDropController(listView));
+                listView.itemsSource = m_DataList;
             }
         }
 
@@ -90,6 +101,12 @@ namespace UnityEditor.UIElements.Bindings
 
         void BindListViewItem(VisualElement ve, int index)
         {
+            if (m_ArraySize.intValue != m_ListViewArraySize)
+            {
+                // We need to wait for array size to be updated, which triggers a refresh anyway.
+                return;
+            }
+
             var field = ve as IBindable;
             if (field == null)
             {
@@ -109,12 +126,36 @@ namespace UnityEditor.UIElements.Bindings
             bindingContext.ContinueBinding(ve, itemProp);
         }
 
+        void UnbindListViewItem(VisualElement ve, int index)
+        {
+            var field = ve as IBindable;
+            if (field == null)
+            {
+                //we find the first Bindable
+                field = ve.Query().Where(x => x is IBindable).First() as IBindable;
+            }
+
+            if (field == null)
+            {
+                //can't default unbind anything!
+                throw new InvalidOperationException("Can't find BindableElement: please provide BindableVisualElements or provide your own Listview.unbindItem callback");
+            }
+
+            ve.Unbind();
+        }
+
         void UpdateArraySize()
         {
-            m_DataList.RefreshProperties(boundProperty, listView.showBoundCollectionSize);
+            foreach (var item in listView.activeItems)
+            {
+                item.rootElement.Unbind();
+            }
+
+            m_DataList.RefreshProperties(boundProperty, listView.sourceIncludesArraySize);
             m_ArraySize = m_DataList.ArraySize;
             m_ListViewArraySize = m_ArraySize.intValue;
-            listView.Refresh();
+            m_LastSourceIncludesArraySize = listView.sourceIncludesArraySize;
+            listView.RefreshItems();
         }
 
         public override void Release()
@@ -131,7 +172,8 @@ namespace UnityEditor.UIElements.Bindings
             m_ListViewArraySize = -1;
         }
 
-        private UInt64 lastUpdatedRevision = 0xFFFFFFFFFFFFFFFF;
+        private UInt64 m_LastUpdatedRevision = 0xFFFFFFFFFFFFFFFF;
+        private bool m_LastSourceIncludesArraySize;
 
         protected override void ResetCachedValues()
         {
@@ -151,15 +193,15 @@ namespace UnityEditor.UIElements.Bindings
                 ResetUpdate();
                 isUpdating = true;
 
-                if (lastUpdatedRevision == bindingContext.lastRevision)
+                if (m_LastUpdatedRevision == bindingContext.lastRevision && listView.sourceIncludesArraySize == m_LastSourceIncludesArraySize)
                     return;
 
                 if (bindingContext.IsValid() && IsPropertyValid())
                 {
-                    lastUpdatedRevision = bindingContext.lastRevision;
+                    m_LastUpdatedRevision = bindingContext.lastRevision;
 
                     int currentArraySize = m_ArraySize.intValue;
-                    if (currentArraySize != m_ListViewArraySize)
+                    if (currentArraySize != m_ListViewArraySize || listView.sourceIncludesArraySize != m_LastSourceIncludesArraySize)
                     {
                         UpdateArraySize();
                     }
@@ -175,6 +217,7 @@ namespace UnityEditor.UIElements.Bindings
             {
                 isUpdating = false;
             }
+
             // We unbind here
             Release();
         }
@@ -183,9 +226,9 @@ namespace UnityEditor.UIElements.Bindings
     class SerializedObjectListReorderableDragAndDropController : ListViewReorderableDragAndDropController
     {
         private SerializedObjectList objectList => m_ListView.itemsSource as SerializedObjectList;
-        public SerializedObjectListReorderableDragAndDropController(ListView listView) : base(listView)
-        {
-        }
+
+        public SerializedObjectListReorderableDragAndDropController(ListView listView)
+            : base(listView) {}
 
         public override void OnDrop(IListDragAndDropArgs args)
         {
@@ -199,72 +242,17 @@ namespace UnityEditor.UIElements.Bindings
                     throw new ArgumentException($"{args.dragAndDropPosition} is not supported by {nameof(SerializedObjectListReorderableDragAndDropController)}.");
             }
 
-            var array = objectList;
-
-            // TODO: GC Allocs generated by LINQ
-            var selection = m_ListView.selectedIndices.OrderBy((i) => i).ToArray();
-
-            var baseOffset = 0;
-            if (m_ListView.showBoundCollectionSize)
-            {
-                //we must offset everything by 1
-                baseOffset = -1;
-            }
-
-            var insertIndex = args.insertAtIndex + baseOffset;
-
-            int insertIndexShift = 0;
-            int srcIndexShift = 0;
-            for (int i = selection.Length - 1; i >= 0; --i)
-            {
-                var index = selection[i] + baseOffset;
-
-                if (index < 0)
-                    continue;
-
-                var newIndex = insertIndex - insertIndexShift;
-
-                if (index > insertIndex)
-                {
-                    index += srcIndexShift;
-                    srcIndexShift++;
-                }
-                else if (index < newIndex)
-                {
-                    insertIndexShift++;
-                    newIndex--;
-                }
-
-                array.Move(index, newIndex);
-
-                onItemMoved?.Invoke(new ItemMoveArgs<object>
-                {
-                    item = objectList[index],
-                    newIndex = newIndex,
-                    previousIndex = index
-                });
-            }
-
-            array.ApplyChanges();
-
-            var newSelection = new List<int>();
-
-            for (int i = 0; i < selection.Length; ++i)
-            {
-                newSelection.Add(insertIndex - insertIndexShift + i - baseOffset);
-            }
-
-            m_ListView.SetSelectionWithoutNotify(newSelection);
+            base.OnDrop(args);
         }
     }
-
 
     internal class SerializedObjectList : IList
     {
         public SerializedProperty ArrayProperty { get; private set; }
-        public SerializedProperty ArraySize {get; private set;}
+        public SerializedProperty ArraySize { get; private set; }
 
         List<SerializedProperty> properties;
+
         public SerializedObjectList(SerializedProperty parentProperty, bool includeArraySize)
         {
             RefreshProperties(parentProperty, includeArraySize);
@@ -297,7 +285,7 @@ namespace UnityEditor.UIElements.Bindings
                     properties.Add(property.Copy());
                 }
             }
-            while (property.NextVisible(false)); // Never expand children.
+            while (property.NextVisible(false));   // Never expand children.
 
             if (ArraySize == null)
             {
@@ -307,14 +295,8 @@ namespace UnityEditor.UIElements.Bindings
 
         public object this[int index]
         {
-            get
-            {
-                return properties[index];
-            }
-            set
-            {
-                throw new NotImplementedException();
-            }
+            get { return properties[index]; }
+            set { throw new NotImplementedException(); }
         }
 
         public bool IsReadOnly => true;
@@ -366,11 +348,39 @@ namespace UnityEditor.UIElements.Bindings
             {
                 return properties.IndexOf(prop);
             }
+
             return -1;
         }
 
         public void Move(int srcIndex, int destIndex)
         {
+            if (srcIndex == destIndex)
+                return;
+
+            var sourceExpanded = ArrayProperty.GetArrayElementAtIndex(srcIndex).isExpanded;
+            if (srcIndex < destIndex)
+            {
+                var currentProperty = ArrayProperty.GetArrayElementAtIndex(srcIndex);
+                for (var i = srcIndex + 1; i <= destIndex; i++)
+                {
+                    var nextProperty = ArrayProperty.GetArrayElementAtIndex(i);
+                    currentProperty.isExpanded = nextProperty.isExpanded;
+                    currentProperty = nextProperty;
+                }
+            }
+            else
+            {
+                var currentPropertyExpanded = ArrayProperty.GetArrayElementAtIndex(destIndex).isExpanded;
+                for (var i = destIndex + 1; i <= srcIndex; i++)
+                {
+                    var nextProperty = ArrayProperty.GetArrayElementAtIndex(i);
+                    var nextPropertyExpanded = nextProperty.isExpanded;
+                    nextProperty.isExpanded = currentPropertyExpanded;
+                    currentPropertyExpanded = nextPropertyExpanded;
+                }
+            }
+
+            ArrayProperty.GetArrayElementAtIndex(destIndex).isExpanded = sourceExpanded;
             ArrayProperty.MoveArrayElement(srcIndex, destIndex);
         }
 
@@ -386,16 +396,23 @@ namespace UnityEditor.UIElements.Bindings
 
         public void Remove(object value)
         {
-            var index = IndexOf(value);
-            if (index >= 0)
-            {
-                RemoveAt(index);
-            }
+            RemoveAt(IndexOf(value));
         }
 
         public void RemoveAt(int index)
         {
-            ArrayProperty.DeleteArrayElementAtIndex(index);
+            if (index >= 0 && index < Count)
+            {
+                var currentProperty = ArrayProperty.GetArrayElementAtIndex(index);
+                for (var i = index + 1; i < ArraySize.intValue; i++)
+                {
+                    var nextProperty = ArrayProperty.GetArrayElementAtIndex(i);
+                    currentProperty.isExpanded = nextProperty.isExpanded;
+                    currentProperty = nextProperty;
+                }
+
+                ArrayProperty.DeleteArrayElementAtIndex(index);
+            }
         }
     }
 }

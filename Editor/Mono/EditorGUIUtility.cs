@@ -29,6 +29,25 @@ namespace UnityEditor
             AppDomain.CurrentDomain.DomainUnload += (object sender, EventArgs e) => { UnityObject.DestroyImmediate(obj); };
         }
 
+        public class PropertyCallbackScope : IDisposable
+        {
+            Action<Rect, SerializedProperty> m_Callback;
+
+            public PropertyCallbackScope(Action<Rect, SerializedProperty> callback)
+            {
+                m_Callback = callback;
+
+                if (m_Callback != null)
+                    EditorGUIUtility.beginProperty += callback;
+            }
+
+            public void Dispose()
+            {
+                if (m_Callback != null)
+                    EditorGUIUtility.beginProperty -= m_Callback;
+            }
+        }
+
         public class IconSizeScope : GUI.Scope
         {
             private readonly Vector2 m_OriginalIconSize;

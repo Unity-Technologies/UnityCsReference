@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Bee.BeeDriver;
 using NiceIO;
-using ScriptCompilationBuildProgram.Data;
 using UnityEditor.PackageManager;
 using UnityEditorInternal;
 using UnityEngine;
@@ -49,7 +48,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             NPath dagDir = dagDirectory ?? "Library/Bee";
             dagDir.CreateDirectory();
-            var result = new BeeDriver(buildProgram, UnityBeeBackendProgram(), projectDirectory, dagName, dagDir.ToString(), sourceFileUpdaters, processSourceFileUpdatersResult, progressAPI ?? new UnityProgressAPI("Script Compilation"), profilerOutputFile: $"{dagDir}/fullprofile.json");
+            NPath profilerOutputFile = UnityBeeDriverProfilerSession.GetTraceEventsOutputForNewBeeDriver() ?? $"{dagDir}/fullprofile.json";
+            var result = new BeeDriver(buildProgram, UnityBeeBackendProgram(), projectDirectory, dagName, dagDir.ToString(), sourceFileUpdaters, processSourceFileUpdatersResult, progressAPI ?? new UnityProgressAPI("Script Compilation"), profilerOutputFile: profilerOutputFile.ToString());
 
             result.DataForBuildProgram.Add(new BeeBuildProgramCommon.Data.ConfigurationData
             {

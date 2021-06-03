@@ -38,7 +38,7 @@ namespace UnityEditorInternal.Profiling
             public static readonly GUIContent selectionHighlightNonMainThreadLabelBaseText = EditorGUIUtility.TrTextContent("Selected: {0} (Thread: {1})", "Selected Sample Stack: {0} (Thread: {1})");
         }
 
-        GUIContent selectionHighlightLabel = GUIContent.none;
+        GUIContent selectionHighlightLabel = new GUIContent();
 
         [SerializeField]
         ProfilerTimelineGUI m_TimelineGUI;

@@ -185,6 +185,11 @@ namespace UnityEngine
                     return GetVertexBufferCount(m_Ptr);
                 }
             }
+            public int GetVertexBufferStride(int stream)
+            {
+                CheckReadAccess();
+                return GetVertexBufferStride(m_Ptr, stream);
+            }
 
             public bool HasVertexAttribute(VertexAttribute attr)
             {
@@ -202,6 +207,18 @@ namespace UnityEngine
             {
                 CheckReadAccess();
                 return GetVertexAttributeFormat(m_Ptr, attr);
+            }
+
+            public int GetVertexAttributeStream(VertexAttribute attr)
+            {
+                CheckReadAccess();
+                return GetVertexAttributeStream(m_Ptr, attr);
+            }
+
+            public int GetVertexAttributeOffset(VertexAttribute attr)
+            {
+                CheckReadAccess();
+                return GetVertexAttributeOffset(m_Ptr, attr);
             }
 
             public void GetVertices(NativeArray<Vector3> outVertices)

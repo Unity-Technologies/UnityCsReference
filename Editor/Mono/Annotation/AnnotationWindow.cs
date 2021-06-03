@@ -73,6 +73,7 @@ namespace UnityEditor
         Vector2 m_ScrollPosition;
         bool m_SyncWithState;
         string m_LastScriptThatHasShownTheIconSelector;
+
         List<MonoScript> m_MonoScriptIconsChanged;
 
         const int maxShowRecent = 5;
@@ -144,7 +145,7 @@ namespace UnityEditor
             AssemblyReloadEvents.beforeAssemblyReload -= Close;
             // When window closes we copy all changes to monoimporters (reimport monoScripts)
             foreach (MonoScript monoScript in m_MonoScriptIconsChanged)
-                MonoImporter.CopyMonoScriptIconToImporters(monoScript);
+                IconSelector.CopyIconToImporter(monoScript);
 
             s_LastClosedTime = System.DateTime.Now.Ticks / System.TimeSpan.TicksPerMillisecond;
             s_AnnotationWindow = null;

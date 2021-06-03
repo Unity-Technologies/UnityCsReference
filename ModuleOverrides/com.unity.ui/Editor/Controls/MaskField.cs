@@ -26,7 +26,7 @@ namespace UnityEditor.UIElements
         // This is the list of string representing all the user choices
         List<string> m_UserChoices;
 
-        // This is the list of masks for every specific choices... if null, the mask will be computed with the default values
+        // This is the list of masks for every specific choice... if null, the mask will be computed with the default values
         // More details about this :
         //   In IMGUI, the MaskField is only allowing the creation of the field with an array of choices that will have a mask
         //    based on power of 2 value starting from 1.
@@ -43,7 +43,10 @@ namespace UnityEditor.UIElements
         {
         }
 
-        internal override List<string> choices
+        /// <summary>
+        /// The list of choices to display in the popup menu.
+        /// </summary>
+        public override List<string> choices
         {
             get { return m_UserChoices; }
             set
@@ -83,7 +86,11 @@ namespace UnityEditor.UIElements
                 SetValueWithoutNotify(rawValue);
             }
         }
-        internal virtual List<int> choicesMasks
+
+        /// <summary>
+        /// The list of list of masks for every specific choice to display in the popup menu.
+        /// </summary>
+        public virtual List<int> choicesMasks
         {
             get { return m_UserChoicesMasks; }
             set

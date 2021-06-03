@@ -226,6 +226,14 @@ namespace UnityEngine.UIElements
         /// </summary>
         StyleLength right { get; set; }
         /// <summary>
+        /// A rotation transformation.
+        /// </summary>
+        StyleRotate rotate { get; set; }
+        /// <summary>
+        /// A scaling transformation.
+        /// </summary>
+        StyleScale scale { get; set; }
+        /// <summary>
         /// The element's text overflow mode.
         /// </summary>
         StyleEnum<TextOverflow> textOverflow { get; set; }
@@ -237,6 +245,14 @@ namespace UnityEngine.UIElements
         /// Top distance from the element's box during layout.
         /// </summary>
         StyleLength top { get; set; }
+        /// <summary>
+        /// The transformation origin is the point around which a transformation is applied.
+        /// </summary>
+        StyleTransformOrigin transformOrigin { get; set; }
+        /// <summary>
+        /// A translate transformation.
+        /// </summary>
+        StyleTranslate translate { get; set; }
         /// <summary>
         /// Tinting color for the element's backgroundImage.
         /// </summary>

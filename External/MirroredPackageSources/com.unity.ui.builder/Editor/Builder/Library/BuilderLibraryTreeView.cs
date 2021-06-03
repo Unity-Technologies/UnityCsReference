@@ -19,7 +19,7 @@ namespace Unity.UI.Builder
         const string k_TreeViewClassName = "unity-builder-library__tree-view";
         const string k_TreeViewItemWithButtonClassName = "unity-builder-library__tree-item-with-edit-button";
 
-        readonly TreeView m_TreeView;
+        readonly InternalTreeView m_TreeView;
         readonly VisualTreeAsset m_TreeViewItemTemplate;
 
         public override VisualElement primaryFocusable => m_TreeView.Q<ListView>();
@@ -29,7 +29,7 @@ namespace Unity.UI.Builder
             m_TreeViewItemTemplate = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(BuilderConstants.LibraryUIPath + "/BuilderLibraryTreeViewItem.uxml");
 
             style.flexGrow = 1;
-            m_TreeView = new TreeView { name = k_TreeViewName };
+            m_TreeView = new InternalTreeView { name = k_TreeViewName };
             m_TreeView.AddToClassList(k_TreeViewClassName);
             Add(m_TreeView);
 
@@ -39,7 +39,8 @@ namespace Unity.UI.Builder
             m_TreeView.makeItem = MakeItem;
             m_TreeView.bindItem = BindItem;
             m_TreeView.onItemsChosen += OnItemsChosen;
-            m_TreeView.Refresh();
+
+            m_TreeView.Rebuild();
 
             foreach (var item in m_TreeView.rootItems)
                 m_TreeView.ExpandItem(item.id);
@@ -174,7 +175,7 @@ namespace Unity.UI.Builder
             AddItemToTheDocument(item);
         }
 
-        public override void Refresh() => m_TreeView.Refresh();
+        public override void Refresh() => m_TreeView.Rebuild();  
 
         void AssignTreeItemIcon(VisualElement itemRoot, Texture2D icon)
         {

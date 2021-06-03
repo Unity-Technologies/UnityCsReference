@@ -35,6 +35,8 @@ namespace UnityEngine.Rendering
                 Debug.LogErrorFormat("Global keyword {0} doesn't exist.", name);
         }
 
+        public override string ToString() { return m_Name; }
+
         internal readonly string m_Name;
         internal readonly uint m_Index;
     }

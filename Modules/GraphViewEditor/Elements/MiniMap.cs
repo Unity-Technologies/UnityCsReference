@@ -329,6 +329,8 @@ namespace UnityEditor.Experimental.GraphView
             Handles.DrawSolidRectangleWithOutline(cachedRect, faceColor, typeColor);
         }
 
+        static readonly Unity.Profiling.ProfilerMarker k_ImmediateRepaintMarker = new Unity.Profiling.ProfilerMarker("MiniMap.ImmediateRepaint");
+
         void DrawMinimapContent()
         {
             Color currentColor = Handles.color;
@@ -339,6 +341,8 @@ namespace UnityEditor.Experimental.GraphView
                 Resize();
                 return;
             }
+
+            k_ImmediateRepaintMarker.Begin();
 
             VisualElement container = graphView.contentViewContainer;
 
@@ -365,6 +369,8 @@ namespace UnityEditor.Experimental.GraphView
             DrawRectangleOutline(m_ViewportRect, m_ViewportColor);
 
             Handles.color = currentColor;
+
+            k_ImmediateRepaintMarker.End();
         }
 
         void DrawElements()

@@ -12,6 +12,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class DropdownButton : VisualElement, IToolbarMenuElement
     {
+        internal new class UxmlFactory : UxmlFactory<DropdownButton> {}
+
         private const string k_HasDropDownClass = "hasDropDown";
         private const string k_HasCustomAction = "customAction";
 
@@ -103,6 +105,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         private Clickable m_Clickable;
+        public Clickable clickable => m_Clickable;
 
         private VisualElement m_DropDownArea;
         private void RefreshDropdownArea()

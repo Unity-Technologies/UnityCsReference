@@ -580,6 +580,9 @@ namespace UnityEngine
             {
                 LDR,
                 HDR,
+                DepthStencil,
+                Shadow,
+                Video
             }
 
             // Keep in sync with GraphicsFormat in Runtime/Graphics/Format.h
@@ -678,6 +681,13 @@ namespace UnityEngine
                 R10G10B10_XRUNormPack32 = 84,
                 A10R10G10B10_XRSRGBPack32 = 85,
                 A10R10G10B10_XRUNormPack32 = 86,
+
+                D16_UNorm = 90,
+                D24_UNorm = 91,
+                D24_UNorm_S8_UInt = 92,
+                D32_SFloat = 93,
+                D32_SFloat_S8_UInt = 94,
+                S8_UInt = 95,
 
                 [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
                 [Obsolete("Enum member GraphicsFormat.RGB_DXT1_SRGB has been deprecated. Use GraphicsFormat.RGBA_DXT1_SRGB instead (UnityUpgradable) -> RGBA_DXT1_SRGB", true)]
@@ -928,6 +938,25 @@ namespace UnityEngine.Rendering
         TexCoord7,    // Texcoord 7
         BlendWeight,
         BlendIndices,
+    }
+
+    // Keep in sync with ShaderParamType, GfxDeviceTypes.h
+    public enum ShaderParamType
+    {
+        Float = 0,
+        Int,
+        Bool,
+        Half,
+        Short,
+        UInt,
+    }
+
+    // Keep in sync with ShaderConstantType, ShaderUtil.bindings.h
+    public enum ShaderConstantType
+    {
+        Vector = 0,
+        Matrix,
+        Struct,
     }
 
     // Match Camera::OpaqueSortMode on C++ side

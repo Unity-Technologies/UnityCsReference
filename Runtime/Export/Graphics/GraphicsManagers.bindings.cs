@@ -13,7 +13,6 @@ using ReflectionMode = UnityEngine.Rendering.DefaultReflectionMode;
 namespace UnityEngine
 {
     [NativeHeader("Runtime/Camera/RenderSettings.h")]
-    [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]
     [NativeHeader("Runtime/Graphics/QualitySettingsTypes.h")]
     [StaticAccessor("GetRenderSettings()", StaticAccessorType.Dot)]
     public sealed partial class RenderSettings : Object

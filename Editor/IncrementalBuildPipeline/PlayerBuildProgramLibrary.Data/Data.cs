@@ -35,6 +35,7 @@ namespace PlayerBuildProgramLibrary.Data
         public bool GenerateIdeProject;
         public bool Development;
         public Services Services;
+        public StreamingAssetsFile[] StreamingAssetsFiles;
     }
 
     public class BuiltFilesOutput
@@ -80,5 +81,11 @@ namespace PlayerBuildProgramLibrary.Data
         public bool EnablePerformanceReporting;
         public bool EnableAnalytics;
         public bool EnableCrashReporting;
+    }
+
+    public class StreamingAssetsFile
+    {
+        public string File;
+        public string RelativePath;
     }
 }

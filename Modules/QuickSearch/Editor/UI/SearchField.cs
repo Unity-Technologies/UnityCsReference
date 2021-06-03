@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace UnityEditor.Search
 {
-    static class SearchField
+    class SearchField
     {
         static class CommandName
         {
@@ -24,23 +24,27 @@ namespace UnityEditor.Search
         private const string k_QuickSearchBoxName = "QuickSearchBox";
         private static readonly int s_SearchFieldHash = "QuickSearchField".GetHashCode();
 
-        private static TextEditor s_ActiveEditor;
-        private static bool s_ActuallyEditing = false; // internal so we can save this state.
-        private static IMECompositionMode s_IMECompositionModeBackup;
+        private TextEditor m_ActiveEditor;
+        private bool m_ActuallyEditing = false; // internal so we can save this state.
+        private IMECompositionMode m_IMECompositionModeBackup;
 
-        private static bool s_DragToPosition = true;
-        private static bool s_Dragged = false;
-        private static bool s_PostPoneMove = false;
-        private static double s_NextBlinkTime = 0;
-        private static bool s_CursorBlinking;
-        private static int s_RecentSearchIndex = -1;
-        private static string m_CycledSearch;
-        private static string m_LastSearch;
-        public static float s_CancelButtonWidth = 20f;
+        private bool m_DragToPosition = true;
+        private bool m_Dragged = false;
+        private bool m_PostPoneMove = false;
+        private double m_NextBlinkTime = 0;
+        private bool m_CursorBlinking;
+        private int m_RecentSearchIndex = -1;
+        private string m_CycledSearch;
+        private string m_LastSearch;
 
-        public static int controlID { get; private set; } = -1;
+        private int m_UndoIndex = -1;
+        private TextUndoInfo[] m_UndoStack;
+        private double m_UndoLastTime = 0f;
 
-        public static bool IsMultiline(float height)
+        public const float cancelButtonWidth = 20f;
+        public int controlID { get; private set; } = -1;
+
+        public bool IsMultiline(float height)
         {
             return height > 30f;
         }
@@ -49,22 +53,43 @@ namespace UnityEditor.Search
         {
             readonly public string text;
             readonly public int cursorPos;
+            readonly public int selectPos;
 
-            public TextUndoInfo(string text, int cursorPos)
+            public TextUndoInfo(in TextEditor te)
+            {
+                this.text = te.text;
+                this.cursorPos = te.cursorIndex;
+                this.selectPos = te.selectIndex;
+            }
+
+            public TextUndoInfo(string text, int cursorPos, int selectPos)
             {
                 this.text = text;
                 this.cursorPos = cursorPos;
+                this.selectPos = selectPos;
+            }
+
+            public override string ToString()
+            {
+                return $"{text} ({cursorPos}/{selectPos})";
             }
         }
 
-        static int s_UndoIndex = -1;
-        static TextUndoInfo[] s_UndoStack = new TextUndoInfo[10];
-        static double s_UndoLastTime = 0f;
-
-        public static string Draw(Rect position, string text, GUIStyle style)
+        public string Draw(Rect position, string text, GUIStyle style)
         {
+            if (m_UndoStack == null)
+            {
+                m_UndoStack = new TextUndoInfo[10];
+                if (!string.IsNullOrEmpty(text))
+                {
+                    m_UndoStack[0] = new TextUndoInfo(text, text.Length, text.Length);
+                    m_UndoIndex = 0;
+                }
+                SaveUndo(text);
+            }
+
             var evt = Event.current;
-            using (new BlinkCursorScope(s_CursorBlinking && HasKeyboardFocus(controlID), new Color(0, 0, 0, 0.01f)))
+            using (new BlinkCursorScope(m_CursorBlinking && HasKeyboardFocus(controlID), new Color(0, 0, 0, 0.01f)))
             {
                 bool selectAll = false;
                 if (!String.IsNullOrEmpty(m_CycledSearch) && (evt.type == EventType.Repaint || evt.type == EventType.Layout))
@@ -74,10 +99,8 @@ namespace UnityEditor.Search
                     selectAll = GUI.changed = true;
                 }
 
-                if (GUI.changed || evt.isKey)
-                    SaveUndo(text);
-
                 text = Draw(position, text, IsMultiline(position.height), false, null, style ?? Styles.searchField);
+                TrackUndoRedo(text);
 
                 if (selectAll)
                     GetTextEditor().SelectAll();
@@ -86,37 +109,48 @@ namespace UnityEditor.Search
             }
         }
 
-        private static void SaveUndo(string text)
+        private void TrackUndoRedo(string text)
         {
             var now = EditorApplication.timeSinceStartup;
-            if (now - s_UndoLastTime <= 1f)
-                return;
-
-            if (!string.IsNullOrEmpty(text) && (s_UndoIndex == -1 || s_UndoStack[s_UndoIndex].text != text))
-            {
-                s_UndoIndex = Utils.Wrap(s_UndoIndex + 1, s_UndoStack.Length);
-                s_UndoStack[s_UndoIndex] = new TextUndoInfo(text, GetTextEditor().cursorIndex);
-            }
-            s_UndoLastTime = now;
+            if (GUI.changed)
+                m_UndoLastTime = now;
+            else if (m_UndoLastTime != 0f && now - m_UndoLastTime >= 0.5f)
+                SaveUndo(text);
         }
 
-        private static bool UndoEdit(TextEditor editor, int direction = 1)
+        private void SaveUndo(string text)
         {
-            s_UndoIndex = Utils.Wrap(s_UndoIndex - direction, s_UndoStack.Length);
-            if (s_UndoStack[s_UndoIndex].text == null)
+            if (string.IsNullOrEmpty(text) || m_UndoIndex != -1 && m_UndoStack[m_UndoIndex].text == text)
+                return;
+            m_UndoIndex = Utils.Wrap(m_UndoIndex + 1, m_UndoStack.Length);
+            m_UndoStack[m_UndoIndex] = new TextUndoInfo(GetTextEditor());
+        }
+
+        private bool UndoEdit(TextEditor editor, int direction = 1)
+        {
+            if (m_UndoStack == null)
                 return false;
 
-            editor.text = s_UndoStack[s_UndoIndex].text;
-            editor.cursorIndex = s_UndoStack[s_UndoIndex].cursorPos;
+            // Save current state in case it has changed
+            SaveUndo(editor.text);
+
+            var nextIndex = Utils.Wrap(m_UndoIndex - direction, m_UndoStack.Length);
+            if (string.IsNullOrEmpty(m_UndoStack[nextIndex].text))
+                return false;
+
+            m_UndoIndex = nextIndex;
+            editor.text = m_UndoStack[m_UndoIndex].text;
+            editor.cursorIndex = m_UndoStack[m_UndoIndex].selectPos;
+            editor.selectIndex = m_UndoStack[m_UndoIndex].cursorPos;
             return true;
         }
 
-        private static bool RedoEdit(TextEditor editor)
+        private bool RedoEdit(TextEditor editor)
         {
             return UndoEdit(editor, -1);
         }
 
-        public static string Draw(Rect position, string text, bool multiline, bool passwordField, string allowedletters, GUIStyle style)
+        public string Draw(Rect position, string text, bool multiline, bool passwordField, string allowedletters, GUIStyle style)
         {
             GUI.SetNextControlName(k_QuickSearchBoxName);
 
@@ -135,18 +169,17 @@ namespace UnityEditor.Search
                 editor.text = text;
                 if (Event.current.type != EventType.Layout)
                 {
-                    if (editor.IsEditingControl(id))
+                    if (IsEditingControl(editor, id))
                     {
                         editor.position = position;
                         editor.style = style;
                         editor.controlID = id;
                         editor.multiline = multiline;
                         editor.isPasswordField = passwordField;
-                        editor.DetectFocusChange();
                     }
                     else if (EditorGUIUtility.editingTextField || (eventType == EventType.ExecuteCommand && evt.commandName == CommandName.NewKeyboardFocus))
                     {
-                        editor.BeginEditing(id, text, position, style, multiline, passwordField);
+                        BeginEditing(editor, id, text, position, style, multiline, passwordField);
                         if (eventType == EventType.ExecuteCommand)
                             evt.Use();
                     }
@@ -154,7 +187,7 @@ namespace UnityEditor.Search
             }
 
             if (editor.controlID == id && GUIUtility.keyboardControl != id)
-                editor.EndEditing();
+                EndEditing(editor);
 
             var mayHaveChanged = false;
             var textBeforeKey = editor.text;
@@ -181,7 +214,6 @@ namespace UnityEditor.Search
                                 evt.Use();
                                 break;
                             case CommandName.UndoRedoPerformed:
-                                editor.text = text;
                                 evt.Use();
                                 break;
                         }
@@ -193,11 +225,11 @@ namespace UnityEditor.Search
                         switch (evt.commandName)
                         {
                             case CommandName.OnLostFocus:
-                                s_ActiveEditor?.EndEditing();
+                                EndEditing(m_ActiveEditor);
                                 evt.Use();
                                 break;
                             case CommandName.Cut:
-                                editor.BeginEditing(id, text, position, style, multiline, passwordField);
+                                BeginEditing(editor, id, text, position, style, multiline, passwordField);
                                 editor.Cut();
                                 mayHaveChanged = true;
                                 break;
@@ -209,7 +241,7 @@ namespace UnityEditor.Search
                                 evt.Use();
                                 break;
                             case CommandName.Paste:
-                                editor.BeginEditing(id, text, position, style, multiline, passwordField);
+                                BeginEditing(editor, id, text, position, style, multiline, passwordField);
                                 editor.Paste();
                                 mayHaveChanged = true;
                                 break;
@@ -220,7 +252,7 @@ namespace UnityEditor.Search
                             case CommandName.Delete:
                                 // This "Delete" command stems from a Shift-Delete in the text editor.
                                 // On Windows, Shift-Delete in text does a cut whereas on Mac, it does a delete.
-                                editor.BeginEditing(id, text, position, style, multiline, passwordField);
+                                BeginEditing(editor, id, text, position, style, multiline, passwordField);
                                 if (SystemInfo.operatingSystemFamily == OperatingSystemFamily.MacOSX)
                                     editor.Delete();
                                 else
@@ -234,20 +266,20 @@ namespace UnityEditor.Search
                 case EventType.MouseUp:
                     if (GUIUtility.hotControl == id)
                     {
-                        if (s_Dragged && s_DragToPosition)
+                        if (m_Dragged && m_DragToPosition)
                         {
                             editor.MoveSelectionToAltCursor();
                             mayHaveChanged = true;
                         }
-                        else if (s_PostPoneMove)
+                        else if (m_PostPoneMove)
                         {
                             editor.MoveCursorToPosition(evt.mousePosition);
                         }
 
                         editor.MouseDragSelectsWholeWords(false);
-                        s_DragToPosition = true;
-                        s_Dragged = false;
-                        s_PostPoneMove = false;
+                        m_DragToPosition = true;
+                        m_Dragged = false;
+                        m_PostPoneMove = false;
                         if (evt.button == 0)
                         {
                             GUIUtility.hotControl = 0;
@@ -259,15 +291,16 @@ namespace UnityEditor.Search
                     if (position.Contains(evt.mousePosition) && evt.button == 0)
                     {
                         // Does this text field already have focus?
-                        if (editor.IsEditingControl(id))
+                        if (IsEditingControl(editor, id))
                         { // if so, process the event normally
+                            Utils.SetTextEditorHasFocus(editor, true); // We do not want the TextEditor to SelectAll
                             if (evt.clickCount == 2 && GUI.skin.settings.doubleClickSelectsWord)
                             {
                                 editor.MoveCursorToPosition(evt.mousePosition);
                                 editor.SelectCurrentWord();
                                 editor.MouseDragSelectsWholeWords(true);
                                 editor.DblClickSnap(TextEditor.DblClickSnapping.WORDS);
-                                s_DragToPosition = false;
+                                m_DragToPosition = false;
                             }
                             else if (evt.clickCount == 3 && GUI.skin.settings.tripleClickSelectsLine)
                             {
@@ -275,7 +308,7 @@ namespace UnityEditor.Search
                                 editor.SelectCurrentParagraph();
                                 editor.MouseDragSelectsWholeWords(true);
                                 editor.DblClickSnap(TextEditor.DblClickSnapping.PARAGRAPHS);
-                                s_DragToPosition = false;
+                                m_DragToPosition = false;
                             }
                             else
                             {
@@ -285,7 +318,7 @@ namespace UnityEditor.Search
                         else
                         { // Otherwise, mark this as initial click and begin editing
                             GUIUtility.keyboardControl = id;
-                            editor.BeginEditing(id, text, position, style, multiline, passwordField);
+                            BeginEditing(editor, id, text, position, style, multiline, passwordField);
                             editor.MoveCursorToPosition(evt.mousePosition);
                         }
 
@@ -296,7 +329,7 @@ namespace UnityEditor.Search
                 case EventType.MouseDrag:
                     if (GUIUtility.hotControl == id)
                     {
-                        if (!evt.shift && editor.hasSelection && s_DragToPosition)
+                        if (!evt.shift && editor.hasSelection && m_DragToPosition)
                         {
                             editor.MoveAltCursorToPosition(evt.mousePosition);
                         }
@@ -311,21 +344,21 @@ namespace UnityEditor.Search
                                 editor.SelectToPosition(evt.mousePosition);
                             }
 
-                            s_DragToPosition = false;
+                            m_DragToPosition = false;
                         }
-                        s_Dragged = true;
+                        m_Dragged = true;
                         evt.Use();
                     }
                     break;
                 case EventType.ContextClick:
                     if (position.Contains(evt.mousePosition))
                     {
-                        if (!editor.IsEditingControl(id))
+                        if (!IsEditingControl(editor, id))
                         { // First click: focus before showing popup
                             GUIUtility.keyboardControl = id;
                             if (wasEnabled)
                             {
-                                editor.BeginEditing(id, text, position, style, multiline, passwordField);
+                                BeginEditing(editor, id, text, position, style, multiline, passwordField);
                                 editor.MoveCursorToPosition(evt.mousePosition);
                             }
                         }
@@ -340,50 +373,50 @@ namespace UnityEditor.Search
                         char c = evt.character;
 
                         // Let the editor handle all cursor keys, etc...
-                        if (editor.IsEditingControl(id) && editor.HandleKeyEvent(evt))
+                        if (IsEditingControl(editor, id) && editor.HandleKeyEvent(evt))
                         {
                             evt.Use();
                             mayHaveChanged = true;
                             break;
                         }
 
-                        if (s_UndoIndex != -1 && evt.keyCode == KeyCode.Z && (evt.command || evt.control))
+                        if (m_UndoIndex != -1 && evt.keyCode == KeyCode.Z && (evt.command || evt.control))
                         {
-                            if (editor.IsEditingControl(id) && UndoEdit(editor))
+                            if (IsEditingControl(editor, id) && UndoEdit(editor))
                             {
-                                editor.EndEditing();
+                                evt.Use();
                                 mayHaveChanged = true;
                             }
                         }
-                        else if (s_UndoIndex != -1 && evt.keyCode == KeyCode.Y && (evt.command || evt.control))
+                        else if (m_UndoIndex != -1 && evt.keyCode == KeyCode.Y && (evt.command || evt.control))
                         {
-                            if (editor.IsEditingControl(id) && RedoEdit(editor))
+                            if (IsEditingControl(editor, id) && RedoEdit(editor))
                             {
-                                editor.EndEditing();
+                                evt.Use();
                                 mayHaveChanged = true;
                             }
                         }
                         else if (evt.keyCode == KeyCode.Escape)
                         {
-                            if (editor.IsEditingControl(id))
+                            if (IsEditingControl(editor, id))
                             {
                                 editor.text = String.Empty;
-                                editor.EndEditing();
+                                EndEditing(editor);
                                 mayHaveChanged = true;
                             }
                         }
                         else if (c == '\n' || c == 3)
                         {
-                            if (!editor.IsEditingControl(id))
+                            if (!IsEditingControl(editor, id))
                             {
-                                editor.BeginEditing(id, text, position, style, multiline, passwordField);
+                                BeginEditing(editor, id, text, position, style, multiline, passwordField);
                                 editor.SelectAll();
                             }
                             else
                             {
                                 if (!multiline || (evt.alt || evt.shift || evt.control))
                                 {
-                                    editor.EndEditing();
+                                    EndEditing(editor);
                                 }
                                 else
                                 {
@@ -396,7 +429,7 @@ namespace UnityEditor.Search
                         else if (c == '\t' || evt.keyCode == KeyCode.Tab)
                         {
                             // Only insert tabs if multiline
-                            if (multiline && editor.IsEditingControl(id))
+                            if (multiline && IsEditingControl(editor, id))
                             {
                                 bool validTabCharacter = (allowedletters == null || allowedletters.IndexOf(c) != -1);
                                 bool validTabEvent = !(evt.alt || evt.shift || evt.control) && c == '\t';
@@ -418,7 +451,7 @@ namespace UnityEditor.Search
                             // ASCII 27: "Escape" on pressing ESC
                             nonPrintableTab = true;
                         }
-                        else if (editor.IsEditingControl(id))
+                        else if (IsEditingControl(editor, id))
                         {
                             bool validCharacter = (allowedletters == null || allowedletters.IndexOf(c) != -1) && IsPrintableChar(c);
                             if (validCharacter)
@@ -444,7 +477,7 @@ namespace UnityEditor.Search
                             }
                         }
                         // consume Keycode events that might result in a printable key so they aren't passed on to other controls or shortcut manager later
-                        if (editor.IsEditingControl(id) && MightBePrintableKey(evt, multiline) && !nonPrintableTab)
+                        if (IsEditingControl(editor, id) && MightBePrintableKey(evt, multiline) && !nonPrintableTab)
                             evt.Use();
                     }
                     break;
@@ -455,12 +488,12 @@ namespace UnityEditor.Search
                         if (!String.IsNullOrEmpty(text))
                         {
                             cursorRect = Styles.searchFieldBtn.margin.Remove(cursorRect);
-                            cursorRect.width -= s_CancelButtonWidth;
+                            cursorRect.width -= cancelButtonWidth;
                         }
                         EditorGUIUtility.AddCursorRect(cursorRect, MouseCursor.Text);
                     }
 
-                    string drawText = editor.IsEditingControl(id) ? editor.text : text;
+                    string drawText = IsEditingControl(editor, id) ? editor.text : text;
                     editor.position = position;
                     editor.style = style;
                     editor.DrawCursor(drawText);
@@ -489,17 +522,17 @@ namespace UnityEditor.Search
             return text;
         }
 
-        public static TextEditor GetTextEditor()
+        public TextEditor GetTextEditor()
         {
             return (TextEditor)GUIUtility.GetStateObject(typeof(TextEditor), controlID);
         }
 
-        public static void MoveCursor(TextCursorPlacement moveCursor)
+        public void MoveCursor(TextCursorPlacement moveCursor)
         {
             MoveCursor(moveCursor, -1);
         }
 
-        public static void MoveCursor(TextCursorPlacement moveCursor, int cursorInsertPosition)
+        public void MoveCursor(TextCursorPlacement moveCursor, int cursorInsertPosition)
         {
             var te = GetTextEditor();
 
@@ -522,7 +555,7 @@ namespace UnityEditor.Search
             }
         }
 
-        private static void MoveAutoComplete(TextEditor te)
+        private void MoveAutoComplete(TextEditor te)
         {
             while (te.cursorIndex < te.text.Length && !char.IsWhiteSpace(te.text[te.cursorIndex]))
                 te.MoveRight();
@@ -532,28 +565,25 @@ namespace UnityEditor.Search
                 te.MoveRight();
         }
 
-        public static void Focus()
+        public void Focus()
         {
             if (GUIUtility.keyboardControl != controlID)
-            {
                 EditorGUI.FocusTextInControl(k_QuickSearchBoxName);
-                GetTextEditor().SelectAll();
-            }
         }
 
-        public static bool UpdateBlinkCursorState(double time)
+        public bool UpdateBlinkCursorState(double time)
         {
-            if (time >= s_NextBlinkTime)
+            if (time >= m_NextBlinkTime)
             {
-                s_NextBlinkTime = time + 0.5;
-                s_CursorBlinking = !s_CursorBlinking;
+                m_NextBlinkTime = time + 0.5;
+                m_CursorBlinking = !m_CursorBlinking;
                 return true;
             }
 
             return false;
         }
 
-        public static bool HandleKeyEvent(Event evt)
+        public bool HandleKeyEvent(Event evt)
         {
             if (evt.type != EventType.KeyDown)
                 return false;
@@ -580,18 +610,19 @@ namespace UnityEditor.Search
             return false;
         }
 
-        private static bool IsEditingControl(this TextEditor self, int id)
+        private bool IsEditingControl(TextEditor self, int id)
         {
-            return GUIUtility.keyboardControl == id && self.controlID == id && s_ActuallyEditing && Utils.HasCurrentWindowKeyFocus();
+            return GUIUtility.keyboardControl == id && self.controlID == id && m_ActuallyEditing && Utils.HasCurrentWindowKeyFocus();
         }
 
-        private static void BeginEditing(this TextEditor self, int id, string newText, Rect _position, GUIStyle _style, bool _multiline, bool passwordField)
+        private void BeginEditing(TextEditor self, int id, string newText, Rect _position, GUIStyle _style, bool _multiline, bool passwordField)
         {
-            if (self.IsEditingControl(id))
+            if (IsEditingControl(self, id))
                 return;
 
-            s_ActiveEditor?.EndEditing();
-            s_ActiveEditor = self;
+            if (m_ActiveEditor != null)
+                EndEditing(m_ActiveEditor);
+            m_ActiveEditor = self;
             self.controlID = id;
             self.text = newText;
             self.multiline = _multiline;
@@ -599,26 +630,26 @@ namespace UnityEditor.Search
             self.position = _position;
             self.isPasswordField = passwordField;
             self.scrollOffset = Vector2.zero;
-            s_ActuallyEditing = true;
+            m_ActuallyEditing = true;
             Undo.IncrementCurrentGroup();
 
-            s_IMECompositionModeBackup = Input.imeCompositionMode;
+            m_IMECompositionModeBackup = Input.imeCompositionMode;
             Input.imeCompositionMode = IMECompositionMode.On;
         }
 
-        private static void EndEditing(this TextEditor self)
+        private void EndEditing(TextEditor self)
         {
-            if (s_ActiveEditor == self)
-                s_ActiveEditor = null;
+            if (m_ActiveEditor == self)
+                m_ActiveEditor = null;
 
             self.controlID = 0;
-            s_ActuallyEditing = false;
+            m_ActuallyEditing = false;
             Undo.IncrementCurrentGroup();
 
-            Input.imeCompositionMode = s_IMECompositionModeBackup;
+            Input.imeCompositionMode = m_IMECompositionModeBackup;
         }
 
-        private static bool HasKeyboardFocus(int controlID)
+        private bool HasKeyboardFocus(int controlID)
         {
             // Every EditorWindow has its own keyboardControl state so we also need to
             // check if the current OS view has focus to determine if the control has actual key focus (gets the input)
@@ -626,7 +657,7 @@ namespace UnityEditor.Search
             return GUIUtility.keyboardControl == controlID && Utils.HasCurrentWindowKeyFocus();
         }
 
-        private static EventType GetEventTypeForControlAllowDisabledContextMenuPaste(Event evt, int id)
+        private EventType GetEventTypeForControlAllowDisabledContextMenuPaste(Event evt, int id)
         {
             // UI is enabled: regular code path
             var wasEnabled = GUI.enabled;
@@ -654,7 +685,7 @@ namespace UnityEditor.Search
             return EventType.Ignore;
         }
 
-        private static void ShowTextEditorPopupMenu(TextEditor editor)
+        private void ShowTextEditorPopupMenu(TextEditor editor)
         {
             GenericMenu pm = new GenericMenu();
             var enabled = GUI.enabled;
@@ -679,14 +710,14 @@ namespace UnityEditor.Search
             pm.ShowAsContext();
         }
 
-        private static bool IsLineBreak(Event evt)
+        private bool IsLineBreak(Event evt)
         {
             if ((evt.control || evt.shift) && (evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter))
                 return true;
             return false;
         }
 
-        private static bool MightBePrintableKey(Event evt, bool multiline)
+        private bool MightBePrintableKey(Event evt, bool multiline)
         {
             if (IsLineBreak(evt))
                 return true;
@@ -742,7 +773,7 @@ namespace UnityEditor.Search
             }
         }
 
-        private static bool IsPrintableChar(char c)
+        private bool IsPrintableChar(char c)
         {
             if (c < 32)
             {
@@ -751,33 +782,33 @@ namespace UnityEditor.Search
             return true;
         }
 
-        private static string CyclePreviousSearch(int shift)
+        private string CyclePreviousSearch(int shift)
         {
             if (SearchSettings.recentSearches.Count == 0)
                 return m_LastSearch;
 
-            s_RecentSearchIndex = Utils.Wrap(s_RecentSearchIndex + shift, SearchSettings.recentSearches.Count);
+            m_RecentSearchIndex = Utils.Wrap(m_RecentSearchIndex + shift, SearchSettings.recentSearches.Count);
 
-            return SearchSettings.recentSearches[s_RecentSearchIndex];
+            return SearchSettings.recentSearches[m_RecentSearchIndex];
         }
 
-        public static void UpdateLastSearchText(string value)
+        public void UpdateLastSearchText(string value)
         {
             if (value.Equals(m_LastSearch))
                 return;
             m_LastSearch = value;
             if (string.IsNullOrEmpty(value))
                 return;
-            s_RecentSearchIndex = 0;
+            m_RecentSearchIndex = 0;
             SearchSettings.AddRecentSearch(value);
         }
 
-        public static void DrawError(int errorIndex, int errorLength, string errorTooltip)
+        public void DrawError(int errorIndex, int errorLength, string errorTooltip)
         {
             DrawLineWithTooltip(errorIndex, errorIndex + errorLength, errorTooltip, Styles.Wiggle.wiggle, Styles.Wiggle.wiggleTooltip);
         }
 
-        public static void DrawWarning(int errorIndex, int errorLength, string errorTooltip)
+        public void DrawWarning(int errorIndex, int errorLength, string errorTooltip)
         {
             DrawLineWithTooltip(errorIndex, errorIndex + errorLength, errorTooltip, Styles.Wiggle.wiggleWarning, Styles.Wiggle.wiggleTooltip);
         }
@@ -786,7 +817,7 @@ namespace UnityEditor.Search
         const float minSinglelineTextHeight = 20f;
         public const float searchFieldSingleLineHeight = minSinglelineTextHeight + textTopBottomPadding;
 
-        private static void DrawLineWithTooltip(int lineStartIndex, int lineEndIndex, string tooltip, GUIStyle lineStyle, GUIStyle tooltipStyle)
+        private void DrawLineWithTooltip(int lineStartIndex, int lineEndIndex, string tooltip, GUIStyle lineStyle, GUIStyle tooltipStyle)
         {
             if (Event.current.type != EventType.Repaint)
                 return;
@@ -817,7 +848,7 @@ namespace UnityEditor.Search
             EditorGUIUtility.AddCursorRect(tooltipRect, MouseCursor.Arrow);
         }
 
-        internal static Rect GetRect(string text, float width, float padding)
+        internal Rect GetRect(string text, float width, float padding)
         {
             var fieldWidth = width - padding;
             var fieldHeight = Mathf.Max(minSinglelineTextHeight, Styles.searchField.CalcHeight(Utils.GUIContentTemp(text), fieldWidth));

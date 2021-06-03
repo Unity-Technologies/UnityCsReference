@@ -8,7 +8,7 @@ using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCode
 
 using UnityEngine;
 using UnityEngine.Rendering;
-
+using UnityEditor.Build;
 
 namespace UnityEditor.Rendering
 {
@@ -58,6 +58,8 @@ namespace UnityEditor.Rendering
             MakeTierSettingsAutomatic(target, tier, false);
             OnUpdateTierSettings(target, true);
         }
+
+        public static void SetTierSettings(NamedBuildTarget target, GraphicsTier tier, TierSettings settings) => SetTierSettings(target.ToBuildTargetGroup(), tier, settings);
     }
 
 

@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Mono.Cecil;
+using UnityEditor.Build;
 using UnityEditor.Modules;
 using UnityEditorInternal;
 using UnityEngine;
@@ -25,6 +26,7 @@ namespace UnityEditor
         static BuildPlayerDataExtractor m_BuildPlayerDataExtractor = new BuildPlayerDataExtractor();
 
         // Check if assmebly internal name doesn't match file name, and show the warning.
+        [RequiredByNativeCode]
         static public void CheckForAssemblyFileNameMismatch(string assemblyPath)
         {
             string fileName = Path.GetFileNameWithoutExtension(assemblyPath);
@@ -99,7 +101,7 @@ namespace UnityEditor
             }
             else if (target == BuildTarget.XboxOne)
             {
-                var profile = PlayerSettings.GetApiCompatibilityLevel(BuildTargetGroup.XboxOne);
+                var profile = PlayerSettings.GetApiCompatibilityLevel(NamedBuildTarget.XboxOne);
                 if (profile == ApiCompatibilityLevel.NET_4_6 || profile == ApiCompatibilityLevel.NET_Standard_2_0)
                 {
                     if (CouldBelongToDotNetOrWindowsRuntime(assemblyPath))
@@ -192,6 +194,7 @@ namespace UnityEditor
             return "";
         }
 
+        [RequiredByNativeCode]
         static public string[] FindAssembliesReferencedBy(string[] paths, string[] foldersToSearch, BuildTarget target)
         {
             List<string> unique = new List<string>();
@@ -205,13 +208,6 @@ namespace UnityEditor
                 unique.Remove(paths[i]);
 
             return unique.ToArray();
-        }
-
-        static public string[] FindAssembliesReferencedBy(string path, string[] foldersToSearch, BuildTarget target)
-        {
-            string[] tmp = new string[1];
-            tmp[0] = path;
-            return FindAssembliesReferencedBy(tmp, foldersToSearch, target);
         }
 
         static public bool IsUnityEngineModule(AssemblyDefinition assembly)

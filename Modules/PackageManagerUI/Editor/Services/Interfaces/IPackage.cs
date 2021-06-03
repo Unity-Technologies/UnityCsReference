@@ -55,5 +55,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         IPackage Clone();
 
         DateTime? firstPublishedDate { get; }
+
+        string GetDescriptor(bool isFirstLetterCapitalized = false);
     }
 }

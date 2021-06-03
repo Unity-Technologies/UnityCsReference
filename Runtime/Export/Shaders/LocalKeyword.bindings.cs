@@ -19,8 +19,10 @@ namespace UnityEngine.Rendering
         [FreeFunction("ShaderScripting::GetKeywordIndex")] extern private static uint GetShaderKeywordIndex(Shader shader, string keyword);
         [FreeFunction("ShaderScripting::GetKeywordCount")] extern private static uint GetComputeShaderKeywordCount(ComputeShader shader);
         [FreeFunction("ShaderScripting::GetKeywordIndex")] extern private static uint GetComputeShaderKeywordIndex(ComputeShader shader, string keyword);
+        [FreeFunction("keywords::GetKeywordType")] extern private static ShaderKeywordType GetKeywordType(LocalKeywordSpace spaceInfo, uint keyword);
 
         public string name { get { return m_Name; } }
+        public ShaderKeywordType type { get { return GetKeywordType(m_SpaceInfo, m_Index); } }
 
         public LocalKeyword(Shader shader, string name)
         {
@@ -39,6 +41,8 @@ namespace UnityEngine.Rendering
             if (m_Index >= GetComputeShaderKeywordCount(shader))
                 Debug.LogErrorFormat("Local keyword {0} doesn't exist in the compute shader.", name);
         }
+
+        public override string ToString() { return m_Name; }
 
         internal readonly LocalKeywordSpace m_SpaceInfo;
         internal readonly string m_Name;

@@ -54,6 +54,10 @@ namespace UnityEditor
         internal static Color s_ColliderHandleColorDisabled = new Color(84, 200f, 77f, 140f) / 255;
         internal static Color s_BoundingBoxHandleColor = new Color(255, 255, 255, 150) / 255;
 
+        // Should match s_ColliderHandleColor to start unless the user overrides the color. As Gizmos are drawn from CPP there is no way currently to hook the ColliderHandleColor up properly.
+        public static Color UIColliderHandleColor { get { return s_UIColliderHandleColor; } }
+        internal static PrefColor s_UIColliderHandleColor = new PrefColor("Scene/UI Collider Handle", 145f / 255, 244f / 255, 139f / 255, 210f / 255);
+
         internal readonly static GUIContent s_StaticLabel = EditorGUIUtility.TrTextContent("Static");
         internal readonly static GUIContent s_PrefabLabel = EditorGUIUtility.TrTextContent("Prefab");
 

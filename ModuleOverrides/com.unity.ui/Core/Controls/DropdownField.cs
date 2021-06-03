@@ -232,10 +232,19 @@ namespace UnityEngine.UIElements
             value = menuItem;
         }
 
-        internal virtual List<string> choices
+        /// <summary>
+        /// The list of choices to display in the popup menu.
+        /// </summary>
+        public virtual List<string> choices
         {
             get => m_Choices;
-            set => m_Choices = value;
+            set
+            {
+                m_Choices = value;
+
+                // Make sure to update the text displayed
+                SetValueWithoutNotify(rawValue);
+            }
         }
 
         /// <summary>

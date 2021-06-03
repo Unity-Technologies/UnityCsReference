@@ -81,14 +81,12 @@ namespace UnityEditor.Overlays
                 presets[preset.name] = preset;
         }
 
+        // used by tests
         internal static void RevertPreferencesPresetsToDefault()
         {
             if (File.Exists(k_PreferencesAssetPath))
-            {
                 FileUtil.DeleteFileOrDirectory(k_PreferencesAssetPath);
-                FileUtil.CopyFileOrDirectory(k_ResourcesAssetPath, k_PreferencesAssetPath);
-                ReloadAllPresets();
-            }
+            FileUtil.CopyFileOrDirectory(k_ResourcesAssetPath, k_PreferencesAssetPath);
         }
 
         static void SaveAllPreferences()
@@ -189,24 +187,30 @@ namespace UnityEditor.Overlays
             var results = new Dictionary<Type, Dictionary<string, OverlayPreset>>();
 
             if (!Directory.Exists(preferencesPath))
-            {
                 Directory.CreateDirectory(preferencesPath);
-            }
             if (!File.Exists(k_PreferencesAssetPath))
-            {
-                // If not copy our default file to the preferences folder
-                FileUtil.CopyFileOrDirectory(k_ResourcesAssetPath, k_PreferencesAssetPath);
-            }
+                RevertPreferencesPresetsToDefault();
 
             List<Object> loaded = new List<Object>(64);
 
-            //LOAD PREFERENCE BASED PRESETS
-            loaded.AddRange(InternalEditorUtility.LoadSerializedFileAndForget(k_PreferencesAssetPath));
+            // load preference based presets
+            var builtin = InternalEditorUtility.LoadSerializedFileAndForget(k_PreferencesAssetPath);
+
+            // this is necessary for users who tried out overlays preview builds. the registered class ID changed
+            // from 13987 to 13988 during development. we correct that case here. can remove this check in 2022.
+            if (builtin.Length < 1)
+            {
+                RevertPreferencesPresetsToDefault();
+                builtin = InternalEditorUtility.LoadSerializedFileAndForget(k_PreferencesAssetPath);
+            }
+
+            loaded.AddRange(builtin);
 
             foreach (var rawPreset in loaded)
             {
                 var preset = rawPreset as OverlayPreset;
-                if (preset != null)
+
+                if (preset != null && preset.targetWindowType != null)
                 {
                     if (!results.TryGetValue(preset.targetWindowType, out var presets))
                     {
@@ -358,6 +362,7 @@ namespace UnityEditor.Overlays
                     L10n.Tr("Continue"), L10n.Tr("Cancel")))
                 {
                     RevertPreferencesPresetsToDefault();
+                    ReloadAllPresets();
                 }
             });
         }

@@ -21,6 +21,7 @@ namespace UnityEditor.UIElements
         void Bind(VisualElement element, object bindingContext, SerializedProperty parentProperty);
 
         void TrackPropertyValue(VisualElement element, SerializedProperty property, Action<SerializedProperty> callback);
+        void TrackSerializedObjectValue(VisualElement element, SerializedObject property, Action<SerializedObject> callback);
 
         void HandleStyleUpdate(VisualElement element);
     }
@@ -90,7 +91,7 @@ namespace UnityEditor.UIElements
         }
 
         /// <summary>
-        /// Checks the property values for changes every frame. Executes the callback when the property value changes.
+        /// Checks the property values for changes at regular intervals. Executes the callback when the property value changes.
         /// If no callback is specified, a SerializedPropertyChangeEvent is sent to the target element.
         /// </summary>
         /// <param name="element">VisualElement tracking a property.</param>
@@ -99,6 +100,19 @@ namespace UnityEditor.UIElements
         public static void TrackPropertyValue(this VisualElement element, SerializedProperty property, Action<SerializedProperty> callback = null)
         {
             bindingImpl.TrackPropertyValue(element, property, callback);
+        }
+
+        /// <summary>
+        /// Checks the object for changes at regular intervals. Executes the callback when the object value changes.
+        /// If no callback is specified, a SerializedObjectChangeEvent is sent to the target element.
+        /// </summary>
+        /// <param name="element">VisualElement tracking an object.</param>
+        /// <param name="property">The SerializedObject to track.</param>
+        /// <param name="callback">Invoked when one of the tracked SerializedObject's value changes.</param>
+        public static void TrackSerializedObjectValue(this VisualElement element, SerializedObject obj,
+            Action<SerializedObject> callback = null)
+        {
+            bindingImpl.TrackSerializedObjectValue(element, obj, callback);
         }
     }
 }

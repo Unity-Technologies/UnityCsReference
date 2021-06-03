@@ -217,7 +217,10 @@ namespace UnityEditor.Search
         None = 0,
         Asset = 1 << 0,
         Object = 1 << 1,
-        Nested = 1 << 2
+        Nested = 1 << 2,
+        Grouped = 1 << 3,
+
+        Resources = Asset | Grouped
     }
 
     static class SearchDocumentFlagsExtensions
@@ -381,11 +384,12 @@ namespace UnityEditor.Search
         /// </summary>
         public int minWordIndexationLength { get; set; } = 2;
 
+        private long m_Timestamp;
         private Thread m_IndexerThread;
         private volatile bool m_IndexReady = false;
-        private long m_Timestamp;
+        private volatile bool m_RebuildFilters = true;
 
-        private static readonly QueryValidationOptions k_QueryEngineOptions = new QueryValidationOptions {validateFilters = false, skipNestedQueries = true};
+        private static readonly QueryValidationOptions k_QueryEngineOptions = new QueryValidationOptions {validateFilters = true, skipNestedQueries = true};
         private readonly QueryEngine<SearchResult> m_QueryEngine = new QueryEngine<SearchResult>(k_QueryEngineOptions);
         private readonly Dictionary<string, Query<SearchResult, object>> m_QueryPool = new Dictionary<string, Query<SearchResult, object>>();
 
@@ -439,6 +443,12 @@ namespace UnityEditor.Search
 
         private Query<SearchResult, object> BuildQuery(string searchQuery)
         {
+            if (m_RebuildFilters)
+            {
+                AddFilters();
+                m_RebuildFilters = false;
+            }
+
             Query<SearchResult, object> query;
             if (m_QueryPool.TryGetValue(searchQuery, out query) && query.valid)
                 return query;
@@ -446,7 +456,7 @@ namespace UnityEditor.Search
             if (m_QueryPool.Count > 50)
                 m_QueryPool.Clear();
 
-            query = m_QueryEngine.Parse(searchQuery, new SearchIndexerQueryFactory(args => EvaluateSearchNode(args)));
+            query = m_QueryEngine.Parse(searchQuery, new SearchIndexerQueryFactory(EvaluateSearchNode));
             if (query.valid)
                 m_QueryPool[searchQuery] = query;
             return query;
@@ -1082,6 +1092,7 @@ namespace UnityEditor.Search
 
         private void BuildDocumentIndexTable()
         {
+            m_RebuildFilters = true;
             m_IndexByDocuments.Clear();
             m_UnusedDocumentIndexes.Clear();
             for (int docIndex = 0; docIndex < m_Documents.Count; ++docIndex)
@@ -1091,6 +1102,19 @@ namespace UnityEditor.Search
                     m_UnusedDocumentIndexes.Push(docIndex);
                 else
                     m_IndexByDocuments[doc.id] = docIndex;
+            }
+        }
+
+        void AddFilters()
+        {
+            foreach (var kw in m_Keywords)
+            {
+                var filter = kw;
+                var ft = filter.LastIndexOfAny(SearchUtils.KeywordsValueDelimiters);
+                if (ft >= 0)
+                    filter = filter.Substring(0, ft);
+                if (!m_QueryEngine.HasFilter(filter))
+                    m_QueryEngine.AddFilter(filter);
             }
         }
 

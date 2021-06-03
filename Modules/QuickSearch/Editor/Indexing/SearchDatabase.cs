@@ -77,7 +77,7 @@ namespace UnityEditor.Search
         }
 
         [Serializable]
-        public class Options // TODO: replace this class with a enum flags IndexingOptions
+        public class Options
         {
             public bool disabled = false;           // Disables the index
 

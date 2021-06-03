@@ -96,6 +96,22 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         [SerializeField]
+        private bool m_FeatureDependenciesExpanded = false;
+        public virtual bool featureDependenciesExpanded
+        {
+            get => m_FeatureDependenciesExpanded;
+            set => m_FeatureDependenciesExpanded = value;
+        }
+
+        [SerializeField]
+        private string m_SelectedFeatureDependency;
+        public virtual string selectedFeatureDependency
+        {
+            get => m_SelectedFeatureDependency;
+            set => m_SelectedFeatureDependency = value;
+        }
+
+        [SerializeField]
         private bool m_SamplesExpanded = false;
         public virtual bool samplesExpanded
         {

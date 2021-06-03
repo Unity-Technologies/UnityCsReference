@@ -35,6 +35,13 @@ namespace Unity.UI.Builder
 
         protected void OnStartDrag(VisualElement handle)
         {
+            bool isScaledOrRotated = m_Target.computedStyle.rotate != Rotate.None() || m_Target.computedStyle.scale != Scale.Initial();
+
+            if (isScaledOrRotated)
+            {
+                Builder.ShowWarning(BuilderConstants.CannotManipulateResizedOrScaledItemMessage);
+            }
+
             m_TargetRectOnStartDrag = m_Target.layout;
             m_ThisRectOnStartDrag = this.layout;
 

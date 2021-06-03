@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using UnityEngine;
+using UnityEngine.Scripting;
 
 namespace UnityEditor.PackageManager
 {
@@ -24,6 +25,7 @@ namespace UnityEditor.PackageManager
             m_PackageNameToCallback[cb.PackageName] = cb;
         }
 
+        [RequiredByNativeCode]
         internal static int ShouldIncludeInBuild(string packagePath, string packageFullPath)
         {
             string packageName = Regex.Match(packagePath, @"\/(.*)\/").Groups[1].Value;

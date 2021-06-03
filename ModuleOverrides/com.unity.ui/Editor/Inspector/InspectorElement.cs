@@ -159,7 +159,7 @@ namespace UnityEditor.UIElements
             this.mode = mode;
             if (obj == null)
             {
-                if (!GenericInspector.ObjectIsMonoBehaviourOrScriptableObject(obj))
+                if (!GenericInspector.ObjectIsMonoBehaviourOrScriptableObjectWithoutScript(obj))
                 {
                     return;
                 }
@@ -182,7 +182,7 @@ namespace UnityEditor.UIElements
             this.mode = mode;
             if (obj.targetObject == null)
             {
-                if (!GenericInspector.ObjectIsMonoBehaviourOrScriptableObject(obj.targetObject))
+                if (!GenericInspector.ObjectIsMonoBehaviourOrScriptableObjectWithoutScript(obj.targetObject))
                 {
                     return;
                 }
@@ -213,7 +213,7 @@ namespace UnityEditor.UIElements
             var targetObject = editor.targets[0];
             if (targetObject == null)
             {
-                if (!GenericInspector.ObjectIsMonoBehaviourOrScriptableObject(targetObject))
+                if (!GenericInspector.ObjectIsMonoBehaviourOrScriptableObjectWithoutScript(targetObject))
                 {
                     return;
                 }
@@ -544,7 +544,7 @@ namespace UnityEditor.UIElements
                     m_IgnoreOnInspectorGUIErrors = true;
                 }
 
-                if ((editor.target == null && !GenericInspector.ObjectIsMonoBehaviourOrScriptableObject(editor.target)) ||
+                if ((editor.target == null && !GenericInspector.ObjectIsMonoBehaviourOrScriptableObjectWithoutScript(editor.target)) ||
                     !editor.serializedObject.isValid)
                 {
                     return;
@@ -691,7 +691,7 @@ namespace UnityEditor.UIElements
             var target = editor.targets[0];
             if (target == null)
             {
-                if (!GenericInspector.ObjectIsMonoBehaviourOrScriptableObject(target))
+                if (!GenericInspector.ObjectIsMonoBehaviourOrScriptableObjectWithoutScript(target))
                 {
                     return null;
                 }

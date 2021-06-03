@@ -42,7 +42,7 @@ namespace UnityEditor.Overlays
             m_ListRoot.makeItem = CreateListItem;
             m_ListRoot.bindItem = BindListItem;
             m_ListRoot.itemsSource = m_OverlayToShow;
-            m_ListRoot.itemHeight = 20;
+            m_ListRoot.fixedItemHeight = 20;
             m_ListRoot.selectionType = SelectionType.None;
 
             m_Dropdown = this.Q<Button>("preset-dropdown");
@@ -101,13 +101,13 @@ namespace UnityEditor.Overlays
 
             foreach (var overlay in overlays)
             {
-                if (!overlay.userControlledVisibility)
+                if (!overlay.userControlledVisibility || !overlay.hasMenuEntry)
                     continue;
 
                 m_OverlayToShow.Add(overlay);
             }
 
-            m_ListRoot.Refresh();
+            m_ListRoot.Rebuild();
         }
 
         public void Show(IEnumerable<Overlay> overlays, Rect bounds, Vector2 mousePosition)
@@ -144,6 +144,9 @@ namespace UnityEditor.Overlays
         public void Hide()
         {
             style.display = DisplayStyle.None;
+
+            foreach (var overlay in m_OverlayToShow)
+                overlay.Highlight(false);
         }
 
         public static void SetKeepAlive(bool keepAlive)

@@ -7,10 +7,10 @@ using System.Collections.Generic;
 
 namespace UnityEngine.UIElements
 {
-    internal interface IDragAndDropController<TItem, in TArgs>
+    internal interface IDragAndDropController<in TArgs>
     {
-        bool CanStartDrag(IEnumerable<TItem> items);
-        StartDragArgs SetupDragAndDrop(IEnumerable<TItem> items);
+        bool CanStartDrag(IEnumerable<int> itemIndices);
+        StartDragArgs SetupDragAndDrop(IEnumerable<int> itemIndices, bool skipText = false);
         DragVisualMode HandleDragAndDrop(TArgs args);
         void OnDrop(TArgs args);
     }

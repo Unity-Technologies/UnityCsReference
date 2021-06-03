@@ -13,8 +13,6 @@ namespace UnityEditorInternal
     internal sealed class FrameDebuggerUtility
     {
         extern public static void SetEnabled(bool enabled, int remotePlayerGUID);
-        public extern static bool IsLocalEnabled();
-        public extern static bool IsRemoteEnabled();
         public extern static int GetRemotePlayerGUID();
         public extern static bool receivingRemoteFrameEventData { [NativeName("IsReceivingRemoteFrameEventData")] get; }
         public extern static bool locallySupported { [NativeName("IsSupported")] get; }
@@ -24,7 +22,7 @@ namespace UnityEditorInternal
         [NativeName("FrameEventDataHash")] public extern static uint eventDataHash { get; }
         public extern static void SetRenderTargetDisplayOptions(int rtIndex, Vector4 channels, float blackLevel, float whiteLevel);
         [NativeName("GetProfilerEventName")] public extern static string GetFrameEventInfoName(int index);
-        public extern static GameObject GetFrameEventGameObject(int index);
+        public extern static Object GetFrameEventObject(int index);
         [FreeFunction("FrameDebuggerBindings::GetBatchBreakCauseStrings")] public extern static string[] GetBatchBreakCauseStrings();
 
         public static FrameDebuggerEvent[] GetFrameEvents() { return (FrameDebuggerEvent[])GetFrameEventsImpl(); }

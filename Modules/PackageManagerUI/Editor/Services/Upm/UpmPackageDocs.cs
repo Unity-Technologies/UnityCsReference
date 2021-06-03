@@ -30,7 +30,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         // Method content must be matched in package manager doc tools
-        public static string GetPackageUrlRedirect(string packageName, string shortVersionId)
+        private static string GetPackageUrlRedirect(string packageName, string shortVersionId)
         {
             var redirectUrl = "";
             if (packageName == "com.unity.ads")
@@ -68,9 +68,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return version.packageInfo.description.Split(new[] { k_BuiltinPackageDocsUrlKey }, StringSplitOptions.None);
         }
 
-        private static string GetOfflineDocumentation(IOProxy IOProxy, UpmPackageVersion version)
+        public static string GetOfflineDocumentation(IOProxy IOProxy, IPackageVersion version)
         {
-            if (version?.isAvailableOnDisk ?? false)
+            if (version?.isAvailableOnDisk == true && version.packageInfo != null)
             {
                 try
                 {
@@ -86,23 +86,16 @@ namespace UnityEditor.PackageManager.UI.Internal
                             return docsMd;
                     }
                 }
-                catch (System.IO.IOException e)
-                {
-                    Debug.Log($"[Package Manager] Cannot get offline documentation: {e.Message}");
-                    return string.Empty;
-                }
+                catch (System.IO.IOException) {}
             }
             return string.Empty;
         }
 
-        public static string GetDocumentationUrl(IOProxy IOProxy, IPackageVersion version, bool offline = false)
+        public static string GetDocumentationUrl(IPackageVersion version)
         {
             var upmVersion = version as UpmPackageVersion;
             if (upmVersion == null)
                 return string.Empty;
-
-            if (offline)
-                return GetOfflineDocumentation(IOProxy, upmVersion);
 
             if (!string.IsNullOrEmpty(upmVersion.documentationUrl))
                 return upmVersion.documentationUrl;
@@ -116,14 +109,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             return $"http://docs.unity3d.com/Packages/{upmVersion.shortVersionId}/index.html";
         }
 
-        public static string GetChangelogUrl(IOProxy IOProxy, IPackageVersion version, bool offline = false)
+        public static string GetChangelogUrl(IPackageVersion version)
         {
             var upmVersion = version as UpmPackageVersion;
             if (upmVersion == null)
                 return string.Empty;
-
-            if (offline)
-                return GetOfflineChangelog(IOProxy, upmVersion);
 
             if (!string.IsNullOrEmpty(upmVersion.changelogUrl))
                 return upmVersion.changelogUrl;
@@ -131,31 +121,25 @@ namespace UnityEditor.PackageManager.UI.Internal
             return $"http://docs.unity3d.com/Packages/{upmVersion.shortVersionId}/changelog/CHANGELOG.html";
         }
 
-        private static string GetOfflineChangelog(IOProxy IOProxy, UpmPackageVersion version)
+        public static string GetOfflineChangelog(IOProxy IOProxy, IPackageVersion version)
         {
-            if (version?.isAvailableOnDisk ?? false)
+            if (version?.isAvailableOnDisk == true && version.packageInfo != null)
             {
                 try
                 {
                     var changelogFile = IOProxy.PathsCombine(version.packageInfo.resolvedPath, "CHANGELOG.md");
                     return IOProxy.FileExists(changelogFile) ? changelogFile : string.Empty;
                 }
-                catch (System.IO.IOException e)
-                {
-                    Debug.Log($"[Package Manager] Cannot get offline change log: {e.Message}");
-                }
+                catch (System.IO.IOException) {}
             }
             return string.Empty;
         }
 
-        public static string GetLicensesUrl(IOProxy IOProxy, IPackageVersion version, bool offline = false)
+        public static string GetLicensesUrl(IPackageVersion version)
         {
             var upmVersion = version as UpmPackageVersion;
             if (upmVersion == null)
                 return string.Empty;
-
-            if (offline)
-                return GetOfflineLicenses(IOProxy, upmVersion);
 
             if (!string.IsNullOrEmpty(upmVersion.licensesUrl))
                 return upmVersion.licensesUrl;
@@ -168,36 +152,42 @@ namespace UnityEditor.PackageManager.UI.Internal
             return url;
         }
 
-        private static string GetOfflineLicenses(IOProxy IOProxy, UpmPackageVersion version)
+        public static string GetOfflineLicenses(IOProxy IOProxy, IPackageVersion version)
         {
-            if (version?.isAvailableOnDisk ?? false)
+            if (version?.isAvailableOnDisk == true && version.packageInfo != null)
             {
                 try
                 {
                     var licenseFile = IOProxy.PathsCombine(version.packageInfo.resolvedPath, "LICENSE.md");
                     return IOProxy.FileExists(licenseFile) ? licenseFile : string.Empty;
                 }
-                catch (System.IO.IOException e)
-                {
-                    Debug.Log($"[Package Manager] Cannot get offline licenses: {e.Message}");
-                }
+                catch (System.IO.IOException) {}
             }
             return string.Empty;
         }
 
         public static bool HasDocs(IPackageVersion version)
         {
-            return (version as UpmPackageVersion) != null;
+            var upmVersion = version as UpmPackageVersion;
+            if (!string.IsNullOrEmpty(upmVersion?.documentationUrl))
+                return true;
+            return upmVersion != null && !version.HasTag(PackageTag.Feature);
         }
 
         public static bool HasChangelog(IPackageVersion version)
         {
-            return (version as UpmPackageVersion) != null && !version.HasTag(PackageTag.BuiltIn) && string.IsNullOrEmpty(GetPackageUrlRedirect(version));
+            var upmVersion = version as UpmPackageVersion;
+            if (!string.IsNullOrEmpty(upmVersion?.changelogUrl))
+                return true;
+            return upmVersion != null && !version.HasTag(PackageTag.BuiltIn | PackageTag.Feature) && string.IsNullOrEmpty(GetPackageUrlRedirect(version));
         }
 
         public static bool HasLicenses(IPackageVersion version)
         {
-            return (version as UpmPackageVersion) != null && !version.HasTag(PackageTag.BuiltIn);
+            var upmVersion = version as UpmPackageVersion;
+            if (!string.IsNullOrEmpty(upmVersion?.licensesUrl))
+                return true;
+            return upmVersion != null && !version.HasTag(PackageTag.BuiltIn | PackageTag.Feature);
         }
     }
 }

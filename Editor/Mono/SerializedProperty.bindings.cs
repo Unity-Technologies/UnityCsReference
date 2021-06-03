@@ -11,6 +11,7 @@ using UnityEngine.Bindings;
 using UnityObject = UnityEngine.Object;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using RefId = System.Int64;
 
 namespace UnityEditor
 {
@@ -966,6 +967,18 @@ namespace UnityEditor
         // Value of an object reference property.
         public object managedReferenceValue
         {
+            get
+            {
+                Verify(VerifyFlags.IteratorNotAtEnd);
+
+                if (propertyType != SerializedPropertyType.ManagedReference)
+                {
+                    throw new System.InvalidOperationException(
+                        $"managedReferenceValue is only available on fields with the [SerializeReference] attribute");
+                }
+
+                return LookupInstanceByIdInternal(GetManagedReferenceIdInternal());
+            }
             set
             {
                 if (propertyType != SerializedPropertyType.ManagedReference)
@@ -997,19 +1010,30 @@ namespace UnityEditor
                 Verify(VerifyFlags.IteratorNotAtEnd);
                 SetManagedReferenceValueInternal(value);
             }
-            // No getter for managed reference since it adds a few notions that might be hard to reason about from the user's perspective.
-            // A serializedobject is a serialized version of a UnityObject. A serialized property is a view on that serialized object.
-            // All operations and all that a serialized knows about are around that serialzied view of the managed world.
-            // Managed references in the context of SO/SP does not have the same semantics as C# references. All the references are
-            // serialized properly but the original C# reference is lost in the process and cannot be retrieved unless e.g. cached locally
-            // on the C# side (i.e. in this file). BUT this would not world properly or involve tricky reconstruction with domain reloads
-            // after which all those C# references would have to be reconstructed etc.
-            // So for now we dont allow getting a managed reference.
-
-            // If we ever wanted to add one though, the approach would be to add an explicit setting that takes an reference ID and an object instance as
-            // input, this would allow serialized properties to edit relations between managed references. We would also need a method to get
-            // an instance from a managed reference id along with a nice safe API around it.
         }
+
+        public RefId managedReferenceId
+        {
+            get
+            {
+                Verify(VerifyFlags.IteratorNotAtEnd);
+                return GetManagedReferenceIdInternal();
+            }
+            set
+            {
+                Verify(VerifyFlags.IteratorNotAtEnd);
+                var referencedObj = LookupInstanceByIdInternal(value);
+                if (value != SerializationUtility.RefIdNull && referencedObj == null)
+                {
+                    throw new System.InvalidOperationException(
+                        $"The specified managed reference id cannot be set because it is not currently assigned to an object.");
+                }
+                managedReferenceValue = referencedObj;
+            }
+        }
+
+        [NativeName("GetManagedReferenceId")]
+        private extern long GetManagedReferenceIdInternal();
 
         // Dynamic type for the current managed reference.
         public string managedReferenceFullTypename
@@ -1052,6 +1076,9 @@ namespace UnityEditor
 
         [NativeName("SetManagedReferenceValue")]
         private extern void SetManagedReferenceValueInternal(object value);
+
+        [NativeName("LookupInstanceById")]
+        private extern object LookupInstanceByIdInternal(RefId refId);
 
         [NativeName("GetPPtrValue")]
         private extern UnityObject GetPPtrValueInternal();

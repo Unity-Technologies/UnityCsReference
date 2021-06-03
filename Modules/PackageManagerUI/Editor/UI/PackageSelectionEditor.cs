@@ -24,7 +24,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (packageSelectionObject == null)
                     return base.targetTitle;
 
-                return string.Format(L10n.Tr("Package '{0}' Manifest"), m_Version != null ?
+                return string.Format(L10n.Tr("{0} '{1}' Manifest"), m_Package?.GetDescriptor(true), m_Version != null ?
                     string.IsNullOrEmpty(m_Version.displayName) ? m_Version.name : m_Version.displayName :
                     packageSelectionObject.displayName);
             }
@@ -33,13 +33,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         private static class Styles
         {
             public static readonly GUIContent information = EditorGUIUtility.TrTextContent("Information");
-            public static readonly GUIContent name = EditorGUIUtility.TrTextContent("Name", "Package name");
-            public static readonly GUIContent displayName = EditorGUIUtility.TrTextContent("Display name", "Display name used in UI");
-            public static readonly GUIContent version = EditorGUIUtility.TrTextContent("Version", "Package Version");
-            public static readonly GUIContent category = EditorGUIUtility.TrTextContent("Category", "Package Category");
+            public static readonly GUIContent name = EditorGUIUtility.TrTextContent("Name");
+            public static readonly GUIContent displayName = EditorGUIUtility.TrTextContent("Display name");
+            public static readonly GUIContent version = EditorGUIUtility.TrTextContent("Version");
+            public static readonly GUIContent category = EditorGUIUtility.TrTextContent("Category");
             public static readonly GUIContent description = EditorGUIUtility.TrTextContent("Description");
-            public static readonly GUIContent dependencies = EditorGUIUtility.TrTextContent("Dependencies");
-            public static readonly GUIContent package = EditorGUIUtility.TrTextContent("Package name", "Dependency package name");
+            public static readonly GUIContent package = EditorGUIUtility.TrTextContent("Package name");
             public static readonly GUIContent editPackage = EditorGUIUtility.TrTextContent("Edit");
             public static readonly GUIContent viewInPackageManager = EditorGUIUtility.TrTextContent("View in Package Manager");
         }
@@ -139,8 +138,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             GUILayout.Label(Styles.description, EditorStyles.boldLabel);
             DoPackageDescriptionLayout();
 
-            // Package dependencies
-            GUILayout.Label(Styles.dependencies, EditorStyles.boldLabel);
+            // Dependencies or Packages included section
+            var dependenciesTitleText = EditorGUIUtility.TrTextContent(
+                m_Package.Is(PackageType.Feature) ? "Packages included" : "Dependencies");
+            GUILayout.Label(dependenciesTitleText, EditorStyles.boldLabel);
             m_List.DoLayoutList();
 
             GUI.enabled = previousEnabled;
@@ -204,6 +205,17 @@ namespace UnityEditor.PackageManager.UI.Internal
             var dependency = list[index];
             var packageName = dependency.name;
             var version = dependency.version;
+            var p = m_PackageDatabase.GetPackage(dependency.name);
+            if (p != null)
+            {
+                packageName = string.IsNullOrEmpty(p.displayName) ? p.name : p.displayName;
+
+                if (version == "default")
+                    version = p.versions.lifecycleVersion?.versionString ?? p.versions.primary?.versionString ?? dependency.version;
+
+                if (p.Is(PackageType.BuiltIn))
+                    version = string.Empty;
+            }
 
             var w = rect.width;
             rect.x += 4;
@@ -223,18 +235,18 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var labels = new List<GUIContent>();
                 if (!m_Package.Is(PackageType.AssetStore))
                     labels.Add(Styles.name);
-                labels.AddRange(new[]
-                {
-                    Styles.displayName, Styles.version, Styles.category
-                });
+                labels.Add(Styles.displayName);
+                if (!m_Package.Is(PackageType.Feature))
+                    labels.Add(Styles.version);
+                labels.Add(Styles.category);
 
                 var contents = new List<string>();
                 if (!m_Package.Is(PackageType.AssetStore))
                     contents.Add(m_Version.name);
-                contents.AddRange(new[]
-                {
-                    m_Version.displayName, m_Version.version.ToString(), m_Version.category
-                });
+                contents.Add(m_Version.displayName);
+                if (!m_Package.Is(PackageType.Feature))
+                    contents.Add(m_Version.version.ToString());
+                contents.Add(m_Version.category);
 
                 SelectableLabelFields(labels, contents);
             }

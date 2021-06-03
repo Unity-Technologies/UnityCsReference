@@ -65,6 +65,8 @@ namespace UnityEditor
         int  m_StreamingMipmapsPriority;
 
         [SerializeField]
+        int m_VTOnly;
+        [SerializeField]
         int m_IgnoreMasterTextureLimit;
 
         [SerializeField]
@@ -302,6 +304,11 @@ namespace UnityEditor
             set { m_StreamingMipmapsPriority = value; }
         }
 
+        public bool vtOnly
+        {
+            get { return m_VTOnly != 0; }
+            set { m_VTOnly = value ? 1 : 0; }
+        }
         internal bool ignoreMasterTextureLimit
         {
             get { return m_IgnoreMasterTextureLimit != 0; }

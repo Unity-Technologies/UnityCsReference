@@ -32,6 +32,9 @@ namespace UnityEditor.AssetImporters
         AssetImportContext() {}
 
         public extern string assetPath { get; internal set; }
+
+        [Obsolete("GetResultPath has been deprecated. Use GetOutputArtifactFilePath(string) instead (UnityUpgradable) -> GetOutputArtifactFilePath(*)")]
+        [NativeName("GetOutputArtifactFilePath")]
         public extern string GetResultPath(string extension);
 
         public extern BuildTarget selectedBuildTarget { get; }
@@ -94,6 +97,23 @@ namespace UnityEditor.AssetImporters
 
             DependsOnImportedAssetInternal(path);
         }
+
+        [NativeName("GetArtifactFilePath")]
+        private extern string GetArtifactFilePath_Internal(string path, string fileName);
+
+        public string GetArtifactFilePath(string path, string fileName)
+        {
+            return GetArtifactFilePath_Internal(path, fileName);
+        }
+
+        public string GetArtifactFilePath(GUID guid, string fileName)
+        {
+            return GetArtifactFilePath(new ArtifactKey(guid), fileName);
+        }
+
+        public extern string GetArtifactFilePath(ArtifactKey key, string fileName);
+
+        public extern string GetOutputArtifactFilePath(string fileName);
 
         [NativeName("DependsOnImportedAsset")]
         private extern void DependsOnImportedAssetInternal(string path);

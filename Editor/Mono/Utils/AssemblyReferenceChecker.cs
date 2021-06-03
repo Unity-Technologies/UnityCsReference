@@ -148,24 +148,31 @@ namespace UnityEditor
 
             foreach (var method in type.Methods)
             {
-                if (!method.HasBody)
-                    continue;
-
-                foreach (var instr in method.Body.Instructions)
+                try
                 {
-                    if (OpCodes.Call == instr.OpCode)
-                    {
-                        var name = instr.Operand.ToString();
-                        if (!isSystem)
-                        {
-                            _userReferencedMethods.Add(name);
-                        }
-                        _referencedMethods.Add(name);
-                    }
-                }
-                _definedMethods.Add(method.ToString());
+                    if (!method.HasBody)
+                        continue;
 
-                HasMouseEvent |= MethodIsMouseEvent(method);
+                    foreach (var instr in method.Body.Instructions)
+                    {
+                        if (OpCodes.Call == instr.OpCode)
+                        {
+                            var name = instr.Operand.ToString();
+                            if (!isSystem)
+                            {
+                                _userReferencedMethods.Add(name);
+                            }
+                            _referencedMethods.Add(name);
+                        }
+                    }
+                    _definedMethods.Add(method.ToString());
+
+                    HasMouseEvent |= MethodIsMouseEvent(method);
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidOperationException($"Error while observing opcode in {type.FullName}::{method?.ToString()}", ex);
+                }
             }
         }
 
@@ -289,7 +296,8 @@ namespace UnityEditor
                 || name.Equals("UnityEngine")
                 || name.Equals("UnityEngine.Networking")
                 || name.Equals("Mono.Posix")
-                || name.Equals("Moq");
+                || name.Equals("Moq")
+                || name.StartsWith("Unity.VisualScripting");
         }
 
         public static bool GetScriptsHaveMouseEvents(string path)

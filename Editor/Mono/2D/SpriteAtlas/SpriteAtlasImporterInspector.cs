@@ -64,7 +64,7 @@ namespace UnityEditor.U2D
             public readonly GUIContent copyMasterButton = EditorGUIUtility.TrTextContent("Copy Master's Settings", "Copy all master's settings into this variant.");
 
             public readonly GUIContent disabledPackLabel = EditorGUIUtility.TrTextContent("Sprite Atlas packing is disabled. Enable it in Edit > Project Settings > Editor.", null, EditorGUIUtility.GetHelpIcon(MessageType.Info));
-            public readonly GUIContent packableListLabel = EditorGUIUtility.TrTextContent("Objects for Packing", "Only accepts Sprite Sheet (Texture) and Sprite.");
+            public readonly GUIContent packableListLabel = EditorGUIUtility.TrTextContent("Objects for Packing", "Only accepts Folders, Sprite Sheet (Texture) and Sprite.");
 
             public readonly GUIContent notPowerOfTwoWarning = EditorGUIUtility.TrTextContent("This scale will produce a Variant Sprite Atlas with a packed Texture that is NPOT (non - power of two). This may cause visual artifacts in certain compression/Texture formats.");
             public readonly GUIContent secondaryTextureNameLabel = EditorGUIUtility.TrTextContent("Secondary Texture Name", "The name of the Secondary Texture to apply the following settings to.");
@@ -167,7 +167,7 @@ namespace UnityEditor.U2D
 
         static bool IsPackable(Object o)
         {
-            return o != null && (o.GetType() == typeof(Sprite) || o.GetType() == typeof(Texture2D));
+            return o != null && (o.GetType() == typeof(Sprite) || o.GetType() == typeof(Texture2D) || (o.GetType() == typeof(DefaultAsset) && ProjectWindowUtil.IsFolder(o.GetInstanceID())));
         }
 
         static Object ValidateObjectForPackableFieldAssignment(Object[] references, System.Type objType, SerializedProperty property, EditorGUI.ObjectFieldValidatorOptions options)
@@ -337,7 +337,7 @@ namespace UnityEditor.U2D
         void AddPackable(ReorderableList list)
         {
             ObjectSelector.get.Show(null, typeof(Object), null, false);
-            ObjectSelector.get.searchFilter = "t:sprite t:texture2d";
+            ObjectSelector.get.searchFilter = "t:sprite t:texture2d t:folder";
             ObjectSelector.get.objectSelectorID = styles.packableSelectorHash;
         }
 

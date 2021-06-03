@@ -1258,8 +1258,13 @@ namespace UnityEditorInternal
             return (int)(domain.y - domain.x) + 1;
         }
 
-        public void UpdateChartGrid(float timeMax)
+        public void UpdateChartGrid(float timeMax, bool showGrid)
         {
+            if (!showGrid)
+            {
+                SetGrid(null, null);
+                return;
+            }
             if (timeMax < 1500)
             {
                 SetGrid(k_ChartGridValues1ms, k_ChartGridLabels1ms);

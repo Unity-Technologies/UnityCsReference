@@ -9,6 +9,7 @@ namespace UnityEngine.UIElements.UIR
 {
     internal struct TextCoreSettings : IEquatable<TextCoreSettings>
     {
+        public Color faceColor;
         public Color outlineColor;
         public float outlineWidth;
 
@@ -24,6 +25,7 @@ namespace UnityEngine.UIElements.UIR
         public bool Equals(TextCoreSettings other)
         {
             return
+                other.faceColor == faceColor &&
                 other.outlineColor == outlineColor &&
                 other.outlineWidth == outlineWidth &&
                 other.underlayColor == underlayColor &&
@@ -34,6 +36,7 @@ namespace UnityEngine.UIElements.UIR
         public override int GetHashCode()
         {
             var hashCode = 75905159;
+            hashCode = hashCode * -1521134295 + faceColor.GetHashCode();
             hashCode = hashCode * -1521134295 + outlineColor.GetHashCode();
             hashCode = hashCode * -1521134295 + outlineWidth.GetHashCode();
             hashCode = hashCode * -1521134295 + underlayColor.GetHashCode();

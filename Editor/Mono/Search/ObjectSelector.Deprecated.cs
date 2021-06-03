@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor.SearchService
 {
@@ -20,5 +21,43 @@ namespace UnityEditor.SearchService
         {
             ObjectSelectorSearch.UnregisterEngine(engine);
         }
+    }
+
+    [Obsolete("ObjectSelectorHandlerAttribute has been deprecated. Use SearchContextAttribute instead.")]
+    [AttributeUsage(AttributeTargets.Method)]
+    public class ObjectSelectorHandlerAttribute : Attribute
+    {
+        public Type attributeType { get; }
+
+        public ObjectSelectorHandlerAttribute(Type attributeType)
+        {
+            this.attributeType = attributeType;
+        }
+    }
+
+    [Obsolete("ObjectSelectorTargetInfo has been deprecated.")]
+    public struct ObjectSelectorTargetInfo
+    {
+        public GlobalObjectId globalObjectId { get; }
+        public Object targetObject { get; }
+        public Type type { get; }
+
+        public ObjectSelectorTargetInfo(GlobalObjectId globalObjectId, Object targetObject = null, Type type = null)
+        {
+            this.globalObjectId = globalObjectId;
+            this.targetObject = targetObject;
+            this.type = type;
+        }
+
+        public Object LoadObject()
+        {
+            return targetObject ?? GlobalObjectId.GlobalObjectIdentifierToObjectSlow(globalObjectId);
+        }
+    }
+
+    public partial class ObjectSelectorSearchContext : ISearchContext
+    {
+        [Obsolete("selectorConstraint has been deprecated.")]
+        public Func<ObjectSelectorTargetInfo, Object[], ObjectSelectorSearchContext, bool> selectorConstraint { get; set; }
     }
 }

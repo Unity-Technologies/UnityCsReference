@@ -219,7 +219,7 @@ namespace UnityEditor.Search
             private Rect[] GetMoreButtonRect(Rect headerRect, int numButtons)
             {
                 const float k_MoreButtonSize = 16f;
-                const float k_MoreButtonHPadding = 2f;
+                const float k_MoreButtonHPadding = 4f;
                 var rects = new Rect[numButtons];
                 var x = headerRect.xMax - numButtons * (k_MoreButtonHPadding + k_MoreButtonSize);
                 var y = headerRect.yMin + (headerRect.height - k_MoreButtonSize) / 2f;

@@ -40,9 +40,7 @@ namespace UnityEditor.Overlays
             set
             {
                 var position = canvas.ClampToOverlayWindow(new Rect(value, rootVisualElement.rect.size)).position;
-                FloatingToSnapPosition(position, out var snapCorner, out var snapOffset);
-                floatingSnapCorner = snapCorner;
-                floatingSnapOffset = snapOffset;
+                UpdateSnappingOffsets(position);
             }
         }
 
@@ -86,11 +84,11 @@ namespace UnityEditor.Overlays
                 case SnapCorner.TopLeft:
                     return snapPosition;
                 case SnapCorner.TopRight:
-                    return new Vector2(canvas.floatingContainer.localBound.width - rootVisualElement.localBound.width + snapPosition.x, snapPosition.y);
+                    return new Vector2(canvas.floatingContainer.localBound.width + snapPosition.x, snapPosition.y);
                 case SnapCorner.BottomLeft:
-                    return new Vector2(snapPosition.x, canvas.floatingContainer.localBound.height - rootVisualElement.localBound.height + snapPosition.y);
+                    return new Vector2(snapPosition.x, canvas.floatingContainer.localBound.height + snapPosition.y);
                 case SnapCorner.BottomRight:
-                    return canvas.floatingContainer.localBound.size - rootVisualElement.localBound.size + snapPosition;
+                    return canvas.floatingContainer.localBound.size + snapPosition;
                 default:
                     return Vector2.zero;
             }
@@ -120,27 +118,34 @@ namespace UnityEditor.Overlays
 
             if (topRight.sqrMagnitude < snapOffset.sqrMagnitude)
             {
-                snapOffset = topRight;
+                snapOffset = overlayRect.position - aTopRight;
                 snapCorner = SnapCorner.TopRight;
             }
 
             if (bottomLeft.sqrMagnitude < snapOffset.sqrMagnitude)
             {
-                snapOffset = bottomLeft;
+                snapOffset = overlayRect.position - aBottomLeft;
                 snapCorner = SnapCorner.BottomLeft;
             }
 
             if (bottomRight.sqrMagnitude < snapOffset.sqrMagnitude)
             {
-                snapOffset = bottomRight;
+                snapOffset = overlayRect.position - aBottomRight;
                 snapCorner = SnapCorner.BottomRight;
             }
         }
 
         void OnGeometryChanged(GeometryChangedEvent evt)
         {
-            if (evt.newRect.size != evt.oldRect.size)
+            if (evt.newRect.size != evt.oldRect.size && canvas.overlaysEnabled)
                 floatingPosition = floatingPosition; //Force a clamp of the container
+        }
+
+        internal void UpdateSnappingOffsets(Vector2 floatingPosition)
+        {
+            FloatingToSnapPosition(floatingPosition, out var snapCorner, out var snapOffset);
+            floatingSnapCorner = snapCorner;
+            floatingSnapOffset = snapOffset;
         }
 
         internal void UpdateAbsolutePosition()

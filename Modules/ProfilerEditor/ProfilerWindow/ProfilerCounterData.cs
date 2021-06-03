@@ -13,7 +13,7 @@ namespace UnityEditor.Profiling
         public string m_Category;
         public string m_Name;
 
-        public static ProfilerCounterData FromProfilerCounterDescriptor(ProfilerCounterDescriptor counter)
+        public static ProfilerCounterData FromProfilerCounterDescriptor(in ProfilerCounterDescriptor counter)
         {
             return new ProfilerCounterData()
             {
@@ -32,8 +32,10 @@ namespace UnityEditor.Profiling
     {
         public static ProfilerCounterDescriptor[] ConvertFromLegacyCounterDatas(List<ProfilerCounterData> legacyCounters)
         {
-            var capacity = (legacyCounters != null) ? legacyCounters.Count : 0;
-            var counters = new List<ProfilerCounterDescriptor>(capacity);
+            if (legacyCounters == null)
+                return new ProfilerCounterDescriptor[0];
+
+            var counters = new List<ProfilerCounterDescriptor>(legacyCounters.Count);
             foreach (var legacyCounter in legacyCounters)
             {
                 var counter = legacyCounter.ToProfilerCounterDescriptor();
@@ -45,8 +47,10 @@ namespace UnityEditor.Profiling
 
         public static List<ProfilerCounterData> ConvertToLegacyCounterDatas(ProfilerCounterDescriptor[] counters)
         {
-            var capacity = (counters != null) ? counters.Length : 0;
-            var legacyCounters = new List<ProfilerCounterData>(capacity);
+            if (counters == null)
+                return new List<ProfilerCounterData>();
+
+            var legacyCounters = new List<ProfilerCounterData>(counters.Length);
             foreach (var counter in counters)
             {
                 var legacyCounter = ProfilerCounterData.FromProfilerCounterDescriptor(counter);

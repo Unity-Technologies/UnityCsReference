@@ -1378,8 +1378,33 @@ namespace UnityEditor
 
         void SetSearchFolderFromFolderTreeSelection()
         {
-            if (m_FolderTree != null)
-                m_SearchFilter.folders = GetFolderPathsFromInstanceIDs(m_FolderTree.GetSelection());
+            if (m_FolderTree == null)
+                return;
+
+            m_SearchFilter.folders = GetFolderPathsFromInstanceIDs(m_FolderTree.GetSelection());
+
+            if (m_SearchFilter.folders.Length != 0)
+                return;
+
+            //If we fail to find the folder path from the selected ID then probably the selection could be from Favorites.
+            //At any point of time there can only be one selection from Favorites..
+            //The Favorites have a custom InstanceID(starting from 1000000000) different from Assets and are saved in a cache,
+            //Since we cant get the path from the AssetsUtility with these InstanceIDs we need to get them from cache.
+            if (m_FolderTree.GetSelection().Length == 1)
+            {
+                int selectionID = m_FolderTree.GetSelection()[0];
+                ItemType type = GetItemType(selectionID);
+                if (type == ItemType.SavedFilter)
+                {
+                    SearchFilter filter = SavedSearchFilters.GetFilter(selectionID);
+
+                    // Check if the filter is valid (the root of filters are not an actual filter)
+                    if (ValidateFilter(selectionID, filter))
+                    {
+                        m_SearchFilter = filter;
+                    }
+                }
+            }
         }
 
         void FolderTreeSelectionCallback(int[] selectedTreeViewInstanceIDs)

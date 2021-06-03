@@ -181,7 +181,7 @@ namespace Unity.UI.Builder
         {
             if (asset)
                 return URIHelpers.MakeAssetUri(asset);
-            
+
             if (string.IsNullOrEmpty(assetPath))
                 return assetPath;
 
@@ -291,12 +291,12 @@ namespace Unity.UI.Builder
             // Add special children.
             var styleSheets = root.GetStyleSheets();
             var styleSheetPaths = root.GetStyleSheetPaths();
-            
+
             if (styleSheetPaths != null && styleSheetPaths.Count > 0)
             {
                 Assert.IsNotNull(styleSheets);
                 Assert.AreEqual(styleSheetPaths.Count, styleSheets.Count);
-                
+
                 bool newLineAdded = false;
 
                 for (var i = 0; i < styleSheetPaths.Count; ++i)
@@ -391,13 +391,18 @@ namespace Unity.UI.Builder
 
             var idToChildren = VisualTreeAssetUtilities.GenerateIdToChildren(vta);
 
+            var usedTemplates = new HashSet<string>();
+
             foreach (var vea in veas)
             {
                 // Templates
-                var usedTemplates = new HashSet<string>();
                 GatherUsedTemplates(vta, vea, idToChildren, usedTemplates);
-                AppendTemplateRegistrations(vta, vtaPath, stringBuilder, usedTemplates);
+            }
 
+            AppendTemplateRegistrations(vta, vtaPath, stringBuilder, usedTemplates);
+
+            foreach (var vea in veas)
+            {
                 GenerateUXMLRecursive(vta, vtaPath, vea, idToChildren, stringBuilder, 1, true);
             }
 
@@ -426,12 +431,12 @@ namespace Unity.UI.Builder
             bool tempHasChildTags = false;
             var styleSheets = uxmlRootAsset.GetStyleSheets();
             var styleSheetPaths = uxmlRootAsset.GetStyleSheetPaths();
-            
+
             if (styleSheetPaths != null && styleSheetPaths.Count > 0)
             {
                 Assert.IsNotNull(styleSheets);
                 Assert.AreEqual(styleSheetPaths.Count, styleSheets.Count);
-                
+
                 bool newLineAdded = true;
 
                 for (var i = 0; i < styleSheetPaths.Count; ++i)

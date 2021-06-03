@@ -50,8 +50,11 @@ namespace UnityEngine.UIElements
         Size = 1 << 11,
         // The visuals of the element have changed
         Repaint = 1 << 12,
-        // The opacity of the element have changed
+        // The opacity of the element has changed
         Opacity = 1 << 13,
+        // Some color of the element has changed (background-color, border-color, etc.)
+        Color = 1 << 14,
+        RenderHints = 1 << 15,
     }
 
     /// <summary>
@@ -90,16 +93,32 @@ namespace UnityEngine.UIElements
         /// This flag is implicitly set on the root VisualElement, making single-level masks non-batch-breaking by default.
         /// </remarks>
         MaskContainer = 1 << 2,
+        /// <summary>
+        /// Marks a <see cref="VisualElement"/> that changes its color often (background-color, border-color, etc.).
+        /// This will store the element's colors in an optimized storage suitable for frequent changes, such as animation.
+        /// </summary>
+        DynamicColor = 1 << 3,
     }
 
     [Flags]
     internal enum RenderHints
     {
         None = 0,
+
         GroupTransform = 1 << 0, // Use uniform matrix to transform children
         BoneTransform = 1 << 1, // Use GPU buffer to store transform matrices
         ClipWithScissors = 1 << 2, // If clipping is requested on this element, prefer scissoring
         MaskContainer = 1 << 3, // Use to prevent the next nested masks from modifying the stencil ref
+        DynamicColor = 1 << 4, // Use to store the color in shaderInfo storage
+
+        // Whenever we change a render hint, we also set a dirty flag to indicate that it has changed
+        // This way, we don't need an additional field to store pending changes
+        DirtyOffset = 5,
+        DirtyGroupTransform = GroupTransform << DirtyOffset,
+        DirtyBoneTransform = BoneTransform << DirtyOffset,
+        DirtyClipWithScissors = ClipWithScissors << DirtyOffset,
+        DirtyMaskContainer = MaskContainer << DirtyOffset,
+        DirtyAll = DirtyGroupTransform | DirtyBoneTransform | DirtyClipWithScissors | DirtyMaskContainer,
     }
 
     // For backwards compatibility with debugger in 2020.1
@@ -1127,22 +1146,31 @@ namespace UnityEngine.UIElements
         }
 
         internal bool ScreenToPanel(Vector2 screenPosition, Vector2 screenDelta,
-            out Vector2 panelPosition, out Vector2 panelDelta)
+            out Vector2 panelPosition, out Vector2 panelDelta, bool allowOutside = false)
         {
             panelPosition = ScreenToPanel(screenPosition);
 
-            var panelRect = visualTree.layout;
-            if (!panelRect.Contains(panelPosition))
-            {
-                panelDelta = screenDelta;
-                return false;
-            }
+            Vector2 panelPrevPosition;
 
-            var panelPrevPosition = ScreenToPanel(screenPosition - screenDelta);
-            if (!panelRect.Contains(panelPrevPosition))
+            if (!allowOutside)
             {
-                panelDelta = screenDelta;
-                return true;
+                var panelRect = visualTree.layout;
+                if (!panelRect.Contains(panelPosition))
+                {
+                    panelDelta = screenDelta;
+                    return false;
+                }
+
+                panelPrevPosition = ScreenToPanel(screenPosition - screenDelta);
+                if (!panelRect.Contains(panelPrevPosition))
+                {
+                    panelDelta = screenDelta;
+                    return true;
+                }
+            }
+            else
+            {
+                panelPrevPosition = ScreenToPanel(screenPosition - screenDelta);
             }
 
             panelDelta = panelPosition - panelPrevPosition;

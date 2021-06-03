@@ -6,6 +6,7 @@ using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngineInternal;
+using Unity.Collections;
 
 namespace UnityEngine.Networking
 {
@@ -13,6 +14,8 @@ namespace UnityEngine.Networking
     [NativeHeader("Modules/UnityWebRequestAudio/Public/DownloadHandlerAudioClip.h")]
     public sealed class DownloadHandlerAudioClip : DownloadHandler
     {
+        private NativeArray<byte> m_NativeData;
+
         private extern static IntPtr Create(DownloadHandlerAudioClip obj, string url, AudioType audioType);
 
         private void InternalCreateAudioClip(string url, AudioType audioType)
@@ -30,9 +33,15 @@ namespace UnityEngine.Networking
             InternalCreateAudioClip(uri.AbsoluteUri, audioType);
         }
 
-        protected override byte[] GetData()
+        protected override NativeArray<byte> GetNativeData()
         {
-            return InternalGetByteArray(this);
+            return InternalGetNativeArray(this, ref m_NativeData);
+        }
+
+        public override void Dispose()
+        {
+            DisposeNativeArray(ref m_NativeData);
+            base.Dispose();
         }
 
         protected override string GetText()

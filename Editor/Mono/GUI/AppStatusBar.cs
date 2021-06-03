@@ -387,8 +387,9 @@ namespace UnityEditor
                 m_ProgressPercentageStatus.text = Progress.globalProgress.ToString("P", percentageFormat);
 
                 var remainingTimeText = "";
-                if (progressItems.Any(item => item.timeDisplayMode == Progress.TimeDisplayMode.ShowRemainingTime && item.priority != (int)Progress.Priority.Idle) &&
-                    progressItems.All(item => !item.indefinite) && Progress.globalRemainingTime.TotalSeconds > 0)
+                var runningProgresses = Progress.EnumerateItems().Where(item => item.running);
+                if (Progress.globalRemainingTime.TotalSeconds > 0 && runningProgresses.Any(item => item.timeDisplayMode == Progress.TimeDisplayMode.ShowRemainingTime && item.priority != (int)Progress.Priority.Idle) &&
+                    runningProgresses.All(item => !item.indefinite))
                 {
                     remainingTimeText = $" [{Progress.globalRemainingTime:g}]";
                 }

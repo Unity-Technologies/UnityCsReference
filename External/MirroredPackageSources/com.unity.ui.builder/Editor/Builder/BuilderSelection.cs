@@ -16,6 +16,7 @@ namespace Unity.UI.Builder
         StyleSelector,
         ParentStyleSelector,
         ElementInTemplateInstance,
+        ElementInControlInstance,
         VisualTreeAsset,
         ElementInParentDocument
     }
@@ -78,10 +79,19 @@ namespace Unity.UI.Builder
                 if (BuilderSharedStyles.IsStyleSheetElement(selectedElement))
                     return BuilderSelectionType.StyleSheet;
                 if (selectedElement.GetVisualElementAsset() == null)
-                    return BuilderSelectionType.ElementInTemplateInstance;
+                {
+                    if (selectedElement.HasProperty(VisualTreeAsset.LinkedVEAInTemplatePropertyName))
+                    {
+                        return BuilderSelectionType.ElementInTemplateInstance;
+                    }
+                    else
+                    {
+                        return BuilderSelectionType.ElementInControlInstance;
+                    }
+                }
                 if (selectedElement.IsPartOfActiveVisualTreeAsset(m_PaneWindow.document))
                     return BuilderSelectionType.Element;
-                
+
                 return BuilderSelectionType.ElementInParentDocument;
             }
         }
@@ -99,7 +109,7 @@ namespace Unity.UI.Builder
         }
 
         public bool isEmpty { get { return m_Selection.Count == 0; } }
-        
+
         MethodInfo m_LiveReloadTriggerMethod;
 
         public BuilderSelection(VisualElement root, BuilderPaneWindow paneWindow)
@@ -352,7 +362,7 @@ namespace Unity.UI.Builder
             get { return m_PaneWindow.document.hasUnsavedChanges; }
             private set { m_PaneWindow.document.hasUnsavedChanges = value; }
         }
-        
+
         public void ResetUnsavedChanges()
         {
             hasUnsavedChanges = false;

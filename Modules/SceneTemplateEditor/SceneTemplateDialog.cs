@@ -82,7 +82,7 @@ namespace UnityEditor.SceneTemplate
 
         internal static SceneTemplateInfo emptySceneTemplateInfo = new SceneTemplateInfo
         {
-            name = "Empty (Built-in)",
+            name = "Empty",
             isPinned = true,
             thumbnailPath = $"{Styles.k_IconsFolderFolder}scene-template-empty-scene.png",
             description = L10n.Tr("Just an empty scene - no Game Objects."),

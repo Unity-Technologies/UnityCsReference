@@ -31,10 +31,8 @@ namespace UnityEditor
         // Override this method to make your own GUI for the property based on IMGUI.
         public virtual void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            EditorGUI.DefaultPropertyField(position, property, label);
-
-            if (!EditorGUI.DrawLabelHighlight(position, label, EditorStyles.label))
-                EditorGUI.LabelField(position, label, EditorGUIUtility.TempContent("No GUI Implemented"));
+            var labelCopy = new GUIContent(label);
+            EditorGUI.LabelField(position, labelCopy, EditorGUIUtility.TempContent("No GUI Implemented"));
         }
 
         // Override this method to make your own GUI for the property based on UIElements.

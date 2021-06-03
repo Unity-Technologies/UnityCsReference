@@ -24,10 +24,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public static PackageTagLabel CreateTagLabel(IPackageVersion version, bool isVersionItem = false)
         {
-            // check with version.packageInfo.UnityLifecycle
             if (version != null)
             {
-                var applicationProxy = ServicesContainer.instance.Resolve<ApplicationProxy>();
                 if (version.HasTag(PackageTag.Custom))
                     return new PackageTagLabel(L10n.Tr("Custom"), string.Empty, PackageTag.Custom);
                 if (version.HasTag(PackageTag.PreRelease))

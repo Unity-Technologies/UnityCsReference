@@ -257,6 +257,13 @@ namespace UnityEditor
 
         extern private static System.Object GetMaterialPropertiesImpl(System.Object mats);
 
+        internal static string[] GetMaterialPropertyNames(UnityEngine.Object[] mats)
+        {
+            return GetMaterialPropertyNamesImpl(mats);
+        }
+
+        extern private static string[] GetMaterialPropertyNamesImpl(System.Object mats);
+
         internal static MaterialProperty GetMaterialProperty(UnityEngine.Object[] mats, string name)
         {
             return (MaterialProperty)GetMaterialPropertyImpl(mats, name);
@@ -311,5 +318,15 @@ namespace UnityEditor
             var rpEditor = GetCustomEditorForRenderPipeline(shader, GraphicsSettings.renderPipelineAsset?.GetType());
             return String.IsNullOrEmpty(rpEditor) ? shader.customEditor : rpEditor;
         }
+
+        extern public static BuiltinShaderDefine[] GetShaderPlatformKeywordsForBuildTarget(ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, GraphicsTier tier);
+
+        public static BuiltinShaderDefine[] GetShaderPlatformKeywordsForBuildTarget(ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget)
+        {
+            return GetShaderPlatformKeywordsForBuildTarget(shaderCompilerPlatform, buildTarget, GraphicsTier.Tier1);
+        }
+
+        extern internal static ShaderData.VariantCompileInfo CompileShaderVariant([NotNull] Shader shader, int subShaderIndex, int passId,
+            ShaderType shaderType, BuiltinShaderDefine[] platformKeywords, string[] keywords, ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, GraphicsTier tier);
     }
 }

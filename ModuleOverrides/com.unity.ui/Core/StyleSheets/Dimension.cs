@@ -18,7 +18,11 @@ namespace UnityEngine.UIElements.StyleSheets
         {
             Unitless,
             Pixel,
-            Percent
+            Percent,
+            Degree,
+            Gradian,
+            Radian,
+            Turn,
         }
 
         public Unit unit;
@@ -34,6 +38,19 @@ namespace UnityEngine.UIElements.StyleSheets
         {
             var lengthUnit = unit == Unit.Percent ? LengthUnit.Percent : LengthUnit.Pixel;
             return new Length(value, lengthUnit);
+        }
+
+        public Angle ToAngle()
+        {
+            switch (unit)
+            {
+                case Unit.Degree:  return new Angle(value, AngleUnit.Degree);
+                case Unit.Gradian: return new Angle(value, AngleUnit.Gradian);
+                case Unit.Radian: return new Angle(value, AngleUnit.Radian);
+                case Unit.Turn: return new Angle(value, AngleUnit.Turn);
+            }
+
+            return new Angle(value, AngleUnit.Degree);
         }
 
         public static bool operator==(Dimension lhs, Dimension rhs)
@@ -81,7 +98,20 @@ namespace UnityEngine.UIElements.StyleSheets
                 case Unit.Percent:
                     unitStr = "%";
                     break;
-                default:
+                case Unit.Degree:
+                    unitStr = "deg";
+                    break;
+                case Unit.Gradian:
+                    unitStr = "grad";
+                    break;
+                case Unit.Radian:
+                    unitStr = "rad";
+                    break;
+                case Unit.Turn:
+                    unitStr = "turn";
+                    break;
+                case Unit.Unitless:
+                    unitStr = string.Empty;
                     break;
             }
             return $"{value.ToString(CultureInfo.InvariantCulture.NumberFormat)}{unitStr}";

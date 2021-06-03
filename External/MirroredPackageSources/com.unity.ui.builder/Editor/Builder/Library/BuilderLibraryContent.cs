@@ -212,14 +212,14 @@ namespace Unity.UI.Builder
             IList<ITreeViewItem> containersItemList = new List<ITreeViewItem>
             {
                 new BuilderLibraryTreeItem("VisualElement", "VisualElement", typeof(VisualElement), () =>
-                    {
-                        var ve = new VisualElement();
-                        var veMinSizeChild = new VisualElement();
-                        veMinSizeChild.name = BuilderConstants.SpecialVisualElementInitialMinSizeName;
-                        veMinSizeChild.AddToClassList(BuilderConstants.SpecialVisualElementInitialMinSizeClassName);
-                        ve.Add(veMinSizeChild);
-                        return ve;
-                    },
+                {
+                    var ve = new VisualElement();
+                    var veMinSizeChild = new VisualElement();
+                    veMinSizeChild.name = BuilderConstants.SpecialVisualElementInitialMinSizeName;
+                    veMinSizeChild.AddToClassList(BuilderConstants.SpecialVisualElementInitialMinSizeClassName);
+                    ve.Add(veMinSizeChild);
+                    return ve;
+                },
                     (inVta, inParent, ve) =>
                     {
                         var vea = new VisualElementAsset(typeof(VisualElement).ToString());
@@ -240,7 +240,7 @@ namespace Unity.UI.Builder
                 new BuilderLibraryTreeItem("Label", nameof(Label), typeof(Label), () => new Label("Label")),
                 new BuilderLibraryTreeItem("Button", nameof(Button), typeof(Button), () => new Button { text = "Button" }),
                 new BuilderLibraryTreeItem("Toggle", nameof(Toggle), typeof(Toggle), () => new Toggle("Toggle")),
-                new BuilderLibraryTreeItem("Scroller", nameof(Scroller), typeof(Scroller), () => new Scroller(0, 100, (v) => { }, SliderDirection.Horizontal) { value = 42 }),
+                new BuilderLibraryTreeItem("Scroller", nameof(Scroller), typeof(Scroller), () => new Scroller(0, 100, (v) => {}, SliderDirection.Horizontal) { value = 42 }),
                 new BuilderLibraryTreeItem("Text Field", nameof(TextField), typeof(TextField), () => new TextField("Text Field") { value = "filler text" }),
                 new BuilderLibraryTreeItem("Foldout", nameof(Foldout), typeof(Foldout), () => new Foldout { text = "Foldout" }),
                 new BuilderLibraryTreeItem("Slider", nameof(Slider), typeof(Slider), () => new Slider("Slider", 0, 100) { value = 42 }),

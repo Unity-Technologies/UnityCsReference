@@ -565,8 +565,8 @@ namespace UnityEditor
                                         //EditorGUI.indentLevel--;
                                     }
 
-                                    EditorGUILayout.PropertyField(m_PVRBounces, Styles.maxBounces);
                                     EditorGUILayout.PropertyField(m_PVRMinBounces, Styles.minBounces);
+                                    EditorGUILayout.PropertyField(m_PVRBounces, Styles.maxBounces);
 
                                     // Filtering
                                     EditorGUILayout.PropertyField(m_PVRFilteringMode, Styles.filteringMode);

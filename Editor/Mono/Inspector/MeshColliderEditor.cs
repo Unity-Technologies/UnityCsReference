@@ -61,12 +61,16 @@ namespace UnityEditor
             }
             EditorGUI.indentLevel--;
 
-            EditorGUI.BeginProperty(EditorGUILayout.GetControlRect(), null, m_CookingOptions);
-            EditorGUI.BeginChangeCheck();
-            var newOptions = (MeshColliderCookingOptions)EditorGUILayout.EnumFlagsField(Styles.cookingOptionsText, GetCookingOptions());
-            if (EditorGUI.EndChangeCheck())
-                SetCookingOptions(newOptions);
-            EditorGUI.EndProperty();
+            using (var horizontal = new EditorGUILayout.HorizontalScope())
+            {
+                using (var propertyScope = new EditorGUI.PropertyScope(horizontal.rect, GUIContent.none, m_CookingOptions))
+                {
+                    EditorGUI.BeginChangeCheck();
+                    var newOptions = (MeshColliderCookingOptions)EditorGUILayout.EnumFlagsField(Styles.cookingOptionsText, GetCookingOptions());
+                    if (EditorGUI.EndChangeCheck())
+                        SetCookingOptions(newOptions);
+                }
+            }
 
             EditorGUILayout.PropertyField(m_Material, BaseStyles.materialContent);
 

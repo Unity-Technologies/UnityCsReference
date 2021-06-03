@@ -75,7 +75,8 @@ namespace UnityEditor.Search
 
     static class SearchSettings
     {
-        const string k_ProjectUserSettingsPath = "UserSettings/Search.settings";
+        public static readonly string projectLocalSettingsFolder = Utils.CleanPath(new DirectoryInfo("UserSettings").FullName);
+        public static readonly string projectLocalSettingsPath = $"{projectLocalSettingsFolder}/Search.settings";
 
         const string k_ItemIconSizePrefKey = "Search.ItemIconSize";
         public const string settingsPreferencesKey = "Preferences/Search";
@@ -94,6 +95,8 @@ namespace UnityEditor.Search
         public static Dictionary<string, string> scopes { get; private set; }
         public static Dictionary<string, SearchProviderSettings> providers { get; private set; }
 
+        public static int[] expandedQueries { get; set; }
+
         // User editor pref
         public static float itemIconSize { get; set; } = (float)DisplayMode.List;
 
@@ -105,39 +108,34 @@ namespace UnityEditor.Search
 
         public static int debounceMs
         {
-            get
-            {
-                return UnityEditor.SearchUtils.debounceThresholdMs;
-            }
+            get { return UnityEditor.SearchUtils.debounceThresholdMs; }
 
-            set
-            {
-                UnityEditor.SearchUtils.debounceThresholdMs = value;
-            }
+            set { UnityEditor.SearchUtils.debounceThresholdMs = value; }
         }
 
         static SearchSettings()
         {
+            expandedQueries = new int[0];
             Load();
         }
 
         private static void Load()
         {
-            if (!File.Exists(k_ProjectUserSettingsPath))
+            if (!File.Exists(projectLocalSettingsPath))
             {
                 if (!Directory.Exists("UserSettings/"))
                     Directory.CreateDirectory("UserSettings/");
-                File.WriteAllText(k_ProjectUserSettingsPath, "{}");
+                File.WriteAllText(projectLocalSettingsPath, "{}");
             }
 
             IDictionary settings = null;
             try
             {
-                settings = (IDictionary)SJSON.Load(k_ProjectUserSettingsPath);
+                settings = (IDictionary)SJSON.Load(projectLocalSettingsPath);
             }
             catch (Exception ex)
             {
-                Debug.LogError($"We weren't able to parse search user settings at {k_ProjectUserSettingsPath}. We will fallback to default settings.\n{ex}");
+                Debug.LogError($"We weren't able to parse search user settings at {projectLocalSettingsPath}. We will fallback to default settings.\n{ex}");
             }
 
             trackSelection = ReadSetting(settings, nameof(trackSelection), true);
@@ -161,6 +159,10 @@ namespace UnityEditor.Search
             var favoriteItems = ReadSetting<object[]>(settings, nameof(searchItemFavorites));
             if (favoriteItems != null)
                 searchItemFavorites.UnionWith(favoriteItems.Cast<string>());
+
+            var expandedObjects = ReadSetting<object[]>(settings, nameof(expandedQueries));
+            if (expandedObjects != null)
+                expandedQueries = expandedObjects.Select(Convert.ToInt32).ToArray();
 
             scopes = ReadProperties<string>(settings, nameof(scopes));
             providers = ReadProviderSettings(settings, nameof(providers));
@@ -186,10 +188,11 @@ namespace UnityEditor.Search
                 [nameof(searchItemFavorites)] = searchItemFavorites.ToList(),
                 [nameof(savedSearchesSortOrder)] = (int)savedSearchesSortOrder,
                 [nameof(showSavedSearchPanel)] = showSavedSearchPanel,
+                [nameof(expandedQueries)] = expandedQueries,
 
             };
 
-            SJSON.Save(settings, k_ProjectUserSettingsPath);
+            SJSON.Save(settings, projectLocalSettingsPath);
             SaveFavorites();
 
             EditorPrefs.SetFloat(k_ItemIconSizePrefKey, itemIconSize);
@@ -472,7 +475,7 @@ namespace UnityEditor.Search
 
                 using (new EditorGUI.DisabledGroupScope(!p.active))
                 {
-                    GUILayout.Label(new GUIContent(p.name, $"{p.id} ({p.priority})"), GUILayout.Width(175));
+                    GUILayout.Label(new GUIContent(p.name, $"{p.id}"), GUILayout.Width(175));
                 }
 
                 if (!p.isExplicitProvider)
@@ -500,6 +503,10 @@ namespace UnityEditor.Search
                         p.actions.Count == 1 ?
                         $"Default action for {p.name} (Enter)" :
                         $"Set default action for {p.name} (Enter)")).ToArray();
+                    if (items.Length == 0)
+                    {
+                        items = new[] { new GUIContent("No actions available") };
+                    }
                     var newDefaultAction = EditorGUILayout.Popup(0, items, GUILayout.ExpandWidth(true));
                     if (EditorGUI.EndChangeCheck())
                     {

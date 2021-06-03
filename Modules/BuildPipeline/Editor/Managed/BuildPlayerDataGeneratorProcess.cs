@@ -4,6 +4,7 @@
 
 using System;
 using System.IO;
+using System.Text;
 using UnityEngine;
 using UnityEditor.Scripting;
 using UnityEditor.Scripting.Compilers;
@@ -88,9 +89,20 @@ namespace UnityEditor.Build.Player
 
         private string OptionsToStringArgument(BuildPlayerDataGeneratorOptions options)
         {
-            string result =
-                $"-a \"{string.Join(",", options.Assemblies)}\" -s \"{string.Join(",", options.SearchPaths)}\" -o \"{options.OutputPath}\" -rn=\"{options.GeneratedRuntimeInitializeOnLoadName}\" -tn=\"{options.GeneratedTypeDbName}\"";
-            return result;
+            // Quote Windows style even on Unix
+            var sb = new StringBuilder();
+            foreach (var assembly in options.Assemblies)
+            {
+                sb.Append("-a=").Append("\"").Append(assembly).AppendLine("\"");
+            }
+            foreach (var searchPath in options.SearchPaths)
+            {
+                sb.Append("-s=").Append("\"").Append(searchPath).AppendLine("\"");
+            }
+            sb.Append("-o=").Append("\"").Append(options.OutputPath).AppendLine("\"");
+            sb.Append("-rn=").Append("\"").Append(options.GeneratedRuntimeInitializeOnLoadName).AppendLine("\"");
+            sb.Append("-tn=").Append("\"").Append(options.GeneratedTypeDbName).AppendLine("\"");
+            return sb.ToString();
         }
     }
 }

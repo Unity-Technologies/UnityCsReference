@@ -52,6 +52,73 @@ namespace UnityEngine
                 }
 
                 [FreeFunction(IsThreadSafe = true)]
+                extern private static GraphicsFormat GetDepthStencilFormat_Native(int minimumDepthBits);
+
+                public static GraphicsFormat GetDepthStencilFormat(int minimumDepthBits)
+                {
+                    return GetDepthStencilFormat_Native(minimumDepthBits);
+                }
+
+                [FreeFunction(IsThreadSafe = true)]
+                extern public static int GetDepthBits(GraphicsFormat format);
+
+
+                //the legacy DepthBufferFormatFromBits dropped stencil if depthBits < 16 but we need/can to handle it differently with an explicit stencilBits value.
+                //8bit or 16bit depth + stencil maps to D24_UNorm_S8_UInt (so more bits for depth)
+                //depth bit depth 0, 8, 16, 24, 32
+                private static readonly GraphicsFormat[] tableNoStencil = { GraphicsFormat.None, GraphicsFormat.D16_UNorm, GraphicsFormat.D16_UNorm, GraphicsFormat.D24_UNorm, GraphicsFormat.D32_SFloat };
+                private static readonly GraphicsFormat[] tableStencil = { GraphicsFormat.None, GraphicsFormat.D24_UNorm_S8_UInt, GraphicsFormat.D24_UNorm_S8_UInt, GraphicsFormat.D24_UNorm_S8_UInt, GraphicsFormat.D32_SFloat_S8_UInt };
+
+                public static GraphicsFormat GetDepthStencilFormat(int minimumDepthBits, int minimumStencilBits)
+                {
+                    if (minimumDepthBits == 0 && minimumStencilBits == 0)
+                        return GraphicsFormat.None;
+
+                    if (minimumDepthBits < 0 || minimumStencilBits < 0)
+                        throw new ArgumentException("Number of bits in DepthStencil format can't be negative.");
+
+                    if (minimumDepthBits > 32)
+                        throw new ArgumentException("Number of depth buffer bits cannot exceed 32.");
+
+                    if (minimumStencilBits > 8)
+                        throw new ArgumentException("Number of stencil buffer bits cannot exceed 8.");
+
+                    //the legacy DepthBufferFormatFromBits rounded up so mimicking that here
+                    if (minimumDepthBits <= 16)
+                    {
+                        minimumDepthBits = 16;
+                    }
+                    else if (minimumDepthBits <= 24)
+                    {
+                        minimumDepthBits = 24;
+                    }
+                    else
+                    {
+                        minimumDepthBits = 32;
+                    }
+
+                    if (minimumStencilBits != 0)
+                        minimumStencilBits = 8;
+
+                    Debug.Assert(tableNoStencil.Length == tableStencil.Length);
+
+                    GraphicsFormat[] table = (minimumStencilBits > 0) ? tableStencil : tableNoStencil;
+
+                    //the minimum format we need to guarantee the minimum bits
+                    int formatIndex = minimumDepthBits / 8;
+
+                    //verify that the format works on this platform. And try other formats with more bits if the formats fails.
+                    for (int i = formatIndex; i < table.Length; ++i)
+                    {
+                        GraphicsFormat format = table[i];
+                        if (SystemInfo.IsFormatSupported(format, FormatUsage.Render))
+                            return format;
+                    }
+
+                    return GraphicsFormat.None;
+                }
+
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsSRGBFormat(GraphicsFormat format);
 
                 [FreeFunction(IsThreadSafe = true)]

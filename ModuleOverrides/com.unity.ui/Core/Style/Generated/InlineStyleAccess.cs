@@ -82,7 +82,7 @@ namespace UnityEngine.UIElements
 
             set
             {
-                var changeType = VersionChangeType.Styles | VersionChangeType.Repaint;
+                var changeType = VersionChangeType.Styles | VersionChangeType.Color;
                 if (SetStyleValue(StylePropertyId.BackgroundColor, value, ref changeType))
                 {
                     ve.IncrementVersion(changeType);
@@ -116,7 +116,7 @@ namespace UnityEngine.UIElements
 
             set
             {
-                var changeType = VersionChangeType.Styles | VersionChangeType.Repaint;
+                var changeType = VersionChangeType.Styles | VersionChangeType.Color;
                 if (SetStyleValue(StylePropertyId.BorderBottomColor, value, ref changeType))
                 {
                     ve.IncrementVersion(changeType);
@@ -185,7 +185,7 @@ namespace UnityEngine.UIElements
 
             set
             {
-                var changeType = VersionChangeType.Styles | VersionChangeType.Repaint;
+                var changeType = VersionChangeType.Styles | VersionChangeType.Color;
                 if (SetStyleValue(StylePropertyId.BorderLeftColor, value, ref changeType))
                 {
                     ve.IncrementVersion(changeType);
@@ -220,7 +220,7 @@ namespace UnityEngine.UIElements
 
             set
             {
-                var changeType = VersionChangeType.Styles | VersionChangeType.Repaint;
+                var changeType = VersionChangeType.Styles | VersionChangeType.Color;
                 if (SetStyleValue(StylePropertyId.BorderRightColor, value, ref changeType))
                 {
                     ve.IncrementVersion(changeType);
@@ -255,7 +255,7 @@ namespace UnityEngine.UIElements
 
             set
             {
-                var changeType = VersionChangeType.Styles | VersionChangeType.Repaint;
+                var changeType = VersionChangeType.Styles | VersionChangeType.Color;
                 if (SetStyleValue(StylePropertyId.BorderTopColor, value, ref changeType))
                 {
                     ve.IncrementVersion(changeType);
@@ -342,7 +342,7 @@ namespace UnityEngine.UIElements
 
             set
             {
-                var changeType = VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Repaint;
+                var changeType = VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Color;
                 if (SetStyleValue(StylePropertyId.Color, value, ref changeType))
                 {
                     ve.IncrementVersion(changeType);
@@ -885,7 +885,7 @@ namespace UnityEngine.UIElements
 
             set
             {
-                var changeType = VersionChangeType.Styles | VersionChangeType.Repaint;
+                var changeType = VersionChangeType.Styles | VersionChangeType.Color;
                 if (SetStyleValue(StylePropertyId.UnityBackgroundImageTintColor, value, ref changeType))
                 {
                     ve.IncrementVersion(changeType);

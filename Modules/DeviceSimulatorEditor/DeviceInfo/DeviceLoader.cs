@@ -12,7 +12,7 @@ namespace UnityEditor.DeviceSimulation
 {
     internal static class DeviceLoader
     {
-        private static string[] s_BuiltInDevices =
+        public static string[] s_BuiltInDevices =
         {
             "Apple iPad (5th generation).device",
             "Apple iPad (7th gen).device",
@@ -53,9 +53,7 @@ namespace UnityEditor.DeviceSimulation
             "Google Pixel X.device",
             "HTC 10.device",
             "HTC One M9.device",
-            "Huawei Mate 40 Pro.device",
             "Huawei P9.device",
-            "Huawei P20.device",
             "Huawei P40 Pro.device",
             "Lenovo Phab2 Pro.device",
             "LG G4.device",

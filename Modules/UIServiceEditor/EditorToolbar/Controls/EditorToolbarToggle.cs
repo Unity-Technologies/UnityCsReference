@@ -8,71 +8,85 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.Toolbars
 {
-    class EditorToolbarToggle : ToolbarToggle
+    public class EditorToolbarToggle : ToolbarToggle
     {
-        public new class UxmlFactory : UxmlFactory<EditorToolbarToggle, UxmlTraits> {}
-        public new class UxmlTraits : ToolbarToggle.UxmlTraits {}
-
+        internal const string textClassName = EditorToolbar.elementLabelClassName;
+        internal const string iconClassName = EditorToolbar.elementIconClassName;
         public new const string ussClassName = "unity-editor-toolbar-toggle";
-        public const string iconOnClassName = EditorToolbar.elementIconClassName + "-on";
-        public const string iconOffClassName = EditorToolbar.elementIconClassName + "-off";
 
-        GUIContent m_OnContent;
-        GUIContent m_OffContent;
+        Texture2D m_OnIcon;
+        Texture2D m_OffIcon;
 
-        public readonly TextElement textElement;
-        public readonly VisualElement iconElement;
+        readonly TextElement m_TextElement;
+        readonly Image m_IconElement;
 
-        public GUIContent onContent
+        public new string text
         {
-            get => m_OnContent;
+            get => m_TextElement.text;
+            set => m_TextElement.text = value;
+        }
+
+        public Texture2D icon
+        {
+            get => offIcon;
+            set => offIcon = onIcon = value;
+        }
+
+        public Texture2D onIcon
+        {
+            get => m_OnIcon;
             set
             {
-                m_OnContent = value;
-                UpdateContent();
+                m_OnIcon = value;
+                UpdateIcon();
             }
         }
 
-        public GUIContent offContent
+        public Texture2D offIcon
         {
-            get => m_OffContent;
+            get => m_OffIcon;
             set
             {
-                m_OffContent = value;
-                UpdateContent();
+                m_OffIcon = value;
+                UpdateIcon();
             }
         }
 
-        public EditorToolbarToggle()
+        public EditorToolbarToggle() : this(string.Empty, null, null) {}
+        public EditorToolbarToggle(string text) : this(text, null, null) {}
+
+        public EditorToolbarToggle(Texture2D icon) : this(string.Empty, icon, icon) {}
+        public EditorToolbarToggle(Texture2D onIcon, Texture2D offIcon) : this(string.Empty, onIcon, offIcon) {}
+
+        public EditorToolbarToggle(string text, Texture2D onIcon, Texture2D offIcon)
         {
             AddToClassList(ussClassName);
             var input = this.Q<VisualElement>(className: Toggle.inputUssClassName);
-            iconElement = EditorToolbarUtility.AddIconElement(input);
-            textElement = EditorToolbarUtility.AddTextElement(input);
-            UpdateContent();
+
+            m_IconElement = new Image { scaleMode = ScaleMode.ScaleToFit};
+            m_IconElement.AddToClassList(EditorToolbar.elementIconClassName);
+            input.Add(m_IconElement);
+
+            m_TextElement = new TextElement();
+            m_TextElement.AddToClassList(EditorToolbar.elementLabelClassName);
+            input.Add(m_TextElement);
+
+            this.text = text;
+            m_OnIcon = onIcon;
+            m_OffIcon = offIcon;
+
+            UpdateIcon();
         }
 
         public override void SetValueWithoutNotify(bool newValue)
         {
             base.SetValueWithoutNotify(newValue);
-            UpdateContent();
+            UpdateIcon();
         }
 
-        void UpdateContent()
+        void UpdateIcon()
         {
-            iconElement.EnableInClassList(iconOnClassName, value);
-            iconElement.EnableInClassList(iconOffClassName, !value);
-
-            var content = value ? onContent : offContent;
-            if (content != null)
-            {
-                textElement.text = content.text;
-                tooltip = content.tooltip;
-
-                var image = content.image as Texture2D;
-                if (image != null)
-                    iconElement.style.backgroundImage = new StyleBackground(Background.FromTexture2D(image));
-            }
+            m_IconElement.image = value ? onIcon : offIcon;
         }
     }
 }

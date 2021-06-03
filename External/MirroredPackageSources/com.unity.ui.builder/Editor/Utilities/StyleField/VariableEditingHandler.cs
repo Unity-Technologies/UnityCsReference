@@ -80,9 +80,10 @@ namespace Unity.UI.Builder
             labelElement.RegisterValueChangedCallback(e => { e.StopImmediatePropagation(); });
 
             fieldLabel.Add(labelElement);
+            labelElement.AddToClassList(BaseField<int>.labelUssClassName);
             labelElement.AddToClassList(s_LabelClassName);
             labelElement.text = fieldLabel.text;
-
+            fieldLabel.AddToClassList(BuilderConstants.InspectorContainerClassName);
             fieldLabel.generateVisualContent = null; // Leave the text of the default label as it is used in some queries (in tests) but prevent the text from being rendered
 
             m_Inspector = targetField.GetFirstAncestorOfType<BuilderInspector>();

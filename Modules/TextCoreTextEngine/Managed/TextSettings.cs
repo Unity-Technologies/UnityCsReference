@@ -273,7 +273,8 @@ namespace UnityEngine.TextCore.Text
             }
         }
 
-        private Dictionary<int, FontAsset> m_FontLookup;
+        // Internal for testing purposes
+        internal Dictionary<int, FontAsset> m_FontLookup;
         private List<FontReferenceMap> m_FontReferences = new List<FontReferenceMap>();
 
         protected FontAsset GetCachedFontAssetInternal(Font font)

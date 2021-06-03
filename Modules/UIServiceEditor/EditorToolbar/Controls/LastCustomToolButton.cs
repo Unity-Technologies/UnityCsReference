@@ -3,76 +3,74 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor.EditorTools;
+using UnityEditor.Overlays;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Toolbars
 {
-    sealed class LastCustomToolButton : ToolButton
+    sealed class LastCustomToolButton : EditorToolbarDropdownToggle
     {
-        public LastCustomToolButton() : base(Tool.Custom)
+        public LastCustomToolButton()
         {
-            UpdateContent();
-            var rightClickable = new Clickable(OpenToolSelector);
-            rightClickable.activators.Clear();
-            rightClickable.activators.Add(new ManipulatorActivationFilter {button = MouseButton.RightMouse});
-            this.AddManipulator(rightClickable);
+            dropdownClicked += DropDownMenu;
+            this.RegisterValueChangedCallback(ToggleEnabled);
+            RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
+            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+
+            UpdateContents();
         }
 
-        protected override void OnAttachedToPanel(AttachToPanelEvent evt)
+        void OnAttachedToPanel(AttachToPanelEvent evt)
         {
-            base.OnAttachedToPanel(evt);
-            Selection.selectionChanged += OnSelectionChanged;
+            ToolManager.activeToolChanged += UpdateContents;
+            EditorToolManager.availableComponentToolsChanged += UpdateContents;
+            SceneViewMotion.viewToolActiveChanged += UpdateState;
         }
 
-        protected override void OnDetachFromPanel(DetachFromPanelEvent evt)
+        void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
-            base.OnDetachFromPanel(evt);
-            Selection.selectionChanged -= OnSelectionChanged;
+            SceneViewMotion.viewToolActiveChanged -= UpdateState;
+            ToolManager.activeToolChanged -= UpdateContents;
+            EditorToolManager.availableComponentToolsChanged -= UpdateContents;
         }
 
-        void OpenToolSelector()
+        void ToggleEnabled(ChangeEvent<bool> evt)
         {
-            EditorToolGUI.DoEditorToolMenu();
-        }
-
-        void UpdateContent()
-        {
-            var tool = EditorToolManager.GetLastCustomTool();
-            GUIContent content;
-
-            if (tool == null || (content = tool.toolbarIcon) == null)
-                content = EditorToolUtility.GetIcon(ToolManager.activeToolType);
-
-            iconElement.style.backgroundImage = new StyleBackground(content.image as Texture2D);
-            tooltip = tool != null ? content.tooltip : "Editor Tools";
-
-            SetEnabled(EditorToolUtility.GetNonBuiltinToolCount() > 0);
-        }
-
-        protected override void SetToolActive()
-        {
-            //If no last custom exists, the value will be none
-            if (EditorToolUtility.GetEditorToolWithEnum(Tool.Custom) == null)
+            if (evt.newValue)
             {
-                OpenToolSelector();
+                var last = EditorToolManager.GetLastCustomTool();
+
+                if (last == null || last is NoneTool)
+                    DropDownMenu();
+                else
+                    ToolManager.SetActiveTool(last);
             }
             else
             {
-                base.SetToolActive();
+                ToolManager.RestorePreviousPersistentTool();
             }
         }
 
-        protected override void OnToolChanged()
+        void DropDownMenu()
         {
-            base.OnToolChanged();
-
-            UpdateContent();
+            EditorToolGUI.DropDownComponentToolsContextMenu(worldBound);
         }
 
-        void OnSelectionChanged()
+        void UpdateState()
         {
-            UpdateContent();
+            SetValueWithoutNotify(Tools.current == Tool.Custom);
+        }
+
+        void UpdateContents()
+        {
+            var last = EditorToolManager.GetLastCustomTool();
+            var content = EditorToolUtility.GetToolbarIcon(last);
+            icon = content.image as Texture2D;
+            tooltip = content.tooltip;
+            SetEnabled(EditorToolUtility.GetNonBuiltinToolCount() > 0);
+
+            UpdateState();
         }
     }
 }

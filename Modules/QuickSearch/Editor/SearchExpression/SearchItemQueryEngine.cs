@@ -383,6 +383,50 @@ namespace UnityEditor.Search
             return comparer(v.color, value);
         }
 
+        [PropertyDatabaseSerializer(typeof(SearchValue))]
+        internal static PropertyDatabaseRecordValue SearchValueSerializer(PropertyDatabaseSerializationArgs args)
+        {
+            var gop = (SearchValue)args.value;
+            switch (gop.type)
+            {
+                case ValueType.Nil:
+                    return new PropertyDatabaseRecordValue((byte)PropertyDatabaseType.GameObjectProperty, (byte)gop.type);
+                case ValueType.Bool:
+                case ValueType.Number:
+                    return new PropertyDatabaseRecordValue((byte)PropertyDatabaseType.GameObjectProperty, (byte)gop.type, BitConverter.DoubleToInt64Bits(gop.number));
+                case ValueType.Text:
+                    var symbol = args.stringTableView.ToSymbol(gop.text);
+                    return new PropertyDatabaseRecordValue((byte)PropertyDatabaseType.GameObjectProperty, (byte)gop.type, (int)symbol);
+                case ValueType.Color:
+                    return new PropertyDatabaseRecordValue((byte)PropertyDatabaseType.GameObjectProperty, (byte)gop.type, (byte)gop.color.r, (byte)gop.color.g, (byte)gop.color.b, (byte)gop.color.a);
+            }
+
+            return PropertyDatabaseRecordValue.invalid;
+        }
+
+        [PropertyDatabaseDeserializer(PropertyDatabaseType.GameObjectProperty)]
+        internal static object SearchValueDeserializer(PropertyDatabaseDeserializationArgs args)
+        {
+            var gopType = (ValueType)args.value[0];
+            switch (gopType)
+            {
+                case ValueType.Nil:
+                    return new SearchValue();
+                case ValueType.Bool:
+                    return new SearchValue(BitConverter.Int64BitsToDouble(args.value.int64_1) == 1d);
+                case ValueType.Number:
+                    return new SearchValue(BitConverter.Int64BitsToDouble(args.value.int64_1));
+                case ValueType.Text:
+                    var symbol = args.value.int32_1;
+                    var str = args.stringTableView.GetString(symbol);
+                    return new SearchValue(str);
+                case ValueType.Color:
+                    return new SearchValue(new SearchColor(args.value[1], args.value[2], args.value[3], args.value[4]));
+            }
+
+            throw new Exception("Failed to deserialize game object property");
+        }
+
     }
 
     class SearchItemQueryEngine : QueryEngine<SearchItem>

@@ -687,6 +687,7 @@ namespace UnityEditor
             }
 
             int colorCode = goItem.colorCode;
+            bool renderDisabled = colorCode >= 4;
 
             lineStyle = Styles.lineStyle;
 
@@ -699,12 +700,13 @@ namespace UnityEditor
             }
             else
             {
-                if ((colorCode & 3) == (int)GameObjectColorType.Normal)
-                    lineStyle = (colorCode < 4) ? Styles.lineStyle : GameObjectStyles.disabledLabel;
-                else if ((colorCode & 3) == (int)GameObjectColorType.Prefab)
-                    lineStyle = (colorCode < 4) ? GameObjectStyles.prefabLabel : GameObjectStyles.disabledPrefabLabel;
-                else if ((colorCode & 3) == (int)GameObjectColorType.BrokenPrefab)
-                    lineStyle = (colorCode < 4) ? GameObjectStyles.brokenPrefabLabel : GameObjectStyles.disabledBrokenPrefabLabel;
+                GameObjectColorType objectColorType = (GameObjectColorType)(colorCode & 3);
+                if (objectColorType == GameObjectColorType.Normal)
+                    lineStyle = (renderDisabled) ? GameObjectStyles.disabledLabel : Styles.lineStyle;
+                else if (objectColorType == GameObjectColorType.Prefab)
+                    lineStyle = (renderDisabled) ? GameObjectStyles.disabledPrefabLabel : GameObjectStyles.prefabLabel;
+                else if (objectColorType == GameObjectColorType.BrokenPrefab)
+                    lineStyle = (renderDisabled) ? GameObjectStyles.disabledBrokenPrefabLabel : GameObjectStyles.brokenPrefabLabel;
             }
 
             var sceneGUID = s_ActiveParentObjectPerSceneGUID.FirstOrDefault(x => x.Value == goItem.id).Key;
@@ -720,7 +722,7 @@ namespace UnityEditor
             {
                 Rect iconRect = rect;
                 iconRect.width = k_IconWidth;
-                bool renderDisabled = colorCode >= 4;
+
                 Color col = GUI.color;
                 if (renderDisabled || (CutBoard.hasCutboardData && CutBoard.IsGameObjectPartOfCutAndPaste((GameObject)goItem.objectPPTR)))
                     col = new Color(1f, 1f, 1f, 0.5f);

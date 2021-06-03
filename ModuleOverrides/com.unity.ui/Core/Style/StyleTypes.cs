@@ -87,6 +87,42 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal static Rotate ToRotate(this StyleKeyword keyword)
+        {
+            switch (keyword)
+            {
+                case StyleKeyword.None:
+                    return Rotate.None();
+                default:
+                    Debug.LogAssertion($"Unexpected StyleKeyword '{keyword.ToString()}'");
+                    return new Rotate();
+            }
+        }
+
+        internal static Scale ToScale(this StyleKeyword keyword)
+        {
+            switch (keyword)
+            {
+                case StyleKeyword.None:
+                    return Scale.None();
+                default:
+                    Debug.LogAssertion($"Unexpected StyleKeyword '{keyword.ToString()}'");
+                    return new Scale();
+            }
+        }
+
+        internal static Translate ToTranslate(this StyleKeyword keyword)
+        {
+            switch (keyword)
+            {
+                case StyleKeyword.None:
+                    return Translate.None();
+                default:
+                    Debug.LogAssertion($"Unexpected StyleKeyword '{keyword.ToString()}'");
+                    return new Translate();
+            }
+        }
+
         internal static Length ToLength(this StyleLength styleLength)
         {
             switch (styleLength.keyword)

@@ -315,7 +315,6 @@ namespace UnityEditor.Search
         public bool showDetails;
 
         /// <summary> Explicitly define details options to be shown</summary>
-        /// TODO: Move these options to the item options
         public ShowDetailsOptions showDetailsOptions = ShowDetailsOptions.Default;
 
         /// <summary> Handler used to fetch and format the label of a search item.</summary>

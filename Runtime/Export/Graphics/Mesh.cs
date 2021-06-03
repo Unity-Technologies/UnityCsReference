@@ -741,6 +741,26 @@ namespace UnityEngine
             data.ApplyToMeshesAndDispose(NoAllocHelpers.ExtractArrayFromListT(meshes), flags);
         }
 
+        public GraphicsBuffer GetVertexBuffer(int index)
+        {
+            if (this == null)
+                throw new NullReferenceException();
+            var buf = GetVertexBufferImpl(index);
+            if (buf != null)
+                buf.SaveCallstack(2);
+            return buf;
+        }
+
+        public GraphicsBuffer GetIndexBuffer()
+        {
+            if (this == null)
+                throw new NullReferenceException();
+            var buf = GetIndexBufferImpl();
+            if (buf != null)
+                buf.SaveCallstack(2);
+            return buf;
+        }
+
         //
         // triangles/indices
         //
@@ -1154,7 +1174,7 @@ namespace UnityEngine
             if (start < 0 || count < 0 || start + count > desc.Length)
                 throw new ArgumentOutOfRangeException($"Bad start/count arguments (start:{start} count:{count} desc.Length:{desc.Length})");
 
-            SetAllSubMeshesAtOnceFromNativeArray((IntPtr)desc.GetUnsafeReadOnlyPtr(), start, count, UnityEngine.Rendering.MeshUpdateFlags.Default);
+            SetAllSubMeshesAtOnceFromNativeArray((IntPtr)desc.GetUnsafeReadOnlyPtr(), start, count, flags);
         }
 
         public unsafe void SetSubMeshes<T>(NativeArray<T> desc, UnityEngine.Rendering.MeshUpdateFlags flags = UnityEngine.Rendering.MeshUpdateFlags.Default) where T : struct

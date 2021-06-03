@@ -152,7 +152,7 @@ namespace UnityEditor.Overlays
         }
 
         // Context is usually the containing EditorWindow
-        public static EditorToolbar CreateToolbar(this VisualElement rootVisualElement, object context = null, params string[] elementIDs)
+        public static EditorToolbar CreateToolbar(this VisualElement rootVisualElement, EditorWindow context = null, params string[] elementIDs)
         {
             rootVisualElement.AddToClassList("unity-toolbar-overlay");
             var toolbar = new EditorToolbar(context, rootVisualElement);

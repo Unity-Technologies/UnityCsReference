@@ -94,17 +94,6 @@ namespace UnityEditorInternal
     [NativeHeader("Runtime/Utilities/UnityConfiguration.h")]
     public partial class InternalEditorUtility
     {
-        // Needs to be kept in sync with DragAndDropForwarding.h
-        public enum HierarchyDropMode
-        {
-            kHierarchyDragNormal = 0,
-            kHierarchyDropUpon = 1 << 0,
-            kHierarchyDropBetween = 1 << 1,
-            kHierarchyDropAfterParent = 1 << 2,
-            kHierarchySearchActive = 1 << 3,
-            kHierarchyDropAbove = 1 << 4
-        }
-
         public extern static bool isHumanControllingUs
         {
             [FreeFunction("IsHumanControllingUs")]
@@ -259,10 +248,10 @@ namespace UnityEditorInternal
         extern public static DragAndDropVisualMode ProjectWindowDrag(HierarchyProperty property, bool perform);
 
         [FreeFunction("InternalEditorUtilityBindings::HierarchyWindowDrag")]
-        extern public static DragAndDropVisualMode HierarchyWindowDrag(HierarchyProperty property, HierarchyDropMode dropMode, Transform parentForDraggedObjects, bool perform);
+        extern public static DragAndDropVisualMode HierarchyWindowDrag(HierarchyProperty property, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform);
 
         [FreeFunction("InternalEditorUtilityBindings::HierarchyWindowDragByID")]
-        extern public static DragAndDropVisualMode HierarchyWindowDragByID(int dropTargetInstanceID, HierarchyDropMode dropMode, Transform parentForDraggedObjects, bool perform);
+        extern public static DragAndDropVisualMode HierarchyWindowDragByID(int dropTargetInstanceID, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform);
 
         [FreeFunction("InternalEditorUtilityBindings::InspectorWindowDrag")]
         extern internal static DragAndDropVisualMode InspectorWindowDrag(Object[] targets, bool perform);

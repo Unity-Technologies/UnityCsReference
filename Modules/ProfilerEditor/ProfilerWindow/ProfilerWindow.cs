@@ -179,8 +179,7 @@ namespace UnityEditor
 
         internal event Action<int, bool> currentFrameChanged = delegate {};
         internal event Action frameDataViewAboutToBeDisposed = delegate {};
-        // TODO This event must be made public as part of Extensibility.
-        internal event Action<long> SelectedFrameIndexChanged;
+        public event Action<long> SelectedFrameIndexChanged;
 
         internal event Action<bool> recordingStateChanged = delegate {};
         internal event Action<bool> deepProfileChanged = delegate {};
@@ -276,9 +275,11 @@ namespace UnityEditor
             switch (moduleIdentifier)
             {
                 case cpuModuleIdentifier:
+                case "CPU Usage": // Support for deprecated API constant ProfilerWindow.cpuModuleName.
                     var cpuModule = this.GetProfilerModuleByType<CPUProfilerModule>();
                     return cpuModule;
                 case gpuModuleIdentifier:
+                case "GPU Usage": // Support for deprecated API constant ProfilerWindow.gpuModuleName.
                     var gpuModule = this.GetProfilerModuleByType<GPUProfilerModule>();
                     return gpuModule;
                 default:

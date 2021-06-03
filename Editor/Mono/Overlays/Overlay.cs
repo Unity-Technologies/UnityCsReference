@@ -19,6 +19,7 @@ namespace UnityEditor.Overlays
         All = Panel | HorizontalToolbar | VerticalToolbar,
     }
 
+    // See also OverlayPlacement.cs
     public abstract partial class Overlay
     {
         const string k_UxmlPath = "UXML/Overlays/overlay.uxml";
@@ -133,6 +134,9 @@ namespace UnityEditor.Overlays
         {
             get => !(this is IControlVisibility || this is ITransientOverlay);
         }
+
+        internal bool m_HasMenuEntry = true;
+        internal bool hasMenuEntry => m_HasMenuEntry;
 
         public bool collapsed
         {
@@ -395,11 +399,11 @@ namespace UnityEditor.Overlays
                 var layouts = supportedLayouts;
 
                 if ((layouts & Layout.Panel) != 0)
-                    menu.AppendAction(L10n.Tr("Panel"), action => layout = Layout.Panel, GetMenuItemState(layout == Layout.Panel));
+                    menu.AppendAction(L10n.Tr("Panel"), action => { layout = Layout.Panel; collapsed = false; }, GetMenuItemState(layout == Layout.Panel));
                 if ((layouts & Layout.HorizontalToolbar) != 0)
-                    menu.AppendAction(L10n.Tr("Horizontal"), action => layout = Layout.HorizontalToolbar, GetMenuItemState(layout == Layout.HorizontalToolbar));
+                    menu.AppendAction(L10n.Tr("Horizontal"), action => { layout = Layout.HorizontalToolbar; collapsed = false; }, GetMenuItemState(layout == Layout.HorizontalToolbar));
                 if ((layouts & Layout.VerticalToolbar) != 0)
-                    menu.AppendAction(L10n.Tr("Vertical"), action => layout = Layout.VerticalToolbar, GetMenuItemState(layout == Layout.VerticalToolbar));
+                    menu.AppendAction(L10n.Tr("Vertical"), action => { layout = Layout.VerticalToolbar; collapsed = false; }, GetMenuItemState(layout == Layout.VerticalToolbar));
             }
         }
 
@@ -487,13 +491,16 @@ namespace UnityEditor.Overlays
             this.floatingSnapCorner = snapCorner;
             // Changing layout, floating, or collapsed will all rebuild the content. During initialization, set these
             // values directly and invoke their callbacks once so that content isn't created and discarded multiple times.
-            this.m_Layout = layout;
             this.m_Floating = floating;
+            this.m_Collapsed = collapsed;
+            this.m_Layout = layout;
+            OnFloatingChanged(floating);
+
+            // We need to set this property after the call to UpdateStyling() as the assignment triggers
+            // OverlayPlacement.UpdateAbsolutePosition() which depends on the style being up to date.
             this.floatingSnapOffset = floatingSnapOffset;
-            this.collapsed = collapsed;
-            UpdateStyling();
-            UpdateDropZones();
-            floatingChanged?.Invoke(floating);
+            OnCollapsedChanged(collapsed);
+
             layoutChanged?.Invoke(m_Layout);
             this.displayed = displayed;
         }

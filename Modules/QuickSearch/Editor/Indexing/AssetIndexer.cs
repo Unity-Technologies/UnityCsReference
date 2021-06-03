@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-//#define DEBUG_INDEXING
-
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -148,6 +146,7 @@ namespace UnityEditor.Search
             var at = AssetDatabase.GetMainAssetTypeAtPath(path);
             var hasCustomIndexers = HasCustomIndexers(at);
 
+            bool isPrefab = path.EndsWith(".prefab");
             if (settings.options.types && at != null)
             {
                 IndexWord(documentIndex, at.Name);
@@ -161,6 +160,22 @@ namespace UnityEditor.Search
                         continue;
 
                     IndexSubAsset(obj, path, checkIfDocumentExists, hasCustomIndexers);
+                }
+
+                if (isPrefab)
+                {
+                    var rootPrefabObject = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                    if (rootPrefabObject)
+                    {
+                        var gocs = rootPrefabObject.GetComponents<Component>();
+                        for (int componentIndex = 1; componentIndex < gocs.Length; ++componentIndex)
+                        {
+                            var c = gocs[componentIndex];
+                            if (!c || (c.hideFlags & (HideFlags.DontSave | HideFlags.HideInInspector)) != 0)
+                                continue;
+                            IndexProperty(documentIndex, "t", c.GetType().Name, saveKeyword: true);
+                        }
+                    }
                 }
             }
             else if (at != null)
@@ -176,7 +191,6 @@ namespace UnityEditor.Search
             if (settings.options.properties)
             {
                 bool wasLoaded = AssetDatabase.IsMainAssetAtPathLoaded(path);
-                bool isPrefab = path.EndsWith(".prefab");
 
                 var mainAsset = isPrefab ? PrefabUtility.LoadPrefabContents(path) : AssetDatabase.LoadMainAssetAtPath(path);
                 if (!mainAsset)

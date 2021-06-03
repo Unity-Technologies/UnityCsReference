@@ -464,11 +464,13 @@ namespace UnityEngine.UIElements
             float underlaySoftness = Mathf.Max(0.0f, computedStyle.textShadow.blurRadius * factor);
             Vector2 underlayOffset = computedStyle.textShadow.offset * factor;
 
+            var faceColor = resolvedStyle.color;
             var outlineColor = resolvedStyle.unityTextOutlineColor;
             if (outlineWidth < Mathf.Epsilon)
                 outlineColor.a = 0.0f;
 
             return new TextCoreSettings() {
+                faceColor = faceColor,
                 outlineColor = outlineColor,
                 outlineWidth = outlineWidth,
                 underlayColor = computedStyle.textShadow.color,

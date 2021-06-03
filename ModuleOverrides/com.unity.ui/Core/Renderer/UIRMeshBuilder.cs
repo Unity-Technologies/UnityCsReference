@@ -32,6 +32,7 @@ namespace UnityEngine.UIElements.UIR
             internal TextureId svgTexture;
             internal Material material;
             internal MeshGenerationContext.MeshFlags flags;
+            internal BMPAlloc colorAlloc;
         }
 
         internal static void MakeBorder(MeshGenerationContextUtils.BorderParams borderParams, float posZ, AllocMeshData meshAlloc)
@@ -47,7 +48,7 @@ namespace UnityEngine.UIElements.UIR
                 Tessellation.TessellateRect(rectParams, posZ, meshAlloc, false);
         }
 
-        internal static void MakeTexturedRect(MeshGenerationContextUtils.RectangleParams rectParams, float posZ, AllocMeshData meshAlloc)
+        internal static void MakeTexturedRect(MeshGenerationContextUtils.RectangleParams rectParams, float posZ, AllocMeshData meshAlloc, ColorPage colorPage)
         {
             if (rectParams.leftSlice <= Mathf.Epsilon &&
                 rectParams.topSlice <= Mathf.Epsilon &&
@@ -55,17 +56,17 @@ namespace UnityEngine.UIElements.UIR
                 rectParams.bottomSlice <= Mathf.Epsilon)
             {
                 if (!rectParams.HasRadius(Tessellation.kEpsilon))
-                    MakeQuad(rectParams.rect, rectParams.uv, rectParams.color, posZ, meshAlloc);
+                    MakeQuad(rectParams.rect, rectParams.uv, rectParams.color, posZ, meshAlloc, colorPage);
                 else Tessellation.TessellateRect(rectParams, posZ, meshAlloc, true);
             }
             else if (rectParams.texture == null)
             {
-                MakeQuad(rectParams.rect, rectParams.uv, rectParams.color, posZ, meshAlloc);
+                MakeQuad(rectParams.rect, rectParams.uv, rectParams.color, posZ, meshAlloc, colorPage);
             }
             else MakeSlicedQuad(ref rectParams, posZ, meshAlloc);
         }
 
-        private static Vertex ConvertTextVertexToUIRVertex(MeshInfo info, int index, Vector2 offset, VertexFlags flags = VertexFlags.IsText)
+        private static Vertex ConvertTextVertexToUIRVertex(MeshInfo info, int index, Vector2 offset, VertexFlags flags = VertexFlags.IsText, bool isDynamicColor = false)
         {
             float dilate = 0.0f;
             // If Bold, dilate the shape (this value is hardcoded, should be set from the font actual bold weight)
@@ -75,7 +76,7 @@ namespace UnityEngine.UIElements.UIR
                 position = new Vector3(info.vertices[index].x + offset.x, info.vertices[index].y + offset.y, UIRUtility.k_MeshPosZ),
                 uv = new Vector2(info.uvs0[index].x, info.uvs0[index].y),
                 tint = info.colors32[index],
-                flags = new Color32((byte)flags, (byte)(dilate * 255), 0, 0)
+                flags = new Color32((byte)flags, (byte)(dilate * 255), 0, isDynamicColor ? (byte)1 : (byte)0)
             };
         }
 
@@ -101,7 +102,7 @@ namespace UnityEngine.UIElements.UIR
             return s_MaxTextMeshVertices;
         }
 
-        internal static void MakeText(MeshInfo meshInfo, Vector2 offset, AllocMeshData meshAlloc, VertexFlags flags = VertexFlags.IsText)
+        internal static void MakeText(MeshInfo meshInfo, Vector2 offset, AllocMeshData meshAlloc, VertexFlags flags = VertexFlags.IsText, bool isDynamicColor = false)
         {
             int vertexCount = LimitTextVertices(meshInfo.vertexCount);
             int quadCount = vertexCount / 4;
@@ -109,10 +110,10 @@ namespace UnityEngine.UIElements.UIR
 
             for (int q = 0, v = 0; q < quadCount; ++q, v += 4)
             {
-                mesh.SetNextVertex(ConvertTextVertexToUIRVertex(meshInfo, v + 0, offset, flags));
-                mesh.SetNextVertex(ConvertTextVertexToUIRVertex(meshInfo, v + 1, offset, flags));
-                mesh.SetNextVertex(ConvertTextVertexToUIRVertex(meshInfo, v + 2, offset, flags));
-                mesh.SetNextVertex(ConvertTextVertexToUIRVertex(meshInfo, v + 3, offset, flags));
+                mesh.SetNextVertex(ConvertTextVertexToUIRVertex(meshInfo, v + 0, offset, flags, isDynamicColor));
+                mesh.SetNextVertex(ConvertTextVertexToUIRVertex(meshInfo, v + 1, offset, flags, isDynamicColor));
+                mesh.SetNextVertex(ConvertTextVertexToUIRVertex(meshInfo, v + 2, offset, flags, isDynamicColor));
+                mesh.SetNextVertex(ConvertTextVertexToUIRVertex(meshInfo, v + 3, offset, flags, isDynamicColor));
 
                 mesh.SetNextIndex((UInt16)(v + 0));
                 mesh.SetNextIndex((UInt16)(v + 1));
@@ -164,12 +165,12 @@ namespace UnityEngine.UIElements.UIR
                     xformClipPages = xformClipPages,
                     ids = ids,
                     flags = flags,
-                    opacityPageSettingIndex = opacityPageSettingIndex
+                    opacityColorPages = opacityPageSettingIndex
                 };
             }
         }
 
-        private static void MakeQuad(Rect rcPosition, Rect rcTexCoord, Color color, float posZ, AllocMeshData meshAlloc)
+        private static void MakeQuad(Rect rcPosition, Rect rcTexCoord, Color color, float posZ, AllocMeshData meshAlloc, ColorPage colorPage)
         {
             var mesh = meshAlloc.Allocate(4, 6);
 
@@ -184,29 +185,45 @@ namespace UnityEngine.UIElements.UIR
             float v0 = rcTexCoord.y * uvRegion.height + uvRegion.yMin;
             float v3 = rcTexCoord.yMax * uvRegion.height + uvRegion.yMin;
 
+            var flags = new Color32(0, 0, 0, colorPage.isValid ? (byte)1 : (byte)0);
+            var page = new Color32(0, 0, colorPage.pageAndID.r, colorPage.pageAndID.g);
+            var ids = new Color32(0, 0, 0, colorPage.pageAndID.b);
+
             mesh.SetNextVertex(new Vertex()
             {
                 position = new Vector3(x0, y0, posZ),
                 tint = color,
-                uv = new Vector2(u0, v0)
+                uv = new Vector2(u0, v0),
+                flags = flags,
+                opacityColorPages = page,
+                ids = ids
             });
             mesh.SetNextVertex(new Vertex()
             {
                 position = new Vector3(x3, y0, posZ),
                 tint = color,
-                uv = new Vector2(u3, v0)
+                uv = new Vector2(u3, v0),
+                flags = flags,
+                opacityColorPages = page,
+                ids = ids
             });
             mesh.SetNextVertex(new Vertex()
             {
                 position = new Vector3(x0, y3, posZ),
                 tint = color,
-                uv = new Vector2(u0, v3)
+                uv = new Vector2(u0, v3),
+                flags = flags,
+                opacityColorPages = page,
+                ids = ids
             });
             mesh.SetNextVertex(new Vertex()
             {
                 position = new Vector3(x3, y3, posZ),
                 tint = color,
-                uv = new Vector2(u3, v3)
+                uv = new Vector2(u3, v3),
+                flags = flags,
+                opacityColorPages = page,
+                ids = ids
             });
 
             mesh.SetNextIndex(0);
@@ -337,7 +354,7 @@ namespace UnityEngine.UIElements.UIR
                     position = v.position,
                     tint = v.tint,
                     uv = v.uv,
-                    opacityPageSettingIndex = new Color32(0, 0, (byte)(v.settingIndex >> 8), (byte)v.settingIndex)
+                    opacityColorPages = new Color32(0, 0, (byte)(v.settingIndex >> 8), (byte)v.settingIndex)
                 };
             }
 
@@ -468,9 +485,9 @@ namespace UnityEngine.UIElements.UIR
                 v.uv.x = v.uv.x * uvRegion.width + uvRegion.xMin;
                 v.uv.y = v.uv.y * uvRegion.height + uvRegion.yMin;
                 v.tint *= tint;
-                uint settingIndex = (uint)(((v.opacityPageSettingIndex.b << 8) | v.opacityPageSettingIndex.a) + settingIndexOffset);
-                v.opacityPageSettingIndex.b = (byte)(settingIndex >> 8);
-                v.opacityPageSettingIndex.a = (byte)settingIndex;
+                uint settingIndex = (uint)(((v.opacityColorPages.b << 8) | v.opacityColorPages.a) + settingIndexOffset);
+                v.opacityColorPages.b = (byte)(settingIndex >> 8);
+                v.opacityColorPages.a = (byte)settingIndex;
                 mwd.SetNextVertex(v);
             }
 
@@ -483,9 +500,9 @@ namespace UnityEngine.UIElements.UIR
                 v.uv.x = v.uv.x * uvRegion.width + uvRegion.xMin;
                 v.uv.y = v.uv.y * uvRegion.height + uvRegion.yMin;
                 v.tint *= tint;
-                uint settingIndex = (uint)(((v.opacityPageSettingIndex.b << 8) | v.opacityPageSettingIndex.a) + settingIndexOffset);
-                v.opacityPageSettingIndex.b = (byte)(settingIndex >> 8);
-                v.opacityPageSettingIndex.a = (byte)settingIndex;
+                uint settingIndex = (uint)(((v.opacityColorPages.b << 8) | v.opacityColorPages.a) + settingIndexOffset);
+                v.opacityColorPages.b = (byte)(settingIndex >> 8);
+                v.opacityColorPages.a = (byte)settingIndex;
                 mwd.SetNextVertex(v);
             }
 
@@ -521,9 +538,9 @@ namespace UnityEngine.UIElements.UIR
                 v.uv.x = v.uv.x * uvRegion.width + uvRegion.xMin;
                 v.uv.y = v.uv.y * uvRegion.height + uvRegion.yMin;
                 v.tint *= tint;
-                uint settingIndex = (uint)(((v.opacityPageSettingIndex.b << 8) | v.opacityPageSettingIndex.a) + settingIndexOffset);
-                v.opacityPageSettingIndex.b = (byte)(settingIndex >> 8);
-                v.opacityPageSettingIndex.a = (byte)settingIndex;
+                uint settingIndex = (uint)(((v.opacityColorPages.b << 8) | v.opacityColorPages.a) + settingIndexOffset);
+                v.opacityColorPages.b = (byte)(settingIndex >> 8);
+                v.opacityColorPages.a = (byte)settingIndex;
                 mwd.SetNextVertex(v);
             }
 

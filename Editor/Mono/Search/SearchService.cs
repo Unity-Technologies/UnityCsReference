@@ -213,7 +213,7 @@ namespace UnityEditor.SearchService
             defines.Add("USE_SEARCH_ENGINE_API");
             defines.Add("USE_SEARCH_TABLE");
             defines.Add("USE_SEARCH_MODULE");
-            //defines.Add("USE_PROPERTY_DATABASE");
+            defines.Add("USE_PROPERTY_DATABASE");
         }
 
         public static void NotifySyncSearchChanged(SyncSearchEvent evt, string syncViewId, string searchQuery)

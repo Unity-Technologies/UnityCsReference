@@ -11,13 +11,17 @@ namespace UnityEngine.UIElements
     {
         Vector3 positionWithLayout
         {
-            get { return m_Position + (Vector3)layout.min; }
+            get { return ResolveTranslate() + (Vector3)layout.min; }
         }
 
         // Translate to pivot, scale, rotate, translate back, then do final translation.
         Matrix4x4 pivottedMatrixWithLayout
         {
-            get { return Matrix4x4.TRS(positionWithLayout + transformOrigin , m_Rotation, m_Scale) * Matrix4x4.Translate(-transformOrigin); }
+            get
+            {
+                var transformOrigin = ResolveTransformOrigin();
+                return Matrix4x4.TRS(positionWithLayout + transformOrigin , resolvedStyle.rotate.ToQuaternion(), resolvedStyle.scale.value) * Matrix4x4.Translate(-transformOrigin);
+            }
         }
 
         void TransformAlignedRect(ref Rect r)
@@ -25,19 +29,35 @@ namespace UnityEngine.UIElements
             Vector2 pos = r.position;
             Vector2 size = r.size;
 
-            pos.x *= m_Scale.x;
-            pos.y *= m_Scale.y;
-            size.x *= m_Scale.x;
-            size.y *= m_Scale.y;
+            var rotation = resolvedStyle.rotate.ToQuaternion();
+            var scale = resolvedStyle.scale.value;
+            var translation = ResolveTranslate();
 
-            m_Rotation.Multiply2D(ref pos);
-            m_Rotation.Multiply2D(ref size);
+            pos.x *= scale.x;
+            pos.y *= scale.y;
+            size.x *= scale.x;
+            size.y *= scale.y;
 
-            pos.x += m_Position.x;
-            pos.y += m_Position.y;
+            rotation.Multiply2D(ref pos);
+            rotation.Multiply2D(ref size);
+
+            pos.x += translation.x;
+            pos.y += translation.y;
 
             r = new Rect(pos, size);
             OrderMinMaxRect(ref r);
+        }
+
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        internal static float Min(float a, float b, float c, float d)
+        {
+            return Mathf.Min(Mathf.Min(a, b), Mathf.Min(c, d));
+        }
+
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        internal static float Max(float a, float b, float c, float d)
+        {
+            return Mathf.Max(Mathf.Max(a, b), Mathf.Max(c, d));
         }
 
         internal static Rect CalculateConservativeRect(ref Matrix4x4 matrix, Rect rect)
@@ -63,24 +83,14 @@ namespace UnityEngine.UIElements
             var transformedBL = matrix.MultiplyPoint3x4(bottomLeft);
 
             Vector2 min = new Vector2(
-                Min4(transformedTL.x, transformedBR.x, transformedRL.x, transformedBL.x),
-                Min4(transformedTL.y, transformedBR.y, transformedRL.y, transformedBL.y));
+                Min(transformedTL.x, transformedBR.x, transformedRL.x, transformedBL.x),
+                Min(transformedTL.y, transformedBR.y, transformedRL.y, transformedBL.y));
 
             Vector2 max = new Vector2(
-                Max4(transformedTL.x, transformedBR.x, transformedRL.x, transformedBL.x),
-                Max4(transformedTL.y, transformedBR.y, transformedRL.y, transformedBL.y));
+                Max(transformedTL.x, transformedBR.x, transformedRL.x, transformedBL.x),
+                Max(transformedTL.y, transformedBR.y, transformedRL.y, transformedBL.y));
 
             return new Rect(min.x, min.y, max.x - min.x, max.y - min.y);
-        }
-
-        private static float Min4(float a, float b, float c, float d)
-        {
-            return Mathf.Min(a, Mathf.Min(b, Mathf.Min(c, d)));
-        }
-
-        private static float Max4(float a, float b, float c, float d)
-        {
-            return Mathf.Max(a, Mathf.Max(b, Mathf.Max(c, d)));
         }
 
         internal static void TransformAlignedRect(ref Matrix4x4 matrix, ref Rect rect)

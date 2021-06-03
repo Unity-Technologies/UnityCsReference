@@ -4,6 +4,8 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using System.Collections.Generic;
@@ -75,8 +77,18 @@ namespace UnityEngine.XR
 
         public static int Combine(int hash1, int hash2)
         {
-            return hash1 * k_HashCodeMultiplier + hash2;
+            unchecked
+            {
+                return hash1 * k_HashCodeMultiplier + hash2;
+            }
         }
+
+        public static int Combine(int hash1, int hash2, int hash3) => Combine(Combine(hash1, hash2), hash3);
+        public static int Combine(int hash1, int hash2, int hash3, int hash4) => Combine(Combine(hash1, hash2, hash3), hash4);
+        public static int Combine(int hash1, int hash2, int hash3, int hash4, int hash5) => Combine(Combine(hash1, hash2, hash3, hash4), hash5);
+        public static int Combine(int hash1, int hash2, int hash3, int hash4, int hash5, int hash6) => Combine(Combine(hash1, hash2, hash3, hash4, hash5), hash6);
+        public static int Combine(int hash1, int hash2, int hash3, int hash4, int hash5, int hash6, int hash7) => Combine(Combine(hash1, hash2, hash3, hash4, hash5, hash6), hash7);
+        public static int Combine(int hash1, int hash2, int hash3, int hash4, int hash5, int hash6, int hash7, int hash8) => Combine(Combine(hash1, hash2, hash3, hash4, hash5, hash6, hash7), hash8);
     }
 
     [NativeHeader("Modules/XR/Subsystems/Meshing/XRMeshBindings.h")]
@@ -89,6 +101,10 @@ namespace UnityEngine.XR
         public MeshCollider MeshCollider { get; }
         public MeshGenerationStatus Status { get; }
         public MeshVertexAttributes Attributes { get; }
+        public ulong Timestamp { get; }
+        public Vector3 Position { get; }
+        public Quaternion Rotation { get; }
+        public Vector3 Scale { get; }
 
         public override bool Equals(object obj)
         {
@@ -101,11 +117,14 @@ namespace UnityEngine.XR
         public bool Equals(MeshGenerationResult other)
         {
             return
-                (MeshId.Equals(other.MeshId)) &&
-                (Mesh.Equals(other.Mesh)) &&
-                (MeshCollider.Equals(other.MeshCollider)) &&
-                (Status.Equals(other.Status)) &&
-                (Attributes.Equals(other.Attributes));
+                MeshId.Equals(other.MeshId) &&
+                Mesh.Equals(other.Mesh) &&
+                MeshCollider.Equals(other.MeshCollider) &&
+                Status == other.Status &&
+                Attributes == other.Attributes &&
+                Position.Equals(other.Position) &&
+                Rotation.Equals(other.Rotation) &&
+                Scale.Equals(other.Scale);
         }
 
         public static bool operator==(MeshGenerationResult lhs, MeshGenerationResult rhs)
@@ -120,12 +139,10 @@ namespace UnityEngine.XR
 
         public override int GetHashCode()
         {
-            return
-                HashCodeHelper.Combine(
-                HashCodeHelper.Combine(
-                    HashCodeHelper.Combine(
-                        HashCodeHelper.Combine(MeshId.GetHashCode(), Mesh.GetHashCode()),
-                        MeshCollider.GetHashCode()), Status.GetHashCode()), Attributes.GetHashCode());
+            return HashCodeHelper.Combine(
+                MeshId.GetHashCode(), Mesh.GetHashCode(), MeshCollider.GetHashCode(),
+                ((int)Status).GetHashCode(), ((int)Attributes).GetHashCode(),
+                Position.GetHashCode(), Rotation.GetHashCode(), Scale.GetHashCode());
         }
     }
 
@@ -142,13 +159,21 @@ namespace UnityEngine.XR
     }
 
     [NativeHeader("Modules/XR/Subsystems/Meshing/XRMeshBindings.h")]
+    [Flags, UsedByNativeCode]
+    public enum MeshGenerationOptions
+    {
+        None = 0,
+        ConsumeTransform = 1 << 0,
+    }
+
+    [NativeHeader("Modules/XR/Subsystems/Meshing/XRMeshBindings.h")]
     [UsedByNativeCode]
     public enum MeshChangeState
     {
         Added,
         Updated,
         Removed,
-        Unchanged
+        Unchanged,
     }
 
     [NativeHeader("Modules/XR/Subsystems/Meshing/XRMeshBindings.h")]
@@ -171,9 +196,9 @@ namespace UnityEngine.XR
         public bool Equals(MeshInfo other)
         {
             return
-                (MeshId.Equals(other.MeshId)) &&
-                (ChangeState.Equals(other.ChangeState)) &&
-                (PriorityHint.Equals(other.PriorityHint));
+                MeshId.Equals(other.MeshId) &&
+                ChangeState.Equals(other.ChangeState) &&
+                PriorityHint.Equals(other.PriorityHint);
         }
 
         public static bool operator==(MeshInfo lhs, MeshInfo rhs)
@@ -186,12 +211,41 @@ namespace UnityEngine.XR
             return !lhs.Equals(rhs);
         }
 
-        public override int GetHashCode()
+        public override int GetHashCode() =>
+            HashCodeHelper.Combine(MeshId.GetHashCode(), ((int)ChangeState).GetHashCode(), PriorityHint.GetHashCode());
+    }
+
+    [NativeHeader("Modules/XR/Subsystems/Meshing/XRMeshBindings.h")]
+    [UsedByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    readonly public struct MeshTransform : IEquatable<MeshTransform>
+    {
+        public MeshId MeshId { get; }
+        public ulong Timestamp { get; }
+        public Vector3 Position { get; }
+        public Quaternion Rotation { get; }
+        public Vector3 Scale { get; }
+
+        public MeshTransform(in MeshId meshId, ulong timestamp, in Vector3 position, in Quaternion rotation, in Vector3 scale)
         {
-            return
-                HashCodeHelper.Combine(
-                HashCodeHelper.Combine(MeshId.GetHashCode(), ChangeState.GetHashCode()), PriorityHint);
+            MeshId = meshId;
+            Timestamp = timestamp;
+            Position = position;
+            Rotation = rotation;
+            Scale = scale;
         }
+
+        public override bool Equals(object obj) => obj is MeshTransform other && Equals(other);
+        public bool Equals(MeshTransform other) =>
+            MeshId.Equals(other.MeshId) &&
+            Timestamp == other.Timestamp &&
+            Position.Equals(other.Position) &&
+            Rotation.Equals(other.Rotation) &&
+            Scale.Equals(other.Scale);
+        public static bool operator==(MeshTransform lhs, MeshTransform rhs) => lhs.Equals(rhs);
+        public static bool operator!=(MeshTransform lhs, MeshTransform rhs) => !lhs.Equals(rhs);
+        public override int GetHashCode() =>
+            HashCodeHelper.Combine(MeshId.GetHashCode(), Timestamp.GetHashCode(), Position.GetHashCode(), Rotation.GetHashCode(), Scale.GetHashCode());
     }
 
     [NativeHeader("Modules/XR/XRPrefix.h")]
@@ -212,12 +266,23 @@ namespace UnityEngine.XR
 
         private extern MeshInfo[] GetMeshInfosAsFixedArray();
 
+        public void GenerateMeshAsync(
+            MeshId meshId,
+            Mesh mesh,
+            MeshCollider meshCollider,
+            MeshVertexAttributes attributes,
+            Action<MeshGenerationResult> onMeshGenerationComplete)
+        {
+            GenerateMeshAsync(meshId, mesh, meshCollider, attributes, onMeshGenerationComplete, MeshGenerationOptions.None);
+        }
+
         public extern void GenerateMeshAsync(
             MeshId meshId,
             Mesh mesh,
             MeshCollider meshCollider,
             MeshVertexAttributes attributes,
-            Action<MeshGenerationResult> onMeshGenerationComplete);
+            Action<MeshGenerationResult> onMeshGenerationComplete,
+            MeshGenerationOptions options);
 
         [RequiredByNativeCode]
         private void InvokeMeshReadyDelegate(
@@ -231,5 +296,41 @@ namespace UnityEngine.XR
         public extern float meshDensity { get; set; }
 
         public extern bool SetBoundingVolume(Vector3 origin, Vector3 extents);
+
+        [NativeConditional("ENABLE_XR")]
+        readonly struct MeshTransformList : IDisposable
+        {
+            readonly IntPtr m_Self;
+
+            public MeshTransformList(IntPtr self) => m_Self = self;
+
+            public int Count => GetLength(m_Self);
+
+            public IntPtr Data => GetData(m_Self);
+
+            public void Dispose() => Dispose(m_Self);
+
+            [FreeFunction("UnityXRMeshTransformList_get_Length")]
+            static extern int GetLength(IntPtr self);
+
+            [FreeFunction("UnityXRMeshTransformList_get_Data")]
+            static extern IntPtr GetData(IntPtr self);
+
+            [FreeFunction("UnityXRMeshTransformList_Dispose")]
+            static extern void Dispose(IntPtr self);
+        }
+
+        public NativeArray<MeshTransform> GetUpdatedMeshTransforms(Allocator allocator)
+        {
+            unsafe
+            {
+                using var transforms = new MeshTransformList(GetUpdatedMeshTransforms());
+                var result = new NativeArray<MeshTransform>(transforms.Count, allocator, NativeArrayOptions.UninitializedMemory);
+                UnsafeUtility.MemCpy(result.GetUnsafePtr(), transforms.Data.ToPointer(), transforms.Count * sizeof(MeshTransform));
+                return result;
+            }
+        }
+
+        extern IntPtr GetUpdatedMeshTransforms();
     }
 }

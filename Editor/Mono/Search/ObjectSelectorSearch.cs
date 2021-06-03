@@ -12,17 +12,6 @@ namespace UnityEditor.SearchService
     public class ObjectSelectorEngineAttribute : Attribute
     {}
 
-    [AttributeUsage(AttributeTargets.Method)]
-    public class ObjectSelectorHandlerAttribute : Attribute
-    {
-        public Type attributeType { get; }
-
-        public ObjectSelectorHandlerAttribute(Type attributeType)
-        {
-            this.attributeType = attributeType;
-        }
-    }
-
     [Flags]
     public enum VisibleObjects
     {
@@ -32,26 +21,7 @@ namespace UnityEditor.SearchService
         All = Assets | Scene
     }
 
-    public struct ObjectSelectorTargetInfo
-    {
-        public GlobalObjectId globalObjectId { get; }
-        public Object targetObject { get; }
-        public Type type { get; }
-
-        public ObjectSelectorTargetInfo(GlobalObjectId globalObjectId, Object targetObject = null, Type type = null)
-        {
-            this.globalObjectId = globalObjectId;
-            this.targetObject = targetObject;
-            this.type = type;
-        }
-
-        public Object LoadObject()
-        {
-            return targetObject ?? GlobalObjectId.GlobalObjectIdentifierToObjectSlow(globalObjectId);
-        }
-    }
-
-    public class ObjectSelectorSearchContext : ISearchContext
+    public partial class ObjectSelectorSearchContext : ISearchContext
     {
         public Guid guid { get; } = Guid.NewGuid();
         public SearchEngineScope engineScope { get; protected set; } = ObjectSelectorSearch.EngineScope;
@@ -61,7 +31,6 @@ namespace UnityEditor.SearchService
         public IEnumerable<string> requiredTypeNames { get; set; }
         public VisibleObjects visibleObjects { get; set; }
         public IEnumerable<int> allowedInstanceIds { get; set; }
-        public Func<ObjectSelectorTargetInfo, Object[], ObjectSelectorSearchContext, bool> selectorConstraint { get; set; }
     }
 
     public interface IObjectSelectorEngine : ISelectorEngine {}

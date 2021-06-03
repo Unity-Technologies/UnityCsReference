@@ -564,7 +564,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var hidden = string.IsNullOrEmpty(groupName);
             var expanded = m_PageManager.IsGroupExpanded(groupName);
-            group = new PackageGroup(m_ResourceLoader, m_PageManager, m_SettingsProxy, groupName, GetGroupDisplayName(groupName), expanded, hidden);
+            group = new PackageGroup(m_ResourceLoader, m_PageManager, m_SettingsProxy, m_PackageDatabase, groupName, GetGroupDisplayName(groupName), expanded, hidden);
             if (!hidden)
             {
                 group.onGroupToggle += value =>
@@ -604,7 +604,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void ReorderGroups()
         {
-            itemsList.Sort((left, right) => string.Compare(left.name, right.name, StringComparison.OrdinalIgnoreCase));
+            var subPage = m_PageManager.GetCurrentPage().currentSubPage;
+            if (subPage?.compareGroup != null)
+                itemsList.Sort((left, right) => subPage.compareGroup.Invoke(left.name, right.name));
+            else
+                itemsList.Sort((left, right) => string.Compare(left.name, right.name, StringComparison.OrdinalIgnoreCase));
         }
 
         private void OnListRebuild(IPage page)
@@ -641,7 +645,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             foreach (var package in addedOrUpdated)
             {
-                var visualState = page.GetVisualState(package.uniqueId) ?? new VisualState(package.uniqueId, string.Empty);
+                var visualState = page.GetVisualState(package.uniqueId) ?? new VisualState(package.uniqueId, string.Empty,
+                    page.GetDefaultLockState(package));
                 AddOrUpdatePackageItem(visualState, package);
             }
             var itemsAdded = numItems != m_PackageItemsLookup.Count;

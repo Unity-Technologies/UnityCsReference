@@ -95,6 +95,7 @@ namespace UnityEngine.UIElements
                 new ProgressBar.UxmlFactory(),
                 new ListView.UxmlFactory(),
                 new TwoPaneSplitView.UxmlFactory(),
+                new InternalTreeView.UxmlFactory(),
                 new TreeView.UxmlFactory(),
                 new Foldout.UxmlFactory(),
                 new BindableElement.UxmlFactory(),

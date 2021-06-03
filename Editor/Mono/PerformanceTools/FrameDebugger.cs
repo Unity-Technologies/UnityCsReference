@@ -43,6 +43,9 @@ namespace UnityEditorInternal
         GLDraw,
         SkinOnGPU,
         DrawProcedural,
+        DrawProceduralIndirect,
+        DrawProceduralIndexed,
+        DrawProceduralIndexedIndirect,
         ComputeDispatch,
         RayTracingDispatch,
         PluginEvent,
@@ -155,6 +158,7 @@ namespace UnityEditorInternal
         public Mesh mesh;
         public int meshInstanceID;
         public int meshSubset;
+        public int[] meshInstanceIDs;
 
         // state for compute shader dispatches
         public int csInstanceID;
@@ -163,6 +167,9 @@ namespace UnityEditorInternal
         public int csThreadGroupsX;
         public int csThreadGroupsY;
         public int csThreadGroupsZ;
+        public int csGroupSizeX;
+        public int csGroupSizeY;
+        public int csGroupSizeZ;
 
         // state for ray tracing shader dispatches
         public int rtsInstanceID;
@@ -198,14 +205,23 @@ namespace UnityEditorInternal
         public sbyte rtHasDepthTexture;
         public sbyte rtMemoryless;
 
-        // shader state and properties
+        // shader state
         public FrameDebuggerBlendState blendState;
         public FrameDebuggerRasterState rasterState;
         public FrameDebuggerDepthState depthState;
         public FrameDebuggerStencilState stencilState;
         public int stencilRef;
-        public int batchBreakCause;
 
+        // clear event data
+        public float clearColorR;
+        public float clearColorG;
+        public float clearColorB;
+        public float clearColorA;
+        public float clearDepth;
+        public uint clearStencil;
+
+        // shader properties
+        public int batchBreakCause;
         public ShaderProperties shaderProperties;
     }
 
@@ -214,7 +230,7 @@ namespace UnityEditorInternal
     internal struct FrameDebuggerEvent
     {
         public FrameEventType type;
-        public GameObject gameObject;
+        public UnityEngine.Object obj;
     }
 
     // Match C++ ScriptingFrameDebuggerBlendState memory layout!
@@ -294,7 +310,10 @@ namespace UnityEditor
             "Draw GL",
             "GPU Skinning",
             "Draw Procedural",
-            "Compute Shader",
+            "Draw Procedural Indirect",
+            "Draw Procedural Indexed",
+            "Draw Procedural Indexed Indirect",
+            "Compute",
             "Ray Tracing Dispatch",
             "Plugin Event",
             "Draw Mesh (instanced)",
@@ -358,7 +377,6 @@ namespace UnityEditor
 
         // Mesh preview
         PreviewRenderUtility m_PreviewUtility;
-        private Material m_Material;
 
         // Texture preview
         GUIContent m_TextureGUIContent = new GUIContent();
@@ -431,9 +449,9 @@ namespace UnityEditor
 
             if (newLimit != FrameDebuggerUtility.limit && newLimit > 0)
             {
-                GameObject go = FrameDebuggerUtility.GetFrameEventGameObject(newLimit - 1);
-                if (go != null)
-                    EditorGUIUtility.PingObject(go);
+                var obj = FrameDebuggerUtility.GetFrameEventObject(newLimit - 1);
+                if (obj != null)
+                    EditorGUIUtility.PingObject(obj);
             }
 
             FrameDebuggerUtility.limit = newLimit;
@@ -443,7 +461,7 @@ namespace UnityEditor
 
         static void DisableFrameDebugger()
         {
-            if (FrameDebuggerUtility.IsLocalEnabled())
+            if (FrameDebugger.IsLocalEnabled())
             {
                 // if it was true before, we disabled and ask the game scene to repaint
                 EditorApplication.SetSceneRepaintDirty();
@@ -509,7 +527,7 @@ namespace UnityEditor
 
         public void EnableIfNeeded()
         {
-            if (FrameDebuggerUtility.IsLocalEnabled() || FrameDebuggerUtility.IsRemoteEnabled())
+            if (FrameDebugger.enabled)
                 return;
             m_RTChannel = 0;
             m_RTIndex = 0;
@@ -521,7 +539,7 @@ namespace UnityEditor
 
         private void ClickEnableFrameDebugger()
         {
-            bool isEnabled = FrameDebuggerUtility.IsLocalEnabled() || FrameDebuggerUtility.IsRemoteEnabled();
+            bool isEnabled = FrameDebugger.enabled;
 
             bool enablingLocally = !isEnabled && m_AttachToPlayerState.connectedToTarget == ConnectionTarget.Editor;
 
@@ -541,7 +559,7 @@ namespace UnityEditor
                 FrameDebuggerUtility.SetEnabled(false, FrameDebuggerUtility.GetRemotePlayerGUID());
 
             // Make sure game view is visible when enabling frame debugger locally
-            if (FrameDebuggerUtility.IsLocalEnabled())
+            if (FrameDebugger.IsLocalEnabled())
             {
                 var playModeView = PlayModeView.GetMainPlayModeView();
                 if (playModeView)
@@ -572,13 +590,13 @@ namespace UnityEditor
             // stencil states
             if (m_CurEventData.stencilState.stencilEnable)
             {
-                m_CurEventDataStrings.stencilRef = m_CurEventData.stencilRef.ToString();
+                m_CurEventDataStrings.stencilRef = GetStencilString(m_CurEventData.stencilRef);
 
                 if (m_CurEventData.stencilState.readMask != 255)
-                    m_CurEventDataStrings.stencilReadMask = m_CurEventData.stencilState.readMask.ToString();
+                    m_CurEventDataStrings.stencilReadMask = GetStencilString(m_CurEventData.stencilState.readMask);
 
                 if (m_CurEventData.stencilState.writeMask != 255)
-                    m_CurEventDataStrings.stencilWriteMask = m_CurEventData.stencilState.writeMask.ToString();
+                    m_CurEventDataStrings.stencilWriteMask = GetStencilString(m_CurEventData.stencilState.writeMask);
 
                 // Only show *Front states when CullMode is set to Back.
                 // Only show *Back states when CullMode is set to Front.
@@ -665,7 +683,7 @@ namespace UnityEditor
                 }
                 else if (texture is RenderTexture)
                 {
-                    tooltip.AppendFormat("\nRT Format: {0}", (texture as RenderTexture).format.ToString());
+                    tooltip.AppendFormat("\nRT Format: {0}", (texture as RenderTexture).graphicsFormat.ToString());
                 }
 
                 tooltip.Append("\n\nCtrl or Shift + Click to show preview");
@@ -686,7 +704,7 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
             using (new EditorGUI.DisabledScope(!isSupported))
             {
-                GUILayout.Toggle(FrameDebuggerUtility.IsLocalEnabled() || FrameDebuggerUtility.IsRemoteEnabled(), styles.recordButton, EditorStyles.toolbarButtonLeft, GUILayout.MinWidth(80));
+                GUILayout.Toggle(FrameDebugger.enabled, styles.recordButton, EditorStyles.toolbarButtonLeft, GUILayout.MinWidth(80));
             }
             if (EditorGUI.EndChangeCheck())
             {
@@ -694,7 +712,7 @@ namespace UnityEditor
                 repaint = true;
             }
 
-            if (FrameDebuggerUtility.IsLocalEnabled())
+            if (FrameDebugger.IsLocalEnabled())
             {
                 styles.recordButton.text = L10n.Tr("Disable");
                 styles.recordButton.tooltip = L10n.Tr("Disable Frame Debugging");
@@ -707,7 +725,7 @@ namespace UnityEditor
 
             PlayerConnectionGUILayout.ConnectionTargetSelectionDropdown(m_AttachToPlayerState, EditorStyles.toolbarDropDown);
 
-            bool isAnyEnabled = FrameDebuggerUtility.IsLocalEnabled() || FrameDebuggerUtility.IsRemoteEnabled();
+            bool isAnyEnabled = FrameDebugger.enabled;
             if (isAnyEnabled && ProfilerDriver.connectedProfiler != FrameDebuggerUtility.GetRemotePlayerGUID())
             {
                 // Switch from local to remote debugger or vice versa
@@ -762,16 +780,10 @@ namespace UnityEditor
             return repaint;
         }
 
-        private void DrawMeshPreview(Rect previewRect, Rect meshInfoRect, Mesh mesh, int meshSubset)
+        void DrawMeshPreview(Rect previewRect, Rect meshInfoRect, Mesh mesh, int meshSubset)
         {
-            if (m_Material == null)
-                m_Material = Material.GetDefaultMaterial();
-
-            m_Settings.activeMaterial = m_Material;
             m_PreviewUtility.BeginPreview(previewRect, "preBackground");
-
             MeshPreview.RenderMeshPreview(mesh, m_PreviewUtility, m_Settings, meshSubset);
-
             m_PreviewUtility.EndAndDrawPreview(previewRect);
 
             // mesh info
@@ -797,7 +809,7 @@ namespace UnityEditor
             if (previewRect.width < kMinPreviewSize || previewRect.height < kMinPreviewSize)
                 return true;
 
-            GameObject go = FrameDebuggerUtility.GetFrameEventGameObject(m_CurEventData.frameEventIndex);
+            UnityEngine.Object obj = FrameDebuggerUtility.GetFrameEventObject(m_CurEventData.frameEventIndex);
 
             // Info display at bottom (and pings object when clicked)
             Rect meshInfoRect = previewRect;
@@ -806,29 +818,30 @@ namespace UnityEditor
 
             meshInfoRect.xMin = meshInfoRect.center.x;
             goInfoRect.xMax = goInfoRect.center.x;
-            if (Event.current.type == EventType.MouseDown)
+            var evt = Event.current;
+            if (evt.type == EventType.MouseDown)
             {
-                if (meshInfoRect.Contains(Event.current.mousePosition))
+                if (meshInfoRect.Contains(evt.mousePosition))
                 {
-                    EditorGUIUtility.PingObject(mesh);
-                    Event.current.Use();
+                    EditorGUIUtility.PingObject(m_CurEventData.mesh);
+                    evt.Use();
                 }
-                if (go != null && goInfoRect.Contains(Event.current.mousePosition))
+                if (obj != null && goInfoRect.Contains(evt.mousePosition))
                 {
-                    EditorGUIUtility.PingObject(go.GetInstanceID());
-                    Event.current.Use();
+                    EditorGUIUtility.PingObject(obj.GetInstanceID());
+                    evt.Use();
                 }
             }
 
             m_Settings.previewDir = PreviewGUI.Drag2D(m_Settings.previewDir, previewRect);
 
-            if (Event.current.type == EventType.Repaint)
+            if (evt.type == EventType.Repaint)
             {
                 int meshSubset = m_CurEventData.meshSubset;
                 DrawMeshPreview(previewRect, meshInfoRect, mesh, meshSubset);
-                if (go != null)
+                if (obj != null)
                 {
-                    EditorGUI.DropShadowLabel(goInfoRect, go.name);
+                    EditorGUI.DropShadowLabel(goInfoRect, obj.name);
                 }
             }
 
@@ -948,9 +961,9 @@ namespace UnityEditor
                 else
                 {
                     if (isDepthFormat)
-                        GUILayout.Label(string.Format("Clear Depth {0}", cur.rtClearDepth));
+                        GUILayout.Label($"Clear Depth {cur.rtClearDepth}");
                     if (isStencilFormat)
-                        GUILayout.Label(string.Format("Clear Stencil {0:X}", cur.rtClearStencil));
+                        GUILayout.Label($"Clear Stencil {GetStencilString((int)cur.rtClearStencil)}");
                 }
             }
 
@@ -958,16 +971,17 @@ namespace UnityEditor
                 GUILayout.Label("Rendering into cubemap");
         }
 
+        void DrawKeywords(string shaderName)
+        {
+            if (string.IsNullOrEmpty(m_CurEventData.shaderKeywords))
+                return;
+            EditorGUILayout.LabelField("Keywords", m_CurEventData.shaderKeywords);
+            if (GUI.Button(GUILayoutUtility.GetLastRect(), Styles.copyToClipboardTooltip, GUI.skin.label))
+                EditorGUIUtility.systemCopyBuffer = shaderName + Environment.NewLine + m_CurEventData.shaderKeywords;
+        }
+
         private void DrawEventDrawCallInfo()
         {
-            if (m_CurEventData.instanceCount > 1)
-            {
-                EditorGUILayout.LabelField("DrawInstanced Calls", m_CurEventDataStrings.drawCallCount);
-                EditorGUILayout.LabelField("Instances", m_CurEventDataStrings.drawInstancedCallCount);
-            }
-            else if (m_CurEventData.drawCallCount > 1)
-                EditorGUILayout.LabelField("Draw Calls", m_CurEventDataStrings.drawCallCount);
-
             // shader, pass & keyword information
             EditorGUILayout.LabelField("Shader", m_CurEventDataStrings.shader);
 
@@ -978,14 +992,7 @@ namespace UnityEditor
             }
 
             EditorGUILayout.LabelField("Pass", m_CurEventDataStrings.pass);
-
-            if (!string.IsNullOrEmpty(m_CurEventData.shaderKeywords))
-            {
-                EditorGUILayout.LabelField("Keywords", m_CurEventData.shaderKeywords);
-
-                if (GUI.Button(GUILayoutUtility.GetLastRect(), Styles.copyToClipboardTooltip, GUI.skin.label))
-                    EditorGUIUtility.systemCopyBuffer = m_CurEventDataStrings.shader + System.Environment.NewLine + m_CurEventData.shaderKeywords;
-            }
+            DrawKeywords(m_CurEventDataStrings.shader);
 
             DrawStates();
 
@@ -1013,12 +1020,35 @@ namespace UnityEditor
                         // If no mesh preview, then show vertex/index count at least
                         EditorGUILayout.LabelField("Vertices", m_CurEventData.vertexCount.ToString());
                         EditorGUILayout.LabelField("Indices", m_CurEventData.indexCount.ToString());
+
+                        if (m_CurEventData.meshInstanceIDs != null)
+                        {
+                            EditorGUILayout.LabelField("Meshes", m_CurEventData.meshInstanceIDs.Length.ToString());
+                            ++EditorGUI.indentLevel;
+                            foreach (var id in m_CurEventData.meshInstanceIDs)
+                            {
+                                var mesh = EditorUtility.InstanceIDToObject(id) as Mesh;
+                                if (mesh != null)
+                                    EditorGUILayout.LabelField(mesh.name);
+                            }
+                            --EditorGUI.indentLevel;
+                        }
                     }
                     break;
                 case ShowAdditionalInfo.ShaderProperties:
                     DrawShaderProperties(m_CurEventData.shaderProperties);
                     break;
             }
+        }
+
+        void DrawEventClearInfo(FrameEventType type)
+        {
+            if (((int)type & 1) != 0)
+                EditorGUILayout.LabelField("Color", $"{m_CurEventData.clearColorR:F3},{m_CurEventData.clearColorG:F3},{m_CurEventData.clearColorB:F3},{m_CurEventData.clearColorA:F3}");
+            if (((int)type & 2) != 0)
+                EditorGUILayout.LabelField("Depth", m_CurEventData.clearDepth.ToString("f3"));
+            if (((int)type & 4) != 0)
+                EditorGUILayout.LabelField("Stencil", GetStencilString((int)m_CurEventData.clearStencil));
         }
 
         private void DrawEventComputeDispatchInfo()
@@ -1032,13 +1062,18 @@ namespace UnityEditor
             }
 
             EditorGUILayout.LabelField("Kernel", m_CurEventData.csKernel);
+            DrawKeywords(m_CurEventData.csKernel);
 
             // dispatch size
             string threadGroupsText;
             if (m_CurEventData.csThreadGroupsX != 0 || m_CurEventData.csThreadGroupsY != 0 || m_CurEventData.csThreadGroupsZ != 0)
-                threadGroupsText = string.Format("{0}x{1}x{2}", m_CurEventData.csThreadGroupsX, m_CurEventData.csThreadGroupsY, m_CurEventData.csThreadGroupsZ);
+                threadGroupsText = $"{m_CurEventData.csThreadGroupsX}x{m_CurEventData.csThreadGroupsY}x{m_CurEventData.csThreadGroupsZ}";
             else
                 threadGroupsText = "indirect dispatch";
+
+            // thread group size
+            if (m_CurEventData.csGroupSizeX > 0)
+                threadGroupsText += $", group size {m_CurEventData.csGroupSizeX}x{m_CurEventData.csGroupSizeY}x{m_CurEventData.csGroupSizeZ}";
 
             EditorGUILayout.LabelField("Thread Groups", threadGroupsText);
 
@@ -1103,15 +1138,26 @@ namespace UnityEditor
             if (isFrameEventDataValid && cur.type != FrameEventType.RayTracingDispatch)
                 DrawRenderTargetControls();
 
-            GUILayout.Label(string.Format("Event #{0}: {1}", (curEventIndex + 1), s_FrameEventTypeNames[(int)cur.type]), EditorStyles.boldLabel);
+            // event type
+            GUILayout.BeginHorizontal();
+            GUILayout.Label($"Event #{curEventIndex + 1}: {s_FrameEventTypeNames[(int) cur.type]}", EditorStyles.boldLabel);
+            if (isFrameEventDataValid)
+            {
+                if (m_CurEventData.instanceCount > 1)
+                    GUILayout.Label($" ({m_CurEventDataStrings.drawCallCount} draw calls, {m_CurEventDataStrings.drawInstancedCallCount} instances)");
+                else if (m_CurEventData.drawCallCount > 1)
+                    GUILayout.Label($" ({m_CurEventDataStrings.drawCallCount} draw calls)");
+                GUILayout.FlexibleSpace();
+            }
+            GUILayout.EndHorizontal();
 
-            if (FrameDebuggerUtility.IsRemoteEnabled() && FrameDebuggerUtility.receivingRemoteFrameEventData)
+            if (FrameDebugger.IsRemoteEnabled() && FrameDebuggerUtility.receivingRemoteFrameEventData)
             {
                 GUILayout.Label("Receiving frame event data...");
             }
             else if (isFrameEventDataValid)     // Is this a draw call?
             {
-                if (m_CurEventData.vertexCount > 0 || m_CurEventData.indexCount > 0)
+                if (m_CurEventData.vertexCount > 0 || m_CurEventData.indexCount > 0 || cur.type == FrameEventType.DrawProceduralIndirect || cur.type == FrameEventType.DrawProceduralIndexedIndirect)
                 {
                     // a draw call, display extra info
                     DrawEventDrawCallInfo();
@@ -1125,6 +1171,11 @@ namespace UnityEditor
                 {
                     // a ray tracing dispatch
                     DrawEventRayTracingDispatchInfo();
+                }
+                else if (cur.type >= FrameEventType.ClearNone && cur.type <= FrameEventType.ClearAll)
+                {
+                    // a render target clear
+                    DrawEventClearInfo(cur.type);
                 }
             }
 
@@ -1563,6 +1614,11 @@ namespace UnityEditor
             }
         }
 
+        static string GetStencilString(int stencil)
+        {
+            return $"{stencil} (0b{Convert.ToString(stencil, 2)})";
+        }
+
         internal void OnGUI()
         {
             FrameDebuggerEvent[] descs = FrameDebuggerUtility.GetFrameEvents();
@@ -1593,7 +1649,7 @@ namespace UnityEditor
             int oldLimit = FrameDebuggerUtility.limit;
             bool repaint = DrawToolbar(descs);
 
-            if (!FrameDebuggerUtility.IsLocalEnabled() && !FrameDebuggerUtility.IsRemoteEnabled() && m_AttachToPlayerState.connectedToTarget == ConnectionTarget.Editor)
+            if (!FrameDebugger.enabled && m_AttachToPlayerState.connectedToTarget == ConnectionTarget.Editor)
             {
                 GUI.enabled = true;
 
@@ -1670,9 +1726,6 @@ namespace UnityEditor
 
         internal class Styles
         {
-            public GUIStyle header = "OL title";
-            public GUIStyle entryEven = "OL EntryBackEven";
-            public GUIStyle entryOdd = "OL EntryBackOdd";
             public GUIStyle rowText = "OL Label";
             public GUIStyle rowTextRight = "OL RightLabel";
 

@@ -21,6 +21,7 @@ namespace UnityEngine.UIElements
         public StyleDataRef<InheritedData> inheritedData;
         public StyleDataRef<LayoutData> layoutData;
         public StyleDataRef<RareData> rareData;
+        public StyleDataRef<TransformData> transformData;
         public StyleDataRef<VisualData> visualData;
 
         public YogaNode yogaNode;
@@ -75,9 +76,13 @@ namespace UnityEngine.UIElements
         public Length paddingTop => layoutData.Read().paddingTop;
         public Position position => layoutData.Read().position;
         public Length right => layoutData.Read().right;
+        public Rotate rotate => transformData.Read().rotate;
+        public Scale scale => transformData.Read().scale;
         public TextOverflow textOverflow => rareData.Read().textOverflow;
         public TextShadow textShadow => inheritedData.Read().textShadow;
         public Length top => layoutData.Read().top;
+        public TransformOrigin transformOrigin => transformData.Read().transformOrigin;
+        public Translate translate => transformData.Read().translate;
         public Color unityBackgroundImageTintColor => rareData.Read().unityBackgroundImageTintColor;
         public ScaleMode unityBackgroundScaleMode => rareData.Read().unityBackgroundScaleMode;
         public Font unityFont => inheritedData.Read().unityFont;
@@ -101,20 +106,22 @@ namespace UnityEngine.UIElements
         public static ComputedStyle Create(ref ComputedStyle parentStyle)
         {
             ref var initialStyle = ref InitialStyle.Get();
-            var cs = new ComputedStyle {dpiScaling = 1f};
+            var cs = new ComputedStyle{dpiScaling = 1f};
             cs.inheritedData = parentStyle.inheritedData.Acquire();
             cs.layoutData = initialStyle.layoutData.Acquire();
             cs.rareData = initialStyle.rareData.Acquire();
+            cs.transformData = initialStyle.transformData.Acquire();
             cs.visualData = initialStyle.visualData.Acquire();
             return cs;
         }
 
         public static ComputedStyle CreateInitial()
         {
-            var cs = new ComputedStyle {dpiScaling = 1f};
+            var cs = new ComputedStyle{dpiScaling = 1f};
             cs.inheritedData = StyleDataRef<InheritedData>.Create();
             cs.layoutData = StyleDataRef<LayoutData>.Create();
             cs.rareData = StyleDataRef<RareData>.Create();
+            cs.transformData = StyleDataRef<TransformData>.Create();
             cs.visualData = StyleDataRef<VisualData>.Create();
             return cs;
         }
@@ -124,6 +131,7 @@ namespace UnityEngine.UIElements
             inheritedData.Acquire();
             layoutData.Acquire();
             rareData.Acquire();
+            transformData.Acquire();
             visualData.Acquire();
             return this;
         }
@@ -133,6 +141,7 @@ namespace UnityEngine.UIElements
             inheritedData.Release();
             layoutData.Release();
             rareData.Release();
+            transformData.Release();
             visualData.Release();
         }
 
@@ -141,6 +150,7 @@ namespace UnityEngine.UIElements
             inheritedData.CopyFrom(other.inheritedData);
             layoutData.CopyFrom(other.layoutData);
             rareData.CopyFrom(other.rareData);
+            transformData.CopyFrom(other.transformData);
             visualData.CopyFrom(other.visualData);
 
             yogaNode = other.yogaNode;
@@ -316,6 +326,12 @@ namespace UnityEngine.UIElements
                     case StylePropertyId.Right:
                         layoutData.Write().right = reader.ReadLength(0);
                         break;
+                    case StylePropertyId.Rotate:
+                        transformData.Write().rotate = reader.ReadRotate(0);
+                        break;
+                    case StylePropertyId.Scale:
+                        transformData.Write().scale = reader.ReadScale(0);
+                        break;
                     case StylePropertyId.TextOverflow:
                         rareData.Write().textOverflow = (TextOverflow)reader.ReadEnum(StyleEnumType.TextOverflow, 0);
                         break;
@@ -324,6 +340,12 @@ namespace UnityEngine.UIElements
                         break;
                     case StylePropertyId.Top:
                         layoutData.Write().top = reader.ReadLength(0);
+                        break;
+                    case StylePropertyId.TransformOrigin:
+                        transformData.Write().transformOrigin = reader.ReadTransformOrigin(0);
+                        break;
+                    case StylePropertyId.Translate:
+                        transformData.Write().translate = reader.ReadTranslate(0);
                         break;
                     case StylePropertyId.UnityBackgroundImageTintColor:
                         rareData.Write().unityBackgroundImageTintColor = reader.ReadColor(0);
@@ -628,6 +650,26 @@ namespace UnityEngine.UIElements
             inheritedData.Write().textShadow = st;
         }
 
+        public void ApplyStyleTransformOrigin(TransformOrigin st)
+        {
+            transformData.Write().transformOrigin = st;
+        }
+
+        public void ApplyStyleTranslate(Translate translateValue)
+        {
+            transformData.Write().translate = translateValue;
+        }
+
+        public void ApplyStyleRotate(Rotate rotateValue)
+        {
+            transformData.Write().rotate = rotateValue;
+        }
+
+        public void ApplyStyleScale(Scale scaleValue)
+        {
+            transformData.Write().scale = scaleValue;
+        }
+
         public void ApplyInitialValue(StylePropertyReader reader)
         {
             switch (reader.propertyId)
@@ -821,6 +863,12 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.Right:
                     layoutData.Write().right = InitialStyle.right;
                     break;
+                case StylePropertyId.Rotate:
+                    transformData.Write().rotate = InitialStyle.rotate;
+                    break;
+                case StylePropertyId.Scale:
+                    transformData.Write().scale = InitialStyle.scale;
+                    break;
                 case StylePropertyId.TextOverflow:
                     rareData.Write().textOverflow = InitialStyle.textOverflow;
                     break;
@@ -829,6 +877,12 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.Top:
                     layoutData.Write().top = InitialStyle.top;
+                    break;
+                case StylePropertyId.TransformOrigin:
+                    transformData.Write().transformOrigin = InitialStyle.transformOrigin;
+                    break;
+                case StylePropertyId.Translate:
+                    transformData.Write().translate = InitialStyle.translate;
                     break;
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     rareData.Write().unityBackgroundImageTintColor = InitialStyle.unityBackgroundImageTintColor;

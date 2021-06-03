@@ -15,7 +15,7 @@ namespace UnityEditor
 
         internal GUIContent title { get { return m_Title; } }
 
-        public LightingExplorerTab(string title, Func<UnityEngine.Object[]> objects, Func<LightingExplorerTableColumn[]> columns)
+        public LightingExplorerTab(string title, Func<UnityEngine.Object[]> objects, Func<LightingExplorerTableColumn[]> columns, bool showFilterGUI = true)
         {
             if (objects() == null)
                 throw new ArgumentException("Objects are not allowed to be null", "objects");
@@ -25,7 +25,7 @@ namespace UnityEditor
 
             m_LightTable = new SerializedPropertyTable(title.Replace(" ", string.Empty), new SerializedPropertyDataStore.GatherDelegate(objects), () => {
                 return columns().Select(item => item.internalColumn).ToArray();
-            });
+            }, showFilterGUI);
             m_Title = EditorGUIUtility.TrTextContent(title);
         }
 

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Profiling;
 
 namespace UnityEngine.UIElements
 {
@@ -247,6 +248,8 @@ namespace UnityEngine.UIElements
             }
         }
 
+        static readonly ProfilerMarker k_OnGUIMarker = new ProfilerMarker("OnGUI");
+
         private void DoOnGUI(Event evt, Matrix4x4 parentTransform, Rect clippingRect, bool isComputingLayout, Rect layoutSize, Action onGUIHandler, bool canAffectFocus = true)
         {
             // Extra checks are needed here because client code might have changed the IMGUIContainer
@@ -344,7 +347,10 @@ namespace UnityEngine.UIElements
             {
                 using (new GUIClip.ParentClipScope(parentTransform, clippingRect))
                 {
-                    onGUIHandler();
+                    using (k_OnGUIMarker.Auto())
+                    {
+                        onGUIHandler();
+                    }
                 }
             }
             catch (Exception exception)
@@ -531,14 +537,19 @@ namespace UnityEngine.UIElements
             }
         }
 
+        static readonly ProfilerMarker k_ImmediateCallbackMarker = new ProfilerMarker(nameof(IMGUIContainer));
+
         // This is the IStylePainterInternal.DrawImmediate callback
         private void DoIMGUIRepaint()
         {
-            var offset = elementPanel.repaintData.currentOffset;
-            m_CachedClippingRect = ComputeAAAlignedBound(worldClipImmediate, offset);
-            m_CachedTransform = offset * worldTransform;
+            using (k_ImmediateCallbackMarker.Auto())
+            {
+                var offset = elementPanel.repaintData.currentOffset;
+                m_CachedClippingRect = ComputeAAAlignedBound(worldClipImmediate, offset);
+                m_CachedTransform = offset * worldTransform;
 
-            HandleIMGUIEvent(elementPanel.repaintData.repaintEvent, m_CachedTransform, m_CachedClippingRect, onGUIHandler, true);
+                HandleIMGUIEvent(elementPanel.repaintData.repaintEvent, m_CachedTransform, m_CachedClippingRect, onGUIHandler, true);
+            }
         }
 
         internal bool SendEventToIMGUI(EventBase evt, bool canAffectFocus = true, bool verifyBounds = true)

@@ -435,6 +435,7 @@ namespace Unity.UI.Builder
                         Section.LocalStyles);
                     break;
                 case BuilderSelectionType.ElementInTemplateInstance:
+                case BuilderSelectionType.ElementInControlInstance:
                 case BuilderSelectionType.ElementInParentDocument:
                 case BuilderSelectionType.Element:
                     EnableSections(
@@ -448,10 +449,18 @@ namespace Unity.UI.Builder
                     return;
             }
             bool selectionInTemplateInstance = m_Selection.selectionType == BuilderSelectionType.ElementInTemplateInstance;
+            bool selectionInControlInstance = m_Selection.selectionType == BuilderSelectionType.ElementInControlInstance;
             bool selectionInParentSelector = m_Selection.selectionType == BuilderSelectionType.ParentStyleSelector;
             bool selectionInParentDocument = m_Selection.selectionType == BuilderSelectionType.ElementInParentDocument;
-            if (selectionInTemplateInstance || selectionInParentSelector || selectionInParentDocument)
+
+            if (selectionInTemplateInstance || selectionInParentSelector || selectionInParentDocument || selectionInControlInstance)
+            {
                 DisableFields();
+            }
+            if (selectionInTemplateInstance && !string.IsNullOrEmpty(currentVisualElement.name))
+            {
+                m_AttributesSection.Enable();
+            }
 
             // Bind the style selector controls.
             m_SelectorSection.Refresh();
@@ -470,6 +479,11 @@ namespace Unity.UI.Builder
             m_LocalStylesSection.Refresh();
 
             m_CanvasSection.Refresh();
+
+            if (selectionInTemplateInstance)
+            {
+                m_AttributesSection.DisableNameRow();
+            }
         }
 
         public void OnAfterBuilderDeserialize()

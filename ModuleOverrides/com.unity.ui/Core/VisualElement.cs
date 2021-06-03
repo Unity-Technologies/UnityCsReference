@@ -201,10 +201,7 @@ namespace UnityEngine.UIElements
                 ve.name = m_Name.GetValueFromBag(bag, cc);
                 ve.viewDataKey = m_ViewDataKey.GetValueFromBag(bag, cc);
                 ve.pickingMode = m_PickingMode.GetValueFromBag(bag, cc);
-                // usageHints can't be changed if the element is attached to a panel. Here we ignore usageHints if the VE is attached to a panel already.
-                // This happens in the UIBuilder, and the hints don't cause visual or behavioral differences, so it is safe from an editing experience stand point.
-                if (ve.panel == null)
-                    ve.usageHints = m_UsageHints.GetValueFromBag(bag, cc);
+                ve.usageHints = m_UsageHints.GetValueFromBag(bag, cc);
 
                 int index = 0;
                 if (focusIndex.TryGetValueFromBag(bag, cc, ref index))
@@ -347,27 +344,29 @@ namespace UnityEngine.UIElements
             get
             {
                 return
-                    (((m_RenderHints & RenderHints.GroupTransform) != 0) ? UsageHints.GroupTransform : 0) |
-                    (((m_RenderHints & RenderHints.BoneTransform) != 0) ? UsageHints.DynamicTransform : 0) |
-                    (((m_RenderHints & RenderHints.MaskContainer) != 0) ? UsageHints.MaskContainer : 0);
+                    (((renderHints & RenderHints.GroupTransform) != 0) ? UsageHints.GroupTransform : 0) |
+                    (((renderHints & RenderHints.BoneTransform) != 0) ? UsageHints.DynamicTransform : 0) |
+                    (((renderHints & RenderHints.MaskContainer) != 0) ? UsageHints.MaskContainer : 0) |
+                    (((renderHints & RenderHints.DynamicColor) != 0) ? UsageHints.DynamicColor : 0);
             }
             set
             {
-                if (panel != null)
-                    throw new InvalidOperationException("usageHints cannot be changed once the VisualElement is part of an active visual tree");
-
                 // Preserve hints not exposed through UsageHints
                 if ((value & UsageHints.GroupTransform) != 0)
-                    m_RenderHints |= RenderHints.GroupTransform;
-                else m_RenderHints &= ~RenderHints.GroupTransform;
+                    renderHints |= RenderHints.GroupTransform;
+                else renderHints &= ~RenderHints.GroupTransform;
 
                 if ((value & UsageHints.DynamicTransform) != 0)
-                    m_RenderHints |= RenderHints.BoneTransform;
-                else m_RenderHints &= ~RenderHints.BoneTransform;
+                    renderHints |= RenderHints.BoneTransform;
+                else renderHints &= ~RenderHints.BoneTransform;
 
                 if ((value & UsageHints.MaskContainer) != 0)
-                    m_RenderHints |= RenderHints.MaskContainer;
-                else m_RenderHints &= ~RenderHints.MaskContainer;
+                    renderHints |= RenderHints.MaskContainer;
+                else renderHints &= ~RenderHints.MaskContainer;
+
+                if ((value & UsageHints.DynamicColor) != 0)
+                    renderHints |= RenderHints.DynamicColor;
+                else renderHints &= ~RenderHints.DynamicColor;
             }
         }
 
@@ -377,22 +376,33 @@ namespace UnityEngine.UIElements
             get { return m_RenderHints; }
             set
             {
-                if (panel != null)
-                    throw new InvalidOperationException("renderHints cannot be changed once the VisualElement is part of an active visual tree");
-                m_RenderHints = value;
+                // Filter out the dirty flags
+                RenderHints oldHints = m_RenderHints & ~RenderHints.DirtyAll;
+                RenderHints newHints = value & ~RenderHints.DirtyAll;
+                RenderHints changedHints = oldHints ^ newHints;
+
+                if (changedHints != 0)
+                {
+                    RenderHints oldDirty = m_RenderHints & RenderHints.DirtyAll;
+                    RenderHints addDirty = (RenderHints)((int)changedHints << (int)RenderHints.DirtyOffset);
+
+                    m_RenderHints = newHints | oldDirty | addDirty;
+                    IncrementVersion(VersionChangeType.RenderHints);
+                }
             }
         }
 
+        // Dirty flags cannot be removed by the renderHints setter
+        // This method must ONLY be called from the renderer
+        internal void MarkRenderHintsClean()
+        {
+            m_RenderHints &= ~RenderHints.DirtyAll;
+        }
+
         internal Rect lastLayout;
-        internal Rect lastPadding;
+        internal Rect lastPseudoPadding;
         internal RenderChainVEData renderChainData;
 
-        // m_Pivot will be soon replaced by the resolved style and will default to  Vector3(float.NaN, float.NaN, 0);
-        Vector3 m_Pivot = Vector3.zero;
-
-        Vector3 m_Position = Vector3.zero;
-        Quaternion m_Rotation = Quaternion.identity;
-        Vector3 m_Scale = Vector3.one;
 
         /// <summary>
         /// Returns a transform object for this VisualElement.
@@ -406,39 +416,15 @@ namespace UnityEngine.UIElements
             get { return this; }
         }
 
-        internal Vector3 transformOrigin
-        {
-            get
-            {
-                var pivot = m_Pivot;
-                if (float.IsNaN(pivot.x))
-                    pivot.x = layout.width / 2.0f;
-                if (float.IsNaN(pivot.y))
-                    pivot.y = layout.height / 2.0f;
-
-                return pivot;
-            }
-            set
-            {
-                if (m_Pivot == value)
-                    return;
-                m_Pivot = value;
-                IncrementVersion(VersionChangeType.Transform | VersionChangeType.Size);
-            }
-        }
-
         Vector3 ITransform.position
         {
             get
             {
-                return m_Position;
+                return resolvedStyle.translate;
             }
             set
             {
-                if (m_Position == value)
-                    return;
-                m_Position = value;
-                IncrementVersion(VersionChangeType.Transform);
+                style.translate = new Translate(value.x, value.y, value.z);
             }
         }
 
@@ -446,15 +432,12 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                return m_Rotation;
+                return resolvedStyle.rotate.ToQuaternion();
             }
             set
             {
-                if (m_Rotation == value)
-                    return;
-                m_Rotation = value;
-
-                IncrementVersion(VersionChangeType.Transform);
+                value.ToAngleAxis(out float angle, out Vector3 axis);
+                style.rotate = new Rotate(angle, axis);
             }
         }
 
@@ -462,26 +445,23 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                return m_Scale;
+                return resolvedStyle.scale.value;
             }
             set
             {
-                if (m_Scale == value)
-                    return;
-                m_Scale = value;
-                IncrementVersion(VersionChangeType.Transform | VersionChangeType.Layout /*This will change how we measure text*/);
+                style.scale = new Scale(value);
             }
         }
 
         internal Vector3 ComputeGlobalScale()
         {
-            Vector3 result = m_Scale;
+            Vector3 result = resolvedStyle.scale.value;
 
             var ve = this.hierarchy.parent;
 
             while (ve != null)
             {
-                result.Scale(ve.m_Scale);
+                result.Scale(ve.resolvedStyle.scale.value);
                 ve = ve.hierarchy.parent;
             }
             return result;
@@ -489,7 +469,7 @@ namespace UnityEngine.UIElements
 
         Matrix4x4 ITransform.matrix
         {
-            get { return Matrix4x4.TRS(m_Position, m_Rotation, m_Scale); }
+            get { return Matrix4x4.TRS(resolvedStyle.translate, resolvedStyle.rotate.ToQuaternion(), resolvedStyle.scale.value); }
         }
 
         internal bool isLayoutManual
@@ -1469,13 +1449,16 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public Action<MeshGenerationContext> generateVisualContent { get; set; }
 
+        Unity.Profiling.ProfilerMarker k_GenerateVisualContentMarker = new Unity.Profiling.ProfilerMarker("GenerateVisualContent");
+
         internal void InvokeGenerateVisualContent(MeshGenerationContext mgc)
         {
             if (generateVisualContent != null)
             {
                 try
                 {
-                    generateVisualContent(mgc);
+                    using (k_GenerateVisualContentMarker.Auto())
+                        generateVisualContent(mgc);
                 }
                 catch (Exception e)
                 {
@@ -1754,6 +1737,11 @@ namespace UnityEngine.UIElements
             var previousBorderBottomWidth = m_Style.borderBottomWidth;
             var previousOpacity = m_Style.opacity;
 
+            var previousTransformOrigin = m_Style.transformOrigin;
+            var previousTranslate = m_Style.translate;
+            var previousScale = m_Style.scale;
+            var previousRotate = m_Style.rotate;
+
             // Here we do a "smart" copy of the style instead of just acquiring them to prevent additional GC alloc.
             // If this element has no inline styles it will release the current style data group and acquire the new one.
             // However, when there a inline styles the style data group that is inline will have a ref count of 1
@@ -1790,6 +1778,14 @@ namespace UnityEngine.UIElements
 
             if (m_Style.opacity != previousOpacity)
                 changes |= VersionChangeType.Opacity;
+
+            if (previousTransformOrigin != m_Style.transformOrigin ||
+                previousTranslate != m_Style.translate ||
+                previousScale != m_Style.scale ||
+                previousRotate != m_Style.rotate)
+            {
+                changes |= VersionChangeType.Transform;
+            }
 
             // This is a pre-emptive since we do not know if style changes actually cause a repaint or a layout
             // But those should be the only possible type of changes needed

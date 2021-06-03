@@ -277,8 +277,10 @@ namespace UnityEditorInternal
                         continue;
 
                     // add leaf event to current level
-                    var eventGo = FrameDebuggerUtility.GetFrameEventGameObject(i);
-                    var displayName = eventGo ? " " + eventGo.name : string.Empty;
+                    var eventObj = FrameDebuggerUtility.GetFrameEventObject(i);
+                    var displayName = string.Empty;
+                    if (eventObj)
+                        displayName = " " + eventObj.name;
                     FDTreeHierarchyLevel parentEvent = eventStack[eventStack.Count - 1];
                     var leafEventID = i + 1;
                     var item = new FDTreeViewItem(leafEventID, eventStack.Count - 1, parentEvent.item, displayName);

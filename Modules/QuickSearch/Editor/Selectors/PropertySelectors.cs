@@ -85,11 +85,27 @@ namespace UnityEditor.Search
             if (property != null)
                 return property;
 
+            using (var view = SearchMonitor.GetView())
             {
+                var unresolvedPropertyPath = $"{obj.GetType().Name}.{propertyPath}";
+                var propertyPathRecordKey = PropertyDatabase.CreateRecordKey(obj.GetType().Name, unresolvedPropertyPath);
+                if (view.TryLoadAlias(propertyPathRecordKey, out var resolvedPropertyPath))
+                {
+                    if (string.IsNullOrEmpty(resolvedPropertyPath))
+                    {
+                        so?.Dispose();
+                        return null;
+                    }
+
+                    var resolvedProperty = so.FindProperty(resolvedPropertyPath);
+                    if (resolvedProperty != null)
+                        return resolvedProperty;
+                }
 
                 property = so.FindProperty($"m_{propertyPath}");
                 if (property != null)
                 {
+                    view.StoreAlias(propertyPathRecordKey, property.propertyPath);
                     return property;
                 }
 
@@ -99,11 +115,13 @@ namespace UnityEditor.Search
                 {
                     if (property.name.EndsWith(propertyPath, StringComparison.OrdinalIgnoreCase))
                     {
+                        view.StoreAlias(propertyPathRecordKey, property.propertyPath);
                         return property;
                     }
                     next = property.NextVisible(property.hasChildren);
                 }
 
+                view.StoreAlias(propertyPathRecordKey, string.Empty);
                 so?.Dispose();
                 so = null;
                 return null;
@@ -447,12 +465,6 @@ namespace UnityEditor.Search
                     return prop;
                 }
 
-                // TODO
-                public static object DrawVector4Handler(Rect r, SerializedProperty prop)
-                {
-                    return null;
-                }
-
                 public static object DrawDefaultHandler(Rect r, SerializedProperty prop)
                 {
                     var fieldContent = Utils.GUIContentTemp(string.Empty);
@@ -526,7 +538,6 @@ namespace UnityEditor.Search
                 {
                     case SerializedPropertyType.Boolean: return DefaultDelegates.DrawCheckboxHandler(r, sp);
                     case SerializedPropertyType.Quaternion: return DefaultDelegates.DrawQuaternionHandler(r, sp);
-                    case SerializedPropertyType.Vector4: return DefaultDelegates.DrawVector4Handler(r, sp);
                     default: return DefaultDelegates.DrawDefaultHandler(r, sp);
                 }
             }

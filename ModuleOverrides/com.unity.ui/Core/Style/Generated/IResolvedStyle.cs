@@ -213,6 +213,14 @@ namespace UnityEngine.UIElements
         /// </summary>
         float right { get; }
         /// <summary>
+        /// A rotation transformation.
+        /// </summary>
+        Rotate rotate { get; }
+        /// <summary>
+        /// A scaling transformation.
+        /// </summary>
+        Scale scale { get; }
+        /// <summary>
         /// The element's text overflow mode.
         /// </summary>
         TextOverflow textOverflow { get; }
@@ -220,6 +228,14 @@ namespace UnityEngine.UIElements
         /// Top distance from the element's box during layout.
         /// </summary>
         float top { get; }
+        /// <summary>
+        /// The transformation origin is the point around which a transformation is applied.
+        /// </summary>
+        Vector3 transformOrigin { get; }
+        /// <summary>
+        /// A translate transformation.
+        /// </summary>
+        Vector3 translate { get; }
         /// <summary>
         /// Tinting color for the element's backgroundImage.
         /// </summary>

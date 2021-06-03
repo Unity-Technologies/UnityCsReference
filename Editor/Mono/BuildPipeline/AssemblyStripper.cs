@@ -320,7 +320,7 @@ namespace UnityEditorInternal
 
             var sb = new StringBuilder();
             sb.AppendLine("<linker>");
-            foreach (var assemblyTypePair in items)
+            foreach (var assemblyTypePair in items.OrderBy(t => t.Key))
             {
                 // Some how stuff for assemblies that will not be in the build make it into UsedTypePerUserAssembly such as
                 // ex: [UnityEditor.TestRunner.dll] UnityEditor.TestTools.TestRunner.TestListCacheData
@@ -330,7 +330,7 @@ namespace UnityEditorInternal
                     continue;
 
                 sb.AppendLine($"\t<assembly fullname=\"{Path.GetFileNameWithoutExtension(assemblyTypePair.Key)}\">");
-                foreach (var type in assemblyTypePair.Value)
+                foreach (var type in assemblyTypePair.Value.OrderBy(s => s))
                 {
                     sb.AppendLine($"\t\t<type fullname=\"{type}\" preserve=\"nothing\"/>");
                 }
@@ -350,7 +350,7 @@ namespace UnityEditorInternal
             var oneOrMoreItemsWritten = false;
             var sb = new StringBuilder();
             sb.AppendLine("<linker>");
-            foreach (var assemblyTypePair in items)
+            foreach (var assemblyTypePair in items.OrderBy(t => t.Key))
             {
                 // Filter anything out where the assembly doesn't exist so that UnityLinker can be strict about preservations in link xml files
                 var assemblyPathWithoutExtension = Path.Combine(managedAssemblyDirectory, assemblyTypePair.Key);
@@ -358,7 +358,7 @@ namespace UnityEditorInternal
                     continue;
 
                 sb.AppendLine($"\t<assembly fullname=\"{assemblyTypePair.Key}\">");
-                foreach (var type in assemblyTypePair.Value)
+                foreach (var type in assemblyTypePair.Value.OrderBy(s => s))
                 {
                     oneOrMoreItemsWritten = true;
                     sb.AppendLine($"\t\t<type fullname=\"{type}\" preserve=\"nothing\" serialized=\"true\"/>");
@@ -419,7 +419,7 @@ namespace UnityEditorInternal
 
         public static void WriteEditorData(UnityLinkerRunInformation runInformation)
         {
-            var items = GetTypesInScenesInformation(runInformation.managedAssemblyFolderPath, runInformation.rcr);
+            var items = GetTypesInScenesInformation(runInformation.managedAssemblyFolderPath, runInformation.rcr).OrderBy(data => data.fullManagedTypeName ?? data.nativeClass);
 
             List<string> forceIncludeModules;
             List<string> forceExcludeModules;
@@ -444,7 +444,7 @@ namespace UnityEditorInternal
                 var unityType = UnityType.FindTypeByName(nativeClass);
 
                 var managedName = RuntimeClassMetadataUtils.ScriptingWrapperTypeNameForNativeID(unityType.persistentTypeID);
-                var usedInScenes = rcr.GetScenesForClass(unityType.persistentTypeID);
+                var usedInScenes = rcr.GetScenesForClass(unityType.persistentTypeID)?.OrderBy(p => p);
 
                 bool noManagedType = unityType.persistentTypeID != 0 && managedName == "UnityEngine.Object";
                 var information = new EditorToLinkerData.TypeInSceneData(
@@ -527,15 +527,15 @@ namespace UnityEditorInternal
             sb.AppendLine("<linker>");
 
             var groupedByAssembly = rcr.GetMethodsToPreserve().GroupBy(m => m.assembly);
-            foreach (var assembly in groupedByAssembly)
+            foreach (var assembly in groupedByAssembly.OrderBy(a => a.Key))
             {
                 var assemblyName = assembly.Key;
                 sb.AppendLine(string.Format("\t<assembly fullname=\"{0}\" ignoreIfMissing=\"1\">", assemblyName));
                 var groupedByType = assembly.GroupBy(m => m.fullTypeName);
-                foreach (var type in groupedByType)
+                foreach (var type in groupedByType.OrderBy(t => t.Key))
                 {
                     sb.AppendLine(string.Format("\t\t<type fullname=\"{0}\">", type.Key));
-                    foreach (var method in type)
+                    foreach (var method in type.OrderBy(m => m.methodName))
                         sb.AppendLine(string.Format("\t\t\t<method name=\"{0}\"/>", method.methodName));
                     sb.AppendLine("\t\t</type>");
                 }

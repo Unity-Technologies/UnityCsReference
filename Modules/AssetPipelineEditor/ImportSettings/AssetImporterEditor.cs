@@ -623,8 +623,12 @@ namespace UnityEditor.AssetImporters
 
         bool CanEditorSurviveAssemblyReload()
         {
-            var script = new SerializedObject(this).FindProperty("m_Script").objectReferenceValue as MonoScript;
-            return script != null && AssetDatabase.Contains(script);
+            using (var so = new SerializedObject(this))
+            using (var prop = so.FindProperty("m_Script"))
+            {
+                var script = prop.objectReferenceValue as MonoScript;
+                return script != null && AssetDatabase.Contains(script);
+            }
         }
 
         bool IsClosingInspector()

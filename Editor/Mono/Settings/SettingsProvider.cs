@@ -132,6 +132,10 @@ namespace UnityEditor
             keywords = GetSearchKeywordsFromGUIContentProperties<T>();
         }
 
+        internal virtual void FocusLost()
+        {
+        }
+
         #region Helper
         public static IEnumerable<string> GetSearchKeywordsFromGUIContentProperties<T>()
         {

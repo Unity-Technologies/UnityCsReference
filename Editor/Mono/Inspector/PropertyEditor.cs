@@ -583,6 +583,7 @@ namespace UnityEditor
 
             menu.AddSeparator("");
             menu.AddItem(EditorGUIUtility.TrTextContent("Ping"), false, () => EditorGUIUtility.PingObject(GetInspectedObject()));
+            menu.AddItem(EditorGUIUtility.TrTextContent("Open in Import Activity Window"), false, () => ImportActivityWindow.OpenFromPropertyEditor(GetInspectedObject()));
         }
 
         private void SetTrackerExpandedState(ActiveEditorTracker tracker, int editorIndex, bool expanded)

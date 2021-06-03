@@ -13,7 +13,7 @@ namespace Unity.UI.Builder
 
     internal abstract class StyleField<T> : StyleFieldBase
     {
-        protected static readonly string s_NoOptionString = "-";
+        internal static readonly string s_NoOptionString = "-";
 
         static readonly string s_UssPath = BuilderConstants.UtilitiesPath + "/StyleField/StyleField.uss";
         static readonly string s_UxmlPath = BuilderConstants.UtilitiesPath + "/StyleField/StyleField.uxml";
@@ -68,6 +68,8 @@ namespace Unity.UI.Builder
         }
 
         public bool isKeyword => m_StyleKeywords.Contains(option);
+
+        public bool populatesOptionsMenuFromParentRow { get; set; } = true;
 
         public StyleField() : this(null) {}
 
@@ -197,16 +199,25 @@ namespace Unity.UI.Builder
                 return;
             }
 
-            var row = GetFirstAncestorOfType<BuilderStyleRow>();
-            if (row != null && !string.IsNullOrEmpty(row.bindingPath)) {
-                UpdateOptionsMenu(row.bindingPath);
-                return;
+            if (populatesOptionsMenuFromParentRow)
+            {
+                var row = GetFirstAncestorOfType<BuilderStyleRow>();
+                if (row != null && !string.IsNullOrEmpty(row.bindingPath))
+                {
+                    UpdateOptionsMenu(row.bindingPath);
+                    return;
+                }
             }
         }
 
         protected virtual List<string> GenerateAdditionalOptions(string binding)
         {
             return new List<string>();
+        }
+
+        public void UpdateOptionsMenu()
+        {
+            UpdateOptionsMenu(bindingPath);
         }
 
         void UpdateOptionsMenu(string binding)

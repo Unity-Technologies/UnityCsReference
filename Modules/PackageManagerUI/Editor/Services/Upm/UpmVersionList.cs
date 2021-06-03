@@ -91,7 +91,17 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private string m_LifecycleVersionString;
         private SemVersion? m_LifecycleVersion;
-        internal string lifecycleVersion => m_LifecycleVersionString;
+        internal string lifecycleVersionString => m_LifecycleVersionString;
+
+        // the lifeCycle version from the Editor manifest, if it exists
+        public IPackageVersion lifecycleVersion
+        {
+            get
+            {
+                return m_LifecycleVersion == null ? null : m_Versions.FirstOrDefault(v => !v.HasTag(PackageTag.Custom | PackageTag.Local | PackageTag.Git) && v.version == m_LifecycleVersion);
+            }
+        }
+
         // the latest patch of lifecycle version if it exists, or the exact
         //  version if version is set to a pre-release
         private IPackageVersion actualLifecycleVersion
@@ -175,6 +185,19 @@ namespace UnityEditor.PackageManager.UI.Internal
         public IPackageVersion primary => installed ?? recommended ?? latest;
 
         public IPackageVersion importAvailable => null;
+
+        // Right now we only want to compare the version itself,
+        // If the user installs a local, git or embedded package with the same version string as the lifecycle version, it is consider as a non lifecycle version
+        // We also consider that installation as the `lifecycle` version. We might change this behaviour later
+        public bool isNonLifecycleVersionInstalled
+        {
+            get
+            {
+                var installed = this.installed;
+                var lifecycleVersion = this.lifecycleVersion;
+                return installed != null && lifecycleVersion != null && (installed.HasTag(PackageTag.Custom | PackageTag.Git | PackageTag.Local) || installed.version != lifecycleVersion.version);
+            }
+        }
 
         internal void UpdateVersion(UpmPackageVersion version)
         {

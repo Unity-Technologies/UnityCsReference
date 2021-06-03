@@ -2,18 +2,18 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
 using System.Linq;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Events;
-using TierSettingsEditor            = UnityEditor.GraphicsSettingsWindow.TierSettingsEditor;
-using BuiltinShadersEditor          = UnityEditor.GraphicsSettingsWindow.BuiltinShadersEditor;
-using VideoShadersEditor            = UnityEditor.GraphicsSettingsWindow.VideoShadersEditor;
-using AlwaysIncludedShadersEditor   = UnityEditor.GraphicsSettingsWindow.AlwaysIncludedShadersEditor;
-using ShaderStrippingEditor         = UnityEditor.GraphicsSettingsWindow.ShaderStrippingEditor;
-using ShaderPreloadEditor           = UnityEditor.GraphicsSettingsWindow.ShaderPreloadEditor;
 using UnityEngine.Rendering;
+using AlwaysIncludedShadersEditor = UnityEditor.GraphicsSettingsWindow.AlwaysIncludedShadersEditor;
+using BuiltinShadersEditor = UnityEditor.GraphicsSettingsWindow.BuiltinShadersEditor;
+using Object = UnityEngine.Object;
+using ShaderPreloadEditor = UnityEditor.GraphicsSettingsWindow.ShaderPreloadEditor;
+using ShaderStrippingEditor = UnityEditor.GraphicsSettingsWindow.ShaderStrippingEditor;
+using TierSettingsEditor = UnityEditor.GraphicsSettingsWindow.TierSettingsEditor;
+using VideoShadersEditor = UnityEditor.GraphicsSettingsWindow.VideoShadersEditor;
 
 namespace UnityEditor
 {
@@ -137,16 +137,8 @@ namespace UnityEditor
             serializedObject.Update();
 
             GUILayout.Label(Styles.renderPipeSettings, EditorStyles.boldLabel);
-            Rect renderLoopRect = EditorGUILayout.GetControlRect(true, EditorGUI.GetPropertyHeight(m_ScriptableRenderLoop));
-
-            EditorGUI.BeginProperty(renderLoopRect, Styles.renderPipeLabel, m_ScriptableRenderLoop);
-
-            m_ScriptableRenderLoop.objectReferenceValue =
-                EditorGUI.ObjectField(renderLoopRect, m_ScriptableRenderLoop.objectReferenceValue, typeof(RenderPipelineAsset), false);
-
-            EditorGUI.EndProperty();
+            RenderPipelineAssetSelector.Draw(serializedObject, m_ScriptableRenderLoop);
             EditorGUILayout.Space();
-
 
             bool usingSRP = GraphicsSettings.currentRenderPipeline != null;
             if (usingSRP)

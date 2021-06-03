@@ -74,7 +74,8 @@ namespace UnityEditor.Overlays
         const string k_ToolbarZone = "overlay-toolbar-zone";
         const string k_ToolbarArea = "overlay-toolbar-area";
         const string k_DropTargetClassName = "overlay-droptarget";
-        const string k_GhostClassName = "overlay-dummy";
+        const string k_GhostClassName = "overlay-ghost";
+        const string k_GhostAreaHovered = "unity-overlay-in-ghost-area";
         const string k_DefaultContainer = "overlay-container-default";
         static VisualTreeAsset s_TreeAsset;
         static VisualTreeAsset s_DropZoneTreeAsset;
@@ -238,6 +239,7 @@ namespace UnityEditor.Overlays
                 container.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
             foreach (var toolbar in toolbarZones)
                 toolbar.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+            floatingContainer.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         public void Show(Overlay overlay)
@@ -315,6 +317,9 @@ namespace UnityEditor.Overlays
         //clamp all overlays to  root visual element's new bounds
         void GeometryChanged(GeometryChangedEvent evt)
         {
+            if (!overlaysEnabled)
+                return;
+
             foreach (var overlay in m_Overlays)
             {
                 //force an update of the floating position
@@ -508,6 +513,41 @@ namespace UnityEditor.Overlays
             m_Initialized = false;
         }
 
+        //returns first overlay, spacer or ghost that is docked
+        VisualElement GetDockedOverlay(List<VisualElement> pickingList)
+        {
+            foreach (var visualElement in pickingList)
+            {
+                if (visualElement.ClassListContains(Overlay.ussClassName) ||
+                    visualElement.ClassListContains(OverlayContainer.spacerClassName) ||
+                    visualElement.ClassListContains(k_GhostClassName))
+                {
+                    if (GetContainer(visualElement) != null)
+                        return visualElement;
+                }
+            }
+
+            return null;
+        }
+
+        //returns first OverlayContainer in parent hierarchy of the visual element
+        static OverlayContainer GetContainer(VisualElement element)
+        {
+            var parent = element.parent;
+            while (parent != null)
+            {
+                var container = parent as OverlayContainer;
+                if (container != null)
+                {
+                    return container;
+                }
+
+                parent = parent.parent;
+            }
+
+            return null;
+        }
+
         internal Rect GetOriginGhostWorldBound()
         {
             return m_OriginGhost.parent == null ? new Rect(-1000, -1000, 0, 0) : m_OriginGhost.worldBound;
@@ -525,6 +565,11 @@ namespace UnityEditor.Overlays
             m_OriginGhost.style.width = overlay.rootVisualElement.layout.width;
             m_OriginGhost.style.height = overlay.rootVisualElement.layout.height;
             overlay.container.Insert(overlay.container.IndexOf(overlay.rootVisualElement), m_OriginGhost);
+        }
+
+        internal void UpdateGhostHover(bool hovered)
+        {
+            m_OriginGhost.EnableInClassList(k_GhostAreaHovered, hovered);
         }
 
         public void OnBeforeSerialize()
@@ -655,24 +700,27 @@ namespace UnityEditor.Overlays
                     m_ContainerFromId.Add(container.name, container);
             }
 
-            //Sort by index to prepare to add in correct order
-            m_SaveData.Sort((x, y) => x.index.CompareTo(y.index));
+            var overlaysToAdd = new Dictionary<string, Overlay>();
             foreach (var overlay in overlays)
             {
                 overlay.container?.RemoveOverlay(overlay);
+                overlaysToAdd.Add(overlay.id, overlay);
             }
 
-            foreach (var overlay in overlays)
+            //Sort by index to prepare to add in correct order
+            m_SaveData.Sort((x, y) => x.index.CompareTo(y.index));
+            foreach (var saveData in m_SaveData)
             {
-                if (saveDataById.TryGetValue(overlay.id, out var saveData))
+                if (overlaysToAdd.TryGetValue(saveData.id, out var overlay))
                 {
                     ApplySaveDataToOverlay(saveData, overlay);
-                }
-                else
-                {
-                    ApplyDefaultDataToOverlay(overlay);
+                    overlaysToAdd.Remove(overlay.id);
                 }
             }
+
+            // Apply default data to remaining overlays
+            foreach (var idToOverlayPair in overlaysToAdd)
+                ApplyDefaultDataToOverlay(idToOverlayPair.Value);
         }
 
         public bool IsInToolbar(Overlay overlay)

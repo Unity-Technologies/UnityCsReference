@@ -219,7 +219,7 @@ namespace UnityEditor
             ClearPreviewCache();
             m_PreviewCache = null;
 
-            if (m_Name.stringValue == string.Empty)
+            if (string.IsNullOrEmpty(m_Name.stringValue) && !(string.IsNullOrEmpty(m_GOPreviousName)))
             {
                 Debug.LogWarning("A GameObject name cannot be set to an empty string.");
                 m_Name.stringValue = m_GOPreviousName;
@@ -360,7 +360,7 @@ namespace UnityEditor
                         {
                             // Name
                             // Resets the game object name when attempted to set it to an empty string
-                            if (m_Name.stringValue == string.Empty)
+                            if (string.IsNullOrEmpty(m_Name.stringValue) && !(string.IsNullOrEmpty(m_GOPreviousName)))
                             {
                                 Debug.LogWarning("A GameObject name cannot be set to an empty string.");
                                 m_Name.stringValue = m_GOPreviousName;

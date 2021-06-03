@@ -4,7 +4,6 @@
 
 using UnityEditor.EditorTools;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace UnityEditor.Toolbars
 {
@@ -15,7 +14,7 @@ namespace UnityEditor.Toolbars
         {
             GUIContent content = EditorToolManager.GetSingleton<T>().toolbarIcon ?? EditorToolUtility.GetIcon(typeof(T));
             tooltip = content.tooltip;
-            iconElement.style.backgroundImage = new StyleBackground(content.image as Texture2D);
+            icon = content.image as Texture2D;
         }
 
         protected override void SetToolActive()

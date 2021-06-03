@@ -24,10 +24,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             AlwaysVisible
         }
 
-        private static readonly string s_LocalizedTitle = L10n.Tr("Package '{0}' Manifest");
+        private static readonly string s_LocalizedTitle = L10n.Tr("{0} '{1}' Manifest");
         private static readonly string s_LocalizedMultipleTitle = L10n.Tr("{0} Package Manifests");
         private static readonly string s_LocalizedInvalidPackageManifest = L10n.Tr("Invalid Package Manifest");
-        private static readonly string s_LocalizedPackageManagerUINotInstalledWarning = L10n.Tr("Package Manager UI package is required to see selected packaged detail.");
 
         private const float kMinHeightDescriptionScrollView = 96f;
         private const int kMinimalUnityMajorVersionSupported = 2017;
@@ -109,15 +108,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         private static class Styles
         {
             public static readonly GUIContent information = EditorGUIUtility.TrTextContent("Information");
-            public static readonly GUIContent name = EditorGUIUtility.TrTextContent("Name", "Package name. Must be lowercase");
-            public static readonly GUIContent organizationName = EditorGUIUtility.TrTextContent("Organization name", "Package organization name. Must be lowercase and not include dots '.'");
+            public static readonly GUIContent name = EditorGUIUtility.TrTextContent("Name", "Must be lowercase");
+            public static readonly GUIContent organizationName = EditorGUIUtility.TrTextContent("Organization name", "Must be lowercase and not include dots '.'");
             public static readonly GUIContent displayName = EditorGUIUtility.TrTextContent("Display name", "Display name used in UI.");
-            public static readonly GUIContent version = EditorGUIUtility.TrTextContent("Version", "Package Version, much follow SemVer (ex: 1.0.0-preview.1).");
-            public static readonly GUIContent type = EditorGUIUtility.TrTextContent("Type", "Package Type (optional).");
+            public static readonly GUIContent version = EditorGUIUtility.TrTextContent("Version", "Must follow SemVer (ex: 1.0.0-preview.1).");
+            public static readonly GUIContent type = EditorGUIUtility.TrTextContent("Type", "Type (optional).");
 
             public static readonly GUIContent showAdvanced = EditorGUIUtility.TrTextContent("Advanced", "Show advanced settings.");
 
-            public static readonly GUIContent visibility = EditorGUIUtility.TrTextContent("Visibility in Editor", "Package visibility in Editor.");
+            public static readonly GUIContent visibility = EditorGUIUtility.TrTextContent("Visibility in Editor");
 
             public static readonly GUIContent unity = EditorGUIUtility.TrTextContent("Minimal Unity Version");
             public static readonly GUIContent unityMajor = EditorGUIUtility.TrTextContent("Major", "Major version of Unity");
@@ -127,7 +126,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             public static readonly GUIContent description = EditorGUIUtility.TrTextContent("Brief Description");
 
             public static readonly GUIContent dependencies = EditorGUIUtility.TrTextContent("Dependencies");
-            public static readonly GUIContent package = EditorGUIUtility.TrTextContent("Package name", "Package name. Must be lowercase");
+            public static readonly GUIContent package = EditorGUIUtility.TrTextContent("Package name", "Must be lowercase");
 
             public static readonly GUIContent viewInPackageManager = EditorGUIUtility.TrTextContent("View in Package Manager");
         }
@@ -163,6 +162,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private SerializedProperty m_Advanced;
         private SerializedProperty m_Visibility;
 
+        private bool isFeatureSet => m_Type?.stringValue == "feature";
+
         internal override string targetTitle
         {
             get
@@ -172,7 +173,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                     return string.Format(s_LocalizedMultipleTitle, targets.Length);
                 }
 
-                return string.Format(s_LocalizedTitle,
+                var packageDescriptor = EditorGUIUtility.TrTextContent(isFeatureSet ? "Feature" : "Package");
+                return string.Format(s_LocalizedTitle, packageDescriptor,
                     packageState != null && packageState.isValidFile ? !string.IsNullOrWhiteSpace(packageState.info.displayName) ? packageState.info.displayName.Trim() : packageState.info.packageName.completeName : s_LocalizedInvalidPackageManifest);
             }
         }
@@ -226,8 +228,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             ReadPackageManifest(targets[targetIndex], (PackageManifestState)extraData);
         }
 
-        private static void DrawDependencyHeaderElement(Rect rect)
+        private void DrawDependencyHeaderElement(Rect rect)
         {
+            if (isFeatureSet)
+            {
+                GUI.Label(rect, Styles.package, EditorStyles.label);
+                return;
+            }
+
             var w = rect.width;
             rect.x += 4;
             rect.width = w / 3 * 2 - 2;
@@ -246,13 +254,19 @@ namespace UnityEditor.PackageManager.UI.Internal
             var version = dependency.FindPropertyRelative("version");
 
             var w = rect.width;
-            rect.x += 4;
-            rect.width = w / 3 * 2 - 2;
+            if (!isFeatureSet)
+            {
+                rect.x += 4;
+                rect.width = w / 3 * 2 - 2;
+            }
             rect.height -= EditorGUIUtility.standardVerticalSpacing;
             packageName.stringValue = EditorGUI.DelayedTextField(rect, packageName.stringValue);
 
             if (!string.IsNullOrWhiteSpace(packageName.stringValue) && !PackageValidation.ValidateName(packageName.stringValue))
                 errorMessages.Add($"Invalid Dependency Package Name '{packageName.stringValue}'");
+
+            if (isFeatureSet)
+                return;
 
             using (new EditorGUI.DisabledScope(string.IsNullOrWhiteSpace(packageName.stringValue)))
             {
@@ -300,6 +314,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_OrganizationName.stringValue = EditorGUILayout.DelayedTextFieldDropDown(Styles.organizationName, m_OrganizationName.stringValue.ToLower(), Connect.UnityConnect.instance.userInfo.organizationNames);
                 EditorGUILayout.DelayedTextField(m_DisplayName, Styles.displayName);
                 EditorGUILayout.DelayedTextField(m_Version, Styles.version);
+
+                if (isFeatureSet)
+                    return;
+
                 m_Type.stringValue = EditorGUILayout.DelayedTextFieldDropDown(Styles.type, m_Type.stringValue, PackageInfo.GetPredefinedPackageTypes());
 
                 EditorGUILayout.PropertyField(m_UnityVersionEnabled, Styles.unity);
@@ -423,7 +441,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             // Package dependencies
             if (m_DependenciesList.index < 0 && m_DependenciesList.count > 0)
                 m_DependenciesList.index = 0;
-            GUILayout.Label(Styles.dependencies, EditorStyles.boldLabel);
+
+            var dependenciesTitleText = EditorGUIUtility.TrTextContent(
+                isFeatureSet ? "Packages included" : "Dependencies");
+            GUILayout.Label(dependenciesTitleText, EditorStyles.boldLabel);
             m_DependenciesList.DoLayoutList();
 
             // Package advanced settings
@@ -442,6 +463,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             extraDataSerializedObject.ApplyModifiedProperties();
 
             ApplyRevertGUI();
+
+            if (isFeatureSet)
+            {
+                EditorGUILayout.Space();
+                EditorGUILayout.HelpBox("Customization of a feature is not supported. Doing this may break your project. Use at your own risk.", MessageType.Warning);
+            }
 
             if (errorMessages.Count > 0)
             {
@@ -569,7 +596,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        private static void WritePackageManifest(Object target, PackageManifestState packageState)
+        private void WritePackageManifest(Object target, PackageManifestState packageState)
         {
             var importer = target as PackageManifestImporter;
             if (importer == null)
@@ -644,7 +671,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 foreach (var dependency in packageState.dependencies)
                 {
                     if (!string.IsNullOrWhiteSpace(dependency.packageName))
-                        dependencies.Add(dependency.packageName.Trim(), dependency.version);
+                        dependencies.Add(dependency.packageName.Trim(), isFeatureSet ? "default" : dependency.version);
                 }
 
                 json["dependencies"] = dependencies;

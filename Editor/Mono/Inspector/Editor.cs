@@ -1065,6 +1065,8 @@ namespace UnityEditor
             else
                 GUI.Label(titleRect, header, EditorStyles.largeLabel);
 
+            CheckForMainObjectNameMismatch(editor);
+
             // Context Menu; process event even for disabled UI
             var wasEnabled = GUI.enabled;
             GUI.enabled = true;
@@ -1079,6 +1081,43 @@ namespace UnityEditor
             }
 
             return fullRect;
+        }
+
+        internal static void CheckForMainObjectNameMismatch(Editor editor)
+        {
+            if (editor && editor.target && AssetDatabase.IsNativeAsset(editor.target) && AssetDatabase.IsMainAsset(editor.target))
+            {
+                var mainObjectName = editor.target.name;
+                var fileName = FileUtil.GetLastPathNameComponent(AssetDatabase.GetAssetPath(editor.target));
+                var expectedMainObjectName = FileUtil.GetPathWithoutExtension(fileName);
+
+                if (mainObjectName != expectedMainObjectName)
+                {
+                    var warningText = "The main object name should match the asset filename.\nPlease fix to avoid errors.";
+
+                    GUILayout.BeginVertical(EditorStyles.helpBox);
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label(EditorGUIUtility.GetHelpIcon(MessageType.Warning), GUILayout.ExpandWidth(false));
+                    GUILayout.Label(warningText, EditorStyles.wordWrappedLabel);
+                    GUILayout.FlexibleSpace();
+                    GUILayout.BeginVertical();
+                    GUILayout.FlexibleSpace();
+                    if (GUILayout.Button("Fix object name", EditorStyles.miniButtonRight, GUILayout.ExpandWidth(false)))
+                    {
+                        editor.target.name = expectedMainObjectName;
+                        AssetDatabase.SaveAssetIfDirty(editor.target);
+
+                        var message = String.Format("Main Object Name '{0}' does not match filename '{1}'", mainObjectName, expectedMainObjectName);
+                        var hash = Hash128.Compute(message);
+                        UInt32 correspondingLogID = (UInt32)hash.GetHashCode();
+                        Debug.RemoveLogEntriesByIdentifier((int)correspondingLogID);
+                    }
+                    GUILayout.FlexibleSpace();
+                    GUILayout.EndVertical();
+                    GUILayout.EndHorizontal();
+                    GUILayout.EndVertical();
+                }
+            }
         }
 
         internal void DrawPostIconContent(Rect iconRect)

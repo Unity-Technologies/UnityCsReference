@@ -3,10 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
-using System.Collections;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -15,10 +13,12 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine
 {
-    // Data buffer to hold data for compute shaders.
+    // Note: both C# ComputeBuffer and GraphicsBuffer
+    // use C++ GraphicsBuffer as an implementation object.
     [UsedByNativeCode]
-    [NativeHeader("Runtime/Shaders/ComputeShader.h")]
-    [NativeHeader("Runtime/Export/Shaders/ComputeShader.bindings.h")]
+    [NativeHeader("Runtime/Shaders/GraphicsBuffer.h")]
+    [NativeHeader("Runtime/Export/Graphics/GraphicsBuffer.bindings.h")]
+    [NativeClass("GraphicsBuffer")]
     public sealed class ComputeBuffer : IDisposable
     {
 #pragma warning disable 414
@@ -27,21 +27,18 @@ namespace UnityEngine
 
         AtomicSafetyHandle m_Safety;
 
-        // IDisposable implementation, with Release() for explicit cleanup.
-
         ~ComputeBuffer()
         {
             Dispose(false);
         }
 
-        //*undocumented*
         public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
 
-        private void Dispose(bool disposing)
+        void Dispose(bool disposing)
         {
             if (disposing)
             {
@@ -57,18 +54,16 @@ namespace UnityEngine
             m_Ptr = IntPtr.Zero;
         }
 
-        [FreeFunction("ComputeShader_Bindings::InitBuffer")]
-        extern private static IntPtr InitBuffer(int count, int stride, ComputeBufferType type, ComputeBufferMode usage);
+        [FreeFunction("GraphicsBuffer_Bindings::InitComputeBuffer")]
+        static extern IntPtr InitBuffer(int count, int stride, ComputeBufferType type, ComputeBufferMode usage);
 
-        [FreeFunction("ComputeShader_Bindings::DestroyBuffer")]
-        extern private static void DestroyBuffer(ComputeBuffer buf);
+        [FreeFunction("GraphicsBuffer_Bindings::DestroyBuffer")]
+        static extern void DestroyBuffer(ComputeBuffer buf);
 
-        ///*listonly*
         public ComputeBuffer(int count, int stride) : this(count, stride, ComputeBufferType.Default, ComputeBufferMode.Immutable, 3)
         {
         }
 
-        // Create a Compute Buffer.
         public ComputeBuffer(int count, int stride, ComputeBufferType type) : this(count, stride, type, ComputeBufferMode.Immutable, 3)
         {
         }
@@ -77,7 +72,7 @@ namespace UnityEngine
         {
         }
 
-        internal ComputeBuffer(int count, int stride, ComputeBufferType type, ComputeBufferMode usage, int stackDepth)
+        ComputeBuffer(int count, int stride, ComputeBufferType type, ComputeBufferMode usage, int stackDepth)
         {
             if (count <= 0)
             {
@@ -101,14 +96,13 @@ namespace UnityEngine
             SaveCallstack(stackDepth);
         }
 
-        // Release a Compute Buffer.
         public void Release()
         {
             Dispose();
         }
 
-        [FreeFunction("ComputeShader_Bindings::IsValidBuffer")]
-        extern private static bool IsValidBuffer(ComputeBuffer buf);
+        [FreeFunction("GraphicsBuffer_Bindings::IsValidBuffer")]
+        static extern bool IsValidBuffer(ComputeBuffer buf);
 
         public bool IsValid()
         {
@@ -214,17 +208,15 @@ namespace UnityEngine
             InternalSetNativeData((IntPtr)data.GetUnsafeReadOnlyPtr(), nativeBufferStartIndex, computeBufferStartIndex, count, UnsafeUtility.SizeOf<T>());
         }
 
-        [System.Security.SecurityCritical] // to prevent accidentally making this public in the future
-        [FreeFunction(Name = "ComputeShader_Bindings::InternalSetNativeData", HasExplicitThis = true, ThrowsException = true)]
-        extern private void InternalSetNativeData(IntPtr data, int nativeBufferStartIndex, int computeBufferStartIndex, int count, int elemSize);
+        [FreeFunction(Name = "GraphicsBuffer_Bindings::InternalSetNativeData", HasExplicitThis = true, ThrowsException = true)]
+        extern void InternalSetNativeData(IntPtr data, int nativeBufferStartIndex, int computeBufferStartIndex, int count, int elemSize);
 
-        [System.Security.SecurityCritical] // to prevent accidentally making this public in the future
-        [FreeFunction(Name = "ComputeShader_Bindings::InternalSetData", HasExplicitThis = true, ThrowsException = true)]
-        extern private void InternalSetData(System.Array data, int managedBufferStartIndex, int computeBufferStartIndex, int count, int elemSize);
+        [FreeFunction(Name = "GraphicsBuffer_Bindings::InternalSetData", HasExplicitThis = true, ThrowsException = true)]
+        extern void InternalSetData(Array data, int managedBufferStartIndex, int computeBufferStartIndex, int count, int elemSize);
 
         // Read buffer data.
         [System.Security.SecurityCritical] // due to Marshal.SizeOf
-        public void GetData(System.Array data)
+        public void GetData(Array data)
         {
             if (data == null)
                 throw new ArgumentNullException("data");
@@ -259,9 +251,8 @@ namespace UnityEngine
             InternalGetData(data, managedBufferStartIndex, computeBufferStartIndex, count, Marshal.SizeOf(data.GetType().GetElementType()));
         }
 
-        [System.Security.SecurityCritical] // to prevent accidentally making this public in the future
-        [FreeFunction(Name = "ComputeShader_Bindings::InternalGetData", HasExplicitThis = true, ThrowsException = true)]
-        extern private void InternalGetData(System.Array data, int managedBufferStartIndex, int computeBufferStartIndex, int count, int elemSize);
+        [FreeFunction(Name = "GraphicsBuffer_Bindings::InternalGetData", HasExplicitThis = true, ThrowsException = true)]
+        extern void InternalGetData(Array data, int managedBufferStartIndex, int computeBufferStartIndex, int count, int elemSize);
 
         extern unsafe private void* BeginBufferWrite(int offset = 0, int size = 0);
 
@@ -312,7 +303,7 @@ namespace UnityEngine
         // Buffer name for graphics debuggers
         public string name { set { SetName(value); } }
 
-        [FreeFunction(Name = "ComputeShader_Bindings::SetName", HasExplicitThis = true)]
+        [FreeFunction(Name = "GraphicsBuffer_Bindings::SetName", HasExplicitThis = true)]
         extern private void SetName(string name);
 
         // Set counter value of append/consume buffer.

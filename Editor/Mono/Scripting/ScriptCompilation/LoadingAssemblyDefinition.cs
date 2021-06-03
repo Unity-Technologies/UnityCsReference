@@ -20,14 +20,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
         void SetAllCustomScriptAssemblyReferenceJsonsContents(string[] paths, string[] contents);
         void ClearCustomScriptAssemblies();
         void Refresh(
-            CompilationSetupErrorsTrackerBase trackerBase,
+            ICompilationSetupErrorsTracker trackerBase,
             bool skipCustomScriptAssemblyGraphValidation,
             string projectDirectory);
     }
 
     class LoadingAssemblyDefinition : ILoadingAssemblyDefinition
     {
-        CompilationSetupErrorsTrackerBase m_CompilationSetupErrorsTracker;
+        ICompilationSetupErrorsTracker m_CompilationSetupErrorsTracker;
         bool m_SkipCustomScriptAssemblyGraphValidation;
         string m_ProjectDirectory;
 
@@ -37,7 +37,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public Exception[] Exceptions { get; private set; }
 
         public void Refresh(
-            CompilationSetupErrorsTrackerBase trackerBase,
+            ICompilationSetupErrorsTracker trackerBase,
             bool skipCustomScriptAssemblyGraphValidation,
             string projectDirectory)
         {

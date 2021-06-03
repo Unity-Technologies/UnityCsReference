@@ -20,6 +20,8 @@ namespace UnityEditor.Search
     /// </summary>
     public static class SearchUtils
     {
+        internal static readonly char[] KeywordsValueDelimiters = new[] { ':', '=', '<', '>', '!' };
+
         /// <summary>
         /// Separators used to split an entry into indexable tokens.
         /// </summary>

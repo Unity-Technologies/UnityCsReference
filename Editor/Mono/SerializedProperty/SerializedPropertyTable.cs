@@ -22,12 +22,15 @@ namespace UnityEditor
         float                                       m_ColumnHeaderHeight;
         string                                      m_SerializationUID;
         readonly float                              m_FilterHeight = 20;
+        bool                                        m_ShowFilterGUI;
 
-        public SerializedPropertyTable(string serializationUID, SerializedPropertyDataStore.GatherDelegate gatherDelegate, HeaderDelegate headerDelegate)
+        public SerializedPropertyTable(string serializationUID, SerializedPropertyDataStore.GatherDelegate gatherDelegate, HeaderDelegate headerDelegate, bool showFilterGUI)
         {
             m_SerializationUID = serializationUID;
             m_GatherDelegate = gatherDelegate;
             m_HeaderDelegate = headerDelegate;
+
+            m_ShowFilterGUI = showFilterGUI;
         }
 
         void InitIfNeeded()
@@ -51,7 +54,7 @@ namespace UnityEditor
 
             var header = new MultiColumnHeader(m_MultiColumnHeaderState);
             m_ColumnHeaderHeight = header.height;
-            m_TreeView = new SerializedPropertyTreeView(m_TreeViewState, header, m_DataStore);
+            m_TreeView = new SerializedPropertyTreeView(m_TreeViewState, header, m_DataStore, m_ShowFilterGUI);
 
             m_TreeView.DeserializeState(m_SerializationUID);
             m_TreeView.Reload();

@@ -30,7 +30,7 @@ namespace UnityEngine.UIElements
         public WhiteSpace whiteSpace;
         public Length wordSpacing;
 
-        public static bool operator==(InheritedData lhs, InheritedData rhs)
+        public static bool operator ==(InheritedData lhs, InheritedData rhs)
         {
             return lhs.color == rhs.color &&
                 lhs.fontSize == rhs.fontSize &&
@@ -48,7 +48,7 @@ namespace UnityEngine.UIElements
                 lhs.wordSpacing == rhs.wordSpacing;
         }
 
-        public static bool operator!=(InheritedData lhs, InheritedData rhs)
+        public static bool operator !=(InheritedData lhs, InheritedData rhs)
         {
             return !(lhs == rhs);
         }
@@ -125,7 +125,7 @@ namespace UnityEngine.UIElements
         public Length top;
         public Length width;
 
-        public static bool operator==(LayoutData lhs, LayoutData rhs)
+        public static bool operator ==(LayoutData lhs, LayoutData rhs)
         {
             return lhs.alignContent == rhs.alignContent &&
                 lhs.alignItems == rhs.alignItems &&
@@ -162,7 +162,7 @@ namespace UnityEngine.UIElements
                 lhs.width == rhs.width;
         }
 
-        public static bool operator!=(LayoutData lhs, LayoutData rhs)
+        public static bool operator !=(LayoutData lhs, LayoutData rhs)
         {
             return !(lhs == rhs);
         }
@@ -235,7 +235,7 @@ namespace UnityEngine.UIElements
         public int unitySliceTop;
         public TextOverflowPosition unityTextOverflowPosition;
 
-        public static bool operator==(RareData lhs, RareData rhs)
+        public static bool operator ==(RareData lhs, RareData rhs)
         {
             return lhs.cursor == rhs.cursor &&
                 lhs.textOverflow == rhs.textOverflow &&
@@ -249,7 +249,7 @@ namespace UnityEngine.UIElements
                 lhs.unityTextOverflowPosition == rhs.unityTextOverflowPosition;
         }
 
-        public static bool operator!=(RareData lhs, RareData rhs)
+        public static bool operator !=(RareData lhs, RareData rhs)
         {
             return !(lhs == rhs);
         }
@@ -286,6 +286,52 @@ namespace UnityEngine.UIElements
         }
     }
 
+    internal struct TransformData : IEquatable<TransformData>
+    {
+        public Rotate rotate;
+        public Scale scale;
+        public TransformOrigin transformOrigin;
+        public Translate translate;
+
+        public static bool operator==(TransformData lhs, TransformData rhs)
+        {
+            return lhs.rotate == rhs.rotate &&
+                lhs.scale == rhs.scale &&
+                lhs.transformOrigin == rhs.transformOrigin &&
+                lhs.translate == rhs.translate;
+        }
+
+        public static bool operator!=(TransformData lhs, TransformData rhs)
+        {
+            return !(lhs == rhs);
+        }
+
+        public bool Equals(TransformData other)
+        {
+            return other == this;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj))
+                return false;
+            return obj is TransformData &&
+                Equals((TransformData)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = rotate.GetHashCode();
+                hashCode = (hashCode * 397) ^ scale.GetHashCode();
+                hashCode = (hashCode * 397) ^ transformOrigin.GetHashCode();
+                hashCode = (hashCode * 397) ^ translate.GetHashCode();
+                return hashCode;
+            }
+        }
+    }
+
     internal struct VisualData : IEquatable<VisualData>
     {
         public Color backgroundColor;
@@ -301,7 +347,7 @@ namespace UnityEngine.UIElements
         public float opacity;
         public OverflowInternal overflow;
 
-        public static bool operator==(VisualData lhs, VisualData rhs)
+        public static bool operator ==(VisualData lhs, VisualData rhs)
         {
             return lhs.backgroundColor == rhs.backgroundColor &&
                 lhs.backgroundImage == rhs.backgroundImage &&
@@ -317,7 +363,7 @@ namespace UnityEngine.UIElements
                 lhs.overflow == rhs.overflow;
         }
 
-        public static bool operator!=(VisualData lhs, VisualData rhs)
+        public static bool operator !=(VisualData lhs, VisualData rhs)
         {
             return !(lhs == rhs);
         }

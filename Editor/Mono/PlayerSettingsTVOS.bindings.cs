@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEditor.Build;
 using UnityEngine;
 using UnityEngine.Bindings;
 
@@ -49,8 +50,8 @@ namespace UnityEditor
             // tvOS bundle build number
             public static string buildNumber
             {
-                get { return PlayerSettings.GetBuildNumber(BuildTargetGroup.tvOS); }
-                set { PlayerSettings.SetBuildNumber(BuildTargetGroup.tvOS, value); }
+                get { return PlayerSettings.GetBuildNumber(NamedBuildTarget.tvOS.TargetName); }
+                set { PlayerSettings.SetBuildNumber(NamedBuildTarget.tvOS.TargetName, value); }
             }
 
             [System.Obsolete("targetOSVersion is obsolete. Use targetOSVersionString instead.", false)]

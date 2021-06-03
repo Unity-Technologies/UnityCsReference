@@ -42,6 +42,9 @@ namespace UnityEditor.UIElements.Debugger
 
         public new class UxmlTraits : ToolbarSearchField.UxmlTraits {}
 
+        const int k_MaxTooltipLines = 40;
+        const string EllipsisText = "...";
+
         VisualElement m_MenuContainer;
         VisualElement m_OuterContainer;
         ListView m_ListView;
@@ -53,6 +56,8 @@ namespace UnityEditor.UIElements.Debugger
         Dictionary<long, int> m_EventCountLog;
         bool m_IsFocused;
 
+        public int GetSelectedCount() => m_Choices.Count(c => c.TypeId > 0 && m_State[c.TypeId]);
+
         public new static readonly string ussClassName = "event-debugger-filter";
         public static readonly string ussContainerClassName = ussClassName + "__container";
         public static readonly string ussListViewClassName = ussClassName + "__list-view";
@@ -63,6 +68,50 @@ namespace UnityEditor.UIElements.Debugger
         public static readonly string ussItemToggleClassName = ussClassName + "__item-toggle";
 
         public IReadOnlyDictionary<long, bool> State => m_State;
+
+        public void SetState(Dictionary<long, bool> state)
+        {
+            m_State = state;
+            UpdateTextHint();
+        }
+
+        bool IsGenericTypeOf(Type t, Type genericDefinition)
+        {
+            Type[] parameters = null;
+            return IsGenericTypeOf(t, genericDefinition, out parameters);
+        }
+
+        bool IsGenericTypeOf(Type t, Type genericDefinition, out Type[] genericParameters)
+        {
+            genericParameters = new Type[] {};
+            if (!genericDefinition.IsGenericType)
+            {
+                return false;
+            }
+
+            var isMatch = t.IsGenericType && t.GetGenericTypeDefinition() == genericDefinition.GetGenericTypeDefinition();
+            if (!isMatch && t.BaseType != null)
+            {
+                isMatch = IsGenericTypeOf(t.BaseType, genericDefinition, out genericParameters);
+            }
+            if (!isMatch && genericDefinition.IsInterface && t.GetInterfaces().Any())
+            {
+                foreach (var i in t.GetInterfaces())
+                {
+                    if (IsGenericTypeOf(i, genericDefinition, out genericParameters))
+                    {
+                        isMatch = true;
+                        break;
+                    }
+                }
+            }
+
+            if (isMatch && !genericParameters.Any())
+            {
+                genericParameters = t.GetGenericArguments();
+            }
+            return isMatch;
+        }
 
         public EventTypeSearchField()
         {
@@ -81,7 +130,8 @@ namespace UnityEditor.UIElements.Debugger
                 {
                     foreach (var type in assembly.GetTypes().Where(t => typeof(EventBase).IsAssignableFrom(t) && !t.ContainsGenericParameters))
                     {
-                        AddType(type);
+                        // Only select Pointer events on startup
+                        AddType(type, IsGenericTypeOf(type, typeof(PointerEventBase<>)));
                     }
 
                     // Special case for ChangeEvent<>.
@@ -95,7 +145,7 @@ namespace UnityEditor.UIElements.Debugger
                         var argumentType = baseType.GetGenericArguments()[0];
                         if (!argumentType.IsGenericParameter)
                         {
-                            AddType(typeof(ChangeEvent<>).MakeGenericType(argumentType));
+                            AddType(typeof(ChangeEvent<>).MakeGenericType(argumentType), false);
                         }
                     }
                 }
@@ -115,14 +165,14 @@ namespace UnityEditor.UIElements.Debugger
                 }
             }
 
-            m_State.Add(0, true);
+            m_State.Add(0, false);
 
             // Add groups, with negative ids.
             var keyIndex = -1;
             foreach (var key in m_GroupedEvents.Keys.OrderBy(k => k))
             {
                 m_Choices.Add(new EventTypeChoice() { Name = key, Group = key, TypeId = keyIndex });
-                m_State.Add(keyIndex--, true);
+                m_State.Add(keyIndex--, key.Contains("IPointerEvent"));
             }
 
             m_Choices.Sort();
@@ -140,7 +190,7 @@ namespace UnityEditor.UIElements.Debugger
             m_ListView.AddToClassList(ussListViewClassName);
             m_ListView.pickingMode = PickingMode.Position;
             m_ListView.showBoundCollectionSize = false;
-            m_ListView.itemHeight = 20;
+            m_ListView.fixedItemHeight = 20;
             m_ListView.selectionType = SelectionType.None;
             m_ListView.showAlternatingRowBackgrounds = AlternatingRowBackground.All;
 
@@ -217,7 +267,7 @@ namespace UnityEditor.UIElements.Debugger
                     select x;
         }
 
-        void AddType(Type type)
+        void AddType(Type type, bool value)
         {
             var methodInfo = type.GetMethod("TypeId", BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
             if (methodInfo == null)
@@ -228,11 +278,10 @@ namespace UnityEditor.UIElements.Debugger
             if (m_State.ContainsKey(typeId))
                 return;
 
-            m_State.Add(typeId, true);
-
+            m_State.Add(typeId, value);
             var nextType = type;
 
-            static bool InterfacePredicate(Type t) => t.IsPublic && t.Namespace != nameof(System);
+            bool InterfacePredicate(Type t) => t.IsPublic && t.Namespace != nameof(System);
 
             Type interfaceType;
             do
@@ -373,7 +422,8 @@ namespace UnityEditor.UIElements.Debugger
         void UpdateTextHint()
         {
             UpdateTooltip();
-            base.SetValueWithoutNotify($"{m_Choices.Count(c => c.TypeId > 0 && m_State[c.TypeId]).ToString()} events");
+            var choiceCount = GetSelectedCount();
+            base.SetValueWithoutNotify($"{choiceCount} selected event type{(choiceCount > 1 ? "s" : "")}");
         }
 
         void OnValueChanged(ChangeEvent<string> changeEvent)
@@ -451,7 +501,7 @@ namespace UnityEditor.UIElements.Debugger
             {
                 m_OuterContainer.style.height = Mathf.Min(
                     m_MenuContainer.layout.height - m_MenuContainer.layout.y - m_OuterContainer.layout.y,
-                    m_ListView.itemHeight * m_ListView.itemsSource.Count +
+                    m_ListView.fixedItemHeight * m_ListView.itemsSource.Count +
                     m_ListView.resolvedStyle.borderTopWidth + m_ListView.resolvedStyle.borderBottomWidth +
                     m_OuterContainer.resolvedStyle.borderBottomWidth + m_OuterContainer.resolvedStyle.borderTopWidth);
 
@@ -465,8 +515,15 @@ namespace UnityEditor.UIElements.Debugger
         void UpdateTooltip()
         {
             var tooltipStr = new StringBuilder();
+            var lineCount = 0;
             foreach (var selectedChoice in m_Choices.Where(c => c.TypeId > 0 && m_State[c.TypeId]))
             {
+                if (lineCount++ >= k_MaxTooltipLines)
+                {
+                    tooltipStr.AppendLine(EllipsisText);
+                    break;
+                }
+
                 tooltipStr.AppendLine(selectedChoice.Name);
             }
 

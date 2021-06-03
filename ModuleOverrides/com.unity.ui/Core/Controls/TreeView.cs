@@ -3,9 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
-using UnityEngine.Assertions;
 using System.Linq;
+using UnityEngine.Assertions;
 
 namespace UnityEngine.UIElements
 {
@@ -22,7 +23,7 @@ namespace UnityEngine.UIElements
 
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
-            private readonly UxmlIntAttributeDescription m_ItemHeight = new UxmlIntAttributeDescription { name = "item-height", defaultValue = ListView.s_DefaultItemHeight };
+            private readonly UxmlIntAttributeDescription m_ItemHeight = new UxmlIntAttributeDescription { name = "item-height", defaultValue = BaseVerticalCollectionView.s_DefaultItemHeight };
             private readonly UxmlBoolAttributeDescription m_ShowBorder = new UxmlBoolAttributeDescription { name = "show-border", defaultValue = false };
             private readonly UxmlEnumAttributeDescription<SelectionType> m_SelectionType = new UxmlEnumAttributeDescription<SelectionType> { name = "selection-type", defaultValue = SelectionType.Single };
             private readonly UxmlEnumAttributeDescription<AlternatingRowBackground> m_ShowAlternatingRowBackgrounds = new UxmlEnumAttributeDescription<AlternatingRowBackground> { name = "show-alternating-row-backgrounds", defaultValue = AlternatingRowBackground.None };
@@ -40,6 +41,7 @@ namespace UnityEngine.UIElements
                 {
                     ((TreeView)ve).itemHeight = itemHeight;
                 }
+
                 ((TreeView)ve).showBorder = m_ShowBorder.GetValueFromBag(bag, cc);
                 ((TreeView)ve).selectionType = m_SelectionType.GetValueFromBag(bag, cc);
                 ((TreeView)ve).showAlternatingRowBackgrounds = m_ShowAlternatingRowBackgrounds.GetValueFromBag(bag, cc);
@@ -47,6 +49,7 @@ namespace UnityEngine.UIElements
         }
 
         Func<VisualElement> m_MakeItem;
+
         public Func<VisualElement> makeItem
         {
             get { return m_MakeItem; }
@@ -55,7 +58,7 @@ namespace UnityEngine.UIElements
                 if (m_MakeItem == value)
                     return;
                 m_MakeItem = value;
-                ListViewRefresh();
+                m_ListView.Rebuild();
             }
         }
 
@@ -87,6 +90,7 @@ namespace UnityEngine.UIElements
         }
 
         private Action<VisualElement, ITreeViewItem> m_BindItem;
+
         public Action<VisualElement, ITreeViewItem> bindItem
         {
             get { return m_BindItem; }
@@ -100,24 +104,25 @@ namespace UnityEngine.UIElements
         public Action<VisualElement, ITreeViewItem> unbindItem { get; set; }
 
         IList<ITreeViewItem> m_RootItems;
+
         public IList<ITreeViewItem> rootItems
         {
             get { return m_RootItems; }
             set
             {
                 m_RootItems = value;
-                Refresh();
+                Rebuild();
             }
         }
 
         public IEnumerable<ITreeViewItem> items => GetAllItems(m_RootItems);
 
-        public float resolvedItemHeight => m_ListView.resolvedItemHeight;
+        public float resolvedItemHeight => m_ListView.ResolveItemHeight();
 
         public int itemHeight
         {
-            get { return m_ListView.itemHeight; }
-            set { m_ListView.itemHeight = value; }
+            get { return (int)m_ListView.fixedItemHeight; }
+            set { m_ListView.fixedItemHeight = value; }
         }
 
         public bool horizontalScrollingEnabled
@@ -128,7 +133,7 @@ namespace UnityEngine.UIElements
 
         public bool showBorder
         {
-            get { return m_ListView.showBorder;}
+            get { return m_ListView.showBorder; }
             set { m_ListView.showBorder = value; }
         }
 
@@ -182,7 +187,7 @@ namespace UnityEngine.UIElements
             m_ListView.onItemsChosen += OnItemsChosen;
             m_ListView.onSelectionChange += OnSelectionChange;
 
-            m_ScrollView = m_ListView.m_ScrollView;
+            m_ScrollView = m_ListView.scrollView;
             m_ScrollView.contentContainer.RegisterCallback<KeyDownEvent>(OnKeyDown);
 
             RegisterCallback<MouseUpEvent>(OnTreeViewMouseUp, TrickleDown.TrickleDown);
@@ -191,22 +196,29 @@ namespace UnityEngine.UIElements
 
         public TreeView(
             IList<ITreeViewItem> items,
-            int itemHeight,
+            int fixedItemHeight,
             Func<VisualElement> makeItem,
-            Action<VisualElement, ITreeViewItem> bindItem) : this()
+            Action<VisualElement, ITreeViewItem> bindItem)
+            : this()
         {
-            m_ListView.itemHeight = itemHeight;
+            m_ListView.fixedItemHeight = fixedItemHeight;
             m_MakeItem = makeItem;
             m_BindItem = bindItem;
             m_RootItems = items;
 
-            Refresh();
+            Rebuild();
         }
 
-        public void Refresh()
+        public void RefreshItems()
         {
             RegenerateWrappers();
             ListViewRefresh();
+        }
+
+        public void Rebuild()
+        {
+            RegenerateWrappers();
+            m_ListView.Rebuild();
         }
 
         internal override void OnViewDataReady()
@@ -217,7 +229,7 @@ namespace UnityEngine.UIElements
 
             OverwriteFromViewData(this, key);
 
-            Refresh();
+            Rebuild();
         }
 
         public static IEnumerable<ITreeViewItem> GetAllItems(IEnumerable<ITreeViewItem> rootItems)
@@ -281,7 +293,7 @@ namespace UnityEngine.UIElements
 
         public void SetSelection(int id)
         {
-            SetSelection(new[] {id});
+            SetSelection(new[] { id });
         }
 
         public void SetSelection(IEnumerable<int> ids)
@@ -334,13 +346,13 @@ namespace UnityEngine.UIElements
                         m_ExpandedItemIds.Add(itemParent.id);
                         regenerateWrappers = true;
                     }
+
                     itemParent = itemParent.parent;
                 }
 
                 if (regenerateWrappers)
                     RegenerateWrappers();
             }
-
 
             var index = 0;
             for (; index < m_ItemWrappers.Count; ++index)
@@ -363,7 +375,7 @@ namespace UnityEngine.UIElements
         public void ScrollToItem(int id)
         {
             var index = GetItemIndex(id, true);
-            Refresh();
+            RefreshItems();
             m_ListView.ScrollToItem(index);
         }
 
@@ -385,7 +397,6 @@ namespace UnityEngine.UIElements
                     {
                         var sourceChild = source.children.ElementAt(i);
                         var targetchild = target.children.ElementAt(i);
-
                         CopyExpandedStates(sourceChild, targetchild);
                     }
                 }
@@ -420,7 +431,7 @@ namespace UnityEngine.UIElements
                 return;
 
             m_ExpandedItemIds.Remove(id);
-            Refresh();
+            RefreshItems();
         }
 
         public void ExpandItem(int id)
@@ -442,7 +453,7 @@ namespace UnityEngine.UIElements
                 return;
 
             m_ExpandedItemIds.Add(id);
-            Refresh();
+            RefreshItems();
         }
 
         public ITreeViewItem FindItem(int id)
@@ -456,7 +467,7 @@ namespace UnityEngine.UIElements
 
         private void ListViewRefresh()
         {
-            m_ListView.Refresh();
+            m_ListView.RefreshItems();
         }
 
         private void OnItemsChosen(IEnumerable<object> chosenItems)
@@ -525,7 +536,7 @@ namespace UnityEngine.UIElements
 
             m_ExpandedItemIds = hashSet.ToList();
 
-            Refresh();
+            RefreshItems();
 
             evt.StopPropagation();
         }
@@ -714,12 +725,12 @@ namespace UnityEngine.UIElements
         private void OnCustomStyleResolved(CustomStyleResolvedEvent e)
         {
             int height;
-            var oldHeight = m_ListView.itemHeight;
-            if (!m_ListView.m_ItemHeightIsInline && e.customStyle.TryGetValue(ListView.s_ItemHeightProperty, out height))
-                m_ListView.m_ItemHeight = height;
+            var oldHeight = m_ListView.fixedItemHeight;
+            if (!m_ListView.m_ItemHeightIsInline && e.customStyle.TryGetValue(BaseVerticalCollectionView.s_ItemHeightProperty, out height))
+                m_ListView.m_FixedItemHeight = height;
 
-            if (m_ListView.m_ItemHeight != oldHeight)
-                m_ListView.Refresh();
+            if (m_ListView.m_FixedItemHeight != oldHeight)
+                m_ListView.RefreshItems();
         }
     }
 }

@@ -22,6 +22,7 @@ namespace UnityEditor.Search
         private List<SearchItem> m_Items;
         private QueryEngine<int> m_QueryEngine = null;
         private static readonly QueryValidationOptions k_QueryEngineOptions = new QueryValidationOptions { validateFilters = true, skipNestedQueries = true };
+        private SearchField m_SearchField;
 
         [MenuItem("Window/Search/Open Report...")]
         static void OpenWindow()
@@ -106,6 +107,7 @@ namespace UnityEditor.Search
 
         internal void OnEnable()
         {
+            m_SearchField = new SearchField();
             if (m_ReportPath != null)
                 InitializeReport(m_ReportPath);
         }
@@ -120,7 +122,7 @@ namespace UnityEditor.Search
                     using (new GUILayout.HorizontalScope(Styles.searchReportField))
                     {
                         var searchFieldText = string.IsNullOrEmpty(m_SearchText) ? m_Report.query : m_SearchText;
-                        var searchTextRect = SearchField.GetRect(searchFieldText, position.width, (Styles.toolbarButton.fixedWidth + Styles.toolbarButton.margin.left) + Styles.toolbarButton.margin.right);
+                        var searchTextRect = m_SearchField.GetRect(searchFieldText, position.width, (Styles.toolbarButton.fixedWidth + Styles.toolbarButton.margin.left) + Styles.toolbarButton.margin.right);
                         var searchClearButtonRect = Styles.searchFieldBtn.margin.Remove(searchTextRect);
                         searchClearButtonRect.xMin = searchClearButtonRect.xMax - 20f;
 
@@ -130,7 +132,7 @@ namespace UnityEditor.Search
                         var previousSearchText = m_SearchText;
                         if (Event.current.type != EventType.KeyDown || Event.current.keyCode != KeyCode.None || Event.current.character != '\r')
                         {
-                            m_SearchText = SearchField.Draw(searchTextRect, m_SearchText, Styles.searchField);
+                            m_SearchText = m_SearchField.Draw(searchTextRect, m_SearchText, Styles.searchField);
                             if (!string.Equals(previousSearchText, m_SearchText, StringComparison.Ordinal))
                             {
                                 UpdatePropertyTable();
@@ -160,7 +162,7 @@ namespace UnityEditor.Search
 
         internal void Update()
         {
-            if (SearchField.UpdateBlinkCursorState(EditorApplication.timeSinceStartup))
+            if (m_SearchField.UpdateBlinkCursorState(EditorApplication.timeSinceStartup))
                 Repaint();
         }
 
@@ -180,7 +182,7 @@ namespace UnityEditor.Search
                 return;
             if (m_FocusSearchField)
             {
-                SearchField.Focus();
+                m_SearchField.Focus();
                 m_FocusSearchField = false;
             }
         }

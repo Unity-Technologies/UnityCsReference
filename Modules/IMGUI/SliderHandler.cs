@@ -149,7 +149,7 @@ namespace UnityEngine
             bool hover = GUIUtility.HitTest(position, CurrentEvent());
 
             slider.Draw(position, GUIContent.none, id, false, hover);
-            if (!IsEmptySlider() && currentValue >= Mathf.Min(start, end) && currentValue <= Mathf.Max(start, end))
+            if (currentValue >= Mathf.Min(start, end) && currentValue <= Mathf.Max(start, end))
             {
                 if (thumbExtent != null)
                     thumbExtent.Draw(ThumbExtRect(), GUIContent.none, id, false, hover);
@@ -335,9 +335,10 @@ namespace UnityEngine
 
         private float ValuesPerPixel()
         {
+            var length = (end == start) ? 1 : end - start;
             if (horiz)
-                return (position.width - slider.padding.horizontal - ThumbSize()) / (end - start);
-            return (position.height - slider.padding.vertical - ThumbSize()) / (end - start);
+                return (position.width - slider.padding.horizontal - ThumbSize()) / length;
+            return (position.height - slider.padding.vertical - ThumbSize()) / length;
         }
 
         private float ThumbSize()

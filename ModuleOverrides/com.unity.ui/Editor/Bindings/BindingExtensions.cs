@@ -13,7 +13,6 @@ namespace UnityEditor.UIElements.Bindings
 {
     internal class SerializedObjectBindingContext
     {
-        SerializedObjectChangeTracker m_Tracker;
         public UInt64 lastRevision {get; private set; }
         public SerializedObject serializedObject {get; private set; }
 
@@ -25,8 +24,8 @@ namespace UnityEditor.UIElements.Bindings
 
         public SerializedObjectBindingContext(SerializedObject so)
         {
-            m_Tracker = new SerializedObjectChangeTracker(so);
             this.serializedObject = so;
+            this.lastRevision = so.objectVersion;
         }
 
         public void Bind(VisualElement element)
@@ -490,8 +489,7 @@ namespace UnityEditor.UIElements.Bindings
         internal void UpdateRevision()
         {
             var previousRevision = lastRevision;
-            m_Tracker.UpdateTrackedVersion();
-            lastRevision = m_Tracker.CurrentRevision;
+            lastRevision = serializedObject.objectVersion;
 
             if (previousRevision != lastRevision)
             {
@@ -628,6 +626,7 @@ namespace UnityEditor.UIElements.Bindings
         /// Check <see cref="GetTrackedValueForPropertyType"/> for reference.
         /// </summary>
         private Dictionary<SerializedPropertyType, ITrackedValues> m_ValueTracker;
+
 
         void UpdateTrackedValues()
         {
@@ -1019,6 +1018,53 @@ namespace UnityEditor.UIElements.Bindings
             }
         }
 
+        private static void SendObjectChangeCallback(object cookie, SerializedObject obj)
+        {
+            if (cookie is VisualElement element)
+            {
+                using (SerializedObjectChangeEvent evt = SerializedObjectChangeEvent.GetPooled(obj))
+                {
+                    evt.target = element;
+                    element.SendEvent(evt);
+                }
+            }
+        }
+
+        public void TrackSerializedObjectValue(VisualElement element, SerializedObject serializedObject, Action<SerializedObject> callback)
+        {
+            if (serializedObject == null)
+            {
+                throw new ArgumentNullException(nameof(serializedObject));
+            }
+
+            if (element != null)
+            {
+                var request = BindingRequest.Create(BindingRequest.RequestType.TrackObject, serializedObject);
+
+                request.obj = serializedObject;
+
+                if (callback != null)
+                {
+                    request.objectChangedCallback = (e, o) => callback(o);
+                }
+                else
+                {
+                    request.objectChangedCallback = (o, obj) => SendObjectChangeCallback(o, obj);
+                }
+
+                if (element.panel == null)
+                {
+                    // wait until element is attached
+                    VisualTreeBindingsUpdater.AddBindingRequest(element, request);
+                }
+                else
+                {
+                    request.Bind(element);
+                    request.Release();
+                }
+            }
+        }
+
         // visual element style changes wrt its property state
 
         void ISerializedObjectBindingImplementation.Bind(VisualElement element, object objWrapper, SerializedProperty parentProperty)
@@ -1068,13 +1114,15 @@ namespace UnityEditor.UIElements.Bindings
             {
                 Bind,
                 DelayBind,
-                TrackProperty
+                TrackProperty,
+                TrackObject
             }
 
             public SerializedObject obj;
             public SerializedObjectBindingContext context;
             public SerializedProperty parentProperty;
             public Action<object, SerializedProperty> callback;
+            public Action<object, SerializedObject> objectChangedCallback;
             public RequestType requestType;
 
             public static BindingRequest Create(RequestType reqType, SerializedObject obj)
@@ -1110,11 +1158,19 @@ namespace UnityEditor.UIElements.Bindings
                         context.ContinueBinding(element, parentProperty);
                         break;
                     case RequestType.TrackProperty:
+                    {
                         var contextUpdater = context.AddBindingUpdater(element);
                         contextUpdater.AddTracking(parentProperty);
                         context.RegisterSerializedPropertyChangeCallback(element, parentProperty,
                             callback as Action<object, SerializedProperty>);
-                        break;
+                    }
+                    break;
+                    case RequestType.TrackObject:
+                    {
+                        var contextUpdater = context.AddBindingUpdater(element);
+                        contextUpdater.registeredCallbacks += objectChangedCallback;
+                    }
+                    break;
                     default:
                         break;
                 }
@@ -1126,6 +1182,7 @@ namespace UnityEditor.UIElements.Bindings
                 context = null;
                 parentProperty = null;
                 callback = null;
+                objectChangedCallback = null;
                 requestType = RequestType.Bind;
                 s_Pool.Release(this);
             }
@@ -1304,11 +1361,16 @@ namespace UnityEditor.UIElements.Bindings
 
         private VisualElement owner;
 
+        private UInt64 lastUpdatedRevision = 0xFFFFFFFFFFFFFFFF;
+
+        public event Action<object, SerializedObject> registeredCallbacks;
+
         public static SerializedObjectBindingContextUpdater Create(VisualElement owner, SerializedObjectBindingContext context)
         {
             var b = s_Pool.Get();
             b.bindingContext = context;
             b.owner = owner;
+            b.lastUpdatedRevision = context.lastRevision;
             return b;
         }
 
@@ -1327,6 +1389,14 @@ namespace UnityEditor.UIElements.Bindings
         public override void Update()
         {
             ResetUpdate();
+
+            if (lastUpdatedRevision != bindingContext.lastRevision)
+            {
+                lastUpdatedRevision = bindingContext.lastRevision;
+
+                registeredCallbacks?.Invoke(owner, bindingContext.serializedObject);
+                return;
+            }
         }
 
         public override void Release()
@@ -1346,6 +1416,7 @@ namespace UnityEditor.UIElements.Bindings
             owner = null;
             bindingContext = null;
             boundProperty = null;
+            registeredCallbacks = null;
             ResetCachedValues();
             isReleased = true;
             s_Pool.Release(this);
@@ -1353,6 +1424,7 @@ namespace UnityEditor.UIElements.Bindings
 
         protected override void ResetCachedValues()
         {
+            lastUpdatedRevision = 0xFFFFFFFFFFFFFFFF;
         }
     }
 
@@ -1363,9 +1435,11 @@ namespace UnityEditor.UIElements.Bindings
             get { return m_Field as TField; }
             set
             {
-                field?.UnregisterValueChangedCallback(FieldValueChanged);
+                var ve = field as VisualElement;
+                ve?.UnregisterCallback<ChangeEvent<TValue>>(FieldValueChanged);
                 boundElement = value as IBindable;
-                field?.RegisterValueChangedCallback(FieldValueChanged);
+                ve = field as VisualElement;
+                ve?.RegisterCallback<ChangeEvent<TValue>>(FieldValueChanged, TrickleDown.TrickleDown);
             }
         }
 

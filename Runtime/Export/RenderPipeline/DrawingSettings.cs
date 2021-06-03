@@ -28,6 +28,7 @@ namespace UnityEngine.Rendering
 #pragma warning disable 414
         int m_OverrideMaterialInstanceId;
         int m_OverrideMaterialPassIndex;
+        int m_fallbackMaterialInstanceId;
         int m_MainLightIndex;
         int m_UseSrpBatcher; // only needed to match native struct
 #pragma warning restore 414
@@ -40,6 +41,7 @@ namespace UnityEngine.Rendering
 
             m_OverrideMaterialInstanceId = 0;
             m_OverrideMaterialPassIndex = 0;
+            m_fallbackMaterialInstanceId = 0;
             m_MainLightIndex = -1;
 
             fixed(int* p = shaderPassNames)
@@ -105,6 +107,12 @@ namespace UnityEngine.Rendering
             set { m_OverrideMaterialPassIndex = value; }
         }
 
+        public Material fallbackMaterial
+        {
+            get { return m_fallbackMaterialInstanceId != 0 ? Object.FindObjectFromInstanceID(m_fallbackMaterialInstanceId) as Material : null; }
+            set { m_fallbackMaterialInstanceId = value?.GetInstanceID() ?? 0; }
+        }
+
         public int mainLightIndex
         {
             get { return m_MainLightIndex; }
@@ -141,7 +149,13 @@ namespace UnityEngine.Rendering
                     return false;
             }
 
-            return m_SortingSettings.Equals(other.m_SortingSettings) && m_PerObjectData == other.m_PerObjectData && m_Flags == other.m_Flags && m_OverrideMaterialInstanceId == other.m_OverrideMaterialInstanceId && m_OverrideMaterialPassIndex == other.m_OverrideMaterialPassIndex && m_UseSrpBatcher == other.m_UseSrpBatcher;
+            return m_SortingSettings.Equals(other.m_SortingSettings)
+                && m_PerObjectData == other.m_PerObjectData
+                && m_Flags == other.m_Flags
+                && m_OverrideMaterialInstanceId == other.m_OverrideMaterialInstanceId
+                && m_OverrideMaterialPassIndex == other.m_OverrideMaterialPassIndex
+                && m_fallbackMaterialInstanceId == other.m_fallbackMaterialInstanceId
+                && m_UseSrpBatcher == other.m_UseSrpBatcher;
         }
 
         public override bool Equals(object obj)
@@ -159,6 +173,7 @@ namespace UnityEngine.Rendering
                 hashCode = (hashCode * 397) ^ (int)m_Flags;
                 hashCode = (hashCode * 397) ^ m_OverrideMaterialInstanceId;
                 hashCode = (hashCode * 397) ^ m_OverrideMaterialPassIndex;
+                hashCode = (hashCode * 397) ^ m_fallbackMaterialInstanceId;
                 hashCode = (hashCode * 397) ^ m_UseSrpBatcher;
                 return hashCode;
             }

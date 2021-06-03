@@ -33,7 +33,7 @@ namespace UnityEditorInternal
             }
         }
 
-        public string Profile => IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(m_RunInformation.buildTargetGroup));
+        public string Profile => IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(m_RunInformation.buildTargetGroup), m_RunInformation.target);
 
         public string RuleSet
         {

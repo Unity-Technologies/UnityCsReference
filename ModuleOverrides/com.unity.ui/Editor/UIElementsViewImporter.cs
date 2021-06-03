@@ -514,7 +514,7 @@ namespace UnityEditor.UIElements
                 else
                 {
                     var asset = response.resolvedQueryAsset;
-                    if (asset)
+                    if (asset && m_Context != null)
                     {
                         m_Context.DependsOnSourceAsset(projectRelativePath);
                     }

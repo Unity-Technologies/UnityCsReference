@@ -36,7 +36,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(HasExplicitThis = true, ThrowsException = true)]
-        extern internal void GetComponentFastPath(System.Type type, IntPtr oneFurtherThanResultValue);
+        internal extern void GetComponentFastPath(System.Type type, IntPtr oneFurtherThanResultValue);
 
         [System.Security.SecuritySafeCritical]
         public unsafe T GetComponent<T>()
@@ -59,7 +59,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(HasExplicitThis = true)]
-        extern public Component GetComponent(string type);
+        public extern Component GetComponent(string type);
 
         [TypeInferenceRule(TypeInferenceRules.TypeReferencedByFirstArgument)]
         public Component GetComponentInChildren(Type t, bool includeInactive)
@@ -116,14 +116,25 @@ namespace UnityEngine
         }
 
         [TypeInferenceRule(TypeInferenceRules.TypeReferencedByFirstArgument)]
+        public Component GetComponentInParent(Type t, bool includeInactive)
+        {
+            return gameObject.GetComponentInParent(t, includeInactive);
+        }
+
+        [TypeInferenceRule(TypeInferenceRules.TypeReferencedByFirstArgument)]
         public Component GetComponentInParent(Type t)
         {
-            return gameObject.GetComponentInParent(t);
+            return gameObject.GetComponentInParent(t, false);
+        }
+
+        public T GetComponentInParent<T>([DefaultValue("false")] bool includeInactive)
+        {
+            return (T)(object)GetComponentInParent(typeof(T), includeInactive);
         }
 
         public T GetComponentInParent<T>()
         {
-            return (T)(object)GetComponentInParent(typeof(T));
+            return (T)(object)GetComponentInParent(typeof(T), false);
         }
 
         public Component[] GetComponentsInParent(Type t, [DefaultValue("false")] bool includeInactive)
@@ -158,7 +169,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(HasExplicitThis = true, ThrowsException = true)]
-        extern private void GetComponentsForListInternal(Type searchType, object resultList);
+        private extern void GetComponentsForListInternal(Type searchType, object resultList);
 
         public void GetComponents(Type type, List<Component> results)
         {
@@ -172,8 +183,8 @@ namespace UnityEngine
 
         public string tag
         {
-            get { return gameObject.tag; }
-            set { gameObject.tag = value; }
+            get => gameObject.tag;
+            set => gameObject.tag = value;
         }
 
         public T[] GetComponents<T>()
@@ -187,13 +198,13 @@ namespace UnityEngine
         }
 
         [FreeFunction(HasExplicitThis = true)]
-        extern internal Component GetCoupledComponent();
+        internal extern Component GetCoupledComponent();
 
         [FreeFunction(HasExplicitThis = true)]
-        extern internal bool IsCoupledComponent();
+        internal extern bool IsCoupledComponent();
 
         [FreeFunction(HasExplicitThis = true)]
-        extern public void SendMessageUpwards(string methodName, [DefaultValue("null")] object value, [DefaultValue("SendMessageOptions.RequireReceiver")] SendMessageOptions options);
+        public extern void SendMessageUpwards(string methodName, [DefaultValue("null")] object value, [DefaultValue("SendMessageOptions.RequireReceiver")] SendMessageOptions options);
 
         [ExcludeFromDocs]
         public void SendMessageUpwards(string methodName, object value)
@@ -223,7 +234,7 @@ namespace UnityEngine
         }
 
         [FreeFunction("SendMessage", HasExplicitThis = true)]
-        extern public void SendMessage(string methodName, object value, SendMessageOptions options);
+        public extern void SendMessage(string methodName, object value, SendMessageOptions options);
 
         public void SendMessage(string methodName, SendMessageOptions options)
         {
@@ -231,7 +242,7 @@ namespace UnityEngine
         }
 
         [FreeFunction("BroadcastMessage", HasExplicitThis = true)]
-        extern public void BroadcastMessage(string methodName, [DefaultValue("null")] object parameter, [DefaultValue("SendMessageOptions.RequireReceiver")] SendMessageOptions options);
+        public extern void BroadcastMessage(string methodName, [DefaultValue("null")] object parameter, [DefaultValue("SendMessageOptions.RequireReceiver")] SendMessageOptions options);
 
         [ExcludeFromDocs]
         public void BroadcastMessage(string methodName, object parameter)

@@ -37,13 +37,13 @@ namespace UnityEngine.UIElements.UIR
             // Count the required triangles by calling the tessellation method with a "countOnly=true" flag, which skips
             // tessellation and only update the vertex and index counts.
             UInt16 vertexCount = 0, indexCount = 0;
-            TessellateRectInternal(ref rectParams, 0, null, ref vertexCount, ref indexCount, true);
+            TessellateRoundedCorners(ref rectParams, 0, null, rectParams.colorPage, ref vertexCount, ref indexCount, true);
 
             var mesh = meshAlloc.Allocate(vertexCount, indexCount);
 
             vertexCount = 0;
             indexCount = 0;
-            TessellateRectInternal(ref rectParams, posZ, mesh, ref vertexCount, ref indexCount);
+            TessellateRoundedCorners(ref rectParams, posZ, mesh, rectParams.colorPage, ref vertexCount, ref indexCount, false);
             if (computeUVs)
                 ComputeUVs(rectParams.rect, rectParams.uv, mesh.uvRegion, mesh.m_Vertices);
             Debug.Assert(vertexCount == mesh.vertexCount);
@@ -66,13 +66,13 @@ namespace UnityEngine.UIElements.UIR
             // Count the required triangles by calling the tessellation method with a "countOnly=true" flag, which skips
             // tessellation and only update the vertex and index counts.
             UInt16 vertexCount = 0, indexCount = 0;
-            TessellateQuad(rectParams.rect, Edges.All, rectParams.color, posZ, null, ref vertexCount, ref indexCount, true);
+            TessellateQuad(rectParams.rect, Edges.All, rectParams.color, posZ, null, rectParams.colorPage, ref vertexCount, ref indexCount, true);
 
             var mesh = meshAlloc.Allocate(vertexCount, indexCount);
 
             vertexCount = 0;
             indexCount = 0;
-            TessellateQuad(rectParams.rect, Edges.All, rectParams.color, posZ, mesh, ref vertexCount, ref indexCount, false);
+            TessellateQuad(rectParams.rect, Edges.All, rectParams.color, posZ, mesh, rectParams.colorPage, ref vertexCount, ref indexCount, false);
             Debug.Assert(vertexCount == mesh.vertexCount);
             Debug.Assert(indexCount == mesh.indexCount);
 
@@ -97,37 +97,22 @@ namespace UnityEngine.UIElements.UIR
             borderParams.rightWidth = Mathf.Min(borderParams.rightWidth, halfSize.x);
             borderParams.bottomWidth = Mathf.Min(borderParams.bottomWidth, halfSize.y);
 
+            // To count the required triangles, we call the tessellation method with a "countOnly=true" flag, which skips
+            // tessellation and only update the vertex and index counts.
             UInt16 vertexCount = 0, indexCount = 0;
-            CountBorderTriangles(ref borderParams, ref vertexCount, ref indexCount);
+            TessellateRoundedBorders(ref borderParams, 0, null, ref vertexCount, ref indexCount, true);
 
             var mesh = meshAlloc.Allocate(vertexCount, indexCount);
 
             vertexCount = 0;
             indexCount = 0;
-            TessellateBorderInternal(ref borderParams, posZ, mesh, ref vertexCount, ref indexCount);
+            TessellateRoundedBorders(ref borderParams, posZ, mesh, ref vertexCount, ref indexCount, false);
             Debug.Assert(vertexCount == mesh.vertexCount);
             Debug.Assert(indexCount == mesh.indexCount);
             s_MarkerTessellateBorder.End();
         }
 
-        private static void CountBorderTriangles(ref MeshGenerationContextUtils.BorderParams border, ref UInt16 vertexCount, ref UInt16 indexCount)
-        {
-            // To count the required triangles, we call the tessellation method with a "countOnly=true" flag, which skips
-            // tessellation and only update the vertex and index counts.
-            TessellateBorderInternal(ref border, 0, null, ref vertexCount, ref indexCount, true);
-        }
-
-        private static void TessellateRectInternal(ref MeshGenerationContextUtils.RectangleParams rectParams, float posZ, MeshWriteData mesh, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly = false)
-        {
-            TessellateRoundedCorners(ref rectParams, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
-        }
-
-        private static void TessellateBorderInternal(ref MeshGenerationContextUtils.BorderParams border, float posZ, MeshWriteData mesh, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly = false)
-        {
-            TessellateRoundedBorders(ref border, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
-        }
-
-        private static void TessellateRoundedCorners(ref MeshGenerationContextUtils.RectangleParams rectParams, float posZ, MeshWriteData mesh, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
+        private static void TessellateRoundedCorners(ref MeshGenerationContextUtils.RectangleParams rectParams, float posZ, MeshWriteData mesh, ColorPage colorPage, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
         {
             // To tessellate the 4 corners, the rect is divided in 4 quadrants and every quadrant is computed as if they were the top-left corner.
             // The quadrants are then mirrored and the triangles winding flipped as necessary.
@@ -136,12 +121,12 @@ namespace UnityEngine.UIElements.UIR
             var quarterRect = new Rect(rectParams.rect.x, rectParams.rect.y, halfSize.x, halfSize.y);
 
             // Top-left
-            TessellateRoundedCorner(quarterRect, rectParams.color, posZ, rectParams.topLeftRadius, mesh, ref vertexCount, ref indexCount, countOnly);
+            TessellateRoundedCorner(quarterRect, rectParams.color, posZ, rectParams.topLeftRadius, mesh, colorPage, ref vertexCount, ref indexCount, countOnly);
 
             // Top-right
             startVc = vertexCount;
             startIc = indexCount;
-            TessellateRoundedCorner(quarterRect, rectParams.color, posZ, rectParams.topRightRadius, mesh, ref vertexCount, ref indexCount, countOnly);
+            TessellateRoundedCorner(quarterRect, rectParams.color, posZ, rectParams.topRightRadius, mesh, colorPage, ref vertexCount, ref indexCount, countOnly);
             if (!countOnly)
             {
                 MirrorVertices(quarterRect, mesh.m_Vertices, startVc, vertexCount - startVc, true);
@@ -151,7 +136,7 @@ namespace UnityEngine.UIElements.UIR
             // Bottom-right
             startVc = vertexCount;
             startIc = indexCount;
-            TessellateRoundedCorner(quarterRect, rectParams.color, posZ, rectParams.bottomRightRadius, mesh, ref vertexCount, ref indexCount, countOnly);
+            TessellateRoundedCorner(quarterRect, rectParams.color, posZ, rectParams.bottomRightRadius, mesh, colorPage, ref vertexCount, ref indexCount, countOnly);
             if (!countOnly)
             {
                 MirrorVertices(quarterRect, mesh.m_Vertices, startVc, vertexCount - startVc, true);
@@ -161,7 +146,7 @@ namespace UnityEngine.UIElements.UIR
             // Bottom-left
             startVc = vertexCount;
             startIc = indexCount;
-            TessellateRoundedCorner(quarterRect, rectParams.color, posZ, rectParams.bottomLeftRadius, mesh, ref vertexCount, ref indexCount, countOnly);
+            TessellateRoundedCorner(quarterRect, rectParams.color, posZ, rectParams.bottomLeftRadius, mesh, colorPage, ref vertexCount, ref indexCount, countOnly);
             if (!countOnly)
             {
                 MirrorVertices(quarterRect, mesh.m_Vertices, startVc, vertexCount - startVc, false);
@@ -183,12 +168,12 @@ namespace UnityEngine.UIElements.UIR
             Color32 rightColor = border.rightColor;
 
             // Top-left
-            TessellateRoundedBorder(quarterRect, leftColor, topColor, posZ, border.topLeftRadius, border.leftWidth, border.topWidth, mesh, ref vertexCount, ref indexCount, countOnly);
+            TessellateRoundedBorder(quarterRect, leftColor, topColor, posZ, border.topLeftRadius, border.leftWidth, border.topWidth, mesh, border.leftColorPage, border.topColorPage, ref vertexCount, ref indexCount, countOnly);
 
             // Top-right
             startVc = vertexCount;
             startIc = indexCount;
-            TessellateRoundedBorder(quarterRect, rightColor, topColor, posZ, border.topRightRadius, border.rightWidth, border.topWidth, mesh, ref vertexCount, ref indexCount, countOnly);
+            TessellateRoundedBorder(quarterRect, rightColor, topColor, posZ, border.topRightRadius, border.rightWidth, border.topWidth, mesh, border.rightColorPage, border.topColorPage, ref vertexCount, ref indexCount, countOnly);
             if (!countOnly)
             {
                 MirrorVertices(quarterRect, mesh.m_Vertices, startVc, vertexCount - startVc, true);
@@ -198,7 +183,7 @@ namespace UnityEngine.UIElements.UIR
             // Bottom-right
             startVc = vertexCount;
             startIc = indexCount;
-            TessellateRoundedBorder(quarterRect, rightColor, bottomColor, posZ, border.bottomRightRadius, border.rightWidth, border.bottomWidth, mesh, ref vertexCount, ref indexCount, countOnly);
+            TessellateRoundedBorder(quarterRect, rightColor, bottomColor, posZ, border.bottomRightRadius, border.rightWidth, border.bottomWidth, mesh, border.rightColorPage, border.bottomColorPage, ref vertexCount, ref indexCount, countOnly);
             if (!countOnly)
             {
                 MirrorVertices(quarterRect, mesh.m_Vertices, startVc, vertexCount - startVc, true);
@@ -208,7 +193,7 @@ namespace UnityEngine.UIElements.UIR
             // Bottom-left
             startVc = vertexCount;
             startIc = indexCount;
-            TessellateRoundedBorder(quarterRect, leftColor, bottomColor, posZ, border.bottomLeftRadius, border.leftWidth, border.bottomWidth, mesh, ref vertexCount, ref indexCount, countOnly);
+            TessellateRoundedBorder(quarterRect, leftColor, bottomColor, posZ, border.bottomLeftRadius, border.leftWidth, border.bottomWidth, mesh, border.leftColorPage, border.bottomColorPage, ref vertexCount, ref indexCount, countOnly);
             if (!countOnly)
             {
                 MirrorVertices(quarterRect, mesh.m_Vertices, startVc, vertexCount - startVc, false);
@@ -216,7 +201,7 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        private static void TessellateRoundedCorner(Rect rect, Color32 color, float posZ, Vector2 radius, MeshWriteData mesh, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
+        private static void TessellateRoundedCorner(Rect rect, Color32 color, float posZ, Vector2 radius, MeshWriteData mesh, ColorPage colorPage, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
         {
             var cornerCenter = rect.position + radius;
             var subRect = Rect.zero;
@@ -228,7 +213,7 @@ namespace UnityEngine.UIElements.UIR
                 // |     |
                 // |     |
                 // -------
-                TessellateQuad(rect, Edges.Left | Edges.Top, color, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
+                TessellateQuad(rect, Edges.Left | Edges.Top, color, posZ, mesh, new ColorPage(), ref vertexCount, ref indexCount, countOnly);
                 return;
             }
 
@@ -240,22 +225,22 @@ namespace UnityEngine.UIElements.UIR
             // | B |    |
             // |   |    |
             // ----------
-            TessellateFilledFan(cornerCenter, radius, Vector2.zero, 0, 0, color, color, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
+            TessellateFilledFan(cornerCenter, radius, Vector2.zero, 0, 0, color, color, posZ, mesh, colorPage, colorPage, ref vertexCount, ref indexCount, countOnly);
             if (radius.x < rect.width)
             {
                 // A
                 subRect = new Rect(rect.x + radius.x, rect.y, rect.width - radius.x, rect.height);
-                TessellateQuad(subRect, Edges.Top, color, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
+                TessellateQuad(subRect, Edges.Top, color, posZ, mesh, colorPage, ref vertexCount, ref indexCount, countOnly);
             }
             if (radius.y < rect.height)
             {
                 // B
                 subRect = new Rect(rect.x, rect.y + radius.y, radius.x < rect.width ? radius.x : rect.width, rect.height - radius.y);
-                TessellateQuad(subRect, Edges.Left, color, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
+                TessellateQuad(subRect, Edges.Left, color, posZ, mesh, colorPage, ref vertexCount, ref indexCount, countOnly);
             }
         }
 
-        private static void TessellateRoundedBorder(Rect rect, Color32 leftColor, Color32 topColor, float posZ, Vector2 radius, float leftWidth, float topWidth, MeshWriteData mesh, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
+        private static void TessellateRoundedBorder(Rect rect, Color32 leftColor, Color32 topColor, float posZ, Vector2 radius, float leftWidth, float topWidth, MeshWriteData mesh, ColorPage leftColorPage, ColorPage topColorPage, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
         {
             if (leftWidth < kEpsilon && topWidth < kEpsilon)
                 return;
@@ -281,13 +266,13 @@ namespace UnityEngine.UIElements.UIR
                 {
                     // A
                     subRect = new Rect(rect.x, rect.y, leftWidth, rect.height);
-                    TessellateStraightBorder(subRect, Edges.Left, topWidth, leftColor, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
+                    TessellateStraightBorder(subRect, Edges.Left, topWidth, leftColor, posZ, mesh, leftColorPage, ref vertexCount, ref indexCount, countOnly);
                 }
                 if (topWidth > kEpsilon)
                 {
                     // B
                     subRect = new Rect(rect.x, rect.y, rect.width, topWidth);
-                    TessellateStraightBorder(subRect, Edges.Top, leftWidth, topColor, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
+                    TessellateStraightBorder(subRect, Edges.Top, leftWidth, topColor, posZ, mesh, topColorPage, ref vertexCount, ref indexCount, countOnly);
                 }
                 return;
             }
@@ -306,7 +291,7 @@ namespace UnityEngine.UIElements.UIR
                 // |_____|
 
                 // A
-                TessellateFilledFan(cornerCenter, radius, Vector2.zero, leftWidth, topWidth, leftColor, topColor, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
+                TessellateFilledFan(cornerCenter, radius, Vector2.zero, leftWidth, topWidth, leftColor, topColor, posZ, mesh, leftColorPage, topColorPage, ref vertexCount, ref indexCount, countOnly);
             }
             else if (LooseCompare(radius.x, leftWidth) > 0 && LooseCompare(radius.y, topWidth) > 0)
             {
@@ -322,7 +307,7 @@ namespace UnityEngine.UIElements.UIR
                 // |__|
 
                 // A
-                TessellateBorderedFan(cornerCenter, radius, leftWidth, topWidth, leftColor, topColor, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
+                TessellateBorderedFan(cornerCenter, radius, leftWidth, topWidth, leftColor, topColor, posZ, mesh, leftColorPage, topColorPage, ref vertexCount, ref indexCount, countOnly);
             }
             else
             {
@@ -338,19 +323,19 @@ namespace UnityEngine.UIElements.UIR
                 // | |
                 // |_|
                 subRect = new Rect(rect.x, rect.y, Mathf.Max(radius.x, leftWidth), Mathf.Max(radius.y, topWidth));
-                TessellateComplexBorderCorner(subRect, radius, leftWidth, topWidth, leftColor, topColor, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
+                TessellateComplexBorderCorner(subRect, radius, leftWidth, topWidth, leftColor, topColor, posZ, mesh, leftColorPage, topColorPage, ref vertexCount, ref indexCount, countOnly);
             }
 
             // Tessellate the straight outlines
             // E
             float cornerSize = Mathf.Max(radius.y, topWidth);
             subRect = new Rect(rect.x, rect.y + cornerSize, leftWidth, rect.height - cornerSize);
-            TessellateStraightBorder(subRect, Edges.Left, 0.0f, leftColor, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
+            TessellateStraightBorder(subRect, Edges.Left, 0.0f, leftColor, posZ, mesh, leftColorPage, ref vertexCount, ref indexCount, countOnly);
 
             // F
             cornerSize = Mathf.Max(radius.x, leftWidth);
             subRect = new Rect(rect.x + cornerSize, rect.y, rect.width - cornerSize, topWidth);
-            TessellateStraightBorder(subRect, Edges.Top, 0.0f, topColor, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
+            TessellateStraightBorder(subRect, Edges.Top, 0.0f, topColor, posZ, mesh, topColorPage, ref vertexCount, ref indexCount, countOnly);
         }
 
         internal enum Edges
@@ -395,7 +380,7 @@ namespace UnityEngine.UIElements.UIR
             return 0;
         }
 
-        unsafe private static void TessellateComplexBorderCorner(Rect rect, Vector2 radius, float leftWidth, float topWidth, Color32 leftColor, Color32 topColor, float posZ, MeshWriteData mesh, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
+        unsafe private static void TessellateComplexBorderCorner(Rect rect, Vector2 radius, float leftWidth, float topWidth, Color32 leftColor, Color32 topColor, float posZ, MeshWriteData mesh, ColorPage leftColorPage, ColorPage topColorPage, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
         {
             if (rect.width < kEpsilon || rect.height < kEpsilon)
                 return;
@@ -416,7 +401,7 @@ namespace UnityEngine.UIElements.UIR
             if (intersection.y >= 0.0f && LooseCompare(intersection.y, topWidth) <= 0)
                 miterOffset.y = Mathf.Min(0.0f, intersection.y - center.y);
 
-            TessellateFilledFan(center, radius, miterOffset, leftWidth, topWidth, leftColor, topColor, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
+            TessellateFilledFan(center, radius, miterOffset, leftWidth, topWidth, leftColor, topColor, posZ, mesh, leftColorPage, topColorPage, ref vertexCount, ref indexCount, countOnly);
 
             if (LooseCompare(rect.height, radius.y) > 0)
             {
@@ -434,7 +419,7 @@ namespace UnityEngine.UIElements.UIR
                 var subRect = new Rect(rect.x, rect.y + radius.y, leftWidth, rect.height - radius.y);
                 var offsets = stackalloc Vector2[4];
                 offsets[2] = new Vector2(radius.x - leftWidth + miterOffset.x, miterOffset.y);
-                TessellateQuad(subRect, Edges.Left | Edges.Right, offsets, leftColor, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
+                TessellateQuad(subRect, Edges.Left | Edges.Right, offsets, leftColor, posZ, mesh, leftColorPage, ref vertexCount, ref indexCount, countOnly);
             }
             else if (miterOffset.y < -kEpsilon)
             {
@@ -449,7 +434,7 @@ namespace UnityEngine.UIElements.UIR
                 var subRect = new Rect(rect.x, rect.y + radius.y + miterOffset.y, leftWidth, -miterOffset.y);
                 var offsets = stackalloc Vector2[4];
                 offsets[1] = new Vector2(radius.x + miterOffset.x, 0.0f);
-                TessellateQuad(subRect, Edges.Right, offsets, leftColor, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
+                TessellateQuad(subRect, Edges.Right, offsets, leftColor, posZ, mesh, leftColorPage, ref vertexCount, ref indexCount, countOnly);
             }
 
             if (LooseCompare(rect.width, radius.x) > 0)
@@ -468,7 +453,7 @@ namespace UnityEngine.UIElements.UIR
                 var subRect = new Rect(rect.x + radius.x, rect.y, rect.width - radius.x, topWidth);
                 var offsets = stackalloc Vector2[4];
                 offsets[0] = new Vector2(miterOffset.x, radius.y - topWidth + miterOffset.y);
-                TessellateQuad(subRect, Edges.Top | Edges.Bottom, offsets, topColor, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
+                TessellateQuad(subRect, Edges.Top | Edges.Bottom, offsets, topColor, posZ, mesh, topColorPage, ref vertexCount, ref indexCount, countOnly);
             }
             else if (miterOffset.x < -kEpsilon)
             {
@@ -487,13 +472,13 @@ namespace UnityEngine.UIElements.UIR
                 var offsets = stackalloc Vector2[4];
                 offsets[0] = new Vector2(leftWidth - (radius.x + miterOffset.x), 0.0f);
                 offsets[1] = new Vector2(0.0f, radius.y);
-                TessellateQuad(subRect, Edges.Bottom, offsets, topColor, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
+                TessellateQuad(subRect, Edges.Bottom, offsets, topColor, posZ, mesh, topColorPage, ref vertexCount, ref indexCount, countOnly);
             }
         }
 
-        private static void TessellateQuad(Rect rect, Color32 color, float posZ, MeshWriteData mesh, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
+        private static void TessellateQuad(Rect rect, Color32 color, float posZ, MeshWriteData mesh, ColorPage colorPage, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
         {
-            // Simple, non-smooted quads are tessellated with two triangles like so:
+            // Simple, non-smoothed quads are tessellated with two triangles like so:
             //    +-------+
             //    |     / |
             //    |   /   |
@@ -510,15 +495,19 @@ namespace UnityEngine.UIElements.UIR
                 return;
             }
 
+            var flags = new Color32(0, 0, 0, colorPage.isValid ? (byte)1 : (byte)0);
+            var page = new Color32(0, 0, colorPage.pageAndID.r, colorPage.pageAndID.g);
+            var ids = new Color32(0, 0, 0, colorPage.pageAndID.b);
+
             Vector3 topLeft = new Vector3(rect.x, rect.y, posZ);
             Vector3 topRight = new Vector3(rect.xMax, rect.y, posZ);
             Vector3 bottomLeft = new Vector3(rect.x, rect.yMax, posZ);
             Vector3 bottomRight = new Vector3(rect.xMax, rect.yMax, posZ);
 
-            mesh.SetNextVertex(new Vertex { position = topLeft, tint = color });
-            mesh.SetNextVertex(new Vertex { position = topRight, tint = color });
-            mesh.SetNextVertex(new Vertex { position = bottomLeft, tint = color });
-            mesh.SetNextVertex(new Vertex { position = bottomRight, tint = color });
+            mesh.SetNextVertex(new Vertex { position = topLeft, tint = color, flags = flags, opacityColorPages = page, ids = ids });
+            mesh.SetNextVertex(new Vertex { position = topRight, tint = color, flags = flags, opacityColorPages = page, ids = ids });
+            mesh.SetNextVertex(new Vertex { position = bottomLeft, tint = color, flags = flags, opacityColorPages = page, ids = ids });
+            mesh.SetNextVertex(new Vertex { position = bottomRight, tint = color, flags = flags, opacityColorPages = page, ids = ids });
 
             mesh.SetNextIndex((UInt16)(vertexCount + 0));
             mesh.SetNextIndex((UInt16)(vertexCount + 1));
@@ -533,9 +522,9 @@ namespace UnityEngine.UIElements.UIR
 
         private static Edges[] s_AllEdges = { Edges.Left, Edges.Top, Edges.Right, Edges.Bottom };
 
-        unsafe private static void TessellateQuad(Rect rect, Edges smoothedEdges, Color32 color, float posZ, MeshWriteData mesh, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
+        unsafe private static void TessellateQuad(Rect rect, Edges smoothedEdges, Color32 color, float posZ, MeshWriteData mesh, ColorPage colorPage, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
         {
-            TessellateQuad(rect, smoothedEdges, null, color, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
+            TessellateQuad(rect, smoothedEdges, null, color, posZ, mesh, colorPage, ref vertexCount, ref indexCount, countOnly);
         }
 
         private static int EdgesCount(Edges edges)
@@ -549,7 +538,7 @@ namespace UnityEngine.UIElements.UIR
             return count;
         }
 
-        unsafe private static void TessellateQuad(Rect rect, Edges smoothedEdges, Vector2* offsets, Color32 color, float posZ, MeshWriteData mesh, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
+        unsafe private static void TessellateQuad(Rect rect, Edges smoothedEdges, Vector2* offsets, Color32 color, float posZ, MeshWriteData mesh, ColorPage colorPage, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
         {
             // Quads with smoothed edges are tessellated as a fan like so:
             //    +-------+
@@ -567,14 +556,14 @@ namespace UnityEngine.UIElements.UIR
             if (smoothedEdges == Edges.None && offsets == null)
             {
                 // Fallback to simpler case
-                TessellateQuad(rect, color, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
+                TessellateQuad(rect, color, posZ, mesh, colorPage, ref vertexCount, ref indexCount, countOnly);
                 return;
             }
 
             if (EdgesCount(smoothedEdges) == 1 && offsets == null)
             {
                 // We can optimize the single smoothed edge with only two triangles
-                TessellateQuadSingleEdge(rect, smoothedEdges, color, posZ, mesh, ref vertexCount, ref indexCount, countOnly);
+                TessellateQuadSingleEdge(rect, smoothedEdges, color, posZ, mesh, colorPage, ref vertexCount, ref indexCount, countOnly);
                 return;
             }
 
@@ -611,6 +600,10 @@ namespace UnityEngine.UIElements.UIR
             else
                 center = new Vector3(rect.xMin + rect.width / 2, rect.yMin + rect.height / 2, posZ);
 
+            var flags = new Color32(0, 0, 1, colorPage.isValid ? (byte)1 : (byte)0);
+            var page = new Color32(0, 0, colorPage.pageAndID.r, colorPage.pageAndID.g);
+            var ids = new Color32(0, 0, 0, colorPage.pageAndID.b);
+
             UInt16 currentIndex = vertexCount;
             for (int i = 0; i < s_AllEdges.Length; ++i)
             {
@@ -619,9 +612,9 @@ namespace UnityEngine.UIElements.UIR
                 var q = quadPoints[(i + 1) % kQuadsPointsLength];
                 float radius = (((p + q) / 2.0f) - center).magnitude;
 
-                var v0 = new Vertex() { position = p, tint = color };
-                var v1 = new Vertex() { position = q, tint = color };
-                var v2 = new Vertex() { position = center, tint = color };
+                var v0 = new Vertex() { position = p, tint = color, flags = flags, opacityColorPages = page, ids = ids };
+                var v1 = new Vertex() { position = q, tint = color, flags = flags, opacityColorPages = page, ids = ids };
+                var v2 = new Vertex() { position = center, tint = color, flags = flags, opacityColorPages = page, ids = ids };
                 if ((smoothedEdges & currentEdge) == currentEdge)
                     EncodeStraightArc(ref v0, ref v1, ref v2, radius);
 
@@ -653,10 +646,10 @@ namespace UnityEngine.UIElements.UIR
 
             center.circle = new Vector4(center.position.x, center.position.y, radius, 0.0f);
 
-            var arcFlags = new Color32(0, 0, 1, 0);
-            v0.flags = arcFlags;
-            v1.flags = arcFlags;
-            center.flags = arcFlags;
+            // Set arc flags
+            v0.flags.b = 1;
+            v1.flags.b = 1;
+            center.flags.b = 1;
         }
 
         static void ExpandTriangle(ref Vector3 v0, ref Vector3 v1, Vector3 center, float factor)
@@ -665,7 +658,7 @@ namespace UnityEngine.UIElements.UIR
             v1 += (v1 - center).normalized * factor;
         }
 
-        private static void TessellateQuadSingleEdge(Rect rect, Edges smoothedEdge, Color32 color, float posZ, MeshWriteData mesh, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
+        private static void TessellateQuadSingleEdge(Rect rect, Edges smoothedEdge, Color32 color, float posZ, MeshWriteData mesh, ColorPage colorPage, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
         {
             if (countOnly)
             {
@@ -709,13 +702,15 @@ namespace UnityEngine.UIElements.UIR
                 default: break;
             }
 
-            var arcFlags = new Color32(0, 0, 1, 0);
+            var arcFlags = new Color32(0, 0, 1, colorPage.isValid ? (byte)1 : (byte)0);
+            var page = new Color32(0, 0, colorPage.pageAndID.r, colorPage.pageAndID.g);
+            var ids = new Color32(0, 0, 0, colorPage.pageAndID.b);
 
             UInt16 baseIndex = vertexCount;
-            mesh.SetNextVertex(new Vertex() { position = p0, tint = color, flags = arcFlags, circle = circleP0 });
-            mesh.SetNextVertex(new Vertex() { position = p1, tint = color, flags = arcFlags, circle = circleP1 });
-            mesh.SetNextVertex(new Vertex() { position = p2, tint = color, flags = arcFlags, circle = circleP2 });
-            mesh.SetNextVertex(new Vertex() { position = p3, tint = color, flags = arcFlags, circle = circleP3 });
+            mesh.SetNextVertex(new Vertex() { position = p0, tint = color, flags = arcFlags, circle = circleP0, opacityColorPages = page, ids = ids });
+            mesh.SetNextVertex(new Vertex() { position = p1, tint = color, flags = arcFlags, circle = circleP1, opacityColorPages = page, ids = ids });
+            mesh.SetNextVertex(new Vertex() { position = p2, tint = color, flags = arcFlags, circle = circleP2, opacityColorPages = page, ids = ids });
+            mesh.SetNextVertex(new Vertex() { position = p3, tint = color, flags = arcFlags, circle = circleP3, opacityColorPages = page, ids = ids });
 
             mesh.SetNextIndex((UInt16)(baseIndex));
             mesh.SetNextIndex((UInt16)(baseIndex + 1));
@@ -728,7 +723,7 @@ namespace UnityEngine.UIElements.UIR
             indexCount += 6;
         }
 
-        static void TessellateStraightBorder(Rect rect, Edges smoothedEdge, float miterOffset, Color color, float posZ, MeshWriteData mesh, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
+        static void TessellateStraightBorder(Rect rect, Edges smoothedEdge, float miterOffset, Color color, float posZ, MeshWriteData mesh, ColorPage colorPage, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
         {
             Debug.Assert(smoothedEdge == Edges.Left || smoothedEdge == Edges.Top);
 
@@ -747,6 +742,10 @@ namespace UnityEngine.UIElements.UIR
             var c = new Vector3(rect.xMax, rect.yMax, posZ);
             var d = new Vector3(rect.xMin, rect.yMax, posZ);
 
+            var flags = new Color32(0, 0, 1, colorPage.isValid ? (byte)1 : (byte)0);
+            var page = new Color32(0, 0, colorPage.pageAndID.r, colorPage.pageAndID.g);
+            var ids = new Color32(0, 0, 0, colorPage.pageAndID.b);
+
             // Inflate the geometry to give space to AA computations.
             // Carefully inflate in the direction of the miter diagonal.
             if (smoothedEdge == Edges.Left)
@@ -762,12 +761,11 @@ namespace UnityEngine.UIElements.UIR
                 float x = rect.x + rect.width + 1.0f;
                 float outer = rect.width + 1.0f;
                 float inner = 1.0f;
-                var arcFlags = new Color32(0, 0, 1, 0);
 
-                mesh.SetNextVertex(new Vertex() { position = a, tint = color, flags = arcFlags, circle = new Vector4(x, a.y, outer, inner), uv = new Vector2(x, a.y) });
-                mesh.SetNextVertex(new Vertex() { position = b, tint = color, flags = arcFlags, circle = new Vector4(x, b.y, outer, inner), uv = new Vector2(x, b.y) });
-                mesh.SetNextVertex(new Vertex() { position = c, tint = color, flags = arcFlags, circle = new Vector4(x, c.y, outer, inner), uv = new Vector2(x, c.y) });
-                mesh.SetNextVertex(new Vertex() { position = d, tint = color, flags = arcFlags, circle = new Vector4(x, d.y, outer, inner), uv = new Vector2(x, d.y) });
+                mesh.SetNextVertex(new Vertex() { position = a, tint = color, flags = flags, circle = new Vector4(x, a.y, outer, inner), uv = new Vector2(x, a.y), opacityColorPages = page, ids = ids });
+                mesh.SetNextVertex(new Vertex() { position = b, tint = color, flags = flags, circle = new Vector4(x, b.y, outer, inner), uv = new Vector2(x, b.y), opacityColorPages = page, ids = ids });
+                mesh.SetNextVertex(new Vertex() { position = c, tint = color, flags = flags, circle = new Vector4(x, c.y, outer, inner), uv = new Vector2(x, c.y), opacityColorPages = page, ids = ids });
+                mesh.SetNextVertex(new Vertex() { position = d, tint = color, flags = flags, circle = new Vector4(x, d.y, outer, inner), uv = new Vector2(x, d.y), opacityColorPages = page, ids = ids });
             }
             else
             {
@@ -782,12 +780,11 @@ namespace UnityEngine.UIElements.UIR
                 float y = rect.y + rect.height + 1.0f;
                 float outer = rect.height + 1.0f;
                 float inner = 1.0f;
-                var arcFlags = new Color32(0, 0, 1, 0);
 
-                mesh.SetNextVertex(new Vertex() { position = a, tint = color, flags = arcFlags, circle = new Vector4(a.x, y, outer, inner), uv = new Vector2(a.x, y) });
-                mesh.SetNextVertex(new Vertex() { position = b, tint = color, flags = arcFlags, circle = new Vector4(b.x, y, outer, inner), uv = new Vector2(b.x, y) });
-                mesh.SetNextVertex(new Vertex() { position = c, tint = color, flags = arcFlags, circle = new Vector4(c.x, y, outer, inner), uv = new Vector2(c.x, y) });
-                mesh.SetNextVertex(new Vertex() { position = d, tint = color, flags = arcFlags, circle = new Vector4(d.x, y, outer, inner), uv = new Vector2(d.x, y) });
+                mesh.SetNextVertex(new Vertex() { position = a, tint = color, flags = flags, circle = new Vector4(a.x, y, outer, inner), uv = new Vector2(a.x, y), opacityColorPages = page, ids = ids });
+                mesh.SetNextVertex(new Vertex() { position = b, tint = color, flags = flags, circle = new Vector4(b.x, y, outer, inner), uv = new Vector2(b.x, y), opacityColorPages = page, ids = ids });
+                mesh.SetNextVertex(new Vertex() { position = c, tint = color, flags = flags, circle = new Vector4(c.x, y, outer, inner), uv = new Vector2(c.x, y), opacityColorPages = page, ids = ids });
+                mesh.SetNextVertex(new Vertex() { position = d, tint = color, flags = flags, circle = new Vector4(d.x, y, outer, inner), uv = new Vector2(d.x, y), opacityColorPages = page, ids = ids });
             }
 
             UInt16 currentIndex = vertexCount;
@@ -860,7 +857,7 @@ namespace UnityEngine.UIElements.UIR
             u = 1.0f - v - w;
         }
 
-        static void TessellateFilledFan(Vector2 center, Vector2 radius, Vector2 miterOffset, float leftWidth, float topWidth, Color32 leftColor, Color32 topColor, float posZ, MeshWriteData mesh, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
+        static void TessellateFilledFan(Vector2 center, Vector2 radius, Vector2 miterOffset, float leftWidth, float topWidth, Color32 leftColor, Color32 topColor, float posZ, MeshWriteData mesh, ColorPage leftColorPage, ColorPage topColorPage, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
         {
             if (countOnly)
             {
@@ -869,11 +866,17 @@ namespace UnityEngine.UIElements.UIR
                 return;
             }
 
-            byte isArc = 1;
-            Color32 flags = new Color32((byte)VertexFlags.IsSolid, 0, isArc, 0);
+            var leftFlags = new Color32(0, 0, 1, leftColorPage.isValid ? (byte)1 : (byte)0);
+            var leftPage = new Color32(0, 0, leftColorPage.pageAndID.r, leftColorPage.pageAndID.g);
+            var leftIds = new Color32(0, 0, 0, leftColorPage.pageAndID.b);
+
+            var topFlags = new Color32(0, 0, 1, topColorPage.isValid ? (byte)1 : (byte)0);
+            var topPage = new Color32(0, 0, topColorPage.pageAndID.r, topColorPage.pageAndID.g);
+            var topIds = new Color32(0, 0, 0, topColorPage.pageAndID.b);
+
             float r = Mathf.Min(radius.x, radius.y); // This is arbitrary since we have a degree of freedom.
 
-            var bottomRight = new Vertex { flags = flags };
+            var bottomRight = new Vertex();
             var bottomLeft = bottomRight;
             var topLeft = bottomRight;
             var topRight = bottomRight;
@@ -906,6 +909,31 @@ namespace UnityEngine.UIElements.UIR
             topRight.tint = topColor;
             bottomRight2.tint = topColor;
 
+            // Update flags, pages and ids
+            bottomRight.flags = leftFlags;
+            bottomRight.opacityColorPages = leftPage;
+            bottomRight.ids = leftIds;
+
+            bottomLeft.flags = leftFlags;
+            bottomLeft.opacityColorPages = leftPage;
+            bottomLeft.ids = leftIds;
+
+            topLeft2.flags = leftFlags;
+            topLeft2.opacityColorPages = leftPage;
+            topLeft2.ids = leftIds;
+
+            topLeft.flags = topFlags;
+            topLeft.opacityColorPages = topPage;
+            topLeft.ids = topIds;
+
+            topRight.flags = topFlags;
+            topRight.opacityColorPages = topPage;
+            topRight.ids = topIds;
+
+            bottomRight2.flags = topFlags;
+            bottomRight2.opacityColorPages = topPage;
+            bottomRight2.ids = topIds;
+
             mesh.SetNextVertex(bottomRight);
             mesh.SetNextVertex(bottomLeft);
             mesh.SetNextVertex(topLeft2);
@@ -924,7 +952,7 @@ namespace UnityEngine.UIElements.UIR
             indexCount += 6;
         }
 
-        private static void TessellateBorderedFan(Vector2 center, Vector2 outerRadius, float leftWidth, float topWidth, Color32 leftColor, Color32 topColor, float posZ, MeshWriteData mesh, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
+        private static void TessellateBorderedFan(Vector2 center, Vector2 outerRadius, float leftWidth, float topWidth, Color32 leftColor, Color32 topColor, float posZ, MeshWriteData mesh, ColorPage leftColorPage, ColorPage topColorPage, ref UInt16 vertexCount, ref UInt16 indexCount, bool countOnly)
         {
             if (countOnly)
             {
@@ -934,11 +962,15 @@ namespace UnityEngine.UIElements.UIR
             }
             Vector2 innerRadius = new Vector2(outerRadius.x - leftWidth, outerRadius.y - topWidth);
 
-            var widths = new Vector2(leftWidth, topWidth);
-            byte isArc = 1;
-            Color32 flags = new Color32((byte)VertexFlags.IsSolid, 0, isArc, 0);
+            var leftFlags = new Color32(0, 0, 1, leftColorPage.isValid ? (byte)1 : (byte)0);
+            var leftPage = new Color32(0, 0, leftColorPage.pageAndID.r, leftColorPage.pageAndID.g);
+            var leftIds = new Color32(0, 0, 0, leftColorPage.pageAndID.b);
 
-            var bottomRight = new Vertex { flags = flags, uv = widths };
+            var topFlags = new Color32(0, 0, 1, topColorPage.isValid ? (byte)1 : (byte)0);
+            var topPage = new Color32(0, 0, topColorPage.pageAndID.r, topColorPage.pageAndID.g);
+            var topIds = new Color32(0, 0, 0, topColorPage.pageAndID.b);
+
+            var bottomRight = new Vertex();
             var bottomLeft = bottomRight;
             var topLeft = bottomRight;
             var topRight = bottomRight;
@@ -963,6 +995,31 @@ namespace UnityEngine.UIElements.UIR
             topLeft.tint = topColor;
             topRight.tint = topColor;
             bottomRight2.tint = topColor;
+
+            // Update flags, pages and ids
+            bottomRight.flags = leftFlags;
+            bottomRight.opacityColorPages = leftPage;
+            bottomRight.ids = leftIds;
+
+            bottomLeft.flags = leftFlags;
+            bottomLeft.opacityColorPages = leftPage;
+            bottomLeft.ids = leftIds;
+
+            topLeft2.flags = leftFlags;
+            topLeft2.opacityColorPages = leftPage;
+            topLeft2.ids = leftIds;
+
+            topLeft.flags = topFlags;
+            topLeft.opacityColorPages = topPage;
+            topLeft.ids = topIds;
+
+            topRight.flags = topFlags;
+            topRight.opacityColorPages = topPage;
+            topRight.ids = topIds;
+
+            bottomRight2.flags = topFlags;
+            bottomRight2.opacityColorPages = topPage;
+            bottomRight2.ids = topIds;
 
             mesh.SetNextVertex(bottomRight);
             mesh.SetNextVertex(bottomLeft);

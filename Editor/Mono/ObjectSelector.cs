@@ -17,7 +17,9 @@ using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.SearchService;
 using UnityObject = UnityEngine.Object;
+#pragma warning disable 618
 using SelectorHandlerType = System.Func<UnityEditor.SearchService.ObjectSelectorTargetInfo, UnityEngine.Object[], UnityEditor.SearchService.ObjectSelectorSearchContext, bool>;
+#pragma warning restore 618
 using Scene = UnityEngine.SceneManagement.Scene;
 
 namespace UnityEditor
@@ -483,7 +485,9 @@ namespace UnityEditor
             {
                 m_SearchSessionHandler.BeginSession(() =>
                 {
+                    #pragma warning disable 618
                     SelectorHandlerType selectorConstraint = null;
+                    #pragma warning restore 618
                     if (m_EditedProperty != null)
                     {
                         selectorConstraint = GetSelectorHandlerFromProperty(m_EditedProperty);
@@ -496,7 +500,10 @@ namespace UnityEditor
                         requiredTypeNames = m_RequiredTypes,
                         allowedInstanceIds = allowedInstanceIDs,
                         visibleObjects = allowSceneObjects ? SearchService.VisibleObjects.All : SearchService.VisibleObjects.Assets,
+
+                        #pragma warning disable 618
                         selectorConstraint = selectorConstraint
+                        #pragma warning restore 618
                     };
                 });
 
@@ -1066,6 +1073,7 @@ namespace UnityEditor
             SendEvent(ObjectSelectorClosedCommand, exitGUI);
         }
 
+        #pragma warning disable 618
         SelectorHandlerType GetSelectorHandlerFromProperty(SerializedProperty property)
         {
             var fieldInfo = ScriptAttributeUtility.GetFieldInfoFromProperty(property, out _);
@@ -1236,5 +1244,7 @@ namespace UnityEditor
                 objectSelectorName = objectSelectorName.Remove(index);
             return objectSelectorName;
         }
+
+        #pragma warning restore 618
     }
 }

@@ -159,15 +159,28 @@ namespace UnityEngine.UIElements
             switch (evt.propagationPhase)
             {
                 case PropagationPhase.TrickleDown:
-                case PropagationPhase.AtTarget:
                 case PropagationPhase.BubbleUp:
                 {
                     if (!evt.isPropagationStopped)
                     {
-                        m_CallbackRegistry?.InvokeCallbacks(evt);
+                        m_CallbackRegistry?.InvokeCallbacks(evt, evt.propagationPhase);
                     }
                     break;
                 }
+
+                case PropagationPhase.AtTarget:
+                {
+                    //We make sure we invoke callbacks from the TrickleDownPhase before the BubbleUp ones when we are directly at target
+                    if (!evt.isPropagationStopped)
+                    {
+                        m_CallbackRegistry?.InvokeCallbacks(evt, PropagationPhase.TrickleDown);
+                    }
+                    if (!evt.isPropagationStopped)
+                    {
+                        m_CallbackRegistry?.InvokeCallbacks(evt, PropagationPhase.BubbleUp);
+                    }
+                }
+                break;
 
                 case PropagationPhase.DefaultActionAtTarget:
                 {

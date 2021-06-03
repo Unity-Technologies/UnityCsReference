@@ -4,80 +4,230 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using UnityEngine.Pool;
 
 namespace UnityEngine.UIElements
 {
-    internal interface ITreeViewItem
+    internal readonly struct TreeData<T>
     {
-        int id { get; }
+        readonly IList<int> m_RootItemIds;
+        readonly Dictionary<int, TreeViewItemData<T>> m_Tree;
+        readonly Dictionary<int, int> m_ParentIds;
+        readonly Dictionary<int, List<int>> m_ChildrenIds;
 
-        ITreeViewItem parent { get; }
+        public IEnumerable<int> rootItemIds => m_RootItemIds;
 
-        IEnumerable<ITreeViewItem> children { get; }
+        public TreeData(IList<TreeViewItemData<T>> rootItems)
+        {
+            m_RootItemIds = new List<int>();
+            m_Tree = new Dictionary<int, TreeViewItemData<T>>();
+            m_ParentIds = new Dictionary<int, int>();
+            m_ChildrenIds = new Dictionary<int, List<int>>();
 
-        bool hasChildren { get; }
+            RefreshTree(rootItems);
+        }
 
-        void AddChild(ITreeViewItem child);
+        public TreeViewItemData<T> GetDataForId(int id)
+        {
+            return m_Tree[id];
+        }
 
-        void AddChildren(IList<ITreeViewItem> children);
+        public int GetParentId(int id)
+        {
+            if (m_ParentIds.TryGetValue(id, out var parentId))
+                return parentId;
 
-        void RemoveChild(ITreeViewItem child);
+            return TreeItem.invalidId;
+        }
+
+        public void AddItem(TreeViewItemData<T> item, int parentId, int childIndex)
+        {
+            var enumerator = ListPool<TreeViewItemData<T>>.Get();
+            enumerator.Add(item);
+            BuildTree(enumerator, false);
+            AddItemToParent(item, parentId, childIndex);
+            ListPool<TreeViewItemData<T>>.Release(enumerator);
+        }
+
+        public bool TryRemove(int id)
+        {
+            if (m_ParentIds.TryGetValue(id, out var parentId))
+            {
+                RemoveFromParent(id, parentId);
+            }
+
+            return TryRemoveChildrenIds(id);
+        }
+
+        public void Move(int id, int newParentId, int childIndex)
+        {
+            if (!m_Tree.TryGetValue(id, out var child))
+                return;
+
+            if (m_ParentIds.TryGetValue(id, out var currentParentId))
+            {
+                if (currentParentId == newParentId)
+                {
+                    var index = m_Tree[currentParentId].GetChildIndex(id);
+                    if (index < childIndex)
+                    {
+                        childIndex--;
+                    }
+                }
+
+                RemoveFromParent(child.id, currentParentId);
+            }
+            else
+            {
+                m_RootItemIds.Remove(id);
+            }
+
+            AddItemToParent(child, newParentId, childIndex);
+        }
+
+        void AddItemToParent(TreeViewItemData<T> item, int parentId, int childIndex)
+        {
+            if (parentId == TreeItem.invalidId)
+            {
+                m_ParentIds.Remove(item.id);
+                if (childIndex == -1)
+                    m_RootItemIds.Add(item.id);
+                else
+                    m_RootItemIds.Insert(childIndex, item.id);
+
+                return;
+            }
+
+            var parent = m_Tree[parentId];
+            parent.InsertChild(item, childIndex);
+            m_Tree[parentId] = parent;
+            m_ParentIds[item.id] = parentId;
+
+            // We need to replace struct in parents since they're not value reference types.
+            UpdateParentTree(parent);
+        }
+
+        void RemoveFromParent(int id, int parentId)
+        {
+            var currentParent = m_Tree[parentId];
+            currentParent.RemoveChild(id);
+            m_Tree[parentId] = currentParent;
+
+            if (m_ChildrenIds.TryGetValue(parentId, out var childrenList))
+                childrenList.Remove(id);
+
+            // We need to replace struct in parents since they're not value reference types.
+            UpdateParentTree(currentParent);
+        }
+
+        void UpdateParentTree(TreeViewItemData<T> current)
+        {
+            while (m_ParentIds.TryGetValue(current.id, out var nextParentId))
+            {
+                var nextParent = m_Tree[nextParentId];
+                nextParent.ReplaceChild(current);
+                m_Tree[nextParentId] = nextParent;
+
+                current = nextParent;
+            }
+        }
+
+        bool TryRemoveChildrenIds(int id)
+        {
+            if (m_Tree.TryGetValue(id, out var item) && item.children != null)
+            {
+                foreach (var child in item.children)
+                {
+                    TryRemoveChildrenIds(child.id);
+                }
+            }
+
+            if (m_ChildrenIds.TryGetValue(id, out var childrenIds))
+            {
+                ListPool<int>.Release(childrenIds);
+            }
+
+            var removed = false;
+            removed |= m_ChildrenIds.Remove(id);
+            removed |= m_ParentIds.Remove(id);
+            removed |= m_Tree.Remove(id);
+
+            return removed;
+        }
+
+        void RefreshTree(IList<TreeViewItemData<T>> rootItems)
+        {
+            m_Tree.Clear();
+            m_ParentIds.Clear();
+            m_ChildrenIds.Clear();
+            m_RootItemIds.Clear();
+
+            BuildTree(rootItems, true);
+        }
+
+        void BuildTree(IEnumerable<TreeViewItemData<T>> items, bool isRoot)
+        {
+            if (items == null)
+                return;
+
+            foreach (var item in items)
+            {
+                m_Tree.Add(item.id, item);
+
+                if (isRoot)
+                    m_RootItemIds.Add(item.id);
+
+                if (item.children != null)
+                {
+                    if (!m_ChildrenIds.TryGetValue(item.id, out var childIndexList))
+                    {
+                        m_ChildrenIds.Add(item.id, childIndexList = ListPool<int>.Get());
+                    }
+
+                    foreach (var child in item.children)
+                    {
+                        m_ParentIds.Add(child.id, item.id);
+                        childIndexList.Add(child.id);
+                    }
+
+                    BuildTree(item.children, false);
+                }
+            }
+        }
     }
 
-    internal class TreeViewItem<T> : ITreeViewItem
+    internal readonly struct TreeItem
     {
-        public int id { get; private set; }
+        public const int invalidId = -1;
 
-        internal TreeViewItem<T> m_Parent;
-        public ITreeViewItem parent => m_Parent;
+        public int id { get; }
+        public int parentId { get; }
+        public IEnumerable<int> childrenIds { get; }
 
-        List<ITreeViewItem> m_Children;
-        public IEnumerable<ITreeViewItem> children { get { return m_Children; } }
+        public bool hasChildren => childrenIds != null && childrenIds.Any();
 
-        public bool hasChildren { get { return m_Children != null && m_Children.Count > 0; } }
-
-        public T data { get; private set; }
-
-        public TreeViewItem(int id, T data, List<TreeViewItem<T>> children = null)
+        public TreeItem(int id, int parentId = invalidId, IEnumerable<int> childrenIds = null)
         {
             this.id = id;
-            this.data = data;
-
-            if (children != null)
-                foreach (var child in children)
-                    AddChild(child);
+            this.parentId = parentId;
+            this.childrenIds = childrenIds;
         }
+    }
 
-        public void AddChild(ITreeViewItem child)
+    internal readonly struct TreeViewItemWrapper
+    {
+        public readonly TreeItem item;
+        public int id => item.id;
+        public int parentId => item.parentId;
+        public IEnumerable<int> childrenIds => item.childrenIds;
+        public bool hasChildren => item.hasChildren;
+        public readonly int depth;
+
+        public TreeViewItemWrapper(TreeItem item, int depth)
         {
-            var treeChild = child as TreeViewItem<T>;
-            if (treeChild == null)
-                return;
-
-            if (m_Children == null)
-                m_Children = new List<ITreeViewItem>();
-
-            m_Children.Add(treeChild);
-
-            treeChild.m_Parent = this;
-        }
-
-        public void AddChildren(IList<ITreeViewItem> children)
-        {
-            foreach (var child in children)
-                AddChild(child);
-        }
-
-        public void RemoveChild(ITreeViewItem child)
-        {
-            if (m_Children == null)
-                return;
-
-            var treeChild = child as TreeViewItem<T>;
-            if (treeChild == null)
-                return;
-
-            m_Children.Remove(treeChild);
+            this.item = item;
+            this.depth = depth;
         }
     }
 }

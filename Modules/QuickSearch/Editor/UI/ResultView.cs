@@ -12,23 +12,20 @@ namespace UnityEditor.Search
     [Serializable]
     class ResultViewState
     {
-        public bool isValid => displayMode != DisplayMode.None;
         public float itemSize;
-        public DisplayMode displayMode;
         public string group;
         public SearchTable tableConfig;
 
-        public ResultViewState(DisplayMode mode, SearchTable tableConfig)
+        public ResultViewState(SearchTable tableConfig)
         {
-            displayMode = mode;
-            itemSize = (float)mode;
+            itemSize = (float)DisplayMode.Table;
             group = null;
             this.tableConfig = tableConfig;
         }
 
-        public ResultViewState(DisplayMode mode, float itemSize)
+
+        public ResultViewState(float itemSize)
         {
-            displayMode = mode;
             this.itemSize = itemSize;
             group = null;
             tableConfig = null;
@@ -115,7 +112,7 @@ namespace UnityEditor.Search
 
         public virtual ResultViewState SaveViewState(string name)
         {
-            return new ResultViewState(searchView.displayMode, itemSize);
+            return new ResultViewState(itemSize);
         }
 
         public virtual void SetViewState(ResultViewState viewState)
@@ -222,12 +219,10 @@ namespace UnityEditor.Search
 
                     if ((now - m_ClickTime) < 0.3)
                     {
-                        var item = items.ElementAt(clickedItemIndex);
-                        if (item.provider.actions.Count > 0)
-                            searchView.ExecuteAction(item.provider.actions[0], new[] {item}, !SearchSettings.keepOpen);
+                        searchView.ExecuteSelection();
                         GUIUtility.ExitGUI();
                     }
-                    SearchField.Focus();
+                    searchView.FocusSearch();
                     evt.Use();
                     m_ClickTime = now;
                 }
@@ -332,33 +327,12 @@ namespace UnityEditor.Search
 
                 if (selectedIndex != -1)
                 {
-                    var item = results.ElementAt(selectedIndex);
-                    if (item.provider.actions.Count > 0)
-                    {
-                        SearchAction action = item.provider.actions[0];
-                        if (evt.modifiers.HasAny(EventModifiers.Alt))
-                        {
-                            var actionIndex = 1;
-                            if (evt.modifiers.HasAny(EventModifiers.Control))
-                            {
-                                actionIndex = 2;
-                                if (evt.modifiers.HasAny(EventModifiers.Shift))
-                                    actionIndex = 3;
-                            }
-                            action = item.provider.actions[Math.Max(0, Math.Min(actionIndex, item.provider.actions.Count - 1))];
-                        }
-
-                        if (action != null)
-                        {
-                            evt.Use();
-                            searchView.ExecuteAction(action, searchView.selection.ToArray(), !SearchSettings.keepOpen);
-                            GUIUtility.ExitGUI();
-                        }
-                    }
+                    searchView.ExecuteSelection();
+                    GUIUtility.ExitGUI();
                 }
             }
             else if (!EditorGUIUtility.editingTextField)
-                SearchField.Focus();
+                searchView.FocusSearch();
 
             var newSelection = selection.Count == 0 ? k_ResetSelectionIndex : selection.Last();
             if (selectedIndex != newSelection)

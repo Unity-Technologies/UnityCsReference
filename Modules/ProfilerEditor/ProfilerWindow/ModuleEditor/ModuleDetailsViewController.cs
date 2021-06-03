@@ -50,7 +50,7 @@ namespace UnityEditor.Profiling.ModuleEditor
         Button m_DeleteModuleButton;
         Label m_AllCountersTitleLabel;
         Label m_AllCountersDescriptionLabel;
-        TreeView m_AllCountersTreeView;
+        InternalTreeView m_AllCountersTreeView;
         Button m_AllCountersAddSelectedButton;
         Button m_ConfirmButton;
         Label m_NoModuleSelectedLabel;
@@ -84,11 +84,7 @@ namespace UnityEditor.Profiling.ModuleEditor
             m_ChartCountersListView.bindItem = BindListViewItem;
             m_ChartCountersListView.selectionType = SelectionType.Multiple;
             m_ChartCountersListView.reorderable = true;
-            var dragAndDropController = m_ChartCountersListView.GetDragAndDropController();
-            if (dragAndDropController != null)
-            {
-                dragAndDropController.onItemMoved += OnListViewItemMoved;
-            }
+            m_ChartCountersListView.itemIndexChanged += OnListViewItemMoved;
             m_DeleteModuleButton.text = LocalizationDatabase.GetLocalizedString("Delete Module");
             m_DeleteModuleButton.clicked += DeleteModule;
 
@@ -121,8 +117,8 @@ namespace UnityEditor.Profiling.ModuleEditor
                 m_TitleTextField.SetValueWithoutNotify(m_Module.localizedName);
                 UpdateChartCountersCountLabel();
                 m_ChartCountersListView.itemsSource = m_Module.chartCounters;
-                m_ChartCountersListView.Refresh();
-                m_AllCountersTreeView.Refresh();
+                m_ChartCountersListView.Rebuild();
+                m_AllCountersTreeView.Rebuild();
                 m_NoModuleSelectedLabel.visible = false;
             }
             else
@@ -150,7 +146,7 @@ namespace UnityEditor.Profiling.ModuleEditor
             m_DeleteModuleButton = root.Q<Button>(k_UssSelector_CurrentModuleDetailsDeleteButton);
             m_AllCountersTitleLabel = root.Q<Label>(k_UssSelector_AllCountersTitleLabel);
             m_AllCountersDescriptionLabel = root.Q<Label>(k_UssSelector_AllCountersDescriptionLabel);
-            m_AllCountersTreeView = root.Q<TreeView>(k_UssSelector_AllCountersTreeView);
+            m_AllCountersTreeView = root.Q<InternalTreeView>(k_UssSelector_AllCountersTreeView);
             m_AllCountersAddSelectedButton = root.Q<Button>(k_UssSelector_AllCountersAddSelectedToolbarButton);
             m_ConfirmButton = root.Q<Button>(k_UssSelector_ModuleDetailsConfirmButton);
             m_NoModuleSelectedLabel = root.Q<Label>(k_UssSelector_ModuleDetailsNoModuleSelectedLabel);
@@ -181,7 +177,7 @@ namespace UnityEditor.Profiling.ModuleEditor
                 // Update tree view UI.
                 ProfilerMarkers.k_RebuildCountersUI.Begin();
                 m_AllCountersTreeView.rootItems = m_TreeDataItems;
-                m_AllCountersTreeView.Refresh();
+                m_AllCountersTreeView.Rebuild();
                 ProfilerMarkers.k_RebuildCountersUI.End();
             }
         }
@@ -311,8 +307,8 @@ namespace UnityEditor.Profiling.ModuleEditor
             }
 
             m_AllCountersTreeView.ClearSelection();
-            m_ChartCountersListView.Refresh();
-            m_AllCountersTreeView.Refresh();
+            m_ChartCountersListView.Rebuild();
+            m_AllCountersTreeView.Rebuild();
             UpdateChartCountersCountLabel();
         }
 
@@ -342,8 +338,8 @@ namespace UnityEditor.Profiling.ModuleEditor
             }
 
             m_ChartCountersListView.ClearSelection();
-            m_ChartCountersListView.Refresh();
-            m_AllCountersTreeView.Refresh();
+            m_ChartCountersListView.Rebuild();
+            m_AllCountersTreeView.Rebuild();
             UpdateChartCountersCountLabel();
         }
 
@@ -380,7 +376,7 @@ namespace UnityEditor.Profiling.ModuleEditor
             m_ChartCountersCountLabel.text = $"{m_Module.chartCounters.Count}/{ModuleData.k_MaximumChartCountersCount}";
         }
 
-        void OnListViewItemMoved(ItemMoveArgs<object> args)
+        void OnListViewItemMoved(int previousIndex, int newIndex)
         {
             m_Module.SetUpdatedEditedStateForOrderIndexChange();
         }

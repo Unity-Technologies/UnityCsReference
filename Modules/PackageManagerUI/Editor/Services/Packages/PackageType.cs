@@ -16,6 +16,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         AssetStore      = 1 << 2,
         Unity           = 1 << 3,
         ScopedRegistry  = 1 << 4,
-        MainNotUnity    = 1 << 5
+        MainNotUnity    = 1 << 5,
+        Feature         = 1 << 6
     }
 }

@@ -15,6 +15,8 @@ namespace UnityEngine.UIElements
     [Serializable]
     public class VisualTreeAsset : ScriptableObject
     {
+        internal static string LinkedVEAInTemplatePropertyName = "--unity-linked-vea-in-template";
+
         [SerializeField]
         bool m_ImportedWithErrors;
 
@@ -369,6 +371,10 @@ namespace UnityEngine.UIElements
 
                 if (rootVe != null)
                 {
+                    // Save reference to the visualElementAsset so elements can be reinitialized when
+                    // we set their attributes in the editor
+                    rootVe.SetProperty(LinkedVEAInTemplatePropertyName, rootElement);
+
                     // Save reference to the VisualTreeAsset itself on the containing VisualElement so it can be
                     // tracked for live reloading on changes, and also accessible for users that need to keep track
                     // of their cloned VisualTreeAssets.
@@ -434,6 +440,10 @@ namespace UnityEngine.UIElements
                     VisualElement childVe = CloneSetupRecursively(childVea, idToChildren, context);
                     if (childVe == null)
                         continue;
+
+                    // Save reference to the visualElementAsset so elements can be reinitialized when
+                    // we set their attributes in the editor
+                    childVe.SetProperty(LinkedVEAInTemplatePropertyName, childVea);
 
                     // if the parent is not a template asset, just add the child to whatever hierarchy we currently have
                     // if ve is a scrollView (with contentViewport as contentContainer), this will go to the right place

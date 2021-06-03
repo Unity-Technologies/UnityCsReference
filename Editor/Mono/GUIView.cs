@@ -9,7 +9,7 @@ using UnityEngine.Scripting;
 
 using FrameCapture = UnityEngine.Apple.FrameCapture;
 using FrameCaptureDestination = UnityEngine.Apple.FrameCaptureDestination;
-
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
@@ -33,16 +33,12 @@ namespace UnityEditor
             {
                 SavedGUIState oldState = SavedGUIState.Create();
                 var retval = Internal_SendEvent(e);
-                if (retval)
-                    EditorApplication.SignalTick();
                 oldState.ApplyAndForget();
                 return retval;
             }
 
             {
                 var retval = Internal_SendEvent(e);
-                if (retval)
-                    EditorApplication.SignalTick();
                 return retval;
             }
         }
@@ -78,6 +74,7 @@ namespace UnityEditor
         }
 
         Vector2 IWindowModel.size => windowPosition.size;
+        protected VisualElement visualTree => (VisualElement)(windowBackend?.visualTree);
 
         public EventInterests eventInterests
         {

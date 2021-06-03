@@ -74,14 +74,19 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void CreateGUI()
         {
+            var newTab = m_PackageManagerPrefs.lastUsedPackageFilter ?? PackageFiltering.k_DefaultFilterTab;
+
+            // Reset the lock icons when users open a new Package Manager window
+            m_PageManager.GetPage(newTab).ResetUserUnlockedState();
+
             packageDetails.OnEnable();
             packageList.OnEnable();
             packageLoadBar.OnEnable();
             packageManagerToolbar.OnEnable();
+            packageSubPageFilterBar.OnEnable();
             packageStatusbar.OnEnable();
 
-            packageManagerToolbar.SetEnabled(!m_PackageDatabase.isEmpty);
-            packageDetails.packageToolbarContainer.SetEnabled(!m_PackageDatabase.isEmpty);
+            SetToolbarsEnabled(!m_PackageDatabase.isEmpty);
 
             leftColumnContainer.style.flexGrow = m_PackageManagerPrefs.splitterFlexGrow;
             rightColumnContainer.style.flexGrow = 1 - m_PackageManagerPrefs.splitterFlexGrow;
@@ -105,7 +110,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             RefreshSelectedInInspectorClass();
 
             // set the current filter tab value after all the callback system has been setup so that we don't miss any callbacks
-            var newTab = m_PackageManagerPrefs.lastUsedPackageFilter ?? PackageFiltering.k_DefaultFilterTab;
             m_PackageFiltering.currentFilterTab = newTab;
 
             if (m_PageManager.GetRefreshTimestamp(newTab) == 0)
@@ -126,7 +130,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 packageList.HidePackagesShowMessage(false, false, L10n.Tr("UPM server is not running"));
                 packageStatusbar.DisableRefresh();
-                packageManagerToolbar.SetEnabled(false);
+                SetToolbarsEnabled(false);
                 return;
             }
 
@@ -190,6 +194,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             packageList.OnDisable();
             packageLoadBar.OnDisable();
             packageManagerToolbar.OnDisable();
+            packageSubPageFilterBar.OnDisable();
             packageStatusbar.OnDisable();
 
             EditorApplication.focusChanged -= OnFocusChanged;
@@ -231,8 +236,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnRefreshOperationFinish()
         {
-            packageManagerToolbar.SetEnabled(true);
-            packageDetails.packageToolbarContainer.SetEnabled(true);
+            SetToolbarsEnabled(true);
 
             if (m_FilterToSelectAfterLoad != null && m_PageManager.GetRefreshTimestamp(m_FilterToSelectAfterLoad) > 0)
                 SelectPackageAndFilter();
@@ -315,15 +319,20 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (m_PageManager.IsRefreshInProgress(tab))
             {
-                packageManagerToolbar.SetEnabled(false);
-                packageDetails.packageToolbarContainer.SetEnabled(false);
+                SetToolbarsEnabled(false);
             }
         }
 
         private void OnRefreshOperationError(UIError error)
         {
-            packageManagerToolbar.SetEnabled(true);
-            packageDetails.packageToolbarContainer.SetEnabled(true);
+            SetToolbarsEnabled(true);
+        }
+
+        private void SetToolbarsEnabled(bool value)
+        {
+            packageManagerToolbar.SetEnabled(value);
+            packageSubPageFilterBar.SetEnabled(value);
+            packageDetails.packageToolbarContainer.SetEnabled(value);
         }
 
         public void SelectPackageAndFilter(string packageToSelect, PackageFilterTab? filterTab = null, bool refresh = false, string searchText = "")
@@ -429,6 +438,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal PackageLoadBar packageLoadBar { get { return cache.Get<PackageLoadBar>("packageLoadBar"); } }
         internal PackageDetails packageDetails { get { return cache.Get<PackageDetails>("packageDetails"); } }
         internal PackageManagerToolbar packageManagerToolbar { get { return cache.Get<PackageManagerToolbar>("topMenuToolbar"); } }
+        private PackageSubPageFilterBar packageSubPageFilterBar { get { return cache.Get<PackageSubPageFilterBar>("packageSubPageFilterBar"); } }
         internal PackageStatusBar packageStatusbar { get { return cache.Get<PackageStatusBar>("packageStatusBar"); } }
         private VisualElement leftColumnContainer { get { return cache.Get<VisualElement>("leftColumnContainer"); } }
         private VisualElement rightColumnContainer { get { return cache.Get<VisualElement>("rightColumnContainer"); } }

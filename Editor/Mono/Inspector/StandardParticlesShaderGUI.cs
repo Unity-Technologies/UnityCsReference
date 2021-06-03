@@ -156,12 +156,8 @@ namespace UnityEditor
             m_MaterialEditor = materialEditor;
             Material material = materialEditor.target as Material;
 
-            // Make sure that needed setup (ie keywords/renderqueue) are set up if we're switching some existing
-            // material to a standard shader.
-            // Do this before any GUI code has been issued to prevent layout issues in subsequent GUILayout statements (case 780071)
             if (m_FirstTimeApply)
             {
-                MaterialChanged(material);
                 CacheRenderersUsingThisMaterial(material);
                 m_FirstTimeApply = false;
             }
@@ -209,7 +205,7 @@ namespace UnityEditor
             if (EditorGUI.EndChangeCheck())
             {
                 foreach (var obj in blendMode.targets)
-                    MaterialChanged((Material)obj);
+                    ValidateMaterial((Material)obj);
             }
 
             EditorGUILayout.Space();
@@ -241,10 +237,7 @@ namespace UnityEditor
             base.AssignNewShaderToMaterial(material, oldShader, newShader);
 
             if (oldShader == null || !oldShader.name.Contains("Legacy Shaders/"))
-            {
-                SetupMaterialWithBlendMode(material, (BlendMode)material.GetFloat("_Mode"));
                 return;
-            }
 
             BlendMode blendMode = BlendMode.Opaque;
             if (oldShader.name.Contains("/Transparent/Cutout/"))
@@ -258,8 +251,6 @@ namespace UnityEditor
                 blendMode = BlendMode.Fade;
             }
             material.SetFloat("_Mode", (float)blendMode);
-
-            MaterialChanged(material);
         }
 
         void BlendModePopup()
@@ -797,10 +788,10 @@ namespace UnityEditor
                 material.SetFloat("_DistortionStrengthScaled", material.GetFloat("_DistortionStrength") * 0.1f);   // more friendly number scale than 1 unit per size of the screen
         }
 
-        void MaterialChanged(Material material)
+        override public void ValidateMaterial(Material material)
         {
             SetupMaterialWithBlendMode(material, (BlendMode)material.GetFloat("_Mode"));
-            if (colorMode != null)
+            if (material.HasProperty("_ColorMode"))
                 SetupMaterialWithColorMode(material, (ColorMode)material.GetFloat("_ColorMode"));
             SetMaterialKeywords(material);
         }

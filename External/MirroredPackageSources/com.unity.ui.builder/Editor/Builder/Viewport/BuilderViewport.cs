@@ -104,7 +104,7 @@ namespace Unity.UI.Builder
                 m_ContentOffset = value;
                 if (m_PaneWindow.document)
                     m_PaneWindow.document.viewportContentOffset = value;
-                
+
                 UpdateSurface();
             }
         }
@@ -470,6 +470,7 @@ namespace Unity.UI.Builder
             {
                 case BuilderSelectionType.Element:
                 case BuilderSelectionType.ElementInTemplateInstance:
+                case BuilderSelectionType.ElementInControlInstance:
                     m_BuilderSelectionIndicator.Activate(m_Selection, m_PaneWindow.document.visualTreeAsset, selectedElement);
                     break;
                 case BuilderSelectionType.VisualTreeAsset:

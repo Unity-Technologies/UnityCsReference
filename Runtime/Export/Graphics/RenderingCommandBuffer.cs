@@ -484,6 +484,11 @@ namespace UnityEngine.Rendering
             DrawRenderer(renderer, material, 0);
         }
 
+        public void DrawRendererList(RendererUtils.RendererList rendererList)
+        {
+            Internal_DrawRendererList(rendererList);
+        }
+
         public void DrawProcedural(Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, int vertexCount, int instanceCount, MaterialPropertyBlock properties)
         {
             if (material == null)
@@ -1076,6 +1081,12 @@ namespace UnityEngine.Rendering
         {
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
             Internal_ProcessVTFeedback(rt, resolver, slice, x, width, y, height, mip);
+        }
+
+        public void CopyBuffer(GraphicsBuffer source, GraphicsBuffer dest)
+        {
+            Graphics.ValidateCopyBuffer(source, dest);
+            CopyBufferImpl(source, dest);
         }
     }
 }

@@ -44,6 +44,7 @@ namespace UnityEngine.UIElements.StyleSheets
         protected abstract bool MatchColor();
         protected abstract bool MatchResource();
         protected abstract bool MatchUrl();
+        protected abstract bool MatchAngle();
 
         public abstract int valueCount { get; }
         public abstract bool isVariable { get; }
@@ -373,6 +374,9 @@ namespace UnityEngine.UIElements.StyleSheets
                     case DataType.Url:
                         result = MatchUrl();
                         break;
+                    case DataType.Angle:
+                        result = MatchAngle();
+                        break;
                 }
             }
 
@@ -532,6 +536,18 @@ namespace UnityEngine.UIElements.StyleSheets
             match = s_VarFunctionRegex.Match(path);
             return !match.Success;
         }
+
+        static readonly Regex s_AngleRegex = new Regex(@"^[+-]?\d+(?:\.\d+)?(?:deg|grad|rad|turn)$", RegexOptions.Compiled);
+        protected override bool MatchAngle()
+        {
+            var value = current;
+            Match match = s_AngleRegex.Match(value);
+            if (match.Success)
+                return true;
+
+            match = s_ZeroRegex.Match(value);
+            return match.Success;
+        }
     }
 
     internal class StylePropertyValueMatcher : BaseStyleMatcher
@@ -676,6 +692,32 @@ namespace UnityEngine.UIElements.StyleSheets
         protected override bool MatchUrl()
         {
             return current.handle.valueType == StyleValueType.AssetReference;
+        }
+
+        protected override bool MatchAngle()
+        {
+            var value = current;
+            if (value.handle.valueType == StyleValueType.Dimension)
+            {
+                var dimension = value.sheet.ReadDimension(value.handle);
+                switch (dimension.unit)
+                {
+                    case Dimension.Unit.Degree:
+                    case Dimension.Unit.Gradian:
+                    case Dimension.Unit.Radian:
+                    case Dimension.Unit.Turn:
+                        return true;
+                }
+                ;
+            }
+
+            if (value.handle.valueType == StyleValueType.Float)
+            {
+                var f = value.sheet.ReadFloat(value.handle);
+                return Mathf.Approximately(0f, f);
+            }
+
+            return false;
         }
     }
 }

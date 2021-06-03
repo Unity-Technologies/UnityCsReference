@@ -22,5 +22,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         // the primary version is most important version that we want to show to the user
         // it will be the default that will be displayed if no versions are selected
         IPackageVersion primary { get; }
+
+        IPackageVersion lifecycleVersion { get; }
+
+        bool isNonLifecycleVersionInstalled { get; }
     }
 }

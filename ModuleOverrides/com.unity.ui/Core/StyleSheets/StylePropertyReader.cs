@@ -28,7 +28,7 @@ namespace UnityEngine.UIElements.StyleSheets
         }
     }
 
-    internal class StylePropertyReader
+    internal partial class StylePropertyReader
     {
         // Strategy to create default cursor must be provided in the context of Editor or Runtime
         internal delegate int GetCursorIdFunction(StyleSheet sheet, StyleValueHandle handle);
@@ -126,6 +126,43 @@ namespace UnityEngine.UIElements.StyleSheets
 
             var dimension = value.sheet.ReadDimension(value.handle);
             return dimension.ToLength();
+        }
+
+        public Translate ReadTranslate(int index)
+        {
+            var val1 = m_Values[m_CurrentValueIndex + index];
+            var val2 = valueCount > 1 ? m_Values[m_CurrentValueIndex + index + 1] : default;
+            var val3 = valueCount > 2 ? m_Values[m_CurrentValueIndex + index + 2] : default;
+
+            return ReadTranslate(valueCount, val1, val2, val3);
+        }
+
+        public TransformOrigin ReadTransformOrigin(int index)
+        {
+            var val1 = m_Values[m_CurrentValueIndex + index];
+            var val2 = valueCount > 1 ? m_Values[m_CurrentValueIndex + index + 1] : default;
+            var val3 = valueCount > 2 ? m_Values[m_CurrentValueIndex + index + 2] : default;
+
+            return ReadTransformOrigin(valueCount, val1, val2, val3);
+        }
+
+        public Rotate ReadRotate(int index)
+        {
+            var val1 = m_Values[m_CurrentValueIndex + index];
+            var val2 = valueCount > 1 ? m_Values[m_CurrentValueIndex + index + 1] : default;
+            var val3 = valueCount > 2 ? m_Values[m_CurrentValueIndex + index + 2] : default;
+            var val4 = valueCount > 3 ? m_Values[m_CurrentValueIndex + index + 3] : default;
+
+            return ReadRotate(valueCount, val1, val2, val3, val4);
+        }
+
+        public Scale ReadScale(int index)
+        {
+            var val1 = m_Values[m_CurrentValueIndex + index];
+            var val2 = valueCount > 1 ? m_Values[m_CurrentValueIndex + index + 1] : default;
+            var val3 = valueCount > 2 ? m_Values[m_CurrentValueIndex + index + 2] : default;
+
+            return ReadScale(valueCount, val1, val2, val3);
         }
 
         public float ReadFloat(int index)
@@ -486,88 +523,6 @@ namespace UnityEngine.UIElements.StyleSheets
                 propertyId = StylePropertyId.Unknown;
                 valueCount = 0;
             }
-        }
-
-        internal static bool TryGetImageSourceFromValue(StylePropertyValue propertyValue, float dpiScaling, out ImageSource source)
-        {
-            source = new ImageSource();
-
-            switch (propertyValue.handle.valueType)
-            {
-                case StyleValueType.ResourcePath:
-                {
-                    string path = propertyValue.sheet.ReadResourcePath(propertyValue.handle);
-                    if (!string.IsNullOrEmpty(path))
-                    {
-                        //TODO: This will use GUIUtility.pixelsPerPoint as targetDpi, this may not be the best value for the current panel
-                        source.sprite = Panel.LoadResource(path, typeof(Sprite), dpiScaling) as Sprite;
-                        if (source.IsNull())
-                            source.texture = Panel.LoadResource(path, typeof(Texture2D), dpiScaling) as Texture2D;
-                        if (source.IsNull())
-                            source.vectorImage = Panel.LoadResource(path, typeof(VectorImage), dpiScaling) as VectorImage;
-                        if (source.IsNull())
-                            source.renderTexture = Panel.LoadResource(path, typeof(RenderTexture), dpiScaling) as RenderTexture;
-                    }
-
-                    if (source.IsNull())
-                    {
-                        Debug.LogWarning(string.Format("Image not found for path: {0}", path));
-                        return false;
-                    }
-                }
-                break;
-
-                case StyleValueType.AssetReference:
-                {
-                    var o = propertyValue.sheet.ReadAssetReference(propertyValue.handle);
-                    source.texture = o as Texture2D;
-                    source.sprite = o as Sprite;
-                    source.vectorImage = o as VectorImage;
-                    source.renderTexture = o as RenderTexture;
-                    if (source.IsNull())
-                    {
-                        Debug.LogWarning("Invalid image specified");
-                        return false;
-                    }
-                }
-                break;
-
-                case StyleValueType.MissingAssetReference:
-                    return false;
-
-                case StyleValueType.ScalableImage:
-                {
-                    var img = propertyValue.sheet.ReadScalableImage(propertyValue.handle);
-
-                    if (img.normalImage == null && img.highResolutionImage == null)
-                    {
-                        Debug.LogWarning("Invalid scalable image specified");
-                        return false;
-                    }
-
-                    if (dpiScaling > 1.0f)
-                    {
-                        source.texture = img.highResolutionImage;
-                        source.texture.pixelsPerPoint = 2.0f;
-                    }
-                    else
-                    {
-                        source.texture = img.normalImage;
-                    }
-
-                    if (!Mathf.Approximately(dpiScaling % 1.0f, 0))
-                    {
-                        source.texture.filterMode = FilterMode.Bilinear;
-                    }
-                }
-                break;
-
-                default:
-                    Debug.LogWarning("Invalid value for image texture " + propertyValue.handle.valueType);
-                    return false;
-            }
-
-            return true;
         }
     }
 }

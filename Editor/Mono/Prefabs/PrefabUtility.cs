@@ -2114,6 +2114,9 @@ namespace UnityEditor
             if (HasInvalidComponent(gameObjectOrComponent))
                 return false;
 
+            if (PrefabUtility.HasManagedReferencesWithMissingTypes(gameObjectOrComponent))
+                return false;
+
             return true;
         }
 

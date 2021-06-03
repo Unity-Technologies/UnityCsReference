@@ -43,6 +43,13 @@ namespace UnityEditor
             ConfigurableDefaultTextureCompressionFormat = (1 << 22)
         }
 
+        public enum RootSystemType
+        {
+            Linux   = 0,
+            Windows = 1,
+            OSX     = 2
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         public struct DiscoveredTargetInfo
         {
@@ -78,6 +85,10 @@ namespace UnityEditor
         public static extern string GetModuleNameForBuildTarget(BuildTarget platform);
 
         public static extern string GetModuleNameForBuildTargetGroup(BuildTargetGroup group);
+
+        public static extern RootSystemType GetPlatformRootSystemType(BuildTarget platform);
+
+        public static extern string GetPlatformProfileSuffix(BuildTarget platform);
 
         public static bool BuildTargetSupportsRenderer(BuildPlatform platform, GraphicsDeviceType type)
         {

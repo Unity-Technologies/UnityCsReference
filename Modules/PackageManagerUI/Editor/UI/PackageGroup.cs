@@ -22,16 +22,18 @@ namespace UnityEditor.PackageManager.UI.Internal
         private ResourceLoader m_ResourceLoader;
         private PageManager m_PageManager;
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
-        private void ResolveDependencies(ResourceLoader resourceLoader, PageManager pageManager, PackageManagerProjectSettingsProxy settingsProxy)
+        private PackageDatabase m_PackageDatabase;
+        private void ResolveDependencies(ResourceLoader resourceLoader, PageManager pageManager, PackageManagerProjectSettingsProxy settingsProxy, PackageDatabase packageDatabase)
         {
             m_ResourceLoader = resourceLoader;
             m_PageManager = pageManager;
             m_SettingsProxy = settingsProxy;
+            m_PackageDatabase = packageDatabase;
         }
 
-        public PackageGroup(ResourceLoader resourceLoader, PageManager pageManager, PackageManagerProjectSettingsProxy settingsProxy, string groupName, string displayName, bool expanded = true, bool hidden = false)
+        public PackageGroup(ResourceLoader resourceLoader, PageManager pageManager, PackageManagerProjectSettingsProxy settingsProxy, PackageDatabase packageDatabase, string groupName, string displayName, bool expanded = true, bool hidden = false)
         {
-            ResolveDependencies(resourceLoader, pageManager, settingsProxy);
+            ResolveDependencies(resourceLoader, pageManager, settingsProxy, packageDatabase);
 
             name = groupName;
             var root = m_ResourceLoader.GetTemplate("PackageGroup.uxml");
@@ -67,7 +69,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         internal PackageItem AddPackageItem(IPackage package, VisualState state)
         {
-            var packageItem = new PackageItem(m_PageManager, m_SettingsProxy, package, state) {packageGroup = this};
+            var packageItem = new PackageItem(m_PageManager, m_SettingsProxy, m_PackageDatabase, package, state) {packageGroup = this};
             groupContainer.Add(packageItem);
             return packageItem;
         }

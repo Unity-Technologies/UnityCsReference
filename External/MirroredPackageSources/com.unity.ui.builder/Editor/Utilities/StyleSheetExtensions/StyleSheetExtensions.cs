@@ -295,7 +295,7 @@ namespace Unity.UI.Builder
 
             ScriptableObject.DestroyImmediate(styleSheet);
         }
-        
+
         public static void UpdateContentHash(this StyleSheet styleSheet)
         {
             // Set the contentHash to 0 if the style sheet is empty
@@ -303,7 +303,7 @@ namespace Unity.UI.Builder
                 styleSheet.contentHash = 0;
             else
                 // Use a random value instead of computing the real contentHash.
-                // This is faster (for large content) and safe enough to avoid conflicts with other style sheets 
+                // This is faster (for large content) and safe enough to avoid conflicts with other style sheets
                 // since contentHash is used internally as a optimized way to compare style sheets.
                 // However, note that the real contentHash will still be computed on import.
                 styleSheet.contentHash = UnityEngine.Random.Range(1, int.MaxValue);

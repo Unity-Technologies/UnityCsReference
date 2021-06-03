@@ -6,12 +6,12 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.Overlays
 {
-    public interface ICreateHorizontalToolbar
+    interface ICreateHorizontalToolbar
     {
         VisualElement CreateHorizontalToolbarContent();
     }
 
-    public interface ICreateVerticalToolbar
+    interface ICreateVerticalToolbar
     {
         VisualElement CreateVerticalToolbarContent();
     }

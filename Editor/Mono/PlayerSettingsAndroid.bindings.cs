@@ -194,6 +194,60 @@ namespace UnityEditor
                 set {}
             }
 
+            // Default horizontal dimension of Android player window.
+            public static extern int defaultWindowWidth
+            {
+                [NativeMethod("GetAndroidDefaultWindowWidth")]
+                get;
+                [NativeMethod("SetAndroidDefaultWindowWidth")]
+                set;
+            }
+
+            // Default vertical dimension of Android player window.
+            public static extern int defaultWindowHeight
+            {
+                [NativeMethod("GetAndroidDefaultWindowHeight")]
+                get;
+                [NativeMethod("SetAndroidDefaultWindowHeight")]
+                set;
+            }
+
+            // Minimum horizontal dimension of Android player window.
+            public static extern int minimumWindowWidth
+            {
+                [NativeMethod("GetAndroidMinimumWindowWidth")]
+                get;
+                [NativeMethod("SetAndroidMinimumWindowWidth")]
+                set;
+            }
+
+            // Minimum vertical dimension of Android player window.
+            public static extern int minimumWindowHeight
+            {
+                [NativeMethod("GetAndroidMinimumWindowHeight")]
+                get;
+                [NativeMethod("SetAndroidMinimumWindowHeight")]
+                set;
+            }
+
+            // Should window resizing be allowed.
+            public static extern bool resizableWindow
+            {
+                [NativeMethod("GetAndroidResizableWindow")]
+                get;
+                [NativeMethod("SetAndroidResizableWindow")]
+                set;
+            }
+
+            // Full screen mode. Full screen window or windowed.
+            public static extern FullScreenMode fullscreenMode
+            {
+                [NativeMethod("GetAndroidFullscreenMode")]
+                get;
+                [NativeMethod("SetAndroidFullscreenMode")]
+                set;
+            }
+
             // Android bundle version code
             public static extern int  bundleVersionCode
             {
@@ -455,7 +509,8 @@ namespace UnityEditor
                 [NativeMethod("SetAndroidStartInFullscreen")]
                 set;
             }
-            // Start application in fullscreen mode
+
+            // Allow the application to render outside the safe area.
             public static extern bool renderOutsideSafeArea
             {
                 [NativeMethod("GetAndroidRenderOutsideSafeArea")]
@@ -479,6 +534,14 @@ namespace UnityEditor
 
             // App Bundle size which should cause warning message appear
             internal static extern int appBundleSizeToValidate { get; set; }
+
+            public static extern bool optimizedFramePacing
+            {
+                [NativeMethod("GetAndroidUseSwappy")]
+                get;
+                [NativeMethod("SetAndroidUseSwappy")]
+                set;
+            }
         }
     }
 }

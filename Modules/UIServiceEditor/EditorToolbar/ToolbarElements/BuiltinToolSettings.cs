@@ -9,24 +9,14 @@ using UnityEngine.UIElements;
 namespace UnityEditor.Toolbars
 {
     [EditorToolbarElement("Tool Settings/Pivot Mode")]
-    sealed class PivotModeDropdown : ToolbarButton
+    sealed class PivotModeDropdown : EditorToolbarDropdown
     {
-        const string k_DropdownIconClass = "unity-toolbar-dropdown-label-icon";
-        const string k_ToolSettingsClass = "unity-tool-settings";
-        readonly TextElement m_Label;
-        readonly VisualElement m_Icon;
         readonly GUIContent m_Center;
         readonly GUIContent m_Pivot;
 
         public PivotModeDropdown()
         {
             name = "Pivot Mode";
-            AddToClassList(k_ToolSettingsClass);
-            m_Icon = EditorToolbarUtility.AddIconElement(this);
-            m_Icon.AddToClassList(k_DropdownIconClass);
-            m_Label = EditorToolbarUtility.AddTextElement(this);
-            m_Label.style.flexGrow = 1;
-            EditorToolbarUtility.AddArrowElement(this);
 
             m_Center = EditorGUIUtility.TrTextContentWithIcon("Center",
                 "Toggle Tool Handle Position\n\nThe tool handle is placed at the center of the selection.",
@@ -54,9 +44,13 @@ namespace UnityEditor.Toolbars
         void PivotModeChanged()
         {
             var content = Tools.pivotMode == PivotMode.Center ? m_Center : m_Pivot;
-            m_Label.text = content.text;
+            text = content.text;
             tooltip = content.tooltip;
-            m_Icon.name = Tools.pivotMode == PivotMode.Center ? "CenterIcon" : "PivotIcon";
+            icon = content.image as Texture2D;
+
+            //Ensuring constant size of the text area
+            var textElement = this.Q<TextElement>(className: EditorToolbar.elementLabelClassName);
+            textElement.style.width = 40;
         }
 
         void AttachedToPanel(AttachToPanelEvent evt)
@@ -71,30 +65,21 @@ namespace UnityEditor.Toolbars
     }
 
     [EditorToolbarElement("Tool Settings/Pivot Rotation")]
-    sealed class PivotRotationDropdown : ToolbarButton
+    sealed class PivotRotationDropdown : EditorToolbarDropdown
     {
-        const string k_DropdownIconClass = "unity-toolbar-dropdown-label-icon";
-        const string k_ToolSettingsClass = "unity-tool-settings";
-
-        readonly TextElement m_Label;
-        readonly VisualElement m_Icon;
         readonly GUIContent m_Local;
         readonly GUIContent m_Global;
 
         public PivotRotationDropdown()
         {
             name = "Pivot Rotation";
-            AddToClassList(k_ToolSettingsClass);
-            m_Icon = EditorToolbarUtility.AddIconElement(this);
-            m_Icon.AddToClassList(k_DropdownIconClass);
-            m_Label = EditorToolbarUtility.AddTextElement(this);
-            m_Label.style.flexGrow = 1;
-            EditorToolbarUtility.AddArrowElement(this);
 
             m_Local = EditorGUIUtility.TrTextContent("Local",
-                "Toggle Tool Handle Rotation\n\nTool handles are in the active object's rotation.");
+                "Toggle Tool Handle Rotation\n\nTool handles are in the active object's rotation.",
+                "ToolHandleLocal");
             m_Global = EditorGUIUtility.TrTextContent("Global",
-                "Toggle Tool Handle Rotation\n\nTool handles are in global rotation.");
+                "Toggle Tool Handle Rotation\n\nTool handles are in global rotation.",
+                "ToolHandleGlobal");
 
             RegisterCallback<AttachToPanelEvent>(AttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(DetachedFromPanel);
@@ -115,9 +100,13 @@ namespace UnityEditor.Toolbars
         void PivotRotationChanged()
         {
             var content = Tools.pivotRotation == PivotRotation.Global ? m_Global : m_Local;
-            m_Label.text = content.text;
+            text = content.text;
             tooltip = content.tooltip;
-            m_Icon.name = Tools.pivotRotation == PivotRotation.Global ? "GlobalIcon" : "LocalIcon";
+            icon = content.image as Texture2D;
+
+            //Ensuring constant size of the text area
+            var textElement = this.Q<TextElement>(className: EditorToolbar.elementLabelClassName);
+            textElement.style.width = 40;
         }
 
         void AttachedToPanel(AttachToPanelEvent evt)

@@ -60,7 +60,7 @@ namespace UnityEditor
         public override DragAndDropVisualMode DoDrag(TreeViewItem parentItem, TreeViewItem targetItem, bool perform, DropPosition dropPos)
         {
             var dragToInstanceId = parentItem?.id ?? 0;
-            return DragAndDropService.Drop(DragAndDropService.kProjectBrowserDropDstId, dragToInstanceId, AssetDatabase.GetAssetPath(dragToInstanceId), perform);
+            return DragAndDrop.Drop(DragAndDropWindowTarget.projectBrowser, dragToInstanceId, AssetDatabase.GetAssetPath(dragToInstanceId), perform);
         }
     }
 
@@ -157,10 +157,10 @@ namespace UnityEditor
             if (targetItem != null && !IsDropTargetUserModifiable(hierarchyTargetItem, dropPos))
                 return DragAndDropVisualMode.Rejected;
 
-            var option = InternalEditorUtility.HierarchyDropMode.kHierarchyDragNormal;
+            var option = HierarchyDropFlags.None;
             var searchActive = !string.IsNullOrEmpty(dataSource.searchString);
             if (searchActive)
-                option |= InternalEditorUtility.HierarchyDropMode.kHierarchySearchActive;
+                option |= HierarchyDropFlags.SearchActive;
             if (parentItem == null || targetItem == null)
             {
                 // Here we are dragging outside any treeview items:
@@ -168,7 +168,7 @@ namespace UnityEditor
                 if (parentForDraggedObjectsOutsideItems != null)
                 {
                     // Use specific parent for DragAndDropForwarding
-                    return DragAndDropService.Drop(DragAndDropService.kHierarchyDropDstId, 0, option, parentForDraggedObjectsOutsideItems, perform);
+                    return DragAndDrop.Drop(DragAndDropWindowTarget.hierarchy, 0, option, parentForDraggedObjectsOutsideItems, perform);
                 }
                 else
                 {
@@ -177,8 +177,8 @@ namespace UnityEditor
                     if (!lastScene.IsValid())
                         return DragAndDropVisualMode.Rejected;
 
-                    option |= InternalEditorUtility.HierarchyDropMode.kHierarchyDropUpon;
-                    return DragAndDropService.Drop(DragAndDropService.kHierarchyDropDstId, lastScene.handle, option, null, perform);
+                    option |= HierarchyDropFlags.DropUpon;
+                    return DragAndDrop.Drop(DragAndDropWindowTarget.hierarchy, lastScene.handle, option, null, perform);
                 }
             }
 
@@ -193,22 +193,22 @@ namespace UnityEditor
 
             if (draggingUpon)
             {
-                option |= InternalEditorUtility.HierarchyDropMode.kHierarchyDropUpon;
+                option |= HierarchyDropFlags.DropUpon;
             }
             else
             {
                 if (dropPos == TreeViewDragging.DropPosition.Above)
                 {
-                    option |= InternalEditorUtility.HierarchyDropMode.kHierarchyDropAbove;
+                    option |= HierarchyDropFlags.DropAbove;
                 }
 
-                option |= InternalEditorUtility.HierarchyDropMode.kHierarchyDropBetween;
+                option |= HierarchyDropFlags.DropBetween;
             }
 
             bool isDroppingBetweenParentAndFirstChild = parentItem != null && targetItem != parentItem && dropPos == DropPosition.Above && parentItem.children[0] == targetItem;
             if (isDroppingBetweenParentAndFirstChild)
             {
-                option |= InternalEditorUtility.HierarchyDropMode.kHierarchyDropAfterParent;
+                option |= HierarchyDropFlags.DropAfterParent;
             }
 
             int gameObjectOrSceneInstanceID = GetDropTargetInstanceID(hierarchyTargetItem, dropPos);
@@ -218,7 +218,7 @@ namespace UnityEditor
             if (perform && SubSceneGUI.IsUsingSubScenes() && !IsValidSubSceneDropTarget(gameObjectOrSceneInstanceID, dropPos, DragAndDrop.objectReferences))
                 return DragAndDropVisualMode.Rejected;
 
-            return DragAndDropService.Drop(DragAndDropService.kHierarchyDropDstId, gameObjectOrSceneInstanceID, option, null, perform);
+            return DragAndDrop.Drop(DragAndDropWindowTarget.hierarchy, gameObjectOrSceneInstanceID, option, null, perform);
         }
 
         int GetDropTargetInstanceID(GameObjectTreeViewItem hierarchyTargetItem, DropPosition dropPosition)

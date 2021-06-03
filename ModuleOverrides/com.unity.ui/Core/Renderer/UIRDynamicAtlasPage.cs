@@ -156,7 +156,7 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            if (atlas.width != m_CurrentSize.x || atlas.height != m_CurrentSize.x)
+            if (atlas.width != m_CurrentSize.x || atlas.height != m_CurrentSize.y)
             {
                 RenderTexture newAtlas = CreateAtlasTexture();
                 if (newAtlas == null)

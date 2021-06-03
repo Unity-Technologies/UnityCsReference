@@ -38,6 +38,13 @@ namespace UnityEditor
         Ignore
     }
 
+    public enum WebGLDebugSymbolMode
+    {
+        Off = 0,
+        External = 1,
+        Embedded = 2
+    }
+
     public sealed partial class PlayerSettings : UnityEngine.Object
     {
         [NativeHeader("Editor/Mono/PlayerSettingsWebGL.bindings.h")]
@@ -135,10 +142,17 @@ namespace UnityEditor
             }
 
             [NativeProperty("webGLDebugSymbols", TargetType.Field)]
-            public extern static bool debugSymbols
+            public extern static WebGLDebugSymbolMode debugSymbolMode
             {
                 [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)] get;
                 [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)] set;
+            }
+
+            [Obsolete("debugSymbols Property deprecated. Property has been replaced by debugSymbolMode property.", false)]
+            public static bool debugSymbols
+            {
+                get { return debugSymbolMode != WebGLDebugSymbolMode.Off; }
+                set { debugSymbolMode = value ? WebGLDebugSymbolMode.External : WebGLDebugSymbolMode.Off; }
             }
 
             [Obsolete("wasmStreaming Property deprecated. WebAssembly streaming will be automatically used when decompressionFallback is disabled and vice versa.", true)]

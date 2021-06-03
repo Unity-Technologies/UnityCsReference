@@ -79,5 +79,10 @@ namespace UnityEngine.Rendering
         {
             return m_Ptr;
         }
+
+        extern private unsafe RendererUtils.RendererList CreateRendererList_Internal(IntPtr cullResults, ref DrawingSettings drawingSettings, ref FilteringSettings filteringSettings, ShaderTagId tagName, bool isPassTagName, IntPtr tagValues, IntPtr stateBlocks, int stateCount);
+
+        extern private unsafe void PrepareRendererListsAsync_Internal(object rendererLists);
+        extern private RendererUtils.RendererListStatus QueryRendererListStatus_Internal(RendererUtils.RendererList handle);
     }
 }

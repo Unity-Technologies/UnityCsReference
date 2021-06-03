@@ -20,8 +20,13 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/GI/Progressive/PVRData.h")]
     internal struct LightmapConvergence
     {
-        public bool       IsConverged() { return convergedDirectTexelCount == occupiedTexelCount && convergedGITexelCount == occupiedTexelCount; }
+        [NativeName("IsConverged")]
+        public extern bool IsConverged();
+
         public bool       IsValid() { return -1 != visibleConvergedDirectTexelCount; }
+
+        [NativeName("GetTileCount")]
+        internal extern int GetTileCount();
 
         [NativeName("m_CullingHash")]                      public Hash128 cullingHash;
         [NativeName("m_VisibleConvergedDirectTexelCount")] public int     visibleConvergedDirectTexelCount;
@@ -33,6 +38,7 @@ namespace UnityEditor
         [NativeName("m_ConvergedGITexelCount")]            public int     convergedGITexelCount;
         [NativeName("m_ConvergedEnvTexelCount")]           public int     convergedEnvTexelCount;
         [NativeName("m_OccupiedTexelCount")]               public int     occupiedTexelCount;
+        [NativeName("m_OccupiedTexelCountInCurrentTile")]  public int     occupiedTexelCountInCurrentTile;
 
         [NativeName("m_MinDirectSamples")]                 public int     minDirectSamples;
         [NativeName("m_MinGISamples")]                     public int     minGISamples;
@@ -47,6 +53,8 @@ namespace UnityEditor
         [NativeName("m_ForceStop")]                        public bool     avgGIForceStop;
 
         [NativeName("m_Progress")]                         public float   progress;
+        [NativeName("m_TilingMode")]                       public int     tilingMode;
+        [NativeName("m_TilingPassNum")]                    public int     tilingPassNum;
     }
 
     [UsedByNativeCode]
@@ -379,6 +387,14 @@ namespace UnityEditor
             if (completed != null)
                 completed();
 #pragma warning restore 0618
+        }
+
+        internal static event Action<string> bakeAnalytics;
+
+        private static void Internal_CallBakeAnalyticsFunctions(string analytics)
+        {
+            if (bakeAnalytics != null)
+                bakeAnalytics(analytics);
         }
 
         // Returns the progress of a build when the bake job is running, returns 0 when no bake job is running.
@@ -722,5 +738,8 @@ namespace UnityEditor.Experimental
 
         [FreeFunction]
         public static extern void SetAdditionalBakedProbes(int id, Vector3[] positions);
+
+        [FreeFunction]
+        public static extern void SetLightDirty(Light light);
     }
 }

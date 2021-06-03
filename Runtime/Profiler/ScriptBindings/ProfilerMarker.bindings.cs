@@ -52,6 +52,18 @@ namespace Unity.Profiling
         }
 
         [MethodImpl(256)]
+        public ProfilerMarker(ProfilerCategory category, string name, MarkerFlags flags)
+        {
+            m_Ptr = ProfilerUnsafeUtility.CreateMarker(name, category, flags, 0);
+        }
+
+        [MethodImpl(256)]
+        public unsafe ProfilerMarker(ProfilerCategory category, char* name, int nameLen, MarkerFlags flags)
+        {
+            m_Ptr = ProfilerUnsafeUtility.CreateMarker(name, nameLen, category, flags, 0);
+        }
+
+        [MethodImpl(256)]
         [Conditional("ENABLE_PROFILER")]
         [Pure]
         public void Begin()

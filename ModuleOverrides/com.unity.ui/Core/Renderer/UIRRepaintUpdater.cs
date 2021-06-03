@@ -13,14 +13,12 @@ namespace UnityEngine.UIElements
         BaseVisualElementPanel attachedPanel;
         internal RenderChain renderChain; // May be recreated any time.
 
-        static ProfilerMarker s_MarkerDrawChain = new ProfilerMarker("DrawChain");
-
         public UIRRepaintUpdater()
         {
             panelChanged += OnPanelChanged;
         }
 
-        private static readonly string s_Description = "UIRepaint";
+        private static readonly string s_Description = "Update Rendering";
         private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
         public override ProfilerMarker profilerMarker => s_ProfilerMarker;
         public bool drawStats { get; set; }
@@ -36,6 +34,10 @@ namespace UnityEngine.UIElements
             bool overflowChanged = (versionChangeType & VersionChangeType.Overflow) != 0;
             bool borderRadiusChanged = (versionChangeType & VersionChangeType.BorderRadius) != 0;
             bool borderWidthChanged = (versionChangeType & VersionChangeType.BorderWidth) != 0;
+            bool renderHintsChanged = (versionChangeType & VersionChangeType.RenderHints) != 0;
+
+            if (renderHintsChanged)
+                renderChain.UIEOnRenderHintsChanged(ve);
 
             if (transformChanged || sizeChanged || borderWidthChanged)
                 renderChain.UIEOnTransformOrSizeChanged(ve, transformChanged, sizeChanged || borderWidthChanged);
@@ -45,6 +47,9 @@ namespace UnityEngine.UIElements
 
             if ((versionChangeType & VersionChangeType.Opacity) != 0)
                 renderChain.UIEOnOpacityChanged(ve);
+
+            if ((versionChangeType & VersionChangeType.Color) != 0)
+                renderChain.UIEOnColorChanged(ve);
 
             if ((versionChangeType & VersionChangeType.Repaint) != 0)
                 renderChain.UIEOnVisualsChanged(ve, false);
@@ -58,27 +63,24 @@ namespace UnityEngine.UIElements
             if (renderChain == null || renderChain.device == null)
                 return;
 
-            using (s_MarkerDrawChain.Auto())
+            renderChain.ProcessChanges();
+
+            PanelClearSettings clearSettings = panel.clearSettings;
+            if (clearSettings.clearColor || clearSettings.clearDepthStencil)
             {
-                renderChain.ProcessChanges();
+                // Case 1277149: Clear color must be pre-multiplied like when we render.
+                Color clearColor = clearSettings.color;
+                clearColor = clearColor.RGBMultiplied(clearColor.a);
 
-                PanelClearSettings clearSettings = panel.clearSettings;
-                if (clearSettings.clearColor || clearSettings.clearDepthStencil)
-                {
-                    // Case 1277149: Clear color must be pre-multiplied like when we render.
-                    Color clearColor = clearSettings.color;
-                    clearColor = clearColor.RGBMultiplied(clearColor.a);
-
-                    GL.Clear(clearSettings.clearDepthStencil, // Clearing may impact MVP
-                        clearSettings.clearColor, clearColor, UIRUtility.k_ClearZ);
-                }
-
-                // Apply these debug values every frame because the render chain may have been recreated.
-                renderChain.drawStats = drawStats;
-                renderChain.device.breakBatches = breakBatches;
-
-                renderChain.Render();
+                GL.Clear(clearSettings.clearDepthStencil, // Clearing may impact MVP
+                    clearSettings.clearColor, clearColor, UIRUtility.k_ClearZ);
             }
+
+            // Apply these debug values every frame because the render chain may have been recreated.
+            renderChain.drawStats = drawStats;
+            renderChain.device.breakBatches = breakBatches;
+
+            renderChain.Render();
         }
 
         // Overriden in tests
@@ -145,7 +147,7 @@ namespace UnityEngine.UIElements
             renderChain = CreateRenderChain();
 
             if (attachedPanel.visualTree != null)
-                renderChain.UIEOnChildAdded(null, attachedPanel.visualTree, 0);
+                renderChain.UIEOnChildAdded(attachedPanel.visualTree);
 
             OnPanelStandardShaderChanged();
             if (panel.contextType == ContextType.Player)
@@ -175,7 +177,7 @@ namespace UnityEngine.UIElements
             switch (changeType)
             {
                 case HierarchyChangeType.Add:
-                    renderChain.UIEOnChildAdded(ve.hierarchy.parent, ve, ve.hierarchy.parent != null ? ve.hierarchy.parent.IndexOf(ve) : 0);
+                    renderChain.UIEOnChildAdded(ve);
                     break;
 
                 case HierarchyChangeType.Remove:

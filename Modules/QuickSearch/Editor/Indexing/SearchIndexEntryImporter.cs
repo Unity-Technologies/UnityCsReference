@@ -67,7 +67,7 @@ namespace UnityEditor.Search
                     ctx.LogImportError($"Failed to build search index for {ctx.assetPath}\n{ex}");
                 }
 
-                var indexArtifactPath = ctx.GetResultPath($"{(int)options:X}.index".ToLowerInvariant());
+                var indexArtifactPath = ctx.GetOutputArtifactFilePath($"{(int)options:X}.index".ToLowerInvariant());
                 using (var fileStream = new FileStream(indexArtifactPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read))
                     indexer.Write(fileStream);
             }

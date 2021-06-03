@@ -13,6 +13,7 @@ using UnityEditor.PlatformSupport;
 using UnityEngine.Bindings;
 
 using UnityEngine;
+using UnityEditor.Build;
 
 namespace UnityEditor
 {
@@ -239,8 +240,8 @@ namespace UnityEditor
             // iOS bundle build number
             public static string buildNumber
             {
-                get { return PlayerSettings.GetBuildNumber(BuildTargetGroup.iOS); }
-                set { PlayerSettings.SetBuildNumber(BuildTargetGroup.iOS, value); }
+                get { return PlayerSettings.GetBuildNumber(NamedBuildTarget.iOS.TargetName); }
+                set { PlayerSettings.SetBuildNumber(NamedBuildTarget.iOS.TargetName, value); }
             }
             public extern static bool disableDepthAndStencilBuffers  { get; set; }
 

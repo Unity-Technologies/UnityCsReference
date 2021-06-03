@@ -554,7 +554,13 @@ namespace UnityEngine.UIElements
             isReplaying = false;
         }
 
-        public Dictionary<string, long> ComputeHistogram(List<EventDebuggerEventRecord> eventBases)
+        internal struct HistogramRecord
+        {
+            public long count;
+            public long duration;
+        }
+
+        public Dictionary<string, HistogramRecord> ComputeHistogram(List<EventDebuggerEventRecord> eventBases)
         {
             if (panel == null || !m_EventProcessedEvents.TryGetValue(panel, out var list))
                 return null;
@@ -562,19 +568,21 @@ namespace UnityEngine.UIElements
             if (list == null)
                 return null;
 
-            Dictionary<string, long> histogram = new Dictionary<string, long>();
+            Dictionary<string, HistogramRecord> histogram = new Dictionary<string, HistogramRecord>();
             foreach (var callObject in list)
             {
                 if (eventBases == null || eventBases.Count == 0 || eventBases.Contains(callObject.eventBase))
                 {
                     var key = callObject.eventBase.eventBaseName;
                     var totalDuration = callObject.duration;
-                    if (histogram.TryGetValue(key, out var currentDuration))
+                    long totalCount = 1;
+                    if (histogram.TryGetValue(key, out var currentHistogramRecord))
                     {
-                        totalDuration += currentDuration;
+                        totalDuration += currentHistogramRecord.duration;
+                        totalCount += currentHistogramRecord.count;
                     }
 
-                    histogram[key] = totalDuration;
+                    histogram[key] = new HistogramRecord { count = totalCount, duration = totalDuration };
                 }
             }
 

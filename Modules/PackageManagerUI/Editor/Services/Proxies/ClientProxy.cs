@@ -18,6 +18,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             return Client.Add(identifier);
         }
 
+        public virtual AddAndRemoveRequest AddAndRemove(string[] packagesToAdd = null, string[] packagesToRemove = null)
+        {
+            return Client.AddAndRemove(packagesToAdd, packagesToRemove);
+        }
+
         public virtual AddScopedRegistryRequest AddScopedRegistry(string registryName, string url, string[] scopes)
         {
             return Client.AddScopedRegistry(registryName, url, scopes);

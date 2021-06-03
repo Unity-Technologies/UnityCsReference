@@ -20,6 +20,8 @@ using UnityEditor.StyleSheets;
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("com.unity.quicksearch.tests")]
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("com.unity.search.extensions.editor")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.Environment.Core.Editor")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.ProceduralGraph.Editor")]
 
 namespace UnityEditor.Search
 {
@@ -58,6 +60,14 @@ namespace UnityEditor.Search
 
         private static UnityEngine.Object[] s_LastDraggedObjects;
 
+
+        public static GUIStyle objectFieldButton
+        {
+            get
+            {
+                return EditorStyles.objectFieldButton;
+            }
+        }
 
         static Utils()
         {
@@ -232,6 +242,11 @@ namespace UnityEditor.Search
             var asset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path);
             SelectObject(asset, ping);
             return asset;
+        }
+
+        internal static void SetTextEditorHasFocus(TextEditor editor, bool hasFocus)
+        {
+            editor.m_HasFocus = hasFocus;
         }
 
         internal static void FrameAssetFromPath(string path)
@@ -896,6 +911,97 @@ namespace UnityEditor.Search
             foreach (var c in invalidChars)
                 path = path.Replace(c, repl);
             return path;
+        }
+
+        public static Rect BeginHorizontal(GUIContent content, GUIStyle style, params GUILayoutOption[] options)
+        {
+            return EditorGUILayout.BeginHorizontal(content, style, options);
+        }
+
+        public static bool IsGUIClipEnabled()
+        {
+            return GUIClip.enabled;
+        }
+
+        public static MonoScript MonoScriptFromScriptedObject(UnityEngine.Object obj)
+        {
+            return MonoScript.FromScriptedObject(obj);
+        }
+
+        public static bool SerializedPropertyIsScript(SerializedProperty property)
+        {
+            return property.isScript;
+        }
+
+        public static string SerializedPropertyObjectReferenceStringValue(SerializedProperty property)
+        {
+            return property.objectReferenceStringValue;
+        }
+
+        public static GUIContent ObjectContent(UnityEngine.Object obj, Type type, int instanceID)
+        {
+            return EditorGUIUtility.ObjectContent(obj, type, instanceID);
+        }
+
+        public static bool IsCommandDelete(string commandName)
+        {
+            return commandName == EventCommandNames.Delete || commandName == EventCommandNames.SoftDelete;
+        }
+
+        public static void PopupWindowWithoutFocus(Rect position, PopupWindowContent windowContent)
+        {
+            UnityEditor.PopupWindowWithoutFocus.Show(
+                position,
+                windowContent,
+                new[] { UnityEditor.PopupLocation.Left, UnityEditor.PopupLocation.Below, UnityEditor.PopupLocation.Right });
+        }
+
+        public static void OpenPropertyEditor(UnityEngine.Object target)
+        {
+            PropertyEditor.OpenPropertyEditor(target);
+        }
+
+        public static bool MainActionKeyForControl(Event evt, int id)
+        {
+            return evt.MainActionKeyForControl(id);
+        }
+
+
+        public static bool IsNavigationKey(in Event evt)
+        {
+            if (!evt.isKey)
+                return false;
+
+            switch (evt.keyCode)
+            {
+                case KeyCode.UpArrow:
+                case KeyCode.DownArrow:
+                case KeyCode.LeftArrow:
+                case KeyCode.RightArrow:
+                case KeyCode.Home:
+                case KeyCode.End:
+                case KeyCode.PageUp:
+                case KeyCode.PageDown:
+                    return true;
+            }
+
+            return false;
+        }
+
+        public static Texture2D LoadIcon(string name)
+        {
+            return EditorGUIUtility.LoadIcon(name);
+        }
+
+        public static bool IsEditingTextField()
+        {
+            return GUIUtility.textFieldInput || EditorGUI.IsEditingTextField();
+        }
+
+        static readonly Regex trimmer = new Regex(@"\s\s+");
+        public static string Simplify(string text)
+        {
+            return trimmer.Replace(text, " ").Trim();
         }
     }
 

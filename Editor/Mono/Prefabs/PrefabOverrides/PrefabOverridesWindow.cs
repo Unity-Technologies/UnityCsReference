@@ -42,6 +42,8 @@ namespace UnityEditor
         bool m_ModelPrefab;
         bool m_Immutable;
         bool m_InvalidComponentOnAsset;
+        bool m_HasManagedReferencesWithMissingTypesOnAsset;
+
 
         static class Styles
         {
@@ -65,6 +67,7 @@ namespace UnityEditor
 
             // Messages related to reasons for inability to apply.
             public static GUIContent warningInvalidAsset = EditorGUIUtility.TrTextContent("The Prefab file contains an invalid script. Applying is not possible. Enter Prefab Mode and remove or recover the script.");
+            public static GUIContent warningHasManagedReferencesWithMissingTypes = EditorGUIUtility.TrTextContent("The Prefab file contains missing SerializeReference types. Applying is not possible. Enter Prefab Mode to see more details.");
             public static GUIContent warningInvalidInstance = EditorGUIUtility.TrTextContent("The Prefab instance contains an invalid script. Applying is not possible. Remove or recover the script.");
             public static GUIContent warningImmutable = EditorGUIUtility.TrTextContent("The Prefab file is immutable. Applying is not possible.");
 
@@ -139,6 +142,7 @@ namespace UnityEditor
             m_ModelPrefab = false;
             m_Immutable = false;
             m_InvalidComponentOnAsset = false;
+            m_HasManagedReferencesWithMissingTypesOnAsset = false;
 
             for (int i = 0; i < m_SelectedGameObjects.Length; i++)
                 UpdateStatusChecks(m_SelectedGameObjects[i]);
@@ -172,6 +176,9 @@ namespace UnityEditor
                 m_Immutable = true;
             if (PrefabUtility.HasInvalidComponent(prefabAssetRoot))
                 m_InvalidComponentOnAsset = true;
+
+            if (PrefabUtility.HasManagedReferencesWithMissingTypes(prefabAssetRoot))
+                m_HasManagedReferencesWithMissingTypesOnAsset = true;
         }
 
         bool IsShowingActionButton()
@@ -195,7 +202,7 @@ namespace UnityEditor
                 !HasMultiSelection() &&
                 (m_AnyOverrides || m_Disconnected) &&
                 !m_ModelPrefab &&
-                (m_InvalidComponentOnInstance || m_InvalidComponentOnAsset || m_Immutable);
+                (m_InvalidComponentOnInstance || m_InvalidComponentOnAsset || m_HasManagedReferencesWithMissingTypesOnAsset || m_Immutable);
         }
 
         public override Vector2 GetWindowSize()
@@ -270,7 +277,7 @@ namespace UnityEditor
             // Display tree view and/or instructions related to it.
             if (HasMultiSelection())
             {
-                if (m_InvalidComponentOnAsset || m_InvalidComponentOnInstance || m_ModelPrefab || m_Immutable)
+                if (m_InvalidComponentOnAsset || m_HasManagedReferencesWithMissingTypesOnAsset || m_InvalidComponentOnInstance || m_ModelPrefab || m_Immutable)
                     EditorGUILayout.HelpBox(Styles.infoMultipleNoApply.text, MessageType.Info);
                 else
                     EditorGUILayout.HelpBox(Styles.infoMultiple.text, MessageType.Info);
@@ -304,6 +311,8 @@ namespace UnityEditor
                         EditorGUILayout.HelpBox(Styles.warningInvalidAsset.text, MessageType.Warning);
                     else if (m_InvalidComponentOnInstance)
                         EditorGUILayout.HelpBox(Styles.warningInvalidInstance.text, MessageType.Warning);
+                    if (m_HasManagedReferencesWithMissingTypesOnAsset)
+                        EditorGUILayout.HelpBox(Styles.warningHasManagedReferencesWithMissingTypes.text, MessageType.Warning);
                     else
                         EditorGUILayout.HelpBox(Styles.warningImmutable.text, MessageType.Warning);
                 }
@@ -312,7 +321,7 @@ namespace UnityEditor
             // Display action buttons (Revert All and Apply All)
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
-            using (new EditorGUI.DisabledScope(m_InvalidComponentOnAsset))
+            using (new EditorGUI.DisabledScope(m_InvalidComponentOnAsset || m_HasManagedReferencesWithMissingTypesOnAsset))
             {
                 if (m_TreeView != null && m_TreeView.GetSelection().Count > 1)
                 {

@@ -11,6 +11,7 @@ using System.IO;
 using System;
 using UnityEditor.Build.Reporting;
 using UnityEditor.Connect;
+using UnityEditor.Profiling;
 using UnityEditor.Utils;
 
 namespace UnityEditor
@@ -259,12 +260,15 @@ namespace UnityEditor
                     options.options |= BuildOptions.EnableDeepProfilingSupport;
                 if (EditorUserBuildSettings.buildScriptsOnly)
                     options.options |= BuildOptions.BuildScriptsOnly;
+                if (!string.IsNullOrEmpty(ProfilerUserSettings.customConnectionID) && developmentBuild)
+                    options.options |= BuildOptions.CustomConnectionID;
+
 
                 if (IsInstallInBuildFolderOption())
                 {
                     options.options |= BuildOptions.InstallInBuildFolder;
                 }
-                else
+                else if ((options.options & BuildOptions.PatchPackage) == 0)
                 {
                     if (askForBuildLocation && !PickBuildLocation(buildTargetGroup, buildTarget, options.options, out updateExistingBuild))
                         throw new BuildMethodException();
@@ -273,7 +277,7 @@ namespace UnityEditor
 
                     if (newLocation.Length == 0)
                     {
-                        throw new BuildMethodException("Build location for buildTarget " + buildTarget + "is not valid.");
+                        throw new BuildMethodException("Build location for buildTarget " + buildTarget + " is not valid.");
                     }
 
                     if (!askForBuildLocation)
@@ -291,7 +295,7 @@ namespace UnityEditor
 
                                 newLocation = EditorUserBuildSettings.GetBuildLocation(buildTarget);
                                 if (!BuildLocationIsValid(newLocation))
-                                    throw new BuildMethodException("Build location for buildTarget " + buildTarget + "is not valid.");
+                                    throw new BuildMethodException("Build location for buildTarget " + buildTarget + " is not valid.");
 
                                 break;
                         }

@@ -38,7 +38,7 @@ namespace Unity.UI.Builder
 
         IList<ITreeViewItem> m_TreeRootItems;
 
-        TreeView m_TreeView;
+        InternalTreeView m_TreeView;
         HighlightOverlayPainter m_TreeViewHoverOverlay;
 
         VisualElement m_Container;
@@ -109,7 +109,8 @@ namespace Unity.UI.Builder
 
             // Create TreeView.
             m_TreeRootItems = new List<ITreeViewItem>();
-            m_TreeView = new TreeView(m_TreeRootItems, 20, MakeItem, FillItem);
+            m_TreeView = new InternalTreeView(m_TreeRootItems, 20, MakeItem, FillItem);
+
             m_TreeView.selectionType = SelectionType.Multiple;
             m_TreeView.viewDataKey = "unity-builder-explorer-tree";
             m_TreeView.style.flexGrow = 1;
@@ -543,7 +544,7 @@ namespace Unity.UI.Builder
         {
             // Auto-expand all items on load.
             if (m_TreeRootItems != null)
-                foreach (var item in TreeView.GetAllItems(m_TreeView.rootItems))
+                foreach (var item in InternalTreeView.GetAllItems(m_TreeView.rootItems))
                     m_TreeView.ExpandItem(item.id);
         }
 
@@ -685,6 +686,16 @@ namespace Unity.UI.Builder
                 hl.RemoveFromHierarchy();
 
             m_SearchResultsHightlights.Clear();
+        }
+
+        public int GetSelectedItemId()
+        {
+            return m_TreeView.selectedItem.id;
+        }
+
+        public void SelectItemById(int id)
+        {
+            m_TreeView.SetSelection(id);
         }
 
         public void SelectElements(IEnumerable<VisualElement> elements)

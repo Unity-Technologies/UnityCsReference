@@ -205,6 +205,18 @@ namespace UnityEditor.Overlays
             return (m_SupportedOverlayLayouts & layout) > 0;
         }
 
+        public Layout defaultLayout
+        {
+            get
+            {
+                if ((m_SupportedOverlayLayouts & Layout.HorizontalToolbar) == Layout.HorizontalToolbar)
+                    return Layout.HorizontalToolbar;
+                if ((m_SupportedOverlayLayouts & Layout.VerticalToolbar) == Layout.VerticalToolbar)
+                    return Layout.VerticalToolbar;
+                return Layout.Panel;
+            }
+        }
+
         void OnAttachedToPanel(AttachToPanelEvent evt)
         {
             m_Canvas = parent;

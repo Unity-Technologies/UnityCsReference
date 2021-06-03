@@ -9,6 +9,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
+using UnityEditor.Build;
 
 namespace UnityEditor.Rendering
 {
@@ -19,6 +20,8 @@ namespace UnityEditor.Rendering
         [NativeName("SetTierSettings")] extern internal static void SetTierSettingsImpl(BuildTargetGroup target, GraphicsTier tier, TierSettings settings);
 
         extern public   static TierSettings GetTierSettings(BuildTargetGroup target, GraphicsTier tier);
+        public static TierSettings GetTierSettings(NamedBuildTarget target, GraphicsTier tier) => GetTierSettings(target.ToBuildTargetGroup(), tier);
+
         extern internal static TierSettings GetCurrentTierSettings();
 
         extern internal static bool AreTierSettingsAutomatic(BuildTargetGroup target, GraphicsTier tier);

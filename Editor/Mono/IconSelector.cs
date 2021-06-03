@@ -72,7 +72,7 @@ namespace UnityEditor
                     if (m_MonoScriptIconChangedCallback != null)
                         m_MonoScriptIconChangedCallback(monoScript);
                     else
-                        MonoImporter.CopyMonoScriptIconToImporters(monoScript);
+                        CopyIconToImporter(monoScript);
                 }
             }
         }
@@ -109,6 +109,25 @@ namespace UnityEditor
                 s_IconSelector.m_MonoScriptIconChangedCallback = callback;
             else
                 Debug.Log("ERROR: setting callback on hidden IconSelector");
+        }
+
+        internal static void CopyIconToImporter(MonoScript monoScript)
+        {
+            // update the icon on the importer (requires a reimport)
+            var icon = EditorGUIUtility.GetIconForObject(monoScript);
+            var importer = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(monoScript));
+            var monoImporter = importer as MonoImporter;
+            var pluginImporter = importer as PluginImporter;
+            if (monoImporter)
+            {
+                monoImporter.SetIcon(icon);
+                monoImporter.SaveAndReimport();
+            }
+            else if (pluginImporter)
+            {
+                pluginImporter.SetIcon(monoScript.GetClass().FullName, icon);
+                pluginImporter.SaveAndReimport();
+            }
         }
 
         void Init(Object[] targetObjects, Rect activatorRect, bool showLabelIcons)

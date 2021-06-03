@@ -183,6 +183,8 @@ namespace UnityEditor.UIElements.Debugger
 
             EditorGUILayout.LabelField("Focusable", m_SelectedElement.focusable.ToString());
 
+            m_SelectedElement.usageHints = (UsageHints)EditorGUILayout.EnumFlagsField("Usage Hints", m_SelectedElement.usageHints);
+
             EditorGUILayout.LabelField("Layout", m_SelectedElement.layout.ToString());
             EditorGUILayout.LabelField("World Bound", m_SelectedElement.worldBound.ToString());
             EditorGUILayout.LabelField("World Clip", m_SelectedElement.worldClip.ToString());

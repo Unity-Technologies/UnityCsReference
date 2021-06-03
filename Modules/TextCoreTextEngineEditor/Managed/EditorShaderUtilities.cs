@@ -17,11 +17,11 @@ namespace UnityEditor.TextCore.Text
         /// <returns></returns>
         internal static void CopyMaterialProperties(Material source, Material destination)
         {
-            MaterialProperty[] source_prop = MaterialEditor.GetMaterialProperties(new Object[] { source });
+            string[] sourcePropNames = MaterialEditor.GetMaterialPropertyNames(new Object[] { source });
 
-            for (int i = 0; i < source_prop.Length; i++)
+            for (int i = 0; i < sourcePropNames.Length; i++)
             {
-                int property_ID = Shader.PropertyToID(source_prop[i].name);
+                int property_ID = Shader.PropertyToID(sourcePropNames[i]);
                 if (destination.HasProperty(property_ID))
                 {
                     //Debug.Log(source_prop[i].name + "  Type:" + ShaderUtil.GetPropertyType(source.shader, i));

@@ -16,6 +16,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public event Action<IEnumerable<VisualState>> onVisualStateChange = delegate {};
         public event Action<IPage, IEnumerable<IPackage>, IEnumerable<IPackage>, bool> onListUpdate = delegate {};
         public event Action<IPage> onListRebuild = delegate {};
+        public event Action<IPage> onSubPageAdded = delegate {};
 
         // keep track of a list of selected items by remembering the uniqueIds
         [SerializeField]
@@ -47,6 +48,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         public abstract long numCurrentItems { get; }
 
         public abstract IEnumerable<VisualState> visualStates { get; }
+        public abstract IEnumerable<SubPage> subPages { get; }
+        public abstract SubPage currentSubPage { get; set; }
 
         [NonSerialized]
         protected PackageDatabase m_PackageDatabase;
@@ -98,6 +101,21 @@ namespace UnityEditor.PackageManager.UI.Internal
             onListRebuild?.Invoke(this);
         }
 
+        public virtual void SetPackagesUserUnlockedState(IEnumerable<string> packageUniqueIds, bool unlocked)
+        {
+            // do nothing, only simple page needs implementation right now
+        }
+
+        public virtual void ResetUserUnlockedState()
+        {
+            // do nothing, only simple page needs implementation right now
+        }
+
+        public virtual bool GetDefaultLockState(IPackage package)
+        {
+            return false;
+        }
+
         protected void TriggerOnVisualStateChange(IEnumerable<VisualState> visualStates)
         {
             onVisualStateChange?.Invoke(visualStates);
@@ -106,6 +124,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void TriggerOnSelectionChanged(IPackageVersion version)
         {
             onSelectionChanged?.Invoke(version);
+        }
+
+        public void TriggerOnSubPageAdded()
+        {
+            onSubPageAdded?.Invoke(this);
         }
 
         public abstract VisualState GetVisualState(string packageUniqueId);
@@ -135,7 +158,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             SetSelected(package?.uniqueId, version?.uniqueId ?? package?.versions.primary?.uniqueId);
         }
 
-        public void SetSelected(string packageUniqueId, string versionUniqueId)
+        public virtual void SetSelected(string packageUniqueId, string versionUniqueId)
         {
             var oldPackageUniqueId = m_SelectedUniqueIds.FirstOrDefault();
             var oldSelection = GetVisualState(oldPackageUniqueId);
@@ -203,7 +226,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             return Contains(package?.uniqueId);
         }
 
-        public string GetGroupName(IPackage package)
+        public virtual string GetGroupName(IPackage package)
+        {
+            return GetDefaultGroupName(tab, package);
+        }
+
+        public static string GetDefaultGroupName(PackageFilterTab tab, IPackage package)
         {
             if (package.Is(PackageType.BuiltIn) || package.Is(PackageType.AssetStore))
                 return string.Empty;
@@ -221,5 +249,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public abstract void LoadMore(long numberOfPackages);
 
         public abstract void Load(IPackage package, IPackageVersion version = null);
+
+        public abstract void AddSubPage(SubPage subPage);
     }
 }

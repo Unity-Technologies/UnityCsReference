@@ -9,13 +9,13 @@ using UnityEngine.UIElements;
 namespace UnityEditor.Toolbars
 {
     [EditorToolbarElement("Editor Utility/Layout", typeof(DefaultMainToolbar))]
-    sealed class LayoutDropdown : ToolbarButton
+    sealed class LayoutDropdown : EditorToolbarDropdown
     {
         public LayoutDropdown()
         {
             name = "LayoutDropdown";
 
-            EditorToolbarUtility.MakeDropdown(this).text = Toolbar.lastLoadedLayoutName; //Only assigned once, UI is recreated when changing layout
+            text = Toolbar.lastLoadedLayoutName; //Only assigned once, UI is recreated when changing layout
             clicked += () => OpenLayoutWindow(worldBound);
             tooltip = L10n.Tr("Select editor layout");
 

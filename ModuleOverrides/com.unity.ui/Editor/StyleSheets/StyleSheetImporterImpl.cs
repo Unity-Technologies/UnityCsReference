@@ -616,6 +616,22 @@ namespace UnityEditor.UIElements.StyleSheets
                         float? percentValue = primitiveTerm.GetFloatValue(UnitType.Pixel);
                         m_Builder.AddValue(new Dimension(percentValue.Value, Dimension.Unit.Percent));
                         break;
+                    case UnitType.Degree:
+                        float? degValue = primitiveTerm.GetFloatValue(UnitType.Pixel);
+                        m_Builder.AddValue(new Dimension(degValue.Value, Dimension.Unit.Degree));
+                        break;
+                    case UnitType.Grad:
+                        float? gradValue = primitiveTerm.GetFloatValue(UnitType.Pixel);
+                        m_Builder.AddValue(new Dimension(gradValue.Value, Dimension.Unit.Gradian));
+                        break;
+                    case UnitType.Radian:
+                        float? radValue = primitiveTerm.GetFloatValue(UnitType.Pixel);
+                        m_Builder.AddValue(new Dimension(radValue.Value, Dimension.Unit.Radian));
+                        break;
+                    case UnitType.Turn:
+                        float? turnValue = primitiveTerm.GetFloatValue(UnitType.Pixel);
+                        m_Builder.AddValue(new Dimension(turnValue.Value, Dimension.Unit.Turn));
+                        break;
                     case UnitType.Ident:
                         StyleValueKeyword keyword;
                         if (TryParseKeyword(rawStr, out keyword))

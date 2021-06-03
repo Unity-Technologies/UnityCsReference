@@ -342,6 +342,18 @@ namespace UnityEditor
         [FreeFunction("AssetDatabase::SaveAssets")]
         extern public static void SaveAssets();
 
+        [FreeFunction("AssetDatabase::SaveAssetIfDirty")]
+        extern public static void SaveAssetIfDirty(GUID guid);
+
+        public static void SaveAssetIfDirty(Object obj)
+        {
+            string guidString;
+            long localID;
+
+            if (TryGetGUIDAndLocalFileIdentifier(obj.GetInstanceID(), out guidString, out localID))
+                SaveAssetIfDirty(new GUID(guidString));
+        }
+
         extern public static Texture GetCachedIcon(string path);
         extern public static void SetLabels(Object obj, string[] labels);
         extern private static void GetAllLabelsImpl(object labelsList, object scoresList);
@@ -697,6 +709,23 @@ namespace UnityEditor
         [NativeThrows]
         internal extern static int GetArtifactInfoCount_Internal(GUID guid);
 
+        internal extern static void GetCurrentRevisions_Internal(GUID[] guids, [Out] ArtifactInfo[] artifactInfos);
+
+        internal extern static int GetCurrentRevisionsCount_Internal();
+
+        internal static ArtifactInfo[] GetCurrentRevisions(GUID[] guids)
+        {
+            var currentRevisionsCount = GetCurrentRevisionsCount_Internal();
+            var artifactInfos = new ArtifactInfo[guids.Length];
+            for (int i = 0; i < guids.Length; ++i)
+            {
+                artifactInfos[i] = new ArtifactInfo();
+            }
+
+            GetCurrentRevisions_Internal(guids, artifactInfos);
+            return artifactInfos;
+        }
+
         internal static ArtifactInfo[] GetArtifactInfos(GUID guid)
         {
             var count = GetArtifactInfoCount_Internal(guid);
@@ -807,5 +836,44 @@ namespace UnityEditor
 
             return assetsReportedChanged.ToArray();
         }
+
+        public enum RefreshImportMode
+        {
+            InProcess = 0,
+            OutOfProcessPerQueue = 1
+        }
+        public extern static RefreshImportMode ActiveRefreshImportMode
+        {
+            [FreeFunction("AssetDatabase::GetRefreshImportMode")]
+            get;
+            [FreeFunction("AssetDatabase::SetRefreshImportMode")]
+            set;
+        }
+
+        public extern static int DesiredWorkerCount
+        {
+            [FreeFunction("AssetDatabase::GetDesiredWorkerCount")]
+            get;
+            [FreeFunction("AssetDatabase::SetDesiredWorkerCount")]
+            set;
+        }
+
+        [FreeFunction("AssetDatabase::ForceToDesiredWorkerCount")]
+        public extern static void ForceToDesiredWorkerCount();
+
+        [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabaseTypes.h")]
+        [RequiredByNativeCode]
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct WorkerStats
+        {
+            public int desiredWorkerCount;
+            public int idleWorkerCount;
+            public int importingWorkerCount;
+            public int connectingWorkerCount;
+            public int operationalWorkerCount;
+            public int suspendedWorkerCount;
+        }
+
+        internal extern static WorkerStats GetWorkerStats();
     }
 }

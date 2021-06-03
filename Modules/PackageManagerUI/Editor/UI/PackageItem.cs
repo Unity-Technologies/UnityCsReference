@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using UnityEngine.UIElements;
 
@@ -59,17 +60,19 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private PageManager m_PageManager;
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
-        private void ResolveDependencies(PageManager pageManager, PackageManagerProjectSettingsProxy settingsProxy)
+        private PackageDatabase m_PackageDatabase;
+        private void ResolveDependencies(PageManager pageManager, PackageManagerProjectSettingsProxy settingsProxy, PackageDatabase packageDatabase)
         {
             m_PageManager = pageManager;
             m_SettingsProxy = settingsProxy;
+            m_PackageDatabase = packageDatabase;
         }
 
-        public PackageItem(PageManager pageManager, PackageManagerProjectSettingsProxy settingsProxy, IPackage package, VisualState state)
+        public PackageItem(PageManager pageManager, PackageManagerProjectSettingsProxy settingsProxy, PackageDatabase packageDatabase, IPackage package, VisualState state)
         {
-            ResolveDependencies(pageManager, settingsProxy);
+            ResolveDependencies(pageManager, settingsProxy, packageDatabase);
 
-            BuildMainItem();
+            BuildMainItem(package);
 
             UpdateExpanderUI(false);
 
@@ -77,7 +80,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             UpdateVisualState(state);
         }
 
-        private void BuildMainItem()
+        private void BuildMainItem(IPackage package)
         {
             m_MainItem = new VisualElement {name = "mainItem"};
             m_MainItem.OnLeftClick(SelectMainItem);
@@ -88,13 +91,28 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_ArrowExpander = new Toggle {name = "arrowExpander", classList = {"expander"}};
             m_ArrowExpander.RegisterValueChangedCallback(ToggleExpansion);
+            m_LockedIcon = new Label { name = "lockedIcon" };
             m_LeftContainer.Add(m_ArrowExpander);
+            m_LeftContainer.Add(m_LockedIcon);
 
             m_ExpanderHidden = new Label {name = "expanderHidden", classList = {"expanderHidden"}};
             m_LeftContainer.Add(m_ExpanderHidden);
 
             m_NameLabel = new Label {name = "packageName", classList = {"name"}};
-            m_LeftContainer.Add(m_NameLabel);
+            if (package?.Is(PackageType.Feature) == true)
+            {
+                m_MainItem.AddToClassList("feature");
+                m_NumPackagesInFeature = new Label() { name = "numPackages" };
+
+                var leftMiddleContainer = new VisualElement() { name = "leftMiddleContainer" };
+                leftMiddleContainer.Add(m_NameLabel);
+                leftMiddleContainer.Add(m_NumPackagesInFeature);
+                m_LeftContainer.Add(leftMiddleContainer);
+            }
+            else
+            {
+                m_LeftContainer.Add(m_NameLabel);
+            }
 
             m_EntitlementLabel = new Label {name = "entitlementLabel"};
             UIUtils.SetElementDisplay(m_EntitlementLabel, false);
@@ -111,8 +129,17 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_Spinner = null;
 
-            m_StateIcon = new VisualElement {name = "stateIcon", classList = {"status"}};
-            m_RightContainer.Add(m_StateIcon);
+            m_StateContainer = new VisualElement { name = "statesContainer" };
+            m_MainItem.Add(m_StateContainer);
+
+            m_StateIcon = new VisualElement { name = "stateIcon", classList = { "status" } };
+            m_StateContainer.Add(m_StateIcon);
+
+            if (package != null && package.Is(PackageType.Feature))
+            {
+                m_InfoStateIcon = new VisualElement { name = "versionState" };
+                m_StateContainer.Add(m_InfoStateIcon);
+            }
 
             m_VersionsContainer = null;
         }
@@ -140,22 +167,28 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void Refresh(VisualState newVisualState = null)
         {
-            var previousVisualState = visualState?.Clone() ?? new VisualState(package?.uniqueId, string.Empty);
-            visualState = newVisualState?.Clone() ?? visualState ?? new VisualState(package?.uniqueId, string.Empty);
+            var previousVisualState = visualState?.Clone() ?? new VisualState(package?.uniqueId, string.Empty, false);
+            visualState = newVisualState?.Clone() ?? visualState ?? new VisualState(package?.uniqueId, string.Empty, false);
 
             EnableInClassList("invisible", !visualState.visible);
             m_NameLabel.text = targetVersion?.displayName ?? string.Empty;
             m_VersionLabel.text = targetVersion.versionString ?? string.Empty;
 
-            var expandable = !package.Is(PackageType.BuiltIn);
+            if (m_NumPackagesInFeature != null)
+                m_NumPackagesInFeature.text = string.Format(L10n.Tr("{0} packages"), package.versions.primary?.dependencies?.Length ?? 0);
+
+            var expandable = !package.Is(PackageType.BuiltIn | PackageType.Feature);
             UIUtils.SetElementDisplay(m_ArrowExpander, expandable);
             UIUtils.SetElementDisplay(m_VersionLabel, expandable);
             UIUtils.SetElementDisplay(m_ExpanderHidden, !expandable);
+            UIUtils.SetElementDisplay(m_LockedIcon, false);
 
             if (!expandable && UIUtils.IsElementVisible(m_VersionsContainer))
                 UpdateExpanderUI(false);
             else
                 UpdateExpanderUI(visualState.expanded);
+
+            UpdateLockedUI(visualState.isLocked, expandable);
 
             var showVersionList = !targetVersion.HasTag(PackageTag.BuiltIn) && !string.IsNullOrEmpty(package.displayName);
             UIUtils.SetElementDisplay(m_VersionList, showVersionList);
@@ -201,6 +234,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 m_StateIcon.tooltip = GetTooltipByState(state);
                 StopSpinner();
+
+                if (package.Is(PackageType.Feature) && state == PackageState.Installed)
+                    GetState();
             }
             else
             {
@@ -222,6 +258,37 @@ namespace UnityEditor.PackageManager.UI.Internal
                 StopSpinner();
             else
                 StartSpinner();
+        }
+
+        private void GetState()
+        {
+            var featureState = FeatureState.None;
+            foreach (var dependency in targetVersion.dependencies)
+            {
+                var packageVersion = m_PackageDatabase.GetPackageInFeatureVersion(dependency.name);
+                if (packageVersion == null)
+                    continue;
+
+                var package = m_PackageDatabase.GetPackage(packageVersion);
+                var installedVersion = package?.versions.installed;
+
+                if (installedVersion == null)
+                {
+                    continue;
+                }
+                // User manually decide to install a different version
+                else if ((installedVersion.isDirectDependency && package.versions.isNonLifecycleVersionInstalled) || installedVersion.HasTag(PackageTag.InDevelopment))
+                {
+                    featureState = FeatureState.Customized;
+                    break;
+                }
+            }
+
+            if (featureState == FeatureState.Customized)
+            {
+                m_InfoStateIcon.AddToClassList(featureState.ToString().ToLower());
+                m_InfoStateIcon.tooltip = L10n.Tr("This feature has been manually customized");
+            }
         }
 
         private void RefreshVersions()
@@ -307,6 +374,15 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageManager.SetExpanded(package, value);
         }
 
+        internal void UpdateLockedUI(bool showLock, bool expandable)
+        {
+            UIUtils.SetElementDisplay(m_ArrowExpander, !showLock && expandable);
+            UIUtils.SetElementDisplay(m_LockedIcon, showLock);
+
+            if (showLock && UIUtils.IsElementVisible(m_VersionsContainer))
+                UIUtils.SetElementDisplay(m_VersionsContainer, false);
+        }
+
         internal void UpdateExpanderUI(bool expanded)
         {
             m_MainItem.EnableInClassList(k_ExpandedClassName, expanded);
@@ -314,7 +390,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (expanded && m_VersionsContainer == null)
                 BuildVersions();
-
             UIUtils.SetElementDisplay(m_VersionsContainer, expanded);
         }
 
@@ -329,7 +404,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (m_Spinner == null)
             {
                 m_Spinner = new LoadingSpinner {name = "packageSpinner"};
-                m_RightContainer.Add(m_Spinner);
+                m_StateContainer.Insert(0, m_Spinner);
             }
 
             m_Spinner.Start();
@@ -348,50 +423,55 @@ namespace UnityEditor.PackageManager.UI.Internal
         private VisualElement m_TagContainer;
         private VisualElement m_MainItem;
         private VisualElement m_StateIcon;
+        private VisualElement m_InfoStateIcon;
+        private VisualElement m_StateContainer;
         private Label m_EntitlementLabel;
         private Label m_VersionLabel;
         private LoadingSpinner m_Spinner;
         private Toggle m_ArrowExpander;
+        private Label m_LockedIcon;
         private Label m_ExpanderHidden;
         private VisualElement m_VersionsContainer;
         private ScrollView m_VersionList;
         private VisualElement m_LeftContainer;
         private VisualElement m_RightContainer;
+        private Label m_NumPackagesInFeature;
 
         private static readonly string[] k_TooltipsByState =
         {
             "",
-            "This package is installed.",
+            "This {0} is installed.",
             // Keep the error message for `installed` and `installedAsDependency` the same for now as requested by the designer
-            "This package is installed.",
-            "This package is available for download.",
-            "This package is available for import.",
-            "This package is in development.",
-            "A newer version of this package is available.",
+            "This {0} is installed.",
+            "This {0} is available for download.",
+            "This {0} is available for import.",
+            "This {0} is in development.",
+            "A newer version of this {0} is available.",
             "",
-            "There are errors with this package. Please read the package details for further guidance.",
-            "There are warnings with this package. Please read the package details for further guidance."
+            "There are errors with this {0}. Please read the {0} details for further guidance.",
+            "There are warnings with this {0}. Please read the {0} details for further guidance."
         };
 
-        public static string GetTooltipByState(PackageState state)
+        public string GetTooltipByState(PackageState state)
         {
-            return L10n.Tr(k_TooltipsByState[(int)state]);
+            return string.Format(L10n.Tr(k_TooltipsByState[(int)state]), package.GetDescriptor());
         }
 
         private static readonly string[] k_TooltipsByProgress =
         {
             "",
-            "Package refreshing in progress.",
-            "Package downloading in progress.",
-            "Package pausing in progress.",
-            "Package resuming in progress.",
-            "Package installing in progress.",
-            "Package removing in progress."
+            "{0} refreshing in progress.",
+            "{0} downloading in progress.",
+            "{0} pausing in progress.",
+            "{0} resuming in progress.",
+            "{0} installing in progress.",
+            "{0} resetting in progress.",
+            "{0} removing in progress."
         };
 
-        public static string GetTooltipByProgress(PackageProgress progress)
+        public string GetTooltipByProgress(PackageProgress progress)
         {
-            return L10n.Tr(k_TooltipsByProgress[(int)progress]);
+            return string.Format(L10n.Tr(k_TooltipsByProgress[(int)progress]), package.GetDescriptor(true));
         }
     }
 }

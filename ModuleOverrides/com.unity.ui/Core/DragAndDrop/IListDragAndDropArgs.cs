@@ -17,11 +17,7 @@ namespace UnityEngine.UIElements
         public object target { get; set; }
         public int insertAtIndex { get; set; }
         public DragAndDropPosition dragAndDropPosition { get; set;  }
-
-        public IDragAndDropData dragAndDropData
-        {
-            get { return DragAndDropUtility.dragAndDrop.data; }
-        }
+        public IDragAndDropData dragAndDropData { get; set; }
     }
 
     internal enum DragAndDropPosition

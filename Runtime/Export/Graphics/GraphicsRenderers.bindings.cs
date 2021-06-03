@@ -30,7 +30,18 @@ namespace UnityEngine
     [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]
     public partial class Renderer : Component
     {
-        extern public Bounds bounds {[FreeFunction(Name = "RendererScripting::GetBounds", HasExplicitThis = true)] get; }
+        extern public Bounds bounds
+        {
+            [FreeFunction(Name = "RendererScripting::GetWorldBounds", HasExplicitThis = true)] get;
+            [NativeName("SetWorldAABB")] set;
+        }
+        extern public Bounds localBounds
+        {
+            [FreeFunction(Name = "RendererScripting::GetLocalBounds", HasExplicitThis = true)] get;
+            [NativeName("SetLocalAABB")] set;
+        }
+        [NativeName("ResetWorldAABB")] extern public void ResetBounds();
+        [NativeName("ResetLocalAABB")] extern public void ResetLocalBounds();
 
         [FreeFunction(Name = "RendererScripting::SetStaticLightmapST", HasExplicitThis = true)] extern private void SetStaticLightmapST(Vector4 st);
 
@@ -336,11 +347,32 @@ namespace UnityEngine
         public void BakeMesh(Mesh mesh) { BakeMesh(mesh, false); }
         extern public void  BakeMesh([NotNull("NullExceptionObject")] Mesh mesh, bool useScale);
 
-        [FreeFunction(Name = "SkinnedMeshRendererScripting::GetLocalAABB", HasExplicitThis = true)]
-        extern private Bounds GetLocalAABB();
-        extern private void   SetLocalAABB(Bounds b);
+        public GraphicsBuffer GetVertexBuffer()
+        {
+            if (this == null)
+                throw new NullReferenceException();
+            var buf = GetVertexBufferImpl();
+            if (buf != null)
+                buf.SaveCallstack(2);
+            return buf;
+        }
 
-        public Bounds localBounds { get { return GetLocalAABB(); } set { SetLocalAABB(value); } }
+        public GraphicsBuffer GetPreviousVertexBuffer()
+        {
+            if (this == null)
+                throw new NullReferenceException();
+            var buf = GetPreviousVertexBufferImpl();
+            if (buf != null)
+                buf.SaveCallstack(2);
+            return buf;
+        }
+
+        [FreeFunction(Name = "SkinnedMeshRendererScripting::GetVertexBufferPtr", HasExplicitThis = true)]
+        extern GraphicsBuffer GetVertexBufferImpl();
+        [FreeFunction(Name = "SkinnedMeshRendererScripting::GetPreviousVertexBufferPtr", HasExplicitThis = true)]
+        extern GraphicsBuffer GetPreviousVertexBufferImpl();
+
+        public extern GraphicsBuffer.Target vertexBufferTarget { get; set; }
     }
 
     [NativeHeader("Runtime/Graphics/Mesh/MeshRenderer.h")]

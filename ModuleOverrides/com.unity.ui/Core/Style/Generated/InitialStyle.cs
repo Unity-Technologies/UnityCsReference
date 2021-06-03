@@ -75,9 +75,13 @@ namespace UnityEngine.UIElements.StyleSheets
             s_InitialStyle.layoutData.Write().paddingTop = 0f;
             s_InitialStyle.layoutData.Write().position = Position.Relative;
             s_InitialStyle.layoutData.Write().right = StyleKeyword.Auto.ToLength();
+            s_InitialStyle.transformData.Write().rotate = StyleKeyword.None.ToRotate();
+            s_InitialStyle.transformData.Write().scale = StyleKeyword.None.ToScale();
             s_InitialStyle.rareData.Write().textOverflow = TextOverflow.Clip;
             s_InitialStyle.inheritedData.Write().textShadow = default(TextShadow);
             s_InitialStyle.layoutData.Write().top = StyleKeyword.Auto.ToLength();
+            s_InitialStyle.transformData.Write().transformOrigin = TransformOrigin.Initial();
+            s_InitialStyle.transformData.Write().translate = StyleKeyword.None.ToTranslate();
             s_InitialStyle.rareData.Write().unityBackgroundImageTintColor = Color.white;
             s_InitialStyle.rareData.Write().unityBackgroundScaleMode = ScaleMode.StretchToFill;
             s_InitialStyle.inheritedData.Write().unityFont = default(Font);
@@ -146,9 +150,13 @@ namespace UnityEngine.UIElements.StyleSheets
         public static Length paddingTop => s_InitialStyle.layoutData.Read().paddingTop;
         public static Position position => s_InitialStyle.layoutData.Read().position;
         public static Length right => s_InitialStyle.layoutData.Read().right;
+        public static Rotate rotate => s_InitialStyle.transformData.Read().rotate;
+        public static Scale scale => s_InitialStyle.transformData.Read().scale;
         public static TextOverflow textOverflow => s_InitialStyle.rareData.Read().textOverflow;
         public static TextShadow textShadow => s_InitialStyle.inheritedData.Read().textShadow;
         public static Length top => s_InitialStyle.layoutData.Read().top;
+        public static TransformOrigin transformOrigin => s_InitialStyle.transformData.Read().transformOrigin;
+        public static Translate translate => s_InitialStyle.transformData.Read().translate;
         public static Color unityBackgroundImageTintColor => s_InitialStyle.rareData.Read().unityBackgroundImageTintColor;
         public static ScaleMode unityBackgroundScaleMode => s_InitialStyle.rareData.Read().unityBackgroundScaleMode;
         public static Font unityFont => s_InitialStyle.inheritedData.Read().unityFont;

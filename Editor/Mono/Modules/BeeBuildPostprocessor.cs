@@ -31,6 +31,30 @@ namespace UnityEditor.Modules
             return isBuildingPlayer;
         }
 
+        [RequiredByNativeCode]
+        static void BeginProfile()
+        {
+            UnityBeeDriverProfilerSession.Start($"{DagDirectory}/buildreport.json");
+        }
+
+        [RequiredByNativeCode]
+        static void EndProfile()
+        {
+            UnityBeeDriverProfilerSession.Finish();
+        }
+
+        [RequiredByNativeCode]
+        static void BeginBuildSection(string name)
+        {
+            UnityBeeDriverProfilerSession.BeginSection(name);
+        }
+
+        [RequiredByNativeCode]
+        static void EndBuildSection()
+        {
+            UnityBeeDriverProfilerSession.EndSection();
+        }
+
         protected BeeDriver Driver { get; private set; }
         protected virtual IPluginImporterExtension GetPluginImpExtension() => new EditorPluginImporterExtension();
 
@@ -135,7 +159,7 @@ namespace UnityEditor.Modules
                     SearchDirectories = new[] {managedAssemblyFolderPath.MakeAbsolute().ToString()},
                     Runtime = GetUseIl2Cpp(args) ? "il2cpp" : "mono",
                     Profile = IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(
-                        PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup)),
+                        PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup), args.target),
                     // *begin-nonstandard-formatting*
                     Ruleset = strippingLevel switch
                     {
@@ -163,12 +187,17 @@ namespace UnityEditor.Modules
             return Il2CppNativeCodeBuilderUtils.GetConfigurationName(PlayerSettings.GetIl2CppCompilerConfiguration(buildTargetGroup));
         }
 
+        protected virtual IEnumerable<string> AdditionalIl2CppArgsFor(BuildPostProcessArgs args)
+        {
+            yield break;
+        }
+
         Il2CppConfig Il2CppConfigFor(BuildPostProcessArgs args)
         {
             if (!GetUseIl2Cpp(args))
                 return null;
 
-            var additionalArgs = new List<string>();
+            var additionalArgs = new List<string>(AdditionalIl2CppArgsFor(args));
 
             var diagArgs = Debug.GetDiagnosticSwitch("VMIl2CppAdditionalArgs").value as string;
             if (!string.IsNullOrEmpty(diagArgs))
@@ -187,7 +216,7 @@ namespace UnityEditor.Modules
                     IsBuildOptionSet(args.report.summary.options,
                     BuildOptions.EnableDeepProfilingSupport),
                 EnableFullGenericSharing = EditorUserBuildSettings.il2CppCodeGeneration == Il2CppCodeGeneration.OptimizeSize,
-                Profile = IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup)),
+                Profile = IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup), args.target),
                 ConfigurationName = Il2CppBuildConfigurationNameFor(args),
                 GcWBarrierValidation = platformHasIncrementalGC && PlayerSettings.gcWBarrierValidation,
                 GcIncremental = platformHasIncrementalGC && PlayerSettings.gcIncremental &&
@@ -223,7 +252,10 @@ namespace UnityEditor.Modules
                 EnableCrashReporting = UnityEditor.CrashReporting.CrashReportingSettings.enabled,
                 EnablePerformanceReporting = UnityEngine.Analytics.PerformanceReporting.enabled,
                 EnableUnityConnect = UnityEngine.Connect.UnityConnectSettings.enabled,
-            }
+            },
+            StreamingAssetsFiles = BuildPlayerContext.ActiveInstance.StreamingAssets
+                .Select(e => new StreamingAssetsFile { File = e.src.ToString(), RelativePath = e.dst.ToString() })
+                .ToArray()
         };
 
         public override bool UsesBeeBuild() => true;

@@ -13,8 +13,8 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal class PackageDatabase : ISerializationCallbackReceiver
     {
-        public virtual event Action<IPackage, IPackageVersion> onInstallSuccess = delegate {};
-        public virtual event Action<IPackage> onUninstallSuccess = delegate {};
+        public virtual event Action<IPackage> onInstallOrUninstallSuccess = delegate {};
+
         public virtual event Action<IPackage> onPackageProgressUpdate = delegate {};
 
         public virtual event Action<IEnumerable<IPackage> /*added*/,
@@ -44,6 +44,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         [NonSerialized]
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
         [NonSerialized]
+        private UpmCache m_UpmCache;
+        [NonSerialized]
         private UpmClient m_UpmClient;
         [NonSerialized]
         private IOProxy m_IOProxy;
@@ -52,6 +54,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             AssetStoreUtils assetStoreUtils,
             AssetStoreClient assetStoreClient,
             AssetStoreDownloadManager assetStoreDownloadManager,
+            UpmCache upmCache,
             UpmClient upmClient,
             IOProxy ioProxy)
         {
@@ -59,6 +62,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetDatabase = assetDatabase;
             m_AssetStoreClient = assetStoreClient;
             m_AssetStoreDownloadManager = assetStoreDownloadManager;
+            m_UpmCache = upmCache;
             m_UpmClient = upmClient;
             m_IOProxy = ioProxy;
 
@@ -72,7 +76,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual bool isInstallOrUninstallInProgress
         {
-            // add, embed -> install, remove -> uninstall
+            // add, embed -> install, remove -> uninstall or addAndRemove -> install/uninstall
             get { return m_UpmClient.isAddRemoveOrEmbedInProgress; }
         }
 
@@ -127,6 +131,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             version = null;
         }
 
+        public virtual IPackage GetPackageByIdOrName(string idOrName)
+        {
+            GetPackageAndVersionByIdOrName(idOrName, out var package, out var version);
+            return package;
+        }
+
         public virtual void GetPackageAndVersion(string packageUniqueId, string versionUniqueId, out IPackage package, out IPackageVersion version)
         {
             package = GetPackage(packageUniqueId);
@@ -170,13 +180,27 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public virtual IEnumerable<IPackageVersion> GetReverseDependencies(IPackageVersion version)
+        public virtual IEnumerable<IPackageVersion> GetReverseDependencies(IPackageVersion version, bool directDependenciesOnly = false)
         {
             if (version?.dependencies == null)
                 return null;
             var installedRoots = allPackages.Select(p => p.versions.installed).Where(p => p?.isDirectDependency ?? false);
-            var dependsOnPackage = installedRoots.Where(p => p.resolvedDependencies?.Any(r => r.name == version.name) ?? false);
-            return dependsOnPackage;
+            return installedRoots.Where(p
+                => (directDependenciesOnly ? p.dependencies : p.resolvedDependencies)?.Any(r => r.name == version.name) ?? false);
+        }
+
+        public virtual IEnumerable<IPackageVersion> GetFeatureDependents(IPackageVersion version)
+        {
+            return GetReverseDependencies(version, true)?.Where(p => p.HasTag(PackageTag.Feature)) ?? Enumerable.Empty<IPackageVersion>();
+        }
+
+        public virtual IPackage[] GetCustomizedDependencies(IPackageVersion version, bool? rootDependenciesOnly = null)
+        {
+            return version?.dependencies?.Select(d => GetPackage(d.name)).Where(p =>
+            {
+                return p?.versions.isNonLifecycleVersionInstalled == true
+                && (rootDependenciesOnly == null || p.versions.installed.isDirectDependency == rootDependenciesOnly);
+            }).ToArray() ?? new IPackage[0];
         }
 
         public virtual IEnumerable<Sample> GetSamples(IPackageVersion version)
@@ -187,9 +211,15 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (m_ParsedSamples.TryGetValue(version.uniqueId, out var parsedSamples))
                 return parsedSamples;
 
-            var samples = Sample.FindByPackage(version.packageInfo, m_IOProxy, m_AssetDatabase);
+            var samples = Sample.FindByPackage(version.packageInfo, m_UpmCache, m_IOProxy, m_AssetDatabase);
             m_ParsedSamples[version.uniqueId] = samples;
             return samples;
+        }
+
+        public virtual IPackageVersion GetPackageInFeatureVersion(string packageId)
+        {
+            var versions = GetPackage(packageId)?.versions;
+            return versions?.lifecycleVersion ?? versions?.primary;
         }
 
         public void OnAfterDeserialize()
@@ -254,6 +284,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmClient.onAddOperation += OnUpmAddOperation;
             m_UpmClient.onEmbedOperation += OnUpmEmbedOperation;
             m_UpmClient.onRemoveOperation += OnUpmRemoveOperation;
+            m_UpmClient.onAddAndRemoveOperation += OnUpmAddAndRemoveOperation;
 
             m_AssetStoreClient.onPackagesChanged += OnPackagesChanged;
             m_AssetStoreClient.onPackageVersionUpdated += OnUpmPackageVersionUpdated;
@@ -273,6 +304,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmClient.onAddOperation -= OnUpmAddOperation;
             m_UpmClient.onEmbedOperation -= OnUpmEmbedOperation;
             m_UpmClient.onRemoveOperation -= OnUpmRemoveOperation;
+            m_UpmClient.onAddAndRemoveOperation -= OnUpmAddAndRemoveOperation;
 
             m_AssetStoreClient.onPackagesChanged -= OnPackagesChanged;
             m_AssetStoreClient.onPackageVersionUpdated -= OnUpmPackageVersionUpdated;
@@ -408,11 +440,43 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var match = specialInstallationChecklist.FirstOrDefault(p => p.versions.installed.uniqueId.ToLower().Contains(specialUniqueId.ToLower()));
                 if (match != null)
                 {
-                    onInstallSuccess(match, match.versions.installed);
+                    onInstallOrUninstallSuccess?.Invoke(match);
                     SetPackageProgress(match, PackageProgress.None);
                     RemoveSpecialInstallation(specialUniqueId);
                 }
             }
+        }
+
+        private void OnUpmAddAndRemoveOperation(UpmAddAndRemoveOperation operation)
+        {
+            foreach (var packageId in operation.packageIdsToReset)
+                SetPackageProgress(GetPackageByIdOrName(packageId), PackageProgress.Resetting);
+            foreach (var packageId in operation.packageIdsToAdd)
+                SetPackageProgress(GetPackageByIdOrName(packageId), PackageProgress.Installing);
+            foreach (var packageName in operation.packagesNamesToRemove)
+                SetPackageProgress(GetPackage(packageName), PackageProgress.Removing);
+
+            operation.onOperationSuccess += (op) =>
+            {
+                var package = GetPackage(op.packageUniqueId);
+                if (package != null)
+                    onInstallOrUninstallSuccess?.Invoke(package);
+            };
+
+            operation.onOperationError += (op, err) =>
+            {
+                // For now we all the actions we use `AddAndRemoveOperation` for should have a packageUniqueId
+                // because we don't support multi-select yet. We need to update the logic when we do multi-selection
+                // And we'll need to discuss with the PAK team.
+                var package = GetPackage(op.packageUniqueId);
+                if (package != null)
+                    AddPackageError(package, err);
+            };
+            operation.onOperationFinalized += (op) =>
+            {
+                foreach (var packageIdOrName in operation.packageIdsToAdd.Concat(operation.packageIdsToReset).Concat(operation.packagesNamesToRemove))
+                    SetPackageProgress(GetPackageByIdOrName(packageIdOrName), PackageProgress.None);
+            };
         }
 
         private void OnUpmAddOperation(IOperation operation)
@@ -431,13 +495,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
             SetPackageProgress(GetPackage(operation.packageUniqueId), PackageProgress.Installing);
-            operation.onOperationSuccess += (op) =>
-            {
-                IPackage package;
-                IPackageVersion version;
-                GetPackageAndVersion(operation.packageUniqueId, operation.versionUniqueId, out package, out version);
-                onInstallSuccess(package, version);
-            };
+            operation.onOperationSuccess += (op) => onInstallOrUninstallSuccess?.Invoke(GetPackage(op.packageUniqueId));
             operation.onOperationError += OnUpmOperationError;
             operation.onOperationFinalized += OnUpmOperationFinalized;
         }
@@ -457,11 +515,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnUpmEmbedOperation(IOperation operation)
         {
             SetPackageProgress(GetPackage(operation.packageUniqueId), PackageProgress.Installing);
-            operation.onOperationSuccess += (op) =>
-            {
-                var package = GetPackage(operation.packageUniqueId);
-                onInstallSuccess(package, package?.versions.installed);
-            };
+            operation.onOperationSuccess += (op) => onInstallOrUninstallSuccess?.Invoke(GetPackage(op.packageUniqueId));
             operation.onOperationError += OnUpmOperationError;
             operation.onOperationFinalized += OnUpmOperationFinalized;
         }
@@ -469,7 +523,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnUpmRemoveOperation(IOperation operation)
         {
             SetPackageProgress(GetPackage(operation.packageUniqueId), PackageProgress.Removing);
-            operation.onOperationSuccess += (op) => onUninstallSuccess(GetPackage(operation.packageUniqueId));
+            operation.onOperationSuccess += (op) => onInstallOrUninstallSuccess?.Invoke(GetPackage(operation.packageUniqueId));
             operation.onOperationError += OnUpmOperationError;
             operation.onOperationFinalized += OnUpmOperationFinalized;
         }
@@ -525,6 +579,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (package.versions.installed == null)
                 return;
             m_UpmClient.RemoveByName(package.name);
+        }
+
+        public virtual void InstallAndResetDependencies(IPackageVersion version, IEnumerable<IPackage> dependenciesToReset)
+        {
+            m_UpmClient.AddAndResetDependencies(version.uniqueId, dependenciesToReset?.Select(package => package.name) ?? Enumerable.Empty<string>());
+        }
+
+        public virtual void ResetDependencies(IPackageVersion version, IEnumerable<IPackage> dependenciesToReset)
+        {
+            m_UpmClient.ResetDependencies(version.uniqueId, dependenciesToReset?.Select(package => package.name) ?? Enumerable.Empty<string>());
         }
 
         public virtual void Embed(IPackageVersion packageVersion)

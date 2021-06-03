@@ -198,6 +198,22 @@ namespace Unity.UI.Builder
             {
                 textShadowStyleField.RegisterValueChangedCallback(e => OnFieldValueChangeTextShadow(e, styleName));
             }
+            else if (IsComputedStyleTransformOrigin(val) && fieldElement is TransformOriginStyleField transformOriginStyleField)
+            {
+                transformOriginStyleField.RegisterValueChangedCallback(e => OnFieldValueChangeTransformOrigin(e, styleName));
+            }
+            else if (IsComputedStyleTranslate(val) && fieldElement is TranslateStyleField translateStyleField)
+            {
+                translateStyleField.RegisterValueChangedCallback(e => OnFieldValueChangeTranslate(e, styleName));
+            }
+            else if (IsComputedStyleRotate(val) && fieldElement is RotateStyleField rotateStyleField)
+            {
+                rotateStyleField.RegisterValueChangedCallback(e => OnFieldValueChangeRotate(e, styleName));
+            }
+            else if (IsComputedStyleScale(val) && fieldElement is ScaleStyleField scaleStyleField)
+            {
+                scaleStyleField.RegisterValueChangedCallback(e => OnFieldValueChangeScale(e, styleName));
+            }
             else if (IsComputedStyleBackground(val) && fieldElement is ImageStyleField imageStyleField)
             {
                 imageStyleField.RegisterValueChangedCallback(e => OnFieldValueChange(e, styleName));
@@ -514,6 +530,42 @@ namespace Unity.UI.Builder
                     value = styleSheet.GetTextShadow(styleProperty);
                 else
                     value.color.a = 255.0f; // When no specific style value defined, we will use default alpha = 255 instead of 0.
+
+                uiField.SetValueWithoutNotify(value);
+            }
+            else if (IsComputedStyleTransformOrigin(val) && fieldElement is TransformOriginStyleField)
+            {
+                var uiField = fieldElement as TransformOriginStyleField;
+                var value = GetComputedStyleTransformOriginValue(val);
+                if (useStyleProperty)
+                    value = styleSheet.GetTransformOrigin(styleProperty);
+
+                uiField.SetValueWithoutNotify(value);
+            }
+            else if (IsComputedStyleTranslate(val) && fieldElement is TranslateStyleField)
+            {
+                var uiField = fieldElement as TranslateStyleField;
+                var value = GetComputedStyleTranslateValue(val);
+                if (useStyleProperty)
+                    value = styleSheet.GetTranslate(styleProperty);
+
+                uiField.SetValueWithoutNotify(value);
+            }
+            else if (IsComputedStyleRotate(val) && fieldElement is RotateStyleField)
+            {
+                var uiField = fieldElement as RotateStyleField;
+                var value = GetComputedStyleRotateValue(val);
+                if (useStyleProperty)
+                    value = styleSheet.GetRotate(styleProperty);
+
+                uiField.SetValueWithoutNotify(value);
+            }
+            else if (IsComputedStyleScale(val) && fieldElement is ScaleStyleField)
+            {
+                var uiField = fieldElement as ScaleStyleField;
+                var value = GetComputedStyleScaleValue(val);
+                if (useStyleProperty)
+                    value = styleSheet.GetScale(styleProperty);
 
                 uiField.SetValueWithoutNotify(value);
             }
@@ -1119,7 +1171,7 @@ namespace Unity.UI.Builder
         {
             var fieldElement = action.userData as VisualElement;
             var listToUnset = fieldElement?.userData;
-            if (listToUnset != null && listToUnset is List<VisualElement> bindableElements)
+            if (listToUnset != null && listToUnset is List<BindableElement> bindableElements)
             {
                 return CanUnsetStyleProperties(bindableElements, normalStatusCondition);
             }
@@ -1187,7 +1239,7 @@ namespace Unity.UI.Builder
         void SetStyleProperty(DropdownMenuAction action)
         {
             var listToUnset = (action.userData as VisualElement)?.userData;
-            if (listToUnset != null && listToUnset is List<VisualElement> bindableElements)
+            if (listToUnset != null && listToUnset is List<BindableElement> bindableElements)
             {
                 SetStyleProperties(bindableElements);
                 NotifyStyleChanges();
@@ -1233,7 +1285,7 @@ namespace Unity.UI.Builder
         public void UnsetStylePropertyForElement(VisualElement fieldElement)
         {
             var listToUnset = fieldElement?.userData;
-            if (listToUnset != null && listToUnset is List<VisualElement> bindableElements)
+            if (listToUnset != null && listToUnset is List<BindableElement> bindableElements)
             {
                 UnsetStyleProperties(bindableElements);
                 return;
@@ -1789,6 +1841,45 @@ namespace Unity.UI.Builder
             PostStyleFieldSteps(field, styleName, isNewValue);
         }
 
+        void OnFieldValueChangeTransformOrigin(ChangeEvent<BuilderTransformOrigin> e, string styleName)
+        {
+            var field = e.target as TransformOriginStyleField;
+            var styleProperty = GetOrCreateStylePropertyByStyleName(styleName);
+
+            var isNewValue = field.OnFieldValueChange(styleProperty, styleSheet);
+
+            PostStyleFieldSteps(field, styleName, isNewValue);
+        }
+
+        void OnFieldValueChangeTranslate(ChangeEvent<BuilderTranslate> e, string styleName)
+        {
+            var field = e.target as TranslateStyleField;
+            var styleProperty = GetOrCreateStylePropertyByStyleName(styleName);
+
+            var isNewValue = field.OnFieldValueChange(styleProperty, styleSheet);
+
+            PostStyleFieldSteps(field, styleName, isNewValue);
+        }
+
+        void OnFieldValueChangeRotate(ChangeEvent<BuilderRotate> e, string styleName)
+        {
+            var field = e.target as RotateStyleField;
+            var styleProperty = GetOrCreateStylePropertyByStyleName(styleName);
+
+            var isNewValue = field.OnFieldValueChange(styleProperty, styleSheet);
+
+            PostStyleFieldSteps(field, styleName, isNewValue);
+        }
+        
+        void OnFieldValueChangeScale(ChangeEvent<BuilderScale> e, string styleName)
+        {
+            var field = e.target as ScaleStyleField;
+            var styleProperty = GetOrCreateStylePropertyByStyleName(styleName);
+
+            var isNewValue = field.OnFieldValueChange(styleProperty, styleSheet);
+
+            PostStyleFieldSteps(field, styleName, isNewValue);
+        }
 
         void OnFieldValueChange(ChangeEvent<Enum> e, string styleName)
         {
@@ -1897,6 +1988,26 @@ namespace Unity.UI.Builder
         }
 
 
+        static public bool IsComputedStyleTransformOrigin(object val)
+        {
+            return val is StyleTransformOrigin || val is TransformOrigin || val is BuilderTransformOrigin;
+        }
+
+        static public bool IsComputedStyleTranslate(object val)
+        {
+            return val is StyleTranslate || val is Translate || val is BuilderTranslate;
+        }
+
+        static public bool IsComputedStyleRotate(object val)
+        {
+            return val is StyleRotate || val is Rotate || val is BuilderRotate;
+        }
+        
+        static public bool IsComputedStyleScale(object val)
+        {
+            return val is StyleScale || val is Scale || val is BuilderScale;
+        }
+
         static public bool IsComputedStyleBackground(object val)
         {
             return val is StyleBackground || val is Background;
@@ -1938,6 +2049,53 @@ namespace Unity.UI.Builder
             return new BuilderTextShadow(style);
         }
 
+        static public BuilderTransformOrigin GetComputedStyleTransformOriginValue(object val)
+        {
+            if (val is BuilderTransformOrigin)
+                return (BuilderTransformOrigin)val;
+
+            if (val is TransformOrigin)
+                return new BuilderTransformOrigin((TransformOrigin)val);
+
+            var style = (StyleTransformOrigin)val;
+            return new BuilderTransformOrigin(style);
+        }
+
+        static public BuilderTranslate GetComputedStyleTranslateValue(object val)
+        {
+            if (val is BuilderTranslate)
+                return (BuilderTranslate)val;
+
+            if (val is Translate)
+                return new BuilderTranslate((Translate)val);
+
+            var style = (StyleTranslate)val;
+            return new BuilderTranslate(style);
+        }
+
+        static public BuilderRotate GetComputedStyleRotateValue(object val)
+        {
+            if (val is BuilderRotate)
+                return (BuilderRotate)val;
+
+            if (val is Rotate)
+                return new BuilderRotate((Rotate)val);
+
+            var style = (StyleRotate)val;
+            return new BuilderRotate(style);
+        }
+        
+        static public BuilderScale GetComputedStyleScaleValue(object val)
+        {
+            if (val is BuilderScale)
+                return (BuilderScale)val;
+
+            if (val is Scale)
+                return new BuilderScale((Scale)val);
+
+            var style = (StyleScale)val;
+            return new BuilderScale(style);
+        }     
 
         static public int GetComputedStyleIntValue(object val)
         {
@@ -1994,7 +2152,6 @@ namespace Unity.UI.Builder
             var style = (StyleFontDefinition)val;
             return (FontAsset)style.value.fontAsset;
         }
-
 
         static public Background GetComputedStyleBackgroundValue(object val)
         {

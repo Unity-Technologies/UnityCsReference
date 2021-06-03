@@ -117,6 +117,88 @@ namespace UnityEngine.UIElements
             return length.value * parentSize / 100;
         }
 
+        private Vector3 ResolveTranslate()
+        {
+            var translationOperation = computedStyle.translate;
+            float x = float.NaN;
+            var x_cache = translationOperation.x;
+            if (x_cache.IsNone())
+            {
+                x = 0;
+            }
+            else if (x_cache.unit == LengthUnit.Percent)
+            {
+                var width = resolvedStyle.width;
+                x = float.IsNaN(width) ? 0 : width * x_cache.value / 100;
+            }
+            else // we asume unitless or pixel values
+            {
+                x = x_cache.value;
+            }
+
+            float y = float.NaN;
+            var y_cache = translationOperation.y;
+            if (y_cache.IsNone())
+            {
+                y = 0;
+            }
+            else if (y_cache.unit == LengthUnit.Percent)
+            {
+                var height = resolvedStyle.height;
+                y = float.IsNaN(height) ? 0 : height * y_cache.value / 100;
+            }
+            else // we asume unitless or pixel values
+            {
+                y = y_cache.value;
+            }
+            float z = translationOperation.z;
+            return new Vector3(x, y, z);
+        }
+
+        private Vector3 ResolveTransformOrigin()
+        {
+            var transformOrigin = computedStyle.transformOrigin;
+
+            float x = float.NaN;
+            var x_cache = transformOrigin.x;
+            if (x_cache.IsNone())
+            {
+                var width = resolvedStyle.width;
+                x = float.IsNaN(width) ? 0 :  width / 2;
+            }
+            else if (x_cache.unit == LengthUnit.Percent)
+            {
+                var width = resolvedStyle.width;
+                x = float.IsNaN(width) ? 0 : width * x_cache.value / 100;
+            }
+            else // we asume unitless or pixel values
+            {
+                x = x_cache.value;
+            }
+
+
+            float y = float.NaN;
+            var y_cache = transformOrigin.y;
+            if (y_cache.IsNone())
+            {
+                var height = resolvedStyle.height;
+                y = float.IsNaN(height) ? 0 : height / 2;
+            }
+            else if (y_cache.unit == LengthUnit.Percent)
+            {
+                var height = resolvedStyle.height;
+                y = float.IsNaN(height) ? 0 : height * y_cache.value  / 100;
+            }
+            else // we asume unitless or pixel values
+            {
+                y = y_cache.value;
+            }
+
+            float z = transformOrigin.z;
+
+            return new Vector3(x, y, z);
+        }
+
         internal class CustomStyleAccess : ICustomStyle
         {
             private Dictionary<string, StylePropertyValue> m_CustomProperties;

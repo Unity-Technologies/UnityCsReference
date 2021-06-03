@@ -56,6 +56,7 @@ namespace UnityEditor
             public static readonly GUIContent inputMaxProcessTime = EditorGUIUtility.TrTextContent("Input Throttling (milliseconds)", "The maximum number of milliseconds the Editor will take to process user inputs.");
             public static readonly GUIContent interactionMode = EditorGUIUtility.TrTextContent("Interaction Mode", "Specifies how long the Editor can idle before it updates.");
             public static readonly GUIContent enterPlayModeSettingsFocusGameView = EditorGUIUtility.TrTextContent("Create Game View On Play", "If enabled, a Game View window will be created when entering play mode if none exists");
+            public static readonly GUIContent enableExtendedDynamicHints = EditorGUIUtility.TrTextContent("Enable extended Dynamic Hints", "Check this to enable extended Dynamic Hints. If available, extended Dynamic Hints will display more information when a property, object or tool is hovered for enough time, or when a Dynamic Hint is displayed");
             public static readonly GUIContent[] interactionModes =
             {
                 EditorGUIUtility.TrTextContent("Default", "The Editor can idle up to 4 ms per frame."),
@@ -190,6 +191,11 @@ namespace UnityEditor
         private bool m_Create3DObjectsAtOrigin = false;
         private float m_ProgressDialogDelay = 3.0f;
         private bool m_GraphSnapping;
+        private bool m_EnableExtendedDynamicHints
+        {
+            get { return TooltipView.s_EnableExtendedDynamicHints; }
+            set { TooltipView.s_EnableExtendedDynamicHints.value = value; }
+        }
 
         private string[] m_ScriptApps;
         private string[] m_ImageApps;
@@ -577,6 +583,7 @@ namespace UnityEditor
             DrawInteractionModeOptions();
 
             DrawPackageManagerOptions();
+            DrawDynamicHintsOptions();
         }
 
         enum InteractionMode
@@ -643,6 +650,11 @@ namespace UnityEditor
                     EditorApplication.UpdateInteractionModeSettings();
                 }
             }
+        }
+
+        private void DrawDynamicHintsOptions()
+        {
+            m_EnableExtendedDynamicHints = EditorGUILayout.Toggle(GeneralProperties.enableExtendedDynamicHints, m_EnableExtendedDynamicHints);
         }
 
         private void DrawPackageManagerOptions()

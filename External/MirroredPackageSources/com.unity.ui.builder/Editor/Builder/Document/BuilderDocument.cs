@@ -292,6 +292,9 @@ namespace Unity.UI.Builder
             SaveToDisk();
         }
 
+        internal bool SaveNewTemplateFileFromHierarchy(string newTemplatePath, string uxml)
+            => activeOpenUXMLFile.SaveNewTemplateFileFromHierarchy(newTemplatePath, uxml);
+
         public void LoadDocument(VisualTreeAsset visualTreeAsset, VisualElement documentElement)
         {
             activeOpenUXMLFile.LoadDocument(visualTreeAsset, documentElement);

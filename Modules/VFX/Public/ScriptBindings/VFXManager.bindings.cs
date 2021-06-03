@@ -18,6 +18,14 @@ namespace UnityEngine.Experimental.VFX
 namespace UnityEngine.VFX
 {
     [RequiredByNativeCode]
+    public struct VFXCameraXRSettings
+    {
+        public uint viewTotal;
+        public uint viewCount;
+        public uint viewOffset;
+    }
+
+    [RequiredByNativeCode]
     [NativeHeader("Modules/VFX/Public/VFXManager.h")]
     [StaticAccessor("GetVFXManager()", StaticAccessorType.Dot)]
     public static class VFXManager
@@ -34,14 +42,27 @@ namespace UnityEngine.VFX
         extern internal static bool renderInSceneView { get; set; }
         internal static bool activateVFX { get; set; }
 
+        private static readonly VFXCameraXRSettings kDefaultCameraXRSettings = new VFXCameraXRSettings { viewTotal = 1, viewCount = 1, viewOffset = 0 };
+
         public static void ProcessCamera(Camera cam)
         {
-            PrepareCamera(cam);
-            ProcessCameraCommand(cam, null);
+            PrepareCamera(cam, kDefaultCameraXRSettings);
+            ProcessCameraCommand(cam, null, kDefaultCameraXRSettings);
         }
 
-        extern public static void PrepareCamera([NotNull("NullExceptionObject")] Camera cam);
-        extern public static void ProcessCameraCommand([NotNull("NullExceptionObject")] Camera cam, CommandBuffer cmd);
+        public static void PrepareCamera(Camera cam)
+        {
+            PrepareCamera(cam, kDefaultCameraXRSettings);
+        }
+
+        extern public static void PrepareCamera([NotNull("NullExceptionObject")] Camera cam, VFXCameraXRSettings camXRSettings);
+
+        public static void ProcessCameraCommand(Camera cam, CommandBuffer cmd)
+        {
+            ProcessCameraCommand(cam, cmd, kDefaultCameraXRSettings);
+        }
+
+        extern public static void ProcessCameraCommand([NotNull("NullExceptionObject")] Camera cam, CommandBuffer cmd, VFXCameraXRSettings camXRSettings);
         extern public static VFXCameraBufferTypes IsCameraBufferNeeded([NotNull("NullExceptionObject")] Camera cam);
         extern public static void SetCameraBuffer([NotNull("NullExceptionObject")] Camera cam, VFXCameraBufferTypes type, Texture buffer, int x, int y, int width, int height);
     }

@@ -199,6 +199,7 @@ namespace UnityEditor.VFX
         public string name;
         public uint[] startSystems;
         public uint[] stopSystems;
+        public uint[] initSystems;
     }
 
     internal abstract class VFXExpressionValueContainerDesc
@@ -408,6 +409,12 @@ namespace UnityEditor.VFX
                     var v = group.Cast<VFXExpressionValueContainerDesc<Mesh>>().ToArray();
                     internalSheet.meshValues = v.Select(o => o.value != null ? o.value.GetInstanceID() : 0).ToArray();
                     internalSheet.meshValuesExpressions = v.Select(o => o.expressionIndex).ToArray();
+                }
+                else if (group.Key == typeof(VFXExpressionValueContainerDesc<GraphicsBuffer>))
+                {
+                    //Nothing to do, graphicsBufferValues are always null, simply ignore
+                    //internalSheet.graphicsBufferValues = v.Select(o => null).ToArray();
+                    //internalSheet.graphicsBufferValuesExpressions = values.Select(o => o.expressionIndex).ToArray();
                 }
                 else
                 {

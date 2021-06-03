@@ -96,50 +96,55 @@ namespace UnityEditor.PackageManager.UI
             this.interactiveImport = interactiveImport;
         }
 
-        internal static IEnumerable<Sample> FindByPackage(PackageInfo package, IOProxy ioProxy, AssetDatabaseProxy assetDatabaseProxy)
+        internal static IEnumerable<Sample> FindByPackage(PackageInfo package, UpmCache upmCache, IOProxy ioProxy, AssetDatabaseProxy assetDatabaseProxy)
         {
-            if (package != null)
-            {
-                if (string.IsNullOrEmpty(package.resolvedPath))
-                    return Enumerable.Empty<Sample>();
+            if (string.IsNullOrEmpty(package?.upmReserved) && string.IsNullOrEmpty(package.resolvedPath))
+                return Enumerable.Empty<Sample>();
 
-                try
+            try
+            {
+                IEnumerable<IDictionary<string, object>> samples = null;
+                var upmReserved = upmCache.ParseUpmReserved(package);
+                if (upmReserved != null)
+                    samples = upmReserved.GetList<IDictionary<string, object>>("samples");
+
+                if (samples == null)
                 {
                     var jsonPath = ioProxy.PathsCombine(package.resolvedPath, "package.json");
-                    if (!ioProxy.FileExists(jsonPath))
-                        return Enumerable.Empty<Sample>();
-
-                    var packageJson = Json.Deserialize(ioProxy.FileReadAllText(jsonPath)) as Dictionary<string, object>;
-                    var samples = packageJson.GetList<IDictionary<string, object>>("samples");
-                    return samples?.Select(sample =>
+                    if (ioProxy.FileExists(jsonPath))
                     {
-                        var displayName = sample.GetString("displayName");
-                        var path = sample.GetString("path");
-                        var description = sample.GetString("description");
-                        var interactiveImport = sample.Get("interactiveImport", false);
+                        var packageJson = Json.Deserialize(ioProxy.FileReadAllText(jsonPath)) as Dictionary<string, object>;
+                        samples = packageJson.GetList<IDictionary<string, object>>("samples");
+                    }
+                }
 
-                        var resolvedSamplePath = ioProxy.PathsCombine(package.resolvedPath, path);
-                        var importPath = ioProxy.PathsCombine(
-                            Application.dataPath,
-                            "Samples",
-                            IOUtils.SanitizeFileName(package.displayName),
-                            package.version,
-                            string.IsNullOrEmpty(displayName) ? string.Empty : IOUtils.SanitizeFileName(displayName)
-                        );
-                        return new Sample(ioProxy, assetDatabaseProxy, displayName, description, resolvedSamplePath, importPath, interactiveImport);
-                    });
-                }
-                catch (IOException e)
+                return samples?.Select(sample =>
                 {
-                    Debug.Log($"[Package Manager] Cannot find samples for package {package.displayName}: {e.Message}");
-                    return Enumerable.Empty<Sample>();
-                }
-                catch (Exception)
-                {
-                    return Enumerable.Empty<Sample>();
-                }
+                    var displayName = sample.GetString("displayName");
+                    var path = sample.GetString("path");
+                    var description = sample.GetString("description");
+                    var interactiveImport = sample.Get("interactiveImport", false);
+
+                    var resolvedSamplePath = ioProxy.PathsCombine(package.resolvedPath, path);
+                    var importPath = ioProxy.PathsCombine(
+                        Application.dataPath,
+                        "Samples",
+                        IOUtils.SanitizeFileName(package.displayName),
+                        package.version,
+                        string.IsNullOrEmpty(displayName) ? string.Empty : IOUtils.SanitizeFileName(displayName)
+                    );
+                    return new Sample(ioProxy, assetDatabaseProxy, displayName, description, resolvedSamplePath, importPath, interactiveImport);
+                }) ?? Enumerable.Empty<Sample>();
             }
-            return Enumerable.Empty<Sample>();
+            catch (IOException e)
+            {
+                Debug.Log($"[Package Manager] Cannot find samples for package {package.displayName}: {e.Message}");
+                return Enumerable.Empty<Sample>();
+            }
+            catch (Exception)
+            {
+                return Enumerable.Empty<Sample>();
+            }
         }
 
         /// <summary>
@@ -159,7 +164,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 var ioProxy = ServicesContainer.instance.Resolve<IOProxy>();
                 var assetDatabaseProxy = ServicesContainer.instance.Resolve<AssetDatabaseProxy>();
-                return FindByPackage(package, ioProxy, assetDatabaseProxy);
+                return FindByPackage(package, upmCache, ioProxy, assetDatabaseProxy);
             }
             return Enumerable.Empty<Sample>();
         }

@@ -334,7 +334,7 @@ namespace UnityEngine.UIElements
             return true;
         }
 
-        public void InvokeCallbacks(EventBase evt)
+        public void InvokeCallbacks(EventBase evt, PropagationPhase propagationPhase)
         {
             if (m_Callbacks == null)
             {
@@ -354,7 +354,7 @@ namespace UnityEngine.UIElements
                     continue;
                 }
 
-                m_Callbacks[i].Invoke(evt);
+                m_Callbacks[i].Invoke(evt, propagationPhase);
             }
 
             m_IsInvoking--;

@@ -34,21 +34,21 @@ namespace UnityEngine.UIElements
             this.invokePolicy = invokePolicy;
         }
 
-        public abstract void Invoke(EventBase evt);
+        public abstract void Invoke(EventBase evt, PropagationPhase propagationPhase);
 
         public abstract bool IsEquivalentTo(long eventTypeId, Delegate callback, CallbackPhase phase);
 
-        protected bool PhaseMatches(EventBase evt)
+        protected bool PhaseMatches(PropagationPhase propagationPhase)
         {
             switch (phase)
             {
                 case CallbackPhase.TrickleDownAndTarget:
-                    if (evt.propagationPhase != PropagationPhase.TrickleDown && evt.propagationPhase != PropagationPhase.AtTarget)
+                    if (propagationPhase != PropagationPhase.TrickleDown && propagationPhase != PropagationPhase.AtTarget)
                         return false;
                     break;
 
                 case CallbackPhase.TargetAndBubbleUp:
-                    if (evt.propagationPhase != PropagationPhase.AtTarget && evt.propagationPhase != PropagationPhase.BubbleUp)
+                    if (propagationPhase != PropagationPhase.AtTarget && propagationPhase != PropagationPhase.BubbleUp)
                         return false;
                     break;
             }
@@ -68,7 +68,7 @@ namespace UnityEngine.UIElements
             m_EventTypeId = EventBase<TEventType>.TypeId();
         }
 
-        public override void Invoke(EventBase evt)
+        public override void Invoke(EventBase evt, PropagationPhase propagationPhase)
         {
             if (evt == null)
                 throw new ArgumentNullException(nameof(evt));
@@ -76,7 +76,7 @@ namespace UnityEngine.UIElements
             if (evt.eventTypeId != m_EventTypeId)
                 return;
 
-            if (PhaseMatches(evt))
+            if (PhaseMatches(propagationPhase))
             {
                 using (new EventDebuggerLogCall(m_Callback, evt))
                 {
@@ -105,7 +105,7 @@ namespace UnityEngine.UIElements
             m_EventTypeId = EventBase<TEventType>.TypeId();
         }
 
-        public override void Invoke(EventBase evt)
+        public override void Invoke(EventBase evt, PropagationPhase propagationPhase)
         {
             if (evt == null)
                 throw new ArgumentNullException(nameof(evt));
@@ -113,7 +113,7 @@ namespace UnityEngine.UIElements
             if (evt.eventTypeId != m_EventTypeId)
                 return;
 
-            if (PhaseMatches(evt))
+            if (PhaseMatches(propagationPhase))
             {
                 using (new EventDebuggerLogCall(m_Callback, evt))
                 {

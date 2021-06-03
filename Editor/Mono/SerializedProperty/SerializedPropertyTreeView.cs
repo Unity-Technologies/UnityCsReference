@@ -67,6 +67,10 @@ namespace UnityEditor
                     {
                         return ((Component)m_Object).gameObject.activeInHierarchy;
                     }
+                    if (m_Object != null && m_Object is Material) // Materials can't be shown in the hierarchy
+                    {
+                        return true;
+                    }
 
                     return false;
                 }
@@ -326,8 +330,9 @@ namespace UnityEditor
         bool                        m_bFilterSelection;
         bool                        m_ShowInactiveObjects;
         int[]                       m_SelectionFilter;
+        bool                        m_ShowFilterGUI;
 
-        public SerializedPropertyTreeView(TreeViewState state, MultiColumnHeader multicolumnHeader, SerializedPropertyDataStore dataStore) : base(state, multicolumnHeader)
+        public SerializedPropertyTreeView(TreeViewState state, MultiColumnHeader multicolumnHeader, SerializedPropertyDataStore dataStore, bool showFilterGUI) : base(state, multicolumnHeader)
         {
             m_DataStore = dataStore;
             // initialize internal data for the columns
@@ -346,6 +351,8 @@ namespace UnityEditor
             showAlternatingRowBackgrounds = true;
             showBorder = true;
             rowHeight = EditorGUIUtility.singleLineHeight;
+
+            m_ShowFilterGUI = showFilterGUI;
         }
 
         public void SerializeState(string uid)
@@ -470,10 +477,10 @@ namespace UnityEditor
             // filtering
             IEnumerable<TreeViewItem> tmprows = m_Items;
 
-            if (!m_ShowInactiveObjects)
+            if (!m_ShowInactiveObjects && m_ShowFilterGUI)
                 tmprows = m_Items.Where((TreeViewItem item) => { return ((SerializedPropertyItem)item).GetData().activeInHierarchy; });
 
-            if (m_bFilterSelection)
+            if (m_bFilterSelection && m_ShowFilterGUI)
             {
                 if (m_SelectionFilter == null)
                     m_SelectionFilter = Selection.instanceIDs;
@@ -617,21 +624,29 @@ namespace UnityEditor
             float windowPadding = r.x;
             float toggleWidth = 16;
 
-            r.width = toggleWidth;
-            m_bFilterSelection = EditorGUI.Toggle(r, m_bFilterSelection);
-            r.x += toggleWidth;
-            r.width = GUI.skin.label.CalcSize(SerializedPropertyTreeView.Styles.filterSelection).x;
-            EditorGUI.LabelField(r, SerializedPropertyTreeView.Styles.filterSelection);
+            if (m_ShowFilterGUI)
+            {
+                r.width = toggleWidth;
+                m_bFilterSelection = EditorGUI.Toggle(r, m_bFilterSelection);
+                r.x += toggleWidth;
+                r.width = GUI.skin.label.CalcSize(SerializedPropertyTreeView.Styles.filterSelection).x;
+                EditorGUI.LabelField(r, SerializedPropertyTreeView.Styles.filterSelection);
 
-            r.x += r.width + 10;
-            r.width = toggleWidth;
-            m_ShowInactiveObjects = EditorGUI.Toggle(r, m_ShowInactiveObjects);
-            r.x += toggleWidth;
-            r.width = GUI.skin.label.CalcSize(SerializedPropertyTreeView.Styles.showInactiveObjects).x;
-            EditorGUI.LabelField(r, SerializedPropertyTreeView.Styles.showInactiveObjects);
+                r.x += r.width + 10;
+                r.width = toggleWidth;
+                m_ShowInactiveObjects = EditorGUI.Toggle(r, m_ShowInactiveObjects);
+                r.x += toggleWidth;
+                r.width = GUI.skin.label.CalcSize(SerializedPropertyTreeView.Styles.showInactiveObjects).x;
+                EditorGUI.LabelField(r, SerializedPropertyTreeView.Styles.showInactiveObjects);
 
-            r.width = Mathf.Min(fullWidth - (r.x + r.width), 300);
-            r.x = fullWidth - r.width + windowPadding;
+                r.width = Mathf.Min(fullWidth - (r.x + r.width), 300);
+                r.x = fullWidth - r.width + windowPadding;
+            }
+            else
+            {
+                r.width = 300;
+                r.x = fullWidth - r.width + windowPadding;
+            }
 
             for (int i = 0; i < multiColumnHeader.state.columns.Length; i++)
             {

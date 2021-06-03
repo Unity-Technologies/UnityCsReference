@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.Search.Providers;
 using UnityEditor.SearchService;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -107,7 +108,7 @@ namespace UnityEditor.Search
 
         public virtual void EndSearch(ISearchContext context) {}
 
-        public string name => "Default";
+        public string name => "Advanced";
 
         public abstract string providerId { get; }
 
@@ -137,29 +138,6 @@ namespace UnityEditor.Search
     {
         public override string providerId => "asset";
 
-        static SearchProvider s_AssetDatabaseLegacyProvider;
-
-        public static SearchProvider CreateAssetDatabaseLegacyProvider() => new SearchProvider("adb", FetchItems);
-        private static IEnumerable<SearchItem> FetchItems(SearchContext context, SearchProvider provider)
-        {
-            var searchFilter = new SearchFilter
-            {
-                searchArea = SearchFilter.SearchArea.AllAssets,
-                showAllHits = true,
-                originalText = context.searchQuery
-            };
-            SearchUtility.ParseSearchString(context.searchQuery, searchFilter);
-            searchFilter.originalText = context.searchQuery;
-
-            var rIt = AssetDatabase.EnumerateAllAssets(searchFilter);
-            while (rIt.MoveNext())
-            {
-                if (rIt.Current.pptrValue)
-                    yield return provider.CreateItem(context, GlobalObjectId.GetGlobalObjectIdSlow(rIt.Current.instanceID).ToString());
-            }
-        }
-
-
         public override void BeginSession(ISearchContext context)
         {
             if (searchSessions.ContainsKey(context.guid))
@@ -167,9 +145,8 @@ namespace UnityEditor.Search
 
             var engineProvider = SearchService.GetProvider(providerId);
 
-            if (s_AssetDatabaseLegacyProvider == null)
-                s_AssetDatabaseLegacyProvider = CreateAssetDatabaseLegacyProvider();
-            searchSessions.Add(context.guid, new SearchApiSession(s_AssetDatabaseLegacyProvider, engineProvider));
+            var adbProvider = SearchService.GetProvider(AdbProvider.type);
+            searchSessions.Add(context.guid, new SearchApiSession(adbProvider, engineProvider));
         }
 
         public virtual IEnumerable<string> Search(ISearchContext context, string query, Action<IEnumerable<string>> asyncItemsReceived)
@@ -186,12 +163,10 @@ namespace UnityEditor.Search
 
             if (context.requiredTypeNames != null && context.requiredTypeNames.Any())
             {
-                searchSession.context.wantsMore = true;
                 searchSession.context.filterType = Utils.GetTypeFromName(context.requiredTypeNames.First());
             }
             else
             {
-                searchSession.context.wantsMore = false;
                 searchSession.context.filterType = null;
             }
             searchSession.context.searchText = query;
@@ -225,7 +200,6 @@ namespace UnityEditor.Search
                 return;
 
             searchSession.context.searchText = query;
-            searchSession.context.wantsMore = true;
             if (context.requiredTypeNames != null && context.requiredTypeNames.Any())
             {
                 searchSession.context.filterType = Utils.GetTypeFromName(context.requiredTypeNames.First());
@@ -271,8 +245,7 @@ namespace UnityEditor.Search
         }
     }
 
-    // TODO: To renenable when SearchPicker epics is being worked on.
-    // [ObjectSelectorEngine]
+    [ObjectSelectorEngine]
     class ObjectSelectorEngine : QuickSearchEngine, IObjectSelectorEngine
     {
         // Internal for tests purposes.
@@ -296,9 +269,8 @@ namespace UnityEditor.Search
             var viewFlags = SearchFlags.OpenPicker;
             if (Utils.IsRunningTests())
                 viewFlags |= SearchFlags.Dockable;
-            qsWindow = QuickSearch.ShowObjectPicker(selectHandler, trackingHandler,
-                selectContext.currentObject?.name ?? "",
-                selectContext.requiredTypeNames.First(), selectContext.requiredTypes.First(), flags: viewFlags);
+            qsWindow = SearchService.ShowObjectPicker(selectHandler, trackingHandler, "",
+                selectContext.requiredTypeNames.First(), selectContext.requiredTypes.First(), flags: viewFlags) as QuickSearch;
 
             return qsWindow != null;
         }

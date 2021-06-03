@@ -23,6 +23,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override IEnumerable<VisualState> visualStates => m_VisualStateList;
 
+        public override IEnumerable<SubPage> subPages => Enumerable.Empty<SubPage>();
+
+        public override SubPage currentSubPage { get => null; set {} }
+
         [NonSerialized]
         private AssetStoreClient m_AssetStoreClient;
         [NonSerialized]
@@ -247,6 +251,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (m_VisualStateList.SetSeeAllVersions(packageUniqueId, value))
                 TriggerOnVisualStateChange(new[] { GetVisualState(packageUniqueId) });
+        }
+
+        public override void AddSubPage(SubPage subPage)
+        {
+            // do nothing
         }
     }
 }

@@ -31,6 +31,7 @@ namespace UnityEditor.Search
         public Func<SearchItem, bool> filterCallback => null;
         public Action<SearchItem> trackingCallback => null;
         public string currentGroup => string.Empty;
+        public Rect position => m_Results?.context.searchView?.position ?? Rect.zero;
 
         public SearchResultView(ISearchList results)
         {
@@ -41,6 +42,11 @@ namespace UnityEditor.Search
         public void AddSelection(params int[] newSelection)
         {
             m_Selection.AddRange(newSelection.Where(s => !m_Selection.Contains(s)));
+        }
+
+        public void ExecuteSelection()
+        {
+            selectCallback?.Invoke(selection.FirstOrDefault(), false);
         }
 
         public void ExecuteAction(SearchAction action, SearchItem[] items, bool endSearch = true)
@@ -125,7 +131,6 @@ namespace UnityEditor.Search
             if (results.Count > 0)
             {
                 m_View.HandleInputEvent(Event.current, m_Selection);
-                // GUI.Box(previewArea, string.Empty, Styles.resultview);
                 m_View.Draw(previewArea, m_Selection);
             }
             else
@@ -160,6 +165,11 @@ namespace UnityEditor.Search
         public void Dispose()
         {
             // Not needed
+        }
+
+        public void FocusSearch()
+        {
+            // Do nothing
         }
     }
 

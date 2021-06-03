@@ -906,6 +906,7 @@ namespace UnityEditor
                                     GUI.color = new Color(GUI.color.r, GUI.color.g, GUI.color.b, alpha);
 
                                 Styles.resultsGrid.Draw(actualImageDrawPosition, m_Content, false, false, selected, m_Owner.HasFocus());
+                                DynamicHintUtility.DrawHint(position, evt.mousePosition, assetReference);
 
                                 if (alpha < 1f)
                                     GUI.color = orgColor2;
@@ -1398,7 +1399,7 @@ namespace UnityEditor
 
             public DragAndDropVisualMode DoDrag(int dragToInstanceID, bool perform)
             {
-                return DragAndDropService.Drop(DragAndDropService.kProjectBrowserDropDstId, dragToInstanceID, AssetDatabase.GetAssetPath(dragToInstanceID), perform);
+                return DragAndDrop.Drop(DragAndDropWindowTarget.projectBrowser, dragToInstanceID, AssetDatabase.GetAssetPath(dragToInstanceID), perform);
             }
 
             static internal int GetControlIDFromInstanceID(int instanceID)
@@ -1472,6 +1473,13 @@ namespace UnityEditor
                 using (new GUI.ColorScope(color))
                 {
                     rect.xMin += Styles.resultsLabel.margin.left;
+
+                    if (filterItem != null)
+                    {
+                        var assetReference = new AssetReference() { instanceID = filterItem.instanceID };
+                        assetReference.guid = filterItem.guid;
+                        DynamicHintUtility.DrawHint(rect, Event.current.mousePosition, assetReference);
+                    }
 
                     // Reduce the label width to allow delegate drawing on the right.
                     float delegateDrawWidth = (k_ListModeExternalIconPadding * 2) + k_IconWidth;

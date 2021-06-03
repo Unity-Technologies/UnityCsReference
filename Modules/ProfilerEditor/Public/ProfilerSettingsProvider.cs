@@ -26,15 +26,18 @@ namespace UnityEditor.Profiling
 
             public static readonly GUIContent[] k_TargetModes =
             {
-                EditorGUIUtility.TrTextContent("Playmode", "The editor starts with play mode as a recording target."),
-                EditorGUIUtility.TrTextContent("Editmode", "The editor starts with the editor as a recording target.")
+                EditorGUIUtility.TrTextContent("Play Mode", "The editor starts with play mode as a recording target."),
+                EditorGUIUtility.TrTextContent("Edit Mode", "The editor starts with the editor as a recording target.")
             };
         }
 
         public ProfilerSettingsProvider()
             : base("Preferences/Analysis/Profiler", SettingsScope.User)
         {
+            connectionID = ProfilerUserSettings.customConnectionID;
         }
+
+        private string connectionID;
 
         public override void OnGUI(string searchContext)
         {
@@ -57,6 +60,52 @@ namespace UnityEditor.Profiling
 
             var defaultModeIndexIndex = EditorGUILayout.Popup(Content.k_DefaultTargetMode, (int)ProfilerUserSettings.defaultTargetMode, Content.k_TargetModes);
             ProfilerUserSettings.defaultTargetMode = (ProfilerEditorTargetMode)defaultModeIndexIndex;
+
+            GUI.SetNextControlName("connectionID");
+            connectionID = EditorGUILayout.TextField("Custom connection ID", connectionID);
+
+            if ((Event.current.isKey && Event.current.keyCode == KeyCode.Space &&
+                 GUI.GetNameOfFocusedControl() == "connectionID"))
+            {
+                connectionID = connectionID.Replace(" ", "_");
+                Repaint();
+            }
+
+            if ((Event.current.isKey && Event.current.keyCode == KeyCode.Return && GUI.GetNameOfFocusedControl() == "connectionID") || GUI.GetNameOfFocusedControl() != "connectionID")
+            {
+                ValidateConnectionId();
+            }
+
+            Rect r = GUILayoutUtility.GetRect(100, 40);
+            if (ProfilerUserSettings.ValidCustomConnectionID(connectionID))
+            {
+                EditorGUI.HelpBox(r, $"Connection ID cannot contain \", * or be more than 26 characters in length. Spaces will be converted to underscores.",
+                    MessageType.Info);
+            }
+            else
+            {
+                EditorGUI.HelpBox(r,
+                    $"Connection ID contains \", * or is more than 26 characters in length and will be reverted",
+                    MessageType.Error);
+            }
+        }
+
+        private void ValidateConnectionId()
+        {
+            if (ProfilerUserSettings.ValidCustomConnectionID(connectionID))
+            {
+                ProfilerUserSettings.customConnectionID = connectionID;
+            }
+            else
+            {
+                connectionID = ProfilerUserSettings.customConnectionID;
+                Repaint();
+            }
+        }
+
+        internal override void FocusLost()
+        {
+            ValidateConnectionId();
         }
 
         [SettingsProvider]

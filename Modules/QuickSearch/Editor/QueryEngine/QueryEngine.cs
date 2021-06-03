@@ -2074,6 +2074,20 @@ namespace UnityEditor.Search
             m_Impl = new QueryEngineImpl<TData>(validationOptions);
         }
 
+        internal IQueryEngineFilter AddFilter(string token, string[] supportedOperators = null)
+        {
+            var filter = new Filter<TData, string>(token, supportedOperators, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter AddFilter(Regex token, string[] supportedOperators = null)
+        {
+            var filter = new RegexFilter<TData, string>(token, supportedOperators, m_Impl);
+            m_Impl.AddFilter(filter);
+            return filter;
+        }
+
         /// <summary>
         /// Add a new custom filter.
         /// </summary>
@@ -2346,6 +2360,20 @@ namespace UnityEditor.Search
         public IQueryEngineFilter AddFilter<TParam, TFilter>(Regex token, Func<TData, string, TParam, string, TFilter, bool> filterResolver, Func<string, TParam> parameterTransformer, string[] supportedOperatorType = null)
         {
             var filter = new RegexFilter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver, parameterTransformer, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter SetFilter(string token, string[] supportedOperatorType = null)
+        {
+            var filter = new Filter<TData, string>(token, supportedOperatorType, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter SetFilter(Regex token, string[] supportedOperatorType = null)
+        {
+            var filter = new RegexFilter<TData, string>(token, supportedOperatorType, m_Impl);
             m_Impl.AddFilter(token, filter);
             return filter;
         }

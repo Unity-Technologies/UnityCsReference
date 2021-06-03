@@ -139,6 +139,18 @@ namespace UnityEngine.UIElements
         private bool m_HasInlineTextShadow;
         private StyleTextShadow m_InlineTextShadow;
 
+        private bool m_HasInlineTransformOrigin;
+        private StyleTransformOrigin m_InlineTransformOrigin;
+
+        private bool m_HasInlineTranslateOperation;
+        private StyleTranslate m_InlineTranslateOperation;
+
+        private bool m_HasInlineRotateOperation;
+        private StyleRotate m_InlineRotateOperation;
+
+        private bool m_HasInlineScale;
+        private StyleScale m_InlineScale;
+
         private InlineRule m_InlineRule;
         public InlineRule inlineRule => m_InlineRule;
 
@@ -200,6 +212,31 @@ namespace UnityEngine.UIElements
             {
                 ve.computedStyle.ApplyStyleCursor(ve.style.cursor.value);
             }
+
+            if (ve.style.transformOrigin.keyword != StyleKeyword.Null)
+            {
+                ve.computedStyle.ApplyStyleTransformOrigin(ve.style.transformOrigin.value);
+            }
+
+            if (ve.style.translate.keyword != StyleKeyword.Null)
+            {
+                ve.computedStyle.ApplyStyleTranslate(ve.style.translate.value);
+            }
+
+            if (ve.style.textShadow.keyword != StyleKeyword.Null)
+            {
+                ve.computedStyle.ApplyStyleTextShadow(ve.style.textShadow.value);
+            }
+
+            if (ve.style.scale.keyword != StyleKeyword.Null)
+            {
+                ve.computedStyle.ApplyStyleScale(ve.style.scale.value);
+            }
+
+            if (ve.style.rotate.keyword != StyleKeyword.Null)
+            {
+                ve.computedStyle.ApplyStyleRotate(ve.style.rotate.value);
+            }
         }
 
         StyleCursor IStyle.cursor
@@ -239,6 +276,84 @@ namespace UnityEngine.UIElements
                 }
             }
         }
+
+        StyleTransformOrigin IStyle.transformOrigin
+        {
+            get
+            {
+                var inlineTransformOrigin = new StyleTransformOrigin();
+                if (TryGetInlineTransformOrigin(ref inlineTransformOrigin))
+                    return inlineTransformOrigin;
+                return StyleKeyword.Null;
+            }
+            set
+            {
+                var changeType = VersionChangeType.Styles | VersionChangeType.Transform;
+                if (SetInlineTransformOrigin(value, ref changeType))
+                {
+                    ve.IncrementVersion(changeType);
+                }
+            }
+        }
+
+        StyleTranslate IStyle.translate
+        {
+            get
+            {
+                var inlineTranslate = new StyleTranslate();
+                if (TryGetInlineTranslate(ref inlineTranslate))
+                    return inlineTranslate;
+                return StyleKeyword.Null;
+            }
+            set
+            {
+                var changeType = VersionChangeType.Styles | VersionChangeType.Transform;
+                if (SetInlineTranslate(value, ref changeType))
+                {
+                    ve.IncrementVersion(changeType);
+                }
+            }
+        }
+
+        StyleRotate IStyle.rotate
+        {
+            get
+            {
+                var inlineRotate = new StyleRotate();
+                if (TryGetInlineRotate(ref inlineRotate))
+                    return inlineRotate;
+                return StyleKeyword.Null;
+            }
+            set
+            {
+                var changeType = VersionChangeType.Styles | VersionChangeType.Transform;
+                if (SetInlineRotate(value, ref changeType))
+                {
+                    ve.IncrementVersion(changeType);
+                }
+            }
+        }
+
+        StyleScale IStyle.scale
+        {
+            get
+            {
+                var inlineScale = new StyleScale();
+                if (TryGetInlineScale(ref inlineScale))
+                    return inlineScale;
+                return StyleKeyword.Null;
+            }
+            set
+            {
+                // The layout need to be regenerated because the TextNative requires the scale to mesure it's size to be pixel perfect.
+                var changeType = VersionChangeType.Styles | VersionChangeType.Transform | VersionChangeType.Layout;
+                if (SetInlineScale(value, ref changeType))
+                {
+                    ve.IncrementVersion(changeType);
+                }
+            }
+        }
+
 
         private bool SetStyleValue(StylePropertyId id, StyleLength inlineValue, ref VersionChangeType versionChangeType)
         {
@@ -538,18 +653,16 @@ namespace UnityEngine.UIElements
                 return false;
             }
 
-            styleCursor.value = inlineValue.value;
-            styleCursor.keyword = inlineValue.keyword;
-
-            SetInlineCursor(styleCursor);
-
             if (inlineValue.keyword == StyleKeyword.Null)
             {
                 versionChangeType |= VersionChangeType.InlineStyleRemove;
+                m_HasInlineCursor = false;
             }
             else
             {
-                ve.computedStyle.ApplyStyleCursor(styleCursor.value);
+                ve.computedStyle.ApplyStyleCursor(inlineValue.value);
+                m_InlineCursor = inlineValue;
+                m_HasInlineCursor = true;
             }
 
             return true;
@@ -568,18 +681,132 @@ namespace UnityEngine.UIElements
                 return false;
             }
 
-            styleTextShadow.value = inlineValue.value;
-            styleTextShadow.keyword = inlineValue.keyword;
-
-            SetInlineTextShadow(styleTextShadow);
 
             if (inlineValue.keyword == StyleKeyword.Null)
             {
                 versionChangeType |= VersionChangeType.InlineStyleRemove;
+                m_HasInlineTextShadow = false;
             }
             else
             {
-                ve.computedStyle.ApplyStyleTextShadow(styleTextShadow.value);
+                ve.computedStyle.ApplyStyleTextShadow(inlineValue.value);
+                m_InlineTextShadow = inlineValue;
+                m_HasInlineTextShadow = true;
+            }
+
+            return true;
+        }
+
+        private bool SetInlineTransformOrigin(StyleTransformOrigin inlineValue, ref VersionChangeType versionChangeType)
+        {
+            var styleTransformOrigin = new StyleTransformOrigin();
+            if (TryGetInlineTransformOrigin(ref styleTransformOrigin))
+            {
+                if (styleTransformOrigin.value == inlineValue.value && styleTransformOrigin.keyword == inlineValue.keyword)
+                    return false;
+            }
+            else if (inlineValue.keyword == StyleKeyword.Null)
+            {
+                return false;
+            }
+
+
+            if (inlineValue.keyword == StyleKeyword.Null)
+            {
+                versionChangeType |= VersionChangeType.InlineStyleRemove;
+                m_HasInlineTransformOrigin = false;
+            }
+            else
+            {
+                ve.computedStyle.ApplyStyleTransformOrigin(inlineValue.value);
+                m_InlineTransformOrigin = inlineValue;
+                m_HasInlineTransformOrigin = true;
+            }
+
+            return true;
+        }
+
+        private bool SetInlineTranslate(StyleTranslate inlineValue, ref VersionChangeType versionChangeType)
+        {
+            var styleTranslate = new StyleTranslate();
+            if (TryGetInlineTranslate(ref styleTranslate))
+            {
+                if (styleTranslate.value == inlineValue.value && styleTranslate.keyword == inlineValue.keyword)
+                    return false;
+            }
+            else if (inlineValue.keyword == StyleKeyword.Null)
+            {
+                return false;
+            }
+
+
+            if (inlineValue.keyword == StyleKeyword.Null)
+            {
+                versionChangeType |= VersionChangeType.InlineStyleRemove;
+                m_HasInlineTranslateOperation = false;
+            }
+            else
+            {
+                ve.computedStyle.ApplyStyleTranslate(inlineValue.value);
+                m_InlineTranslateOperation = inlineValue;
+                m_HasInlineTranslateOperation = true;
+            }
+
+            return true;
+        }
+
+        private bool SetInlineScale(StyleScale inlineValue, ref VersionChangeType versionChangeType)
+        {
+            var styleScale = new StyleScale();
+            if (TryGetInlineScale(ref styleScale))
+            {
+                if (styleScale.value == inlineValue.value && styleScale.keyword == inlineValue.keyword)
+                    return false;
+            }
+            else if (inlineValue.keyword == StyleKeyword.Null)
+            {
+                return false;
+            }
+
+            if (inlineValue.keyword == StyleKeyword.Null)
+            {
+                versionChangeType |= VersionChangeType.InlineStyleRemove;
+                m_HasInlineScale = false;
+            }
+            else
+            {
+                ve.computedStyle.ApplyStyleScale(inlineValue.value);
+                m_InlineScale = inlineValue;
+                m_HasInlineScale = true;
+            }
+
+            return true;
+        }
+
+        private bool SetInlineRotate(StyleRotate inlineValue, ref VersionChangeType versionChangeType)
+        {
+            var styleRotate = new StyleRotate();
+            if (TryGetInlineRotate(ref styleRotate))
+            {
+                if (styleRotate.value == inlineValue.value && styleRotate.keyword == inlineValue.keyword)
+                    return false;
+            }
+            else if (inlineValue.keyword == StyleKeyword.Null)
+            {
+                return false;
+            }
+
+
+            if (inlineValue.keyword == StyleKeyword.Null)
+            {
+                versionChangeType |= VersionChangeType.InlineStyleRemove;
+                m_HasInlineRotateOperation = false;
+            }
+            else
+            {
+                ve.computedStyle.ApplyStyleRotate(inlineValue.value);
+                m_InlineRotateOperation = inlineValue;
+                m_HasInlineRotateOperation = true;
             }
 
             return true;
@@ -602,12 +829,6 @@ namespace UnityEngine.UIElements
             return false;
         }
 
-        public void SetInlineCursor(StyleCursor value)
-        {
-            m_InlineCursor = value;
-            m_HasInlineCursor = true;
-        }
-
         public bool TryGetInlineTextShadow(ref StyleTextShadow value)
         {
             if (m_HasInlineTextShadow)
@@ -618,10 +839,44 @@ namespace UnityEngine.UIElements
             return false;
         }
 
-        public void SetInlineTextShadow(StyleTextShadow value)
+        public bool TryGetInlineTransformOrigin(ref StyleTransformOrigin value)
         {
-            m_InlineTextShadow = value;
-            m_HasInlineTextShadow = true;
+            if (m_HasInlineTransformOrigin)
+            {
+                value = m_InlineTransformOrigin;
+                return true;
+            }
+            return false;
+        }
+
+        public bool TryGetInlineTranslate(ref StyleTranslate value)
+        {
+            if (m_HasInlineTranslateOperation)
+            {
+                value = m_InlineTranslateOperation;
+                return true;
+            }
+            return false;
+        }
+
+        public bool TryGetInlineRotate(ref StyleRotate value)
+        {
+            if (m_HasInlineRotateOperation)
+            {
+                value = m_InlineRotateOperation;
+                return true;
+            }
+            return false;
+        }
+
+        public bool TryGetInlineScale(ref StyleScale value)
+        {
+            if (m_HasInlineScale)
+            {
+                value = m_InlineScale;
+                return true;
+            }
+            return false;
         }
     }
 }

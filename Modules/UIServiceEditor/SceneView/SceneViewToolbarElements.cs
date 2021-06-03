@@ -40,20 +40,28 @@ namespace UnityEditor.Toolbars
     }
 
     [EditorToolbarElement("SceneView/Camera Mode", typeof(SceneView))]
-    sealed class CameraModeElement : ToolbarButton, IEditorToolbarContext
+    sealed class CameraModeElement : EditorToolbarDropdown, IAccessContainerWindow
     {
-        public object context { get; set; }
-        SceneView sceneView => context as SceneView;
+        public EditorWindow containerWindow { get; set; }
+        SceneView sceneView => containerWindow as SceneView;
 
-        VisualElement m_Icon;
+        readonly Texture2D m_ShadedIcon;
+        readonly Texture2D m_WireframeIcon;
+        readonly Texture2D m_ShadedWireframeIcon;
+        readonly Texture2D m_DebugIcon;
 
         public CameraModeElement()
         {
             name = "CameraModeDropDown";
             tooltip = L10n.Tr("The Draw Mode used to display the Scene.");
 
-            m_Icon = EditorToolbarUtility.AddIconElement(this);
-            EditorToolbarUtility.AddArrowElement(this);
+            clicked += () => PopupWindow.Show(worldBound, new SceneRenderModeWindow(sceneView));
+
+            m_ShadedIcon = EditorGUIUtility.FindTexture("Toolbars/Shaded");
+            m_ShadedWireframeIcon = EditorGUIUtility.FindTexture("Toolbars/ShadedWireframe");
+            m_WireframeIcon = EditorGUIUtility.FindTexture("Toolbars/Wireframe");
+            m_DebugIcon = EditorGUIUtility.FindTexture("Toolbars/debug");
+
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
             SceneViewToolbarElements.AddStyleSheets(this);
@@ -61,7 +69,6 @@ namespace UnityEditor.Toolbars
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
         {
-            clicked += () => PopupWindow.Show(worldBound, new SceneRenderModeWindow(sceneView));
             SceneViewOnCameraModeChanged(sceneView.cameraMode);
             sceneView.onCameraModeChanged += SceneViewOnCameraModeChanged;
         }
@@ -73,28 +80,40 @@ namespace UnityEditor.Toolbars
 
         void SceneViewOnCameraModeChanged(SceneView.CameraMode mode)
         {
-            var shaded = mode.name == "Shaded";
-            var wireframe =  mode.name == "Wireframe";
-            var shadedWireframe = mode.name == "Shaded Wireframe";
-            m_Icon.EnableInClassList("shaded", shaded);
-            m_Icon.EnableInClassList("wireframe", wireframe);
-            m_Icon.EnableInClassList("shaded-wireframe", shadedWireframe);
-            m_Icon.EnableInClassList("debug", !(shaded || wireframe || shadedWireframe));
+            switch (mode.name)
+            {
+                case "Shaded":
+                    icon = m_ShadedIcon;
+                    break;
+
+                case "Wireframe":
+                    icon = m_WireframeIcon;
+                    break;
+
+                case "Shaded Wireframe":
+                    icon = m_ShadedWireframeIcon;
+                    break;
+
+                default:
+                    icon = m_DebugIcon;
+                    break;
+            }
         }
     }
 
     [EditorToolbarElement("SceneView/2D", typeof(SceneView))]
-    sealed class In2DModeElement : EditorToolbarToggle, IEditorToolbarContext
+    sealed class In2DModeElement : EditorToolbarToggle, IAccessContainerWindow
     {
-        public object context { get; set; }
-        SceneView sceneView => context as SceneView;
+        public EditorWindow containerWindow { get; set; }
+        SceneView sceneView => containerWindow as SceneView;
 
         public In2DModeElement()
         {
             name = "SceneView2D";
             tooltip = L10n.Tr("When toggled on, the Scene is in 2D view. When toggled off, the Scene is in 3D view.");
             this.RegisterValueChangedCallback(evt => sceneView.in2DMode = evt.newValue);
-            text = "2D";
+            onIcon = EditorGUIUtility.FindTexture("SceneView2D On");
+            offIcon = EditorGUIUtility.FindTexture("SceneView2D");
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
             SceneViewToolbarElements.AddStyleSheets(this);
@@ -118,15 +137,18 @@ namespace UnityEditor.Toolbars
     }
 
     [EditorToolbarElement("SceneView/Lighting", typeof(SceneView))]
-    sealed class SceneLightingElement : EditorToolbarToggle, IEditorToolbarContext
+    sealed class SceneLightingElement : EditorToolbarToggle, IAccessContainerWindow
     {
-        public object context { get; set; }
-        SceneView sceneView => context as SceneView;
+        public EditorWindow containerWindow { get; set; }
+        SceneView sceneView => containerWindow as SceneView;
 
         public SceneLightingElement()
         {
             name = "SceneviewLighting";
             tooltip = L10n.Tr("When toggled on, the Scene lighting is used. When toggled off, a light attached to the Scene view camera is used.");
+            onIcon = EditorGUIUtility.FindTexture("SceneViewLighting On");
+            offIcon = EditorGUIUtility.FindTexture("SceneViewLighting");
+
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
             this.RegisterValueChangedCallback(evt => sceneView.sceneLighting = evt.newValue);
@@ -151,15 +173,18 @@ namespace UnityEditor.Toolbars
     }
 
     [EditorToolbarElement("SceneView/Audio", typeof(SceneView))]
-    sealed class SceneAudioElement : EditorToolbarToggle, IEditorToolbarContext
+    sealed class SceneAudioElement : EditorToolbarToggle, IAccessContainerWindow
     {
-        public object context { get; set; }
-        SceneView sceneView => context as SceneView;
+        public EditorWindow containerWindow { get; set; }
+        SceneView sceneView => containerWindow as SceneView;
 
         public SceneAudioElement()
         {
             name = "SceneviewAudio";
             tooltip = "Toggle audio on or off.";
+            onIcon = EditorGUIUtility.FindTexture("SceneViewAudio On");
+            offIcon = EditorGUIUtility.FindTexture("SceneViewAudio");
+
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
             this.RegisterValueChangedCallback(evt => sceneView.audioPlay = evt.newValue);
@@ -191,16 +216,18 @@ namespace UnityEditor.Toolbars
     }
 
     [EditorToolbarElement("SceneView/Fx", typeof(SceneView))]
-    sealed class SceneFxElement : DropdownToggle, IEditorToolbarContext
+    sealed class SceneFxElement : EditorToolbarDropdownToggle, IAccessContainerWindow
     {
-        public object context { get; set; }
-        SceneView sceneView => context as SceneView;
+        public EditorWindow containerWindow { get; set; }
+        SceneView sceneView => containerWindow as SceneView;
 
         public SceneFxElement()
         {
             name = "SceneviewFx";
             tooltip = L10n.Tr("Toggle skybox, fog, and various other effects.");
-            dropdownButton.clicked += () => PopupWindow.Show(worldBound, new SceneFXWindow(sceneView));
+
+            dropdownClicked += () => PopupWindow.Show(worldBound, new SceneFXWindow(sceneView));
+
             this.RegisterValueChangedCallback(delegate(ChangeEvent<bool> evt)
             {
                 sceneView.sceneViewState.fxEnabled = evt.newValue;
@@ -228,15 +255,18 @@ namespace UnityEditor.Toolbars
     }
 
     [EditorToolbarElement("SceneView/Scene Visibility", typeof(SceneView))]
-    sealed class SceneVisElement : EditorToolbarToggle, IEditorToolbarContext
+    sealed class SceneVisElement : EditorToolbarToggle, IAccessContainerWindow
     {
-        public object context { get; set; }
-        SceneView sceneView => context as SceneView;
+        public EditorWindow containerWindow { get; set; }
+        SceneView sceneView => containerWindow as SceneView;
 
         public SceneVisElement()
         {
             name = "SceneViewVisibility";
             tooltip = "Number of hidden objects, click to toggle scene visibility";
+            onIcon = EditorGUIUtility.FindTexture("SceneViewVisibility On");
+            offIcon = EditorGUIUtility.FindTexture("SceneViewVisibility");
+
             this.RegisterValueChangedCallback(evt => sceneView.sceneVisActive = evt.newValue);
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
@@ -261,10 +291,10 @@ namespace UnityEditor.Toolbars
     }
 
     [EditorToolbarElement("SceneView/Grids", typeof(SceneView))]
-    sealed class SceneViewGridSettingsElement : DropdownToggle, IEditorToolbarContext
+    sealed class SceneViewGridSettingsElement : EditorToolbarDropdownToggle, IAccessContainerWindow
     {
-        public object context { get; set; }
-        SceneView sceneView => context as SceneView;
+        public EditorWindow containerWindow { get; set; }
+        SceneView sceneView => containerWindow as SceneView;
 
         public SceneViewGridSettingsElement()
         {
@@ -282,7 +312,7 @@ namespace UnityEditor.Toolbars
 
         void OnClickableOnclicked()
         {
-            GridSettingsWindow.ShowDropDownAtTrigger(this, context as SceneView);
+            GridSettingsWindow.ShowDropDownAtTrigger(this, containerWindow as SceneView);
         }
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
@@ -291,14 +321,14 @@ namespace UnityEditor.Toolbars
             sceneView.gridVisibilityChanged += SceneViewOngridVisibilityChanged;
             sceneView.sceneViewGrids.gridRenderAxisChanged += OnSceneViewOngridRenderAxisChanged;
             OnSceneViewOngridRenderAxisChanged(sceneView.sceneViewGrids.gridAxis);
-            dropdownButton.clicked += OnClickableOnclicked;
+            dropdownClicked += OnClickableOnclicked;
         }
 
         void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
             sceneView.gridVisibilityChanged -= SceneViewOngridVisibilityChanged;
             sceneView.sceneViewGrids.gridRenderAxisChanged -= OnSceneViewOngridRenderAxisChanged;
-            dropdownButton.clicked -= OnClickableOnclicked;
+            dropdownClicked -= OnClickableOnclicked;
         }
 
         void OnSceneViewOngridRenderAxisChanged(SceneViewGrid.GridRenderAxis axis)
@@ -315,21 +345,26 @@ namespace UnityEditor.Toolbars
     }
 
     [EditorToolbarElement("SceneView/Render Doc", typeof(SceneView))]
-    sealed class RenderDocElement : ToolbarButton, IEditorToolbarContext
+    sealed class RenderDocElement : EditorToolbarButton, IAccessContainerWindow
     {
-        public object context { get; set; }
-        SceneView sceneView => context as SceneView;
+        public EditorWindow containerWindow { get; set; }
+        SceneView sceneView => containerWindow as SceneView;
 
         public RenderDocElement()
         {
             name = "FrameCapture";
             tooltip = L10n.Tr(RenderDocUtil.openInRenderDocLabel);
+            icon = EditorGUIUtility.FindTexture("FrameCapture");
+            UpdateState();
 
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
             SceneViewToolbarElements.AddStyleSheets(this);
+        }
 
-            EditorToolbarUtility.AddIconElement(this);
+        void UpdateState()
+        {
+            style.display = RenderDoc.IsLoaded() && RenderDoc.IsSupported() ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
@@ -351,24 +386,32 @@ namespace UnityEditor.Toolbars
 
         void OnUpdate()
         {
-            style.display = RenderDoc.IsLoaded() && RenderDoc.IsSupported() ? DisplayStyle.Flex : DisplayStyle.None;
+            UpdateState();
         }
     }
 
     [EditorToolbarElement("SceneView/Metal Capture", typeof(SceneView))]
-    sealed class MetalCaptureElement : ToolbarButton, IEditorToolbarContext
+    sealed class MetalCaptureElement : EditorToolbarButton, IAccessContainerWindow
     {
-        public object context { get; set; }
-        SceneView sceneView => context as SceneView;
+        public EditorWindow containerWindow { get; set; }
+        SceneView sceneView => containerWindow as SceneView;
 
         public MetalCaptureElement()
         {
             name = "MetalCapture";
             tooltip = L10n.Tr("Capture the current view and open in Xcode frame debugger");
+            icon = EditorGUIUtility.FindTexture("FrameCapture");
+            UpdateState();
+
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
             SceneViewToolbarElements.AddStyleSheets(this);
-            EditorToolbarUtility.AddIconElement(this);
+        }
+
+        void UpdateState()
+        {
+            style.display = FrameCapture.IsDestinationSupported(FrameCaptureDestination.DevTools)
+                || FrameCapture.IsDestinationSupported(FrameCaptureDestination.GPUTraceDocument) ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
@@ -390,24 +433,22 @@ namespace UnityEditor.Toolbars
 
         void OnUpdate()
         {
-            style.display = FrameCapture.IsDestinationSupported(FrameCaptureDestination.DevTools)
-                || FrameCapture.IsDestinationSupported(FrameCaptureDestination.GPUTraceDocument) ? DisplayStyle.Flex : DisplayStyle.None;
+            UpdateState();
         }
     }
 
     [EditorToolbarElement("SceneView/Scene Camera", typeof(SceneView))]
-    sealed class SceneCameraElement : ToolbarButton, IEditorToolbarContext
+    sealed class SceneCameraElement : EditorToolbarDropdown, IAccessContainerWindow
     {
-        public object context { get; set; }
-        SceneView sceneView => context as SceneView;
+        public EditorWindow containerWindow { get; set; }
+        SceneView sceneView => containerWindow as SceneView;
 
         public SceneCameraElement()
         {
             name = "SceneViewCamera";
             tooltip = "Settings for the Scene view camera.";
+            icon = EditorGUIUtility.FindTexture("SceneViewCamera");
 
-            EditorToolbarUtility.AddIconElement(this);
-            EditorToolbarUtility.AddArrowElement(this);
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
             SceneViewToolbarElements.AddStyleSheets(this);
@@ -433,18 +474,17 @@ namespace UnityEditor.Toolbars
     }
 
     [EditorToolbarElement("SceneView/Gizmos", typeof(SceneView))]
-    sealed class GizmosElement : DropdownToggle, IEditorToolbarContext
+    sealed class GizmosElement : EditorToolbarDropdownToggle, IAccessContainerWindow
     {
-        public object context { get; set; }
-        SceneView sceneView => context as SceneView;
-        // ToolbarToggle m_Toggle;
+        public EditorWindow containerWindow { get; set; }
+        SceneView sceneView => containerWindow as SceneView;
 
         public GizmosElement()
         {
             name = "Gizmos";
             tooltip = L10n.Tr("Toggle visibility of all Gizmos in the Scene view");
 
-            dropdownButton.clicked += () => AnnotationWindow.ShowAtPosition(worldBound, false);
+            dropdownClicked += () => AnnotationWindow.ShowAtPosition(worldBound, false);
 
             this.RegisterValueChangedCallback(delegate(ChangeEvent<bool> evt)
             {
@@ -473,18 +513,14 @@ namespace UnityEditor.Toolbars
     }
 
     [EditorToolbarElement("SceneView/Snap Increment", typeof(SceneView))]
-    sealed class SnapIncrementSettingsElement : ToolbarButton, IEditorToolbarContext
+    sealed class SnapIncrementSettingsElement : EditorToolbarDropdown
     {
-        public object context { get; set; }
-        SceneView sceneView => context as SceneView;
-
         public SnapIncrementSettingsElement()
         {
             name = "SnapIncrement";
             tooltip = "Snap Increment";
+            icon = EditorGUIUtility.FindTexture("Snap/SnapIncrement");
 
-            EditorToolbarUtility.AddIconElement(this);
-            EditorToolbarUtility.AddArrowElement(this);
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
             SceneViewToolbarElements.AddStyleSheets(this);

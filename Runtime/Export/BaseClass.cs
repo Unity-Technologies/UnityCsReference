@@ -138,6 +138,11 @@ namespace UnityEngine
         EmbeddedLinuxArm32 = 40,
         EmbeddedLinuxX64 = 41,
         EmbeddedLinuxX86 = 42,
+
+        // Server (Standalone subtarget)
+        LinuxServer = 43,
+        WindowsServer = 44,
+        OSXServer = 45,
     }
 
     // The language the user's operating system is running in. Returned by Application.systemLanguage.

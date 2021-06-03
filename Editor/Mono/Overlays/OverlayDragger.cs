@@ -11,6 +11,8 @@ namespace UnityEditor.Overlays
 {
     sealed class OverlayDragger : MouseManipulator
     {
+        internal const string k_DragAreaHovered = "unity-overlay-drag-area-hovered";
+
         public static event Action<Overlay> dragStarted;
         public static event Action<Overlay> dragEnded;
 
@@ -22,7 +24,7 @@ namespace UnityEditor.Overlays
         bool m_WasFloating;
         OverlayContainer m_StartContainer;
         Vector2 m_InitialLayoutPosition;
-        Vector2 m_LastMousePosition;
+        Vector2 m_StartMousePosition;
         readonly Overlay m_Overlay;
         int m_InitialIndex;
 
@@ -98,21 +100,22 @@ namespace UnityEditor.Overlays
             if (!IsInDraggableArea(e.mousePosition) || !CanStartManipulation(e))
                 return;
 
-            var canvasLocalPos = canvasRoot.WorldToLocal(e.mousePosition);
-            var constrainedMousePosition = canvas.ClampToOverlayWindow(new Rect(canvasLocalPos, Vector2.zero)).position;
             m_WasFloating = m_Overlay.floating;
             m_StartContainer = m_Overlay.container;
-            m_InitialLayoutPosition = new Vector2(m_Overlay.rootVisualElement.resolvedStyle.left, m_Overlay.rootVisualElement.resolvedStyle.top);
+
+            var canvasLocalPos = canvasRoot.WorldToLocal(e.mousePosition);
+            var constrainedMousePosition = canvas.ClampToOverlayWindow(new Rect(canvasLocalPos, Vector2.zero)).position;
+            m_StartMousePosition = constrainedMousePosition;
+
+            m_InitialLayoutPosition = floatingContainer.WorldToLocal(m_Overlay.rootVisualElement.worldBound.position);
 
             //if docked, convert to floating
             if (!m_Overlay.floating)
             {
                 m_Overlay.container.stateLocked = true;
-                var r = m_Overlay.rootVisualElement.worldBound;
-                var local = floatingContainer.WorldToLocal(r.position);
                 m_InitialIndex = m_Overlay.container.IndexOf(m_Overlay.rootVisualElement);
                 canvas.ShowOriginGhost(m_Overlay);
-                m_Overlay.floatingPosition = local;
+                m_Overlay.floatingPosition = m_InitialLayoutPosition;
                 m_Overlay.Undock();
             }
             else
@@ -120,8 +123,6 @@ namespace UnityEditor.Overlays
                 //make sure overlay is on top
                 m_Overlay.rootVisualElement.BringToFront();
             }
-
-            m_LastMousePosition = constrainedMousePosition;
 
             m_Active = true;
             target.CaptureMouse();
@@ -140,11 +141,10 @@ namespace UnityEditor.Overlays
 
             var canvasLocalPos = canvasRoot.WorldToLocal(e.mousePosition);
             var constrainedMousePosition = canvas.ClampToOverlayWindow(new Rect(canvasLocalPos, Vector2.zero)).position;
-            var diff = constrainedMousePosition - m_LastMousePosition;
-            m_LastMousePosition = constrainedMousePosition;
 
-            m_Overlay.rootVisualElement.style.left = m_Overlay.rootVisualElement.resolvedStyle.left + diff.x;
-            m_Overlay.rootVisualElement.style.top = m_Overlay.rootVisualElement.resolvedStyle.top + diff.y;
+            var diff = (constrainedMousePosition - m_StartMousePosition);
+            m_Overlay.rootVisualElement.style.left = m_InitialLayoutPosition.x + diff.x;
+            m_Overlay.rootVisualElement.style.top = m_InitialLayoutPosition.y + diff.y;
 
             canvas.destinationMarker.SetTarget(IsInOriginGhost(e.mousePosition)
                 ? null
@@ -174,21 +174,29 @@ namespace UnityEditor.Overlays
             }
 
             if (m_Overlay.floating)
+            {
                 m_Overlay.floatingPosition = new Vector2(
                     m_Overlay.rootVisualElement.style.left.value.value,
                     m_Overlay.rootVisualElement.style.top.value.value);
+            }
 
             OnDragEnd(e.mousePosition);
         }
 
         void OnMouseLeave(MouseLeaveEvent evt)
         {
-            UpdateHovered(evt.mousePosition);
+            //No need to consider the event position in case of a mouse leave event
+            UpdateHovered(false);
         }
 
         void UpdateHovered(Vector2 mousePosition)
         {
-            m_Overlay.rootVisualElement.EnableInClassList("unity-overlay-drag-area-hovered", m_Active || IsInDraggableArea(mousePosition));
+            UpdateHovered(m_Active || IsInDraggableArea(mousePosition));
+        }
+
+        void UpdateHovered(bool hoverStatus)
+        {
+            m_Overlay.rootVisualElement.EnableInClassList(k_DragAreaHovered, hoverStatus);
         }
 
         void OnKeyDown(KeyDownEvent evt)
@@ -202,7 +210,11 @@ namespace UnityEditor.Overlays
 
         bool IsInOriginGhost(Vector2 mousePosition)
         {
-            return canvas.GetOriginGhostWorldBound().Contains(mousePosition);
+            var isInGhost = canvas.GetOriginGhostWorldBound().Contains(mousePosition);
+
+            canvas.UpdateGhostHover(isInGhost);
+
+            return isInGhost;
         }
 
         void CancelDrag(Vector2 mousePosition)

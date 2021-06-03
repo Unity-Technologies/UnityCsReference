@@ -87,7 +87,7 @@ namespace UnityEngine.UIElements
                 else if (m_Event.type == EventType.ScrollWheel)
                 {
                     var screenPosition = GetLocalScreenPosition(m_Event, out var targetDisplay);
-                    SendPositionBasedEvent(screenPosition, m_Event.delta, targetDisplay, (panelPosition, panelDelta, self) =>
+                    SendPositionBasedEvent(screenPosition, m_Event.delta, PointerId.mousePointerId, targetDisplay, (panelPosition, panelDelta, self) =>
                     {
                         self.m_Event.mousePosition = panelPosition;
                         return UIElementsRuntimeUtility.CreateEvent(self.m_Event);
@@ -96,7 +96,7 @@ namespace UnityEngine.UIElements
                 else
                 {
                     var screenPosition = GetLocalScreenPosition(m_Event, out var targetDisplay);
-                    SendPositionBasedEvent(screenPosition, m_Event.delta, targetDisplay, (panelPosition, panelDelta, self) =>
+                    SendPositionBasedEvent(screenPosition, m_Event.delta, PointerId.mousePointerId, targetDisplay, (panelPosition, panelDelta, self) =>
                     {
                         self.m_Event.mousePosition = panelPosition;
                         self.m_Event.delta = panelDelta;
@@ -170,11 +170,11 @@ namespace UnityEngine.UIElements
         }
 
         // For Unit Tests
-        internal void SendPositionBasedEvent<TArg>(Vector3 mousePosition, Vector3 delta,
+        internal void SendPositionBasedEvent<TArg>(Vector3 mousePosition, Vector3 delta, int pointerId,
             Func<Vector3, Vector3, TArg, EventBase> evtFactory, TArg arg, bool deselectIfNoTarget = false) =>
-            SendPositionBasedEvent(mousePosition, delta, null, evtFactory, arg, deselectIfNoTarget);
+            SendPositionBasedEvent(mousePosition, delta, pointerId, null, evtFactory, arg, deselectIfNoTarget);
 
-        void SendPositionBasedEvent<TArg>(Vector3 mousePosition, Vector3 delta, int? targetDisplay, Func<Vector3, Vector3, TArg, EventBase> evtFactory, TArg arg, bool deselectIfNoTarget = false)
+        void SendPositionBasedEvent<TArg>(Vector3 mousePosition, Vector3 delta, int pointerId, int? targetDisplay, Func<Vector3, Vector3, TArg, EventBase> evtFactory, TArg arg, bool deselectIfNoTarget = false)
         {
             // Allow focus to be lost before processing the event
             if (focusedPanel != null)
@@ -182,8 +182,33 @@ namespace UnityEngine.UIElements
                 UpdateFocusedPanel(focusedPanel);
             }
 
-            // Try all the panels, from closest to deepest
             var panels = UIElementsRuntimeUtility.GetSortedPlayerPanels();
+            for (var i = panels.Count - 1; i >= 0; i--)
+            {
+                var panel = panels[i];
+                if (panel is BaseRuntimePanel runtimePanel)
+                {
+                    if (panel.GetCapturingElement(pointerId) != null)
+                    {
+                        runtimePanel.ScreenToPanel(mousePosition, delta, out var panelPosition, out var panelDelta, true);
+
+                        using (EventBase evt = evtFactory(panelPosition, panelDelta, arg))
+                        {
+                            runtimePanel.visualTree.SendEvent(evt);
+
+                            if (evt.processedByFocusController)
+                            {
+                                UpdateFocusedPanel(runtimePanel);
+                            }
+
+                            // Only 1 panel receives the event.
+                            return;
+                        }
+                    }
+                }
+            }
+
+            // Try all the panels, from closest to deepest
             for (var i = panels.Count - 1; i >= 0; i--)
             {
                 var panel = panels[i];
@@ -259,7 +284,7 @@ namespace UnityEngine.UIElements
                 touch.rawPosition = UIElementsRuntimeUtility.MultiDisplayBottomLeftToPanelPosition(touch.rawPosition, out _);
                 touch.deltaPosition = UIElementsRuntimeUtility.ScreenBottomLeftToPanelDelta(touch.deltaPosition);
 
-                SendPositionBasedEvent(touch.position, touch.deltaPosition, targetDisplay, (panelPosition, panelDelta, _touch) =>
+                SendPositionBasedEvent(touch.position, touch.deltaPosition, PointerId.touchPointerIdBase + touch.fingerId, targetDisplay, (panelPosition, panelDelta, _touch) =>
                 {
                     _touch.position = panelPosition;
                     _touch.deltaPosition = panelDelta;

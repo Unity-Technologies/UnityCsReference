@@ -55,7 +55,7 @@ namespace UnityEditor.DeviceSimulation
                 serializedState = new SimulatorState();
             m_Devices = DeviceLoader.LoadDevices();
             InitDeviceIndex(serializedState);
-            m_ApplicationSimulation = new ApplicationSimulation(serializedState, currentDevice.deviceInfo);
+            m_ApplicationSimulation = new ApplicationSimulation(serializedState);
             m_DeviceSimulator = new DeviceSimulator {applicationSimulation = m_ApplicationSimulation};
             m_PluginController = new PluginController(serializedState, m_DeviceSimulator);
             m_TouchInput = new TouchEventManipulator(m_DeviceSimulator);
@@ -100,6 +100,7 @@ namespace UnityEditor.DeviceSimulation
             m_SystemInfoSimulation = new SystemInfoSimulation(currentDevice, playerSettings);
             m_TouchInput.InitTouchInput(overlayTexture, currentDevice.deviceInfo, m_ScreenSimulation);
             m_UserInterface.OnSimulationStart(m_ScreenSimulation);
+            m_ApplicationSimulation.OnSimulationStart(currentDevice.deviceInfo);
         }
 
         private void InitDeviceIndex(SimulatorState serializedState)

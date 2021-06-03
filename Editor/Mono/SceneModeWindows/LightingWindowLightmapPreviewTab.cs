@@ -372,8 +372,27 @@ namespace UnityEditor
             LightmapConvergence lc = Lightmapping.GetLightmapConvergence(index);
             if (lc.IsValid())
             {
-                GUILayout.Label("Occupied: " + InternalEditorUtility.CountToString((ulong)lc.occupiedTexelCount), EditorStyles.miniLabel);
-
+                ulong occupiedTexels = (ulong)lc.occupiedTexelCount;
+                if (lc.tilingMode > 0)
+                {
+                    // Make sure we display the total amount of occupied texels once lightmap is converged
+                    // If tiling is on, and lightmap is not converged, display the occupied texel count in current tile
+                    if (lc.IsConverged())
+                    {
+                        GUILayout.Label("Occupied: " + InternalEditorUtility.CountToString(occupiedTexels), EditorStyles.miniLabel);
+                        GUILayout.Label("Baked using " + lc.GetTileCount() + " tiles", EditorStyles.miniLabel);
+                    }
+                    else
+                    {
+                        occupiedTexels = (ulong)lc.occupiedTexelCountInCurrentTile;
+                        GUILayout.Label("Occupied (in tile): " + InternalEditorUtility.CountToString(occupiedTexels), EditorStyles.miniLabel);
+                        GUILayout.Label("Baking pass (#tile): " + (lc.tilingPassNum + 1) + "/" + lc.GetTileCount(), EditorStyles.miniLabel);
+                    }
+                }
+                else
+                {
+                    GUILayout.Label("Occupied: " + InternalEditorUtility.CountToString(occupiedTexels), EditorStyles.miniLabel);
+                }
                 GUIContent direct = EditorGUIUtility.TrTextContent("Direct: " + lc.minDirectSamples + " / " + lc.maxDirectSamples + " / " + lc.avgDirectSamples + "", "min / max / avg samples per texel");
                 GUILayout.Label(direct, EditorStyles.miniLabel);
 

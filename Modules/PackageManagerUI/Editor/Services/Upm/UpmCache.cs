@@ -21,6 +21,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         // the mapping between package name (key) to asset store product id (value)
         private Dictionary<string, string> m_ProductIdMap = new Dictionary<string, string>();
 
+        private readonly Dictionary<string, Dictionary<string, object>> m_ParsedUpmReserved = new Dictionary<string, Dictionary<string, object>>();
+
         [SerializeField]
         private long m_SearchPackageInfosTimestamp = 0;
 
@@ -140,19 +142,25 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             m_InstalledPackageInfos.Remove(packageName);
-            onPackageInfosUpdated?.Invoke(new PackageInfo[] { oldInfo });
+            TriggerOnPackageInfosUpdated(new PackageInfo[] { oldInfo });
         }
 
         public virtual bool IsPackageInstalled(string packageName) => m_InstalledPackageInfos.ContainsKey(packageName);
 
         public virtual PackageInfo GetInstalledPackageInfo(string packageName) => m_InstalledPackageInfos.Get(packageName);
 
+        public virtual PackageInfo GetInstalledPackageInfoById(string packageId)
+        {
+            var idSplit = packageId?.Split(new[] { '@' }, 2);
+            return idSplit?.Length == 2 ? GetInstalledPackageInfo(idSplit[0]) : null;
+        }
+
         public virtual void SetInstalledPackageInfo(PackageInfo info, bool isSpecialInstallation)
         {
             var oldInfo = m_InstalledPackageInfos.Get(info.name);
             m_InstalledPackageInfos[info.name] = info;
             if (isSpecialInstallation || oldInfo == null || IsDifferent(oldInfo, info))
-                onPackageInfosUpdated?.Invoke(new PackageInfo[] { info });
+                TriggerOnPackageInfosUpdated(new PackageInfo[] { info });
         }
 
         public virtual void SetInstalledPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp = 0)
@@ -174,7 +182,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_SearchPackageInfos[newInfo.name] = newInfo;
 
             if (updatedInfos.Any())
-                onPackageInfosUpdated?.Invoke(updatedInfos);
+                TriggerOnPackageInfosUpdated(updatedInfos);
         }
 
         public virtual PackageInfo GetSearchPackageInfo(string packageName) => m_SearchPackageInfos.Get(packageName);
@@ -188,7 +196,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var updatedInfos = FindUpdatedPackageInfos(oldPackageInfos, newPackageInfos);
             if (updatedInfos.Any())
-                onPackageInfosUpdated?.Invoke(updatedInfos);
+                TriggerOnPackageInfosUpdated(updatedInfos);
 
             m_SearchPackageInfosTimestamp = timestamp;
         }
@@ -200,7 +208,27 @@ namespace UnityEditor.PackageManager.UI.Internal
             var oldInfo = m_ProductPackageInfos.Get(info.name);
             m_ProductPackageInfos[info.name] = info;
             if (oldInfo == null || IsDifferent(oldInfo, info))
-                onPackageInfosUpdated?.Invoke(new PackageInfo[] { info });
+                TriggerOnPackageInfosUpdated(new PackageInfo[] { info });
+        }
+
+        private void TriggerOnPackageInfosUpdated(IEnumerable<PackageInfo> packageInfos)
+        {
+            foreach (var info in packageInfos)
+                m_ParsedUpmReserved.Remove(info.packageId);
+            onPackageInfosUpdated?.Invoke(packageInfos);
+        }
+
+        public virtual Dictionary<string, object> ParseUpmReserved(PackageInfo packageInfo)
+        {
+            if (string.IsNullOrEmpty(packageInfo?.upmReserved))
+                return null;
+
+            if (!m_ParsedUpmReserved.TryGetValue(packageInfo.packageId, out var result))
+            {
+                result = Json.Deserialize(packageInfo.upmReserved) as Dictionary<string, object>;
+                m_ParsedUpmReserved[packageInfo.packageId] = result;
+            }
+            return result;
         }
 
         public virtual string GetProductId(string packageName) => m_ProductIdMap.Get(packageName);

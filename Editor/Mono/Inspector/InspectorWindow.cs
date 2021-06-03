@@ -156,6 +156,7 @@ namespace UnityEditor
         public override void AddItemsToMenu(GenericMenu menu)
         {
             m_LockTracker.AddItemsToMenu(menu);
+            menu.AddItem(EditorGUIUtility.TrTextContent("Properties..."), false, () => PropertyEditor.OpenPropertyEditor(GetInspectedObject()));
             menu.AddSeparator(String.Empty);
             base.AddItemsToMenu(menu);
         }

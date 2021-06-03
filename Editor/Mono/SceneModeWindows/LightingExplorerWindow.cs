@@ -173,7 +173,7 @@ namespace UnityEditor
                 m_CurrentLightingExplorerExtension = GetLightExplorerExtension(SRPType);
                 m_CurrentLightingExplorerExtension.OnEnable();
 
-                m_SelectedTab = 0;
+                m_SelectedTab = EditorSettings.defaultBehaviorMode == EditorBehaviorMode.Mode2D ? /* 2D Lights */ 1 : /* Lights */ 0;
 
                 if (m_CurrentLightingExplorerExtension.GetContentTabs() == null || m_CurrentLightingExplorerExtension.GetContentTabs().Length == 0)
                 {

@@ -175,6 +175,7 @@ namespace UnityEditor.ShortcutManagement
         None = 0,
         Alt = 1,
         Action = 2,
-        Shift = 4
+        Shift = 4,
+        Control = 8
     }
 }

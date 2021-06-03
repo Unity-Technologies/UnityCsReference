@@ -75,8 +75,6 @@ namespace UnityEditor.Overlays
 
     class OverlayContainerDropZone : OverlayDropZoneBase
     {
-        const string k_InToolbarClassName = OverlayDestinationMarker.className + "--in-toolbar";
-
         public enum Placement
         {
             Start,
@@ -192,8 +190,8 @@ namespace UnityEditor.Overlays
         {
             base.PopulateDestMarkerClassList(classes);
 
-            if (m_Container is ToolbarOverlayContainer)
-                classes.Add(k_InToolbarClassName);
+            if (!(m_Container is ToolbarOverlayContainer))
+                classes.Add(k_FloatingClassName);
 
             GetContainerStylingForDestMarker(m_Container, ref classes);
         }
@@ -321,6 +319,7 @@ namespace UnityEditor.Overlays
         const string k_DropAreaClassName = className + "__target";
         const string k_HorizontalClassName = OverlayDestinationMarker.className + "--container-horizontal";
         const string k_VerticalClassName = OverlayDestinationMarker.className + "--container-vertical";
+        protected const string k_FloatingClassName = OverlayDestinationMarker.className + "--floating";
 
         public const string dropAreaName = "DropArea";
         const string k_VisualBoundsClassName = k_DropAreaClassName + "__visual-bounds";
@@ -430,8 +429,8 @@ namespace UnityEditor.Overlays
                     break;
             }
 
-            if (container is ToolbarOverlayContainer)
-                classes.Add(OverlayDestinationMarker.className + "--in-toolbar");
+            if (!(container is ToolbarOverlayContainer))
+                classes.Add(k_FloatingClassName);
         }
 
         protected virtual void OnDropZoneActivated(Overlay draggedOverlay) {}

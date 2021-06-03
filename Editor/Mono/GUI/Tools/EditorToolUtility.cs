@@ -20,7 +20,6 @@ namespace UnityEditor.EditorTools
         static EditorToolCache s_ToolCache = new EditorToolCache(typeof(EditorToolAttribute));
         static EditorToolCache s_ContextCache = new EditorToolCache(typeof(EditorToolContextAttribute));
         static Dictionary<Type, GUIContent> s_ToolbarIcons = new Dictionary<Type, GUIContent>();
-        static Type[] s_AvailableToolContexts;
 
         // Caution: Returns all types without filtering for EditorToolContext
         internal static IEnumerable<EditorTypeAssociation> GetCustomEditorToolsForType(Type type)
@@ -28,30 +27,12 @@ namespace UnityEditor.EditorTools
             return s_ToolCache.GetEditorsForTargetType(type);
         }
 
-        internal static Type[] availableToolContexts
+        internal static IEnumerable<EditorTypeAssociation> availableGlobalToolContexts
         {
-            get
-            {
-                if (s_AvailableToolContexts == null)
-                {
-                    s_AvailableToolContexts = TypeCache.GetTypesWithAttribute<EditorToolContextAttribute>()
-                        .Where(x => typeof(EditorToolContext).IsAssignableFrom(x) && !x.IsAbstract)
-                        .ToArray();
-
-                    // Move the default tool context to the top of the list
-                    int idx = Array.IndexOf(s_AvailableToolContexts, typeof(GameObjectToolContext));
-
-                    if (idx > 0)
-                    {
-                        var tmp = s_AvailableToolContexts[0];
-                        s_AvailableToolContexts[0] = s_AvailableToolContexts[idx];
-                        s_AvailableToolContexts[idx] = tmp;
-                    }
-                }
-
-                return s_AvailableToolContexts;
-            }
+            get => s_ContextCache.GetEditorsForTargetType(null);
         }
+
+        internal static int toolContextsInProject => s_ContextCache.Count;
 
         internal static string GetToolName(Type tool)
         {
@@ -85,7 +66,7 @@ namespace UnityEditor.EditorTools
                         return L10n.Tr(path);
                 }
             }
-            return L10n.Tr(ObjectNames.NicifyVariableName(tool.Name));
+            return L10n.Tr(ObjectNames.NicifyVariableName(tool.Name.Replace("ToolContext", string.Empty)));
         }
 
         internal static string GetToolMenuPath(EditorTool tool)
@@ -208,9 +189,12 @@ namespace UnityEditor.EditorTools
             return GetIcon(obj.GetType());
         }
 
-        internal static GUIContent GetIcon(Type editorToolType)
+        internal static GUIContent GetIcon(Type editorToolType, bool forceReload = false)
         {
             GUIContent res;
+
+            if (forceReload)
+                s_ToolbarIcons.Remove(editorToolType);
 
             if (s_ToolbarIcons.TryGetValue(editorToolType, out res))
                 return res;
@@ -232,6 +216,7 @@ namespace UnityEditor.EditorTools
         ReturnToolbarIcon:
             if (string.IsNullOrEmpty(res.tooltip))
                 res.tooltip = ObjectNames.NicifyVariableName(editorToolType.Name);
+
             s_ToolbarIcons.Add(editorToolType, res);
 
             return res;

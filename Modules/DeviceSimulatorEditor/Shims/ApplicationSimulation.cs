@@ -11,16 +11,19 @@ namespace UnityEditor.DeviceSimulation
     {
         public SystemLanguage simulatedSystemLanguage { get; set; }
         public NetworkReachability simulatedInternetReachability { get; set; }
-
-        private readonly DeviceInfo m_DeviceInfo;
+        private DeviceInfo m_DeviceInfo;
         private event Application.LowMemoryCallback m_LowMemory;
 
-        public ApplicationSimulation(SimulatorState serializedState, DeviceInfo deviceInfo)
+        public ApplicationSimulation(SimulatorState serializedState)
         {
-            m_DeviceInfo = deviceInfo;
             simulatedSystemLanguage = serializedState.systemLanguage;
             simulatedInternetReachability = serializedState.networkReachability;
             Enable();
+        }
+
+        public void OnSimulationStart(DeviceInfo deviceInfo)
+        {
+            m_DeviceInfo = deviceInfo;
         }
 
         public void Enable()

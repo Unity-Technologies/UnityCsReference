@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor.Build;
 using UnityEngine;
 using UnityEngine.Bindings;
 
@@ -16,23 +17,32 @@ namespace UnityEditor
         {
             public static string buildNumber
             {
-                get { return PlayerSettings.GetBuildNumber(BuildTargetGroup.Standalone); }
-                set { PlayerSettings.SetBuildNumber(BuildTargetGroup.Standalone, value); }
+                get { return PlayerSettings.GetBuildNumber(NamedBuildTarget.Standalone.TargetName); }
+                set { PlayerSettings.SetBuildNumber(NamedBuildTarget.Standalone.TargetName, value); }
             }
 
             [NativeProperty("MacAppStoreCategory")]
-            extern internal static string applicationCategoryType  { get; set; }
+            public extern static string applicationCategoryType  { get; set; }
 
-            // these two are internal because we are not yet sure if we want to have them back in general PlayerSettings
+            // these four WERE internal because we are not yet sure if we want to have them back in general PlayerSettings
             // as we have several platforms that might want to use it
             [NativeProperty("CameraUsageDescription")]
-            internal extern static string cameraUsageDescription { get; set; }
+            public extern static string cameraUsageDescription { get; set; }
 
             [NativeProperty("MicrophoneUsageDescription")]
-            internal extern static string microphoneUsageDescription { get; set; }
+            public extern static string microphoneUsageDescription { get; set; }
 
             [NativeProperty("BluetoothUsageDescription")]
-            internal extern static string bluetoothUsageDescription { get; set; }
+            public extern static string bluetoothUsageDescription { get; set; }
+
+            [NativeProperty("macOSURLSchemes", false, TargetType.Field)]
+            public extern static string[] urlSchemes
+            {
+                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+                get;
+                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
+                set;
+            }
         }
     }
 }

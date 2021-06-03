@@ -21,6 +21,7 @@ using CompilerMessage = UnityEditor.Scripting.Compilers.CompilerMessage;
 using CompilerMessageType = UnityEditor.Scripting.Compilers.CompilerMessageType;
 using Directory = System.IO.Directory;
 using File = System.IO.File;
+using UnityEditor.Build;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
@@ -69,10 +70,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         public PrecompiledAssemblyProviderBase PrecompiledAssemblyProvider { get; set; } = new PrecompiledAssemblyProvider();
-        public CompilationSetupErrorsTrackerBase CompilationSetupErrorsTracker { get; set; } = new CompilationSetupErrorsTracker();
+        public ICompilationSetupErrorsTracker CompilationSetupErrorsTracker { get; set; } = new CompilationSetupErrorsTracker();
         public ResponseFileProvider ResponseFileProvider { get; set; } = new MicrosoftCSharpResponseFileProvider();
         public ILoadingAssemblyDefinition loadingAssemblyDefinition { get; set; } = new LoadingAssemblyDefinition();
         public IVersionDefinesConsoleLogs VersionDefinesConsoleLogs { get; set; } = new VersionDefinesConsoleLogs();
+        public ICompilationSetupWarningTracker CompilationSetupWarningTracker { get; set; } = new CompilationSetupWarningTracker();
 
         internal string projectDirectory = string.Empty;
         Dictionary<string, string> allScripts = new Dictionary<string, string>();
@@ -101,6 +103,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             public BeeDriver Driver;
             public ScriptAssembly[] assemblies;
+
             public ScriptAssemblySettings settings { get; set; }
         }
 
@@ -179,6 +182,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         internal static void CleanCache()
         {
             new NPath("Library/Bee").DeleteIfExists(DeleteMode.Soft);
+            Mono.Utils.Pram.PramDataDirectory.DeleteIfExists(DeleteMode.Soft);
         }
 
         public void SetAllUnityAssemblies(PrecompiledAssembly[] unityAssemblies)
@@ -916,7 +920,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
             ScriptAssembly[] scriptAssemblies;
             try
             {
-                scriptAssemblies = GetAllScriptAssembliesOfType(scriptAssemblySettings, TargetAssemblyType.Undefined);
+                CompilationSetupWarningTracker.ClearAssetWarnings();
+                scriptAssemblies = GetAllScriptAssembliesOfType(scriptAssemblySettings, TargetAssemblyType.Undefined, CompilationSetupWarningTracker);
             }
             catch (PrecompiledAssemblyException)
             {
@@ -1009,7 +1014,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 predefinedAssembliesCompilerOptions.UseDeterministicCompilation = true;
             }
 
-            predefinedAssembliesCompilerOptions.ApiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup);
+            predefinedAssembliesCompilerOptions.ApiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(NamedBuildTarget.FromBuildTargetGroup(buildTargetGroup));
 
             ICompilationExtension compilationExtension = null;
             if ((options & EditorScriptCompilationOptions.BuildingForEditor) == 0)
@@ -1018,7 +1023,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
 
-            List<string> additionalCompilationArguments = new List<string>(PlayerSettings.GetAdditionalCompilerArgumentsForGroup(buildTargetGroup));
+            List<string> additionalCompilationArguments = new List<string>(PlayerSettings.GetAdditionalCompilerArguments(NamedBuildTarget.FromBuildTargetGroup(buildTargetGroup)));
 
             if (PlayerSettings.suppressCommonWarnings)
             {
@@ -1540,7 +1545,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return defines;
         }
 
-        public ScriptAssembly[] GetAllScriptAssembliesOfType(ScriptAssemblySettings settings, TargetAssemblyType type)
+        public ScriptAssembly[] GetAllScriptAssembliesOfType(ScriptAssemblySettings settings, TargetAssemblyType type, ICompilationSetupWarningTracker warningSink)
         {
             using (new ProfilerMarker(nameof(GetAllScriptAssembliesOfType)).Auto())
             {
@@ -1560,7 +1565,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     EditorAssemblyReferences = ModuleUtils.GetAdditionalReferencesForUserScripts(),
                 };
 
-                return EditorBuildRules.GetAllScriptAssemblies(allScripts, projectDirectory, settings, assemblies, type);
+                return EditorBuildRules.GetAllScriptAssemblies(allScripts, projectDirectory, settings, assemblies, type, warningSink: CompilationSetupWarningTracker);
             }
         }
 
@@ -1712,7 +1717,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var precompiledAssemblies = GetPrecompiledAssembliesWithSetupErrorsTracking(
                 buildingForEditor, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget);
-            var precompiledReferences = EditorBuildRules.GetPrecompiledReferences(scriptAssembly, TargetAssemblyType.Custom, options, EditorCompatibility.CompatibleWithEditor, precompiledAssemblies);
+            // todo split implicit/explicit precompiled references
+            var precompiledReferences = EditorBuildRules.GetPrecompiledReferences(scriptAssembly, TargetAssemblyType.Custom, options, EditorCompatibility.CompatibleWithEditor, precompiledAssemblies, null, null);
             var additionalReferences = MonoLibraryHelpers.GetSystemLibraryReferences(scriptAssembly.CompilerOptions.ApiCompatibilityLevel);
             string[] editorReferences = buildingForEditor ? ModuleUtils.GetAdditionalReferencesForUserScripts() : new string[0];
 

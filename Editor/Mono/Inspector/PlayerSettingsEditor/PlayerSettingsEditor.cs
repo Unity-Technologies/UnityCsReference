@@ -50,9 +50,10 @@ namespace UnityEditor
         {
             public static readonly GUIContent frameTimingStatsWebGLWarning = EditorGUIUtility.TrTextContent("Frame timing stats are supported in WebGL 2 only. Uncheck 'Automatic Graphics API' if it's set and remove the WebGL 1 API.");
             public static readonly GUIContent lightmapEncodingWebGLWarning = EditorGUIUtility.TrTextContent("High quality lightmap encoding requires WebGL 2 only. Uncheck 'Automatic Graphics API' if it's set and remove the WebGL 1 API.");
-            public static readonly GUIContent colorSpaceAndroidWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires OpenGL ES 3.0 or Vulkan, uncheck 'Automatic Graphics API' to remove OpenGL ES 2 API, Blit Type for non-SRP projects must be Always Blit or Auto");
+            public static readonly GUIContent colorSpaceAndroidWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires OpenGL ES 3.0 or Vulkan, remove OpenGL ES 2 API from the list. Blit Type for non-SRP projects must be Always Blit or Auto.");
             public static readonly GUIContent colorSpaceWebGLWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires WebGL 2, uncheck 'Automatic Graphics API' to remove WebGL 1 API. WARNING: If DXT sRGB is not supported by the browser, texture will be decompressed");
             public static readonly GUIContent colorSpaceIOSWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires Metal API only. Uncheck 'Automatic Graphics API' and remove OpenGL ES 2/3 APIs.");
+            public static readonly GUIContent colorSpaceEmbeddedLinuxWarning = EditorGUIUtility.TrTextContent("Linear colorspace is not supported with OpenGL ES 2.0, uncheck 'Automatic Graphics API' to remove OpenGL ES 2 API");
             public static readonly GUIContent recordingInfo = EditorGUIUtility.TrTextContent("Reordering the list will switch editor to the first available platform");
             public static readonly GUIContent sharedBetweenPlatformsInfo = EditorGUIUtility.TrTextContent("* Shared setting between multiple platforms.");
 
@@ -76,6 +77,7 @@ namespace UnityEditor
             public static readonly GUIContent identificationTitle = EditorGUIUtility.TrTextContent("Identification");
             public static readonly GUIContent macAppStoreTitle = EditorGUIUtility.TrTextContent("Mac App Store Options");
             public static readonly GUIContent configurationTitle = EditorGUIUtility.TrTextContent("Configuration");
+            public static readonly GUIContent macConfigurationTitle = EditorGUIUtility.TrTextContent("Mac Configuration");
             public static readonly GUIContent optimizationTitle = EditorGUIUtility.TrTextContent("Optimization");
             public static readonly GUIContent loggingTitle = EditorGUIUtility.TrTextContent("Stack Trace*");
             public static readonly GUIContent legacyTitle = EditorGUIUtility.TrTextContent("Legacy");
@@ -105,6 +107,7 @@ namespace UnityEditor
             public static readonly GUIContent UIStatusBarStyle = EditorGUIUtility.TrTextContent("Status Bar Style");
             public static readonly GUIContent useMacAppStoreValidation = EditorGUIUtility.TrTextContent("Mac App Store Validation");
             public static readonly GUIContent macAppStoreCategory = EditorGUIUtility.TrTextContent("Category", "'LSApplicationCategoryType'");
+            public static readonly GUIContent macOSURLSchemes = EditorGUIUtility.TrTextContent("Supported URL schemes*");
             public static readonly GUIContent fullscreenMode = EditorGUIUtility.TrTextContent("Fullscreen Mode ", " Not all platforms support all modes");
             public static readonly GUIContent exclusiveFullscreen = EditorGUIUtility.TrTextContent("Exclusive Fullscreen");
             public static readonly GUIContent fullscreenWindow = EditorGUIUtility.TrTextContent("Fullscreen Window");
@@ -198,8 +201,7 @@ namespace UnityEditor
             public static readonly GUIContent[] lightmapEncodingNames = { EditorGUIUtility.TrTextContent("Low Quality"), EditorGUIUtility.TrTextContent("Normal Quality"), EditorGUIUtility.TrTextContent("High Quality") };
             public static readonly GUIContent lightmapStreamingEnabled = EditorGUIUtility.TrTextContent("Lightmap Streaming", "Only load larger lightmap mipmaps as needed to render the current game cameras. Requires texture streaming to be enabled in quality settings. This value is applied to the light map textures as they are generated.");
             public static readonly GUIContent lightmapStreamingPriority = EditorGUIUtility.TrTextContent("Streaming Priority", "Lightmap mipmap streaming priority when there's contention for resources. Positive numbers represent higher priority. Valid range is -128 to 127. This value is applied to the light map textures as they are generated.");
-            public static readonly GUIContent lightmapQualityAndroidWarning = EditorGUIUtility.TrTextContent("The selected Lightmap Encoding requires OpenGL ES 3.0 or Vulkan. Uncheck 'Automatic Graphics API' and remove OpenGL ES 2 API");
-            public static readonly GUIContent lightmapQualityIOSWarning = EditorGUIUtility.TrTextContent("The selected Lightmap Encoding requires Metal API only. Uncheck 'Automatic Graphics API' and remove OpenGL ES APIs.");
+            public static readonly GUIContent lightmapQualityAndroidWarning = EditorGUIUtility.TrTextContent("The selected Lightmap Encoding requires OpenGL ES 3.0 or Vulkan. Please remove the OpenGL ES 2 API.");
             public static readonly GUIContent legacyClampBlendShapeWeights = EditorGUIUtility.TrTextContent("Clamp BlendShapes (Deprecated)*", "If set, the range of BlendShape weights in SkinnedMeshRenderers will be clamped.");
             public static readonly GUIContent virtualTexturingSupportEnabled = EditorGUIUtility.TrTextContent("Virtual Texturing*", "Enable support for Virtual Texturing. Changing this value requires an Editor restart.");
             public static readonly GUIContent virtualTexturingUnsupportedPlatformWarning = EditorGUIUtility.TrTextContent("The current target platform does not support Virtual Texturing. To build for this platform, uncheck Enable Virtual Texturing.");
@@ -210,6 +212,7 @@ namespace UnityEditor
             public static readonly GUIContent shaderPrecisionModel = EditorGUIUtility.TrTextContent("Shader precision model*", "Mobile targets prefer lower precision by default to improve performance, but your rendering pipeline may prefer full precision by default and to optimize against lower precision cases explicitly.");
             public static readonly GUIContent[] shaderPrecisionModelOptions = { EditorGUIUtility.TrTextContent("Use platform defaults for sampler precision"), EditorGUIUtility.TrTextContent("Use full sampler precision by default, lower precision explicitly declared") };
             public static readonly GUIContent stereo360CaptureCheckbox = EditorGUIUtility.TrTextContent("360 Stereo Capture*");
+            public static readonly GUIContent forceSRGBBlit = EditorGUIUtility.TrTextContent("Force SRGB blit", "Force SRGB blit for Linear color space.");
 
             public static string undoChangedBatchingString { get { return LocalizationDatabase.GetLocalizedString("Changed Batching Settings"); } }
             public static string undoChangedGraphicsAPIString { get { return LocalizationDatabase.GetLocalizedString("Changed Graphics API Settings"); } }
@@ -269,6 +272,7 @@ namespace UnityEditor
         SerializedProperty m_ApplicationBundleVersion;
         SerializedProperty m_UseMacAppStoreValidation;
         SerializedProperty m_MacAppStoreCategory;
+        SerializedProperty m_MacURLSchemes;
 
         // vulkan
         SerializedProperty m_VulkanNumSwapchainBuffers;
@@ -403,6 +407,9 @@ namespace UnityEditor
         SerializedProperty m_StackTraceTypes;
         SerializedProperty m_ManagedStrippingLevel;
         SerializedProperty m_ActiveInputHandler;
+
+        // Embedded Linux specific
+        SerializedProperty m_ForceSRGBBlit;
 
         // Localization Cache
         string m_LocalizedTargetName;
@@ -572,6 +579,7 @@ namespace UnityEditor
             m_ResizableWindow                  = FindPropertyAssert("resizableWindow");
             m_UseMacAppStoreValidation         = FindPropertyAssert("useMacAppStoreValidation");
             m_MacAppStoreCategory              = FindPropertyAssert("macAppStoreCategory");
+            m_MacURLSchemes                    = FindPropertyAssert("macOSURLSchemes");
             m_VulkanNumSwapchainBuffers        = FindPropertyAssert("vulkanNumSwapchainBuffers");
             m_VulkanEnableLateAcquireNextImage = FindPropertyAssert("vulkanEnableLateAcquireNextImage");
             m_FullscreenMode                   = FindPropertyAssert("fullscreenMode");
@@ -594,6 +602,8 @@ namespace UnityEditor
 
             m_VirtualTexturingSupportEnabled = FindPropertyAssert("virtualTexturingSupportEnabled");
             m_ShaderPrecisionModel = FindPropertyAssert("shaderPrecisionModel");
+
+            m_ForceSRGBBlit                 = FindPropertyAssert("forceSRGBBlit");
 
             m_SettingsExtensions = new ISettingEditorExtension[validPlatforms.Length];
             for (int i = 0; i < validPlatforms.Length; i++)
@@ -620,8 +630,8 @@ namespace UnityEditor
             serializedActiveInputHandler = m_ActiveInputHandler.intValue;
             serializedSuppressCommonWarnings = m_SuppressCommonWarnings.boolValue;
             serializedAllowUnsafeCode = m_AllowUnsafeCode.boolValue;
-            serializedAdditionalCompilerArguments = GetAdditionalCompilerArgumentsForGroup(targetGroup);
-            serializedScriptingDefines = GetScriptingDefineSymbolsForGroup(targetGroup);
+            serializedAdditionalCompilerArguments = GetAdditionalCompilerArgumentsForGroup(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
+            serializedScriptingDefines = GetScriptingDefineSymbolsForGroup(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
             serializedAPICompatibilityLevel = GetApiCompatibilityLevelForTarget(targetGroup);
             serializedUseDeterministicCompilation = m_UseDeterministicCompilation.boolValue;
 
@@ -635,7 +645,7 @@ namespace UnityEditor
             {
                 if (EditorUtility.DisplayDialog("Scripting Define Symbols Have Been Modified", "Do you want to apply changes?", "Apply", "Revert"))
                 {
-                    SetScriptingDefineSymbolsForGroup(lastTargetGroup, scriptingDefinesList.ToArray());
+                    SetScriptingDefineSymbolsForGroup(NamedBuildTarget.FromBuildTargetGroup(lastTargetGroup), scriptingDefinesList.ToArray());
                     RecompileScripts(RecompileReason.scriptingDefineSymbolsModified);
                 }
 
@@ -646,7 +656,7 @@ namespace UnityEditor
             {
                 if (EditorUtility.DisplayDialog("Additional Compiler Arguments Have Been Modified", "Do you want to apply changes?", "Apply", "Revert"))
                 {
-                    SetAdditionalCompilerArgumentsForGroup(lastTargetGroup, additionalCompilerArgumentsList.ToArray());
+                    SetAdditionalCompilerArgumentsForGroup(NamedBuildTarget.FromBuildTargetGroup(lastTargetGroup), additionalCompilerArgumentsList.ToArray());
                     RecompileScripts(RecompileReason.additionalCompilerArgumentsModified);
                 }
 
@@ -708,7 +718,7 @@ namespace UnityEditor
                 return;
 
             // Scripting define symbols
-            var currentDefines = GetScriptingDefineSymbolsForGroup(targetGroup);
+            var currentDefines = GetScriptingDefineSymbolsForGroup(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
             if (serializedScriptingDefines != currentDefines)
             {
                 if (!hasScriptingDefinesBeenModified)
@@ -722,7 +732,7 @@ namespace UnityEditor
             }
 
             // Additional compiler arguments
-            var currentAdditionalCompilerArguments = GetAdditionalCompilerArgumentsForGroup(targetGroup);
+            var currentAdditionalCompilerArguments = GetAdditionalCompilerArgumentsForGroup(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
             if (!serializedAdditionalCompilerArguments.SequenceEqual(currentAdditionalCompilerArguments))
             {
                 if (!hasAdditionalCompilerArgumentsBeenModified)
@@ -821,7 +831,7 @@ namespace UnityEditor
                     EditorGUI.EndEditingActiveTextField();
                     GUIUtility.keyboardControl = 0;
                     string[] defines = PlayerSettings.ConvertScriptingDefineStringToArray(EditorGUI.s_DelayedTextEditor.text);
-                    SetScriptingDefineSymbolsForGroup(validPlatforms[oldPlatform].targetGroup, defines);
+                    SetScriptingDefineSymbolsForGroup(NamedBuildTarget.FromBuildTargetGroup(validPlatforms[oldPlatform].targetGroup), defines);
                 }
                 // Reset focus when changing between platforms.
                 // If we don't do this, the resolution width/height value will not update correctly when they have the focus
@@ -952,7 +962,7 @@ namespace UnityEditor
                         settingsExtension.ResolutionSectionGUI(h, kLabelFloatMinW, kLabelFloatMaxW);
                     }
 
-                    if (targetGroup == BuildTargetGroup.Standalone)
+                    if (targetGroup == BuildTargetGroup.Standalone || targetGroup == BuildTargetGroup.EmbeddedLinux)
                     {
                         GUILayout.Label(SettingsContent.resolutionTitle, EditorStyles.boldLabel);
 
@@ -1677,6 +1687,12 @@ namespace UnityEditor
                     showWarning = apis.Contains(GraphicsDeviceType.OpenGLES2);
                     warningMessage = SettingsContent.colorSpaceWebGLWarning;
                 }
+                else if ((targetGroup == BuildTargetGroup.EmbeddedLinux))
+                {
+                    showWarning = apis.Contains(GraphicsDeviceType.OpenGLES2);
+                    warningMessage = SettingsContent.colorSpaceEmbeddedLinuxWarning;
+                    EditorGUILayout.PropertyField(m_ForceSRGBBlit, SettingsContent.forceSRGBBlit);
+                }
 
                 if (showWarning)
                     EditorGUILayout.HelpBox(warningMessage.text, MessageType.Warning);
@@ -1934,21 +1950,7 @@ namespace UnityEditor
 
                     if (encodingQuality != LightmapEncodingQuality.Low)
                     {
-                        if (targetGroup == BuildTargetGroup.iOS)
-                        {
-                            var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.iOS);
-                            var hasMinAPI = apis.Contains(GraphicsDeviceType.Metal) && !apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
-                            if (!hasMinAPI)
-                                EditorGUILayout.HelpBox(SettingsContent.lightmapQualityIOSWarning.text, MessageType.Warning);
-                        }
-                        else if (targetGroup == BuildTargetGroup.tvOS)
-                        {
-                            var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.tvOS);
-                            var hasMinAPI = apis.Contains(GraphicsDeviceType.Metal) && !apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
-                            if (!hasMinAPI)
-                                EditorGUILayout.HelpBox(SettingsContent.lightmapQualityIOSWarning.text, MessageType.Warning);
-                        }
-                        else if (targetGroup == BuildTargetGroup.Android)
+                        if (targetGroup == BuildTargetGroup.Android)
                         {
                             var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
                             var hasMinAPI = (apis.Contains(GraphicsDeviceType.Vulkan) || apis.Contains(GraphicsDeviceType.OpenGLES3)) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
@@ -2427,16 +2429,12 @@ namespace UnityEditor
 
             // Privacy permissions
             bool showPrivacyPermissions =
-                targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS ||
-                platform.defaultTarget == BuildTarget.StandaloneOSX;
+                targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS;
 
             if (showPrivacyPermissions)
             {
                 EditorGUILayout.PropertyField(m_CameraUsageDescription, SettingsContent.cameraUsageDescription);
                 EditorGUILayout.PropertyField(m_MicrophoneUsageDescription, SettingsContent.microphoneUsageDescription);
-
-                if (platform.defaultTarget == BuildTarget.StandaloneOSX)
-                    EditorGUILayout.PropertyField(m_BluetoothUsageDescription, SettingsContent.bluetoothUsageDescription);
 
                 if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS)
                     EditorGUILayout.PropertyField(m_LocationUsageDescription, SettingsContent.locationUsageDescription);
@@ -2510,26 +2508,38 @@ namespace UnityEditor
             }
 
             EditorGUILayout.Space();
+
+            if (targetGroup == BuildTargetGroup.Standalone)
+            {
+                GUILayout.Label(SettingsContent.macConfigurationTitle, EditorStyles.boldLabel);
+
+                EditorGUILayout.PropertyField(m_CameraUsageDescription, SettingsContent.cameraUsageDescription);
+                EditorGUILayout.PropertyField(m_MicrophoneUsageDescription, SettingsContent.microphoneUsageDescription);
+                EditorGUILayout.PropertyField(m_BluetoothUsageDescription, SettingsContent.bluetoothUsageDescription);
+                EditorGUILayout.PropertyField(m_MacURLSchemes, SettingsContent.macOSURLSchemes, true);
+
+                EditorGUILayout.Space();
+            }
         }
 
-        private string GetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup)
+        private string GetScriptingDefineSymbolsForGroup(NamedBuildTarget buildTarget)
         {
             string defines = string.Empty;
-            if (m_ScriptingDefines.TryGetMapEntry((int)targetGroup, out var entry))
+            if (m_ScriptingDefines.TryGetMapEntry(buildTarget.TargetName, out var entry))
             {
                 defines = entry.FindPropertyRelative("second").stringValue;
             }
             return defines;
         }
 
-        private void SetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup, string[] defines)
+        private void SetScriptingDefineSymbolsForGroup(NamedBuildTarget buildTarget, string[] defines)
         {
-            m_ScriptingDefines.SetMapValue((int)targetGroup, PlayerSettings.ConvertScriptingDefineArrayToString(defines));
+            m_ScriptingDefines.SetMapValue(buildTarget.TargetName, PlayerSettings.ConvertScriptingDefineArrayToString(defines));
         }
 
-        string[] GetAdditionalCompilerArgumentsForGroup(BuildTargetGroup targetGroup)
+        string[] GetAdditionalCompilerArgumentsForGroup(NamedBuildTarget buildTarget)
         {
-            if (m_AdditionalCompilerArguments.TryGetMapEntry((int)targetGroup, out var entry))
+            if (m_AdditionalCompilerArguments.TryGetMapEntry(buildTarget.TargetName, out var entry))
             {
                 var serializedArguments = entry.FindPropertyRelative("second");
                 var arguments = new string[serializedArguments.arraySize];
@@ -2545,9 +2555,9 @@ namespace UnityEditor
             return new string[0];
         }
 
-        void SetAdditionalCompilerArgumentsForGroup(BuildTargetGroup targetGroup, string[] arguments)
+        void SetAdditionalCompilerArgumentsForGroup(NamedBuildTarget buildTarget, string[] arguments)
         {
-            m_AdditionalCompilerArguments.SetMapValue((int)targetGroup, arguments);
+            m_AdditionalCompilerArguments.SetMapValue(buildTarget.TargetName, arguments);
         }
 
         private void OtherSectionScriptCompilationGUI(BuildTargetGroup targetGroup)
@@ -2576,7 +2586,7 @@ namespace UnityEditor
                         if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsCopyDefines,
                             EditorStyles.miniButton))
                         {
-                            EditorGUIUtility.systemCopyBuffer = PlayerSettings.GetScriptingDefineSymbolsForGroup(targetGroup);
+                            EditorGUIUtility.systemCopyBuffer = PlayerSettings.GetScriptingDefineSymbols(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
                         }
 
                         GUI.enabled = hasScriptingDefinesBeenModified;
@@ -2594,10 +2604,10 @@ namespace UnityEditor
                             // Make sure to remove focus from reorderable list text field on apply
                             GUI.FocusControl(null);
 
-                            SetScriptingDefineSymbolsForGroup(targetGroup, scriptingDefinesList.ToArray());
+                            SetScriptingDefineSymbolsForGroup(NamedBuildTarget.FromBuildTargetGroup(targetGroup), scriptingDefinesList.ToArray());
 
                             // Get Scripting Define Symbols without duplicates
-                            serializedScriptingDefines = GetScriptingDefineSymbolsForGroup(targetGroup);
+                            serializedScriptingDefines = GetScriptingDefineSymbolsForGroup(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
                             UpdateScriptingDefineSymbolsLists();
 
                             if (EditorUserBuildSettings.activeBuildTargetGroup == targetGroup)
@@ -2635,10 +2645,10 @@ namespace UnityEditor
 
                                 if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsApply, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
                                 {
-                                    SetAdditionalCompilerArgumentsForGroup(targetGroup, additionalCompilerArgumentsList.ToArray());
+                                    SetAdditionalCompilerArgumentsForGroup(NamedBuildTarget.FromBuildTargetGroup(targetGroup), additionalCompilerArgumentsList.ToArray());
 
                                     // Get Additional Compiler Arguments without duplicates
-                                    serializedAdditionalCompilerArguments = GetAdditionalCompilerArgumentsForGroup(targetGroup);
+                                    serializedAdditionalCompilerArguments = GetAdditionalCompilerArgumentsForGroup(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
                                     UpdateAdditionalCompilerArgumentsLists();
 
                                     if (EditorUserBuildSettings.activeBuildTargetGroup == targetGroup)
@@ -3194,7 +3204,7 @@ namespace UnityEditor
         void InitReorderableScriptingDefineSymbolsList(BuildTargetGroup targetGroup)
         {
             // Get Scripting Define Symbols data
-            string defines = GetScriptingDefineSymbolsForGroup(targetGroup);
+            string defines = GetScriptingDefineSymbolsForGroup(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
             scriptingDefinesList = new List<string>(PlayerSettings.ConvertScriptingDefineStringToArray(serializedScriptingDefines));
 
             // Initialize Reorderable List

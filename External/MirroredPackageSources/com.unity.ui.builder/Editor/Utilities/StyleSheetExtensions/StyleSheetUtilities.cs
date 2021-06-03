@@ -99,6 +99,18 @@ namespace Unity.UI.Builder
             return unit == LengthUnit.Percent ? Dimension.Unit.Percent : Dimension.Unit.Pixel;
         }
 
+        public static Dimension.Unit ConvertToDimensionUnit(AngleUnit unit)
+        {
+            switch (unit)
+            {
+                case AngleUnit.Gradian: return Dimension.Unit.Gradian;
+                case AngleUnit.Radian: return Dimension.Unit.Radian;
+                case AngleUnit.Turn: return Dimension.Unit.Turn;
+                default:
+                    return Dimension.Unit.Degree;
+            }
+        }
+
         public static string GetCleanVariableName(string value)
         {
             if (string.IsNullOrEmpty(value))

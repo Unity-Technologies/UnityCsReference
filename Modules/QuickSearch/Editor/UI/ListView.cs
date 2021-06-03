@@ -92,10 +92,13 @@ namespace UnityEditor.Search
             }
 
             // Draw action dropdown
-            var buttonRect = new Rect(itemRect.xMax - Styles.actionButton.fixedWidth - Styles.actionButton.margin.right, itemRect.y, Styles.actionButton.fixedWidth, Styles.actionButton.fixedHeight);
+            var hovered = itemRect.Contains(evt.mousePosition) && screenRect.Contains(evt.mousePosition);
+            var buttonWidth = Styles.actionButton.fixedWidth + Styles.actionButton.margin.right;
+            var buttonRect = new Rect(itemRect.xMax, itemRect.y, Styles.actionButton.fixedWidth, Styles.actionButton.fixedHeight);
             buttonRect.y += (itemRect.height - Styles.actionButton.fixedHeight) / 2f;
-            if (evt.type == EventType.Repaint || (itemRect.Contains(evt.mousePosition) && screenRect.Contains(evt.mousePosition)))
+            if (hovered)
             {
+                buttonRect.x -= buttonWidth;
                 bool hasActionDropdown = searchView.selectCallback == null && searchView.selection.Count <= 1 && item.provider.actions.Count > 1;
                 if (hasActionDropdown)
                 {
@@ -109,7 +112,7 @@ namespace UnityEditor.Search
                         GUIUtility.ExitGUI();
                     }
 
-                    buttonRect.x -= Styles.actionButton.fixedWidth + Styles.actionButton.margin.left;
+                    buttonRect.x -= buttonWidth;
                 }
 
                 if (SearchSettings.searchItemFavorites.Contains(item.id))
@@ -125,6 +128,7 @@ namespace UnityEditor.Search
                             SearchSettings.AddItemFavorite(item);
                     EditorGUIUtility.AddCursorRect(buttonRect, MouseCursor.Link);
                 }
+                buttonRect.x -= buttonWidth;
             }
 
             if (evt.type == EventType.Repaint)

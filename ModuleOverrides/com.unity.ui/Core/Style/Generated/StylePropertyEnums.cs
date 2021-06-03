@@ -19,6 +19,7 @@ namespace UnityEngine.UIElements.StyleSheets
         Layout,
         Rare,
         Shorthand,
+        Transform,
         Visual
     }
 
@@ -37,6 +38,7 @@ namespace UnityEngine.UIElements.StyleSheets
         TextAnchor,
         TextOverflow,
         TextOverflowPosition,
+        TransformOriginOffset,
         Visibility,
         WhiteSpace,
         Wrap
@@ -99,9 +101,13 @@ namespace UnityEngine.UIElements.StyleSheets
         PaddingTop = StylePropertyGroup.Layout << k_GroupOffset | 28,
         Position = StylePropertyGroup.Layout << k_GroupOffset | 29,
         Right = StylePropertyGroup.Layout << k_GroupOffset | 30,
+        Rotate = StylePropertyGroup.Transform << k_GroupOffset | 0,
+        Scale = StylePropertyGroup.Transform << k_GroupOffset | 1,
         TextOverflow = StylePropertyGroup.Rare << k_GroupOffset | 1,
         TextShadow = StylePropertyGroup.Inherited << k_GroupOffset | 3,
         Top = StylePropertyGroup.Layout << k_GroupOffset | 31,
+        TransformOrigin = StylePropertyGroup.Transform << k_GroupOffset | 2,
+        Translate = StylePropertyGroup.Transform << k_GroupOffset | 3,
         UnityBackgroundImageTintColor = StylePropertyGroup.Rare << k_GroupOffset | 2,
         UnityBackgroundScaleMode = StylePropertyGroup.Rare << k_GroupOffset | 3,
         UnityFont = StylePropertyGroup.Inherited << k_GroupOffset | 4,

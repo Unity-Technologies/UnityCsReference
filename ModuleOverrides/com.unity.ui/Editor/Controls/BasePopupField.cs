@@ -44,7 +44,10 @@ namespace UnityEditor.UIElements
         // This method is used when the menu is built to fill up all the choices.
         internal abstract void AddMenuItems(IGenericMenu menu);
 
-        internal virtual List<TValueChoice> choices
+        /// <summary>
+        /// The list of choices to display in the popup menu.
+        /// </summary>
+        public virtual List<TValueChoice> choices
         {
             get { return m_Choices; }
             set
@@ -53,6 +56,9 @@ namespace UnityEditor.UIElements
                     throw new ArgumentNullException(nameof(value));
 
                 m_Choices = value;
+
+                // Make sure to update the text displayed
+                SetValueWithoutNotify(rawValue);
             }
         }
 

@@ -15,12 +15,17 @@ namespace UnityEditor.PackageManager.UI.Internal
         // triggered when packages are added/updated or removed
         event Action<IPage, IEnumerable<IPackage>, IEnumerable<IPackage>, bool> onListUpdate;
         event Action<IPage> onListRebuild;
+        event Action<IPage> onSubPageAdded;
         PageFilters filters { get; }
         PackageFilterTab tab { get; }
         PageCapability capability { get; }
 
         long numTotalItems { get; }
         long numCurrentItems { get; }
+
+        IEnumerable<SubPage> subPages { get; }
+        SubPage currentSubPage { get; set; }
+        void AddSubPage(SubPage subPage);
 
         // an ordered list of `packageUniqueIds`
         IEnumerable<VisualState> visualStates { get; }
@@ -55,5 +60,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         bool Contains(IPackage package);
         bool Contains(string packageUniqueId);
+        void SetPackagesUserUnlockedState(IEnumerable<string> packageUniqueIds, bool unlocked);
+        void ResetUserUnlockedState();
+        bool GetDefaultLockState(IPackage package);
     }
 }
