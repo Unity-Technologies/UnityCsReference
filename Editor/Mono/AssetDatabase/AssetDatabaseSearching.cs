@@ -5,6 +5,7 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using UnityEditor.Utils;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -66,11 +67,12 @@ namespace UnityEditor
 
             foreach (var folderPath in folders)
             {
-                var folderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(folderPath);
+                var sanitizedFolderPath = folderPath.ConvertSeparatorsToUnity().TrimTrailingSlashes();
+                var folderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(sanitizedFolderPath);
                 var rootPath = "Assets";
 
                 // Find the right rootPath if folderPath is part of a package
-                var packageInfo = PackageManager.PackageInfo.FindForAssetPath(folderPath);
+                var packageInfo = PackageManager.PackageInfo.FindForAssetPath(sanitizedFolderPath);
                 if (packageInfo != null)
                 {
                     rootPath = packageInfo.assetPath;
@@ -94,7 +96,7 @@ namespace UnityEditor
                 }
                 else
                 {
-                    Debug.LogWarning("AssetDatabase.FindAssets: Folder not found: '" + folderPath + "'");
+                    Debug.LogWarning("AssetDatabase.FindAssets: Folder not found: '" + sanitizedFolderPath + "'");
                 }
             }
         }
