@@ -143,8 +143,7 @@ namespace UnityEditor.SceneManagement
         public void OnAssetsChangedOnHDD(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
         {
             foreach (var stage in m_History)
-                if (stage.isPrefabStage)
-                    stage.SyncAssetPathFromAssetGUID();
+                stage.OnAssetsChangedOnHDD(importedAssets, deletedAssets, movedAssets, movedFromAssetPaths);
         }
     }
 }

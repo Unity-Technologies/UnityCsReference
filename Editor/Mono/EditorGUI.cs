@@ -2529,6 +2529,20 @@ namespace UnityEditor
                 var parentArrayPropertyPath = property.propertyPath.Substring(0, property.propertyPath.LastIndexOf(".Array.data[", StringComparison.Ordinal));
                 var parentArrayProperty = property.serializedObject.FindProperty(parentArrayPropertyPath);
 
+                var parentArrayIndex = -1;
+                // Referencing the selected element in the array ensures that Duplicate/Delete
+                // actually work, so we need to try and parse it's index out of the path string.
+                try
+                {
+                    // Strip the string up to the first .Array.data[
+                    var parentArrayIndexString = property.propertyPath.Substring(property.propertyPath.LastIndexOf(".Array.data[", StringComparison.Ordinal) + 12);
+                    // Strip everything after the next ]
+                    parentArrayIndexString = parentArrayIndexString.Substring(0, parentArrayIndexString.IndexOf("]"));
+                    // Attempt to parse this into an Int32
+                    parentArrayIndex = Int32.Parse(parentArrayIndexString);
+                }
+                catch { /*we can't parse an array index, so leave it -1*/ }
+
                 if (!parentArrayProperty.isFixedBuffer)
                 {
                     if (pm.GetItemCount() > 0)
@@ -2537,12 +2551,35 @@ namespace UnityEditor
                     }
                     pm.AddItem(EditorGUIUtility.TrTextContent("Duplicate Array Element"), false, (a) =>
                     {
-                        TargetChoiceHandler.DuplicateArrayElement(a);
+                        if (parentArrayIndex >= 0 && parentArrayIndex < parentArrayProperty.arraySize)
+                        {
+                            SerializedProperty resolvedProperty = parentArrayProperty.GetArrayElementAtIndex(parentArrayIndex);
+                            if (resolvedProperty != null)
+                            {
+                                TargetChoiceHandler.DuplicateArrayElement(resolvedProperty);
+                            }
+                        }
+                        else
+                        {
+                            TargetChoiceHandler.DuplicateArrayElement(a);
+                        }
+
                         EditorGUIUtility.editingTextField = false;
                     }, propertyWithPath);
                     pm.AddItem(EditorGUIUtility.TrTextContent("Delete Array Element"), false, (a) =>
                     {
-                        TargetChoiceHandler.DeleteArrayElement(a);
+                        if (parentArrayIndex >= 0 && parentArrayIndex < parentArrayProperty.arraySize)
+                        {
+                            SerializedProperty resolvedProperty = parentArrayProperty.GetArrayElementAtIndex(parentArrayIndex);
+                            if (resolvedProperty != null)
+                            {
+                                TargetChoiceHandler.DeleteArrayElement(resolvedProperty);
+                            }
+                        }
+                        else
+                        {
+                            TargetChoiceHandler.DeleteArrayElement(a);
+                        }
                         EditorGUIUtility.editingTextField = false;
                     }, propertyWithPath);
                 }

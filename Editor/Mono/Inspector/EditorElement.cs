@@ -81,11 +81,17 @@ namespace UnityEditor.UIElements
             }
         }
 
-        internal EditorElement(int editorIndex, InspectorWindow iw)
+        internal EditorElement(int editorIndex, InspectorWindow iw, bool isCulled = false)
         {
             m_EditorIndex = editorIndex;
             inspectorWindow = iw;
             pickingMode = PickingMode.Ignore;
+
+            if (isCulled)
+            {
+                InitCulled();
+                return;
+            }
 
             Init();
 
@@ -98,6 +104,24 @@ namespace UnityEditor.UIElements
             }
 
             Add(m_Footer);
+        }
+
+        void InitCulled()
+        {
+            PopulateCache();
+
+            var container = inspectorWindow.CreateIMGUIContainer(() =>
+            {
+                if (editor != null)
+                {
+                    // Reset dirtiness when repainting, just like in EditorElement.HeaderOnGUI.
+                    if (Event.current.type == EventType.Repaint)
+                    {
+                        editor.isInspectorDirty = false;
+                    }
+                }
+            }, name);
+            Add(container);
         }
 
         void Init()
@@ -130,8 +154,30 @@ namespace UnityEditor.UIElements
             UpdateInspectorVisibility();
         }
 
+        public void ReinitCulled(int editorIndex)
+        {
+            if (m_Header != null)
+            {
+                m_EditorIndex = editorIndex;
+                m_Header = m_Footer = null;
+                Clear();
+                InitCulled();
+                return;
+            }
+
+            PopulateCache();
+        }
+
         internal void Reinit(int editorIndex)
         {
+            if (m_Header == null)
+            {
+                m_EditorIndex = editorIndex;
+                Clear();
+                Init();
+                return;
+            }
+
             PopulateCache();
             Object editorTarget = editor.targets[0];
             string editorTitle = ObjectNames.GetInspectorTitle(editorTarget);

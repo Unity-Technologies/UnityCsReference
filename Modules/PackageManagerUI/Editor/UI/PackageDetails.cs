@@ -909,6 +909,8 @@ namespace UnityEditor.PackageManager.UI
                 return;
             }
 
+            var isUpdate = package.GetState() == PackageState.Outdated;
+
             detailError.ClearError();
             var downloadInProgress = PackageDatabase.instance.IsDownloadInProgress(displayVersion);
             if (downloadInProgress)
@@ -918,7 +920,7 @@ namespace UnityEditor.PackageManager.UI
 
             RefreshImportAndDownloadButtons();
 
-            var eventName = downloadInProgress ? "abortDownload" : "startDownload";
+            var eventName = downloadInProgress ? "abortDownload" : (isUpdate ? "startDownloadUpdate" : "startDownloadNew");
             PackageManagerWindowAnalytics.SendEvent(eventName, package.uniqueId);
         }
 
