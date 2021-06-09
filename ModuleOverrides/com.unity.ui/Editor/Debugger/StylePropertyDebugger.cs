@@ -427,14 +427,27 @@ namespace UnityEditor.UIElements.Debugger
                 SetSpecificity(specificity);
                 SetEnabled(false);
             }
-            else
+            else if (val is Enum)
             {
-                // Enum
-                Debug.Assert(val is Enum, "Expected Enum value");
                 Enum enumValue = (Enum)val;
                 EnumField field = GetOrCreateEnumField(enumValue);
                 if (!IsFocused(field))
                     field.SetValueWithoutNotify(enumValue);
+            }
+            else
+            {
+                var type = val.GetType();
+                Debug.Assert(type.IsArrayOrList(), "Expected List type");
+
+                var listValue = val as System.Collections.IList;
+                var valueString = listValue[0].ToString();
+                for (int i = 1; i < listValue.Count; i++)
+                {
+                    valueString += $", {listValue[i]}";
+                }
+                TextField field = GetOrCreateField<TextField, string>();
+                if (!IsFocused(field))
+                    field.SetValueWithoutNotify(valueString);
             }
 
             SetSpecificity(specificity);

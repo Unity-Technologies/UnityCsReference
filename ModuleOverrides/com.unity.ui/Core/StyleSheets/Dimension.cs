@@ -19,6 +19,8 @@ namespace UnityEngine.UIElements.StyleSheets
             Unitless,
             Pixel,
             Percent,
+            Second,
+            Millisecond,
             Degree,
             Gradian,
             Radian,
@@ -38,6 +40,12 @@ namespace UnityEngine.UIElements.StyleSheets
         {
             var lengthUnit = unit == Unit.Percent ? LengthUnit.Percent : LengthUnit.Pixel;
             return new Length(value, lengthUnit);
+        }
+
+        public TimeValue ToTime()
+        {
+            var timeUnit = unit == Unit.Millisecond ? TimeUnit.Millisecond : TimeUnit.Second;
+            return new TimeValue(value, timeUnit);
         }
 
         public Angle ToAngle()
@@ -97,6 +105,12 @@ namespace UnityEngine.UIElements.StyleSheets
                     break;
                 case Unit.Percent:
                     unitStr = "%";
+                    break;
+                case Unit.Second:
+                    unitStr = "s";
+                    break;
+                case Unit.Millisecond:
+                    unitStr = "ms";
                     break;
                 case Unit.Degree:
                     unitStr = "deg";

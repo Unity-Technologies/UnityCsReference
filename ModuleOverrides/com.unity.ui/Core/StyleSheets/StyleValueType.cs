@@ -19,7 +19,7 @@ namespace UnityEngine.UIElements
         Variable, // A literal value starting with "--"
         String, // A quoted value or any other value that is not recognized as a primitive
         Function,
-        FunctionSeparator,
+        CommaSeparator,
         ScalableImage,
         MissingAssetReference,
     }

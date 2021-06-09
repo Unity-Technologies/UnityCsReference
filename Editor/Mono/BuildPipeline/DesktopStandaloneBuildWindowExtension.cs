@@ -13,21 +13,22 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
 {
     private GUIContent m_StandaloneTarget = EditorGUIUtility.TrTextContent("Target Platform", "Destination platform for standalone build");
     private GUIContent m_Architecture = EditorGUIUtility.TrTextContent("Architecture", "Build m_Architecture for standalone");
-    private GUIContent m_HeadlessMode = EditorGUIUtility.TrTextContent("Server Build", "Headless player build tailored for server environments");
     private BuildTarget[] m_StandaloneSubtargets;
     private GUIContent[] m_StandaloneSubtargetStrings;
 
     protected bool m_HasMonoPlayers;
     protected bool m_HasIl2CppPlayers;
+    protected bool m_HasServerPlayers;
     protected bool m_IsRunningOnHostPlatform;
 
-    public DesktopStandaloneBuildWindowExtension(bool hasMonoPlayers, bool hasIl2CppPlayers)
+    public DesktopStandaloneBuildWindowExtension(bool hasMonoPlayers, bool hasIl2CppPlayers, bool hasServerPlayers)
     {
         SetupStandaloneSubtargets();
 
         m_IsRunningOnHostPlatform = Application.platform == GetHostPlatform();
         m_HasIl2CppPlayers = hasIl2CppPlayers;
         m_HasMonoPlayers = hasMonoPlayers;
+        m_HasServerPlayers = hasServerPlayers;
     }
 
     private void SetupStandaloneSubtargets()
@@ -185,8 +186,6 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
 
         ShowArchitectureSpecificOptions();
 
-        EditorUserBuildSettings.enableHeadlessMode = EditorGUILayout.Toggle(m_HeadlessMode, EditorUserBuildSettings.enableHeadlessMode);
-
         ShowBackendErrorIfNeeded();
     }
 
@@ -201,15 +200,17 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
 
     public override bool EnabledBuildButton()
     {
-        if (PlayerSettings.GetScriptingBackend(NamedBuildTarget.Standalone) == ScriptingImplementation.Mono2x)
-            return true;
-
         return string.IsNullOrEmpty(GetCannotBuildPlayerInCurrentSetupError());
     }
 
     protected virtual string GetCannotBuildPlayerInCurrentSetupError()
     {
-        if (PlayerSettings.GetScriptingBackend(NamedBuildTarget.Standalone) != ScriptingImplementation.IL2CPP)
+        var namedBuildTarget = EditorUserBuildSettingsUtils.CalculateSelectedNamedBuildTarget();
+
+        if (namedBuildTarget == NamedBuildTarget.Server && !m_HasServerPlayers)
+            return $"Dedicated Server support for {GetHostPlatformName()} is not installed";
+
+        if (PlayerSettings.GetScriptingBackend(namedBuildTarget) != ScriptingImplementation.IL2CPP)
         {
             if (!m_HasMonoPlayers)
                 return "Currently selected scripting backend (Mono) is not installed.";
@@ -219,7 +220,8 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
             if (!m_IsRunningOnHostPlatform)
                 return string.Format("{0} IL2CPP player can only be built on {0}.", GetHostPlatformName());
 
-            if (!m_HasIl2CppPlayers)
+            // Il2cpp is always shipped in the Server support installer for the host platform.
+            if (!m_HasIl2CppPlayers && namedBuildTarget != NamedBuildTarget.Server)
                 return "Currently selected scripting backend (IL2CPP) is not installed."; // Note: error should match UWP player error message for consistency.
         }
 

@@ -477,9 +477,9 @@ namespace UnityEditor
                 return (RealtimeGICPUUsage)EditorGUILayout.IntPopup((int)usage, Styles.realtimeGICPUUsageName, Styles.realtimeGICPUUsageValue);
             }
 
-            internal void OnTierGUI(BuildTargetGroup platform, GraphicsTier tier, bool vertical)
+            internal void OnTierGUI(BuildPlatform platform, GraphicsTier tier, bool vertical)
             {
-                TierSettings ts = EditorGraphicsSettings.GetTierSettings(platform, tier);
+                TierSettings ts = EditorGraphicsSettings.GetTierSettings(platform.namedBuildTarget, tier);
 
                 EditorGUI.BeginChangeCheck();
 
@@ -522,11 +522,11 @@ namespace UnityEditor
                 {
                     // TODO: it should be doable in c# now as we "expose" GraphicsSettings anyway
                     EditorGraphicsSettings.RegisterUndo();
-                    EditorGraphicsSettings.SetTierSettings(platform, tier, ts);
+                    EditorGraphicsSettings.SetTierSettings(platform.namedBuildTarget, tier, ts);
                 }
             }
 
-            internal void OnGuiHorizontal(BuildTargetGroup platform)
+            internal void OnGuiHorizontal(BuildPlatform platform)
             {
                 EditorGUILayout.BeginHorizontal();
 
@@ -541,7 +541,7 @@ namespace UnityEditor
                 EditorGUIUtility.labelWidth = 50;
                 foreach (GraphicsTier tier in Enum.GetValues(typeof(GraphicsTier)))
                 {
-                    bool autoSettings = EditorGraphicsSettings.AreTierSettingsAutomatic(platform, tier);
+                    bool autoSettings = EditorGraphicsSettings.AreTierSettingsAutomatic(platform.namedBuildTarget.ToBuildTargetGroup(), tier);
 
                     EditorGUILayout.BeginVertical();
                     EditorGUILayout.LabelField(Styles.tierName[(int)tier], EditorStyles.boldLabel);
@@ -554,8 +554,8 @@ namespace UnityEditor
                     if (EditorGUI.EndChangeCheck())
                     {
                         EditorGraphicsSettings.RegisterUndo();
-                        EditorGraphicsSettings.MakeTierSettingsAutomatic(platform, tier, autoSettings);
-                        EditorGraphicsSettings.OnUpdateTierSettings(platform, true);
+                        EditorGraphicsSettings.MakeTierSettingsAutomatic(platform.namedBuildTarget.ToBuildTargetGroup(), tier, autoSettings);
+                        EditorGraphicsSettings.OnUpdateTierSettings(platform.namedBuildTarget.ToBuildTargetGroup(), true);
                     }
                     EditorGUILayout.EndVertical();
                 }
@@ -564,12 +564,12 @@ namespace UnityEditor
                 EditorGUILayout.EndHorizontal();
             }
 
-            internal void OnGuiVertical(BuildTargetGroup platform)
+            internal void OnGuiVertical(BuildPlatform platform)
             {
                 EditorGUILayout.BeginVertical();
                 foreach (GraphicsTier tier in Enum.GetValues(typeof(GraphicsTier)))
                 {
-                    bool autoSettings = EditorGraphicsSettings.AreTierSettingsAutomatic(platform, tier);
+                    bool autoSettings = EditorGraphicsSettings.AreTierSettingsAutomatic(platform.namedBuildTarget.ToBuildTargetGroup(), tier);
                     EditorGUI.BeginChangeCheck();
                     {
                         GUILayout.BeginHorizontal();
@@ -584,8 +584,8 @@ namespace UnityEditor
                     if (EditorGUI.EndChangeCheck())
                     {
                         EditorGraphicsSettings.RegisterUndo();
-                        EditorGraphicsSettings.MakeTierSettingsAutomatic(platform, tier, autoSettings);
-                        EditorGraphicsSettings.OnUpdateTierSettings(platform, true);
+                        EditorGraphicsSettings.MakeTierSettingsAutomatic(platform.namedBuildTarget.ToBuildTargetGroup(), tier, autoSettings);
+                        EditorGraphicsSettings.OnUpdateTierSettings(platform.namedBuildTarget.ToBuildTargetGroup(), true);
                     }
 
                     using (new EditorGUI.DisabledScope(autoSettings))
@@ -614,7 +614,7 @@ namespace UnityEditor
             public override void OnInspectorGUI()
             {
                 BuildPlatform[] validPlatforms = BuildPlatforms.instance.GetValidPlatforms().ToArray();
-                BuildTargetGroup platform = validPlatforms[EditorGUILayout.BeginPlatformGrouping(validPlatforms, null, EditorStyles.frameBox)].targetGroup;
+                BuildPlatform platform = validPlatforms[EditorGUILayout.BeginPlatformGrouping(validPlatforms, null, EditorStyles.frameBox)];
 
                 if (verticalLayout)  OnGuiVertical(platform);
                 else                OnGuiHorizontal(platform);

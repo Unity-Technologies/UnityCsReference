@@ -349,7 +349,7 @@ namespace UnityEditor
                 bool showRequired = requireEnabled == 0;
                 foreach (BuildPlatform gt in BuildPlatforms.instance.buildPlatforms)
                 {
-                    var available = IsBuildTargetGroupSupported(gt.targetGroup, gt.defaultTarget) && BuildPipeline.LicenseCheck(gt.defaultTarget);
+                    var available = IsBuildTargetGroupSupported(gt.namedBuildTarget.ToBuildTargetGroup(), gt.defaultTarget) && BuildPipeline.LicenseCheck(gt.defaultTarget);
                     if (available != showRequired)
                         continue;
 
@@ -378,8 +378,8 @@ namespace UnityEditor
 
             // Switch build target
             BuildTarget selectedTarget = EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget();
-            BuildTargetGroup selectedTargetGroup = EditorUserBuildSettingsUtils.CalculateSelectedBuildTargetGroup();
-            GUI.enabled = BuildPipeline.IsBuildTargetSupported(selectedTargetGroup, selectedTarget);
+            NamedBuildTarget selectedNamedBuildTarget = EditorUserBuildSettingsUtils.CalculateSelectedNamedBuildTarget();
+            GUI.enabled = BuildPipeline.IsBuildTargetSupported(selectedNamedBuildTarget.ToBuildTargetGroup(), selectedTarget);
             if (GUILayout.Button(EditorGUIUtility.TrTextContent("Player Settings..."), GUILayout.Width(Styles.kButtonWidth)))
             {
                 SettingsService.OpenProjectSettings("Project/Player");
@@ -418,7 +418,8 @@ namespace UnityEditor
             Rect r = GUILayoutUtility.GetRect(50, 36);
             r.x += 1;
             r.y += 1;
-            bool selected = EditorUserBuildSettings.selectedBuildTargetGroup == bp.targetGroup;
+            bool selected = bp.IsSelected();
+            bool active = bp.IsActive();
 
             if (Event.current.type == EventType.Repaint)
             {
@@ -438,7 +439,7 @@ namespace UnityEditor
 
                 GUI.Label(new Rect(r.x + 3, r.y + 3, 32, 32), image, GUIStyle.none);
 
-                if (EditorUserBuildSettings.activeBuildTargetGroup == bp.targetGroup)
+                if (active)
                     GUI.Label(new Rect(r.xMax - styles.activePlatformIcon.width - 8, r.y + 3 + (32 - styles.activePlatformIcon.height) / 2,
                         styles.activePlatformIcon.width, styles.activePlatformIcon.height),
                         styles.activePlatformIcon, GUIStyle.none);
@@ -446,9 +447,9 @@ namespace UnityEditor
 
             if (GUI.Toggle(r, selected, title.text, styles.platformSelector))
             {
-                if (EditorUserBuildSettings.selectedBuildTargetGroup != bp.targetGroup)
+                if (!selected)
                 {
-                    EditorUserBuildSettings.selectedBuildTargetGroup = bp.targetGroup;
+                    bp.Select();
 
                     // Repaint inspectors, as they may be showing platform target specific things.
                     Object[] inspectors = Resources.FindObjectsOfTypeAll(typeof(InspectorWindow));
@@ -457,6 +458,15 @@ namespace UnityEditor
                         InspectorWindow inspector = inspectors[i] as InspectorWindow;
                         if (inspector != null)
                             inspector.Repaint();
+                    }
+
+                    // We also need to repaint project settings window.
+                    Object[] projecSettingsWindows = Resources.FindObjectsOfTypeAll(typeof(ProjectSettingsWindow));
+                    for (int i = 0; i < projecSettingsWindows.Length; i++)
+                    {
+                        ProjectSettingsWindow projecSettingsWindow = projecSettingsWindows[i] as ProjectSettingsWindow;
+                        if (projecSettingsWindow != null)
+                            projecSettingsWindow.Repaint();
                     }
                 }
             }
@@ -538,15 +548,15 @@ namespace UnityEditor
                 var hasMinGraphicsAPI = true;
 
                 var apis = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
-                if (platform.targetGroup == BuildTargetGroup.Android)
+                if (platform.namedBuildTarget == NamedBuildTarget.Android)
                 {
                     hasMinGraphicsAPI = (apis.Contains(GraphicsDeviceType.Vulkan) || apis.Contains(GraphicsDeviceType.OpenGLES3)) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
                 }
-                else if (platform.targetGroup == BuildTargetGroup.iOS || platform.targetGroup == BuildTargetGroup.tvOS)
+                else if (platform.namedBuildTarget == NamedBuildTarget.iOS || platform.namedBuildTarget == NamedBuildTarget.tvOS)
                 {
                     hasMinGraphicsAPI = !apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
                 }
-                else if (platform.targetGroup == BuildTargetGroup.WebGL)
+                else if (platform.namedBuildTarget == NamedBuildTarget.WebGL)
                 {
                     // must have OpenGLES3-only
                     hasMinGraphicsAPI = apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
@@ -562,21 +572,21 @@ namespace UnityEditor
 
         static bool IsLightmapEncodingValid(BuildPlatform platform)
         {
-            if (PlayerSettings.GetLightmapEncodingQualityForPlatformGroup(platform.targetGroup) != LightmapEncodingQuality.Low)
+            if (PlayerSettings.GetLightmapEncodingQualityForPlatformGroup(platform.namedBuildTarget.ToBuildTargetGroup()) != LightmapEncodingQuality.Low)
             {
                 var hasMinGraphicsAPI = true;
 
-                if (platform.targetGroup == BuildTargetGroup.iOS)
+                if (platform.namedBuildTarget == NamedBuildTarget.iOS)
                 {
                     var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.iOS);
                     hasMinGraphicsAPI = apis.Contains(GraphicsDeviceType.Metal) && !apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
                 }
-                else if (platform.targetGroup == BuildTargetGroup.tvOS)
+                else if (platform.namedBuildTarget == NamedBuildTarget.tvOS)
                 {
                     var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.tvOS);
                     hasMinGraphicsAPI = apis.Contains(GraphicsDeviceType.Metal) && !apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
                 }
-                else if (platform.targetGroup == BuildTargetGroup.Android)
+                else if (platform.namedBuildTarget == NamedBuildTarget.Android)
                 {
                     var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
                     hasMinGraphicsAPI = (apis.Contains(GraphicsDeviceType.Vulkan) || apis.Contains(GraphicsDeviceType.OpenGLES3)) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
@@ -702,11 +712,11 @@ namespace UnityEditor
             return string.Format("unityhub://{0}/{1}/module={2}", shortVersion, revision, moduleName.ToLower());
         }
 
-        bool IsModuleNotInstalled(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget)
+        bool IsModuleNotInstalled(NamedBuildTarget namedBuildTarget, BuildTarget buildTarget)
         {
             bool licensed = BuildPipeline.LicenseCheck(buildTarget);
 
-            string moduleName = ModuleManager.GetTargetStringFrom(buildTargetGroup, buildTarget);
+            string moduleName = ModuleManager.GetTargetStringFrom(namedBuildTarget.ToBuildTargetGroup(), buildTarget);
 
             return licensed &&
                 !string.IsNullOrEmpty(moduleName) &&
@@ -735,9 +745,9 @@ namespace UnityEditor
             EditorGUIUtility.labelWidth = Mathf.Min(180, (position.width - 265) * 0.47f);
 
             BuildTarget buildTarget = EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget();
-            BuildTargetGroup buildTargetGroup = EditorUserBuildSettingsUtils.CalculateSelectedBuildTargetGroup();
-            BuildPlatform platform = BuildPlatforms.instance.BuildPlatformFromTargetGroup(buildTargetGroup);
-            IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(buildTargetGroup, buildTarget);
+            NamedBuildTarget namedBuildTarget = EditorUserBuildSettingsUtils.CalculateSelectedNamedBuildTarget();
+            BuildPlatform platform = BuildPlatforms.instance.BuildPlatformFromNamedBuildTarget(namedBuildTarget);
+            IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(namedBuildTarget.ToBuildTargetGroup(), buildTarget);
             bool licensed = BuildPipeline.LicenseCheck(buildTarget);
 
             // Draw the group name (text & icon separately to have some space between them)
@@ -750,11 +760,11 @@ namespace UnityEditor
 
             GUILayout.Space(10);
 
-            string moduleName = ModuleManager.GetTargetStringFrom(buildTargetGroup, buildTarget);
+            string moduleName = ModuleManager.GetTargetStringFrom(namedBuildTarget.ToBuildTargetGroup(), buildTarget);
 
-            if (IsModuleNotInstalled(buildTargetGroup, buildTarget))
+            if (IsModuleNotInstalled(namedBuildTarget, buildTarget))
             {
-                GUILayout.Label(EditorGUIUtility.TextContent(string.Format(styles.noModuleLoaded, BuildPlatforms.instance.GetModuleDisplayName(buildTargetGroup, buildTarget))));
+                GUILayout.Label(EditorGUIUtility.TextContent(string.Format(styles.noModuleLoaded, BuildPlatforms.instance.GetModuleDisplayName(namedBuildTarget, buildTarget))));
                 string url = "";
 
                 if (!isEditorinstalledWithHub || (moduleName == "PS4" || moduleName == "XboxOne"))
@@ -780,14 +790,14 @@ namespace UnityEditor
             {
                 // Show copy for using personal edition build targets with pro edition editor
                 string infoText = string.Format(styles.infoText,
-                    BuildPlatforms.instance.GetBuildTargetDisplayName(buildTargetGroup, buildTarget));
+                    BuildPlatforms.instance.GetBuildTargetDisplayName(namedBuildTarget, buildTarget));
 
                 GUILayout.BeginVertical(EditorStyles.helpBox);
                 GUILayout.Label(infoText, EditorStyles.wordWrappedMiniLabel);
                 GUILayout.BeginHorizontal();
                 if (GUILayout.Button(styles.eula, EditorStyles.miniButton))
                     Application.OpenURL("http://unity3d.com/legal/eula");
-                if (GUILayout.Button(string.Format(styles.addToYourPro, BuildPlatforms.instance.GetBuildTargetDisplayName(buildTargetGroup, buildTarget)), EditorStyles.miniButton))
+                if (GUILayout.Button(string.Format(styles.addToYourPro, BuildPlatforms.instance.GetBuildTargetDisplayName(namedBuildTarget, buildTarget)), EditorStyles.miniButton))
                     Application.OpenURL("http://unity3d.com/get-unity");
                 GUILayout.EndHorizontal();
                 GUILayout.EndVertical();
@@ -804,7 +814,7 @@ namespace UnityEditor
             // Draw not licensed buy now UI
             if (!licensed)
             {
-                string niceName = BuildPipeline.GetBuildTargetGroupDisplayName(buildTargetGroup);
+                string niceName = BuildPipeline.GetBuildTargetGroupDisplayName(namedBuildTarget.ToBuildTargetGroup());
                 string licenseMsg = "Your license does not cover {0} Publishing.";
                 string buttonMsg = "Go to Our Online Store";
                 if (BuildTargetDiscovery.PlatformHasFlag(buildTarget, TargetAttributes.IsConsole))
@@ -842,7 +852,7 @@ namespace UnityEditor
 
             // FIXME: WHY IS THIS ALL IN ONE FUNCTION?!
             // Draw the side bar to the right. Different options like specific Standalone player to build, profiling and debugging options, etc.
-            string module = ModuleManager.GetTargetStringFrom(platform.targetGroup, buildTarget);
+            string module = ModuleManager.GetTargetStringFrom(platform.namedBuildTarget.ToBuildTargetGroup(), buildTarget);
             IBuildWindowExtension buildWindowExtension = ModuleManager.GetBuildWindowExtension(module);
             if (buildWindowExtension != null)
                 buildWindowExtension.ShowPlatformBuildOptions();
@@ -862,7 +872,7 @@ namespace UnityEditor
             bool enableBuildScriptsOnly = postprocessor != null ? postprocessor.SupportsScriptsOnlyBuild() && !postprocessor.UsesBeeBuild() : false;
             bool canInstallInBuildFolder = false;
 
-            if (BuildPipeline.IsBuildTargetSupported(buildTargetGroup, buildTarget))
+            if (BuildPipeline.IsBuildTargetSupported(namedBuildTarget.ToBuildTargetGroup(), buildTarget))
             {
                 bool shouldDrawProfilerToggles = buildWindowExtension != null ? buildWindowExtension.ShouldDrawProfilerCheckbox() : true;
 
@@ -902,9 +912,9 @@ namespace UnityEditor
                         }
                     }
 
-                    if (EditorUserBuildSettings.allowDebugging && PlayerSettings.GetScriptingBackend(buildTargetGroup) == ScriptingImplementation.IL2CPP)
+                    if (EditorUserBuildSettings.allowDebugging && PlayerSettings.GetScriptingBackend(namedBuildTarget) == ScriptingImplementation.IL2CPP)
                     {
-                        var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup);
+                        var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(namedBuildTarget);
                         bool isDebuggerUsable = apiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6 || apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard_2_0;
 
                         if (!isDebuggerUsable)
@@ -956,23 +966,23 @@ namespace UnityEditor
 
                 GUI.enabled = true;
 
-                if (PlayerSettings.GetScriptingBackend(buildTargetGroup) == ScriptingImplementation.IL2CPP)
+                if (PlayerSettings.GetScriptingBackend(namedBuildTarget) == ScriptingImplementation.IL2CPP)
                 {
                     EditorUserBuildSettings.il2CppCodeGeneration = (Il2CppCodeGeneration)EditorGUILayout.Popup(styles.il2cppCodeGeneration, (int)EditorUserBuildSettings.il2CppCodeGeneration, styles.il2cppCodeGenerationStrings);
                 }
 
                 if (postprocessor != null && postprocessor.SupportsLz4Compression())
                 {
-                    var cmpIdx = Array.IndexOf(styles.compressionTypes, EditorUserBuildSettings.GetCompressionType(buildTargetGroup));
+                    var cmpIdx = Array.IndexOf(styles.compressionTypes, EditorUserBuildSettings.GetCompressionType(namedBuildTarget.ToBuildTargetGroup()));
                     if (cmpIdx == -1)
                         cmpIdx = Array.IndexOf(styles.compressionTypes, postprocessor.GetDefaultCompression());
                     if (cmpIdx == -1)
                         cmpIdx = 1; // Lz4 by default.
                     cmpIdx = EditorGUILayout.Popup(styles.compressionMethod, cmpIdx, styles.compressionStrings);
-                    EditorUserBuildSettings.SetCompressionType(buildTargetGroup, styles.compressionTypes[cmpIdx]);
+                    EditorUserBuildSettings.SetCompressionType(namedBuildTarget.ToBuildTargetGroup(), styles.compressionTypes[cmpIdx]);
                 }
 
-                canInstallInBuildFolder = Unsupported.IsSourceBuild() && PostprocessBuildPlayer.SupportsInstallInBuildFolder(buildTargetGroup, buildTarget);
+                canInstallInBuildFolder = Unsupported.IsSourceBuild() && PostprocessBuildPlayer.SupportsInstallInBuildFolder(namedBuildTarget.ToBuildTargetGroup(), buildTarget);
 
                 if (enableBuildButton)
                 {
@@ -986,7 +996,7 @@ namespace UnityEditor
 
                 GUILayout.BeginVertical(GUILayout.ExpandWidth(true));
 
-                GUILayout.Label(string.Format(L10n.Tr("{0} is not supported in this build.\nDownload a build that supports it."), BuildPipeline.GetBuildTargetGroupDisplayName(buildTargetGroup)));
+                GUILayout.Label(string.Format(L10n.Tr("{0} is not supported in this build.\nDownload a build that supports it."), BuildPipeline.GetBuildTargetGroupDisplayName(namedBuildTarget.ToBuildTargetGroup())));
 
                 GUILayout.EndVertical();
                 GUILayout.FlexibleSpace();
@@ -1101,11 +1111,9 @@ namespace UnityEditor
             }
 
             // Switching build target in the editor
-            BuildTarget selectedTarget = EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget();
-            BuildTargetGroup selectedTargetGroup = EditorUserBuildSettingsUtils.CalculateSelectedBuildTargetGroup();
+            BuildTarget selectedTarget = EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget(platform.namedBuildTarget);
 
-            bool selectedTargetIsActive = EditorUserBuildSettings.activeBuildTarget == selectedTarget &&
-                EditorUserBuildSettings.activeBuildTargetGroup == selectedTargetGroup;
+            bool selectedTargetIsActive = platform.IsActive();
 
             if (selectedTargetIsActive)
             {
@@ -1148,11 +1156,11 @@ namespace UnityEditor
             }
             else
             {
-                GUI.enabled = BuildPipeline.IsBuildTargetSupported(selectedTargetGroup, selectedTarget) && EditorUserBuildSettings.activeBuildTargetGroup != selectedTargetGroup;
+                GUI.enabled = BuildPipeline.IsBuildTargetSupported(platform.namedBuildTarget.ToBuildTargetGroup(), selectedTarget);
                 if (GUILayout.Button(styles.switchPlatform, GUILayout.Width(Styles.kButtonWidth)))
                 {
                     ApplyAssetImportOverridesToSettingsAsset();
-                    EditorUserBuildSettings.SwitchActiveBuildTargetAsync(selectedTargetGroup, selectedTarget);
+                    platform.SetActive();
                     GUIUtility.ExitGUI();
                 }
             }

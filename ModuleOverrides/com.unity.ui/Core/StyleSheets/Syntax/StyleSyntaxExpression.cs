@@ -44,7 +44,9 @@ namespace UnityEngine.UIElements.StyleSheets.Syntax
         Color, // <color>
         Resource, // <resource>
         Url, // <url>
+        Time, // <time>
         Angle, //<angle>
+        CustomIdent // <custom-ident>
     }
 
     // In order of precedence
@@ -71,9 +73,9 @@ namespace UnityEngine.UIElements.StyleSheets.Syntax
 
     internal struct ExpressionMultiplier
     {
-        // Assume that 10 is the max number of value that a property can have.
+        // Assume that 100 is the max number of value that a property can have.
         // No properties get close to having that amount.
-        public const int Infinity = 10;
+        public const int Infinity = 100;
 
         private ExpressionMultiplierType m_Type;
 

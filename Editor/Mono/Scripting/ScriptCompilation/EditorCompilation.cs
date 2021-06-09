@@ -777,6 +777,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             EditorScriptCompilationOptions editorScriptCompilationOptions,
             BuildTargetGroup platformGroup,
             BuildTarget platform,
+            int subtarget,
             string[] extraScriptingDefines
         )
         {
@@ -1125,7 +1126,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return activeBeeBuild != null;
         }
 
-        public CompileStatus TickCompilationPipeline(EditorScriptCompilationOptions options, BuildTargetGroup platformGroup, BuildTarget platform, string[] extraScriptingDefines)
+        public CompileStatus TickCompilationPipeline(EditorScriptCompilationOptions options, BuildTargetGroup platformGroup, BuildTarget platform, int subtarget, string[] extraScriptingDefines)
         {
             // Return CompileStatus.Compiling if any compile task is still compiling.
             // This ensures that the compile tasks finish compiling before any
@@ -1145,7 +1146,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 CompileStatus compileStatus;
                 try
                 {
-                    compileStatus = CompileScripts(options, platformGroup, platform, extraScriptingDefines);
+                    compileStatus = CompileScripts(options, platformGroup, platform, subtarget, extraScriptingDefines);
                 }
                 finally
                 {

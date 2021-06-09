@@ -656,6 +656,7 @@ namespace UnityEditor
             }
         }
 
+        [NativeThrows]
         [NativeMethod("SetPlatformIcons")]
         internal static extern void SetIconsForPlatform(string platform, Texture2D[] icons, IconKind kind);
 
@@ -984,8 +985,7 @@ namespace UnityEditor
         internal static extern ScriptingImplementation GetDefaultScriptingBackendForGroup(BuildTargetGroup targetGroup);
         public static ScriptingImplementation GetDefaultScriptingBackend(NamedBuildTarget buildTarget)
         {
-            ValidateBuildTargetNameParameter(buildTarget.TargetName, true);
-            return GetDefaultScriptingBackendForGroup(BuildPipeline.GetBuildTargetGroupByName(buildTarget.TargetName));
+            return GetDefaultScriptingBackendForGroup(buildTarget.ToBuildTargetGroup());
         }
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
@@ -1029,7 +1029,7 @@ namespace UnityEditor
 
         public static void SetIl2CppCompilerConfiguration(NamedBuildTarget buildTarget, Il2CppCompilerConfiguration configuration)
         {
-            var scriptingImpl = ModuleManager.GetScriptingImplementations(BuildPipeline.GetBuildTargetGroupByName(buildTarget.TargetName));
+            var scriptingImpl = ModuleManager.GetScriptingImplementations(buildTarget);
             if (scriptingImpl != null && !scriptingImpl.AllowIL2CPPCompilerConfigurationSelection())
             {
                 Debug.LogWarning($"The C++ compiler configuration option does not apply to the {buildTarget.TargetName} platform as it is configured. Set the configuration in the generated IDE project instead.");

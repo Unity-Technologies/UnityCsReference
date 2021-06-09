@@ -40,7 +40,6 @@ namespace UnityEditor
             // Use default labelWidth
             EditorGUIUtility.labelWidth = 0.0f;
 
-            EditorGUI.BeginChangeCheck();
             {
                 GUILayout.Label(Styles.primaryMapsText, EditorStyles.boldLabel);
 
@@ -94,14 +93,6 @@ namespace UnityEditor
                 {
                     var prop = ShaderGUI.FindProperty("_BillboardShadowFade", properties);
                     materialEditor.ShaderProperty(prop, Styles.billboardShadowFadeText, 2);
-                }
-            }
-            if (EditorGUI.EndChangeCheck())
-            {
-                foreach (var obj in materialEditor.targets)
-                {
-                    Material mat = (Material)obj;
-                    ValidateMaterial(mat);
                 }
             }
 

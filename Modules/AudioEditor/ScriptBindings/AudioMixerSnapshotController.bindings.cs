@@ -15,7 +15,8 @@ namespace UnityEditor.Audio
         Squared = 2,
         SquareRoot = 3,
         BrickwallStart = 4,
-        BrickwallEnd = 5
+        BrickwallEnd = 5,
+        Attenuation = 6
     }
 
     [NativeHeader("Editor/Src/Audio/Mixer/AudioMixerSnapshotController.h")]

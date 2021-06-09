@@ -22,12 +22,14 @@ namespace UnityEngine.UIElements
         public StyleDataRef<LayoutData> layoutData;
         public StyleDataRef<RareData> rareData;
         public StyleDataRef<TransformData> transformData;
+        public StyleDataRef<TransitionData> transitionData;
         public StyleDataRef<VisualData> visualData;
 
         public YogaNode yogaNode;
         public Dictionary<string, StylePropertyValue> customProperties;
         public Int64 matchingRulesHash;
         public float dpiScaling;
+        public ComputedTransitionProperty[] computedTransitions;
 
         public Align alignContent => layoutData.Read().alignContent;
         public Align alignItems => layoutData.Read().alignItems;
@@ -82,6 +84,10 @@ namespace UnityEngine.UIElements
         public TextShadow textShadow => inheritedData.Read().textShadow;
         public Length top => layoutData.Read().top;
         public TransformOrigin transformOrigin => transformData.Read().transformOrigin;
+        public List<TimeValue> transitionDelay => transitionData.Read().transitionDelay;
+        public List<TimeValue> transitionDuration => transitionData.Read().transitionDuration;
+        public List<StylePropertyName> transitionProperty => transitionData.Read().transitionProperty;
+        public List<EasingFunction> transitionTimingFunction => transitionData.Read().transitionTimingFunction;
         public Translate translate => transformData.Read().translate;
         public Color unityBackgroundImageTintColor => rareData.Read().unityBackgroundImageTintColor;
         public ScaleMode unityBackgroundScaleMode => rareData.Read().unityBackgroundScaleMode;
@@ -106,22 +112,24 @@ namespace UnityEngine.UIElements
         public static ComputedStyle Create(ref ComputedStyle parentStyle)
         {
             ref var initialStyle = ref InitialStyle.Get();
-            var cs = new ComputedStyle{dpiScaling = 1f};
+            var cs = new ComputedStyle {dpiScaling = 1f};
             cs.inheritedData = parentStyle.inheritedData.Acquire();
             cs.layoutData = initialStyle.layoutData.Acquire();
             cs.rareData = initialStyle.rareData.Acquire();
             cs.transformData = initialStyle.transformData.Acquire();
+            cs.transitionData = initialStyle.transitionData.Acquire();
             cs.visualData = initialStyle.visualData.Acquire();
             return cs;
         }
 
         public static ComputedStyle CreateInitial()
         {
-            var cs = new ComputedStyle{dpiScaling = 1f};
+            var cs = new ComputedStyle {dpiScaling = 1f};
             cs.inheritedData = StyleDataRef<InheritedData>.Create();
             cs.layoutData = StyleDataRef<LayoutData>.Create();
             cs.rareData = StyleDataRef<RareData>.Create();
             cs.transformData = StyleDataRef<TransformData>.Create();
+            cs.transitionData = StyleDataRef<TransitionData>.Create();
             cs.visualData = StyleDataRef<VisualData>.Create();
             return cs;
         }
@@ -132,6 +140,7 @@ namespace UnityEngine.UIElements
             layoutData.Acquire();
             rareData.Acquire();
             transformData.Acquire();
+            transitionData.Acquire();
             visualData.Acquire();
             return this;
         }
@@ -142,6 +151,7 @@ namespace UnityEngine.UIElements
             layoutData.Release();
             rareData.Release();
             transformData.Release();
+            transitionData.Release();
             visualData.Release();
         }
 
@@ -151,12 +161,14 @@ namespace UnityEngine.UIElements
             layoutData.CopyFrom(other.layoutData);
             rareData.CopyFrom(other.rareData);
             transformData.CopyFrom(other.transformData);
+            transitionData.CopyFrom(other.transitionData);
             visualData.CopyFrom(other.visualData);
 
             yogaNode = other.yogaNode;
             customProperties = other.customProperties;
             matchingRulesHash = other.matchingRulesHash;
             dpiScaling = other.dpiScaling;
+            computedTransitions = other.computedTransitions;
         }
 
         public void ApplyProperties(StylePropertyReader reader, ref ComputedStyle parentStyle)
@@ -175,6 +187,8 @@ namespace UnityEngine.UIElements
                         break;
                     case StylePropertyId.AlignSelf:
                         layoutData.Write().alignSelf = (Align)reader.ReadEnum(StyleEnumType.Align, 0);
+                        break;
+                    case StylePropertyId.All:
                         break;
                     case StylePropertyId.BackgroundColor:
                         visualData.Write().backgroundColor = reader.ReadColor(0);
@@ -344,6 +358,25 @@ namespace UnityEngine.UIElements
                     case StylePropertyId.TransformOrigin:
                         transformData.Write().transformOrigin = reader.ReadTransformOrigin(0);
                         break;
+                    case StylePropertyId.Transition:
+                        ShorthandApplicator.ApplyTransition(reader, ref this);
+                        break;
+                    case StylePropertyId.TransitionDelay:
+                        reader.ReadListTimeValue(transitionData.Write().transitionDelay, 0);
+                        ResetComputedTransitions();
+                        break;
+                    case StylePropertyId.TransitionDuration:
+                        reader.ReadListTimeValue(transitionData.Write().transitionDuration, 0);
+                        ResetComputedTransitions();
+                        break;
+                    case StylePropertyId.TransitionProperty:
+                        reader.ReadListStylePropertyName(transitionData.Write().transitionProperty, 0);
+                        ResetComputedTransitions();
+                        break;
+                    case StylePropertyId.TransitionTimingFunction:
+                        reader.ReadListEasingFunction(transitionData.Write().transitionTimingFunction, 0);
+                        ResetComputedTransitions();
+                        break;
                     case StylePropertyId.Translate:
                         transformData.Write().translate = reader.ReadTranslate(0);
                         break;
@@ -421,7 +454,7 @@ namespace UnityEngine.UIElements
 
         public void ApplyStyleValue(StyleValue sv, ref ComputedStyle parentStyle)
         {
-            if (ApplyGlobalKeyword(sv, ref parentStyle))
+            if (ApplyGlobalKeyword(sv.id, sv.keyword, ref parentStyle))
                 return;
             switch (sv.id)
             {
@@ -640,6 +673,46 @@ namespace UnityEngine.UIElements
             }
         }
 
+        public void ApplyStyleValueManaged(StyleValueManaged sv, ref ComputedStyle parentStyle)
+        {
+            if (ApplyGlobalKeyword(sv.id, sv.keyword, ref parentStyle))
+                return;
+            switch (sv.id)
+            {
+                case StylePropertyId.TransitionDelay:
+                    if (sv.value == null)
+                        transitionData.Write().transitionDelay.CopyFrom(InitialStyle.transitionDelay);
+                    else
+                        transitionData.Write().transitionDelay = sv.value as List<TimeValue>;
+                    ResetComputedTransitions();
+                    break;
+                case StylePropertyId.TransitionDuration:
+                    if (sv.value == null)
+                        transitionData.Write().transitionDuration.CopyFrom(InitialStyle.transitionDuration);
+                    else
+                        transitionData.Write().transitionDuration = sv.value as List<TimeValue>;
+                    ResetComputedTransitions();
+                    break;
+                case StylePropertyId.TransitionProperty:
+                    if (sv.value == null)
+                        transitionData.Write().transitionProperty.CopyFrom(InitialStyle.transitionProperty);
+                    else
+                        transitionData.Write().transitionProperty = sv.value as List<StylePropertyName>;
+                    ResetComputedTransitions();
+                    break;
+                case StylePropertyId.TransitionTimingFunction:
+                    if (sv.value == null)
+                        transitionData.Write().transitionTimingFunction.CopyFrom(InitialStyle.transitionTimingFunction);
+                    else
+                        transitionData.Write().transitionTimingFunction = sv.value as List<EasingFunction>;
+                    ResetComputedTransitions();
+                    break;
+                default:
+                    Debug.LogAssertion($"Unexpected property id {sv.id}");
+                    break;
+            }
+        }
+
         public void ApplyStyleCursor(Cursor cursor)
         {
             rareData.Write().cursor = cursor;
@@ -648,6 +721,1732 @@ namespace UnityEngine.UIElements
         public void ApplyStyleTextShadow(TextShadow st)
         {
             inheritedData.Write().textShadow = st;
+        }
+
+        public void ApplyFromComputedStyle(StylePropertyId id, ref ComputedStyle other)
+        {
+            switch (id)
+            {
+                case StylePropertyId.AlignContent:
+                    layoutData.Write().alignContent = other.layoutData.Read().alignContent;
+                    break;
+                case StylePropertyId.AlignItems:
+                    layoutData.Write().alignItems = other.layoutData.Read().alignItems;
+                    break;
+                case StylePropertyId.AlignSelf:
+                    layoutData.Write().alignSelf = other.layoutData.Read().alignSelf;
+                    break;
+                case StylePropertyId.BackgroundColor:
+                    visualData.Write().backgroundColor = other.visualData.Read().backgroundColor;
+                    break;
+                case StylePropertyId.BackgroundImage:
+                    visualData.Write().backgroundImage = other.visualData.Read().backgroundImage;
+                    break;
+                case StylePropertyId.BorderBottomColor:
+                    visualData.Write().borderBottomColor = other.visualData.Read().borderBottomColor;
+                    break;
+                case StylePropertyId.BorderBottomLeftRadius:
+                    visualData.Write().borderBottomLeftRadius = other.visualData.Read().borderBottomLeftRadius;
+                    break;
+                case StylePropertyId.BorderBottomRightRadius:
+                    visualData.Write().borderBottomRightRadius = other.visualData.Read().borderBottomRightRadius;
+                    break;
+                case StylePropertyId.BorderBottomWidth:
+                    layoutData.Write().borderBottomWidth = other.layoutData.Read().borderBottomWidth;
+                    break;
+                case StylePropertyId.BorderLeftColor:
+                    visualData.Write().borderLeftColor = other.visualData.Read().borderLeftColor;
+                    break;
+                case StylePropertyId.BorderLeftWidth:
+                    layoutData.Write().borderLeftWidth = other.layoutData.Read().borderLeftWidth;
+                    break;
+                case StylePropertyId.BorderRightColor:
+                    visualData.Write().borderRightColor = other.visualData.Read().borderRightColor;
+                    break;
+                case StylePropertyId.BorderRightWidth:
+                    layoutData.Write().borderRightWidth = other.layoutData.Read().borderRightWidth;
+                    break;
+                case StylePropertyId.BorderTopColor:
+                    visualData.Write().borderTopColor = other.visualData.Read().borderTopColor;
+                    break;
+                case StylePropertyId.BorderTopLeftRadius:
+                    visualData.Write().borderTopLeftRadius = other.visualData.Read().borderTopLeftRadius;
+                    break;
+                case StylePropertyId.BorderTopRightRadius:
+                    visualData.Write().borderTopRightRadius = other.visualData.Read().borderTopRightRadius;
+                    break;
+                case StylePropertyId.BorderTopWidth:
+                    layoutData.Write().borderTopWidth = other.layoutData.Read().borderTopWidth;
+                    break;
+                case StylePropertyId.Bottom:
+                    layoutData.Write().bottom = other.layoutData.Read().bottom;
+                    break;
+                case StylePropertyId.Color:
+                    inheritedData.Write().color = other.inheritedData.Read().color;
+                    break;
+                case StylePropertyId.Cursor:
+                    rareData.Write().cursor = other.rareData.Read().cursor;
+                    break;
+                case StylePropertyId.Display:
+                    layoutData.Write().display = other.layoutData.Read().display;
+                    break;
+                case StylePropertyId.FlexBasis:
+                    layoutData.Write().flexBasis = other.layoutData.Read().flexBasis;
+                    break;
+                case StylePropertyId.FlexDirection:
+                    layoutData.Write().flexDirection = other.layoutData.Read().flexDirection;
+                    break;
+                case StylePropertyId.FlexGrow:
+                    layoutData.Write().flexGrow = other.layoutData.Read().flexGrow;
+                    break;
+                case StylePropertyId.FlexShrink:
+                    layoutData.Write().flexShrink = other.layoutData.Read().flexShrink;
+                    break;
+                case StylePropertyId.FlexWrap:
+                    layoutData.Write().flexWrap = other.layoutData.Read().flexWrap;
+                    break;
+                case StylePropertyId.FontSize:
+                    inheritedData.Write().fontSize = other.inheritedData.Read().fontSize;
+                    break;
+                case StylePropertyId.Height:
+                    layoutData.Write().height = other.layoutData.Read().height;
+                    break;
+                case StylePropertyId.JustifyContent:
+                    layoutData.Write().justifyContent = other.layoutData.Read().justifyContent;
+                    break;
+                case StylePropertyId.Left:
+                    layoutData.Write().left = other.layoutData.Read().left;
+                    break;
+                case StylePropertyId.LetterSpacing:
+                    inheritedData.Write().letterSpacing = other.inheritedData.Read().letterSpacing;
+                    break;
+                case StylePropertyId.MarginBottom:
+                    layoutData.Write().marginBottom = other.layoutData.Read().marginBottom;
+                    break;
+                case StylePropertyId.MarginLeft:
+                    layoutData.Write().marginLeft = other.layoutData.Read().marginLeft;
+                    break;
+                case StylePropertyId.MarginRight:
+                    layoutData.Write().marginRight = other.layoutData.Read().marginRight;
+                    break;
+                case StylePropertyId.MarginTop:
+                    layoutData.Write().marginTop = other.layoutData.Read().marginTop;
+                    break;
+                case StylePropertyId.MaxHeight:
+                    layoutData.Write().maxHeight = other.layoutData.Read().maxHeight;
+                    break;
+                case StylePropertyId.MaxWidth:
+                    layoutData.Write().maxWidth = other.layoutData.Read().maxWidth;
+                    break;
+                case StylePropertyId.MinHeight:
+                    layoutData.Write().minHeight = other.layoutData.Read().minHeight;
+                    break;
+                case StylePropertyId.MinWidth:
+                    layoutData.Write().minWidth = other.layoutData.Read().minWidth;
+                    break;
+                case StylePropertyId.Opacity:
+                    visualData.Write().opacity = other.visualData.Read().opacity;
+                    break;
+                case StylePropertyId.Overflow:
+                    visualData.Write().overflow = other.visualData.Read().overflow;
+                    break;
+                case StylePropertyId.PaddingBottom:
+                    layoutData.Write().paddingBottom = other.layoutData.Read().paddingBottom;
+                    break;
+                case StylePropertyId.PaddingLeft:
+                    layoutData.Write().paddingLeft = other.layoutData.Read().paddingLeft;
+                    break;
+                case StylePropertyId.PaddingRight:
+                    layoutData.Write().paddingRight = other.layoutData.Read().paddingRight;
+                    break;
+                case StylePropertyId.PaddingTop:
+                    layoutData.Write().paddingTop = other.layoutData.Read().paddingTop;
+                    break;
+                case StylePropertyId.Position:
+                    layoutData.Write().position = other.layoutData.Read().position;
+                    break;
+                case StylePropertyId.Right:
+                    layoutData.Write().right = other.layoutData.Read().right;
+                    break;
+                case StylePropertyId.Rotate:
+                    transformData.Write().rotate = other.transformData.Read().rotate;
+                    break;
+                case StylePropertyId.Scale:
+                    transformData.Write().scale = other.transformData.Read().scale;
+                    break;
+                case StylePropertyId.TextOverflow:
+                    rareData.Write().textOverflow = other.rareData.Read().textOverflow;
+                    break;
+                case StylePropertyId.TextShadow:
+                    inheritedData.Write().textShadow = other.inheritedData.Read().textShadow;
+                    break;
+                case StylePropertyId.Top:
+                    layoutData.Write().top = other.layoutData.Read().top;
+                    break;
+                case StylePropertyId.TransformOrigin:
+                    transformData.Write().transformOrigin = other.transformData.Read().transformOrigin;
+                    break;
+                case StylePropertyId.TransitionDelay:
+                    transitionData.Write().transitionDelay.CopyFrom(other.transitionData.Read().transitionDelay);
+                    ResetComputedTransitions();
+                    break;
+                case StylePropertyId.TransitionDuration:
+                    transitionData.Write().transitionDuration.CopyFrom(other.transitionData.Read().transitionDuration);
+                    ResetComputedTransitions();
+                    break;
+                case StylePropertyId.TransitionProperty:
+                    transitionData.Write().transitionProperty.CopyFrom(other.transitionData.Read().transitionProperty);
+                    ResetComputedTransitions();
+                    break;
+                case StylePropertyId.TransitionTimingFunction:
+                    transitionData.Write().transitionTimingFunction.CopyFrom(other.transitionData.Read().transitionTimingFunction);
+                    ResetComputedTransitions();
+                    break;
+                case StylePropertyId.Translate:
+                    transformData.Write().translate = other.transformData.Read().translate;
+                    break;
+                case StylePropertyId.UnityBackgroundImageTintColor:
+                    rareData.Write().unityBackgroundImageTintColor = other.rareData.Read().unityBackgroundImageTintColor;
+                    break;
+                case StylePropertyId.UnityBackgroundScaleMode:
+                    rareData.Write().unityBackgroundScaleMode = other.rareData.Read().unityBackgroundScaleMode;
+                    break;
+                case StylePropertyId.UnityFont:
+                    inheritedData.Write().unityFont = other.inheritedData.Read().unityFont;
+                    break;
+                case StylePropertyId.UnityFontDefinition:
+                    inheritedData.Write().unityFontDefinition = other.inheritedData.Read().unityFontDefinition;
+                    break;
+                case StylePropertyId.UnityFontStyleAndWeight:
+                    inheritedData.Write().unityFontStyleAndWeight = other.inheritedData.Read().unityFontStyleAndWeight;
+                    break;
+                case StylePropertyId.UnityOverflowClipBox:
+                    rareData.Write().unityOverflowClipBox = other.rareData.Read().unityOverflowClipBox;
+                    break;
+                case StylePropertyId.UnityParagraphSpacing:
+                    inheritedData.Write().unityParagraphSpacing = other.inheritedData.Read().unityParagraphSpacing;
+                    break;
+                case StylePropertyId.UnitySliceBottom:
+                    rareData.Write().unitySliceBottom = other.rareData.Read().unitySliceBottom;
+                    break;
+                case StylePropertyId.UnitySliceLeft:
+                    rareData.Write().unitySliceLeft = other.rareData.Read().unitySliceLeft;
+                    break;
+                case StylePropertyId.UnitySliceRight:
+                    rareData.Write().unitySliceRight = other.rareData.Read().unitySliceRight;
+                    break;
+                case StylePropertyId.UnitySliceTop:
+                    rareData.Write().unitySliceTop = other.rareData.Read().unitySliceTop;
+                    break;
+                case StylePropertyId.UnityTextAlign:
+                    inheritedData.Write().unityTextAlign = other.inheritedData.Read().unityTextAlign;
+                    break;
+                case StylePropertyId.UnityTextOutlineColor:
+                    inheritedData.Write().unityTextOutlineColor = other.inheritedData.Read().unityTextOutlineColor;
+                    break;
+                case StylePropertyId.UnityTextOutlineWidth:
+                    inheritedData.Write().unityTextOutlineWidth = other.inheritedData.Read().unityTextOutlineWidth;
+                    break;
+                case StylePropertyId.UnityTextOverflowPosition:
+                    rareData.Write().unityTextOverflowPosition = other.rareData.Read().unityTextOverflowPosition;
+                    break;
+                case StylePropertyId.Visibility:
+                    inheritedData.Write().visibility = other.inheritedData.Read().visibility;
+                    break;
+                case StylePropertyId.WhiteSpace:
+                    inheritedData.Write().whiteSpace = other.inheritedData.Read().whiteSpace;
+                    break;
+                case StylePropertyId.Width:
+                    layoutData.Write().width = other.layoutData.Read().width;
+                    break;
+                case StylePropertyId.WordSpacing:
+                    inheritedData.Write().wordSpacing = other.inheritedData.Read().wordSpacing;
+                    break;
+                default:
+                    Debug.LogAssertion($"Unexpected property id {id}");
+                    break;
+            }
+        }
+
+        public void ApplyPropertyAnimation(VisualElement ve, StylePropertyId id, Length newValue)
+        {
+            switch (id)
+            {
+                case StylePropertyId.BorderBottomLeftRadius:
+                    visualData.Write().borderBottomLeftRadius = newValue;
+                    ve.IncrementVersion(VersionChangeType.BorderRadius | VersionChangeType.Repaint);
+                    break;
+                case StylePropertyId.BorderBottomRightRadius:
+                    visualData.Write().borderBottomRightRadius = newValue;
+                    ve.IncrementVersion(VersionChangeType.BorderRadius | VersionChangeType.Repaint);
+                    break;
+                case StylePropertyId.BorderTopLeftRadius:
+                    visualData.Write().borderTopLeftRadius = newValue;
+                    ve.IncrementVersion(VersionChangeType.BorderRadius | VersionChangeType.Repaint);
+                    break;
+                case StylePropertyId.BorderTopRightRadius:
+                    visualData.Write().borderTopRightRadius = newValue;
+                    ve.IncrementVersion(VersionChangeType.BorderRadius | VersionChangeType.Repaint);
+                    break;
+                case StylePropertyId.Bottom:
+                    layoutData.Write().bottom = newValue;
+                    ve.yogaNode.Bottom = newValue.ToYogaValue();
+                    ve.IncrementVersion(VersionChangeType.Layout);
+                    break;
+                case StylePropertyId.FlexBasis:
+                    layoutData.Write().flexBasis = newValue;
+                    ve.yogaNode.FlexBasis = newValue.ToYogaValue();
+                    ve.IncrementVersion(VersionChangeType.Layout);
+                    break;
+                case StylePropertyId.FontSize:
+                    inheritedData.Write().fontSize = newValue;
+                    ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.StyleSheet);
+                    break;
+                case StylePropertyId.Height:
+                    layoutData.Write().height = newValue;
+                    ve.yogaNode.Height = newValue.ToYogaValue();
+                    ve.IncrementVersion(VersionChangeType.Layout);
+                    break;
+                case StylePropertyId.Left:
+                    layoutData.Write().left = newValue;
+                    ve.yogaNode.Left = newValue.ToYogaValue();
+                    ve.IncrementVersion(VersionChangeType.Layout);
+                    break;
+                case StylePropertyId.LetterSpacing:
+                    inheritedData.Write().letterSpacing = newValue;
+                    ve.IncrementVersion(VersionChangeType.Repaint | VersionChangeType.Layout | VersionChangeType.StyleSheet);
+                    break;
+                case StylePropertyId.MarginBottom:
+                    layoutData.Write().marginBottom = newValue;
+                    ve.yogaNode.MarginBottom = newValue.ToYogaValue();
+                    ve.IncrementVersion(VersionChangeType.Layout);
+                    break;
+                case StylePropertyId.MarginLeft:
+                    layoutData.Write().marginLeft = newValue;
+                    ve.yogaNode.MarginLeft = newValue.ToYogaValue();
+                    ve.IncrementVersion(VersionChangeType.Layout);
+                    break;
+                case StylePropertyId.MarginRight:
+                    layoutData.Write().marginRight = newValue;
+                    ve.yogaNode.MarginRight = newValue.ToYogaValue();
+                    ve.IncrementVersion(VersionChangeType.Layout);
+                    break;
+                case StylePropertyId.MarginTop:
+                    layoutData.Write().marginTop = newValue;
+                    ve.yogaNode.MarginTop = newValue.ToYogaValue();
+                    ve.IncrementVersion(VersionChangeType.Layout);
+                    break;
+                case StylePropertyId.MaxHeight:
+                    layoutData.Write().maxHeight = newValue;
+                    ve.yogaNode.MaxHeight = newValue.ToYogaValue();
+                    ve.IncrementVersion(VersionChangeType.Layout);
+                    break;
+                case StylePropertyId.MaxWidth:
+                    layoutData.Write().maxWidth = newValue;
+                    ve.yogaNode.MaxWidth = newValue.ToYogaValue();
+                    ve.IncrementVersion(VersionChangeType.Layout);
+                    break;
+                case StylePropertyId.MinHeight:
+                    layoutData.Write().minHeight = newValue;
+                    ve.yogaNode.MinHeight = newValue.ToYogaValue();
+                    ve.IncrementVersion(VersionChangeType.Layout);
+                    break;
+                case StylePropertyId.MinWidth:
+                    layoutData.Write().minWidth = newValue;
+                    ve.yogaNode.MinWidth = newValue.ToYogaValue();
+                    ve.IncrementVersion(VersionChangeType.Layout);
+                    break;
+                case StylePropertyId.PaddingBottom:
+                    layoutData.Write().paddingBottom = newValue;
+                    ve.yogaNode.PaddingBottom = newValue.ToYogaValue();
+                    ve.IncrementVersion(VersionChangeType.Layout);
+                    break;
+                case StylePropertyId.PaddingLeft:
+                    layoutData.Write().paddingLeft = newValue;
+                    ve.yogaNode.PaddingLeft = newValue.ToYogaValue();
+                    ve.IncrementVersion(VersionChangeType.Layout);
+                    break;
+                case StylePropertyId.PaddingRight:
+                    layoutData.Write().paddingRight = newValue;
+                    ve.yogaNode.PaddingRight = newValue.ToYogaValue();
+                    ve.IncrementVersion(VersionChangeType.Layout);
+                    break;
+                case StylePropertyId.PaddingTop:
+                    layoutData.Write().paddingTop = newValue;
+                    ve.yogaNode.PaddingTop = newValue.ToYogaValue();
+                    ve.IncrementVersion(VersionChangeType.Layout);
+                    break;
+                case StylePropertyId.Right:
+                    layoutData.Write().right = newValue;
+                    ve.yogaNode.Right = newValue.ToYogaValue();
+                    ve.IncrementVersion(VersionChangeType.Layout);
+                    break;
+                case StylePropertyId.Top:
+                    layoutData.Write().top = newValue;
+                    ve.yogaNode.Top = newValue.ToYogaValue();
+                    ve.IncrementVersion(VersionChangeType.Layout);
+                    break;
+                case StylePropertyId.UnityParagraphSpacing:
+                    inheritedData.Write().unityParagraphSpacing = newValue;
+                    ve.IncrementVersion(VersionChangeType.Repaint | VersionChangeType.Layout | VersionChangeType.StyleSheet);
+                    break;
+                case StylePropertyId.Width:
+                    layoutData.Write().width = newValue;
+                    ve.yogaNode.Width = newValue.ToYogaValue();
+                    ve.IncrementVersion(VersionChangeType.Layout);
+                    break;
+                case StylePropertyId.WordSpacing:
+                    inheritedData.Write().wordSpacing = newValue;
+                    ve.IncrementVersion(VersionChangeType.Repaint | VersionChangeType.Layout | VersionChangeType.StyleSheet);
+                    break;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Length' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public void ApplyPropertyAnimation(VisualElement ve, StylePropertyId id, float newValue)
+        {
+            switch (id)
+            {
+                case StylePropertyId.BorderBottomWidth:
+                    layoutData.Write().borderBottomWidth = newValue;
+                    ve.yogaNode.BorderBottomWidth = newValue;
+                    ve.IncrementVersion(VersionChangeType.BorderWidth | VersionChangeType.Layout | VersionChangeType.Repaint);
+                    break;
+                case StylePropertyId.BorderLeftWidth:
+                    layoutData.Write().borderLeftWidth = newValue;
+                    ve.yogaNode.BorderLeftWidth = newValue;
+                    ve.IncrementVersion(VersionChangeType.BorderWidth | VersionChangeType.Layout | VersionChangeType.Repaint);
+                    break;
+                case StylePropertyId.BorderRightWidth:
+                    layoutData.Write().borderRightWidth = newValue;
+                    ve.yogaNode.BorderRightWidth = newValue;
+                    ve.IncrementVersion(VersionChangeType.BorderWidth | VersionChangeType.Layout | VersionChangeType.Repaint);
+                    break;
+                case StylePropertyId.BorderTopWidth:
+                    layoutData.Write().borderTopWidth = newValue;
+                    ve.yogaNode.BorderTopWidth = newValue;
+                    ve.IncrementVersion(VersionChangeType.BorderWidth | VersionChangeType.Layout | VersionChangeType.Repaint);
+                    break;
+                case StylePropertyId.FlexGrow:
+                    layoutData.Write().flexGrow = newValue;
+                    ve.yogaNode.FlexGrow = newValue;
+                    ve.IncrementVersion(VersionChangeType.Layout);
+                    break;
+                case StylePropertyId.FlexShrink:
+                    layoutData.Write().flexShrink = newValue;
+                    ve.yogaNode.FlexShrink = newValue;
+                    ve.IncrementVersion(VersionChangeType.Layout);
+                    break;
+                case StylePropertyId.Opacity:
+                    visualData.Write().opacity = newValue;
+                    ve.IncrementVersion(VersionChangeType.Opacity);
+                    break;
+                case StylePropertyId.UnityTextOutlineWidth:
+                    inheritedData.Write().unityTextOutlineWidth = newValue;
+                    ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint | VersionChangeType.StyleSheet);
+                    break;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'float' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public void ApplyPropertyAnimation(VisualElement ve, StylePropertyId id, int newValue)
+        {
+            switch (id)
+            {
+                case StylePropertyId.AlignContent:
+                    layoutData.Write().alignContent = (Align)newValue;
+                    ve.yogaNode.AlignContent = (YogaAlign)newValue;
+                    ve.IncrementVersion(VersionChangeType.Layout);
+                    break;
+                case StylePropertyId.AlignItems:
+                    layoutData.Write().alignItems = (Align)newValue;
+                    ve.yogaNode.AlignItems = (YogaAlign)newValue;
+                    ve.IncrementVersion(VersionChangeType.Layout);
+                    break;
+                case StylePropertyId.AlignSelf:
+                    layoutData.Write().alignSelf = (Align)newValue;
+                    ve.yogaNode.AlignSelf = (YogaAlign)newValue;
+                    ve.IncrementVersion(VersionChangeType.Layout);
+                    break;
+                case StylePropertyId.Display:
+                    layoutData.Write().display = (DisplayStyle)newValue;
+                    ve.yogaNode.Display = (YogaDisplay)newValue;
+                    ve.IncrementVersion(VersionChangeType.Layout);
+                    break;
+                case StylePropertyId.FlexDirection:
+                    layoutData.Write().flexDirection = (FlexDirection)newValue;
+                    ve.yogaNode.FlexDirection = (YogaFlexDirection)newValue;
+                    ve.IncrementVersion(VersionChangeType.Layout);
+                    break;
+                case StylePropertyId.FlexWrap:
+                    layoutData.Write().flexWrap = (Wrap)newValue;
+                    ve.yogaNode.Wrap = (YogaWrap)newValue;
+                    ve.IncrementVersion(VersionChangeType.Layout);
+                    break;
+                case StylePropertyId.JustifyContent:
+                    layoutData.Write().justifyContent = (Justify)newValue;
+                    ve.yogaNode.JustifyContent = (YogaJustify)newValue;
+                    ve.IncrementVersion(VersionChangeType.Layout);
+                    break;
+                case StylePropertyId.Overflow:
+                    visualData.Write().overflow = (OverflowInternal)newValue;
+                    ve.yogaNode.Overflow = (YogaOverflow)newValue;
+                    ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Overflow);
+                    break;
+                case StylePropertyId.Position:
+                    layoutData.Write().position = (Position)newValue;
+                    ve.yogaNode.PositionType = (YogaPositionType)newValue;
+                    ve.IncrementVersion(VersionChangeType.Layout);
+                    break;
+                case StylePropertyId.TextOverflow:
+                    rareData.Write().textOverflow = (TextOverflow)newValue;
+                    ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
+                    break;
+                case StylePropertyId.UnityBackgroundScaleMode:
+                    rareData.Write().unityBackgroundScaleMode = (ScaleMode)newValue;
+                    ve.IncrementVersion(VersionChangeType.Repaint);
+                    break;
+                case StylePropertyId.UnityFontStyleAndWeight:
+                    inheritedData.Write().unityFontStyleAndWeight = (FontStyle)newValue;
+                    ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint | VersionChangeType.StyleSheet);
+                    break;
+                case StylePropertyId.UnityOverflowClipBox:
+                    rareData.Write().unityOverflowClipBox = (OverflowClipBox)newValue;
+                    ve.IncrementVersion(VersionChangeType.Repaint);
+                    break;
+                case StylePropertyId.UnitySliceBottom:
+                    rareData.Write().unitySliceBottom = newValue;
+                    ve.IncrementVersion(VersionChangeType.Repaint);
+                    break;
+                case StylePropertyId.UnitySliceLeft:
+                    rareData.Write().unitySliceLeft = newValue;
+                    ve.IncrementVersion(VersionChangeType.Repaint);
+                    break;
+                case StylePropertyId.UnitySliceRight:
+                    rareData.Write().unitySliceRight = newValue;
+                    ve.IncrementVersion(VersionChangeType.Repaint);
+                    break;
+                case StylePropertyId.UnitySliceTop:
+                    rareData.Write().unitySliceTop = newValue;
+                    ve.IncrementVersion(VersionChangeType.Repaint);
+                    break;
+                case StylePropertyId.UnityTextAlign:
+                    inheritedData.Write().unityTextAlign = (TextAnchor)newValue;
+                    ve.IncrementVersion(VersionChangeType.Repaint | VersionChangeType.StyleSheet);
+                    break;
+                case StylePropertyId.UnityTextOverflowPosition:
+                    rareData.Write().unityTextOverflowPosition = (TextOverflowPosition)newValue;
+                    ve.IncrementVersion(VersionChangeType.Repaint);
+                    break;
+                case StylePropertyId.Visibility:
+                    inheritedData.Write().visibility = (Visibility)newValue;
+                    ve.IncrementVersion(VersionChangeType.Repaint | VersionChangeType.StyleSheet);
+                    break;
+                case StylePropertyId.WhiteSpace:
+                    inheritedData.Write().whiteSpace = (WhiteSpace)newValue;
+                    ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.StyleSheet);
+                    break;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'int' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public void ApplyPropertyAnimation(VisualElement ve, StylePropertyId id, Color newValue)
+        {
+            switch (id)
+            {
+                case StylePropertyId.BackgroundColor:
+                    visualData.Write().backgroundColor = newValue;
+                    ve.IncrementVersion(VersionChangeType.Color);
+                    break;
+                case StylePropertyId.BorderBottomColor:
+                    visualData.Write().borderBottomColor = newValue;
+                    ve.IncrementVersion(VersionChangeType.Color);
+                    break;
+                case StylePropertyId.BorderLeftColor:
+                    visualData.Write().borderLeftColor = newValue;
+                    ve.IncrementVersion(VersionChangeType.Color);
+                    break;
+                case StylePropertyId.BorderRightColor:
+                    visualData.Write().borderRightColor = newValue;
+                    ve.IncrementVersion(VersionChangeType.Color);
+                    break;
+                case StylePropertyId.BorderTopColor:
+                    visualData.Write().borderTopColor = newValue;
+                    ve.IncrementVersion(VersionChangeType.Color);
+                    break;
+                case StylePropertyId.Color:
+                    inheritedData.Write().color = newValue;
+                    ve.IncrementVersion(VersionChangeType.Repaint | VersionChangeType.StyleSheet);
+                    break;
+                case StylePropertyId.UnityBackgroundImageTintColor:
+                    rareData.Write().unityBackgroundImageTintColor = newValue;
+                    ve.IncrementVersion(VersionChangeType.Color);
+                    break;
+                case StylePropertyId.UnityTextOutlineColor:
+                    inheritedData.Write().unityTextOutlineColor = newValue;
+                    ve.IncrementVersion(VersionChangeType.Repaint | VersionChangeType.StyleSheet);
+                    break;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Color' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public void ApplyPropertyAnimation(VisualElement ve, StylePropertyId id, Background newValue)
+        {
+            switch (id)
+            {
+                case StylePropertyId.BackgroundImage:
+                    visualData.Write().backgroundImage = newValue;
+                    ve.IncrementVersion(VersionChangeType.Repaint);
+                    break;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Background' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public void ApplyPropertyAnimation(VisualElement ve, StylePropertyId id, Font newValue)
+        {
+            switch (id)
+            {
+                case StylePropertyId.UnityFont:
+                    inheritedData.Write().unityFont = newValue;
+                    ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint | VersionChangeType.StyleSheet);
+                    break;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Font' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public void ApplyPropertyAnimation(VisualElement ve, StylePropertyId id, FontDefinition newValue)
+        {
+            switch (id)
+            {
+                case StylePropertyId.UnityFontDefinition:
+                    inheritedData.Write().unityFontDefinition = newValue;
+                    ve.IncrementVersion(VersionChangeType.Repaint | VersionChangeType.Layout | VersionChangeType.StyleSheet);
+                    break;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'FontDefinition' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public void ApplyPropertyAnimation(VisualElement ve, StylePropertyId id, Cursor newValue)
+        {
+            switch (id)
+            {
+                case StylePropertyId.Cursor:
+                    rareData.Write().cursor = newValue;
+                    break;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Cursor' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public void ApplyPropertyAnimation(VisualElement ve, StylePropertyId id, TextShadow newValue)
+        {
+            switch (id)
+            {
+                case StylePropertyId.TextShadow:
+                    inheritedData.Write().textShadow = newValue;
+                    ve.IncrementVersion(VersionChangeType.Repaint | VersionChangeType.StyleSheet);
+                    break;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'TextShadow' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public void ApplyPropertyAnimation(VisualElement ve, StylePropertyId id, Translate newValue)
+        {
+            switch (id)
+            {
+                case StylePropertyId.Translate:
+                    transformData.Write().translate = newValue;
+                    ve.IncrementVersion(VersionChangeType.Transform);
+                    break;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Translate' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public void ApplyPropertyAnimation(VisualElement ve, StylePropertyId id, TransformOrigin newValue)
+        {
+            switch (id)
+            {
+                case StylePropertyId.TransformOrigin:
+                    transformData.Write().transformOrigin = newValue;
+                    ve.IncrementVersion(VersionChangeType.Repaint);
+                    break;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'TransformOrigin' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public void ApplyPropertyAnimation(VisualElement ve, StylePropertyId id, Rotate newValue)
+        {
+            switch (id)
+            {
+                case StylePropertyId.Rotate:
+                    transformData.Write().rotate = newValue;
+                    ve.IncrementVersion(VersionChangeType.Transform);
+                    break;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Rotate' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public void ApplyPropertyAnimation(VisualElement ve, StylePropertyId id, Scale newValue)
+        {
+            switch (id)
+            {
+                case StylePropertyId.Scale:
+                    transformData.Write().scale = newValue;
+                    ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Transform);
+                    break;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Scale' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public static bool StartAnimation(VisualElement element, StylePropertyId id, ref ComputedStyle oldStyle, ref ComputedStyle newStyle, int durationMs, int delayMs, Func<float, float> easingCurve)
+        {
+            switch (id)
+            {
+                case StylePropertyId.AlignContent:
+                    return element.styleAnimation.StartEnum(StylePropertyId.AlignContent, (int)oldStyle.layoutData.Read().alignContent, (int)newStyle.layoutData.Read().alignContent, durationMs, delayMs, easingCurve);
+                case StylePropertyId.AlignItems:
+                    return element.styleAnimation.StartEnum(StylePropertyId.AlignItems, (int)oldStyle.layoutData.Read().alignItems, (int)newStyle.layoutData.Read().alignItems, durationMs, delayMs, easingCurve);
+                case StylePropertyId.AlignSelf:
+                    return element.styleAnimation.StartEnum(StylePropertyId.AlignSelf, (int)oldStyle.layoutData.Read().alignSelf, (int)newStyle.layoutData.Read().alignSelf, durationMs, delayMs, easingCurve);
+                case StylePropertyId.All:
+                    return StartAnimationAllProperty(element, ref oldStyle, ref newStyle, durationMs, delayMs, easingCurve);
+                case StylePropertyId.BackgroundColor:
+                    return element.styleAnimation.Start(StylePropertyId.BackgroundColor, oldStyle.visualData.Read().backgroundColor, newStyle.visualData.Read().backgroundColor, durationMs, delayMs, easingCurve);
+                case StylePropertyId.BackgroundImage:
+                    return element.styleAnimation.Start(StylePropertyId.BackgroundImage, oldStyle.visualData.Read().backgroundImage, newStyle.visualData.Read().backgroundImage, durationMs, delayMs, easingCurve);
+                case StylePropertyId.BorderBottomColor:
+                    return element.styleAnimation.Start(StylePropertyId.BorderBottomColor, oldStyle.visualData.Read().borderBottomColor, newStyle.visualData.Read().borderBottomColor, durationMs, delayMs, easingCurve);
+                case StylePropertyId.BorderBottomLeftRadius:
+                    return element.styleAnimation.Start(StylePropertyId.BorderBottomLeftRadius, oldStyle.visualData.Read().borderBottomLeftRadius, newStyle.visualData.Read().borderBottomLeftRadius, durationMs, delayMs, easingCurve);
+                case StylePropertyId.BorderBottomRightRadius:
+                    return element.styleAnimation.Start(StylePropertyId.BorderBottomRightRadius, oldStyle.visualData.Read().borderBottomRightRadius, newStyle.visualData.Read().borderBottomRightRadius, durationMs, delayMs, easingCurve);
+                case StylePropertyId.BorderBottomWidth:
+                    return element.styleAnimation.Start(StylePropertyId.BorderBottomWidth, oldStyle.layoutData.Read().borderBottomWidth, newStyle.layoutData.Read().borderBottomWidth, durationMs, delayMs, easingCurve);
+                case StylePropertyId.BorderColor:
+                {
+                    bool result = false;
+                    result |= element.styleAnimation.Start(StylePropertyId.BorderTopColor, oldStyle.visualData.Read().borderTopColor, newStyle.visualData.Read().borderTopColor, durationMs, delayMs, easingCurve);
+                    result |= element.styleAnimation.Start(StylePropertyId.BorderRightColor, oldStyle.visualData.Read().borderRightColor, newStyle.visualData.Read().borderRightColor, durationMs, delayMs, easingCurve);
+                    result |= element.styleAnimation.Start(StylePropertyId.BorderBottomColor, oldStyle.visualData.Read().borderBottomColor, newStyle.visualData.Read().borderBottomColor, durationMs, delayMs, easingCurve);
+                    result |= element.styleAnimation.Start(StylePropertyId.BorderLeftColor, oldStyle.visualData.Read().borderLeftColor, newStyle.visualData.Read().borderLeftColor, durationMs, delayMs, easingCurve);
+                    return result;
+                }
+
+                case StylePropertyId.BorderLeftColor:
+                    return element.styleAnimation.Start(StylePropertyId.BorderLeftColor, oldStyle.visualData.Read().borderLeftColor, newStyle.visualData.Read().borderLeftColor, durationMs, delayMs, easingCurve);
+                case StylePropertyId.BorderLeftWidth:
+                    return element.styleAnimation.Start(StylePropertyId.BorderLeftWidth, oldStyle.layoutData.Read().borderLeftWidth, newStyle.layoutData.Read().borderLeftWidth, durationMs, delayMs, easingCurve);
+                case StylePropertyId.BorderRadius:
+                {
+                    bool result = false;
+                    result |= element.styleAnimation.Start(StylePropertyId.BorderTopLeftRadius, oldStyle.visualData.Read().borderTopLeftRadius, newStyle.visualData.Read().borderTopLeftRadius, durationMs, delayMs, easingCurve);
+                    result |= element.styleAnimation.Start(StylePropertyId.BorderTopRightRadius, oldStyle.visualData.Read().borderTopRightRadius, newStyle.visualData.Read().borderTopRightRadius, durationMs, delayMs, easingCurve);
+                    result |= element.styleAnimation.Start(StylePropertyId.BorderBottomRightRadius, oldStyle.visualData.Read().borderBottomRightRadius, newStyle.visualData.Read().borderBottomRightRadius, durationMs, delayMs, easingCurve);
+                    result |= element.styleAnimation.Start(StylePropertyId.BorderBottomLeftRadius, oldStyle.visualData.Read().borderBottomLeftRadius, newStyle.visualData.Read().borderBottomLeftRadius, durationMs, delayMs, easingCurve);
+                    return result;
+                }
+
+                case StylePropertyId.BorderRightColor:
+                    return element.styleAnimation.Start(StylePropertyId.BorderRightColor, oldStyle.visualData.Read().borderRightColor, newStyle.visualData.Read().borderRightColor, durationMs, delayMs, easingCurve);
+                case StylePropertyId.BorderRightWidth:
+                    return element.styleAnimation.Start(StylePropertyId.BorderRightWidth, oldStyle.layoutData.Read().borderRightWidth, newStyle.layoutData.Read().borderRightWidth, durationMs, delayMs, easingCurve);
+                case StylePropertyId.BorderTopColor:
+                    return element.styleAnimation.Start(StylePropertyId.BorderTopColor, oldStyle.visualData.Read().borderTopColor, newStyle.visualData.Read().borderTopColor, durationMs, delayMs, easingCurve);
+                case StylePropertyId.BorderTopLeftRadius:
+                    return element.styleAnimation.Start(StylePropertyId.BorderTopLeftRadius, oldStyle.visualData.Read().borderTopLeftRadius, newStyle.visualData.Read().borderTopLeftRadius, durationMs, delayMs, easingCurve);
+                case StylePropertyId.BorderTopRightRadius:
+                    return element.styleAnimation.Start(StylePropertyId.BorderTopRightRadius, oldStyle.visualData.Read().borderTopRightRadius, newStyle.visualData.Read().borderTopRightRadius, durationMs, delayMs, easingCurve);
+                case StylePropertyId.BorderTopWidth:
+                    return element.styleAnimation.Start(StylePropertyId.BorderTopWidth, oldStyle.layoutData.Read().borderTopWidth, newStyle.layoutData.Read().borderTopWidth, durationMs, delayMs, easingCurve);
+                case StylePropertyId.BorderWidth:
+                {
+                    bool result = false;
+                    result |= element.styleAnimation.Start(StylePropertyId.BorderTopWidth, oldStyle.layoutData.Read().borderTopWidth, newStyle.layoutData.Read().borderTopWidth, durationMs, delayMs, easingCurve);
+                    result |= element.styleAnimation.Start(StylePropertyId.BorderRightWidth, oldStyle.layoutData.Read().borderRightWidth, newStyle.layoutData.Read().borderRightWidth, durationMs, delayMs, easingCurve);
+                    result |= element.styleAnimation.Start(StylePropertyId.BorderBottomWidth, oldStyle.layoutData.Read().borderBottomWidth, newStyle.layoutData.Read().borderBottomWidth, durationMs, delayMs, easingCurve);
+                    result |= element.styleAnimation.Start(StylePropertyId.BorderLeftWidth, oldStyle.layoutData.Read().borderLeftWidth, newStyle.layoutData.Read().borderLeftWidth, durationMs, delayMs, easingCurve);
+                    return result;
+                }
+
+                case StylePropertyId.Bottom:
+                    return element.styleAnimation.Start(StylePropertyId.Bottom, oldStyle.layoutData.Read().bottom, newStyle.layoutData.Read().bottom, durationMs, delayMs, easingCurve);
+                case StylePropertyId.Color:
+                    return element.styleAnimation.Start(StylePropertyId.Color, oldStyle.inheritedData.Read().color, newStyle.inheritedData.Read().color, durationMs, delayMs, easingCurve);
+                case StylePropertyId.Cursor:
+                    return element.styleAnimation.Start(StylePropertyId.Cursor, oldStyle.rareData.Read().cursor, newStyle.rareData.Read().cursor, durationMs, delayMs, easingCurve);
+                case StylePropertyId.Display:
+                    return element.styleAnimation.StartEnum(StylePropertyId.Display, (int)oldStyle.layoutData.Read().display, (int)newStyle.layoutData.Read().display, durationMs, delayMs, easingCurve);
+                case StylePropertyId.Flex:
+                {
+                    bool result = false;
+                    result |= element.styleAnimation.Start(StylePropertyId.FlexGrow, oldStyle.layoutData.Read().flexGrow, newStyle.layoutData.Read().flexGrow, durationMs, delayMs, easingCurve);
+                    result |= element.styleAnimation.Start(StylePropertyId.FlexShrink, oldStyle.layoutData.Read().flexShrink, newStyle.layoutData.Read().flexShrink, durationMs, delayMs, easingCurve);
+                    result |= element.styleAnimation.Start(StylePropertyId.FlexBasis, oldStyle.layoutData.Read().flexBasis, newStyle.layoutData.Read().flexBasis, durationMs, delayMs, easingCurve);
+                    return result;
+                }
+
+                case StylePropertyId.FlexBasis:
+                    return element.styleAnimation.Start(StylePropertyId.FlexBasis, oldStyle.layoutData.Read().flexBasis, newStyle.layoutData.Read().flexBasis, durationMs, delayMs, easingCurve);
+                case StylePropertyId.FlexDirection:
+                    return element.styleAnimation.StartEnum(StylePropertyId.FlexDirection, (int)oldStyle.layoutData.Read().flexDirection, (int)newStyle.layoutData.Read().flexDirection, durationMs, delayMs, easingCurve);
+                case StylePropertyId.FlexGrow:
+                    return element.styleAnimation.Start(StylePropertyId.FlexGrow, oldStyle.layoutData.Read().flexGrow, newStyle.layoutData.Read().flexGrow, durationMs, delayMs, easingCurve);
+                case StylePropertyId.FlexShrink:
+                    return element.styleAnimation.Start(StylePropertyId.FlexShrink, oldStyle.layoutData.Read().flexShrink, newStyle.layoutData.Read().flexShrink, durationMs, delayMs, easingCurve);
+                case StylePropertyId.FlexWrap:
+                    return element.styleAnimation.StartEnum(StylePropertyId.FlexWrap, (int)oldStyle.layoutData.Read().flexWrap, (int)newStyle.layoutData.Read().flexWrap, durationMs, delayMs, easingCurve);
+                case StylePropertyId.FontSize:
+                    return element.styleAnimation.Start(StylePropertyId.FontSize, oldStyle.inheritedData.Read().fontSize, newStyle.inheritedData.Read().fontSize, durationMs, delayMs, easingCurve);
+                case StylePropertyId.Height:
+                    return element.styleAnimation.Start(StylePropertyId.Height, oldStyle.layoutData.Read().height, newStyle.layoutData.Read().height, durationMs, delayMs, easingCurve);
+                case StylePropertyId.JustifyContent:
+                    return element.styleAnimation.StartEnum(StylePropertyId.JustifyContent, (int)oldStyle.layoutData.Read().justifyContent, (int)newStyle.layoutData.Read().justifyContent, durationMs, delayMs, easingCurve);
+                case StylePropertyId.Left:
+                    return element.styleAnimation.Start(StylePropertyId.Left, oldStyle.layoutData.Read().left, newStyle.layoutData.Read().left, durationMs, delayMs, easingCurve);
+                case StylePropertyId.LetterSpacing:
+                    return element.styleAnimation.Start(StylePropertyId.LetterSpacing, oldStyle.inheritedData.Read().letterSpacing, newStyle.inheritedData.Read().letterSpacing, durationMs, delayMs, easingCurve);
+                case StylePropertyId.Margin:
+                {
+                    bool result = false;
+                    result |= element.styleAnimation.Start(StylePropertyId.MarginTop, oldStyle.layoutData.Read().marginTop, newStyle.layoutData.Read().marginTop, durationMs, delayMs, easingCurve);
+                    result |= element.styleAnimation.Start(StylePropertyId.MarginRight, oldStyle.layoutData.Read().marginRight, newStyle.layoutData.Read().marginRight, durationMs, delayMs, easingCurve);
+                    result |= element.styleAnimation.Start(StylePropertyId.MarginBottom, oldStyle.layoutData.Read().marginBottom, newStyle.layoutData.Read().marginBottom, durationMs, delayMs, easingCurve);
+                    result |= element.styleAnimation.Start(StylePropertyId.MarginLeft, oldStyle.layoutData.Read().marginLeft, newStyle.layoutData.Read().marginLeft, durationMs, delayMs, easingCurve);
+                    return result;
+                }
+
+                case StylePropertyId.MarginBottom:
+                    return element.styleAnimation.Start(StylePropertyId.MarginBottom, oldStyle.layoutData.Read().marginBottom, newStyle.layoutData.Read().marginBottom, durationMs, delayMs, easingCurve);
+                case StylePropertyId.MarginLeft:
+                    return element.styleAnimation.Start(StylePropertyId.MarginLeft, oldStyle.layoutData.Read().marginLeft, newStyle.layoutData.Read().marginLeft, durationMs, delayMs, easingCurve);
+                case StylePropertyId.MarginRight:
+                    return element.styleAnimation.Start(StylePropertyId.MarginRight, oldStyle.layoutData.Read().marginRight, newStyle.layoutData.Read().marginRight, durationMs, delayMs, easingCurve);
+                case StylePropertyId.MarginTop:
+                    return element.styleAnimation.Start(StylePropertyId.MarginTop, oldStyle.layoutData.Read().marginTop, newStyle.layoutData.Read().marginTop, durationMs, delayMs, easingCurve);
+                case StylePropertyId.MaxHeight:
+                    return element.styleAnimation.Start(StylePropertyId.MaxHeight, oldStyle.layoutData.Read().maxHeight, newStyle.layoutData.Read().maxHeight, durationMs, delayMs, easingCurve);
+                case StylePropertyId.MaxWidth:
+                    return element.styleAnimation.Start(StylePropertyId.MaxWidth, oldStyle.layoutData.Read().maxWidth, newStyle.layoutData.Read().maxWidth, durationMs, delayMs, easingCurve);
+                case StylePropertyId.MinHeight:
+                    return element.styleAnimation.Start(StylePropertyId.MinHeight, oldStyle.layoutData.Read().minHeight, newStyle.layoutData.Read().minHeight, durationMs, delayMs, easingCurve);
+                case StylePropertyId.MinWidth:
+                    return element.styleAnimation.Start(StylePropertyId.MinWidth, oldStyle.layoutData.Read().minWidth, newStyle.layoutData.Read().minWidth, durationMs, delayMs, easingCurve);
+                case StylePropertyId.Opacity:
+                    return element.styleAnimation.Start(StylePropertyId.Opacity, oldStyle.visualData.Read().opacity, newStyle.visualData.Read().opacity, durationMs, delayMs, easingCurve);
+                case StylePropertyId.Overflow:
+                    return element.styleAnimation.StartEnum(StylePropertyId.Overflow, (int)oldStyle.visualData.Read().overflow, (int)newStyle.visualData.Read().overflow, durationMs, delayMs, easingCurve);
+                case StylePropertyId.Padding:
+                {
+                    bool result = false;
+                    result |= element.styleAnimation.Start(StylePropertyId.PaddingTop, oldStyle.layoutData.Read().paddingTop, newStyle.layoutData.Read().paddingTop, durationMs, delayMs, easingCurve);
+                    result |= element.styleAnimation.Start(StylePropertyId.PaddingRight, oldStyle.layoutData.Read().paddingRight, newStyle.layoutData.Read().paddingRight, durationMs, delayMs, easingCurve);
+                    result |= element.styleAnimation.Start(StylePropertyId.PaddingBottom, oldStyle.layoutData.Read().paddingBottom, newStyle.layoutData.Read().paddingBottom, durationMs, delayMs, easingCurve);
+                    result |= element.styleAnimation.Start(StylePropertyId.PaddingLeft, oldStyle.layoutData.Read().paddingLeft, newStyle.layoutData.Read().paddingLeft, durationMs, delayMs, easingCurve);
+                    return result;
+                }
+
+                case StylePropertyId.PaddingBottom:
+                    return element.styleAnimation.Start(StylePropertyId.PaddingBottom, oldStyle.layoutData.Read().paddingBottom, newStyle.layoutData.Read().paddingBottom, durationMs, delayMs, easingCurve);
+                case StylePropertyId.PaddingLeft:
+                    return element.styleAnimation.Start(StylePropertyId.PaddingLeft, oldStyle.layoutData.Read().paddingLeft, newStyle.layoutData.Read().paddingLeft, durationMs, delayMs, easingCurve);
+                case StylePropertyId.PaddingRight:
+                    return element.styleAnimation.Start(StylePropertyId.PaddingRight, oldStyle.layoutData.Read().paddingRight, newStyle.layoutData.Read().paddingRight, durationMs, delayMs, easingCurve);
+                case StylePropertyId.PaddingTop:
+                    return element.styleAnimation.Start(StylePropertyId.PaddingTop, oldStyle.layoutData.Read().paddingTop, newStyle.layoutData.Read().paddingTop, durationMs, delayMs, easingCurve);
+                case StylePropertyId.Position:
+                    return element.styleAnimation.StartEnum(StylePropertyId.Position, (int)oldStyle.layoutData.Read().position, (int)newStyle.layoutData.Read().position, durationMs, delayMs, easingCurve);
+                case StylePropertyId.Right:
+                    return element.styleAnimation.Start(StylePropertyId.Right, oldStyle.layoutData.Read().right, newStyle.layoutData.Read().right, durationMs, delayMs, easingCurve);
+                case StylePropertyId.Rotate:
+                    return element.styleAnimation.Start(StylePropertyId.Rotate, oldStyle.transformData.Read().rotate, newStyle.transformData.Read().rotate, durationMs, delayMs, easingCurve);
+                case StylePropertyId.Scale:
+                    return element.styleAnimation.Start(StylePropertyId.Scale, oldStyle.transformData.Read().scale, newStyle.transformData.Read().scale, durationMs, delayMs, easingCurve);
+                case StylePropertyId.TextOverflow:
+                    return element.styleAnimation.StartEnum(StylePropertyId.TextOverflow, (int)oldStyle.rareData.Read().textOverflow, (int)newStyle.rareData.Read().textOverflow, durationMs, delayMs, easingCurve);
+                case StylePropertyId.TextShadow:
+                    return element.styleAnimation.Start(StylePropertyId.TextShadow, oldStyle.inheritedData.Read().textShadow, newStyle.inheritedData.Read().textShadow, durationMs, delayMs, easingCurve);
+                case StylePropertyId.Top:
+                    return element.styleAnimation.Start(StylePropertyId.Top, oldStyle.layoutData.Read().top, newStyle.layoutData.Read().top, durationMs, delayMs, easingCurve);
+                case StylePropertyId.TransformOrigin:
+                    return element.styleAnimation.Start(StylePropertyId.TransformOrigin, oldStyle.transformData.Read().transformOrigin, newStyle.transformData.Read().transformOrigin, durationMs, delayMs, easingCurve);
+                case StylePropertyId.Translate:
+                    return element.styleAnimation.Start(StylePropertyId.Translate, oldStyle.transformData.Read().translate, newStyle.transformData.Read().translate, durationMs, delayMs, easingCurve);
+                case StylePropertyId.UnityBackgroundImageTintColor:
+                    return element.styleAnimation.Start(StylePropertyId.UnityBackgroundImageTintColor, oldStyle.rareData.Read().unityBackgroundImageTintColor, newStyle.rareData.Read().unityBackgroundImageTintColor, durationMs, delayMs, easingCurve);
+                case StylePropertyId.UnityBackgroundScaleMode:
+                    return element.styleAnimation.StartEnum(StylePropertyId.UnityBackgroundScaleMode, (int)oldStyle.rareData.Read().unityBackgroundScaleMode, (int)newStyle.rareData.Read().unityBackgroundScaleMode, durationMs, delayMs, easingCurve);
+                case StylePropertyId.UnityFont:
+                    return element.styleAnimation.Start(StylePropertyId.UnityFont, oldStyle.inheritedData.Read().unityFont, newStyle.inheritedData.Read().unityFont, durationMs, delayMs, easingCurve);
+                case StylePropertyId.UnityFontDefinition:
+                    return element.styleAnimation.Start(StylePropertyId.UnityFontDefinition, oldStyle.inheritedData.Read().unityFontDefinition, newStyle.inheritedData.Read().unityFontDefinition, durationMs, delayMs, easingCurve);
+                case StylePropertyId.UnityFontStyleAndWeight:
+                    return element.styleAnimation.StartEnum(StylePropertyId.UnityFontStyleAndWeight, (int)oldStyle.inheritedData.Read().unityFontStyleAndWeight, (int)newStyle.inheritedData.Read().unityFontStyleAndWeight, durationMs, delayMs, easingCurve);
+                case StylePropertyId.UnityOverflowClipBox:
+                    return element.styleAnimation.StartEnum(StylePropertyId.UnityOverflowClipBox, (int)oldStyle.rareData.Read().unityOverflowClipBox, (int)newStyle.rareData.Read().unityOverflowClipBox, durationMs, delayMs, easingCurve);
+                case StylePropertyId.UnityParagraphSpacing:
+                    return element.styleAnimation.Start(StylePropertyId.UnityParagraphSpacing, oldStyle.inheritedData.Read().unityParagraphSpacing, newStyle.inheritedData.Read().unityParagraphSpacing, durationMs, delayMs, easingCurve);
+                case StylePropertyId.UnitySliceBottom:
+                    return element.styleAnimation.Start(StylePropertyId.UnitySliceBottom, oldStyle.rareData.Read().unitySliceBottom, newStyle.rareData.Read().unitySliceBottom, durationMs, delayMs, easingCurve);
+                case StylePropertyId.UnitySliceLeft:
+                    return element.styleAnimation.Start(StylePropertyId.UnitySliceLeft, oldStyle.rareData.Read().unitySliceLeft, newStyle.rareData.Read().unitySliceLeft, durationMs, delayMs, easingCurve);
+                case StylePropertyId.UnitySliceRight:
+                    return element.styleAnimation.Start(StylePropertyId.UnitySliceRight, oldStyle.rareData.Read().unitySliceRight, newStyle.rareData.Read().unitySliceRight, durationMs, delayMs, easingCurve);
+                case StylePropertyId.UnitySliceTop:
+                    return element.styleAnimation.Start(StylePropertyId.UnitySliceTop, oldStyle.rareData.Read().unitySliceTop, newStyle.rareData.Read().unitySliceTop, durationMs, delayMs, easingCurve);
+                case StylePropertyId.UnityTextAlign:
+                    return element.styleAnimation.StartEnum(StylePropertyId.UnityTextAlign, (int)oldStyle.inheritedData.Read().unityTextAlign, (int)newStyle.inheritedData.Read().unityTextAlign, durationMs, delayMs, easingCurve);
+                case StylePropertyId.UnityTextOutline:
+                {
+                    bool result = false;
+                    result |= element.styleAnimation.Start(StylePropertyId.UnityTextOutlineColor, oldStyle.inheritedData.Read().unityTextOutlineColor, newStyle.inheritedData.Read().unityTextOutlineColor, durationMs, delayMs, easingCurve);
+                    result |= element.styleAnimation.Start(StylePropertyId.UnityTextOutlineWidth, oldStyle.inheritedData.Read().unityTextOutlineWidth, newStyle.inheritedData.Read().unityTextOutlineWidth, durationMs, delayMs, easingCurve);
+                    return result;
+                }
+
+                case StylePropertyId.UnityTextOutlineColor:
+                    return element.styleAnimation.Start(StylePropertyId.UnityTextOutlineColor, oldStyle.inheritedData.Read().unityTextOutlineColor, newStyle.inheritedData.Read().unityTextOutlineColor, durationMs, delayMs, easingCurve);
+                case StylePropertyId.UnityTextOutlineWidth:
+                    return element.styleAnimation.Start(StylePropertyId.UnityTextOutlineWidth, oldStyle.inheritedData.Read().unityTextOutlineWidth, newStyle.inheritedData.Read().unityTextOutlineWidth, durationMs, delayMs, easingCurve);
+                case StylePropertyId.UnityTextOverflowPosition:
+                    return element.styleAnimation.StartEnum(StylePropertyId.UnityTextOverflowPosition, (int)oldStyle.rareData.Read().unityTextOverflowPosition, (int)newStyle.rareData.Read().unityTextOverflowPosition, durationMs, delayMs, easingCurve);
+                case StylePropertyId.Visibility:
+                    return element.styleAnimation.StartEnum(StylePropertyId.Visibility, (int)oldStyle.inheritedData.Read().visibility, (int)newStyle.inheritedData.Read().visibility, durationMs, delayMs, easingCurve);
+                case StylePropertyId.WhiteSpace:
+                    return element.styleAnimation.StartEnum(StylePropertyId.WhiteSpace, (int)oldStyle.inheritedData.Read().whiteSpace, (int)newStyle.inheritedData.Read().whiteSpace, durationMs, delayMs, easingCurve);
+                case StylePropertyId.Width:
+                    return element.styleAnimation.Start(StylePropertyId.Width, oldStyle.layoutData.Read().width, newStyle.layoutData.Read().width, durationMs, delayMs, easingCurve);
+                case StylePropertyId.WordSpacing:
+                    return element.styleAnimation.Start(StylePropertyId.WordSpacing, oldStyle.inheritedData.Read().wordSpacing, newStyle.inheritedData.Read().wordSpacing, durationMs, delayMs, easingCurve);
+                default:
+                    return false;
+            }
+        }
+
+        public static bool StartAnimationAllProperty(VisualElement element, ref ComputedStyle oldStyle, ref ComputedStyle newStyle, int durationMs, int delayMs, Func<float, float> easingCurve)
+        {
+            bool result = false;
+            if (!oldStyle.inheritedData.Equals(newStyle.inheritedData))
+            {
+                ref readonly var oldData = ref oldStyle.inheritedData.Read();
+                ref readonly var newData = ref newStyle.inheritedData.Read();
+                if (oldData.color != newData.color)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.Color, oldData.color, newData.color, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.fontSize != newData.fontSize)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.FontSize, oldData.fontSize, newData.fontSize, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.letterSpacing != newData.letterSpacing)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.LetterSpacing, oldData.letterSpacing, newData.letterSpacing, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.textShadow != newData.textShadow)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.TextShadow, oldData.textShadow, newData.textShadow, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.unityFont != newData.unityFont)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.UnityFont, oldData.unityFont, newData.unityFont, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.unityFontDefinition != newData.unityFontDefinition)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.UnityFontDefinition, oldData.unityFontDefinition, newData.unityFontDefinition, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.unityFontStyleAndWeight != newData.unityFontStyleAndWeight)
+                {
+                    result |= element.styleAnimation.StartEnum(StylePropertyId.UnityFontStyleAndWeight, (int)oldData.unityFontStyleAndWeight, (int)newData.unityFontStyleAndWeight, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.unityParagraphSpacing != newData.unityParagraphSpacing)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.UnityParagraphSpacing, oldData.unityParagraphSpacing, newData.unityParagraphSpacing, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.unityTextAlign != newData.unityTextAlign)
+                {
+                    result |= element.styleAnimation.StartEnum(StylePropertyId.UnityTextAlign, (int)oldData.unityTextAlign, (int)newData.unityTextAlign, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.unityTextOutlineColor != newData.unityTextOutlineColor)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.UnityTextOutlineColor, oldData.unityTextOutlineColor, newData.unityTextOutlineColor, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.unityTextOutlineWidth != newData.unityTextOutlineWidth)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.UnityTextOutlineWidth, oldData.unityTextOutlineWidth, newData.unityTextOutlineWidth, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.visibility != newData.visibility)
+                {
+                    result |= element.styleAnimation.StartEnum(StylePropertyId.Visibility, (int)oldData.visibility, (int)newData.visibility, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.whiteSpace != newData.whiteSpace)
+                {
+                    result |= element.styleAnimation.StartEnum(StylePropertyId.WhiteSpace, (int)oldData.whiteSpace, (int)newData.whiteSpace, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.wordSpacing != newData.wordSpacing)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.WordSpacing, oldData.wordSpacing, newData.wordSpacing, durationMs, delayMs, easingCurve);
+                }
+            }
+
+            if (!oldStyle.layoutData.Equals(newStyle.layoutData))
+            {
+                ref readonly var oldData = ref oldStyle.layoutData.Read();
+                ref readonly var newData = ref newStyle.layoutData.Read();
+                if (oldData.alignContent != newData.alignContent)
+                {
+                    result |= element.styleAnimation.StartEnum(StylePropertyId.AlignContent, (int)oldData.alignContent, (int)newData.alignContent, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.alignItems != newData.alignItems)
+                {
+                    result |= element.styleAnimation.StartEnum(StylePropertyId.AlignItems, (int)oldData.alignItems, (int)newData.alignItems, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.alignSelf != newData.alignSelf)
+                {
+                    result |= element.styleAnimation.StartEnum(StylePropertyId.AlignSelf, (int)oldData.alignSelf, (int)newData.alignSelf, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.borderBottomWidth != newData.borderBottomWidth)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.BorderBottomWidth, oldData.borderBottomWidth, newData.borderBottomWidth, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.borderLeftWidth != newData.borderLeftWidth)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.BorderLeftWidth, oldData.borderLeftWidth, newData.borderLeftWidth, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.borderRightWidth != newData.borderRightWidth)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.BorderRightWidth, oldData.borderRightWidth, newData.borderRightWidth, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.borderTopWidth != newData.borderTopWidth)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.BorderTopWidth, oldData.borderTopWidth, newData.borderTopWidth, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.bottom != newData.bottom)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.Bottom, oldData.bottom, newData.bottom, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.display != newData.display)
+                {
+                    result |= element.styleAnimation.StartEnum(StylePropertyId.Display, (int)oldData.display, (int)newData.display, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.flexBasis != newData.flexBasis)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.FlexBasis, oldData.flexBasis, newData.flexBasis, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.flexDirection != newData.flexDirection)
+                {
+                    result |= element.styleAnimation.StartEnum(StylePropertyId.FlexDirection, (int)oldData.flexDirection, (int)newData.flexDirection, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.flexGrow != newData.flexGrow)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.FlexGrow, oldData.flexGrow, newData.flexGrow, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.flexShrink != newData.flexShrink)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.FlexShrink, oldData.flexShrink, newData.flexShrink, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.flexWrap != newData.flexWrap)
+                {
+                    result |= element.styleAnimation.StartEnum(StylePropertyId.FlexWrap, (int)oldData.flexWrap, (int)newData.flexWrap, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.height != newData.height)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.Height, oldData.height, newData.height, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.justifyContent != newData.justifyContent)
+                {
+                    result |= element.styleAnimation.StartEnum(StylePropertyId.JustifyContent, (int)oldData.justifyContent, (int)newData.justifyContent, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.left != newData.left)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.Left, oldData.left, newData.left, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.marginBottom != newData.marginBottom)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.MarginBottom, oldData.marginBottom, newData.marginBottom, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.marginLeft != newData.marginLeft)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.MarginLeft, oldData.marginLeft, newData.marginLeft, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.marginRight != newData.marginRight)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.MarginRight, oldData.marginRight, newData.marginRight, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.marginTop != newData.marginTop)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.MarginTop, oldData.marginTop, newData.marginTop, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.maxHeight != newData.maxHeight)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.MaxHeight, oldData.maxHeight, newData.maxHeight, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.maxWidth != newData.maxWidth)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.MaxWidth, oldData.maxWidth, newData.maxWidth, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.minHeight != newData.minHeight)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.MinHeight, oldData.minHeight, newData.minHeight, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.minWidth != newData.minWidth)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.MinWidth, oldData.minWidth, newData.minWidth, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.paddingBottom != newData.paddingBottom)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.PaddingBottom, oldData.paddingBottom, newData.paddingBottom, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.paddingLeft != newData.paddingLeft)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.PaddingLeft, oldData.paddingLeft, newData.paddingLeft, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.paddingRight != newData.paddingRight)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.PaddingRight, oldData.paddingRight, newData.paddingRight, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.paddingTop != newData.paddingTop)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.PaddingTop, oldData.paddingTop, newData.paddingTop, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.position != newData.position)
+                {
+                    result |= element.styleAnimation.StartEnum(StylePropertyId.Position, (int)oldData.position, (int)newData.position, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.right != newData.right)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.Right, oldData.right, newData.right, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.top != newData.top)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.Top, oldData.top, newData.top, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.width != newData.width)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.Width, oldData.width, newData.width, durationMs, delayMs, easingCurve);
+                }
+            }
+
+            if (!oldStyle.rareData.Equals(newStyle.rareData))
+            {
+                ref readonly var oldData = ref oldStyle.rareData.Read();
+                ref readonly var newData = ref newStyle.rareData.Read();
+                if (oldData.cursor != newData.cursor)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.Cursor, oldData.cursor, newData.cursor, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.textOverflow != newData.textOverflow)
+                {
+                    result |= element.styleAnimation.StartEnum(StylePropertyId.TextOverflow, (int)oldData.textOverflow, (int)newData.textOverflow, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.unityBackgroundImageTintColor != newData.unityBackgroundImageTintColor)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.UnityBackgroundImageTintColor, oldData.unityBackgroundImageTintColor, newData.unityBackgroundImageTintColor, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.unityBackgroundScaleMode != newData.unityBackgroundScaleMode)
+                {
+                    result |= element.styleAnimation.StartEnum(StylePropertyId.UnityBackgroundScaleMode, (int)oldData.unityBackgroundScaleMode, (int)newData.unityBackgroundScaleMode, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.unityOverflowClipBox != newData.unityOverflowClipBox)
+                {
+                    result |= element.styleAnimation.StartEnum(StylePropertyId.UnityOverflowClipBox, (int)oldData.unityOverflowClipBox, (int)newData.unityOverflowClipBox, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.unitySliceBottom != newData.unitySliceBottom)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.UnitySliceBottom, oldData.unitySliceBottom, newData.unitySliceBottom, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.unitySliceLeft != newData.unitySliceLeft)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.UnitySliceLeft, oldData.unitySliceLeft, newData.unitySliceLeft, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.unitySliceRight != newData.unitySliceRight)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.UnitySliceRight, oldData.unitySliceRight, newData.unitySliceRight, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.unitySliceTop != newData.unitySliceTop)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.UnitySliceTop, oldData.unitySliceTop, newData.unitySliceTop, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.unityTextOverflowPosition != newData.unityTextOverflowPosition)
+                {
+                    result |= element.styleAnimation.StartEnum(StylePropertyId.UnityTextOverflowPosition, (int)oldData.unityTextOverflowPosition, (int)newData.unityTextOverflowPosition, durationMs, delayMs, easingCurve);
+                }
+            }
+
+            if (!oldStyle.transformData.Equals(newStyle.transformData))
+            {
+                ref readonly var oldData = ref oldStyle.transformData.Read();
+                ref readonly var newData = ref newStyle.transformData.Read();
+                if (oldData.rotate != newData.rotate)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.Rotate, oldData.rotate, newData.rotate, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.scale != newData.scale)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.Scale, oldData.scale, newData.scale, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.transformOrigin != newData.transformOrigin)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.TransformOrigin, oldData.transformOrigin, newData.transformOrigin, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.translate != newData.translate)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.Translate, oldData.translate, newData.translate, durationMs, delayMs, easingCurve);
+                }
+            }
+
+            if (!oldStyle.visualData.Equals(newStyle.visualData))
+            {
+                ref readonly var oldData = ref oldStyle.visualData.Read();
+                ref readonly var newData = ref newStyle.visualData.Read();
+                if (oldData.backgroundColor != newData.backgroundColor)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.BackgroundColor, oldData.backgroundColor, newData.backgroundColor, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.backgroundImage != newData.backgroundImage)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.BackgroundImage, oldData.backgroundImage, newData.backgroundImage, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.borderBottomColor != newData.borderBottomColor)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.BorderBottomColor, oldData.borderBottomColor, newData.borderBottomColor, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.borderBottomLeftRadius != newData.borderBottomLeftRadius)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.BorderBottomLeftRadius, oldData.borderBottomLeftRadius, newData.borderBottomLeftRadius, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.borderBottomRightRadius != newData.borderBottomRightRadius)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.BorderBottomRightRadius, oldData.borderBottomRightRadius, newData.borderBottomRightRadius, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.borderLeftColor != newData.borderLeftColor)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.BorderLeftColor, oldData.borderLeftColor, newData.borderLeftColor, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.borderRightColor != newData.borderRightColor)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.BorderRightColor, oldData.borderRightColor, newData.borderRightColor, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.borderTopColor != newData.borderTopColor)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.BorderTopColor, oldData.borderTopColor, newData.borderTopColor, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.borderTopLeftRadius != newData.borderTopLeftRadius)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.BorderTopLeftRadius, oldData.borderTopLeftRadius, newData.borderTopLeftRadius, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.borderTopRightRadius != newData.borderTopRightRadius)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.BorderTopRightRadius, oldData.borderTopRightRadius, newData.borderTopRightRadius, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.opacity != newData.opacity)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.Opacity, oldData.opacity, newData.opacity, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.overflow != newData.overflow)
+                {
+                    result |= element.styleAnimation.StartEnum(StylePropertyId.Overflow, (int)oldData.overflow, (int)newData.overflow, durationMs, delayMs, easingCurve);
+                }
+            }
+
+            return result;
+        }
+
+        public static bool StartAnimationInline(VisualElement element, StylePropertyId id, ref ComputedStyle computedStyle, StyleValue sv, int durationMs, int delayMs, Func<float, float> easingCurve)
+        {
+            switch (id)
+            {
+                case StylePropertyId.AlignContent:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.alignContent : (Align)sv.number;
+                    if (sv.keyword == StyleKeyword.Auto)
+                        to = Align.Auto;
+                    return element.styleAnimation.StartEnum(StylePropertyId.AlignContent, (int)computedStyle.layoutData.Read().alignContent, (int)to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.AlignItems:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.alignItems : (Align)sv.number;
+                    if (sv.keyword == StyleKeyword.Auto)
+                        to = Align.Auto;
+                    return element.styleAnimation.StartEnum(StylePropertyId.AlignItems, (int)computedStyle.layoutData.Read().alignItems, (int)to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.AlignSelf:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.alignSelf : (Align)sv.number;
+                    if (sv.keyword == StyleKeyword.Auto)
+                        to = Align.Auto;
+                    return element.styleAnimation.StartEnum(StylePropertyId.AlignSelf, (int)computedStyle.layoutData.Read().alignSelf, (int)to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.BackgroundColor:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.backgroundColor : sv.color;
+                    return element.styleAnimation.Start(StylePropertyId.BackgroundColor, computedStyle.visualData.Read().backgroundColor, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.BackgroundImage:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.backgroundImage : sv.resource.IsAllocated ? Background.FromObject(sv.resource.Target) : new Background();
+                    return element.styleAnimation.Start(StylePropertyId.BackgroundImage, computedStyle.visualData.Read().backgroundImage, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.BorderBottomColor:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.borderBottomColor : sv.color;
+                    return element.styleAnimation.Start(StylePropertyId.BorderBottomColor, computedStyle.visualData.Read().borderBottomColor, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.BorderBottomLeftRadius:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.borderBottomLeftRadius : sv.length;
+                    return element.styleAnimation.Start(StylePropertyId.BorderBottomLeftRadius, computedStyle.visualData.Read().borderBottomLeftRadius, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.BorderBottomRightRadius:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.borderBottomRightRadius : sv.length;
+                    return element.styleAnimation.Start(StylePropertyId.BorderBottomRightRadius, computedStyle.visualData.Read().borderBottomRightRadius, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.BorderBottomWidth:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.borderBottomWidth : sv.number;
+                    return element.styleAnimation.Start(StylePropertyId.BorderBottomWidth, computedStyle.layoutData.Read().borderBottomWidth, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.BorderLeftColor:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.borderLeftColor : sv.color;
+                    return element.styleAnimation.Start(StylePropertyId.BorderLeftColor, computedStyle.visualData.Read().borderLeftColor, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.BorderLeftWidth:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.borderLeftWidth : sv.number;
+                    return element.styleAnimation.Start(StylePropertyId.BorderLeftWidth, computedStyle.layoutData.Read().borderLeftWidth, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.BorderRightColor:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.borderRightColor : sv.color;
+                    return element.styleAnimation.Start(StylePropertyId.BorderRightColor, computedStyle.visualData.Read().borderRightColor, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.BorderRightWidth:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.borderRightWidth : sv.number;
+                    return element.styleAnimation.Start(StylePropertyId.BorderRightWidth, computedStyle.layoutData.Read().borderRightWidth, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.BorderTopColor:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.borderTopColor : sv.color;
+                    return element.styleAnimation.Start(StylePropertyId.BorderTopColor, computedStyle.visualData.Read().borderTopColor, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.BorderTopLeftRadius:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.borderTopLeftRadius : sv.length;
+                    return element.styleAnimation.Start(StylePropertyId.BorderTopLeftRadius, computedStyle.visualData.Read().borderTopLeftRadius, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.BorderTopRightRadius:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.borderTopRightRadius : sv.length;
+                    return element.styleAnimation.Start(StylePropertyId.BorderTopRightRadius, computedStyle.visualData.Read().borderTopRightRadius, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.BorderTopWidth:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.borderTopWidth : sv.number;
+                    return element.styleAnimation.Start(StylePropertyId.BorderTopWidth, computedStyle.layoutData.Read().borderTopWidth, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.Bottom:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.bottom : sv.length;
+                    return element.styleAnimation.Start(StylePropertyId.Bottom, computedStyle.layoutData.Read().bottom, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.Color:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.color : sv.color;
+                    return element.styleAnimation.Start(StylePropertyId.Color, computedStyle.inheritedData.Read().color, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.Display:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.display : (DisplayStyle)sv.number;
+                    if (sv.keyword == StyleKeyword.None)
+                        to = DisplayStyle.None;
+                    return element.styleAnimation.StartEnum(StylePropertyId.Display, (int)computedStyle.layoutData.Read().display, (int)to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.FlexBasis:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.flexBasis : sv.length;
+                    return element.styleAnimation.Start(StylePropertyId.FlexBasis, computedStyle.layoutData.Read().flexBasis, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.FlexDirection:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.flexDirection : (FlexDirection)sv.number;
+                    return element.styleAnimation.StartEnum(StylePropertyId.FlexDirection, (int)computedStyle.layoutData.Read().flexDirection, (int)to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.FlexGrow:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.flexGrow : sv.number;
+                    return element.styleAnimation.Start(StylePropertyId.FlexGrow, computedStyle.layoutData.Read().flexGrow, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.FlexShrink:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.flexShrink : sv.number;
+                    return element.styleAnimation.Start(StylePropertyId.FlexShrink, computedStyle.layoutData.Read().flexShrink, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.FlexWrap:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.flexWrap : (Wrap)sv.number;
+                    return element.styleAnimation.StartEnum(StylePropertyId.FlexWrap, (int)computedStyle.layoutData.Read().flexWrap, (int)to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.FontSize:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.fontSize : sv.length;
+                    return element.styleAnimation.Start(StylePropertyId.FontSize, computedStyle.inheritedData.Read().fontSize, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.Height:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.height : sv.length;
+                    return element.styleAnimation.Start(StylePropertyId.Height, computedStyle.layoutData.Read().height, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.JustifyContent:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.justifyContent : (Justify)sv.number;
+                    return element.styleAnimation.StartEnum(StylePropertyId.JustifyContent, (int)computedStyle.layoutData.Read().justifyContent, (int)to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.Left:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.left : sv.length;
+                    return element.styleAnimation.Start(StylePropertyId.Left, computedStyle.layoutData.Read().left, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.LetterSpacing:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.letterSpacing : sv.length;
+                    return element.styleAnimation.Start(StylePropertyId.LetterSpacing, computedStyle.inheritedData.Read().letterSpacing, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.MarginBottom:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.marginBottom : sv.length;
+                    return element.styleAnimation.Start(StylePropertyId.MarginBottom, computedStyle.layoutData.Read().marginBottom, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.MarginLeft:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.marginLeft : sv.length;
+                    return element.styleAnimation.Start(StylePropertyId.MarginLeft, computedStyle.layoutData.Read().marginLeft, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.MarginRight:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.marginRight : sv.length;
+                    return element.styleAnimation.Start(StylePropertyId.MarginRight, computedStyle.layoutData.Read().marginRight, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.MarginTop:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.marginTop : sv.length;
+                    return element.styleAnimation.Start(StylePropertyId.MarginTop, computedStyle.layoutData.Read().marginTop, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.MaxHeight:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.maxHeight : sv.length;
+                    return element.styleAnimation.Start(StylePropertyId.MaxHeight, computedStyle.layoutData.Read().maxHeight, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.MaxWidth:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.maxWidth : sv.length;
+                    return element.styleAnimation.Start(StylePropertyId.MaxWidth, computedStyle.layoutData.Read().maxWidth, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.MinHeight:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.minHeight : sv.length;
+                    return element.styleAnimation.Start(StylePropertyId.MinHeight, computedStyle.layoutData.Read().minHeight, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.MinWidth:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.minWidth : sv.length;
+                    return element.styleAnimation.Start(StylePropertyId.MinWidth, computedStyle.layoutData.Read().minWidth, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.Opacity:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.opacity : sv.number;
+                    return element.styleAnimation.Start(StylePropertyId.Opacity, computedStyle.visualData.Read().opacity, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.Overflow:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.overflow : (OverflowInternal)sv.number;
+                    return element.styleAnimation.StartEnum(StylePropertyId.Overflow, (int)computedStyle.visualData.Read().overflow, (int)to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.PaddingBottom:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.paddingBottom : sv.length;
+                    return element.styleAnimation.Start(StylePropertyId.PaddingBottom, computedStyle.layoutData.Read().paddingBottom, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.PaddingLeft:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.paddingLeft : sv.length;
+                    return element.styleAnimation.Start(StylePropertyId.PaddingLeft, computedStyle.layoutData.Read().paddingLeft, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.PaddingRight:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.paddingRight : sv.length;
+                    return element.styleAnimation.Start(StylePropertyId.PaddingRight, computedStyle.layoutData.Read().paddingRight, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.PaddingTop:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.paddingTop : sv.length;
+                    return element.styleAnimation.Start(StylePropertyId.PaddingTop, computedStyle.layoutData.Read().paddingTop, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.Position:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.position : (Position)sv.number;
+                    return element.styleAnimation.StartEnum(StylePropertyId.Position, (int)computedStyle.layoutData.Read().position, (int)to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.Right:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.right : sv.length;
+                    return element.styleAnimation.Start(StylePropertyId.Right, computedStyle.layoutData.Read().right, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.TextOverflow:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.textOverflow : (TextOverflow)sv.number;
+                    return element.styleAnimation.StartEnum(StylePropertyId.TextOverflow, (int)computedStyle.rareData.Read().textOverflow, (int)to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.Top:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.top : sv.length;
+                    return element.styleAnimation.Start(StylePropertyId.Top, computedStyle.layoutData.Read().top, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.UnityBackgroundImageTintColor:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.unityBackgroundImageTintColor : sv.color;
+                    return element.styleAnimation.Start(StylePropertyId.UnityBackgroundImageTintColor, computedStyle.rareData.Read().unityBackgroundImageTintColor, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.UnityBackgroundScaleMode:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.unityBackgroundScaleMode : (ScaleMode)sv.number;
+                    return element.styleAnimation.StartEnum(StylePropertyId.UnityBackgroundScaleMode, (int)computedStyle.rareData.Read().unityBackgroundScaleMode, (int)to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.UnityFont:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.unityFont : sv.resource.IsAllocated ? sv.resource.Target as Font : null;
+                    return element.styleAnimation.Start(StylePropertyId.UnityFont, computedStyle.inheritedData.Read().unityFont, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.UnityFontDefinition:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.unityFontDefinition : sv.resource.IsAllocated ? FontDefinition.FromObject(sv.resource.Target) : new FontDefinition();
+                    return element.styleAnimation.Start(StylePropertyId.UnityFontDefinition, computedStyle.inheritedData.Read().unityFontDefinition, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.UnityFontStyleAndWeight:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.unityFontStyleAndWeight : (FontStyle)sv.number;
+                    return element.styleAnimation.StartEnum(StylePropertyId.UnityFontStyleAndWeight, (int)computedStyle.inheritedData.Read().unityFontStyleAndWeight, (int)to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.UnityOverflowClipBox:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.unityOverflowClipBox : (OverflowClipBox)sv.number;
+                    return element.styleAnimation.StartEnum(StylePropertyId.UnityOverflowClipBox, (int)computedStyle.rareData.Read().unityOverflowClipBox, (int)to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.UnityParagraphSpacing:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.unityParagraphSpacing : sv.length;
+                    return element.styleAnimation.Start(StylePropertyId.UnityParagraphSpacing, computedStyle.inheritedData.Read().unityParagraphSpacing, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.UnitySliceBottom:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.unitySliceBottom : (int)sv.number;
+                    return element.styleAnimation.Start(StylePropertyId.UnitySliceBottom, computedStyle.rareData.Read().unitySliceBottom, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.UnitySliceLeft:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.unitySliceLeft : (int)sv.number;
+                    return element.styleAnimation.Start(StylePropertyId.UnitySliceLeft, computedStyle.rareData.Read().unitySliceLeft, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.UnitySliceRight:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.unitySliceRight : (int)sv.number;
+                    return element.styleAnimation.Start(StylePropertyId.UnitySliceRight, computedStyle.rareData.Read().unitySliceRight, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.UnitySliceTop:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.unitySliceTop : (int)sv.number;
+                    return element.styleAnimation.Start(StylePropertyId.UnitySliceTop, computedStyle.rareData.Read().unitySliceTop, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.UnityTextAlign:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.unityTextAlign : (TextAnchor)sv.number;
+                    return element.styleAnimation.StartEnum(StylePropertyId.UnityTextAlign, (int)computedStyle.inheritedData.Read().unityTextAlign, (int)to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.UnityTextOutlineColor:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.unityTextOutlineColor : sv.color;
+                    return element.styleAnimation.Start(StylePropertyId.UnityTextOutlineColor, computedStyle.inheritedData.Read().unityTextOutlineColor, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.UnityTextOutlineWidth:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.unityTextOutlineWidth : sv.number;
+                    return element.styleAnimation.Start(StylePropertyId.UnityTextOutlineWidth, computedStyle.inheritedData.Read().unityTextOutlineWidth, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.UnityTextOverflowPosition:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.unityTextOverflowPosition : (TextOverflowPosition)sv.number;
+                    return element.styleAnimation.StartEnum(StylePropertyId.UnityTextOverflowPosition, (int)computedStyle.rareData.Read().unityTextOverflowPosition, (int)to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.Visibility:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.visibility : (Visibility)sv.number;
+                    return element.styleAnimation.StartEnum(StylePropertyId.Visibility, (int)computedStyle.inheritedData.Read().visibility, (int)to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.WhiteSpace:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.whiteSpace : (WhiteSpace)sv.number;
+                    return element.styleAnimation.StartEnum(StylePropertyId.WhiteSpace, (int)computedStyle.inheritedData.Read().whiteSpace, (int)to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.Width:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.width : sv.length;
+                    return element.styleAnimation.Start(StylePropertyId.Width, computedStyle.layoutData.Read().width, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.WordSpacing:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.wordSpacing : sv.length;
+                    return element.styleAnimation.Start(StylePropertyId.WordSpacing, computedStyle.inheritedData.Read().wordSpacing, to, durationMs, delayMs, easingCurve);
+                }
+
+                default:
+                    return false;
+            }
         }
 
         public void ApplyStyleTransformOrigin(TransformOrigin st)
@@ -677,6 +2476,9 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.Custom:
                     RemoveCustomStyleProperty(reader);
                     break;
+                case StylePropertyId.All:
+                    ApplyAllPropertyInitial();
+                    break;
                 default:
                     ApplyInitialValue(reader.propertyId);
                     break;
@@ -695,6 +2497,8 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.AlignSelf:
                     layoutData.Write().alignSelf = InitialStyle.alignSelf;
+                    break;
+                case StylePropertyId.All:
                     break;
                 case StylePropertyId.BackgroundColor:
                     visualData.Write().backgroundColor = InitialStyle.backgroundColor;
@@ -880,6 +2684,29 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.TransformOrigin:
                     transformData.Write().transformOrigin = InitialStyle.transformOrigin;
+                    break;
+                case StylePropertyId.Transition:
+                    transitionData.Write().transitionDelay.CopyFrom(InitialStyle.transitionDelay);
+                    transitionData.Write().transitionDuration.CopyFrom(InitialStyle.transitionDuration);
+                    transitionData.Write().transitionProperty.CopyFrom(InitialStyle.transitionProperty);
+                    transitionData.Write().transitionTimingFunction.CopyFrom(InitialStyle.transitionTimingFunction);
+                    ResetComputedTransitions();
+                    break;
+                case StylePropertyId.TransitionDelay:
+                    transitionData.Write().transitionDelay.CopyFrom(InitialStyle.transitionDelay);
+                    ResetComputedTransitions();
+                    break;
+                case StylePropertyId.TransitionDuration:
+                    transitionData.Write().transitionDuration.CopyFrom(InitialStyle.transitionDuration);
+                    ResetComputedTransitions();
+                    break;
+                case StylePropertyId.TransitionProperty:
+                    transitionData.Write().transitionProperty.CopyFrom(InitialStyle.transitionProperty);
+                    ResetComputedTransitions();
+                    break;
+                case StylePropertyId.TransitionTimingFunction:
+                    transitionData.Write().transitionTimingFunction.CopyFrom(InitialStyle.transitionTimingFunction);
+                    ResetComputedTransitions();
                     break;
                 case StylePropertyId.Translate:
                     transformData.Write().translate = InitialStyle.translate;

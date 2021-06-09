@@ -65,7 +65,7 @@ namespace UnityEditor
             if (settings != null && audioImporter != null)
             {
                 // We need to sort them so every extraDataTarget have them ordered correctly and we can use serializedProperties.
-                var validPlatforms = BuildPlatforms.instance.GetValidPlatforms().OrderBy(platform => platform.targetGroup);
+                var validPlatforms = BuildPlatforms.instance.GetValidPlatforms().OrderBy(platform => platform.namedBuildTarget.TargetName);
                 settings.sampleSettingOverrides = new List<AudioImporterPlatformSettings>(validPlatforms.Count());
                 foreach (BuildPlatform platform in validPlatforms)
                 {
@@ -73,7 +73,7 @@ namespace UnityEditor
                     var sample = audioImporter.GetOverrideSampleSettings(platformName);
                     settings.sampleSettingOverrides.Add(new AudioImporterPlatformSettings()
                     {
-                        platform = platform.targetGroup,
+                        platform = platform.namedBuildTarget.ToBuildTargetGroup(),
                         isOverridden = audioImporter.ContainsSampleSettingsOverride(platformName),
                         settings = sample
                     });
@@ -280,7 +280,7 @@ namespace UnityEditor
             }
         }
 
-        private void OnSampleSettingGUI(BuildTargetGroup platform, SerializedProperty audioImporterSampleSettings, bool selectionContainsTrackerFile)
+        private void OnSampleSettingGUI(BuildPlatform platform, SerializedProperty audioImporterSampleSettings, bool selectionContainsTrackerFile)
         {
             //Load Type
             var loadTypeProperty = audioImporterSampleSettings.FindPropertyRelative("loadType");
@@ -317,7 +317,7 @@ namespace UnityEditor
             {
                 //Compression format
                 var compressionFormatProperty = audioImporterSampleSettings.FindPropertyRelative("compressionFormat");
-                var allowedFormats = GetFormatsForPlatform(platform);
+                var allowedFormats = GetFormatsForPlatform(platform.namedBuildTarget.ToBuildTargetGroup());
                 using (var horizontal = new EditorGUILayout.HorizontalScope())
                 {
                     using (var propertyScope = new EditorGUI.PropertyScope(horizontal.rect, Style.CompressionFormat, compressionFormatProperty))
@@ -363,7 +363,7 @@ namespace UnityEditor
                     }
                 }
 
-                if (platform != BuildTargetGroup.WebGL)
+                if (platform.namedBuildTarget != NamedBuildTarget.WebGL)
                 {
                     //Sample rate settings
                     var sampleRateSettingProperty = audioImporterSampleSettings.FindPropertyRelative("sampleRateSetting");
@@ -432,17 +432,17 @@ namespace UnityEditor
             }
 
             // We need to sort them so every extraDataTarget have them ordered correctly and we can use serializedProperties.
-            BuildPlatform[] validPlatforms = BuildPlatforms.instance.GetValidPlatforms().OrderBy(platform => platform.targetGroup).ToArray();
+            BuildPlatform[] validPlatforms = BuildPlatforms.instance.GetValidPlatforms().OrderBy(platform => platform.namedBuildTarget.TargetName).ToArray();
             GUILayout.Space(10);
             int shownSettingsPage = EditorGUILayout.BeginPlatformGrouping(validPlatforms, Style.DefaultPlatform);
 
             if (shownSettingsPage == -1)
             {
-                OnSampleSettingGUI(BuildTargetGroup.Unknown, m_DefaultSampleSettings, selectionContainsTrackerFile);
+                OnSampleSettingGUI(new BuildPlatform("", "", NamedBuildTarget.Unknown, BuildTarget.NoTarget, false), m_DefaultSampleSettings, selectionContainsTrackerFile);
             }
             else
             {
-                BuildTargetGroup platform = validPlatforms[shownSettingsPage].targetGroup;
+                BuildPlatform platform = validPlatforms[shownSettingsPage];
                 SerializedProperty platformProperty = extraDataSerializedObject.FindProperty($"sampleSettingOverrides.Array.data[{shownSettingsPage}]");
                 var isOverriddenProperty = platformProperty.FindPropertyRelative("isOverridden");
 

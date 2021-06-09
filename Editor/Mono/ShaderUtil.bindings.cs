@@ -315,7 +315,7 @@ namespace UnityEditor
             if (shader == null)
                 return null;
 
-            var rpEditor = GetCustomEditorForRenderPipeline(shader, GraphicsSettings.renderPipelineAsset?.GetType());
+            var rpEditor = GetCustomEditorForRenderPipeline(shader, GraphicsSettings.currentRenderPipeline?.GetType());
             return String.IsNullOrEmpty(rpEditor) ? shader.customEditor : rpEditor;
         }
 

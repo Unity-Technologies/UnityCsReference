@@ -14,10 +14,13 @@ namespace UnityEditor.Build
     {
         // short name used for texture settings, etc.
         public string name;
-        public BuildTargetGroup targetGroup;
+        public NamedBuildTarget namedBuildTarget;
         public bool forceShowTarget;
         public string tooltip;
         public BuildTarget defaultTarget;
+
+        // TODO: Some packages are still using targetGroup, so we keep it here as a getter for compatibility
+        public BuildTargetGroup targetGroup => namedBuildTarget.ToBuildTargetGroup();
 
         ScalableGUIContent m_Title;
         ScalableGUIContent m_SmallTitle;
@@ -25,20 +28,32 @@ namespace UnityEditor.Build
         public GUIContent title => m_Title;
         public Texture2D smallIcon => ((GUIContent)m_SmallTitle).image as Texture2D;
 
-        public BuildPlatform(string locTitle, string iconId, BuildTargetGroup targetGroup, BuildTarget defaultTarget, bool forceShowTarget)
-            : this(locTitle, "", iconId, targetGroup, defaultTarget, forceShowTarget)
+        public BuildPlatform(string locTitle, string iconId, NamedBuildTarget namedBuildTarget, BuildTarget defaultTarget, bool forceShowTarget)
+            : this(locTitle, "", iconId, namedBuildTarget, defaultTarget, forceShowTarget)
         {
         }
 
-        public BuildPlatform(string locTitle, string tooltip, string iconId, BuildTargetGroup targetGroup, BuildTarget defaultTarget, bool forceShowTarget)
+        public BuildPlatform(string locTitle, string tooltip, string iconId, NamedBuildTarget namedBuildTarget, BuildTarget defaultTarget, bool forceShowTarget)
         {
-            this.targetGroup = targetGroup;
-            name = targetGroup != BuildTargetGroup.Unknown ? BuildPipeline.GetBuildTargetGroupName(defaultTarget) : "";
+            this.namedBuildTarget = namedBuildTarget;
+            name = namedBuildTarget.TargetName;
             m_Title = new ScalableGUIContent(locTitle, null, iconId);
             m_SmallTitle = new ScalableGUIContent(null, null, iconId + ".Small");
             this.tooltip = tooltip;
             this.forceShowTarget = forceShowTarget;
             this.defaultTarget = defaultTarget;
+        }
+    }
+
+    internal class BuildPlatformWithSubtarget : BuildPlatform
+    {
+        public int subtarget;
+
+        public BuildPlatformWithSubtarget(string locTitle, string tooltip, string iconId, NamedBuildTarget namedBuildTarget, BuildTarget defaultTarget, int subtarget, bool forceShowTarget)
+            : base(locTitle, tooltip, iconId, namedBuildTarget, defaultTarget, forceShowTarget)
+        {
+            this.subtarget = subtarget;
+            name = namedBuildTarget.TargetName;
         }
     }
 
@@ -64,17 +79,21 @@ namespace UnityEditor.Build
             else if (Application.platform == RuntimePlatform.LinuxEditor)
                 standaloneTarget = BuildTarget.StandaloneLinux64;
 
-            buildPlatformsList.Add(new BuildPlatform(BuildPipeline.GetBuildTargetGroupDisplayName(BuildTargetGroup.Standalone), "BuildSettings.Standalone", BuildTargetGroup.Standalone, standaloneTarget, true));
+            buildPlatformsList.Add(new BuildPlatformWithSubtarget(BuildPipeline.GetBuildTargetGroupDisplayName(BuildTargetGroup.Standalone), "", "BuildSettings.Standalone",
+                NamedBuildTarget.Standalone, standaloneTarget, (int)StandaloneBuildSubtarget.Player, true));
+
+            buildPlatformsList.Add(new BuildPlatformWithSubtarget("Dedicated Server", "", "BuildSettings.Standalone",
+                NamedBuildTarget.Server, standaloneTarget, (int)StandaloneBuildSubtarget.Server, true));
 
             foreach (var target in buildTargets)
             {
                 if (!target.HasFlag(TargetAttributes.IsStandalonePlatform))
                 {
-                    BuildTargetGroup btg = BuildPipeline.GetBuildTargetGroup(target.buildTargetPlatformVal);
+                    NamedBuildTarget namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(BuildPipeline.GetBuildTargetGroup(target.buildTargetPlatformVal));
                     buildPlatformsList.Add(new BuildPlatform(
-                        BuildPipeline.GetBuildTargetGroupDisplayName(btg),
+                        BuildPipeline.GetBuildTargetGroupDisplayName(namedBuildTarget.ToBuildTargetGroup()),
                         target.iconName,
-                        btg,
+                        namedBuildTarget,
                         target.buildTargetPlatformVal,
                         !target.HasFlag(TargetAttributes.HideInUI)));
                 }
@@ -90,54 +109,64 @@ namespace UnityEditor.Build
 
         public BuildPlatform[] buildPlatforms;
 
-        public string GetBuildTargetDisplayName(BuildTargetGroup group, BuildTarget target)
+        public string GetBuildTargetDisplayName(BuildTargetGroup buildTargetGroup, BuildTarget target, int subtarget)
+        {
+            if (buildTargetGroup == BuildTargetGroup.Standalone && subtarget == (int)StandaloneBuildSubtarget.Server)
+                return GetBuildTargetDisplayName(NamedBuildTarget.Server, target);
+
+            return GetBuildTargetDisplayName(NamedBuildTarget.FromBuildTargetGroup(buildTargetGroup), target);
+        }
+
+        public string GetBuildTargetDisplayName(NamedBuildTarget namedBuildTarget, BuildTarget target)
         {
             foreach (BuildPlatform cur in buildPlatforms)
             {
-                if (cur.defaultTarget == target && cur.targetGroup == group)
+                if (cur.defaultTarget == target && cur.namedBuildTarget == namedBuildTarget)
                     return cur.title.text;
             }
+
+            var suffix = namedBuildTarget == NamedBuildTarget.Server ? " Server" : "";
 
             switch (target)
             {
                 case BuildTarget.StandaloneWindows:
                 case BuildTarget.StandaloneWindows64:
-                    return "Windows";
+                    return $"Windows{suffix}";
                 case BuildTarget.StandaloneOSX:
                     // Deprecated
 #pragma warning disable 612, 618
                 case BuildTarget.StandaloneOSXIntel:
                 case BuildTarget.StandaloneOSXIntel64:
 #pragma warning restore 612, 618
-                    return "macOS";
+                    return $"macOS{suffix}";
                     // Deprecated
 #pragma warning disable 612, 618
                 case BuildTarget.StandaloneLinux:
                 case BuildTarget.StandaloneLinuxUniversal:
 #pragma warning restore 612, 618
                 case BuildTarget.StandaloneLinux64:
-                    return "Linux";
+                    return $"Linux{suffix}";
             }
 
             return "Unsupported Target";
         }
 
-        public string GetModuleDisplayName(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget)
+        public string GetModuleDisplayName(NamedBuildTarget namedBuildTarget, BuildTarget buildTarget)
         {
-            return GetBuildTargetDisplayName(buildTargetGroup, buildTarget);
+            return GetBuildTargetDisplayName(namedBuildTarget, buildTarget);
         }
 
-        int BuildPlatformIndexFromTargetGroup(BuildTargetGroup group)
+        int BuildPlatformIndexFromNamedBuildTarget(NamedBuildTarget target)
         {
             for (int i = 0; i < buildPlatforms.Length; i++)
-                if (group == buildPlatforms[i].targetGroup)
+                if (target == buildPlatforms[i].namedBuildTarget)
                     return i;
             return -1;
         }
 
-        public BuildPlatform BuildPlatformFromTargetGroup(BuildTargetGroup group)
+        public BuildPlatform BuildPlatformFromNamedBuildTarget(NamedBuildTarget target)
         {
-            int index = BuildPlatformIndexFromTargetGroup(group);
+            int index = BuildPlatformIndexFromNamedBuildTarget(target);
             return index != -1 ? buildPlatforms[index] : null;
         }
 
@@ -145,7 +174,7 @@ namespace UnityEditor.Build
         {
             List<BuildPlatform> platforms = new List<BuildPlatform>();
             foreach (BuildPlatform bp in buildPlatforms)
-                if (bp.targetGroup == BuildTargetGroup.Standalone || BuildPipeline.IsBuildTargetSupported(bp.targetGroup, bp.defaultTarget))
+                if (bp.namedBuildTarget == NamedBuildTarget.Standalone || BuildPipeline.IsBuildTargetSupported(bp.namedBuildTarget.ToBuildTargetGroup(), bp.defaultTarget))
                     platforms.Add(bp);
 
             return platforms;

@@ -1,7 +1,6 @@
-using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
 {
@@ -24,6 +23,7 @@ namespace Unity.UI.Builder
         bool m_PopupTemporarilyDisabled = false;
         bool m_EditingTemporarilyDisabled = false;
         VariableCompleter m_CompleterOnTarget;
+        public int index = 0;
 
         public bool editingEnabled { get; set; } = true;
 
@@ -136,7 +136,8 @@ namespace Unity.UI.Builder
                 }
                 else
                 {
-                    m_Inspector.styleFields.OnFieldVariableChange(newVarName, targetField, styleName);
+                    m_Inspector.styleFields.OnFieldVariableChange(newVarName, targetField, styleName, index);
+                    m_Inspector.RefreshUI();
                 }
             }
 
@@ -205,21 +206,30 @@ namespace Unity.UI.Builder
                 return;
 
             var cShartStyleName = BuilderInspectorStyleFields.ConvertUssStyleNameToCSharpStyleName(styleName);
-            var property = BuilderInspectorStyleFields.GetStyleProperty(m_Inspector.currentRule, cShartStyleName);
 
             // Disable completion on text field-based property fields when editing inline styles
             if (m_CompleterOnTarget != null)
                 m_CompleterOnTarget.enabled = BuilderSharedStyles.IsSelectorElement(m_Inspector.currentVisualElement);
 
+            var property = BuilderInspectorStyleFields.GetStyleProperty(m_Inspector.currentRule, cShartStyleName);
+
             if (property != null)
             {
-                if (property.IsVariable())
+                using (var manipulator = m_Inspector.styleSheet.GetStylePropertyManipulator(
+                    m_Inspector.currentVisualElement, m_Inspector.currentRule, property.name,
+                    m_Inspector.document.fileSettings.editorExtensionMode))
                 {
-                    targetField.AddToClassList(BuilderConstants.InspectorLocalStyleVariableClassName);
-                }
-                else
-                {
-                    targetField.RemoveFromClassList(BuilderConstants.InspectorLocalStyleVariableClassName);
+                    var displayIndex = index;
+                    displayIndex = AdjustDisplayIndexForTransitions(displayIndex, manipulator);
+
+                    if (displayIndex >= 0 &&  manipulator.IsVariableAtIndex(displayIndex))
+                    {
+                        targetField.AddToClassList(BuilderConstants.InspectorLocalStyleVariableClassName);
+                    }
+                    else
+                    {
+                        targetField.RemoveFromClassList(BuilderConstants.InspectorLocalStyleVariableClassName);
+                    }
                 }
             }
             else if (!string.IsNullOrEmpty(styleName))
@@ -236,10 +246,18 @@ namespace Unity.UI.Builder
 
                     if (ruleProperty != null)
                     {
-                        if (ruleProperty.IsVariable())
+                        using (var manipulator = matchRecord.sheet.GetStylePropertyManipulator(
+                            m_Inspector.currentVisualElement, matchRecord.complexSelector.rule, ruleProperty.name,
+                            m_Inspector.document.fileSettings.editorExtensionMode))
                         {
-                            targetField.AddToClassList(BuilderConstants.InspectorLocalStyleVariableClassName);
-                            found = true;
+                            var displayIndex = index;
+                            displayIndex = AdjustDisplayIndexForTransitions(displayIndex, manipulator);
+
+                            if (displayIndex >= 0 &&  manipulator.IsVariableAtIndex(displayIndex))
+                            {
+                                targetField.AddToClassList(BuilderConstants.InspectorLocalStyleVariableClassName);
+                                found = true;
+                            }
                         }
 
                         break;
@@ -260,9 +278,14 @@ namespace Unity.UI.Builder
             // Find the name of the variable bound to the field
             if (property != null)
             {
-                if (property.IsVariable())
+                using (var manipulator = handler.m_Inspector.styleSheet.GetStylePropertyManipulator(
+                    handler.m_Inspector.currentVisualElement, handler.m_Inspector.currentRule, property.name,
+                    handler.m_Inspector.document.fileSettings.editorExtensionMode))
                 {
-                    varName = handler.m_Inspector.styleSheet.ReadVariable(property);
+                    var displayIndex = handler.index;
+                    displayIndex = AdjustDisplayIndexForTransitions(displayIndex, manipulator);
+                    if (displayIndex >= 0 && manipulator.IsVariableAtIndex(displayIndex))
+                        varName = manipulator.GetVariableNameAtIndex(displayIndex);
                 }
             }
             else if (!handler.editingEnabled)
@@ -276,11 +299,20 @@ namespace Unity.UI.Builder
 
                     if (ruleProperty != null)
                     {
-                        if (ruleProperty.IsVariable())
+                        using (var manipulator = matchRecord.sheet.GetStylePropertyManipulator(
+                            handler.m_Inspector.currentVisualElement, matchRecord.complexSelector.rule, ruleProperty.name,
+                            handler.m_Inspector.document.fileSettings.editorExtensionMode))
                         {
-                            varName = matchRecord.sheet.ReadVariable(ruleProperty);
-                            break;
+                            var displayIndex = handler.index;
+                            displayIndex = AdjustDisplayIndexForTransitions(displayIndex, manipulator);
+
+                            if (displayIndex >= 0 && manipulator.IsVariableAtIndex(displayIndex))
+                            {
+                                varName = manipulator.GetVariableNameAtIndex(displayIndex);
+                                break;
+                            }
                         }
+
                     }
                 }
             }
@@ -353,6 +385,33 @@ namespace Unity.UI.Builder
                 return;
             m_EditingTemporarilyDisabled = true;
             labelElement.schedule.Execute(() => m_EditingTemporarilyDisabled = false).ExecuteLater(s_InteractionDisableDelay);
+        }
+
+        static int AdjustDisplayIndexForTransitions(int index, StylePropertyManipulator manipulator)
+        {
+            var valueCount = manipulator.GetValuesCount();
+            if (index < valueCount ||
+                !StylePropertyUtil.s_NameToId.TryGetValue(manipulator.propertyName, out var id) ||
+                !id.IsTransitionId())
+                return index;
+
+            switch (id)
+            {
+                case StylePropertyId.TransitionProperty:
+                    index = -1;
+                    break;
+                case StylePropertyId.TransitionDuration:
+                    index %= manipulator.GetValuesCount();
+                    break;
+                case StylePropertyId.TransitionTimingFunction:
+                    index %= manipulator.GetValuesCount();
+                    break;
+                case StylePropertyId.TransitionDelay:
+                    index %= manipulator.GetValuesCount();
+                    break;
+            }
+
+            return index;
         }
     }
 }

@@ -3,6 +3,11 @@ using System.Collections.Generic;
 using System;
 using UnityEngine.Assertions;
 
+using System.Linq;
+using UnityEditor;
+using UnityEngine.Pool;
+using UnityEngine.UIElements.StyleSheets;
+
 namespace Unity.UI.Builder
 {
     internal class BuilderInspectorLocalStyles : IBuilderInspectorSection
@@ -60,6 +65,11 @@ namespace Unity.UI.Builder
                         else if (styleField is FoldoutColorField)
                         {
                             m_StyleFields.BindStyleField(styleRow, styleField as FoldoutColorField);
+                        }
+                        else if (styleField is TransitionsListView transitionsListView)
+                        {
+                            GenerateTransitionPropertiesContent();
+                            m_StyleFields.BindStyleField(styleRow, transitionsListView);
                         }
                         else if (!string.IsNullOrEmpty(styleField.bindingPath))
                         {
@@ -160,6 +170,10 @@ namespace Unity.UI.Builder
                     {
                         m_StyleFields.RefreshStyleField(styleField as FoldoutField);
                     }
+                    else if (styleField is TransitionsListView transitionsListView)
+                    {
+                        m_StyleFields.RefreshStyleField(transitionsListView);
+                    }
                     else if (!string.IsNullOrEmpty(styleField.bindingPath))
                     {
                         m_StyleFields.RefreshStyleField(styleField.bindingPath, styleField);
@@ -191,6 +205,102 @@ namespace Unity.UI.Builder
             m_LocalStylesSection.EnableInClassList(BuilderConstants.InspectorFlexColumnReverseModeClassName, newDirection == FlexDirection.ColumnReverse);
             m_LocalStylesSection.EnableInClassList(BuilderConstants.InspectorFlexRowModeClassName, newDirection == FlexDirection.Row);
             m_LocalStylesSection.EnableInClassList(BuilderConstants.InspectorFlexRowReverseModeClassName, newDirection == FlexDirection.RowReverse);
+        }
+
+        /// <summary>
+        /// This will iterate over the current UI Builder hierarchy and extract the supported animatable properties.
+        /// This will allow to display the options to users in the same order that they are in the builder.
+        /// </summary>
+        void GenerateTransitionPropertiesContent()
+        {
+            ref var content = ref TransitionPropertyDropdownContent.Content;
+            content.AppendValue(new CategoryDropdownContent.ValueItem
+            {
+                value = "all",
+                displayName = "all"
+            });
+
+            foreach (var kvp in m_StyleCategories)
+            {
+                var groupName = kvp.Key.text;
+                if (string.IsNullOrWhiteSpace(groupName) || groupName == "Transition Animations")
+                    continue;
+
+                content.AppendCategory(new CategoryDropdownContent.Category{ name = groupName });
+
+                foreach (var element in kvp.Value)
+                {
+                    var styleName = element.GetProperty(BuilderConstants.InspectorStylePropertyNameVEPropertyName) as string;
+
+                    if (!string.IsNullOrWhiteSpace(styleName))
+                    {
+                        var styleId = StyleDebug.GetStylePropertyIdFromName(styleName);
+                        if (!StylePropertyUtil.s_AnimatableProperties.Contains(styleId))
+                            continue;
+
+                        if (!string.IsNullOrWhiteSpace(styleId.ToString()))
+                        {
+                            content.AppendValue(
+                            new CategoryDropdownContent.ValueItem
+                                {
+                                    categoryName = groupName,
+                                    value = styleName,
+                                    displayName = ObjectNames.NicifyVariableName(styleId.ToString())
+                                });
+                        }
+                    }
+
+                    if (!(element is FoldoutField foldoutField)) continue;
+                    var hashSet = HashSetPool<StylePropertyId>.Get();
+                    try
+                    {
+                        foreach (var bindingPath in foldoutField.bindingPathArray)
+                        {
+                            var shortHandId = StyleDebug.GetStylePropertyIdFromName(bindingPath).GetShorthandProperty();
+                            if (shortHandId == StylePropertyId.Unknown || !hashSet.Add(shortHandId))
+                                continue;
+
+                            if (!StylePropertyUtil.s_AnimatableProperties.Contains(shortHandId))
+                                continue;
+
+                            if (!string.IsNullOrWhiteSpace(shortHandId.ToString()))
+                            {
+                                content.AppendValue(
+                                    new CategoryDropdownContent.ValueItem
+                                    {
+                                        categoryName = groupName,
+                                        value = BuilderNameUtilities.ConvertStyleCSharpNameToUssName(
+                                            shortHandId.ToString()),
+                                        displayName = ObjectNames.NicifyVariableName(shortHandId.ToString())
+                                    });
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        HashSetPool<StylePropertyId>.Release(hashSet);
+                    }
+                }
+            }
+
+            content.AppendSeparator();
+            content.AppendValue(new CategoryDropdownContent.ValueItem
+            {
+                value = "none",
+                displayName = "none"
+            });
+
+            content.AppendValue(new CategoryDropdownContent.ValueItem
+            {
+                value = "initial",
+                displayName = "initial"
+            });
+
+            content.AppendValue(new CategoryDropdownContent.ValueItem
+            {
+                value = "ignored",
+                displayName = "ignored"
+            });
         }
     }
 }

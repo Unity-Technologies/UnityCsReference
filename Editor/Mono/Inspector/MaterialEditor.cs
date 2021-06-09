@@ -267,10 +267,9 @@ namespace UnityEditor
                 EndNoApplyMaterialPropertyDrawers();
 
                 EditorMaterialUtility.ResetDefaultTextures(material, false);
+                ApplyMaterialPropertyDrawers(material);
                 if (m_CustomShaderGUI != null)
                     m_CustomShaderGUI.ValidateMaterial(material);
-                else
-                    ApplyMaterialPropertyDrawers(material);
             }
 
             if (updateMaterialEditors)
@@ -1791,16 +1790,17 @@ namespace UnityEditor
 
         void CreateCustomShaderEditorIfNeeded(Shader shader)
         {
-            if (shader == null || string.IsNullOrEmpty(ShaderUtil.GetCurrentCustomEditor(shader)))
+            var customEditorName = ShaderUtil.GetCurrentCustomEditor(shader);
+            if (string.IsNullOrEmpty(customEditorName))
             {
                 m_CustomEditorClassName = "";
                 m_CustomShaderGUI = null;
                 return;
             }
-            if (m_CustomEditorClassName == ShaderUtil.GetCurrentCustomEditor(shader))
+            if (m_CustomEditorClassName == customEditorName)
                 return;
 
-            m_CustomEditorClassName = ShaderUtil.GetCurrentCustomEditor(shader);
+            m_CustomEditorClassName = customEditorName;
             m_CustomShaderGUI = ShaderGUIUtility.CreateShaderGUI(m_CustomEditorClassName);
             // We need to delay checking setup because we need all loaded editor assemblies which is not ready
             // during package import. During package import we create an Editor to generate a asset preview. (case 707328)

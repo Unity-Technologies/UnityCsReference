@@ -211,6 +211,9 @@ namespace UnityEditor.StyleSheets
                 case StyleValueType.Function:
                     str = sheet.ReadFunctionName(handle);
                     break;
+                case StyleValueType.CommaSeparator:
+                    str = ",";
+                    break;
                 default:
                     throw new ArgumentException("Unhandled type " + handle.valueType);
             }
@@ -235,7 +238,7 @@ namespace UnityEditor.StyleSheets
                         sb.Append(")");
 
                         break;
-                    case StyleValueType.FunctionSeparator:
+                    case StyleValueType.CommaSeparator:
                         sb.Append(",");
                         break;
                     default:
@@ -246,7 +249,7 @@ namespace UnityEditor.StyleSheets
                     }
                 }
 
-                if (valueIndex < values.Length && values[valueIndex].valueType != StyleValueType.FunctionSeparator && valueCount != 1)
+                if (valueIndex < values.Length && values[valueIndex].valueType != StyleValueType.CommaSeparator && valueCount != 1)
                 {
                     sb.Append(" ");
                 }
@@ -275,10 +278,11 @@ namespace UnityEditor.StyleSheets
                     for (i = 0; i < property.values.Length - 1; i++)
                     {
                         propertyValueStr = ToUssString(sheet, options, property.values[i]);
-                        sb.Append(" ");
+                        if (propertyValueStr != ",")
+                            sb.Append(" ");
                         sb.Append(propertyValueStr);
                     }
-                    sb.Append(", ");
+                    sb.Append(" ");
                     propertyValueStr = ToUssString(sheet, options,  property.values[i]);
                     sb.Append(propertyValueStr);
                 }

@@ -56,7 +56,7 @@ namespace Unity.UI.Builder
                 else
                 {
                     var rule = vta.inlineSheet.rules[root.ruleIndex];
-                    ve.SetInlineRule(vta.inlineSheet, rule);
+                    ve.UpdateInlineRule(vta.inlineSheet, rule);
                 }
             }
 

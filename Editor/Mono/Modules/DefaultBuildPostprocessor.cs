@@ -121,7 +121,7 @@ namespace UnityEditor.Modules
             return $"{args.installPath.ToNPath().FileNameWithoutExtension}_BackUpThisFolder_ButDontShipItWithYourGame";
         }
 
-        public virtual string GetExtension(BuildTarget target, BuildOptions options)
+        public virtual string GetExtension(BuildTarget target, int subtarget, BuildOptions options)
         {
             return string.Empty;
         }

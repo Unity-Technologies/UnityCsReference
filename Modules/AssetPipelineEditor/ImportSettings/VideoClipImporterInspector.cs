@@ -225,8 +225,8 @@ namespace UnityEditor
                 foreach (var validPlatform in validPlatforms)
                 {
                     var setting = new InspectorTargetSettings();
-                    setting.target = validPlatform.targetGroup;
-                    setting.settings = currentTarget.Internal_GetTargetSettings(validPlatform.targetGroup);
+                    setting.target = validPlatform.namedBuildTarget.ToBuildTargetGroup();
+                    setting.settings = currentTarget.Internal_GetTargetSettings(validPlatform.namedBuildTarget.ToBuildTargetGroup());
                     setting.overridePlatform = setting.settings != null;
                     if (!setting.overridePlatform)
                     {

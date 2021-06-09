@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -145,5 +146,15 @@ namespace UnityEditor
         public extern bool SupportsRemappedAssetType(Type type);
 
         internal extern double GetImportStartTime();
+
+        internal AssetPostprocessor.PostprocessorInfo[] GetDynamicPostprocessors()
+        {
+            return AssetPostprocessingInternal.GetSortedDynamicPostprocessorsForAsset(assetPath).ToArray();
+        }
+
+        internal static AssetPostprocessor.PostprocessorInfo[] GetStaticPostprocessors(Type importerType)
+        {
+            return AssetPostprocessingInternal.GetSortedStaticPostprocessorTypes(importerType).ToArray();
+        }
     }
 }

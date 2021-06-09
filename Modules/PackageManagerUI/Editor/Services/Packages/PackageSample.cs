@@ -17,6 +17,7 @@ namespace UnityEditor.PackageManager.UI
     [Serializable]
     public struct Sample
     {
+        private static readonly string k_CopySamplesFilesTitle = L10n.Tr("Copying samples files");
         /// <summary>
         /// Sample import options
         /// </summary>
@@ -193,7 +194,7 @@ namespace UnityEditor.PackageManager.UI
                         return false;
                     foreach (var v in prevImports)
                     {
-                        EditorUtility.DisplayProgressBar(L10n.Tr("Copying samples files"), L10n.Tr("Cleaning previous import..."), 0);
+                        EditorUtility.DisplayProgressBar(k_CopySamplesFilesTitle, L10n.Tr("Cleaning previous import..."), 0);
                         m_IOProxy.RemovePathAndMeta(v, true);
                     }
 
@@ -202,7 +203,7 @@ namespace UnityEditor.PackageManager.UI
                         (fileName, progress) =>
                         {
                             var name = fileName.Replace(sourcePath + Path.DirectorySeparatorChar, "");
-                            EditorUtility.DisplayProgressBar(L10n.Tr("Copying samples files"), name, progress);
+                            EditorUtility.DisplayProgressBar(k_CopySamplesFilesTitle, name, progress);
                         }
                     );
                     EditorUtility.ClearProgressBar();
@@ -237,7 +238,7 @@ namespace UnityEditor.PackageManager.UI
                                 var versionDirs = m_IOProxy.DirectoryGetDirectories(importDirectory, "*");
                                 foreach (var d in versionDirs)
                                 {
-                                    var p = m_IOProxy.PathsCombine(d, m_IOProxy.GetDirectoryName(importPath));
+                                    var p = m_IOProxy.PathsCombine(d, m_IOProxy.GetFileName(importPath));
                                     if (m_IOProxy.DirectoryExists(p))
                                         m_PreviousImports.Add(p);
                                 }

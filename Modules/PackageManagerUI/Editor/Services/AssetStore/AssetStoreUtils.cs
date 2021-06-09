@@ -13,8 +13,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class AssetStoreUtils
     {
-        public static string k_InvalidJSONErrorMessage = "Server response is not a valid JSON";
-        public static string k_ServerErrorMessage = "Server response is";
+        public static readonly string k_InvalidJSONErrorMessage = L10n.Tr("Server response is not a valid JSON");
+        public static readonly string k_ServerErrorMessage = L10n.Tr("Server response is");
 
         [NonSerialized]
         private UnityConnectProxy m_UnityConnect;
@@ -37,11 +37,11 @@ namespace UnityEditor.PackageManager.UI.Internal
                     if (response != null)
                         return response;
 
-                    errorMessage = L10n.Tr(k_InvalidJSONErrorMessage);
+                    errorMessage = k_InvalidJSONErrorMessage;
                 }
                 catch (Exception e)
                 {
-                    errorMessage = $"{L10n.Tr(k_InvalidJSONErrorMessage)} {e.Message}";
+                    errorMessage = $"{k_InvalidJSONErrorMessage} {e.Message}";
                 }
             }
             else
@@ -51,7 +51,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     return null;
 
                 var text = request.text.Length <= 128 ? request.text : request.text.Substring(0, 128) + "...";
-                errorMessage = $"{L10n.Tr(k_ServerErrorMessage)} \"{text}\" [Code {request.responseCode}]";
+                errorMessage = $"{k_ServerErrorMessage} \"{text}\" [Code {request.responseCode}]";
             }
 
             return string.IsNullOrEmpty(errorMessage) ? null : new Dictionary<string, object> { ["errorMessage"] = errorMessage };

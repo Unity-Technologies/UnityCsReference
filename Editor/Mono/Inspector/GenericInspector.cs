@@ -97,6 +97,17 @@ namespace UnityEditor
             bool wasEnabled = GUI.enabled;
             var visibleRect = GUIClip.visibleRect;
             var contentOffset = contentRect.y;
+
+            // In some specific cases (e.g. when the inspector field has a dropdown behavior - case 1335344) we need to
+            // apply the padding values so it behaves properly. By checking that xMin is zero when we do the assignments,
+            // we avoid applying the padding more than once (because this is called more than once in some cases and
+            // can lead to wrong indentation - case 1114055).
+            if (contentRect.xMin == 0)
+            {
+                contentRect.xMin = EditorStyles.kInspectorPaddingLeft;
+                contentRect.xMax -= EditorStyles.kInspectorPaddingRight;
+            }
+
             if (Event.current.type != EventType.Repaint)
                 visibleRect = m_LastVisibleRect;
 

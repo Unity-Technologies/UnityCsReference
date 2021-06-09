@@ -522,7 +522,11 @@ namespace UnityEditor.Modules
             IsBuildOptionSet(args.options, BuildOptions.InstallInBuildFolder);
 
         protected static bool GetServer(BuildPostProcessArgs args) =>
-            IsBuildOptionSet(args.options, BuildOptions.EnableHeadlessMode);
+            (args.target == BuildTarget.StandaloneWindows ||
+                args.target == BuildTarget.StandaloneWindows64 ||
+                args.target == BuildTarget.StandaloneOSX ||
+                args.target == BuildTarget.StandaloneLinux64) &&
+            (StandaloneBuildSubtarget)args.subtarget == StandaloneBuildSubtarget.Server;
 
         protected static bool ShouldAppendBuild(BuildPostProcessArgs args) =>
             IsBuildOptionSet(args.options, BuildOptions.AcceptExternalModificationsToPlayer);

@@ -218,7 +218,8 @@ namespace UnityEngine.UIElements.StyleSheets
                 enumString = value.sheet.ReadEnum(handle);
             }
 
-            return StylePropertyUtil.GetEnumIntValue(enumType, enumString);
+            StylePropertyUtil.TryGetEnumIntValue(enumType, enumString, out var intValue);
+            return intValue;
         }
 
         static public Angle ReadAngle(StylePropertyValue value)

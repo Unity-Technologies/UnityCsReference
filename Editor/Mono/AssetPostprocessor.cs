@@ -5,16 +5,12 @@
 using UnityEngine;
 using UnityEngine.Internal;
 using UnityEngine.Scripting;
-using UnityEngine.Profiling;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEditor.AssetImporters;
 using Object = UnityEngine.Object;
-using UnityEditorInternal;
-using Unity.CodeEditor;
 using UnityEditor.Profiling;
 
 namespace UnityEditor
@@ -22,6 +18,39 @@ namespace UnityEditor
     // AssetPostprocessor lets you hook into the import pipeline and run scripts prior or after importing assets.
     public partial class AssetPostprocessor
     {
+        internal struct PostprocessorInfo
+        {
+            public Type Type { get; }
+            public string[] Methods { get; }
+            public uint Version { get; }
+            public int Priority { get; }
+            /// <summary>
+            /// StaticDependency is true if any method in the postprocessor is not part of the NonAutomaticDependencyMethods list.
+            /// This is used to know which PostprocessorInfo should be used for the static importer dependency hash.
+            /// </summary>
+            public bool StaticDependency { get; }
+
+            public PostprocessorInfo(Type assetPostprocessorType, int importerPriority)
+            {
+                Type = assetPostprocessorType;
+                Methods = null;
+                Version = 0;
+                StaticDependency = false;
+                Priority = importerPriority;
+            }
+
+            public PostprocessorInfo(Type assetPostprocessorType, string[] implementedMethods)
+            {
+                Type = assetPostprocessorType;
+                Methods = implementedMethods;
+                StaticDependency = Methods.Intersect(AssetPostprocessingInternal.k_NonAutomaticDependencyMethods).Count() != Methods.Length;
+
+                var inst = (AssetPostprocessor)Activator.CreateInstance(assetPostprocessorType);
+                Version = inst.GetVersion();
+                Priority = inst.GetPostprocessOrder();
+            }
+        }
+
         private string m_PathName;
         private AssetImportContext m_Context;
 
@@ -68,6 +97,91 @@ namespace UnityEditor
 
     internal class AssetPostprocessingInternal
     {
+        // What is it:
+        // Static postprocessor methods always called for each importer that are part of importer static dependency.
+        // No new postprocessors should be added to these lists. Please reach out to #devs-import-workflow to talk about new additions.
+        internal static readonly string[] k_NonAutomaticDependencyMethods =
+        {
+            "OnPreprocessAsset",
+        };
+        static readonly string[] k_ModelImporterPostprocessors =
+        {
+            "OnPreprocessModel",
+            "OnPostprocessMeshHierarchy",
+            "OnPostprocessModel",
+            "OnPreprocessAnimation",
+            "OnPostprocessAnimation",
+            "OnPostprocessGameObjectWithAnimatedUserProperties",
+            "OnPostprocessGameObjectWithUserProperties",
+            "OnPostprocessMaterial",
+            "OnAssignMaterialModel",
+            "OnPreprocessMaterialDescription",
+        };
+
+        static readonly string[] k_DynamicModelImporterPostprocessors =
+        {
+            "OnPreprocessCameraDescription",
+            "OnPreprocessLightDescription"
+        };
+
+        static readonly string[] k_TextureImporterPostprocessors =
+        {
+            "OnPreprocessTexture",
+            "OnPostprocessTexture",
+            "OnPostprocessCubemap",
+            "OnPostprocessSprites",
+            "OnPostprocessTexture3D",
+            "OnPostprocessTexture2DArray"
+        };
+        static readonly string[] k_IHVImporterPostprocessors =
+        {
+            "OnPostprocessTexture",
+        };
+        static readonly string[] k_AudioImporterPostprocessors =
+        {
+            "OnPreprocessAudio",
+            "OnPostprocessAudio",
+        };
+        static readonly string[] k_SpeedTreeImporterPostprocessors =
+        {
+            "OnPreprocessSpeedTree",
+            "OnPostprocessSpeedTree",
+        };
+        static readonly string[] k_PrefabImporterPostprocessors =
+        {
+            "OnPostprocessPrefab",
+        };
+        static readonly string[] k_CameraPostprocessors =
+        {
+            "OnPreprocessCameraDescription",
+        };
+        static readonly string[] k_LightPostprocessors =
+        {
+            "OnPreprocessLightDescription",
+        };
+
+        static Dictionary<string, string[]> s_PostprocessorMethodsByDependencyKey;
+        static Dictionary<Type, string[]> s_StaticPostprocessorMethodsByImporterType;
+        static Dictionary<Type, string[]> s_DynamicPostprocessorMethodsByImporterType;
+
+        static AssetPostprocessingInternal()
+        {
+            s_StaticPostprocessorMethodsByImporterType = new Dictionary<Type, string[]>();
+            s_StaticPostprocessorMethodsByImporterType.Add(typeof(ModelImporter), k_ModelImporterPostprocessors);
+            s_StaticPostprocessorMethodsByImporterType.Add(typeof(TextureImporter), k_TextureImporterPostprocessors);
+            s_StaticPostprocessorMethodsByImporterType.Add(typeof(IHVImageFormatImporter), k_IHVImporterPostprocessors);
+            s_StaticPostprocessorMethodsByImporterType.Add(typeof(SpeedTreeImporter), k_SpeedTreeImporterPostprocessors);
+            s_StaticPostprocessorMethodsByImporterType.Add(typeof(AudioImporter), k_AudioImporterPostprocessors);
+            s_StaticPostprocessorMethodsByImporterType.Add(typeof(PrefabImporter), k_PrefabImporterPostprocessors);
+
+            s_DynamicPostprocessorMethodsByImporterType = new Dictionary<Type, string[]>();
+            s_DynamicPostprocessorMethodsByImporterType.Add(typeof(ModelImporter), k_DynamicModelImporterPostprocessors);
+
+            s_PostprocessorMethodsByDependencyKey = new Dictionary<string, string[]>();
+            s_PostprocessorMethodsByDependencyKey.Add(kCameraPostprocessorDependencyName, k_CameraPostprocessors);
+            s_PostprocessorMethodsByDependencyKey.Add(kLightPostprocessorDependencyName, k_LightPostprocessors);
+        }
+
         [Serializable]
         class AssetPostProcessorAnalyticsData
         {
@@ -108,23 +222,46 @@ namespace UnityEditor
                 CodeEditorProjectSync.PostprocessSyncProject(importedAssets, addedAssets, deletedAssets, movedAssets, movedFromPathAssets);
         }
 
-        [RequiredByNativeCode]
-        static void PreprocessAssembly(string pathName)
+        internal class CompareAssetImportPriority : IComparer<AssetPostprocessor.PostprocessorInfo>, IComparer<AssetPostprocessor>
         {
-            foreach (AssetPostprocessor inst in m_ImportProcessors)
+            public int Compare(AssetPostprocessor.PostprocessorInfo x, AssetPostprocessor.PostprocessorInfo y)
             {
-                InvokeMethodIfAvailable(inst, "OnPreprocessAssembly", new[] { pathName });
+                int xo = x.Priority;
+                int yo = y.Priority;
+
+                var compare = xo.CompareTo(yo);
+                if (compare == 0)
+                {
+                    compare = x.Type.FullName.CompareTo(y.Type.FullName);
+                    if (compare == 0)
+                        compare = x.Type.AssemblyQualifiedName.CompareTo(y.Type.AssemblyQualifiedName);
+                }
+                return compare;
+            }
+
+            public int Compare(AssetPostprocessor x, AssetPostprocessor y)
+            {
+                var xi = new AssetPostprocessor.PostprocessorInfo(x.GetType(), x.GetPostprocessOrder());
+                var yi = new AssetPostprocessor.PostprocessorInfo(y.GetType(), y.GetPostprocessOrder());
+                return Compare(xi, yi);
             }
         }
 
-        internal class CompareAssetImportPriority : IComparer
+        private static string BuildStaticDependencyHashString(SortedSet<AssetPostprocessor.PostprocessorInfo> list)
         {
-            int IComparer.Compare(System.Object xo, System.Object yo)
+            var hashStr = "";
+            foreach (var info in list)
             {
-                int x = ((AssetPostprocessor)xo).GetPostprocessOrder();
-                int y = ((AssetPostprocessor)yo).GetPostprocessOrder();
-                return x.CompareTo(y);
+                if (info.StaticDependency)
+                {
+                    hashStr += info.Type.AssemblyQualifiedName;
+                    hashStr += '.';
+                    hashStr += info.Version;
+                    hashStr += '|';
+                }
             }
+
+            return hashStr;
         }
 
         private static string BuildHashString(SortedList<string, uint> list)
@@ -141,16 +278,12 @@ namespace UnityEditor
             return hashStr;
         }
 
-        internal class PostprocessStack
-        {
-            internal ArrayList m_ImportProcessors = null;
-        }
+        internal const string kCameraPostprocessorDependencyName = "postprocessor/camera";
+        internal const string kLightPostprocessorDependencyName = "postprocessor/light";
 
-        const string kCameraPostprocessorDependencyName = "postprocessor/camera";
-        const string kLightPostprocessorDependencyName = "postprocessor/light";
+        static Stack<SortedSet<AssetPostprocessor>> m_PostprocessStack = null;
+        static SortedSet<AssetPostprocessor> m_ImportProcessors = null;
 
-        static ArrayList m_PostprocessStack = null;
-        static ArrayList m_ImportProcessors = null;
         static Type[] m_PostprocessorClasses = null;
         static string m_MeshProcessorsHashString = null;
         static string m_TextureProcessorsHashString = null;
@@ -160,6 +293,11 @@ namespace UnityEditor
         static string m_CameraProcessorsHashString = null;
         static string m_LightProcessorsHashString = null;
 
+        static Dictionary<Type, SortedSet<AssetPostprocessor.PostprocessorInfo>> s_StaticPostprocessorsPerImporterType = new Dictionary<Type, SortedSet<AssetPostprocessor.PostprocessorInfo>>();
+        static Dictionary<Type, SortedSet<AssetPostprocessor.PostprocessorInfo>> s_DynamicPostprocessorsPerImporterType = new Dictionary<Type, SortedSet<AssetPostprocessor.PostprocessorInfo>>();
+
+        static Stack<AssetPostProcessorAnalyticsData> s_AnalyticsEventsStack = new Stack<AssetPostProcessorAnalyticsData>();
+
         static Type[] GetCachedAssetPostprocessorClasses()
         {
             if (m_PostprocessorClasses == null)
@@ -168,52 +306,65 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        static void InitPostprocessors(AssetImportContext context, string pathName)
+        static void InitPostprocessorsForTextureGenerator(string pathName)
         {
-            m_ImportProcessors = new ArrayList();
             var analyticsEvent = new AssetPostProcessorAnalyticsData();
-
-            // This may happen if the processors are initialized outside a proper importer context. This is currently
-            // used by the TextureGenerator to be able to invoke the postprocessors on the generated texture.
-            if (AssetImporter.GetAtPath(pathName) != null)
-            {
-                analyticsEvent.importActionId = ((int)Math.Floor(AssetImporter.GetAtPath(pathName).GetImportStartTime() * 1000)).ToString();
-            }
-            else
-            {
-                analyticsEvent.importActionId = "None";
-            }
+            analyticsEvent.importActionId = "None";
             s_AnalyticsEventsStack.Push(analyticsEvent);
 
-            // @TODO: This is just a temporary workaround for the import settings.
-            // We should add importers to the asset, persist them and show an inspector for them.
-            foreach (Type assetPostprocessorClass in GetCachedAssetPostprocessorClasses())
+            m_ImportProcessors = new SortedSet<AssetPostprocessor>(new CompareAssetImportPriority());
+            foreach (var postprocessorInfo in GetSortedStaticPostprocessorTypes(typeof(TextureImporter)))
             {
-                try
-                {
-                    var assetPostprocessor = Activator.CreateInstance(assetPostprocessorClass) as AssetPostprocessor;
-                    assetPostprocessor.assetPath = pathName;
-                    assetPostprocessor.context = context;
-                    m_ImportProcessors.Add(assetPostprocessor);
-                }
-                catch (MissingMethodException)
-                {
-                    LogPostProcessorMissingDefaultConstructor(assetPostprocessorClass);
-                }
-                catch (Exception e)
-                {
-                    Debug.LogException(e);
-                }
+                var assetPostprocessor = (AssetPostprocessor)Activator.CreateInstance(postprocessorInfo.Type);
+                assetPostprocessor.assetPath = pathName;
+                assetPostprocessor.context = null;
+                m_ImportProcessors.Add(assetPostprocessor);
             }
 
-            m_ImportProcessors.Sort(new CompareAssetImportPriority());
+            foreach (var postprocessorInfo in GetSortedDynamicPostprocessorTypes(typeof(TextureImporter)))
+            {
+                var assetPostprocessor = (AssetPostprocessor)Activator.CreateInstance(postprocessorInfo.Type);
+                assetPostprocessor.assetPath = pathName;
+                assetPostprocessor.context = null;
+                m_ImportProcessors.Add(assetPostprocessor);
+            }
 
-            // Setup postprocessing stack to support rentrancy (Import asset immediate)
-            PostprocessStack postStack = new PostprocessStack();
-            postStack.m_ImportProcessors = m_ImportProcessors;
+            // Setup postprocessing stack to support reentrancy (Import asset immediate)
             if (m_PostprocessStack == null)
-                m_PostprocessStack = new ArrayList();
-            m_PostprocessStack.Add(postStack);
+                m_PostprocessStack = new Stack<SortedSet<AssetPostprocessor>>();
+            m_PostprocessStack.Push(m_ImportProcessors);
+        }
+
+        [RequiredByNativeCode]
+        static void InitPostprocessors(AssetImportContext context, string pathName)
+        {
+            var importer = AssetImporter.GetAtPath(pathName);
+
+            var analyticsEvent = new AssetPostProcessorAnalyticsData();
+            analyticsEvent.importActionId = ((int)Math.Floor(importer.GetImportStartTime() * 1000)).ToString();
+            s_AnalyticsEventsStack.Push(analyticsEvent);
+
+            m_ImportProcessors = new SortedSet<AssetPostprocessor>(new CompareAssetImportPriority());
+            foreach (var postprocessorInfo in GetSortedStaticPostprocessorTypes(importer.GetType()))
+            {
+                var assetPostprocessor = (AssetPostprocessor)Activator.CreateInstance(postprocessorInfo.Type);
+                assetPostprocessor.assetPath = pathName;
+                assetPostprocessor.context = context;
+                m_ImportProcessors.Add(assetPostprocessor);
+            }
+
+            foreach (var postprocessorInfo in GetSortedDynamicPostprocessorTypes(importer.GetType()))
+            {
+                var assetPostprocessor = (AssetPostprocessor)Activator.CreateInstance(postprocessorInfo.Type);
+                assetPostprocessor.assetPath = pathName;
+                assetPostprocessor.context = context;
+                m_ImportProcessors.Add(assetPostprocessor);
+            }
+
+            // Setup postprocessing stack to support reentrancy (Import asset immediate)
+            if (m_PostprocessStack == null)
+                m_PostprocessStack = new Stack<SortedSet<AssetPostprocessor>>();
+            m_PostprocessStack.Push(m_ImportProcessors);
         }
 
         [RequiredByNativeCode]
@@ -221,28 +372,128 @@ namespace UnityEditor
         {
             if (m_PostprocessStack != null)
             {
-                m_PostprocessStack.RemoveAt(m_PostprocessStack.Count - 1);
-                if (m_PostprocessStack.Count != 0)
+                m_PostprocessStack.Pop();
+                m_ImportProcessors = m_PostprocessStack.Count > 0 ? m_PostprocessStack.Peek() : null;
+            }
+
+            if (s_AnalyticsEventsStack.Count > 0)
+            {
+                var lastEvent = s_AnalyticsEventsStack.Pop();
+                if (lastEvent.postProcessorCalls.Count > 0)
+                    EditorAnalytics.SendAssetPostprocessorsUsage(lastEvent);
+            }
+        }
+
+        static bool ImplementsAnyOfTheses(Type type, IEnumerable<string> methods, out List<string> usedMethods)
+        {
+            usedMethods = new List<string>(methods.Where(method => type.GetMethod(method, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null));
+            return usedMethods.Count > 0;
+        }
+
+        /*
+         * Returns the list of actual dynamic postprocessor methods for a particular asset.
+         * Note: That where the asset is not yet imported, this list will be empty.
+         */
+        internal static SortedSet<AssetPostprocessor.PostprocessorInfo> GetSortedDynamicPostprocessorsForAsset(string path)
+        {
+            var list = new SortedSet<AssetPostprocessor.PostprocessorInfo>(new CompareAssetImportPriority());
+
+            var guid = AssetDatabase.GUIDFromAssetPath(path);
+            if (guid.Empty())
+                return list;
+
+            //Artifact Infos may contains multiple artifacts, associated with different version of the object (E.g. Main, Preview etc.)
+            var artifactInfos = AssetDatabase.GetArtifactInfos(guid);
+
+            var allMethodsNames = new List<string>();
+            foreach (var info in artifactInfos)
+            {
+                if (!info.isCurrentArtifact)
+                    continue;
+
+                foreach (var kvp in info.dependencies)
                 {
-                    PostprocessStack postStack = (PostprocessStack)m_PostprocessStack[m_PostprocessStack.Count - 1];
-                    m_ImportProcessors = postStack.m_ImportProcessors;
+                    if (kvp.Value.type == ArtifactInfoDependencyType.Dynamic)
+                    {
+                        //Try to retrieve Postprocessor Methods associated with the supplied Dependency keys
+                        string dependencyName = kvp.Key.Replace(ArtifactDifferenceReporter.kEnvironment_CustomDependency + "/", "");
+                        if (s_PostprocessorMethodsByDependencyKey.TryGetValue(dependencyName, out var methodNames))
+                            allMethodsNames.AddRange(methodNames);
+                    }
                 }
             }
 
-            if (s_AnalyticsEventsStack.Peek().postProcessorCalls.Count != 0)
-                EditorAnalytics.SendAssetPostprocessorsUsage(s_AnalyticsEventsStack.Peek());
+            if (allMethodsNames.Count == 0)
+                return list;
 
-            s_AnalyticsEventsStack.Pop();
+            /*
+            * The asset has dynamic dependencies to an Asset Postprocessor, so let's find any Postprocessors which
+            * implements those methods.
+            */
+            var distinctMethodNames = allMethodsNames.Distinct();
+            foreach (Type assetPostprocessorClass in GetCachedAssetPostprocessorClasses())
+            {
+                if (ImplementsAnyOfTheses(assetPostprocessorClass, distinctMethodNames, out var methods))
+                {
+                    if (assetPostprocessorClass.GetConstructors().Any(t => t.GetParameters().Count() == 0))
+                        list.Add(new AssetPostprocessor.PostprocessorInfo(assetPostprocessorClass, methods.ToArray()));
+                    else
+                        LogPostProcessorMissingDefaultConstructor(assetPostprocessorClass);
+                }
+            }
+
+            return list;
         }
 
-        static bool ImplementsAnyOfTheses(Type type, string[] methods)
+        internal static SortedSet<AssetPostprocessor.PostprocessorInfo> GetSortedStaticPostprocessorTypes(Type importer)
         {
-            foreach (var method in methods)
+            var defaultMethods = new string[]
             {
-                if (type.GetMethod(method, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null)
-                    return true;
+                "OnPreprocessAsset"
+            };
+            return GetSortedPostprocessorTypes(importer, s_StaticPostprocessorMethodsByImporterType, defaultMethods,
+                s_StaticPostprocessorsPerImporterType);
+        }
+
+        /*
+         * Returns the list of *possible* dynamic postprocessor methods associated with a particular importer type.
+         * See also: GetSortedDynamicPostprocessorsForAsset, to get the actual postprocessor methods for a given asset.
+         */
+        internal static SortedSet<AssetPostprocessor.PostprocessorInfo> GetSortedDynamicPostprocessorTypes(Type importer)
+        {
+            return GetSortedPostprocessorTypes(importer, s_DynamicPostprocessorMethodsByImporterType, new string[0],
+                s_DynamicPostprocessorsPerImporterType);
+        }
+
+        static SortedSet<AssetPostprocessor.PostprocessorInfo> GetSortedPostprocessorTypes(Type importer, Dictionary<Type, string[]> postprocessorMethodsByImporterType, string[] defaultMethods, Dictionary<Type, SortedSet<AssetPostprocessor.PostprocessorInfo>> cache)
+        {
+            if (cache.TryGetValue(importer, out var cachedPostprocessors))
+                return cachedPostprocessors;
+
+            var list = new SortedSet<AssetPostprocessor.PostprocessorInfo>(new CompareAssetImportPriority());
+            var allMethodsNames = defaultMethods.ToList();
+            var methodsType = importer;
+            while (methodsType != null && methodsType != typeof(AssetImporter))
+            {
+                if (postprocessorMethodsByImporterType.TryGetValue(methodsType, out var methodNames))
+                    allMethodsNames.AddRange(methodNames);
+                methodsType = methodsType.BaseType;
             }
-            return false;
+
+            foreach (Type assetPostprocessorClass in GetCachedAssetPostprocessorClasses())
+            {
+                if (ImplementsAnyOfTheses(assetPostprocessorClass, allMethodsNames, out var methods))
+                {
+                    if (assetPostprocessorClass.GetConstructors().Any(t => t.GetParameters().Count() == 0))
+                        list.Add(new AssetPostprocessor.PostprocessorInfo(assetPostprocessorClass, methods.ToArray()));
+                    else
+                        LogPostProcessorMissingDefaultConstructor(assetPostprocessorClass);
+                }
+            }
+
+            cache.Add(importer, list);
+
+            return list;
         }
 
         [RequiredByNativeCode]
@@ -251,43 +502,7 @@ namespace UnityEditor
             if (m_MeshProcessorsHashString != null)
                 return m_MeshProcessorsHashString;
 
-            var versionsByType = new SortedList<string, uint>();
-
-            foreach (var assetPostprocessorClass in GetCachedAssetPostprocessorClasses())
-            {
-                try
-                {
-                    var inst = Activator.CreateInstance(assetPostprocessorClass) as AssetPostprocessor;
-                    var type = inst.GetType();
-                    bool hasAnyPostprocessMethod = ImplementsAnyOfTheses(type, new[]
-                    {
-                        "OnPreprocessModel",
-                        "OnPostprocessMeshHierarchy",
-                        "OnPostprocessModel",
-                        "OnPreprocessAnimation",
-                        "OnPostprocessAnimation",
-                        "OnPostprocessGameObjectWithAnimatedUserProperties",
-                        "OnPostprocessGameObjectWithUserProperties",
-                        "OnPostprocessMaterial",
-                        "OnAssignMaterialModel",
-                        "OnPreprocessMaterialDescription"
-                    });
-                    uint version = inst.GetVersion();
-                    if (hasAnyPostprocessMethod)
-                    {
-                        versionsByType.Add(type.FullName, version);
-                    }
-                }
-                catch (MissingMethodException)
-                {
-                    LogPostProcessorMissingDefaultConstructor(assetPostprocessorClass);
-                }
-                catch (Exception e)
-                {
-                    Debug.LogException(e);
-                }
-            }
-            m_MeshProcessorsHashString = BuildHashString(versionsByType);
+            m_MeshProcessorsHashString = BuildStaticDependencyHashString(GetSortedStaticPostprocessorTypes(typeof(ModelImporter)));
             return m_MeshProcessorsHashString;
         }
 
@@ -417,36 +632,7 @@ namespace UnityEditor
             if (m_TextureProcessorsHashString != null)
                 return m_TextureProcessorsHashString;
 
-            var versionsByType = new SortedList<string, uint>();
-
-            foreach (var assetPostprocessorClass in GetCachedAssetPostprocessorClasses())
-            {
-                try
-                {
-                    var inst = Activator.CreateInstance(assetPostprocessorClass) as AssetPostprocessor;
-                    var type = inst.GetType();
-                    bool hasPreProcessMethod = type.GetMethod("OnPreprocessTexture", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null;
-                    bool hasPostProcessMethod = (type.GetMethod("OnPostprocessTexture", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null) ||
-                        (type.GetMethod("OnPostprocessCubemap", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null) ||
-                        (type.GetMethod("OnPostprocessTexture3D", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null) ||
-                        (type.GetMethod("OnPostprocessTexture2DArray", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null);
-                    uint version = inst.GetVersion();
-                    if (hasPreProcessMethod || hasPostProcessMethod)
-                    {
-                        versionsByType.Add(type.FullName, version);
-                    }
-                }
-                catch (MissingMethodException)
-                {
-                    LogPostProcessorMissingDefaultConstructor(assetPostprocessorClass);
-                }
-                catch (Exception e)
-                {
-                    Debug.LogException(e);
-                }
-            }
-
-            m_TextureProcessorsHashString = BuildHashString(versionsByType);
+            m_TextureProcessorsHashString = BuildStaticDependencyHashString(GetSortedStaticPostprocessorTypes(typeof(TextureImporter)));
             return m_TextureProcessorsHashString;
         }
 
@@ -497,33 +683,7 @@ namespace UnityEditor
             if (m_AudioProcessorsHashString != null)
                 return m_AudioProcessorsHashString;
 
-            var versionsByType = new SortedList<string, uint>();
-
-            foreach (var assetPostprocessorClass in GetCachedAssetPostprocessorClasses())
-            {
-                try
-                {
-                    var inst = Activator.CreateInstance(assetPostprocessorClass) as AssetPostprocessor;
-                    var type = inst.GetType();
-                    bool hasPreProcessMethod = type.GetMethod("OnPreprocessAudio", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null;
-                    bool hasPostProcessMethod = type.GetMethod("OnPostprocessAudio", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null;
-                    uint version = inst.GetVersion();
-                    if (hasPreProcessMethod || hasPostProcessMethod)
-                    {
-                        versionsByType.Add(type.FullName, version);
-                    }
-                }
-                catch (MissingMethodException)
-                {
-                    LogPostProcessorMissingDefaultConstructor(assetPostprocessorClass);
-                }
-                catch (Exception e)
-                {
-                    Debug.LogException(e);
-                }
-            }
-
-            m_AudioProcessorsHashString = BuildHashString(versionsByType);
+            m_AudioProcessorsHashString = BuildStaticDependencyHashString(GetSortedStaticPostprocessorTypes(typeof(AudioImporter)));
             return m_AudioProcessorsHashString;
         }
 
@@ -532,8 +692,6 @@ namespace UnityEditor
         {
             CallPostProcessMethods("OnPreprocessAudio", null);
         }
-
-        static Stack<AssetPostProcessorAnalyticsData> s_AnalyticsEventsStack = new Stack<AssetPostProcessorAnalyticsData>();
 
         [RequiredByNativeCode]
         static void PostprocessAudio(AudioClip clip, string pathName)
@@ -547,33 +705,7 @@ namespace UnityEditor
         {
             if (m_PrefabProcessorsHashString != null)
                 return m_PrefabProcessorsHashString;
-
-            var versionsByType = new SortedList<string, uint>();
-
-            foreach (var assetPostprocessorClass in GetCachedAssetPostprocessorClasses())
-            {
-                try
-                {
-                    var inst = Activator.CreateInstance(assetPostprocessorClass) as AssetPostprocessor;
-                    var type = inst.GetType();
-                    bool hasPostProcessMethod = type.GetMethod("OnPostprocessPrefab", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null;
-                    uint version = inst.GetVersion();
-                    if (version != 0 && hasPostProcessMethod)
-                    {
-                        versionsByType.Add(type.FullName, version);
-                    }
-                }
-                catch (MissingMethodException)
-                {
-                    LogPostProcessorMissingDefaultConstructor(assetPostprocessorClass);
-                }
-                catch (Exception e)
-                {
-                    Debug.LogException(e);
-                }
-            }
-
-            m_PrefabProcessorsHashString = BuildHashString(versionsByType);
+            m_PrefabProcessorsHashString = BuildStaticDependencyHashString(GetSortedStaticPostprocessorTypes(typeof(PrefabImporter)));
             return m_PrefabProcessorsHashString;
         }
 
@@ -585,9 +717,9 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        static void PostprocessAssetbundleNameChanged(string assetPath, string prevoiusAssetBundleName, string newAssetBundleName)
+        static void PostprocessAssetbundleNameChanged(string assetPath, string previousAssetBundleName, string newAssetBundleName)
         {
-            object[] args = { assetPath, prevoiusAssetBundleName, newAssetBundleName };
+            object[] args = { assetPath, previousAssetBundleName, newAssetBundleName };
 
             foreach (var assetPostprocessorClass in GetCachedAssetPostprocessorClasses())
             {
@@ -601,34 +733,7 @@ namespace UnityEditor
         {
             if (m_SpeedTreeProcessorsHashString != null)
                 return m_SpeedTreeProcessorsHashString;
-
-            var versionsByType = new SortedList<string, uint>();
-
-            foreach (var assetPostprocessorClass in GetCachedAssetPostprocessorClasses())
-            {
-                try
-                {
-                    var inst = Activator.CreateInstance(assetPostprocessorClass) as AssetPostprocessor;
-                    var type = inst.GetType();
-                    bool hasPreProcessMethod = type.GetMethod("OnPreprocessSpeedTree", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null;
-                    bool hasPostProcessMethod = type.GetMethod("OnPostprocessSpeedTree", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null;
-                    uint version = inst.GetVersion();
-                    if (hasPreProcessMethod || hasPostProcessMethod)
-                    {
-                        versionsByType.Add(type.FullName, version);
-                    }
-                }
-                catch (MissingMethodException)
-                {
-                    LogPostProcessorMissingDefaultConstructor(assetPostprocessorClass);
-                }
-                catch (Exception e)
-                {
-                    Debug.LogException(e);
-                }
-            }
-
-            m_SpeedTreeProcessorsHashString = BuildHashString(versionsByType);
+            m_SpeedTreeProcessorsHashString = BuildStaticDependencyHashString(GetSortedStaticPostprocessorTypes(typeof(SpeedTreeImporter)));
             return m_SpeedTreeProcessorsHashString;
         }
 

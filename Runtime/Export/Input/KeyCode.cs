@@ -275,12 +275,16 @@ namespace UnityEngine
         // Left Alt key
         LeftAlt     = 308,
 
+        // Left Meta key
+        LeftMeta        = 310,
         // Left Command key
         LeftCommand     = 310,
         // Left Command key
         LeftApple       = 310,
         // Left Windows key
         LeftWindows     = 311,
+        // Right Meta key
+        RightMeta       = 309,
         // Right Command key
         RightCommand    = 309,
         // Right Command key

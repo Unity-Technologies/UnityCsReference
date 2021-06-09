@@ -9,6 +9,8 @@
 //              See ResolvedStyleAccessCsGenerator class for details
 //
 /******************************************************************************/
+using System.Collections.Generic;
+
 namespace UnityEngine.UIElements
 {
     public partial class VisualElement : IResolvedStyle
@@ -68,6 +70,10 @@ namespace UnityEngine.UIElements
         TextOverflow IResolvedStyle.textOverflow => computedStyle.textOverflow;
         float IResolvedStyle.top => yogaNode.LayoutY;
         Vector3 IResolvedStyle.transformOrigin => ResolveTransformOrigin();
+        IEnumerable<TimeValue> IResolvedStyle.transitionDelay => computedStyle.transitionDelay;
+        IEnumerable<TimeValue> IResolvedStyle.transitionDuration => computedStyle.transitionDuration;
+        IEnumerable<StylePropertyName> IResolvedStyle.transitionProperty => computedStyle.transitionProperty;
+        IEnumerable<EasingFunction> IResolvedStyle.transitionTimingFunction => computedStyle.transitionTimingFunction;
         Vector3 IResolvedStyle.translate => ResolveTranslate();
         Color IResolvedStyle.unityBackgroundImageTintColor => computedStyle.unityBackgroundImageTintColor;
         ScaleMode IResolvedStyle.unityBackgroundScaleMode => computedStyle.unityBackgroundScaleMode;

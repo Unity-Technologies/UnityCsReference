@@ -92,11 +92,6 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
             config.AddKey("force-d3d11-bltblt-mode");
         if (IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildPipeline.GetBuildTargetGroup(target)))
             config.Set("mono-codegen", "il2cpp");
-        if ((options & BuildOptions.EnableHeadlessMode) != 0)
-        {
-            config.AddKey("headless");
-            config.AddKey("force-gfx-direct");
-        }
         if ((options & BuildOptions.EnableCodeCoverage) != 0)
             config.Set("enableCodeCoverage", "1");
         if (!PlayerSettings.usePlayerLog)
@@ -549,9 +544,13 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         return ((args.options & BuildOptions.Development) != 0);
     }
 
-    protected static bool IsServerBuild(BuildPostProcessArgs args)
+    protected static bool GetServer(BuildPostProcessArgs args)
     {
-        return ((args.options & BuildOptions.EnableHeadlessMode) != 0);
+        return (args.target == BuildTarget.StandaloneWindows ||
+            args.target == BuildTarget.StandaloneWindows64 ||
+            args.target == BuildTarget.StandaloneOSX ||
+            args.target == BuildTarget.StandaloneLinux64) &&
+            (StandaloneBuildSubtarget)args.subtarget == StandaloneBuildSubtarget.Server;
     }
 
     protected string GetVariationName(BuildPostProcessArgs args)
@@ -567,7 +566,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
 
         return string.Format("{0}_{1}_{2}_{3}",
             platformString,
-            IsServerBuild(args) ? "server" : "player",
+            GetServer(args) ? "server" : "player",
             GetDevelopment(args) ? "development" : "nondevelopment",
             scriptingBackend);
     }

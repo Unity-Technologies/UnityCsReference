@@ -41,6 +41,7 @@ namespace UnityEditor.Mono.BuildPipeline
         {
             public BuildDataInputFile[] scenes;
             public BuildDataInputFile[] inputFiles;
+            public string[] resourcePaths;
             public BuildOptions buildOptions;
             public string unityVersion;
 
@@ -110,6 +111,27 @@ namespace UnityEditor.Mono.BuildPipeline
             if (buildData.inputFiles.Any(CheckAssetDirty))
                 return true;
 
+            var resourcePaths = ResourcesAPIInternal.GetAllPaths("").OrderBy(p => p).ToArray();
+            if (!resourcePaths.SequenceEqual(buildData.resourcePaths))
+            {
+                for (int i = 0; i < resourcePaths.Length || i < buildData.resourcePaths.Length; i++)
+                {
+                    string path;
+                    if (i >= resourcePaths.Length)
+                        path = buildData.resourcePaths[i];
+                    else if (i >= buildData.resourcePaths.Length)
+                        path = resourcePaths[i];
+                    else if (buildData.resourcePaths[i] != resourcePaths[i])
+                        path = resourcePaths[i];
+                    else
+                        continue;
+
+                    Console.WriteLine($"Rebuiding Data files because {path} is dirty (Resource file added or removed)");
+                    return true;
+                }
+            }
+
+
             Console.WriteLine("Not rebuiding Data files -- no changes");
             return false;
         }
@@ -139,7 +161,8 @@ namespace UnityEditor.Mono.BuildPipeline
                 scenes = inputScenes.ToArray(),
                 inputFiles = inputFiles.ToArray(),
                 buildOptions = report.summary.options & BuildData.BuildOptionsMask,
-                unityVersion = Application.unityVersion
+                unityVersion = Application.unityVersion,
+                resourcePaths = ResourcesAPIInternal.GetAllPaths("").OrderBy(p => p).ToArray()
             };
             buildDataPath.ToNPath().WriteAllText(JsonUtility.ToJson(buildData));
         }

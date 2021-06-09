@@ -246,20 +246,28 @@ namespace UnityEngine.UIElements.StyleSheets.Syntax
             switch (token.type)
             {
                 case StyleSyntaxTokenType.String:
-                    DataType dataType = DataType.None;
-                    try
-                    {
-                        object enumValue = Enum.Parse(typeof(DataType), token.text, true);
-                        if (enumValue != null)
-                            dataType = (DataType)enumValue;
-                    }
-                    catch (Exception)
-                    {
-                        throw new Exception($"Unknown data type '{token.text}'");
-                    }
 
-                    exp = new Expression(ExpressionType.Data);
-                    exp.dataType = dataType;
+                    if (StylePropertyCache.TryGetNonTerminalValue(token.text, out var syntaxAlias))
+                    {
+                        exp = ParseNonTerminalValue(syntaxAlias);
+                    }
+                    else
+                    {
+                        DataType dataType = DataType.None;
+                        try
+                        {
+                            object enumValue = Enum.Parse(typeof(DataType), token.text.Replace("-", ""), true);
+                            if (enumValue != null)
+                                dataType = (DataType)enumValue;
+                        }
+                        catch (Exception)
+                        {
+                            throw new Exception($"Unknown data type '{token.text}'");
+                        }
+
+                        exp = new Expression(ExpressionType.Data);
+                        exp.dataType = dataType;
+                    }
 
                     tokenizer.MoveNext();
                     break;
@@ -277,6 +285,28 @@ namespace UnityEngine.UIElements.StyleSheets.Syntax
             tokenizer.MoveNext();
 
             return exp;
+        }
+
+        private Expression ParseNonTerminalValue(string syntax)
+        {
+            Expression exp = null;
+
+            // Check if it's in the cache first
+            if (!m_ParsedExpressionCache.TryGetValue(syntax, out exp))
+            {
+                // Expanded syntax are in a group to honor the precedence rule and multiplier
+                // Pushing the ExpressionCombinator.Group allow the next call to Parse to stop at this location
+                m_CombinatorStack.Push(ExpressionCombinator.Group);
+
+                // Recursively call Parse to expand the property syntax
+                exp = Parse(syntax);
+            }
+
+            var group = new Expression(ExpressionType.Combinator);
+            group.combinator = ExpressionCombinator.Group;
+            group.subExpressions = new Expression[] { exp };
+
+            return group;
         }
 
         private Expression ParseProperty(StyleSyntaxTokenizer tokenizer)
@@ -299,7 +329,7 @@ namespace UnityEngine.UIElements.StyleSheets.Syntax
             // Check if it's in the cache first
             if (!m_ParsedExpressionCache.TryGetValue(syntax, out exp))
             {
-                // Expanded property are in a group to honor the precedence rule
+                // Expanded property are in a group to honor the precedence rule and multiplier
                 // Pushing the ExpressionCombinator.Group allow the next call to Parse to stop at this location
                 m_CombinatorStack.Push(ExpressionCombinator.Group);
 

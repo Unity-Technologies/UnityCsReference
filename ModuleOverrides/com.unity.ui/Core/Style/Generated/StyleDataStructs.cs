@@ -10,10 +10,17 @@
 //
 /******************************************************************************/
 using System;
+using System.Collections.Generic;
 
 namespace UnityEngine.UIElements
 {
-    internal struct InheritedData : IEquatable<InheritedData>
+    internal interface IStyleDataGroup<T>
+    {
+        T Copy();
+        void CopyFrom(ref T other);
+    }
+
+    internal struct InheritedData : IStyleDataGroup<InheritedData>, IEquatable<InheritedData>
     {
         public Color color;
         public Length fontSize;
@@ -30,7 +37,17 @@ namespace UnityEngine.UIElements
         public WhiteSpace whiteSpace;
         public Length wordSpacing;
 
-        public static bool operator ==(InheritedData lhs, InheritedData rhs)
+        public InheritedData Copy()
+        {
+            return this;
+        }
+
+        public void CopyFrom(ref InheritedData other)
+        {
+            this = other;
+        }
+
+        public static bool operator==(InheritedData lhs, InheritedData rhs)
         {
             return lhs.color == rhs.color &&
                 lhs.fontSize == rhs.fontSize &&
@@ -48,7 +65,7 @@ namespace UnityEngine.UIElements
                 lhs.wordSpacing == rhs.wordSpacing;
         }
 
-        public static bool operator !=(InheritedData lhs, InheritedData rhs)
+        public static bool operator!=(InheritedData lhs, InheritedData rhs)
         {
             return !(lhs == rhs);
         }
@@ -89,7 +106,7 @@ namespace UnityEngine.UIElements
         }
     }
 
-    internal struct LayoutData : IEquatable<LayoutData>
+    internal struct LayoutData : IStyleDataGroup<LayoutData>, IEquatable<LayoutData>
     {
         public Align alignContent;
         public Align alignItems;
@@ -125,7 +142,17 @@ namespace UnityEngine.UIElements
         public Length top;
         public Length width;
 
-        public static bool operator ==(LayoutData lhs, LayoutData rhs)
+        public LayoutData Copy()
+        {
+            return this;
+        }
+
+        public void CopyFrom(ref LayoutData other)
+        {
+            this = other;
+        }
+
+        public static bool operator==(LayoutData lhs, LayoutData rhs)
         {
             return lhs.alignContent == rhs.alignContent &&
                 lhs.alignItems == rhs.alignItems &&
@@ -162,7 +189,7 @@ namespace UnityEngine.UIElements
                 lhs.width == rhs.width;
         }
 
-        public static bool operator !=(LayoutData lhs, LayoutData rhs)
+        public static bool operator!=(LayoutData lhs, LayoutData rhs)
         {
             return !(lhs == rhs);
         }
@@ -222,7 +249,7 @@ namespace UnityEngine.UIElements
         }
     }
 
-    internal struct RareData : IEquatable<RareData>
+    internal struct RareData : IStyleDataGroup<RareData>, IEquatable<RareData>
     {
         public Cursor cursor;
         public TextOverflow textOverflow;
@@ -235,7 +262,17 @@ namespace UnityEngine.UIElements
         public int unitySliceTop;
         public TextOverflowPosition unityTextOverflowPosition;
 
-        public static bool operator ==(RareData lhs, RareData rhs)
+        public RareData Copy()
+        {
+            return this;
+        }
+
+        public void CopyFrom(ref RareData other)
+        {
+            this = other;
+        }
+
+        public static bool operator==(RareData lhs, RareData rhs)
         {
             return lhs.cursor == rhs.cursor &&
                 lhs.textOverflow == rhs.textOverflow &&
@@ -249,7 +286,7 @@ namespace UnityEngine.UIElements
                 lhs.unityTextOverflowPosition == rhs.unityTextOverflowPosition;
         }
 
-        public static bool operator !=(RareData lhs, RareData rhs)
+        public static bool operator!=(RareData lhs, RareData rhs)
         {
             return !(lhs == rhs);
         }
@@ -286,12 +323,22 @@ namespace UnityEngine.UIElements
         }
     }
 
-    internal struct TransformData : IEquatable<TransformData>
+    internal struct TransformData : IStyleDataGroup<TransformData>, IEquatable<TransformData>
     {
         public Rotate rotate;
         public Scale scale;
         public TransformOrigin transformOrigin;
         public Translate translate;
+
+        public TransformData Copy()
+        {
+            return this;
+        }
+
+        public void CopyFrom(ref TransformData other)
+        {
+            this = other;
+        }
 
         public static bool operator==(TransformData lhs, TransformData rhs)
         {
@@ -332,7 +379,90 @@ namespace UnityEngine.UIElements
         }
     }
 
-    internal struct VisualData : IEquatable<VisualData>
+    internal struct TransitionData : IStyleDataGroup<TransitionData>, IEquatable<TransitionData>
+    {
+        public List<TimeValue> transitionDelay;
+        public List<TimeValue> transitionDuration;
+        public List<StylePropertyName> transitionProperty;
+        public List<EasingFunction> transitionTimingFunction;
+
+        public TransitionData Copy()
+        {
+            var data = new TransitionData();
+            data.transitionDelay = new List<TimeValue>(transitionDelay);
+            data.transitionDuration = new List<TimeValue>(transitionDuration);
+            data.transitionProperty = new List<StylePropertyName>(transitionProperty);
+            data.transitionTimingFunction = new List<EasingFunction>(transitionTimingFunction);
+            return data;
+        }
+
+        public void CopyFrom(ref TransitionData other)
+        {
+            if (!ReferenceEquals(transitionDelay, other.transitionDelay))
+            {
+                transitionDelay.Clear();
+                transitionDelay.AddRange(other.transitionDelay);
+            }
+
+            if (!ReferenceEquals(transitionDuration, other.transitionDuration))
+            {
+                transitionDuration.Clear();
+                transitionDuration.AddRange(other.transitionDuration);
+            }
+
+            if (!ReferenceEquals(transitionProperty, other.transitionProperty))
+            {
+                transitionProperty.Clear();
+                transitionProperty.AddRange(other.transitionProperty);
+            }
+
+            if (!ReferenceEquals(transitionTimingFunction, other.transitionTimingFunction))
+            {
+                transitionTimingFunction.Clear();
+                transitionTimingFunction.AddRange(other.transitionTimingFunction);
+            }
+        }
+
+        public static bool operator==(TransitionData lhs, TransitionData rhs)
+        {
+            return lhs.transitionDelay == rhs.transitionDelay &&
+                lhs.transitionDuration == rhs.transitionDuration &&
+                lhs.transitionProperty == rhs.transitionProperty &&
+                lhs.transitionTimingFunction == rhs.transitionTimingFunction;
+        }
+
+        public static bool operator!=(TransitionData lhs, TransitionData rhs)
+        {
+            return !(lhs == rhs);
+        }
+
+        public bool Equals(TransitionData other)
+        {
+            return other == this;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj))
+                return false;
+            return obj is TransitionData &&
+                Equals((TransitionData)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = transitionDelay.GetHashCode();
+                hashCode = (hashCode * 397) ^ transitionDuration.GetHashCode();
+                hashCode = (hashCode * 397) ^ transitionProperty.GetHashCode();
+                hashCode = (hashCode * 397) ^ transitionTimingFunction.GetHashCode();
+                return hashCode;
+            }
+        }
+    }
+
+    internal struct VisualData : IStyleDataGroup<VisualData>, IEquatable<VisualData>
     {
         public Color backgroundColor;
         public Background backgroundImage;
@@ -347,7 +477,17 @@ namespace UnityEngine.UIElements
         public float opacity;
         public OverflowInternal overflow;
 
-        public static bool operator ==(VisualData lhs, VisualData rhs)
+        public VisualData Copy()
+        {
+            return this;
+        }
+
+        public void CopyFrom(ref VisualData other)
+        {
+            this = other;
+        }
+
+        public static bool operator==(VisualData lhs, VisualData rhs)
         {
             return lhs.backgroundColor == rhs.backgroundColor &&
                 lhs.backgroundImage == rhs.backgroundImage &&
@@ -363,7 +503,7 @@ namespace UnityEngine.UIElements
                 lhs.overflow == rhs.overflow;
         }
 
-        public static bool operator !=(VisualData lhs, VisualData rhs)
+        public static bool operator!=(VisualData lhs, VisualData rhs)
         {
             return !(lhs == rhs);
         }

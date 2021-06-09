@@ -247,7 +247,11 @@ namespace UnityEditor
                     bool isBillboard = (m_SelectedLODRange == lods.Count - 1) && importers.First().hasBillboard;
 
                     EditorGUILayout.PropertyField(m_LODSettings.GetArrayElementAtIndex(m_SelectedLODRange).FindPropertyRelative("castShadows"), Styles.CastShadows);
-                    EditorGUILayout.PropertyField(m_LODSettings.GetArrayElementAtIndex(m_SelectedLODRange).FindPropertyRelative("receiveShadows"), Styles.ReceiveShadows);
+
+                    using (new EditorGUI.DisabledScope(!UnityEngine.Rendering.SupportedRenderingFeatures.active.receiveShadows))
+                    {
+                        EditorGUILayout.PropertyField(m_LODSettings.GetArrayElementAtIndex(m_SelectedLODRange).FindPropertyRelative("receiveShadows"), Styles.ReceiveShadows);
+                    }
 
                     var useLightProbes = m_LODSettings.GetArrayElementAtIndex(m_SelectedLODRange).FindPropertyRelative("useLightProbes");
                     EditorGUILayout.PropertyField(useLightProbes, Styles.UseLightProbes);

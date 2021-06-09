@@ -46,7 +46,7 @@ namespace UnityEngine.UIElements.StyleSheets
                 case StyleValueType.Function:
                     value = sheet.ReadFunctionName(handle);
                     break;
-                case StyleValueType.FunctionSeparator:
+                case StyleValueType.CommaSeparator:
                     value = ",";
                     break;
                 case StyleValueType.ScalableImage:

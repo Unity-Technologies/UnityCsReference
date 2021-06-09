@@ -17,6 +17,9 @@ namespace UnityEngine.UIElements
         private static Dictionary<Int64, ComputedStyle> s_ComputedStyleCache = new Dictionary<Int64, ComputedStyle>();
         private static Dictionary<int, StyleVariableContext> s_StyleVariableContextCache = new Dictionary<int, StyleVariableContext>();
 
+        // Cached values for TransitionData converted into a ComputedTransitionProperty array for easier access
+        private static Dictionary<int, ComputedTransitionProperty[]> s_ComputedTransitionsCache = new Dictionary<int, ComputedTransitionProperty[]>();
+
         public static bool TryGetValue(Int64 hash, out ComputedStyle data)
         {
             return s_ComputedStyleCache.TryGetValue(hash, out data);
@@ -38,6 +41,16 @@ namespace UnityEngine.UIElements
             s_StyleVariableContextCache[hash] = data;
         }
 
+        public static bool TryGetValue(int hash, out ComputedTransitionProperty[] data)
+        {
+            return s_ComputedTransitionsCache.TryGetValue(hash, out data);
+        }
+
+        public static void SetValue(int hash, ComputedTransitionProperty[] data)
+        {
+            s_ComputedTransitionsCache[hash] = data;
+        }
+
         public static void ClearStyleCache()
         {
             foreach (var kvp in s_ComputedStyleCache)
@@ -45,17 +58,25 @@ namespace UnityEngine.UIElements
 
             s_ComputedStyleCache.Clear();
             s_StyleVariableContextCache.Clear();
+            s_ComputedTransitionsCache.Clear();
         }
     }
 
     internal class VisualTreeStyleUpdater : BaseVisualTreeUpdater
     {
         private HashSet<VisualElement> m_ApplyStyleUpdateList = new HashSet<VisualElement>();
+        private HashSet<VisualElement> m_TransitionPropertyUpdateList = new HashSet<VisualElement>();
         private bool m_IsApplyingStyles = false;
         private uint m_Version = 0;
         private uint m_LastVersion = 0;
 
         private VisualTreeStyleUpdaterTraversal m_StyleContextHierarchyTraversal = new VisualTreeStyleUpdaterTraversal();
+
+        public VisualTreeStyleUpdaterTraversal traversal
+        {
+            get => m_StyleContextHierarchyTraversal;
+            set => m_StyleContextHierarchyTraversal = value;
+        }
 
         private static readonly string s_Description = "Update Style";
         private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
@@ -71,19 +92,27 @@ namespace UnityEngine.UIElements
 
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {
-            if ((versionChangeType & (VersionChangeType.StyleSheet | VersionChangeType.InlineStyleRemove)) == 0)
+            if ((versionChangeType & (VersionChangeType.StyleSheet | VersionChangeType.TransitionProperty)) == 0)
                 return;
 
             ++m_Version;
 
-            // Applying styles can trigger new changes, store changes in a separate list
-            if (m_IsApplyingStyles)
+            if ((versionChangeType & VersionChangeType.StyleSheet) != 0)
             {
-                m_ApplyStyleUpdateList.Add(ve);
+                // Applying styles can trigger new changes, store changes in a separate list
+                if (m_IsApplyingStyles)
+                {
+                    m_ApplyStyleUpdateList.Add(ve);
+                }
+                else
+                {
+                    m_StyleContextHierarchyTraversal.AddChangedElement(ve, versionChangeType);
+                }
             }
-            else
+
+            if ((versionChangeType & VersionChangeType.TransitionProperty) != 0)
             {
-                m_StyleContextHierarchyTraversal.AddChangedElement(ve, versionChangeType);
+                m_TransitionPropertyUpdateList.Add(ve);
             }
         }
 
@@ -103,6 +132,17 @@ namespace UnityEngine.UIElements
                 m_StyleContextHierarchyTraversal.AddChangedElement(ve, VersionChangeType.StyleSheet);
             }
             m_ApplyStyleUpdateList.Clear();
+
+            foreach (var ve in m_TransitionPropertyUpdateList)
+            {
+                // Allow for transitions to be cancelled if matching transition property was removed.
+                if (ve.hasRunningAnimations)
+                {
+                    ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle);
+                    m_StyleContextHierarchyTraversal.CancelAnimationsWithNoTransitionProperty(ve, ref ve.computedStyle);
+                }
+            }
+            m_TransitionPropertyUpdateList.Clear();
         }
 
         private void ApplyStyles()
@@ -164,6 +204,8 @@ namespace UnityEngine.UIElements
 
         StyleMatchingContext m_StyleMatchingContext = new StyleMatchingContext(OnProcessMatchResult);
         StylePropertyReader m_StylePropertyReader = new StylePropertyReader();
+
+        public StyleMatchingContext styleMatchingContext => m_StyleMatchingContext;
 
         public void PrepareTraversal(float pixelsPerPoint)
         {
@@ -265,8 +307,36 @@ namespace UnityEngine.UIElements
                 m_StyleMatchingContext.currentElement = element;
                 StyleSelectorHelper.FindMatches(m_StyleMatchingContext, m_TempMatchResults, originalStyleSheetCount - 1);
 
-                ProcessMatchedRules(element, m_TempMatchResults);
+                var newStyle = ProcessMatchedRules(element, m_TempMatchResults);
+                newStyle.Acquire();
 
+                if (element.hasInlineStyle)
+                    element.inlineStyleAccess.ApplyInlineStyles(ref newStyle);
+
+                ComputedTransitionUtils.UpdateComputedTransitions(ref newStyle);
+
+                if (element.hasRunningAnimations &&
+                    !ComputedTransitionUtils.SameTransitionProperty(ref element.computedStyle, ref newStyle))
+                {
+                    CancelAnimationsWithNoTransitionProperty(element, ref newStyle);
+                }
+
+                if (newStyle.hasTransition && element.styleInitialized)
+                {
+                    // Start the transitions. Note that the element still has its old style at this point.
+                    ProcessTransitions(element, ref element.computedStyle, ref newStyle);
+
+                    // Set entire new computed style but immediately force the animated values to be updated again.
+                    element.SetComputedStyle(ref newStyle);
+                    ForceUpdateTransitions(element);
+                }
+                else
+                {
+                    element.SetComputedStyle(ref newStyle);
+                }
+
+                newStyle.Release();
+                element.styleInitialized = true;
                 element.inheritedStylesHash = element.computedStyle.inheritedData.GetHashCode();
                 m_StyleMatchingContext.currentElement = null;
                 m_TempMatchResults.Clear();
@@ -296,12 +366,52 @@ namespace UnityEngine.UIElements
             }
         }
 
-        bool ShouldSkipElement(VisualElement element)
+        private void ProcessTransitions(VisualElement element, ref ComputedStyle oldStyle, ref ComputedStyle newStyle)
+        {
+            for (var i = newStyle.computedTransitions.Length - 1; i >= 0; i--)
+            {
+                var t = newStyle.computedTransitions[i];
+
+                // Need to skip inline styles because they take precedence over USS styles
+                if (element.hasInlineStyle && element.inlineStyleAccess.IsValueSet(t.id))
+                    continue;
+
+                ComputedStyle.StartAnimation(element, t.id, ref oldStyle, ref newStyle, t.durationMs, t.delayMs,
+                    t.easingCurve);
+            }
+        }
+
+        private void ForceUpdateTransitions(VisualElement element)
+        {
+            element.styleAnimation.GetAllAnimations(m_AnimatedProperties);
+            if (m_AnimatedProperties.Count > 0)
+            {
+                foreach (var id in m_AnimatedProperties)
+                {
+                    element.styleAnimation.UpdateAnimation(id);
+                }
+                m_AnimatedProperties.Clear();
+            }
+        }
+
+        private readonly List<StylePropertyId> m_AnimatedProperties = new List<StylePropertyId>();
+        internal void CancelAnimationsWithNoTransitionProperty(VisualElement element, ref ComputedStyle newStyle)
+        {
+            element.styleAnimation.GetAllAnimations(m_AnimatedProperties);
+            foreach (var id in m_AnimatedProperties)
+            {
+                if (!newStyle.HasTransitionProperty(id))
+                    element.styleAnimation.CancelAnimation(id);
+            }
+            m_AnimatedProperties.Clear();
+        }
+
+        protected bool ShouldSkipElement(VisualElement element)
         {
             return !m_ParentList.Contains(element) && !m_UpdateList.Contains(element);
         }
 
-        void ProcessMatchedRules(VisualElement element, List<SelectorMatchRecord> matchingSelectors)
+        ComputedStyle ProcessMatchedRules(VisualElement element, List<SelectorMatchRecord> matchingSelectors)
         {
             matchingSelectors.Sort((a, b) => SelectorMatchRecord.Compare(a, b));
 
@@ -363,11 +473,7 @@ namespace UnityEngine.UIElements
             element.variableContext = m_StyleMatchingContext.variableContext;
             m_ProcessVarContext.Clear();
 
-            if (StyleCache.TryGetValue(matchingRulesHash, out var resolvedStyles))
-            {
-                element.SetComputedStyle(ref resolvedStyles);
-            }
-            else
+            if (!StyleCache.TryGetValue(matchingRulesHash, out var resolvedStyles))
             {
                 ref var parentStyle = ref parent?.computedStyle != null ? ref parent.computedStyle : ref InitialStyle.Get();
                 resolvedStyles = ComputedStyle.Create(ref parentStyle);
@@ -383,9 +489,9 @@ namespace UnityEngine.UIElements
                 resolvedStyles.FinalizeApply(ref parentStyle);
 
                 StyleCache.SetValue(matchingRulesHash, ref resolvedStyles);
-
-                element.SetComputedStyle(ref resolvedStyles);
             }
+
+            return resolvedStyles;
         }
 
         private void ProcessMatchedVariables(StyleSheet sheet, StyleRule rule)

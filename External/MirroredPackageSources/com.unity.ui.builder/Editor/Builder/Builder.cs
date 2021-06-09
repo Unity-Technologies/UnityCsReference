@@ -231,8 +231,23 @@ namespace Unity.UI.Builder
         protected override void OnEnable()
         {
             base.OnEnable();
+
             minSize = new Vector2(200, 200);
             SetTitleContent(BuilderConstants.BuilderWindowTitle, BuilderConstants.BuilderWindowIcon);
+
+            if (rootVisualElement.panel != null)
+                SetStyleUpdaterTraversal();
+            // Sometimes, the panel is not already set
+            else
+                rootVisualElement.RegisterCallback<AttachToPanelEvent>(e => SetStyleUpdaterTraversal());
+        }
+
+        void SetStyleUpdaterTraversal()
+        {
+            var updater = rootVisualElement.panel as BaseVisualElementPanel;
+            var styleUpdater = updater.GetUpdater(VisualTreeUpdatePhase.Styles) as VisualTreeStyleUpdater;
+
+            styleUpdater.traversal = new BuilderVisualTreeStyleUpdaterTraversal(m_Viewport.documentRootElement);
         }
 
         [OnOpenAsset(0)]

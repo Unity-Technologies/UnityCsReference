@@ -1938,7 +1938,8 @@ namespace UnityEditor
             GUILayout.EndVertical();
         }
 
-        [Overlay(typeof(SceneView), "Scene View/Cloth Constraints", "unity-sceneview-clothconstraints", "Cloth Constraints")]
+        [Overlay(typeof(SceneView), "Scene View/Cloth Constraints", "Cloth Constraints", "unity-sceneview-clothconstraints")]
+        [Icon("Icons/editconstraints_16.png")]
         class SceneViewClothConstraintsOverlay : TransientSceneViewOverlay
         {
             public override bool visible
@@ -1952,7 +1953,8 @@ namespace UnityEditor
             }
         }
 
-        [Overlay(typeof(SceneView), "Scene View/Cloth Collisions", "unity-sceneview-clothcollision", "Cloth Self-Collision and Inter-Collision")]
+        [Overlay(typeof(SceneView), "Scene View/Cloth Collisions", "Cloth Self-Collision and Inter-Collision", "unity-sceneview-clothcollision")]
+        [Icon("Icons/editCollision_16.png")]
         class SceneViewClothCollisionsOverlay : TransientSceneViewOverlay
         {
             public override bool visible

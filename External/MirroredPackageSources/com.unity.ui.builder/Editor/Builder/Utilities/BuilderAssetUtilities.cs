@@ -484,5 +484,18 @@ namespace Unity.UI.Builder
 
             return attributeOverrides;
         }
+
+        static public bool WriteTextFileToDisk(string path, string content)
+        {
+            bool success = FileUtil.WriteTextFileToDisk(path, content, out string message);
+
+            if (!success)
+            {
+                Debug.LogError(message);
+                EditorUtility.DisplayDialog("Save - " + path, message, "Ok");
+            }
+
+            return success;
+        }
     }
 }

@@ -334,8 +334,6 @@ namespace UnityEditor
         // Loops through 'requiredIconSlots' and fills it with icons that are already serialized.
         public static PlatformIcon[] GetPlatformIcons(NamedBuildTarget buildTarget, PlatformIconKind kind)
         {
-            ValidateBuildTargetNameParameter(buildTarget.TargetName, true);
-
             var platformIconProvider = GetPlatformIconProvider(buildTarget);
             if (platformIconProvider == null)
                 return new PlatformIcon[] {};
@@ -365,8 +363,6 @@ namespace UnityEditor
 
         public static void SetPlatformIcons(NamedBuildTarget buildTarget, PlatformIconKind kind, PlatformIcon[] icons)
         {
-            ValidateBuildTargetNameParameter(buildTarget.TargetName);
-
             var platformIconProvider = GetPlatformIconProvider(buildTarget);
             if (platformIconProvider == null)
                 return;
@@ -401,8 +397,6 @@ namespace UnityEditor
 
         public static PlatformIconKind[] GetSupportedIconKinds(NamedBuildTarget buildTarget)
         {
-            ValidateBuildTargetNameParameter(buildTarget.TargetName, true);
-
             var platformIconProvider = GetPlatformIconProvider(buildTarget);
 
             if (platformIconProvider == null)
@@ -474,8 +468,6 @@ namespace UnityEditor
 
         public static void SetIcons(NamedBuildTarget buildTarget, Texture2D[] icons, IconKind kind)
         {
-            ValidateBuildTargetNameParameter(buildTarget.TargetName);
-
             if (buildTarget == NamedBuildTarget.iOS ||
                 buildTarget == NamedBuildTarget.tvOS ||
                 buildTarget == NamedBuildTarget.Android)
@@ -510,8 +502,6 @@ namespace UnityEditor
 
         public static Texture2D[] GetIcons(NamedBuildTarget buildTarget, IconKind kind)
         {
-            ValidateBuildTargetNameParameter(buildTarget.TargetName, true);
-
             if (buildTarget == NamedBuildTarget.iOS ||
                 buildTarget == NamedBuildTarget.tvOS ||
                 buildTarget == NamedBuildTarget.Android)
@@ -575,8 +565,6 @@ namespace UnityEditor
 
         public static int[] GetIconSizes(NamedBuildTarget buildTarget, IconKind kind)
         {
-            ValidateBuildTargetNameParameter(buildTarget.TargetName, true);
-
             if (buildTarget == NamedBuildTarget.iOS ||
                 buildTarget == NamedBuildTarget.tvOS ||
                 buildTarget == NamedBuildTarget.Android)

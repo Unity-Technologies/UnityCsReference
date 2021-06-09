@@ -159,7 +159,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             m_LastVerticalScrollerValue = value;
-            ForceDisplayOfVisibleItems();
 
             UpdateItemsVisibleInScrollView();
 
@@ -169,38 +168,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Timestamp = EditorApplication.timeSinceStartup;
             EditorApplication.update -= DelayedCheckPackageItems;
             EditorApplication.update += DelayedCheckPackageItems;
-        }
-
-        private void ForceDisplayOfVisibleItems()
-        {
-            // Make sure all item are displayed properly
-            var scrollViewWorldBound = scrollView.worldBound;
-            foreach (var packageGroup in packageGroups)
-            {
-                var packageGroupWorldBound = packageGroup.worldBound;
-                if (packageGroupWorldBound.yMax < scrollViewWorldBound.yMin)
-                    continue;
-                if (packageGroupWorldBound.yMin > scrollViewWorldBound.yMax)
-                    break;
-
-                foreach (var item in packageGroup.packageItems)
-                {
-                    // Make sure selected item is shown
-                    if (!string.IsNullOrEmpty(item.visualState?.selectedVersionId))
-                    {
-                        item.IncrementVersion(VersionChangeType.Transform);
-                        continue;
-                    }
-
-                    var itemWorldBound = item.worldBound;
-                    if (itemWorldBound.yMax <= scrollViewWorldBound.yMin)
-                        continue;
-                    if (itemWorldBound.yMin >= scrollViewWorldBound.yMax)
-                        break;
-
-                    item.IncrementVersion(VersionChangeType.Transform);
-                }
-            }
         }
 
         private void OnScrollViewGeometryChanged(GeometryChangedEvent evt)

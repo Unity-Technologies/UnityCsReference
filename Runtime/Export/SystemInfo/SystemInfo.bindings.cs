@@ -631,6 +631,11 @@ namespace UnityEngine
             get { return SupportsStoreAndResolveAction(); }
         }
 
+        public static bool supportsMultisampleResolveDepth
+        {
+            get { return SupportsMultisampleResolveDepth(); }
+        }
+
         [Obsolete("Vertex program support is required in Unity 5.0+")]
         public static bool supportsVertexPrograms { get { return true; } }
 
@@ -911,5 +916,8 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsStoreAndResolveAction")]
         static extern bool SupportsStoreAndResolveAction();
+
+        [FreeFunction("ScriptingGraphicsCaps::SupportsMultisampleResolveDepth")]
+        static extern bool SupportsMultisampleResolveDepth();
     }
 }

@@ -8,7 +8,7 @@ using System.IO;
 using System.Linq;
 using UnityEngine;
 using Object = UnityEngine.Object;
-using UnityEditor.Experimental;
+using UnityEditorInternal;
 using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEditor.AssetImporters
@@ -205,6 +205,17 @@ namespace UnityEditor.AssetImporters
         int m_SelectedImporterType = k_MultipleSelectedImporterTypes;
         string[] m_AvailableImporterTypesOptions;
         List<string> m_SelectedAssetsPath = new List<string>();
+
+        // Support for postprocessors display
+        struct PostprocessorInfo
+        {
+            public string Name;
+            public string[] Methods;
+            public bool Expanded;
+        }
+        List<PostprocessorInfo> m_Postprocessors;
+        ReorderableList m_PostprocessorUI;
+        SavedBool m_ProcessorsAreExpanded;
 
         // Called from ActiveEditorTracker.cpp to setup the target editor once created before Awake and OnEnable of the Editor.
         internal void InternalSetAssetImporterTargetEditor(Object editor)
@@ -549,6 +560,8 @@ namespace UnityEditor.AssetImporters
                 }
             }
 
+            InitializePostprocessors();
+
             m_OnEnableCalled = true;
             // Forces the inspector as dirty allows us to make sure the OnInspectorGUI has been called
             // at least once in the OnDisable in order to show the ApplyRevertGUI error.
@@ -619,6 +632,73 @@ namespace UnityEditor.AssetImporters
 
             m_OnEnableCalled = false;
             m_ApplyRevertGUICalled = false;
+        }
+
+        private void InitializePostprocessors()
+        {
+            /*
+             * Combine Dynamic and Static Postprocessors into one ordered list - the user is unlikely to be interested in *how* we're registering the Assets Postprocessors under the hood.
+             */
+            SortedSet<AssetPostprocessor.PostprocessorInfo> allAssetImportProcessors = new SortedSet<AssetPostprocessor.PostprocessorInfo>(new AssetPostprocessingInternal.CompareAssetImportPriority());
+            allAssetImportProcessors.UnionWith(((AssetImporter)target).GetDynamicPostprocessors());
+            allAssetImportProcessors.UnionWith(AssetImporter.GetStaticPostprocessors(target.GetType()).Where(t => t.Type.Assembly != typeof(AssetImporter).Assembly));
+
+            m_Postprocessors = new List<PostprocessorInfo>();
+            foreach (var processor in allAssetImportProcessors)
+            {
+                m_Postprocessors.Add(new PostprocessorInfo()
+                {
+                    Expanded = false,
+                    Methods = processor.Methods,
+                    Name = processor.Type.FullName
+                });
+            }
+
+            m_ProcessorsAreExpanded = new SavedBool("AssetImporterEditor_DisplayProcessors", true);
+            m_PostprocessorUI = new ReorderableList(m_Postprocessors, typeof(string), false, true, false, false)
+            {
+                elementHeightCallback = index => m_Postprocessors[index].Expanded ? EditorGUIUtility.singleLineHeight * (m_Postprocessors[index].Methods.Length + 1) + 3f : EditorGUIUtility.singleLineHeight + 3f,
+                drawElementCallback = DrawPostprocessorElement,
+                headerHeight = ReorderableList.Defaults.minHeaderHeight,
+                m_IsEditable = false,
+                multiSelect = false,
+                footerHeight = ReorderableList.Defaults.minHeaderHeight,
+            };
+        }
+
+        void DrawPostprocessorElement(Rect rect, int index, bool active, bool focused)
+        {
+            EditorGUI.indentLevel++;
+
+            var processor = m_Postprocessors[index];
+            rect.yMax = rect.yMin + EditorGUIUtility.singleLineHeight;
+            if (Event.current.type == EventType.ContextClick && rect.Contains(Event.current.mousePosition))
+            {
+                Event.current.Use();
+                GenericMenu pm = new GenericMenu();
+                pm.AddItem(new GUIContent("Copy"), false, RightClickPostprocessor, processor.Name);
+                pm.ShowAsContext();
+            }
+
+            processor.Expanded = EditorGUI.Foldout(rect, processor.Expanded, m_Postprocessors[index].Name, true);
+            if (processor.Expanded)
+            {
+                EditorGUI.indentLevel++;
+                foreach (var method in processor.Methods)
+                {
+                    rect.y += EditorGUIUtility.singleLineHeight;
+                    EditorGUI.LabelField(rect, method);
+                }
+                EditorGUI.indentLevel--;
+            }
+            m_Postprocessors[index] = processor;
+
+            EditorGUI.indentLevel--;
+        }
+
+        static void RightClickPostprocessor(object userdata)
+        {
+            EditorGUIUtility.systemCopyBuffer = (string)userdata;
         }
 
         bool CanEditorSurviveAssemblyReload()
@@ -884,39 +964,50 @@ namespace UnityEditor.AssetImporters
                 extraDataSerializedObject.Update();
             }
 
-            if (!needsApplyRevert)
+            if (needsApplyRevert)
+            {
+                if (m_Inspector == null)
+                    m_Inspector = InspectorWindow.GetInspectors().Find(i => i.tracker.activeEditors.Contains(this));
+
+                if (m_Inspector != null)
+                    m_HasInspectorBeenSeenLocked = m_Inspector.isLocked;
+
+                EditorGUILayout.Space();
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    GUILayout.FlexibleSpace();
+
+                    var applied = OnApplyRevertGUI();
+
+                    // If the .meta file was modified on disk, reload UI
+                    var updatedAssets = AssetWasUpdated();
+                    if (updatedAssets.Any() && Event.current.type != EventType.Layout)
+                    {
+                        ReloadTargets(updatedAssets);
+                        applied = false;
+                    }
+
+                    // asset has changed...
+                    // need to start rendering again.
+                    if (applied)
+                        Repaint();
+                }
+            }
+            else
             {
                 if (extraDataSerializedObject != null && HasModified())
                     Apply(); // user may have extra data that needs to be applied back to the target.
-                return;
             }
 
-            // we cannot do this in OnEnable because it is sometimes not setup properly right after an assembly reload...
-            if (m_Inspector == null)
-                m_Inspector = InspectorWindow.GetInspectors().Find(i => i.tracker.activeEditors.Contains(this));
-
-            if (m_Inspector != null)
-                m_HasInspectorBeenSeenLocked = m_Inspector.isLocked;
-
-            EditorGUILayout.Space();
-            using (new EditorGUILayout.HorizontalScope())
+            if (m_Postprocessors.Count > 0)
             {
-                GUILayout.FlexibleSpace();
-
-                var applied = OnApplyRevertGUI();
-
-                // If the .meta file was modified on disk, reload UI
-                var updatedAssets = AssetWasUpdated();
-                if (updatedAssets.Any() && Event.current.type != EventType.Layout)
+                EditorGUILayout.Space();
+                m_ProcessorsAreExpanded.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ProcessorsAreExpanded.value, GUIContent.Temp("Asset PostProcessors"));
+                EditorGUI.EndFoldoutHeaderGroup();
+                if (m_ProcessorsAreExpanded)
                 {
-                    ReloadTargets(updatedAssets);
-                    applied = false;
+                    m_PostprocessorUI.DoLayoutList();
                 }
-
-                // asset has changed...
-                // need to start rendering again.
-                if (applied)
-                    Repaint();
             }
         }
 

@@ -13,6 +13,7 @@ namespace UnityEditor.Build
         {
             "",
             "Standalone",
+            "Server",
             "iPhone",
             "Android",
             "WebGL",
@@ -32,6 +33,7 @@ namespace UnityEditor.Build
 
         public static readonly NamedBuildTarget Unknown = new NamedBuildTarget("");
         public static readonly NamedBuildTarget Standalone = new NamedBuildTarget("Standalone");
+        public static readonly NamedBuildTarget Server = new NamedBuildTarget("Server");
         public static readonly NamedBuildTarget iOS = new NamedBuildTarget("iPhone");
         public static readonly NamedBuildTarget Android = new NamedBuildTarget("Android");
         public static readonly NamedBuildTarget WebGL = new NamedBuildTarget("WebGL");
@@ -58,7 +60,13 @@ namespace UnityEditor.Build
 
         public BuildTargetGroup ToBuildTargetGroup()
         {
-            return BuildPipeline.GetBuildTargetGroupByName(TargetName);
+            switch (TargetName)
+            {
+                case "Server":
+                    return BuildTargetGroup.Standalone;
+                default:
+                    return BuildPipeline.GetBuildTargetGroupByName(TargetName);
+            }
         }
 
         public static NamedBuildTarget FromBuildTargetGroup(BuildTargetGroup buildTargetGroup)
@@ -127,7 +135,6 @@ namespace UnityEditor.Build
             {
                 return false;
             }
-
             return Equals((NamedBuildTarget)obj);
         }
 

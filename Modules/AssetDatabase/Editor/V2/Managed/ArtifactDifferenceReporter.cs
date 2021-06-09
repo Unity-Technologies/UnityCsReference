@@ -59,6 +59,7 @@ namespace UnityEditor
         public static string kSourceAsset_HashOfSourceAssetByGUID = "SourceAsset/HashOfSourceAssetByGUID";
         public static string kSourceAsset_MetaFileHash = "SourceAsset/MetaFileHash";
         public static string kArtifact_HashOfContent = "Artifact/HashOfContent";
+        public static string kArtifact_HashOfGuidsOfChildren = "Artifact/HashOfGuidsOfChildren";
         public static string kArtifact_FileIdOfMainObject = "Artifact/Property"; //Manual check
         public static string kImportParameter_Platform = "ImportParameter/Platform";
         public static string kEnvironment_TextureImportCompression = "Environment/TextureImportCompression";
@@ -143,6 +144,7 @@ namespace UnityEditor
             yield return (kSourceAsset_HashOfSourceAssetByGUID, HashOfSourceAssetModified);
             yield return (kSourceAsset_MetaFileHash, MetaFileHashModified);
             yield return (kArtifact_HashOfContent, ArtifactHashOfContentDifference);
+            yield return (kArtifact_HashOfGuidsOfChildren, ArtifactHashOfGuidsOfChildrenContentDifference);
             yield return (kImportParameter_Platform, PlatformDependencyModified);
             yield return (kSourceAsset_GuidOfPathLocation, GuidOfPathLocationModified);
             yield return (kImporterRegistry_PostProcessorVersionHash, PostProcessorVersionHashModified);
@@ -459,6 +461,31 @@ namespace UnityEditor
             else if (diff.diffType == DiffType.Modified)
             {
                 diff.message = $"the asset at '{path}' changed, which is registered as a dependency of '{assetName}'";
+                msgsList.Add(diff.message);
+            }
+        }
+
+        private static void ArtifactHashOfGuidsOfChildrenContentDifference(ref ArtifactInfoDifference diff, List<string> msgsList)
+        {
+            var startIndex = diff.key.LastIndexOf('/') + 1;
+            var guid = diff.key.Substring(startIndex, 32);
+            var folderpath = AssetDatabase.GUIDToAssetPath(guid);
+
+            if (diff.diffType == DiffType.Removed)
+            {
+                diff.message = $"a dependency on the Hash of all the GUIDs belonging to assets inside of the folder '{folderpath}' was removed";
+                msgsList.Add(diff.message);
+            }
+            else if (diff.diffType == DiffType.Added)
+            {
+                diff.message = $"a dependency on the Hash of all the GUIDs belonging to assets inside of the folder '{folderpath}' was added";
+                msgsList.Add(diff.message);
+            }
+            else if (diff.diffType == DiffType.Modified)
+            {
+                var oldHash = diff.oldArtifactInfo.dependencies[diff.key].value;
+                var newHash = diff.newArtifactInfo.dependencies[diff.key].value;
+                diff.message = $"the Hash of all the GUIDs belonging to assets inside the folder '{folderpath}' changed from '{oldHash}' to '{newHash}'";
                 msgsList.Add(diff.message);
             }
         }

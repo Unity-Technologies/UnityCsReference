@@ -263,7 +263,7 @@ namespace UnityEditor
         SavedInt m_SelectedSection = new SavedInt("PlayerSettings.ShownSection", -1);
 
         BuildPlatform[] validPlatforms;
-        BuildTargetGroup lastTargetGroup;
+        NamedBuildTarget lastNamedBuildTarget;
 
         // il2cpp
         SerializedProperty m_StripEngineCode;
@@ -608,7 +608,7 @@ namespace UnityEditor
             m_SettingsExtensions = new ISettingEditorExtension[validPlatforms.Length];
             for (int i = 0; i < validPlatforms.Length; i++)
             {
-                string module = ModuleManager.GetTargetStringFromBuildTargetGroup(validPlatforms[i].targetGroup);
+                string module = ModuleManager.GetTargetStringFromBuildTargetGroup(validPlatforms[i].namedBuildTarget.ToBuildTargetGroup());
                 m_SettingsExtensions[i] = ModuleManager.GetEditorSettingsExtension(module);
                 if (m_SettingsExtensions[i] != null)
                     m_SettingsExtensions[i].OnEnable(this);
@@ -626,17 +626,17 @@ namespace UnityEditor
             s_GraphicsDeviceLists.Clear();
 
             // Setup initial values to prevent immediate script recompile (or editor restart)
-            BuildTargetGroup targetGroup = validPlatforms[selectedPlatform].targetGroup;
+            NamedBuildTarget namedBuildTarget = validPlatforms[selectedPlatform].namedBuildTarget;
             serializedActiveInputHandler = m_ActiveInputHandler.intValue;
             serializedSuppressCommonWarnings = m_SuppressCommonWarnings.boolValue;
             serializedAllowUnsafeCode = m_AllowUnsafeCode.boolValue;
-            serializedAdditionalCompilerArguments = GetAdditionalCompilerArgumentsForGroup(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
-            serializedScriptingDefines = GetScriptingDefineSymbolsForGroup(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
-            serializedAPICompatibilityLevel = GetApiCompatibilityLevelForTarget(targetGroup);
+            serializedAdditionalCompilerArguments = GetAdditionalCompilerArgumentsForGroup(namedBuildTarget);
+            serializedScriptingDefines = GetScriptingDefineSymbolsForGroup(namedBuildTarget);
+            serializedAPICompatibilityLevel = GetApiCompatibilityLevelForTarget(namedBuildTarget);
             serializedUseDeterministicCompilation = m_UseDeterministicCompilation.boolValue;
 
-            InitReorderableScriptingDefineSymbolsList(targetGroup);
-            InitReorderableAdditionalCompilerArgumentsList(targetGroup);
+            InitReorderableScriptingDefineSymbolsList(namedBuildTarget);
+            InitReorderableAdditionalCompilerArgumentsList(namedBuildTarget);
         }
 
         void OnDisable()
@@ -645,7 +645,7 @@ namespace UnityEditor
             {
                 if (EditorUtility.DisplayDialog("Scripting Define Symbols Have Been Modified", "Do you want to apply changes?", "Apply", "Revert"))
                 {
-                    SetScriptingDefineSymbolsForGroup(NamedBuildTarget.FromBuildTargetGroup(lastTargetGroup), scriptingDefinesList.ToArray());
+                    SetScriptingDefineSymbolsForGroup(lastNamedBuildTarget, scriptingDefinesList.ToArray());
                     RecompileScripts(RecompileReason.scriptingDefineSymbolsModified);
                 }
 
@@ -656,7 +656,7 @@ namespace UnityEditor
             {
                 if (EditorUtility.DisplayDialog("Additional Compiler Arguments Have Been Modified", "Do you want to apply changes?", "Apply", "Revert"))
                 {
-                    SetAdditionalCompilerArgumentsForGroup(NamedBuildTarget.FromBuildTargetGroup(lastTargetGroup), additionalCompilerArgumentsList.ToArray());
+                    SetAdditionalCompilerArgumentsForGroup(lastNamedBuildTarget, additionalCompilerArgumentsList.ToArray());
                     RecompileScripts(RecompileReason.additionalCompilerArgumentsModified);
                 }
 
@@ -712,13 +712,13 @@ namespace UnityEditor
                 PlayerSettings.isHandlingScriptRecompile = false;
         }
 
-        private void CheckConsistency(BuildTargetGroup targetGroup)
+        private void CheckConsistency(BuildPlatform platform)
         {
             if (isPreset)
                 return;
 
             // Scripting define symbols
-            var currentDefines = GetScriptingDefineSymbolsForGroup(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
+            var currentDefines = GetScriptingDefineSymbolsForGroup(platform.namedBuildTarget);
             if (serializedScriptingDefines != currentDefines)
             {
                 if (!hasScriptingDefinesBeenModified)
@@ -727,12 +727,12 @@ namespace UnityEditor
                     UpdateScriptingDefineSymbolsLists();
                 }
 
-                if (EditorUserBuildSettings.activeBuildTargetGroup == targetGroup)
+                if (platform.IsActive())
                     scriptRecompileRequired = true;
             }
 
             // Additional compiler arguments
-            var currentAdditionalCompilerArguments = GetAdditionalCompilerArgumentsForGroup(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
+            var currentAdditionalCompilerArguments = GetAdditionalCompilerArgumentsForGroup(platform.namedBuildTarget);
             if (!serializedAdditionalCompilerArguments.SequenceEqual(currentAdditionalCompilerArguments))
             {
                 if (!hasAdditionalCompilerArgumentsBeenModified)
@@ -741,16 +741,16 @@ namespace UnityEditor
                     UpdateAdditionalCompilerArgumentsLists();
                 }
 
-                if (EditorUserBuildSettings.activeBuildTargetGroup == targetGroup)
+                if (platform.IsActive())
                     scriptRecompileRequired = true;
             }
 
             // API compatibility level
-            var currentAPICompatibilityLevel = GetApiCompatibilityLevelForTarget(targetGroup);
+            var currentAPICompatibilityLevel = GetApiCompatibilityLevelForTarget(platform.namedBuildTarget);
             if (serializedAPICompatibilityLevel != currentAPICompatibilityLevel)
             {
                 serializedAPICompatibilityLevel = currentAPICompatibilityLevel;
-                if (EditorUserBuildSettings.activeBuildTargetGroup == targetGroup)
+                if (platform.IsActive())
                     scriptRecompileRequired = true;
             }
 
@@ -831,7 +831,7 @@ namespace UnityEditor
                     EditorGUI.EndEditingActiveTextField();
                     GUIUtility.keyboardControl = 0;
                     string[] defines = PlayerSettings.ConvertScriptingDefineStringToArray(EditorGUI.s_DelayedTextEditor.text);
-                    SetScriptingDefineSymbolsForGroup(NamedBuildTarget.FromBuildTargetGroup(validPlatforms[oldPlatform].targetGroup), defines);
+                    SetScriptingDefineSymbolsForGroup(validPlatforms[oldPlatform].namedBuildTarget, defines);
                 }
                 // Reset focus when changing between platforms.
                 // If we don't do this, the resolution width/height value will not update correctly when they have the focus
@@ -839,12 +839,11 @@ namespace UnityEditor
             }
 
             BuildPlatform platform = validPlatforms[selectedPlatform];
-            BuildTargetGroup targetGroup = platform.targetGroup;
 
             if (!isPreset)
             {
                 CheckUpdatePresetSelectorStatus();
-                CheckConsistency(targetGroup);
+                CheckConsistency(platform);
             }
 
             GUILayout.Label(string.Format(L10n.Tr("Settings for {0}"), validPlatforms[selectedPlatform].title.text));
@@ -863,13 +862,13 @@ namespace UnityEditor
                 }
             }
 
-            m_IconsEditor.IconSectionGUI(targetGroup, m_SettingsExtensions[selectedPlatform], selectedPlatform, sectionIndex++);
+            m_IconsEditor.IconSectionGUI(platform.namedBuildTarget, m_SettingsExtensions[selectedPlatform], selectedPlatform, sectionIndex++);
 
-            ResolutionSectionGUI(targetGroup, m_SettingsExtensions[selectedPlatform], sectionIndex++);
-            m_SplashScreenEditor.SplashSectionGUI(platform, targetGroup, m_SettingsExtensions[selectedPlatform], sectionIndex++);
-            DebugAndCrashReportingGUI(platform, targetGroup, m_SettingsExtensions[selectedPlatform], sectionIndex++);
-            OtherSectionGUI(platform, targetGroup, m_SettingsExtensions[selectedPlatform], sectionIndex++);
-            PublishSectionGUI(targetGroup, m_SettingsExtensions[selectedPlatform], sectionIndex++);
+            ResolutionSectionGUI(platform.namedBuildTarget, m_SettingsExtensions[selectedPlatform], sectionIndex++);
+            m_SplashScreenEditor.SplashSectionGUI(platform, m_SettingsExtensions[selectedPlatform], sectionIndex++);
+            DebugAndCrashReportingGUI(platform, m_SettingsExtensions[selectedPlatform], sectionIndex++);
+            OtherSectionGUI(platform, m_SettingsExtensions[selectedPlatform], sectionIndex++);
+            PublishSectionGUI(platform, m_SettingsExtensions[selectedPlatform], sectionIndex++);
 
             if (sectionIndex != kNumberGUISections)
                 Debug.LogError("Mismatched number of GUI sections.");
@@ -945,7 +944,7 @@ namespace UnityEditor
             return targetGroup == BuildTargetGroup.Standalone;
         }
 
-        public void ResolutionSectionGUI(BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension, int sectionIndex = 0)
+        public void ResolutionSectionGUI(NamedBuildTarget namedBuildTarget, ISettingEditorExtension settingsExtension, int sectionIndex = 0)
         {
             if (BeginSettingsBox(sectionIndex, SettingsContent.resolutionPresentationTitle))
             {
@@ -962,7 +961,7 @@ namespace UnityEditor
                         settingsExtension.ResolutionSectionGUI(h, kLabelFloatMinW, kLabelFloatMaxW);
                     }
 
-                    if (targetGroup == BuildTargetGroup.Standalone || targetGroup == BuildTargetGroup.EmbeddedLinux)
+                    if (namedBuildTarget == NamedBuildTarget.Standalone || namedBuildTarget == NamedBuildTarget.EmbeddedLinux)
                     {
                         GUILayout.Label(SettingsContent.resolutionTitle, EditorStyles.boldLabel);
 
@@ -998,9 +997,12 @@ namespace UnityEditor
                         }
                         EditorGUILayout.EndFadeGroup();
                     }
-                    if (targetGroup == BuildTargetGroup.Standalone)
+                    if (namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone)
                     {
-                        EditorGUILayout.PropertyField(m_MacRetinaSupport, SettingsContent.macRetinaSupport);
+                        if (namedBuildTarget != NamedBuildTarget.Server)
+                        {
+                            EditorGUILayout.PropertyField(m_MacRetinaSupport, SettingsContent.macRetinaSupport);
+                        }
                         EditorGUILayout.PropertyField(m_RunInBackground, SettingsContent.runInBackground);
                     }
 
@@ -1012,7 +1014,7 @@ namespace UnityEditor
 
                         if (m_DefaultScreenOrientation.enumValueIndex == (int)UIOrientation.AutoRotation)
                         {
-                            if (targetGroup == BuildTargetGroup.iOS)
+                            if (namedBuildTarget == NamedBuildTarget.iOS)
                                 EditorGUILayout.PropertyField(m_UseOSAutoRotation, SettingsContent.useOSAutoRotation);
 
                             EditorGUI.indentLevel++;
@@ -1039,7 +1041,7 @@ namespace UnityEditor
                         }
                     }
 
-                    if (targetGroup == BuildTargetGroup.iOS)
+                    if (namedBuildTarget == NamedBuildTarget.iOS)
                     {
                         GUILayout.Label(SettingsContent.multitaskingSupportTitle, EditorStyles.boldLabel);
                         EditorGUILayout.PropertyField(m_UIRequiresFullScreen, SettingsContent.UIRequiresFullScreen);
@@ -1054,7 +1056,7 @@ namespace UnityEditor
                     EditorGUILayout.Space();
 
                     // Standalone Player
-                    if (targetGroup == BuildTargetGroup.Standalone)
+                    if (namedBuildTarget == NamedBuildTarget.Standalone)
                     {
                         GUILayout.Label(SettingsContent.standalonePlayerOptionsTitle, EditorStyles.boldLabel);
                         EditorGUILayout.PropertyField(m_CaptureSingleScreen);
@@ -1081,11 +1083,11 @@ namespace UnityEditor
                     }
 
                     // integrated gpu color/depth bits setup
-                    if (BuildTargetDiscovery.PlatformGroupHasFlag(targetGroup, TargetAttributes.HasIntegratedGPU))
+                    if (BuildTargetDiscovery.PlatformGroupHasFlag(namedBuildTarget.ToBuildTargetGroup(), TargetAttributes.HasIntegratedGPU))
                     {
                         // iOS, while supports 16bit FB through GL interface, use 32bit in hardware, so there is no need in 16bit
-                        if (targetGroup != BuildTargetGroup.iOS &&
-                            targetGroup != BuildTargetGroup.tvOS)
+                        if (namedBuildTarget != NamedBuildTarget.iOS &&
+                            namedBuildTarget != NamedBuildTarget.tvOS)
                         {
                             EditorGUILayout.PropertyField(m_Use32BitDisplayBuffer, SettingsContent.use32BitDisplayBuffer);
                         }
@@ -1094,15 +1096,15 @@ namespace UnityEditor
                         EditorGUILayout.PropertyField(m_PreserveFramebufferAlpha, SettingsContent.preserveFramebufferAlpha);
                     }
                     // activity indicator on loading
-                    if (targetGroup == BuildTargetGroup.iOS)
+                    if (namedBuildTarget == NamedBuildTarget.iOS)
                     {
                         EditorGUILayout.PropertyField(m_iosShowActivityIndicatorOnLoading, SettingsContent.iosShowActivityIndicatorOnLoading);
                     }
-                    if (targetGroup == BuildTargetGroup.Android)
+                    if (namedBuildTarget == NamedBuildTarget.Android)
                     {
                         EditorGUILayout.PropertyField(m_androidShowActivityIndicatorOnLoading, SettingsContent.androidShowActivityIndicatorOnLoading);
                     }
-                    if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.Android)
+                    if (namedBuildTarget == NamedBuildTarget.iOS || namedBuildTarget == NamedBuildTarget.Android)
                     {
                         EditorGUILayout.Space();
                     }
@@ -1536,10 +1538,10 @@ namespace UnityEditor
             s_ColorGamutList.DoLayoutList();
         }
 
-        public void DebugAndCrashReportingGUI(BuildPlatform platform, BuildTargetGroup targetGroup,
+        public void DebugAndCrashReportingGUI(BuildPlatform platform,
             ISettingEditorExtension settingsExtension, int sectionIndex = 3)
         {
-            if (targetGroup != BuildTargetGroup.iOS && targetGroup != BuildTargetGroup.tvOS)
+            if (platform.namedBuildTarget != NamedBuildTarget.iOS && platform.namedBuildTarget != NamedBuildTarget.tvOS)
                 return;
 
             if (BeginSettingsBox(sectionIndex, SettingsContent.debuggingCrashReportingTitle))
@@ -1622,25 +1624,25 @@ namespace UnityEditor
             return options[newIdx];
         }
 
-        public void OtherSectionGUI(BuildPlatform platform, BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension, int sectionIndex = 4)
+        public void OtherSectionGUI(BuildPlatform platform, ISettingEditorExtension settingsExtension, int sectionIndex = 4)
         {
             if (BeginSettingsBox(sectionIndex, SettingsContent.otherSettingsTitle))
             {
                 // PLEASE DO NOT COPY SETTINGS TO APPEAR MULTIPLE PLACES IN THE CODE! See top of file for more info.
-                OtherSectionRenderingGUI(platform, targetGroup, settingsExtension);
-                OtherSectionVulkanSettingsGUI(targetGroup, settingsExtension);
-                OtherSectionIdentificationGUI(targetGroup, settingsExtension);
-                OtherSectionConfigurationGUI(platform, targetGroup, settingsExtension);
-                OtherSectionScriptCompilationGUI(targetGroup);
-                OtherSectionOptimizationGUI(platform, targetGroup);
+                OtherSectionRenderingGUI(platform, settingsExtension);
+                OtherSectionVulkanSettingsGUI(platform, settingsExtension);
+                OtherSectionIdentificationGUI(platform, settingsExtension);
+                OtherSectionConfigurationGUI(platform, settingsExtension);
+                OtherSectionScriptCompilationGUI(platform);
+                OtherSectionOptimizationGUI(platform);
                 OtherSectionLoggingGUI();
-                OtherSectionLegacyGUI(targetGroup);
+                OtherSectionLegacyGUI(platform);
                 ShowSharedNote();
             }
             EndSettingsBox();
         }
 
-        private void OtherSectionRenderingGUI(BuildPlatform platform, BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension)
+        private void OtherSectionRenderingGUI(BuildPlatform platform, ISettingEditorExtension settingsExtension)
         {
             // Rendering related settings
             GUILayout.Label(SettingsContent.renderingTitle, EditorStyles.boldLabel);
@@ -1670,24 +1672,24 @@ namespace UnityEditor
                 GUIContent warningMessage = null;
                 var apis = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
 
-                if (targetGroup == BuildTargetGroup.Android)
+                if (platform.namedBuildTarget == NamedBuildTarget.Android)
                 {
                     // SRP should handle blits internally
                     bool hasBlitDisabled = (PlayerSettings.Android.blitType == AndroidBlitType.Never) && (GraphicsSettings.currentRenderPipeline == null);
                     showWarning = hasBlitDisabled || apis.Contains(GraphicsDeviceType.OpenGLES2);
                     warningMessage = SettingsContent.colorSpaceAndroidWarning;
                 }
-                else if (targetGroup == BuildTargetGroup.iOS || platform.targetGroup == BuildTargetGroup.tvOS)
+                else if (platform.namedBuildTarget == NamedBuildTarget.iOS || platform.namedBuildTarget == NamedBuildTarget.tvOS)
                 {
                     showWarning = apis.Contains(GraphicsDeviceType.OpenGLES3) || apis.Contains(GraphicsDeviceType.OpenGLES2);
                     warningMessage = SettingsContent.colorSpaceIOSWarning;
                 }
-                else if ((targetGroup == BuildTargetGroup.WebGL))
+                else if ((platform.namedBuildTarget == NamedBuildTarget.WebGL))
                 {
                     showWarning = apis.Contains(GraphicsDeviceType.OpenGLES2);
                     warningMessage = SettingsContent.colorSpaceWebGLWarning;
                 }
-                else if ((targetGroup == BuildTargetGroup.EmbeddedLinux))
+                else if ((platform.namedBuildTarget == NamedBuildTarget.EmbeddedLinux))
                 {
                     showWarning = apis.Contains(GraphicsDeviceType.OpenGLES2);
                     warningMessage = SettingsContent.colorSpaceEmbeddedLinuxWarning;
@@ -1701,11 +1703,11 @@ namespace UnityEditor
             // Graphics APIs
             using (new EditorGUI.DisabledScope(EditorApplication.isPlaying))
             {
-                GraphicsAPIsGUI(targetGroup, platform.defaultTarget);
+                GraphicsAPIsGUI(platform.namedBuildTarget.ToBuildTargetGroup(), platform.defaultTarget);
             }
 
             // Output color spaces
-            ColorGamutGUI(targetGroup);
+            ColorGamutGUI(platform.namedBuildTarget.ToBuildTargetGroup());
 
             // Metal
             if (Application.platform == RuntimePlatform.OSXEditor && BuildTargetDiscovery.BuildTargetSupportsRenderer(platform, GraphicsDeviceType.Metal))
@@ -1713,7 +1715,7 @@ namespace UnityEditor
                 m_MetalAPIValidation.boolValue = EditorGUILayout.Toggle(SettingsContent.metalAPIValidation, m_MetalAPIValidation.boolValue);
 
                 EditorGUILayout.PropertyField(m_MetalFramebufferOnly, SettingsContent.metalFramebufferOnly);
-                if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS)
+                if (platform.namedBuildTarget == NamedBuildTarget.iOS || platform.namedBuildTarget == NamedBuildTarget.tvOS)
                     EditorGUILayout.PropertyField(m_MetalForceHardShadows, SettingsContent.metalForceHardShadows);
 
                 int[] memorylessModeValues = { 0, 1, 2 };
@@ -1724,7 +1726,7 @@ namespace UnityEditor
             {
                 // Multithreaded rendering
                 if (settingsExtension != null && settingsExtension.SupportsMultithreadedRendering())
-                    settingsExtension.MultithreadedRenderingGUI(targetGroup);
+                    settingsExtension.MultithreadedRenderingGUI(platform.namedBuildTarget.ToBuildTargetGroup());
 
                 // Batching section
                 {
@@ -1783,7 +1785,7 @@ namespace UnityEditor
 
             bool hdrDisplaySupported = false;
             bool gfxJobModesSupported = false;
-            bool customLightmapEncodingSupported = (targetGroup == BuildTargetGroup.Standalone || targetGroup == BuildTargetGroup.WebGL);
+            bool customLightmapEncodingSupported = (platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone || platform.namedBuildTarget == NamedBuildTarget.WebGL);
             if (settingsExtension != null)
             {
                 hdrDisplaySupported = settingsExtension.SupportsHighDynamicRangeDisplays();
@@ -1792,7 +1794,7 @@ namespace UnityEditor
             }
             else
             {
-                if (targetGroup == BuildTargetGroup.Standalone)
+                if (platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone)
                 {
                     GraphicsDeviceType[] gfxAPIs = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
 
@@ -1821,7 +1823,7 @@ namespace UnityEditor
             bool newGraphicsJobs = graphicsJobs;
             bool graphicsJobsModeOptionEnabled = graphicsJobs;
 
-            if (targetGroup == BuildTargetGroup.XboxOne)
+            if (platform.namedBuildTarget == NamedBuildTarget.XboxOne)
             {
                 // on XBoxOne, we only have kGfxJobModeNative active for DX12 API and kGfxJobModeLegacy for the DX11 API
                 // no need for a drop down popup for XBoxOne
@@ -1904,12 +1906,12 @@ namespace UnityEditor
                 using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || Lightmapping.isRunning))
                 {
                     EditorGUI.BeginChangeCheck();
-                    NormalMapEncoding oldEncoding = PlayerSettings.GetNormalMapEncoding(targetGroup);
+                    NormalMapEncoding oldEncoding = PlayerSettings.GetNormalMapEncoding(platform.namedBuildTarget);
                     NormalMapEncoding[] encodingValues = { NormalMapEncoding.XYZ, NormalMapEncoding.DXT5nm };
                     NormalMapEncoding newEncoding = BuildEnumPopup(SettingsContent.normalMapEncodingLabel, oldEncoding, encodingValues, SettingsContent.normalMapEncodingNames);
                     if (EditorGUI.EndChangeCheck() && newEncoding != oldEncoding)
                     {
-                        PlayerSettings.SetNormalMapEncoding(targetGroup, newEncoding);
+                        PlayerSettings.SetNormalMapEncoding(platform.namedBuildTarget, newEncoding);
                         serializedObject.ApplyModifiedProperties();
                         GUIUtility.ExitGUI();
                     }
@@ -1922,14 +1924,14 @@ namespace UnityEditor
                 using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || Lightmapping.isRunning))
                 {
                     EditorGUI.BeginChangeCheck();
-                    LightmapEncodingQuality encodingQuality = PlayerSettings.GetLightmapEncodingQualityForPlatformGroup(targetGroup);
+                    LightmapEncodingQuality encodingQuality = PlayerSettings.GetLightmapEncodingQualityForPlatformGroup(platform.namedBuildTarget.ToBuildTargetGroup());
                     LightmapEncodingQuality[] lightmapEncodingValues = { LightmapEncodingQuality.Low, LightmapEncodingQuality.Normal, LightmapEncodingQuality.High };
                     LightmapEncodingQuality newEncodingQuality = BuildEnumPopup(SettingsContent.lightmapEncodingLabel, encodingQuality, lightmapEncodingValues, SettingsContent.lightmapEncodingNames);
                     if (EditorGUI.EndChangeCheck() && encodingQuality != newEncodingQuality)
                     {
-                        PlayerSettings.SetLightmapEncodingQualityForPlatformGroup(targetGroup, newEncodingQuality);
+                        PlayerSettings.SetLightmapEncodingQualityForPlatformGroup(platform.namedBuildTarget.ToBuildTargetGroup(), newEncodingQuality);
 
-                        Lightmapping.OnUpdateLightmapEncoding(targetGroup);
+                        Lightmapping.OnUpdateLightmapEncoding(platform.namedBuildTarget.ToBuildTargetGroup());
 
                         serializedObject.ApplyModifiedProperties();
 
@@ -1938,7 +1940,7 @@ namespace UnityEditor
 
                     if (encodingQuality == LightmapEncodingQuality.High)
                     {
-                        if (targetGroup == BuildTargetGroup.WebGL)
+                        if (platform.namedBuildTarget == NamedBuildTarget.WebGL)
                         {
                             var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.WebGL);
                             if (apis.Contains(GraphicsDeviceType.OpenGLES2))
@@ -1950,7 +1952,7 @@ namespace UnityEditor
 
                     if (encodingQuality != LightmapEncodingQuality.Low)
                     {
-                        if (targetGroup == BuildTargetGroup.Android)
+                        if (platform.namedBuildTarget == NamedBuildTarget.Android)
                         {
                             var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
                             var hasMinAPI = (apis.Contains(GraphicsDeviceType.Vulkan) || apis.Contains(GraphicsDeviceType.OpenGLES3)) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
@@ -1966,8 +1968,8 @@ namespace UnityEditor
             {
                 using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || Lightmapping.isRunning))
                 {
-                    bool streamingEnabled = PlayerSettings.GetLightmapStreamingEnabledForPlatformGroup(targetGroup);
-                    int streamingPriority = PlayerSettings.GetLightmapStreamingPriorityForPlatformGroup(targetGroup);
+                    bool streamingEnabled = PlayerSettings.GetLightmapStreamingEnabledForPlatformGroup(platform.namedBuildTarget.ToBuildTargetGroup());
+                    int streamingPriority = PlayerSettings.GetLightmapStreamingPriorityForPlatformGroup(platform.namedBuildTarget.ToBuildTargetGroup());
 
                     EditorGUI.BeginChangeCheck();
                     streamingEnabled = EditorGUILayout.Toggle(SettingsContent.lightmapStreamingEnabled, streamingEnabled);
@@ -1979,10 +1981,10 @@ namespace UnityEditor
                     }
                     if (EditorGUI.EndChangeCheck())
                     {
-                        PlayerSettings.SetLightmapStreamingEnabledForPlatformGroup(targetGroup, streamingEnabled);
-                        PlayerSettings.SetLightmapStreamingPriorityForPlatformGroup(targetGroup, streamingPriority);
+                        PlayerSettings.SetLightmapStreamingEnabledForPlatformGroup(platform.namedBuildTarget.ToBuildTargetGroup(), streamingEnabled);
+                        PlayerSettings.SetLightmapStreamingPriorityForPlatformGroup(platform.namedBuildTarget.ToBuildTargetGroup(), streamingPriority);
 
-                        Lightmapping.OnUpdateLightmapStreaming(targetGroup);
+                        Lightmapping.OnUpdateLightmapStreaming(platform.namedBuildTarget.ToBuildTargetGroup());
 
                         serializedObject.ApplyModifiedProperties();
 
@@ -1990,10 +1992,10 @@ namespace UnityEditor
                     }
                 }
 
-                if (targetGroup == BuildTargetGroup.Standalone || targetGroup == BuildTargetGroup.WSA || targetGroup == BuildTargetGroup.WebGL || (settingsExtension != null && settingsExtension.SupportsFrameTimingStatistics()))
+                if (platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone || platform.namedBuildTarget == NamedBuildTarget.WindowsStoreApps || platform.namedBuildTarget == NamedBuildTarget.WebGL || (settingsExtension != null && settingsExtension.SupportsFrameTimingStatistics()))
                 {
                     PlayerSettings.enableFrameTimingStats = EditorGUILayout.Toggle(SettingsContent.enableFrameTimingStats, PlayerSettings.enableFrameTimingStats);
-                    if (PlayerSettings.enableFrameTimingStats && targetGroup == BuildTargetGroup.WebGL)
+                    if (PlayerSettings.enableFrameTimingStats && platform.namedBuildTarget == NamedBuildTarget.WebGL)
                     {
                         var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.WebGL);
                         if (apis.Contains(GraphicsDeviceType.OpenGLES2))
@@ -2006,7 +2008,7 @@ namespace UnityEditor
                 if (hdrDisplaySupported)
                 {
                     string label = "Use display in HDR mode";
-                    string tooltip = "Switch the display to HDR output (on supported displays)" + ((targetGroup == BuildTargetGroup.XboxOne) ? " at start of application." : ".");
+                    string tooltip = "Switch the display to HDR output (on supported displays)" + ((platform.namedBuildTarget == NamedBuildTarget.XboxOne) ? " at start of application." : ".");
                     bool oldUseHDRDisplay = PlayerSettings.useHDRDisplay;
                     PlayerSettings.useHDRDisplay = EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent(label, tooltip), oldUseHDRDisplay);
                     bool requestRepaint = false;
@@ -2014,7 +2016,7 @@ namespace UnityEditor
                     if (oldUseHDRDisplay != PlayerSettings.useHDRDisplay)
                         requestRepaint = true;
 
-                    if (targetGroup == BuildTargetGroup.Standalone || targetGroup == BuildTargetGroup.WSA)
+                    if (platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone || platform.namedBuildTarget == NamedBuildTarget.WindowsStoreApps)
                     {
                         using (new EditorGUI.DisabledScope(!PlayerSettings.useHDRDisplay))
                         {
@@ -2072,7 +2074,7 @@ namespace UnityEditor
                     }
 
                     // Test for all three 'Automatic Graphics API for X' checkboxes and report API/Platform-specific error
-                    if (targetGroup == BuildTargetGroup.Standalone)
+                    if (platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone)
                     {
                         if (VirtualTexturingInvalidGfxAPI(BuildTarget.StandaloneWindows, true) ||
                             VirtualTexturingInvalidGfxAPI(BuildTarget.StandaloneWindows64, true))
@@ -2115,7 +2117,7 @@ namespace UnityEditor
             if (!isPreset)
                 EditorGUILayout.Space();
 
-            Stereo360CaptureGUI(targetGroup);
+            Stereo360CaptureGUI(platform.namedBuildTarget.ToBuildTargetGroup());
 
             EditorGUILayout.Space();
         }
@@ -2133,7 +2135,7 @@ namespace UnityEditor
             return !supportedAPI;
         }
 
-        private void OtherSectionIdentificationGUI(BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension)
+        private void OtherSectionIdentificationGUI(BuildPlatform platform, ISettingEditorExtension settingsExtension)
         {
             // Identification
 
@@ -2144,7 +2146,7 @@ namespace UnityEditor
 
                 EditorGUILayout.Space();
             }
-            else if (targetGroup == BuildTargetGroup.Standalone)
+            else if (platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone)
             {
                 // TODO this should be move to an extension if we have one for MacOS or Standalone target at some point.
                 GUILayout.Label(SettingsContent.macAppStoreTitle, EditorStyles.boldLabel);
@@ -2172,7 +2174,7 @@ namespace UnityEditor
             }
         }
 
-        private void OtherSectionVulkanSettingsGUI(BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension)
+        private void OtherSectionVulkanSettingsGUI(BuildPlatform platform, ISettingEditorExtension settingsExtension)
         {
             // Standalone targets don't have a settingsExtension but support vulkan
             if (settingsExtension != null && !settingsExtension.ShouldShowVulkanSettings())
@@ -2262,25 +2264,25 @@ namespace UnityEditor
             return EditorUtility.DisplayDialog("Unity editor restart required", "The Unity editor must be restarted for this change to take effect.  Cancel to revert changes.", "Apply", "Cancel");
         }
 
-        private ScriptingImplementation GetCurrentBackendForTarget(BuildTargetGroup targetGroup)
+        private ScriptingImplementation GetCurrentBackendForTarget(NamedBuildTarget namedBuildTarget)
         {
-            if (m_ScriptingBackend.TryGetMapEntry(BuildPipeline.GetBuildTargetGroupName(targetGroup), out var entry))
+            if (m_ScriptingBackend.TryGetMapEntry(namedBuildTarget.TargetName, out var entry))
                 return (ScriptingImplementation)entry.FindPropertyRelative("second").intValue;
             else
-                return PlayerSettings.GetDefaultScriptingBackend(targetGroup);
+                return PlayerSettings.GetDefaultScriptingBackend(namedBuildTarget);
         }
 
-        private Il2CppCompilerConfiguration GetCurrentIl2CppCompilerConfigurationForTarget(BuildTargetGroup targetGroup)
+        private Il2CppCompilerConfiguration GetCurrentIl2CppCompilerConfigurationForTarget(NamedBuildTarget namedBuildTarget)
         {
-            if (m_Il2CppCompilerConfiguration.TryGetMapEntry(BuildPipeline.GetBuildTargetGroupName(targetGroup), out var entry))
+            if (m_Il2CppCompilerConfiguration.TryGetMapEntry(namedBuildTarget.TargetName, out var entry))
                 return (Il2CppCompilerConfiguration)entry.FindPropertyRelative("second").intValue;
             else
                 return Il2CppCompilerConfiguration.Release;
         }
 
-        private ManagedStrippingLevel GetCurrentManagedStrippingLevelForTarget(BuildTargetGroup targetGroup, ScriptingImplementation backend)
+        private ManagedStrippingLevel GetCurrentManagedStrippingLevelForTarget(NamedBuildTarget namedBuildTarget, ScriptingImplementation backend)
         {
-            if (m_ManagedStrippingLevel.TryGetMapEntry(BuildPipeline.GetBuildTargetGroupName(targetGroup), out var entry))
+            if (m_ManagedStrippingLevel.TryGetMapEntry(namedBuildTarget.TargetName, out var entry))
                 return (ManagedStrippingLevel)entry.FindPropertyRelative("second").intValue;
             else
             {
@@ -2291,16 +2293,16 @@ namespace UnityEditor
             }
         }
 
-        private ApiCompatibilityLevel GetApiCompatibilityLevelForTarget(BuildTargetGroup targetGroup)
+        private ApiCompatibilityLevel GetApiCompatibilityLevelForTarget(NamedBuildTarget namedBuildTarget)
         {
-            if (m_APICompatibilityLevel.TryGetMapEntry(BuildPipeline.GetBuildTargetGroupName(targetGroup), out var entry))
+            if (m_APICompatibilityLevel.TryGetMapEntry(namedBuildTarget.TargetName, out var entry))
                 return (ApiCompatibilityLevel)entry.FindPropertyRelative("second").intValue;
             else
                 // See comment in EditorOnlyPlayerSettings regarding defaultApiCompatibilityLevel
                 return (ApiCompatibilityLevel)m_DefaultAPICompatibilityLevel.intValue;
         }
 
-        private void OtherSectionConfigurationGUI(BuildPlatform platform, BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension)
+        private void OtherSectionConfigurationGUI(BuildPlatform platform, ISettingEditorExtension settingsExtension)
         {
             // Configuration
             GUILayout.Label(SettingsContent.configurationTitle, EditorStyles.boldLabel);
@@ -2310,14 +2312,14 @@ namespace UnityEditor
             {
                 // Scripting back-end
                 bool allowCompilerConfigurationSelection = false;
-                ScriptingImplementation currentBackend = GetCurrentBackendForTarget(targetGroup);
+                ScriptingImplementation currentBackend = GetCurrentBackendForTarget(platform.namedBuildTarget);
                 using (new EditorGUI.DisabledScope(m_SerializedObject.isEditingMultipleObjects))
                 {
                     using (var horizontal = new EditorGUILayout.HorizontalScope())
                     {
                         using (var propertyScope = new EditorGUI.PropertyScope(horizontal.rect, GUIContent.none, m_ScriptingBackend))
                         {
-                            IScriptingImplementations scripting = ModuleManager.GetScriptingImplementations(targetGroup);
+                            IScriptingImplementations scripting = ModuleManager.GetScriptingImplementations(platform.namedBuildTarget);
 
                             if (scripting == null)
                             {
@@ -2343,7 +2345,7 @@ namespace UnityEditor
 
                                 if (newBackend != currentBackend)
                                 {
-                                    m_ScriptingBackend.SetMapValue(BuildPipeline.GetBuildTargetGroupName(targetGroup), (int)newBackend);
+                                    m_ScriptingBackend.SetMapValue(platform.namedBuildTarget.TargetName, (int)newBackend);
                                     currentBackend = newBackend;
                                 }
                             }
@@ -2358,7 +2360,7 @@ namespace UnityEditor
                     {
                         using (var propertyScope = new EditorGUI.PropertyScope(horizontal.rect, GUIContent.none, m_APICompatibilityLevel))
                         {
-                            var currentAPICompatibilityLevel = GetApiCompatibilityLevelForTarget(targetGroup);
+                            var currentAPICompatibilityLevel = GetApiCompatibilityLevelForTarget(platform.namedBuildTarget);
                             var availableCompatibilityLevels = new ApiCompatibilityLevel[] { ApiCompatibilityLevel.NET_4_6, ApiCompatibilityLevel.NET_Standard_2_0 };
                             currentAPICompatibilityLevel = BuildEnumPopup(
                                 SettingsContent.apiCompatibilityLevel,
@@ -2369,10 +2371,10 @@ namespace UnityEditor
 
                             if (serializedAPICompatibilityLevel != currentAPICompatibilityLevel)
                             {
-                                m_APICompatibilityLevel.SetMapValue(BuildPipeline.GetBuildTargetGroupName(targetGroup), (int)currentAPICompatibilityLevel);
+                                m_APICompatibilityLevel.SetMapValue(platform.namedBuildTarget.TargetName, (int)currentAPICompatibilityLevel);
                                 serializedAPICompatibilityLevel = currentAPICompatibilityLevel;
 
-                                if (EditorUserBuildSettings.activeBuildTargetGroup == targetGroup)
+                                if (platform.IsActive())
                                     RecompileScripts(RecompileReason.apiCompatibilityLevelModified);
                             }
                         }
@@ -2388,7 +2390,7 @@ namespace UnityEditor
                         {
                             using (new EditorGUI.DisabledScope(!allowCompilerConfigurationSelection))
                             {
-                                Il2CppCompilerConfiguration currentConfiguration = GetCurrentIl2CppCompilerConfigurationForTarget(targetGroup);
+                                Il2CppCompilerConfiguration currentConfiguration = GetCurrentIl2CppCompilerConfigurationForTarget(platform.namedBuildTarget);
 
                                 var configurations = GetIl2CppCompilerConfigurations();
                                 var configurationNames = GetIl2CppCompilerConfigurationNames();
@@ -2396,14 +2398,14 @@ namespace UnityEditor
                                 var newConfiguration = BuildEnumPopup(SettingsContent.il2cppCompilerConfiguration, currentConfiguration, configurations, configurationNames);
 
                                 if (currentConfiguration != newConfiguration)
-                                    m_Il2CppCompilerConfiguration.SetMapValue(BuildPipeline.GetBuildTargetGroupName(targetGroup), (int)newConfiguration);
+                                    m_Il2CppCompilerConfiguration.SetMapValue(platform.namedBuildTarget.TargetName, (int)newConfiguration);
                             }
                         }
                     }
                 }
 
                 bool gcIncrementalEnabled = BuildPipeline.IsFeatureSupported("ENABLE_SCRIPTING_GC_WBARRIERS", platform.defaultTarget);
-                if (targetGroup == BuildTargetGroup.iOS)
+                if (platform.namedBuildTarget == NamedBuildTarget.iOS)
                     gcIncrementalEnabled = gcIncrementalEnabled && currentBackend == ScriptingImplementation.IL2CPP;
 
                 using (new EditorGUI.DisabledScope(!gcIncrementalEnabled))
@@ -2424,53 +2426,53 @@ namespace UnityEditor
                 }
 
                 EditorGUILayout.PropertyField(m_AssemblyVersionValidation,
-                    (PlayerSettings.GetScriptingBackend(targetGroup) != ScriptingImplementation.Mono2x) ? SettingsContent.assemblyVersionValidationEditorOnly : SettingsContent.assemblyVersionValidation);
+                    (PlayerSettings.GetScriptingBackend(platform.namedBuildTarget) != ScriptingImplementation.Mono2x) ? SettingsContent.assemblyVersionValidationEditorOnly : SettingsContent.assemblyVersionValidation);
             }
 
             // Privacy permissions
             bool showPrivacyPermissions =
-                targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS;
+                platform.namedBuildTarget == NamedBuildTarget.iOS || platform.namedBuildTarget == NamedBuildTarget.tvOS;
 
             if (showPrivacyPermissions)
             {
                 EditorGUILayout.PropertyField(m_CameraUsageDescription, SettingsContent.cameraUsageDescription);
                 EditorGUILayout.PropertyField(m_MicrophoneUsageDescription, SettingsContent.microphoneUsageDescription);
 
-                if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS)
+                if (platform.namedBuildTarget == NamedBuildTarget.iOS || platform.namedBuildTarget == NamedBuildTarget.tvOS)
                     EditorGUILayout.PropertyField(m_LocationUsageDescription, SettingsContent.locationUsageDescription);
             }
 
             bool showMobileSection =
-                targetGroup == BuildTargetGroup.iOS ||
-                targetGroup == BuildTargetGroup.tvOS ||
-                targetGroup == BuildTargetGroup.Android ||
-                targetGroup == BuildTargetGroup.WSA;
+                platform.namedBuildTarget == NamedBuildTarget.iOS ||
+                platform.namedBuildTarget == NamedBuildTarget.tvOS ||
+                platform.namedBuildTarget == NamedBuildTarget.Android ||
+                platform.namedBuildTarget == NamedBuildTarget.WindowsStoreApps;
 
             // mobile-only settings
             if (showMobileSection)
             {
-                if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS)
+                if (platform.namedBuildTarget == NamedBuildTarget.iOS || platform.namedBuildTarget == NamedBuildTarget.tvOS)
                     EditorGUILayout.PropertyField(m_useOnDemandResources, SettingsContent.useOnDemandResources);
 
                 bool supportsAccelerometerFrequency =
-                    targetGroup == BuildTargetGroup.iOS ||
-                    targetGroup == BuildTargetGroup.tvOS ||
-                    targetGroup == BuildTargetGroup.WSA;
+                    platform.namedBuildTarget == NamedBuildTarget.iOS ||
+                    platform.namedBuildTarget == NamedBuildTarget.tvOS ||
+                    platform.namedBuildTarget == NamedBuildTarget.WindowsStoreApps;
                 if (supportsAccelerometerFrequency)
                     EditorGUILayout.PropertyField(m_AccelerometerFrequency, SettingsContent.accelerometerFrequency);
 
-                if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS || targetGroup == BuildTargetGroup.Android)
+                if (platform.namedBuildTarget == NamedBuildTarget.iOS || platform.namedBuildTarget == NamedBuildTarget.tvOS || platform.namedBuildTarget == NamedBuildTarget.Android)
                 {
                     EditorGUILayout.PropertyField(m_MuteOtherAudioSources, SettingsContent.muteOtherAudioSources);
 
-                    if (m_MuteOtherAudioSources.boolValue == false && targetGroup == BuildTargetGroup.iOS)
+                    if (m_MuteOtherAudioSources.boolValue == false && platform.namedBuildTarget == NamedBuildTarget.iOS)
                         EditorGUILayout.HelpBox(SettingsContent.iOSExternalAudioInputNotSupported.text, MessageType.Warning);
                 }
 
                 // TVOS TODO: check what should stay or go
-                if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS)
+                if (platform.namedBuildTarget == NamedBuildTarget.iOS || platform.namedBuildTarget == NamedBuildTarget.tvOS)
                 {
-                    if (targetGroup == BuildTargetGroup.iOS)
+                    if (platform.namedBuildTarget == NamedBuildTarget.iOS)
                     {
                         EditorGUILayout.PropertyField(m_PrepareIOSForRecording, SettingsContent.prepareIOSForRecording);
                         EditorGUILayout.PropertyField(m_ForceIOSSpeakersWhenRecording, SettingsContent.forceIOSSpeakersWhenRecording);
@@ -2509,7 +2511,7 @@ namespace UnityEditor
 
             EditorGUILayout.Space();
 
-            if (targetGroup == BuildTargetGroup.Standalone)
+            if (platform.namedBuildTarget == NamedBuildTarget.Standalone)
             {
                 GUILayout.Label(SettingsContent.macConfigurationTitle, EditorStyles.boldLabel);
 
@@ -2560,7 +2562,7 @@ namespace UnityEditor
             m_AdditionalCompilerArguments.SetMapValue(buildTarget.TargetName, arguments);
         }
 
-        private void OtherSectionScriptCompilationGUI(BuildTargetGroup targetGroup)
+        private void OtherSectionScriptCompilationGUI(BuildPlatform platform)
         {
             // Configuration
             GUILayout.Label(SettingsContent.scriptCompilationTitle, EditorStyles.boldLabel);
@@ -2570,10 +2572,10 @@ namespace UnityEditor
             {
                 using (var vertical = new EditorGUILayout.VerticalScope())
                 {
-                    lastTargetGroup = targetGroup;
+                    lastNamedBuildTarget = platform.namedBuildTarget;
 
                     if (serializedScriptingDefines == null || scriptingDefineSymbolsList == null)
-                        InitReorderableScriptingDefineSymbolsList(targetGroup);
+                        InitReorderableScriptingDefineSymbolsList(platform.namedBuildTarget);
 
                     scriptingDefineSymbolsList.DoLayoutList();
 
@@ -2586,7 +2588,7 @@ namespace UnityEditor
                         if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsCopyDefines,
                             EditorStyles.miniButton))
                         {
-                            EditorGUIUtility.systemCopyBuffer = PlayerSettings.GetScriptingDefineSymbols(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
+                            EditorGUIUtility.systemCopyBuffer = PlayerSettings.GetScriptingDefineSymbols(platform.namedBuildTarget);
                         }
 
                         GUI.enabled = hasScriptingDefinesBeenModified;
@@ -2604,13 +2606,13 @@ namespace UnityEditor
                             // Make sure to remove focus from reorderable list text field on apply
                             GUI.FocusControl(null);
 
-                            SetScriptingDefineSymbolsForGroup(NamedBuildTarget.FromBuildTargetGroup(targetGroup), scriptingDefinesList.ToArray());
+                            SetScriptingDefineSymbolsForGroup(platform.namedBuildTarget, scriptingDefinesList.ToArray());
 
                             // Get Scripting Define Symbols without duplicates
-                            serializedScriptingDefines = GetScriptingDefineSymbolsForGroup(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
+                            serializedScriptingDefines = GetScriptingDefineSymbolsForGroup(platform.namedBuildTarget);
                             UpdateScriptingDefineSymbolsLists();
 
-                            if (EditorUserBuildSettings.activeBuildTargetGroup == targetGroup)
+                            if (platform.IsActive())
                                 RecompileScripts(RecompileReason.scriptingDefineSymbolsModified);
                         }
 
@@ -2625,7 +2627,7 @@ namespace UnityEditor
                 {
                     if (serializedAdditionalCompilerArguments == null || additionalCompilerArgumentsReorderableList == null)
                     {
-                        InitReorderableAdditionalCompilerArgumentsList(targetGroup);
+                        InitReorderableAdditionalCompilerArgumentsList(platform.namedBuildTarget);
                     }
 
                     using (new EditorGUI.PropertyScope(vertical.rect, GUIContent.none, m_AdditionalCompilerArguments))
@@ -2645,13 +2647,13 @@ namespace UnityEditor
 
                                 if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsApply, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
                                 {
-                                    SetAdditionalCompilerArgumentsForGroup(NamedBuildTarget.FromBuildTargetGroup(targetGroup), additionalCompilerArgumentsList.ToArray());
+                                    SetAdditionalCompilerArgumentsForGroup(platform.namedBuildTarget, additionalCompilerArgumentsList.ToArray());
 
                                     // Get Additional Compiler Arguments without duplicates
-                                    serializedAdditionalCompilerArguments = GetAdditionalCompilerArgumentsForGroup(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
+                                    serializedAdditionalCompilerArguments = GetAdditionalCompilerArgumentsForGroup(platform.namedBuildTarget);
                                     UpdateAdditionalCompilerArgumentsLists();
 
-                                    if (EditorUserBuildSettings.activeBuildTargetGroup == targetGroup)
+                                    if (platform.IsActive())
                                     {
                                         RecompileScripts(RecompileReason.additionalCompilerArgumentsModified);
                                     }
@@ -2770,7 +2772,7 @@ namespace UnityEditor
             hasAdditionalCompilerArgumentsBeenModified = true;
         }
 
-        private void OtherSectionOptimizationGUI(BuildPlatform platform, BuildTargetGroup targetGroup)
+        private void OtherSectionOptimizationGUI(BuildPlatform platform)
         {
             // Optimization
             GUILayout.Label(SettingsContent.optimizationTitle, EditorStyles.boldLabel);
@@ -2787,19 +2789,19 @@ namespace UnityEditor
                 EditorGUI.indentLevel--;
 
             bool platformUsesAOT =
-                targetGroup == BuildTargetGroup.iOS ||
-                targetGroup == BuildTargetGroup.tvOS ||
-                targetGroup == BuildTargetGroup.XboxOne ||
-                targetGroup == BuildTargetGroup.PS4;
+                platform.namedBuildTarget == NamedBuildTarget.iOS ||
+                platform.namedBuildTarget == NamedBuildTarget.tvOS ||
+                platform.namedBuildTarget == NamedBuildTarget.XboxOne ||
+                platform.namedBuildTarget == NamedBuildTarget.PS4;
 
             if (platformUsesAOT)
                 EditorGUILayout.PropertyField(m_AotOptions, SettingsContent.aotOptions);
 
-            bool platformSupportsStripping = !BuildTargetDiscovery.PlatformGroupHasFlag(targetGroup, TargetAttributes.StrippingNotSupported);
+            bool platformSupportsStripping = !BuildTargetDiscovery.PlatformGroupHasFlag(platform.namedBuildTarget.ToBuildTargetGroup(), TargetAttributes.StrippingNotSupported);
 
             if (platformSupportsStripping)
             {
-                ScriptingImplementation backend = GetCurrentBackendForTarget(targetGroup);
+                ScriptingImplementation backend = GetCurrentBackendForTarget(platform.namedBuildTarget);
                 if (BuildPipeline.IsFeatureSupported("ENABLE_ENGINE_CODE_STRIPPING", platform.defaultTarget) && backend == ScriptingImplementation.IL2CPP)
                     EditorGUILayout.PropertyField(m_StripEngineCode, SettingsContent.stripEngineCode);
 
@@ -2808,21 +2810,21 @@ namespace UnityEditor
                     using (var propertyScope = new EditorGUI.PropertyScope(vertical.rect, GUIContent.none, m_ManagedStrippingLevel))
                     {
                         var availableStrippingLevels = GetAvailableManagedStrippingLevels(backend);
-                        ManagedStrippingLevel currentManagedStrippingLevel = GetCurrentManagedStrippingLevelForTarget(targetGroup, backend);
+                        ManagedStrippingLevel currentManagedStrippingLevel = GetCurrentManagedStrippingLevelForTarget(platform.namedBuildTarget, backend);
                         ManagedStrippingLevel newManagedStrippingLevel;
 
                         newManagedStrippingLevel = BuildEnumPopup(SettingsContent.managedStrippingLevel, currentManagedStrippingLevel, availableStrippingLevels, GetNiceManagedStrippingLevelNames(availableStrippingLevels));
                         if (newManagedStrippingLevel != currentManagedStrippingLevel)
-                            m_ManagedStrippingLevel.SetMapValue(BuildPipeline.GetBuildTargetGroupName(targetGroup), (int)newManagedStrippingLevel);
+                            m_ManagedStrippingLevel.SetMapValue(platform.namedBuildTarget.TargetName, (int)newManagedStrippingLevel);
                     }
                 }
             }
 
-            if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS)
+            if (platform.namedBuildTarget == NamedBuildTarget.iOS || platform.namedBuildTarget == NamedBuildTarget.tvOS)
             {
                 EditorGUILayout.PropertyField(m_IPhoneScriptCallOptimization, SettingsContent.iPhoneScriptCallOptimization);
             }
-            if (targetGroup == BuildTargetGroup.Android)
+            if (platform.namedBuildTarget == NamedBuildTarget.Android)
             {
                 EditorGUILayout.PropertyField(m_AndroidProfiler, SettingsContent.enableInternalProfiler);
             }
@@ -2939,7 +2941,7 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_Enable360StereoCapture, SettingsContent.stereo360CaptureCheckbox);
         }
 
-        private void OtherSectionLegacyGUI(BuildTargetGroup targetGroup)
+        private void OtherSectionLegacyGUI(BuildPlatform platform)
         {
             GUILayout.Label(SettingsContent.legacyTitle, EditorStyles.boldLabel);
 
@@ -3158,9 +3160,9 @@ namespace UnityEditor
             return changed;
         }
 
-        public void PublishSectionGUI(BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension, int sectionIndex = 5)
+        public void PublishSectionGUI(BuildPlatform platform, ISettingEditorExtension settingsExtension, int sectionIndex = 5)
         {
-            if (targetGroup != BuildTargetGroup.WSA &&
+            if (platform.namedBuildTarget != NamedBuildTarget.WindowsStoreApps &&
                 !(settingsExtension != null && settingsExtension.HasPublishSection()))
                 return;
 
@@ -3201,10 +3203,10 @@ namespace UnityEditor
             return provider;
         }
 
-        void InitReorderableScriptingDefineSymbolsList(BuildTargetGroup targetGroup)
+        void InitReorderableScriptingDefineSymbolsList(NamedBuildTarget namedBuildTarget)
         {
             // Get Scripting Define Symbols data
-            string defines = GetScriptingDefineSymbolsForGroup(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
+            string defines = GetScriptingDefineSymbolsForGroup(namedBuildTarget);
             scriptingDefinesList = new List<string>(PlayerSettings.ConvertScriptingDefineStringToArray(serializedScriptingDefines));
 
             // Initialize Reorderable List
@@ -3224,7 +3226,7 @@ namespace UnityEditor
             hasScriptingDefinesBeenModified = false;
         }
 
-        void InitReorderableAdditionalCompilerArgumentsList(BuildTargetGroup targetGroup)
+        void InitReorderableAdditionalCompilerArgumentsList(NamedBuildTarget namedBuildTarget)
         {
             additionalCompilerArgumentsList = new List<string>(serializedAdditionalCompilerArguments);
 

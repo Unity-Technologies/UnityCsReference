@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.TextCore.Text;
@@ -131,6 +132,7 @@ namespace UnityEngine.UIElements
     {
         private static StylePropertyReader s_StylePropertyReader = new StylePropertyReader();
 
+        private List<StyleValueManaged> m_ValuesManaged;
         private VisualElement ve { get; set; }
 
         private bool m_HasInlineCursor;
@@ -142,10 +144,10 @@ namespace UnityEngine.UIElements
         private bool m_HasInlineTransformOrigin;
         private StyleTransformOrigin m_InlineTransformOrigin;
 
-        private bool m_HasInlineTranslateOperation;
+        private bool m_HasInlineTranslate;
         private StyleTranslate m_InlineTranslateOperation;
 
-        private bool m_HasInlineRotateOperation;
+        private bool m_HasInlineRotate;
         private StyleRotate m_InlineRotateOperation;
 
         private bool m_HasInlineScale;
@@ -187,55 +189,99 @@ namespace UnityEngine.UIElements
             m_InlineRule.properties = rule.properties;
             m_InlineRule.propertyIds = StyleSheetCache.GetPropertyIds(rule);
 
-            ApplyInlineStyles();
+            ApplyInlineStyles(ref ve.computedStyle);
         }
 
-        public void ApplyInlineStyles()
+        public bool IsValueSet(StylePropertyId id)
+        {
+            foreach (var sv in m_Values)
+            {
+                if (sv.id == id)
+                    return true;
+            }
+
+            if (m_ValuesManaged != null)
+            {
+                foreach (var sv in m_ValuesManaged)
+                {
+                    if (sv.id == id)
+                        return true;
+                }
+            }
+
+            switch (id)
+            {
+                case StylePropertyId.Cursor:
+                    return m_HasInlineCursor;
+                case StylePropertyId.TextShadow:
+                    return m_HasInlineTextShadow;
+                case StylePropertyId.TransformOrigin:
+                    return m_HasInlineTransformOrigin;
+                case StylePropertyId.Translate:
+                    return m_HasInlineTranslate;
+                case StylePropertyId.Rotate:
+                    return m_HasInlineRotate;
+                case StylePropertyId.Scale:
+                    return m_HasInlineScale;
+                default:
+                    return false;
+            }
+        }
+
+        public void ApplyInlineStyles(ref ComputedStyle computedStyle)
         {
             // Apply inline rule coming from UXML if any
+            var parent = ve.hierarchy.parent;
+            ref var parentStyle = ref parent?.computedStyle != null ? ref parent.computedStyle : ref InitialStyle.Get();
+
             if (m_InlineRule.sheet != null)
             {
-                var parent = ve.hierarchy.parent;
-                ref var parentStyle = ref parent?.computedStyle != null ? ref parent.computedStyle : ref InitialStyle.Get();
-
                 s_StylePropertyReader.SetInlineContext(m_InlineRule.sheet, m_InlineRule.properties, m_InlineRule.propertyIds);
-                ve.computedStyle.ApplyProperties(s_StylePropertyReader, ref parentStyle);
+                computedStyle.ApplyProperties(s_StylePropertyReader, ref parentStyle);
             }
 
             // Apply values coming from IStyle if any
             foreach (var sv in m_Values)
             {
-                ApplyStyleValue(sv);
+                computedStyle.ApplyStyleValue(sv, ref parentStyle);
+            }
+
+            if (m_ValuesManaged != null)
+            {
+                foreach (var sv in m_ValuesManaged)
+                {
+                    computedStyle.ApplyStyleValueManaged(sv, ref parentStyle);
+                }
             }
 
             if (ve.style.cursor.keyword != StyleKeyword.Null)
             {
-                ve.computedStyle.ApplyStyleCursor(ve.style.cursor.value);
-            }
-
-            if (ve.style.transformOrigin.keyword != StyleKeyword.Null)
-            {
-                ve.computedStyle.ApplyStyleTransformOrigin(ve.style.transformOrigin.value);
-            }
-
-            if (ve.style.translate.keyword != StyleKeyword.Null)
-            {
-                ve.computedStyle.ApplyStyleTranslate(ve.style.translate.value);
+                computedStyle.ApplyStyleCursor(ve.style.cursor.value);
             }
 
             if (ve.style.textShadow.keyword != StyleKeyword.Null)
             {
-                ve.computedStyle.ApplyStyleTextShadow(ve.style.textShadow.value);
+                computedStyle.ApplyStyleTextShadow(ve.style.textShadow.value);
             }
 
-            if (ve.style.scale.keyword != StyleKeyword.Null)
+            if (m_HasInlineTransformOrigin)
             {
-                ve.computedStyle.ApplyStyleScale(ve.style.scale.value);
+                computedStyle.ApplyStyleTransformOrigin(ve.style.transformOrigin.value);
             }
 
-            if (ve.style.rotate.keyword != StyleKeyword.Null)
+            if (m_HasInlineTranslate)
             {
-                ve.computedStyle.ApplyStyleRotate(ve.style.rotate.value);
+                computedStyle.ApplyStyleTranslate(ve.style.translate.value);
+            }
+
+            if (m_HasInlineScale)
+            {
+                computedStyle.ApplyStyleScale(ve.style.scale.value);
+            }
+
+            if (m_HasInlineRotate)
+            {
+                computedStyle.ApplyStyleRotate(ve.style.rotate.value);
             }
         }
 
@@ -250,10 +296,9 @@ namespace UnityEngine.UIElements
             }
             set
             {
-                var changeType = VersionChangeType.Styles;
-                if (SetInlineCursor(value, ref changeType))
+                if (SetInlineCursor(value))
                 {
-                    ve.IncrementVersion(changeType);
+                    ve.IncrementVersion(VersionChangeType.Styles);
                 }
             }
         }
@@ -269,12 +314,62 @@ namespace UnityEngine.UIElements
             }
             set
             {
-                var changeType = VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Repaint;
-                if (SetInlineTextShadow(value, ref changeType))
+                if (SetInlineTextShadow(value))
                 {
-                    ve.IncrementVersion(changeType);
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Repaint);
                 }
             }
+        }
+
+        private StyleList<T> GetStyleList<T>(StylePropertyId id)
+        {
+            var inline = new StyleValueManaged();
+            if (TryGetStyleValueManaged(id, ref inline))
+            {
+                return new StyleList<T>(inline.value as List<T>, inline.keyword);
+            }
+            return StyleKeyword.Null;
+        }
+
+        private void SetStyleValueManaged(StyleValueManaged value)
+        {
+            if (m_ValuesManaged == null)
+                m_ValuesManaged = new List<StyleValueManaged>();
+
+            for (int i = 0; i < m_ValuesManaged.Count; i++)
+            {
+                if (m_ValuesManaged[i].id == value.id)
+                {
+                    if (value.keyword == StyleKeyword.Null)
+                    {
+                        m_ValuesManaged.RemoveAt(i);
+                    }
+                    else
+                    {
+                        m_ValuesManaged[i] = value;
+                    }
+                    return;
+                }
+            }
+
+            m_ValuesManaged.Add(value);
+        }
+
+        private bool TryGetStyleValueManaged(StylePropertyId id, ref StyleValueManaged value)
+        {
+            value.id = StylePropertyId.Unknown;
+            if (m_ValuesManaged == null)
+                return false;
+
+            foreach (var inlineStyle in m_ValuesManaged)
+            {
+                if (inlineStyle.id == id)
+                {
+                    value = inlineStyle;
+                    return true;
+                }
+            }
+            return false;
         }
 
         StyleTransformOrigin IStyle.transformOrigin
@@ -288,10 +383,9 @@ namespace UnityEngine.UIElements
             }
             set
             {
-                var changeType = VersionChangeType.Styles | VersionChangeType.Transform;
-                if (SetInlineTransformOrigin(value, ref changeType))
+                if (SetInlineTransformOrigin(value))
                 {
-                    ve.IncrementVersion(changeType);
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Transform);
                 }
             }
         }
@@ -307,10 +401,9 @@ namespace UnityEngine.UIElements
             }
             set
             {
-                var changeType = VersionChangeType.Styles | VersionChangeType.Transform;
-                if (SetInlineTranslate(value, ref changeType))
+                if (SetInlineTranslate(value))
                 {
-                    ve.IncrementVersion(changeType);
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Transform);
                 }
             }
         }
@@ -326,10 +419,9 @@ namespace UnityEngine.UIElements
             }
             set
             {
-                var changeType = VersionChangeType.Styles | VersionChangeType.Transform;
-                if (SetInlineRotate(value, ref changeType))
+                if (SetInlineRotate(value))
                 {
-                    ve.IncrementVersion(changeType);
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Transform);
                 }
             }
         }
@@ -346,16 +438,15 @@ namespace UnityEngine.UIElements
             set
             {
                 // The layout need to be regenerated because the TextNative requires the scale to mesure it's size to be pixel perfect.
-                var changeType = VersionChangeType.Styles | VersionChangeType.Transform | VersionChangeType.Layout;
-                if (SetInlineScale(value, ref changeType))
+                if (SetInlineScale(value))
                 {
-                    ve.IncrementVersion(changeType);
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Transform | VersionChangeType.Layout);
                 }
             }
         }
 
 
-        private bool SetStyleValue(StylePropertyId id, StyleLength inlineValue, ref VersionChangeType versionChangeType)
+        private bool SetStyleValue(StylePropertyId id, StyleLength inlineValue)
         {
             var sv = new StyleValue();
             if (TryGetStyleValue(id, ref sv))
@@ -375,18 +466,13 @@ namespace UnityEngine.UIElements
             SetStyleValue(sv);
 
             if (inlineValue.keyword == StyleKeyword.Null)
-            {
-                versionChangeType |= VersionChangeType.InlineStyleRemove;
-            }
-            else
-            {
-                ApplyStyleValue(sv);
-            }
+                return RemoveInlineStyle(id);
 
+            ApplyStyleValue(sv);
             return true;
         }
 
-        private bool SetStyleValue(StylePropertyId id, StyleFloat inlineValue, ref VersionChangeType versionChangeType)
+        private bool SetStyleValue(StylePropertyId id, StyleFloat inlineValue)
         {
             var sv = new StyleValue();
             if (TryGetStyleValue(id, ref sv))
@@ -406,18 +492,13 @@ namespace UnityEngine.UIElements
             SetStyleValue(sv);
 
             if (inlineValue.keyword == StyleKeyword.Null)
-            {
-                versionChangeType |= VersionChangeType.InlineStyleRemove;
-            }
-            else
-            {
-                ApplyStyleValue(sv);
-            }
+                return RemoveInlineStyle(id);
 
+            ApplyStyleValue(sv);
             return true;
         }
 
-        private bool SetStyleValue(StylePropertyId id, StyleInt inlineValue, ref VersionChangeType versionChangeType)
+        private bool SetStyleValue(StylePropertyId id, StyleInt inlineValue)
         {
             var sv = new StyleValue();
             if (TryGetStyleValue(id, ref sv))
@@ -437,18 +518,13 @@ namespace UnityEngine.UIElements
             SetStyleValue(sv);
 
             if (inlineValue.keyword == StyleKeyword.Null)
-            {
-                versionChangeType |= VersionChangeType.InlineStyleRemove;
-            }
-            else
-            {
-                ApplyStyleValue(sv);
-            }
+                return RemoveInlineStyle(id);
 
+            ApplyStyleValue(sv);
             return true;
         }
 
-        private bool SetStyleValue(StylePropertyId id, StyleColor inlineValue, ref VersionChangeType versionChangeType)
+        private bool SetStyleValue(StylePropertyId id, StyleColor inlineValue)
         {
             var sv = new StyleValue();
             if (TryGetStyleValue(id, ref sv))
@@ -468,18 +544,13 @@ namespace UnityEngine.UIElements
             SetStyleValue(sv);
 
             if (inlineValue.keyword == StyleKeyword.Null)
-            {
-                versionChangeType |= VersionChangeType.InlineStyleRemove;
-            }
-            else
-            {
-                ApplyStyleValue(sv);
-            }
+                return RemoveInlineStyle(id);
 
+            ApplyStyleValue(sv);
             return true;
         }
 
-        private bool SetStyleValue<T>(StylePropertyId id, StyleEnum<T> inlineValue, ref VersionChangeType versionChangeType) where T : struct, IConvertible
+        private bool SetStyleValue<T>(StylePropertyId id, StyleEnum<T> inlineValue) where T : struct, IConvertible
         {
             var sv = new StyleValue();
             int intValue = UnsafeUtility.EnumToInt(inlineValue.value);
@@ -500,18 +571,13 @@ namespace UnityEngine.UIElements
             SetStyleValue(sv);
 
             if (inlineValue.keyword == StyleKeyword.Null)
-            {
-                versionChangeType |= VersionChangeType.InlineStyleRemove;
-            }
-            else
-            {
-                ApplyStyleValue(sv);
-            }
+                return RemoveInlineStyle(id);
 
+            ApplyStyleValue(sv);
             return true;
         }
 
-        private bool SetStyleValue(StylePropertyId id, StyleBackground inlineValue, ref VersionChangeType versionChangeType)
+        private bool SetStyleValue(StylePropertyId id, StyleBackground inlineValue)
         {
             var sv = new StyleValue();
             if (TryGetStyleValue(id, ref sv))
@@ -550,18 +616,13 @@ namespace UnityEngine.UIElements
             SetStyleValue(sv);
 
             if (inlineValue.keyword == StyleKeyword.Null)
-            {
-                versionChangeType |= VersionChangeType.InlineStyleRemove;
-            }
-            else
-            {
-                ApplyStyleValue(sv);
-            }
+                return RemoveInlineStyle(id);
 
+            ApplyStyleValue(sv);
             return true;
         }
 
-        private bool SetStyleValue(StylePropertyId id, StyleFontDefinition inlineValue, ref VersionChangeType versionChangeType)
+        private bool SetStyleValue(StylePropertyId id, StyleFontDefinition inlineValue)
         {
             var sv = new StyleValue();
             if (TryGetStyleValue(id, ref sv))
@@ -592,17 +653,13 @@ namespace UnityEngine.UIElements
             SetStyleValue(sv);
 
             if (inlineValue.keyword == StyleKeyword.Null)
-            {
-                versionChangeType |= VersionChangeType.InlineStyleRemove;
-            }
-            else
-            {
-                ApplyStyleValue(sv);
-            }
+                return RemoveInlineStyle(id);
+
+            ApplyStyleValue(sv);
             return true;
         }
 
-        private bool SetStyleValue(StylePropertyId id, StyleFont inlineValue, ref VersionChangeType versionChangeType)
+        private bool SetStyleValue(StylePropertyId id, StyleFont inlineValue)
         {
             var sv = new StyleValue();
             if (TryGetStyleValue(id, ref sv))
@@ -629,18 +686,55 @@ namespace UnityEngine.UIElements
             SetStyleValue(sv);
 
             if (inlineValue.keyword == StyleKeyword.Null)
-            {
-                versionChangeType |= VersionChangeType.InlineStyleRemove;
-            }
-            else
-            {
-                ApplyStyleValue(sv);
-            }
+                return RemoveInlineStyle(id);
 
+            ApplyStyleValue(sv);
             return true;
         }
 
-        private bool SetInlineCursor(StyleCursor inlineValue, ref VersionChangeType versionChangeType)
+        private bool SetStyleValue<T>(StylePropertyId id, StyleList<T> inlineValue)
+        {
+            var sv = new StyleValueManaged();
+            if (TryGetStyleValueManaged(id, ref sv))
+            {
+                if (sv.value is List<T> list && inlineValue.value != null && list.SequenceEqual(inlineValue.value) && sv.keyword == inlineValue.keyword)
+                    return false;
+            }
+            else if (inlineValue.keyword == StyleKeyword.Null)
+            {
+                return false;
+            }
+
+            sv.id = id;
+            sv.keyword = inlineValue.keyword;
+            if (inlineValue.value != null)
+            {
+                if (sv.value == null)
+                {
+                    sv.value = new List<T>(inlineValue.value);
+                }
+                else
+                {
+                    var list = (List<T>)sv.value;
+                    list.Clear();
+                    list.AddRange(inlineValue.value);
+                }
+            }
+            else
+            {
+                sv.value = null;
+            }
+
+            SetStyleValueManaged(sv);
+
+            if (inlineValue.keyword == StyleKeyword.Null)
+                return RemoveInlineStyle(id);
+
+            ApplyStyleValue(sv);
+            return true;
+        }
+
+        private bool SetInlineCursor(StyleCursor inlineValue)
         {
             var styleCursor = new StyleCursor();
             if (TryGetInlineCursor(ref styleCursor))
@@ -653,22 +747,47 @@ namespace UnityEngine.UIElements
                 return false;
             }
 
+            styleCursor.value = inlineValue.value;
+            styleCursor.keyword = inlineValue.keyword;
+
             if (inlineValue.keyword == StyleKeyword.Null)
             {
-                versionChangeType |= VersionChangeType.InlineStyleRemove;
+                RemoveInlineStyle(StylePropertyId.Cursor);
                 m_HasInlineCursor = false;
+                return m_HasInlineCursor;
             }
-            else
-            {
-                ve.computedStyle.ApplyStyleCursor(inlineValue.value);
-                m_InlineCursor = inlineValue;
-                m_HasInlineCursor = true;
-            }
+
+            m_InlineCursor = styleCursor;
+            m_HasInlineCursor = true;
+            ApplyStyleCursor(styleCursor);
 
             return true;
         }
 
-        private bool SetInlineTextShadow(StyleTextShadow inlineValue, ref VersionChangeType versionChangeType)
+        private void ApplyStyleCursor(StyleCursor cursor)
+        {
+            ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle);
+
+            bool startedTransition = false;
+            if (ve.computedStyle.hasTransition && ve.styleInitialized &&
+                ve.computedStyle.GetTransitionProperty(StylePropertyId.Cursor, out var t))
+            {
+                startedTransition = ComputedStyle.StartAnimationInlineCursor(ve, ref ve.computedStyle,
+                    cursor, t.durationMs, t.delayMs, t.easingCurve);
+            }
+            else
+            {
+                // In case there were older animations running, cancel them.
+                ve.styleAnimation.CancelAnimation(StylePropertyId.Cursor);
+            }
+
+            if (!startedTransition)
+            {
+                ve.computedStyle.ApplyStyleCursor(cursor.value);
+            }
+        }
+
+        private bool SetInlineTextShadow(StyleTextShadow inlineValue)
         {
             var styleTextShadow = new StyleTextShadow();
             if (TryGetInlineTextShadow(ref styleTextShadow))
@@ -681,23 +800,47 @@ namespace UnityEngine.UIElements
                 return false;
             }
 
+            styleTextShadow.value = inlineValue.value;
+            styleTextShadow.keyword = inlineValue.keyword;
 
             if (inlineValue.keyword == StyleKeyword.Null)
             {
-                versionChangeType |= VersionChangeType.InlineStyleRemove;
+                RemoveInlineStyle(StylePropertyId.TextShadow);
                 m_HasInlineTextShadow = false;
+                return m_HasInlineTextShadow;
             }
-            else
-            {
-                ve.computedStyle.ApplyStyleTextShadow(inlineValue.value);
-                m_InlineTextShadow = inlineValue;
-                m_HasInlineTextShadow = true;
-            }
+
+            m_InlineTextShadow = styleTextShadow;
+            m_HasInlineTextShadow = true;
+            ApplyStyleTextShadow(styleTextShadow);
 
             return true;
         }
 
-        private bool SetInlineTransformOrigin(StyleTransformOrigin inlineValue, ref VersionChangeType versionChangeType)
+        private void ApplyStyleTextShadow(StyleTextShadow textShadow)
+        {
+            ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle);
+
+            bool startedTransition = false;
+            if (ve.computedStyle.hasTransition && ve.styleInitialized &&
+                ve.computedStyle.GetTransitionProperty(StylePropertyId.TextShadow, out var t))
+            {
+                startedTransition = ComputedStyle.StartAnimationInlineTextShadow(ve, ref ve.computedStyle,
+                    textShadow, t.durationMs, t.delayMs, t.easingCurve);
+            }
+            else
+            {
+                // In case there were older animations running, cancel them.
+                ve.styleAnimation.CancelAnimation(StylePropertyId.TextShadow);
+            }
+
+            if (!startedTransition)
+            {
+                ve.computedStyle.ApplyStyleTextShadow(textShadow.value);
+            }
+        }
+
+        private bool SetInlineTransformOrigin(StyleTransformOrigin inlineValue)
         {
             var styleTransformOrigin = new StyleTransformOrigin();
             if (TryGetInlineTransformOrigin(ref styleTransformOrigin))
@@ -713,20 +856,43 @@ namespace UnityEngine.UIElements
 
             if (inlineValue.keyword == StyleKeyword.Null)
             {
-                versionChangeType |= VersionChangeType.InlineStyleRemove;
+                RemoveInlineStyle(StylePropertyId.TransformOrigin);
                 m_HasInlineTransformOrigin = false;
+                return m_HasInlineTransformOrigin;
             }
-            else
-            {
-                ve.computedStyle.ApplyStyleTransformOrigin(inlineValue.value);
-                m_InlineTransformOrigin = inlineValue;
-                m_HasInlineTransformOrigin = true;
-            }
+
+            m_InlineTransformOrigin = inlineValue;
+            m_HasInlineTransformOrigin = true;
+            ApplyStyleTransformOrigin(inlineValue);
 
             return true;
         }
 
-        private bool SetInlineTranslate(StyleTranslate inlineValue, ref VersionChangeType versionChangeType)
+        private void ApplyStyleTransformOrigin(StyleTransformOrigin transformOrigin)
+        {
+            ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle);
+
+            bool startedTransition = false;
+            if (ve.computedStyle.hasTransition && ve.styleInitialized &&
+                ve.computedStyle.GetTransitionProperty(StylePropertyId.TransformOrigin, out var t))
+            {
+                startedTransition = ComputedStyle.StartAnimationInlineTransformOrigin(ve, ref ve.computedStyle,
+                    transformOrigin, t.durationMs, t.delayMs, t.easingCurve);
+            }
+            else
+            {
+                // In case there were older animations running, cancel them.
+                ve.styleAnimation.CancelAnimation(StylePropertyId.TransformOrigin);
+            }
+
+
+            if (!startedTransition)
+            {
+                ve.computedStyle.ApplyStyleTransformOrigin(transformOrigin.value);
+            }
+        }
+
+        private bool SetInlineTranslate(StyleTranslate inlineValue)
         {
             var styleTranslate = new StyleTranslate();
             if (TryGetInlineTranslate(ref styleTranslate))
@@ -742,20 +908,42 @@ namespace UnityEngine.UIElements
 
             if (inlineValue.keyword == StyleKeyword.Null)
             {
-                versionChangeType |= VersionChangeType.InlineStyleRemove;
-                m_HasInlineTranslateOperation = false;
+                RemoveInlineStyle(StylePropertyId.Translate);
+                m_HasInlineTranslate = false;
+                return m_HasInlineTranslate;
             }
-            else
-            {
-                ve.computedStyle.ApplyStyleTranslate(inlineValue.value);
-                m_InlineTranslateOperation = inlineValue;
-                m_HasInlineTranslateOperation = true;
-            }
+
+            m_InlineTranslateOperation = inlineValue;
+            m_HasInlineTranslate = true;
+            ApplyStyleTranslate(inlineValue);
 
             return true;
         }
 
-        private bool SetInlineScale(StyleScale inlineValue, ref VersionChangeType versionChangeType)
+        private void ApplyStyleTranslate(StyleTranslate translate)
+        {
+            ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle);
+
+            bool startedTransition = false;
+            if (ve.computedStyle.hasTransition && ve.styleInitialized &&
+                ve.computedStyle.GetTransitionProperty(StylePropertyId.Translate, out var t))
+            {
+                startedTransition = ComputedStyle.StartAnimationInlineTranslate(ve, ref ve.computedStyle,
+                    translate, t.durationMs, t.delayMs, t.easingCurve);
+            }
+            else
+            {
+                // In case there were older animations running, cancel them.
+                ve.styleAnimation.CancelAnimation(StylePropertyId.Translate);
+            }
+
+            if (!startedTransition)
+            {
+                ve.computedStyle.ApplyStyleTranslate(translate.value);
+            }
+        }
+
+        private bool SetInlineScale(StyleScale inlineValue)
         {
             var styleScale = new StyleScale();
             if (TryGetInlineScale(ref styleScale))
@@ -770,20 +958,43 @@ namespace UnityEngine.UIElements
 
             if (inlineValue.keyword == StyleKeyword.Null)
             {
-                versionChangeType |= VersionChangeType.InlineStyleRemove;
+                RemoveInlineStyle(StylePropertyId.Scale);
                 m_HasInlineScale = false;
+                return m_HasInlineScale;
             }
-            else
-            {
-                ve.computedStyle.ApplyStyleScale(inlineValue.value);
-                m_InlineScale = inlineValue;
-                m_HasInlineScale = true;
-            }
+
+            m_InlineScale = inlineValue;
+            m_HasInlineScale = true;
+            ApplyStyleScale(inlineValue);
 
             return true;
         }
 
-        private bool SetInlineRotate(StyleRotate inlineValue, ref VersionChangeType versionChangeType)
+        private void ApplyStyleScale(StyleScale scale)
+        {
+            ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle);
+
+            bool startedTransition = false;
+            if (ve.computedStyle.hasTransition && ve.styleInitialized &&
+                ve.computedStyle.GetTransitionProperty(StylePropertyId.Scale, out var t))
+            {
+                startedTransition = ComputedStyle.StartAnimationInlineScale(ve, ref ve.computedStyle,
+                    scale, t.durationMs, t.delayMs, t.easingCurve);
+            }
+            else
+            {
+                // In case there were older animations running, cancel them.
+                ve.styleAnimation.CancelAnimation(StylePropertyId.Scale);
+            }
+
+
+            if (!startedTransition)
+            {
+                ve.computedStyle.ApplyStyleScale(scale.value);
+            }
+        }
+
+        private bool SetInlineRotate(StyleRotate inlineValue)
         {
             var styleRotate = new StyleRotate();
             if (TryGetInlineRotate(ref styleRotate))
@@ -799,24 +1010,124 @@ namespace UnityEngine.UIElements
 
             if (inlineValue.keyword == StyleKeyword.Null)
             {
-                versionChangeType |= VersionChangeType.InlineStyleRemove;
-                m_HasInlineRotateOperation = false;
+                RemoveInlineStyle(StylePropertyId.Rotate);
+                m_HasInlineRotate = false;
+                return m_HasInlineRotate;
+            }
+
+            m_InlineRotateOperation = inlineValue;
+            m_HasInlineRotate = true;
+            ApplyStyleRotate(inlineValue);
+
+            return true;
+        }
+
+        private void ApplyStyleRotate(StyleRotate rotate)
+        {
+            var parent = ve.hierarchy.parent;
+            ref var parentStyle = ref parent?.computedStyle != null ? ref parent.computedStyle : ref InitialStyle.Get();
+            ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle);
+
+            bool startedTransition = false;
+            if (ve.computedStyle.hasTransition && ve.styleInitialized &&
+                ve.computedStyle.GetTransitionProperty(StylePropertyId.Rotate, out var t))
+            {
+                startedTransition = ComputedStyle.StartAnimationInlineRotate(ve, ref ve.computedStyle,
+                    rotate, t.durationMs, t.delayMs, t.easingCurve);
             }
             else
             {
-                ve.computedStyle.ApplyStyleRotate(inlineValue.value);
-                m_InlineRotateOperation = inlineValue;
-                m_HasInlineRotateOperation = true;
+                // In case there were older animations running, cancel them.
+                ve.styleAnimation.CancelAnimation(StylePropertyId.Rotate);
             }
 
-            return true;
+
+            if (!startedTransition)
+            {
+                ve.computedStyle.ApplyStyleRotate(rotate.value);
+            }
         }
 
         private void ApplyStyleValue(StyleValue value)
         {
             var parent = ve.hierarchy.parent;
             ref var parentStyle = ref parent?.computedStyle != null ? ref parent.computedStyle : ref InitialStyle.Get();
-            ve.computedStyle.ApplyStyleValue(value, ref parentStyle);
+            bool startedTransition = false;
+
+            if (StylePropertyUtil.IsAnimatable(value.id))
+            {
+                ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle);
+
+                if (ve.computedStyle.hasTransition && ve.styleInitialized &&
+                    ve.computedStyle.GetTransitionProperty(value.id, out var t))
+                {
+                    startedTransition = ComputedStyle.StartAnimationInline(ve, value.id, ref ve.computedStyle,
+                        value, t.durationMs, t.delayMs, t.easingCurve);
+                }
+                else
+                {
+                    // In case there were older animations running, cancel them.
+                    ve.styleAnimation.CancelAnimation(value.id);
+                }
+            }
+
+            if (!startedTransition)
+            {
+                ve.computedStyle.ApplyStyleValue(value, ref parentStyle);
+            }
+        }
+
+        private void ApplyStyleValue(StyleValueManaged value)
+        {
+            // No need to check for transitions because all StyleValueManaged cannot be animated
+            var parent = ve.hierarchy.parent;
+            ref var parentStyle = ref parent?.computedStyle != null ? ref parent.computedStyle : ref InitialStyle.Get();
+            ve.computedStyle.ApplyStyleValueManaged(value, ref parentStyle);
+        }
+
+        //return true if another style was applied when removing the inlineStyle, false if notthing was applied
+        private bool RemoveInlineStyle(StylePropertyId id)
+        {
+            var rulesHash = ve.computedStyle.matchingRulesHash;
+            if (rulesHash == 0)
+            {
+                ApplyFromComputedStyle(id, ref InitialStyle.Get());
+                return true;
+            }
+
+            if (StyleCache.TryGetValue(rulesHash, out var baseComputedStyle))
+            {
+                ApplyFromComputedStyle(id, ref baseComputedStyle);
+                return true;
+            }
+
+            return false;
+        }
+
+        private void ApplyFromComputedStyle(StylePropertyId id, ref ComputedStyle newStyle)
+        {
+            bool startedTransition = false;
+
+            if (StylePropertyUtil.IsAnimatable(id))
+            {
+                ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle);
+
+                if (ve.computedStyle.hasTransition && ve.styleInitialized &&
+                    ve.computedStyle.GetTransitionProperty(id, out var t))
+                {
+                    startedTransition = ComputedStyle.StartAnimation(ve, id, ref ve.computedStyle, ref newStyle, t.durationMs, t.delayMs, t.easingCurve);
+                }
+                else
+                {
+                    // In case there were older animations running, cancel them.
+                    ve.styleAnimation.CancelAnimation(id);
+                }
+            }
+
+            if (!startedTransition)
+            {
+                ve.computedStyle.ApplyFromComputedStyle(id, ref newStyle);
+            }
         }
 
         public bool TryGetInlineCursor(ref StyleCursor value)
@@ -851,7 +1162,7 @@ namespace UnityEngine.UIElements
 
         public bool TryGetInlineTranslate(ref StyleTranslate value)
         {
-            if (m_HasInlineTranslateOperation)
+            if (m_HasInlineTranslate)
             {
                 value = m_InlineTranslateOperation;
                 return true;
@@ -861,7 +1172,7 @@ namespace UnityEngine.UIElements
 
         public bool TryGetInlineRotate(ref StyleRotate value)
         {
-            if (m_HasInlineRotateOperation)
+            if (m_HasInlineRotate)
             {
                 value = m_InlineRotateOperation;
                 return true;

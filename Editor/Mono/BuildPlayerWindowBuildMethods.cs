@@ -159,7 +159,7 @@ namespace UnityEditor
                         // with a build.
                         var errStr = string.Format("Could not switch to build target '{0}', '{1}'.",
                             BuildPipeline.GetBuildTargetGroupDisplayName(options.targetGroup),
-                            BuildPlatforms.instance.GetBuildTargetDisplayName(options.targetGroup, options.target));
+                            BuildPlatforms.instance.GetBuildTargetDisplayName(options.targetGroup, options.target, options.subtarget));
                         throw new BuildMethodException(errStr);
                     }
 
@@ -170,7 +170,7 @@ namespace UnityEditor
                 bool locationPathExistedBeforeBuild = System.IO.Directory.Exists(options.locationPathName);
                 // Trigger build.
                 // Note: report will be null, if delayToAfterScriptReload = true
-                var report = BuildPipeline.BuildPlayerInternalNoCheck(options.scenes, options.locationPathName, PostprocessBuildPlayer.GetStreamingAssetsBundleManifestPath(), options.targetGroup, options.target, options.options, options.extraScriptingDefines, delayToAfterScriptReload);
+                var report = BuildPipeline.BuildPlayerInternalNoCheck(options.scenes, options.locationPathName, PostprocessBuildPlayer.GetStreamingAssetsBundleManifestPath(), options.targetGroup, options.target, options.subtarget, options.options, options.extraScriptingDefines, delayToAfterScriptReload);
 
                 if (report != null
                 )
@@ -229,6 +229,7 @@ namespace UnityEditor
 
                 BuildTarget buildTarget = EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget();
                 BuildTargetGroup buildTargetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
+                int subtarget = EditorUserBuildSettings.GetSelectedSubtargetFor(buildTarget);
 
                 // Pick location for the build
                 string newLocation = "";
@@ -252,8 +253,6 @@ namespace UnityEditor
                     options.options |= BuildOptions.AllowDebugging;
                 if (EditorUserBuildSettings.symlinkSources)
                     options.options |= BuildOptions.SymlinkSources;
-                if (EditorUserBuildSettings.enableHeadlessMode)
-                    options.options |= BuildOptions.EnableHeadlessMode;
                 if (EditorUserBuildSettings.connectProfiler && (developmentBuild || buildTarget == BuildTarget.WSAPlayer))
                     options.options |= BuildOptions.ConnectWithProfiler;
                 if (EditorUserBuildSettings.buildWithDeepProfilingSupport && developmentBuild)
@@ -270,7 +269,7 @@ namespace UnityEditor
                 }
                 else if ((options.options & BuildOptions.PatchPackage) == 0)
                 {
-                    if (askForBuildLocation && !PickBuildLocation(buildTargetGroup, buildTarget, options.options, out updateExistingBuild))
+                    if (askForBuildLocation && !PickBuildLocation(buildTargetGroup, buildTarget, subtarget, options.options, out updateExistingBuild))
                         throw new BuildMethodException();
 
                     newLocation = EditorUserBuildSettings.GetBuildLocation(buildTarget);
@@ -290,7 +289,7 @@ namespace UnityEditor
                                 updateExistingBuild = true;
                                 break;
                             case CanAppendBuild.No:
-                                if (!PickBuildLocation(buildTargetGroup, buildTarget, options.options, out updateExistingBuild))
+                                if (!PickBuildLocation(buildTargetGroup, buildTarget, subtarget, options.options, out updateExistingBuild))
                                     throw new BuildMethodException();
 
                                 newLocation = EditorUserBuildSettings.GetBuildLocation(buildTarget);
@@ -306,6 +305,7 @@ namespace UnityEditor
                     options.options |= BuildOptions.AcceptExternalModificationsToPlayer;
 
                 options.target = buildTarget;
+                options.subtarget = subtarget;
                 options.targetGroup = buildTargetGroup;
                 options.locationPathName = EditorUserBuildSettings.GetBuildLocation(buildTarget);
                 options.assetBundleManifestPath = null;
@@ -324,7 +324,7 @@ namespace UnityEditor
                 return options;
             }
 
-            private static bool PickBuildLocation(BuildTargetGroup targetGroup, BuildTarget target, BuildOptions options, out bool updateExistingBuild)
+            private static bool PickBuildLocation(BuildTargetGroup targetGroup, BuildTarget target, int subtarget, BuildOptions options, out bool updateExistingBuild)
             {
                 updateExistingBuild = false;
                 var previousPath = EditorUserBuildSettings.GetBuildLocation(target);
@@ -342,7 +342,7 @@ namespace UnityEditor
                     defaultName = FileUtil.GetLastPathNameComponent(previousPath);
                 }
 
-                string extension = PostprocessBuildPlayer.GetExtensionForBuildTarget(targetGroup, target, options);
+                string extension = PostprocessBuildPlayer.GetExtensionForBuildTarget(targetGroup, target, subtarget, options);
                 // Invalidate default name, if extension mismatches the default file (for ex., when switching between folder type export to file type export, see Android)
                 if (extension != Path.GetExtension(defaultName).Replace(".", ""))
                     defaultName = string.Empty;
@@ -360,7 +360,7 @@ namespace UnityEditor
                         defaultName = Path.GetDirectoryName(defaultName);
                 }
 
-                string title = "Build " + BuildPlatforms.instance.GetBuildTargetDisplayName(targetGroup, target);
+                string title = "Build " + BuildPlatforms.instance.GetBuildTargetDisplayName(targetGroup, target, subtarget);
                 string path = EditorUtility.SaveBuildPanel(target, title, defaultFolder, defaultName, extension, out updateExistingBuild);
 
                 if (path == string.Empty)

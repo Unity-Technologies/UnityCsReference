@@ -9,6 +9,7 @@ namespace UnityEditor
 {
     class DefaultMainToolbar : MainToolbarVisual
     {
+        EditorToolbar m_LeftToolbar;
         EditorToolbar m_CenterToolbar;
         EditorToolbar m_RightToolbar;
 
@@ -19,6 +20,12 @@ namespace UnityEditor
             root.style.flexGrow = 1;
             visualTree.CloneTree(root);
 
+            var leftContainer = root.Q("ToolbarZoneLeftAlign");
+            m_LeftToolbar = new EditorToolbar(null, leftContainer,
+                "Services/Account",
+                "Services/Cloud",
+                "Editor Utility/Imgui Subtoolbars");
+
             m_CenterToolbar = new EditorToolbar(null, root.Q("ToolbarZonePlayMode"),
                 "Editor Utility/Play Mode");
 
@@ -26,12 +33,9 @@ namespace UnityEditor
             m_RightToolbar = new EditorToolbar(null, rightContainer,
                 "Editor Utility/Layout",
                 "Editor Utility/Layers",
-                "Services/Account",
-                "Services/Cloud",
-                "Editor Utility/Imgui Subtoolbars",
                 "Editor Utility/Search",
-                "Package Manager/PreviewPackagesInUse",
-                "Editor Utility/Modes");
+                "Editor Utility/Modes",
+                "Package Manager/PreviewPackagesInUse");
 
             EditorToolbarUtility.LoadStyleSheets("MainToolbar", root);
             return root;

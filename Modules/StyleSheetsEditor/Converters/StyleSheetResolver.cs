@@ -831,7 +831,7 @@ namespace UnityEditor.StyleSheets
                 {
                     parsedValues.Add(ParseFunction(sourceValues, srcSheet, valueHandle, ref i));
                 }
-                else
+                else if (valueHandle.valueType != StyleValueType.CommaSeparator)
                     parsedValues.Add(new Value(valueHandle.valueType, GetPropertyValue(valueHandle, srcSheet)));
             }
 
@@ -853,7 +853,7 @@ namespace UnityEditor.StyleSheets
                 {
                     argValues.Add(ParseFunction(sourceValues, srcSheet, argHandle, ref handleIndex));
                 }
-                else if (argHandle.valueType == StyleValueType.FunctionSeparator)
+                else if (argHandle.valueType == StyleValueType.CommaSeparator)
                 {
                     func.args.Add(argValues.ToArray());
                     argValues.Clear();
@@ -965,7 +965,7 @@ namespace UnityEditor.StyleSheets
                             AddValues(helper, functionValue.args[argIndex]);
                             if (argIndex < functionValue.args.Count - 1)
                             {
-                                helper.builder.AddValue(value.AsString(), StyleValueType.FunctionSeparator);
+                                helper.builder.AddValue(value.AsString(), StyleValueType.CommaSeparator);
                             }
                         }
                         break;

@@ -5183,7 +5183,7 @@ namespace UnityEditor
                                 var currentView = GUIView.current;
 
                                 EditorUtility.DisplayCustomMenu(
-                                    position,
+                                    new Rect(Event.current.mousePosition, Vector2.zero),
                                     names,
                                     enabled,
                                     null,
@@ -10886,7 +10886,7 @@ namespace UnityEditor
         {
             BuildPlatform[] validPlatforms = BuildPlatforms.instance.GetValidPlatforms().ToArray();
             int selected = BeginPlatformGrouping(validPlatforms, null);
-            return validPlatforms[selected].targetGroup;
+            return validPlatforms[selected].namedBuildTarget.ToBuildTargetGroup();
         }
 
         public static void EndBuildTargetSelectionGrouping()
@@ -10940,8 +10940,11 @@ namespace UnityEditor
             int selectedPlatform = -1;
             for (int i = 0; i < platforms.Length; i++)
             {
-                if (platforms[i].targetGroup == EditorUserBuildSettings.selectedBuildTargetGroup)
+                if (platforms[i].IsSelected())
+                {
                     selectedPlatform = i;
+                    break;
+                }
             }
             if (selectedPlatform == -1)
             {
@@ -11014,7 +11017,7 @@ namespace UnityEditor
             {
                 if (defaultTab == null)
                 {
-                    EditorUserBuildSettings.selectedBuildTargetGroup = platforms[selected].targetGroup;
+                    platforms[selected].Select();
                 }
                 else
                 {
@@ -11024,7 +11027,7 @@ namespace UnityEditor
                     }
                     else
                     {
-                        EditorUserBuildSettings.selectedBuildTargetGroup = platforms[selected].targetGroup;
+                        platforms[selected].Select();
                         s_SelectedDefault.value = false;
                     }
                 }

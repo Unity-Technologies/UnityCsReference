@@ -15,9 +15,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         const string k_GeneralServicesTemplatePath = "UXML/PackageManager/PackageManagerProjectSettings.uxml";
         protected VisualTreeAsset m_GeneralTemplate;
 
-        private static readonly string k_Message =
+        private static readonly string k_Message = L10n.Tr(
             "Pre-release packages are in the process of becoming stable and will be available as production-ready by the end of this LTS release. \n" +
-            "We recommend using these only for testing purposes and to give us direct feedback until then.";
+            "We recommend using these only for testing purposes and to give us direct feedback until then.");
 
         private ResourceLoader m_ResourceLoader;
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
@@ -96,7 +96,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                         var saveIt = true;
                         if (newValue && !m_SettingsProxy.oneTimeWarningShown)
                         {
-                            if (EditorUtility.DisplayDialog(L10n.Tr("Package Manager"), L10n.Tr(k_Message), L10n.Tr("I understand"), L10n.Tr("Cancel")))
+                            if (EditorUtility.DisplayDialog(L10n.Tr("Package Manager"), k_Message, L10n.Tr("I understand"), L10n.Tr("Cancel")))
                                 m_SettingsProxy.oneTimeWarningShown = true;
                             else
                                 saveIt = false;

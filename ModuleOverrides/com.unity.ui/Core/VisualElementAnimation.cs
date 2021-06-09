@@ -69,6 +69,8 @@ namespace UnityEngine.UIElements
                 if (sys != null)
                     sys.UnregisterAnimations(m_RunningAnimations);
             }
+
+            styleAnimation.CancelAllAnimations();
         }
 
         private void RegisterRunningAnimations()

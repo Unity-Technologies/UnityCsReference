@@ -33,7 +33,7 @@ namespace UnityEditor.UIElements
 
         internal static string GetTssTemplateContent()
         {
-            return "@import url(\"" + ThemeRegistry.kThemeScheme + "://default\")";
+            return "@import url(\"" + ThemeRegistry.kThemeScheme + "://default\");";
         }
 
         internal static ThemeStyleSheet GetOrCreateDefaultTheme()

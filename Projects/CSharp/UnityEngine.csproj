@@ -472,6 +472,9 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\TooltipEvent.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Events\TooltipEvent.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\TransitionEvents.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Events\TransitionEvents.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\UIEvent.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Events\UIEvent.cs</Link>
     </Compile>
@@ -667,6 +670,15 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StylePainter.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\StylePainter.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StylePropertyAnimation.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\StylePropertyAnimation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StylePropertyAnimationSystem.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\StylePropertyAnimationSystem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StylePropertyName.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\StylePropertyName.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\CSSSpec.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\CSSSpec.cs</Link>
     </Compile>
@@ -775,8 +787,14 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\ComputedStyle.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Style\ComputedStyle.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\ComputedTransitions.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Style\ComputedTransitions.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\CustomStyle.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Style\CustomStyle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\EasingFunction.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Style\EasingFunction.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\FontDefinition.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Style\FontDefinition.cs</Link>
@@ -862,6 +880,12 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\StyleLength.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Style\StyleLength.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\StyleList.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Style\StyleList.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\StylePropertyUtil.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Style\StylePropertyUtil.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\StyleRotate.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Style\StyleRotate.cs</Link>
     </Compile>
@@ -879,6 +903,9 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\StyleTypes.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Style\StyleTypes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\TimeValue.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Style\TimeValue.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\TransformOrigin.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Style\TransformOrigin.cs</Link>

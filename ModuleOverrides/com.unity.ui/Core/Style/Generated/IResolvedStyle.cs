@@ -9,6 +9,8 @@
 //              See ResolvedStyleInterfaceCsGenerator class for details
 //
 /******************************************************************************/
+using System.Collections.Generic;
+
 namespace UnityEngine.UIElements
 {
     /// <summary>
@@ -232,6 +234,22 @@ namespace UnityEngine.UIElements
         /// The transformation origin is the point around which a transformation is applied.
         /// </summary>
         Vector3 transformOrigin { get; }
+        /// <summary>
+        /// Duration to wait before starting a property's transition effect when its value changes.
+        /// </summary>
+        IEnumerable<TimeValue> transitionDelay { get; }
+        /// <summary>
+        /// Time a transition animation should take to complete.
+        /// </summary>
+        IEnumerable<TimeValue> transitionDuration { get; }
+        /// <summary>
+        /// Properties to which a transition effect should be applied.
+        /// </summary>
+        IEnumerable<StylePropertyName> transitionProperty { get; }
+        /// <summary>
+        /// Determines how intermediate values are calculated for properties modified by a transition effect.
+        /// </summary>
+        IEnumerable<EasingFunction> transitionTimingFunction { get; }
         /// <summary>
         /// A translate transformation.
         /// </summary>

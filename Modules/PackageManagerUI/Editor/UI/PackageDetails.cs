@@ -233,11 +233,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnInternetReachabilityChange(bool value)
         {
+            var message = L10n.Tr("You need to restore your network connection to perform this action.");
             RefreshButtonStatusAndTooltip(resumeButton, PackageAction.Resume,
-                new ButtonDisableCondition(!value, L10n.Tr("You need to restore your network connection to perform this action.")));
+                new ButtonDisableCondition(!value, message));
 
             RefreshButtonStatusAndTooltip(downloadButton, PackageAction.Download,
-                new ButtonDisableCondition(!value, L10n.Tr("You need to restore your network connection to perform this action.")));
+                new ButtonDisableCondition(!value, message));
 
             if (value)
                 RefreshErrorDisplay();

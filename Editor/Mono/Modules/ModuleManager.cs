@@ -16,6 +16,7 @@ using Unity.Profiling;
 using UnityEditor.Utils;
 using UnityEditor.DeploymentTargets;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
+using UnityEditor.Build;
 
 namespace UnityEditor.Modules
 {
@@ -542,14 +543,14 @@ namespace UnityEditor.Modules
             return null;
         }
 
-        internal static IScriptingImplementations GetScriptingImplementations(BuildTargetGroup target)
+        internal static IScriptingImplementations GetScriptingImplementations(NamedBuildTarget namedBuildTarget)
         {
             // Standalone Windows, Linux and OS X share player settings between each other, so they share scripting implementations too
             // However, since we can't pin BuildTargetGroup to any single platform support module, we have to explicitly check for this case
-            if (target == BuildTargetGroup.Standalone)
+            if (namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone)
                 return new DesktopStandalonePostProcessor.ScriptingImplementations();
 
-            return GetScriptingImplementations(GetTargetStringFromBuildTargetGroup(target));
+            return GetScriptingImplementations(GetTargetStringFromBuildTargetGroup(namedBuildTarget.ToBuildTargetGroup()));
         }
 
         internal static IPluginImporterExtension GetPluginImporterExtension(string target)

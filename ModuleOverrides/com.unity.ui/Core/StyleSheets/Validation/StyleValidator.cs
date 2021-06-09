@@ -70,8 +70,8 @@ namespace UnityEngine.UIElements.StyleSheets
                 {
                     case MatchResultErrorCode.Syntax:
                         result.status = StyleValidationStatus.Error;
-                        if (IsUnitMissing(syntax, value))
-                            result.hint = "Property expects a unit. Did you forget to add px or %?";
+                        if (IsUnitMissing(syntax, value, out var unitHint))
+                            result.hint = $"Property expects a unit. Did you forget to add {unitHint}?";
                         else if (IsUnsupportedColor(syntax))
                             result.hint = $"Unsupported color '{value}'.";
                         result.message = $"Expected ({syntax}) but found '{matchResult.errorValue}'";
@@ -94,10 +94,18 @@ namespace UnityEngine.UIElements.StyleSheets
         }
 
         // A simple check to give a better error message when a unit is missing
-        private bool IsUnitMissing(string propertySyntax, string propertyValue)
+        private bool IsUnitMissing(string propertySyntax, string propertyValue, out string unitHint)
         {
-            float val;
-            return float.TryParse(propertyValue, out val) && (propertySyntax.Contains("<length>") || propertySyntax.Contains("<percentage>"));
+            unitHint = null;
+            if (!float.TryParse(propertyValue, out _))
+                return false;
+
+            if (propertySyntax.Contains("<length>") || propertySyntax.Contains("<length-percentage>"))
+                unitHint = "px or %";
+            else if (propertySyntax.Contains("<time>"))
+                unitHint = "s or ms";
+
+            return !string.IsNullOrEmpty(unitHint);
         }
 
         private bool IsUnsupportedColor(string propertySyntax)

@@ -19,7 +19,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private long m_Total;
         private long m_NumberOfPackagesShown;
-        private const string k_All = "All";
+        private static readonly string k_All = L10n.Tr("All");
 
         private long m_LoadMore;
         private string m_LoadedText;
@@ -117,9 +117,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void AddDropdownItem(DropdownMenu menu, int value)
         {
             var textValue = value == (int)AssetsToLoad.All ? k_All : value.ToString();
-            menu.AppendAction(L10n.Tr(textValue), a =>
+            textValue = L10n.Tr(textValue);
+            menu.AppendAction(textValue, a =>
             {
-                loadAssetsDropdown.text = L10n.Tr(textValue);
+                loadAssetsDropdown.text = textValue;
                 m_SettingsProxy.loadAssets = value;
                 m_SettingsProxy.Save();
                 UpdateLoadBarMessage();
@@ -210,7 +211,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void SetLabels()
         {
             var loadAll = m_SettingsProxy.loadAssets == (int)AssetsToLoad.All ? true : false;
-            loadAssetsDropdown.text = loadAll || m_LoadAllDiff ? L10n.Tr(k_All) : m_LoadMore.ToString();
+            loadAssetsDropdown.text = loadAll || m_LoadAllDiff ? k_All : m_LoadMore.ToString();
 
             loadedLabel.text = m_LoadedText;
 

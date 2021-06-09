@@ -154,8 +154,10 @@ namespace Unity.UI.Builder
             m_Canvas.SetSelection(selection);
             m_SharedStylesAndDocumentElement = this.Q("shared-styles-and-document");
             m_SharedStylesAndDocumentElement.pseudoStates |= PseudoStates.Root; // To apply variables of the active theme that are defined in the :root selector
+
             m_StyleSelectorElementContainer = this.Q(BuilderConstants.StyleSelectorElementContainerName);
             m_DocumentRootElement = this.Q("document");
+            m_DocumentRootElement.StretchToParentSize();
             m_Canvas.documentRootElement = m_DocumentRootElement;
             m_EditorLayer = this.Q("__unity-editor-layer");
             m_EditorLayer.AddToClassList(BuilderConstants.HiddenStyleClassName);
@@ -444,12 +446,16 @@ namespace Unity.UI.Builder
                 m_ViewportWrapper.AddToClassList(s_PreviewModeClassName);
                 m_Viewport.AddToClassList(s_PreviewModeClassName);
                 m_PickOverlay.AddToClassList(s_PreviewModeClassName);
+                if (panel is Panel p)
+                    p.styleAnimationSystem = new StylePropertyAnimationSystem();
             }
             else
             {
                 m_ViewportWrapper.RemoveFromClassList(s_PreviewModeClassName);
                 m_Viewport.RemoveFromClassList(s_PreviewModeClassName);
                 m_PickOverlay.RemoveFromClassList(s_PreviewModeClassName);
+                if (panel is Panel p)
+                    p.styleAnimationSystem = new EmptyStylePropertyAnimationSystem();
             }
         }
 

@@ -4,7 +4,10 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using System.Runtime.InteropServices;
+using UnityEngine.Assertions;
 using UnityEngine.Bindings;
 using UnityEngine.Internal;
 using UnityEngine.SceneManagement;
@@ -591,6 +594,9 @@ namespace UnityEngine
         public const int IgnoreRaycastLayer = 1 << 2;
         public const int DefaultRaycastLayers = ~Physics2D.IgnoreRaycastLayer;
         public const int AllLayers = ~0;
+
+        // This should match Box2D "b2_maxPolygonVertices"
+        public const int MaxPolygonShapeVertices = 8;
 
         public static PhysicsScene2D defaultPhysicsScene { get { return new PhysicsScene2D(); } }
 
@@ -2347,7 +2353,7 @@ namespace UnityEngine
         Impulse = 1,
     }
 
-    internal enum ColliderErrorState2D
+    public enum ColliderErrorState2D
     {
         // No errors were encountered when creating the collider.
         None = 0,
@@ -2398,9 +2404,530 @@ namespace UnityEngine
         InverseSquared = 2,
     }
 
+    // The type of a physics shape.
+    public enum PhysicsShapeType2D
+    {
+        // Circle 1-Vertex (b2CircleShape)
+        Circle = 0,
+
+        // Capsule 2-Vertex (b2CapsuleShape)
+        Capsule = 1,
+
+        // Polygon (Physics2D.MaxPolygonShapeVertices - See "b2_maxPolygonVertices") Vertex (b2PolygonShape)
+        Polygon = 2,
+
+        // Edge n-Vertex (b2Chainhape)
+        Edges = 3,
+    }
+
     #endregion
 
     #region Structures
+
+    [StructLayout(LayoutKind.Sequential)]
+    [UsedByNativeCode]
+    [NativeHeader(Header = "Modules/Physics2D/Public/PhysicsScripting2D.h")]
+    public struct PhysicsShape2D
+    {
+        private PhysicsShapeType2D m_ShapeType;
+        private float m_Radius;
+        private int m_VertexStartIndex;
+        private int m_VertexCount;
+        private int m_UseAdjacentStart;
+        private int m_UseAdjacentEnd;
+        private Vector2 m_AdjacentStart;
+        private Vector2 m_AdjacentEnd;
+
+        public PhysicsShapeType2D shapeType
+        {
+            get { return m_ShapeType; }
+            set { m_ShapeType = value; }
+        }
+
+        public float radius
+        {
+            get { return m_Radius; }
+            set
+            {
+                if (value < 0.0f)
+                    throw new ArgumentOutOfRangeException("radius cannot be negative.");
+
+                if (Single.IsNaN(value) || Single.IsInfinity(value))
+                    throw new ArgumentException("radius contains an invalid value.");
+
+                m_Radius = value;
+            }
+        }
+
+        public int vertexStartIndex
+        {
+            get { return m_VertexStartIndex; }
+            set
+            {
+                if (value < 0)
+                    throw new ArgumentOutOfRangeException("vertexStartIndex cannot be negative.");
+
+                m_VertexStartIndex = value;
+            }
+        }
+
+        public int vertexCount
+        {
+            get { return m_VertexCount; }
+            set
+            {
+                if (value < 1)
+                    throw new ArgumentOutOfRangeException("vertexCount cannot be less than one.");
+
+                m_VertexCount = value;
+            }
+        }
+
+        public bool useAdjacentStart
+        {
+            get { return m_UseAdjacentStart != 0; }
+            set { m_UseAdjacentStart = value ? 1 : 0; }
+        }
+
+        public bool useAdjacentEnd
+        {
+            get { return m_UseAdjacentEnd != 0; }
+            set { m_UseAdjacentEnd = value ? 1 : 0; }
+        }
+
+        public Vector2 adjacentStart
+        {
+            get { return m_AdjacentStart; }
+            set
+            {
+                if (Single.IsNaN(value.x) ||
+                    Single.IsNaN(value.y) ||
+                    Single.IsInfinity(value.x) ||
+                    Single.IsInfinity(value.y))
+                    throw new ArgumentException("adjacentStart contains an invalid value.");
+
+                m_AdjacentStart = value;
+            }
+        }
+
+        public Vector2 adjacentEnd
+        {
+            get { return m_AdjacentEnd; }
+            set
+            {
+                if (Single.IsNaN(value.x) ||
+                    Single.IsNaN(value.y) ||
+                    Single.IsInfinity(value.x) ||
+                    Single.IsInfinity(value.y))
+                    throw new ArgumentException("adjacentEnd contains an invalid value.");
+
+                m_AdjacentEnd = value;
+            }
+        }
+    }
+
+    public class PhysicsShapeGroup2D
+    {
+        [StructLayout(LayoutKind.Sequential)]
+        [NativeHeader(Header = "Modules/Physics2D/Public/PhysicsScripting2D.h")]
+        internal struct GroupState
+        {
+            [NativeName("shapesList")] public List<PhysicsShape2D> m_Shapes;
+            [NativeName("verticesList")] public List<Vector2> m_Vertices;
+            [NativeName("localToWorld")] public Matrix4x4 m_LocalToWorld;
+
+            public void ClearGeometry()
+            {
+                m_Shapes.Clear();
+                m_Vertices.Clear();
+            }
+        }
+
+        internal GroupState m_GroupState;
+
+        // Get the vertices.
+        internal List<Vector2> groupVertices { get { return m_GroupState.m_Vertices; } }
+
+        // Get the shapes.
+        internal List<PhysicsShape2D> groupShapes { get { return m_GroupState.m_Shapes; } }
+
+        // Get the total shape count.
+        public int shapeCount { get { return m_GroupState.m_Shapes.Count; } }
+
+        // Get the total vertex count.
+        public int vertexCount { get { return m_GroupState.m_Vertices.Count; } }
+
+        // Get/Set the local to world pose matrix.
+        public Matrix4x4 localToWorldMatrix { get { return m_GroupState.m_LocalToWorld; } set { m_GroupState.m_LocalToWorld = value; } }
+
+        // The minimum vertex separation for polygon shapes.
+        // NOTE: This equates to half the linear-s;op in the physics engine.
+        private const float MinVertexSeparation = 0.5f * 0.005f;
+
+        public PhysicsShapeGroup2D([DefaultValue("1")] int shapeCapacity = 1, [DefaultValue("8")] int vertexCapacity = 8)
+        {
+            m_GroupState = new GroupState
+            {
+                m_Shapes = new List<PhysicsShape2D>(shapeCapacity),
+                m_Vertices = new List<Vector2>(vertexCapacity),
+                m_LocalToWorld = Matrix4x4.identity
+            };
+        }
+
+        // Clears the shape group.
+        public void Clear()
+        {
+            m_GroupState.ClearGeometry();
+            m_GroupState.m_LocalToWorld = Matrix4x4.identity;
+        }
+
+        // Add a shape group to this one.
+        public void Add(PhysicsShapeGroup2D physicsShapeGroup)
+        {
+            if (physicsShapeGroup == null)
+                throw new ArgumentNullException("Cannot merge a NULL PhysicsShapeGroup2D.");
+
+            if (physicsShapeGroup == this)
+                throw new ArgumentException("Cannot merge a PhysicsShapeGroup2D with itself.");
+
+            // Finish if no shapes.
+            if (physicsShapeGroup.shapeCount == 0)
+                return;
+
+            // Fetch the index where the first new shape will be.
+            var shapeIndex = groupShapes.Count;
+
+            // Fetch index offset we need to shift the new shape vertices by.
+            var startVertexOffset = physicsShapeGroup.vertexCount;
+
+            // Add the new shapes and vertices.
+            groupShapes.AddRange(physicsShapeGroup.groupShapes);
+            groupVertices.AddRange(physicsShapeGroup.groupVertices);
+
+            // Offset the new shape indices if required.
+            if (shapeIndex > 0)
+            {
+                // Offset all vertices for the new shapes.
+                for (var i = shapeIndex; i < m_GroupState.m_Shapes.Count; ++i)
+                {
+                    var physicsShape = m_GroupState.m_Shapes[i];
+                    physicsShape.vertexStartIndex += startVertexOffset;
+                    m_GroupState.m_Shapes[i] = physicsShape;
+                }
+            }
+        }
+
+        // Get all the shapes and vertices.
+        public void GetShapeData(List<PhysicsShape2D> shapes, List<Vector2> vertices)
+        {
+            shapes.AddRange(groupShapes);
+            vertices.AddRange(groupVertices);
+        }
+
+        // Get all the shapes and vertices into native arrays.
+        public void GetShapeData(NativeArray<PhysicsShape2D> shapes, NativeArray<Vector2> vertices)
+        {
+            if (!shapes.IsCreated || shapes.Length != shapeCount)
+                throw new ArgumentException($"Cannot get shape data as the native shapes array length must be identical to the current custom shape count of {shapeCount}.", "shapes");
+
+            if (!vertices.IsCreated || vertices.Length != vertexCount)
+                throw new ArgumentException($"Cannot get shape data as the native vertices array length must be identical to the current custom vertex count of {shapeCount}.", "vertices");
+
+            // Copy the shapes.
+            for (var i = 0; i < shapeCount; ++i)
+                shapes[i] = m_GroupState.m_Shapes[i];
+
+            // Copy the vertices.
+            for (var i = 0; i < vertexCount; ++i)
+                vertices[i] = m_GroupState.m_Vertices[i];
+        }
+
+        // Get all the shape vertices.
+        public void GetShapeVertices(int shapeIndex, List<Vector2> vertices)
+        {
+            var shape = GetShape(shapeIndex);
+            var shapeVertexCount = shape.vertexCount;
+
+            vertices.Clear();
+            if (vertices.Capacity < shapeVertexCount)
+                vertices.Capacity = shapeVertexCount;
+
+            var shapeVertices = groupVertices;
+            var shapeVertexIndex = shape.vertexStartIndex;
+            for (var n = 0; n < shapeVertexCount; ++n)
+            {
+                vertices.Add(shapeVertices[shapeVertexIndex++]);
+            }
+        }
+
+        // Get the shape vertex at the specified index.
+        public Vector2 GetShapeVertex(int shapeIndex, int vertexIndex)
+        {
+            var index = GetShape(shapeIndex).vertexStartIndex + vertexIndex;
+            if (index < 0 || index >= groupVertices.Count)
+                throw new ArgumentOutOfRangeException(String.Format("Cannot get shape-vertex at index {0}. There are {1} shape-vertices.", index, shapeCount));
+
+            return groupVertices[index];
+        }
+
+        // Set the shape vertex at the specified index.
+        public void SetShapeVertex(int shapeIndex, int vertexIndex, Vector2 vertex)
+        {
+            var index = GetShape(shapeIndex).vertexStartIndex + vertexIndex;
+            if (index < 0 || index >= groupVertices.Count)
+                throw new ArgumentOutOfRangeException(String.Format("Cannot set shape-vertex at index {0}. There are {1} shape-vertices.", index, shapeCount));
+
+            groupVertices[index] = vertex;
+        }
+
+        // Set the shape radius at the specified index.
+        public void SetShapeRadius(int shapeIndex, float radius)
+        {
+            // Fetch the shape.
+            var shape = GetShape(shapeIndex);
+
+            // Validate the specified radius.
+            switch (shape.shapeType)
+            {
+                case PhysicsShapeType2D.Circle:
+                    Assert.IsTrue(radius > 0.0f, string.Format("Circle radius {0} must be greater than zero.", radius));
+                    break;
+
+                case PhysicsShapeType2D.Capsule:
+                    Assert.IsTrue(radius > 0.00001f, string.Format("Capsule radius: {0} is too small.", radius));
+                    break;
+
+                case PhysicsShapeType2D.Edges:
+                case PhysicsShapeType2D.Polygon:
+                    radius = Mathf.Max(0f, radius);
+                    break;
+            }
+
+            // Set the radius and update the shape.
+            shape.radius = radius;
+            groupShapes[shapeIndex] = shape;
+        }
+
+        // Set the shape adjacent vertices.
+        public void SetShapeAdjacentVertices(
+            int shapeIndex,
+            bool useAdjacentStart,
+            bool useAdjacentEnd,
+            Vector2 adjacentStart,
+            Vector2 adjacentEnd)
+        {
+            if (shapeIndex < 0 || shapeIndex >= shapeCount)
+                throw new ArgumentOutOfRangeException(String.Format("Cannot set shape adjacent vertices at index {0}. There are {1} shapes(s).", shapeIndex, shapeCount));
+
+            var shape = groupShapes[shapeIndex];
+
+            if (shape.shapeType != PhysicsShapeType2D.Edges)
+                throw new InvalidOperationException(String.Format("Cannot set shape adjacent vertices at index {0}. The shape must be of type {1} but it is of typee {2}.", shapeIndex, PhysicsShapeType2D.Edges, shape.shapeType));
+
+            shape.useAdjacentStart = useAdjacentStart;
+            shape.useAdjacentEnd = useAdjacentEnd;
+            shape.adjacentStart = adjacentStart;
+            shape.adjacentEnd = adjacentEnd;
+
+            groupShapes[shapeIndex] = shape;
+        }
+
+        // Deletes the shape at the specified index.
+        public void DeleteShape(int shapeIndex)
+        {
+            if (shapeIndex < 0 || shapeIndex >= shapeCount)
+                throw new ArgumentOutOfRangeException(String.Format("Cannot delete shape at index {0}. There are {1} shapes(s).", shapeIndex, shapeCount));
+
+            var shape = groupShapes[shapeIndex];
+            var shapeVertexCount = shape.vertexCount;
+
+            groupShapes.RemoveAt(shapeIndex);
+            groupVertices.RemoveRange(shape.vertexStartIndex, shapeVertexCount);
+
+            // NOTE: This makes the assumption that shape vertex usage is ordered.
+            while (shapeIndex < groupShapes.Count)
+            {
+                var offsetShape = m_GroupState.m_Shapes[shapeIndex];
+                offsetShape.vertexStartIndex -= shapeVertexCount;
+                m_GroupState.m_Shapes[shapeIndex++] = offsetShape;
+            }
+        }
+
+        // Get the shape at the specified index.
+        public PhysicsShape2D GetShape(int shapeIndex)
+        {
+            if (shapeIndex < 0 || shapeIndex >= shapeCount)
+                throw new ArgumentOutOfRangeException(String.Format("Cannot get shape at index {0}. There are {1} shapes(s).", shapeIndex, shapeCount));
+
+            return groupShapes[shapeIndex];
+        }
+
+        // Add a circle shape.
+        public int AddCircle(Vector2 center, float radius)
+        {
+            Assert.IsTrue(radius > 0.0f, string.Format("radius {0} must be greater than zero.", radius));
+
+            // Add geometry.
+            var vertexStartIndex = groupVertices.Count;
+            groupVertices.Add(center);
+
+            // Add shape.
+            groupShapes.Add(
+                new PhysicsShape2D
+                {
+                    shapeType = PhysicsShapeType2D.Circle,
+                    radius = radius,
+                    vertexStartIndex = vertexStartIndex,
+                    vertexCount = 1
+                });
+
+            // Return the new shape index.
+            return groupShapes.Count - 1;
+        }
+
+        // Add a capsule shape.
+        public int AddCapsule(Vector2 vertex0, Vector2 vertex1, float radius)
+        {
+            Assert.IsTrue(radius > 0.00001f, string.Format("radius: {0} is too small.", radius));
+
+            // Add geometry.
+            var vertexStartIndex = groupVertices.Count;
+            groupVertices.Add(vertex0);
+            groupVertices.Add(vertex1);
+
+            groupShapes.Add(
+                new PhysicsShape2D
+                {
+                    shapeType = PhysicsShapeType2D.Capsule,
+                    radius = radius,
+                    vertexStartIndex = vertexStartIndex,
+                    vertexCount = 2
+                });
+
+            // Return the new shape index.
+            return groupShapes.Count - 1;
+        }
+
+        public int AddBox(Vector2 center, Vector2 size, [DefaultValue("0f")] float angle = 0f, [DefaultValue("0f")] float edgeRadius = 0f)
+        {
+            Assert.IsTrue(size.x > MinVertexSeparation && size.y > MinVertexSeparation, string.Format("size: {0} is too small. Vertex need to be separated by at least {1}", size, MinVertexSeparation));
+
+            // Clamp the edge-radius.
+            edgeRadius = Mathf.Max(0f, edgeRadius);
+
+            // Convert to radians.
+            angle *= Mathf.Deg2Rad;
+            var cos = Mathf.Cos(angle);
+            var sin = Mathf.Sin(angle);
+
+            // Add geometry.
+            static Vector2 Rotate(float cos, float sin, Vector2 value) { return new Vector2(cos * value.x - sin * value.y, sin * value.x + cos * value.y); }
+            var halfSize = size * 0.5f;
+            var vertex0 = center + Rotate(cos, sin, -halfSize);
+            var vertex1 = center + Rotate(cos, sin, new Vector2(halfSize.x, -halfSize.y));
+            var vertex2 = center + Rotate(cos, sin, halfSize);
+            var vertex3 = center + Rotate(cos, sin, new Vector2(-halfSize.x, halfSize.y));
+
+            var vertexStartIndex = groupVertices.Count;
+            groupVertices.Add(vertex0);
+            groupVertices.Add(vertex1);
+            groupVertices.Add(vertex2);
+            groupVertices.Add(vertex3);
+
+            groupShapes.Add(
+                new PhysicsShape2D
+                {
+                    shapeType = PhysicsShapeType2D.Polygon,
+                    radius = edgeRadius,
+                    vertexStartIndex = vertexStartIndex,
+                    vertexCount = 4
+                });
+
+            // Return the new shape index.
+            return groupShapes.Count - 1;
+        }
+
+        // Add a polygon shape.
+        public int AddPolygon(List<Vector2> vertices)
+        {
+            var vertexCount = vertices.Count;
+            Assert.IsTrue(vertexCount >= 3 && vertexCount <= Physics2D.MaxPolygonShapeVertices, string.Format("Vertex Count {0} must be >= 3 and <= {1}.", vertexCount, Physics2D.MaxPolygonShapeVertices));
+
+            // Validate vertex separation (squared)
+            float minSeparationSqr = MinVertexSeparation * MinVertexSeparation;
+            for (var i = 1; i < vertexCount; ++i)
+            {
+                var vertex1 = vertices[i - 1];
+                var vertex2 = vertices[i];
+                Assert.IsTrue((vertex2 - vertex1).sqrMagnitude > minSeparationSqr, string.Format("vertices: {0} and {1} are too close. Vertices need to be separated by at least {2}", vertex1, vertex2, minSeparationSqr));
+            }
+
+            // Add geometry.
+            var vertexStartIndex = groupVertices.Count;
+            groupVertices.AddRange(vertices);
+
+            groupShapes.Add(
+                new PhysicsShape2D
+                {
+                    shapeType = PhysicsShapeType2D.Polygon,
+                    radius = 0f,
+                    vertexStartIndex = vertexStartIndex,
+                    vertexCount = vertexCount
+                });
+
+            // Return the new shape index.
+            return groupShapes.Count - 1;
+        }
+
+        // Add an edge shape.
+        public int AddEdges(List<Vector2> vertices, [DefaultValue("0f")] float edgeRadius = 0f)
+        {
+            return AddEdges(
+                vertices,
+                useAdjacentStart: false,
+                useAdjacentEnd: false,
+                adjacentStart: Vector2.zero,
+                adjacentEnd: Vector2.zero,
+                edgeRadius);
+        }
+
+        // Add an edge shape with adjacent vertices.
+        public int AddEdges(
+            List<Vector2> vertices,
+            bool useAdjacentStart,
+            bool useAdjacentEnd,
+            Vector2 adjacentStart,
+            Vector2 adjacentEnd,
+            [DefaultValue("0f")] float edgeRadius = 0f)
+        {
+            var vertexCount = vertices.Count;
+            Assert.IsTrue(vertexCount >= 2, string.Format("Vertex Count {0} must be >= 2.", vertexCount));
+
+            // Clamp the edge-radius.
+            edgeRadius = Mathf.Max(0f, edgeRadius);
+
+            // Add geometry.
+            var vertexStartIndex = groupVertices.Count;
+            groupVertices.AddRange(vertices);
+
+            groupShapes.Add(
+                new PhysicsShape2D
+                {
+                    shapeType = PhysicsShapeType2D.Edges,
+                    radius = edgeRadius,
+                    vertexStartIndex = vertexStartIndex,
+                    vertexCount = vertexCount,
+
+                    useAdjacentStart = useAdjacentStart,
+                    useAdjacentEnd = useAdjacentEnd,
+                    adjacentStart = adjacentStart,
+                    adjacentEnd = adjacentEnd
+                });
+
+            // Return the new shape index.
+            return groupShapes.Count - 1;
+        }
+    }
 
     // Represents the closest points and distance between two colliders.
     [StructLayout(LayoutKind.Sequential)]
@@ -3259,6 +3786,14 @@ namespace UnityEngine
 
         [NativeMethod("CastFilteredList_Binding")]
         extern private int CastFilteredList_Internal(Vector2 direction, float distance, ContactFilter2D contactFilter, [NotNull] List<RaycastHit2D> results);
+
+        public int GetShapes(PhysicsShapeGroup2D physicsShapeGroup)
+        {
+            return GetShapes_Internal(ref physicsShapeGroup.m_GroupState);
+        }
+
+        [NativeMethod("GetShapes_Binding")]
+        extern private int GetShapes_Internal(ref PhysicsShapeGroup2D.GroupState physicsShapeGroupState);
     }
 
     #endregion
@@ -3301,11 +3836,33 @@ namespace UnityEngine
         [NativeMethod("GetShapeHash_Binding")]
         extern public UInt32 GetShapeHash();
 
+        public int GetShapes(PhysicsShapeGroup2D physicsShapeGroup)
+        {
+            return GetShapes_Internal(ref physicsShapeGroup.m_GroupState, 0, shapeCount);
+        }
+
+        public int GetShapes(PhysicsShapeGroup2D physicsShapeGroup, int shapeIndex, [DefaultValue("1")] int shapeCount = 1)
+        {
+            var colliderShapeCount = this.shapeCount;
+
+            // Validate range.
+            if (shapeIndex < 0 ||
+                shapeIndex >= colliderShapeCount ||
+                shapeCount < 1 ||
+                (shapeIndex + shapeCount) > colliderShapeCount)
+                throw new ArgumentOutOfRangeException(String.Format("Cannot get shape range from {0} to {1} as Collider2D only has {2} shape(s).", shapeIndex, shapeIndex + shapeCount - 1, colliderShapeCount));
+
+            return GetShapes_Internal(ref physicsShapeGroup.m_GroupState, shapeIndex, shapeCount);
+        }
+
+        [NativeMethod("GetShapes_Binding")]
+        extern private int GetShapes_Internal(ref PhysicsShapeGroup2D.GroupState physicsShapeGroupState, int shapeIndex, int shapeCount);
+
         // The world space bounding volume of the collider.
         extern public Bounds bounds { get; }
 
         // Gets the collider error state indicating indicating if anything (and what) went wrong creating collision shape(s).
-        extern internal ColliderErrorState2D errorState { get; }
+        extern public ColliderErrorState2D errorState { get; }
 
         // Is the collider capable of being composited?
         extern internal bool compositeCapable {[NativeMethod("GetCompositeCapable_Binding")] get; }
@@ -3529,6 +4086,163 @@ namespace UnityEngine
         {
             return Physics2D.ClosestPoint(position, this);
         }
+    }
+
+    [NativeHeader("Modules/Physics2D/Public/CustomCollider2D.h")]
+    public sealed partial class CustomCollider2D : Collider2D
+    {
+        // Gets the number of custom shapes this collider will generate.
+        [NativeMethod("CustomShapeCount_Binding")]
+        extern public int customShapeCount { get; }
+
+        // Gets the number of custom shape vertices this collider will generate.
+        [NativeMethod("CustomVertexCount_Binding")]
+        extern public int customVertexCount { get; }
+
+        public int GetCustomShapes(PhysicsShapeGroup2D physicsShapeGroup)
+        {
+            var colliderShapeCount = customShapeCount;
+
+            // Get the custom shapes if there are any.
+            if (colliderShapeCount > 0)
+                return GetCustomShapes_Internal(ref physicsShapeGroup.m_GroupState, 0, colliderShapeCount);
+
+            // No shapes so clear the group and finish.
+            physicsShapeGroup.Clear();
+            return 0;
+        }
+
+        public int GetCustomShapes(PhysicsShapeGroup2D physicsShapeGroup, int shapeIndex, [DefaultValue("1")] int shapeCount = 1)
+        {
+            var colliderShapeCount = customShapeCount;
+
+            // Validate range.
+            if (shapeIndex < 0 ||
+                shapeIndex >= colliderShapeCount ||
+                shapeCount < 1 ||
+                (shapeIndex + shapeCount) > colliderShapeCount)
+                throw new ArgumentOutOfRangeException(String.Format("Cannot get shape range from {0} to {1} as CustomCollider2D only has {2} shape(s).", shapeIndex, shapeIndex + shapeCount - 1, colliderShapeCount));
+
+            return GetCustomShapes_Internal(ref physicsShapeGroup.m_GroupState, shapeIndex, shapeCount);
+        }
+
+        [NativeMethod("GetCustomShapes_Binding")]
+        extern private int GetCustomShapes_Internal(ref PhysicsShapeGroup2D.GroupState physicsShapeGroupState, int shapeIndex, int shapeCount);
+
+        public unsafe int GetCustomShapes(NativeArray<PhysicsShape2D> shapes, NativeArray<Vector2> vertices)
+        {
+            if (!shapes.IsCreated || shapes.Length != customShapeCount)
+                throw new ArgumentException($"Cannot get custom shapes as the native shapes array length must be identical to the current custom shape count of {customShapeCount}.", "shapes");
+
+            if (!vertices.IsCreated || vertices.Length != customVertexCount)
+                throw new ArgumentException($"Cannot get custom shapes as the native vertices array length must be identical to the current custom vertex count of {customVertexCount}.", "vertices");
+
+            return GetCustomShapesNative_Internal(
+                (IntPtr)shapes.GetUnsafeReadOnlyPtr(), shapes.Length,
+                (IntPtr)vertices.GetUnsafeReadOnlyPtr(), vertices.Length);
+        }
+
+        [NativeMethod("GetCustomShapesAllNative_Binding")]
+        extern private int GetCustomShapesNative_Internal(IntPtr shapesPtr, int shapeCount, IntPtr verticesPtr, int vertexCount);
+
+        // Set all custom shapes.
+        public void SetCustomShapes(PhysicsShapeGroup2D physicsShapeGroup)
+        {
+            SetCustomShapesAll_Internal(ref physicsShapeGroup.m_GroupState);
+        }
+
+        [NativeMethod("SetCustomShapesAll_Binding")]
+        extern private void SetCustomShapesAll_Internal(ref PhysicsShapeGroup2D.GroupState physicsShapeGroupState);
+
+        // Set all custom shapes using native arrays.
+        public unsafe void SetCustomShapes(NativeArray<PhysicsShape2D> shapes, NativeArray<Vector2> vertices)
+        {
+            if (!shapes.IsCreated || shapes.Length == 0)
+                throw new ArgumentException("Cannot set custom shapes as the native shapes array is empty.", "shapes");
+
+            if (!vertices.IsCreated || vertices.Length == 0)
+                throw new ArgumentException("Cannot set custom shapes as the native vertices array is empty.", "vertices");
+
+            SetCustomShapesNative_Internal(
+                (IntPtr)shapes.GetUnsafeReadOnlyPtr(), shapes.Length,
+                (IntPtr)vertices.GetUnsafeReadOnlyPtr(), vertices.Length);
+        }
+
+        [NativeMethod("SetCustomShapesAllNative_Binding", ThrowsException = true)]
+        extern private void SetCustomShapesNative_Internal(IntPtr shapesPtr, int shapeCount, IntPtr verticesPtr, int vertexCount);
+
+        // Set a single custom shape.
+        public void SetCustomShape(PhysicsShapeGroup2D physicsShapeGroup, int srcShapeIndex, int dstShapeIndex)
+        {
+            if (srcShapeIndex < 0 || srcShapeIndex >= physicsShapeGroup.shapeCount)
+                throw new ArgumentOutOfRangeException(String.Format("Cannot set custom shape at {0} as the shape group only has {1} shape(s).", srcShapeIndex, physicsShapeGroup.shapeCount));
+
+            var physicsShape2D = physicsShapeGroup.GetShape(srcShapeIndex);
+            if (physicsShape2D.vertexStartIndex < 0 ||
+                physicsShape2D.vertexStartIndex >= physicsShapeGroup.vertexCount ||
+                physicsShape2D.vertexCount < 1 ||
+                (physicsShape2D.vertexStartIndex + physicsShape2D.vertexCount) > physicsShapeGroup.vertexCount)
+                throw new ArgumentOutOfRangeException(String.Format("Cannot set custom shape at {0} as its shape indices are out of the available vertices ranges.", srcShapeIndex));
+
+            if (dstShapeIndex < 0 || dstShapeIndex >= customShapeCount)
+                throw new ArgumentOutOfRangeException(String.Format("Cannot set custom shape at destination {0} as CustomCollider2D only has {1} custom shape(s). The destination index must be within the existing shape range.", dstShapeIndex, customShapeCount));
+
+            SetCustomShape_Internal(ref physicsShapeGroup.m_GroupState, srcShapeIndex, dstShapeIndex);
+        }
+
+        [NativeMethod("SetCustomShape_Binding")]
+        extern private void SetCustomShape_Internal(ref PhysicsShapeGroup2D.GroupState physicsShapeGroupState, int srcShapeIndex, int dstShapeIndex);
+
+        // Set a single custom shape using native arrays.
+        public unsafe void SetCustomShape(NativeArray<PhysicsShape2D> shapes, NativeArray<Vector2> vertices, int srcShapeIndex, int dstShapeIndex)
+        {
+            if (!shapes.IsCreated || shapes.Length == 0)
+                throw new ArgumentException("Cannot set custom shapes as the native shapes array is empty.", "shapes");
+
+            if (!vertices.IsCreated || vertices.Length == 0)
+                throw new ArgumentException("Cannot set custom shapes as the native vertices array is empty.", "vertices");
+
+            if (srcShapeIndex < 0 || srcShapeIndex >= shapes.Length)
+                throw new ArgumentOutOfRangeException(String.Format("Cannot set custom shape at {0} as the shape native array only has {1} shape(s).", srcShapeIndex, shapes.Length));
+
+            var physicsShape2D = shapes[srcShapeIndex];
+            if (physicsShape2D.vertexStartIndex < 0 ||
+                physicsShape2D.vertexStartIndex >= vertices.Length ||
+                physicsShape2D.vertexCount < 1 ||
+                (physicsShape2D.vertexStartIndex + physicsShape2D.vertexCount) > vertices.Length)
+                throw new ArgumentOutOfRangeException(String.Format("Cannot set custom shape at {0} as its shape indices are out of the available vertices ranges.", srcShapeIndex));
+
+            if (dstShapeIndex < 0 || dstShapeIndex >= customShapeCount)
+                throw new ArgumentOutOfRangeException(String.Format("Cannot set custom shape at destination {0} as CustomCollider2D only has {1} custom shape(s). The destination index must be within the existing shape range.", dstShapeIndex, customShapeCount));
+
+            SetCustomShapeNative_Internal(
+                (IntPtr)shapes.GetUnsafeReadOnlyPtr(), shapes.Length,
+                (IntPtr)vertices.GetUnsafeReadOnlyPtr(), vertices.Length,
+                srcShapeIndex, dstShapeIndex);
+        }
+
+        [NativeMethod("SetCustomShapeNative_Binding", ThrowsException = true)]
+        extern private void SetCustomShapeNative_Internal(IntPtr shapesPtr, int shapeCount, IntPtr verticesPtr, int vertexCount, int srcShapeIndex, int dstShapeIndex);
+
+        // Clear shapes in the specified range.
+        public void ClearCustomShapes(int shapeIndex, int shapeCount)
+        {
+            var colliderShapeCount = customShapeCount;
+
+            if (shapeIndex < 0 || shapeIndex >= colliderShapeCount)
+                throw new ArgumentOutOfRangeException(String.Format("Cannot clear custom shape(s) at index {0} as the CustomCollider2D only has {1} shape(s).", shapeIndex, colliderShapeCount));
+
+            if ((shapeIndex + shapeCount) < 0 || (shapeIndex + shapeCount) > customShapeCount)
+                throw new ArgumentOutOfRangeException(String.Format("Cannot clear custom shape(s) in the range (index {0}, count {1}) as this range is outside range of the existing {2} shape(s).", shapeIndex, shapeCount, customShapeCount));
+
+            ClearCustomShapes_Internal(shapeIndex, shapeCount);
+        }
+
+        [NativeMethod("ClearCustomShapes_Binding")]
+        extern private void ClearCustomShapes_Internal(int shapeIndex, int shapeCount);
+
+        [NativeMethod("ClearCustomShapes_Binding")]
+        extern public void ClearCustomShapes();
     }
 
     [NativeHeader("Modules/Physics2D/Public/CircleCollider2D.h")]

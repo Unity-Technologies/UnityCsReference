@@ -11,7 +11,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class ScopedRegistriesSettings : VisualElement
     {
-        private const string k_AddNewScopedRegistryText = "New Scoped Registry";
+        private static readonly string k_AddNewScopedRegistryText = L10n.Tr("New Scoped Registry");
         private const string k_SelectedRegistryClass = "selectedRegistry";
         private const string k_NewRegistryClass = "newRegistry";
         private const string k_SelectedScopeClass = "selectedScope";
@@ -147,16 +147,16 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (draft.original != null)
             {
+                string message;
                 if (AnyPackageInstalledFromRegistry(draft.original.name))
                 {
-                    EditorUtility.DisplayDialog(L10n.Tr("Cannot delete scoped registry"),
-                        L10n.Tr("There are packages in your project that are from this scoped registry, please remove them before removing the scoped registry."), L10n.Tr("Ok"));
+                    message = L10n.Tr("There are packages in your project that are from this scoped registry, please remove them before removing the scoped registry.");
+                    EditorUtility.DisplayDialog(L10n.Tr("Cannot delete scoped registry"), message, L10n.Tr("Ok"));
                     return;
                 }
 
-                var deleteRegistry = EditorUtility.DisplayDialog(L10n.Tr("Deleting a scoped registry"),
-                    L10n.Tr("You are about to delete a scoped registry, are you sure you want to continue?"),
-                    L10n.Tr("Ok"), L10n.Tr("Cancel"));
+                message = L10n.Tr("You are about to delete a scoped registry, are you sure you want to continue?");
+                var deleteRegistry = EditorUtility.DisplayDialog(L10n.Tr("Deleting a scoped registry"), message, L10n.Tr("Ok"), L10n.Tr("Cancel"));
 
                 if (deleteRegistry)
                 {
@@ -228,7 +228,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 GetRegistryLabel(draft.original.name).text = draft.original.name;
             else
             {
-                m_NewScopedRegistryLabel.text = L10n.Tr(k_AddNewScopedRegistryText);
+                m_NewScopedRegistryLabel.text = k_AddNewScopedRegistryText;
                 var lastScopedRegistry = m_SettingsProxy.scopedRegistries.LastOrDefault();
                 if (lastScopedRegistry != null)
                 {
@@ -432,7 +432,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private static string GetLabelText(RegistryInfoDraft draft, bool newScopedRegistry = false)
         {
             if (newScopedRegistry || draft.original == null)
-                return (draft.original != null || string.IsNullOrEmpty(draft.name)) ? L10n.Tr(k_AddNewScopedRegistryText) : $"* {draft.name}";
+                return (draft.original != null || string.IsNullOrEmpty(draft.name)) ? k_AddNewScopedRegistryText : $"* {draft.name}";
             else
                 return draft.hasUnsavedChanges ? $"* {draft.name}" : draft.name;
         }

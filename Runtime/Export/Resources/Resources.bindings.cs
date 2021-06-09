@@ -49,6 +49,9 @@ namespace UnityEngine
         [FreeFunction("Resources_Bindings::LoadAll")]
         public extern static Object[] LoadAll([NotNull] string path, [NotNull] Type systemTypeInstance);
 
+        [FreeFunction("Resources_Bindings::GetAllPaths")]
+        public extern static string[] GetAllPaths([NotNull] string path);
+
         [FreeFunction("Resources_Bindings::LoadAsyncInternal")]
         extern internal static ResourceRequest LoadAsyncInternal(string path, Type type);
 

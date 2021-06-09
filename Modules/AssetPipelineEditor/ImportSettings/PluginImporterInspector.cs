@@ -270,7 +270,7 @@ namespace UnityEditor
 
             if (m_CompatibleWithEditor > Compatibility.NotCompatible)
             {
-                BuildPlatform editorPlatform = new BuildPlatform("Editor settings", "Editor Settings", "BuildSettings.Editor", BuildTargetGroup.Unknown, BuildTarget.NoTarget, true);
+                BuildPlatform editorPlatform = new BuildPlatform("Editor settings", "Editor Settings", "BuildSettings.Editor", NamedBuildTarget.Unknown, BuildTarget.NoTarget, true);
                 editorPlatform.name = BuildPipeline.GetEditorTargetName();
                 filtered.Add(editorPlatform);
             }
@@ -279,7 +279,7 @@ namespace UnityEditor
                 if (IgnorePlatform(bp.defaultTarget))
                     continue;
 
-                if (bp.targetGroup == BuildTargetGroup.Standalone)
+                if (bp.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone)
                 {
                     if (compatibleWithStandalone < Compatibility.Compatible)
                         continue;
@@ -289,7 +289,7 @@ namespace UnityEditor
                     if (m_CompatibleWithPlatform[(int)bp.defaultTarget] < Compatibility.Compatible)
                         continue;
 
-                    IPluginImporterExtension extension = ModuleManager.GetPluginImporterExtension(bp.targetGroup);
+                    IPluginImporterExtension extension = ModuleManager.GetPluginImporterExtension(bp.namedBuildTarget.ToBuildTargetGroup());
                     if (extension == null)
                         continue;
                 }
@@ -689,7 +689,7 @@ namespace UnityEditor
                 }
                 else
                 {
-                    BuildTargetGroup targetGroup = validPlatforms[platformIndex].targetGroup;
+                    BuildTargetGroup targetGroup = validPlatforms[platformIndex].namedBuildTarget.ToBuildTargetGroup();
                     if (targetGroup == BuildTargetGroup.Standalone)
                     {
                         desktopExtension.OnPlatformSettingsGUI(this);

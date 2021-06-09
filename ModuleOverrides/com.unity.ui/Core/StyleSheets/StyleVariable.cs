@@ -182,8 +182,8 @@ namespace UnityEngine.UIElements
                 if (result == Result.NotFound && argc > 1 && !m_Property.isCustomProperty)
                 {
                     var h = m_Handles[++index];
-                    Debug.Assert(h.valueType == StyleValueType.FunctionSeparator, $"Unexpected value type {h.valueType} in var function");
-                    if (h.valueType == StyleValueType.FunctionSeparator && index + 1 < m_Handles.Length)
+                    Debug.Assert(h.valueType == StyleValueType.CommaSeparator, $"Unexpected value type {h.valueType} in var function");
+                    if (h.valueType == StyleValueType.CommaSeparator && index + 1 < m_Handles.Length)
                     {
                         ++index;
                         result = ResolveFallback(ref index);
@@ -269,8 +269,8 @@ namespace UnityEngine.UIElements
                         if (argc > 1)
                         {
                             h = m_Handles[++index];
-                            Debug.Assert(h.valueType == StyleValueType.FunctionSeparator, $"Unexpected value type {h.valueType} in var function");
-                            if (h.valueType == StyleValueType.FunctionSeparator && index + 1 < m_Handles.Length)
+                            Debug.Assert(h.valueType == StyleValueType.CommaSeparator, $"Unexpected value type {h.valueType} in var function");
+                            if (h.valueType == StyleValueType.CommaSeparator && index + 1 < m_Handles.Length)
                             {
                                 ++index;
                                 result = ResolveFallback(ref index);

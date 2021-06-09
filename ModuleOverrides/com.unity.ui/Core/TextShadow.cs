@@ -63,5 +63,15 @@ namespace UnityEngine.UIElements
         {
             return $"offset={offset}, blurRadius={blurRadius}, color={color}";
         }
+
+        internal static TextShadow LerpUnclamped(TextShadow a, TextShadow b, float t)
+        {
+            return new TextShadow
+            {
+                offset = Vector2.LerpUnclamped(a.offset, b.offset, t),
+                blurRadius = Mathf.LerpUnclamped(a.blurRadius, b.blurRadius, t),
+                color = Color.LerpUnclamped(a.color, b.color, t)
+            };
+        }
     }
 }

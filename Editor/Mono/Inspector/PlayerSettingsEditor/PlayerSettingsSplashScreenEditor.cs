@@ -304,14 +304,14 @@ namespace UnityEditor
             EditorGUI.EndProperty();
         }
 
-        public void SplashSectionGUI(BuildPlatform platform, BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension, int sectionIndex = 2)
+        public void SplashSectionGUI(BuildPlatform platform, ISettingEditorExtension settingsExtension, int sectionIndex = 2)
         {
             if (m_Owner.BeginSettingsBox(sectionIndex, k_Texts.title))
             {
                 ObjectReferencePropertyField<Texture2D>(m_VirtualRealitySplashScreen, k_Texts.vrSplashScreen);
 
-                if (TargetSupportsOptionalBuiltinSplashScreen(targetGroup, settingsExtension))
-                    BuiltinCustomSplashScreenGUI(targetGroup, settingsExtension);
+                if (TargetSupportsOptionalBuiltinSplashScreen(platform.namedBuildTarget.ToBuildTargetGroup(), settingsExtension))
+                    BuiltinCustomSplashScreenGUI(platform.namedBuildTarget.ToBuildTargetGroup(), settingsExtension);
 
                 if (settingsExtension != null)
                     settingsExtension.SplashSectionGUI();

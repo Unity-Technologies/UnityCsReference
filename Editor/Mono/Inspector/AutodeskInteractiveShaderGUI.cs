@@ -110,8 +110,6 @@ namespace UnityEditor
             // Use default labelWidth
             EditorGUIUtility.labelWidth = 0f;
 
-            // Detect any changes to the material
-            EditorGUI.BeginChangeCheck();
             {
                 BlendModePopup();
 
@@ -145,11 +143,6 @@ namespace UnityEditor
                     m_MaterialEditor.ShaderProperty(highlights, Styles.highlightsText);
                 if (reflections != null)
                     m_MaterialEditor.ShaderProperty(reflections, Styles.reflectionsText);
-            }
-            if (EditorGUI.EndChangeCheck())
-            {
-                foreach (var obj in blendMode.targets)
-                    ValidateMaterial((Material)obj);
             }
 
             EditorGUILayout.Space();

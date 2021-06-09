@@ -23,10 +23,11 @@ namespace UnityEngine.Animations
         static readonly AnimationLayerMixerPlayable m_NullPlayable = new AnimationLayerMixerPlayable(PlayableHandle.Null);
         public static AnimationLayerMixerPlayable Null { get { return m_NullPlayable; } }
 
-        public static AnimationLayerMixerPlayable Create(PlayableGraph graph, int inputCount = 0)
+        public static AnimationLayerMixerPlayable Create(PlayableGraph graph, int inputCount = 0, bool singleLayerOptimization = true)
         {
             var handle = CreateHandle(graph, inputCount);
-            return new AnimationLayerMixerPlayable(handle);
+            var mixer = new AnimationLayerMixerPlayable(handle, singleLayerOptimization);
+            return mixer;
         }
 
         private static PlayableHandle CreateHandle(PlayableGraph graph, int inputCount = 0)
@@ -38,14 +39,15 @@ namespace UnityEngine.Animations
             return handle;
         }
 
-        internal AnimationLayerMixerPlayable(PlayableHandle handle)
+        internal AnimationLayerMixerPlayable(PlayableHandle handle, bool singleLayerOptimization = true)
         {
             if (handle.IsValid())
             {
                 if (!handle.IsPlayableOfType<AnimationLayerMixerPlayable>())
                     throw new InvalidCastException("Can't set handle: the playable is not an AnimationLayerMixerPlayable.");
-            }
 
+                SetSingleLayerOptimizationInternal(ref handle, singleLayerOptimization);
+            }
             m_Handle = handle;
         }
 
@@ -104,6 +106,9 @@ namespace UnityEngine.Animations
 
         [NativeThrows]
         extern private static void SetLayerAdditiveInternal(ref PlayableHandle handle, uint layerIndex, bool value);
+
+        [NativeThrows]
+        extern private static void SetSingleLayerOptimizationInternal(ref PlayableHandle handle, bool value);
 
         [NativeThrows]
         extern private static void SetLayerMaskFromAvatarMaskInternal(ref PlayableHandle handle, uint layerIndex, AvatarMask mask);

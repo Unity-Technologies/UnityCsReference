@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -616,6 +617,14 @@ namespace UnityEditor.UIElements.StyleSheets
                         float? percentValue = primitiveTerm.GetFloatValue(UnitType.Pixel);
                         m_Builder.AddValue(new Dimension(percentValue.Value, Dimension.Unit.Percent));
                         break;
+                    case UnitType.Second:
+                        float? secondValue = primitiveTerm.GetFloatValue(UnitType.Second);
+                        m_Builder.AddValue(new Dimension(secondValue.Value, Dimension.Unit.Second));
+                        break;
+                    case UnitType.Millisecond:
+                        float? msValue = primitiveTerm.GetFloatValue(UnitType.Millisecond);
+                        m_Builder.AddValue(new Dimension(msValue.Value, Dimension.Unit.Millisecond));
+                        break;
                     case UnitType.Degree:
                         float? degValue = primitiveTerm.GetFloatValue(UnitType.Pixel);
                         m_Builder.AddValue(new Dimension(degValue.Value, Dimension.Unit.Degree));
@@ -684,14 +693,33 @@ namespace UnityEditor.UIElements.StyleSheets
             }
             else if (termList != null)
             {
+                int valueCount = 0;
                 foreach (Term childTerm in termList)
                 {
                     VisitValue(childTerm);
+                    ++valueCount;
+
+                    // Add separator
+                    if (valueCount < termList.Length)
+                    {
+                        var termSeparator = termList.GetSeparatorAt(valueCount - 1);
+                        switch (termSeparator)
+                        {
+                            case TermList.TermSeparator.Comma:
+                                m_Builder.AddCommaSeparator();
+                                break;
+                            case TermList.TermSeparator.Space:
+                            case TermList.TermSeparator.Colon:
+                                break;
+                            default:
+                                throw new ArgumentOutOfRangeException(nameof(termSeparator));
+                        }
+                    }
                 }
             }
             else if (commaTerm != null)
             {
-                m_Builder.AddValue(commaTerm.ToString(), StyleValueType.FunctionSeparator);
+                m_Builder.AddCommaSeparator();
             }
             else if (wsTerm != null)
             {

@@ -70,6 +70,7 @@ namespace UnityEditor
                     pm.AddItem(EditorGUIUtility.TrTextContent("SquareRoot Snapshot Transition"), existingType == ParameterTransitionType.SquareRoot, ParameterTransitionOverrideCallback, new ParameterTransitionOverrideContext(controller, path.parameter, ParameterTransitionType.SquareRoot));
                     pm.AddItem(EditorGUIUtility.TrTextContent("BrickwallStart Snapshot Transition"), existingType == ParameterTransitionType.BrickwallStart, ParameterTransitionOverrideCallback, new ParameterTransitionOverrideContext(controller, path.parameter, ParameterTransitionType.BrickwallStart));
                     pm.AddItem(EditorGUIUtility.TrTextContent("BrickwallEnd Snapshot Transition"), existingType == ParameterTransitionType.BrickwallEnd, ParameterTransitionOverrideCallback, new ParameterTransitionOverrideContext(controller, path.parameter, ParameterTransitionType.BrickwallEnd));
+                    pm.AddItem(EditorGUIUtility.TrTextContent("Attenuation Snapshot Transition"), existingType == ParameterTransitionType.Attenuation, ParameterTransitionOverrideCallback, new ParameterTransitionOverrideContext(controller, path.parameter, ParameterTransitionType.Attenuation));
                     pm.AddSeparator(string.Empty);
 
                     pm.ShowAsContext();

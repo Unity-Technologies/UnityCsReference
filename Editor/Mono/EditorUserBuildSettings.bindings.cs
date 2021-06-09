@@ -6,9 +6,17 @@ using Object = UnityEngine.Object;
 using UnityEngine.Bindings;
 using System;
 using System.ComponentModel;
+using UnityEditor.Build;
 
 namespace UnityEditor
 {
+    [NativeType(Header = "Runtime/Serialize/BuildTarget.h")]
+    public enum StandaloneBuildSubtarget
+    {
+        Player = 0,
+        Server = 1,
+    }
+
     namespace Build
     {
         [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
@@ -303,6 +311,18 @@ namespace UnityEditor
         // The currently selected build target group.
         public static extern BuildTargetGroup selectedBuildTargetGroup { get; set; }
 
+        [NativeMethod("GetSelectedSubTargetFor")]
+        internal static extern int GetSelectedSubtargetFor(BuildTarget target);
+
+        [NativeMethod("SetSelectedSubTargetFor")]
+        internal static extern void SetSelectedSubtargetFor(BuildTarget target, int subtarget);
+
+        [NativeMethod("GetActiveSubTargetFor")]
+        internal static extern int GetActiveSubtargetFor(BuildTarget target);
+
+        [NativeMethod("SetActiveSubTargetFor")]
+        internal static extern void SetActiveSubtargetFor(BuildTarget target, int subtarget);
+
         // Embedded Linux Architecture
         public static extern EmbeddedLinuxArchitecture selectedEmbeddedLinuxArchitecture
         {
@@ -318,6 +338,22 @@ namespace UnityEditor
             [NativeMethod("GetSelectedStandaloneTarget")]
             get;
             [NativeMethod("SetSelectedStandaloneTargetFromBindings")]
+            set;
+        }
+
+        internal static extern StandaloneBuildSubtarget selectedStandaloneBuildSubtarget
+        {
+            [NativeMethod("GetSelectedStandaloneBuildSubtarget")]
+            get;
+            [NativeMethod("SetSelectedStandaloneBuildSubtarget")]
+            set;
+        }
+
+        public static extern StandaloneBuildSubtarget standaloneBuildSubtarget
+        {
+            [NativeMethod("GetActiveStandaloneBuildSubtarget")]
+            get;
+            [NativeMethod("SetActiveStandaloneBuildSubtarget")]
             set;
         }
 
@@ -365,7 +401,12 @@ namespace UnityEditor
         public static extern bool compressFilesInPackage { get; set; }
 
         // Headless Mode
-        public static extern bool enableHeadlessMode { get; set; }
+        [Obsolete("Use EditorUserBuildSettings.standaloneBuildSubtarget instead.")]
+        public static bool enableHeadlessMode
+        {
+            get => standaloneBuildSubtarget == StandaloneBuildSubtarget.Server;
+            set => standaloneBuildSubtarget = value ? StandaloneBuildSubtarget.Server : StandaloneBuildSubtarget.Player;
+        }
 
 
         // Scripts only build
@@ -576,6 +617,9 @@ namespace UnityEditor
         public static extern bool SwitchActiveBuildTarget(BuildTargetGroup targetGroup, BuildTarget target);
         [NativeMethod("SwitchActiveBuildTargetAsync")]
         public static extern bool SwitchActiveBuildTargetAsync(BuildTargetGroup targetGroup, BuildTarget target);
+
+        public static bool SwitchActiveBuildTarget(NamedBuildTarget namedBuildTarget, BuildTarget target) =>
+            BuildPlatforms.instance.BuildPlatformFromNamedBuildTarget(namedBuildTarget).SetActive(target);
 
         // This is used by tests -- note that it does tell the editor that current platform is X, without
         // validating if support for it is installed. However it does not do things like script recompile

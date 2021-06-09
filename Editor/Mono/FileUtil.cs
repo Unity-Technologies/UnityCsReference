@@ -357,5 +357,33 @@ namespace UnityEditor
 
             return false;
         }
+
+        internal static bool WriteTextFileToDisk(string path, string content)
+        {
+            return WriteTextFileToDisk(path, content, out string message);
+        }
+
+        internal static bool WriteTextFileToDisk(string path, string content, out string message)
+        {
+            if (AssetDatabase.IsOpenForEdit(path, out message) || AssetDatabase.MakeEditable(path))
+            {
+                try
+                {
+                    File.WriteAllText(path, content);
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    message = e.Message;
+                }
+            }
+
+            if (string.IsNullOrEmpty(message))
+            {
+                message = "Failed to write file " + path + " to disk.\nVerify that the file is not read-only or locked.";
+            }
+
+            return false;
+        }
     }
 }

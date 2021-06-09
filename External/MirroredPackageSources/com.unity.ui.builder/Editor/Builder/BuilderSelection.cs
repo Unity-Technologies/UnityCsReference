@@ -244,7 +244,7 @@ namespace Unity.UI.Builder
                 var vta = m_PaneWindow.document.visualTreeAsset;
                 var rule = vta.GetOrCreateInlineStyleRule(vea);
 
-                element.SetInlineRule(vta.inlineSheet, rule);
+                element.UpdateInlineRule(vta.inlineSheet, rule);
 
                 // Need to enforce this specific style is updated.
                 element.IncrementVersion(VersionChangeType.Opacity | VersionChangeType.Overflow);

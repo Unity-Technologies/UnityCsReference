@@ -7,7 +7,7 @@ using Unity.Profiling;
 
 namespace UnityEngine.UIElements
 {
-    internal struct StyleDataRef<T> : IEquatable<StyleDataRef<T>> where T : struct, IEquatable<T>
+    internal struct StyleDataRef<T> : IEquatable<StyleDataRef<T>> where T : struct, IEquatable<T>, IStyleDataGroup<T>
     {
         private class RefCounted
         {
@@ -35,7 +35,7 @@ namespace UnityEngine.UIElements
 
             public RefCounted Copy()
             {
-                return new RefCounted {value = value};
+                return new RefCounted {value = value.Copy()};
             }
         }
 
@@ -60,7 +60,7 @@ namespace UnityEngine.UIElements
         {
             if (m_Ref.refCount == 1)
             {
-                m_Ref.value = other.m_Ref.value;
+                m_Ref.value.CopyFrom(ref other.m_Ref.value);
             }
             else
             {

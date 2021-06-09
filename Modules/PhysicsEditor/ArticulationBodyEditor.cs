@@ -192,6 +192,7 @@ namespace UnityEditor
                 QuaternionAsEulerAnglesPropertyField(Styles.anchorRotation, m_AnchorRotation, body.anchorRotation);
                 if (EditorGUI.EndChangeCheck())
                 {
+                    Undo.RecordObject(target, "Changing Articulation body anchor position/rotation");
                     body.anchorPosition = m_AnchorPosition.vector3Value;
                     body.anchorRotation = m_AnchorRotation.quaternionValue;
 
@@ -213,6 +214,7 @@ namespace UnityEditor
 
                     if (EditorGUI.EndChangeCheck())
                     {
+                        Undo.RecordObject(target, "Changing Articulation body parent anchor position/rotation");
                         body.parentAnchorPosition = m_ParentAnchorPosition.vector3Value;
                         body.parentAnchorRotation = m_ParentAnchorRotation.quaternionValue;
                     }

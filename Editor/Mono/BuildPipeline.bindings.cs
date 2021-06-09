@@ -74,6 +74,7 @@ namespace UnityEditor
         CustomConnectionID = 1 << 13,
 
         // Headless Mode
+        [Obsolete("Use StandaloneBuildSubtarget.Server instead")]
         EnableHeadlessMode = 1 << 14,
 
         // Build scripts only
@@ -210,6 +211,7 @@ namespace UnityEditor
         public string assetBundleManifestPath {get; set; }
         public BuildTargetGroup targetGroup {get; set; }
         public BuildTarget target {get; set; }
+        public int subtarget { get; set; }
         public BuildOptions options {get; set; }
         public string[] extraScriptingDefines { get; set; }
     }
@@ -219,6 +221,7 @@ namespace UnityEditor
         public string[] scenes { get; set; }
         public BuildTargetGroup targetGroup { get; set; }
         public BuildTarget target { get; set; }
+        public int subtarget { get; set; }
         public BuildOptions options { get; set; }
         public string[] extraScriptingDefines { get; set; }
     }
@@ -296,6 +299,7 @@ namespace UnityEditor
             buildPlayerOptions.scenes = EditorBuildSettingsScene.GetActiveSceneList(levels);
             buildPlayerOptions.locationPathName = locationPathName;
             buildPlayerOptions.target = target;
+            buildPlayerOptions.subtarget = EditorUserBuildSettings.GetActiveSubtargetFor(target);
             buildPlayerOptions.options = options;
             return BuildPlayer(buildPlayerOptions);
         }
@@ -308,16 +312,17 @@ namespace UnityEditor
             buildPlayerOptions.locationPathName = locationPathName;
             buildPlayerOptions.targetGroup = buildTargetGroup;
             buildPlayerOptions.target = target;
+            buildPlayerOptions.subtarget = EditorUserBuildSettings.GetActiveSubtargetFor(target);
             buildPlayerOptions.options = options;
             return BuildPlayer(buildPlayerOptions);
         }
 
         public static BuildReport BuildPlayer(BuildPlayerOptions buildPlayerOptions)
         {
-            return BuildPlayer(buildPlayerOptions.scenes, buildPlayerOptions.locationPathName, buildPlayerOptions.assetBundleManifestPath, buildPlayerOptions.targetGroup, buildPlayerOptions.target, buildPlayerOptions.options, buildPlayerOptions.extraScriptingDefines);
+            return BuildPlayer(buildPlayerOptions.scenes, buildPlayerOptions.locationPathName, buildPlayerOptions.assetBundleManifestPath, buildPlayerOptions.targetGroup, buildPlayerOptions.target, buildPlayerOptions.subtarget, buildPlayerOptions.options, buildPlayerOptions.extraScriptingDefines);
         }
 
-        private static BuildReport BuildPlayer(string[] scenes, string locationPathName, string assetBundleManifestPath, BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options, string[] extraScriptingDefines)
+        private static BuildReport BuildPlayer(string[] scenes, string locationPathName, string assetBundleManifestPath, BuildTargetGroup buildTargetGroup, BuildTarget target, int subtarget, BuildOptions options, string[] extraScriptingDefines)
         {
             if (isBuildingPlayer)
                 throw new InvalidOperationException("Cannot start a new build because there is already a build in progress.");
@@ -326,7 +331,7 @@ namespace UnityEditor
                 buildTargetGroup = GetBuildTargetGroup(target);
 
             string locationPathNameError;
-            if (!ValidateLocationPathNameForBuildTargetGroup(locationPathName, buildTargetGroup, target, options, out locationPathNameError))
+            if (!ValidateLocationPathNameForBuildTargetGroup(locationPathName, buildTargetGroup, target, subtarget, options, out locationPathNameError))
                 throw new ArgumentException(locationPathNameError);
 
             if ((options & BuildOptions.AcceptExternalModificationsToPlayer) == BuildOptions.AcceptExternalModificationsToPlayer)
@@ -340,7 +345,7 @@ namespace UnityEditor
 
             try
             {
-                return BuildPlayerInternal(scenes, locationPathName, assetBundleManifestPath, buildTargetGroup, target, options, extraScriptingDefines);
+                return BuildPlayerInternal(scenes, locationPathName, assetBundleManifestPath, buildTargetGroup, target, subtarget, options, extraScriptingDefines);
             }
             catch (System.Exception exception)
             {
@@ -350,7 +355,7 @@ namespace UnityEditor
             }
         }
 
-        internal static bool ValidateLocationPathNameForBuildTargetGroup(string locationPathName, BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options, out string errorMessage)
+        internal static bool ValidateLocationPathNameForBuildTargetGroup(string locationPathName, BuildTargetGroup buildTargetGroup, BuildTarget target, int subtarget, BuildOptions options, out string errorMessage)
         {
             if (string.IsNullOrEmpty(locationPathName))
             {
@@ -365,7 +370,7 @@ namespace UnityEditor
             }
             else if (string.IsNullOrEmpty(Path.GetFileName(locationPathName)))
             {
-                var extensionForBuildTarget = PostprocessBuildPlayer.GetExtensionForBuildTarget(buildTargetGroup, target, options);
+                var extensionForBuildTarget = PostprocessBuildPlayer.GetExtensionForBuildTarget(buildTargetGroup, target, subtarget, options);
 
                 if (!string.IsNullOrEmpty(extensionForBuildTarget))
                 {
@@ -404,17 +409,17 @@ namespace UnityEditor
         public static string BuildStreamedSceneAssetBundle(string[] levels, string locationPath, BuildTarget target, out uint crc, BuildOptions options)
         {
             BuildTargetGroup buildTargetGroup = BuildPipeline.GetBuildTargetGroup(target);
-            return BuildStreamedSceneAssetBundle(levels, locationPath, buildTargetGroup, target, out crc, options);
+            return BuildStreamedSceneAssetBundle(levels, locationPath, buildTargetGroup, target, EditorUserBuildSettings.GetActiveSubtargetFor(target), out crc, options);
         }
 
         // Builds one or more scenes and all their dependencies into a compressed asset bundle.
         [Obsolete("BuildStreamedSceneAssetBundle has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.")]
-        internal static string BuildStreamedSceneAssetBundle(string[] levels, string locationPath, BuildTargetGroup buildTargetGroup, BuildTarget target, out uint crc, BuildOptions options)
+        internal static string BuildStreamedSceneAssetBundle(string[] levels, string locationPath, BuildTargetGroup buildTargetGroup, BuildTarget target, int subtarget, out uint crc, BuildOptions options)
         {
             crc = 0;
             try
             {
-                var report = BuildPlayerInternal(levels, locationPath, null, buildTargetGroup, target, options | BuildOptions.BuildAdditionalStreamedScenes | BuildOptions.ComputeCRC, new string[] {});
+                var report = BuildPlayerInternal(levels, locationPath, null, buildTargetGroup, target, subtarget, options | BuildOptions.BuildAdditionalStreamedScenes | BuildOptions.ComputeCRC, new string[] {});
                 crc = report.summary.crc;
 
                 var summary = report.SummarizeErrors();
@@ -436,19 +441,19 @@ namespace UnityEditor
             return BuildStreamedSceneAssetBundle(levels, locationPath, target, out crc, 0);
         }
 
-        private static BuildReport BuildPlayerInternal(string[] levels, string locationPathName, string assetBundleManifestPath, BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options, string[] extraScriptingDefines)
+        private static BuildReport BuildPlayerInternal(string[] levels, string locationPathName, string assetBundleManifestPath, BuildTargetGroup buildTargetGroup, BuildTarget target, int subtarget, BuildOptions options, string[] extraScriptingDefines)
         {
             if (!BuildPlayerWindow.DefaultBuildMethods.IsBuildPathValid(locationPathName))
                 throw new Exception("Invalid Build Path: " + locationPathName);
 
-            return BuildPlayerInternalNoCheck(levels, locationPathName, assetBundleManifestPath, buildTargetGroup, target, options, extraScriptingDefines, false);
+            return BuildPlayerInternalNoCheck(levels, locationPathName, assetBundleManifestPath, buildTargetGroup, target, subtarget, options, extraScriptingDefines, false);
         }
 
         // Is a player currently building?
         public static extern bool isBuildingPlayer { [FreeFunction("IsBuildingPlayer")] get; }
 
         // Just like BuildPlayer, but does not check for Pro license. Used from build player dialog.
-        internal static extern BuildReport BuildPlayerInternalNoCheck(string[] levels, string locationPathName, string assetBundleManifestPath, BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options, string[] extraScriptingDefines, bool delayToAfterScriptReload);
+        internal static extern BuildReport BuildPlayerInternalNoCheck(string[] levels, string locationPathName, string assetBundleManifestPath, BuildTargetGroup buildTargetGroup, BuildTarget target, int subtarget, BuildOptions options, string[] extraScriptingDefines, bool delayToAfterScriptReload);
 
         internal static extern void BuildPlayerInternalPostBuild(BuildReport report);
 
@@ -490,16 +495,16 @@ namespace UnityEditor
         public static bool BuildAssetBundle(UnityEngine.Object mainAsset, UnityEngine.Object[] assets, string pathName, out uint crc, BuildAssetBundleOptions assetBundleOptions, BuildTarget targetPlatform)
         {
             BuildTargetGroup targetPlatformGroup = BuildPipeline.GetBuildTargetGroup(targetPlatform);
-            return BuildAssetBundle(mainAsset, assets, pathName, out crc, assetBundleOptions, targetPlatformGroup, targetPlatform);
+            return BuildAssetBundle(mainAsset, assets, pathName, out crc, assetBundleOptions, targetPlatformGroup, targetPlatform, EditorUserBuildSettings.GetActiveSubtargetFor(targetPlatform));
         }
 
         // Builds an AssetBundle.
-        internal static bool BuildAssetBundle(UnityEngine.Object mainAsset, UnityEngine.Object[] assets, string pathName, out uint crc, BuildAssetBundleOptions assetBundleOptions, BuildTargetGroup targetPlatformGroup, BuildTarget targetPlatform)
+        internal static bool BuildAssetBundle(UnityEngine.Object mainAsset, UnityEngine.Object[] assets, string pathName, out uint crc, BuildAssetBundleOptions assetBundleOptions, BuildTargetGroup targetPlatformGroup, BuildTarget targetPlatform, int subtarget)
         {
             crc = 0;
             try
             {
-                return BuildAssetBundleInternal(mainAsset, assets, null, pathName, assetBundleOptions, targetPlatformGroup, targetPlatform, out crc);
+                return BuildAssetBundleInternal(mainAsset, assets, null, pathName, assetBundleOptions, targetPlatformGroup, targetPlatform, subtarget, out crc);
             }
             catch (System.Exception exception)
             {
@@ -521,16 +526,16 @@ namespace UnityEditor
         public static bool BuildAssetBundleExplicitAssetNames(UnityEngine.Object[] assets, string[] assetNames, string pathName, out uint crc, BuildAssetBundleOptions assetBundleOptions, BuildTarget targetPlatform)
         {
             BuildTargetGroup targetPlatformGroup = BuildPipeline.GetBuildTargetGroup(targetPlatform);
-            return BuildAssetBundleExplicitAssetNames(assets, assetNames, pathName, out crc, assetBundleOptions, targetPlatformGroup, targetPlatform);
+            return BuildAssetBundleExplicitAssetNames(assets, assetNames, pathName, out crc, assetBundleOptions, targetPlatformGroup, targetPlatform, EditorUserBuildSettings.GetActiveSubtargetFor(targetPlatform));
         }
 
         // Builds an AssetBundle, with custom names for the assets.
-        internal static bool BuildAssetBundleExplicitAssetNames(UnityEngine.Object[] assets, string[] assetNames, string pathName, out uint crc, BuildAssetBundleOptions assetBundleOptions, BuildTargetGroup targetPlatformGroup, BuildTarget targetPlatform)
+        internal static bool BuildAssetBundleExplicitAssetNames(UnityEngine.Object[] assets, string[] assetNames, string pathName, out uint crc, BuildAssetBundleOptions assetBundleOptions, BuildTargetGroup targetPlatformGroup, BuildTarget targetPlatform, int subtarget)
         {
             crc = 0;
             try
             {
-                return BuildAssetBundleInternal(null, assets, assetNames, pathName, assetBundleOptions, targetPlatformGroup, targetPlatform, out crc);
+                return BuildAssetBundleInternal(null, assets, assetNames, pathName, assetBundleOptions, targetPlatformGroup, targetPlatform, subtarget, out crc);
             }
             catch (System.Exception exception)
             {
@@ -541,15 +546,15 @@ namespace UnityEditor
 
 #pragma warning restore 618
 
-        private static extern bool BuildAssetBundleInternal(UnityEngine.Object mainAsset, UnityEngine.Object[] assets, string[] assetNames, string pathName, BuildAssetBundleOptions assetBundleOptions, BuildTargetGroup targetPlatformGroup, BuildTarget targetPlatform, out uint crc);
+        private static extern bool BuildAssetBundleInternal(UnityEngine.Object mainAsset, UnityEngine.Object[] assets, string[] assetNames, string pathName, BuildAssetBundleOptions assetBundleOptions, BuildTargetGroup targetPlatformGroup, BuildTarget targetPlatform, int subtarget, out uint crc);
 
         public static AssetBundleManifest BuildAssetBundles(string outputPath, BuildAssetBundleOptions assetBundleOptions, BuildTarget targetPlatform)
         {
             BuildTargetGroup targetPlatformGroup = BuildPipeline.GetBuildTargetGroup(targetPlatform);
-            return BuildAssetBundles(outputPath, assetBundleOptions, targetPlatformGroup, targetPlatform);
+            return BuildAssetBundles(outputPath, assetBundleOptions, targetPlatformGroup, targetPlatform, EditorUserBuildSettings.GetActiveSubtargetFor(targetPlatform));
         }
 
-        internal static AssetBundleManifest BuildAssetBundles(string outputPath, BuildAssetBundleOptions assetBundleOptions, BuildTargetGroup targetPlatformGroup, BuildTarget targetPlatform)
+        internal static AssetBundleManifest BuildAssetBundles(string outputPath, BuildAssetBundleOptions assetBundleOptions, BuildTargetGroup targetPlatformGroup, BuildTarget targetPlatform, int subtarget)
         {
             if (isBuildingPlayer)
                 throw new InvalidOperationException("Cannot build asset bundles while a build is in progress.");
@@ -557,19 +562,20 @@ namespace UnityEditor
             if (!System.IO.Directory.Exists(outputPath))
                 throw new ArgumentException("The output path \"" + outputPath + "\" doesn't exist");
 
-            return BuildAssetBundlesInternal(outputPath, assetBundleOptions, targetPlatformGroup, targetPlatform);
+            return BuildAssetBundlesInternal(outputPath, assetBundleOptions, targetPlatformGroup, targetPlatform, subtarget);
         }
 
         [NativeThrows]
-        private static extern AssetBundleManifest BuildAssetBundlesInternal(string outputPath, BuildAssetBundleOptions assetBundleOptions, BuildTargetGroup targetPlatformGroup, BuildTarget targetPlatform);
+        private static extern AssetBundleManifest BuildAssetBundlesInternal(string outputPath, BuildAssetBundleOptions assetBundleOptions, BuildTargetGroup targetPlatformGroup, BuildTarget targetPlatform, int subtarget);
 
         public static AssetBundleManifest BuildAssetBundles(string outputPath, AssetBundleBuild[] builds, BuildAssetBundleOptions assetBundleOptions, BuildTarget targetPlatform)
         {
             BuildTargetGroup targetPlatformGroup = BuildPipeline.GetBuildTargetGroup(targetPlatform);
-            return BuildAssetBundles(outputPath, builds, assetBundleOptions, targetPlatformGroup, targetPlatform);
+            int subtarget = EditorUserBuildSettings.GetActiveSubtargetFor(targetPlatform);
+            return BuildAssetBundles(outputPath, builds, assetBundleOptions, targetPlatformGroup, targetPlatform, subtarget);
         }
 
-        internal static AssetBundleManifest BuildAssetBundles(string outputPath, AssetBundleBuild[] builds, BuildAssetBundleOptions assetBundleOptions, BuildTargetGroup targetPlatformGroup, BuildTarget targetPlatform)
+        internal static AssetBundleManifest BuildAssetBundles(string outputPath, AssetBundleBuild[] builds, BuildAssetBundleOptions assetBundleOptions, BuildTargetGroup targetPlatformGroup, BuildTarget targetPlatform, int subtarget)
         {
             if (isBuildingPlayer)
                 throw new InvalidOperationException("Cannot build asset bundles while a build is in progress.");
@@ -580,11 +586,11 @@ namespace UnityEditor
             if (builds == null)
                 throw new ArgumentException("AssetBundleBuild cannot be null.");
 
-            return BuildAssetBundlesWithInfoInternal(outputPath, builds, assetBundleOptions, targetPlatformGroup, targetPlatform);
+            return BuildAssetBundlesWithInfoInternal(outputPath, builds, assetBundleOptions, targetPlatformGroup, targetPlatform, subtarget);
         }
 
         [NativeThrows]
-        private static extern AssetBundleManifest BuildAssetBundlesWithInfoInternal(string outputPath, AssetBundleBuild[] builds, BuildAssetBundleOptions assetBundleOptions, BuildTargetGroup targetPlatformGroup, BuildTarget targetPlatform);
+        private static extern AssetBundleManifest BuildAssetBundlesWithInfoInternal(string outputPath, AssetBundleBuild[] builds, BuildAssetBundleOptions assetBundleOptions, BuildTargetGroup targetPlatformGroup, BuildTarget targetPlatform, int subtarget);
 
         [FreeFunction("GetPlayerDataSessionId")]
         internal static extern string GetSessionIdForBuildTarget(BuildTarget target);

@@ -85,6 +85,7 @@ namespace UnityEditor
             else
                 EditorGUILayout.HelpBox("This is where you can configure the controls to use with the UnityEngine.Input API. Consider using the new Input System Package instead.", MessageType.Info);
             DrawDefaultInspector();
+            EditorGUILayout.HelpBox("Physical Keys enables keyboard language layout independent mapping of key codes to physical keys. For example, 'q' will be the key to the right of the tab key no matter which (if any) key on the keyboard currently generates a 'q' character.", MessageType.Info);
         }
     }
 

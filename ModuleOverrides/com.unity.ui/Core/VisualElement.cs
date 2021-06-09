@@ -56,6 +56,8 @@ namespace UnityEngine.UIElements
         // Element is shown in the hierarchy (element or one of its ancestors is not DisplayStyle.None)
         // Note that this flag is up-to-date only after UIRLayoutUpdater is done with its updates
         HierarchyDisplayed = 1 << 11,
+        // Element style are computed
+        StyleInitialized = 1 << 12,
         // Element initial flags
         Init = WorldTransformDirty | WorldTransformInverseDirty | WorldClipDirty | BoundingBoxDirty | WorldBoundingBoxDirty | HierarchyDisplayed
     }
@@ -1048,6 +1050,12 @@ namespace UnityEngine.UIElements
 
         internal bool hasInlineStyle => inlineStyleAccess != null;
 
+        internal bool styleInitialized
+        {
+            get => (m_Flags & VisualElementFlags.StyleInitialized) == VisualElementFlags.StyleInitialized;
+            set => m_Flags = value ? m_Flags | VisualElementFlags.StyleInitialized : m_Flags & ~VisualElementFlags.StyleInitialized;
+        }
+
         // Opacity is not fully supported so it's hidden from public API for now
         internal float opacity
         {
@@ -1258,6 +1266,7 @@ namespace UnityEngine.UIElements
 
 
             // styles are dependent on topology
+            styleInitialized = false;
             IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Layout | VersionChangeType.Transform);
 
             // persistent data key may have changed or needs initialization
@@ -1700,7 +1709,7 @@ namespace UnityEngine.UIElements
 
         void FinalizeLayout()
         {
-            if (hasInlineStyle)
+            if (hasInlineStyle || hasRunningAnimations)
             {
                 computedStyle.SyncWithLayout(yogaNode);
             }
@@ -1718,77 +1727,43 @@ namespace UnityEngine.UIElements
             inlineStyleAccess.SetInlineRule(sheet, rule);
         }
 
-        internal void SetComputedStyle(ref ComputedStyle style)
+        // Used by the builder to apply the inline styles without passing by SetComputedStyle
+        internal void UpdateInlineRule(StyleSheet sheet, StyleRule rule)
+        {
+            var oldStyle = computedStyle.Acquire();
+
+            var rulesHash = computedStyle.matchingRulesHash;
+            if (!StyleCache.TryGetValue(rulesHash, out var baseComputedStyle))
+                baseComputedStyle = InitialStyle.Get();
+
+            m_Style.CopyFrom(ref baseComputedStyle);
+
+            SetInlineRule(sheet, rule);
+            FinalizeLayout();
+
+            var changes = ComputedStyle.CompareChanges(ref oldStyle, ref computedStyle);
+            oldStyle.Release();
+
+            IncrementVersion(changes);
+        }
+
+        internal void SetComputedStyle(ref ComputedStyle newStyle)
         {
             // When a parent class list change all children get their styles recomputed.
-            // A lot of time the children won't change and the same style will get computed so we can early exit in that case
-            // except if the element has inline style we may need to apply them again (happens when inline style get removed).
-            if (m_Style.matchingRulesHash == style.matchingRulesHash && !hasInlineStyle)
+            // A lot of time the children won't change and the same style will get computed so we can early exit in that case.
+            if (m_Style.matchingRulesHash == newStyle.matchingRulesHash)
                 return;
 
-            var previousOverflow = m_Style.overflow;
-            var previousBorderBottomLeftRadius = m_Style.borderBottomLeftRadius;
-            var previousBorderBottomRightRadius = m_Style.borderBottomRightRadius;
-            var previousBorderTopLeftRadius = m_Style.borderTopLeftRadius;
-            var previousBorderTopRightRadius = m_Style.borderTopRightRadius;
-            var previousBorderLeftWidth = m_Style.borderLeftWidth;
-            var previousBorderTopWidth = m_Style.borderTopWidth;
-            var previousBorderRightWidth = m_Style.borderRightWidth;
-            var previousBorderBottomWidth = m_Style.borderBottomWidth;
-            var previousOpacity = m_Style.opacity;
-
-            var previousTransformOrigin = m_Style.transformOrigin;
-            var previousTranslate = m_Style.translate;
-            var previousScale = m_Style.scale;
-            var previousRotate = m_Style.rotate;
+            var changes = ComputedStyle.CompareChanges(ref m_Style, ref newStyle);
 
             // Here we do a "smart" copy of the style instead of just acquiring them to prevent additional GC alloc.
             // If this element has no inline styles it will release the current style data group and acquire the new one.
             // However, when there a inline styles the style data group that is inline will have a ref count of 1
             // so instead of releasing it and acquiring a new one we just copy the data to save on GC alloc.
-            m_Style.CopyFrom(ref style);
-
-            if (hasInlineStyle)
-            {
-                inlineStyleAccess.ApplyInlineStyles();
-            }
+            m_Style.CopyFrom(ref newStyle);
 
             FinalizeLayout();
 
-            VersionChangeType changes = VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Repaint;
-
-            if (m_Style.overflow != previousOverflow)
-                changes |= VersionChangeType.Overflow;
-
-            if (previousBorderBottomLeftRadius != m_Style.borderBottomLeftRadius ||
-                previousBorderBottomRightRadius != m_Style.borderBottomRightRadius ||
-                previousBorderTopLeftRadius != m_Style.borderTopLeftRadius ||
-                previousBorderTopRightRadius != m_Style.borderTopRightRadius)
-            {
-                changes |= VersionChangeType.BorderRadius;
-            }
-
-            if (previousBorderLeftWidth != m_Style.borderLeftWidth ||
-                previousBorderTopWidth != m_Style.borderTopWidth ||
-                previousBorderRightWidth != m_Style.borderRightWidth ||
-                previousBorderBottomWidth != m_Style.borderBottomWidth)
-            {
-                changes |= VersionChangeType.BorderWidth;
-            }
-
-            if (m_Style.opacity != previousOpacity)
-                changes |= VersionChangeType.Opacity;
-
-            if (previousTransformOrigin != m_Style.transformOrigin ||
-                previousTranslate != m_Style.translate ||
-                previousScale != m_Style.scale ||
-                previousRotate != m_Style.rotate)
-            {
-                changes |= VersionChangeType.Transform;
-            }
-
-            // This is a pre-emptive since we do not know if style changes actually cause a repaint or a layout
-            // But those should be the only possible type of changes needed
             IncrementVersion(changes);
         }
 
@@ -1810,19 +1785,6 @@ namespace UnityEngine.UIElements
             style.bottom = StyleKeyword.Null;
             style.width = StyleKeyword.Null;
             style.height = StyleKeyword.Null;
-
-            // Reapply computed style here because GraphView expect the resolved style to be
-            // up to date after ResetPositionProperties is called
-            if (StyleCache.TryGetValue(m_Style.matchingRulesHash, out var sharedStyle))
-            {
-                SetComputedStyle(ref sharedStyle);
-            }
-            else
-            {
-                // If it's not in the cache it must be the initial styles
-                Debug.Assert(m_Style.matchingRulesHash == 0);
-                SetComputedStyle(ref InitialStyle.Get());
-            }
         }
 
         public override string ToString()

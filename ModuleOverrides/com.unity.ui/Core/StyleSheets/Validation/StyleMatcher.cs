@@ -27,6 +27,8 @@ namespace UnityEngine.UIElements.StyleSheets
 
     internal abstract class BaseStyleMatcher
     {
+        protected static readonly Regex s_CustomIdentRegex = new Regex(@"^-?[_a-z][_a-z0-9-]*", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
         private struct MatchContext
         {
             public int valueIndex;
@@ -44,10 +46,13 @@ namespace UnityEngine.UIElements.StyleSheets
         protected abstract bool MatchColor();
         protected abstract bool MatchResource();
         protected abstract bool MatchUrl();
+        protected abstract bool MatchTime();
         protected abstract bool MatchAngle();
+        protected abstract bool MatchCustomIdent();
 
         public abstract int valueCount { get; }
-        public abstract bool isVariable { get; }
+        public abstract bool isCurrentVariable { get; }
+        public abstract bool isCurrentComma { get; }
 
         public bool hasCurrent => m_CurrentContext.valueIndex < valueCount;
         public int currentIndex
@@ -100,21 +105,8 @@ namespace UnityEngine.UIElements.StyleSheets
             }
             else
             {
-                Debug.Assert(exp.multiplier.type != ExpressionMultiplierType.OneOrMoreComma, "'#' multiplier in syntax expression is not supported");
                 Debug.Assert(exp.multiplier.type != ExpressionMultiplierType.GroupAtLeastOne, "'!' multiplier in syntax expression is not supported");
-
-                int min = exp.multiplier.min;
-                int max = exp.multiplier.max;
-
-                int matchCount = 0;
-                for (int i = 0; result && hasCurrent && i < max; i++)
-                {
-                    result = MatchExpression(exp);
-                    if (result)
-                        ++matchCount;
-                }
-
-                result = matchCount >= min && matchCount <= max;
+                result = MatchExpressionWithMultiplier(exp);
             }
 
             return result;
@@ -131,7 +123,7 @@ namespace UnityEngine.UIElements.StyleSheets
             else
             {
                 // var function cannot be resolved here and is assumed to be valid
-                if (isVariable)
+                if (isCurrentVariable)
                 {
                     result = true;
                     matchedVariableCount++;
@@ -152,6 +144,42 @@ namespace UnityEngine.UIElements.StyleSheets
             // If more values were expected but a variable was matched
             // Assume that the variable also matched the expected values
             if (!result && !hasCurrent && matchedVariableCount > 0)
+                result = true;
+
+            return result;
+        }
+
+        private bool MatchExpressionWithMultiplier(Expression exp)
+        {
+            bool isCommaSeparated = exp.multiplier.type == ExpressionMultiplierType.OneOrMoreComma;
+            bool result = true;
+
+            int min = exp.multiplier.min;
+            int max = exp.multiplier.max;
+
+            int matchCount = 0;
+            for (int i = 0; result && hasCurrent && i < max; i++)
+            {
+                result = MatchExpression(exp);
+                if (result)
+                {
+                    ++matchCount;
+                    if (isCommaSeparated)
+                    {
+                        if (!isCurrentComma)
+                            break;
+
+                        // Skip comma value
+                        MoveNext();
+                    }
+                }
+            }
+
+            result = matchCount >= min && matchCount <= max;
+
+            // If more match were expected but a variable was matched
+            // Assume that the variable also matched the expected values
+            if (!result && matchCount <= max && matchedVariableCount > 0)
                 result = true;
 
             return result;
@@ -374,8 +402,14 @@ namespace UnityEngine.UIElements.StyleSheets
                     case DataType.Url:
                         result = MatchUrl();
                         break;
+                    case DataType.Time:
+                        result = MatchTime();
+                        break;
                     case DataType.Angle:
                         result = MatchAngle();
+                        break;
+                    case DataType.CustomIdent:
+                        result = MatchCustomIdent();
                         break;
                 }
             }
@@ -392,7 +426,8 @@ namespace UnityEngine.UIElements.StyleSheets
         private string current => hasCurrent ? m_PropertyParts[currentIndex] : null;
 
         public override int valueCount => m_PropertyParts.Length;
-        public override bool isVariable => hasCurrent && current.StartsWith("var(");
+        public override bool isCurrentVariable => hasCurrent && current.StartsWith("var(");
+        public override bool isCurrentComma => hasCurrent && current == ",";
 
         private void Initialize(string propertyValue)
         {
@@ -537,6 +572,15 @@ namespace UnityEngine.UIElements.StyleSheets
             return !match.Success;
         }
 
+        static readonly Regex s_TimeRegex = new Regex(@"^[+-]?\.?\d+(?:\.\d+)?(?:s|ms)$", RegexOptions.Compiled);
+        protected override bool MatchTime()
+        {
+            // Time require a unit even for 0
+            var value = current;
+            Match match = s_TimeRegex.Match(value);
+            return match.Success;
+        }
+
         static readonly Regex s_AngleRegex = new Regex(@"^[+-]?\d+(?:\.\d+)?(?:deg|grad|rad|turn)$", RegexOptions.Compiled);
         protected override bool MatchAngle()
         {
@@ -547,6 +591,13 @@ namespace UnityEngine.UIElements.StyleSheets
 
             match = s_ZeroRegex.Match(value);
             return match.Success;
+        }
+
+        protected override bool MatchCustomIdent()
+        {
+            var value = current;
+            Match match = s_CustomIdentRegex.Match(value);
+            return match.Success && match.Length == value.Length;
         }
     }
 
@@ -559,7 +610,8 @@ namespace UnityEngine.UIElements.StyleSheets
         public override int valueCount => m_Values.Count;
         // This matcher is only validating resolved value handles
         // A var function in this context is an error so this always return false
-        public override bool isVariable => false;
+        public override bool isCurrentVariable => false;
+        public override bool isCurrentComma => hasCurrent && m_Values[currentIndex].handle.valueType == StyleValueType.CommaSeparator;
 
         public MatchResult Match(Expression exp, List<StylePropertyValue> values)
         {
@@ -694,6 +746,29 @@ namespace UnityEngine.UIElements.StyleSheets
             return current.handle.valueType == StyleValueType.AssetReference;
         }
 
+        protected override bool MatchTime()
+        {
+            var value = current;
+            if (value.handle.valueType == StyleValueType.Dimension)
+            {
+                var dimension = value.sheet.ReadDimension(value.handle);
+                return dimension.unit == Dimension.Unit.Second || dimension.unit == Dimension.Unit.Millisecond;
+            }
+            return false;
+        }
+
+        protected override bool MatchCustomIdent()
+        {
+            var value = current;
+            if (value.handle.valueType == StyleValueType.Enum)
+            {
+                var ident = value.sheet.ReadAsString(value.handle);
+                Match match = s_CustomIdentRegex.Match(ident);
+                return match.Success && match.Length == ident.Length;
+            }
+            return false;
+        }
+
         protected override bool MatchAngle()
         {
             var value = current;
@@ -708,7 +783,6 @@ namespace UnityEngine.UIElements.StyleSheets
                     case Dimension.Unit.Turn:
                         return true;
                 }
-                ;
             }
 
             if (value.handle.valueType == StyleValueType.Float)

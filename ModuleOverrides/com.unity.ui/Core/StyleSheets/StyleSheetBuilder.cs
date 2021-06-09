@@ -146,6 +146,11 @@ namespace UnityEngine.UIElements.StyleSheets
             m_CurrentValues.Add(new StyleValueHandle((int)function, StyleValueType.Function));
         }
 
+        public void AddCommaSeparator()
+        {
+            m_CurrentValues.Add(new StyleValueHandle(0, StyleValueType.CommaSeparator));
+        }
+
         public void AddValue(string value, StyleValueType type)
         {
             if (type == StyleValueType.Variable)

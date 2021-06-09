@@ -190,13 +190,16 @@ namespace UnityEditor
             return false;
         }
 
-        static public string GetExtensionForBuildTarget(BuildTargetGroup targetGroup, BuildTarget target, BuildOptions options)
+        static public string GetExtensionForBuildTarget(BuildTargetGroup targetGroup, BuildTarget target, int subtarget, BuildOptions options)
         {
             IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(targetGroup, target);
             if (postprocessor == null)
                 return string.Empty;
-            return postprocessor.GetExtension(target, options);
+            return postprocessor.GetExtension(target, subtarget, options);
         }
+
+        static public string GetExtensionForBuildTarget(BuildTargetGroup targetGroup, BuildTarget target, BuildOptions options) =>
+            GetExtensionForBuildTarget(targetGroup, target, EditorUserBuildSettings.GetActiveSubtargetFor(target), options);
 
         static public bool SupportsInstallInBuildFolder(BuildTargetGroup targetGroup, BuildTarget target)
         {
@@ -333,7 +336,7 @@ namespace UnityEditor
             }
         }
 
-        static public void Postprocess(BuildTargetGroup targetGroup, BuildTarget target, string installPath, string companyName, string productName,
+        static public void Postprocess(BuildTargetGroup targetGroup, BuildTarget target, int subtarget, string installPath, string companyName, string productName,
             int width, int height, BuildOptions options,
             RuntimeClassRegistry usedClassRegistry, BuildReport report)
         {
@@ -352,6 +355,7 @@ namespace UnityEditor
             {
                 BuildPostProcessArgs args;
                 args.target = target;
+                args.subtarget = subtarget;
                 args.stagingAreaData = stagingAreaData;
                 args.stagingArea = stagingArea;
                 args.stagingAreaDataManaged = stagingAreaDataManaged;

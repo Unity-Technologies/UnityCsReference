@@ -24,7 +24,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Reprensents a distance value.
+    /// Represents a distance value.
     /// </summary>
     public struct Length : IEquatable<Length>
     {
@@ -83,7 +83,7 @@ namespace UnityEngine.UIElements
         internal bool IsNone() => m_Unit == Unit.None;
 
         /// <summary>
-        /// Creates from a float and an optionnal <see cref="LengthUnit"/>.
+        /// Creates from a float and an optional <see cref="LengthUnit"/>.
         /// </summary>
         /// <remarks>
         /// <see cref="LengthUnit.Pixel"/> is the default unit.
@@ -92,7 +92,7 @@ namespace UnityEngine.UIElements
         {}
 
         /// <summary>
-        /// Creates from a float and an optionnal <see cref="LengthUnit"/>.
+        /// Creates from a float and an optional <see cref="LengthUnit"/>.
         /// </summary>
         /// <remarks>
         /// <see cref="LengthUnit.Pixel"/> is the default unit.

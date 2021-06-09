@@ -14,6 +14,11 @@ namespace UnityEngine.UIElements.StyleSheets
             return s_PropertySyntaxCache.TryGetValue(name, out syntax);
         }
 
+        public static bool TryGetNonTerminalValue(string name, out string syntax)
+        {
+            return s_NonTerminalValues.TryGetValue(name, out syntax);
+        }
+
         public static string FindClosestPropertyName(string name)
         {
             float cost = float.MaxValue;

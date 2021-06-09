@@ -381,7 +381,7 @@ namespace UnityEditor
             DeserializeLegacyIcons();
         }
 
-        public void IconSectionGUI(BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension, int platformID, int sectionIndex)
+        public void IconSectionGUI(NamedBuildTarget namedBuildTarget, ISettingEditorExtension settingsExtension, int platformID, int sectionIndex)
         {
             m_SelectedPlatform = platformID;
             if (!m_Owner.BeginSettingsBox(sectionIndex, SettingsContent.iconTitle))
@@ -399,23 +399,23 @@ namespace UnityEditor
                 var selectedDefault = (m_SelectedPlatform < 0);
                 // Set default platform variables
                 BuildPlatform platform = null;
-                targetGroup = BuildTargetGroup.Standalone;
+                namedBuildTarget = NamedBuildTarget.Standalone;
                 var platformName = "";
 
                 // Override if a platform is selected
                 if (!selectedDefault)
                 {
                     platform = m_ValidPlatforms[m_SelectedPlatform];
-                    targetGroup = platform.targetGroup;
+                    namedBuildTarget = platform.namedBuildTarget;
                     platformName = platform.name;
                 }
 
-                if (targetGroup == BuildTargetGroup.WebGL)
+                if (namedBuildTarget == NamedBuildTarget.WebGL)
                 {
                     ShowNoSettings();
                     EditorGUILayout.Space();
                 }
-                else if (targetGroup != BuildTargetGroup.WSA) // UWP does this in its editor extension
+                else if (namedBuildTarget != NamedBuildTarget.WindowsStoreApps) // UWP does this in its editor extension
                 {
                     // Both default icon and Legacy icons are serialized to the same map
                     // That's why m_LegacyPlatformIcons can be excluded in two places (other place in CommonSettings())
@@ -459,7 +459,7 @@ namespace UnityEditor
                             var previewWidth = Mathf.Min(kMaxPreviewSize, widths[i]);
                             var previewHeight = (int)((float)heights[i] * previewWidth / widths[i]);   // take into account the aspect ratio
 
-                            if (targetGroup == BuildTargetGroup.iOS)
+                            if (namedBuildTarget == NamedBuildTarget.iOS)
                             {
                                 // Spotlight icons begin with 120 but there are two in the list.
                                 // So check if the next one is 80.
@@ -525,7 +525,7 @@ namespace UnityEditor
 
                         EditorGUI.EndDisabled();
 
-                        if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS)
+                        if (namedBuildTarget == NamedBuildTarget.iOS || namedBuildTarget == NamedBuildTarget.tvOS)
                         {
                             EditorGUILayout.PropertyField(m_UIPrerenderedIcon, SettingsContent.UIPrerenderedIcon);
                             EditorGUILayout.Space();

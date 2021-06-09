@@ -14,6 +14,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal class AssetStoreListOperation : IOperation
     {
         private const int k_QueryLimit = 500;
+        private static readonly string k_UserNotLoggedInErrorMessage = L10n.Tr("User not logged in.");
 
         public string packageUniqueId => string.Empty;
 
@@ -109,7 +110,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (!m_UnityConnect.isUserLoggedIn)
             {
-                OnOperationError(new UIError(UIErrorCode.AssetStoreOperationError, L10n.Tr("User not logged in.")));
+                OnOperationError(new UIError(UIErrorCode.AssetStoreOperationError, k_UserNotLoggedInErrorMessage));
                 return;
             }
 
@@ -158,7 +159,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (!m_UnityConnect.isUserLoggedIn)
             {
-                OnOperationError(new UIError(UIErrorCode.AssetStoreOperationError, L10n.Tr("User not logged in.")));
+                OnOperationError(new UIError(UIErrorCode.AssetStoreOperationError, k_UserNotLoggedInErrorMessage));
                 return;
             }
 

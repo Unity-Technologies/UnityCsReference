@@ -484,7 +484,7 @@ namespace Unity.UI.Builder
             if (vea != null && vea.ruleIndex != -1)
             {
                 var rule = inlineSheet.rules[vea.ruleIndex];
-                ve.SetInlineRule(inlineSheet, rule);
+                ve.UpdateInlineRule(inlineSheet, rule);
             }
 
             var children = ve.Children();
@@ -825,7 +825,7 @@ namespace Unity.UI.Builder
             if (!Directory.Exists(uxmlFolder))
                 Directory.CreateDirectory(uxmlFolder);
 
-            File.WriteAllText(uxmlPath, uxmlText);
+            BuilderAssetUtilities.WriteTextFileToDisk(uxmlPath, uxmlText);
         }
 
         VisualElement ReloadChildToCanvas(BuilderDocumentOpenUXML childOpenUXML, VisualElement rootElement)

@@ -23,6 +23,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"align-content", StylePropertyId.AlignContent},
             {"align-items", StylePropertyId.AlignItems},
             {"align-self", StylePropertyId.AlignSelf},
+            {"all", StylePropertyId.All},
             {"background-color", StylePropertyId.BackgroundColor},
             {"background-image", StylePropertyId.BackgroundImage},
             {"border-bottom-color", StylePropertyId.BorderBottomColor},
@@ -79,6 +80,11 @@ namespace UnityEngine.UIElements.StyleSheets
             {"text-shadow", StylePropertyId.TextShadow},
             {"top", StylePropertyId.Top},
             {"transform-origin", StylePropertyId.TransformOrigin},
+            {"transition", StylePropertyId.Transition},
+            {"transition-delay", StylePropertyId.TransitionDelay},
+            {"transition-duration", StylePropertyId.TransitionDuration},
+            {"transition-property", StylePropertyId.TransitionProperty},
+            {"transition-timing-function", StylePropertyId.TransitionTimingFunction},
             {"translate", StylePropertyId.Translate},
             {"-unity-background-image-tint-color", StylePropertyId.UnityBackgroundImageTintColor},
             {"-unity-background-scale-mode", StylePropertyId.UnityBackgroundScaleMode},
@@ -102,230 +108,653 @@ namespace UnityEngine.UIElements.StyleSheets
             {"word-spacing", StylePropertyId.WordSpacing}
         };
 
-        public static int GetEnumIntValue(StyleEnumType enumType, string value)
+        internal static readonly Dictionary<StylePropertyId, string> s_IdToName = new Dictionary<StylePropertyId, string>()
         {
+            {StylePropertyId.AlignContent, "align-content"},
+            {StylePropertyId.AlignItems, "align-items"},
+            {StylePropertyId.AlignSelf, "align-self"},
+            {StylePropertyId.All, "all"},
+            {StylePropertyId.BackgroundColor, "background-color"},
+            {StylePropertyId.BackgroundImage, "background-image"},
+            {StylePropertyId.BorderBottomColor, "border-bottom-color"},
+            {StylePropertyId.BorderBottomLeftRadius, "border-bottom-left-radius"},
+            {StylePropertyId.BorderBottomRightRadius, "border-bottom-right-radius"},
+            {StylePropertyId.BorderBottomWidth, "border-bottom-width"},
+            {StylePropertyId.BorderColor, "border-color"},
+            {StylePropertyId.BorderLeftColor, "border-left-color"},
+            {StylePropertyId.BorderLeftWidth, "border-left-width"},
+            {StylePropertyId.BorderRadius, "border-radius"},
+            {StylePropertyId.BorderRightColor, "border-right-color"},
+            {StylePropertyId.BorderRightWidth, "border-right-width"},
+            {StylePropertyId.BorderTopColor, "border-top-color"},
+            {StylePropertyId.BorderTopLeftRadius, "border-top-left-radius"},
+            {StylePropertyId.BorderTopRightRadius, "border-top-right-radius"},
+            {StylePropertyId.BorderTopWidth, "border-top-width"},
+            {StylePropertyId.BorderWidth, "border-width"},
+            {StylePropertyId.Bottom, "bottom"},
+            {StylePropertyId.Color, "color"},
+            {StylePropertyId.Cursor, "cursor"},
+            {StylePropertyId.Display, "display"},
+            {StylePropertyId.Flex, "flex"},
+            {StylePropertyId.FlexBasis, "flex-basis"},
+            {StylePropertyId.FlexDirection, "flex-direction"},
+            {StylePropertyId.FlexGrow, "flex-grow"},
+            {StylePropertyId.FlexShrink, "flex-shrink"},
+            {StylePropertyId.FlexWrap, "flex-wrap"},
+            {StylePropertyId.FontSize, "font-size"},
+            {StylePropertyId.Height, "height"},
+            {StylePropertyId.JustifyContent, "justify-content"},
+            {StylePropertyId.Left, "left"},
+            {StylePropertyId.LetterSpacing, "letter-spacing"},
+            {StylePropertyId.Margin, "margin"},
+            {StylePropertyId.MarginBottom, "margin-bottom"},
+            {StylePropertyId.MarginLeft, "margin-left"},
+            {StylePropertyId.MarginRight, "margin-right"},
+            {StylePropertyId.MarginTop, "margin-top"},
+            {StylePropertyId.MaxHeight, "max-height"},
+            {StylePropertyId.MaxWidth, "max-width"},
+            {StylePropertyId.MinHeight, "min-height"},
+            {StylePropertyId.MinWidth, "min-width"},
+            {StylePropertyId.Opacity, "opacity"},
+            {StylePropertyId.Overflow, "overflow"},
+            {StylePropertyId.Padding, "padding"},
+            {StylePropertyId.PaddingBottom, "padding-bottom"},
+            {StylePropertyId.PaddingLeft, "padding-left"},
+            {StylePropertyId.PaddingRight, "padding-right"},
+            {StylePropertyId.PaddingTop, "padding-top"},
+            {StylePropertyId.Position, "position"},
+            {StylePropertyId.Right, "right"},
+            {StylePropertyId.Rotate, "rotate"},
+            {StylePropertyId.Scale, "scale"},
+            {StylePropertyId.TextOverflow, "text-overflow"},
+            {StylePropertyId.TextShadow, "text-shadow"},
+            {StylePropertyId.Top, "top"},
+            {StylePropertyId.TransformOrigin, "transform-origin"},
+            {StylePropertyId.Transition, "transition"},
+            {StylePropertyId.TransitionDelay, "transition-delay"},
+            {StylePropertyId.TransitionDuration, "transition-duration"},
+            {StylePropertyId.TransitionProperty, "transition-property"},
+            {StylePropertyId.TransitionTimingFunction, "transition-timing-function"},
+            {StylePropertyId.Translate, "translate"},
+            {StylePropertyId.UnityBackgroundImageTintColor, "-unity-background-image-tint-color"},
+            {StylePropertyId.UnityBackgroundScaleMode, "-unity-background-scale-mode"},
+            {StylePropertyId.UnityFont, "-unity-font"},
+            {StylePropertyId.UnityFontDefinition, "-unity-font-definition"},
+            {StylePropertyId.UnityFontStyleAndWeight, "-unity-font-style"},
+            {StylePropertyId.UnityOverflowClipBox, "-unity-overflow-clip-box"},
+            {StylePropertyId.UnityParagraphSpacing, "-unity-paragraph-spacing"},
+            {StylePropertyId.UnitySliceBottom, "-unity-slice-bottom"},
+            {StylePropertyId.UnitySliceLeft, "-unity-slice-left"},
+            {StylePropertyId.UnitySliceRight, "-unity-slice-right"},
+            {StylePropertyId.UnitySliceTop, "-unity-slice-top"},
+            {StylePropertyId.UnityTextAlign, "-unity-text-align"},
+            {StylePropertyId.UnityTextOutline, "-unity-text-outline"},
+            {StylePropertyId.UnityTextOutlineColor, "-unity-text-outline-color"},
+            {StylePropertyId.UnityTextOutlineWidth, "-unity-text-outline-width"},
+            {StylePropertyId.UnityTextOverflowPosition, "-unity-text-overflow-position"},
+            {StylePropertyId.Visibility, "visibility"},
+            {StylePropertyId.WhiteSpace, "white-space"},
+            {StylePropertyId.Width, "width"},
+            {StylePropertyId.WordSpacing, "word-spacing"}
+        };
+
+        internal static readonly StylePropertyId[] s_AnimatableProperties = new StylePropertyId[] {StylePropertyId.AlignContent, StylePropertyId.AlignItems, StylePropertyId.AlignSelf, StylePropertyId.All, StylePropertyId.BackgroundColor, StylePropertyId.BackgroundImage, StylePropertyId.BorderBottomColor, StylePropertyId.BorderBottomLeftRadius, StylePropertyId.BorderBottomRightRadius, StylePropertyId.BorderBottomWidth, StylePropertyId.BorderColor, StylePropertyId.BorderLeftColor, StylePropertyId.BorderLeftWidth, StylePropertyId.BorderRadius, StylePropertyId.BorderRightColor, StylePropertyId.BorderRightWidth, StylePropertyId.BorderTopColor, StylePropertyId.BorderTopLeftRadius, StylePropertyId.BorderTopRightRadius, StylePropertyId.BorderTopWidth, StylePropertyId.BorderWidth, StylePropertyId.Bottom, StylePropertyId.Color, StylePropertyId.Cursor, StylePropertyId.Display, StylePropertyId.Flex, StylePropertyId.FlexBasis, StylePropertyId.FlexDirection, StylePropertyId.FlexGrow, StylePropertyId.FlexShrink, StylePropertyId.FlexWrap, StylePropertyId.FontSize, StylePropertyId.Height, StylePropertyId.JustifyContent, StylePropertyId.Left, StylePropertyId.LetterSpacing, StylePropertyId.Margin, StylePropertyId.MarginBottom, StylePropertyId.MarginLeft, StylePropertyId.MarginRight, StylePropertyId.MarginTop, StylePropertyId.MaxHeight, StylePropertyId.MaxWidth, StylePropertyId.MinHeight, StylePropertyId.MinWidth, StylePropertyId.Opacity, StylePropertyId.Overflow, StylePropertyId.Padding, StylePropertyId.PaddingBottom, StylePropertyId.PaddingLeft, StylePropertyId.PaddingRight, StylePropertyId.PaddingTop, StylePropertyId.Position, StylePropertyId.Right, StylePropertyId.Rotate, StylePropertyId.Scale, StylePropertyId.TextOverflow, StylePropertyId.TextShadow, StylePropertyId.Top, StylePropertyId.TransformOrigin, StylePropertyId.Translate, StylePropertyId.UnityBackgroundImageTintColor, StylePropertyId.UnityBackgroundScaleMode, StylePropertyId.UnityFont, StylePropertyId.UnityFontDefinition, StylePropertyId.UnityFontStyleAndWeight, StylePropertyId.UnityOverflowClipBox, StylePropertyId.UnityParagraphSpacing, StylePropertyId.UnitySliceBottom, StylePropertyId.UnitySliceLeft, StylePropertyId.UnitySliceRight, StylePropertyId.UnitySliceTop, StylePropertyId.UnityTextAlign, StylePropertyId.UnityTextOutline, StylePropertyId.UnityTextOutlineColor, StylePropertyId.UnityTextOutlineWidth, StylePropertyId.UnityTextOverflowPosition, StylePropertyId.Visibility, StylePropertyId.WhiteSpace, StylePropertyId.Width, StylePropertyId.WordSpacing};
+
+        public static bool TryGetEnumIntValue(StyleEnumType enumType, string value, out int intValue)
+        {
+            intValue = 0;
             switch (enumType)
             {
                 case StyleEnumType.Align:
-                {
                     if (string.Equals(value, "auto", StringComparison.OrdinalIgnoreCase))
-                        return (int)Align.Auto;
-                    else if (string.Equals(value, "flex-start", StringComparison.OrdinalIgnoreCase))
-                        return (int)Align.FlexStart;
-                    else if (string.Equals(value, "center", StringComparison.OrdinalIgnoreCase))
-                        return (int)Align.Center;
-                    else if (string.Equals(value, "flex-end", StringComparison.OrdinalIgnoreCase))
-                        return (int)Align.FlexEnd;
-                    else if (string.Equals(value, "stretch", StringComparison.OrdinalIgnoreCase))
-                        return (int)Align.Stretch;
-                    else
-                        return 0;
-                }
+                    {
+                        intValue = (int)Align.Auto;
+                        return true;
+                    }
 
-                case StyleEnumType.DisplayStyle:
-                {
-                    if (string.Equals(value, "flex", StringComparison.OrdinalIgnoreCase))
-                        return (int)DisplayStyle.Flex;
-                    else if (string.Equals(value, "none", StringComparison.OrdinalIgnoreCase))
-                        return (int)DisplayStyle.None;
-                    else
-                        return 0;
-                }
-
-                case StyleEnumType.FlexDirection:
-                {
-                    if (string.Equals(value, "column", StringComparison.OrdinalIgnoreCase))
-                        return (int)FlexDirection.Column;
-                    else if (string.Equals(value, "column-reverse", StringComparison.OrdinalIgnoreCase))
-                        return (int)FlexDirection.ColumnReverse;
-                    else if (string.Equals(value, "row", StringComparison.OrdinalIgnoreCase))
-                        return (int)FlexDirection.Row;
-                    else if (string.Equals(value, "row-reverse", StringComparison.OrdinalIgnoreCase))
-                        return (int)FlexDirection.RowReverse;
-                    else
-                        return 0;
-                }
-
-                case StyleEnumType.FontStyle:
-                {
-                    if (string.Equals(value, "normal", StringComparison.OrdinalIgnoreCase))
-                        return (int)FontStyle.Normal;
-                    else if (string.Equals(value, "bold", StringComparison.OrdinalIgnoreCase))
-                        return (int)FontStyle.Bold;
-                    else if (string.Equals(value, "italic", StringComparison.OrdinalIgnoreCase))
-                        return (int)FontStyle.Italic;
-                    else if (string.Equals(value, "bold-and-italic", StringComparison.OrdinalIgnoreCase))
-                        return (int)FontStyle.BoldAndItalic;
-                    else
-                        return 0;
-                }
-
-                case StyleEnumType.Justify:
-                {
                     if (string.Equals(value, "flex-start", StringComparison.OrdinalIgnoreCase))
-                        return (int)Justify.FlexStart;
-                    else if (string.Equals(value, "center", StringComparison.OrdinalIgnoreCase))
-                        return (int)Justify.Center;
-                    else if (string.Equals(value, "flex-end", StringComparison.OrdinalIgnoreCase))
-                        return (int)Justify.FlexEnd;
-                    else if (string.Equals(value, "space-between", StringComparison.OrdinalIgnoreCase))
-                        return (int)Justify.SpaceBetween;
-                    else if (string.Equals(value, "space-around", StringComparison.OrdinalIgnoreCase))
-                        return (int)Justify.SpaceAround;
-                    else
-                        return 0;
-                }
+                    {
+                        intValue = (int)Align.FlexStart;
+                        return true;
+                    }
 
-                case StyleEnumType.Overflow:
-                {
-                    if (string.Equals(value, "visible", StringComparison.OrdinalIgnoreCase))
-                        return (int)Overflow.Visible;
-                    else if (string.Equals(value, "hidden", StringComparison.OrdinalIgnoreCase))
-                        return (int)Overflow.Hidden;
-                    else
-                        return 0;
-                }
+                    if (string.Equals(value, "center", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)Align.Center;
+                        return true;
+                    }
 
-                case StyleEnumType.OverflowClipBox:
-                {
-                    if (string.Equals(value, "padding-box", StringComparison.OrdinalIgnoreCase))
-                        return (int)OverflowClipBox.PaddingBox;
-                    else if (string.Equals(value, "content-box", StringComparison.OrdinalIgnoreCase))
-                        return (int)OverflowClipBox.ContentBox;
-                    else
-                        return 0;
-                }
+                    if (string.Equals(value, "flex-end", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)Align.FlexEnd;
+                        return true;
+                    }
 
-                case StyleEnumType.OverflowInternal:
-                {
-                    if (string.Equals(value, "visible", StringComparison.OrdinalIgnoreCase))
-                        return (int)OverflowInternal.Visible;
-                    else if (string.Equals(value, "hidden", StringComparison.OrdinalIgnoreCase))
-                        return (int)OverflowInternal.Hidden;
-                    else if (string.Equals(value, "scroll", StringComparison.OrdinalIgnoreCase))
-                        return (int)OverflowInternal.Scroll;
-                    else
-                        return 0;
-                }
+                    if (string.Equals(value, "stretch", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)Align.Stretch;
+                        return true;
+                    }
 
-                case StyleEnumType.Position:
-                {
-                    if (string.Equals(value, "relative", StringComparison.OrdinalIgnoreCase))
-                        return (int)Position.Relative;
-                    else if (string.Equals(value, "absolute", StringComparison.OrdinalIgnoreCase))
-                        return (int)Position.Absolute;
-                    else
-                        return 0;
-                }
+                    break;
+                case StyleEnumType.DisplayStyle:
+                    if (string.Equals(value, "flex", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)DisplayStyle.Flex;
+                        return true;
+                    }
 
-                case StyleEnumType.ScaleMode:
-                {
-                    if (string.Equals(value, "stretch-to-fill", StringComparison.OrdinalIgnoreCase))
-                        return (int)ScaleMode.StretchToFill;
-                    else if (string.Equals(value, "scale-and-crop", StringComparison.OrdinalIgnoreCase))
-                        return (int)ScaleMode.ScaleAndCrop;
-                    else if (string.Equals(value, "scale-to-fit", StringComparison.OrdinalIgnoreCase))
-                        return (int)ScaleMode.ScaleToFit;
-                    else
-                        return 0;
-                }
+                    if (string.Equals(value, "none", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)DisplayStyle.None;
+                        return true;
+                    }
 
-                case StyleEnumType.TextAnchor:
-                {
-                    if (string.Equals(value, "upper-left", StringComparison.OrdinalIgnoreCase))
-                        return (int)TextAnchor.UpperLeft;
-                    else if (string.Equals(value, "upper-center", StringComparison.OrdinalIgnoreCase))
-                        return (int)TextAnchor.UpperCenter;
-                    else if (string.Equals(value, "upper-right", StringComparison.OrdinalIgnoreCase))
-                        return (int)TextAnchor.UpperRight;
-                    else if (string.Equals(value, "middle-left", StringComparison.OrdinalIgnoreCase))
-                        return (int)TextAnchor.MiddleLeft;
-                    else if (string.Equals(value, "middle-center", StringComparison.OrdinalIgnoreCase))
-                        return (int)TextAnchor.MiddleCenter;
-                    else if (string.Equals(value, "middle-right", StringComparison.OrdinalIgnoreCase))
-                        return (int)TextAnchor.MiddleRight;
-                    else if (string.Equals(value, "lower-left", StringComparison.OrdinalIgnoreCase))
-                        return (int)TextAnchor.LowerLeft;
-                    else if (string.Equals(value, "lower-center", StringComparison.OrdinalIgnoreCase))
-                        return (int)TextAnchor.LowerCenter;
-                    else if (string.Equals(value, "lower-right", StringComparison.OrdinalIgnoreCase))
-                        return (int)TextAnchor.LowerRight;
-                    else
-                        return 0;
-                }
+                    break;
+                case StyleEnumType.EasingMode:
+                    if (string.Equals(value, "ease", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)EasingMode.Ease;
+                        return true;
+                    }
 
-                case StyleEnumType.TextOverflow:
-                {
-                    if (string.Equals(value, "clip", StringComparison.OrdinalIgnoreCase))
-                        return (int)TextOverflow.Clip;
-                    else if (string.Equals(value, "ellipsis", StringComparison.OrdinalIgnoreCase))
-                        return (int)TextOverflow.Ellipsis;
-                    else
-                        return 0;
-                }
+                    if (string.Equals(value, "ease-in", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)EasingMode.EaseIn;
+                        return true;
+                    }
 
-                case StyleEnumType.TextOverflowPosition:
-                {
-                    if (string.Equals(value, "start", StringComparison.OrdinalIgnoreCase))
-                        return (int)TextOverflowPosition.Start;
-                    else if (string.Equals(value, "middle", StringComparison.OrdinalIgnoreCase))
-                        return (int)TextOverflowPosition.Middle;
-                    else if (string.Equals(value, "end", StringComparison.OrdinalIgnoreCase))
-                        return (int)TextOverflowPosition.End;
-                    else
-                        return 0;
-                }
+                    if (string.Equals(value, "ease-out", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)EasingMode.EaseOut;
+                        return true;
+                    }
 
-                case StyleEnumType.TransformOriginOffset:
-                {
-                    if (string.Equals(value, "left", StringComparison.OrdinalIgnoreCase))
-                        return (int)TransformOriginOffset.Left;
-                    else if (string.Equals(value, "right", StringComparison.OrdinalIgnoreCase))
-                        return (int)TransformOriginOffset.Right;
-                    else if (string.Equals(value, "top", StringComparison.OrdinalIgnoreCase))
-                        return (int)TransformOriginOffset.Top;
-                    else if (string.Equals(value, "bottom", StringComparison.OrdinalIgnoreCase))
-                        return (int)TransformOriginOffset.Bottom;
-                    else if (string.Equals(value, "center", StringComparison.OrdinalIgnoreCase))
-                        return (int)TransformOriginOffset.Center;
-                    else
-                        return 0;
-                }
+                    if (string.Equals(value, "ease-in-out", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)EasingMode.EaseInOut;
+                        return true;
+                    }
 
-                case StyleEnumType.Visibility:
-                {
-                    if (string.Equals(value, "visible", StringComparison.OrdinalIgnoreCase))
-                        return (int)Visibility.Visible;
-                    else if (string.Equals(value, "hidden", StringComparison.OrdinalIgnoreCase))
-                        return (int)Visibility.Hidden;
-                    else
-                        return 0;
-                }
+                    if (string.Equals(value, "linear", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)EasingMode.Linear;
+                        return true;
+                    }
 
-                case StyleEnumType.WhiteSpace:
-                {
+                    if (string.Equals(value, "ease-in-sine", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)EasingMode.EaseInSine;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "ease-out-sine", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)EasingMode.EaseOutSine;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "ease-in-out-sine", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)EasingMode.EaseInOutSine;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "ease-in-cubic", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)EasingMode.EaseInCubic;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "ease-out-cubic", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)EasingMode.EaseOutCubic;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "ease-in-out-cubic", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)EasingMode.EaseInOutCubic;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "ease-in-circ", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)EasingMode.EaseInCirc;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "ease-out-circ", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)EasingMode.EaseOutCirc;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "ease-in-out-circ", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)EasingMode.EaseInOutCirc;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "ease-in-elastic", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)EasingMode.EaseInElastic;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "ease-out-elastic", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)EasingMode.EaseOutElastic;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "ease-in-out-elastic", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)EasingMode.EaseInOutElastic;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "ease-in-back", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)EasingMode.EaseInBack;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "ease-out-back", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)EasingMode.EaseOutBack;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "ease-in-out-back", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)EasingMode.EaseInOutBack;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "ease-in-bounce", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)EasingMode.EaseInBounce;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "ease-out-bounce", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)EasingMode.EaseOutBounce;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "ease-in-out-bounce", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)EasingMode.EaseInOutBounce;
+                        return true;
+                    }
+
+                    break;
+                case StyleEnumType.FlexDirection:
+                    if (string.Equals(value, "column", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)FlexDirection.Column;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "column-reverse", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)FlexDirection.ColumnReverse;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "row", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)FlexDirection.Row;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "row-reverse", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)FlexDirection.RowReverse;
+                        return true;
+                    }
+
+                    break;
+                case StyleEnumType.FontStyle:
                     if (string.Equals(value, "normal", StringComparison.OrdinalIgnoreCase))
-                        return (int)WhiteSpace.Normal;
-                    else if (string.Equals(value, "nowrap", StringComparison.OrdinalIgnoreCase))
-                        return (int)WhiteSpace.NoWrap;
-                    else
-                        return 0;
-                }
+                    {
+                        intValue = (int)FontStyle.Normal;
+                        return true;
+                    }
 
-                case StyleEnumType.Wrap:
-                {
+                    if (string.Equals(value, "bold", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)FontStyle.Bold;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "italic", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)FontStyle.Italic;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "bold-and-italic", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)FontStyle.BoldAndItalic;
+                        return true;
+                    }
+
+                    break;
+                case StyleEnumType.Justify:
+                    if (string.Equals(value, "flex-start", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)Justify.FlexStart;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "center", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)Justify.Center;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "flex-end", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)Justify.FlexEnd;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "space-between", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)Justify.SpaceBetween;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "space-around", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)Justify.SpaceAround;
+                        return true;
+                    }
+
+                    break;
+                case StyleEnumType.Overflow:
+                    if (string.Equals(value, "visible", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)Overflow.Visible;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "hidden", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)Overflow.Hidden;
+                        return true;
+                    }
+
+                    break;
+                case StyleEnumType.OverflowClipBox:
+                    if (string.Equals(value, "padding-box", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)OverflowClipBox.PaddingBox;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "content-box", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)OverflowClipBox.ContentBox;
+                        return true;
+                    }
+
+                    break;
+                case StyleEnumType.OverflowInternal:
+                    if (string.Equals(value, "visible", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)OverflowInternal.Visible;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "hidden", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)OverflowInternal.Hidden;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "scroll", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)OverflowInternal.Scroll;
+                        return true;
+                    }
+
+                    break;
+                case StyleEnumType.Position:
+                    if (string.Equals(value, "relative", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)Position.Relative;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "absolute", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)Position.Absolute;
+                        return true;
+                    }
+
+                    break;
+                case StyleEnumType.ScaleMode:
+                    if (string.Equals(value, "stretch-to-fill", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)ScaleMode.StretchToFill;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "scale-and-crop", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)ScaleMode.ScaleAndCrop;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "scale-to-fit", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)ScaleMode.ScaleToFit;
+                        return true;
+                    }
+
+                    break;
+                case StyleEnumType.TextAnchor:
+                    if (string.Equals(value, "upper-left", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)TextAnchor.UpperLeft;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "upper-center", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)TextAnchor.UpperCenter;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "upper-right", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)TextAnchor.UpperRight;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "middle-left", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)TextAnchor.MiddleLeft;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "middle-center", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)TextAnchor.MiddleCenter;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "middle-right", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)TextAnchor.MiddleRight;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "lower-left", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)TextAnchor.LowerLeft;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "lower-center", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)TextAnchor.LowerCenter;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "lower-right", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)TextAnchor.LowerRight;
+                        return true;
+                    }
+
+                    break;
+                case StyleEnumType.TextOverflow:
+                    if (string.Equals(value, "clip", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)TextOverflow.Clip;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "ellipsis", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)TextOverflow.Ellipsis;
+                        return true;
+                    }
+
+                    break;
+                case StyleEnumType.TextOverflowPosition:
+                    if (string.Equals(value, "start", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)TextOverflowPosition.Start;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "middle", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)TextOverflowPosition.Middle;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "end", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)TextOverflowPosition.End;
+                        return true;
+                    }
+
+                    break;
+                case StyleEnumType.TransformOriginOffset:
+                    if (string.Equals(value, "left", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)TransformOriginOffset.Left;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "right", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)TransformOriginOffset.Right;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "top", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)TransformOriginOffset.Top;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "bottom", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)TransformOriginOffset.Bottom;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "center", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)TransformOriginOffset.Center;
+                        return true;
+                    }
+
+                    break;
+                case StyleEnumType.Visibility:
+                    if (string.Equals(value, "visible", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)Visibility.Visible;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "hidden", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)Visibility.Hidden;
+                        return true;
+                    }
+
+                    break;
+                case StyleEnumType.WhiteSpace:
+                    if (string.Equals(value, "normal", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)WhiteSpace.Normal;
+                        return true;
+                    }
+
                     if (string.Equals(value, "nowrap", StringComparison.OrdinalIgnoreCase))
-                        return (int)Wrap.NoWrap;
-                    else if (string.Equals(value, "wrap", StringComparison.OrdinalIgnoreCase))
-                        return (int)Wrap.Wrap;
-                    else if (string.Equals(value, "wrap-reverse", StringComparison.OrdinalIgnoreCase))
-                        return (int)Wrap.WrapReverse;
-                    else
-                        return 0;
-                }
+                    {
+                        intValue = (int)WhiteSpace.NoWrap;
+                        return true;
+                    }
+
+                    break;
+                case StyleEnumType.Wrap:
+                    if (string.Equals(value, "nowrap", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)Wrap.NoWrap;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "wrap", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)Wrap.Wrap;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "wrap-reverse", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)Wrap.WrapReverse;
+                        return true;
+                    }
+
+                    break;
             }
 
-            return 0;
+            return false;
+        }
+
+        public static bool IsMatchingShorthand(StylePropertyId shorthand, StylePropertyId id)
+        {
+            switch (shorthand)
+            {
+                case StylePropertyId.All:
+                    return true;
+                case StylePropertyId.BorderColor:
+                    return id == StylePropertyId.BorderTopColor || id == StylePropertyId.BorderRightColor || id == StylePropertyId.BorderBottomColor || id == StylePropertyId.BorderLeftColor;
+                case StylePropertyId.BorderRadius:
+                    return id == StylePropertyId.BorderTopLeftRadius || id == StylePropertyId.BorderTopRightRadius || id == StylePropertyId.BorderBottomRightRadius || id == StylePropertyId.BorderBottomLeftRadius;
+                case StylePropertyId.BorderWidth:
+                    return id == StylePropertyId.BorderTopWidth || id == StylePropertyId.BorderRightWidth || id == StylePropertyId.BorderBottomWidth || id == StylePropertyId.BorderLeftWidth;
+                case StylePropertyId.Flex:
+                    return id == StylePropertyId.FlexGrow || id == StylePropertyId.FlexShrink || id == StylePropertyId.FlexBasis;
+                case StylePropertyId.Margin:
+                    return id == StylePropertyId.MarginTop || id == StylePropertyId.MarginRight || id == StylePropertyId.MarginBottom || id == StylePropertyId.MarginLeft;
+                case StylePropertyId.Padding:
+                    return id == StylePropertyId.PaddingTop || id == StylePropertyId.PaddingRight || id == StylePropertyId.PaddingBottom || id == StylePropertyId.PaddingLeft;
+                case StylePropertyId.UnityTextOutline:
+                    return id == StylePropertyId.UnityTextOutlineColor || id == StylePropertyId.UnityTextOutlineWidth;
+                default:
+                    return false;
+            }
         }
     }
 }

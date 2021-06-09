@@ -9,6 +9,8 @@
 //              See InitialStyleCsGenerator class for details
 //
 /******************************************************************************/
+using System.Collections.Generic;
+
 namespace UnityEngine.UIElements.StyleSheets
 {
     internal static class InitialStyle
@@ -81,6 +83,10 @@ namespace UnityEngine.UIElements.StyleSheets
             s_InitialStyle.inheritedData.Write().textShadow = default(TextShadow);
             s_InitialStyle.layoutData.Write().top = StyleKeyword.Auto.ToLength();
             s_InitialStyle.transformData.Write().transformOrigin = TransformOrigin.Initial();
+            s_InitialStyle.transitionData.Write().transitionDelay = new List<TimeValue> {0};
+            s_InitialStyle.transitionData.Write().transitionDuration = new List<TimeValue> {0};
+            s_InitialStyle.transitionData.Write().transitionProperty = new List<StylePropertyName> {"all"};
+            s_InitialStyle.transitionData.Write().transitionTimingFunction = new List<EasingFunction> {EasingMode.Ease};
             s_InitialStyle.transformData.Write().translate = StyleKeyword.None.ToTranslate();
             s_InitialStyle.rareData.Write().unityBackgroundImageTintColor = Color.white;
             s_InitialStyle.rareData.Write().unityBackgroundScaleMode = ScaleMode.StretchToFill;
@@ -156,6 +162,10 @@ namespace UnityEngine.UIElements.StyleSheets
         public static TextShadow textShadow => s_InitialStyle.inheritedData.Read().textShadow;
         public static Length top => s_InitialStyle.layoutData.Read().top;
         public static TransformOrigin transformOrigin => s_InitialStyle.transformData.Read().transformOrigin;
+        public static List<TimeValue> transitionDelay => s_InitialStyle.transitionData.Read().transitionDelay;
+        public static List<TimeValue> transitionDuration => s_InitialStyle.transitionData.Read().transitionDuration;
+        public static List<StylePropertyName> transitionProperty => s_InitialStyle.transitionData.Read().transitionProperty;
+        public static List<EasingFunction> transitionTimingFunction => s_InitialStyle.transitionData.Read().transitionTimingFunction;
         public static Translate translate => s_InitialStyle.transformData.Read().translate;
         public static Color unityBackgroundImageTintColor => s_InitialStyle.rareData.Read().unityBackgroundImageTintColor;
         public static ScaleMode unityBackgroundScaleMode => s_InitialStyle.rareData.Read().unityBackgroundScaleMode;

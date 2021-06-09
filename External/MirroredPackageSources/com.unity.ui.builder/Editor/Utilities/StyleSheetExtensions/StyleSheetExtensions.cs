@@ -174,24 +174,12 @@ namespace Unity.UI.Builder
                 undoMessage = "New UI Style Selector";
             Undo.RegisterCompleteObjectUndo(styleSheet, undoMessage);
 
-            // Remove extra whitespace.
-            var selectorSplit = complexSelectorStr.Split(' ');
-            complexSelectorStr = String.Join(" ", selectorSplit);
-
-            // Create rule.
-            var rule = new StyleRule { line = -1 };
-            rule.properties = new StyleProperty[0];
-
-            // Create selector.
-            var complexSelector = new StyleComplexSelector();
-            complexSelector.rule = rule;
-            var initResult = StyleComplexSelectorExtensions.InitializeSelector(complexSelector, complexSelectorStr);
-            if (!initResult)
+            if (!SelectorUtility.TryCreateSelector(complexSelectorStr, out var complexSelector))
                 return null;
 
             // Add rule to StyleSheet.
             var rulesList = styleSheet.rules.ToList();
-            rulesList.Add(rule);
+            rulesList.Add(complexSelector.rule);
             styleSheet.rules = rulesList.ToArray();
             complexSelector.ruleIndex = styleSheet.rules.Length - 1;
 

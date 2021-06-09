@@ -134,5 +134,11 @@ namespace UnityEngine.UIElements
                     return styleLength.value;
             }
         }
+
+        internal static void CopyFrom<T>(this List<T> list, List<T> other)
+        {
+            list.Clear();
+            list.AddRange(other);
+        }
     }
 }

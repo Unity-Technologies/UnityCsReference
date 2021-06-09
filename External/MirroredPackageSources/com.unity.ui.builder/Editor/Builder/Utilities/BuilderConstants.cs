@@ -49,7 +49,7 @@ namespace Unity.UI.Builder
         public const string SettingsUIPath = UIBuilderPackagePath + "/Settings";
         public const string LibraryUssPathNoExt = UIBuilderPackagePath + "/Library/BuilderLibrary";
         public const string InspectorUssPathNoExt = UIBuilderPackagePath + "/Inspector/BuilderInspector";
-
+        
         public const string UIBuilderTestsTestFilesPath = UIBuilderTestsRootPath + "/TestFiles";
         const string BuilderDocumentDiskJsonFileName = "UIBuilderDocument.json";
         const string BuilderDocumentDiskJsonFolderPath = "Library/UIBuilder";
@@ -125,8 +125,8 @@ namespace Unity.UI.Builder
         public static readonly string InspectorLocalStyleVariableEditingClassName = "unity-builder-inspector__style--variable-editing";
         public static readonly string InspectorEmptyFoldoutLabelClassName = "unity-builder-inspector__empty-foldout-label";
         public static readonly string InspectorClassPillNotInDocumentClassName = "unity-builder-class-pill--not-in-document";
-        public static readonly string InspectorContainerClassName = "unity-builder-inspector__container";
         public static readonly string InspectorClassHelpBox = "unity-builder-inspector__help-box";
+        public static readonly string InspectorContainerClassName = "unity-builder-inspector__container";
 
         // Inspector Links VE Property Names
         public static readonly string InspectorLinkedStyleRowVEPropertyName = "__unity-ui-builder-style-row";
@@ -150,6 +150,8 @@ namespace Unity.UI.Builder
         public static readonly string VariableNotSupportedInInlineStyleMessage = "Setting variables in inline style is not yet supported.";
         public static readonly string VariableDescriptionsCouldNotBeLoadedMessage = "Could not load the variable descriptions file.";
         public static readonly string NoNameElementAttributes = "A name is required in order to edit attributes.";
+        public static readonly string TransitionWillNotBeVisibleBecauseOfDuration = "In order to be visible, at least one transition on this element should have a duration greater than 0.";
+        public static readonly string EditPropertyToAddNewTransition = "Set a property to a non-keyword value to add a new transition.";
 
         //
         // Explorer

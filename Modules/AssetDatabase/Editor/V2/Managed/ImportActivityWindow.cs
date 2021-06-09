@@ -2124,6 +2124,7 @@ namespace UnityEditor
                 AddTopLevelDescription(ArtifactDifferenceReporter.kImportParameter_NameOfAsset, ArtifactDifferenceReporter.DiffType.Added, kNoTopLevelDescription);
                 AddTopLevelDescription(ArtifactDifferenceReporter.kSourceAsset_GuidOfPathLocation, ArtifactDifferenceReporter.DiffType.Added, "GuidOfPathLocation: a dependency on an asset has been added");
                 AddTopLevelDescription(ArtifactDifferenceReporter.kSourceAsset_HashOfSourceAssetByGUID, ArtifactDifferenceReporter.DiffType.Added, "HashOfSourceAssetByGUID: a dependency on an asset has been added");
+                AddTopLevelDescription(ArtifactDifferenceReporter.kArtifact_HashOfGuidsOfChildren, ArtifactDifferenceReporter.DiffType.Added, "HashOfGuidsOfChildren: a dependency on the Hash of all GUIDs belonging to assets in a folder was added");
                 AddTopLevelDescription(ArtifactDifferenceReporter.kSourceAsset_MetaFileHash, ArtifactDifferenceReporter.DiffType.Added, kNoTopLevelDescription);
                 AddTopLevelDescription(ArtifactDifferenceReporter.kArtifact_HashOfContent, ArtifactDifferenceReporter.DiffType.Added, "HashOfContent: a dependency on an asset has been added");
                 AddTopLevelDescription(ArtifactDifferenceReporter.kArtifact_FileIdOfMainObject, ArtifactDifferenceReporter.DiffType.Added, kNoTopLevelDescription);
@@ -2146,6 +2147,7 @@ namespace UnityEditor
                 AddTopLevelDescription(ArtifactDifferenceReporter.kSourceAsset_HashOfSourceAssetByGUID, ArtifactDifferenceReporter.DiffType.Removed, "HashOfSourceAssetByGUID: a dependency on an Asset has been removed");
                 AddTopLevelDescription(ArtifactDifferenceReporter.kSourceAsset_MetaFileHash, ArtifactDifferenceReporter.DiffType.Removed, "MetaFileHash: a dependency on a .meta file has been removed");
                 AddTopLevelDescription(ArtifactDifferenceReporter.kArtifact_HashOfContent, ArtifactDifferenceReporter.DiffType.Removed, "HashOfContent: a dependency on an asset has been removed");
+                AddTopLevelDescription(ArtifactDifferenceReporter.kArtifact_HashOfGuidsOfChildren, ArtifactDifferenceReporter.DiffType.Removed, "HashOfGuidsOfChildren: a dependency on the Hash of all GUIDs belonging to assets in a folder was removed");
                 AddTopLevelDescription(ArtifactDifferenceReporter.kArtifact_FileIdOfMainObject, ArtifactDifferenceReporter.DiffType.Removed, kNoTopLevelDescription);
                 AddTopLevelDescription(ArtifactDifferenceReporter.kImportParameter_Platform, ArtifactDifferenceReporter.DiffType.Removed, kNoTopLevelDescription);
                 AddTopLevelDescription(ArtifactDifferenceReporter.kEnvironment_TextureImportCompression, ArtifactDifferenceReporter.DiffType.Removed, kNoTopLevelDescription);
@@ -2166,6 +2168,7 @@ namespace UnityEditor
                 AddTopLevelDescription(ArtifactDifferenceReporter.kSourceAsset_HashOfSourceAssetByGUID, ArtifactDifferenceReporter.DiffType.Modified, "HashOfSourceAssetByGUID: an asset that is depended on has been modified");
                 AddTopLevelDescription(ArtifactDifferenceReporter.kSourceAsset_MetaFileHash, ArtifactDifferenceReporter.DiffType.Modified, "MetaFileHash: a .meta file that is depended on has been modified");
                 AddTopLevelDescription(ArtifactDifferenceReporter.kArtifact_HashOfContent, ArtifactDifferenceReporter.DiffType.Modified, "HashOfContent: a source asset that is depended on has been modified");
+                AddTopLevelDescription(ArtifactDifferenceReporter.kArtifact_HashOfGuidsOfChildren, ArtifactDifferenceReporter.DiffType.Modified, "HashOfGuidsOfChildren: the Hash of all GUIDs belonging to assets in a folder has been modified");
                 AddTopLevelDescription(ArtifactDifferenceReporter.kArtifact_FileIdOfMainObject, ArtifactDifferenceReporter.DiffType.Modified, kNoTopLevelDescription);
                 AddTopLevelDescription(ArtifactDifferenceReporter.kImportParameter_Platform, ArtifactDifferenceReporter.DiffType.Modified, kNoTopLevelDescription);
                 AddTopLevelDescription(ArtifactDifferenceReporter.kEnvironment_TextureImportCompression, ArtifactDifferenceReporter.DiffType.Modified, kNoTopLevelDescription);

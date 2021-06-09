@@ -1,7 +1,4 @@
-using System;
 using System.Collections.Generic;
-using UnityEditor;
-using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets.Syntax;
 using UnityEngine.UIElements.StyleSheets;
@@ -13,6 +10,8 @@ namespace Unity.UI.Builder
         // Units
         public static readonly string UnitPixel = "px";
         public static readonly string UnitPercent = "%";
+        public static readonly string UnitSecond = "s";
+        public static readonly string UnitMillisecond = "ms";
         public static readonly string UnitDegree = "deg";
         public static readonly string UnitGrad = "grad";
         public static readonly string UnitRad = "rad";
@@ -25,7 +24,10 @@ namespace Unity.UI.Builder
             { UnitDegree, Dimension.Unit.Degree },
             { UnitGrad, Dimension.Unit.Gradian },
             { UnitRad, Dimension.Unit.Radian },
-            { UnitTurn, Dimension.Unit.Turn }
+            { UnitTurn, Dimension.Unit.Turn },
+
+            { UnitSecond, Dimension.Unit.Second },
+            { UnitMillisecond, Dimension.Unit.Millisecond },
         };
 
         public static readonly Dictionary<Dimension.Unit, string> DimensionUnitToStringMap = new Dictionary<Dimension.Unit, string>()
@@ -35,7 +37,9 @@ namespace Unity.UI.Builder
             { Dimension.Unit.Degree, UnitDegree },
             { Dimension.Unit.Gradian, UnitGrad },
             { Dimension.Unit.Radian, UnitRad },
-            { Dimension.Unit.Turn, UnitTurn }
+            { Dimension.Unit.Turn, UnitTurn },
+            { Dimension.Unit.Second, UnitSecond },
+            { Dimension.Unit.Millisecond, UnitMillisecond },
         };
 
         // Keywords

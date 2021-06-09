@@ -160,11 +160,7 @@ namespace UnityEngine.UIElements
             set
             {
                 m_ScaleModeIsInline = true;
-                if (m_ScaleMode != value)
-                {
-                    m_ScaleMode = value;
-                    IncrementVersion(VersionChangeType.Layout);
-                }
+                SetScaleMode(value);
             }
         }
 
@@ -200,7 +196,7 @@ namespace UnityEngine.UIElements
         {
             AddToClassList(ussClassName);
 
-            m_ScaleMode = ScaleMode.ScaleAndCrop;
+            m_ScaleMode = ScaleMode.ScaleToFit;
             m_TintColor = Color.white;
 
             m_UV = new Rect(0, 0, 1, 1);
@@ -326,11 +322,21 @@ namespace UnityEngine.UIElements
 
             if (!m_ScaleModeIsInline && customStyle.TryGetValue(s_ScaleModeProperty, out scaleModeValue))
             {
-                m_ScaleMode = (ScaleMode)StylePropertyUtil.GetEnumIntValue(StyleEnumType.ScaleMode, scaleModeValue);
+                StylePropertyUtil.TryGetEnumIntValue(StyleEnumType.ScaleMode, scaleModeValue, out var intValue);
+                SetScaleMode((ScaleMode)intValue);
             }
 
             if (!m_TintColorIsInline && customStyle.TryGetValue(s_TintColorProperty, out tintValue))
                 m_TintColor = tintValue;
+        }
+
+        private void SetScaleMode(ScaleMode mode)
+        {
+            if (m_ScaleMode != mode)
+            {
+                m_ScaleMode = mode;
+                IncrementVersion(VersionChangeType.Repaint);
+            }
         }
 
         private void CalculateUV(Rect srcRect)

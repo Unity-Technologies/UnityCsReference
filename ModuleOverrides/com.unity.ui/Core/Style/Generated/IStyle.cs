@@ -250,6 +250,22 @@ namespace UnityEngine.UIElements
         /// </summary>
         StyleTransformOrigin transformOrigin { get; set; }
         /// <summary>
+        /// Duration to wait before starting a property's transition effect when its value changes.
+        /// </summary>
+        StyleList<TimeValue> transitionDelay { get; set; }
+        /// <summary>
+        /// Time a transition animation should take to complete.
+        /// </summary>
+        StyleList<TimeValue> transitionDuration { get; set; }
+        /// <summary>
+        /// Properties to which a transition effect should be applied.
+        /// </summary>
+        StyleList<StylePropertyName> transitionProperty { get; set; }
+        /// <summary>
+        /// Determines how intermediate values are calculated for properties modified by a transition effect.
+        /// </summary>
+        StyleList<EasingFunction> transitionTimingFunction { get; set; }
+        /// <summary>
         /// A translate transformation.
         /// </summary>
         StyleTranslate translate { get; set; }

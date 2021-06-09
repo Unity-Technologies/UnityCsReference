@@ -17,6 +17,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private const float kMinHeightForOther = 96f;
         private const float kLabelMinWidth = 64f;
 
+        private static readonly string k_PackageNotAccessibleMessage = L10n.Tr("This package is not accessible anymore.");
         internal override string targetTitle
         {
             get
@@ -98,7 +99,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (packageSelectionObject == null)
             {
-                EditorGUILayout.HelpBox(L10n.Tr("This package is not accessible anymore."), MessageType.Error);
+                EditorGUILayout.HelpBox(k_PackageNotAccessibleMessage, MessageType.Error);
                 return;
             }
 
@@ -107,7 +108,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_PackageDatabase.GetPackageAndVersion(packageSelectionObject.packageUniqueId, packageSelectionObject.versionUniqueId, out m_Package, out m_Version);
                 if (m_Package == null || m_Version == null)
                 {
-                    EditorGUILayout.HelpBox(L10n.Tr("This package is not accessible anymore."), MessageType.Error);
+                    EditorGUILayout.HelpBox(k_PackageNotAccessibleMessage, MessageType.Error);
                     return;
                 }
 

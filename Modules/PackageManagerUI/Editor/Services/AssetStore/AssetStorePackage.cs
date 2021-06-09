@@ -91,9 +91,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PurchasedTimeTicks = !string.IsNullOrEmpty(purchaseInfo?.purchasedTime) ? DateTime.Parse(purchaseInfo?.purchasedTime).Ticks : 0;
 
             if (string.IsNullOrEmpty(productInfo?.id) || string.IsNullOrEmpty(productInfo?.versionId))
-            {
                 AddError(new UIError(UIErrorCode.AssetStorePackageError, L10n.Tr("Invalid product details.")));
-            }
             else
             {
                 // The version we get from the product info the latest on the server
@@ -145,10 +143,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_FirstPublishedDateTicks = !string.IsNullOrEmpty(firstPublishedDateString) ? DateTime.Parse(firstPublishedDateString).Ticks : 0;
 
             if (purchaseInfo == null)
-            {
-                var errorMessage = L10n.Tr("Unable to get asset purchase details because you may not have purchased this package.");
-                AddError(new UIError(UIErrorCode.AssetStorePackageError, errorMessage));
-            }
+                AddError(new UIError(UIErrorCode.AssetStorePackageError, L10n.Tr("Unable to get asset purchase details because you may not have purchased this package.")));
             if (string.IsNullOrEmpty(productInfo?.id) || string.IsNullOrEmpty(productInfo?.versionId))
                 AddError(new UIError(UIErrorCode.AssetStorePackageError, L10n.Tr("Unable to retrieve asset product details.")));
             else if (string.IsNullOrEmpty(package?.name))

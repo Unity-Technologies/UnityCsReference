@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Profiling;
+using UnityEngine.Profiling;
 using UnityEngine.UIElements.Experimental;
 
 namespace UnityEngine.UIElements
@@ -26,6 +27,11 @@ namespace UnityEngine.UIElements
         private static readonly string s_Description = "Animation Update";
         private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
         public override ProfilerMarker profilerMarker => s_ProfilerMarker;
+
+
+        private static readonly string s_StylePropertyAnimationDescription = "StylePropertyAnimation Update";
+        private static readonly ProfilerMarker s_StylePropertyAnimationProfilerMarker = new ProfilerMarker(s_StylePropertyAnimationDescription);
+        private static ProfilerMarker stylePropertyAnimationProfilerMarker => s_StylePropertyAnimationProfilerMarker;
 
         public void UnregisterAnimation(IValueAnimationUpdate anim)
         {
@@ -77,6 +83,12 @@ namespace UnityEngine.UIElements
 
                 m_HasNewAnimations = false;
                 lastUpdate = now;
+            }
+
+            var styleAnim = panel.styleAnimationSystem;
+            using (stylePropertyAnimationProfilerMarker.Auto())
+            {
+                styleAnim.Update();
             }
         }
 

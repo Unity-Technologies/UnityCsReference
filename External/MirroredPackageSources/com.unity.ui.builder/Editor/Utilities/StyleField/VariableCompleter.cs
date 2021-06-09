@@ -89,7 +89,9 @@ namespace Unity.UI.Builder
             var valType = val == null ? typeof(object) : val.GetType();
 
             if (BuilderInspectorStyleFields.IsComputedStyleFloat(val) || BuilderInspectorStyleFields.IsComputedStyleInt(val)
-                || BuilderInspectorStyleFields.IsComputedStyleLength(val))
+                || BuilderInspectorStyleFields.IsComputedStyleLength(val)
+                || BuilderInspectorStyleFields.IsComputedStyleList<TimeValue>(val)
+            )
             {
                 return new[] { StyleValueType.Float, StyleValueType.Dimension };
             }
@@ -105,11 +107,15 @@ namespace Unity.UI.Builder
             {
                 return new[] { StyleValueType.ScalableImage, StyleValueType.AssetReference, StyleValueType.ResourcePath };
             }
-            else if (BuilderInspectorStyleFields.IsComputedStyleCursor(val))
+            else if (BuilderInspectorStyleFields.IsComputedStyleCursor(val)
+            || BuilderInspectorStyleFields.IsComputedStyleList<StylePropertyName>(val)
+            )
             {
                 return new[] { StyleValueType.Enum, StyleValueType.ScalableImage, StyleValueType.AssetReference, StyleValueType.ResourcePath };
             }
-            else if (BuilderInspectorStyleFields.IsComputedStyleEnum(val, valType))
+            else if (BuilderInspectorStyleFields.IsComputedStyleEnum(val, valType)
+            || BuilderInspectorStyleFields.IsComputedStyleList<EasingFunction>(val)
+            )
             {
                 return new[] { StyleValueType.Enum };
             }

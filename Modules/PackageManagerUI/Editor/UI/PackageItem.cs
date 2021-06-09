@@ -39,7 +39,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (m_VisibleInScrollView)
                 {
                     Refresh();
-                    IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint | VersionChangeType.Transform);
                 }
             }
         }
@@ -440,38 +439,38 @@ namespace UnityEditor.PackageManager.UI.Internal
         private static readonly string[] k_TooltipsByState =
         {
             "",
-            "This {0} is installed.",
+            L10n.Tr("This {0} is installed."),
             // Keep the error message for `installed` and `installedAsDependency` the same for now as requested by the designer
-            "This {0} is installed.",
-            "This {0} is available for download.",
-            "This {0} is available for import.",
-            "This {0} is in development.",
-            "A newer version of this {0} is available.",
+            L10n.Tr("This {0} is installed."),
+            L10n.Tr("This {0} is available for download."),
+            L10n.Tr("This {0} is available for import."),
+            L10n.Tr("This {0} is in development."),
+            L10n.Tr("A newer version of this {0} is available."),
             "",
-            "There are errors with this {0}. Please read the {0} details for further guidance.",
-            "There are warnings with this {0}. Please read the {0} details for further guidance."
+            L10n.Tr("There are errors with this {0}. Please read the {0} details for further guidance."),
+            L10n.Tr("There are warnings with this {0}. Please read the {0} details for further guidance.")
         };
 
         public string GetTooltipByState(PackageState state)
         {
-            return string.Format(L10n.Tr(k_TooltipsByState[(int)state]), package.GetDescriptor());
+            return string.Format(k_TooltipsByState[(int)state], package.GetDescriptor());
         }
 
         private static readonly string[] k_TooltipsByProgress =
         {
             "",
-            "{0} refreshing in progress.",
-            "{0} downloading in progress.",
-            "{0} pausing in progress.",
-            "{0} resuming in progress.",
-            "{0} installing in progress.",
-            "{0} resetting in progress.",
-            "{0} removing in progress."
+            L10n.Tr("{0} refreshing in progress."),
+            L10n.Tr("{0} downloading in progress."),
+            L10n.Tr("{0} pausing in progress."),
+            L10n.Tr("{0} resuming in progress."),
+            L10n.Tr("{0} installing in progress."),
+            L10n.Tr("{0} resetting in progress."),
+            L10n.Tr("{0} removing in progress.")
         };
 
         public string GetTooltipByProgress(PackageProgress progress)
         {
-            return string.Format(L10n.Tr(k_TooltipsByProgress[(int)progress]), package.GetDescriptor(true));
+            return string.Format(k_TooltipsByProgress[(int)progress], package.GetDescriptor(true));
         }
     }
 }

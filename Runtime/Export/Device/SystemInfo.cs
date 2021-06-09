@@ -196,6 +196,8 @@ namespace UnityEngine.Device
 
         public static bool supportsStoreAndResolveAction => ShimManager.systemInfoShim.supportsStoreAndResolveAction;
 
+        public static bool supportsMultisampleResolveDepth => ShimManager.systemInfoShim.supportsMultisampleResolveDepth;
+
         public static bool IsFormatSupported(GraphicsFormat format, FormatUsage usage)
         {
             return ShimManager.systemInfoShim.IsFormatSupported(format, usage);

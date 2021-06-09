@@ -8,12 +8,14 @@ using UnityEditor.UIElements;
 using Object = UnityEngine.Object;
 using UnityEngine.Assertions;
 using UnityEditor;
+using UnityEngine.Pool;
 using UnityEngine.TextCore.Text;
+
 using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
 {
-    internal class BuilderInspectorStyleFields
+    internal partial class BuilderInspectorStyleFields
     {
         BuilderInspector m_Inspector;
         BuilderSelection m_Selection;
@@ -46,6 +48,15 @@ namespace Unity.UI.Builder
         {
             List<VisualElement> fieldList;
             m_StyleFields.TryGetValue(styleName, out fieldList);
+            return fieldList;
+        }
+
+        public List<VisualElement> GetOrCreateFieldListForStyleName(string styleName)
+        {
+            if (!m_StyleFields.TryGetValue(styleName, out var fieldList))
+            {
+                m_StyleFields[styleName] = fieldList = new List<VisualElement>();
+            }
             return fieldList;
         }
 
@@ -487,7 +498,15 @@ namespace Unity.UI.Builder
         {
             var field = FindStylePropertyInfo(styleName);
             if (field == null)
+            {
+                // Transitions are made from 4 different properties and does not have a dedicated C# property on ComputedStyle.
+                if (!string.IsNullOrEmpty(styleName) &&
+                    StylePropertyUtil.s_NameToId.TryGetValue(styleName, out var id) &&
+                    id.IsTransitionId() &&
+                    fieldElement is TransitionsListView listView)
+                    RefreshStyleField(listView);
                 return;
+            }
 
             var val = field.GetValue(currentVisualElement.computedStyle, null);
             var valType = val == null ? typeof(object) : val.GetType();
@@ -865,6 +884,11 @@ namespace Unity.UI.Builder
                 return;
             }
 
+            UpdateOverrideStyles(fieldElement, styleProperty);
+        }
+
+        void UpdateOverrideStyles(VisualElement fieldElement, StyleProperty styleProperty)
+        {
             // Add override style to field if it is overwritten.
             var styleRow = fieldElement.GetProperty(BuilderConstants.InspectorLinkedStyleRowVEPropertyName) as BuilderStyleRow;
             Assert.IsNotNull(styleRow);
@@ -985,6 +1009,18 @@ namespace Unity.UI.Builder
             {
                 DispatchChangeEvent(objectCursorField);
             }
+            else if (IsComputedStyleList<StylePropertyName>(val) && fieldElement is CategoryDropdownField transitionPropertyField)
+            {
+                DispatchChangeEvent(transitionPropertyField);
+            }
+            else if (IsComputedStyleList<TimeValue>(val) && fieldElement is DimensionStyleField transitionDurationOrDelayField)
+            {
+                DispatchChangeEvent(transitionDurationOrDelayField);
+            }
+            else if (IsComputedStyleList<EasingFunction>(val) && fieldElement is EnumField transitionTimingFunctionField)
+            {
+                DispatchChangeEvent(transitionTimingFunctionField);
+            }
             else if (IsComputedStyleEnum(val, valType))
             {
                 switch (fieldElement)
@@ -1065,6 +1101,26 @@ namespace Unity.UI.Builder
             foldoutElement.header.EnableInClassList(BuilderConstants.InspectorLocalStyleOverrideClassName, isDirty);
         }
 
+        void SetVariableEditor(BindableElement element, int displayIndex)
+        {
+            var handler = StyleVariableUtilities.GetOrCreateVarHandler(element);
+            if (handler != null)
+            {
+                handler.index = displayIndex;
+                handler.editingEnabled = BuilderSharedStyles.IsSelectorElement(currentVisualElement);
+                handler.RefreshField();
+            }
+        }
+
+        internal StylePropertyManipulator GetStylePropertyManipulator(string stylePropertyName)
+        {
+            return styleSheet.GetStylePropertyManipulator(
+                currentVisualElement,
+                currentRule,
+                stylePropertyName,
+                m_Inspector.document.fileSettings.editorExtensionMode);
+        }
+
         void BuildStyleFieldContextualMenu(ContextualMenuPopulateEvent evt)
         {
             evt.menu.AppendAction(
@@ -1093,39 +1149,63 @@ namespace Unity.UI.Builder
                 evt.target);
         }
 
-        bool OnFieldVariableChangeImplInBatch(string newValue, string styleName)
+        bool OnFieldVariableChangeImplInBatch(string newValue, string styleName, int index)
         {
             StyleSheet styleSheet = m_Inspector.styleSheet;
             StyleRule currentRule = m_Inspector.currentRule;
-            var styleProperty = styleSheet.FindProperty(currentRule, styleName);
-            if (styleProperty == null)
-                styleProperty = styleSheet.AddProperty(currentRule, styleName);
 
-            var isNewValue = styleProperty.values.Length == 0;
-
-            // If the current style property is saved as a different type than the new style type,
-            // we need to resave it here as the new type. We do this by just removing the current value.
-            if (!isNewValue && !styleProperty.IsVariable())
+            using (var manipulator = styleSheet.GetStylePropertyManipulator(currentVisualElement, currentRule, styleName, m_Inspector.document.fileSettings.editorExtensionMode))
             {
-                Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
+                var isNewValue = null == manipulator.styleProperty;
 
-                styleProperty.values = new StyleValueHandle[0];
-                isNewValue = true;
+                if (index >= manipulator.GetValuesCount()
+                    && StylePropertyUtil.s_NameToId.TryGetValue(styleName, out var id)
+                    && id.IsTransitionId())
+                {
+                    var transitionData = m_Inspector.currentVisualElement.computedStyle.transitionData.Read();
+                    switch (id)
+                    {
+                        case StylePropertyId.TransitionProperty:
+                            UnpackTransitionProperty(manipulator, transitionData.transitionProperty, transitionData.MaxCount());
+                            break;
+                        case StylePropertyId.TransitionDuration:
+                            UnpackTransitionDurationOrDelay(manipulator, transitionData.transitionDuration, transitionData.MaxCount());
+                            break;
+                        case StylePropertyId.TransitionTimingFunction:
+                            UnpackTransitionTimingFunction(manipulator, transitionData.transitionTimingFunction, transitionData.MaxCount());
+                            break;
+                        case StylePropertyId.TransitionDelay:
+                            UnpackTransitionDurationOrDelay(manipulator, transitionData.transitionDelay, transitionData.MaxCount());
+                            break;
+                    }
+                    manipulator.SetVariableAtIndex(index, newValue);
+                }
+                else
+                {
+                    if (isNewValue)
+                        manipulator.AddVariable(newValue);
+                    else
+                        manipulator.SetVariableAtIndex(index, newValue);
+                }
+
+                if (styleName != "transition-property" && null != GetStyleProperty(currentRule, "transition-property"))
+                {
+                    var transitionData = currentVisualElement.computedStyle.transitionData.Read();
+                    var maxCount = Mathf.Max(transitionData.MaxCount(), manipulator.GetValuesCount());
+                    using var propertyManipulator = GetStylePropertyManipulator("transition-property");
+                    if (null == manipulator.styleProperty)
+                        TransferTransitionComputedData(manipulator, transitionData.transitionProperty, StyleValueType.Enum);
+                }
+                return isNewValue;
             }
-
-            if (isNewValue)
-                styleSheet.AddVariable(styleProperty, newValue);
-            else // Sets the variable name
-                styleSheet.SetValue(styleProperty.values[2], newValue);
-
-            return isNewValue;
         }
 
-        public void OnFieldVariableChange(string newValue, VisualElement target, string styleName)
+        public void OnFieldVariableChange(string newValue, VisualElement target, string styleName, int index)
         {
             if (newValue.Length <= BuilderConstants.UssVariablePrefix.Length)
                 return;
-            bool isNewValue = OnFieldVariableChangeImplInBatch(newValue, styleName);
+
+            bool isNewValue = OnFieldVariableChangeImplInBatch(newValue, styleName, index);
             PostStyleFieldSteps(target, styleName, isNewValue, true);
         }
 
@@ -1317,6 +1397,14 @@ namespace Unity.UI.Builder
                         }
                     }
                 }
+
+                if (fieldElement is TransitionsListView)
+                {
+                    styleSheet.RemoveProperty(currentRule, TransitionConstants.Property);
+                    styleSheet.RemoveProperty(currentRule, TransitionConstants.Duration);
+                    styleSheet.RemoveProperty(currentRule, TransitionConstants.TimingFunction);
+                    styleSheet.RemoveProperty(currentRule, TransitionConstants.Delay);
+                }
             }
             NotifyStyleChanges(null, true);
         }
@@ -1484,7 +1572,7 @@ namespace Unity.UI.Builder
 
             if (isVar && BuilderSharedStyles.IsSelectorElement(currentVisualElement))
             {
-                OnFieldVariableChange(StyleSheetUtilities.GetCleanVariableName(e.newValue), dimensionStyleField, styleName);
+                OnFieldVariableChange(StyleSheetUtilities.GetCleanVariableName(e.newValue), dimensionStyleField, styleName, 0);
             }
             else if (dimensionStyleField.isKeyword)
             {
@@ -1595,7 +1683,7 @@ namespace Unity.UI.Builder
 
             if (isVar && BuilderSharedStyles.IsSelectorElement(currentVisualElement))
             {
-                OnFieldVariableChange(StyleSheetUtilities.GetCleanVariableName(e.newValue), numericStyleField, styleName);
+                OnFieldVariableChange(StyleSheetUtilities.GetCleanVariableName(e.newValue), numericStyleField, styleName, 0);
             }
             else if (numericStyleField.isKeyword)
             {
@@ -1620,7 +1708,7 @@ namespace Unity.UI.Builder
 
             if (isVar && BuilderSharedStyles.IsSelectorElement(currentVisualElement))
             {
-                OnFieldVariableChange(StyleSheetUtilities.GetCleanVariableName(e.newValue), styleField, styleName);
+                OnFieldVariableChange(StyleSheetUtilities.GetCleanVariableName(e.newValue), styleField, styleName, 0);
             }
             else if (styleField.isKeyword)
             {
@@ -1971,6 +2059,11 @@ namespace Unity.UI.Builder
         static public bool IsComputedStyleFont(object val, string styleName)
         {
             return val is StyleFont || val is Font || styleName == "-unity-font";
+        }
+
+        public static bool IsComputedStyleList<T>(object val)
+        {
+            return val is StyleList<T> || val is List<T>;
         }
 
         static public bool IsComputedStyleFontAsset(object val, string styleName)

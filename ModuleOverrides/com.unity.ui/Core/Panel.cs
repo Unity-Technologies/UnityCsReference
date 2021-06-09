@@ -37,24 +37,24 @@ namespace UnityEngine.UIElements
         Layout = 1 << 3,
         // changes to StyleSheet, USS class
         StyleSheet = 1 << 4,
-        // removal of inline style
-        InlineStyleRemove = 1 << 5,
         // changes to styles, colors and other render properties
-        Styles = 1 << 6,
-        Overflow = 1 << 7,
-        BorderRadius = 1 << 8,
-        BorderWidth = 1 << 9,
+        Styles = 1 << 5,
+        Overflow = 1 << 6,
+        BorderRadius = 1 << 7,
+        BorderWidth = 1 << 8,
         // changes that may impact the world transform (e.g. laid out position, local transform)
-        Transform = 1 << 10,
+        Transform = 1 << 9,
         // changes to the size of the element after layout has been performed, without taking the local transform into account
-        Size = 1 << 11,
+        Size = 1 << 10,
         // The visuals of the element have changed
-        Repaint = 1 << 12,
-        // The opacity of the element has changed
-        Opacity = 1 << 13,
+        Repaint = 1 << 11,
+        // The opacity of the element have changed
+        Opacity = 1 << 12,
         // Some color of the element has changed (background-color, border-color, etc.)
-        Color = 1 << 14,
-        RenderHints = 1 << 15,
+        Color = 1 << 13,
+        RenderHints = 1 << 14,
+        // The 'transition-property' style of the element has changed (impacts cancelling of ongoing style transitions)
+        TransitionProperty = 1 << 15,
     }
 
     /// <summary>
@@ -403,6 +403,7 @@ namespace UnityEngine.UIElements
         }
 
         internal abstract IScheduler scheduler { get; }
+        internal abstract IStylePropertyAnimationSystem styleAnimationSystem { get; set; }
         public abstract ContextType contextType { get; protected set; }
         public abstract VisualElement Pick(Vector2 point);
         public abstract VisualElement PickAll(Vector2 point, List<VisualElement> picked);
@@ -577,6 +578,7 @@ namespace UnityEngine.UIElements
     {
         private VisualElement m_RootContainer;
         private VisualTreeUpdater m_VisualTreeUpdater;
+        private IStylePropertyAnimationSystem m_StylePropertyAnimationSystem;
         private string m_PanelName;
         private uint m_Version = 0;
         private uint m_RepaintVersion = 0;
@@ -611,6 +613,19 @@ namespace UnityEngine.UIElements
         internal VisualTreeUpdater visualTreeUpdater
         {
             get { return m_VisualTreeUpdater; }
+        }
+
+        internal override IStylePropertyAnimationSystem styleAnimationSystem
+        {
+            get => m_StylePropertyAnimationSystem;
+            set
+            {
+                if (m_StylePropertyAnimationSystem == value)
+                    return;
+
+                m_StylePropertyAnimationSystem?.CancelAllAnimations();
+                m_StylePropertyAnimationSystem = value;
+            }
         }
 
         public override ScriptableObject ownerObject { get; protected set; }
@@ -756,6 +771,7 @@ namespace UnityEngine.UIElements
             // Required!
             visualTree.SetPanel(this);
             focusController = new FocusController(new VisualElementFocusRing(visualTree));
+            styleAnimationSystem = new StylePropertyAnimationSystem();
 
             CreateMarkers();
 

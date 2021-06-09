@@ -101,7 +101,9 @@ namespace UnityEditor
 
             if (HasRemappedMaterials() || doMatsHaveDifferentShaders)
             {
-                bool upgrade = upgradeMaterials;
+                // Force material upgrade when a custom render pipeline is active so that render pipeline-specific material
+                // modifications may be applied.
+                bool upgrade = upgradeMaterials || (UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline != null);
                 bool hasModified = HasModified();
                 if (GUILayout.Button(GetGenButtonText(hasModified, upgrade)))
                 {

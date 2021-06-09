@@ -1981,6 +1981,9 @@
     <Compile Include="..\..\Editor\Mono\Inspector\CurvePresetLibraryInspector.cs">
       <Link>Editor\Mono\Inspector\CurvePresetLibraryInspector.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\CustomCollider2DEditor.cs">
+      <Link>Editor\Mono\Inspector\CustomCollider2DEditor.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\CustomEditor.cs">
       <Link>Editor\Mono\Inspector\CustomEditor.cs</Link>
     </Compile>
@@ -3832,6 +3835,9 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorSelector.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorSelector.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorStyleFields+Transitions.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorStyleFields+Transitions.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorStyleFields.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorStyleFields.cs</Link>
     </Compile>
@@ -3985,6 +3991,9 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Viewport\BuilderViewportWindow.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Viewport\BuilderViewportWindow.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Viewport\BuilderVisualTreeStyleUpdaterTraversal.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Viewport\BuilderVisualTreeStyleUpdaterTraversal.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Viewport\BuilderZoomer.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Viewport\BuilderZoomer.cs</Link>
     </Compile>
@@ -3996,6 +4005,15 @@
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\ButtonStrip\ButtonStrip.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\ButtonStrip\ButtonStrip.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\CategoryDropdownField\CategoryDropdownContent.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\CategoryDropdownField\CategoryDropdownContent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\CategoryDropdownField\CategoryDropdownField+WindowContent.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\CategoryDropdownField\CategoryDropdownField+WindowContent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\CategoryDropdownField\CategoryDropdownField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\CategoryDropdownField\CategoryDropdownField.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\ElementHierarchyView\BaseOverlayPainter.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\ElementHierarchyView\BaseOverlayPainter.cs</Link>
@@ -4023,6 +4041,9 @@
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\FoldoutField\FoldoutNumberField.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\FoldoutField\FoldoutNumberField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\FoldoutField\FoldoutTransitionField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\FoldoutField\FoldoutTransitionField.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\FoldoutWithCheckbox\FoldoutWithCheckbox.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\FoldoutWithCheckbox\FoldoutWithCheckbox.cs</Link>
@@ -4059,6 +4080,9 @@
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\SampleDocument\BuilderAttributesTestElement.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\SampleDocument\BuilderAttributesTestElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\Selector\SelectorUtility.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\Selector\SelectorUtility.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\DimensionStyleField.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\DimensionStyleField.cs</Link>
@@ -4132,6 +4156,9 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleSheetExtensions\StylePropertyExtensions.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleSheetExtensions\StylePropertyExtensions.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleSheetExtensions\StylePropertyManipulator.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleSheetExtensions\StylePropertyManipulator.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleSheetExtensions\StyleRuleExtensions.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleSheetExtensions\StyleRuleExtensions.cs</Link>
     </Compile>
@@ -4152,6 +4179,30 @@
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\ToggleButtonStrip\ToggleButtonStrip.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\ToggleButtonStrip\ToggleButtonStrip.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\Transitions\BuilderTransition.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\Transitions\BuilderTransition.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\Transitions\BuilderTransitionData.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\Transitions\BuilderTransitionData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\Transitions\TransitionChangeType.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\Transitions\TransitionChangeType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\Transitions\TransitionEvents.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\Transitions\TransitionEvents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\Transitions\TransitionListView.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\Transitions\TransitionListView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\Transitions\TransitionPropertyDropdownContent.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\Transitions\TransitionPropertyDropdownContent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\Transitions\TransitionsExtensions.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\Transitions\TransitionsExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\Transitions\UIStyleValue.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\Transitions\UIStyleValue.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\TwoPaneSplitView\TwoPaneSplitView.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\TwoPaneSplitView\TwoPaneSplitView.cs</Link>

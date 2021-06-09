@@ -130,6 +130,12 @@ namespace Unity.UI.Builder
             if (hasPercent)
                 m_Units.Add(StyleFieldConstants.UnitPercent);
 
+            var hasTime = FindUnitInExpression(expression, DataType.Time);
+            if (hasTime)
+            {
+                m_Units.Add(StyleFieldConstants.UnitSecond);
+                m_Units.Add(StyleFieldConstants.UnitMillisecond);
+            }
             return m_Units;
         }
 

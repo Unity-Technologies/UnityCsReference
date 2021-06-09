@@ -183,9 +183,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
-        public static EditorCompilation.CompileStatus CompileScripts(EditorScriptCompilationOptions definesOptions, BuildTargetGroup platformGroup, BuildTarget platform, string[] extraScriptingDefines)
+        public static EditorCompilation.CompileStatus CompileScripts(EditorScriptCompilationOptions definesOptions, BuildTargetGroup platformGroup, BuildTarget platform, int subtarget, string[] extraScriptingDefines)
         {
-            return EmitExceptionAsError(() => Instance.CompileScripts(definesOptions, platformGroup, platform, extraScriptingDefines),
+            return EmitExceptionAsError(() => Instance.CompileScripts(definesOptions, platformGroup, platform, subtarget, extraScriptingDefines),
                 EditorCompilation.CompileStatus.CompilationFailed);
         }
 
@@ -208,11 +208,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
-        public static EditorCompilation.CompileStatus TickCompilationPipeline(EditorScriptCompilationOptions options, BuildTargetGroup platformGroup, BuildTarget platform, string[] extraScriptingDefines)
+        public static EditorCompilation.CompileStatus TickCompilationPipeline(EditorScriptCompilationOptions options, BuildTargetGroup platformGroup, BuildTarget platform, int subtarget, string[] extraScriptingDefines)
         {
             try
             {
-                return Instance.TickCompilationPipeline(options, platformGroup, platform, extraScriptingDefines);
+                return Instance.TickCompilationPipeline(options, platformGroup, platform, subtarget, extraScriptingDefines);
             }
             catch (Exception e)
             {

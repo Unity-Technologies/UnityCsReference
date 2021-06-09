@@ -142,8 +142,6 @@ namespace UnityEditor
 
             bool blendModeChanged = false;
 
-            // Detect any changes to the material
-            EditorGUI.BeginChangeCheck();
             {
                 blendModeChanged = BlendModePopup();
 
@@ -183,10 +181,10 @@ namespace UnityEditor
 
                 m_MaterialEditor.RenderQueueField();
             }
-            if (EditorGUI.EndChangeCheck())
+            if (blendModeChanged)
             {
                 foreach (var obj in blendMode.targets)
-                    MaterialChanged((Material)obj, m_WorkflowMode, blendModeChanged);
+                    SetupMaterialWithBlendMode((Material)obj, (BlendMode)((Material)obj).GetFloat("_Mode"), true);
             }
 
             m_MaterialEditor.EnableInstancingField();
@@ -426,17 +424,11 @@ namespace UnityEditor
             }
         }
 
-        static void MaterialChanged(Material material, WorkflowMode workflowMode, bool overrideRenderQueue)
-        {
-            SetupMaterialWithBlendMode(material, (BlendMode)material.GetFloat("_Mode"), overrideRenderQueue);
-
-            SetMaterialKeywords(material, workflowMode);
-        }
-
         override public void ValidateMaterial(Material material)
         {
             DetermineWorkflow(material);
-            MaterialChanged(material, m_WorkflowMode, false);
+            SetupMaterialWithBlendMode(material, (BlendMode)material.GetFloat("_Mode"), false);
+            SetMaterialKeywords(material, m_WorkflowMode);
         }
 
         static void SetKeyword(Material m, string keyword, bool state)

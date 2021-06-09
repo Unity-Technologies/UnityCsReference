@@ -154,7 +154,7 @@ namespace UnityEditor.Modules
         void UpdateBootConfig(BuildTarget target, BootConfigData config, BuildOptions options);
 
         // Return string.Empty if targeting a folder.
-        string GetExtension(BuildTarget target, BuildOptions options);
+        string GetExtension(BuildTarget target, int subtarget, BuildOptions options);
     }
 
     internal interface IScriptingImplementations
@@ -383,6 +383,7 @@ namespace UnityEditor.Modules
     internal struct BuildPostProcessArgs
     {
         public BuildTarget target;
+        public int subtarget;
         public string stagingArea;
         public string stagingAreaData;
         public string stagingAreaDataManaged;

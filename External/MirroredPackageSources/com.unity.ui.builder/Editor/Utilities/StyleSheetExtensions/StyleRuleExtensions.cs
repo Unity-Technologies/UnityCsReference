@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine.UIElements;
@@ -69,6 +70,15 @@ namespace Unity.UI.Builder
                 return;
 
             styleSheet.RemoveProperty(rule, property, undoMessage);
+        }
+
+        public static IEnumerable<string> GetAllSetStyleProperties(this StyleRule styleRule)
+        {
+            foreach (var property in styleRule.properties)
+            {
+                if (StylePropertyUtil.s_NameToId.ContainsKey(property.name))
+                    yield return property.name;
+            }
         }
     }
 }

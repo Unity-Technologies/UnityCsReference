@@ -17,6 +17,9 @@ namespace UnityEditor.PackageManager.UI.Internal
     [InitializeOnLoad]
     internal static class PlayModeDownload
     {
+        private static readonly string k_DefaultGotItButtonText = L10n.Tr("Got it");
+        private static readonly string k_DefaultCancelButtonText = L10n.Tr("Cancel");
+
         static PlayModeDownload()
         {
             if (!PlayModeDownloadState.instance.skipShowDialog)
@@ -33,9 +36,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var assetStoreDownloadManager = ServicesContainer.instance.Resolve<AssetStoreDownloadManager>();
                 if (assetStoreDownloadManager.IsAnyDownloadInProgress())
                 {
-                    var accept = EditorUtility.DisplayDialog(L10n.Tr("Package download in progress"),
-                        L10n.Tr("Please note that entering Play Mode while Unity is downloading a package may impact performance"),
-                        L10n.Tr("Got it"), L10n.Tr("Cancel"));
+                    var title = L10n.Tr("Package download in progress");
+                    var message = L10n.Tr("Please note that entering Play Mode while Unity is downloading a package may impact performance");
+                    var accept = EditorUtility.DisplayDialog(title, message, k_DefaultGotItButtonText, k_DefaultCancelButtonText);
 
                     if (accept)
                     {
@@ -60,10 +63,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (!EditorApplication.isPlaying || PlayModeDownloadState.instance.skipShowDialog)
                 return true;
-
-            var accept = EditorUtility.DisplayDialog(L10n.Tr("Play Mode in progress"),
-                L10n.Tr("Please note that making changes in the Package Manager while in Play Mode may impact performance."),
-                L10n.Tr("Got it"), L10n.Tr("Cancel"));
+            var title = L10n.Tr("Play Mode in progress");
+            var message = L10n.Tr("Please note that making changes in the Package Manager while in Play Mode may impact performance.");
+            var accept = EditorUtility.DisplayDialog(title, message, k_DefaultGotItButtonText, k_DefaultCancelButtonText);
 
             if (accept)
                 SetSkipDialog();

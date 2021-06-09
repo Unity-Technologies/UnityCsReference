@@ -1302,7 +1302,11 @@ namespace UnityEngine.UIElements
         void OnScrollWheel(WheelEvent evt)
         {
             var updateContentViewTransform = false;
-            if (contentContainer.boundingBox.height - layout.height > 0)
+            var canUseVerticalScroll = contentContainer.boundingBox.height - layout.height > 0;
+            var canUseHorizontalScroll = contentContainer.boundingBox.width - layout.width > 0;
+            var horizontalScrollDelta = canUseHorizontalScroll && !canUseVerticalScroll ? evt.delta.y : evt.delta.x;
+
+            if (canUseVerticalScroll)
             {
                 var oldVerticalValue = verticalScroller.value;
 
@@ -1318,14 +1322,14 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            if (contentContainer.boundingBox.width - layout.width > 0)
+            if (canUseHorizontalScroll)
             {
                 var oldHorizontalValue = horizontalScroller.value;
 
-                if (evt.delta.x < 0)
-                    horizontalScroller.ScrollPageUp(Mathf.Abs(evt.delta.x));
-                else if (evt.delta.x > 0)
-                    horizontalScroller.ScrollPageDown(Mathf.Abs(evt.delta.x));
+                if (horizontalScrollDelta < 0)
+                    horizontalScroller.ScrollPageUp(Mathf.Abs(horizontalScrollDelta));
+                else if (horizontalScrollDelta > 0)
+                    horizontalScroller.ScrollPageDown(Mathf.Abs(horizontalScrollDelta));
 
                 if (horizontalScroller.value != oldHorizontalValue)
                 {

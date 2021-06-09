@@ -12,7 +12,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         internal new class UxmlFactory : UxmlFactory<PackageStatusBar> {}
 
-        internal static readonly string k_OfflineErrorMessage = "You seem to be offline";
+        internal static readonly string k_OfflineErrorMessage = L10n.Tr("You seem to be offline");
 
         private enum StatusType { Normal, Loading, Error }
 
@@ -134,11 +134,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             var refreshError = m_PageManager.GetRefreshError(tab);
 
             if (!m_Application.isInternetReachable)
-                errorMessage = L10n.Tr(k_OfflineErrorMessage);
+                errorMessage = k_OfflineErrorMessage;
             else if (refreshError != null)
             {
                 var seeConsoleNotif = (UIError.Attribute.IsDetailInConsole & refreshError.attribute) != 0 ? ", see console" : "";
-                errorMessage = L10n.Tr($"Error refreshing packages{seeConsoleNotif}");
+                errorMessage = string.Format(L10n.Tr("Error refreshing packages{0}"), seeConsoleNotif);
             }
 
             if (!string.IsNullOrEmpty(errorMessage))
@@ -149,7 +149,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var timestamp = m_PageManager.GetRefreshTimestamp(tab);
             var dt = new DateTime(timestamp);
-            var label = timestamp == 0L ? string.Empty : L10n.Tr($"Last update {dt.ToString("MMM d, HH:mm", CultureInfo.CreateSpecificCulture("en-US"))}");
+            var dateAndTime = dt.ToString("MMM d, HH:mm", CultureInfo.CreateSpecificCulture("en-US"));
+            var label = timestamp == 0L ? string.Empty : string.Format(L10n.Tr("Last update {0}"), dateAndTime);
             SetStatusMessage(StatusType.Normal, label);
         }
 

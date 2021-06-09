@@ -89,6 +89,8 @@ namespace Unity.UI.Builder
             var previewButton = this.Q<ToolbarToggle>(PreviewToggleName);
             previewButton.RegisterValueChangedCallback(TogglePreviewMode);
 
+            m_Viewport.SetPreviewMode(false);
+
             m_CanvasThemeMenu = this.Q<ToolbarMenu>("canvas-theme-menu");
             SetUpCanvasThemeMenu();
 
@@ -570,7 +572,7 @@ namespace Unity.UI.Builder
 
         public void ChangeCanvasTheme(BuilderDocument.CanvasTheme theme, ThemeStyleSheet themeStyleSheet = null)
         {
-            ApplyCanvasTheme(m_Viewport.sharedStylesAndDocumentElement, theme, themeStyleSheet);
+            ApplyCanvasTheme(m_Viewport.documentRootElement, theme, themeStyleSheet);
             ApplyCanvasBackground(m_Viewport.canvas.defaultBackgroundElement, theme, themeStyleSheet);
             ApplyCanvasTheme(m_TooltipPreview, theme, themeStyleSheet);
             ApplyCanvasBackground(m_TooltipPreview, theme, themeStyleSheet);
@@ -613,6 +615,7 @@ namespace Unity.UI.Builder
             if (m_LastCustomTheme)
             {
                 element.styleSheets.Remove(m_LastCustomTheme);
+                m_LastCustomTheme = null;
             }
             // We verify whether the styles are loaded beforehand because calling GetCommonXXXStyleSheet() will load them unecessarily in this case
             if (UIElementsEditorUtility.IsCommonDarkStyleSheetLoaded())
@@ -633,7 +636,7 @@ namespace Unity.UI.Builder
                     themeStyleSheet = UIElementsEditorUtility.GetCommonLightStyleSheet();
                     break;
                 case BuilderDocument.CanvasTheme.Default:
-                    themeStyleSheet = null;
+                    themeStyleSheet = EditorGUIUtility.isProSkin ? UIElementsEditorUtility.GetCommonDarkStyleSheet() : UIElementsEditorUtility.GetCommonLightStyleSheet();
                     break;
                 case BuilderDocument.CanvasTheme.Custom:
                     m_LastCustomTheme = customThemeSheet;

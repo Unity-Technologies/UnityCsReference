@@ -23,6 +23,14 @@ namespace UnityEditor.Build.Player
     [StructLayout(LayoutKind.Sequential)]
     public struct ScriptCompilationSettings
     {
+        [NativeName("subtarget")]
+        internal int m_Subtarget;
+        public int subtarget
+        {
+            get { return m_Subtarget; }
+            set { m_Subtarget = value; }
+        }
+
         [NativeName("target")]
         internal BuildTarget m_Target;
         public BuildTarget target

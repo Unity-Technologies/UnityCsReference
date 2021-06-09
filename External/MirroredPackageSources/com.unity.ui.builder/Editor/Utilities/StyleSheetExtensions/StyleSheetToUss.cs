@@ -86,7 +86,9 @@ namespace Unity.UI.Builder
                 break;
                 case StyleValueType.Dimension:
                     var dim = sheet.ReadDimension(handle);
-                    if (dim.value == 0)
+                    if (dim.value == 0
+                        && !dim.unit.IsTimeUnit()
+                    )
                         str = "0";
                     else
                         str = dim.ToString();
@@ -139,7 +141,7 @@ namespace Unity.UI.Builder
                         sb.Append(")");
 
                         break;
-                    case StyleValueType.FunctionSeparator:
+                    case StyleValueType.CommaSeparator:
                         sb.Append(",");
                         break;
                     default:
@@ -150,7 +152,7 @@ namespace Unity.UI.Builder
                     }
                 }
 
-                if (valueIndex < values.Length && values[valueIndex].valueType != StyleValueType.FunctionSeparator && valueCount != 1)
+                if (valueIndex < values.Length && values[valueIndex].valueType != StyleValueType.CommaSeparator && valueCount != 1)
                 {
                     sb.Append(" ");
                 }

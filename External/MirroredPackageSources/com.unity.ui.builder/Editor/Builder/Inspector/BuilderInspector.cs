@@ -1,9 +1,9 @@
 using UnityEngine.UIElements;
 using System.Collections.Generic;
 using UnityEditor;
-using UnityEditor.UIElements;
 using UnityEngine;
 using System;
+using UnityEngine.Pool;
 
 namespace Unity.UI.Builder
 {
@@ -542,8 +542,20 @@ namespace Unity.UI.Builder
                     if (fieldList == null)
                         continue;
 
-                    foreach (var field in fieldList)
-                        m_StyleFields.RefreshStyleField(styleName, field);
+                    // Transitions are composed of dynamic elements which can add/remove themselves in the fieldList
+                    // when the style is refreshed, so we take a copy of the list to ensure we do not iterate and
+                    // mutate the list at the same time.
+                    var tempFieldList = ListPool<VisualElement>.Get();
+                    try
+                    {
+                        tempFieldList.AddRange(fieldList);
+                        foreach (var field in tempFieldList)
+                            m_StyleFields.RefreshStyleField(styleName, field);
+                    }
+                    finally
+                    {
+                        ListPool<VisualElement>.Release(tempFieldList);
+                    }
                 }
 
                 m_LocalStylesSection.UpdateStyleCategoryFoldoutOverrides();

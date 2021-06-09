@@ -12,11 +12,11 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal class AssetStoreDownloadOperation : IOperation
     {
-        internal static readonly string k_DownloadErrorMessage = "The download could not be completed. Please try again.";
-        internal static readonly string k_AbortErrorMessage = "The download could not be aborted. Please try again.";
+        internal static readonly string k_DownloadErrorMessage = L10n.Tr("The download could not be completed. Please try again.");
+        internal static readonly string k_AbortErrorMessage = L10n.Tr("The download could not be aborted. Please try again.");
         internal static readonly string k_AssetStoreDownloadPrefix = "content__";
-        internal static readonly string k_ForbiddenErrorMessage = "The Asset Store package you are trying to download is not available to the current Unity account. If you purchased this asset from the Asset Store using a different account, use that Unity account to sign into the Editor.";
-
+        internal static readonly string k_ForbiddenErrorMessage = L10n.Tr("The Asset Store package you are trying to download is not available to the current Unity account. If you purchased this asset from the Asset Store using a different account, use that Unity account to sign into the Editor.");
+        private static readonly string k_ConsoleLogPrefix = L10n.Tr("[Package Manager Window]");
         [SerializeField]
         private string m_ProductId;
         public string packageUniqueId => m_ProductId;
@@ -143,17 +143,17 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnErrorMessage(string errorMessage, int operationErrorCode = -1)
         {
             m_State = DownloadState.Error;
-            Debug.LogError($"{L10n.Tr("[Package Manager Window]")} {errorMessage}");
+            Debug.LogError($"{k_ConsoleLogPrefix} {errorMessage}");
 
             var attr = UIError.Attribute.None;
             if (operationErrorCode == 403)
             {
-                m_ErrorMessage = L10n.Tr(k_ForbiddenErrorMessage);
+                m_ErrorMessage = k_ForbiddenErrorMessage;
             }
             else
             {
                 attr |= UIError.Attribute.IsDetailInConsole | UIError.Attribute.IsClearable;
-                m_ErrorMessage = L10n.Tr(k_DownloadErrorMessage);
+                m_ErrorMessage = k_DownloadErrorMessage;
             }
 
             onOperationError?.Invoke(this, new UIError(UIErrorCode.AssetStoreOperationError, m_ErrorMessage, attr, operationErrorCode));
@@ -172,7 +172,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             // Pause here is the same as aborting the download, but we don't delete the file so we can resume from where we paused it from
             if (!m_AssetStoreUtils.AbortDownload(downloadInfo.destination))
-                Debug.LogError($"{L10n.Tr("[Package Manager Window]")} {L10n.Tr(k_AbortErrorMessage)}");
+                Debug.LogError($"{k_ConsoleLogPrefix} {k_AbortErrorMessage}");
         }
 
         public void Abort()
@@ -194,7 +194,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             // the actual download state change from `downloading` to `aborted` happens in `OnDownloadProgress` callback
             if (!m_AssetStoreUtils.AbortDownload(downloadInfo.destination))
-                Debug.LogError($"{L10n.Tr("[Package Manager Window]")} {L10n.Tr(k_AbortErrorMessage)}");
+                Debug.LogError($"{k_ConsoleLogPrefix} {k_AbortErrorMessage}");
         }
 
         public void Download(bool resume)

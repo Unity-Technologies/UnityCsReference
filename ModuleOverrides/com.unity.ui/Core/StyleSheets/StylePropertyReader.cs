@@ -128,6 +128,12 @@ namespace UnityEngine.UIElements.StyleSheets
             return dimension.ToLength();
         }
 
+        public TimeValue ReadTimeValue(int index)
+        {
+            var value = m_Values[m_CurrentValueIndex + index];
+            return value.sheet.ReadDimension(value.handle).ToTime();
+        }
+
         public Translate ReadTranslate(int index)
         {
             var val1 = m_Values[m_CurrentValueIndex + index];
@@ -209,7 +215,8 @@ namespace UnityEngine.UIElements.StyleSheets
                 enumString = value.sheet.ReadEnum(handle);
             }
 
-            return StylePropertyUtil.GetEnumIntValue(enumType, enumString);
+            StylePropertyUtil.TryGetEnumIntValue(enumType, enumString, out var intValue);
+            return intValue;
         }
 
         public FontDefinition ReadFontDefinition(int index)
@@ -444,6 +451,91 @@ namespace UnityEngine.UIElements.StyleSheets
 
             var textShadow = new TextShadow() { offset = new Vector2(offsetX, offsetY), blurRadius = blurRadius, color = color };
             return textShadow;
+        }
+
+        public void ReadListEasingFunction(List<EasingFunction> list, int index)
+        {
+            list.Clear();
+            do
+            {
+                var value = m_Values[m_CurrentValueIndex + index];
+                var handle = value.handle;
+                if (handle.valueType == StyleValueType.Enum)
+                {
+                    var enumString = value.sheet.ReadEnum(handle);
+                    StylePropertyUtil.TryGetEnumIntValue(StyleEnumType.EasingMode, enumString, out var intValue);
+                    list.Add(new EasingFunction((EasingMode)intValue));
+                    ++index;
+                }
+
+                if (index < valueCount)
+                {
+                    var nextValue = m_Values[m_CurrentValueIndex + index];
+                    if (nextValue.handle.valueType == StyleValueType.CommaSeparator)
+                        ++index;
+                }
+            }
+            while (index < valueCount);
+        }
+
+        public void ReadListTimeValue(List<TimeValue> list, int index)
+        {
+            list.Clear();
+            do
+            {
+                var value = m_Values[m_CurrentValueIndex + index];
+                var time = value.sheet.ReadDimension(value.handle).ToTime();
+                list.Add(time);
+                ++index;
+
+                if (index < valueCount)
+                {
+                    var nextValue = m_Values[m_CurrentValueIndex + index];
+                    if (nextValue.handle.valueType == StyleValueType.CommaSeparator)
+                        ++index;
+                }
+            }
+            while (index < valueCount);
+        }
+
+        public void ReadListStylePropertyName(List<StylePropertyName> list, int index)
+        {
+            list.Clear();
+            do
+            {
+                var value = m_Values[m_CurrentValueIndex + index];
+                var str = value.sheet.ReadAsString(value.handle);
+                list.Add(new StylePropertyName(str));
+                ++index;
+
+                if (index < valueCount)
+                {
+                    var nextValue = m_Values[m_CurrentValueIndex + index];
+                    if (nextValue.handle.valueType == StyleValueType.CommaSeparator)
+                        ++index;
+                }
+            }
+            while (index < valueCount);
+        }
+
+        public void ReadListString(List<string> list, int index)
+        {
+            list.Clear();
+            do
+            {
+                var value = m_Values[m_CurrentValueIndex + index];
+                var str = value.sheet.ReadAsString(value.handle);
+                list.Add(str);
+                ++index;
+
+                if (index < valueCount)
+                {
+                    var nextValue = m_Values[m_CurrentValueIndex + index];
+                    if (nextValue.handle.valueType == StyleValueType.CommaSeparator)
+                        ++index;
+                }
+            }
+            while (index < valueCount);
         }
 
         private void LoadProperties()
