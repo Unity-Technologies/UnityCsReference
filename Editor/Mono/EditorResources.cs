@@ -51,6 +51,7 @@ namespace UnityEditor.Experimental
         public const string k_Inter = "Inter";
         public const string k_LucidaGrande = "Lucida Grande";
         public const string k_Verdana = "Verdana";
+        public const string k_SystemFont = "System Font";
 
         private Dictionary<Style, FontData> m_Fonts = new Dictionary<Style, FontData>();
 
@@ -105,9 +106,9 @@ namespace UnityEditor.Experimental
         {
             FontDef fontDef = new FontDef(fontName);
 
-            fontDef.SetFont(Style.Small, "Fonts/System/System Small.ttf", new string[] {fontName});
-            fontDef.SetFont(Style.Normal, "Fonts/System/System Normal.ttf", new string[] { fontName });
-            fontDef.SetFont(Style.Bold, "Fonts/System/System Normal Bold.ttf", new string[] { fontName + " Bold"});
+            fontDef.SetFont(Style.Small, "Fonts/System/System Small.ttf");
+            fontDef.SetFont(Style.Normal, "Fonts/System/System Normal.ttf");
+            fontDef.SetFont(Style.Bold, "Fonts/System/System Normal Bold.ttf");
             return fontDef;
         }
     }
@@ -190,17 +191,6 @@ namespace UnityEditor.Experimental
             return currentFontDef.GetFont(fontStyle);
         }
 
-        static void AddLucidaGrande()
-        {
-            s_SupportedFonts[FontDef.k_LucidaGrande] = FontDef.CreateFromResources(FontDef.k_LucidaGrande,
-                new Dictionary<FontDef.Style, string>
-                {
-                    {FontDef.Style.Small, "Fonts/Lucida Grande small.ttf"},
-                    {FontDef.Style.Normal, "Fonts/Lucida Grande.ttf"},
-                    {FontDef.Style.Bold, "Fonts/Lucida Grande Bold.ttf"}
-                });
-        }
-
         private static Dictionary<string, FontDef> s_SupportedFonts = null;
         internal static Dictionary<string, FontDef> supportedFonts
         {
@@ -219,14 +209,7 @@ namespace UnityEditor.Experimental
                             {FontDef.Style.BoldAndItalic, "Fonts/Inter/Inter-SemiBoldItalic.ttf"}
                         });
 
-                    if (Application.platform == RuntimePlatform.WindowsEditor)
-                    {
-                        s_SupportedFonts[FontDef.k_Verdana] = FontDef.CreateSystemFont(FontDef.k_Verdana);
-                    }
-                    else
-                    {
-                        AddLucidaGrande();
-                    }
+                    s_SupportedFonts[FontDef.k_SystemFont] = FontDef.CreateSystemFont(FontDef.k_SystemFont);
                 }
 
                 return s_SupportedFonts;

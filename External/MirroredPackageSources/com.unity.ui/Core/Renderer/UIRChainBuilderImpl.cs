@@ -615,18 +615,19 @@ namespace UnityEngine.UIElements.UIR.Implementation
             if (!ve.ShouldClip())
                 return ClipMethod.NotClipped;
 
+            // Even though GroupTransform does not formally imply the use of scissors, we prefer to use them because
+            // this way, we can avoid updating nested clipping rects.
+            bool preferScissors = (ve.renderHints & (RenderHints.GroupTransform | RenderHints.ClipWithScissors)) != 0;
+            ClipMethod rectClipMethod = preferScissors ? ClipMethod.Scissor : ClipMethod.ShaderDiscard;
+
             if (!UIRUtility.IsRoundRect(ve) && !UIRUtility.IsVectorImageBackground(ve))
-            {
-                if ((ve.renderHints & (RenderHints.GroupTransform | RenderHints.ClipWithScissors)) != 0)
-                    return ClipMethod.Scissor;
-                return ClipMethod.ShaderDiscard;
-            }
+                return rectClipMethod;
 
             if (ve.hierarchy.parent?.renderChainData.isStencilClipped == true)
-                return ClipMethod.ShaderDiscard; // Prevent nested stenciling for now, even if inaccurate
+                return rectClipMethod; // Prevent nested stenciling for now, even if inaccurate
 
             // Stencil clipping is not yet supported in world-space rendering, fallback to a coarse shader discard for now
-            return renderChain.drawInCameras ? ClipMethod.ShaderDiscard : ClipMethod.Stencil;
+            return renderChain.drawInCameras ? rectClipMethod : ClipMethod.Stencil;
         }
 
         static bool NeedsTransformID(VisualElement ve)
@@ -1799,6 +1800,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 if (UIRUtility.IsVectorImageBackground(currentElement))
                     GenerateStencilClipEntryForSVGBackground();
                 else GenerateStencilClipEntryForRoundedRectBackground();
+                m_StencilClip = true; // Draw operations following this one must be clipped
             }
             m_ClipRectID = currentElement.renderChainData.clipRectID;
         }
@@ -1947,7 +1949,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 m_Entries.Add(m_CurrentEntry);
                 totalVertices += m_CurrentEntry.vertices.Length;
                 totalIndices += m_CurrentEntry.indices.Length;
-                m_StencilClip = true; // Draw operations following this one should be clipped if not already
                 m_ClosingInfo.needsClosing = true;
             }
             m_CurrentEntry = new Entry();
@@ -1963,7 +1964,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
             Debug.Assert(svgEntry.vertices.Length > 0);
             Debug.Assert(svgEntry.indices.Length > 0);
 
-            m_StencilClip = true; // Draw operations following this one should be clipped if not already
             m_CurrentEntry.vertices = svgEntry.vertices;
             m_CurrentEntry.indices = svgEntry.indices;
             m_CurrentEntry.uvIsDisplacement = svgEntry.uvIsDisplacement;

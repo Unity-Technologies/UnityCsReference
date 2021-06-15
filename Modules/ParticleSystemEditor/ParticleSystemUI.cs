@@ -594,7 +594,16 @@ namespace UnityEditor
                 menu.AddItem(EditorGUIUtility.TrTextContent("Remove"), false, ModuleMenuCallback, moduleIndex);
             else
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Remove")); // Do not allow remove module when always show modules is enabled
-            EditorGUI.DoPropertyContextMenu(m_Modules[moduleIndex].m_Enabled, null, menu);
+
+            ClipboardContextMenu.overrideCopyContent = EditorGUIUtility.TrTextContent("Copy Module");
+            ClipboardContextMenu.overridePasteContent = EditorGUIUtility.TrTextContent("Paste  Module");
+
+            SerializedProperty prop = m_ParticleSystemSerializedObject.FindProperty(m_Modules[moduleIndex].moduleName);
+            EditorGUI.DoPropertyContextMenu(prop, null, menu);
+
+            ClipboardContextMenu.overrideCopyContent = null;
+            ClipboardContextMenu.overridePasteContent = null;
+
             Event.current.Use();
         }
 

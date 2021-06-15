@@ -63,5 +63,10 @@ namespace UnityEditor
         {
             get { return m_Object; }
         }
+
+        internal string moduleName
+        {
+            get { return m_ModuleName; }
+        }
     }
 } // namespace UnityEditor
