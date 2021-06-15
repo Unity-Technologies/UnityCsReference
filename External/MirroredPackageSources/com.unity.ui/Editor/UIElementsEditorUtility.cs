@@ -66,7 +66,7 @@ namespace UnityEditor.UIElements
             if (s_DefaultCommonLightStyleSheet == null)
             {
                 s_DefaultCommonLightStyleSheet = LoadSKinnedStyleSheetForFont(EditorResources.normalSkinIndex, EditorResources.currentFontName);
-                if(s_DefaultCommonDarkStyleSheet != null)
+                if(s_DefaultCommonLightStyleSheet != null)
                     s_DefaultCommonLightStyleSheet.isUnityStyleSheet = true;
             }
             

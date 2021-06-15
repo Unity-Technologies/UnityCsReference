@@ -1511,6 +1511,7 @@ namespace UnityEditor
 
         protected override void Apply()
         {
+            SpriteUtilityWindow.ApplySpriteEditorWindow();
             base.Apply();
             RefreshPreviewChannelSelection();
             BaseTextureImportPlatformSettings.ApplyPlatformSettings(m_PlatformSettings.ConvertAll<BaseTextureImportPlatformSettings>(x => x as BaseTextureImportPlatformSettings));

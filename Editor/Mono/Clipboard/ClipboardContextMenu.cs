@@ -145,6 +145,9 @@ namespace UnityEditor
                 menu.AddSeparator("");
         }
 
+        internal static GUIContent overrideCopyContent { set; get; }
+        internal static GUIContent overridePasteContent { set; get; }
+
         static void SetupAction(SerializedProperty property, GenericMenu menu, Event evt,
             Action<SerializedProperty> copyFunc,
             Func<SerializedProperty, bool> canPasteFunc,
@@ -157,20 +160,27 @@ namespace UnityEditor
             {
                 AddSeparator(menu);
 
+                var copyContent = overrideCopyContent ?? kCopyContent;
                 if (canCopy)
-                    menu.AddItem(kCopyContent, false, o => copyFunc((SerializedProperty)o), property);
+                    menu.AddItem(copyContent, false, o => copyFunc((SerializedProperty)o), property);
                 else
-                    menu.AddDisabledItem(kCopyContent);
+                    menu.AddDisabledItem(copyContent);
+
+                var pasteContent = overridePasteContent ?? kPasteContent;
                 if (canPaste)
-                    menu.AddItem(kPasteContent, false,
+                {
+                    menu.AddItem(pasteContent, false,
                         delegate(object o)
                         {
                             var prop = (SerializedProperty)o;
                             pasteFunc(prop);
                             prop.serializedObject.ApplyModifiedProperties();
                         }, property);
+                }
                 else
-                    menu.AddDisabledItem(kPasteContent);
+                {
+                    menu.AddDisabledItem(pasteContent);
+                }
             }
 
             if (evt != null)
