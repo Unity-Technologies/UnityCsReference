@@ -306,10 +306,10 @@ namespace UnityEditor.UIElements
                 asset.importedWithErrors = true;
         }
 
-        void ImportXml(string xmlPath, out VisualTreeAsset vta)
+        internal static Hash128 GenerateHash(string uxmlPath)
         {
             var h = new Hash128();
-            using (var stream = File.OpenRead(xmlPath))
+            using (var stream = File.OpenRead(uxmlPath))
             {
                 int readCount = 0;
                 byte[] b = new byte[1024 * 16];
@@ -322,6 +322,13 @@ namespace UnityEditor.UIElements
                     h.Append(b);
                 }
             }
+
+            return h;
+        }
+
+        void ImportXml(string xmlPath, out VisualTreeAsset vta)
+        {
+            var h = GenerateHash(xmlPath);
 
             CreateVisualTreeAsset(out vta, h);
 

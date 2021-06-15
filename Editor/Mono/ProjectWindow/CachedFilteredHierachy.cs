@@ -101,7 +101,7 @@ namespace UnityEditor
 
         HierarchyType m_HierarchyType;
 
-        public const int maxSearchAddCount = 3000;
+        public const int maxSearchAddCount = 12000;
 
         public FilteredHierarchy(HierarchyType type)
         {

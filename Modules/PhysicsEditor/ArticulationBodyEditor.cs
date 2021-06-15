@@ -27,7 +27,7 @@ namespace UnityEditor
         SerializedProperty m_ParentAnchorRotation;
         SerializedProperty m_AnchorPosition;
         SerializedProperty m_AnchorRotation;
-        SerializedProperty m_ComputeParentAnchor;
+        SerializedProperty m_MatchAnchors;
 
         SerializedProperty m_LinearX;
         SerializedProperty m_LinearY;
@@ -61,7 +61,7 @@ namespace UnityEditor
             public static GUIContent angularDamping = EditorGUIUtility.TrTextContent("Angular Damping", "Damping factor that affects how this body resists rotations.");
             public static GUIContent jointFriction = EditorGUIUtility.TrTextContent("Joint Friction", "Amount of friction that is applied as a result of connected bodies moving relative to this body.");
 
-            public static GUIContent computeParentAnchor = EditorGUIUtility.TrTextContent("Compute Parent Anchor", "Controls whether to set the anchor relative to the parent to be the same as the anchor relative to this body.");
+            public static GUIContent matchAnchors = EditorGUIUtility.TrTextContent("Match Anchors", "Controls whether to set the anchor relative to the parent to be the same as the anchor relative to this body.");
             public static GUIContent anchorPosition = EditorGUIUtility.TrTextContent("Anchor Position", "Position of the anchor relative to this body.");
             public static GUIContent parentAnchorPosition = EditorGUIUtility.TrTextContent("Parent Anchor Position", "Position of the anchor relative to the parent body.");
             public static GUIContent anchorRotation =  EditorGUIUtility.TrTextContent("Anchor Rotation", "Rotation of the anchor relative to this body.");
@@ -109,7 +109,7 @@ namespace UnityEditor
             m_ParentAnchorRotation = serializedObject.FindProperty("m_ParentAnchorRotation");
             m_AnchorPosition = serializedObject.FindProperty("m_AnchorPosition");
             m_AnchorRotation = serializedObject.FindProperty("m_AnchorRotation");
-            m_ComputeParentAnchor = serializedObject.FindProperty("m_ComputeParentAnchor");
+            m_MatchAnchors = serializedObject.FindProperty("m_MatchAnchors");
             m_ArticulationJointType = serializedObject.FindProperty("m_ArticulationJointType");
 
             m_LinearX = serializedObject.FindProperty("m_LinearX");
@@ -182,7 +182,7 @@ namespace UnityEditor
                 collisionDetectionMode = (CollisionDetectionMode)EditorGUILayout.EnumPopup(Styles.collisionDetectionMode, collisionDetectionMode);
                 m_CollisionDetectionMode.intValue = (int)collisionDetectionMode;
 
-                EditorGUILayout.PropertyField(m_ComputeParentAnchor, Styles.computeParentAnchor);
+                EditorGUILayout.PropertyField(m_MatchAnchors, Styles.matchAnchors);
 
                 // Show anchor edit fields and set to joint if changed
                 // The reason we have change checks here is because in AwakeFromLoad we won't overwrite anchors
@@ -196,7 +196,7 @@ namespace UnityEditor
                     body.anchorPosition = m_AnchorPosition.vector3Value;
                     body.anchorRotation = m_AnchorRotation.quaternionValue;
 
-                    if (m_ComputeParentAnchor.boolValue)
+                    if (m_MatchAnchors.boolValue)
                     {
                         // setting child anchors in this mode will also change the parent ones
                         // lets fetch them back otherwise ApplyModifiedProperties overwrites them
@@ -206,7 +206,7 @@ namespace UnityEditor
                 }
 
                 // parent anchors
-                if (!m_ComputeParentAnchor.boolValue)
+                if (!m_MatchAnchors.boolValue)
                 {
                     EditorGUI.BeginChangeCheck();
                     EditorGUILayout.PropertyField(m_ParentAnchorPosition, Styles.parentAnchorPosition);

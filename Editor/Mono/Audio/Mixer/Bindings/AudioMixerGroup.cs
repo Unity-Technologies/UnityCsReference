@@ -3,6 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEditor;
+using UnityEditor.Audio;
+using System.IO;
 using System.Collections.Generic;
 using System;
 
@@ -56,17 +59,6 @@ namespace UnityEditor.Audio
         public override string ToString()
         {
             return name;
-        }
-
-        public static Dictionary<AudioMixerEffectController, AudioMixerGroupController> GetEffectMapSlow(List<AudioMixerGroupController> allGroups)
-        {
-            var effectMap = new Dictionary<AudioMixerEffectController, AudioMixerGroupController>();
-
-            foreach (var g in allGroups)
-                foreach (var e in g.effects)
-                    effectMap[e] = g;
-
-            return effectMap;
         }
     }
 

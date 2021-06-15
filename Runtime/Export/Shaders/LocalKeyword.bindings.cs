@@ -15,6 +15,7 @@ namespace UnityEngine.Rendering
     [NativeHeader("Runtime/Shaders/Keywords/KeywordSpaceScriptBindings.h")]
     public readonly struct LocalKeyword
     {
+        [FreeFunction("keywords::IsKeywordOverridable")] extern private static bool IsOverridable(LocalKeyword kw);
         [FreeFunction("ShaderScripting::GetKeywordCount")] extern private static uint GetShaderKeywordCount(Shader shader);
         [FreeFunction("ShaderScripting::GetKeywordIndex")] extern private static uint GetShaderKeywordIndex(Shader shader, string keyword);
         [FreeFunction("ShaderScripting::GetKeywordCount")] extern private static uint GetComputeShaderKeywordCount(ComputeShader shader);
@@ -22,6 +23,7 @@ namespace UnityEngine.Rendering
         [FreeFunction("keywords::GetKeywordType")] extern private static ShaderKeywordType GetKeywordType(LocalKeywordSpace spaceInfo, uint keyword);
 
         public string name { get { return m_Name; } }
+        public bool isOverridable { get { return IsOverridable(this); } }
         public ShaderKeywordType type { get { return GetKeywordType(m_SpaceInfo, m_Index); } }
 
         public LocalKeyword(Shader shader, string name)

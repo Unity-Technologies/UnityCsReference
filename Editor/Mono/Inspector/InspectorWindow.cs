@@ -156,7 +156,7 @@ namespace UnityEditor
         public override void AddItemsToMenu(GenericMenu menu)
         {
             m_LockTracker.AddItemsToMenu(menu);
-            menu.AddItem(EditorGUIUtility.TrTextContent("Properties..."), false, () => PropertyEditor.OpenPropertyEditor(GetInspectedObject()));
+            menu.AddItem(EditorGUIUtility.TrTextContent("Properties..."), false, () => OpenPropertyEditor(GetInspectedObjects()));
             menu.AddSeparator(String.Empty);
             base.AddItemsToMenu(menu);
         }
@@ -429,6 +429,14 @@ namespace UnityEditor
             if (editor == null)
                 return null;
             return editor.target;
+        }
+
+        internal Object[] GetInspectedObjects()
+        {
+            Editor editor = InspectorWindowUtils.GetFirstNonImportInspectorEditor(tracker.activeEditors);
+            if (editor == null)
+                return null;
+            return editor.targets;
         }
     }
 }

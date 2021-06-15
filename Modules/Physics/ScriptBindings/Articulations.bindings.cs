@@ -169,7 +169,20 @@ namespace UnityEngine
         extern public Quaternion anchorRotation { get; set; }
         extern public Quaternion parentAnchorRotation { get; set; }
         extern public bool isRoot { get; }
-        extern public bool computeParentAnchor { get; set; }
+
+        [Obsolete("computeParentAnchor has been renamed to matchAnchors (UnityUpgradable) -> matchAnchors")]
+        public bool computeParentAnchor
+        {
+            get
+            {
+                return matchAnchors;
+            }
+            set
+            {
+                matchAnchors = value;
+            }
+        }
+        extern public bool matchAnchors { get; set; }
 
         extern public ArticulationDofLock linearLockX { get; set; }
         extern public ArticulationDofLock linearLockY { get; set; }

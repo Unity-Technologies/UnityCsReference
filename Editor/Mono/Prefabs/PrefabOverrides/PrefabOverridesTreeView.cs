@@ -129,6 +129,9 @@ namespace UnityEditor
                 if (TreeViewUtility.FindItem(state.selectedIDs[i], rootItem) == null)
                     state.selectedIDs.RemoveAt(i);
             }
+
+            if (state.selectedIDs.Count != 1 && PopupWindowWithoutFocus.IsVisible())
+                PopupWindowWithoutFocus.Hide();
         }
 
         void BuildPrefabOverridesPerObject(out Dictionary<int, PrefabOverrides> instanceIDToPrefabOverridesMap)

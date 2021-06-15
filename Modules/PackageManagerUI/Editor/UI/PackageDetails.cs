@@ -14,6 +14,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageDetails : VisualElement
     {
+        private const string k_TermsOfServicesURL = "https://assetstore.unity.com/account/term";
         internal new class UxmlFactory : UxmlFactory<PackageDetails> {}
 
         private const string k_CustomizedIcon = "customizedIcon";
@@ -62,7 +63,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             Resume,
             Cancel,
             Import,
-            Reset
+            Reset,
+            GitUpdate
         }
 
         internal static readonly string[] k_PackageActionVerbs =
@@ -80,6 +82,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             L10n.Tr("Cancel"),
             L10n.Tr("Import"),
             L10n.Tr("Reset"),
+            L10n.Tr("Update")
         };
 
         private static readonly string[] k_PackageActionInProgressVerbs =
@@ -97,6 +100,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             L10n.Tr("Cancel"),
             L10n.Tr("Import"),
             L10n.Tr("Resetting"),
+            L10n.Tr("Update")
         };
 
         internal static readonly string[] k_PackageActionTooltips =
@@ -113,7 +117,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             L10n.Tr("Click to resume the download of this {0}."),
             L10n.Tr("Click to cancel the download of this {0}."),
             L10n.Tr("Click to import assets from the {0} into your project."),
-            L10n.Tr("Click to reset this {0} dependencies to their default versions.")
+            L10n.Tr("Click to reset this {0} dependencies to their default versions."),
+            L10n.Tr("Click to check for updates and update to latest version")
         };
 
         private ResourceLoader m_ResourceLoader;
@@ -199,8 +204,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Application.onInternetReachabilityChange += OnInternetReachabilityChange;
 
             m_PackageDatabase.onPackagesChanged += (added, removed, preUpdate, postUpdate) => OnPackagesUpdated(postUpdate);
+            m_PackageDatabase.onVerifiedGitPackageUpToDate += OnVerifiedGitPackageUpToDate;
 
             m_PackageDatabase.onPackageProgressUpdate += OnPackageProgressUpdate;
+
+            m_PackageDatabase.onTermOfServiceAgreementStatusChange += OnTermOfServiceAgreementStatusChange;
 
             m_AssetStoreDownloadManager.onDownloadProgress += UpdateDownloadProgressBar;
             m_AssetStoreDownloadManager.onDownloadFinalized += StopDownloadProgressBar;
@@ -213,6 +221,19 @@ namespace UnityEditor.PackageManager.UI.Internal
             RefreshUI(m_PageManager.GetSelectedVersion());
         }
 
+        private void OnTermOfServiceAgreementStatusChange(TermOfServiceAgreementStatus status)
+        {
+            if (status == TermOfServiceAgreementStatus.Accepted)
+                return;
+
+            var result = m_Application.DisplayDialog(L10n.Tr("Package Manager"),
+                L10n.Tr("You need to accept Asset Store Terms of Service and EULA before you can download/update any package."),
+                L10n.Tr("Read and accept"), L10n.Tr("Close"));
+
+            if (result)
+                m_UnityConnectProxy.OpenAuthorizedURLInWebBrowser(k_TermsOfServicesURL);
+        }
+
         public void OnDisable()
         {
             body.OnDisable();
@@ -221,6 +242,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Application.onInternetReachabilityChange -= OnInternetReachabilityChange;
 
             m_PackageDatabase.onPackageProgressUpdate -= OnPackageProgressUpdate;
+
+            m_PackageDatabase.onTermOfServiceAgreementStatusChange -= OnTermOfServiceAgreementStatusChange;
 
             m_AssetStoreDownloadManager.onDownloadProgress -= UpdateDownloadProgressBar;
             m_AssetStoreDownloadManager.onDownloadFinalized -= StopDownloadProgressBar;
@@ -384,6 +407,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             RefreshContent();
         }
 
+        internal void OnVerifiedGitPackageUpToDate(IPackage package)
+        {
+            Debug.Log(string.Format(L10n.Tr("{0} is already up-to-date."), package.displayName));
+        }
+
         internal void OnPackagesUpdated(IEnumerable<IPackage> updatedPackages)
         {
             var packageUniqudId = package?.uniqueId;
@@ -391,6 +419,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             var updatedPackage = updatedPackages.FirstOrDefault(p => p.uniqueId == packageUniqudId);
+            // if Git and updated, inform the user
             if (updatedPackage != null)
             {
                 var updatedVersion = displayVersion == null ? null : updatedPackage.versions.FirstOrDefault(v => v.uniqueId == displayVersion.uniqueId);
@@ -482,6 +511,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var installed = package?.versions.installed;
             var targetVersion = this.targetVersion;
             var installable = targetVersion?.HasTag(PackageTag.Installable) ?? false;
+            var isGitInstalled = installed?.HasTag(PackageTag.Git) == true;
             var visibleFlag = installed?.HasTag(PackageTag.VersionLocked) != true && displayVersion != null && installable && installed != targetVersion && !isRequestedButOverriddenVersion
                 && m_PageManager.GetVisualState(package)?.isLocked != true;
             if (visibleFlag)
@@ -499,7 +529,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 RefreshButtonStatusAndTooltip(updateButton, action, disableIfInstallOrUninstallInProgress, disableIfCompiling, disableIfEntitlementsError);
             }
-            UIUtils.SetElementDisplay(updateButton, visibleFlag);
+            else if (isGitInstalled)
+            {
+                var action = PackageAction.GitUpdate;
+                var currentPackageInstallInProgress = m_PackageDatabase.IsInstallInProgress(displayVersion);
+                updateButton.text = GetButtonText(action, currentPackageInstallInProgress, null);
+                RefreshButtonStatusAndTooltip(updateButton, action, disableIfInstallOrUninstallInProgress, disableIfCompiling);
+            }
+            UIUtils.SetElementDisplay(updateButton, isGitInstalled || visibleFlag);
         }
 
         private void RefreshToolbarExtensionsStatusAndTooltip()
@@ -718,8 +755,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void UpdateClick()
         {
-            // dissuade users from updating by showing a warning message
             var installedVersion = package.versions.installed;
+            if (installedVersion?.HasTag(PackageTag.Git) == true)
+            {
+                m_PackageDatabase.Install(installedVersion.packageInfo.packageId);
+                RefreshPackageActionButtons();
+                return;
+            }
+
             var targetVersion = this.targetVersion;
             if (installedVersion != null && !installedVersion.isDirectDependency && installedVersion != targetVersion)
             {
@@ -898,14 +941,17 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var isUpdate = package.state == PackageState.UpdateAvailable;
 
-            m_PackageDatabase.Download(package);
+            var canDownload = m_PackageDatabase.Download(package);
             RefreshDownloadStatesButtons();
 
-            var operation = m_AssetStoreDownloadManager.GetDownloadOperation(displayVersion.packageUniqueId);
-            downloadProgress.UpdateProgress(operation);
+            if (canDownload)
+            {
+                var operation = m_AssetStoreDownloadManager.GetDownloadOperation(displayVersion.packageUniqueId);
+                downloadProgress.UpdateProgress(operation);
 
-            var eventName = isUpdate ? "startDownloadUpdate" : "startDownloadNew";
-            PackageManagerWindowAnalytics.SendEvent(eventName, package.uniqueId);
+                var eventName = isUpdate ? "startDownloadUpdate" : "startDownloadNew";
+                PackageManagerWindowAnalytics.SendEvent(eventName, package.uniqueId);
+            }
         }
 
         private void CancelClick()

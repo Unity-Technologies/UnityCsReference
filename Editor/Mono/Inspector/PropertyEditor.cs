@@ -1663,6 +1663,8 @@ namespace UnityEditor
 
             if (editors.Length == 0)
             {
+                // Release references to prefabs so they can be removed by GC
+                m_ComponentsInPrefabSource = null;
                 return;
             }
 
@@ -2113,21 +2115,23 @@ namespace UnityEditor
         [UsedImplicitly, MenuItem(k_AssetPropertiesMenuItemName, priority = 99999)]
         internal static void OpenPropertyEditorOnSelection()
         {
-            if (Selection.objects.Length == 1)
+            OpenPropertyEditor(Selection.objects);
+        }
+
+        internal static PropertyEditor OpenPropertyEditor(IList<Object> objs)
+        {
+            if (objs == null || objs.Count == 0)
+                return null;
+
+            var firstPropertyEditor = OpenPropertyEditor(objs.First());
+            EditorApplication.delayCall += () =>
             {
-                foreach (var obj in Selection.objects)
-                    OpenPropertyEditor(obj);
-            }
-            else
-            {
-                var firstPropertyEditor = OpenPropertyEditor(Selection.objects[0]);
-                EditorApplication.delayCall += () =>
-                {
-                    var dock = firstPropertyEditor.m_Parent as DockArea;
-                    for (int i = 1; i < Selection.objects.Length; ++i)
-                        dock.AddTab(OpenPropertyEditor(Selection.objects[i], false));
-                };
-            }
+                var dock = firstPropertyEditor.m_Parent as DockArea;
+                for (int i = 1; i < objs.Count; ++i)
+                    dock.AddTab(OpenPropertyEditor(objs[i], false));
+            };
+
+            return firstPropertyEditor;
         }
 
         internal static PropertyEditor OpenPropertyEditor(Object obj, bool showWindow = true)

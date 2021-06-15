@@ -12,11 +12,14 @@ namespace UnityEditor
     [EditorTool("Articulation Body Anchor Transform Tool", typeof(ArticulationBody))]
     class ArticulationBodyAnchorTransformTool : EditorTool
     {
-        public override GUIContent toolbarIcon =>
-            new GUIContent(
-                EditorGUIUtility.IconContent("TransformTool").image,
-                EditorGUIUtility.TrTextContent("Edit the anchor transforms of this Articulation Body").text
-            );
+        protected static class Styles
+        {
+            public static readonly GUIContent toolbarIcon = new GUIContent(
+                EditorGUIUtility.IconContent("AnchorTransformTool").image,
+                L10n.Tr("Edit the anchor transforms of this Articulation Body"));
+        }
+
+        public override GUIContent toolbarIcon => Styles.toolbarIcon;
 
         public override void OnToolGUI(EditorWindow window)
         {
@@ -45,7 +48,7 @@ namespace UnityEditor
                     }
                 }
 
-                if (!body.computeParentAnchor)
+                if (!body.matchAnchors)
                 {
                     Vector3 localAnchorT = body.parentAnchorPosition;
                     Quaternion localAnchorR = body.parentAnchorRotation;

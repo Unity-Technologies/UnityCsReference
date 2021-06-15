@@ -91,35 +91,33 @@ namespace UnityEngine.Networking
         private static extern unsafe IntPtr Create(UploadHandlerRaw self, byte* data, int dataLength);
 
         public UploadHandlerRaw(byte[] data)
+            : this((data == null || data.Length == 0) ? new NativeArray<byte>() : new NativeArray<byte>(data, Allocator.Persistent), true)
         {
-            if (data == null || data.Length == 0)
-                throw new ArgumentException("Cannot create a data handler without payload data");
-            m_Payload = new NativeArray<byte>(data, Allocator.Persistent);
-            unsafe
-            {
-                m_Ptr = Create(this, (byte*)m_Payload.GetUnsafeReadOnlyPtr(), m_Payload.Length);
-            }
         }
 
         public UploadHandlerRaw(NativeArray<byte> data, bool transferOwnership)
         {
-            if (!data.IsCreated || data.Length == 0)
-                throw new ArgumentException("Cannot create a data handler without payload data");
-            if (transferOwnership)
-                m_Payload = data;
             unsafe
             {
-                m_Ptr = Create(this, (byte*)data.GetUnsafeReadOnlyPtr(), data.Length);
+                if (!data.IsCreated || data.Length == 0)
+                    m_Ptr = Create(this, null, 0);
+                else
+                {
+                    if (transferOwnership)
+                        m_Payload = data;
+                    m_Ptr = Create(this, (byte*)data.GetUnsafeReadOnlyPtr(), data.Length);
+                }
             }
         }
 
         public UploadHandlerRaw(NativeArray<byte>.ReadOnly data)
         {
-            if (data.Length == 0)
-                throw new ArgumentException("Cannot create a data handler without payload data");
             unsafe
             {
-                m_Ptr = Create(this, (byte*)data.GetUnsafeReadOnlyPtr(), data.Length);
+                if (data.Length == 0)
+                    m_Ptr = Create(this, null, 0);
+                else
+                    m_Ptr = Create(this, (byte*)data.GetUnsafeReadOnlyPtr(), data.Length);
             }
         }
 

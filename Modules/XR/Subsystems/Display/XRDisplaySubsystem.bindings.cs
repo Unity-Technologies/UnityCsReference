@@ -104,6 +104,33 @@ namespace UnityEngine.XR
         [NativeMethod("TryGetRenderPass")]
         extern private bool Internal_TryGetRenderPass(int renderPassIndex, out XRRenderPass renderPass);
 
+        public void EndRecordingIfLateLatched(Camera camera)
+        {
+            if (!Internal_TryEndRecordingIfLateLatched(camera))
+            {
+                if (camera == null)
+                {
+                    throw new ArgumentNullException("camera");
+                }
+            }
+        }
+
+        [NativeMethod("TryEndRecordingIfLateLatched")]
+        extern private bool Internal_TryEndRecordingIfLateLatched(Camera camera);
+        public void BeginRecordingIfLateLatched(Camera camera)
+        {
+            if (!Internal_TryBeginRecordingIfLateLatched(camera))
+            {
+                if (camera == null)
+                {
+                    throw new ArgumentNullException("camera");
+                }
+            }
+        }
+
+        [NativeMethod("TryBeginRecordingIfLateLatched")]
+        extern private bool Internal_TryBeginRecordingIfLateLatched(Camera camera);
+
         public void GetCullingParameters(Camera camera, int cullingPassIndex, out ScriptableCullingParameters scriptableCullingParameters)
         {
             if (!Internal_TryGetCullingParams(camera, cullingPassIndex, out scriptableCullingParameters))

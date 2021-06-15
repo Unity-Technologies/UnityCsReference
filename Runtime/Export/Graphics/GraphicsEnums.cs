@@ -1936,6 +1936,13 @@ namespace UnityEngine.Rendering
         NativeGraphicsJobs = 4,
         NativeGraphicsJobsWithoutRenderThread = 5,
     }
+    public enum CameraLateLatchMatrixType
+    {
+        View = 0,
+        InverseView = 1,
+        ViewProjection = 2,
+        InverseViewProjection = 3,
+    }
 
     public enum OpenGLESVersion
     {

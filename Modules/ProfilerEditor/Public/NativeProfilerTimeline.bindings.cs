@@ -130,8 +130,11 @@ namespace UnityEditorInternal
 
         public float out_LocalStartTime;
         public float out_Duration;
+        internal float out_TotalDurationForThread;
+        internal int out_InstanceCountForThread;
         public float out_TotalDurationForFrame;
         public int out_InstanceCountForFrame;
+        internal int out_ThreadCountForFrame;
 
         public void Reset()
         {
@@ -142,8 +145,11 @@ namespace UnityEditorInternal
 
             out_LocalStartTime = -1.0f;
             out_Duration = -1.0f;
+            out_TotalDurationForThread = -1.0f;
+            out_InstanceCountForThread = -1;
             out_TotalDurationForFrame = -1.0f;
             out_InstanceCountForFrame = -1;
+            out_ThreadCountForFrame = -1;
         }
     }
 

@@ -41,6 +41,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private string[] m_SerializedProductIdMapValues;
 
         public virtual event Action<IEnumerable<PackageInfo>> onPackageInfosUpdated;
+        public virtual event Action<string> onVerifiedGitPackageUpToDate;
 
         public virtual IEnumerable<PackageInfo> searchPackageInfos => m_SearchPackageInfos.Values;
         public virtual IEnumerable<PackageInfo> installedPackageInfos => m_InstalledPackageInfos.Values;
@@ -161,6 +162,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_InstalledPackageInfos[info.name] = info;
             if (isSpecialInstallation || oldInfo == null || IsDifferent(oldInfo, info))
                 TriggerOnPackageInfosUpdated(new PackageInfo[] { info });
+
+            // if Git install and oldInfo is same as new info, means no update was found
+            else if (oldInfo.source == PackageSource.Git && !IsDifferent(oldInfo, info))
+            {
+                onVerifiedGitPackageUpToDate.Invoke(oldInfo.name);
+            }
         }
 
         public virtual void SetInstalledPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp = 0)

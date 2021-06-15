@@ -883,6 +883,7 @@ namespace UnityEngine
         extern public static int defaultSolverVelocityIterations { get; set; }
 
         extern static public float defaultMaxAngularSpeed { get; set; }
+        extern static public bool improvedPatchFriction { get; set; }
 
         [NativeProperty("DefaultPhysicsSceneHandle")]
         extern public static PhysicsScene defaultPhysicsScene { get; }

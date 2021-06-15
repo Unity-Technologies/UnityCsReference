@@ -46,6 +46,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             UnityConnect.instance.ShowLogin();
         }
 
+        public virtual void OpenAuthorizedURLInWebBrowser(string url)
+        {
+            UnityConnect.instance.OpenAuthorizedURLInWebBrowser(url);
+        }
+
         private void OnUserStateChanged(UserInfo newInfo)
         {
             var prevIsUserInfoReady = isUserInfoReady;

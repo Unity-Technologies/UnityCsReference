@@ -2,12 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-// this file is used by both Editor and AssemblyConverter
-
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Xml.Linq;
 using Microsoft.Win32;
 
@@ -281,7 +280,7 @@ namespace UnityEditor.Scripting.Compilers
 
         private static string CombinePaths(params string[] paths)
         {
-            return UnityEditor.Utils.Paths.Combine(paths);
+            return Path.Combine(paths);
         }
 
         private static IEnumerable<UWPExtensionSDK> GetExtensionSDKs(string sdkFolder, string sdkVersion)
@@ -367,7 +366,7 @@ namespace UnityEditor.Scripting.Compilers
             try
             {
                 const string keyName = @"SOFTWARE\Microsoft\Microsoft SDKs\Windows\v10.0";
-                folder = UnityEditorInternal.RegistryUtil.GetRegistryStringValue(keyName, "InstallationFolder", folder, UnityEditorInternal.RegistryView._32);
+                folder = GetRegistryStringValueWrapper(keyName, "InstallationFolder", folder, UnityEditorInternal.RegistryView._32);
             }
             catch
             {
@@ -379,5 +378,14 @@ namespace UnityEditor.Scripting.Compilers
 
             return folder;
         }
+
+        // Wrap this in a non-inlinable method so that when it gets JITed inside the test runner, it causes the exception
+        // inside try/catch of the parent method call.
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        static string GetRegistryStringValueWrapper(string subKey, string valueName, string defaultValue, UnityEditorInternal.RegistryView view)
+        {
+            return UnityEditorInternal.RegistryUtil.GetRegistryStringValue(subKey, valueName, defaultValue, view);
+        }
+
     }
 }

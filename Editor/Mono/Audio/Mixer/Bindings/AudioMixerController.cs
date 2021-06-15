@@ -5,8 +5,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Audio;
+using UnityEditor;
+using UnityEditor.Audio;
+using System.IO;
 using System;
 using System.Linq;
+
 using Object = UnityEngine.Object;
 
 namespace UnityEditor.Audio
@@ -37,13 +41,18 @@ namespace UnityEditor.Audio
             {
                 return "Volume" + GetBasePath(group.GetDisplayString(), null);
             }
-
-            if (group.GetGUIDForPitch() == parameter)
+            else if (group.GetGUIDForPitch() == parameter)
             {
                 return "Pitch" + GetBasePath(group.GetDisplayString(), null);
             }
-
-            return "Error finding parameter path.";
+            else if (group.GetGUIDForSend() == parameter)
+            {
+                return "Send" + GetBasePath(group.GetDisplayString(), null);
+            }
+            else
+            {
+                return "Error finding Parameter path.";
+            }
         }
 
         protected string GetBasePath(string group, string effect)
@@ -73,29 +82,22 @@ namespace UnityEditor.Audio
 
             if (effect.GetGUIDForMixLevel() == parameter)
             {
-                if (effect.IsSend())
-                {
-                    var allGroups = group.controller.GetAllAudioGroupsSlow();
-                    var effectMap = AudioMixerGroupController.GetEffectMapSlow(allGroups);
-                    return $"Send level{GetBasePath(group.GetDisplayString(), null)} to {effect.sendTarget.GetDisplayString(effectMap)}";
-                }
-
-                return $"Mix Level{GetBasePath(group.GetDisplayString(), effect.effectName)}";
+                return "Mix Level" + GetBasePath(group.GetDisplayString(), effect.effectName);
             }
-
-            MixerParameterDefinition[] paramDefs = MixerEffectDefinitions.GetEffectParameters(effect.effectName);
-
-            for (int i = 0; i < paramDefs.Length; i++)
+            else
             {
-                GUID guid = effect.GetGUIDForParameter(paramDefs[i].name);
-
-                if (guid == parameter)
+                MixerParameterDefinition[] paramDefs = MixerEffectDefinitions.GetEffectParameters(effect.effectName);
+                for (int i = 0; i < paramDefs.Length; i++)
                 {
-                    return paramDefs[i].name + GetBasePath(group.GetDisplayString(), effect.effectName);
+                    GUID guid = effect.GetGUIDForParameter(paramDefs[i].name);
+                    if (guid == parameter)
+                    {
+                        return paramDefs[i].name + GetBasePath(group.GetDisplayString(), effect.effectName);
+                    }
                 }
-            }
 
-            return "Error finding parameter path.";
+                return "Error finding Parameter path.";
+            }
         }
     }
 
@@ -105,12 +107,11 @@ namespace UnityEditor.Audio
     internal sealed partial class AudioMixerController : AudioMixer
     {
         public static float kMinVolume = -80.0f; // The minimum volume is the level at which sends and effects can be bypassed
-        public static float kMaxEffect = 0.0f;
+        public static float kMaxEffect =   0.0f;
         public static float kVolumeWarp = 1.7f;
         public static string s_GroupEffectDisplaySeperator = "\\"; // Use backslash instead of forward slash to prevent OS menus from splitting path and creating submenus
 
         public event ChangedExposedParameterHandler ChangedExposedParameter;
-
         public void OnChangedExposedParameter()
         {
             if (ChangedExposedParameter != null)
@@ -130,7 +131,6 @@ namespace UnityEditor.Audio
 
         [System.NonSerialized]
         private Dictionary<GUID, AudioParameterPath> m_ExposedParamPathCache;
-
         private Dictionary<GUID, AudioParameterPath> exposedParamCache
         {
             get
@@ -221,48 +221,35 @@ namespace UnityEditor.Audio
             List<AudioMixerGroupController> groups = GetAllAudioGroupsSlow();
             foreach (AudioMixerGroupController group in groups)
             {
-                if (group.GetGUIDForVolume() == parameter || group.GetGUIDForPitch() == parameter)
+                if (group.GetGUIDForVolume()             == parameter ||
+                    group.GetGUIDForPitch()              == parameter ||
+                    group.GetGUIDForSend()               == parameter)
                 {
                     AudioGroupParameterPath newPath = new AudioGroupParameterPath(group, parameter);
                     exposedParamCache[parameter] = newPath;
                     return newPath.ResolveStringPath(getOnlyBasePath);
                 }
-
-                for (int i = 0; i < group.effects.Length; i++)
+                else
                 {
-                    AudioMixerEffectController effect = group.effects[i];
-                    MixerParameterDefinition[] paramDefs = MixerEffectDefinitions.GetEffectParameters(effect.effectName);
-
-                    var found = false;
-
-                    if (parameter == effect.GetGUIDForMixLevel())
+                    for (int i = 0; i < group.effects.Length; i++)
                     {
-                        found = true;
-                    }
-                    else
-                    {
-                        for (var j = 0; j < paramDefs.Length; j++)
+                        AudioMixerEffectController effect = group.effects[i];
+                        MixerParameterDefinition[] paramDefs = MixerEffectDefinitions.GetEffectParameters(effect.effectName);
+
+                        for (int j = 0; j < paramDefs.Length; j++)
                         {
-                            var nextGuid = effect.GetGUIDForParameter(paramDefs[j].name);
-
-                            if (parameter == nextGuid)
+                            GUID guid = effect.GetGUIDForParameter(paramDefs[j].name);
+                            if (guid == parameter)
                             {
-                                found = true;
-                                break;
+                                AudioEffectParameterPath newPath = new AudioEffectParameterPath(group, effect, parameter);
+                                exposedParamCache[parameter] = newPath;
+                                return newPath.ResolveStringPath(getOnlyBasePath);
                             }
                         }
                     }
-
-                    if (found)
-                    {
-                        var newPath = new AudioEffectParameterPath(group, effect, parameter);
-                        exposedParamCache[parameter] = newPath;
-                        return newPath.ResolveStringPath(getOnlyBasePath);
-                    }
                 }
             }
-
-            return "Error finding parameter path";
+            return "Error finding Parameter path";
         }
 
         public static AudioMixerController CreateMixerControllerAtPath(string path)
@@ -342,7 +329,6 @@ namespace UnityEditor.Audio
                 if (groups.Contains(child))
                     return true;
             }
-
             return false;
         }
 
@@ -365,7 +351,6 @@ namespace UnityEditor.Audio
         private void DestroyExposedParametersContainedInEffect(AudioMixerEffectController effect)
         {
             Undo.RecordObject(this, "Changed Exposed Parameters");
-
             //Cleanup exposed parameters that were in the effect
             var exposedParams = exposedParameters;
             foreach (var param in exposedParams)
@@ -378,12 +363,11 @@ namespace UnityEditor.Audio
         private void DestroyExposedParametersContainedInGroup(AudioMixerGroupController group)
         {
             Undo.RecordObject(this, "Remove Exposed Parameter");
-
             //Clean up the exposed parameters that were in the group.
             var exposedParams = exposedParameters;
             foreach (var param in exposedParams)
             {
-                if (group.GetGUIDForVolume() == param.guid || group.GetGUIDForPitch() == param.guid)
+                if (group.GetGUIDForVolume() == param.guid || group.GetGUIDForPitch() == param.guid || group.GetGUIDForSend() == param.guid)
                     RemoveExposedParameter(param.guid);
             }
         }
@@ -562,7 +546,6 @@ namespace UnityEditor.Audio
                 if (g != null)
                     return g;
             }
-
             return null;
         }
 
@@ -618,6 +601,8 @@ namespace UnityEditor.Audio
                     s.SetValue(targetGroup.GetGUIDForVolume(), value);
                 if (s.GetValue(sourceGroup.GetGUIDForPitch(), out value))
                     s.SetValue(targetGroup.GetGUIDForPitch(), value);
+                if (s.GetValue(sourceGroup.GetGUIDForSend(), out value))
+                    s.SetValue(targetGroup.GetGUIDForSend(), value);
             }
 
             AssetDatabase.AddObjectToAsset(targetGroup, this);
@@ -677,7 +662,6 @@ namespace UnityEditor.Audio
                     if (snapshot.GetValue(guid, out value))
                         snaps[n].SetValue(guid, value);
                 }
-
                 foreach (var p in paramDefs)
                 {
                     var guid = effect.GetGUIDForParameter(p.name);
@@ -766,7 +750,6 @@ namespace UnityEditor.Audio
                 if (sourceIndex == targetIndex)
                     return false;
             }
-
             if (sourceIndex < 0 || sourceIndex >= sourceEffects.Count)
                 return false;
             if (targetIndex < 0 || targetIndex > targetEffects.Count)
@@ -802,7 +785,6 @@ namespace UnityEditor.Audio
             public List<object> targets = new List<object>();
             public AudioMixerGroupController group = null;
             public AudioMixerEffectController effect = null;
-
             public string GetDisplayString()
             {
                 string s = group.GetDisplayString();
@@ -849,17 +831,13 @@ namespace UnityEditor.Audio
                             graph[target].group = group;
                             graph[target].effect = target;
                         }
-
                         if (!graph[effect].targets.Contains(target))
                             graph[effect].targets.Add(target);
                     }
-
                     groupTail = effect;
                 }
-
                 graph[group].groupTail = groupTail;
             }
-
             return graph;
         }
 
@@ -886,10 +864,8 @@ namespace UnityEditor.Audio
                     identifiedLoop.Clear();
                     identifiedLoop.Add(node);
                 }
-
                 return true;
             }
-
             node.visited = true;
             foreach (var s in node.targets)
             {
@@ -901,7 +877,6 @@ namespace UnityEditor.Audio
                     return true;
                 }
             }
-
             node.visited = false;
             return false;
         }
@@ -923,11 +898,9 @@ namespace UnityEditor.Audio
                         identifiedLoop.RemoveRange(i, identifiedLoop.Count - i);
                         identifiedLoop.Reverse();
                     }
-
                     return true;
                 }
             }
-
             return false;
         }
 

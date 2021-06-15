@@ -18,11 +18,14 @@ namespace UnityEditor
 
         private JointAngularLimitHandle m_angularLimitHandle = new JointAngularLimitHandle();
 
-        public override GUIContent toolbarIcon =>
-            new GUIContent(
+        protected static class Styles
+        {
+            public static readonly GUIContent toolbarIcon = new GUIContent(
                 EditorGUIUtility.IconContent("JointAngularLimits").image,
-                EditorGUIUtility.TrTextContent("Edit the joint limits of this Articulation Body").text
-            );
+                L10n.Tr("Edit the joint angular limits of this Articulation Body"));
+        }
+
+        public override GUIContent toolbarIcon => Styles.toolbarIcon;
 
         public Handles.CapFunction prismaticHandleDrawFunction { get; set; }
 
@@ -54,13 +57,12 @@ namespace UnityEditor
         private void DisplayJointLimits(ArticulationBody body)
         {
             ArticulationBody parentBody = ArticulationBodyEditorCommon.FindEnabledParentArticulationBody(body);
-            bool isPlaying = EditorApplication.isPlaying;
 
             // Consider that the anchors are only actually matched when in play mode.
             // So, if it's not play mode, we need to do that manually for the gizmos to be placed correctly.
             Vector3 anchorPosition;
             Quaternion anchorRotation;
-            if (body.computeParentAnchor & !isPlaying)
+            if (body.matchAnchors & !EditorApplication.isPlaying)
             {
                 anchorPosition = body.transform.TransformPoint(body.anchorPosition);
                 anchorRotation = body.transform.rotation * body.anchorRotation;
@@ -85,7 +87,7 @@ namespace UnityEditor
 
             if (body.jointType == ArticulationJointType.PrismaticJoint)
             {
-                ShowPrismaticLimits(body, parentAnchorSpace);
+                ShowPrismaticLimits(body, parentAnchorSpace, anchorPosition, anchorRotation);
                 return;
             }
 
@@ -110,7 +112,7 @@ namespace UnityEditor
             }
         }
 
-        private void ShowPrismaticLimits(ArticulationBody body, Matrix4x4 parentAnchorSpace)
+        private void ShowPrismaticLimits(ArticulationBody body, Matrix4x4 parentAnchorSpace, Vector3 anchorPosition, Quaternion anchorRotation)
         {
             Vector3 primaryAxis = Vector3.zero;
             // compute the primary axis of the prismatic
@@ -132,91 +134,94 @@ namespace UnityEditor
                 drive = body.zDrive;
             }
 
-            // Now show the valid movement along the axis as well as limits. Stretch the handle along the axis of movement
-            using (new Handles.DrawingScope(parentAnchorSpace))
-            {
-                // Function returns true if DoF is free, therefore we don't need to draw handles
-                if (DrawPrismaticDashedLine(body, primaryAxis, drive))
-                    return;
-
-                DrawPrismaticHandles(body, primaryAxis, drive);
-            }
-        }
-
-        private bool DrawPrismaticDashedLine(ArticulationBody body, Vector3 primaryAxis, ArticulationDrive drive)
-        {
-            Vector3 lp, up;
-            bool isFree = false;
-            Handles.color = new Color(1, 1, 1, DashAlpha);
-            // If prismatic and unlocked - Visualize just the infinite line
-            // Show the axis, extending 20 meters either way or 20 meters in front of body, whichever is farther
             if (body.linearLockX == ArticulationDofLock.FreeMotion || body.linearLockY == ArticulationDofLock.FreeMotion || body.linearLockZ == ArticulationDofLock.FreeMotion)
             {
-                Vector3 bodyPos = body.transform.localPosition;
-                // Make sure we adjust length of dashed line only if body is moving along the primary axis
-                float distFromParentAnchor = new Vector3(bodyPos.x * primaryAxis.x, bodyPos.y * primaryAxis.y, bodyPos.z * primaryAxis.z).magnitude;
-                float direction = Mathf.Sign(Vector3.Dot(bodyPos, primaryAxis));
-                lp = direction * primaryAxis * Mathf.Min(distFromParentAnchor - 20, -20);
-                up = direction * primaryAxis * Mathf.Max(distFromParentAnchor + 20, 20);
-                isFree = true;
+                DrawFreePrismatic(body, primaryAxis, anchorPosition, anchorRotation);
+                return;
             }
-            else
-            {
-                lp = primaryAxis * drive.lowerLimit;
-                up = primaryAxis * drive.upperLimit;
-            }
-            Handles.DrawDottedLine(lp, up, DashSize);
-            return isFree;
+
+            DrawLimitedPrismatic(body, primaryAxis, drive, parentAnchorSpace);
         }
 
-        private void DrawPrismaticHandles(ArticulationBody body, Vector3 primaryAxis, ArticulationDrive drive)
+        private void DrawFreePrismatic(ArticulationBody body, Vector3 primaryAxis, Vector3 anchorPosition, Quaternion anchorRotation)
         {
-            Vector3 lowerPoint = primaryAxis * drive.lowerLimit;
-            Vector3 upperPoint = primaryAxis * drive.upperLimit;
-            int idLower = GUIUtility.GetControlID(Handles.s_SliderHash, FocusType.Passive);
-            int idUpper = GUIUtility.GetControlID(Handles.s_SliderHash, FocusType.Passive);
+            Vector3 lp, up;
+            float paddingAmount = 15;
+            Handles.color = new Color(1, 1, 1, DashAlpha);
+            Vector3 primaryAxisRotated = anchorRotation * primaryAxis;
+            Vector3 padding = primaryAxisRotated * paddingAmount;
 
-            EditorGUI.BeginChangeCheck();
+            // If not in play mode and match anchors is off, use the anchor position
+            if (!body.matchAnchors & !EditorApplication.isPlaying)
             {
-                Handles.color = Handles.xAxisColor;
-                lowerPoint = Handles.Slider(idLower, lowerPoint, primaryAxis, CapScale, prismaticHandleDrawFunction, 0);
-
-                Handles.color = Handles.yAxisColor;
-                upperPoint = Handles.Slider(idUpper, upperPoint, primaryAxis, CapScale, prismaticHandleDrawFunction, 0);
+                lp = anchorPosition - padding;
+                up = anchorPosition + padding;
             }
-            if (EditorGUI.EndChangeCheck())
+            // If in play mode or match anchors is on, calculate the correct position
+            else
             {
-                Undo.RecordObject(target, "Changing Articulation body parent anchor prismatic limits");
-                float newLowerLimit = drive.lowerLimit;
-                float newUpperLimit = drive.upperLimit;
+                Vector3 bodyPosOnPrimaryAxis = Vector3.Project(body.transform.position - anchorPosition, primaryAxisRotated);
 
-                // Disallow moving Lower limit past Upper limit and vice versa, based on which handle is being held down
-                if (GUIUtility.hotControl == idLower)
-                {
-                    float directionLower = Mathf.Sign(lowerPoint.x + lowerPoint.y + lowerPoint.z);
-                    newLowerLimit = lowerPoint.magnitude * directionLower;
-                    if (newLowerLimit > drive.upperLimit) newLowerLimit = drive.upperLimit;
-                }
-                else if (GUIUtility.hotControl == idUpper)
-                {
-                    float directionUpper = Mathf.Sign(upperPoint.x + upperPoint.y + upperPoint.z);
-                    newUpperLimit = upperPoint.magnitude * directionUpper;
-                    if (newUpperLimit < drive.lowerLimit) newUpperLimit = drive.lowerLimit;
-                }
+                lp = anchorPosition + bodyPosOnPrimaryAxis - padding;
+                up = anchorPosition + bodyPosOnPrimaryAxis + padding;
+            }
+            Handles.DrawDottedLine(lp, up, DashSize);
+        }
 
-                ArticulationDrive tempDrive = SetDriveLimits(drive, newLowerLimit, newUpperLimit);
+        private void DrawLimitedPrismatic(ArticulationBody body, Vector3 primaryAxis, ArticulationDrive drive, Matrix4x4 parentAnchorSpace)
+        {
+            using (new Handles.DrawingScope(parentAnchorSpace))
+            {
+                Vector3 lowerPoint = primaryAxis * drive.lowerLimit;
+                Vector3 upperPoint = primaryAxis * drive.upperLimit;
 
-                if (body.linearLockX == ArticulationDofLock.LimitedMotion)
+                Handles.DrawDottedLine(lowerPoint, upperPoint, DashSize);
+
+                int idLower = GUIUtility.GetControlID(Handles.s_SliderHash, FocusType.Passive);
+                int idUpper = GUIUtility.GetControlID(Handles.s_SliderHash, FocusType.Passive);
+
+                EditorGUI.BeginChangeCheck();
                 {
-                    body.xDrive = tempDrive;
+                    Handles.color = Handles.xAxisColor;
+                    lowerPoint = Handles.Slider(idLower, lowerPoint, primaryAxis, CapScale, prismaticHandleDrawFunction, 0);
+
+                    Handles.color = Handles.yAxisColor;
+                    upperPoint = Handles.Slider(idUpper, upperPoint, primaryAxis, CapScale, prismaticHandleDrawFunction, 0);
                 }
-                else if (body.linearLockY == ArticulationDofLock.LimitedMotion)
+                if (EditorGUI.EndChangeCheck())
                 {
-                    body.yDrive = tempDrive;
-                }
-                else if (body.linearLockZ == ArticulationDofLock.LimitedMotion)
-                {
-                    body.zDrive = tempDrive;
+                    Undo.RecordObject(target, "Changing Articulation body parent anchor prismatic limits");
+                    float newLowerLimit = drive.lowerLimit;
+                    float newUpperLimit = drive.upperLimit;
+
+                    // Disallow moving Lower limit past Upper limit and vice versa, based on which handle is being held down
+                    if (GUIUtility.hotControl == idLower)
+                    {
+                        float directionLower = Mathf.Sign(lowerPoint.x + lowerPoint.y + lowerPoint.z);
+                        newLowerLimit = lowerPoint.magnitude * directionLower;
+                        if (newLowerLimit > drive.upperLimit) newLowerLimit = drive.upperLimit;
+                    }
+                    else if (GUIUtility.hotControl == idUpper)
+                    {
+                        float directionUpper = Mathf.Sign(upperPoint.x + upperPoint.y + upperPoint.z);
+                        newUpperLimit = upperPoint.magnitude * directionUpper;
+                        if (newUpperLimit < drive.lowerLimit) newUpperLimit = drive.lowerLimit;
+                    }
+
+                    ArticulationDrive tempDrive = SetDriveLimits(drive, newLowerLimit, newUpperLimit);
+
+                    if (body.linearLockX == ArticulationDofLock.LimitedMotion)
+                    {
+                        body.xDrive = tempDrive;
+                    }
+                    else if (body.linearLockY == ArticulationDofLock.LimitedMotion)
+                    {
+                        body.yDrive = tempDrive;
+                    }
+                    else if (body.linearLockZ == ArticulationDofLock.LimitedMotion)
+                    {
+                        body.zDrive = tempDrive;
+                    }
                 }
             }
         }
@@ -246,7 +251,7 @@ namespace UnityEditor
                 EditorGUI.BeginChangeCheck();
 
                 handle.radius = HandleUtility.GetHandleSize(Vector3.zero);
-                handle.DrawHandle();
+                handle.DrawHandle(true);
 
                 if (EditorGUI.EndChangeCheck())
                 {
@@ -272,7 +277,7 @@ namespace UnityEditor
                 EditorGUI.BeginChangeCheck();
 
                 handle.radius = HandleUtility.GetHandleSize(Vector3.zero);
-                handle.DrawHandle();
+                handle.DrawHandle(true);
 
                 if (EditorGUI.EndChangeCheck())
                 {

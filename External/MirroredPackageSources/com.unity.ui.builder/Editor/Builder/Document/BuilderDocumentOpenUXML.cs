@@ -5,6 +5,7 @@ using UnityEditor;
 using System;
 using System.IO;
 using System.Linq;
+using UnityEditor.UIElements;
 
 namespace Unity.UI.Builder
 {
@@ -970,6 +971,10 @@ namespace Unity.UI.Builder
                 // To get all the selection markers into the new assets.
                 m_VisualTreeAssetBackup.DeepOverwrite(m_VisualTreeAsset);
                 m_VisualTreeAsset.UpdateUsingEntries();
+
+                // Update hash. Otherwise we end up with the old overwritten contentHash
+                var hash = UXMLImporterImpl.GenerateHash(localUxmlPath);
+                m_VisualTreeAsset.contentHash = hash.GetHashCode();
             }
             return needsFullRefresh;
         }

@@ -71,11 +71,12 @@ namespace UnityEditor
             ItemFader m_ItemFader = new ItemFader();
             private readonly Action m_OwnerRepaintAction;
 
+            public int projectItemCount { get { return m_FilteredHierarchy.results.Length; } }
+
             public override int ItemCount
             {
                 get
                 {
-                    int projectItemCount = m_FilteredHierarchy.results.Length;
                     int totalItemCount = projectItemCount + m_ActiveBuiltinList.Length;
                     int noneItem = m_ShowNoneItem ? 1 : 0;
                     int newItem = m_Owner.m_State.m_NewAssetIndexInList != -1 ? 1 : 0;

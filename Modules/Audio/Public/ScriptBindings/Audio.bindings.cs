@@ -121,6 +121,13 @@ namespace UnityEngine
         Spread        = 3
     }
 
+    public enum GamepadSpeakerOutputType
+    {
+        Speaker = 0,
+        Vibration = 1,
+    }
+
+
     // Reverb presets used by the Reverb Zone class and the audio reverb filter
     public enum AudioReverbPreset
     {
@@ -714,16 +721,9 @@ namespace UnityEngine
         [NativeMethod(Name = "AudioSourceBindings::SetGamepadSpeakerRestrictedAudio", HasExplicitThis = true, ThrowsException = true)]
         extern public bool SetGamepadSpeakerRestrictedAudio(Int32 slot, bool restricted);
 
-        public enum GamepadSpeakerOutputType
-        {
-            Speaker = 0,
-            Vibration = 1,
-        }
-
         [NativeConditional("PLATFORM_SUPPORTS_GAMEPAD_AUDIO")]
         [NativeMethod(Name = "GamepadSpeakerSupportsOutputType", HasExplicitThis = false)]
         extern static public bool GamepadSpeakerSupportsOutputType(GamepadSpeakerOutputType outputType);
-
 
         [NativeConditional("PLATFORM_SUPPORTS_GAMEPAD_AUDIO")]
         extern public GamepadSpeakerOutputType gamepadSpeakerOutputType { get; set; }

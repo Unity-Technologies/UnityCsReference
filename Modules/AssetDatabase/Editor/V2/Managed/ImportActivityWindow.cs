@@ -22,6 +22,7 @@ namespace UnityEditor
     {
         public static string kTimeStampFormat = "dd-MM-yyyy hh:mm:ss";
         public static ImportActivityWindow m_Instance = null;
+        public static Vector2 kIdealWindowSize = new Vector2(1280, 720);
 
         public static void OpenFromPropertyEditor(Object inspectedObject)
         {
@@ -58,8 +59,24 @@ namespace UnityEditor
             else
             {
                 window.InitWithDimensions(window.position, selectedObjectGuid, openViaRightClick);
-                window.minSize = new Vector2(1280, 720);
+
+                window.minSize = CalculateWindowMinSize(Screen.currentResolution);
             }
+        }
+
+        internal static Vector2 CalculateWindowMinSize(Resolution resolution)
+        {
+            //If screen is big enough, return the ideal size
+            if (resolution.width >= kIdealWindowSize.x && resolution.height >= kIdealWindowSize.y)
+            {
+                return kIdealWindowSize;
+            }
+
+            //keep aspect ratio
+            var availableWidth = 0.9f * resolution.width;
+            var targetHeight = (kIdealWindowSize.y / kIdealWindowSize.x) * availableWidth;
+            var targetDimensions = new Vector2(availableWidth, targetHeight);
+            return targetDimensions;
         }
 
         internal enum RightContentState

@@ -18,7 +18,6 @@ namespace UnityEditor
         [Serializable]
         public class State
         {
-            public int m_LastClickedInstanceID = 0;
             public Vector2 m_ScrollPos = new Vector2(0, 0);
         }
 
@@ -941,7 +940,7 @@ namespace UnityEditor
             foreach (var group in m_Controller.CachedSelection)
                 selectedIDs.Add(group.GetInstanceID());
 
-            int lastClickedID = m_State.m_LastClickedInstanceID;
+            int lastClickedID = selectedIDs.Count > 0 ? selectedIDs.Last() : 0;
             bool allowMultiselection = true;
             bool keepMultiSelection = Event.current.shift || clickedControlInGroup;
             bool useShiftAsActionKey = false;

@@ -112,12 +112,12 @@ namespace UnityEditorInternal
             // We want to sort position before rotation
             if (sameTransformComponent)
             {
-                string propertyGroupA = AnimationWindowUtility.GetNicePropertyGroupDisplayName(typeof(Transform), AnimationWindowUtility.GetPropertyGroupName(propertyName));
-                string propertyGroupB = AnimationWindowUtility.GetNicePropertyGroupDisplayName(typeof(Transform), AnimationWindowUtility.GetPropertyGroupName(obj.propertyName));
+                string propertyGroupA = AnimationWindowUtility.GetPropertyGroupName(propertyName);
+                string propertyGroupB = AnimationWindowUtility.GetPropertyGroupName(obj.propertyName);
 
-                if (propertyGroupA.Contains("Position") && propertyGroupB.Contains("Rotation"))
+                if (propertyGroupA.Equals("m_LocalPosition") && (propertyGroupB.Equals("m_LocalRotation") || propertyGroupB.StartsWith("localEulerAngles")))
                     return -1;
-                if (propertyGroupA.Contains("Rotation") && propertyGroupB.Contains("Position"))
+                if ((propertyGroupA.Equals("m_LocalRotation") || propertyGroupA.StartsWith("localEulerAngles")) && propertyGroupB.Equals("m_LocalPosition"))
                     return 1;
             }
             // Transform component should always come first.

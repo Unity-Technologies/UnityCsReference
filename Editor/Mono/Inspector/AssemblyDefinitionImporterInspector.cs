@@ -163,6 +163,7 @@ namespace UnityEditor
         SerializedProperty m_CompatibleWithAnyPlatform;
         SerializedProperty m_PlatformCompatibility;
         SerializedProperty m_NoEngineReferences;
+        private bool m_AssetIsReadonly;
 
         Exception initializeException;
         PrecompiledAssemblyProviderBase m_AssemblyProvider;
@@ -189,6 +190,19 @@ namespace UnityEditor
             m_PlatformCompatibility = extraDataSerializedObject.FindProperty("platformCompatibility");
             m_NoEngineReferences = extraDataSerializedObject.FindProperty("noEngineReferences");
             m_AssemblyProvider = EditorCompilationInterface.Instance.PrecompiledAssemblyProvider;
+            m_AssetIsReadonly = false;
+            foreach (var assetPath in targets.OfType<AssetImporter>().Select(i => i.assetPath))
+            {
+                try
+                {
+                    using (var fs = File.Open(assetPath, FileMode.Open, FileAccess.Write)) {}
+                }
+                catch
+                {
+                    // can't open in write mode, must be readonly
+                    m_AssetIsReadonly = true;
+                }
+            }
 
             AssemblyReloadEvents.afterAssemblyReload += AfterAssemblyReload;
         }
@@ -218,10 +232,14 @@ namespace UnityEditor
             extraDataSerializedObject.Update();
 
             var platforms = CompilationPipeline.GetAssemblyDefinitionPlatforms();
-            using (new EditorGUI.DisabledScope(false))
+            using (new EditorGUI.DisabledScope(m_AssetIsReadonly))
             {
                 if (targets.Length > 1)
                 {
+                    if (m_AssetIsReadonly)
+                    {
+                        EditorGUILayout.LabelField("One of the selected assembly definition files is read-only.");
+                    }
                     using (new EditorGUI.DisabledScope(true))
                     {
                         var value = string.Join(", ", extraDataTargets.Select(t => t.name).ToArray());
@@ -230,6 +248,10 @@ namespace UnityEditor
                 }
                 else
                 {
+                    if (m_AssetIsReadonly)
+                    {
+                        EditorGUILayout.LabelField("The selected assembly definition file is read-only.");
+                    }
                     EditorGUILayout.PropertyField(m_AssemblyName, Styles.name);
                 }
 

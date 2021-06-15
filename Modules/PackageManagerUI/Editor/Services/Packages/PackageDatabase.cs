@@ -16,15 +16,31 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual event Action<IPackage> onInstallOrUninstallSuccess = delegate {};
 
         public virtual event Action<IPackage> onPackageProgressUpdate = delegate {};
+        public virtual event Action<IPackage> onVerifiedGitPackageUpToDate = delegate {};
 
         public virtual event Action<IEnumerable<IPackage> /*added*/,
                                     IEnumerable<IPackage> /*removed*/,
                                     IEnumerable<IPackage> /*preUpdated*/,
                                     IEnumerable<IPackage> /*postUpdated*/> onPackagesChanged = delegate {};
 
+        public virtual event Action<TermOfServiceAgreementStatus> onTermOfServiceAgreementStatusChange = delegate {};
+
         private readonly Dictionary<string, IPackage> m_Packages = new Dictionary<string, IPackage>();
 
         private readonly Dictionary<string, IEnumerable<Sample>> m_ParsedSamples = new Dictionary<string, IEnumerable<Sample>>();
+
+        [SerializeField]
+        private TermOfServiceAgreementStatus m_TermOfServiceAgreementStatus = TermOfServiceAgreementStatus.NotAccepted;
+
+        public virtual TermOfServiceAgreementStatus termOfServiceAgreementStatus
+        {
+            get => m_TermOfServiceAgreementStatus;
+            internal set
+            {
+                m_TermOfServiceAgreementStatus = value;
+                onTermOfServiceAgreementStatusChange?.Invoke(m_TermOfServiceAgreementStatus);
+            }
+        }
 
         [SerializeField]
         private List<UpmPackage> m_SerializedUpmPackages = new List<UpmPackage>();
@@ -49,6 +65,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private UpmClient m_UpmClient;
         [NonSerialized]
         private IOProxy m_IOProxy;
+        [NonSerialized]
+        private AssetStoreUtils m_AssetStoreUtils;
+
         public void ResolveDependencies(UnityConnectProxy unityConnect,
             AssetDatabaseProxy assetDatabase,
             AssetStoreUtils assetStoreUtils,
@@ -60,6 +79,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_UnityConnect = unityConnect;
             m_AssetDatabase = assetDatabase;
+            m_AssetStoreUtils = assetStoreUtils;
             m_AssetStoreClient = assetStoreClient;
             m_AssetStoreDownloadManager = assetStoreDownloadManager;
             m_UpmCache = upmCache;
@@ -67,7 +87,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_IOProxy = ioProxy;
 
             foreach (var package in m_SerializedAssetStorePackages)
-                package.ResolveDependencies(assetStoreUtils, ioProxy);
+                package.ResolveDependencies(m_AssetStoreUtils, ioProxy);
         }
 
         public virtual bool isEmpty { get { return !m_Packages.Any(); } }
@@ -286,6 +306,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmClient.onRemoveOperation += OnUpmRemoveOperation;
             m_UpmClient.onAddAndRemoveOperation += OnUpmAddAndRemoveOperation;
 
+            m_UpmCache.onVerifiedGitPackageUpToDate += OnVerifiedGitPackageUpToDate;
+
             m_AssetStoreClient.onPackagesChanged += OnPackagesChanged;
             m_AssetStoreClient.onPackageVersionUpdated += OnUpmPackageVersionUpdated;
 
@@ -327,6 +349,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Packages.Clear();
             m_SerializedUpmPackages = new List<UpmPackage>();
             m_SerializedAssetStorePackages = new List<AssetStorePackage>();
+
+            m_TermOfServiceAgreementStatus = TermOfServiceAgreementStatus.NotAccepted;
         }
 
         private void OnDownloadProgress(IOperation operation)
@@ -377,6 +401,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
         {
+            m_TermOfServiceAgreementStatus = TermOfServiceAgreementStatus.NotAccepted;
+
             if (!loggedIn)
             {
                 var assetStorePackages = m_Packages.Where(kp => kp.Value is AssetStorePackage).Select(kp => kp.Value).ToList();
@@ -386,6 +412,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 onPackagesChanged?.Invoke(k_EmptyList, assetStorePackages, k_EmptyList, k_EmptyList);
             }
+        }
+
+        private void OnVerifiedGitPackageUpToDate(string packageId)
+        {
+            onVerifiedGitPackageUpToDate.Invoke(GetPackage(packageId));
         }
 
         private void OnPackagesChanged(IEnumerable<IPackage> packages)
@@ -584,6 +615,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmClient.AddById(version.uniqueId);
         }
 
+        public virtual void Install(string packageId)
+        {
+            m_UpmClient.AddById(packageId);
+        }
+
         public virtual void InstallFromUrl(string url)
         {
             m_UpmClient.AddByUrl(url);
@@ -642,14 +678,31 @@ namespace UnityEditor.PackageManager.UI.Internal
             return m_AssetStoreDownloadManager.GetDownloadOperation(version.packageUniqueId)?.isInPause ?? false;
         }
 
-        public virtual void Download(IPackage package)
+        public virtual bool Download(IPackage package)
         {
             if (!(package is AssetStorePackage))
-                return;
+                return false;
 
             if (!PlayModeDownload.CanBeginDownload())
-                return;
+                return false;
 
+            if (termOfServiceAgreementStatus == TermOfServiceAgreementStatus.NotAccepted)
+            {
+                m_AssetStoreClient.CheckTermOfServiceAgreement(status =>
+                {
+                    termOfServiceAgreementStatus = status;
+                    if (termOfServiceAgreementStatus == TermOfServiceAgreementStatus.Accepted)
+                        Download_Internal(package);
+                }, error => AddPackageError(package, error));
+                return false;
+            }
+
+            Download_Internal(package);
+            return true;
+        }
+
+        private void Download_Internal(IPackage package)
+        {
             SetPackageProgress(package, PackageProgress.Downloading);
             m_AssetStoreDownloadManager.Download(package);
             // When we start a new download, we want to clear past operation errors to give it a fresh start.

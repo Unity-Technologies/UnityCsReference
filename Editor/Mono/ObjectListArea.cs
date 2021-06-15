@@ -71,6 +71,8 @@ namespace UnityEditor
             public static readonly GUIStyle subAssetExpandButton = new GUIStyle("ProjectBrowserSubAssetExpandBtn");
             public static readonly GUIStyle subAssetExpandButtonMedium = new GUIStyle("ProjectBrowserSubAssetExpandBtnMedium");
             public static readonly GUIStyle subAssetExpandButtonSmall = new GUIStyle("ProjectBrowserSubAssetExpandBtnSmall");
+
+            public static readonly GUIContent maxmumItemCountInfo = EditorGUIUtility.TrTextContent("NOTE: Maximum item count is reached, not all items are shown. Narrow your search.");
         }
 
         // State persisted across assembly reloads
@@ -1056,6 +1058,10 @@ namespace UnityEditor
                     break;
             }
 
+            bool maxItemsReached = m_LocalAssets.projectItemCount >= FilteredHierarchy.maxSearchAddCount;
+            if (maxItemsReached)
+                totalContentsHeight += 45;
+
             Rect scrollRect = m_TotalRect;
             Rect contentRect = new Rect(0, 0, 1, totalContentsHeight);
             bool scrollBarVisible = totalContentsHeight > m_TotalRect.height;
@@ -1091,6 +1097,11 @@ namespace UnityEditor
                     // ShowNone is only used in object select window
                     if (m_LocalAssets.ShowNone)
                         break;
+                }
+
+                if (maxItemsReached)
+                {
+                    GUI.Label(new Rect(0, yOffset + 20, scrollRect.width, 16), Styles.maxmumItemCountInfo, EditorStyles.centeredGreyMiniLabel);
                 }
 
                 HandlePing();

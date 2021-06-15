@@ -87,7 +87,11 @@ namespace UnityEditor
                 return;
 
             var controller = group.controller;
-
+            var allGroups = controller.GetAllAudioGroupsSlow();
+            var effectMap = new Dictionary<AudioMixerEffectController, AudioMixerGroupController>();
+            foreach (var g in allGroups)
+                foreach (var e in g.effects)
+                    effectMap[e] = g;
 
             Rect totalRect = EditorGUILayout.BeginVertical();
 
@@ -113,11 +117,7 @@ namespace UnityEditor
                 }
 
                 // Do Effect modules
-                var allGroups = controller.GetAllAudioGroupsSlow();
-                var effectMap = AudioMixerGroupController.GetEffectMapSlow(allGroups);
-
                 DoInitialModule(group, controller, allGroups);
-
                 for (int effectIndex = 0; effectIndex < group.effects.Length; effectIndex++)
                 {
                     DoEffectGUI(effectIndex, group, allGroups, effectMap, ref controller.m_HighlightEffectIndex);
@@ -283,10 +283,8 @@ namespace UnityEditor
 
                     if (effect.sendTarget != null)
                     {
-                        var wetLevel = effect.GetValueForMixLevel(controller, controller.TargetSnapshot);
-                        var sendGuid = effect.GetGUIDForMixLevel();
-
-                        if (AudioMixerEffectGUI.Slider(Texts.sendLevel, ref wetLevel, 1.0f, 1.0f, Texts.dB, AudioMixerController.kMinVolume, AudioMixerController.kMaxEffect, controller, new AudioEffectParameterPath(group, effect, sendGuid)))
+                        float wetLevel = effect.GetValueForMixLevel(controller, controller.TargetSnapshot);
+                        if (AudioMixerEffectGUI.Slider(Texts.sendLevel, ref wetLevel, 1.0f, 1.0f, Texts.dB, AudioMixerController.kMinVolume, AudioMixerController.kMaxEffect, controller, new AudioGroupParameterPath(group, group.GetGUIDForSend())))
                         {
                             Undo.RecordObject(controller.TargetSnapshot, "Change Send Level");
                             effect.SetValueForMixLevel(controller, controller.TargetSnapshot, wetLevel);

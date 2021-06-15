@@ -74,6 +74,9 @@ namespace UnityEditor.SceneManagement
                     modifiedObjects.Add(new ObjectOverride() { instanceObject = component });
             }
 
+            // Clear the list to avoid holding static references to components
+            s_ComponentList.Clear();
+
             return true;
         }
 
@@ -96,31 +99,39 @@ namespace UnityEditor.SceneManagement
         // Return value indicates if caller should traverse children of the the input transform or not
         static bool CheckForAddedComponents(Transform transform, object userData)
         {
-            s_ComponentList.Clear();
-            transform.gameObject.GetComponents(s_ComponentList);
-            var assetGameObject = PrefabUtility.GetCorrespondingObjectFromSource(transform.gameObject);
-            if (assetGameObject == null)
-                return false; // If this is an added normal GameObject then we do not record added components
-
-            foreach (var component in s_ComponentList)
+            try
             {
-                // This is possible if there's a component with a missing script.
-                if (component == null)
-                    continue;
+                s_ComponentList.Clear();
+                transform.gameObject.GetComponents(s_ComponentList);
 
-                // Don't list DontSave objects as they won't get applied or reverted.
-                if ((component.hideFlags & HideFlags.DontSaveInEditor) != 0)
-                    continue;
+                var assetGameObject = PrefabUtility.GetCorrespondingObjectFromSource(transform.gameObject);
+                if (assetGameObject == null)
+                    return false; // If this is an added normal GameObject then we do not record added components
 
-                bool isAddedObject = PrefabUtility.GetCorrespondingObjectFromSource(component) == null;
-                if (isAddedObject)
+                foreach (var component in s_ComponentList)
                 {
-                    var addedComponents = (List<AddedComponent>)userData;
-                    addedComponents.Add(new AddedComponent() { instanceComponent = component });
-                }
-            }
+                    // This is possible if there's a component with a missing script.
+                    if (component == null)
+                        continue;
 
-            return true;
+                    // Don't list DontSave objects as they won't get applied or reverted.
+                    if ((component.hideFlags & HideFlags.DontSaveInEditor) != 0)
+                        continue;
+
+                    bool isAddedObject = PrefabUtility.GetCorrespondingObjectFromSource(component) == null;
+                    if (isAddedObject)
+                    {
+                        var addedComponents = (List<AddedComponent>)userData;
+                        addedComponents.Add(new AddedComponent() {instanceComponent = component});
+                    }
+                }
+
+                return true;
+            }
+            finally
+            {
+                s_ComponentList.Clear();
+            }
         }
 
         public static List<RemovedComponent> GetRemovedComponents(GameObject prefabInstance)
@@ -152,41 +163,51 @@ namespace UnityEditor.SceneManagement
         // Return value indicates if caller should traverse children of the the input transform or not
         static bool CheckForRemovedComponents(Transform transform, object userData)
         {
-            GameObject instanceGameObject = transform.gameObject;
-            GameObject assetGameObject = PrefabUtility.GetCorrespondingObjectFromSource(instanceGameObject);
-            if (assetGameObject == null)
-                return false; // skip added GameObjects (non of its components will be in the asset)
-
-            // Compare asset with instance component lists
-            s_ComponentList.Clear();
-            instanceGameObject.GetComponents(s_ComponentList);
-
-            s_AssetComponentList.Clear();
-            assetGameObject.GetComponents(s_AssetComponentList);
-
-            // Find asset objects that no instance objects are referencing
-            foreach (var assetComponent in s_AssetComponentList)
+            try
             {
-                bool found = false;
-                foreach (var instanceComponent in s_ComponentList)
-                {
-                    // This is possible if there's a component with a missing script.
-                    if (instanceComponent == null)
-                        continue;
+                GameObject instanceGameObject = transform.gameObject;
+                GameObject assetGameObject = PrefabUtility.GetCorrespondingObjectFromSource(instanceGameObject);
+                if (assetGameObject == null)
+                    return false; // skip added GameObjects (non of its components will be in the asset)
 
-                    if (PrefabUtility.GetCorrespondingObjectFromSource(instanceComponent) == assetComponent)
+                // Compare asset with instance component lists
+                s_ComponentList.Clear();
+                instanceGameObject.GetComponents(s_ComponentList);
+
+                s_AssetComponentList.Clear();
+                assetGameObject.GetComponents(s_AssetComponentList);
+
+                // Find asset objects that no instance objects are referencing
+                foreach (var assetComponent in s_AssetComponentList)
+                {
+                    bool found = false;
+                    foreach (var instanceComponent in s_ComponentList)
                     {
-                        found = true;
-                        break;
+                        // This is possible if there's a component with a missing script.
+                        if (instanceComponent == null)
+                            continue;
+
+                        if (PrefabUtility.GetCorrespondingObjectFromSource(instanceComponent) == assetComponent)
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (!found)
+                    {
+                        List<RemovedComponent> removedComponents = (List<RemovedComponent>)userData;
+                        removedComponents.Add(new RemovedComponent() {assetComponent = assetComponent, containingInstanceGameObject = instanceGameObject});
                     }
                 }
-
-                if (!found)
-                {
-                    List<RemovedComponent> removedComponents = (List<RemovedComponent>)userData;
-                    removedComponents.Add(new RemovedComponent() { assetComponent = assetComponent, containingInstanceGameObject = instanceGameObject });
-                }
             }
+            finally
+            {
+                // Clear the lists to avoid holding static references to components
+                s_ComponentList.Clear();
+                s_AssetComponentList.Clear();
+            }
+
             return true;
         }
 
@@ -250,50 +271,60 @@ namespace UnityEditor.SceneManagement
 
         internal static void CheckForInvalidComponent(Transform transform, object userData)
         {
-            GameObject instanceGameObject = transform.gameObject;
-            var GOList = (List<GameObject>)userData;
-            if (!EditorUtility.IsPersistent(instanceGameObject))
+            try
             {
-                s_ComponentList.Clear();
-                instanceGameObject.GetComponents(s_ComponentList);
-
-                foreach (var component in s_ComponentList)
+                GameObject instanceGameObject = transform.gameObject;
+                var GOList = (List<GameObject>)userData;
+                if (!EditorUtility.IsPersistent(instanceGameObject))
                 {
-                    if (component == null)
+                    s_ComponentList.Clear();
+                    instanceGameObject.GetComponents(s_ComponentList);
+
+                    foreach (var component in s_ComponentList)
                     {
-                        GOList.Add(instanceGameObject);
+                        if (component == null)
+                        {
+                            GOList.Add(instanceGameObject);
+                            return;
+                        }
+                    }
+
+                    var assetGameObject = PrefabUtility.GetCorrespondingObjectFromSource(instanceGameObject);
+                    if (assetGameObject == null)
                         return;
+
+                    s_AssetComponentList.Clear();
+                    assetGameObject.GetComponents(s_AssetComponentList);
+
+                    foreach (var assetComponent in s_AssetComponentList)
+                    {
+                        if (assetComponent == null)
+                        {
+                            GOList.Add(instanceGameObject);
+                            return;
+                        }
                     }
                 }
-                var assetGameObject = PrefabUtility.GetCorrespondingObjectFromSource(instanceGameObject);
-                if (assetGameObject == null)
-                    return;
-
-                s_AssetComponentList.Clear();
-                assetGameObject.GetComponents(s_AssetComponentList);
-
-                foreach (var assetComponent in s_AssetComponentList)
+                else
                 {
-                    if (assetComponent == null)
+                    s_AssetComponentList.Clear();
+                    instanceGameObject.GetComponents(s_AssetComponentList);
+
+                    foreach (var assetComponent in s_AssetComponentList)
                     {
-                        GOList.Add(instanceGameObject);
-                        return;
+                        if (assetComponent == null)
+                        {
+                            GOList.Add(instanceGameObject);
+                            return;
+                        }
                     }
                 }
             }
-            else
+            finally
             {
+                // Clear the lists to avoid holding static references to components
+                s_ComponentList.Clear();
                 s_AssetComponentList.Clear();
-                instanceGameObject.GetComponents(s_AssetComponentList);
-
-                foreach (var assetComponent in s_AssetComponentList)
-                {
-                    if (assetComponent == null)
-                    {
-                        GOList.Add(instanceGameObject);
-                        return;
-                    }
-                }
             }
         }
     }

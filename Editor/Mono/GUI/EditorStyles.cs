@@ -562,7 +562,10 @@ namespace UnityEditor
             m_CenteredGreyMiniLabel = new GUIStyle(m_MiniLabel)
             {
                 alignment = TextAnchor.MiddleCenter,
-                normal = {textColor = Color.grey}
+                normal = {textColor = Color.grey},
+                hover = { textColor = Color.grey },
+                active = { textColor = Color.grey},
+                focused = { textColor = Color.grey }
             };
         }
 

@@ -11,6 +11,7 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Object = UnityEngine.Object;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 [assembly: InternalsVisibleTo("VideoTesting")]
 namespace UnityEditor.Media
@@ -102,6 +103,68 @@ namespace UnityEditor.Media
         private MediaRational m_Rate;
     }
 
+    public struct H264EncoderAttributes
+    {
+        public uint gopSize;
+        public uint numConsecutiveBFrames;
+        public VideoEncodingProfile profile;
+    }
+
+    public struct VP8EncoderAttributes
+    {
+        public uint keyframeDistance;
+        internal VideoAlphaLayout alphaLayout;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    public struct VideoTrackEncoderAttributes
+    {
+        [FieldOffset(0)] public MediaRational           frameRate;
+        [FieldOffset(8)] public uint                    width;
+        [FieldOffset(12)] public uint                   height;
+        [FieldOffset(16)] public uint                   targetBitRate;
+        [FieldOffset(20)] public VideoBitrateMode       bitRateMode;
+        [FieldOffset(24)] public bool                   includeAlpha;
+
+        [FieldOffset(28)] private VideoCodec            codecType;
+        [FieldOffset(32)] private H264EncoderAttributes h264;
+        [FieldOffset(32)] private VP8EncoderAttributes  vp8;
+
+        public VideoTrackEncoderAttributes(H264EncoderAttributes h264Attrs) : this()
+        {
+            if (h264Attrs.profile == VideoEncodingProfile.H264Baseline && h264Attrs.numConsecutiveBFrames != 0)
+            {
+                h264Attrs.numConsecutiveBFrames = 0;
+                Debug.Log("VideoTrackEncoderAttributes: B-frames are not used when encoding profile is set to baseline inside the encoder. NumConsecutiveBFrames will be set to 0.");
+            }
+            else if (h264Attrs.numConsecutiveBFrames > 2)
+            {
+                h264Attrs.numConsecutiveBFrames = 2;
+                Debug.Log("VideoTrackEncoderAttributes: Maximum number of consecutive B-frames is 2. NumConsecutiveBFrames will be set to 2.");
+            }
+
+
+            h264 = h264Attrs;
+            codecType = VideoCodec.H264;
+        }
+
+        public VideoTrackEncoderAttributes(VP8EncoderAttributes vp8Attrs) : this()
+        {
+            vp8 = vp8Attrs;
+            codecType = VideoCodec.VP8;
+        }
+
+        internal VideoTrackEncoderAttributes(VideoTrackAttributes videoAttrs) : this()
+        {
+            frameRate = videoAttrs.frameRate;
+            width = videoAttrs.width;
+            height = videoAttrs.height;
+            includeAlpha = videoAttrs.includeAlpha;
+            bitRateMode = videoAttrs.bitRateMode;
+            vp8.alphaLayout = videoAttrs.alphaLayout;
+        }
+    }
+
     public struct VideoTrackAttributes
     {
         public MediaRational      frameRate;
@@ -133,7 +196,25 @@ namespace UnityEditor.Media
         public MediaEncoder(
             string filePath, VideoTrackAttributes videoAttrs, AudioTrackAttributes[] audioAttrs)
         {
-            m_ThisPtr = Create(filePath, new[] {videoAttrs}, audioAttrs);
+            m_ThisPtr = Create(filePath, videoAttrs, audioAttrs);
+        }
+
+        public MediaEncoder(
+            string filePath, VideoTrackEncoderAttributes videoAttrs, AudioTrackAttributes[] audioAttrs)
+        {
+            m_ThisPtr = Create(filePath, videoAttrs, audioAttrs);
+        }
+
+        public MediaEncoder(
+            string filePath, VideoTrackEncoderAttributes videoAttrs, AudioTrackAttributes audioAttrs)
+            : this(filePath, videoAttrs, new[] { audioAttrs })
+        {
+        }
+
+        public MediaEncoder(
+            string filePath, VideoTrackEncoderAttributes videoAttrs)
+            : this(filePath, videoAttrs, new AudioTrackAttributes[0])
+        {
         }
 
         public MediaEncoder(
@@ -147,7 +228,7 @@ namespace UnityEditor.Media
 
         public MediaEncoder(string filePath, AudioTrackAttributes[] audioAttrs)
         {
-            m_ThisPtr = Create(filePath, new VideoTrackAttributes[0], audioAttrs);
+            m_ThisPtr = Create(filePath, audioAttrs);
         }
 
         public MediaEncoder(string filePath, AudioTrackAttributes audioAttrs)
@@ -205,16 +286,15 @@ namespace UnityEditor.Media
             GC.SuppressFinalize(this);
         }
 
-        private IntPtr Create(
-            string filePath, VideoTrackAttributes[] videoAttrs, AudioTrackAttributes[] audioAttrs)
+        private void ValidateVideoAttributes(VideoTrackEncoderAttributes videoAttrs)
         {
-            foreach (var v in videoAttrs)
-            {
-                var r = v.frameRate;
-                if (r.isNegative)
-                    throw new ArgumentException($"Negative frame rate not supported: {r.numerator}/{r.denominator}");
-            }
+            var rate = videoAttrs.frameRate;
+            if (rate.isNegative)
+                throw new ArgumentException($"Negative frame rate not supported: {rate.numerator}/{rate.denominator}");
+        }
 
+        private void ValidateAudioAttributes(AudioTrackAttributes[] audioAttrs)
+        {
             foreach (var a in audioAttrs)
             {
                 var r = a.sampleRate;
@@ -225,17 +305,53 @@ namespace UnityEditor.Media
                 if (r.isNegative)
                     throw new ArgumentException($"Negative sample rate not supported: {r.numerator}/{r.denominator}");
             }
+        }
 
-            IntPtr ptr = Internal_Create(filePath, videoAttrs, audioAttrs);
-            if (ptr == IntPtr.Zero)
-                throw new InvalidOperationException(
-                    "MediaEncoder: Output file creation failed for " + filePath);
-            return ptr;
+        private IntPtr Create(
+            string filePath, VideoTrackAttributes videoAttrs, AudioTrackAttributes[] audioAttrs)
+        {
+            VideoTrackEncoderAttributes videoEncoderAttrs = new VideoTrackEncoderAttributes(videoAttrs);
+
+            return Create(filePath, videoEncoderAttrs, audioAttrs);
+        }
+
+        private IntPtr Create(
+            string filePath, VideoTrackEncoderAttributes videoAttrs, AudioTrackAttributes[] audioAttrs)
+        {
+            ValidateVideoAttributes(videoAttrs);
+            ValidateAudioAttributes(audioAttrs);
+
+            unsafe
+            {
+                IntPtr ptr = IntPtr.Zero;
+                void* videoAttrsPtr = &videoAttrs;
+                ptr = Internal_Create(filePath, videoAttrsPtr, audioAttrs);
+                if (ptr == IntPtr.Zero)
+                    throw new InvalidOperationException(
+                        "MediaEncoder: Output file creation failed for " + filePath);
+                return ptr;
+            }
+        }
+
+        private IntPtr Create(
+            string filePath, AudioTrackAttributes[] audioAttrs)
+        {
+            ValidateAudioAttributes(audioAttrs);
+
+            unsafe
+            {
+                IntPtr ptr = IntPtr.Zero;
+                ptr = Internal_Create(filePath, null, audioAttrs);
+                if (ptr == IntPtr.Zero)
+                    throw new InvalidOperationException(
+                        "MediaEncoder: Output file creation failed for " + filePath);
+                return ptr;
+            }
         }
 
         [FreeFunction]
-        extern private static IntPtr Internal_Create(
-            string filePath, VideoTrackAttributes[] videoAttrs, AudioTrackAttributes[] audioAttrs);
+        extern private unsafe static IntPtr Internal_Create(
+            string filePath, void* videoAttrs, AudioTrackAttributes[] audioAttrs);
 
         [FreeFunction]
         extern private static void Internal_Release(IntPtr encoder);

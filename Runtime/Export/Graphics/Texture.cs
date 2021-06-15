@@ -539,11 +539,15 @@ namespace UnityEngine
 
         internal bool ValidateFormat(TextureFormat format)
         {
+            // If GPU support is detected, pass validation. Caveat support can also be used for uncompressed/non-IEEE754 formats.
+            // In contrast to GraphicsFormat, TextureFormat can use fallbacks by design.
             if (SystemInfo.SupportsTextureFormat(format))
             {
                 return true;
             }
-            else if (GraphicsFormatUtility.IsCompressedTextureFormat(format))
+            // If a compressed format is not supported natively, we check for decompressor support here.
+            // If we are able to decompress, the data is decoded into a raw format. Otherwise, validation fails.
+            else if (GraphicsFormatUtility.IsCompressedTextureFormat(format) && GraphicsFormatUtility.CanDecompressFormat(GraphicsFormatUtility.GetGraphicsFormat(format, false)))
             {
                 return true;
             }
@@ -563,11 +567,9 @@ namespace UnityEngine
                 return false;
             }
 
+            // *ONLY* GPU support is checked here. If it is not available, fail validation.
+            // GraphicsFormat does not use fallbacks by design.
             if (SystemInfo.IsFormatSupported(format, usage))
-            {
-                return true;
-            }
-            else if (GraphicsFormatUtility.IsCompressedFormat(format))
             {
                 return true;
             }
@@ -1504,7 +1506,7 @@ namespace UnityEngine
         [uei.ExcludeFromDocs]
         public SparseTexture(int width, int height, GraphicsFormat format, int mipCount)
         {
-            if (!ValidateFormat(format, FormatUsage.Sample))
+            if (!ValidateFormat(format, FormatUsage.Sparse))
                 return;
 
             if (!ValidateSize(width, height, format))
