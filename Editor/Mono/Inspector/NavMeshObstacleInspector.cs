@@ -87,7 +87,7 @@ namespace UnityEditor
             else if (m_Shape.enumValueIndex == 1)
             {
                 // NavMeshObstacleShape : kObstacleShapeBox
-                var r = EditorGUILayout.GetControlRect();
+                var r = EditorGUILayout.GetControlRect(true, (EditorGUIUtility.wideMode ? 1 : 2) * EditorGUI.kSingleLineHeight + EditorGUI.kControlVerticalSpacing);
                 EditorGUI.BeginProperty(r, GUIContent.none, m_Extents);
 
                 EditorGUI.BeginChangeCheck();

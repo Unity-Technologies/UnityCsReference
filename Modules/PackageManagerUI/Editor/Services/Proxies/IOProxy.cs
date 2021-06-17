@@ -79,9 +79,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual string CurrentDirectory => NPath.CurrentDirectory.ToString(SlashMode.Native);
 
-        public virtual string GetDirectoryName(string path) => new NPath(path).FileName;
-
-        public virtual string GetParentDirectory(string directoryPath) => new NPath(directoryPath).Parent.ToString(SlashMode.Native);
+        public virtual string GetParentDirectory(string path) => new NPath(path).Parent.ToString(SlashMode.Native);
 
         public virtual bool IsDirectoryEmpty(string directoryPath) => new NPath(directoryPath).Contents().Length == 0;
 
@@ -96,6 +94,22 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual void CreateDirectory(string directoryPath) => new NPath(directoryPath).CreateDirectory();
 
         public virtual void DeleteDirectory(string directoryPath) => new NPath(directoryPath).DeleteIfExists();
+
+        private NPath GetPackageAbsoluteDirectory(string relativePath)
+        {
+            var path = new NPath(relativePath);
+            return path.IsRelative ?  path.MakeAbsolute(new NPath(PathsCombine(GetProjectDirectory(), "Packages"))) : path;
+        }
+
+        public virtual string GetProjectDirectory()
+        {
+            return GetParentDirectory(Application.dataPath);
+        }
+
+        public virtual bool IsSamePackageDirectory(string a, string b)
+        {
+            return GetPackageAbsoluteDirectory(a) == GetPackageAbsoluteDirectory(b);
+        }
 
         public virtual void MakeFileWritable(string filePath, bool writable)
         {

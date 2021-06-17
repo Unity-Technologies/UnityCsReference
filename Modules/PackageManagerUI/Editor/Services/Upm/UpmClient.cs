@@ -171,7 +171,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             try
             {
                 path = path.Replace('\\', '/');
-                var projectPath = m_IOProxy.GetDirectoryName(Application.dataPath).Replace('\\', '/') + '/';
+                var projectPath = m_IOProxy.GetProjectDirectory().Replace('\\', '/') + '/';
                 if (path.StartsWith(projectPath))
                 {
                     var packageFolderPrefix = "Packages/";

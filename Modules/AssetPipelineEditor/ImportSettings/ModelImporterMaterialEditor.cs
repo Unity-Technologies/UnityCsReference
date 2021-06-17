@@ -254,15 +254,30 @@ namespace UnityEditor
 
                         List<Tuple<Object, string>> outputsForTargets = new List<Tuple<Object, string>>();
                         // use the first target for selecting the destination folder, but apply that path for all targets
-                        string destinationPath = (target as ModelImporter).assetPath;
-                        destinationPath = EditorUtility.SaveFolderPanel("Select Textures Folder",
-                            FileUtil.DeleteLastPathNameComponent(destinationPath), "");
-                        if (string.IsNullOrEmpty(destinationPath))
+                        string assetPath = (target as ModelImporter).assetPath;
+                        assetPath = EditorUtility.SaveFolderPanel("Select Textures Folder",
+                            FileUtil.DeleteLastPathNameComponent(assetPath), "");
+                        if (string.IsNullOrEmpty(assetPath))
                         {
                             // cancel the extraction if the user did not select a folder
                             return;
                         }
-                        destinationPath = FileUtil.GetProjectRelativePath(destinationPath);
+                        var destinationPath = FileUtil.GetProjectRelativePath(assetPath);
+
+                        if (!destinationPath.StartsWith("Assets"))
+                        {
+                            assetPath = FileUtil.NiceWinPath(assetPath);
+                            // Destination could be a package. Need to get assetPath instead of relativePath
+                            // The GUID isn't known yet so can't find it from that
+                            foreach (var package in PackageManager.PackageInfo.GetAllRegisteredPackages())
+                            {
+                                if (assetPath.StartsWith(package.resolvedPath))
+                                {
+                                    destinationPath = package.assetPath + assetPath.Substring(package.resolvedPath.Length);
+                                    break;
+                                }
+                            }
+                        }
 
                         try
                         {
@@ -356,11 +371,11 @@ namespace UnityEditor
 
                         if (!assetPath.StartsWith("Assets"))
                         {
+                            destinationPath = FileUtil.NiceWinPath(destinationPath);
                             // Destination could be a package. Need to get assetPath instead of relativePath
                             // The GUID isn't known yet so can't find it from that
                             foreach (var package in PackageManager.PackageInfo.GetAllRegisteredPackages())
                             {
-                                destinationPath = FileUtil.NiceWinPath(destinationPath);
                                 if (destinationPath.StartsWith(package.resolvedPath))
                                 {
                                     assetPath = package.assetPath + destinationPath.Substring(package.resolvedPath.Length);
