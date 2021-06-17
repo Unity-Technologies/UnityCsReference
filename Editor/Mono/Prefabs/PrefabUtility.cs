@@ -1771,7 +1771,7 @@ namespace UnityEditor
             if (Path.GetExtension(assetPath) != ".prefab")
                 throw new ArgumentException(string.Format("Path: {0}, is not a prefab file", assetPath));
 
-            var previewScene = EditorSceneManager.OpenPreviewScene(assetPath);
+            var previewScene = EditorSceneManager.OpenPreviewScene(assetPath, false);
             var roots = previewScene.GetRootGameObjects();
             if (roots.Length != 1)
             {
