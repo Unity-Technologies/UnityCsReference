@@ -730,6 +730,7 @@ namespace UnityEngine.UIElements
                 return;
 
             m_ScrollView.contentContainer.AddManipulator(m_NavigationManipulator = new KeyboardNavigationManipulator(Apply));
+            m_ScrollView.contentContainer.RegisterCallback<PointerMoveEvent>(OnPointerMove);
             m_ScrollView.contentContainer.RegisterCallback<PointerDownEvent>(OnPointerDown);
             m_ScrollView.contentContainer.RegisterCallback<PointerCancelEvent>(OnPointerCancel);
             m_ScrollView.contentContainer.RegisterCallback<PointerUpEvent>(OnPointerUp);
@@ -741,6 +742,7 @@ namespace UnityEngine.UIElements
                 return;
 
             m_ScrollView.contentContainer.RemoveManipulator(m_NavigationManipulator);
+            m_ScrollView.contentContainer.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
             m_ScrollView.contentContainer.UnregisterCallback<PointerDownEvent>(OnPointerDown);
             m_ScrollView.contentContainer.UnregisterCallback<PointerCancelEvent>(OnPointerCancel);
             m_ScrollView.contentContainer.UnregisterCallback<PointerUpEvent>(OnPointerUp);
@@ -873,7 +875,33 @@ namespace UnityEngine.UIElements
         private long m_TouchDownTime = 0;
         private Vector3 m_TouchDownPosition;
 
+        private void OnPointerMove(PointerMoveEvent evt)
+        {
+            // Support cases where PointerMove corresponds to a MouseDown or MouseUp event with multiple buttons.
+            if (evt.button == (int)MouseButton.LeftMouse)
+            {
+                if ((evt.pressedButtons & (1 << (int)MouseButton.LeftMouse)) == 0)
+                {
+                    ProcessPointerUp(evt);
+                }
+                else
+                {
+                    ProcessPointerDown(evt);
+                }
+            }
+        }
+
         private void OnPointerDown(PointerDownEvent evt)
+        {
+            ProcessPointerDown(evt);
+        }
+
+        private void OnPointerUp(PointerUpEvent evt)
+        {
+            ProcessPointerUp(evt);
+        }
+
+        private void ProcessPointerDown(IPointerEvent evt)
         {
             if (!HasValidDataAndBindings())
                 return;
@@ -886,7 +914,7 @@ namespace UnityEngine.UIElements
 
             if (evt.pointerType != PointerType.mouse)
             {
-                m_TouchDownTime = evt.timestamp;
+                m_TouchDownTime = ((EventBase)evt).timestamp;
                 m_TouchDownPosition = evt.position;
                 return;
             }
@@ -905,7 +933,7 @@ namespace UnityEngine.UIElements
             ClearSelection();
         }
 
-        private void OnPointerUp(PointerUpEvent evt)
+        private void ProcessPointerUp(IPointerEvent evt)
         {
             if (!HasValidDataAndBindings())
                 return;
@@ -918,7 +946,7 @@ namespace UnityEngine.UIElements
 
             if (evt.pointerType != PointerType.mouse)
             {
-                var delay = evt.timestamp - m_TouchDownTime;
+                var delay = ((EventBase)evt).timestamp - m_TouchDownTime;
                 var delta = evt.position - m_TouchDownPosition;
                 if (delay < 500 && delta.sqrMagnitude <= 100)
                 {

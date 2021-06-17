@@ -216,6 +216,7 @@ namespace UnityEditor
             [NativeProperty(TargetType = TargetType.Field)] extern public static int playerPrefsMaxSize { get; set; }
             [NativeProperty("ps4attribVROutputEnabled", false, TargetType.Field)] extern public static bool attribVROutputEnabled { get; set; }
             [NativeProperty("ps4CompatibilityPS5", false, TargetType.Field)] extern public static bool compatibilityPS5 { get; set; }
+            [NativeProperty("ps4AllowPS5Detection", false, TargetType.Field)] extern public static bool allowPS5Detection { get; set; }
             [NativeProperty("ps4GPU800MHz", false, TargetType.Field)] extern public static bool gpu800MHz { get; set; }
         }
     }

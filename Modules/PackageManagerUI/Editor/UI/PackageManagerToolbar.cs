@@ -26,7 +26,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private static readonly string k_Descending = "↑";
 
         private ResourceLoader m_ResourceLoader;
-        private ApplicationProxy m_Application;
+        internal ApplicationProxy m_Application;
         private UnityConnectProxy m_UnityConnect;
         private PackageFiltering m_PackageFiltering;
         private PackageDatabase m_PackageDatabase;
