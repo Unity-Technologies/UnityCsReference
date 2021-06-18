@@ -22,11 +22,6 @@ namespace UnityEditor.Overlays
             name = "overlay-popup";
             Overlay.treeAsset.CloneTree(this);
 
-            var background = this.Q(Overlay.k_Background);
-            var backgroundColor = background.style.backgroundColor.value;
-            backgroundColor.a = .95f;
-            background.style.backgroundColor = backgroundColor;
-
             this.Q(Overlay.k_CollapsedContent)?.RemoveFromHierarchy();
             this.Q(null, Overlay.k_Header)?.RemoveFromHierarchy();
 

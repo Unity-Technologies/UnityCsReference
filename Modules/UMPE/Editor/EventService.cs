@@ -65,7 +65,8 @@ namespace UnityEditor.MPE
                 System.Threading.Thread.Sleep(10);
             }
 
-            EditorApplication.update += Tick;
+            EditorApplication.tick -= Tick;
+            EditorApplication.tick += Tick;
         }
 
         public static void Close()
@@ -73,7 +74,7 @@ namespace UnityEditor.MPE
             Clear();
             m_Client.Close();
             m_Client = null;
-            EditorApplication.update -= Tick;
+            EditorApplication.tick -= Tick;
         }
 
         public static Action RegisterEventHandler(string eventType, Action<string, object[]> handler)

@@ -75,6 +75,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public ILoadingAssemblyDefinition loadingAssemblyDefinition { get; set; } = new LoadingAssemblyDefinition();
         public IVersionDefinesConsoleLogs VersionDefinesConsoleLogs { get; set; } = new VersionDefinesConsoleLogs();
         public ICompilationSetupWarningTracker CompilationSetupWarningTracker { get; set; } = new CompilationSetupWarningTracker();
+        public ISafeModeInfo SafeModeInfo { get; set; } = new SafeModeInfo();
 
         internal string projectDirectory = string.Empty;
         Dictionary<string, string> allScripts = new Dictionary<string, string>();
@@ -1413,6 +1414,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 projectDirectory,
                 settings,
                 assemblies,
+                SafeModeInfo,
                 targetAssemblyCondition: targetAssemblyCondition);
         }
 
@@ -1566,7 +1568,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     EditorAssemblyReferences = ModuleUtils.GetAdditionalReferencesForUserScripts(),
                 };
 
-                return EditorBuildRules.GetAllScriptAssemblies(allScripts, projectDirectory, settings, assemblies, type, warningSink: CompilationSetupWarningTracker);
+                return EditorBuildRules.GetAllScriptAssemblies(allScripts, projectDirectory, settings, assemblies, SafeModeInfo, type, warningSink: CompilationSetupWarningTracker);
             }
         }
 

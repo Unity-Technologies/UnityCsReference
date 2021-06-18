@@ -42,6 +42,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnFilterTabChanged(PackageFilterTab filterTab)
         {
             var page = m_PageManager.GetPage(filterTab);
+            Refresh(page);
+        }
+
+        public void Refresh(IPage page = null)
+        {
+            if (page == null)
+                page = m_PageManager.GetCurrentPage();
             var showOnFilterTab = page.subPages.Skip(1).Any();
             UIUtils.SetElementDisplay(this, showOnFilterTab);
 

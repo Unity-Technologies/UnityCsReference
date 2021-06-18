@@ -124,9 +124,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var tab = m_PackageFiltering.currentFilterTab;
 
+            var contentType = m_PageManager.GetCurrentPage().contentType ?? L10n.Tr("packages");
+
             if (m_PageManager.IsRefreshInProgress(tab))
             {
-                SetStatusMessage(StatusType.Loading, L10n.Tr("Refreshing packages..."));
+                SetStatusMessage(StatusType.Loading, string.Format(L10n.Tr("Refreshing {0}..."), contentType));
                 return;
             }
 
@@ -137,8 +139,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                 errorMessage = k_OfflineErrorMessage;
             else if (refreshError != null)
             {
-                var seeConsoleNotif = (UIError.Attribute.IsDetailInConsole & refreshError.attribute) != 0 ? ", see console" : "";
-                errorMessage = string.Format(L10n.Tr("Error refreshing packages{0}"), seeConsoleNotif);
+                var seeDetailInConsole = (UIError.Attribute.IsDetailInConsole & refreshError.attribute) != 0;
+                errorMessage = seeDetailInConsole ?
+                    string.Format(L10n.Tr("Error refreshing {0}, see console"), contentType) :
+                    string.Format(L10n.Tr("Error refreshing {0}"), contentType);
             }
 
             if (!string.IsNullOrEmpty(errorMessage))

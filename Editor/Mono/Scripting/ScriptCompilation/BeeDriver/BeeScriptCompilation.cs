@@ -99,7 +99,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 Asmdef = a.AsmDefPath,
                 CustomCompilerOptions = a.CompilerOptions.AdditionalCompilerArguments,
                 BclDirectories = MonoLibraryHelpers.GetSystemReferenceDirectories(a.CompilerOptions.ApiCompatibilityLevel),
-                DebugIndex = index
+                DebugIndex = index,
+                SkipCodeGen = a.SkipCodeGen
             };
         }
 
@@ -134,6 +135,22 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public static CompilerMessage[] ParseCompilerOutput(NodeResult nodeResult)
         {
             // TODO: future improvement opportunity: write a single parser that can parse warning, errors files from all tools that we use.
+            if (nodeResult.annotation.StartsWith("CopyFiles"))
+            {
+                if (nodeResult.exitcode == 0)
+                {
+                    return Array.Empty<CompilerMessage>();
+                }
+                return new[]
+                {
+                    new CompilerMessage
+                    {
+                        file = nodeResult.outputfile,
+                        message = $"{nodeResult.outputfile}: {nodeResult.stdout}",
+                        type = CompilerMessageType.Error
+                    }
+                };
+            }
             var parser = nodeResult.annotation.StartsWith("ILPostProcess")
                 ? (CompilerOutputParserBase) new PostProcessorOutputParser()
                 : (CompilerOutputParserBase) new MicrosoftCSharpCompilerOutputParser();

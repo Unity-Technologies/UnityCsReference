@@ -62,6 +62,7 @@ namespace UnityEditor.UIElements
         // This property to alleviate the fact we have to cast all the time
         TextValueInput textValueInput => (TextValueInput)textInputBase;
 
+        private BaseFieldMouseDragger m_Dragger;
 
         /// <summary>
         /// The format string for the value.
@@ -83,6 +84,7 @@ namespace UnityEditor.UIElements
             : base(label, maxLength, Char.MinValue, textValueInput)
         {
             SetValueWithoutNotify(default(TValueType));
+            onIsReadOnlyChanged += OnIsReadOnlyChanged;
         }
 
         /// <summary>
@@ -129,6 +131,11 @@ namespace UnityEditor.UIElements
             }
         }
 
+        private void OnIsReadOnlyChanged(bool newValue)
+        {
+            EnableLabelDragger(!newValue);
+        }
+
         internal virtual bool CanTryParse(string textString) => false;
 
         /// <summary>
@@ -136,9 +143,18 @@ namespace UnityEditor.UIElements
         /// </summary>
         protected void AddLabelDragger<TDraggerType>()
         {
-            var dragger = new FieldMouseDragger<TDraggerType>((IValueField<TDraggerType>) this);
-            dragger.SetDragZone(labelElement);
-            labelElement.AddToClassList(labelDraggerVariantUssClassName);
+            m_Dragger = new FieldMouseDragger<TDraggerType>((IValueField<TDraggerType>) this);
+            EnableLabelDragger(!isReadOnly);
+        }
+
+        private void EnableLabelDragger(bool enable)
+        {
+            if (m_Dragger != null)
+            {
+                m_Dragger.SetDragZone(enable ? labelElement : null);
+
+                labelElement.EnableInClassList(labelDraggerVariantUssClassName, enable);
+            }
         }
 
         /// <summary>

@@ -31,6 +31,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         IEnumerable<VisualState> visualStates { get; }
         bool isFullyLoaded { get; }
 
+        string contentType { get; }
+
         VisualState GetVisualState(string packageUniqueId);
         VisualState GetSelectedVisualState();
         void LoadMore(long numberOfPackages);

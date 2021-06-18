@@ -60,6 +60,8 @@ namespace UnityEditor.Animations
             if (AssetDatabase.GetAssetPath(this) != "")
                 AssetDatabase.AddObjectToAsset(newLayer.stateMachine, AssetDatabase.GetAssetPath(this));
 
+            undoHandler.DoUndoCreated(newLayer.stateMachine, "Layer added");
+
             AddLayer(newLayer);
         }
 
@@ -194,6 +196,8 @@ namespace UnityEditor.Animations
 
             if (AssetDatabase.GetAssetPath(this) != "")
                 AssetDatabase.AddObjectToAsset(tree, AssetDatabase.GetAssetPath(this));
+
+            undoHandler.DoUndoCreated(tree, "Blend Tree Created");
 
             AnimatorState state = layers[layerIndex].stateMachine.AddState(tree.name);
             state.motion = tree;

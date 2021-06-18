@@ -54,9 +54,19 @@ namespace UnityEditor
                 : selectedCamera.name;
         }
 
+        void OnPlayModeStateChanged(PlayModeStateChange playModeStateChange)
+        {
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+            OnSelectionChanged();
+        }
+
         public override void OnCreated()
         {
             Selection.selectionChanged += OnSelectionChanged;
+
+            if (!EditorApplication.isPlaying && EditorApplication.isPlayingOrWillChangePlaymode)
+                EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+
             m_PreviewCamera = EditorUtility.CreateGameObjectWithHideFlags("Preview Camera",
                 HideFlags.HideAndDontSave,
                 typeof(Camera),

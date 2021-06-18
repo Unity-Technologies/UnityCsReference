@@ -27,6 +27,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override SubPage currentSubPage { get => null; set {} }
 
+        public override string contentType { get; set; }
+
         [NonSerialized]
         private AssetStoreClient m_AssetStoreClient;
         [NonSerialized]
@@ -41,8 +43,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageManagerPrefs = packageManagerPrefs;
         }
 
-        public PaginatedPage(PackageDatabase packageDatabase, AssetStoreClient assetStoreClient, PackageFiltering packageFiltering, PackageManagerPrefs packageManagerPrefs, PackageFilterTab tab, PageCapability capability) : base(packageDatabase, tab, capability)
+        public PaginatedPage(string contentType, PackageDatabase packageDatabase, AssetStoreClient assetStoreClient, PackageFiltering packageFiltering, PackageManagerPrefs packageManagerPrefs, PackageFilterTab tab, PageCapability capability) : base(packageDatabase, tab, capability)
         {
+            this.contentType = contentType;
             ResolveDependencies(packageDatabase, assetStoreClient, packageFiltering, packageManagerPrefs);
         }
 

@@ -94,6 +94,13 @@ namespace UnityEditorInternal
                 propertyPaths.Add(basePropertyPath + ".b");
                 propertyPaths.Add(basePropertyPath + ".a");
             }
+            else if (materialProp.type == MaterialProperty.PropType.Vector)
+            {
+                propertyPaths.Add(basePropertyPath + ".x");
+                propertyPaths.Add(basePropertyPath + ".y");
+                propertyPaths.Add(basePropertyPath + ".z");
+                propertyPaths.Add(basePropertyPath + ".w");
+            }
             else
             {
                 propertyPaths.Add(basePropertyPath);

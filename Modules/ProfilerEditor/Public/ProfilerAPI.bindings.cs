@@ -482,6 +482,9 @@ namespace UnityEditorInternal
             set;
         }
 
+        [StaticAccessor("EditorProfilerConnection::Get()", StaticAccessorType.Dot)]
+        internal static extern void SetRemoteEditorConnection(int guid);
+
         static public extern string miniMemoryOverview
         {
             [FreeFunction("GetMiniMemoryOverview")] get;

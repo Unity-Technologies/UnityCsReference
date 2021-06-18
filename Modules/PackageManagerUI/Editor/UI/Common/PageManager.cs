@@ -215,7 +215,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             IPage page;
             if (filterTab == PackageFilterTab.AssetStore)
             {
-                page = new PaginatedPage(m_PackageDatabase, m_AssetStoreClient, m_PackageFiltering, m_PackageManagerPrefs, filterTab, new PageCapability
+                page = new PaginatedPage(L10n.Tr("assets"), m_PackageDatabase, m_AssetStoreClient, m_PackageFiltering, m_PackageManagerPrefs, filterTab, new PageCapability
                 {
                     requireUserLoggedIn = true,
                     requireNetwork = true,
@@ -780,28 +780,27 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void InitializeSubPages()
         {
-            Func<IPackage, bool> filterAllPackages = (package) => true;
-            Func<IPackage, string> groupPackagesAndFeatures = (package) =>
+            static bool FilterAllPackages(IPackage package) => true;
+
+            static string GroupPackagesAndFeatures(IPackage package)
             {
-                if (package?.Is(PackageType.Feature) == true)
-                    return L10n.Tr("Features");
+                if (package?.Is(PackageType.Feature) == true) return L10n.Tr("Features");
                 return L10n.Tr("Packages");
-            };
+            }
 
-            Func<IPackage, string> groupPackagesWithAuthorAndFeatures = (package) =>
+            static string GroupPackagesWithAuthorAndFeatures(IPackage package)
             {
-                if (package?.Is(PackageType.Feature) == true && package.Is(PackageType.Unity))
-                    return L10n.Tr("Features");
+                if (package?.Is(PackageType.Feature) == true && package.Is(PackageType.Unity)) return L10n.Tr("Features");
                 return string.Format(L10n.Tr("Packages - {0}"), BasePage.GetDefaultGroupName(PackageFilterTab.InProject, package));
-            };
+            }
 
-            AddSubPage(PackageFilterTab.UnityRegistry, "all", L10n.Tr("All"), 0, filterAllPackages, groupPackagesAndFeatures);
-            AddSubPage(PackageFilterTab.InProject, "all", L10n.Tr("All"), 0, filterAllPackages, groupPackagesWithAuthorAndFeatures);
+            AddSubPage(PackageFilterTab.UnityRegistry, "all", L10n.Tr("All"), L10n.Tr("packages and features"), 0, FilterAllPackages, GroupPackagesAndFeatures);
+            AddSubPage(PackageFilterTab.InProject, "all", L10n.Tr("All"), L10n.Tr("packages and features"), 0, FilterAllPackages, GroupPackagesWithAuthorAndFeatures);
         }
 
-        public SubPage AddSubPage(PackageFilterTab tab, string name, string displayName, int priority = 0, Func<IPackage, bool> filterFunction = null, Func<IPackage, string> groupNameFunction = null, Func<string, string, int> compareGroupFunction = null)
+        public SubPage AddSubPage(PackageFilterTab tab, string name, string displayName, string contentType, int priority = 0, Func<IPackage, bool> filterFunction = null, Func<IPackage, string> groupNameFunction = null, Func<string, string, int> compareGroupFunction = null)
         {
-            var subPage = new SubPage(tab, name, displayName, priority, filterFunction, groupNameFunction, compareGroupFunction);
+            var subPage = new SubPage(tab, name, displayName, contentType, priority, filterFunction, groupNameFunction, compareGroupFunction);
             GetPage(tab).AddSubPage(subPage);
             return subPage;
         }

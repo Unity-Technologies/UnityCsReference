@@ -98,6 +98,14 @@ namespace UnityEditor
 
     // Exposed as internal, editor-only, because we only need it do make a custom inspector
     [NativeClass(null)]
+    internal sealed class MemorySettings : ProjectSettingsBase
+    {
+        private MemorySettings() {}
+    }
+
+
+    // Exposed as internal, editor-only, because we only need it do make a custom inspector
+    [NativeClass(null)]
     internal sealed class UnityConnectSettings : ProjectSettingsBase
     {
         private UnityConnectSettings() {}

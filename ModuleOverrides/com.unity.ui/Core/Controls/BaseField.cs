@@ -81,6 +81,7 @@ namespace UnityEngine.UIElements
         public static readonly string mixedValueLabelUssClassName = labelUssClassName + "--mixed-value";
 
         protected static readonly string mixedValueString = "\u2014";
+        protected internal static readonly PropertyName serializedPropertyCopyName = "SerializedPropertyCopyName";
 
         private VisualElement m_VisualInput;
 
@@ -283,7 +284,6 @@ namespace UnityEngine.UIElements
 
             if (showMixedValue)
                 UpdateMixedValueContent();
-            showMixedValue = false;
         }
 
         internal override void OnViewDataReady()

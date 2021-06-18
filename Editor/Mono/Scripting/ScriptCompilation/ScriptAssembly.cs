@@ -106,5 +106,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             return new MicrosoftCSharpResponseFileProvider().Get(OriginPath).ToArray();
         }
+
+        public bool SkipCodeGen { get; set; }
     }
 }

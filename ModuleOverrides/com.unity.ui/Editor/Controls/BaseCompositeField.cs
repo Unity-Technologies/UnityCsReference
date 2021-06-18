@@ -47,6 +47,9 @@ namespace UnityEditor.UIElements
 
         internal abstract FieldDescription[] DescribeFields();
         bool m_ShouldUpdateDisplay;
+        bool m_ForceUpdateDisplay;
+
+        int m_PropertyIndex;
 
         /// <summary>
         /// USS class name of elements of this type.
@@ -113,7 +116,7 @@ namespace UnityEditor.UIElements
                 AddToClassList(multilineVariantUssClassName);
             }
 
-            int propertyIndex = 0;
+            m_PropertyIndex = 0;
 
             for (int i = 0; i < numberOfLines; i++)
             {
@@ -143,6 +146,8 @@ namespace UnityEditor.UIElements
 
                     field.label = desc.name;
 
+                    field.RegisterCallback<SerializedPropertyBindEvent>(OnSerializedPropertyBind);
+
                     field.RegisterValueChangedCallback(e =>
                     {
                         TValueType cur = value;
@@ -161,24 +166,6 @@ namespace UnityEditor.UIElements
 
                         value = cur;
                         m_ShouldUpdateDisplay = true;
-                    });
-
-                    field.RegisterCallback<AttachToPanelEvent>(e =>
-                    {
-                        if (!(userData is SerializedProperty property)) return;
-                        var propertyCopy = property.Copy();
-
-                        var k = 0;
-                        while (k <= propertyIndex)
-                        {
-                            propertyCopy.Next(k == 0);
-                            k++;
-                        }
-
-                        field.userData = propertyCopy.Copy();
-                        field.showMixedValue = propertyCopy.hasMultipleDifferentValues;
-
-                        propertyIndex++;
                     });
 
                     m_Fields.Add(field);
@@ -218,6 +205,27 @@ namespace UnityEditor.UIElements
             UpdateDisplay();
         }
 
+        void OnSerializedPropertyBind(SerializedPropertyBindEvent e)
+        {
+            if (!(GetProperty(serializedPropertyCopyName) is SerializedProperty property)) return;
+            var propertyCopy = property.Copy();
+
+            var k = 0;
+            while (k <= m_PropertyIndex)
+            {
+                propertyCopy.Next(k == 0);
+                k++;
+            }
+
+            var field = (TField)e.target;
+            field.SetProperty(serializedPropertyCopyName, propertyCopy);
+            field.showMixedValue = propertyCopy.hasMultipleDifferentValues;
+
+            m_ForceUpdateDisplay = true;
+
+            m_PropertyIndex++;
+        }
+
         private void UpdateDisplay()
         {
             if (m_Fields.Count != 0)
@@ -234,7 +242,7 @@ namespace UnityEditor.UIElements
 
         public override void SetValueWithoutNotify(TValueType newValue)
         {
-            var displayNeedsUpdate = m_ShouldUpdateDisplay && !EqualityComparer<TValueType>.Default.Equals(rawValue, newValue);
+            var displayNeedsUpdate = m_ForceUpdateDisplay || (m_ShouldUpdateDisplay && !EqualityComparer<TValueType>.Default.Equals(rawValue, newValue));
 
             // Make sure to call the base class to set the value...
             base.SetValueWithoutNotify(newValue);
@@ -244,6 +252,8 @@ namespace UnityEditor.UIElements
             {
                 UpdateDisplay();
             }
+
+            m_ForceUpdateDisplay = false;
         }
 
         protected override void UpdateMixedValueContent()

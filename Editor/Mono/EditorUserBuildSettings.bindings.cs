@@ -161,6 +161,22 @@ namespace UnityEditor
         Quality32BitDownscaled = 2,
     }
 
+    // Target texture build platform.
+    [NativeType(Header = "Runtime/Serialize/BuildTarget.h")]
+    public enum WebGLTextureSubtarget
+    {
+        // Don't override texture compression.
+        Generic = 0,
+        // S3 texture compression, nonspecific to DXT variant, supported by desktop browsers
+        DXT = 1,
+        // ETC1 texture compression (or RGBA16 for textures with alpha), supported by mobile devices
+        ETC = 2,
+        // ETC2/EAC texture compression, supported by mobile devices
+        ETC2 = 3,
+        // Adaptive Scalable Texture Compression, supported by mobile devices
+        ASTC = 4,
+    }
+
     [NativeType(Header = "Runtime/Serialize/BuildTarget.h")]
     [Obsolete("WSASubtarget is obsolete and has no effect. It will be removed in a subsequent Unity release.")]
     public enum WSASubtarget
@@ -466,6 +482,14 @@ namespace UnityEditor
             set;
         }
 
+        // WebGL platform options.
+        public static extern WebGLTextureSubtarget webGLBuildSubtarget
+        {
+            [NativeMethod("GetSelectedWebGLBuildTextureSubtarget")]
+            get;
+            [NativeMethod("SetSelectedWebGLBuildSubtarget")]
+            set;
+        }
         //Compression set/get methods for the map containing type for BuildTargetGroup
         internal static Compression GetCompressionType(BuildTargetGroup targetGroup)
         {

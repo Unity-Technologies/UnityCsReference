@@ -88,6 +88,8 @@ namespace UnityEditor.Animations
             if (AssetDatabase.GetAssetPath(this) != "")
                 AssetDatabase.AddObjectToAsset(tree, AssetDatabase.GetAssetPath(this));
 
+            Undo.RegisterCreatedObjectUndo(tree, "Blend Tree Created");
+
             AddChild(tree, position, threshold);
             return tree;
         }

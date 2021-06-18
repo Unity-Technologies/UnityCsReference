@@ -66,12 +66,12 @@ namespace UnityEditor
             return IsSourceBuild();
         }
 
-        [FreeFunction]
+        [FreeFunction(IsThreadSafe = true)]
         public static extern bool IsDeveloperMode();
 
         public static bool IsSourceBuild() => IsSourceBuild(true);
 
-        [FreeFunction]
+        [FreeFunction(IsThreadSafe = true)]
         public static extern bool IsSourceBuild(bool checkHumanControllingUs);
 
         public static extern bool IsBleedingEdgeBuild();
@@ -80,7 +80,7 @@ namespace UnityEditor
 
         public static extern bool IsNativeCodeBuiltInReleaseMode();
 
-        [FreeFunction]
+        [FreeFunction(IsThreadSafe = true)]
         public static extern string GetBaseUnityDeveloperFolder();
 
         public static extern void StopPlayingImmediately();

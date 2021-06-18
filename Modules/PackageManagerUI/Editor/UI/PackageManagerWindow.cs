@@ -38,6 +38,21 @@ namespace UnityEditor.PackageManager.UI
         {
             PackageManagerWindow.OpenPackageManager(packageToSelect);
         }
+
+        /// <summary>
+        /// Open Package Manager Window and select specified filter.
+        /// The string used to identify the filter can be any of the following:
+        /// <list type="bullet">
+        /// <item><description>filterTab (e.g. "InProject")</description></item>
+        /// <item><description>filterTab/subPage (e.g. "InProject/Services")</description></item>
+        /// <item><description>null (no specific filterTab to focus)</description></item>
+        /// </list>
+        /// </summary>
+        /// <param name="filterAndSubPageToSelect">Filter tab and subpage (optional) to select. If filter tab cannot be found, last select tab will be selected, if subpage cannot be found, first subpage will be selected</param>
+        internal static void OpenFilter(string filterAndSubPageToSelect)
+        {
+            PackageManagerWindow.OpenPackageManagerOnFilter(filterAndSubPageToSelect);
+        }
     }
 
     [EditorWindowTitle(title = "Package Manager", icon = "Package Manager")]
@@ -152,7 +167,6 @@ namespace UnityEditor.PackageManager.UI
             var isWindowAlreadyVisible = Resources.FindObjectsOfTypeAll<PackageManagerWindow>()?.FirstOrDefault() != null;
 
             SelectPackageAndFilterStatic(packageToSelect);
-
             if (!isWindowAlreadyVisible)
             {
                 string packageId = null;
@@ -167,6 +181,15 @@ namespace UnityEditor.PackageManager.UI
                 }
                 PackageManagerWindowAnalytics.SendEvent("openWindow", packageId);
             }
+        }
+
+        internal static void OpenPackageManagerOnFilter(string filterAndSubPageToSelect)
+        {
+            var isWindowAlreadyVisible = Resources.FindObjectsOfTypeAll<PackageManagerWindow>()?.FirstOrDefault() != null;
+
+            SelectFilterSubPageStatic(filterAndSubPageToSelect);
+            if (!isWindowAlreadyVisible)
+                PackageManagerWindowAnalytics.SendEvent("openWindowOnFilter", filterAndSubPageToSelect);
         }
 
         [UsedByNativeCode]
@@ -194,6 +217,14 @@ namespace UnityEditor.PackageManager.UI
 
             var pageManager = ServicesContainer.instance.Resolve<PageManager>();
             pageManager.Refresh(RefreshOptions.UpmListOffline);
+        }
+
+        internal static void SelectFilterSubPageStatic(string filterTabOrSubPage = "")
+        {
+            instance = GetWindow<PackageManagerWindow>();
+            instance.minSize = new Vector2(800, 250);
+            instance.m_Root.SelectFilterSubPage(filterTabOrSubPage);
+            instance.Show();
         }
 
         internal static void SelectPackageAndFilterStatic(string packageToSelect, PackageFilterTab? filterTab = null, bool refresh = false, string searchText = "")

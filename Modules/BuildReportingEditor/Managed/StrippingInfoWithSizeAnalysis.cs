@@ -11,6 +11,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEditor.Build.Reporting;
 using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace UnityEditor.Build.Reporting
 {
@@ -92,6 +93,8 @@ namespace UnityEditor.Build.Reporting
 
             var functionSizes = GetFunctionSizes();
 
+            Regex moduleNameParser = new Regex(@"WebGLSupport_(.*)Module_Dynamic", RegexOptions.IgnoreCase);
+
             foreach (var functionSize in functionSizes)
             {
                 if (symbolArtifacts.ContainsKey(functionSize.Key))
@@ -113,14 +116,13 @@ namespace UnityEditor.Build.Reporting
                 }
                 if (moduleArtifacts.ContainsKey(functionSize.Key))
                 {
-                    var objectFile = moduleArtifacts[functionSize.Key];
-                    objectFile = objectFile.Substring(0, objectFile.Length - "Module_Dynamic.bc".Length);
-                    objectFile = StrippingInfo.ModuleName(objectFile);
+                    Match m = moduleNameParser.Match(moduleArtifacts[functionSize.Key]);
+                    string moduleName = m.Success ? StrippingInfo.ModuleName(m.Groups[1].ToString()) : moduleArtifacts[functionSize.Key];
 
-                    if (!moduleSizes.ContainsKey(objectFile))
-                        moduleSizes[objectFile] = 0;
+                    if (!moduleSizes.ContainsKey(moduleName))
+                        moduleSizes[moduleName] = 0;
 
-                    moduleSizes[objectFile] += functionSize.Value;
+                    moduleSizes[moduleName] += functionSize.Value;
 
                     moduleAccounted += functionSize.Value;
                 }

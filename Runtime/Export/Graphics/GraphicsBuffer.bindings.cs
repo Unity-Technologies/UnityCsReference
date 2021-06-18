@@ -39,6 +39,25 @@ namespace UnityEngine
             Constant          = 1 << 9,
         }
 
+        public struct IndirectDrawArgs
+        {
+            public const int size = 16;
+            public uint vertexCountPerInstance {get; set;}
+            public uint instanceCount {get; set;}
+            public uint startVertex {get; set;}
+            public uint startInstance {get; set;}
+        }
+
+        public struct IndirectDrawIndexedArgs
+        {
+            public const int size = 20;
+            public uint indexCountPerInstance {get; set;}
+            public uint instanceCount {get; set;}
+            public uint startIndex {get; set;}
+            public uint baseVertexIndex {get; set;}
+            public uint startInstance {get; set;}
+        }
+
         ~GraphicsBuffer()
         {
             Dispose(false);

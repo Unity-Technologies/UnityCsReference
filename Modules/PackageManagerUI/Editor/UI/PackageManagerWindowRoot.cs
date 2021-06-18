@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Linq;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine;
@@ -14,6 +15,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private string m_PackageToSelectOnLoaded;
 
         private PackageFilterTab? m_FilterToSelectAfterLoad;
+
+        private string m_SubPageToSelectAfterLoad;
 
         private ResourceLoader m_ResourceLoader;
         private ExtensionManager m_ExtensionManager;
@@ -121,7 +124,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ExtensionManager.OnWindowCreated(this, packageDetails.extensionContainer, packageDetails.toolbarExtensions);
         }
 
-        private void DelayRefresh(PackageFilterTab tab)
+        private void DelayRefresh(PackageFilterTab tab, string subPage = "")
         {
             if (!m_ApplicationProxy.isUpmRunning)
             {
@@ -137,7 +140,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (tab == PackageFilterTab.AssetStore &&
                 (m_PackageManagerPrefs.numItemsPerPage == null || !m_UnityConnectProxy.isUserInfoReady))
             {
-                EditorApplication.delayCall += () => DelayRefresh(tab);
+                EditorApplication.delayCall += () => DelayRefresh(tab, subPage);
                 return;
             }
 
@@ -273,12 +276,36 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 m_FilterToSelectAfterLoad = null;
                 m_PackageToSelectOnLoaded = null;
+                m_SubPageToSelectAfterLoad = null;
                 return;
             }
 
             if (package != null || m_FilterToSelectAfterLoad != null)
             {
-                var tab = m_FilterToSelectAfterLoad ?? PackageFilterTab.UnityRegistry;
+                var tab = m_FilterToSelectAfterLoad ?? PackageFiltering.k_DefaultFilterTab;
+
+                if (m_SubPageToSelectAfterLoad != null)
+                {
+                    void SelectSubPage(IPage page, string subPageName)
+                    {
+                        var subPage = page.subPages.FirstOrDefault(page => string.Compare(page.name, subPageName, StringComparison.InvariantCultureIgnoreCase) == 0) ?? page.subPages.First();
+                        page.currentSubPage = subPage;
+                        packageSubPageFilterBar.Refresh();
+                    }
+
+                    void OnFilterTabChangedSelectSubPage(PackageFilterTab filterTab)
+                    {
+                        m_PackageFiltering.onFilterTabChanged -= OnFilterTabChangedSelectSubPage;
+                        SelectSubPage(m_PageManager.GetCurrentPage(), m_SubPageToSelectAfterLoad);
+                    }
+
+                    if (m_PackageFiltering.currentFilterTab == tab)
+                        SelectSubPage(m_PageManager.GetCurrentPage(), m_SubPageToSelectAfterLoad);
+                    else
+                        m_PackageFiltering.onFilterTabChanged += OnFilterTabChangedSelectSubPage;
+
+                    m_PackageToSelectOnLoaded = null;
+                }
 
                 m_PackageFiltering.currentFilterTab = tab;
                 if (!string.IsNullOrEmpty(m_PackageToSelectOnLoaded))
@@ -289,6 +316,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 m_FilterToSelectAfterLoad = null;
                 m_PackageToSelectOnLoaded = null;
+                m_SubPageToSelectAfterLoad = null;
             }
         }
 
@@ -333,6 +361,26 @@ namespace UnityEditor.PackageManager.UI.Internal
             packageManagerToolbar.SetEnabled(value);
             packageSubPageFilterBar.SetEnabled(value);
             packageDetails.packageToolbarContainer.SetEnabled(value);
+        }
+
+        public void SelectFilterSubPage(string filterTabOrSubPage = "")
+        {
+            if (!string.IsNullOrEmpty(filterTabOrSubPage))
+            {
+                var split = filterTabOrSubPage.Split('/');
+                if (PackageFilterTab.TryParse(split[0], true, out PackageFilterTab tab))
+                {
+                    var subPage = split.Length > 1 ? split[1] : string.Empty;
+                    m_PackageToSelectOnLoaded = null;
+                    m_FilterToSelectAfterLoad = tab;
+                    m_SubPageToSelectAfterLoad = subPage;
+
+                    if (m_PackageDatabase.isEmpty)
+                        DelayRefresh(tab, subPage);
+                    else
+                        SelectPackageAndFilter();
+                }
+            }
         }
 
         public void SelectPackageAndFilter(string packageToSelect, PackageFilterTab? filterTab = null, bool refresh = false, string searchText = "")

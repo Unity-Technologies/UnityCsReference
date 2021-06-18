@@ -269,6 +269,11 @@ namespace UnityEngine
             }
         }
 
+        public Vector3 GetPosition()
+        {
+            return new Vector3(m03, m13, m23);
+        }
+
         // Sets a column of the matrix.
         public void SetColumn(int index, Vector4 column)
         {

@@ -37,6 +37,8 @@ namespace UnityEditor
 
         private TaskReorderingHelper m_TaskReorderingHelper;
 
+        private static readonly string k_CheckWindowKeyName = $"{typeof(ProgressWindow).FullName}h";
+
         [MenuItem("Window/General/Progress", priority = 50)]
         public static void ShowDetails()
         {
@@ -71,6 +73,10 @@ namespace UnityEditor
             {
                 m_Window = CreateInstance<ProgressWindow>();
                 newWindowCreated = true;
+
+                // If it is the first time this window is opened, reposition.
+                if (!EditorPrefs.HasKey(k_CheckWindowKeyName))
+                    shouldReposition = true;
             }
 
             m_Window.Show();
@@ -321,7 +327,6 @@ namespace UnityEditor
                         return m_Elements[i];
                     }
                 }
-                Assert.IsTrue(true);
             }
             // if there is no parent
             var element = new ProgressElement(progressItem);

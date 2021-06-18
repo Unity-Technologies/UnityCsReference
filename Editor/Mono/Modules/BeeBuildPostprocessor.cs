@@ -515,23 +515,16 @@ namespace UnityEditor.Modules
             return !string.Equals(cpu, "None", StringComparison.OrdinalIgnoreCase);
         }
 
-        protected static bool GetDevelopment(BuildPostProcessArgs args) =>
+        protected bool GetDevelopment(BuildPostProcessArgs args) =>
             IsBuildOptionSet(args.options, BuildOptions.Development);
 
-        protected static bool GetInstallingIntoBuildsFolder(BuildPostProcessArgs args) =>
+        protected bool GetInstallingIntoBuildsFolder(BuildPostProcessArgs args) =>
             IsBuildOptionSet(args.options, BuildOptions.InstallInBuildFolder);
 
-        protected static bool GetServer(BuildPostProcessArgs args) =>
-            (args.target == BuildTarget.StandaloneWindows ||
-                args.target == BuildTarget.StandaloneWindows64 ||
-                args.target == BuildTarget.StandaloneOSX ||
-                args.target == BuildTarget.StandaloneLinux64) &&
-            (StandaloneBuildSubtarget)args.subtarget == StandaloneBuildSubtarget.Server;
-
-        protected static bool ShouldAppendBuild(BuildPostProcessArgs args) =>
+        protected bool ShouldAppendBuild(BuildPostProcessArgs args) =>
             IsBuildOptionSet(args.options, BuildOptions.AcceptExternalModificationsToPlayer);
 
-        protected static bool GetUseIl2Cpp(BuildPostProcessArgs args) =>
+        protected virtual bool GetUseIl2Cpp(BuildPostProcessArgs args) =>
             PlayerSettings.GetScriptingBackend(BuildPipeline.GetBuildTargetGroup(args.target)) == ScriptingImplementation.IL2CPP;
     }
 }

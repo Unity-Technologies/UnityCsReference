@@ -8,7 +8,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
-    [Overlay(typeof(EditorWindow), k_Id, "Tools", true)]
+    [Overlay(typeof(SceneView), k_Id, "Tools", true)]
     [Icon("Icons/Overlays/StandardTools.png")]
     class TransformToolsOverlayToolBar : ToolbarOverlay
     {
@@ -16,7 +16,7 @@ namespace UnityEditor
         public TransformToolsOverlayToolBar() : base("Tools/Builtin Tools") {}
     }
 
-    [Overlay(typeof(EditorWindow), k_Id, "Component Tools", true)]
+    [Overlay(typeof(SceneView), k_Id, "Component Tools", true)]
     [Icon("Icons/Overlays/StandardTools.png")]
     class ComponentToolsOverlayToolBar : ToolbarOverlay
     {
@@ -52,7 +52,7 @@ namespace UnityEditor
             "SceneView/Gizmos") {}
     }
 
-    [Overlay(typeof(EditorWindow), k_Id, "Search", true)]
+    [Overlay(typeof(SceneView), k_Id, "Search", true)]
     [Icon("Icons/Overlays/SearchOverlay.png")]
     class SearchToolBar : Overlay, ICreateHorizontalToolbar
     {

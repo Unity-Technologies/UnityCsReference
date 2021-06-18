@@ -141,6 +141,8 @@ namespace UnityEditor
 
         public static extern int GetCount();
 
+        internal static extern int[] GetManagedNotifiedIds();
+
         public static extern int[] GetCountPerStatus();
 
         public static extern float GetProgress(int id);
@@ -217,8 +219,8 @@ namespace UnityEditor
         }
 
         private static List<Item> s_ProgressItems = new List<Item>(8);
-        private static bool s_Initialized = false;
-        private static float s_Progress = 0;
+        private static bool s_Initialized;
+        private static float s_Progress;
         private static bool s_ProgressDirty = true;
         private static TimeSpan s_RemainingTime = TimeSpan.Zero;
         private static bool s_RemainingTimeDirty = true;
@@ -228,19 +230,16 @@ namespace UnityEditor
         public static event Action<Item[]> updated;
         public static event Action<Item[]> removed;
 
-        static Progress()
-        {
-            RestoreProgressItems(); // on domain reload - request all native operations
-        }
-
         public static IEnumerable<Item> EnumerateItems()
         {
+            if (!s_Initialized)
+                RestoreProgressItems();
             return s_ProgressItems;
         }
 
         public static Item GetProgressById(int id)
         {
-            foreach (var progressItem in s_ProgressItems)
+            foreach (var progressItem in EnumerateItems())
             {
                 if (progressItem.id == id)
                     return progressItem;
@@ -383,10 +382,9 @@ namespace UnityEditor
 
             s_ProgressItems.Clear();
 
-            var n = GetCount();
-            for (var i = 0; i < n; i++)
+            var alreadyCreatedIds = GetManagedNotifiedIds();
+            foreach (var id in alreadyCreatedIds)
             {
-                var id = GetId(i);
                 CreateProgressItem(id);
             }
             s_Initialized = true;

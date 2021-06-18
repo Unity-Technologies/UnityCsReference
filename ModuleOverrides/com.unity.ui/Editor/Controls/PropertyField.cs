@@ -459,10 +459,9 @@ namespace UnityEditor.UIElements
             {
                 field = factory();
             }
-            var propertyCopy = property.Copy();
             var fieldLabel = label ?? property.localizedDisplayName;
             field.bindingPath = property.propertyPath;
-            field.userData = propertyCopy;
+            field.SetProperty(BaseField<TValue>.serializedPropertyCopyName, property.Copy());
             field.name = "unity-input-" + property.propertyPath;
             field.label = fieldLabel;
 

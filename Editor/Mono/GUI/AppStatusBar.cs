@@ -207,7 +207,7 @@ namespace UnityEditor
                     if (canHide)
                         EditorUIService.instance.ProgressWindowHideDetails();
                     else
-                        Progress.ShowDetails();
+                        Progress.ShowDetails(false);
                 }
 
                 var buttonRect = GUILayoutUtility.GetLastRect();
@@ -265,7 +265,7 @@ namespace UnityEditor
             var progressRect = EditorGUILayout.GetControlRect(false, position.height, Styles.progressBarBack, Styles.progressBarWidth);
             if (EditorGUI.ProgressBar(progressRect, globalProgress, progressBarContent, true,
                 Styles.progressBarBack, progressBarStyle, Styles.progressBarText))
-                Progress.ShowDetails();
+                Progress.ShowDetails(false);
 
             if (globalProgress == -1.0f)
             {

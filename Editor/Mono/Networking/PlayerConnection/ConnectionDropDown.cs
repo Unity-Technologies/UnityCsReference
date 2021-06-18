@@ -208,7 +208,7 @@ namespace UnityEditor.Networking.PlayerConnection
 
             if (string.IsNullOrEmpty(m_SubGroup))
             {
-                if (idString == "Editor")
+                if (idString == "Editor" || idString == "Main Editor Process")
                 {
                     m_TopLevelGroup = ConnectionMajorGroup.Local;
                     m_SubGroup = "Editor";

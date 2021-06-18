@@ -187,6 +187,17 @@ namespace UnityEditor
         // Clears drag & drop data.
         public static void PrepareStartDrag()
         {
+            if (Event.current != null)
+            {
+                switch (Event.current.type)
+                {
+                    case EventType.DragUpdated:
+                    case EventType.DragPerform:
+                    case EventType.DragExited:
+                        Debug.LogError($"Calling \"{nameof(PrepareStartDrag)}\" when dragging is in progress is not supported.");
+                        return;
+                }
+            }
             s_GenericData = null;
             paths = null;
             objectReferences = new UnityEngine.Object[] {};

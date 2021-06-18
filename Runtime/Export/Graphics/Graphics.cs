@@ -8,6 +8,8 @@ using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using UnityEngine.Scripting;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using uei = UnityEngine.Internal;
 
 namespace UnityEngine
@@ -139,6 +141,61 @@ namespace UnityEngine
             : this(color, depth, mip, face, LoadActions(color), StoreActions(color), depth.loadAction, depth.storeAction)
         {
         }
+    }
+
+    public struct RenderParams
+    {
+        public RenderParams(Material mat)
+        {
+            layer = 0;
+            renderingLayerMask = GraphicsSettings.defaultRenderingLayerMask;
+            rendererPriority = 0;
+            worldBounds = new Bounds(Vector3.zero, Vector3.zero);
+            camera = null;
+            motionVectorMode = MotionVectorGenerationMode.Camera;
+            reflectionProbeUsage = ReflectionProbeUsage.Off;
+            material = mat;
+            matProps = null;
+            shadowCastingMode = ShadowCastingMode.Off;
+            receiveShadows = false;
+            lightProbeUsage = LightProbeUsage.Off;
+            lightProbeProxyVolume = null;
+        }
+
+        public int layer {get; set;}
+        public uint renderingLayerMask {get; set;}
+        public int rendererPriority {get; set;}
+        public Bounds worldBounds {get; set;}
+        public Camera camera {get; set;}
+        public MotionVectorGenerationMode motionVectorMode {get; set;}
+        public ReflectionProbeUsage reflectionProbeUsage {get; set;}
+
+        public Material material {get; set;}
+        public MaterialPropertyBlock matProps {get; set;}
+
+        public ShadowCastingMode shadowCastingMode {get; set;}
+        public bool receiveShadows {get; set;}
+
+        public LightProbeUsage lightProbeUsage {get; set;}
+        public LightProbeProxyVolume lightProbeProxyVolume {get; set;}
+    }
+
+    internal readonly struct RenderInstancedDataLayout
+    {
+        public RenderInstancedDataLayout(System.Type t)
+        {
+            size = Marshal.SizeOf(t);
+            offsetObjectToWorld = t == typeof(Matrix4x4) ? 0 : Marshal.OffsetOf(t, "objectToWorld").ToInt32();
+
+            // fill optional data members
+            try {offsetPrevObjectToWorld = Marshal.OffsetOf(t, "prevObjectToWorld").ToInt32();} catch (ArgumentException) {offsetPrevObjectToWorld = -1;}
+            try {offsetRenderingLayerMask = Marshal.OffsetOf(t, "renderingLayerMask").ToInt32();} catch (ArgumentException) {offsetRenderingLayerMask = -1;}
+        }
+
+        public int size {get;}
+        public int offsetObjectToWorld {get;}
+        public int offsetPrevObjectToWorld {get;}
+        public int offsetRenderingLayerMask {get;}
     }
 }
 
@@ -412,6 +469,98 @@ namespace UnityEngine
         public static void DrawTexture(Rect screenRect, Texture texture, [uei.DefaultValue("null")] Material mat, [uei.DefaultValue("-1")] int pass)
         {
             DrawTexture(screenRect, texture, 0, 0, 0, 0, mat, pass);
+        }
+
+        public unsafe static void RenderMesh(in RenderParams rparams, Mesh mesh, int submeshIndex, Matrix4x4 objectToWorld, [uei.DefaultValue("null")] Matrix4x4? prevObjectToWorld = null)
+        {
+            if (prevObjectToWorld.HasValue)
+            {
+                Matrix4x4 temp = prevObjectToWorld.Value;
+                Internal_RenderMesh(rparams, mesh, submeshIndex, objectToWorld, &temp);
+            }
+            else
+                Internal_RenderMesh(rparams, mesh, submeshIndex, objectToWorld, null);
+        }
+
+        public unsafe static void RenderMeshInstanced<T>(in RenderParams rparams, Mesh mesh, int submeshIndex, T[] instanceData, [uei.DefaultValue("-1")] int instanceCount = -1, [uei.DefaultValue("0")] int startInstance = 0) where T : unmanaged
+        {
+            if (!SystemInfo.supportsInstancing)
+                throw new InvalidOperationException("Instancing is not supported.");
+            else if (!rparams.material.enableInstancing)
+                throw new InvalidOperationException("Material needs to enable instancing for use with RenderMeshInstanced.");
+            else if (instanceData == null)
+                throw new ArgumentNullException("instanceData");
+            RenderInstancedDataLayout layout = new RenderInstancedDataLayout(typeof(T));
+            uint count = Math.Min((uint)instanceCount, (uint)Math.Max(0, instanceData.Length - startInstance));
+            fixed(T *data = instanceData) {Internal_RenderMeshInstanced(rparams, mesh, submeshIndex, (IntPtr)(data + startInstance), layout, count);}
+        }
+
+        public unsafe static void RenderMeshInstanced<T>(in RenderParams rparams, Mesh mesh, int submeshIndex, List<T> instanceData, [uei.DefaultValue("-1")] int instanceCount = -1, [uei.DefaultValue("0")] int startInstance = 0) where T : unmanaged
+        {
+            if (!SystemInfo.supportsInstancing)
+                throw new InvalidOperationException("Instancing is not supported.");
+            else if (!rparams.material.enableInstancing)
+                throw new InvalidOperationException("Material needs to enable instancing for use with RenderMeshInstanced.");
+            else if (instanceData == null)
+                throw new ArgumentNullException("instanceData");
+            RenderInstancedDataLayout layout = new RenderInstancedDataLayout(typeof(T));
+            uint count = Math.Min((uint)instanceCount, (uint)Math.Max(0, instanceData.Count - startInstance));
+            fixed(T *data = NoAllocHelpers.ExtractArrayFromListT(instanceData)) {Internal_RenderMeshInstanced(rparams, mesh, submeshIndex, (IntPtr)(data + startInstance), layout, count);}
+        }
+
+        public unsafe static void RenderMeshInstanced<T>(RenderParams rparams, Mesh mesh, int submeshIndex, NativeArray<T> instanceData, [uei.DefaultValue("-1")] int instanceCount = -1, [uei.DefaultValue("0")] int startInstance = 0) where T : unmanaged
+        {
+            if (!SystemInfo.supportsInstancing)
+                throw new InvalidOperationException("Instancing is not supported.");
+            else if (!rparams.material.enableInstancing)
+                throw new InvalidOperationException("Material needs to enable instancing for use with RenderMeshInstanced.");
+            else if (instanceData == null)
+                throw new ArgumentNullException("instanceData");
+            RenderInstancedDataLayout layout = new RenderInstancedDataLayout(typeof(T));
+            uint count = Math.Min((uint)instanceCount, (uint)Math.Max(0, instanceData.Length - startInstance));
+            Internal_RenderMeshInstanced(rparams, mesh, submeshIndex, (IntPtr)((T*)instanceData.GetUnsafePtr() + startInstance), layout, count);
+        }
+
+        public static void RenderMeshIndirect(in RenderParams rparams, Mesh mesh, GraphicsBuffer commandBuffer, [uei.DefaultValue("1")] int commandCount = 1, [uei.DefaultValue("0")] int startCommand = 0)
+        {
+            if (!SystemInfo.supportsInstancing)
+                throw new InvalidOperationException("Instancing is not supported.");
+            Internal_RenderMeshIndirect(rparams, mesh, commandBuffer, commandCount, startCommand);
+        }
+
+        public static void RenderMeshPrimitives(in RenderParams rparams, Mesh mesh, int submeshIndex, [uei.DefaultValue("1")] int instanceCount = 1)
+        {
+            if (!SystemInfo.supportsInstancing)
+                throw new InvalidOperationException("Instancing is not supported.");
+            Internal_RenderMeshPrimitives(rparams, mesh, submeshIndex, instanceCount);
+        }
+
+        public static void RenderPrimitives(in RenderParams rparams, MeshTopology topology, int vertexCount, [uei.DefaultValue("1")] int instanceCount = 1)
+        {
+            if (!SystemInfo.supportsInstancing)
+                throw new InvalidOperationException("Instancing is not supported.");
+            Internal_RenderPrimitives(rparams, topology, vertexCount, instanceCount);
+        }
+
+        public static void RenderPrimitivesIndexed(in RenderParams rparams, MeshTopology topology, GraphicsBuffer indexBuffer, int indexCount, [uei.DefaultValue("0")] int startIndex = 0, [uei.DefaultValue("1")] int instanceCount = 1)
+        {
+            if (!SystemInfo.supportsInstancing)
+                throw new InvalidOperationException("Instancing is not supported.");
+            Internal_RenderPrimitivesIndexed(rparams, topology, indexBuffer, indexCount, startIndex, instanceCount);
+        }
+
+        public static void RenderPrimitivesIndirect(in RenderParams rparams, MeshTopology topology, GraphicsBuffer commandBuffer, [uei.DefaultValue("1")] int commandCount = 1, [uei.DefaultValue("0")] int startCommand = 0)
+        {
+            if (!SystemInfo.supportsInstancing)
+                throw new InvalidOperationException("Instancing is not supported.");
+            Internal_RenderPrimitivesIndirect(rparams, topology, commandBuffer, commandCount, startCommand);
+        }
+
+        public static void RenderPrimitivesIndexedIndirect(in RenderParams rparams, MeshTopology topology, GraphicsBuffer indexBuffer, GraphicsBuffer commandBuffer, [uei.DefaultValue("1")] int commandCount = 1, [uei.DefaultValue("0")] int startCommand = 0)
+        {
+            if (!SystemInfo.supportsInstancing)
+                throw new InvalidOperationException("Instancing is not supported.");
+            Internal_RenderPrimitivesIndexedIndirect(rparams, topology, indexBuffer, commandBuffer, commandCount, startCommand);
         }
 
         public static void DrawMeshNow(Mesh mesh, Vector3 position, Quaternion rotation, int materialIndex)

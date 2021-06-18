@@ -24,6 +24,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private List<SubPage> m_SubPages;
         public override IEnumerable<SubPage> subPages => m_SubPages ?? Enumerable.Empty<SubPage>();
 
+        public override string contentType { get => currentSubPage?.contentType; set {} }
+
         [SerializeField]
         private string m_SelectedSubPageName;
         public override SubPage currentSubPage

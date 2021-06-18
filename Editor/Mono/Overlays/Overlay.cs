@@ -35,7 +35,6 @@ namespace UnityEditor.Overlays
         internal const string k_ToolbarHorizontalLayout = "overlay-layout--toolbar-horizontal";
         internal const string k_ToolbarVerticalLayout = "overlay-layout--toolbar-vertical";
         internal const string k_PanelLayout = "overlay-layout--freesize";
-        internal const string k_Background = "unity-overlay";
 
         public EditorWindow containerWindow => canvas.containerWindow;
 

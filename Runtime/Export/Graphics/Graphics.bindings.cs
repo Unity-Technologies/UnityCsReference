@@ -440,6 +440,30 @@ namespace UnityEngine
         [FreeFunction("GraphicsScripting::DrawTexture")][VisibleToOtherModules("UnityEngine.IMGUIModule")]
         extern internal static void Internal_DrawTexture(ref Internal_DrawTextureArguments args);
 
+        [FreeFunction("GraphicsScripting::RenderMesh")]
+        extern unsafe private static void Internal_RenderMesh(RenderParams rparams, [NotNull("NullExceptionObject")] Mesh mesh, int submeshIndex, Matrix4x4 objectToWorld, Matrix4x4* prevObjectToWorld);
+
+        [FreeFunction("GraphicsScripting::RenderMeshInstanced")]
+        extern private static void Internal_RenderMeshInstanced(RenderParams rparams, [NotNull("NullExceptionObject")] Mesh mesh, int submeshIndex, IntPtr instanceData, RenderInstancedDataLayout layout, uint instanceCount);
+
+        [FreeFunction("GraphicsScripting::RenderMeshIndirect")]
+        extern private static void Internal_RenderMeshIndirect(RenderParams rparams, [NotNull("NullExceptionObject")] Mesh mesh, [NotNull("NullExceptionObject")] GraphicsBuffer commandBuffer, int commandCount, int startCommand);
+
+        [FreeFunction("GraphicsScripting::RenderMeshPrimitives")]
+        extern private static void Internal_RenderMeshPrimitives(RenderParams rparams, [NotNull("NullExceptionObject")] Mesh mesh, int submeshIndex, int instanceCount);
+
+        [FreeFunction("GraphicsScripting::RenderPrimitives")]
+        extern private static void Internal_RenderPrimitives(RenderParams rparams, MeshTopology topology, int vertexCount, int instanceCount);
+
+        [FreeFunction("GraphicsScripting::RenderPrimitivesIndexed")]
+        extern private static void Internal_RenderPrimitivesIndexed(RenderParams rparams, MeshTopology topology, [NotNull("NullExceptionObject")] GraphicsBuffer indexBuffer, int indexCount, int startIndex, int instanceCount);
+
+        [FreeFunction("GraphicsScripting::RenderPrimitivesIndirect")]
+        extern private static void Internal_RenderPrimitivesIndirect(RenderParams rparams, MeshTopology topology, [NotNull("NullExceptionObject")] GraphicsBuffer commandBuffer, int commandCount, int startCommand);
+
+        [FreeFunction("GraphicsScripting::RenderPrimitivesIndexedIndirect")]
+        extern private static void Internal_RenderPrimitivesIndexedIndirect(RenderParams rparams, MeshTopology topology, [NotNull("NullExceptionObject")] GraphicsBuffer indexBuffer, [NotNull("NullExceptionObject")] GraphicsBuffer commandBuffer, int commandCount, int startCommand);
+
         [FreeFunction("GraphicsScripting::DrawMesh")]
         extern private static void Internal_DrawMesh(Mesh mesh, int submeshIndex, Matrix4x4 matrix, Material material, int layer, Camera camera, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, Transform probeAnchor, LightProbeUsage lightProbeUsage, LightProbeProxyVolume lightProbeProxyVolume);
 

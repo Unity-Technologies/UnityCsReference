@@ -152,6 +152,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             String projectDirectory,
             ScriptAssemblySettings settings,
             CompilationAssemblies assemblies,
+            ISafeModeInfo safeModeInfo,
             TargetAssemblyType onlyIncludeType = TargetAssemblyType.Undefined,
             Func<TargetAssembly, bool> targetAssemblyCondition = null,
             ICompilationSetupWarningTracker warningSink = null)
@@ -191,7 +192,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 dirtyTargetAssembly.SourceFiles.Add(AssetPath.Combine(projectDirectory, scriptFile));
             }
 
-            return ToScriptAssemblies(targetAssemblyFiles, settings, assemblies, warningSink);
+            return ToScriptAssemblies(targetAssemblyFiles, settings, assemblies, warningSink, safeModeInfo);
         }
 
         internal class DirtyTargetAssembly
@@ -224,7 +225,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         internal static ScriptAssembly[] ToScriptAssemblies(
             IDictionary<TargetAssembly, DirtyTargetAssembly> targetAssemblies,
             ScriptAssemblySettings settings,
-            CompilationAssemblies assemblies, ICompilationSetupWarningTracker warningSink)
+            CompilationAssemblies assemblies, ICompilationSetupWarningTracker warningSink, ISafeModeInfo safeModeInfo)
         {
             var scriptAssemblies = new ScriptAssembly[targetAssemblies.Count];
 
@@ -232,6 +233,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             int index = 0;
 
             bool buildingForEditor = settings.BuildingForEditor;
+            var safeModeWhiteList = new HashSet<string>(safeModeInfo.GetWhiteListAssemblyNames());
             foreach (var entry in targetAssemblies)
             {
                 var targetAssembly = entry.Key;
@@ -247,6 +249,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 scriptAssembly.BuildTarget = settings.BuildTarget;
                 scriptAssembly.OriginPath = targetAssembly.PathPrefix;
                 scriptAssembly.Filename = targetAssembly.Filename;
+                scriptAssembly.SkipCodeGen = safeModeWhiteList.Contains(targetAssembly.Filename);
                 scriptAssembly.RootNamespace = targetAssembly.Type == TargetAssemblyType.Predefined ? settings.ProjectRootNamespace : targetAssembly.RootNamespace;
 
                 scriptAssembly.OutputDirectory = settings.OutputDirectory;

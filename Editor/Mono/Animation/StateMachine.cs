@@ -27,6 +27,11 @@ namespace UnityEditor.Animations
             impl.DoUndo(target, undoOperation);
         }
 
+        public void DoUndoCreated(Object target, string undoOperation)
+        {
+            impl.DoUndoCreated(target, undoOperation);
+        }
+
         PushUndoIfNeededImpl impl
         {
             get
@@ -51,6 +56,14 @@ namespace UnityEditor.Animations
                 if (m_PushUndo)
                 {
                     Undo.RegisterCompleteObjectUndo(target, undoOperation);
+                }
+            }
+
+            public void DoUndoCreated(Object target, string undoOperation)
+            {
+                if (m_PushUndo)
+                {
+                    Undo.RegisterCreatedObjectUndo(target, undoOperation);
                 }
             }
 
@@ -127,6 +140,8 @@ namespace UnityEditor.Animations
             if (AssetDatabase.GetAssetPath(this) != "")
                 AssetDatabase.AddObjectToAsset(newTransition, AssetDatabase.GetAssetPath(this));
             newTransition.hideFlags = HideFlags.HideInHierarchy;
+
+            undoHandler.DoUndoCreated(newTransition, "Transition Created");
 
             if (setDefaultExitTime)
                 SetDefaultTransitionExitTime(ref newTransition);
@@ -377,6 +392,8 @@ namespace UnityEditor.Animations
             if (AssetDatabase.GetAssetPath(this) != "")
                 AssetDatabase.AddObjectToAsset(state, AssetDatabase.GetAssetPath(this));
 
+            undoHandler.DoUndoCreated(state, "State Created");
+
             AddState(state, position);
 
             return state;
@@ -392,6 +409,7 @@ namespace UnityEditor.Animations
             }
 
             undoHandler.DoUndo(this, "State added");
+
             ChildAnimatorState newState = new ChildAnimatorState();
             newState.state = state;
             newState.position = position;
@@ -422,6 +440,8 @@ namespace UnityEditor.Animations
 
             if (AssetDatabase.GetAssetPath(this) != "")
                 AssetDatabase.AddObjectToAsset(stateMachine, AssetDatabase.GetAssetPath(this));
+
+            undoHandler.DoUndoCreated(stateMachine, "StateMachine Created");
 
             return stateMachine;
         }
@@ -464,6 +484,8 @@ namespace UnityEditor.Animations
 
             if (AssetDatabase.GetAssetPath(this) != "")
                 AssetDatabase.AddObjectToAsset(newTransition, AssetDatabase.GetAssetPath(this));
+
+            undoHandler.DoUndoCreated(newTransition, "AnyState Transition Created");
 
             newTransition.hideFlags = HideFlags.HideInHierarchy;
             ArrayUtility.Add(ref transitionsVector, newTransition);
@@ -551,6 +573,8 @@ namespace UnityEditor.Animations
             if (AssetDatabase.GetAssetPath(this) != "")
                 AssetDatabase.AddObjectToAsset(transition, AssetDatabase.GetAssetPath(this));
 
+            undoHandler.DoUndoCreated(transition, "StateMachine Transition Created");
+
             transition.hideFlags = HideFlags.HideInHierarchy;
             ArrayUtility.Add(ref transitionsVector, transition);
             SetStateMachineTransitions(sourceStateMachine, transitionsVector);
@@ -587,6 +611,8 @@ namespace UnityEditor.Animations
 
             if (AssetDatabase.GetAssetPath(this) != "")
                 AssetDatabase.AddObjectToAsset(newTransition, AssetDatabase.GetAssetPath(this));
+
+            undoHandler.DoUndoCreated(newTransition, "Entry Transition Created");
 
             newTransition.hideFlags = HideFlags.HideInHierarchy;
             ArrayUtility.Add(ref transitionsVector, newTransition);

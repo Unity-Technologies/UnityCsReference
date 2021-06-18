@@ -174,7 +174,10 @@ namespace UnityEditor
             {
                 var new_text = LocalizationDatabase.GetLocalizedStringWithGroupName(text, groupName);
                 var new_tooltip = LocalizationDatabase.GetLocalizedStringWithGroupName(tooltip, groupName);
-                return EditorGUIUtility.TrTextContent(new_text, new_tooltip, icon);
+                var gc = new GUIContent(new_text);
+                gc.tooltip = new_tooltip;
+                gc.image = icon;
+                return gc;
             }
             else
             {
@@ -193,7 +196,10 @@ namespace UnityEditor
             {
                 var new_text = LocalizationDatabase.GetLocalizedStringWithGroupName(text, groupName);
                 var new_tooltip = LocalizationDatabase.GetLocalizedStringWithGroupName(tooltip, groupName);
-                return EditorGUIUtility.TrTextContent(new_text, new_tooltip, iconName);
+                var gc = new GUIContent(new_text);
+                gc.tooltip = new_tooltip;
+                gc.image = EditorGUIUtility.LoadIconRequired(iconName);
+                return gc;
             }
             else
             {
@@ -211,7 +217,9 @@ namespace UnityEditor
             if (groupName != null)
             {
                 var new_text = LocalizationDatabase.GetLocalizedStringWithGroupName(text, groupName);
-                return EditorGUIUtility.TrTextContentWithIcon(new_text, icon);
+                var gc = new GUIContent(new_text);
+                gc.image = icon;
+                return gc;
             }
             else
             {
@@ -229,7 +237,9 @@ namespace UnityEditor
             if (groupName != null)
             {
                 var new_text = LocalizationDatabase.GetLocalizedStringWithGroupName(text, groupName);
-                return EditorGUIUtility.TrTextContentWithIcon(new_text, icon);
+                var gc = new GUIContent(new_text);
+                gc.image = icon;
+                return gc;
             }
             else
             {
@@ -247,7 +257,9 @@ namespace UnityEditor
             if (groupName != null)
             {
                 var new_text = LocalizationDatabase.GetLocalizedStringWithGroupName(text, groupName);
-                return EditorGUIUtility.TextContentWithIcon(new_text, iconName);
+                var gc = new GUIContent(new_text);
+                gc.image = EditorGUIUtility.LoadIconRequired(iconName);
+                return gc;
             }
             else
             {
@@ -266,7 +278,10 @@ namespace UnityEditor
             {
                 var new_text = LocalizationDatabase.GetLocalizedStringWithGroupName(text, groupName);
                 var new_tooltip = LocalizationDatabase.GetLocalizedStringWithGroupName(tooltip, groupName);
-                return EditorGUIUtility.TrTextContentWithIcon(new_text, new_tooltip, iconName);
+                var gc = new GUIContent(new_text);
+                gc.tooltip = new_tooltip;
+                gc.image = EditorGUIUtility.LoadIconRequired(iconName);
+                return gc;
             }
             else
             {
@@ -285,7 +300,10 @@ namespace UnityEditor
             {
                 var new_text = LocalizationDatabase.GetLocalizedStringWithGroupName(text, groupName);
                 var new_tooltip = LocalizationDatabase.GetLocalizedStringWithGroupName(tooltip, groupName);
-                return EditorGUIUtility.TrTextContentWithIcon(new_text, new_tooltip, icon);
+                var gc = new GUIContent(new_text);
+                gc.tooltip = new_tooltip;
+                gc.image = icon;
+                return gc;
             }
             else
             {
@@ -304,7 +322,10 @@ namespace UnityEditor
             {
                 var new_text = LocalizationDatabase.GetLocalizedStringWithGroupName(text, groupName);
                 var new_tooltip = LocalizationDatabase.GetLocalizedStringWithGroupName(tooltip, groupName);
-                return EditorGUIUtility.TrTextContentWithIcon(new_text, new_tooltip, messageType);
+                var gc = new GUIContent(new_text);
+                gc.tooltip = new_tooltip;
+                gc.image = EditorGUIUtility.GetHelpIcon(messageType);
+                return gc;
             }
             else
             {
@@ -322,7 +343,9 @@ namespace UnityEditor
             if (groupName != null)
             {
                 var new_text = LocalizationDatabase.GetLocalizedStringWithGroupName(text, groupName);
-                return EditorGUIUtility.TrTextContentWithIcon(new_text, messageType);
+                var gc = new GUIContent(new_text);
+                gc.image = EditorGUIUtility.GetHelpIcon(messageType);
+                return gc;
             }
             else
             {
@@ -340,7 +363,10 @@ namespace UnityEditor
             if (groupName != null)
             {
                 var new_tooltip = LocalizationDatabase.GetLocalizedStringWithGroupName(tooltip, groupName);
-                return EditorGUIUtility.TrIconContent(iconName, new_tooltip);
+                var gc = new GUIContent();
+                gc.tooltip = new_tooltip;
+                gc.image = EditorGUIUtility.LoadIconRequired(iconName);
+                return gc;
             }
             else
             {
@@ -358,7 +384,10 @@ namespace UnityEditor
             if (groupName != null)
             {
                 var new_tooltip = LocalizationDatabase.GetLocalizedStringWithGroupName(tooltip, groupName);
-                return EditorGUIUtility.TrIconContent(icon, new_tooltip);
+                var gc = new GUIContent();
+                gc.tooltip = new_tooltip;
+                gc.image = icon;
+                return gc;
             }
             else
             {

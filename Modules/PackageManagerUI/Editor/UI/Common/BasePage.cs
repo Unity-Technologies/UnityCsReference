@@ -51,6 +51,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         public abstract IEnumerable<SubPage> subPages { get; }
         public abstract SubPage currentSubPage { get; set; }
 
+        public abstract string contentType { get; set; }
+
         [NonSerialized]
         protected PackageDatabase m_PackageDatabase;
         protected void ResolveDependencies(PackageDatabase packageDatabase)

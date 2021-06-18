@@ -73,6 +73,10 @@ namespace UnityEngine.Rendering
         public AtomicSafetyHandle safetyHandle;
         public static AsyncRequestNativeArrayData CreateAndCheckAccess<T>(NativeArray<T> array) where T : struct
         {
+            if (array.m_AllocatorLabel == Allocator.Temp || array.m_AllocatorLabel == Allocator.TempJob)
+            {
+                throw new ArgumentException("AsyncGPUReadback cannot use Temp memory as input since the result may only become available at an unspecified point in the future.");
+            }
             var nativeArrayData = new AsyncRequestNativeArrayData();
             nativeArrayData.nativeArrayBuffer = array.GetUnsafePtr();
             nativeArrayData.lengthInBytes = (long)array.Length * UnsafeUtility.SizeOf<T>();
@@ -86,6 +90,11 @@ namespace UnityEngine.Rendering
 
         public static AsyncRequestNativeArrayData CreateAndCheckAccess<T>(NativeSlice<T> array) where T : struct
         {
+            if (AtomicSafetyHandle.IsTempMemoryHandle(array.m_Safety))
+            {
+                throw new ArgumentException("AsyncGPUReadback cannot use Temp memory as input since the result may only become available at an unspecified point in the future.");
+            }
+
             var nativeArrayData = new AsyncRequestNativeArrayData();
             nativeArrayData.nativeArrayBuffer = array.GetUnsafePtr();
             nativeArrayData.lengthInBytes = (long)array.Length * UnsafeUtility.SizeOf<T>();

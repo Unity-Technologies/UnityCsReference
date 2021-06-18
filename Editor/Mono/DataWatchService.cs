@@ -198,7 +198,9 @@ namespace UnityEditor
 
         private void DoRemoveWatcher(Watchers watchers)
         {
-            m_Watched.Remove(watchers.watchedObject);
+            if (watchers.watchedObject != null)
+                m_Watched.Remove(watchers.watchedObject);
+
             m_Scheduler.Unschedule(watchers.scheduledItem);
             watchers.scheduledItem = null;
             watchers.tracker.ReleaseTracker();

@@ -331,19 +331,21 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(noPackagesLabel, true);
             UIUtils.SetElementDisplay(loginContainer, false);
 
+            var contentType = m_PageManager.GetCurrentPage().contentType ?? L10n.Tr("packages");
+
             if (isRefreshInProgress)
             {
                 if (!isInitialFetchingDone)
-                    noPackagesLabel.text = L10n.Tr("Fetching packages...");
+                    noPackagesLabel.text = string.Format(L10n.Tr("Fetching {0}..."), contentType);
                 else
-                    noPackagesLabel.text = L10n.Tr("Refreshing packages...");
+                    noPackagesLabel.text = string.Format(L10n.Tr("Refreshing {0}..."), contentType);
             }
             else if (string.IsNullOrEmpty(m_PackageFiltering.currentSearchText))
             {
                 if (!isInitialFetchingDone)
                     noPackagesLabel.text = messageWhenInitialFetchNotDone;
                 else
-                    noPackagesLabel.text = L10n.Tr("There are no packages.");
+                    noPackagesLabel.text = string.Format(L10n.Tr("There are no {0}."), contentType);
             }
             else
             {

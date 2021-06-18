@@ -39,6 +39,7 @@ namespace ScriptCompilationBuildProgram.Data
         public string[] BclDirectories = new string[0];
         public string[] CustomCompilerOptions = new string[0];
         public int DebugIndex;
+        public bool SkipCodeGen;
     }
 
     public class ScriptCompilationData_Out

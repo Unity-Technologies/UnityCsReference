@@ -2125,6 +2125,9 @@
     <Compile Include="..\..\Editor\Mono\Inspector\MaterialPropertyDrawer.cs">
       <Link>Editor\Mono\Inspector\MaterialPropertyDrawer.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\MemorySettingsEditor.cs">
+      <Link>Editor\Mono\Inspector\MemorySettingsEditor.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\MeshColliderEditor.cs">
       <Link>Editor\Mono\Inspector\MeshColliderEditor.cs</Link>
     </Compile>
@@ -2448,6 +2451,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Media\Bindings\MediaEncoder.bindings.cs">
       <Link>Editor\Mono\Media\Bindings\MediaEncoder.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\MemorySettings.bindings.cs">
+      <Link>Editor\Mono\MemorySettings.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Menu.bindings.cs">
       <Link>Editor\Mono\Menu.bindings.cs</Link>
@@ -3240,6 +3246,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\PrecompiledAssembly.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\PrecompiledAssembly.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\SafeMode.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\SafeMode.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\ScriptAssembly.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\ScriptAssembly.cs</Link>
