@@ -118,5 +118,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             return EditorUtility.OpenFilePanelWithFilters(title, directory, filters);
         }
+
+        public virtual bool DisplayDialog(string title, string message, string ok, string cancel = "")
+        {
+            return EditorUtility.DisplayDialog(title, message, ok, cancel);
+        }
     }
 }

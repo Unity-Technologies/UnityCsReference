@@ -361,6 +361,15 @@ namespace UnityEditor.PackageManager.UI.Internal
             });
         }
 
+        public virtual void CheckTermOfServiceAgreement(Action<TermOfServiceAgreementStatus> agreementStatusCallback, Action<UIError> errorCallback)
+        {
+            m_AssetStoreRestAPI.CheckTermsAndConditions(result =>
+            {
+                var accepted = result.Get<bool>("result");
+                agreementStatusCallback?.Invoke(accepted ? TermOfServiceAgreementStatus.Accepted : TermOfServiceAgreementStatus.NotAccepted);
+            }, error => errorCallback?.Invoke(error));
+        }
+
         private void RefreshLocalInfos()
         {
             var infos = m_AssetStoreUtils.GetLocalPackageList();

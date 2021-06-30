@@ -4963,6 +4963,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreRestAPI.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreRestAPI.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreTermsOfServiceStatus.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreTermsOfServiceStatus.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreUtils.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreUtils.cs</Link>
     </Compile>
