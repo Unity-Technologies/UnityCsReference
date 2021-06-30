@@ -727,7 +727,7 @@ namespace Unity.UI.Builder
             if (!Directory.Exists(uxmlFolder))
                 Directory.CreateDirectory(uxmlFolder);
 
-            File.WriteAllText(uxmlPath, uxmlText);
+            BuilderAssetUtilities.WriteTextFileToDisk(uxmlPath, uxmlText);
         }
 
         VisualElement ReloadChildToCanvas(BuilderDocumentOpenUXML childOpenUXML, VisualElement rootElement)

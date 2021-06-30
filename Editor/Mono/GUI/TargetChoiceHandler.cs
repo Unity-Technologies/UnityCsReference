@@ -40,6 +40,7 @@ namespace UnityEditor
         {
             SerializedProperty property = (SerializedProperty)userData;
             bool result = property.DuplicateCommand();
+            property.serializedObject.ApplyModifiedProperties();
             EditorUtility.ForceReloadInspectors();
             return result;
         }
@@ -48,6 +49,7 @@ namespace UnityEditor
         {
             SerializedProperty property = (SerializedProperty)userData;
             bool result = property.DeleteCommand();
+            property.serializedObject.ApplyModifiedProperties();
             EditorUtility.ForceReloadInspectors();
             return result;
         }

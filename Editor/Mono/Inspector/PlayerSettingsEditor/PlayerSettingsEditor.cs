@@ -48,6 +48,7 @@ namespace UnityEditor
 
         class SettingsContent
         {
+            public static readonly GUIContent frameTimingStatsWebGLWarning = EditorGUIUtility.TrTextContent("Frame timing stats are supported in WebGL 2 only. Uncheck 'Automatic Graphics API' if it's set and remove the WebGL 1 API.");
             public static readonly GUIContent colorSpaceAndroidWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires OpenGL ES 3.0 or Vulkan, uncheck 'Automatic Graphics API' to remove OpenGL ES 2 API, Blit Type for non-SRP projects must be Always Blit or Auto");
             public static readonly GUIContent colorSpaceWebGLWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires WebGL 2, uncheck 'Automatic Graphics API' to remove WebGL 1 API. WARNING: If DXT sRGB is not supported by the browser, texture will be decompressed");
             public static readonly GUIContent colorSpaceIOSWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires Metal API only. Uncheck 'Automatic Graphics API' and remove OpenGL ES 2/3 APIs.");
@@ -1951,9 +1952,17 @@ namespace UnityEditor
                 }
             }
 
-            if (targetGroup == BuildTargetGroup.Standalone || targetGroup == BuildTargetGroup.WSA || (settingsExtension != null && settingsExtension.SupportsFrameTimingStatistics()))
+            if (targetGroup == BuildTargetGroup.Standalone || targetGroup == BuildTargetGroup.WSA || targetGroup == BuildTargetGroup.WebGL || (settingsExtension != null && settingsExtension.SupportsFrameTimingStatistics()))
             {
                 PlayerSettings.enableFrameTimingStats = EditorGUILayout.Toggle(SettingsContent.enableFrameTimingStats, PlayerSettings.enableFrameTimingStats);
+                if (PlayerSettings.enableFrameTimingStats && targetGroup == BuildTargetGroup.WebGL)
+                {
+                    var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.WebGL);
+                    if (apis.Contains(GraphicsDeviceType.OpenGLES2))
+                    {
+                        EditorGUILayout.HelpBox(SettingsContent.frameTimingStatsWebGLWarning.text, MessageType.Warning);
+                    }
+                }
             }
 
             if (hdrDisplaySupported)

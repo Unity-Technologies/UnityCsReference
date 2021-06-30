@@ -144,7 +144,7 @@ namespace Unity.UI.Builder
             if (!Directory.Exists(ussFolder))
                 Directory.CreateDirectory(ussFolder);
 
-            File.WriteAllText(ussPath, ussText);
+            BuilderAssetUtilities.WriteTextFileToDisk(ussPath, ussText);
         }
     }
 }
