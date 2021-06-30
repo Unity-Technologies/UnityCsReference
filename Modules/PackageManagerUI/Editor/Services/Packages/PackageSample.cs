@@ -232,7 +232,7 @@ namespace UnityEditor.PackageManager.UI
                                 var versionDirs = m_IOProxy.DirectoryGetDirectories(importDirectory, "*");
                                 foreach (var d in versionDirs)
                                 {
-                                    var p = m_IOProxy.PathsCombine(d, m_IOProxy.GetDirectoryName(importPath));
+                                    var p = m_IOProxy.PathsCombine(d, m_IOProxy.GetFileName(importPath));
                                     if (m_IOProxy.DirectoryExists(p))
                                         m_PreviousImports.Add(p);
                                 }

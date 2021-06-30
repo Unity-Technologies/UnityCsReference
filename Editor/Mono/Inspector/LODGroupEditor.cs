@@ -1283,7 +1283,7 @@ namespace UnityEditor
                     0, m_BillboardPreviewProperties);
             }
 
-            m_PreviewUtility.Render();
+            m_PreviewUtility.Render(Unsupported.useScriptableRenderPipeline);
         }
 
         override public string GetInfoString()
