@@ -474,6 +474,9 @@ namespace UnityEditor
 
         void MakeModal()
         {
+            // If we already have modal window up we don't need to setup another modal message loop
+            if (ContainerWindow.s_Modal) return;
+
             try
             {
                 ContainerWindow.s_Modal = true;
@@ -1059,6 +1062,12 @@ namespace UnityEditor
         {
             if (m_Parent != null)
                 m_Parent.SetMainPlayModeViewSize(targetSize);
+        }
+
+        internal void SetDisplayViewSize(int displayId, Vector2 targetSize)
+        {
+            if (m_Parent != null)
+                m_Parent.SetDisplayViewSize(displayId, targetSize);
         }
 
         internal void SetPlayModeView(bool value)

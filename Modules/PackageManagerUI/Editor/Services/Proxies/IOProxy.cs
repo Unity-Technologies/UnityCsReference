@@ -95,6 +95,22 @@ namespace UnityEditor.PackageManager.UI
 
         public virtual void DeleteDirectory(string directoryPath) => new NPath(directoryPath).DeleteIfExists();
 
+        private NPath GetPackageAbsoluteDirectory(string relativePath)
+        {
+            var path = new NPath(relativePath);
+            return path.IsRelative ?  path.MakeAbsolute(new NPath(PathsCombine(GetProjectDirectory(), "Packages"))) : path;
+        }
+
+        public virtual string GetProjectDirectory()
+        {
+            return GetParentDirectory(Application.dataPath);
+        }
+
+        public virtual bool IsSamePackageDirectory(string a, string b)
+        {
+            return GetPackageAbsoluteDirectory(a) == GetPackageAbsoluteDirectory(b);
+        }
+
         public virtual void MakeFileWritable(string filePath, bool writable)
         {
             var npath = new NPath(filePath);

@@ -408,7 +408,27 @@ namespace UnityEditor.PackageManager.UI
             for (var i = m_UpmClient.specialInstallations.Count - 1; i >= 0; i--)
             {
                 var specialUniqueId = m_UpmClient.specialInstallations[i];
-                var match = specialInstallationChecklist.FirstOrDefault(p => p.versions.installed.uniqueId.ToLower().Contains(specialUniqueId.ToLower()));
+
+                // match specialInstallationChecklist's uniqueId with m_UpmClient.specialInstallations
+                // to find which packages are placeholder packages and can be removed now
+                IPackage match;
+                var fileUriPrefix = "file:";
+                if (specialUniqueId.StartsWith(fileUriPrefix)) // local installation (path or tarball)
+                {
+                    var specialInstallationPath = specialUniqueId.Substring(fileUriPrefix.Length);
+                    match = specialInstallationChecklist.FirstOrDefault(p =>
+                    {
+                        var uniqueId = p.versions.installed.uniqueId;
+                        var fileUriPrefixIndex = uniqueId.IndexOf(fileUriPrefix);
+
+                        return fileUriPrefixIndex >= 0 && m_IOProxy.IsSamePackageDirectory(specialInstallationPath, uniqueId.Substring(fileUriPrefixIndex + fileUriPrefix.Length));
+                    });
+                }
+                else // git installation
+                {
+                    match = specialInstallationChecklist.FirstOrDefault(p => p.versions.installed.uniqueId.ToLower().Contains(specialUniqueId.ToLower()));
+                }
+
                 if (match != null)
                 {
                     onInstallSuccess(match, match.versions.installed);

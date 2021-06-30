@@ -174,6 +174,15 @@ namespace UnityEditor
             }
         }
 
+        //This has been added to accomodate the test in PR for case 991291.
+        internal void SetTargetDisplay(int id)
+        {
+            if (id < 0 || id > 7)
+                return;
+            targetDisplay = id;
+            SetDisplayViewSize(id, targetSize);
+        }
+
         static GameViewSizeGroupType currentSizeGroupType => GameViewSizes.instance.currentGroupType;
 
         GameViewSize currentGameViewSize => GameViewSizes.instance.currentGroup.GetGameViewSize(selectedSizeIndex);
@@ -510,7 +519,7 @@ namespace UnityEditor
                 {
                     var typeNames = availableTypes.Values.ToList();
                     var types = availableTypes.Keys.ToList();
-                    int viewIndex = EditorGUILayout.Popup(typeNames.IndexOf(titleContent.text), typeNames.ToArray(),
+                    int viewIndex = EditorGUILayout.Popup(typeNames.IndexOf(GetWindowTitle(GetType())), typeNames.ToArray(),
                         EditorStyles.toolbarPopup,
                         GUILayout.Width(90));
                     EditorGUILayout.Space();

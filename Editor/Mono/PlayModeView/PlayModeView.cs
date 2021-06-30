@@ -64,7 +64,13 @@ namespace UnityEditor
         protected int targetDisplay
         {
             get { return m_TargetDisplay; }
-            set { m_TargetDisplay = value; }
+            set
+            {
+                if (m_TargetDisplay != value)
+                    SetDisplayViewSize(value, m_TargetSize);
+
+                m_TargetDisplay = value;
+            }
         }
 
         protected Color clearColor
@@ -80,6 +86,10 @@ namespace UnityEditor
             {
                 if (this == GetMainPlayModeView())
                     SetMainPlayModeViewSize(value);
+
+                if (m_TargetSize != value)
+                    SetDisplayViewSize(m_TargetDisplay, value);
+
                 m_TargetSize = value;
             }
         }
@@ -151,6 +161,7 @@ namespace UnityEditor
         {
             RegisterWindow();
             SetPlayModeView(true);
+            SetDisplayViewSize(m_TargetDisplay, m_TargetSize);
         }
 
         protected RenderTexture RenderView(Vector2 mousePosition, bool clearTexture)
@@ -396,6 +407,7 @@ namespace UnityEditor
                 s_LastFocused = this;
                 Repaint();
             }
+            SetDisplayViewSize(m_TargetDisplay, m_TargetSize);
         }
 
         [RequiredByNativeCode]
