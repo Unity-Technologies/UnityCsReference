@@ -48,7 +48,7 @@ namespace UnityEditor.Toolbars
             if (active)
                 ToolManager.SetActiveTool(m_Tool);
             else
-                ToolManager.RestorePreviousPersistentTool();
+                ToolManager.RestorePreviousTool();
         }
     }
 }

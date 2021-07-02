@@ -33,10 +33,12 @@ namespace UnityEditor
         [SerializeField][NativeName("name")]       internal string m_Name;
         [SerializeField][NativeName("supported")]  internal bool m_Supported;
         [SerializeField][NativeName("hasErrors")]  internal bool m_HasErrors;
+        [SerializeField][NativeName("hasWarnings")] internal bool m_HasWarnings;
 
         public string   name      { get { return m_Name; } }
         public bool     supported { get { return m_Supported; } }
         public bool     hasErrors { get { return m_HasErrors; } }
+        public bool hasWarnings { get { return m_HasWarnings; } }
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -235,7 +237,7 @@ namespace UnityEditor
         extern internal static string[] GetShaderLocalKeywords([NotNull] Shader shader);
 
         [FreeFunction] public static extern ShaderInfo[] GetAllShaderInfo();
-
+        [FreeFunction] public static extern ShaderInfo GetShaderInfo([NotNull] Shader shader);
 
         [FreeFunction] extern internal static string GetShaderPassSourceCode([NotNull] Shader shader, int subShaderIndex, int passId);
         [FreeFunction] extern internal static string GetShaderPassName([NotNull] Shader shader, int subShaderIndex, int passId);
@@ -328,5 +330,7 @@ namespace UnityEditor
 
         extern internal static ShaderData.VariantCompileInfo CompileShaderVariant([NotNull] Shader shader, int subShaderIndex, int passId,
             ShaderType shaderType, BuiltinShaderDefine[] platformKeywords, string[] keywords, ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, GraphicsTier tier);
+
+        extern public static LocalKeyword[] GetPassKeywords([NotNull] Shader s, in PassIdentifier passIdentifier);
     }
 }

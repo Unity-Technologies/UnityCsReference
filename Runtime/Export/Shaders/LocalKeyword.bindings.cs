@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.Assertions;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -13,7 +14,7 @@ namespace UnityEngine.Rendering
     [UsedByNativeCode]
     [NativeHeader("Runtime/Graphics/ShaderScriptBindings.h")]
     [NativeHeader("Runtime/Shaders/Keywords/KeywordSpaceScriptBindings.h")]
-    public readonly struct LocalKeyword
+    public readonly struct LocalKeyword : IEquatable<LocalKeyword>
     {
         [FreeFunction("keywords::IsKeywordOverridable")] extern private static bool IsOverridable(LocalKeyword kw);
         [FreeFunction("ShaderScripting::GetKeywordCount")] extern private static uint GetShaderKeywordCount(Shader shader);
@@ -45,6 +46,31 @@ namespace UnityEngine.Rendering
         }
 
         public override string ToString() { return m_Name; }
+
+        public override bool Equals(object o)
+        {
+            return o is LocalKeyword other && this.Equals(other);
+        }
+
+        public bool Equals(LocalKeyword rhs)
+        {
+            return m_SpaceInfo == rhs.m_SpaceInfo && m_Index == rhs.m_Index;
+        }
+
+        public static bool operator==(LocalKeyword lhs, LocalKeyword rhs)
+        {
+            return lhs.Equals(rhs);
+        }
+
+        public static bool operator!=(LocalKeyword lhs, LocalKeyword rhs)
+        {
+            return !(lhs == rhs);
+        }
+
+        public override int GetHashCode()
+        {
+            return m_Index.GetHashCode() ^ m_SpaceInfo.GetHashCode();
+        }
 
         internal readonly LocalKeywordSpace m_SpaceInfo;
         internal readonly string m_Name;

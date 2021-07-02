@@ -42,22 +42,8 @@ namespace UnityEditor.Toolbars
 
             AddToClassList("toolbar-contents");
 
-            var contexts = new VisualElement() { name = "Contexts" };
-            contexts.AddToClassList("toolbar-contents");
-
             if ((EditorToolManager.GetCustomEditorToolsCount(false) + EditorToolManager.availableComponentContextCount) < 1)
-            {
-                var disabled = new Label("...");
-                disabled.AddToClassList("overlay-centered-disabled-text");
-                Add(disabled);
                 return;
-            }
-
-            foreach (var ctx in EditorToolManager.componentContexts)
-                contexts.Add(new EditorToolContextButton<EditorToolContext>(ctx.GetEditor<EditorToolContext>()));
-            EditorToolbarUtility.SetupChildrenAsButtonStrip(contexts);
-
-            Add(contexts);
 
             EditorToolManager.GetComponentToolsForSharedTracker(s_EditorToolModes);
             s_SortedTools.Clear();

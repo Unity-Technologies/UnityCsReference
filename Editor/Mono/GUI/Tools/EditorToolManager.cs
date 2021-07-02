@@ -19,8 +19,13 @@ namespace UnityEditor.EditorTools
         [SerializeField]
         EditorTool m_ActiveTool;
 
+        Tool m_PreviousTool = Tool.Move;
+
         [SerializeField]
-        List<EditorTool> m_ToolHistory = new List<EditorTool>();
+        Tool m_LastBuiltinTool = Tool.Move;
+
+        [SerializeField]
+        EditorTool m_LastCustomTool;
 
         static bool s_ChangingActiveTool, s_ChangingActiveContext;
 
@@ -86,17 +91,24 @@ namespace UnityEditor.EditorTools
 
                 instance.RebuildAvailableTools();
 
-                // Remap the history for manipulation tools to use their correctly resolved EditorTool instances
-                RebuildToolHistoryWithContext(prev, ctx);
+                var active = instance.m_ActiveTool;
 
-                var resolved = EditorToolUtility.GetEditorToolWithEnum(tool);
+                // If the previous tool was a Move, Rotate, Scale, Rect, or Transform tool we need to resolve the tool
+                // type using the new context. Additionally, if the previous tool was null we'll take the opportunity
+                // to assign a valid tool.
+                if (EditorToolUtility.IsManipulationTool(tool) || active == null)
+                {
+                    var resolved = EditorToolUtility.GetEditorToolWithEnum(tool, ctx);
 
-                // Always try to resolve to a valid tool when switching contexts, even if it means changing the active tool type
-                for (int i = (int)Tool.Move; (resolved == null || resolved is NoneTool) && i < (int)Tool.Custom; i++)
-                    resolved = EditorToolUtility.GetEditorToolWithEnum((Tool)i);
+                    // Always try to resolve to a valid tool when switching contexts, even if it means changing the
+                    // active tool type
+                    for (int i = (int)Tool.Move; (resolved == null || resolved is NoneTool) && i < (int)Tool.Custom; i++)
+                        resolved = EditorToolUtility.GetEditorToolWithEnum((Tool)i);
 
-                // If resolved is null at this point, the setter for activeTool will substitute an instance of NoneTool for us.
-                ToolManager.SetActiveTool(resolved);
+                    // If resolved is still null at this point, the setter for activeTool will substitute an instance of
+                    // NoneTool for us.
+                    activeTool = resolved;
+                }
 
                 ToolManager.ActiveContextDidChange();
 
@@ -127,21 +139,25 @@ namespace UnityEditor.EditorTools
 
                 s_ChangingActiveTool = true;
 
-                int index = instance.m_ToolHistory.IndexOf(tool);
-
-                if (index > -1)
-                    instance.m_ToolHistory.RemoveAt(index);
-
-                // Never add `None` tool to history
-                if (!(tool is NoneTool))
-                    instance.m_ToolHistory.Add(tool);
-
                 ToolManager.ActiveToolWillChange();
 
                 var previous = instance.m_ActiveTool;
 
                 if (previous != null)
+                {
                     previous.OnWillBeDeactivated();
+                    var prev = EditorToolUtility.GetEnumWithEditorTool(previous, activeToolContext);
+
+                    if (prev != Tool.View && prev != Tool.None && !EditorToolUtility.IsComponentTool(previous.GetType()))
+                    {
+                        instance.m_PreviousTool = prev;
+
+                        if (EditorToolUtility.IsManipulationTool(prev))
+                            instance.m_LastBuiltinTool = prev;
+                        else
+                            instance.m_LastCustomTool = previous;
+                    }
+                }
 
                 instance.m_ActiveTool = tool;
 
@@ -292,11 +308,7 @@ namespace UnityEditor.EditorTools
         void EnsureCurrentToolIsNotNull()
         {
             if (m_ActiveTool == null)
-            {
-                instance.CleanupToolHistory();
-                var previous = GetLastTool();
-                activeTool = previous != null ? previous : GetSingleton<MoveTool>();
-            }
+                RestorePreviousPersistentTool();
         }
 
         void SelectedObjectWasDestroyed(int id)
@@ -312,7 +324,7 @@ namespace UnityEditor.EditorTools
             if (componentToolActive || componentContextActive)
             {
                 SaveComponentTool();
-                RestorePreviousTool();
+                RestorePreviousPersistentTool();
             }
         }
 
@@ -371,15 +383,6 @@ namespace UnityEditor.EditorTools
             }
         }
 
-        void CleanupToolHistory()
-        {
-            for (int i = m_ToolHistory.Count - 1; i > -1; i--)
-            {
-                if (m_ToolHistory[i] == null)
-                    m_ToolHistory.RemoveAt(i);
-            }
-        }
-
         internal static T GetSingleton<T>() where T : ScriptableObject
         {
             return (T)GetSingleton(typeof(T));
@@ -405,70 +408,40 @@ namespace UnityEditor.EditorTools
             return instance.m_ActiveTool;
         }
 
-        internal static void GetToolHistory(List<EditorTool> tools, bool customToolsOnly = false)
+        internal EditorTool lastManipulationTool
         {
-            tools.Clear();
-            instance.CleanupToolHistory();
-
-            for (int i = instance.m_ToolHistory.Count - 1; i > -1; i--)
+            get
             {
-                if (!customToolsOnly || EditorToolUtility.GetEnumWithEditorTool(instance.m_ToolHistory[i]) == Tool.Custom)
-                    tools.Add(instance.m_ToolHistory[i]);
+                var tool = (int)instance.m_LastBuiltinTool;
+                var last = EditorToolUtility.GetEditorToolWithEnum((Tool)Mathf.Clamp(tool, (int)Tool.Move, (int)Tool.Custom));
+
+                if (last != null)
+                    return last;
+
+                // if the current context doesn't support the last built-in tool, cycle through Tool until we get a valid one
+                for (int i = (int)Tool.Move; i < (int)Tool.Custom; i++)
+                {
+                    last = EditorToolUtility.GetEditorToolWithEnum((Tool)i);
+
+                    if (last != null)
+                    {
+                        activeTool = last;
+                        return last;
+                    }
+                }
+
+                // if the current context doesn't support any tools (???) then fall back to the builtin Move Tool
+                return GetSingleton<MoveTool>();
             }
         }
 
-        static void RebuildToolHistoryWithContext(EditorToolContext src, EditorToolContext dst)
-        {
-            var history = instance.m_ToolHistory;
+        internal static Tool previousTool => instance.m_PreviousTool;
 
-            for (int i = history.Count - 1; i > 0; i--)
-            {
-                var tool = EditorToolUtility.GetEnumWithEditorTool(history[i], src);
-
-                if (EditorToolUtility.IsManipulationTool(tool))
-                    history[i] = EditorToolUtility.GetEditorToolWithEnum(tool, dst);
-
-                if (history[i] is NoneTool)
-                    DestroyImmediate(history[i]);
-
-                if (history[i] == null)
-                    history.RemoveAt(i);
-            }
-        }
-
-        internal static EditorTool GetLastTool(Func<EditorTool, bool> predicate = null)
-        {
-            instance.CleanupToolHistory();
-
-            return predicate == null
-                ? instance.m_ToolHistory.LastOrDefault()
-                : instance.m_ToolHistory.LastOrDefault(predicate);
-        }
-
-        internal static EditorTool GetLastCustomTool()
-        {
-            for (int i = instance.m_ToolHistory.Count - 1; i > -1; i--)
-                if (EditorToolUtility.GetEnumWithEditorTool(instance.m_ToolHistory[i]) == Tool.Custom)
-                    return instance.m_ToolHistory[i];
-            return null;
-        }
+        internal static EditorTool lastCustomTool => instance.m_LastCustomTool;
 
         public static void RestorePreviousPersistentTool()
         {
-            var last = GetLastTool(x =>
-            {
-                return x && EditorToolUtility.IsManipulationTool(EditorToolUtility.GetEnumWithEditorTool(x));
-            });
-
-            if (last != null)
-                activeTool = last;
-            else
-                activeTool = GetSingleton<MoveTool>();
-        }
-
-        public static void RestorePreviousTool()
-        {
-            activeTool = GetLastTool(x => x && x != instance.m_ActiveTool);
+            activeTool = instance.lastManipulationTool;
         }
 
         internal static void OnToolGUI(EditorWindow window)
@@ -488,7 +461,7 @@ namespace UnityEditor.EditorTools
 
         static bool IsCustomEditorTool(EditorTool tool)
         {
-            return EditorToolUtility.IsCustomEditorTool(tool != null ? tool.GetType() : null);
+            return EditorToolUtility.IsComponentTool(tool != null ? tool.GetType() : null);
         }
 
         static bool IsCustomToolContext(EditorToolContext context)

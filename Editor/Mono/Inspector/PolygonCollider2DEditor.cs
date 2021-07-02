@@ -30,7 +30,7 @@ namespace UnityEditor
             {
                 EditorGUILayout.HelpBox(Styles.s_ColliderEditDisableHelp.text, MessageType.Info);
                 if (EditorTools.ToolManager.activeToolType == typeof(PolygonCollider2DTool))
-                    EditorTools.ToolManager.RestorePreviousPersistentTool();
+                    EditorTools.ToolManager.RestorePreviousTool();
             }
             else
             {
@@ -86,7 +86,7 @@ namespace UnityEditor
                     }
 
                     if (EditorTools.ToolManager.activeToolType == typeof(PolygonCollider2DTool))
-                        EditorTools.ToolManager.RestorePreviousPersistentTool();
+                        EditorTools.ToolManager.RestorePreviousTool();
                 }
 
                 return;

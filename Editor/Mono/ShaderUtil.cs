@@ -186,6 +186,13 @@ namespace UnityEditor
             return errors.Any(x => x.severity == ShaderCompilerMessageSeverity.Error);
         }
 
+        public static bool ShaderHasWarnings(Shader shader)
+        {
+            FetchCachedMessages(shader);
+            var errors = GetShaderMessages(shader);
+            return errors.Any(x => x.severity == ShaderCompilerMessageSeverity.Warning);
+        }
+
         internal static bool MaterialsUseInstancingShader(SerializedProperty materialsArray)
         {
             if (materialsArray.hasMultipleDifferentValues)

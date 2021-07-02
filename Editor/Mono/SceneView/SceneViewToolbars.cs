@@ -8,30 +8,13 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
+    // Modules/UIServiceEditor/EditorToolbar/ToolbarElements/BuiltinTools.cs
     [Overlay(typeof(SceneView), k_Id, "Tools", true)]
     [Icon("Icons/Overlays/StandardTools.png")]
     class TransformToolsOverlayToolBar : ToolbarOverlay
     {
         const string k_Id = "unity-transform-toolbar";
         public TransformToolsOverlayToolBar() : base("Tools/Builtin Tools") {}
-    }
-
-    [Overlay(typeof(SceneView), k_Id, "Component Tools", true)]
-    [Icon("Icons/Overlays/StandardTools.png")]
-    class ComponentToolsOverlayToolBar : ToolbarOverlay
-    {
-        const string k_Id = "unity-component-tools";
-        public ComponentToolsOverlayToolBar() : base("Tools/Component Tools") {}
-
-        public override VisualElement CreatePanelContent()
-        {
-            var ve = base.CreatePanelContent();
-            //Ensuring constant size of the text area
-            var titleElement = rootVisualElement.Q<Label>(Overlay.headerTitle);
-            titleElement.style.minWidth = 110;
-
-            return ve;
-        }
     }
 
     [Overlay(typeof(SceneView), k_Id, "View Options", true)]

@@ -3025,6 +3025,9 @@
     <Compile Include="..\..\Runtime\Export\Shaders\LocalKeywordSpace.bindings.cs">
       <Link>Runtime\Export\Shaders\LocalKeywordSpace.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Shaders\PassIdentifier.bindings.cs">
+      <Link>Runtime\Export\Shaders\PassIdentifier.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Shaders\PlatformKeywordSet.cs">
       <Link>Runtime\Export\Shaders\PlatformKeywordSet.cs</Link>
     </Compile>

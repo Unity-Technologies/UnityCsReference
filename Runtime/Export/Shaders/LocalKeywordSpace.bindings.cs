@@ -12,7 +12,7 @@ namespace UnityEngine.Rendering
 {
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Runtime/Shaders/Keywords/KeywordSpaceScriptBindings.h")]
-    public readonly struct LocalKeywordSpace
+    public readonly struct LocalKeywordSpace : IEquatable<LocalKeywordSpace>
     {
         [FreeFunction("keywords::GetKeywords", HasExplicitThis = true)] extern private LocalKeyword[] GetKeywords();
         [FreeFunction("keywords::GetKeywordNames", HasExplicitThis = true)] extern private string[] GetKeywordNames();
@@ -21,6 +21,31 @@ namespace UnityEngine.Rendering
         public LocalKeyword[] keywords { get { return GetKeywords(); } }
         public string[] keywordNames { get { return GetKeywordNames(); } }
         public uint keywordCount { get { return GetKeywordCount(); } }
+
+        public override bool Equals(object o)
+        {
+            return o is LocalKeywordSpace other && this.Equals(other);
+        }
+
+        public bool Equals(LocalKeywordSpace rhs)
+        {
+            return m_KeywordSpace == rhs.m_KeywordSpace;
+        }
+
+        public static bool operator==(LocalKeywordSpace lhs, LocalKeywordSpace rhs)
+        {
+            return lhs.Equals(rhs);
+        }
+
+        public static bool operator!=(LocalKeywordSpace lhs, LocalKeywordSpace rhs)
+        {
+            return !(lhs == rhs);
+        }
+
+        public override int GetHashCode()
+        {
+            return m_KeywordSpace.GetHashCode();
+        }
 
         private readonly IntPtr m_KeywordSpace;
     }
