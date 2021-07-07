@@ -51,6 +51,7 @@ namespace UnityEditor
             public static readonly GUIContent frameTimingStatsWebGLWarning = EditorGUIUtility.TrTextContent("Frame timing stats are supported in WebGL 2 only. Uncheck 'Automatic Graphics API' if it's set and remove the WebGL 1 API.");
             public static readonly GUIContent colorSpaceAndroidWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires OpenGL ES 3.0 or Vulkan, uncheck 'Automatic Graphics API' to remove OpenGL ES 2 API, Blit Type for non-SRP projects must be Always Blit or Auto");
             public static readonly GUIContent colorSpaceWebGLWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires WebGL 2, uncheck 'Automatic Graphics API' to remove WebGL 1 API. WARNING: If DXT sRGB is not supported by the browser, texture will be decompressed");
+            public static readonly GUIContent lightmapEncodingWebGLWarning = EditorGUIUtility.TrTextContent("High quality lightmap encoding requires WebGL 2 only. Uncheck 'Automatic Graphics API' if it's set and remove the WebGL 1 API.");
             public static readonly GUIContent colorSpaceIOSWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires Metal API only. Uncheck 'Automatic Graphics API' and remove OpenGL ES 2/3 APIs.");
             public static readonly GUIContent recordingInfo = EditorGUIUtility.TrTextContent("Reordering the list will switch editor to the first available platform");
             public static readonly GUIContent sharedBetweenPlatformsInfo = EditorGUIUtility.TrTextContent("* Shared setting between multiple platforms.");
@@ -134,6 +135,7 @@ namespace UnityEditor
             public static readonly GUIContent vulkanEnableSetSRGBWrite = EditorGUIUtility.TrTextContent("SRGB Write Mode*", "If set, enables Graphics.SetSRGBWrite() for toggling sRGB write mode during the frame but may decrease performance especially on tiled GPUs.");
             public static readonly GUIContent vulkanNumSwapchainBuffers = EditorGUIUtility.TrTextContent("Number of swapchain buffers*");
             public static readonly GUIContent vulkanEnableLateAcquireNextImage = EditorGUIUtility.TrTextContent("Acquire swapchain image late as possible*", "If set, renders to a staging image to delay acquiring the swapchain buffer.");
+            public static readonly GUIContent vulkanEnableCommandBufferRecycling = EditorGUIUtility.TrTextContent("Recycle command buffers*", "When enabled, command buffers are recycled after they have been executed as opposed to being freed.");
             public static readonly GUIContent mTRendering = EditorGUIUtility.TrTextContent("Multithreaded Rendering*");
             public static readonly GUIContent staticBatching = EditorGUIUtility.TrTextContent("Static Batching");
             public static readonly GUIContent dynamicBatching = EditorGUIUtility.TrTextContent("Dynamic Batching");
@@ -271,6 +273,7 @@ namespace UnityEditor
         // vulkan
         SerializedProperty m_VulkanNumSwapchainBuffers;
         SerializedProperty m_VulkanEnableLateAcquireNextImage;
+        SerializedProperty m_VulkanEnableCommandBufferRecycling;
 
         // iOS, tvOS
 #pragma warning disable 169
@@ -570,6 +573,7 @@ namespace UnityEditor
             m_MacAppStoreCategory              = FindPropertyAssert("macAppStoreCategory");
             m_VulkanNumSwapchainBuffers        = FindPropertyAssert("vulkanNumSwapchainBuffers");
             m_VulkanEnableLateAcquireNextImage = FindPropertyAssert("vulkanEnableLateAcquireNextImage");
+            m_VulkanEnableCommandBufferRecycling = FindPropertyAssert("vulkanEnableCommandBufferRecycling");
             m_FullscreenMode                   = FindPropertyAssert("fullscreenMode");
             m_VisibleInBackground              = FindPropertyAssert("visibleInBackground");
             m_AllowFullscreenSwitch            = FindPropertyAssert("allowFullscreenSwitch");
@@ -1898,6 +1902,18 @@ namespace UnityEditor
                         GUIUtility.ExitGUI();
                     }
 
+                    if (encodingQuality == LightmapEncodingQuality.High)
+                    {
+                        if (targetGroup == BuildTargetGroup.WebGL)
+                        {
+                            var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.WebGL);
+                            if (apis.Contains(GraphicsDeviceType.OpenGLES2))
+                            {
+                                EditorGUILayout.HelpBox(SettingsContent.lightmapEncodingWebGLWarning.text, MessageType.Warning);
+                            }
+                        }
+                    }
+
                     if (encodingQuality != LightmapEncodingQuality.Low)
                     {
                         if (targetGroup == BuildTargetGroup.iOS)
@@ -2145,6 +2161,7 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_VulkanNumSwapchainBuffers, SettingsContent.vulkanNumSwapchainBuffers);
             PlayerSettings.vulkanNumSwapchainBuffers = (UInt32)m_VulkanNumSwapchainBuffers.intValue;
             EditorGUILayout.PropertyField(m_VulkanEnableLateAcquireNextImage, SettingsContent.vulkanEnableLateAcquireNextImage);
+            EditorGUILayout.PropertyField(m_VulkanEnableCommandBufferRecycling, SettingsContent.vulkanEnableCommandBufferRecycling);
 
             if (settingsExtension != null && settingsExtension.ShouldShowVulkanSettings())
                 settingsExtension.VulkanSectionGUI();
