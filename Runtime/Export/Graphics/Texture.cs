@@ -30,6 +30,8 @@ namespace UnityEngine
             {
                 _graphicsFormat = value;
                 SetOrClearRenderTextureCreationFlag(GraphicsFormatUtility.IsSRGBFormat(value), RenderTextureCreationFlags.SRGB);
+                //To avoid that the order of setting a property changes the end result, we need to update the depthbufferbits because the setter depends on the graphicsformat.
+                depthBufferBits = depthBufferBits;
             }
         }
 
@@ -57,7 +59,11 @@ namespace UnityEngine
         public int depthBufferBits
         {
             get { return GraphicsFormatUtility.GetDepthBits(depthStencilFormat); }
-            set { depthStencilFormat = GraphicsFormatUtility.GetDepthStencilFormat(value); }
+            //Ideally we deprecate the setter but keeping it for now because its a very commonly used api
+            //It is very bad practice to use the graphicsFormat property here because that makes the result depend on the order of setting the properties
+            //However, it's the best what we can do to make sure this is functionally correct.
+            //We now need to set depthBufferBits after we set graphicsFormat, see that property.
+            set { depthStencilFormat = GetDepthStencilFormatLegacy(value, graphicsFormat); }
         }
 
         public Rendering.TextureDimension dimension { get; set; }
@@ -298,10 +304,6 @@ namespace UnityEngine
 
             SetMipMapCount(mipCount);
             SetSRGBReadWrite(GraphicsFormatUtility.IsSRGBFormat(colorFormat));
-            if (format == RenderTextureFormat.Shadowmap)
-            {
-                SetShadowSamplingMode(Rendering.ShadowSamplingMode.CompareDepths);
-            }
         }
 
         private static GraphicsFormat GetDepthStencilFormatLegacy(int depthBits, GraphicsFormat colorFormat)

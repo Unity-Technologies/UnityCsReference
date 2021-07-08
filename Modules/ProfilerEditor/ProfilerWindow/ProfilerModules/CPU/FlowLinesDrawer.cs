@@ -56,7 +56,7 @@ namespace UnityEditorInternal.Profiling
 
         public bool hasSelectedEvent { get; private set; }
 
-        public void AddFlowEvent(ProfilerTimelineGUI.ThreadInfo.FlowEventData flowEventData, int threadIndex, Rect sampleRect, bool isSelectedSample)
+        public void AddFlowEvent(ProfilerTimelineGUI.ThreadInfo.FlowEventData flowEventData, Rect sampleRect, bool isSelectedSample)
         {
             var flowEvent = flowEventData.flowEvent;
             var flowEventId = flowEvent.FlowId;

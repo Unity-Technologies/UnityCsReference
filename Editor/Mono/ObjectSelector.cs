@@ -206,8 +206,6 @@ namespace UnityEditor
             if (m_ListArea != null)
                 m_StartGridSize.value = m_ListArea.gridSize;
 
-            Undo.CollapseUndoOperations(m_ModalUndoGroup);
-
             if (s_SharedObjectSelector == this)
                 s_SharedObjectSelector = null;
             if (m_EditorCache != null)
@@ -1071,6 +1069,7 @@ namespace UnityEditor
             m_OnObjectSelectorClosed?.Invoke(currentObject);
 
             SendEvent(ObjectSelectorClosedCommand, exitGUI);
+            Undo.CollapseUndoOperations(m_ModalUndoGroup);
         }
 
         #pragma warning disable 618

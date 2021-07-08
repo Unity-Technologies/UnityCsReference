@@ -535,9 +535,9 @@ namespace UnityEditor
                 EditorGUI.showMixedValue = renderingLayerMask.hasMultipleDifferentValues;
 
                 var mask = renderingLayerMask.intValue;
-                var layerNames = srpAsset.renderingLayerMaskNames;
+                var layerNames = srpAsset.prefixedRenderingLayerMaskNames;
                 if (layerNames == null)
-                    layerNames = RendererEditorBase.defaultRenderingLayerNames;
+                    layerNames = RendererEditorBase.defaultPrefixedRenderingLayerNames;
 
                 var rect = EditorGUILayout.GetControlRect();
                 EditorGUI.BeginProperty(rect, Styles.RenderingLayerMask, renderingLayerMask);

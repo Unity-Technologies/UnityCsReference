@@ -1489,9 +1489,9 @@ namespace UnityEditor
                 return;
 
             var mask = (int)m_Terrain.renderingLayerMask;
-            var layerNames = srpAsset.renderingLayerMaskNames;
+            var layerNames = srpAsset.prefixedRenderingLayerMaskNames;
             if (layerNames == null)
-                layerNames = RendererEditorBase.defaultRenderingLayerNames;
+                layerNames = RendererEditorBase.defaultPrefixedRenderingLayerNames;
 
             EditorGUI.BeginChangeCheck();
 

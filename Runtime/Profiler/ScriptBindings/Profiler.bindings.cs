@@ -153,8 +153,7 @@ namespace UnityEngine.Profiling
         private extern static void BeginThreadProfilingInternal(string threadGroupName, string threadName);
 
         [NativeConditional("ENABLE_PROFILER")]
-        [NativeMethod(Name = "ProfilerBindings::EndThreadProfiling", IsFreeFunction = true, IsThreadSafe = true)]
-        public extern static void EndThreadProfiling();
+        public static void EndThreadProfiling() {}
 
         // Begin profiling a piece of code with a custom label.
         // TODO: make obsolete

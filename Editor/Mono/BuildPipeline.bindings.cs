@@ -612,12 +612,22 @@ namespace UnityEditor
 
         public static string GetPlaybackEngineDirectory(BuildTarget target, BuildOptions options)
         {
+            return GetPlaybackEngineDirectory(target, options, true);
+        }
+
+        public static string GetPlaybackEngineDirectory(BuildTarget target, BuildOptions options, bool assertUnsupportedPlatforms)
+        {
             BuildTargetGroup buildTargetGroup = GetBuildTargetGroup(target);
-            return GetPlaybackEngineDirectory(buildTargetGroup, target, options);
+            return GetPlaybackEngineDirectory(buildTargetGroup, target, options, assertUnsupportedPlatforms);
+        }
+
+        public static string GetPlaybackEngineDirectory(BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options)
+        {
+            return GetPlaybackEngineDirectory(buildTargetGroup, target, options, true);
         }
 
         [FreeFunction(IsThreadSafe = true)]
-        public static extern string GetPlaybackEngineDirectory(BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options);
+        public static extern string GetPlaybackEngineDirectory(BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options, bool assertUnsupportedPlatforms);
 
         [FreeFunction(IsThreadSafe = true)]
         internal static extern string GetPlaybackEngineExtensionDirectory(BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options);
