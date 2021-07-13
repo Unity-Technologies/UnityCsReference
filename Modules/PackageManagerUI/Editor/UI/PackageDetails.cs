@@ -16,6 +16,7 @@ namespace UnityEditor.PackageManager.UI
 {
     internal class PackageDetails : VisualElement
     {
+        private const string k_TermsOfServicesURL = "https://assetstore.unity.com/account/term";
         internal new class UxmlFactory : UxmlFactory<PackageDetails> {}
 
         private IPackageVersion m_Version;
@@ -134,6 +135,7 @@ namespace UnityEditor.PackageManager.UI
         private PageManager m_PageManager;
         private IOProxy m_IOProxy;
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
+        private UnityConnectProxy m_UnityConnectProxy;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
@@ -147,6 +149,7 @@ namespace UnityEditor.PackageManager.UI
             m_PackageDatabase = container.Resolve<PackageDatabase>();
             m_PageManager = container.Resolve<PageManager>();
             m_IOProxy = container.Resolve<IOProxy>();
+            m_UnityConnectProxy = container.Resolve<UnityConnectProxy>();
         }
 
         public PackageDetails()
@@ -198,6 +201,8 @@ namespace UnityEditor.PackageManager.UI
 
             m_PackageDatabase.onPackageProgressUpdate += OnPackageProgressUpdate;
 
+            m_PackageDatabase.onTermOfServiceAgreementStatusChange += OnTermOfServiceAgreementStatusChange;
+
             m_AssetStoreDownloadManager.onDownloadProgress += UpdateDownloadProgressBar;
             m_AssetStoreDownloadManager.onDownloadFinalized += StopDownloadProgressBar;
             m_AssetStoreDownloadManager.onDownloadPaused += PauseDownloadProgressBar;
@@ -210,12 +215,27 @@ namespace UnityEditor.PackageManager.UI
             OnSelectionChanged(m_PageManager.GetSelectedVersion());
         }
 
+        private void OnTermOfServiceAgreementStatusChange(TermOfServiceAgreementStatus status)
+        {
+            if (status == TermOfServiceAgreementStatus.Accepted)
+                return;
+
+            var result = m_Application.DisplayDialog(L10n.Tr("Package Manager"),
+                L10n.Tr("You need to accept Asset Store Terms of Service and EULA before you can download/update any package."),
+                L10n.Tr("Read and accept"), L10n.Tr("Close"));
+
+            if (result)
+                m_UnityConnectProxy.OpenAuthorizedURLInWebBrowser(k_TermsOfServicesURL);
+        }
+
         public void OnDisable()
         {
             m_Application.onFinishCompiling -= RefreshPackageActionButtons;
             m_Application.onInternetReachabilityChange -= OnInternetReachabilityChange;
 
             m_PackageDatabase.onPackageProgressUpdate -= OnPackageProgressUpdate;
+
+            m_PackageDatabase.onTermOfServiceAgreementStatusChange -= OnTermOfServiceAgreementStatusChange;
 
             m_AssetStoreDownloadManager.onDownloadProgress -= UpdateDownloadProgressBar;
             m_AssetStoreDownloadManager.onDownloadFinalized -= StopDownloadProgressBar;
@@ -1162,14 +1182,17 @@ namespace UnityEditor.PackageManager.UI
 
             var isUpdate = package.state == PackageState.UpdateAvailable;
 
-            m_PackageDatabase.Download(package);
+            var canDownload = m_PackageDatabase.Download(package);
             RefreshDownloadStatesButtons();
 
-            var operation = m_AssetStoreDownloadManager.GetDownloadOperation(displayVersion.packageUniqueId);
-            downloadProgress.UpdateProgress(operation);
+            if (canDownload)
+            {
+                var operation = m_AssetStoreDownloadManager.GetDownloadOperation(displayVersion.packageUniqueId);
+                downloadProgress.UpdateProgress(operation);
 
-            var eventName = isUpdate ? "startDownloadUpdate" : "startDownloadNew";
-            PackageManagerWindowAnalytics.SendEvent(eventName, package.uniqueId);
+                var eventName = isUpdate ? "startDownloadUpdate" : "startDownloadNew";
+                PackageManagerWindowAnalytics.SendEvent(eventName, package.uniqueId);
+            }
         }
 
         private void CancelClick()

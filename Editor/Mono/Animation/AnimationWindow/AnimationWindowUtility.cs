@@ -729,16 +729,21 @@ namespace UnityEditorInternal
             }
         }
 
+        private static readonly string k_PositionDisplayName = L10n.Tr("Position");
+        private static readonly string k_ScaleDisplayName = L10n.Tr("Scale");
+        private static readonly string k_RotationDisplayName = L10n.Tr("Rotation");
+        private static readonly string k_MaterialReferenceDisplayName = L10n.Tr("Material Reference");
+
         // Takes raw animation curve propertyname and makes it pretty
         public static string GetPropertyDisplayName(string propertyName)
         {
-            propertyName = propertyName.Replace("m_LocalPosition", L10n.Tr("Position"));
-            propertyName = propertyName.Replace("m_LocalScale", L10n.Tr("Scale"));
-            propertyName = propertyName.Replace("m_LocalRotation", L10n.Tr("Rotation"));
-            propertyName = propertyName.Replace("localEulerAnglesBaked", L10n.Tr("Rotation"));
-            propertyName = propertyName.Replace("localEulerAnglesRaw", L10n.Tr("Rotation"));
-            propertyName = propertyName.Replace("localEulerAngles", L10n.Tr("Rotation"));
-            propertyName = propertyName.Replace("m_Materials.Array.data", L10n.Tr("Material Reference"));
+            propertyName = propertyName.Replace("m_LocalPosition", k_PositionDisplayName);
+            propertyName = propertyName.Replace("m_LocalScale", k_ScaleDisplayName);
+            propertyName = propertyName.Replace("m_LocalRotation", k_RotationDisplayName);
+            propertyName = propertyName.Replace("localEulerAnglesBaked", k_RotationDisplayName);
+            propertyName = propertyName.Replace("localEulerAnglesRaw", k_RotationDisplayName);
+            propertyName = propertyName.Replace("localEulerAngles", k_RotationDisplayName);
+            propertyName = propertyName.Replace("m_Materials.Array.data", k_MaterialReferenceDisplayName);
 
             propertyName = ObjectNames.NicifyVariableName(propertyName);
             propertyName = propertyName.Replace("m_", "");

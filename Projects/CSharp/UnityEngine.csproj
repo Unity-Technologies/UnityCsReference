@@ -2914,6 +2914,9 @@
     <Compile Include="..\..\Runtime\Profiler\ScriptBindings\ProfilerMarker.bindings.cs">
       <Link>Runtime\Profiler\ScriptBindings\ProfilerMarker.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Profiler\ScriptBindings\ProfilerMarker.cs">
+      <Link>Runtime\Profiler\ScriptBindings\ProfilerMarker.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Profiler\ScriptBindings\ProfilerRecorder.bindings.cs">
       <Link>Runtime\Profiler\ScriptBindings\ProfilerRecorder.bindings.cs</Link>
     </Compile>

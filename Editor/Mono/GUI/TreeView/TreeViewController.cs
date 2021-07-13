@@ -1006,6 +1006,11 @@ namespace UnityEditor.IMGUI.Controls
 
         private void ChangeFoldingForSingleItem(int id, bool expand)
         {
+            // Skip any ongoing animation first because it could affect the row count.
+            // I.e. if the item to be collapsed is in a row that no longer exists after the animation is done and the rows refreshed in InitIfNeeded, skiping the animation later would cause an IndexOufOfBounds in HandleFastCollapse
+            // if no animation is happening, this is just a null check so moving it later for performance reasons makes little sense.
+            expansionAnimator.SkipAnimating();
+
             int row;
             TreeViewItem item = GetItemAndRowIndex(id, out row);
             if (item != null)
@@ -1014,7 +1019,6 @@ namespace UnityEditor.IMGUI.Controls
                     UserInputChangedExpandedState(item, row, expand);
                 else
                 {
-                    expansionAnimator.SkipAnimating();
                     if (expand)
                         HandleFastExpand(item, row); // Move selection to next parent
                     else
