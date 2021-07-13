@@ -71,7 +71,13 @@ namespace UnityEditor
             {
                 data.Update();
 
-                using (new Handles.DrawingScope(Color.green, data.localToWorldMatrix))
+                // The Collider2D matrix is a 2D projection of the transforms rotation onto the X/Y plane about the transforms origin.
+                var handleMatrix = data.localToWorldMatrix;
+                handleMatrix.SetRow(0, Vector4.Scale(handleMatrix.GetRow(0), new Vector4(1f, 1f, 0f, 1f)));
+                handleMatrix.SetRow(1, Vector4.Scale(handleMatrix.GetRow(1), new Vector4(1f, 1f, 0f, 1f)));
+                handleMatrix.SetRow(2, new Vector4(0f, 0f, 1f, data.localToWorldMatrix.GetColumn(3).z));
+
+                using (new Handles.DrawingScope(Color.green, handleMatrix))
                 {
                     EditorGUI.BeginChangeCheck();
                     data.handle.OnGUI(-Vector3.forward, Vector3.right, Vector3.up);

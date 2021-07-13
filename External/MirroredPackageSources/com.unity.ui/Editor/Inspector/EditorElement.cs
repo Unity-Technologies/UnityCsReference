@@ -138,10 +138,14 @@ namespace UnityEditor.UIElements
 
             UpdateInspectorVisibility();
 
+            //Need to update the cache for multi-object edit detection.
+            if (editor.targets.Length != Selection.objects.Length)
+                inspectorWindow.tracker.RebuildIfNecessary();
+
             Add(m_Header);
             // If the editor targets contain many target and the multi editing is not supported, we should not add this inspector.
             // However, the header and footer are kept since these are showing information regarding this state.
-            if ((editor.targets.Length <= 1) || (inspectorWindow.IsMultiEditingSupported(editor, editor.target)))
+            if (editor != null && ((editor.targets.Length <= 1) || (inspectorWindow.IsMultiEditingSupported(editor, editor.target))))
             {
                 Add(m_InspectorElement);
             }

@@ -340,8 +340,7 @@ namespace UnityEditor
                 m_PreviewInstance = EditorUtility.InstantiateForAnimatorPreview(go);
                 previewUtility.AddSingleGO(m_PreviewInstance);
 
-                Bounds bounds = new Bounds(m_PreviewInstance.transform.position, Vector3.zero);
-                GameObjectInspector.GetRenderableBoundsRecurse(ref bounds, m_PreviewInstance);
+                var bounds = GameObjectInspector.GetRenderableBounds(m_PreviewInstance);
 
                 m_BoundingVolumeScale = Mathf.Max(bounds.size.x, Mathf.Max(bounds.size.y, bounds.size.z));
 

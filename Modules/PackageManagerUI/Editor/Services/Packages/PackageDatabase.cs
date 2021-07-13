@@ -26,9 +26,24 @@ namespace UnityEditor.PackageManager.UI
                                     IEnumerable<IPackage> /*preUpdated*/,
                                     IEnumerable<IPackage> /*postUpdated*/> onPackagesChanged = delegate {};
 
+        public virtual event Action<TermOfServiceAgreementStatus> onTermOfServiceAgreementStatusChange = delegate {};
+
         private readonly Dictionary<string, IPackage> m_Packages = new Dictionary<string, IPackage>();
 
         private readonly Dictionary<string, IEnumerable<Sample>> m_ParsedSamples = new Dictionary<string, IEnumerable<Sample>>();
+
+        [SerializeField]
+        private TermOfServiceAgreementStatus m_TermOfServiceAgreementStatus = TermOfServiceAgreementStatus.NotAccepted;
+
+        public virtual TermOfServiceAgreementStatus termOfServiceAgreementStatus
+        {
+            get => m_TermOfServiceAgreementStatus;
+            internal set
+            {
+                m_TermOfServiceAgreementStatus = value;
+                onTermOfServiceAgreementStatusChange?.Invoke(m_TermOfServiceAgreementStatus);
+            }
+        }
 
         [SerializeField]
         private List<UpmPackage> m_SerializedUpmPackages = new List<UpmPackage>();
@@ -302,6 +317,8 @@ namespace UnityEditor.PackageManager.UI
             m_Packages.Clear();
             m_SerializedUpmPackages = new List<UpmPackage>();
             m_SerializedAssetStorePackages = new List<AssetStorePackage>();
+
+            m_TermOfServiceAgreementStatus = TermOfServiceAgreementStatus.NotAccepted;
         }
 
         private void OnDownloadProgress(IOperation operation)
@@ -348,6 +365,8 @@ namespace UnityEditor.PackageManager.UI
 
         private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
         {
+            m_TermOfServiceAgreementStatus = TermOfServiceAgreementStatus.NotAccepted;
+
             if (!loggedIn)
             {
                 var assetStorePackages = m_Packages.Where(kp => kp.Value is AssetStorePackage).Select(kp => kp.Value).ToList();
@@ -583,14 +602,31 @@ namespace UnityEditor.PackageManager.UI
             return m_AssetStoreDownloadManager.GetDownloadOperation(version.packageUniqueId)?.isInPause ?? false;
         }
 
-        public virtual void Download(IPackage package)
+        public virtual bool Download(IPackage package)
         {
             if (!(package is AssetStorePackage))
-                return;
+                return false;
 
             if (!PlayModeDownload.CanBeginDownload())
-                return;
+                return false;
 
+            if (termOfServiceAgreementStatus == TermOfServiceAgreementStatus.NotAccepted)
+            {
+                m_AssetStoreClient.CheckTermOfServiceAgreement(status =>
+                {
+                    termOfServiceAgreementStatus = status;
+                    if (termOfServiceAgreementStatus == TermOfServiceAgreementStatus.Accepted)
+                        Download_Internal(package);
+                }, error => AddPackageError(package, error));
+                return false;
+            }
+
+            Download_Internal(package);
+            return true;
+        }
+
+        private void Download_Internal(IPackage package)
+        {
             SetPackageProgress(package, PackageProgress.Downloading);
             m_AssetStoreDownloadManager.Download(package.uniqueId);
             // When we start a new download, we want to clear past operation errors to give it a fresh start.

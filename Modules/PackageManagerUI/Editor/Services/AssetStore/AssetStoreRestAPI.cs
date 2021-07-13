@@ -20,6 +20,7 @@ namespace UnityEditor.PackageManager.UI
         private const string k_ProductInfoUri = "/-/api/product";
         private const string k_UpdateInfoUri = "/-/api/legacy-package-update-info";
         private const string k_DownloadInfoUri = "/-/api/legacy-package-download-info";
+        private const string k_TermsCheckUri = "/-/api/terms/check";
 
         internal const int k_ProductUpdateDetailsChunkSize = 30;
         internal const int k_MaxRetries = 3;
@@ -252,6 +253,27 @@ namespace UnityEditor.PackageManager.UI
             }
 
             GetChunkProductUpdateDetails(k_ProductUpdateDetailsChunkSize, ChunkCallbackAction, ErrorCallBack);
+        }
+
+        public virtual void CheckTermsAndConditions(Action<Dictionary<string, object>> doneCallbackAction, Action<UIError> errorCallbackAction)
+        {
+            // Abort any previous request
+            m_HttpClientFactory.AbortByTag("CheckTermsAndConditions");
+
+            HandleHttpRequest(() =>
+            {
+                var httpRequest = m_HttpClientFactory.GetASyncHTTPClient($"{host}{k_TermsCheckUri}");
+                httpRequest.tag = "CheckTermsAndConditions";
+                return httpRequest;
+            },
+                result =>
+                {
+                    doneCallbackAction?.Invoke(result);
+                },
+                error =>
+                {
+                    errorCallbackAction?.Invoke(error);
+                });
         }
 
         public virtual void HandleHttpRequest(IAsyncHTTPClient httpRequest, Action<Dictionary<string, object>> doneCallbackAction, Action<UIError> errorCallbackAction)
