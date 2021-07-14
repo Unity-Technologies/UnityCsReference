@@ -2505,6 +2505,9 @@ namespace UnityEditor
 
         internal static GenericMenu FillPropertyContextMenu(SerializedProperty property, SerializedProperty linkedProperty = null, GenericMenu menu = null)
         {
+            if (property == null)
+                return null;
+
             if (linkedProperty != null && linkedProperty.serializedObject != property.serializedObject)
                 linkedProperty = null;
 

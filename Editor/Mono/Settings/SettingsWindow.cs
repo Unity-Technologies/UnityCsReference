@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using UnityEditor.Experimental;
+using UnityEditor.IMGUI.Controls;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -21,6 +22,8 @@ namespace UnityEditor
 
         [SerializeField] private SettingsScope m_Scope;
         [SerializeField] public float m_SplitterFlex = 0.2f;
+        [SerializeField] private string m_SearchText;
+        [SerializeField] private TreeViewState m_TreeViewState;
 
         private SettingsProvider[] m_Providers;
         private SettingsTreeView m_TreeView;
@@ -28,7 +31,7 @@ namespace UnityEditor
         private VisualElement m_SettingsPanel;
         private VisualElement m_TreeViewContainer;
         private VisualElement m_Toolbar;
-        private string m_SearchText;
+
         private bool m_SearchFieldGiveFocus;
         const string k_SearchField = "SearchField";
 
@@ -84,10 +87,15 @@ namespace UnityEditor
             m_TreeView.FocusSelection(name.GetHashCode());
         }
 
+        internal void OnLostFocus()
+        {
+        }
+
         internal void FilterProviders(string search)
         {
             m_SearchText = search;
-            m_TreeView.searchString = search;
+            if (m_TreeView != null)
+                m_TreeView.searchString = search;
             Repaint();
         }
 
@@ -105,21 +113,8 @@ namespace UnityEditor
         {
             titleContent.image = EditorGUIUtility.IconContent("Settings").image;
 
-            Init();
+
             SetupUI();
-            RestoreSelection();
-
-            SettingsService.settingsProviderChanged -= OnSettingsProviderChanged;
-            SettingsService.settingsProviderChanged += OnSettingsProviderChanged;
-
-            SettingsService.repaintAllSettingsWindow -= OnRepaintAllWindows;
-            SettingsService.repaintAllSettingsWindow += OnRepaintAllWindows;
-
-            Undo.undoRedoPerformed -= OnUndoRedoPerformed;
-            Undo.undoRedoPerformed += OnUndoRedoPerformed;
-
-            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
-            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
         }
 
         internal void OnDisable()
@@ -143,9 +138,29 @@ namespace UnityEditor
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
         }
 
+        internal void InitProviders()
+        {
+            if (m_Providers != null)
+                return;
+            Init();
+            RestoreSelection();
+
+            SettingsService.settingsProviderChanged -= OnSettingsProviderChanged;
+            SettingsService.settingsProviderChanged += OnSettingsProviderChanged;
+
+            SettingsService.repaintAllSettingsWindow -= OnRepaintAllWindows;
+            SettingsService.repaintAllSettingsWindow += OnRepaintAllWindows;
+
+            Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+            Undo.undoRedoPerformed += OnUndoRedoPerformed;
+
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+        }
+
         internal void OnInspectorUpdate()
         {
-            m_TreeView.currentProvider?.OnInspectorUpdate();
+            m_TreeView?.currentProvider?.OnInspectorUpdate();
         }
 
         private void OnUndoRedoPerformed()
@@ -191,6 +206,7 @@ namespace UnityEditor
         private void OnSettingsProviderChanged()
         {
             Init();
+            RestoreSelection();
             Repaint();
         }
 
@@ -224,11 +240,11 @@ namespace UnityEditor
                 }
             }
 
-            m_TreeView = new SettingsTreeView(m_Providers);
-            m_TreeView.currentProviderChanged += ProviderChanged;
-            m_SearchText = String.Empty;
-
+            m_TreeViewState = m_TreeViewState ?? new TreeViewState();
+            m_TreeView = new SettingsTreeView(m_TreeViewState, m_Providers);
+            m_TreeView.searchString = m_SearchText = m_SearchText ?? string.Empty;
             RestoreSelection();
+            m_TreeView.currentProviderChanged += ProviderChanged;
         }
 
         private void WarnAgainstDuplicates()
@@ -255,6 +271,11 @@ namespace UnityEditor
                 EditorPrefs.SetString(GetPrefKeyName(titleContent.text + "_current_provider"), newlySelectedProvider.settingsPath);
             }
 
+            SetupIMGUIForCurrentProviderIfNeeded();
+        }
+
+        internal void SetupIMGUIForCurrentProviderIfNeeded()
+        {
             if (m_SettingsPanel.childCount == 0)
             {
                 var imguiContainer = new IMGUIContainer(DrawSettingsPanel);
@@ -266,6 +287,8 @@ namespace UnityEditor
         private void SetupWindowPosition()
         {
             var minWidth = Styles.window.GetFloat("min-width");
+            // To accomodate some large labels in the settings window, min-width is being increase (case 1282739)
+            minWidth += 10;
             var minHeight = Styles.window.GetFloat("min-height");
             minSize = new Vector2(minWidth, minHeight);
 
@@ -419,7 +442,7 @@ namespace UnityEditor
             GUILayout.BeginHorizontal();
             GUILayout.Space(Styles.settingsPanel.GetFloat(StyleCatalogKeyword.marginLeft));
             var headerContent = new GUIContent(m_TreeView.currentProvider.label, Styles.header.GetBool("-unity-show-icon") ? m_TreeView.currentProvider.icon : null);
-            GUILayout.Label(headerContent, ImguiStyles.header, GUILayout.MaxHeight(Styles.header.GetFloat("max-height")));
+            GUILayout.Label(headerContent, ImguiStyles.header, GUILayout.MaxHeight(Styles.header.GetFloat("max-height")), GUILayout.MinWidth(160));
             GUILayout.FlexibleSpace();
             m_TreeView.currentProvider.OnTitleBarGUI();
             GUILayout.EndHorizontal();
@@ -432,6 +455,9 @@ namespace UnityEditor
 
         private void DrawTreeView()
         {
+            if (m_TreeView == null)
+                InitProviders();
+
             var splitterRect = m_Splitter.GetSplitterRect(m_Splitter.Children().First());
             var splitterPos = splitterRect.xMax - (m_Splitter.splitSize / 2f);
             var treeWidth = splitterPos;
@@ -470,6 +496,7 @@ namespace UnityEditor
         {
             var settingsWindow = FindWindowByScope(scopes) ?? Create(scopes);
             settingsWindow.Show();
+            settingsWindow.InitProviders();
             settingsWindow.Focus();
 
             if (settingsPath != null)
