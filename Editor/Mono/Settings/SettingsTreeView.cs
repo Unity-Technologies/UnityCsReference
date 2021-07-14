@@ -35,8 +35,8 @@ namespace UnityEditor
         public delegate void ProviderChangedHandler(SettingsProvider lastSelectedProvider, SettingsProvider newlySelectedProvider);
         public event ProviderChangedHandler currentProviderChanged;
 
-        public SettingsTreeView(SettingsProvider[] providers)
-            : base(new TreeViewState())
+        public SettingsTreeView(TreeViewState state, SettingsProvider[] providers)
+            : base(state)
         {
             this.providers = providers;
             Reload();
