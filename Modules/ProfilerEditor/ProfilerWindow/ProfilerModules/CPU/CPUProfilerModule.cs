@@ -87,6 +87,12 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
+        internal override void Clear()
+        {
+            base.Clear();
+            m_TimelineGUI?.Clear();
+        }
+
         private protected override void DrawChartOverlay(Rect chartRect)
         {
             // Show selected property name

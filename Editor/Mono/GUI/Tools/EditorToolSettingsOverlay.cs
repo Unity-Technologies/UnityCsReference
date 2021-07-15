@@ -10,7 +10,7 @@ using UnityObject = UnityEngine.Object;
 namespace UnityEditor.EditorTools
 {
     [Overlay(typeof(SceneView), "Tool Settings", true)]
-    [Icon("Icons/Overlays/ToolSettingsOverlay.png")]
+    [Icon("Icons/Overlays/ToolSettings.png")]
     sealed class EditorToolSettingsOverlay : Overlay, ICreateHorizontalToolbar, ICreateVerticalToolbar
     {
         Editor m_Editor;

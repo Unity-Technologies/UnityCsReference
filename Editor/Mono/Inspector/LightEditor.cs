@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using Object = UnityEngine.Object;
+
 using UnityEditor.AnimatedValues;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -95,7 +97,9 @@ namespace UnityEditor
                 public static readonly GUIContent BakedShadowAngle = EditorGUIUtility.TrTextContent("Baked Shadow Angle", "Controls the amount of artificial softening applied to the edges of shadows cast by directional lights.");
 
                 public static readonly GUIContent Cookie = EditorGUIUtility.TrTextContent("Cookie", "Specifies the Texture mask to cast shadows, create silhouettes, or patterned illumination for the light.");
-                public static readonly GUIContent CookieSize = EditorGUIUtility.TrTextContent("Cookie Size", "Controls the size of the cookie mask currently assigned to the light.");
+                public static readonly GUIContent CookieSize = EditorGUIUtility.TrTextContent("Size", "Controls the size of the cookie mask currently assigned to the light.");
+                public static readonly GUIContent CookieTexture = EditorGUIUtility.TrTextContent("Cookie", "Texture to use for the light cookie.");
+
                 public static readonly GUIContent DrawHalo = EditorGUIUtility.TrTextContent("Draw Halo", "When enabled, draws a spherical halo of light with a radius equal to the lights range value.");
                 public static readonly GUIContent Flare = EditorGUIUtility.TrTextContent("Flare", "Specifies the flare object to be used by the light to render lens flares in the scene.");
                 public static readonly GUIContent RenderMode = EditorGUIUtility.TrTextContent("Render Mode", "Specifies the importance of the light which impacts lighting fidelity and performance. Options are Auto, Important, and Not Important. This only affects Forward Rendering.");
@@ -111,6 +115,8 @@ namespace UnityEditor
                 public static readonly GUIContent CookieSpotRepeatWarning = EditorGUIUtility.TrTextContent("Cookie textures for spot lights should be set to clamp, not repeat, to avoid artifacts.");
                 public static readonly GUIContent CookieNotEnabledWarning = EditorGUIUtility.TrTextContent("Cookie support for baked lights is not enabled. Please enable it in Project Settings > Editor > Enable baked cookies support");
                 public static readonly GUIContent CookieNotEnabledInfo = EditorGUIUtility.TrTextContent("Cookie support for mixed lights is not enabled for indirect lighting. You can enable it in Project Settings > Editor > Enable baked cookies support");
+                public static readonly GUIContent CookieSpotDirectionalTextureWarning = EditorGUIUtility.TrTextContent("Spot and directional light cookie textures must be 2D.");
+                public static readonly GUIContent CookiePointCubemapTextureWarning = EditorGUIUtility.TrTextContent("Cookie support for baked lights is not enabled. Please enable it in Project Settings > Editor > Enable baked cookies support");
                 public static readonly GUIContent MixedUnsupportedWarning = EditorGUIUtility.TrTextContent("Light mode is currently overridden to Realtime mode. The current render pipeline doesn't support Mixed mode and/or any of the lighting modes.");
                 public static readonly GUIContent BakedUnsupportedWarning = EditorGUIUtility.TrTextContent("Light mode is currently overridden to Realtime mode. The current render pipeline doesn't support Baked mode.");
 
@@ -165,11 +171,14 @@ namespace UnityEditor
             {
                 get
                 {
+                    RenderPipelineAsset srpAsset = GraphicsSettings.currentRenderPipeline;
+                    bool usingSRP = srpAsset != null;
+
                     return typeIsSame && light.type == LightType.Spot &&
-                        !cookieProp.hasMultipleDifferentValues && cookie && cookie.wrapMode != TextureWrapMode.Clamp;
+                        !cookieProp.hasMultipleDifferentValues && cookie && cookie.wrapMode != TextureWrapMode.Clamp
+                        && !usingSRP;
                 }
             }
-
 
             internal bool showCookieNotEnabledWarning
             {
@@ -281,10 +290,11 @@ namespace UnityEditor
                     }
                 }
 
-                var rect = EditorGUILayout.GetControlRect();
-                EditorGUI.BeginProperty(rect, Styles.Type, lightType);
+                var lightTypeRect = EditorGUILayout.GetControlRect();
+                EditorGUI.BeginProperty(lightTypeRect, Styles.Type, lightType);
                 EditorGUI.BeginChangeCheck();
-                int type = EditorGUI.IntPopup(rect, Styles.Type, selectedLightType, Styles.LightTypeTitles, Styles.LightTypeValues);
+
+                int type = EditorGUI.IntPopup(lightTypeRect, Styles.Type, selectedLightType, Styles.LightTypeTitles, Styles.LightTypeValues);
 
                 if (EditorGUI.EndChangeCheck())
                 {
@@ -295,10 +305,10 @@ namespace UnityEditor
 
                 if (isAreaLightType && selectedShape != (int)AreaLightShape.None)
                 {
-                    rect = EditorGUILayout.GetControlRect();
-                    EditorGUI.BeginProperty(rect, Styles.Shape, lightType);
+                    var lightShapeRect = EditorGUILayout.GetControlRect();
+                    EditorGUI.BeginProperty(lightShapeRect, Styles.Shape, lightType);
                     EditorGUI.BeginChangeCheck();
-                    int shape = EditorGUI.IntPopup(rect, Styles.Shape, selectedShape, Styles.AreaLightShapeTitles, Styles.AreaLightShapeValues);
+                    int shape = EditorGUI.IntPopup(lightShapeRect, Styles.Shape, selectedShape, Styles.AreaLightShapeTitles, Styles.AreaLightShapeValues);
 
                     if (EditorGUI.EndChangeCheck())
                     {
@@ -477,9 +487,77 @@ namespace UnityEditor
                 }
             }
 
+            Object TextureValidator(Object[] references, System.Type objType, SerializedProperty property, EditorGUI.ObjectFieldValidatorOptions options)
+            {
+                LightType lightTypeInfo = (LightType)lightType.intValue;
+
+                foreach (Object assetObject in references)
+                {
+                    if (assetObject is Texture texture)
+                    {
+                        switch (lightTypeInfo)
+                        {
+                            case LightType.Spot:
+                            case LightType.Directional:
+                                if (texture is Texture2D)
+                                    return assetObject;
+                                break;
+
+                            case LightType.Point:
+                                if (texture is Cubemap)
+                                    return assetObject;
+                                break;
+
+                            default:
+                                if (texture is Texture)
+                                    return assetObject;
+                                break;
+                        }
+                    }
+                }
+                return null;
+            }
+
+            void TexturePropertyBody(Rect position, SerializedProperty prop)
+            {
+                EditorGUI.BeginChangeCheck();
+                int controlID = GUIUtility.GetControlID(12354, FocusType.Keyboard, position);
+
+                Type type = null;
+                LightType lightTypeInfo = (LightType)lightType.intValue;
+                switch (lightTypeInfo)
+                {
+                    case LightType.Spot:
+                    case LightType.Directional:
+                        type = typeof(Texture2D);
+                        break;
+
+                    case LightType.Point:
+                        type = typeof(Cubemap);
+                        break;
+
+                    default:
+                        type = typeof(Texture);
+                        break;
+                }
+
+                var newValue = EditorGUI.DoObjectField(position, position, controlID, prop.objectReferenceValue, prop.objectReferenceValue, type, TextureValidator, false) as Texture;
+
+                if (EditorGUI.EndChangeCheck())
+                    prop.objectReferenceValue = newValue;
+            }
+
             public void DrawCookie()
             {
-                EditorGUILayout.PropertyField(cookieProp, Styles.Cookie);
+                // Don't draw cookie texture UI for area lights as cookies are not supported by them (except by HDRP, but they handle their own UI drawing logic)
+                if (isAreaLightType)
+                    return;
+
+                Rect controlRect = EditorGUILayout.GetControlRect();
+                Rect thumbRect, labelRect;
+                EditorGUI.GetRectsForMiniThumbnailField(controlRect, out thumbRect, out labelRect);
+                EditorGUI.HandlePrefixLabel(controlRect, labelRect, Styles.CookieTexture, 0, EditorStyles.label);
+                TexturePropertyBody(thumbRect, cookieProp);
 
                 if (showCookieSpotRepeatWarning)
                 {
@@ -502,7 +580,9 @@ namespace UnityEditor
 
             public void DrawCookieSize()
             {
+                EditorGUI.indentLevel++;
                 EditorGUILayout.PropertyField(cookieSize, Styles.CookieSize);
+                EditorGUI.indentLevel--;
             }
 
             public void DrawHalo()
@@ -535,9 +615,9 @@ namespace UnityEditor
                 EditorGUI.showMixedValue = renderingLayerMask.hasMultipleDifferentValues;
 
                 var mask = renderingLayerMask.intValue;
-                var layerNames = srpAsset.renderingLayerMaskNames;
+                var layerNames = srpAsset.prefixedRenderingLayerMaskNames;
                 if (layerNames == null)
-                    layerNames = RendererEditorBase.defaultRenderingLayerNames;
+                    layerNames = RendererEditorBase.defaultPrefixedRenderingLayerNames;
 
                 var rect = EditorGUILayout.GetControlRect();
                 EditorGUI.BeginProperty(rect, Styles.RenderingLayerMask, renderingLayerMask);
@@ -553,8 +633,6 @@ namespace UnityEditor
 
             public void DrawShadowsType()
             {
-                EditorGUILayout.Space();
-
                 if (isAreaLightType)
                 {
                     var rect = EditorGUILayout.GetControlRect();
@@ -770,8 +848,6 @@ namespace UnityEditor
             if (Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper == LightingSettings.Lightmapper.Enlighten && settings.light.type == LightType.Disc)
                 EditorGUILayout.HelpBox(StylesEx.noDiscLightInEnlighten.text, MessageType.Warning);
 
-            EditorGUILayout.Space();
-
             // When we are switching between two light types that don't show the range (directional lights don't)
             // we want the fade group to stay hidden.
             if (EditorGUILayout.BeginFadeGroup(1.0f - m_AnimShowDirOptions.faded))
@@ -788,8 +864,6 @@ namespace UnityEditor
             EditorGUILayout.EndFadeGroup();
 
             settings.DrawColor();
-
-            EditorGUILayout.Space();
 
             // Baking type
             settings.CheckLightmappingConsistency();
@@ -818,7 +892,6 @@ namespace UnityEditor
             settings.DrawCullingMask();
             settings.DrawRenderingLayerMask();
 
-            EditorGUILayout.Space();
             if (SceneView.lastActiveSceneView != null && SceneView.lastActiveSceneView.sceneLighting == false)
                 EditorGUILayout.HelpBox(StylesEx.DisabledLightWarning.text, MessageType.Warning);
 
@@ -853,8 +926,6 @@ namespace UnityEditor
             EditorGUILayout.EndFadeGroup();
 
             EditorGUI.indentLevel -= 1;
-
-            EditorGUILayout.Space();
         }
 
         protected virtual void OnSceneGUI()

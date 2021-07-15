@@ -55,7 +55,7 @@ namespace UnityEditor
 
             public const float kButtonWidth = 110;
 
-            public string shopURL = "https://store.unity3d.com/shop/";
+            public string shopURL = "https://store.unity.com/products/unity-pro";
 
             public GUIContent GetDownloadErrorForTarget(BuildTarget target)
             {
@@ -349,19 +349,21 @@ namespace UnityEditor
                 bool showRequired = requireEnabled == 0;
                 foreach (BuildPlatform gt in BuildPlatforms.instance.buildPlatforms)
                 {
-                    var available = IsBuildTargetGroupSupported(gt.namedBuildTarget.ToBuildTargetGroup(), gt.defaultTarget) && BuildPipeline.LicenseCheck(gt.defaultTarget);
-                    if (available != showRequired)
+                    var installed = IsBuildTargetGroupInstalled(gt.namedBuildTarget.ToBuildTargetGroup(), gt.defaultTarget);
+
+                    // All installed build targets will be shown on the first pass (showRequired = true)
+                    if (installed != showRequired)
                         continue;
 
-                    // Some build targets are not publicly available, show them only when they are actually in use
-                    if (!available && !gt.forceShowTarget)
+                    // Some build targets are not publicly available, show them only when they are installed
+                    if (!installed && gt.hideInUi)
                         continue;
 
                     // Some build targets are only compatible with specific OS
                     if (!IsBuildTargetCompatibleWithOS(gt.defaultTarget))
                         continue;
 
-                    GUI.contentColor = available ? Color.white : new Color(1, 1, 1, 0.5f);
+                    GUI.contentColor = installed ? Color.white : new Color(1, 1, 1, 0.5f);
                     ShowOption(gt, gt.title, even ? styles.evenRow : styles.oddRow);
                     even = !even;
                 }
@@ -532,6 +534,14 @@ namespace UnityEditor
                 return true;
             else
                 return BuildPipeline.IsBuildTargetSupported(targetGroup, target);
+        }
+
+        internal static bool IsBuildTargetGroupInstalled(BuildTargetGroup targetGroup, BuildTarget target)
+        {
+            if (targetGroup == BuildTargetGroup.Standalone)
+                return true;
+            else
+                return BuildPipeline.GetPlaybackEngineDirectory(target, BuildOptions.None, false) != string.Empty;
         }
 
         static bool IsAnyStandaloneModuleLoaded()
@@ -819,7 +829,7 @@ namespace UnityEditor
                 string buttonMsg = "Go to Our Online Store";
                 if (BuildTargetDiscovery.PlatformHasFlag(buildTarget, TargetAttributes.IsConsole))
                 {
-                    licenseMsg += "Please see the {0} section of the Platform Module Installation documentation for more details.";
+                    licenseMsg += " Please see the {0} section of the Platform Module Installation documentation for more details.";
                     buttonMsg = "Platform Module Installation";
                 }
                 else if (BuildTargetDiscovery.PlatformHasFlag(buildTarget, TargetAttributes.IsStandalonePlatform))

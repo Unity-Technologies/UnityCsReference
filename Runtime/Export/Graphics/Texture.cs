@@ -30,6 +30,8 @@ namespace UnityEngine
             {
                 _graphicsFormat = value;
                 SetOrClearRenderTextureCreationFlag(GraphicsFormatUtility.IsSRGBFormat(value), RenderTextureCreationFlags.SRGB);
+                //To avoid that the order of setting a property changes the end result, we need to update the depthbufferbits because the setter depends on the graphicsformat.
+                depthBufferBits = depthBufferBits;
             }
         }
 
@@ -57,7 +59,11 @@ namespace UnityEngine
         public int depthBufferBits
         {
             get { return GraphicsFormatUtility.GetDepthBits(depthStencilFormat); }
-            set { depthStencilFormat = GraphicsFormatUtility.GetDepthStencilFormat(value); }
+            //Ideally we deprecate the setter but keeping it for now because its a very commonly used api
+            //It is very bad practice to use the graphicsFormat property here because that makes the result depend on the order of setting the properties
+            //However, it's the best what we can do to make sure this is functionally correct.
+            //We now need to set depthBufferBits after we set graphicsFormat, see that property.
+            set { depthStencilFormat = RenderTexture.GetDepthStencilFormatLegacy(value, graphicsFormat); }
         }
 
         public Rendering.TextureDimension dimension { get; set; }
@@ -102,19 +108,12 @@ namespace UnityEngine
             volumeDepth = 1;
             msaaSamples = 1;
             this.graphicsFormat = colorFormat;
-            this.depthStencilFormat = GetDepthStencilFormatLegacy(depthBufferBits, colorFormat);
+            this.depthStencilFormat = RenderTexture.GetDepthStencilFormatLegacy(depthBufferBits, colorFormat);
             this.mipCount = mipCount;
             dimension = Rendering.TextureDimension.Tex2D;
             shadowSamplingMode =  Rendering.ShadowSamplingMode.None;
             vrUsage = VRTextureUsage.None;
             memoryless = RenderTextureMemoryless.None;
-        }
-
-        private static GraphicsFormat GetDepthStencilFormatLegacy(int depthBits, GraphicsFormat colorFormat)
-        {
-            return (colorFormat == GraphicsFormat.ShadowAuto) ?
-                GraphicsFormatUtility.GetDepthStencilFormat(depthBits, 0)
-                : GraphicsFormatUtility.GetDepthStencilFormat(depthBits);
         }
 
         [uei.ExcludeFromDocs]
@@ -244,7 +243,8 @@ namespace UnityEngine
         {
             // Note: the code duplication here is because you can't set a descriptor with
             // zero width/height, which our own code (and possibly existing user code) relies on.
-            if (!ValidateFormat(colorFormat, FormatUsage.Render))
+            // None is valid here as it indicates a depth only rendertexture.
+            if (colorFormat != GraphicsFormat.None && !ValidateFormat(colorFormat, FormatUsage.Render))
                 return;
 
             Internal_Create(this);
@@ -284,29 +284,33 @@ namespace UnityEngine
 
         private void Initialize(int width, int height, int depth, RenderTextureFormat format, RenderTextureReadWrite readWrite, int mipCount)
         {
+            // Note this may return the deprecated GraphicsFormat.ShadowAuto & DepthAuto for now. They will be filtered out internally
+            // by RenderTexture creation code on the c++ side.
             GraphicsFormat colorFormat = GetCompatibleFormat(format, readWrite);
 
             GraphicsFormat depthStencilFormat = GetDepthStencilFormatLegacy(depth, colorFormat);
 
             // Note: the code duplication here is because you can't set a descriptor with
             // zero width/height, which our own code (and possibly existing user code) relies on.
-            if (!ValidateFormat(colorFormat, FormatUsage.Render))
-                return;
+
+            if (colorFormat != GraphicsFormat.None)
+            {
+                if (!ValidateFormat(colorFormat, FormatUsage.Render))
+                    return;
+            }
 
             Internal_Create(this);
             this.width = width; this.height = height; this.depthStencilFormat = depthStencilFormat; this.graphicsFormat = colorFormat;
 
             SetMipMapCount(mipCount);
             SetSRGBReadWrite(GraphicsFormatUtility.IsSRGBFormat(colorFormat));
-            if (format == RenderTextureFormat.Shadowmap)
-            {
-                SetShadowSamplingMode(Rendering.ShadowSamplingMode.CompareDepths);
-            }
         }
 
-        private static GraphicsFormat GetDepthStencilFormatLegacy(int depthBits, GraphicsFormat colorFormat)
+        internal static GraphicsFormat GetDepthStencilFormatLegacy(int depthBits, GraphicsFormat colorFormat)
         {
+#pragma warning disable 618 // Disable deprecation warnings on the ShadowAuto and DepthAuto formats
             return (colorFormat == GraphicsFormat.ShadowAuto) ?
+#pragma warning restore 618
                 GraphicsFormatUtility.GetDepthStencilFormat(depthBits, 0)
                 : GraphicsFormatUtility.GetDepthStencilFormat(depthBits);
         }
@@ -336,9 +340,12 @@ namespace UnityEngine
             if (desc.msaaSamples != 1 && desc.msaaSamples != 2 && desc.msaaSamples != 4 && desc.msaaSamples != 8)
                 throw new ArgumentException("RenderTextureDesc msaaSamples must be 1, 2, 4, or 8.", "desc.msaaSamples");
 
+// Disable deprecation warnings on the ShadowAuto and DepthAuto formats
+#pragma warning disable 618
             if (desc.graphicsFormat != GraphicsFormat.ShadowAuto && desc.graphicsFormat != GraphicsFormat.DepthAuto
                 && (GraphicsFormatUtility.IsDepthFormat(desc.graphicsFormat) || GraphicsFormatUtility.IsStencilFormat(desc.graphicsFormat)))
                 throw new ArgumentException("RenderTextureDesc graphicsFormat must not be a depth/stencil format. " + desc.graphicsFormat + " is not supported.", "desc.graphicsFormat");
+#pragma warning restore 618
         }
     }
 
@@ -379,12 +386,6 @@ namespace UnityEngine
             desc.memoryless = memorylessMode;
             desc.vrUsage = vrUsage;
             desc.useDynamicScale = useDynamicScale;
-
-            if (colorFormat == GraphicsFormat.ShadowAuto)
-            {
-                desc.shadowSamplingMode = Rendering.ShadowSamplingMode.CompareDepths;
-            }
-
             return GetTemporary(desc);
         }
 
@@ -561,7 +562,9 @@ namespace UnityEngine
         internal bool ValidateFormat(GraphicsFormat format, FormatUsage usage)
         {
             //The auto formats are allowed to set as RenderTexture color format.
+#pragma warning disable 618 // Disable deprecation warnings on the ShadowAuto and DepthAuto formats, when finally removing them remove the whole if statement.
             if (usage != FormatUsage.Render && (format == GraphicsFormat.ShadowAuto || format == GraphicsFormat.DepthAuto))
+#pragma warning restore 618
             {
                 Debug.LogWarning(String.Format("'{0}' is not allowed because it is an auto format and not an exact format. Use GraphicsFormatUtility.GetDepthStencilFormat to get an exact depth/stencil format.", format.ToString()), this);
                 return false;

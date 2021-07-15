@@ -10,7 +10,7 @@ namespace UnityEditor
 {
     // Modules/UIServiceEditor/EditorToolbar/ToolbarElements/BuiltinTools.cs
     [Overlay(typeof(SceneView), k_Id, "Tools", true)]
-    [Icon("Icons/Overlays/StandardTools.png")]
+    [Icon("Icons/Overlays/ToolsToggle.png")]
     class TransformToolsOverlayToolBar : ToolbarOverlay
     {
         const string k_Id = "unity-transform-toolbar";

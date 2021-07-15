@@ -27,6 +27,7 @@ namespace UnityEngine.Rendering
         public virtual int terrainBrushPassIndex => (int)UnityEngine.Rendering.RenderQueue.GeometryLast;
 
         public virtual string[] renderingLayerMaskNames => null;
+        public virtual string[] prefixedRenderingLayerMaskNames => null;
 
         public virtual Material defaultMaterial => null;
 

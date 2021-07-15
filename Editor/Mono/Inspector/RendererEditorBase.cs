@@ -322,6 +322,23 @@ namespace UnityEditor
             }
         }
 
+        private static string[] m_DefaultPrefixedRenderingLayerNames;
+        internal static string[] defaultPrefixedRenderingLayerNames
+        {
+            get
+            {
+                if (m_DefaultPrefixedRenderingLayerNames == null)
+                {
+                    m_DefaultPrefixedRenderingLayerNames = new string[32];
+                    for (int i = 0; i < m_DefaultPrefixedRenderingLayerNames.Length; ++i)
+                    {
+                        m_DefaultPrefixedRenderingLayerNames[i] = string.Format("{0}: {1}", i, defaultRenderingLayerNames[i]);
+                    }
+                }
+                return m_DefaultPrefixedRenderingLayerNames;
+            }
+        }
+
         private SerializedProperty m_SortingOrder;
         private SerializedProperty m_SortingLayerID;
         private SerializedProperty m_DynamicOccludee;
@@ -474,9 +491,9 @@ namespace UnityEditor
 
             var renderer = target;
             var mask = (int)renderer.renderingLayerMask;
-            var layerNames = srpAsset.renderingLayerMaskNames;
+            var layerNames = srpAsset.prefixedRenderingLayerMaskNames;
             if (layerNames == null)
-                layerNames = defaultRenderingLayerNames;
+                layerNames = defaultPrefixedRenderingLayerNames;
 
             EditorGUI.BeginChangeCheck();
 

@@ -118,7 +118,7 @@ namespace UnityEditor.Modules
             // IL2CPP does not support a managed stripping level of disabled. If the player settings
             // do try this (which should not be possible from the editor), use Low instead.
             if (GetUseIl2Cpp(args) && strippingLevel == ManagedStrippingLevel.Disabled)
-                strippingLevel = ManagedStrippingLevel.Low;
+                strippingLevel = ManagedStrippingLevel.Minimal;
 
             if (strippingLevel > ManagedStrippingLevel.Disabled)
             {
@@ -163,6 +163,7 @@ namespace UnityEditor.Modules
                     // *begin-nonstandard-formatting*
                     Ruleset = strippingLevel switch
                     {
+                        ManagedStrippingLevel.Minimal => "Minimal",
                         ManagedStrippingLevel.Low => "Conservative",
                         ManagedStrippingLevel.Medium => "Aggressive",
                         ManagedStrippingLevel.High => "Experimental",

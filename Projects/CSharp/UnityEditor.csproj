@@ -4702,6 +4702,9 @@
     <Compile Include="..\..\Modules\AssetPipelineEditor\ImportSettings\VideoClipImporterInspector.cs">
       <Link>Modules\AssetPipelineEditor\ImportSettings\VideoClipImporterInspector.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\AssetPipelineEditor\Public\AndroidAssetPackImporter.bindings.cs">
+      <Link>Modules\AssetPipelineEditor\Public\AndroidAssetPackImporter.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\AssetPipelineEditor\Public\AudioImporter.bindings.cs">
       <Link>Modules\AssetPipelineEditor\Public\AudioImporter.bindings.cs</Link>
     </Compile>

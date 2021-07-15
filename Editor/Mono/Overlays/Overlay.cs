@@ -312,7 +312,6 @@ namespace UnityEditor.Overlays
             header.AddManipulator(contextClick);
             header.AddManipulator(dragger);
             m_CollapsedContent = m_RootVisualElement.Q(k_CollapsedContent);
-            rootVisualElement.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
 
             var iconElement = m_RootVisualElement.Q<Label>(classes: k_CollapsedIconButton);
             var iconTexture = EditorGUIUtility.LoadIcon(EditorGUIUtility.GetIconPathFromAttribute(GetType()));
@@ -332,6 +331,10 @@ namespace UnityEditor.Overlays
             m_RootVisualElement.Insert(0, m_BeforeDropZone = new OverlayDropZone(this, OverlayDropZone.Placement.Before));
             m_RootVisualElement.Add(m_AfterDropZone = new OverlayDropZone(this, OverlayDropZone.Placement.After));
             m_RootVisualElement.tooltip = L10n.Tr(displayName);
+
+            collapsedChanged += b => m_DisplayChanged = true;
+            floatingChanged += b => m_DisplayChanged = true;
+            layoutChanged += b => m_DisplayChanged = true;
 
             layout = Layout.Panel;
             OnCollapsedChanged(collapsed);
@@ -482,6 +485,7 @@ namespace UnityEditor.Overlays
             bool collapsed,
             bool floating,
             Vector2 floatingSnapOffset,
+            Vector2 snapOffsetDelta,
             Layout layout,
             SnapCorner snapCorner,
             OverlayContainer container)
@@ -497,7 +501,7 @@ namespace UnityEditor.Overlays
 
             // We need to set this property after the call to UpdateStyling() as the assignment triggers
             // OverlayPlacement.UpdateAbsolutePosition() which depends on the style being up to date.
-            this.floatingSnapOffset = floatingSnapOffset;
+            SetSnappingOffset(floatingSnapOffset, snapOffsetDelta);
             OnCollapsedChanged(collapsed);
 
             layoutChanged?.Invoke(m_Layout);
