@@ -217,7 +217,7 @@ namespace UnityEngine.Rendering
                 extern internal static ulong Create(CreationParameters p);
                 extern internal static void Destroy(ulong handle);
 
-                [NativeThrows] extern internal static int PopRequests(ulong handle, IntPtr requestHandles);
+                [NativeThrows] extern internal static int PopRequests(ulong handle, IntPtr requestHandles, int length);
                 [NativeThrows][ThreadSafe] extern internal static void GetRequestParameters(IntPtr requestHandles, IntPtr requestParameters, int length);
 
                 // These are two version instead of just one function with fenceBuffer==null so the version without CommandBuffer is burst compatible
@@ -605,13 +605,9 @@ namespace UnityEngine.Rendering
                     {
                         throw new ArgumentNullException();
                     }
-                    if (requestHandles.Length < creationParams.maxActiveRequests)
-                    {
-                        throw new ArgumentException($"Provided slice has invalid length ({requestHandles.Length} given, {creationParams.maxActiveRequests} required).");
-                    }
                     unsafe
                     {
-                        return Binding.PopRequests(handle, (IntPtr)requestHandles.GetUnsafePtr());
+                        return Binding.PopRequests(handle, (IntPtr)requestHandles.GetUnsafePtr(), requestHandles.Length);
                     }
                 }
 

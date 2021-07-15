@@ -182,6 +182,7 @@ namespace UnityEditor
             public static readonly GUIContent scriptingIL2CPP = EditorGUIUtility.TrTextContent("IL2CPP");
             public static readonly GUIContent scriptingDefault = EditorGUIUtility.TrTextContent("Default");
             public static readonly GUIContent strippingDisabled = EditorGUIUtility.TrTextContent("Disabled");
+            public static readonly GUIContent strippingMinimal = EditorGUIUtility.TrTextContent("Minimal");
             public static readonly GUIContent strippingLow = EditorGUIUtility.TrTextContent("Low");
             public static readonly GUIContent strippingMedium = EditorGUIUtility.TrTextContent("Medium");
             public static readonly GUIContent strippingHigh = EditorGUIUtility.TrTextContent("High");
@@ -2294,7 +2295,7 @@ namespace UnityEditor
             else
             {
                 if (backend == ScriptingImplementation.IL2CPP)
-                    return ManagedStrippingLevel.Low;
+                    return ManagedStrippingLevel.Minimal;
                 else
                     return ManagedStrippingLevel.Disabled;
             }
@@ -2849,8 +2850,8 @@ namespace UnityEditor
             EditorGUILayout.Space();
         }
 
-        static ManagedStrippingLevel[] mono_levels = new ManagedStrippingLevel[] { ManagedStrippingLevel.Disabled, ManagedStrippingLevel.Low, ManagedStrippingLevel.Medium, ManagedStrippingLevel.High };
-        static ManagedStrippingLevel[] il2cpp_levels = new ManagedStrippingLevel[] { ManagedStrippingLevel.Low, ManagedStrippingLevel.Medium, ManagedStrippingLevel.High };
+        static ManagedStrippingLevel[] mono_levels = new ManagedStrippingLevel[] { ManagedStrippingLevel.Disabled, ManagedStrippingLevel.Minimal, ManagedStrippingLevel.Low, ManagedStrippingLevel.Medium, ManagedStrippingLevel.High };
+        static ManagedStrippingLevel[] il2cpp_levels = new ManagedStrippingLevel[] { ManagedStrippingLevel.Low, ManagedStrippingLevel.Minimal, ManagedStrippingLevel.Medium, ManagedStrippingLevel.High };
         // stripping levels vary based on scripting backend
         private ManagedStrippingLevel[] GetAvailableManagedStrippingLevels(ScriptingImplementation backend)
         {
@@ -3016,6 +3017,7 @@ namespace UnityEditor
                 m_NiceManagedStrippingLevelNames = new Dictionary<ManagedStrippingLevel, GUIContent>
                 {
                     { ManagedStrippingLevel.Disabled, SettingsContent.strippingDisabled },
+                    { ManagedStrippingLevel.Minimal, SettingsContent.strippingMinimal },
                     { ManagedStrippingLevel.Low, SettingsContent.strippingLow },
                     { ManagedStrippingLevel.Medium, SettingsContent.strippingMedium },
                     { ManagedStrippingLevel.High, SettingsContent.strippingHigh },

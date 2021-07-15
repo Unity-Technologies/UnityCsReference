@@ -718,9 +718,10 @@ namespace UnityEditor
             RenderTexture rt = t as RenderTexture;
             if (rt != null)
             {
-                if (!SystemInfo.IsFormatSupported(rt.graphicsFormat, FormatUsage.Render))
-                    return; // can't do this RT format
-                rt.Create();
+                if (rt.Create() == false)
+                {
+                    return;
+                }
             }
 
             if (IsCubemap())

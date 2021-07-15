@@ -20,6 +20,7 @@ namespace UnityEditor.Overlays
         public bool collapsed;
         public bool displayed;
         public Vector2 snapOffset;
+        public Vector2 snapOffsetDelta;
         public SnapCorner snapCorner;
         public string id;
         public int index = k_InvalidIndex;
@@ -37,6 +38,7 @@ namespace UnityEditor.Overlays
             collapsed = other.collapsed;
             displayed = other.displayed;
             snapOffset = other.snapOffset;
+            snapOffsetDelta = other.snapOffsetDelta;
             snapCorner = other.snapCorner;
             id = other.id;
             index = other.index;
@@ -262,7 +264,6 @@ namespace UnityEditor.Overlays
             rootVisualElement.RegisterCallback<MouseOverEvent>(OnMouseEnter);
             rootVisualElement.RegisterCallback<MouseMoveEvent>(OnMouseMove);
 
-
             //this is used to clamp overlays to floating container bounds.
             floatingContainer.RegisterCallback<GeometryChangedEvent>(GeometryChanged);
         }
@@ -322,9 +323,14 @@ namespace UnityEditor.Overlays
 
             foreach (var overlay in m_Overlays)
             {
-                //force an update of the floating position
-                overlay.floatingPosition = overlay.floatingPosition;
+                using (new Overlay.LockedAnchor(overlay))
+                    overlay.floatingPosition = overlay.floatingPosition; //force an update of the floating position
+
                 overlay.UpdateAbsolutePosition();
+
+                //Register the geometrychanged callback to the overlay if it was not registered before,
+                //this is not doing anything if it has already been registered
+                overlay.rootVisualElement.RegisterCallback<GeometryChangedEvent>(overlay.OnGeometryChanged);
             }
         }
 
@@ -511,6 +517,8 @@ namespace UnityEditor.Overlays
             AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeAssemblyReload;
             containerWindow = null;
             m_Initialized = false;
+            foreach (var overlay in m_Overlays)
+                overlay.rootVisualElement.UnregisterCallback<GeometryChangedEvent>(overlay.OnGeometryChanged);
         }
 
         //returns first overlay, spacer or ghost that is docked
@@ -611,7 +619,8 @@ namespace UnityEditor.Overlays
                 layout = overlay.layout,
                 id = overlay.id,
                 snapCorner = overlay.floatingSnapCorner,
-                snapOffset = overlay.floatingSnapOffset
+                snapOffset = overlay.floatingSnapOffset - overlay.m_SnapOffsetDelta,
+                snapOffsetDelta = overlay.m_SnapOffsetDelta
             };
             return saveData;
         }
@@ -662,7 +671,7 @@ namespace UnityEditor.Overlays
                     container.AddToBottom(overlay);
                 }
 
-                overlay.LoadFromSerializedData(data.displayed, data.collapsed, data.floating, data.snapOffset, data.layout, data.snapCorner, container);
+                overlay.LoadFromSerializedData(data.displayed, data.collapsed, data.floating, data.snapOffset, data.snapOffsetDelta, data.layout, data.snapCorner, container);
 
                 if (overlay.floating)
                     floatingContainer.Add(overlay.rootVisualElement);

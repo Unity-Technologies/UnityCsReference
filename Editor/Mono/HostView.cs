@@ -429,14 +429,13 @@ namespace UnityEditor
             return m_ActualViewName;
         }
 
-        public void InvokeOnGUI(Rect onGUIPosition, Rect viewRect)
+        public void InvokeOnGUI(Rect onGUIPosition)
         {
             if (!this)
                 return;
 
             DoWindowDecorationStart();
-
-            BeginOffsetArea(viewRect, GUIContent.none, Styles.tabWindowBackground);
+            BeginOffsetArea(m_ActualView.rootVisualElement.worldBound, GUIContent.none, Styles.tabWindowBackground);
 
             EditorGUIUtility.ResetGUIState();
 

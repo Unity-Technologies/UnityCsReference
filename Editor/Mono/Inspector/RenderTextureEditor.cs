@@ -34,6 +34,7 @@ namespace UnityEditor
             public readonly GUIContent autoGeneratesMipmaps = EditorGUIUtility.TrTextContent("Auto generate Mip Maps", "This render texture automatically generates its Mip Maps.");
             public readonly GUIContent sRGBTexture = EditorGUIUtility.TrTextContent("sRGB (Color RenderTexture)", "RenderTexture content is stored in gamma space. Non-HDR color textures should enable this flag.");
             public readonly GUIContent useDynamicScale = EditorGUIUtility.TrTextContent("Dynamic Scaling", "Allow the texture to be automatically resized by ScalableBufferManager, to support dynamic resolution.");
+            public readonly GUIContent shadowSamplingMode = EditorGUIUtility.TrTextContent("Shadow Sampling Mode", "Enable/disable shadow depth-compare sampling and percentage closer filtering.");
 
             public readonly GUIContent[] renderTextureAntiAliasing =
             {
@@ -74,6 +75,7 @@ namespace UnityEditor
         SerializedProperty m_Dimension;
         SerializedProperty m_sRGB;
         SerializedProperty m_UseDynamicScale;
+        SerializedProperty m_ShadowSamplingMode;
 
         protected override void OnEnable()
         {
@@ -90,6 +92,7 @@ namespace UnityEditor
             m_Dimension = serializedObject.FindProperty("m_Dimension");
             m_sRGB = serializedObject.FindProperty("m_SRGB");
             m_UseDynamicScale = serializedObject.FindProperty("m_UseDynamicScale");
+            m_ShadowSamplingMode = serializedObject.FindProperty("m_ShadowSamplingMode");
 
             InitPreview();
             SetShaderColorMask();
@@ -167,7 +170,12 @@ namespace UnityEditor
                 }
             }
 
-            using (new EditorGUI.DisabledScope(isTexture3D))
+            if ((GraphicsFormat)m_DepthStencilFormat.intValue == GraphicsFormat.None && (GraphicsFormat)m_ColorFormat.intValue == GraphicsFormat.None)
+            {
+                EditorGUILayout.HelpBox("You cannot set both color format and depth format to None", MessageType.Error);
+            }
+
+            using (new EditorGUI.DisabledScope(isTexture3D || RenderTextureIsDepthOnly()))
             {
                 EditorGUILayout.PropertyField(m_EnableMipmaps, styles.enableMipmaps);
                 using (new EditorGUI.DisabledScope(!m_EnableMipmaps.boolValue))
@@ -178,6 +186,12 @@ namespace UnityEditor
             {
                 // Mip map generation is not supported yet for 3D textures.
                 EditorGUILayout.HelpBox("3D RenderTextures do not support Mip Maps.", MessageType.Info);
+            }
+
+            if (RenderTextureIsDepthOnly())
+            {
+                // Mip map generation is not supported yet for 3D textures.
+                EditorGUILayout.HelpBox("Depth-only RenderTextures do not support Mip Maps.", MessageType.Info);
             }
 
             EditorGUILayout.PropertyField(m_UseDynamicScale, styles.useDynamicScale);
@@ -203,6 +217,23 @@ namespace UnityEditor
                 // user requests any kind of depth then we will force aniso to zero here.
                 m_Aniso.intValue = 0;
                 EditorGUILayout.HelpBox("RenderTextures with depth must have an Aniso Level of 0.", MessageType.Info);
+            }
+
+            using (new EditorGUI.DisabledScope(!RenderTextureHasDepth())) // Depth-only textures have shadow mode
+            {
+                EditorGUI.BeginChangeCheck();
+                EditorGUILayout.PropertyField(m_ShadowSamplingMode, styles.shadowSamplingMode);
+                // Shadow mode unlike the other filter settings requires re-creating the rt if it changed
+                // as it's an actual creation flag on the texture.
+                if (EditorGUI.EndChangeCheck() && rt != null)
+                {
+                    rt.Release();
+                }
+            }
+            if (!RenderTextureHasDepth())
+            {
+                m_ShadowSamplingMode.intValue = (int)ShadowSamplingMode.None;
+                EditorGUILayout.HelpBox("Only render textures with depth can have shadow filtering.", MessageType.Info);
             }
 
             serializedObject.ApplyModifiedProperties();
@@ -325,10 +356,26 @@ namespace UnityEditor
 
         private bool RenderTextureHasDepth()
         {
-            if (GraphicsFormatUtility.IsDepthFormat((GraphicsFormat)m_ColorFormat.enumValueIndex))
+            if (((GraphicsFormat)m_ColorFormat.enumValueIndex == GraphicsFormat.None) ||
+                GraphicsFormatUtility.IsDepthFormat((GraphicsFormat)m_ColorFormat.enumValueIndex)) /* This should be removed if ShadowAuto and DepthAuto formats are finally removed (they are currently deprecated already)*/
                 return true;
 
             return m_DepthStencilFormat.enumValueIndex != 0;
+        }
+
+        private bool RenderTextureIsDepthOnly()
+        {
+            GraphicsFormat colorFormat = (GraphicsFormat)m_ColorFormat.enumValueIndex;
+            if ((colorFormat == GraphicsFormat.None) ||
+#pragma warning disable 0618 //Deprecation warning, simply remove the code below once these formats are really removed
+                (colorFormat == GraphicsFormat.DepthAuto) ||
+                (colorFormat == GraphicsFormat.ShadowAuto)
+#pragma warning restore 0618
+            )
+            {
+                return true;
+            }
+            return false;
         }
 
         override protected float GetExposureValueForTexture(Texture t)

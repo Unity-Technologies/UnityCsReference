@@ -41,6 +41,8 @@ namespace UnityEditorInternal
             {
                 switch (m_RunInformation.managedStrippingLevel)
                 {
+                    case ManagedStrippingLevel.Minimal:
+                        return "Minimal";
                     case ManagedStrippingLevel.Low:
                         return "Conservative";
                     case ManagedStrippingLevel.Medium:

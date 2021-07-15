@@ -599,7 +599,7 @@ namespace UnityEditorInternal
             // IL2CPP does not support a managed stripping level of disabled. If the player settings
             // do try this (which should not be possible from the editor), use Low instead.
             if (managedStrippingLevel == ManagedStrippingLevel.Disabled)
-                managedStrippingLevel = ManagedStrippingLevel.Low;
+                managedStrippingLevel = ManagedStrippingLevel.Minimal;
             AssemblyStripper.StripAssemblies(managedDir, m_PlatformProvider.CreateUnityLinkerPlatformProvider(), m_PlatformProvider, m_RuntimeClassRegistry, managedStrippingLevel);
 
             Directory.CreateDirectory(m_TempFolder);

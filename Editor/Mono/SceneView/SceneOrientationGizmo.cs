@@ -11,6 +11,7 @@ using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
+using BlendMode = UnityEngine.Rendering.BlendMode;
 
 [Overlay(typeof(SceneView), "Orientation", true)]
 [Icon("Icons/Overlays/OrientationGizmo.png")]
@@ -71,6 +72,7 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
     int m_CenterButtonControlID;
     int m_RotationLockControlID;
     int m_PerspectiveIsoControlID;
+    readonly Color k_RTBackground = new Color(1, 1, 1, 0);
     RenderTexture m_RenderTexture;
     Camera m_Camera;
 
@@ -112,6 +114,27 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
         public static GUIStyle lockStyle = "CenteredLabel";
         public static GUIContent unlockedRotationIcon = EditorGUIUtility.TrIconContent("LockIcon", "Click to lock the rotation in the current direction.");
         public static GUIContent lockedRotationIcon = EditorGUIUtility.TrIconContent("LockIcon-On", "Click to unlock the rotation.");
+    }
+
+    struct BlendingScope : IDisposable
+    {
+        int m_srcMode;
+        int m_dstMode;
+
+        public BlendingScope(BlendMode srcMode, BlendMode dstMode)
+        {
+            m_srcMode = (int)HandleUtility.handleMaterial.GetFloat("_BlendSrcMode");
+            HandleUtility.handleMaterial.SetFloat("_BlendSrcMode", (int)srcMode);
+
+            m_dstMode = (int)HandleUtility.handleMaterial.GetFloat("_BlendDstMode");
+            HandleUtility.handleMaterial.SetFloat("_BlendDstMode", (int)dstMode);
+        }
+
+        public void Dispose()
+        {
+            HandleUtility.handleMaterial.SetFloat("_BlendSrcMode", m_srcMode);
+            HandleUtility.handleMaterial.SetFloat("_BlendDstMode", m_dstMode);
+        }
     }
 
     public SceneOrientationGizmo()
@@ -253,45 +276,48 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
 
             c.a *= a * fadedVisibility;
 
-            if (QualitySettings.activeColorSpace == ColorSpace.Linear)
-                c = c.linear;
-
-            Handles.color = c;
-
-            if (c.a <= 0.1f || view.isRotationLocked)
-                GUI.enabled = false;
-
-            // axis widget when drawn behind label
-            if (sgn > 0 && Handles.Button(m_ViewDirectionControlIDs[h], q1 * Vector3.forward * size * -1.2f, q1,
-                size, size * 0.7f, Handles.ConeHandleCap))
+            //Not displaying the axis when rotation is locked and axis invisible otherwise One Zero blending not working fine
+            if (!(view.isRotationLocked && c.a < Mathf.Epsilon))
             {
-                if (!view.in2DMode && !view.isRotationLocked)
-                    ViewAxisDirection(view, h);
+                if (QualitySettings.activeColorSpace == ColorSpace.Linear)
+                    c = c.linear;
+
+                Handles.color = c;
+
+                if (c.a <= 0.1f || view.isRotationLocked)
+                    GUI.enabled = false;
+
+                // axis widget when drawn behind label
+                if (sgn > 0 && Handles.Button(m_ViewDirectionControlIDs[h], q1 * Vector3.forward * size * -1.2f, q1,
+                    size, size * 0.7f, Handles.ConeHandleCap))
+                {
+                    if (!view.in2DMode && !view.isRotationLocked)
+                        ViewAxisDirection(view, h);
+                }
+
+                // primary axes have text labels
+                if (h < 3)
+                {
+                    GUI.color = new Color(1, 1, 1, dirVisible[h].faded * fadedVisibility);
+
+                    // Label pos is a bit further out than the end of the cone
+                    Vector3 pos = direction;
+                    // Remove some of the perspective to avoid labels in front
+                    // being much further away from the gizmo due to perspective
+                    pos += dot * view.camera.transform.forward * -0.5f;
+                    // Also remove some of the spacing difference caused by rotation
+                    pos = (pos * 0.7f + pos.normalized * 1.5f) * size;
+                    Handles.Label(-pos, s_HandleAxisLabels[h], Styles.viewAxisLabelStyle);
+                }
+
+                // axis widget when drawn in front of label
+                if (sgn < 0 && Handles.Button(m_ViewDirectionControlIDs[h], q1 * Vector3.forward * size * -1.2f, q1,
+                    size, size * 0.7f, Handles.ConeHandleCap))
+                {
+                    if (!view.in2DMode && !view.isRotationLocked)
+                        ViewAxisDirection(view, h);
+                }
             }
-
-            // primary axes have text labels
-            if (h < 3)
-            {
-                GUI.color = new Color(1, 1, 1, dirVisible[h].faded * fadedVisibility);
-
-                // Label pos is a bit further out than the end of the cone
-                Vector3 pos = direction;
-                // Remove some of the perspective to avoid labels in front
-                // being much further away from the gizmo due to perspective
-                pos += dot * view.camera.transform.forward * -0.5f;
-                // Also remove some of the spacing difference caused by rotation
-                pos = (pos * 0.7f + pos.normalized * 1.5f) * size;
-                Handles.Label(-pos, s_HandleAxisLabels[h], Styles.viewAxisLabelStyle);
-            }
-
-            // axis widget when drawn in front of label
-            if (sgn < 0 && Handles.Button(m_ViewDirectionControlIDs[h], q1 * Vector3.forward * size * -1.2f, q1,
-                size, size * 0.7f, Handles.ConeHandleCap))
-            {
-                if (!view.in2DMode && !view.isRotationLocked)
-                    ViewAxisDirection(view, h);
-            }
-
 
             Handles.color = Color.white;
             GUI.color = Color.white;
@@ -541,32 +567,38 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
         SetupRenderTexture();
         SetupCamera(view);
 
-        using (new GUI.GroupScope(gizmoRect))
+        //Handle transparency when rotation is locked
+        using (new BlendingScope(
+            view.isRotationLocked ? BlendMode.One : BlendMode.SrcAlpha,
+            view.isRotationLocked ? BlendMode.Zero : BlendMode.OneMinusSrcAlpha))
         {
-            var temp = RenderTexture.active;
-            Handles.SetCamera(gizmoRect, m_Camera);
-
-            if (evt.type == EventType.Repaint)
+            using (new GUI.GroupScope(gizmoRect))
             {
-                RenderTexture.active = m_RenderTexture;
-                Handles.ClearCamera(gizmoRect, m_Camera);
-                GL.Clear(false, true, Color.clear);
-                GUIClip.Internal_PushParentClip(Matrix4x4.identity, GUIClip.GetParentMatrix(), gizmoRect);
+                var temp = RenderTexture.active;
+                Handles.SetCamera(gizmoRect, m_Camera);
+
+                if (evt.type == EventType.Repaint)
+                {
+                    RenderTexture.active = m_RenderTexture;
+                    Handles.ClearCamera(gizmoRect, m_Camera);
+                    GL.Clear(false, true, Color.clear);
+                    GUIClip.Internal_PushParentClip(Matrix4x4.identity, GUIClip.GetParentMatrix(), gizmoRect);
+                }
+
+                DoOrientationHandles(view, m_Camera);
+
+                if (evt.type == EventType.Repaint)
+                    GUIClip.Internal_PopParentClip();
+
+                RenderTexture.active = temp;
             }
 
-            DoOrientationHandles(view, m_Camera);
+            GUI.Label(gizmoRect, m_RenderTexture);
 
-            if (evt.type == EventType.Repaint)
-                GUIClip.Internal_PopParentClip();
-
-            RenderTexture.active = temp;
+            Rect labelRect = gizmoRect;
+            labelRect.y += gizmoRect.height;
+            DrawLabels(view, labelRect);
         }
-
-        GUI.Label(gizmoRect, m_RenderTexture);
-
-        Rect labelRect = gizmoRect;
-        labelRect.y += gizmoRect.height;
-        DrawLabels(view, labelRect);
     }
 
     void DoOrientationHandles(SceneView view, Camera camera)
@@ -588,7 +620,6 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
         AxisSelectors(view, camera, size, -1.0f, Styles.viewAxisLabelStyle);
 
         // Do center handle
-
         Color centerColor = Handles.centerColor;
         centerColor = Color.Lerp(centerColor, Color.gray, faded2Dgray);
         centerColor.a *= fadedVisibility;
