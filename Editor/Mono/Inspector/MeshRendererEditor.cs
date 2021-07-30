@@ -72,7 +72,10 @@ namespace UnityEditor
             {
                 m_GameObjectsSerializedObject.Update();
 
-                if (!m_GameObjectStaticFlags.hasMultipleDifferentValues && ((StaticEditorFlags)m_GameObjectStaticFlags.intValue & StaticEditorFlags.BatchingStatic) != 0)
+                int staticBatching, dynamicBatching;
+                PlayerSettings.GetBatchingForPlatform(EditorUserBuildSettings.activeBuildTarget, out staticBatching, out dynamicBatching);
+
+                if (!m_GameObjectStaticFlags.hasMultipleDifferentValues && ((StaticEditorFlags)m_GameObjectStaticFlags.intValue & StaticEditorFlags.BatchingStatic) != 0 && staticBatching != 0)
                 {
                     EditorGUILayout.HelpBox(Styles.staticBatchingWarning.text, MessageType.Warning, true);
                 }

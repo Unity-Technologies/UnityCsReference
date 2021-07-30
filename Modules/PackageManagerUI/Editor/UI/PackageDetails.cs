@@ -18,6 +18,8 @@ namespace UnityEditor.PackageManager.UI
 {
     internal class PackageDetails : VisualElement
     {
+        private const string k_TermsOfServicesURL = "https://assetstore.unity.com/account/term";
+
         internal new class UxmlFactory : UxmlFactory<PackageDetails> {}
 
         private IPackage m_Package;
@@ -157,6 +159,8 @@ namespace UnityEditor.PackageManager.UI
 
             PackageDatabase.instance.onDownloadProgress += OnDownloadProgress;
 
+            PackageDatabase.instance.onTermOfServiceAgreementStatusChange += OnTermOfServiceAgreementStatusChange;
+
             PageManager.instance.onPageRebuild += page => OnSelectionChanged(PageManager.instance.GetSelectedVersion());
             PageManager.instance.onSelectionChanged += OnSelectionChanged;
 
@@ -177,11 +181,26 @@ namespace UnityEditor.PackageManager.UI
 
             PackageDatabase.instance.onDownloadProgress -= OnDownloadProgress;
 
+            PackageDatabase.instance.onTermOfServiceAgreementStatusChange -= OnTermOfServiceAgreementStatusChange;
+
             PageManager.instance.onSelectionChanged -= OnSelectionChanged;
 
             Selection.selectionChanged -= OnEditorSelectionChanged;
 
             ClearSupportingImages();
+        }
+
+        private void OnTermOfServiceAgreementStatusChange(TermOfServiceAgreementStatus status)
+        {
+            if (status == TermOfServiceAgreementStatus.Accepted)
+                return;
+
+            var result = ApplicationUtil.instance.DisplayDialog(L10n.Tr("Package Manager"),
+                L10n.Tr("You need to accept Asset Store Terms of Service and EULA before you can download/update any package."),
+                L10n.Tr("Read and accept"), L10n.Tr("Close"));
+
+            if (result)
+                ApplicationUtil.instance.OpenAuthorizedURLInWebBrowser(k_TermsOfServicesURL);
         }
 
         private void OnDownloadProgress(DownloadProgress progress)
@@ -914,14 +933,21 @@ namespace UnityEditor.PackageManager.UI
             detailError.ClearError();
             var downloadInProgress = PackageDatabase.instance.IsDownloadInProgress(displayVersion);
             if (downloadInProgress)
+            {
                 PackageDatabase.instance.AbortDownload(package);
+                PackageManagerWindowAnalytics.SendEvent("abortDownload", package.uniqueId);
+            }
             else
-                PackageDatabase.instance.Download(package);
+            {
+                var canDownload = PackageDatabase.instance.Download(package);
+                if (canDownload)
+                {
+                    var eventName = isUpdate ? "startDownloadUpdate" : "startDownloadNew";
+                    PackageManagerWindowAnalytics.SendEvent(eventName, package.uniqueId);
+                }
+            }
 
             RefreshImportAndDownloadButtons();
-
-            var eventName = downloadInProgress ? "abortDownload" : (isUpdate ? "startDownloadUpdate" : "startDownloadNew");
-            PackageManagerWindowAnalytics.SendEvent(eventName, package.uniqueId);
         }
 
         private VisualElementCache cache { get; set; }

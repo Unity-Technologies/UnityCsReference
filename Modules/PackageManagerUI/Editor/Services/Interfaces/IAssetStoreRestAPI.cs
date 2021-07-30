@@ -47,6 +47,8 @@ namespace UnityEditor.PackageManager.UI
 
         void GetProductUpdateDetail(IEnumerable<AssetStore.LocalInfo> localInfos, Action<Dictionary<string, object>> doneCallbackAction);
 
+        void CheckTermsAndConditions(Action<Dictionary<string, object>> doneCallbackAction);
+
         void HandleHttpRequest(IAsyncHTTPClient httpRequest, Action<Dictionary<string, object>> doneCallbackAction, Action<string> errorCallbackAction);
     }
 }

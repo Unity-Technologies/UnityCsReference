@@ -107,6 +107,12 @@ namespace UnityEngine.UIElements
 
         ValueAnimation<StyleValues> ITransitionAnimations.Start(StyleValues from, StyleValues to, int durationMs)
         {
+            if (from.m_StyleValues == null)
+                from.Values();
+
+            if (to.m_StyleValues == null)
+                to.Values();
+
             return Start((e) => from, to, durationMs);
         }
 
@@ -155,107 +161,110 @@ namespace UnityEngine.UIElements
         {
             var s = ve.style;
 
-            foreach (var styleValue in src.m_StyleValues.m_Values)
+            if (src.m_StyleValues != null)
             {
-                switch (styleValue.id)
+                foreach (var styleValue in src.m_StyleValues.m_Values)
                 {
-                    case StyleSheets.StylePropertyID.Unknown:
-                        break;
-                    case StyleSheets.StylePropertyID.MarginLeft:
-                        s.marginLeft = styleValue.number;
-                        break;
-                    case StyleSheets.StylePropertyID.MarginTop:
-                        s.marginTop = styleValue.number;
-                        break;
-                    case StyleSheets.StylePropertyID.MarginRight:
-                        s.marginRight = styleValue.number;
-                        break;
-                    case StyleSheets.StylePropertyID.MarginBottom:
-                        s.marginBottom = styleValue.number;
-                        break;
-                    case StyleSheets.StylePropertyID.PaddingLeft:
-                        s.paddingLeft = styleValue.number;
-                        break;
-                    case StyleSheets.StylePropertyID.PaddingTop:
-                        s.paddingTop = styleValue.number;
-                        break;
-                    case StyleSheets.StylePropertyID.PaddingRight:
-                        s.paddingRight = styleValue.number;
-                        break;
-                    case StyleSheets.StylePropertyID.PaddingBottom:
-                        s.paddingBottom = styleValue.number;
-                        break;
-                    case StyleSheets.StylePropertyID.PositionLeft:
-                        s.left = styleValue.number;
-                        break;
-                    case StyleSheets.StylePropertyID.PositionTop:
-                        s.top = styleValue.number;
-                        break;
-                    case StyleSheets.StylePropertyID.PositionRight:
-                        s.right = styleValue.number;
-                        break;
-                    case StyleSheets.StylePropertyID.PositionBottom:
-                        s.bottom = styleValue.number;
-                        break;
-                    case StyleSheets.StylePropertyID.Width:
-                        s.width = styleValue.number;
-                        break;
-                    case StyleSheets.StylePropertyID.Height:
-                        s.height = styleValue.number;
-                        break;
-                    case StyleSheets.StylePropertyID.FlexGrow:
-                        s.flexGrow = styleValue.number;
-                        break;
-                    case StyleSheets.StylePropertyID.FlexShrink:
-                        s.flexShrink = styleValue.number;
-                        break;
-                    case StyleSheets.StylePropertyID.BorderLeftWidth:
-                        s.borderLeftWidth = styleValue.number;
-                        break;
-                    case StyleSheets.StylePropertyID.BorderTopWidth:
-                        s.borderTopWidth = styleValue.number;
-                        break;
-                    case StyleSheets.StylePropertyID.BorderRightWidth:
-                        s.borderRightWidth = styleValue.number;
-                        break;
-                    case StyleSheets.StylePropertyID.BorderBottomWidth:
-                        s.borderBottomWidth = styleValue.number;
-                        break;
-                    case StyleSheets.StylePropertyID.BorderTopLeftRadius:
-                        s.borderTopLeftRadius = styleValue.number;
-                        break;
-                    case StyleSheets.StylePropertyID.BorderTopRightRadius:
-                        s.borderTopRightRadius = styleValue.number;
-                        break;
-                    case StyleSheets.StylePropertyID.BorderBottomRightRadius:
-                        s.borderBottomRightRadius = styleValue.number;
-                        break;
-                    case StyleSheets.StylePropertyID.BorderBottomLeftRadius:
-                        s.borderBottomLeftRadius = styleValue.number;
-                        break;
-                    case StyleSheets.StylePropertyID.FontSize:
-                        s.fontSize = styleValue.number;
-                        break;
-                    case StyleSheets.StylePropertyID.Color:
-                        s.color = styleValue.color;
-                        break;
-                    case StyleSheets.StylePropertyID.BackgroundColor:
-                        s.backgroundColor = styleValue.color;
-                        break;
-                    case StyleSheets.StylePropertyID.BorderColor:
-                        s.borderLeftColor = styleValue.color;
-                        s.borderTopColor = styleValue.color;
-                        s.borderRightColor = styleValue.color;
-                        s.borderBottomColor = styleValue.color;
-                        break;
-                    case StyleSheets.StylePropertyID.BackgroundImageTintColor:
-                        s.unityBackgroundImageTintColor = styleValue.color;
-                        break;
-                    case StyleSheets.StylePropertyID.Opacity:
-                        s.opacity = styleValue.number;
-                        break;
-                    default:
-                        break;
+                    switch (styleValue.id)
+                    {
+                        case StyleSheets.StylePropertyID.Unknown:
+                            break;
+                        case StyleSheets.StylePropertyID.MarginLeft:
+                            s.marginLeft = styleValue.number;
+                            break;
+                        case StyleSheets.StylePropertyID.MarginTop:
+                            s.marginTop = styleValue.number;
+                            break;
+                        case StyleSheets.StylePropertyID.MarginRight:
+                            s.marginRight = styleValue.number;
+                            break;
+                        case StyleSheets.StylePropertyID.MarginBottom:
+                            s.marginBottom = styleValue.number;
+                            break;
+                        case StyleSheets.StylePropertyID.PaddingLeft:
+                            s.paddingLeft = styleValue.number;
+                            break;
+                        case StyleSheets.StylePropertyID.PaddingTop:
+                            s.paddingTop = styleValue.number;
+                            break;
+                        case StyleSheets.StylePropertyID.PaddingRight:
+                            s.paddingRight = styleValue.number;
+                            break;
+                        case StyleSheets.StylePropertyID.PaddingBottom:
+                            s.paddingBottom = styleValue.number;
+                            break;
+                        case StyleSheets.StylePropertyID.PositionLeft:
+                            s.left = styleValue.number;
+                            break;
+                        case StyleSheets.StylePropertyID.PositionTop:
+                            s.top = styleValue.number;
+                            break;
+                        case StyleSheets.StylePropertyID.PositionRight:
+                            s.right = styleValue.number;
+                            break;
+                        case StyleSheets.StylePropertyID.PositionBottom:
+                            s.bottom = styleValue.number;
+                            break;
+                        case StyleSheets.StylePropertyID.Width:
+                            s.width = styleValue.number;
+                            break;
+                        case StyleSheets.StylePropertyID.Height:
+                            s.height = styleValue.number;
+                            break;
+                        case StyleSheets.StylePropertyID.FlexGrow:
+                            s.flexGrow = styleValue.number;
+                            break;
+                        case StyleSheets.StylePropertyID.FlexShrink:
+                            s.flexShrink = styleValue.number;
+                            break;
+                        case StyleSheets.StylePropertyID.BorderLeftWidth:
+                            s.borderLeftWidth = styleValue.number;
+                            break;
+                        case StyleSheets.StylePropertyID.BorderTopWidth:
+                            s.borderTopWidth = styleValue.number;
+                            break;
+                        case StyleSheets.StylePropertyID.BorderRightWidth:
+                            s.borderRightWidth = styleValue.number;
+                            break;
+                        case StyleSheets.StylePropertyID.BorderBottomWidth:
+                            s.borderBottomWidth = styleValue.number;
+                            break;
+                        case StyleSheets.StylePropertyID.BorderTopLeftRadius:
+                            s.borderTopLeftRadius = styleValue.number;
+                            break;
+                        case StyleSheets.StylePropertyID.BorderTopRightRadius:
+                            s.borderTopRightRadius = styleValue.number;
+                            break;
+                        case StyleSheets.StylePropertyID.BorderBottomRightRadius:
+                            s.borderBottomRightRadius = styleValue.number;
+                            break;
+                        case StyleSheets.StylePropertyID.BorderBottomLeftRadius:
+                            s.borderBottomLeftRadius = styleValue.number;
+                            break;
+                        case StyleSheets.StylePropertyID.FontSize:
+                            s.fontSize = styleValue.number;
+                            break;
+                        case StyleSheets.StylePropertyID.Color:
+                            s.color = styleValue.color;
+                            break;
+                        case StyleSheets.StylePropertyID.BackgroundColor:
+                            s.backgroundColor = styleValue.color;
+                            break;
+                        case StyleSheets.StylePropertyID.BorderColor:
+                            s.borderLeftColor = styleValue.color;
+                            s.borderTopColor = styleValue.color;
+                            s.borderRightColor = styleValue.color;
+                            s.borderBottomColor = styleValue.color;
+                            break;
+                        case StyleSheets.StylePropertyID.BackgroundImageTintColor:
+                            s.unityBackgroundImageTintColor = styleValue.color;
+                            break;
+                        case StyleSheets.StylePropertyID.Opacity:
+                            s.opacity = styleValue.number;
+                            break;
+                        default:
+                            break;
+                    }
                 }
             }
         }
@@ -265,108 +274,115 @@ namespace UnityEngine.UIElements
             StyleValues s = new StyleValues();
             var src = ve.resolvedStyle;
 
-            foreach (var styleValue in targetValuesToRead.m_StyleValues.m_Values)
+            if (targetValuesToRead.m_StyleValues != null)
             {
-                switch (styleValue.id)
+                foreach (var styleValue in targetValuesToRead.m_StyleValues.m_Values)
                 {
-                    case StyleSheets.StylePropertyID.Unknown:
-                        break;
-                    case StyleSheets.StylePropertyID.MarginLeft:
-                        s.marginLeft = src.marginLeft;
-                        break;
-                    case StyleSheets.StylePropertyID.MarginTop:
-                        s.marginTop = src.marginTop;
-                        break;
-                    case StyleSheets.StylePropertyID.MarginRight:
-                        s.marginRight = src.marginRight;
-                        break;
-                    case StyleSheets.StylePropertyID.MarginBottom:
-                        s.marginBottom = src.marginBottom;
-                        break;
-                    case StyleSheets.StylePropertyID.PaddingLeft:
-                        s.paddingLeft = src.paddingLeft;
-                        break;
-                    case StyleSheets.StylePropertyID.PaddingTop:
-                        s.paddingTop = src.paddingTop;
-                        break;
-                    case StyleSheets.StylePropertyID.PaddingRight:
-                        s.paddingRight = src.paddingRight;
-                        break;
-                    case StyleSheets.StylePropertyID.PaddingBottom:
-                        s.paddingBottom = src.paddingBottom;
-                        break;
-                    case StyleSheets.StylePropertyID.PositionLeft:
-                        s.left = src.left;
-                        break;
-                    case StyleSheets.StylePropertyID.PositionTop:
-                        s.top = src.top;
-                        break;
-                    case StyleSheets.StylePropertyID.PositionRight:
-                        s.right = src.right;
-                        break;
-                    case StyleSheets.StylePropertyID.PositionBottom:
-                        s.bottom = src.bottom;
-                        break;
-                    case StyleSheets.StylePropertyID.Width:
-                        s.width = src.width;
-                        break;
-                    case StyleSheets.StylePropertyID.Height:
-                        s.height = src.height;
-                        break;
-                    case StyleSheets.StylePropertyID.FlexGrow:
-                        s.flexGrow = src.flexGrow;
-                        break;
-                    case StyleSheets.StylePropertyID.FlexShrink:
-                        s.flexShrink = src.flexShrink;
-                        break;
-                    case StyleSheets.StylePropertyID.BorderLeftWidth:
-                        s.borderLeftWidth = src.borderLeftWidth;
-                        break;
-                    case StyleSheets.StylePropertyID.BorderTopWidth:
-                        s.borderTopWidth = src.borderTopWidth;
-                        break;
-                    case StyleSheets.StylePropertyID.BorderRightWidth:
-                        s.borderRightWidth = src.borderRightWidth;
-                        break;
-                    case StyleSheets.StylePropertyID.BorderBottomWidth:
-                        s.borderBottomWidth = src.borderBottomWidth;
-                        break;
-                    case StyleSheets.StylePropertyID.BorderTopLeftRadius:
-                        s.borderTopLeftRadius = src.borderTopLeftRadius;
-                        break;
-                    case StyleSheets.StylePropertyID.BorderTopRightRadius:
-                        s.borderTopRightRadius = src.borderTopRightRadius;
-                        break;
-                    case StyleSheets.StylePropertyID.BorderBottomRightRadius:
-                        s.borderBottomRightRadius = src.borderBottomRightRadius;
-                        break;
-                    case StyleSheets.StylePropertyID.BorderBottomLeftRadius:
-                        s.borderBottomLeftRadius = src.borderBottomLeftRadius;
-                        break;
-                    case StyleSheets.StylePropertyID.Color:
-                        s.color = src.color;
-                        break;
-                    case StyleSheets.StylePropertyID.BackgroundColor:
-                        s.backgroundColor = src.backgroundColor;
-                        break;
-                    case StyleSheets.StylePropertyID.BorderColor:
-                        s.borderColor = src.borderLeftColor;
-                        break;
-                    case StyleSheets.StylePropertyID.BackgroundImageTintColor:
-                        s.unityBackgroundImageTintColor = src.unityBackgroundImageTintColor;
-                        break;
-                    case StyleSheets.StylePropertyID.Opacity:
-                        s.opacity = src.opacity;
-                        break;
-                    default:
-                        break;
+                    switch (styleValue.id)
+                    {
+                        case StyleSheets.StylePropertyID.Unknown:
+                            break;
+                        case StyleSheets.StylePropertyID.MarginLeft:
+                            s.marginLeft = src.marginLeft;
+                            break;
+                        case StyleSheets.StylePropertyID.MarginTop:
+                            s.marginTop = src.marginTop;
+                            break;
+                        case StyleSheets.StylePropertyID.MarginRight:
+                            s.marginRight = src.marginRight;
+                            break;
+                        case StyleSheets.StylePropertyID.MarginBottom:
+                            s.marginBottom = src.marginBottom;
+                            break;
+                        case StyleSheets.StylePropertyID.PaddingLeft:
+                            s.paddingLeft = src.paddingLeft;
+                            break;
+                        case StyleSheets.StylePropertyID.PaddingTop:
+                            s.paddingTop = src.paddingTop;
+                            break;
+                        case StyleSheets.StylePropertyID.PaddingRight:
+                            s.paddingRight = src.paddingRight;
+                            break;
+                        case StyleSheets.StylePropertyID.PaddingBottom:
+                            s.paddingBottom = src.paddingBottom;
+                            break;
+                        case StyleSheets.StylePropertyID.PositionLeft:
+                            s.left = src.left;
+                            break;
+                        case StyleSheets.StylePropertyID.PositionTop:
+                            s.top = src.top;
+                            break;
+                        case StyleSheets.StylePropertyID.PositionRight:
+                            s.right = src.right;
+                            break;
+                        case StyleSheets.StylePropertyID.PositionBottom:
+                            s.bottom = src.bottom;
+                            break;
+                        case StyleSheets.StylePropertyID.Width:
+                            s.width = src.width;
+                            break;
+                        case StyleSheets.StylePropertyID.Height:
+                            s.height = src.height;
+                            break;
+                        case StyleSheets.StylePropertyID.FlexGrow:
+                            s.flexGrow = src.flexGrow;
+                            break;
+                        case StyleSheets.StylePropertyID.FlexShrink:
+                            s.flexShrink = src.flexShrink;
+                            break;
+                        case StyleSheets.StylePropertyID.BorderLeftWidth:
+                            s.borderLeftWidth = src.borderLeftWidth;
+                            break;
+                        case StyleSheets.StylePropertyID.BorderTopWidth:
+                            s.borderTopWidth = src.borderTopWidth;
+                            break;
+                        case StyleSheets.StylePropertyID.BorderRightWidth:
+                            s.borderRightWidth = src.borderRightWidth;
+                            break;
+                        case StyleSheets.StylePropertyID.BorderBottomWidth:
+                            s.borderBottomWidth = src.borderBottomWidth;
+                            break;
+                        case StyleSheets.StylePropertyID.BorderTopLeftRadius:
+                            s.borderTopLeftRadius = src.borderTopLeftRadius;
+                            break;
+                        case StyleSheets.StylePropertyID.BorderTopRightRadius:
+                            s.borderTopRightRadius = src.borderTopRightRadius;
+                            break;
+                        case StyleSheets.StylePropertyID.BorderBottomRightRadius:
+                            s.borderBottomRightRadius = src.borderBottomRightRadius;
+                            break;
+                        case StyleSheets.StylePropertyID.BorderBottomLeftRadius:
+                            s.borderBottomLeftRadius = src.borderBottomLeftRadius;
+                            break;
+                        case StyleSheets.StylePropertyID.Color:
+                            s.color = src.color;
+                            break;
+                        case StyleSheets.StylePropertyID.BackgroundColor:
+                            s.backgroundColor = src.backgroundColor;
+                            break;
+                        case StyleSheets.StylePropertyID.BorderColor:
+                            s.borderColor = src.borderLeftColor;
+                            break;
+                        case StyleSheets.StylePropertyID.BackgroundImageTintColor:
+                            s.unityBackgroundImageTintColor = src.unityBackgroundImageTintColor;
+                            break;
+                        case StyleSheets.StylePropertyID.Opacity:
+                            s.opacity = src.opacity;
+                            break;
+                        default:
+                            break;
+                    }
                 }
             }
+
             return s;
         }
 
         ValueAnimation<StyleValues>  ITransitionAnimations.Start(StyleValues to, int durationMs)
         {
+            if (to.m_StyleValues == null)
+                to.Values();
+
             return Start((e) => ReadCurrentValues(e, to), to, durationMs);
         }
 

@@ -24,6 +24,8 @@ namespace UnityEditor.PackageManager.UI
 
         event Action<DownloadProgress> onDownloadProgress;
 
+        event Action<AssetStore.TermOfServiceAgreementStatus> onTermOfServiceAgreementStatusChange;
+
         void RegisterEvents();
 
         void UnregisterEvents();
@@ -46,7 +48,7 @@ namespace UnityEditor.PackageManager.UI
 
         bool IsDownloadInProgress(IPackageVersion version);
 
-        void Download(IPackage package);
+        bool Download(IPackage package);
 
         void AbortDownload(IPackage package);
 

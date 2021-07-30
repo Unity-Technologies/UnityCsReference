@@ -243,6 +243,7 @@ namespace UnityEditor
 
 
             EditorApplication.projectWasLoaded += OnProjectWasLoaded;
+            Selection.selectionChanged += OnSelectionChanged;
 
             m_FirstInitialize = true;
         }
@@ -303,6 +304,15 @@ namespace UnityEditor
             }
         }
 
+        private void OnSelectionChanged()
+        {
+            RebuildContentsContainers();
+            if (Selection.objects.Length == 0 && m_MultiEditLabel != null)
+            {
+                m_MultiEditLabel.RemoveFromHierarchy();
+            }
+        }
+
         protected virtual void OnDisable()
         {
             // save vertical scroll position
@@ -313,6 +323,7 @@ namespace UnityEditor
             m_LockTracker?.lockStateChanged.RemoveListener(LockStateChanged);
 
             EditorApplication.projectWasLoaded -= OnProjectWasLoaded;
+            Selection.selectionChanged -= OnSelectionChanged;
         }
 
         void OnLostFocus()
@@ -706,9 +717,12 @@ namespace UnityEditor
             ResetKeyboardControl();
 
             var addComponentButton = rootVisualElement.Q(className: s_AddComponentClassName);
-            addComponentButton.Clear();
-            versionControlElement.Clear();
-            previewAndLabelElement.Clear();
+            if (addComponentButton != null)
+                addComponentButton.Clear();
+            if (versionControlElement != null)
+                versionControlElement.Clear();
+            if (previewAndLabelElement != null)
+                previewAndLabelElement.Clear();
 
             if (m_TrackerResetter == null)
             {
@@ -719,14 +733,13 @@ namespace UnityEditor
 
             Editor[] editors = tracker.activeEditors;
 
-            if (editors.Any())
+            if (editors.Any() && versionControlElement != null)
             {
                 Profiler.BeginSample("InspectorWindow.RebuildContentsContainers()::versionControlElement");
                 versionControlElement.Add(CreateIMGUIContainer(
                     () => VersionControlBar(InspectorWindowUtils.GetFirstNonImportInspectorEditor(editors))));
                 Profiler.EndSample();
             }
-
 
             Profiler.BeginSample("InspectorWindow.DrawEditors()");
             DrawEditors(editors);
@@ -743,7 +756,7 @@ namespace UnityEditor
             if (tracker.hasComponentsWhichCannotBeMultiEdited)
             {
                 Profiler.BeginSample("InspectorWindow.RebuildContentsContainers()::hasComponentsWhichCannotBeMultiEdited");
-                if (editors.Length == 0 && !tracker.isLocked && Selection.objects.Length > 0)
+                if (editors.Length == 0 && !tracker.isLocked && Selection.objects.Length > 0 && editorsElement != null)
                 {
                     editorsElement.Add(CreateIMGUIContainer(DrawSelectionPickerList));
                 }
@@ -756,12 +769,12 @@ namespace UnityEditor
                 }
                 Profiler.EndSample();
             }
-            else
+            else if (m_MultiEditLabel != null)
             {
                 m_MultiEditLabel.RemoveFromHierarchy();
             }
 
-            if (editors.Any() && RootEditorUtils.SupportsAddComponent(editors))
+            if (addComponentButton != null && editors.Any() && RootEditorUtils.SupportsAddComponent(editors))
             {
                 Profiler.BeginSample("InspectorWindow.RebuildContentsContainers()::addComponentButton");
                 addComponentButton.Add(CreateIMGUIContainer(() =>
@@ -772,12 +785,13 @@ namespace UnityEditor
                 Profiler.EndSample();
             }
 
-            if (editors.Any())
+            if (m_PreviewResizer != null && editors.Any())
             {
                 Profiler.BeginSample("InspectorWindow.RebuildContentsContainers()::previewAndLabelElement");
                 var previewAndLabelsContainer = CreateIMGUIContainer(DrawPreviewAndLabels, "preview-container");
                 m_PreviewResizer.SetContainer(previewAndLabelsContainer, kBottomToolbarHeight);
-                previewAndLabelElement.Add(previewAndLabelsContainer);
+                if (previewAndLabelElement != null)
+                    previewAndLabelElement.Add(previewAndLabelsContainer);
                 Profiler.EndSample();
             }
 
@@ -1630,37 +1644,41 @@ namespace UnityEditor
                     prefabComponentIndex++;
                 }
 
-                var editor = editors[editorIndex];
-                Object editorTarget = editor.targets[0];
-
-                if (ShouldCullEditor(editors, editorIndex))
-                {
-                    editors[editorIndex].isInspectorDirty = false;
-                    // Adds an empty IMGUIContainer to prevent infinite repainting (case 1264833).
-                    // EXCEPT for the ParticleSystemRenderer, because it prevents the ParticleSystem inspector
-                    // from working correctly when setting the Material for its renderer (case 1308966).
-                    EditorElement culledEditorContainer;
-                    if (!(editor.target is ParticleSystemRenderer) && (mapping == null || !mapping.TryGetValue(editor.target.GetInstanceID(),
-                        out culledEditorContainer)))
-                    {
-                        string editorTitle = editorTarget == null
-                            ? "Nothing Selected"
-                            : ObjectNames.GetInspectorTitle(editorTarget);
-                        culledEditorContainer =
-                            new EditorElement(editorIndex, this, true) { name = editorTitle };
-                        editorsElement.Add(culledEditorContainer as VisualElement);
-                    }
-
-                    continue;
-                }
-
                 try
                 {
+                    var editor = editors[editorIndex];
+                    Object editorTarget = editor.targets[0];
+
+                    if (ShouldCullEditor(editors, editorIndex))
+                    {
+                        editors[editorIndex].isInspectorDirty = false;
+
+                        // Adds an empty IMGUIContainer to prevent infinite repainting (case 1264833).
+                        // EXCEPT for the ParticleSystemRenderer, because it prevents the ParticleSystem inspector
+                        // from working correctly when setting the Material for its renderer (case 1308966).
+                        EditorElement culledEditorContainer;
+                        if (!(editor.target is ParticleSystemRenderer) && (mapping == null || !mapping.TryGetValue(editor.target.GetInstanceID(),
+                            out culledEditorContainer)))
+                        {
+                            string editorTitle = editorTarget == null
+                                ? "Nothing Selected"
+                                : ObjectNames.GetInspectorTitle(editorTarget);
+                            culledEditorContainer =
+                                new EditorElement(editorIndex, this, true) { name = editorTitle };
+
+                            editorsElement.Add(culledEditorContainer as VisualElement);
+                        }
+
+                        continue;
+                    }
+
                     EditorElement editorContainer;
-                    string editorTitle = ObjectNames.GetInspectorTitle(editorTarget);
 
                     if (mapping == null || !mapping.TryGetValue(editors[editorIndex].target.GetInstanceID(), out editorContainer))
                     {
+                        string editorTitle = editorTarget == null ?
+                            "Nothing Selected" :
+                            $"{editor.GetType().Name}_{editorTarget.GetType().Name}_{editorTarget.GetInstanceID()}";
                         editorContainer = new EditorElement(editorIndex, this) { name = editorTitle };
                         editorsElement.Add(editorContainer);
                     }
@@ -1817,7 +1835,7 @@ namespace UnityEditor
 
         internal bool ShouldCullEditor(Editor[] editors, int editorIndex)
         {
-            if (editors[editorIndex].hideInspector)
+            if (EditorUtility.IsHiddenInInspector(editors[editorIndex]))
                 return true;
 
             Object currentTarget = editors[editorIndex].target;
@@ -2072,6 +2090,14 @@ namespace UnityEditor
         internal static void RemoveInspectorWindow(InspectorWindow window)
         {
             m_AllInspectors.Remove(window);
+        }
+
+        internal static void RefreshInspectors()
+        {
+            foreach (var inspector in m_AllInspectors)
+            {
+                inspector.tracker.ForceRebuild();
+            }
         }
 
         /*

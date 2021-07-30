@@ -56,5 +56,7 @@ namespace UnityEditor.PackageManager.UI
         void UnregisterEvents();
 
         void ClearCache();
+
+        void CheckTermOfServiceAgreement(Action<TermOfServiceAgreementStatus> agreementStatusCallback);
     }
 }

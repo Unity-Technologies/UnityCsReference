@@ -305,6 +305,29 @@ namespace UnityEditor
             return go;
         }
 
+        internal static bool IsHiddenInInspector(Editor editor)
+        {
+            if (!editor || editor.hideInspector)
+                return true;
+
+            if (editor.inspectorMode != InspectorMode.Normal)
+                return false;
+
+            // Check for missing scripts
+            if (editor.target == null && editor.serializedObject?.FindProperty("m_Script") != null)
+                return false;
+
+            return IsHiddenInInspector(editor.target);
+        }
+
+        internal static bool IsHiddenInInspector(UnityEngine.Object target)
+        {
+            if (!target)
+                return true;
+
+            return (target.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector;
+        }
+
         public static string[] CompileCSharp(string[] sources, string[] references, string[] defines, string outputFile)
         {
             return Scripting.Compilers.MicrosoftCSharpCompiler.Compile(sources, references, defines, outputFile, PlayerSettings.allowUnsafeCode);

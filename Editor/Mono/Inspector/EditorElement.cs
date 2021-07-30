@@ -94,16 +94,6 @@ namespace UnityEditor.UIElements
             }
 
             Init();
-
-            Add(m_Header);
-            // If the editor targets contain many target and the multi editing is not supported, we should not add this inspector.
-            // However, the header and footer are kept since these are showing information regarding this state.
-            if ((editor.targets.Length <= 1) || (iw.IsMultiEditingSupported(editor, editor.target)))
-            {
-                Add(m_InspectorElement);
-            }
-
-            Add(m_Footer);
         }
 
         void InitCulled()
@@ -152,6 +142,20 @@ namespace UnityEditor.UIElements
             }
 
             UpdateInspectorVisibility();
+
+            //Need to update the cache for multi-object edit detection.
+            if (editor.targets.Length != Selection.objects.Length)
+                inspectorWindow.tracker.RebuildIfNecessary();
+
+            Add(m_Header);
+            // If the editor targets contain many target and the multi editing is not supported, we should not add this inspector.
+            // However, the header and footer are kept since these are showing information regarding this state.
+            if (editor != null && ((editor.targets.Length <= 1) || (inspectorWindow.IsMultiEditingSupported(editor, editor.target))))
+            {
+                Add(m_InspectorElement);
+            }
+
+            Add(m_Footer);
         }
 
         public void ReinitCulled(int editorIndex)

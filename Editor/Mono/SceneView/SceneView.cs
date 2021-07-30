@@ -426,8 +426,6 @@ namespace UnityEditor
         float m_ExposureSliderValue = 0.0f;
         [SerializeField]
         float m_ExposureSliderMax = 10f; // this value can be altered by the user
-        // no point of allowing the user to go over this
-        const float kExposureSliderAbsoluteMax = 23.0f;
 
         [SerializeField]
         private SceneViewState m_SceneViewState;
@@ -809,7 +807,6 @@ namespace UnityEditor
             public static GUIContent sceneVisToolbarButtonContent = EditorGUIUtility.TrIconContent("SceneViewVisibility", "Number of hidden objects, click to toggle scene visibility");
             public static GUIStyle gizmoButtonStyle;
             public static GUIContent sceneViewCameraContent = EditorGUIUtility.TrIconContent("SceneViewCamera", "Settings for the Scene view camera.");
-            public static GUIContent exposureIcon = EditorGUIUtility.TrIconContent("Exposure", "Controls the number of stops to over or under expose the precomputed and baked lighting debug views.");
 
             static Styles()
             {
@@ -2304,18 +2301,8 @@ namespace UnityEditor
 
         internal void DrawLightmapExposureSlider()
         {
-            float labelWidth = EditorGUIUtility.labelWidth;
-            EditorGUIUtility.labelWidth = 20;
-            m_ExposureSliderValue = EditorGUILayout.Slider(Styles.exposureIcon, m_ExposureSliderValue, -m_ExposureSliderMax,
-                m_ExposureSliderMax, -kExposureSliderAbsoluteMax, kExposureSliderAbsoluteMax, EditorStyles.toolbarSlider);
+            m_ExposureSliderValue = EditorGUIInternal.ExposureSlider(m_ExposureSliderValue, ref m_ExposureSliderMax, EditorStyles.toolbarSlider);
 
-            // This will allow the user to set a new max value for the current session
-            if (m_ExposureSliderValue >= 0)
-                m_ExposureSliderMax = Mathf.Max(m_ExposureSliderMax, m_ExposureSliderValue);
-            else
-                m_ExposureSliderMax = Mathf.Max(m_ExposureSliderMax, m_ExposureSliderValue * -1);
-
-            EditorGUIUtility.labelWidth = labelWidth;
             Unsupported.SetSceneViewDebugModeExposureNoDirty(m_ExposureSliderValue);
         }
 

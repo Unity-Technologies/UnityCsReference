@@ -1766,6 +1766,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 if (UIRUtility.IsVectorImageBackground(currentElement))
                     GenerateStencilClipEntryForSVGBackground();
                 else GenerateStencilClipEntryForRoundedRectBackground();
+                m_StencilClip = true; // Draw operations following this one must be clipped
             }
             m_ClipRectID = currentElement.renderChainData.clipRectID;
         }
@@ -1887,7 +1888,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 m_Entries.Add(m_CurrentEntry);
                 totalVertices += m_CurrentEntry.vertices.Length;
                 totalIndices += m_CurrentEntry.indices.Length;
-                m_StencilClip = true; // Draw operations following this one should be clipped if not already
                 m_ClosingInfo.needsClosing = true;
             }
             m_CurrentEntry = new Entry();
@@ -1903,7 +1903,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
             Debug.Assert(svgEntry.vertices.Length > 0);
             Debug.Assert(svgEntry.indices.Length > 0);
 
-            m_StencilClip = true; // Draw operations following this one should be clipped if not already
             m_CurrentEntry.vertices = svgEntry.vertices;
             m_CurrentEntry.indices = svgEntry.indices;
             m_CurrentEntry.uvIsDisplacement = svgEntry.uvIsDisplacement;

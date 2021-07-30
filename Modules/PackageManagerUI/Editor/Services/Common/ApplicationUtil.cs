@@ -161,6 +161,16 @@ namespace UnityEditor.PackageManager.UI
             {
                 return Path.GetFileName(path);
             }
+
+            public bool DisplayDialog(string title, string message, string ok, string cancel = "")
+            {
+                return EditorUtility.DisplayDialog(title, message, ok, cancel);
+            }
+
+            public void OpenAuthorizedURLInWebBrowser(string url)
+            {
+                UnityConnect.instance.OpenAuthorizedURLInWebBrowser(url);
+            }
         }
     }
 }

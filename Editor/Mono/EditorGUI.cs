@@ -5977,11 +5977,11 @@ namespace UnityEditor
         // Draws the alpha channel of a texture within a rectangle.
         internal static void DrawTextureAlphaInternal(Rect position, Texture image, ScaleMode scaleMode, float imageAspect, float mipLevel)
         {
-            DrawPreviewTextureInternal(position, image, alphaMaterial, scaleMode, imageAspect, mipLevel, ColorWriteMask.All);
+            DrawPreviewTextureInternal(position, image, alphaMaterial, scaleMode, imageAspect, mipLevel, ColorWriteMask.All, 0);
         }
 
         // Draws texture transparently using the alpha channel.
-        internal static void DrawTextureTransparentInternal(Rect position, Texture image, ScaleMode scaleMode, float imageAspect, float mipLevel, ColorWriteMask colorWriteMask)
+        internal static void DrawTextureTransparentInternal(Rect position, Texture image, ScaleMode scaleMode, float imageAspect, float mipLevel, ColorWriteMask colorWriteMask, float exposure)
         {
             if (imageAspect == 0f && image == null)
             {
@@ -5994,7 +5994,7 @@ namespace UnityEditor
 
             DrawTransparencyCheckerTexture(position, scaleMode, imageAspect);
             if (image != null)
-                DrawPreviewTexture(position, image, transparentMaterial, scaleMode, imageAspect, mipLevel, colorWriteMask);
+                DrawPreviewTexture(position, image, transparentMaterial, scaleMode, imageAspect, mipLevel, colorWriteMask, exposure);
         }
 
         internal static void DrawTransparencyCheckerTexture(Rect position, ScaleMode scaleMode, float imageAspect)
@@ -6016,7 +6016,7 @@ namespace UnityEditor
         }
 
         // Draws the texture within a rectangle.
-        internal static void DrawPreviewTextureInternal(Rect position, Texture image, Material mat, ScaleMode scaleMode, float imageAspect, float mipLevel, ColorWriteMask colorWriteMask)
+        internal static void DrawPreviewTextureInternal(Rect position, Texture image, Material mat, ScaleMode scaleMode, float imageAspect, float mipLevel, ColorWriteMask colorWriteMask, float exposure)
         {
             if (Event.current.type == EventType.Repaint)
             {
@@ -6038,7 +6038,7 @@ namespace UnityEditor
                     mat = GetMaterialForSpecialTexture(image, colorMaterial);
                 mat.SetColor("_ColorMask", colorMask);
                 mat.SetFloat("_Mip", mipLevel);
-
+                mat.SetFloat("_Exposure", exposure);
                 RenderTexture rt = image as RenderTexture;
                 bool manualResolve = (rt != null) && rt.bindTextureMS;
 
@@ -6651,9 +6651,9 @@ namespace UnityEditor
         }
 
         // Draws texture transparently using the alpha channel.
-        public static void DrawTextureTransparent(Rect position, Texture image, [DefaultValue("ScaleMode.StretchToFill")] ScaleMode scaleMode, [DefaultValue("0")] float imageAspect, [DefaultValue("-1")] float mipLevel, [DefaultValue("ColorWriteMask.All")] ColorWriteMask colorWriteMask)
+        public static void DrawTextureTransparent(Rect position, Texture image, [DefaultValue("ScaleMode.StretchToFill")] ScaleMode scaleMode, [DefaultValue("0")] float imageAspect, [DefaultValue("-1")] float mipLevel, [DefaultValue("ColorWriteMask.All")] ColorWriteMask colorWriteMask, [DefaultValue("0")] float exposure)
         {
-            DrawTextureTransparentInternal(position, image, scaleMode, imageAspect, mipLevel, colorWriteMask);
+            DrawTextureTransparentInternal(position, image, scaleMode, imageAspect, mipLevel, colorWriteMask, exposure);
         }
 
         [ExcludeFromDocs]
@@ -6680,11 +6680,23 @@ namespace UnityEditor
             DrawTextureTransparent(position, image, scaleMode, imageAspect, mipLevel, ColorWriteMask.All);
         }
 
+        [ExcludeFromDocs]
+        public static void DrawTextureTransparent(Rect position, Texture image, ScaleMode scaleMode, float imageAspect, float mipLevel, ColorWriteMask colorWriteMask)
+        {
+            DrawTextureTransparent(position, image, scaleMode, imageAspect, mipLevel, colorWriteMask, 0);
+        }
+
         // Draws the texture within a rectangle.
         public static void DrawPreviewTexture(Rect position, Texture image, [DefaultValue("null")] Material mat, [DefaultValue("ScaleMode.StretchToFill")] ScaleMode scaleMode,
-            [DefaultValue("0")] float imageAspect, [DefaultValue("-1")] float mipLevel, [DefaultValue("ColorWriteMask.All")] ColorWriteMask colorWriteMask)
+            [DefaultValue("0")] float imageAspect, [DefaultValue("-1")] float mipLevel, [DefaultValue("ColorWriteMask.All")] ColorWriteMask colorWriteMask, [DefaultValue("0")] float exposure)
         {
-            DrawPreviewTextureInternal(position, image, mat, scaleMode, imageAspect, mipLevel, colorWriteMask);
+            DrawPreviewTextureInternal(position, image, mat, scaleMode, imageAspect, mipLevel, colorWriteMask, exposure);
+        }
+
+        [ExcludeFromDocs]
+        public static void DrawPreviewTexture(Rect position, Texture image, Material mat, ScaleMode scaleMode, float imageAspect, float mipLevel, ColorWriteMask colorWriteMask)
+        {
+            DrawPreviewTexture(position, image, mat, scaleMode, imageAspect, mipLevel, colorWriteMask, 0);
         }
 
         [ExcludeFromDocs]

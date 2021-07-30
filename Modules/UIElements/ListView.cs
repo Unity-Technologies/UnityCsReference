@@ -256,7 +256,7 @@ namespace UnityEngine.UIElements
                     selectedIndex = itemsSource.Count - 1;
                     break;
                 case KeyCode.Return:
-                    if (onItemChosen != null)
+                    if (onItemChosen != null && selectedIndex >= 0 && selectedIndex < m_ItemsSource.Count)
                         onItemChosen.Invoke(m_ItemsSource[selectedIndex]);
                     break;
                 case KeyCode.PageDown:

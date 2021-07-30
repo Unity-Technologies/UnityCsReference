@@ -9,6 +9,12 @@ using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.AssetStore
 {
+    internal enum TermOfServiceAgreementStatus
+    {
+        NotAccepted,
+        Accepted
+    }
+
     internal sealed class AssetStoreClient
     {
         static IAssetStoreClient s_Instance = null;
@@ -513,6 +519,21 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                     return;
                 var package = new AssetStorePackage(fetchedInfo, (LocalInfo)null);
                 onPackagesChanged?.Invoke(new[] { package });
+            }
+
+            public void CheckTermOfServiceAgreement(Action<TermOfServiceAgreementStatus> agreementStatusCallback)
+            {
+                AssetStoreRestAPI.instance.CheckTermsAndConditions(result =>
+                {
+                    if (result.ContainsKey("errorMessage"))
+                    {
+                        agreementStatusCallback?.Invoke(TermOfServiceAgreementStatus.NotAccepted);
+                        return;
+                    }
+
+                    var accepted = result.Get("result", false);
+                    agreementStatusCallback?.Invoke(accepted ? TermOfServiceAgreementStatus.Accepted : TermOfServiceAgreementStatus.NotAccepted);
+                });
             }
         }
     }
