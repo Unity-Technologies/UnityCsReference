@@ -27,8 +27,6 @@ namespace UnityEditor
         float m_ExposureSliderValue = 0.0f;
         [SerializeField]
         float m_ExposureSliderMax = 10f; // this value can be altered by the user
-        // no point of allowing the user to go over this
-        const float kExposureSliderAbsoluteMax = 23.0f;
 
         // Lightmap specifiers
         [SerializeField]
@@ -100,7 +98,6 @@ namespace UnityEditor
             public static readonly GUIContent TextureNotAvailableBakedAlbedoEmissive = EditorGUIUtility.TrTextContent("The texture is not an index-based texture and is not available when using Progressive.\nPlease go to the instance you wish to debug, and select the lightmap on the Mesh Renderer.");
             public static readonly GUIContent TextureLoading = EditorGUIUtility.TrTextContent("Loading...");
             public static readonly GUIContent UVOverlayIcon = EditorGUIUtility.TrIconContent("ToggleUVOverlay", "Toggles the UV Overlay for all the objects in the lightmap. The currently selected object will be highlighted. ");
-            public static readonly GUIContent ExposureIcon = EditorGUIUtility.TrIconContent("Exposure", "Controls the number of stops to over or under expose the lightmap.");
         }
 
         public int lightmapIndex
@@ -142,7 +139,7 @@ namespace UnityEditor
 
         private float exposure
         {
-            get { return SelectedTextureTypeNeedExposureControl() ? m_ExposureSliderValue : 0.0f; }
+            get { return SelectedTextureTypeNeedsExposureControl() ? m_ExposureSliderValue : 0.0f; }
         }
 
         public static void CreateLightmapPreviewWindow(int lightmapId, bool realtimeLightmap, bool indexBased)
@@ -207,20 +204,9 @@ namespace UnityEditor
 
         private void DrawPreviewSettings()
         {
-            using (new EditorGUI.DisabledScope(!SelectedTextureTypeNeedExposureControl()))
+            using (new EditorGUI.DisabledScope(!SelectedTextureTypeNeedsExposureControl()))
             {
-                float labelWidth = EditorGUIUtility.labelWidth;
-                EditorGUIUtility.labelWidth = 20;
-                m_ExposureSliderValue = EditorGUILayout.Slider(Styles.ExposureIcon, m_ExposureSliderValue, -m_ExposureSliderMax,
-                    m_ExposureSliderMax, -kExposureSliderAbsoluteMax, kExposureSliderAbsoluteMax, EditorStyles.toolbarSlider);
-
-                // This will allow the user to set a new max value for the current session
-                if (m_ExposureSliderValue >= 0)
-                    m_ExposureSliderMax = Mathf.Max(m_ExposureSliderMax, m_ExposureSliderValue);
-                else
-                    m_ExposureSliderMax = Mathf.Max(m_ExposureSliderMax, m_ExposureSliderValue * -1);
-
-                EditorGUIUtility.labelWidth = labelWidth;
+                m_ExposureSliderValue = EditorGUIInternal.ExposureSlider(m_ExposureSliderValue, ref m_ExposureSliderMax, EditorStyles.toolbarSlider);
             }
 
             m_ShowUVOverlay = GUILayout.Toggle(m_ShowUVOverlay, Styles.UVOverlayIcon, EditorStyles.toolbarButton);
@@ -402,7 +388,7 @@ namespace UnityEditor
             return types[m_SelectedPreviewTextureOptionIndex];
         }
 
-        private bool SelectedTextureTypeNeedExposureControl()
+        private bool SelectedTextureTypeNeedsExposureControl()
         {
             var textureType = GetSelectedTextureType();
 

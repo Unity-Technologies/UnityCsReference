@@ -49,6 +49,9 @@
     <Compile Include="..\..\Modules\Accessibility\VisionUtility.cs">
       <Link>Modules\Accessibility\VisionUtility.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\AndroidJNI\AndroidAssetPacks.bindings.cs">
+      <Link>Modules\AndroidJNI\AndroidAssetPacks.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\AndroidJNI\AndroidJNI.bindings.cs">
       <Link>Modules\AndroidJNI\AndroidJNI.bindings.cs</Link>
     </Compile>
@@ -1135,11 +1138,17 @@
     <Compile Include="..\..\Runtime\Profiler\ScriptBindings\ProfilerMarker.bindings.cs">
       <Link>Runtime\Profiler\ScriptBindings\ProfilerMarker.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Profiler\ScriptBindings\ProfilerMarker.cs">
+      <Link>Runtime\Profiler\ScriptBindings\ProfilerMarker.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Profiler\ScriptBindings\ProfilerMarkerUtils.cs">
       <Link>Runtime\Profiler\ScriptBindings\ProfilerMarkerUtils.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Profiler\ScriptBindings\ProfilerScreenCapture.cs">
       <Link>Runtime\Profiler\ScriptBindings\ProfilerScreenCapture.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Profiler\ScriptBindings\ProfilerUnsafeUtility.Bindings.cs">
+      <Link>Runtime\Profiler\ScriptBindings\ProfilerUnsafeUtility.Bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Profiler\ScriptBindings\Recorder.bindings.cs">
       <Link>Runtime\Profiler\ScriptBindings\Recorder.bindings.cs</Link>

@@ -42,6 +42,11 @@ namespace UnityEditorInternal.Media
             return Internal_MediaDecoder_SetPosition(m_Ptr, time);
         }
 
+        public string[] GetCustomDependencies()
+        {
+            return Internal_MediaDecoder_GetCustomDependencies(m_Ptr);
+        }
+
         public void Dispose()
         {
             if (m_Ptr != IntPtr.Zero)
@@ -87,5 +92,9 @@ namespace UnityEditorInternal.Media
 
         [FreeFunction]
         extern private static bool Internal_MediaDecoder_SetPosition(IntPtr decoder, MediaTime time);
+
+        [NativeHeader("Editor/Mono/Media/Bindings/MediaDecoder.bindings.h")]
+        [FreeFunction]
+        extern private static string[] Internal_MediaDecoder_GetCustomDependencies(IntPtr decoder);
     }
 }

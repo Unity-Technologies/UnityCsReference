@@ -116,6 +116,9 @@ namespace UnityEditor
                 if (joint == null)
                     continue;
 
+                if (!joint.gameObject.activeInHierarchy)
+                    continue;
+
                 EditorGUI.BeginChangeCheck();
 
                 using (new Handles.DrawingScope(GetAngularLimitHandleMatrix(joint)))

@@ -170,6 +170,7 @@ namespace UnityEditor
             AssetPreview.ClearTemporaryAssetPreviews();
 
             SetupPreview();
+            Undo.undoRedoPerformed += UndoCloseWindow;
         }
 
         void OnDisable()
@@ -196,6 +197,7 @@ namespace UnityEditor
                 m_EditorCache.Dispose();
 
             AssetPreview.ClearTemporaryAssetPreviews();
+            Undo.undoRedoPerformed -= UndoCloseWindow;
         }
 
         public void SetupPreview()
@@ -881,6 +883,15 @@ namespace UnityEditor
         {
             int listKeyboardControlID = GUIUtility.GetControlID(FocusType.Keyboard);
             m_ListArea.OnGUI(listPosition, listKeyboardControlID);
+        }
+
+        void UndoCloseWindow()
+        {
+            if (Selection.activeObject == null)
+            {
+                Close();
+                GUI.changed = true;
+            }
         }
     }
 }

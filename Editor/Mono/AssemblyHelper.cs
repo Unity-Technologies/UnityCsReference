@@ -377,13 +377,18 @@ namespace UnityEditor
                         if (attribute.ConstructorArguments != null && attribute.ConstructorArguments.Count > 0)
                             loadType = (RuntimeInitializeLoadType)attribute.ConstructorArguments[0].Value;
 
-                        RuntimeInitializeClassInfo classInfo = new RuntimeInitializeClassInfo();
+                        TypeDefinition rootType = type;
+                        while (rootType.DeclaringType != null)
+                            rootType = rootType.DeclaringType;
 
-                        classInfo.assemblyName = assemblyName;
-                        classInfo.className = type.FullName;
-                        classInfo.methodNames = new[] { method.Name };
-                        classInfo.loadTypes = new[] { loadType };
-                        classInfoList.Add(classInfo);
+                        classInfoList.Add(new RuntimeInitializeClassInfo
+                        {
+                            assemblyName = assemblyName,
+                            className = type.FullName,
+                            namespaceName = rootType.Namespace,
+                            methodNames = new[] { method.Name },
+                            loadTypes = new[] { loadType },
+                        });
                         methodCount++;
                     }
                 }
@@ -413,17 +418,15 @@ namespace UnityEditor
                     });
 
                     var assemblyName = assembly.Name.Name;
-
-                    foreach (var module in assembly.Modules)
+                    ForEachTypeInAssembly(assembly, (type) =>
                     {
-                        foreach (var type in module.Types)
-                        {
-                            FindRuntimeInitializeOnLoadMethodAttributes(type,
-                                assemblyName,
-                                ref classInfoList,
-                                ref methodCount);
-                        }
-                    }
+                        FindRuntimeInitializeOnLoadMethodAttributes(
+                            type,
+                            assemblyName,
+                            ref classInfoList,
+                            ref methodCount
+                        );
+                    });
                 }
                 catch (Exception ex)
                 {
@@ -436,6 +439,50 @@ namespace UnityEditor
             data.methodsCount = methodCount;
 
             return data;
+        }
+
+        /// <summary>
+        /// Visits every type within the given assembly, calling the provided typeAction for each type visited.
+        /// </summary>
+        /// <exception cref="System.StackOverflowException"> Thrown if the type hierarchy is sufficiently deep </exception>
+        /// <exception cref="System.ArgumentNullException"> Thrown if either argument is null </exception>
+        internal static void ForEachTypeInAssembly(AssemblyDefinition assembly, Action<TypeDefinition> typeAction)
+        {
+            if (assembly == null)
+                throw new ArgumentNullException(nameof(assembly));
+
+            if (typeAction == null)
+                throw new ArgumentNullException(nameof(typeAction));
+
+            foreach (var module in assembly.Modules)
+            {
+                foreach (var type in module.Types)
+                {
+                    typeAction(type);
+
+                    if (type.HasNestedTypes)
+                    {
+                        RecurseNestedTypes(type, typeAction);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Recursively visits all types nested within the given base type, calling the provided typeAction for each type visited.
+        /// </summary>
+        /// <exception cref="System.StackOverflowException"> Thrown if the type hierarchy is sufficiently deep </exception>
+        internal static void RecurseNestedTypes(TypeDefinition baseType, Action<TypeDefinition> typeAction)
+        {
+            foreach (var type in baseType.NestedTypes)
+            {
+                typeAction(type);
+
+                if (type.HasNestedTypes)
+                {
+                    RecurseNestedTypes(type, typeAction);
+                }
+            }
         }
 
         internal static Type[] GetTypesFromAssembly(Assembly assembly)

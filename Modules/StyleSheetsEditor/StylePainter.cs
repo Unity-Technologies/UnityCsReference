@@ -18,6 +18,9 @@ namespace UnityEditor.StyleSheets
 
         internal static bool DrawStyle(GUIStyle gs, Rect position, GUIContent content, DrawStates states)
         {
+            if (Highlighter.searchMode == HighlightSearchMode.Identifier || Highlighter.searchMode == HighlightSearchMode.Auto)
+                Highlighter.HighlightIdentifier(position, content?.text);
+
             if (gs == GUIStyle.none || gs.blockId == -1 || String.IsNullOrEmpty(gs.name) || gs.normal.background != null)
                 return false;
 

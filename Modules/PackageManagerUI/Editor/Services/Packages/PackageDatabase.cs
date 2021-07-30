@@ -60,6 +60,8 @@ namespace UnityEditor.PackageManager.UI
             // args 1,2, 3 are added, removed and preUpdated, and postUpdated packages respectively
             public event Action<IEnumerable<IPackage>, IEnumerable<IPackage>, IEnumerable<IPackage>, IEnumerable<IPackage>> onPackagesChanged = delegate {};
 
+            public event Action<TermOfServiceAgreementStatus> onTermOfServiceAgreementStatusChange = delegate {};
+
             private readonly Dictionary<string, IPackage> m_Packages = new Dictionary<string, IPackage>();
             // a list of unique ids (could be specialUniqueId or packageId)
             private List<string> m_SpecialInstallations = new List<string>();
@@ -86,6 +88,9 @@ namespace UnityEditor.PackageManager.UI
             [NonSerialized]
             private bool m_EventsRegistered;
 
+            [SerializeField]
+            private TermOfServiceAgreementStatus m_TermOfServiceAgreementStatus = TermOfServiceAgreementStatus.NotAccepted;
+
             public bool isEmpty { get { return !m_Packages.Any(); } }
 
             private static readonly IPackage[] k_EmptyList = new IPackage[0] {};
@@ -94,6 +99,19 @@ namespace UnityEditor.PackageManager.UI
             {
                 // add, embed -> install, remove -> uninstall
                 get { return UpmClient.instance.isAddRemoveOrEmbedInProgress; }
+            }
+
+            public virtual TermOfServiceAgreementStatus termOfServiceAgreementStatus
+            {
+                get
+                {
+                    return m_TermOfServiceAgreementStatus;
+                }
+                internal set
+                {
+                    m_TermOfServiceAgreementStatus = value;
+                    onTermOfServiceAgreementStatusChange?.Invoke(m_TermOfServiceAgreementStatus);
+                }
             }
 
             public IEnumerable<IPackage> allPackages { get { return m_Packages.Values; } }
@@ -306,6 +324,8 @@ namespace UnityEditor.PackageManager.UI
 
                 UnregisterEvents();
 
+                m_TermOfServiceAgreementStatus = TermOfServiceAgreementStatus.NotAccepted;
+
                 AssetStore.AssetStoreClient.instance.ClearCache();
                 UpmClient.instance.ClearCache();
 
@@ -367,6 +387,8 @@ namespace UnityEditor.PackageManager.UI
 
             private void OnUserLoginStateChange(bool loggedIn)
             {
+                m_TermOfServiceAgreementStatus = TermOfServiceAgreementStatus.NotAccepted;
+
                 if (!loggedIn)
                 {
                     var assetStorePackages = m_Packages.Where(kp => kp.Value is AssetStorePackage).Select(kp => kp.Value).ToList();
@@ -601,14 +623,31 @@ namespace UnityEditor.PackageManager.UI
                 return AssetStore.AssetStoreClient.instance.IsDownloadInProgress(version.packageUniqueId);
             }
 
-            public void Download(IPackage package)
+            public bool Download(IPackage package)
             {
                 if (!(package is AssetStorePackage))
-                    return;
+                    return false;
 
                 if (!PlayModeDownload.CanBeginDownload())
-                    return;
+                    return false;
 
+                if (termOfServiceAgreementStatus == TermOfServiceAgreementStatus.NotAccepted)
+                {
+                    AssetStore.AssetStoreClient.instance.CheckTermOfServiceAgreement(status =>
+                    {
+                        termOfServiceAgreementStatus = status;
+                        if (termOfServiceAgreementStatus == TermOfServiceAgreementStatus.Accepted)
+                            Download_Internal(package);
+                    });
+                    return false;
+                }
+
+                Download_Internal(package);
+                return true;
+            }
+
+            private void Download_Internal(IPackage package)
+            {
                 AssetStore.AssetStoreClient.instance.Download(package.uniqueId);
             }
 

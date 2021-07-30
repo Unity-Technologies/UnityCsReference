@@ -19,6 +19,9 @@ namespace UnityEditor
 
         private static GUIStyle s_MixedToggleStyle = EditorStyles.toggleMixed;
 
+        const float kExposureSliderAbsoluteMax = 23.0f;
+        static readonly GUIContent s_ExposureIcon = EditorGUIUtility.TrIconContent("Exposure", "Controls the number of stops to over or under expose the lightmap.");
+
         static internal Rect GetTooltipRect() { return tooltipRect; }
         static internal string GetMouseTooltip() { return mouseTooltip; }
         internal static bool DoToggleForward(Rect position, int id, bool value, GUIContent content, GUIStyle style)
@@ -59,6 +62,23 @@ namespace UnityEditor
         internal static void AssetPopup<T>(SerializedProperty serializedProperty, GUIContent content, string fileExtension, string defaultFieldName) where T : Object, new()
         {
             AssetPopupBackend.AssetPopup<T>(serializedProperty, content, fileExtension, defaultFieldName);
+        }
+
+        internal static float ExposureSlider(float value, ref float maxValue, GUIStyle style)
+        {
+            float labelWidth = EditorGUIUtility.labelWidth;
+            EditorGUIUtility.labelWidth = 20;
+            value = EditorGUILayout.Slider(s_ExposureIcon, value, -maxValue, maxValue, -kExposureSliderAbsoluteMax, kExposureSliderAbsoluteMax, style, GUILayout.MaxWidth(64));
+
+            // This will allow the user to set a new max value for the current session
+            if (value >= 0)
+                maxValue = Mathf.Max(maxValue, value);
+            else
+                maxValue = Mathf.Max(maxValue, value * -1);
+
+            EditorGUIUtility.labelWidth = labelWidth;
+
+            return value;
         }
     }
 

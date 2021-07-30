@@ -385,6 +385,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                         var customTargetAssembly = entry.Value;
                         if (customTargetAssembly.ExplicitPrecompiledReferences.Contains(dirtyPrecompiledAssembly))
                         {
+                            if (!IsCompatibleWithPlatformAndDefines(customTargetAssembly, args.Settings))
+                                continue;
+
                             dirtyTargetAssemblies[customTargetAssembly] = new DirtyTargetAssembly(DirtySource.DirtyReference);
                             break;
                         }
@@ -545,9 +548,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             foreach (var entry in dirtyTargetAssemblies)
             {
-                if (entry.Value.SourceFiles.Count == 0 && entry.Key.Type == TargetAssemblyType.Custom)
+                var targetAssembly = entry.Key;
+                if (!IsCompatibleWithPlatformAndDefines(targetAssembly, args.Settings))
                 {
-                    noScriptsCustomTargetAssemblies.Add(entry.Key);
+                    throw new InvalidOperationException($"{targetAssembly.Filename}: is not compatible with {args.Settings.BuildTarget}.");
+                }
+                if (entry.Value.SourceFiles.Count == 0 && targetAssembly.Type == TargetAssemblyType.Custom)
+                {
+                    noScriptsCustomTargetAssemblies.Add(targetAssembly);
                 }
             }
 

@@ -39,5 +39,9 @@ namespace UnityEditor.PackageManager.UI
         string OpenFilePanelWithFilters(string title, string directory, string[] filters);
 
         string GetFileName(string path);
+
+        bool DisplayDialog(string title, string message, string ok, string cancel = "");
+
+        void OpenAuthorizedURLInWebBrowser(string url);
     }
 }

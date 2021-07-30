@@ -31,6 +31,7 @@ namespace UnityEditor.PackageManager.UI.AssetStore
             private const string kDetailUri = "/-/api/product";
             private const string kUpdateUri = "/-/api/legacy-package-update-info";
             private const string kDownloadUri = "/-/api/legacy-package-download-info";
+            private const string k_TermsCheckUri = "/-/api/terms/check";
 
             private const int k_GeneralServerError = 599;
             private const int k_GeneralClientError = 499;
@@ -181,6 +182,26 @@ namespace UnityEditor.PackageManager.UI.AssetStore
                             errorMessage = errorMessage
                         };
                         doneCallbackAction?.Invoke(downloadInfo);
+                    });
+            }
+
+            public void CheckTermsAndConditions(Action<Dictionary<string, object>> doneCallbackAction)
+            {
+                // Abort any previous request
+                m_AsyncHTTPClient.AbortASyncHTTPClientByTag("CheckTermsAndConditions");
+
+                HandleHttpRequest(() =>
+                {
+                    var httpRequest = m_AsyncHTTPClient.GetASyncHTTPClient($"{host}{k_TermsCheckUri}");
+                    httpRequest.tag = "CheckTermsAndConditions";
+                    return httpRequest;
+                }, result =>
+                    {
+                        doneCallbackAction?.Invoke(result);
+                    }, errorMessage =>
+                    {
+                        var ret = new Dictionary<string, object> {["errorMessage"] = errorMessage};
+                        doneCallbackAction?.Invoke(ret);
                     });
             }
 
