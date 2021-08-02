@@ -331,15 +331,15 @@ namespace UnityEngine
         }
 
         [Conditional("UNITY_EDITOR")]
-        internal static void SimulateTouch(int id, Vector2 position, TouchPhase action)
+        internal static void SimulateTouch(Touch touch)
         {
-            SimulateTouchInternal(id, position, action, DateTime.Now.Ticks);
+            SimulateTouchInternal(touch, DateTime.Now.Ticks);
         }
 
         [Conditional("UNITY_EDITOR")]
         [NativeConditional("UNITY_EDITOR")]
         [FreeFunction("SimulateTouch")]
-        private extern static void SimulateTouchInternal(int id, Vector2 position, TouchPhase action, long timestamp);
+        private extern static void SimulateTouchInternal(Touch touch, long timestamp);
 
         public extern static bool simulateMouseWithTouches { get; set; }
         [NativeThrows]

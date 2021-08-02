@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngineInternal;
@@ -13,27 +12,26 @@ namespace UnityEditor
     [NativeHeader("Editor/Mono/SavedGUIState.bindings.h")]
     internal struct SavedGUIState
     {
-        internal GUILayoutUtility.LayoutCache layoutCache;
-        internal IntPtr guiState;
-        internal Vector2 screenManagerSize;
-        internal Rect renderManagerRect;
-        internal GUISkin skin;
-        internal int instanceID;
-        internal GenericStack scrollViewStates;
+        private GUILayoutUtility.LayoutCacheState layoutCache;
+        private IntPtr guiState;
+        private Vector2 screenManagerSize;
+        private GUISkin skin;
+        private int instanceID;
+        private GenericStack scrollViewStates;
 
-        static private extern void Internal_SetupSavedGUIState(out IntPtr state, out Vector2 screenManagerSize);
+        private static extern void Internal_SetupSavedGUIState(out IntPtr state, out Vector2 screenManagerSize);
 
-        static private extern void Internal_ApplySavedGUIState(IntPtr state, Vector2 screenManagerSize);
+        private static extern void Internal_ApplySavedGUIState(IntPtr state, Vector2 screenManagerSize);
 
-        static internal extern int Internal_GetGUIDepth();
+        internal static extern int Internal_GetGUIDepth();
 
-        static internal SavedGUIState Create()
+        internal static SavedGUIState Create()
         {
             SavedGUIState state = new SavedGUIState();
             if (Internal_GetGUIDepth() > 0)
             {
                 state.skin = GUI.skin;
-                state.layoutCache = new GUILayoutUtility.LayoutCache(GUILayoutUtility.current);
+                state.layoutCache = GUILayoutUtility.current.State;
                 state.instanceID = GUIUtility.s_OriginalID;
                 if (GUI.scrollViewStates.Count != 0)
                 {
@@ -48,9 +46,9 @@ namespace UnityEditor
 
         internal void ApplyAndForget()
         {
-            if (layoutCache != null)
+            if (layoutCache.layoutGroups != null)
             {
-                GUILayoutUtility.current = layoutCache;
+                GUILayoutUtility.current.CopyState(layoutCache);
                 GUI.skin = skin;
                 GUIUtility.s_OriginalID = instanceID;
 

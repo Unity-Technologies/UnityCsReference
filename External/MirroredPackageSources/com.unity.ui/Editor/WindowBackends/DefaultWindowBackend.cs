@@ -37,7 +37,10 @@ namespace UnityEditor.UIElements
 
         void IWindowBackend.SizeChanged()
         {
-            m_Panel.visualTree.SetSize(m_Model.size);
+            // The window backend isn't aware of the panel scaling, so the size only considers the native
+            // pixels-per-point value. So for example, if a panel scaling of 2 is used, we must have twice
+            // less points displayed, hence the division by 2.
+            m_Panel.visualTree.SetSize(m_Model.size / m_Panel.scale);
         }
 
         void IWindowBackend.EventInterestsChanged()
