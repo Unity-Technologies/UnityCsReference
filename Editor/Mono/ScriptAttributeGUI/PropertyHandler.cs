@@ -404,18 +404,23 @@ namespace UnityEditor
                 method.Invoke(target, new object[] {});
         }
 
+        static List<Component> s_CachedComponents = new List<Component>();
+
         internal void TestInvalidateCache()
         {
             GameObject activeObject = Selection.activeObject as GameObject;
             if (activeObject != null)
             {
-                var components = activeObject.GetComponents(typeof(Component));
+                activeObject.GetComponents(s_CachedComponents);
+                var componentCount = s_CachedComponents.Count;
+                s_CachedComponents.Clear();
+
                 if (s_LastInspectionTarget != activeObject.GetInstanceID() ||
-                    s_LastInspectorNumComponents != components.Length)
+                    s_LastInspectorNumComponents != componentCount)
                 {
                     ClearCache();
                     s_LastInspectionTarget = activeObject.GetInstanceID();
-                    s_LastInspectorNumComponents = components.Length;
+                    s_LastInspectorNumComponents = componentCount;
                 }
             }
         }

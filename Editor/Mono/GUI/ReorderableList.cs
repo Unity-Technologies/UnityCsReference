@@ -393,7 +393,7 @@ namespace UnityEditorInternal
                     }
 
                     EditorGUIUtility.labelWidth = oldLabelWidth;
-                    if (Event.current.type == EventType.MouseDown && Event.current.button == 1 && rect.Contains(Event.current.mousePosition)) Event.current.Use();
+                    if (Event.current.type == EventType.ContextClick && rect.Contains(Event.current.mousePosition)) Event.current.Use();
                     return;
                 }
 
@@ -1142,7 +1142,8 @@ namespace UnityEditorInternal
                         GUI.changed = true;
                         evt.Use();
                     }
-                    if (evt.keyCode == KeyCode.Delete)
+                    if (Application.platform != RuntimePlatform.OSXEditor && evt.keyCode == KeyCode.Delete
+                        || Application.platform == RuntimePlatform.OSXEditor && evt.keyCode == KeyCode.Backspace && evt.modifiers.HasFlag(EventModifiers.Command))
                     {
                         scheduleRemove = true;
                         InvalidateParentCaches(m_PropertyPath);

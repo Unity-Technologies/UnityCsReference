@@ -242,7 +242,7 @@ namespace UnityEngine
             else
                 op = ExpandWidth(true);
 
-            op.value = 10000;
+            op = new GUILayoutOption(op.type, 10000);
             GUILayoutUtility.GetRect(0, 0, GUILayoutUtility.spaceStyle, op);
 
             if (Event.current.type == EventType.Layout)

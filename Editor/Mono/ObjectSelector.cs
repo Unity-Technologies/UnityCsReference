@@ -195,6 +195,8 @@ namespace UnityEditor
                 FilterSettingsChanged();
                 Repaint();
             });
+
+            Undo.undoRedoPerformed += UndoCloseWindow;
         }
 
         [UsedImplicitly]
@@ -214,6 +216,8 @@ namespace UnityEditor
             AssetPreview.ClearTemporaryAssetPreviews();
             HierarchyProperty.ClearSceneObjectsFilter();
             m_Debounce = null;
+
+            Undo.undoRedoPerformed -= UndoCloseWindow;
         }
 
         public void SetupPreview()
@@ -1158,6 +1162,15 @@ namespace UnityEditor
             if (index > -1)
                 objectSelectorName = objectSelectorName.Remove(index);
             return objectSelectorName;
+        }
+
+        void UndoCloseWindow()
+        {
+            if (Selection.activeObject == null)
+            {
+                Close();
+                GUI.changed = true;
+            }
         }
     }
 }

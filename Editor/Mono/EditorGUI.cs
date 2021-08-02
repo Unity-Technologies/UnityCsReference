@@ -6689,7 +6689,7 @@ namespace UnityEditor
                         BeginChangeCheck();
 
                         // Necessary to check for float type to get correct string formatting for float and double.
-                        bool isFloat = property.type == "float";
+                        bool isFloat = property.isTypeFloat;
                         double newValue = isFloat ? FloatField(position, label, property.floatValue) :
                             DoubleField(position, label, property.doubleValue);
                         if (EndChangeCheck())
