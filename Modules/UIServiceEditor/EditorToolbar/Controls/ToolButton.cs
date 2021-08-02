@@ -31,6 +31,10 @@ namespace UnityEditor.Toolbars
             {
                 if (evt.newValue)
                     SetToolActive();
+
+                // Keep the toggle checked if target is still the current tool
+                if (m_TargetTool == Tools.current)
+                    SetValueWithoutNotify(true);
             });
 
             switch (targetTool)

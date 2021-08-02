@@ -51,6 +51,31 @@ namespace UnityEditor.Search
             }
         }
 
+        public struct ColorScope : IDisposable
+        {
+            private bool m_Disposed;
+            private Color m_PreviousColor;
+
+            public ColorScope(Color newColor)
+            {
+                m_Disposed = false;
+                m_PreviousColor = GUI.color;
+                GUI.color = newColor;
+            }
+
+            public ColorScope(float r, float g, float b, float a = 1.0f) : this(new Color(r, g, b, a))
+            {
+            }
+
+            public void Dispose()
+            {
+                if (m_Disposed)
+                    return;
+                m_Disposed = true;
+                GUI.color = m_PreviousColor;
+            }
+        }
+
         static RootDescriptor[] s_RootDescriptors;
 
         static RootDescriptor[] rootDescriptors

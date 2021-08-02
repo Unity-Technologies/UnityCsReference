@@ -51,11 +51,13 @@ namespace UnityEditor.Search
         int GetDisplayItemCount();
         void HandleInputEvent(Event evt, List<int> selection);
         void DrawControlLayout(float viewWidth);
+        void DrawTabsButtons();
         void Refresh(RefreshFlags flags = RefreshFlags.Default);
         ResultViewState SaveViewState(string name);
         void SetViewState(ResultViewState viewState);
 
         void OnGroupChanged(string prevGroupId, string newGroupId);
+        void AddSaveQueryMenuItems(SearchContext context, GenericMenu menu);
     }
 
     abstract class ResultView : IResultView
@@ -103,6 +105,10 @@ namespace UnityEditor.Search
         public virtual void DrawControlLayout(float viewWidth)
         {
             // Do nothing
+        }
+
+        public virtual void DrawTabsButtons()
+        {
         }
 
         public virtual void OnGroupChanged(string prevGroupId, string newGroupId)
@@ -442,6 +448,11 @@ namespace UnityEditor.Search
         public virtual void Refresh(RefreshFlags flags)
         {
             // Nothing to refresh by default
+        }
+
+        public virtual void AddSaveQueryMenuItems(SearchContext context, GenericMenu menu)
+        {
+            // Do nothing by default
         }
 
         public virtual void Dispose()

@@ -153,7 +153,6 @@ namespace UnityEditor.Search
         /// <summary>
         /// This handler is used for action that do not support multi selection.
         /// </summary>
-        // [Obsolete]
         public Action<SearchItem> handler;
     }
 }

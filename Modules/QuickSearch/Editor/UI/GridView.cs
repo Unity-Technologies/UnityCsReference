@@ -91,13 +91,14 @@ namespace UnityEditor.Search
                     {
                         DrawGridItem(index, item, itemRect, isHoverGrid, selection, evt);
 
-                        if (isHoverGrid && itemRect.Contains(evt.mousePosition))
+                        var markedAsFavorite = SearchSettings.searchItemFavorites.Contains(item.id);
+                        if (markedAsFavorite || (isHoverGrid && itemRect.Contains(evt.mousePosition)))
                         {
-                            if (SearchSettings.searchItemFavorites.Contains(item.id))
+                            if (markedAsFavorite)
                                 GUI.Button(favoriteButtonRect, Styles.searchFavoriteOnButtonContent, Styles.actionButton);
                             else
                             {
-                                using (new GUI.ColorScope(new Color(0.9f, 0.9f, 0.9f, 0.4f)))
+                                using (new Utils.ColorScope(new Color(0.9f, 0.9f, 0.9f, 0.4f)))
                                     GUI.Button(favoriteButtonRect, Styles.searchFavoriteButtonContent, Styles.actionButton);
                             }
                             EditorGUIUtility.AddCursorRect(favoriteButtonRect, MouseCursor.Link);

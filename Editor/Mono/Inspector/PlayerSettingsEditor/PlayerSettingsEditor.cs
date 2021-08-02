@@ -1127,7 +1127,7 @@ namespace UnityEditor
         {
             if (target == BuildTarget.WebGL)
             {
-                if (graphicsDeviceType == GraphicsDeviceType.OpenGLES2) return "WebGL 1";
+                if (graphicsDeviceType == GraphicsDeviceType.OpenGLES2) return "WebGL 1 (Deprecated)";
                 if (graphicsDeviceType == GraphicsDeviceType.OpenGLES3) return "WebGL 2";
             }
             string name = graphicsDeviceType.ToString();
@@ -1144,10 +1144,10 @@ namespace UnityEditor
         // Parses a GraphicsDeviceType from a string.
         static private GraphicsDeviceType GraphicsDeviceTypeFromString(string graphicsDeviceType)
         {
-            if (graphicsDeviceType == "WebGL 1") return GraphicsDeviceType.OpenGLES2;
-            if (graphicsDeviceType == "WebGL 2") return GraphicsDeviceType.OpenGLES3;
             graphicsDeviceType = graphicsDeviceType.Replace(" (Deprecated)", "");
             graphicsDeviceType = graphicsDeviceType.Replace(" (Experimental)", "");
+            if (graphicsDeviceType == "WebGL 1") return GraphicsDeviceType.OpenGLES2;
+            if (graphicsDeviceType == "WebGL 2") return GraphicsDeviceType.OpenGLES3;
             return (GraphicsDeviceType)Enum.Parse(typeof(GraphicsDeviceType), graphicsDeviceType, true);
         }
 

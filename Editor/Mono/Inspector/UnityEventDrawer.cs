@@ -92,7 +92,7 @@ namespace UnityEditorInternal
 
                 SerializedProperty listenersArray = prop.FindPropertyRelative("m_PersistentCalls.m_Calls");
                 state.m_ReorderableList =
-                    new ReorderableList(prop.serializedObject, listenersArray, false, true, true, true)
+                    new ReorderableList(prop.serializedObject, listenersArray, true, true, true, true)
                 {
                     drawHeaderCallback = DrawEventHeader,
                     drawElementCallback = DrawEvent,

@@ -220,7 +220,7 @@ namespace UnityEditor.Search
                 "Texture",
                 typeof(Texture));
             viewState.title = "Query Icon";
-            viewState.SetSearchViewFlags(SearchViewFlags.CompactView);
+            viewState.SetSearchViewFlags(SearchViewFlags.GridView);
             SearchService.ShowPicker(viewState);
         }
 

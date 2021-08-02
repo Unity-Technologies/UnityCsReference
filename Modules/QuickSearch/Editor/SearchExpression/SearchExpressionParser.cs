@@ -188,7 +188,7 @@ namespace UnityEditor.Search
         private static readonly char[] k_Quotes = { '\'', '"' };
         private static readonly char[] k_Openers = { '[', '{' };
         private static readonly char[] k_Closers = { ']', '}' };
-        public static readonly string k_QueryWithSelectorPattern = @"([@$][^><=!:\s\[\]]+)";
+        public static readonly string k_QueryWithSelectorPattern = @"([@$][^><=!:\s\[\]\(\)]+)";
         public static readonly Regex namedExpressionStartRegex = new Regex(@"(?<name>[a-zA-Z0-9_\-]*?){");
 
         public static StringView[] ExtractArguments(StringView text, string errorPrefix = "")
@@ -449,10 +449,14 @@ namespace UnityEditor.Search
             var re = pattern ?? k_QueryWithSelectorPatternRx;
             var evaluator = new MatchEvaluator(match =>
             {
-                var selectorExpr = match.Groups[1].Value;
-                var cleanedSelectorExpr = selectorExpr.Substring(1);
-                var replacement = selectorReplacer(selectorExpr, cleanedSelectorExpr);
-                return match.Value.Replace(selectorExpr, replacement);
+                if (match.Success)
+                {
+                    var selectorExpr = match.Groups[1].Value;
+                    var cleanedSelectorExpr = selectorExpr.Substring(1);
+                    var replacement = selectorReplacer(selectorExpr, cleanedSelectorExpr);
+                    return match.Value.Replace(selectorExpr, replacement);
+                }
+                return originalExpr;
             });
             return re.Replace(originalExpr, evaluator);
         }

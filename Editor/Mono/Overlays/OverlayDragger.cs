@@ -141,10 +141,9 @@ namespace UnityEditor.Overlays
 
             var canvasLocalPos = canvasRoot.WorldToLocal(e.mousePosition);
             var constrainedMousePosition = canvas.ClampToOverlayWindow(new Rect(canvasLocalPos, Vector2.zero)).position;
-
             var diff = (constrainedMousePosition - m_StartMousePosition);
-            m_Overlay.rootVisualElement.style.left = m_InitialLayoutPosition.x + diff.x;
-            m_Overlay.rootVisualElement.style.top = m_InitialLayoutPosition.y + diff.y;
+
+            m_Overlay.rootVisualElement.transform.position = m_InitialLayoutPosition + diff;
 
             canvas.destinationMarker.SetTarget(IsInOriginGhost(e.mousePosition)
                 ? null
@@ -175,9 +174,8 @@ namespace UnityEditor.Overlays
 
             if (m_Overlay.floating)
             {
-                m_Overlay.floatingPosition = new Vector2(
-                    m_Overlay.rootVisualElement.style.left.value.value,
-                    m_Overlay.rootVisualElement.style.top.value.value);
+                var pos = m_Overlay.rootVisualElement.transform.position;
+                m_Overlay.floatingPosition = new Vector2(pos.x, pos.y);
             }
 
             OnDragEnd(e.mousePosition);
@@ -221,8 +219,7 @@ namespace UnityEditor.Overlays
         {
             if (m_WasFloating)
             {
-                m_Overlay.rootVisualElement.style.left = m_InitialLayoutPosition.x;
-                m_Overlay.rootVisualElement.style.top = m_InitialLayoutPosition.y;
+                m_Overlay.rootVisualElement.transform.position = m_InitialLayoutPosition;
             }
             else
             {

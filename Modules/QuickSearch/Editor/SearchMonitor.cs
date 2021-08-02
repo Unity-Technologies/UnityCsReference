@@ -10,7 +10,6 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using UnityEditor.Experimental;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
@@ -507,16 +506,12 @@ namespace UnityEditor.Search
     {
         public static bool IsAssetImportWorkerProcess()
         {
-            #pragma warning disable CS0618 // Type or member is obsolete
-            return AssetDatabaseExperimental.IsAssetImportWorkerProcess();
-            #pragma warning restore CS0618 // Type or member is obsolete
+            return AssetDatabase.IsAssetImportWorkerProcess();
         }
 
         public static void RegisterCustomDependency(string name, Hash128 hash)
         {
-            #pragma warning disable CS0618 // Type or member is obsolete
-            AssetDatabaseExperimental.RegisterCustomDependency(name, hash);
-            #pragma warning restore CS0618 // Type or member is obsolete
+            AssetDatabase.RegisterCustomDependency(name, hash);
         }
     }
 }

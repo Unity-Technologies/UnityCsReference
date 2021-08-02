@@ -9,10 +9,12 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal class FeatureDependencyItem : VisualElement
     {
         public IPackageVersion packageVersion { get; private set; }
+        public string packageName { get; private set; }
 
         public FeatureDependencyItem(IPackageVersion featureVersion, IPackageVersion featureDependencyVersion, FeatureState state = FeatureState.None)
         {
             packageVersion = featureDependencyVersion;
+            packageName = featureDependencyVersion.packageUniqueId;
 
             m_Name = new Label { name = "name" };
             m_Name.text = featureDependencyVersion?.displayName ?? string.Empty;
@@ -26,6 +28,15 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             Add(m_State);
+        }
+
+        public FeatureDependencyItem(string dependencyName)
+        {
+            packageName = dependencyName;
+
+            m_Name = new Label { name = "name" };
+            m_Name.text = dependencyName;
+            Add(m_Name);
         }
 
         private Label m_Name;
