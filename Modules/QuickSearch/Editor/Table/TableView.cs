@@ -149,12 +149,11 @@ namespace UnityEditor.Search
             if (m_TableConfig == null)
                 return;
 
-            var currentNames = m_TableConfig.columns.Select(c => c.name).ToList();
             var columns = new List<SearchColumn>(m_TableConfig.columns);
             if (insertColumnAt == -1)
                 insertColumnAt = columns.Count;
             var columnCountBefore = columns.Count;
-            columns.InsertRange(insertColumnAt, newColumns.Where(n => !currentNames.Contains(n.name)));
+            columns.InsertRange(insertColumnAt, newColumns);
 
             var columnAdded = columns.Count - columnCountBefore;
             if (columnAdded > 0)
@@ -168,6 +167,8 @@ namespace UnityEditor.Search
 
                 m_TableConfig.columns = columns.ToArray();
                 UpdatePropertyTable();
+
+                m_PropertyTable?.FrameColumn(insertColumnAt - 1);
             }
         }
 
@@ -374,6 +375,33 @@ namespace UnityEditor.Search
             var contextRect = new Rect(evt.mousePosition, new Vector2(1, 1));
             searchView.ShowItemContextualMenu(item, contextRect);
             return true;
+        }
+
+        public override void AddSaveQueryMenuItems(SearchContext context, GenericMenu menu)
+        {
+            menu.AddSeparator("");
+            menu.AddItem(EditorGUIUtility.TrTextContent("Export Report..."), false, () => ExportJson(context));
+            menu.AddItem(EditorGUIUtility.TrTextContent("Export CSV..."), false, () => ExportCsv(context));
+        }
+
+        private void ExportJson(SearchContext context)
+        {
+            SearchReport.Export(GetSearchTable().name, GetColumns(), GetRows(), context);
+        }
+
+        private void ExportCsv(SearchContext context)
+        {
+            SearchReport.ExportAsCsv(GetSearchTable().name, GetColumns(), GetRows(), context);
+        }
+
+        public override void DrawTabsButtons()
+        {
+            if (EditorGUILayout.DropdownButton(Styles.resetSearchColumnsContent, FocusType.Keyboard, Styles.tabButton))
+            {
+                SetupColumns();
+                SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchTableReset, context.searchQuery);
+            }
+            EditorGUIUtility.AddCursorRect(GUILayoutUtility.GetLastRect(), MouseCursor.Link);
         }
     }
 }

@@ -222,9 +222,7 @@ namespace UnityEditor.Overlays
         {
             if (rootVisualElement.resolvedStyle.position == Position.Absolute)
             {
-                var position = floatingPosition;
-                rootVisualElement.style.left = position.x;
-                rootVisualElement.style.top = position.y;
+                rootVisualElement.transform.position = floatingPosition;
             }
         }
     }

@@ -16,7 +16,7 @@ namespace UnityEditor.Search
 {
     class IndexManager : EditorWindow
     {
-        [MenuItem("Window/Search/Index Manager")]
+        [MenuItem("Window/Search/Index Manager", priority = 200)]
         public static void OpenWindow()
         {
             OpenWindow(-1);
@@ -782,10 +782,15 @@ namespace UnityEditor.Search
 
         private void DeleteIndexSetting()
         {
-            if (selectedIndex >= 0 && EditorUtility.DisplayDialog("Delete selected index?", "You are about to delete this index, are you sure?", "Yes", "No"))
-            {
+            string warningMessage = "";
+
+            if (selectedIndex >= 0 && m_IndexSettings.Count > 1)
+                warningMessage = "You are about to delete this index, are you sure?";
+            else if (m_IndexSettingsFilePaths.Count == 1)
+                warningMessage = "If you delete all indexes, search functionality is limited to file names only. Continue?";
+
+            if (EditorUtility.DisplayDialog(L10n.Tr("Delete selected index?"), L10n.Tr(warningMessage), L10n.Tr("Yes"), L10n.Tr("No")))
                 DeleteSelectedIndexSetting();
-            }
         }
 
         internal void DeleteSelectedIndexSetting()

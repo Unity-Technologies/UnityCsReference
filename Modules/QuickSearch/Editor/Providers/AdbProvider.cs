@@ -104,13 +104,14 @@ namespace UnityEditor.Search.Providers
         {
             return new SearchProvider(type, "Asset Database")
             {
+                type = "asset",
                 active = false,
                 priority = 2500,
                 fetchItems = (context, items, provider) => FetchItems(context, SearchService.GetProvider("asset") ?? provider)
             };
         }
 
-        [MenuItem("Window/Search/Asset Database")] static void OpenProvider() => SearchService.ShowContextual(type);
+        [MenuItem("Window/Search/Asset Database", priority = 1271)] static void OpenProvider() => SearchService.ShowContextual(type);
         [ShortcutManagement.Shortcut("Help/Search/Asset Database")] static void OpenShortcut() => QuickSearch.OpenWithContextualProvider(type);
     }
 }

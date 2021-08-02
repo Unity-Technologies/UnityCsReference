@@ -134,7 +134,11 @@ namespace UnityEditor
         // returns true if children needs to be drawn separately
         public bool OnGUI(Rect position, SerializedProperty property, GUIContent label, bool includeChildren)
         {
-            Rect visibleArea = new Rect(0, 0, float.MaxValue, float.MaxValue);
+            var screenPos = GUIUtility.GUIToScreenPoint(position.position);
+            screenPos.y = Mathf.Clamp(screenPos.y, 0, Screen.height);
+
+            Rect visibleArea = new Rect(screenPos.x, screenPos.y, Screen.width, Screen.height);
+            visibleArea = GUIUtility.ScreenToGUIRect(visibleArea);
             return OnGUI(position, property, label, includeChildren, visibleArea);
         }
 

@@ -37,8 +37,6 @@ namespace UnityEditor.UIElements.Inspector
         private PropertyField m_ClearColorField;
         private PropertyField m_ColorClearValueField;
 
-        private FloatField m_SortOrderField;
-
         private void ConfigureFields()
         {
             // Using MandatoryQ instead of just Q to make sure modifications of the UXML file don't make the
@@ -71,9 +69,6 @@ namespace UnityEditor.UIElements.Inspector
 
             m_TargetTextureField.parent.Add(targetDisplayField);
             targetDisplayField.PlaceInFront(m_TargetTextureField);
-
-            m_SortOrderField = m_RootVisualElement.MandatoryQ<FloatField>("sortingOrder");
-            m_SortOrderField.isDelayed = true;
         }
 
         private void BindFields()
@@ -84,7 +79,6 @@ namespace UnityEditor.UIElements.Inspector
                 UpdateScreenMatchModeValues((PanelScreenMatchMode)evt.newValue));
             m_ClearColorField.RegisterCallback<ChangeEvent<bool>>(evt =>
                 UpdateColorClearValue(evt.newValue));
-            m_SortOrderField.RegisterCallback<ChangeEvent<float>>(evt => SetSortOrder(evt));
         }
 
         private void UpdateScaleModeValues(PanelScaleMode scaleMode)
@@ -125,16 +119,6 @@ namespace UnityEditor.UIElements.Inspector
         void UpdateColorClearValue(bool newClearColor)
         {
             m_ColorClearValueField.SetEnabled(newClearColor);
-        }
-
-        private void SetSortOrder(ChangeEvent<float> evt)
-        {
-            PanelSettings panelSettings = (PanelSettings)target;
-
-            if (panelSettings.sortingOrder != evt.newValue)
-            {
-                m_SortOrderField.schedule.Execute(() => panelSettings.ApplySortingOrder());
-            }
         }
 
         public override VisualElement CreateInspectorGUI()

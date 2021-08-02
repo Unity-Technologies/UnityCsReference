@@ -82,7 +82,7 @@ namespace UnityEditor.Build
             buildPlatformsList.Add(new BuildPlatformWithSubtarget(BuildPipeline.GetBuildTargetGroupDisplayName(BuildTargetGroup.Standalone), "", "BuildSettings.Standalone",
                 NamedBuildTarget.Standalone, standaloneTarget, (int)StandaloneBuildSubtarget.Player, true));
 
-            buildPlatformsList.Add(new BuildPlatformWithSubtarget("Dedicated Server", "", "BuildSettings.Standalone",
+            buildPlatformsList.Add(new BuildPlatformWithSubtarget("Dedicated Server", "", "BuildSettings.DedicatedServer",
                 NamedBuildTarget.Server, standaloneTarget, (int)StandaloneBuildSubtarget.Server, true));
 
             foreach (var target in buildTargets)

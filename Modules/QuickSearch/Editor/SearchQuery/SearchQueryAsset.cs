@@ -26,7 +26,7 @@ namespace UnityEditor.Search
                 if (s_SavedQueries == null || s_SavedQueries.Any(qs => !qs))
                     s_SavedQueries = EnumerateAll().Where(asset => asset != null).ToList();
 
-                return s_SavedQueries;
+                return s_SavedQueries.Where(s => s);
             }
         }
 
@@ -92,7 +92,7 @@ namespace UnityEditor.Search
             name += ".asset";
 
             asset.text = context.searchText;
-            asset.providerIds = new List<string>();
+            asset.providerIds = new List<string>(context.GetProviders().Except(SearchService.GetActiveProviders()).Select(p => p.id));
 
             var createNew = string.IsNullOrEmpty(AssetDatabase.GetAssetPath(asset));
             var fullPath = Path.Combine(folder, name).Replace("\\", "/");

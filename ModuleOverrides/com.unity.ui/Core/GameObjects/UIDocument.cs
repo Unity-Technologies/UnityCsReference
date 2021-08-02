@@ -260,7 +260,7 @@ namespace UnityEngine.UIElements
                 }
 
                 m_SortingOrder = value;
-                AddRootVisualElementToTree();
+                ApplySortingOrder();
             }
         }
 
@@ -651,6 +651,7 @@ namespace UnityEngine.UIElements
         }
 
         private VisualTreeAsset m_OldUxml = null;
+        private float m_OldSortingOrder = k_DefaultSortingOrder;
 
         private void OnValidate()
         {
@@ -672,6 +673,12 @@ namespace UnityEngine.UIElements
                 var tempPanelSettings = m_PanelSettings;
                 m_PanelSettings = m_PreviousPanelSettings;
                 panelSettings = tempPanelSettings;
+            }
+
+            if (m_OldSortingOrder != m_SortingOrder)
+            {
+                m_OldSortingOrder = m_SortingOrder;
+                ApplySortingOrder();
             }
         }
 

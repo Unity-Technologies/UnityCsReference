@@ -431,6 +431,8 @@ namespace UnityEditor.Search
 
     class SearchItemQueryEngine : QueryEngine<SearchItem>
     {
+        static Regex PropertyFilterRx = new Regex(@"[\@\$]([#\w\d\.]+)");
+
         SearchExpressionContext m_Context;
 
         public SearchItemQueryEngine()
@@ -440,8 +442,6 @@ namespace UnityEditor.Search
 
         public IEnumerable<SearchItem> Where(SearchExpressionContext context, IEnumerable<SearchItem> dataSet, string queryStr)
         {
-            queryStr = ConvertSelectors(queryStr);
-
             m_Context = context;
             var query = Parse(queryStr, true);
             if (query.errors.Count != 0)
@@ -470,8 +470,6 @@ namespace UnityEditor.Search
 
         public IEnumerable<SearchItem> WhereMainThread(SearchExpressionContext context, IEnumerable<SearchItem> dataSet, string queryStr)
         {
-            queryStr = ConvertSelectors(queryStr);
-
             m_Context = context;
             var query = Parse(queryStr, true);
             if (query.errors.Count != 0)
@@ -495,13 +493,9 @@ namespace UnityEditor.Search
             return results;
         }
 
-        static string ConvertSelectors(string queryStr)
-        {
-            return ParserUtils.ReplaceSelectorInExpr(queryStr, (selector, cleanedSelector) => $"p({cleanedSelector})");
-        }
-
         private void Setup()
         {
+            AddFilter(PropertyFilterRx, GetValue);
             AddFilter("p", GetValue, s => s, StringComparison.OrdinalIgnoreCase);
 
             SearchValue.SetupEngine(this);

@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -36,6 +37,18 @@ namespace UnityEditor
             for (int i = 0; i < objects.Length; i++)
             {
                 if (objects[i] != null && objects[i].isStatic)
+                    return true;
+            }
+            return false;
+        }
+
+        internal static bool ContainsMainStageGameObjects(GameObject[] objects)
+        {
+            if (objects == null || objects.Length == 0)
+                return false;
+            for (int i = 0; i < objects.Length; i++)
+            {
+                if (objects[i] != null && StageUtility.GetStageHandle(objects[i]).isMainStage)
                     return true;
             }
             return false;

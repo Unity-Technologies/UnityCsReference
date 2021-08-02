@@ -89,8 +89,6 @@ namespace UnityEditor.Search
         public override void OnGUI(Rect rect)
         {
             var evt = Event.current;
-            if (controller.scrollViewStyle == null)
-                controller.scrollViewStyle = GUIStyle.none;
 
             // Ignore arrow keys for this tree view, these needs to be handled by the search result view (later)
             if (!isRenaming && Utils.IsNavigationKey(evt))
@@ -146,7 +144,8 @@ namespace UnityEditor.Search
 
         private static int SortCreationTime(TreeViewItem a, TreeViewItem b)
         {
-            return ((SearchQueryTreeViewItem)a).query.creationTime.CompareTo(((SearchQueryTreeViewItem)b).query.creationTime);
+            // Most recent is on top.
+            return -((SearchQueryTreeViewItem)a).query.creationTime.CompareTo(((SearchQueryTreeViewItem)b).query.creationTime);
         }
 
         private static TreeViewItem FindItemFromQuery(ISearchQuery q, TreeViewItem i)
@@ -210,15 +209,17 @@ namespace UnityEditor.Search
 
         protected override void RowGUI(RowGUIArgs args)
         {
-            isRenaming = isRenaming || args.isRenaming;
+            var evt = Event.current;
             var rowRect = args.rowRect;
+
+            isRenaming = isRenaming || args.isRenaming;
             if (args.item is SearchQueryCategoryTreeViewItem ctvi)
             {
-                if (Event.current.type == EventType.Repaint)
-                    Styles.categoryLabel.Draw(rowRect, rowRect.Contains(Event.current.mousePosition), false, false, false);
+                if (evt.type == EventType.Repaint)
+                    Styles.categoryLabel.Draw(rowRect, rowRect.Contains(evt.mousePosition), false, false, false);
 
                 EditorGUI.BeginDisabledGroup(!searchView.CanSaveQuery());
-                var addBtn = new Rect(rowRect.xMax - 20f, rowRect.y, 20f, 20f);
+                var addBtn = new Rect(rowRect.xMax - 21f, rowRect.y, 22f, 22f);
                 if (GUI.Button(addBtn, ctvi.addBtnContent, Styles.toolbarButton))
                 {
                     switch (ctvi.content.text)
@@ -240,23 +241,21 @@ namespace UnityEditor.Search
             }
             else if (args.item is SearchQueryTreeViewItem tvi)
             {
-                if (!args.isRenaming)
+                if (!tvi.IsValid())
                 {
-                    if (Event.current.type == EventType.MouseDown && rowRect.Contains(Event.current.mousePosition))
-                    {
-                        if (Event.current.button == 0 && GetSelection().Contains(args.item.id))
-                        {
-                            Event.current.Use();
-                            ClearSelection();
-                        }
-                    }
-                    else
-                    {
-                        var oldLeftPadding = Styles.itemLabel.padding.left;
-                        Styles.itemLabel.padding.left += Mathf.RoundToInt(GetContentIndent(args.item) + extraSpaceBeforeIconAndLabel);
-                        GUI.Label(rowRect, Utils.GUIContentTemp(tvi.query.displayName, SearchQuery.GetIcon(tvi.query)), Styles.itemLabel);
-                        Styles.itemLabel.padding.left = oldLeftPadding;
-                    }
+                    SearchQueryAsset.ResetSearchQueryItems();
+                    Reload();
+                    return;
+                }
+
+                if (!args.isRenaming && evt.type == EventType.Repaint)
+                {
+                    var itemContent = Utils.GUIContentTemp(tvi.query.displayName, SearchQuery.GetIcon(tvi.query));
+                    var oldLeftPadding = Styles.itemLabel.padding.left;
+                    Styles.itemLabel.padding.left += Mathf.RoundToInt(GetContentIndent(args.item) + extraSpaceBeforeIconAndLabel);
+                    Styles.itemLabel.Draw(rowRect, itemContent,
+                        isHover: rowRect.Contains(evt.mousePosition), isActive: args.selected, on: false, hasKeyboardFocus: false);
+                    Styles.itemLabel.padding.left = oldLeftPadding;
                 }
             }
         }
@@ -312,6 +311,10 @@ namespace UnityEditor.Search
                 m_ProjectQueries.AddChild(item);
                 SetExpanded(m_ProjectQueries.id, true);
                 SortBy(m_ProjectQueries, m_SortOrder);
+
+                var evt = searchView.CreateEvent(SearchAnalytics.GenericEventType.QuickSearchCreateSearchQuery, query.searchText, query.filePath, "project");
+                evt.intPayload1 = query.GetResultViewState().tableConfig != null ? 1 : 0;
+                SearchAnalytics.SendEvent(evt);
             }
             else if (query is SearchQuery sq && SearchQuery.IsUserQuery(sq))
             {
@@ -319,13 +322,17 @@ namespace UnityEditor.Search
                 m_UserQueries.AddChild(item);
                 SetExpanded(m_UserQueries.id, true);
                 SortBy(m_UserQueries, m_SortOrder);
+
+                var evt = searchView.CreateEvent(SearchAnalytics.GenericEventType.QuickSearchCreateSearchQuery, query.searchText, "", "user");
+                evt.intPayload1 = query.GetResultViewState().tableConfig != null ? 1 : 0;
+                SearchAnalytics.SendEvent(evt);
             }
 
             if (item != null)
             {
-                if (select)
-                    SelectionClick(item, false);
                 BuildRows(rootItem);
+                if (select)
+                    SetSelection(new int[] { item.id });
             }
         }
     }

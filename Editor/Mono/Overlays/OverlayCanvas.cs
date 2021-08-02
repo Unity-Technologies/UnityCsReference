@@ -85,6 +85,7 @@ namespace UnityEditor.Overlays
         OverlayMenu m_Menu;
 
         List<Overlay> m_Overlays = new List<Overlay>();
+        List<LegacyOverlay> m_LegacyOverlays = new List<LegacyOverlay>();
         Dictionary<string, OverlayContainer> m_ContainerFromId = new Dictionary<string, OverlayContainer>();
 
         [SerializeField]
@@ -120,6 +121,7 @@ namespace UnityEditor.Overlays
         public OverlayDestinationMarker destinationMarker { get; private set; }
 
         public IEnumerable<Overlay> overlays => m_Overlays.AsReadOnly();
+        internal IEnumerable<LegacyOverlay> legacyOverlays => m_LegacyOverlays;
 
         VisualElement m_WindowRoot;
         internal VisualElement windowRoot => m_WindowRoot;
@@ -384,6 +386,27 @@ namespace UnityEditor.Overlays
             OnOverlayAdded(overlay);
         }
 
+        internal LegacyOverlay GetOrCreateLegacyOverlay(string id, string title)
+        {
+            var overlay = m_Overlays.Find(o => o.id == id) as LegacyOverlay;
+
+            if (overlay == null)
+            {
+                overlay = (LegacyOverlay)OverlayUtilities.CreateOverlay(typeof(LegacyOverlay), this);
+                overlay.InitializeFromAttribute(new OverlayAttribute(null, id, title));
+                overlay.dontSaveInLayout = true;
+                m_Overlays.Add(overlay);
+                m_LegacyOverlays.Add(overlay);
+                OnOverlayAdded(overlay);
+
+                m_OverlaysByVE[overlay.rootVisualElement] = overlay;
+
+                defaultContainer.AddToBottom(overlay);
+            }
+
+            return overlay;
+        }
+
         void OnOverlayAdded(Overlay overlay)
         {
             //register mouse events for hovering
@@ -589,6 +612,9 @@ namespace UnityEditor.Overlays
                 for (var index = 0; index < overlays.Count; index++)
                 {
                     var overlay = overlays[index];
+                    if (overlay.dontSaveInLayout)
+                        continue;
+
                     var data = CreateSaveData(index, overlay);
                     m_SaveData.Add(data);
                 }

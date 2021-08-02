@@ -94,6 +94,28 @@ namespace UnityEditor
         static SceneView s_ActiveViewForOverlays;
         IEnumerable<Overlay> m_TransientOverlays;
 
+        static string GetLegacyOverlayId(OverlayWindow overlayData)
+        {
+            return "legacy-overlay::" + overlayData.title.text;
+        }
+
+        internal void ShowLegacyOverlay(OverlayWindow overlayData)
+        {
+            var overlay = overlayCanvas.GetOrCreateLegacyOverlay(GetLegacyOverlayId(overlayData), overlayData.title.text);
+            if (overlay != null)
+            {
+                overlay.data = overlayData;
+                overlay.showRequested = true;
+            }
+        }
+
+        void LegacyOverlayPreOnGUI()
+        {
+            if (Event.current.type == EventType.Layout)
+                foreach (var legacyOverlay in overlayCanvas.legacyOverlays)
+                    legacyOverlay.showRequested = false;
+        }
+
         static void UpdateTransientOverlayDisplay()
         {
             if (s_ActiveViewForOverlays != lastActiveSceneView && lastActiveSceneView != null)
@@ -2195,6 +2217,11 @@ namespace UnityEditor
                 else if (overlay is ITransientOverlay transient)
                     overlay.displayed = shouldShow && transient.visible;
             }
+
+            foreach (var legacyOverlay in overlayCanvas.legacyOverlays)
+                legacyOverlay.displayed = shouldShow && legacyOverlay.visible;
+
+            LegacyOverlayPreOnGUI();
 
             s_CurrentDrawingSceneView = this;
 

@@ -148,9 +148,6 @@ namespace UnityEditor.Search
 
                 menu.AddSeparator("");
                 menu.AddItem(EditorGUIUtility.TrTextContent("Reset Columns"), false, ResetColumnLayout);
-                menu.AddSeparator("");
-                menu.AddItem(EditorGUIUtility.TrTextContent("Export Report..."), false, ExportJson);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Export CSV..."), false, ExportCsv);
             }
 
             private void EditColumn(object userData)
@@ -206,16 +203,6 @@ namespace UnityEditor.Search
                 base.OnGUI(rect, xScroll);
             }
 
-            private void ExportJson()
-            {
-                SearchReport.Export(m_TableView.GetSearchTable().name, m_TableView.GetColumns(), m_TableView.GetRows(), m_TableView.context);
-            }
-
-            private void ExportCsv()
-            {
-                SearchReport.ExportAsCsv(m_TableView.GetSearchTable().name, m_TableView.GetColumns(), m_TableView.GetRows(), m_TableView.context);
-            }
-
             private Rect[] GetMoreButtonRect(Rect headerRect, int numButtons)
             {
                 const float k_MoreButtonSize = 16f;
@@ -248,6 +235,7 @@ namespace UnityEditor.Search
         private readonly ITableView m_TableView;
         private List<TreeViewItem> m_Items;
         private Rect m_ViewRect;
+        private int m_FrameColumnIndex = -1;
 
         public PropertyTable(string serializationUID, ITableView tableView)
             : base(new TreeViewState(), new PropertyTableColumnHeader(tableView))
@@ -276,6 +264,15 @@ namespace UnityEditor.Search
             m_ViewRect.yMin -= 20;
             m_ViewRect.yMax += 20;
             base.OnGUI(tableRect);
+
+            if (m_FrameColumnIndex >= 0)
+            {
+                //multiColumnHeader.UpdateColumnHeaderRects(tableRect);
+                var rect = multiColumnHeader.GetColumnRect(m_FrameColumnIndex);
+                state.scrollPos.x = rect.position.x;
+                m_FrameColumnIndex = -1;
+                Repaint();
+            }
         }
 
         public void Dispose()
@@ -529,6 +526,11 @@ namespace UnityEditor.Search
         private SearchColumn Col(int idx)
         {
             return multiColumnHeader.state.columns[idx].userDataObj as SearchColumn;
+        }
+
+        public void FrameColumn(int columnIndex)
+        {
+            m_FrameColumnIndex = multiColumnHeader.GetVisibleColumnIndex(Math.Max(0, columnIndex));
         }
     }
 }

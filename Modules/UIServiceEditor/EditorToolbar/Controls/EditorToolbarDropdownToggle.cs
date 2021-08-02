@@ -16,6 +16,7 @@ namespace UnityEditor.Overlays
         internal static readonly string toggleClassName = ussClassName + "__toggle";
         internal static readonly string toggleIconClassName = ussClassName + "__icon";
         internal static readonly string toggleTextClassName = ussClassName + "__text";
+        internal static readonly string toggleNoIconClassName = ussClassName + "-noicon";
 
         readonly Image m_IconElement;
         readonly TextElement m_TextElement;
@@ -33,13 +34,21 @@ namespace UnityEditor.Overlays
         public Texture2D icon
         {
             get => m_IconElement.image as Texture2D;
-            set => m_IconElement.image = value;
+            set
+            {
+                m_IconElement.image = value;
+                UpdateIconState();
+            }
         }
 
         public string text
         {
             get => m_TextElement.text;
-            set => m_TextElement.text = value;
+            set
+            {
+                m_TextElement.text = value;
+                UpdateIconState();
+            }
         }
 
         public EditorToolbarDropdownToggle() : this("", null) {}
@@ -57,13 +66,14 @@ namespace UnityEditor.Overlays
             m_IconElement = new Image {scaleMode = ScaleMode.ScaleToFit, image = icon};
             m_IconElement.AddToClassList(EditorToolbar.elementIconClassName);
             m_IconElement.AddToClassList(toggleIconClassName);
+            if (icon == null && !(text == null || text == string.Empty))
+                m_IconElement.AddToClassList(toggleNoIconClassName);
             m_IconElement.pickingMode = PickingMode.Ignore;
             m_Toggle.Add(m_IconElement);
 
             m_TextElement = new TextElement {text = text};
             m_TextElement.AddToClassList(toggleTextClassName);
             m_TextElement.AddToClassList(EditorToolbar.elementLabelClassName);
-            m_TextElement.style.display = (text == null || text == string.Empty) ? DisplayStyle.None : DisplayStyle.Flex;
             m_Toggle.Add(m_TextElement);
 
             m_DropdownButton = new Button(dropdownClickEvent);
@@ -76,6 +86,17 @@ namespace UnityEditor.Overlays
 
             Add(m_Toggle);
             Add(m_DropdownButton);
+        }
+
+        void UpdateIconState()
+        {
+            if (icon == null && (text != null && text != string.Empty))
+            {
+                if (!m_IconElement.ClassListContains(toggleNoIconClassName))
+                    m_IconElement.AddToClassList(toggleNoIconClassName);
+            }
+            else if (icon && m_IconElement.ClassListContains(toggleNoIconClassName))
+                m_IconElement.RemoveFromClassList(toggleNoIconClassName);
         }
 
         void ToggleValue()

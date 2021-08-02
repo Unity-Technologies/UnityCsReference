@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.Search.Providers;
 using UnityEngine;
 
 namespace UnityEditor.Search
@@ -105,6 +106,63 @@ namespace UnityEditor.Search
             {
                 new SearchColumn("GameObject/Enabled", "enabled", "GameObject/Enabled", options: SearchColumnFlags.TextAlignmentCenter)
             });
+        }
+
+        [SceneQueryEngineFilter("vdist")]
+        public static float SceneFilterViewDistance(GameObject go)
+        {
+            if (!go || !SceneView.lastActiveSceneView)
+                return float.NaN;
+            var cam = SceneView.lastActiveSceneView.camera;
+            var dir = go.transform.position - cam.transform.position;
+            return dir.magnitude;
+        }
+
+        [SceneQueryEngineFilter("position")]
+        public static string SceneFilterPosition(GameObject go)
+        {
+            var position = go.transform.position;
+            return $"{Mathf.RoundToInt(position.x)};{Mathf.RoundToInt(position.y)};{Mathf.RoundToInt(position.z)}";
+        }
+
+        [SceneQueryEngineFilter("x")] public static int SceneFilterPositionX(GameObject go) => Mathf.RoundToInt(go.transform.position.z);
+        [SceneQueryEngineFilter("y")] public static int SceneFilterPositionY(GameObject go) => Mathf.RoundToInt(go.transform.position.y);
+        [SceneQueryEngineFilter("z")] public static int SceneFilterPositionZ(GameObject go) => Mathf.RoundToInt(go.transform.position.z);
+
+        [SearchSelector("position", provider: providerId)]
+        public static string SceneSelectPosition(SearchItem item)
+        {
+            var go = item.ToObject<GameObject>();
+            if (!go)
+                return null;
+            return SceneFilterPosition(go);
+        }
+
+        [SearchSelector("x", provider: providerId)]
+        public static object SceneSelectPositionX(SearchItem item)
+        {
+            var go = item.ToObject<GameObject>();
+            if (!go)
+                return null;
+            return Mathf.RoundToInt(go.transform.position.x);
+        }
+
+        [SearchSelector("y", provider: providerId)]
+        public static object SceneSelectPositionY(SearchItem item)
+        {
+            var go = item.ToObject<GameObject>();
+            if (!go)
+                return null;
+            return Mathf.RoundToInt(go.transform.position.y);
+        }
+
+        [SearchSelector("z", provider: providerId)]
+        public static object SceneSelectPositionZ(SearchItem item)
+        {
+            var go = item.ToObject<GameObject>();
+            if (!go)
+                return null;
+            return Mathf.RoundToInt(go.transform.position.z);
         }
     }
 }

@@ -36,6 +36,7 @@ namespace UnityEditor.Search
                 m_Context = value ?? throw new ArgumentNullException(nameof(value));
             }
         }
+
         [NonSerialized] private SearchContext m_Context;
         [NonSerialized] private bool m_WasDeserialized;
         [SerializeField] private string[] providerIds;
@@ -59,11 +60,14 @@ namespace UnityEditor.Search
         public bool hasWindowSize => position.width > 0f && position.height > 0;
         public Vector2 windowSize => hasWindowSize ? position.size : defaultSize;
 
-        public SearchViewState()
-            : this(null, null) {}
+        public SearchViewState() : this(null, null) {}
+        public SearchViewState(SearchContext context) : this(context, null) {}
 
-        public SearchViewState(SearchContext context)
-            : this(context, null) {}
+        public SearchViewState(SearchContext context, SearchViewFlags flags)
+            : this(context, null)
+        {
+            SetSearchViewFlags(flags);
+        }
 
         public SearchViewState(SearchContext context, Action<SearchItem, bool> selectHandler)
         {

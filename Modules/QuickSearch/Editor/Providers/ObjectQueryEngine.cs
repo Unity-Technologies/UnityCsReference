@@ -156,7 +156,7 @@ namespace UnityEditor.Search.Providers
         #region search_query_error_example
         public IEnumerable<T> Search(SearchContext context, SearchProvider provider, IEnumerable<T> subset = null)
         {
-            var query = m_QueryEngine.Parse(ConvertSelectors(context.searchQuery), true);
+            var query = m_QueryEngine.Parse(context.searchQuery, true);
             if (!query.valid)
             {
                 context.AddSearchQueryErrors(query.errors.Select(e => new SearchQueryError(e, context, provider)));
@@ -168,12 +168,6 @@ namespace UnityEditor.Search.Providers
         }
 
         #endregion
-
-        static readonly Regex k_HashPropertyFilterFunctionRegex = new Regex(@"([#][^><=!:\s]+)[><=!:]");
-        static string ConvertSelectors(string queryStr)
-        {
-            return ParserUtils.ReplaceSelectorInExpr(queryStr, (selector, cleanedSelector) => $"p({cleanedSelector})", k_HashPropertyFilterFunctionRegex);
-        }
 
         public virtual bool GetId(T obj, string op, int instanceId)
         {

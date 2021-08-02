@@ -24,7 +24,7 @@ namespace UnityEditor.Search
         private static readonly QueryValidationOptions k_QueryEngineOptions = new QueryValidationOptions { validateFilters = true, skipNestedQueries = true };
         private SearchField m_SearchField;
 
-        [MenuItem("Window/Search/Open Report...")]
+        [MenuItem("Window/Search/Open Report...", priority = 13000)]
         static void OpenWindow()
         {
             OpenWindow(SearchReport.Import());
@@ -122,7 +122,7 @@ namespace UnityEditor.Search
                     using (new GUILayout.HorizontalScope(Styles.searchReportField))
                     {
                         var searchFieldText = string.IsNullOrEmpty(m_SearchText) ? m_Report.query : m_SearchText;
-                        var searchTextRect = m_SearchField.GetRect(searchFieldText, position.width, (Styles.toolbarButton.fixedWidth + Styles.toolbarButton.margin.left) + Styles.toolbarButton.margin.right);
+                        var searchTextRect = m_SearchField.GetLayoutRect(searchFieldText, position.width, (Styles.toolbarButton.fixedWidth + Styles.toolbarButton.margin.left) + Styles.toolbarButton.margin.right);
                         var searchClearButtonRect = Styles.searchFieldBtn.margin.Remove(searchTextRect);
                         searchClearButtonRect.xMin = searchClearButtonRect.xMax - 20f;
 

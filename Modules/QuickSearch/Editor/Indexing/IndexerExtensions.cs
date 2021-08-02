@@ -137,27 +137,35 @@ namespace UnityEditor.Search
             if (!c)
                 return;
 
-            indexer.AddNumber("materialcount", c.sharedMaterials.Length, indexer.settings.baseScore + 2, context.documentIndex);
+            if (indexer.settings.options.properties)
+                indexer.AddNumber("materialcount", c.sharedMaterials.Length, indexer.settings.baseScore + 2, context.documentIndex);
             foreach (var m in c.sharedMaterials)
             {
                 if (!m)
                     continue;
 
-                if (!string.IsNullOrEmpty(m.name))
+                if (!string.IsNullOrEmpty(m.name) && indexer.settings.options.types)
                     indexer.AddProperty("material", m.name.Replace(" (Instance)", "").ToLowerInvariant(), context.documentIndex, saveKeyword: false, exact: false);
 
-                var mp = AssetDatabase.GetAssetPath(m);
-                if (!string.IsNullOrEmpty(mp))
-                    indexer.AddReference(context.documentIndex, mp);
+                if (indexer.settings.options.dependencies)
+                {
+                    var mp = AssetDatabase.GetAssetPath(m);
+                    if (!string.IsNullOrEmpty(mp))
+                        indexer.AddReference(context.documentIndex, mp);
+                }
 
                 if (m.shader != null)
                 {
                     // Index shader name reference
-                    indexer.AddProperty("shader", m.shader.name.ToLowerInvariant(), context.documentIndex, exact: false);
+                    if (indexer.settings.options.types)
+                        indexer.AddProperty("shader", m.shader.name.ToLowerInvariant(), context.documentIndex, exact: false);
 
-                    var sp = AssetDatabase.GetAssetPath(m.shader);
-                    if (!string.IsNullOrEmpty(sp))
-                        indexer.AddReference(context.documentIndex, sp);
+                    if (indexer.settings.options.dependencies)
+                    {
+                        var sp = AssetDatabase.GetAssetPath(m.shader);
+                        if (!string.IsNullOrEmpty(sp))
+                            indexer.AddReference(context.documentIndex, sp);
+                    }
                 }
             }
         }
