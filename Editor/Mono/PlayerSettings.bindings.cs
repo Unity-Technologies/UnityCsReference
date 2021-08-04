@@ -181,7 +181,13 @@ namespace UnityEditor
         NET_Micro = 5,
 
         // .NET Standard 2.0
-        NET_Standard_2_0 = 6
+        NET_Standard_2_0 = 6,
+
+        // Latest .NET Standard version Unity supports
+        NET_Standard = NET_Standard_2_0,
+
+        // .NET Framework 8 + .NET Standard 2.1 APIs
+        NET_Unity_4_8 = NET_4_6,
     }
 
     public enum ManagedStrippingLevel

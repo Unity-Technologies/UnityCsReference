@@ -454,7 +454,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         public void DrawRectangle(MeshGenerationContextUtils.RectangleParams rectParams)
         {
-            if (rectParams.rect.width < Mathf.Epsilon || rectParams.rect.height < Mathf.Epsilon)
+            if (rectParams.rect.width < UIRUtility.k_Epsilon || rectParams.rect.height < UIRUtility.k_Epsilon)
                 return; // Nothing to draw
 
             if (currentElement.panel.contextType == ContextType.Editor)
@@ -509,7 +509,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         public void DrawVisualElementBackground()
         {
-            if (currentElement.layout.width <= Mathf.Epsilon || currentElement.layout.height <= Mathf.Epsilon)
+            if (currentElement.layout.width <= UIRUtility.k_Epsilon || currentElement.layout.height <= UIRUtility.k_Epsilon)
                 return;
 
             var style = currentElement.computedStyle;
@@ -615,7 +615,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         public void DrawVisualElementBorder()
         {
-            if (currentElement.layout.width >= Mathf.Epsilon && currentElement.layout.height >= Mathf.Epsilon)
+            if (currentElement.layout.width >= UIRUtility.k_Epsilon && currentElement.layout.height >= UIRUtility.k_Epsilon)
             {
                 var style = currentElement.computedStyle;
                 if (style.borderLeftColor != Color.clear && style.borderLeftWidth > 0.0f ||
@@ -855,7 +855,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         void GenerateStencilClipEntryForRoundedRectBackground()
         {
-            if (currentElement.layout.width <= Mathf.Epsilon || currentElement.layout.height <= Mathf.Epsilon)
+            if (currentElement.layout.width <= UIRUtility.k_Epsilon || currentElement.layout.height <= UIRUtility.k_Epsilon)
                 return;
 
             var style = currentElement.computedStyle;

@@ -424,7 +424,7 @@ namespace UnityEditor.UIElements.Debugger
             if ((changeTypeFlag & VersionChangeType.Repaint) == VersionChangeType.Repaint && m_Context.showRepaintOverlay)
             {
                 var visible = ve.resolvedStyle.visibility == Visibility.Visible &&
-                    ve.resolvedStyle.opacity > Mathf.Epsilon;
+                    ve.resolvedStyle.opacity > UIRUtility.k_Epsilon;
                 if (panel != null && ve != panel.visualTree && visible)
                     m_RepaintOverlay.AddOverlay(ve, panelDebug?.debugContainer);
             }

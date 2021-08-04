@@ -87,8 +87,11 @@ namespace UnityEditor.Snap
         void Init(SceneView sceneView)
         {
             m_SceneView = sceneView;
-            m_GridPlane.value = (int)m_SceneView.sceneViewGrids.gridAxis;
-            m_GridOpacity.value = m_SceneView.sceneViewGrids.gridOpacity;
+            m_GridOpacity.SetValueWithoutNotify(m_SceneView.sceneViewGrids.gridOpacity);
+
+            SceneViewGrid grid = m_SceneView.sceneViewGrids;
+            grid.gridRenderAxisChanged += axis => { m_GridPlane.SetValueWithoutNotify((int)axis); };
+            m_GridPlane.SetValueWithoutNotify((int)grid.gridAxis);
         }
 
         public static void ShowDropDownAtTrigger(VisualElement trigger, SceneView sceneView)

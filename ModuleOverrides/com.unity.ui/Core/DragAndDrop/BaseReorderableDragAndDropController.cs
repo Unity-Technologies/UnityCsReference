@@ -28,7 +28,9 @@ namespace UnityEngine.UIElements
 
         public virtual StartDragArgs SetupDragAndDrop(IEnumerable<int> itemIndices, bool skipText = false)
         {
+            // *begin-nonstandard-formatting*
             m_SelectedIndices ??= new List<int>();
+            // *end-nonstandard-formatting*
             m_SelectedIndices.Clear();
 
             var title = string.Empty;

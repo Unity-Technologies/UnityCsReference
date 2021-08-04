@@ -83,6 +83,13 @@ namespace UnityEditor
         /// <param name="objectInHierarchy">The object the hint will be drawn next to</param>
         public static void DrawHintNextToHierarchyObject(DynamicHintContent hint, GameObject objectInHierarchy)
         {
+            if (!EditorWindow.HasOpenInstances<SceneHierarchyWindow>())
+            {
+                return;
+            }
+
+            EditorWindow.FocusWindowIfItsOpen<SceneHierarchyWindow>();
+
             Rect rectOfObject = GetRectOfObjectInHierarchy(objectInHierarchy, out bool objectWasFound);
 
             if (!objectWasFound) { return; }
@@ -98,6 +105,13 @@ namespace UnityEditor
         /// <param name="objectToFind">The object the hint will be drawn next to</param>
         public static void DrawHintNextToProjectAsset(DynamicHintContent hint, UnityEngine.Object objectToFind)
         {
+            if (!EditorWindow.HasOpenInstances<ProjectBrowser>())
+            {
+                return;
+            }
+
+            EditorWindow.FocusWindowIfItsOpen<ProjectBrowser>();
+
             Rect rectOfObject = GetRectOfObjectInProjectExplorer(objectToFind, out bool objectWasFound);
 
             if (!objectWasFound) { return; }
@@ -114,6 +128,13 @@ namespace UnityEditor
         /// <param name="targetType">The type of the class that contains the field</param>
         public static void DrawHintNextToInspectorField(DynamicHintContent hint, string fieldPathInClass, Type targetType)
         {
+            if (!EditorWindow.HasOpenInstances<InspectorWindow>())
+            {
+                return;
+            }
+
+            EditorWindow.FocusWindowIfItsOpen<InspectorWindow>();
+
             Rect rectOfObject = GetRectOfFieldInInspector(fieldPathInClass, targetType, out bool objectWasFound);
 
             if (!objectWasFound) { return; }
@@ -173,6 +194,11 @@ namespace UnityEditor
 
         static DynamicHintContent GetDynamicHintContentOf<T>(TypeCache.MethodCollection creatorHandlers, T target)
         {
+            if (target == null) //this means the script has been deleted and is "Missing"
+            {
+                return null;
+            }
+
             Type targetType = target.GetType();
             foreach (var creationHandler in creatorHandlers)
             {

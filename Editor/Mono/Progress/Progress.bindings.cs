@@ -294,7 +294,8 @@ namespace UnityEditor
         [RequiredByNativeCode]
         private static void OnOperationStateCreated(int id)
         {
-            if (!s_Initialized) return;
+            if (!s_Initialized)
+                RestoreProgressItems();
             var item = CreateProgressItem(id);
 
             s_ProgressDirty = true;
@@ -305,7 +306,8 @@ namespace UnityEditor
         [RequiredByNativeCode]
         private static void OnOperationStateChanged(int id)
         {
-            if (!s_Initialized) return;
+            if (!s_Initialized)
+                RestoreProgressItems();
 
             var item = GetProgressById(id);
             Assert.IsNotNull(item);
@@ -320,7 +322,8 @@ namespace UnityEditor
         [RequiredByNativeCode]
         private static void OnOperationsStateChanged(int[] ids)
         {
-            if (!s_Initialized) return;
+            if (!s_Initialized)
+                RestoreProgressItems();
             if (ids.Length == 0) return;
 
             var items = new Item[ids.Length];
@@ -342,7 +345,8 @@ namespace UnityEditor
         [RequiredByNativeCode]
         private static void OnOperationStateRemoved(int id)
         {
-            if (!s_Initialized) return;
+            if (!s_Initialized)
+                RestoreProgressItems();
 
             var item = GetProgressById(id);
             Assert.IsNotNull(item);
@@ -357,7 +361,8 @@ namespace UnityEditor
         [RequiredByNativeCode]
         private static void OnOperationsStateRemoved(int[] ids)
         {
-            if (!s_Initialized) return;
+            if (!s_Initialized)
+                RestoreProgressItems();
 
             var items = new Item[ids.Length];
             var i = 0;
@@ -378,7 +383,8 @@ namespace UnityEditor
 
         private static void RestoreProgressItems()
         {
-            Assert.IsFalse(s_Initialized);
+            if (s_Initialized)
+                return;
 
             s_ProgressItems.Clear();
 
@@ -406,6 +412,31 @@ namespace UnityEditor
             var item = new Item(id);
             s_ProgressItems.Add(item);
             return item;
+        }
+
+        internal static float GetMaxElapsedTime()
+        {
+            if (s_ProgressItems.Count == 0)
+                return 0.0f;
+
+            var maxElapsedTime = -1.0f;
+            foreach (var progressItem in s_ProgressItems)
+            {
+                var elapsedTime = progressItem.elapsedTime;
+                if (elapsedTime > maxElapsedTime)
+                    maxElapsedTime = elapsedTime;
+            }
+
+            return maxElapsedTime;
+        }
+
+        // For testing purposes only.
+        internal static void ClearProgressItems()
+        {
+            s_ProgressItems.Clear();
+            s_Initialized = false;
+            s_ProgressDirty = true;
+            s_RemainingTimeDirty = true;
         }
     }
 }

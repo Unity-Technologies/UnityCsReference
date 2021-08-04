@@ -15,7 +15,7 @@ namespace UnityEditor.UIElements.Bindings
 
         public override int GetItemCount()
         {
-            return serializedObjectList?.ArrayProperty.arraySize ?? 0;
+            return serializedObjectList?.Count ?? 0;
         }
 
         public override void AddItems(int itemCount)

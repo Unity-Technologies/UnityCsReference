@@ -157,22 +157,30 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
+        private string m_Secret;
+        private string secret
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(m_Secret))
+                    m_Secret = m_UnityConnect.GetConfigurationURL(CloudConfigUrl.CloudPackagesKey);
+                return m_Secret;
+            }
+        }
+
+
         [NonSerialized]
         private UnityConnectProxy m_UnityConnect;
         [NonSerialized]
         private UnityOAuthProxy m_UnityOAuth;
         [NonSerialized]
-        private AssetStoreUtils m_AssetStoreUtils;
-        [NonSerialized]
         private HttpClientFactory m_HttpClientFactory;
         public void ResolveDependencies(UnityConnectProxy unityConnect,
             UnityOAuthProxy unityOAuth,
-            AssetStoreUtils assetStoreUtils,
             HttpClientFactory httpClientFactory)
         {
             m_UnityConnect = unityConnect;
             m_UnityOAuth = unityOAuth;
-            m_AssetStoreUtils = assetStoreUtils;
             m_HttpClientFactory = httpClientFactory;
         }
 
@@ -189,9 +197,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
         {
             ClearCache();
-
-            if (loggedIn)
-                GetUserInfo(null);
         }
 
         public virtual void ClearCache()
@@ -237,12 +242,11 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             m_AuthCodeRequested = true;
-            var errorMessage = string.Empty;
             try
             {
                 m_UnityOAuth.GetAuthorizationCodeAsync(k_ServiceId, authCodeResponse =>
                 {
-                    m_AuthCode = "";
+                    m_AuthCode = string.Empty;
                     m_AuthCodeRequested = false;
                     if (!string.IsNullOrEmpty(authCodeResponse.AuthCode))
                     {
@@ -258,7 +262,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             catch (Exception e)
             {
-                m_AuthCode = "";
+                m_AuthCode = string.Empty;
                 m_AuthCodeRequested = false;
                 OnOperationError(e.Message);
             }
@@ -266,53 +270,101 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void GetAccessToken(Action<AccessToken> doneCallback)
         {
+            if (m_AccessToken?.IsValid() ?? false)
+            {
+                doneCallback?.Invoke(m_AccessToken);
+                return;
+            }
+
+            // Use refresh token if any
+            if (!string.IsNullOrEmpty(m_AccessToken?.refreshToken))
+            {
+                RefreshAccessToken(doneCallback);
+                return;
+            }
+
             GetAuthCode(authCode =>
             {
-                if (m_AccessToken?.IsValid() ?? false)
-                {
-                    doneCallback?.Invoke(m_AccessToken);
-                    return;
-                }
-
-                m_OnAccessTokenFetched += doneCallback;
-
-                if (m_AccessTokenRequest != null)
-                    return;
-
-                var secret = m_UnityConnect.GetConfigurationURL(CloudConfigUrl.CloudPackagesKey);
-
-                m_AccessTokenRequest = m_HttpClientFactory.PostASyncHTTPClient(
-                    $"{host}{k_OAuthUri}",
-                    $"grant_type=authorization_code&code={authCode}&client_id=packman&client_secret={secret}&redirect_uri=packman://unity");
-                m_AccessTokenRequest.header["Content-Type"] = "application/x-www-form-urlencoded";
-                m_AccessTokenRequest.doneCallback = httpClient =>
-                {
-                    m_AccessTokenRequest = null;
-                    m_AccessToken = null;
-
-                    var response = AssetStoreUtils.ParseResponseAsDictionary(httpClient);
-                    if (response != null)
-                    {
-                        if (response.ContainsKey("errorMessage"))
-                        {
-                            OnGetAccessTokenError(response.GetString("errorMessage"));
-                            return;
-                        }
-
-                        var accessToken = new AccessToken(response);
-                        if (accessToken.IsValid())
-                        {
-                            m_AccessToken = accessToken;
-                            m_OnAccessTokenFetched?.Invoke(m_AccessToken);
-                            m_OnAccessTokenFetched = null;
-                            return;
-                        }
-                        else
-                            OnGetAccessTokenError(L10n.Tr("Access token invalid"));
-                    }
-                };
-                m_AccessTokenRequest.Begin();
+                GetNewAccessToken(doneCallback, authCode);
             });
+        }
+
+        private void GetNewAccessToken(Action<AccessToken> doneCallback, string authCode)
+        {
+            m_OnAccessTokenFetched += doneCallback;
+
+            if (m_AccessTokenRequest != null)
+                return;
+
+            m_AccessTokenRequest = m_HttpClientFactory.PostASyncHTTPClient(
+                $"{host}{k_OAuthUri}",
+                $"grant_type=authorization_code&code={authCode}&client_id={k_ServiceId}&client_secret={secret}");
+            m_AccessTokenRequest.header["Content-Type"] = "application/x-www-form-urlencoded";
+            m_AccessTokenRequest.doneCallback = httpClient =>
+            {
+                m_AccessTokenRequest = null;
+                m_AccessToken = null;
+
+                var response = AssetStoreUtils.ParseResponseAsDictionary(httpClient);
+                if (response != null)
+                {
+                    if (response.ContainsKey("errorMessage"))
+                    {
+                        OnGetAccessTokenError(response.GetString("errorMessage"));
+                        return;
+                    }
+
+                    var accessToken = new AccessToken(response);
+                    if (accessToken.IsValid())
+                    {
+                        m_AccessToken = accessToken;
+                        m_OnAccessTokenFetched?.Invoke(m_AccessToken);
+                        m_OnAccessTokenFetched = null;
+                    }
+                    else
+                        OnGetAccessTokenError(L10n.Tr("Access token invalid"));
+                }
+            };
+            m_AccessTokenRequest.Begin();
+        }
+
+        private void RefreshAccessToken(Action<AccessToken> doneCallback)
+        {
+            m_OnAccessTokenFetched += doneCallback;
+
+            if (m_AccessTokenRequest != null)
+                return;
+
+            m_AccessTokenRequest = m_HttpClientFactory.PostASyncHTTPClient(
+                $"{host}{k_OAuthUri}",
+                $"grant_type=refresh_token&refresh_token={m_AccessToken.refreshToken}&client_id={k_ServiceId}&client_secret={secret}");
+            m_AccessTokenRequest.header["Content-Type"] = "application/x-www-form-urlencoded";
+            m_AccessTokenRequest.doneCallback = httpClient =>
+            {
+                m_AccessTokenRequest = null;
+                m_AccessToken = null;
+
+                var response = AssetStoreUtils.ParseResponseAsDictionary(httpClient);
+                if (response != null)
+                {
+                    if (response.ContainsKey("errorMessage"))
+                    {
+                        OnGetAccessTokenError(response.GetString("errorMessage"));
+                        return;
+                    }
+
+                    var accessToken = new AccessToken(response);
+                    if (accessToken.IsValid())
+                    {
+                        m_AccessToken = accessToken;
+                        m_OnAccessTokenFetched?.Invoke(m_AccessToken);
+                        m_OnAccessTokenFetched = null;
+                    }
+                    else
+                        OnGetAccessTokenError(L10n.Tr("Access token invalid"));
+                }
+            };
+            m_AccessTokenRequest.Begin();
         }
 
         private void GetTokenInfo(Action<TokenInfo> doneCallback)

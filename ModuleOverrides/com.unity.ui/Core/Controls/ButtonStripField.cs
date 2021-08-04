@@ -19,7 +19,17 @@ namespace UnityEngine.UIElements
         const string k_ButtonRightClass = k_ButtonClass + "--right";
         const string k_ButtonAloneClass = k_ButtonClass + "--alone";
 
-        static readonly List<Button> s_ButtonQueryResults = new List<Button>();
+        List<Button> m_Buttons = new List<Button>();
+
+        List<Button> buttons
+        {
+            get
+            {
+                m_Buttons.Clear();
+                this.Query<Button>().ToList(m_Buttons);
+                return m_Buttons;
+            }
+        }
 
         public void AddButton(string text, string name = "")
         {
@@ -48,6 +58,7 @@ namespace UnityEngine.UIElements
             var button = new Button { name = name, };
             button.AddToClassList(k_ButtonClass);
             button.RegisterCallback<DetachFromPanelEvent>(OnButtonDetachFromPanel);
+            button.clicked += () => { value = buttons.IndexOf(button); };
 
             Add(button);
 
@@ -67,14 +78,12 @@ namespace UnityEngine.UIElements
 
         void RefreshButtonsStyling()
         {
-            this.Query<Button>().ToList(s_ButtonQueryResults);
-
-            for (var i = 0; i < s_ButtonQueryResults.Count; ++i)
+            for (var i = 0; i < buttons.Count; ++i)
             {
-                var button = s_ButtonQueryResults[i];
-                bool alone = s_ButtonQueryResults.Count == 1;
+                var button = m_Buttons[i];
+                bool alone = m_Buttons.Count == 1;
                 bool left = i == 0;
-                bool right = i == s_ButtonQueryResults.Count - 1;
+                bool right = i == m_Buttons.Count - 1;
 
                 button.EnableInClassList(k_ButtonAloneClass, alone);
                 button.EnableInClassList(k_ButtonLeftClass, !alone && left);
@@ -101,30 +110,24 @@ namespace UnityEngine.UIElements
 
         public override void SetValueWithoutNotify(int newValue)
         {
-            newValue = Mathf.Clamp(newValue, 0, s_ButtonQueryResults.Count - 1);
+            newValue = Mathf.Clamp(newValue, 0, buttons.Count - 1);
             base.SetValueWithoutNotify(newValue);
-
             RefreshButtonsState();
         }
 
         void EnsureValueIsValid()
         {
-            this.Query<Button>().ToList(s_ButtonQueryResults);
-
-            if (value >= s_ButtonQueryResults.Count)
-                value = 0;
+            SetValueWithoutNotify(Mathf.Clamp(value, 0, buttons.Count - 1));
         }
 
         void RefreshButtonsState()
         {
-            this.Query<Button>().ToList(s_ButtonQueryResults);
-
-            for (int i = 0; i < s_ButtonQueryResults.Count; ++i)
+            for (int i = 0; i < buttons.Count; ++i)
             {
                 if (i == value)
-                    s_ButtonQueryResults[i].pseudoStates |= PseudoStates.Checked;
+                    m_Buttons[i].pseudoStates |= PseudoStates.Checked;
                 else
-                    s_ButtonQueryResults[i].pseudoStates &= ~PseudoStates.Checked;
+                    m_Buttons[i].pseudoStates &= ~PseudoStates.Checked;
             }
         }
     }

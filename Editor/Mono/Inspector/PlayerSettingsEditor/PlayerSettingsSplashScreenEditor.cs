@@ -308,16 +308,24 @@ namespace UnityEditor
         {
             if (m_Owner.BeginSettingsBox(sectionIndex, k_Texts.title))
             {
-                ObjectReferencePropertyField<Texture2D>(m_VirtualRealitySplashScreen, k_Texts.vrSplashScreen);
+                if (platform.namedBuildTarget == NamedBuildTarget.Server)
+                {
+                    PlayerSettingsEditor.ShowNoSettings();
+                    EditorGUILayout.Space();
+                }
+                else
+                {
+                    ObjectReferencePropertyField<Texture2D>(m_VirtualRealitySplashScreen, k_Texts.vrSplashScreen);
 
-                if (TargetSupportsOptionalBuiltinSplashScreen(platform.namedBuildTarget.ToBuildTargetGroup(), settingsExtension))
-                    BuiltinCustomSplashScreenGUI(platform.namedBuildTarget.ToBuildTargetGroup(), settingsExtension);
+                    if (TargetSupportsOptionalBuiltinSplashScreen(platform.namedBuildTarget.ToBuildTargetGroup(), settingsExtension))
+                        BuiltinCustomSplashScreenGUI(platform.namedBuildTarget.ToBuildTargetGroup(), settingsExtension);
 
-                if (settingsExtension != null)
-                    settingsExtension.SplashSectionGUI();
+                    if (settingsExtension != null)
+                        settingsExtension.SplashSectionGUI();
 
-                if (m_ShowUnitySplashScreen.boolValue)
-                    m_Owner.ShowSharedNote();
+                    if (m_ShowUnitySplashScreen.boolValue)
+                        m_Owner.ShowSharedNote();
+                }
             }
             m_Owner.EndSettingsBox();
         }

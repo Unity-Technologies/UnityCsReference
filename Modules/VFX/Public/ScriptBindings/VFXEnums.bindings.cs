@@ -163,6 +163,8 @@ namespace UnityEngine.VFX
         ExtractPixelDimensionsFromMainCamera,
 
         GetBufferFromMainCamera,
+        IsMainCameraOrthographic,
+        GetOrthographicSizeFromMainCamera,
 
         // Logical operations
         LogicalAnd,

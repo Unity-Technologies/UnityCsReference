@@ -14,12 +14,12 @@ namespace UnityEditor.Utils
         public static string GetReferenceDirectory()
         {
             var prefix = GetNetStandardInstallation();
-            return Path.Combine(prefix, Path.Combine("ref", "2.0.0"));
+            return Path.Combine(prefix, Path.Combine("ref", "2.1.0"));
         }
 
         public static string GetCompatShimsDirectory()
         {
-            return Path.Combine("compat", Path.Combine("2.0.0", "shims"));
+            return Path.Combine("compat", Path.Combine("2.1.0", "shims"));
         }
 
         public static string GetNetStandardCompatShimsDirectory()

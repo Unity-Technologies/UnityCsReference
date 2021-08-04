@@ -123,13 +123,15 @@ namespace UnityEditorInternal
                 Event.current.type = EventType.Used;
             }
 
+            EditorGUI.BeginChangeCheck();
+            if (!m_OriginalProperty.hasMultipleDifferentValues) EditorGUI.BeginProperty(headerRect, GUIContent.none, m_OriginalProperty);
+
             bool prevEnabled = GUI.enabled;
             GUI.enabled = true;
-            EditorGUI.BeginChangeCheck();
-
-            if (!m_OriginalProperty.hasMultipleDifferentValues) EditorGUI.BeginProperty(headerRect, GUIContent.none, m_OriginalProperty);
             Property.isExpanded = EditorGUI.BeginFoldoutHeaderGroup(headerRect, Property.isExpanded, label ?? GUIContent.Temp(Property.displayName));
             EditorGUI.EndFoldoutHeaderGroup();
+            GUI.enabled = prevEnabled;
+
             if (!m_OriginalProperty.hasMultipleDifferentValues) EditorGUI.EndProperty();
 
             if (EditorGUI.EndChangeCheck())
@@ -141,7 +143,6 @@ namespace UnityEditorInternal
 
                 m_ReorderableList.ClearCacheRecursive();
             }
-            GUI.enabled = prevEnabled;
 
             if (!includeChildren) return;
 

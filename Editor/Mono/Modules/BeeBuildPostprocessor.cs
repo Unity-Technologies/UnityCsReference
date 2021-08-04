@@ -222,7 +222,9 @@ namespace UnityEditor.Modules
                 GcWBarrierValidation = platformHasIncrementalGC && PlayerSettings.gcWBarrierValidation,
                 GcIncremental = platformHasIncrementalGC && PlayerSettings.gcIncremental &&
                     (apiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6 ||
-                        apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard_2_0),
+                        apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard_2_0 ||
+                        apiCompatibilityLevel == ApiCompatibilityLevel.NET_Unity_4_8 ||
+                        apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard),
                 CreateSymbolFiles = !GetDevelopment(args) || CrashReportingSettings.enabled,
                 AdditionalCppFiles = PluginImporter.GetImporters(args.target)
                     .Where(imp => DesktopPluginImporterExtension.IsCppPluginFile(imp.assetPath))

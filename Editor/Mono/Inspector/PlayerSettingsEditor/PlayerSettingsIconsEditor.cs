@@ -17,7 +17,6 @@ namespace UnityEditor
         class SettingsContent
         {
             public static readonly GUIContent iconTitle = EditorGUIUtility.TrTextContent("Icon");
-            public static readonly GUIContent notApplicableInfo = EditorGUIUtility.TrTextContent("Not applicable for this platform.");
             public static readonly GUIContent defaultIcon = EditorGUIUtility.TrTextContent("Default Icon");
             public static readonly GUIContent UIPrerenderedIcon = EditorGUIUtility.TrTextContent("Prerendered Icon");
             public static string undoChangedIconString { get { return LocalizationDatabase.GetLocalizedString("Changed Icon"); } }
@@ -51,11 +50,6 @@ namespace UnityEditor
         public PlayerSettingsIconsEditor(PlayerSettingsEditor owner)
         {
             m_Owner = owner;
-        }
-
-        private void ShowNoSettings()
-        {
-            GUILayout.Label(SettingsContent.notApplicableInfo, EditorStyles.miniLabel);
         }
 
         public void OnEnable()
@@ -410,9 +404,9 @@ namespace UnityEditor
                     platformName = platform.name;
                 }
 
-                if (namedBuildTarget == NamedBuildTarget.WebGL)
+                if (namedBuildTarget == NamedBuildTarget.WebGL || namedBuildTarget == NamedBuildTarget.Server)
                 {
-                    ShowNoSettings();
+                    PlayerSettingsEditor.ShowNoSettings();
                     EditorGUILayout.Space();
                 }
                 else if (namedBuildTarget != NamedBuildTarget.WindowsStoreApps) // UWP does this in its editor extension

@@ -773,25 +773,6 @@ namespace UnityEditorInternal
             return GetElementYOffset(m_Count - 1) + GetElementHeight(m_Count - 1) + listElementPadding;
         }
 
-        void EnsureValidProperty(SerializedProperty property)
-        {
-            if (!property.isValid)
-            {
-                ClearCache();
-                CacheIfNeeded();
-            }
-
-            try
-            {
-                ScriptAttributeUtility.GetHandler(property);
-            }
-            catch
-            {
-                ClearCache();
-                CacheIfNeeded();
-            }
-        }
-
         int recursionCounter = 0;
         Rect lastRect = Rect.zero;
         private void DoListElements(Rect listRect, Rect visibleRect)
@@ -846,8 +827,6 @@ namespace UnityEditorInternal
                             m_NonDragTargetIndices.Add(i);
                     }
                     m_NonDragTargetIndices.Insert(targetIndex, -1);
-
-                    if (m_Elements != null) EnsureValidProperty(m_PropertyCache.Last().property);
 
                     // now draw each element in the list (excluding the active element)
                     var targetSeen = false;
@@ -929,8 +908,6 @@ namespace UnityEditorInternal
                 }
                 else
                 {
-                    if (m_Elements != null) EnsureValidProperty(m_PropertyCache.Last().property);
-
                     // if we aren't dragging, we just draw all of the elements in order
                     for (int i = 0; i < m_Count; i++)
                     {
@@ -988,11 +965,6 @@ namespace UnityEditorInternal
                             if ((m_Count = count) >= i) break;
                         }
                         m_PropertyCache[i].lastControlCount = currentControlCount;
-
-                        // If an event was consumed in the course of running this for loop, then there is
-                        // a good chance the array data has changed and it is dangerous for us to continue
-                        // rendering it in this frame.
-                        if (Event.current.type == EventType.Used) break;
                     }
                 }
 

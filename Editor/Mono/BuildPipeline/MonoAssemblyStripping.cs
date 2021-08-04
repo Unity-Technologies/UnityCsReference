@@ -129,7 +129,7 @@ namespace UnityEditor
             process.StartInfo.EnvironmentVariables["_WAPI_PROCESS_HANDLE_OFFSET"] = "5";
 
             // We run the stripper on .NET 4.6 profile
-            var monoProfile = BuildPipeline.CompatibilityProfileToClassLibFolder(ApiCompatibilityLevel.NET_4_6);
+            var monoProfile = BuildPipeline.CompatibilityProfileToClassLibFolder(ApiCompatibilityLevel.NET_Unity_4_8);
             process.StartInfo.EnvironmentVariables["MONO_PATH"] = MonoInstallationFinder.GetProfileDirectory(monoProfile);
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.RedirectStandardOutput = true;

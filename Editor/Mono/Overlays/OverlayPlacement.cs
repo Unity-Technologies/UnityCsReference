@@ -41,7 +41,7 @@ namespace UnityEditor.Overlays
 
         internal Vector2 floatingSnapOffset
         {
-            get => m_FloatingSnapOffset;
+            get => m_FloatingSnapOffset + m_SnapOffsetDelta;
             private set
             {
                 if (m_FloatingSnapOffset == value)

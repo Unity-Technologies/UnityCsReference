@@ -38,7 +38,8 @@ namespace UnityEditor.Profiling.ModuleEditor
 
         public string identifier { get; private set; }
 
-        public string currentProfilerModuleIdentifier { get; }
+        // The private setter here is required by the Unity serialization system. Without it, this value would not survive domain reload.
+        public string currentProfilerModuleIdentifier { get; private set; }
 
         public static List<ModuleData> CreateDataRepresentationOfProfilerModules(List<ProfilerModule> modules)
         {

@@ -530,9 +530,11 @@ namespace UnityEngine.UIElements
         internal void SetViewController(ListViewController controller)
         {
             // Lazily init the callbacks because SetViewController is called before the ListView constructor is fully called.
+            // *begin-nonstandard-formatting*
             m_ItemAddedCallback ??= OnItemAdded;
             m_ItemRemovedCallback ??= OnItemsRemoved;
             m_ItemsSourceSizeChangedCallback ??= OnItemsSourceSizeChanged;
+            // *end-nonstandard-formatting*
 
             if (m_ListViewController != null)
             {

@@ -34,6 +34,8 @@ namespace UnityEditor.Profiling.ModuleEditor
         ModuleListViewController m_ModuleListViewController;
         ModuleDetailsViewController m_ModuleDetailsViewController;
 
+        internal List<ModuleData> Modules => m_Modules;
+
         public event Action<ReadOnlyCollection<ModuleData>, ReadOnlyCollection<ModuleData>> onChangesConfirmed;
 
         public static ModuleEditorWindow Present(List<ProfilerModule> modules, bool isConnectedToEditor)

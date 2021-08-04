@@ -21,7 +21,7 @@ namespace Unity.UI.Builder
 
             // Linking the new element with its VisualElementAsset.
             // All this copied code for this one line!
-            ve.SetProperty(BuilderConstants.ElementLinkedVisualElementAssetVEPropertyName, root);
+            ve.SetVisualElementAsset(root);
             ve.SetProperty(BuilderConstants.ElementLinkedBelongingVisualTreeAssetVEPropertyName, vta);
 
             // context.target is the created templateContainer

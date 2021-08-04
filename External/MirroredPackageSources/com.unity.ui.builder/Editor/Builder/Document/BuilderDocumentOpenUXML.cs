@@ -458,14 +458,10 @@ namespace Unity.UI.Builder
                 // Reset asset name.
                 m_VisualTreeAsset.name = Path.GetFileNameWithoutExtension(newUxmlPath);
                 m_OpenendVisualTreeAssetOldPath = newUxmlPath;
+            }
 
-                if (documentRootElement != null)
-                    ReloadDocumentToCanvas(documentRootElement);
-            }
-            else
-            {
-                SetInlineStyleRecursively(documentRootElement);
-            }
+            if (documentRootElement != null)
+                ReloadDocumentToCanvas(documentRootElement);
 
             hasUnsavedChanges = false;
 

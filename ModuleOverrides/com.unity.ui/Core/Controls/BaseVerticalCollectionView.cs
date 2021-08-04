@@ -542,7 +542,9 @@ namespace UnityEngine.UIElements
 
         internal void SetDragAndDropController(ICollectionDragAndDropController dragAndDropController)
         {
+            // *begin-nonstandard-formatting*
             m_Dragger ??= CreateDragger();
+            // *end-nonstandard-formatting*
             m_Dragger.dragAndDropController = dragAndDropController;
         }
 
