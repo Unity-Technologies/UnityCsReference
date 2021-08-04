@@ -96,7 +96,6 @@ namespace UnityEngine.UIElements
 
             if (rebuild)
             {
-                m_FirstVisibleIndex = 0;
                 m_Pool.Clear();
                 m_ActiveItems.Clear();
                 m_ScrollView.Clear();
@@ -113,7 +112,10 @@ namespace UnityEngine.UIElements
             if (newIndex >= m_ListView.itemsSource.Count || forceHide)
             {
                 recycledItem.rootElement.style.display = DisplayStyle.None;
-                m_ListView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
+                if (recycledItem.index >= 0 && recycledItem.index < m_ListView.itemsSource.Count)
+                {
+                    m_ListView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
+                }
                 return;
             }
 

@@ -100,10 +100,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var packageVersion = m_PackageDatabase.GetPackageInFeatureVersion(dependency.name);
                 var featureState = GetFeatureState(packageVersion);
 
-                var item = new FeatureDependencyItem(version, packageVersion, featureState);
+                var item = packageVersion != null ? new FeatureDependencyItem(version, packageVersion, featureState) : new FeatureDependencyItem(dependency.name);
                 item.OnLeftClick(() =>
                 {
-                    OnDependencyItemClicked(packageVersion);
+                    OnDependencyItemClicked(packageVersion, dependency.name);
                 });
                 dependencyList.Add(item);
             }
@@ -117,21 +117,21 @@ namespace UnityEditor.PackageManager.UI.Internal
             dependenciesExpander.text = numPackages == 1 ? L10n.Tr("One Package Included") : string.Format(L10n.Tr("{0} Packages Included"), numPackages);
         }
 
-        private void OnDependencyItemClicked(IPackageVersion version)
+        private void OnDependencyItemClicked(IPackageVersion version, string dependencyName)
         {
-            m_PackageManagerPrefs.selectedFeatureDependency = version.packageUniqueId;
+            m_PackageManagerPrefs.selectedFeatureDependency = dependencyName;
             RefreshSelection(version);
         }
 
         private void RefreshSelection(IPackageVersion version = null)
         {
+            var selectedDependencyPackageId = m_PackageManagerPrefs.selectedFeatureDependency;
             if (version == null)
             {
                 var dependencies = m_FeatureVersion?.dependencies;
                 if (dependencies?.Any() != true)
                     return;
 
-                var selectedDependencyPackageId = m_PackageManagerPrefs.selectedFeatureDependency;
                 if (string.IsNullOrEmpty(selectedDependencyPackageId) || !dependencies.Any(d => d.name == selectedDependencyPackageId))
                 {
                     selectedDependencyPackageId = dependencies[0].name;
@@ -139,13 +139,26 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }
                 version = m_PackageDatabase.GetPackageInFeatureVersion(selectedDependencyPackageId);
             }
-            foreach (var item in dependencyList.Children().OfType<FeatureDependencyItem>())
-                item.EnableInClassList(k_SelectedClassName, item.packageVersion == version);
 
-            dependencyTitle.value = version.displayName;
+            // If the package is not installed and undiscoverable, we have to display the package's ID name (ex: com.unity.adaptiveperformance.samsung.android)
+            // and hide other elements in the package view
+            var showElementsInDetailsView = version != null;
+
+            UIUtils.SetElementDisplay(dependencyVersion, showElementsInDetailsView);
+            UIUtils.SetElementDisplay(dependencyLink, showElementsInDetailsView);
+            UIUtils.SetElementDisplay(dependencyInfoBox, showElementsInDetailsView);
+
+            foreach (var item in dependencyList.Children().OfType<FeatureDependencyItem>())
+                item.EnableInClassList(k_SelectedClassName, item.packageName == selectedDependencyPackageId);
+
+            dependencyTitle.value = version?.displayName ?? selectedDependencyPackageId;
+            dependencyDesc.value =  version?.description ?? L10n.Tr("This package will be automatically installed with this feature.");
+
+            if (!showElementsInDetailsView)
+                return;
 
             var installedPackageVersion = m_PackageDatabase.GetPackage(version)?.versions.installed;
-            dependencyVersion.value = installedPackageVersion != null && installedPackageVersion != version ? string.Format(L10n.Tr("Version {0} (Installed {1})"), version.versionString, installedPackageVersion.versionString) : string.Format(L10n.Tr("Version {0}"), version.versionString);
+            dependencyVersion.value = installedPackageVersion != null && installedPackageVersion.versionId != version?.versionId ? string.Format(L10n.Tr("Version {0} (Installed {1})"), version.versionString, installedPackageVersion.versionString) : string.Format(L10n.Tr("Version {0}"), version.versionString);
 
             var featureState = GetFeatureState(version);
             versionState.ClearClassList();
@@ -154,7 +167,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 versionState.AddToClassList(featureState.ToString().ToLower());
                 versionState.tooltip = string.Format(L10n.Tr("Using version {0} because at least one other package or feature depends on it"), installedPackageVersion.versionString);
             }
-            dependencyDesc.value = version.description;
 
             var tab = PackageFilterTab.UnityRegistry;
             if (version.isDirectDependency || m_SettingsProxy.enablePackageDependencies)

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -34,7 +35,8 @@ namespace UnityEditor.Search
         // 16- Save all strings in string table header to save space.
         // 17- Compress search index entry with same document indexes.
         // 18- Add search document flags.
-        internal const int version = 0x4242E000 | 0x018;
+        // 19- Merge SearchIndexEntry.version and SearchIndexEntryImporter.version from now on.
+        internal const int version = 0x4242E000 | 0x019;
 
         public enum Type : byte
         {
@@ -974,15 +976,6 @@ namespace UnityEditor.Search
             throw new NotImplementedException($"{nameof(IndexDocument)} must be implemented by a specialized indexer.");
         }
 
-        internal void CombineIndexes(SearchIndexer other, int baseScore = 0, Action<int, SearchIndexer> documentIndexing = null)
-        {
-            Merge(new string[0], other, baseScore, (i, si, _) =>
-            {
-                if (si != null)
-                    documentIndexing(i, si);
-            });
-        }
-
         internal int FindDocumentIndex(string id)
         {
             if (m_IndexByDocuments.TryGetValue(id, out var di))
@@ -1008,6 +1001,72 @@ namespace UnityEditor.Search
                 var d = m_Documents[docIndex];
                 if (d.valid && d.m_Source != null && d.m_Source.Equals(path, StringComparison.Ordinal))
                     yield return docIndex;
+            }
+        }
+
+        internal void CombineIndexes(IEnumerable<SearchIndexer> artifacts, int baseScore, string indexName, Action<int, string> progress)
+        {
+            //using (new DebugTimer("Combining artifacts"))
+            {
+                int i = 0;
+                var wiec = new SearchIndexComparer(SearchIndexOperator.DoNotCompareScore);
+
+                m_BatchIndexes.Clear();
+                m_Timestamp = DateTime.Now.ToBinary();
+
+                foreach (var other in artifacts)
+                {
+                    if (other.documentCount == 0)
+                        continue;
+
+                    progress(i++, other.name);
+
+                    int[] updatedDocIndexes = other.m_Documents.Select(d => FindDocumentIndex(d)).ToArray();
+                    for (int sourceIndex = 0; sourceIndex < updatedDocIndexes.Length; ++sourceIndex)
+                    {
+                        var sourceDoc = other.m_Documents[sourceIndex];
+                        var di = updatedDocIndexes[sourceIndex];
+                        if (di == -1)
+                        {
+                            updatedDocIndexes[sourceIndex] = AddDocument(sourceDoc.id, sourceDoc.m_Name, sourceDoc.m_Source, false, sourceDoc.flags);
+                            other.AddProperty("a", indexName, indexName.Length, indexName.Length, baseScore, sourceIndex, saveKeyword: true, exact: true);
+                        }
+                        else
+                            m_Documents[di] = sourceDoc;
+                    }
+
+                    MergeIndexes(other.m_Indexes, updatedDocIndexes, baseScore, wiec);
+                    if (other.m_BatchIndexes.Count > 0)
+                        MergeIndexes(other.m_BatchIndexes, updatedDocIndexes, baseScore, wiec);
+
+                    m_Keywords.UnionWith(other.m_Keywords);
+                    foreach (var hkvp in other.m_SourceDocuments)
+                        m_SourceDocuments[hkvp.Key] = hkvp.Value;
+                    foreach (var mikvp in other.m_MetaInfo)
+                        m_MetaInfo[mikvp.Key] = mikvp.Value;
+                }
+
+                m_Indexes = m_BatchIndexes.ToArray();
+                m_BatchIndexes.Clear();
+                BuildDocumentIndexTable();
+                m_IndexReady = true;
+            }
+        }
+
+        void MergeIndexes(in IEnumerable<SearchIndexEntry> entries, int[] docIndexes, in int baseScore, in SearchIndexComparer wiec)
+        {
+            foreach (var sie in entries)
+            {
+                var siDocs = sie.docs.Select(sd => docIndexes[sd]);
+                var insertAt = m_BatchIndexes.BinarySearch(sie, wiec);
+                if (insertAt < 0)
+                {
+                    m_BatchIndexes.Insert(~insertAt, new SearchIndexEntry(sie.key, sie.crc, sie.type, baseScore + sie.score, siDocs));
+                }
+                else
+                {
+                    m_BatchIndexes[insertAt].docs.UnionWith(siDocs);
+                }
             }
         }
 
@@ -1708,6 +1767,7 @@ namespace UnityEditor.Search
                 try
                 {
                     m_Indexes = SortIndexes(entries).ToArray();
+                    BuildDocumentIndexTable();
                     onIndexesCreated?.Invoke();
                     m_IndexReady = true;
                 }

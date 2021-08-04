@@ -516,7 +516,7 @@ namespace UnityEditor.UIElements
 
                 // Formula to follow IMGUI label width settings
                 var newWidth = resolvedStyle.width * m_LabelWidthRatio - totalPadding;
-                if (Mathf.Abs(labelElement.resolvedStyle.width - newWidth) > Mathf.Epsilon)
+                if (Mathf.Abs(labelElement.resolvedStyle.width - newWidth) > UIRUtility.k_Epsilon)
                     labelElement.style.width = newWidth;
             });
 

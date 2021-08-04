@@ -319,7 +319,13 @@ namespace UnityEditor.Search
                         { // Otherwise, mark this as initial click and begin editing
                             GUIUtility.keyboardControl = id;
                             BeginEditing(editor, id, text, position, style, multiline, passwordField);
-                            editor.MoveCursorToPosition(evt.mousePosition);
+                            if (editor.hasSelection)
+                                editor.MoveCursorToPosition(evt.mousePosition);
+                            else
+                            {
+                                editor.SelectAll();
+                                m_DragToPosition = false;
+                            }
                         }
 
                         GUIUtility.hotControl = id;
@@ -848,11 +854,18 @@ namespace UnityEditor.Search
             EditorGUIUtility.AddCursorRect(tooltipRect, MouseCursor.Arrow);
         }
 
-        internal Rect GetRect(string text, float width, float padding)
+        internal Rect GetLayoutRect(string text, float width, float padding)
         {
             var fieldWidth = width - padding;
             var fieldHeight = Mathf.Max(minSinglelineTextHeight, Styles.searchField.CalcHeight(Utils.GUIContentTemp(text), fieldWidth));
             return GUILayoutUtility.GetRect(fieldWidth, fieldHeight + textTopBottomPadding, Styles.searchField);
+        }
+
+        internal Rect AdjustRect(string text, Rect rect)
+        {
+            var fieldWidth = rect.width;
+            var fieldHeight = Mathf.Max(minSinglelineTextHeight, Styles.searchField.CalcHeight(Utils.GUIContentTemp(text), fieldWidth));
+            return new Rect(rect.x, rect.y, fieldWidth, fieldHeight + textTopBottomPadding);
         }
     }
 }

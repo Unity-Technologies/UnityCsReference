@@ -41,7 +41,7 @@ namespace UnityEditor.Overlays
 
         internal Vector2 floatingSnapOffset
         {
-            get => m_FloatingSnapOffset;
+            get => m_FloatingSnapOffset + m_SnapOffsetDelta;
             private set
             {
                 if (m_FloatingSnapOffset == value)
@@ -222,9 +222,7 @@ namespace UnityEditor.Overlays
         {
             if (rootVisualElement.resolvedStyle.position == Position.Absolute)
             {
-                var position = floatingPosition;
-                rootVisualElement.style.left = position.x;
-                rootVisualElement.style.top = position.y;
+                rootVisualElement.transform.position = floatingPosition;
             }
         }
     }

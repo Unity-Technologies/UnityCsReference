@@ -65,8 +65,9 @@ namespace UnityEngine.UIElements
             // the ScrollView's OnGeometryChanged() didn't update the low
             // and highValues.
             var scrollableHeight = Mathf.Max(0, contentHeight - m_ScrollView.contentViewport.layout.height);
+            var scrollOffset = Mathf.Min(m_ListView.m_ScrollOffset.y, scrollableHeight);
             m_ScrollView.verticalScroller.slider.SetHighValueWithoutNotify(scrollableHeight);
-            m_ScrollView.verticalScroller.slider.SetValueWithoutNotify(Mathf.Min(m_ListView.m_ScrollOffset.y, scrollableHeight));
+            m_ScrollView.verticalScroller.slider.SetValueWithoutNotify(scrollOffset);
 
             var itemCount = Mathf.Min((int)(size.y / pixelAlignedItemHeight) + k_ExtraVisibleItems, m_ListView.itemsSource.Count);
 
@@ -101,6 +102,8 @@ namespace UnityEngine.UIElements
                     }
                 }
             }
+
+            OnScroll(new Vector2(0, scrollOffset));
         }
 
         public override void OnScroll(Vector2 scrollOffset)

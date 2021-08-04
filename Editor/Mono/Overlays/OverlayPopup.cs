@@ -80,8 +80,7 @@ namespace UnityEditor.Overlays
                     placement.position = new Vector2(xAdjusted, placement.position.y);
                 }
 
-                style.left = placement.x - canvasWorld.x;
-                style.top = placement.y - canvasWorld.y;
+                transform.position = placement.position - canvasWorld.position;
             });
         }
     }

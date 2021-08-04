@@ -195,7 +195,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 var installed = this.installed;
                 var lifecycleVersion = this.lifecycleVersion;
-                return installed != null && lifecycleVersion != null && (installed.HasTag(PackageTag.Custom | PackageTag.Git | PackageTag.Local) || installed.version != lifecycleVersion.version);
+                return installed != null && lifecycleVersion != null && (installed.HasTag(PackageTag.Custom | PackageTag.Git) || installed.version != lifecycleVersion.version);
             }
         }
 

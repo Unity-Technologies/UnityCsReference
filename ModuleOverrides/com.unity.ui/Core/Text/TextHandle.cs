@@ -466,7 +466,7 @@ namespace UnityEngine.UIElements
 
             var faceColor = resolvedStyle.color;
             var outlineColor = resolvedStyle.unityTextOutlineColor;
-            if (outlineWidth < Mathf.Epsilon)
+            if (outlineWidth < UIRUtility.k_Epsilon)
                 outlineColor.a = 0.0f;
 
             return new TextCoreSettings() {

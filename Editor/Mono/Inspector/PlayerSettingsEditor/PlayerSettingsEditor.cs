@@ -191,6 +191,8 @@ namespace UnityEditor
             public static readonly GUIContent apiCompatibilityLevel_NET_2_0_Subset = EditorGUIUtility.TrTextContent(".NET 2.0 Subset");
             public static readonly GUIContent apiCompatibilityLevel_NET_4_6 = EditorGUIUtility.TrTextContent(".NET 4.x");
             public static readonly GUIContent apiCompatibilityLevel_NET_Standard_2_0 = EditorGUIUtility.TrTextContent(".NET Standard 2.0");
+            public static readonly GUIContent apiCompatibilityLevel_NET_FW_Unity = EditorGUIUtility.TrTextContent(".NET Framework");
+            public static readonly GUIContent apiCompatibilityLevel_NET_Standard = EditorGUIUtility.TrTextContent(".NET Standard");
             public static readonly GUIContent scriptCompilationTitle = EditorGUIUtility.TrTextContent("Script Compilation");
             public static readonly GUIContent allowUnsafeCode = EditorGUIUtility.TrTextContent("Allow 'unsafe' Code", "Allow compilation of unsafe code for predefined assemblies (Assembly-CSharp.dll, etc.)");
             public static readonly GUIContent useDeterministicCompilation = EditorGUIUtility.TrTextContent("Use Deterministic Compilation", "Compile with -deterministic compilation flag");
@@ -216,6 +218,7 @@ namespace UnityEditor
             public static readonly GUIContent stereo360CaptureCheckbox = EditorGUIUtility.TrTextContent("360 Stereo Capture*");
             public static readonly GUIContent uploadClearedTextureDataAfterCreationFromScript = EditorGUIUtility.TrTextContent("Upload Cleared Texture Data", "When set, if you create a Texture from script the initial data is cleared and automatically uploaded to video memory. This was the default behavior in previous Unity versions. In most cases this upload is not needed and wastes bandwith because the GPU data gets overwritten anyway. You typically upload (by calling Apply) or copy new data into the new texture right after you create it. Only turn this on for debugging purposes or if your project depends on having the GPU texture data cleared.");
             public static readonly GUIContent forceSRGBBlit = EditorGUIUtility.TrTextContent("Force SRGB blit", "Force SRGB blit for Linear color space.");
+            public static readonly GUIContent notApplicableInfo = EditorGUIUtility.TrTextContent("Not applicable for this platform.");
 
             public static string undoChangedBatchingString { get { return LocalizationDatabase.GetLocalizedString("Changed Batching Settings"); } }
             public static string undoChangedGraphicsAPIString { get { return LocalizationDatabase.GetLocalizedString("Changed Graphics API Settings"); } }
@@ -943,6 +946,11 @@ namespace UnityEditor
             GUILayout.Label(SettingsContent.sharedBetweenPlatformsInfo, EditorStyles.miniLabel);
         }
 
+        internal static void ShowNoSettings()
+        {
+            GUILayout.Label(SettingsContent.notApplicableInfo, EditorStyles.miniLabel);
+        }
+
         private static bool TargetSupportsOptionalBuiltinSplashScreen(BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension)
         {
             if (settingsExtension != null)
@@ -956,7 +964,12 @@ namespace UnityEditor
             if (BeginSettingsBox(sectionIndex, SettingsContent.resolutionPresentationTitle))
             {
                 // PLEASE DO NOT COPY SETTINGS TO APPEAR MULTIPLE PLACES IN THE CODE! See top of file for more info.
-
+                if (namedBuildTarget == NamedBuildTarget.Server)
+                {
+                    ShowNoSettings();
+                    EditorGUILayout.Space();
+                }
+                else
                 {
                     // Resolution itself
 
@@ -1127,7 +1140,7 @@ namespace UnityEditor
         {
             if (target == BuildTarget.WebGL)
             {
-                if (graphicsDeviceType == GraphicsDeviceType.OpenGLES2) return "WebGL 1";
+                if (graphicsDeviceType == GraphicsDeviceType.OpenGLES2) return "WebGL 1 (Deprecated)";
                 if (graphicsDeviceType == GraphicsDeviceType.OpenGLES3) return "WebGL 2";
             }
             string name = graphicsDeviceType.ToString();
@@ -1144,10 +1157,10 @@ namespace UnityEditor
         // Parses a GraphicsDeviceType from a string.
         static private GraphicsDeviceType GraphicsDeviceTypeFromString(string graphicsDeviceType)
         {
-            if (graphicsDeviceType == "WebGL 1") return GraphicsDeviceType.OpenGLES2;
-            if (graphicsDeviceType == "WebGL 2") return GraphicsDeviceType.OpenGLES3;
             graphicsDeviceType = graphicsDeviceType.Replace(" (Deprecated)", "");
             graphicsDeviceType = graphicsDeviceType.Replace(" (Experimental)", "");
+            if (graphicsDeviceType == "WebGL 1") return GraphicsDeviceType.OpenGLES2;
+            if (graphicsDeviceType == "WebGL 2") return GraphicsDeviceType.OpenGLES3;
             return (GraphicsDeviceType)Enum.Parse(typeof(GraphicsDeviceType), graphicsDeviceType, true);
         }
 
@@ -1636,9 +1649,12 @@ namespace UnityEditor
             if (BeginSettingsBox(sectionIndex, SettingsContent.otherSettingsTitle))
             {
                 // PLEASE DO NOT COPY SETTINGS TO APPEAR MULTIPLE PLACES IN THE CODE! See top of file for more info.
-                OtherSectionRenderingGUI(platform, settingsExtension);
-                OtherSectionVulkanSettingsGUI(platform, settingsExtension);
-                OtherSectionIdentificationGUI(platform, settingsExtension);
+                if (platform.namedBuildTarget != NamedBuildTarget.Server)
+                {
+                    OtherSectionRenderingGUI(platform, settingsExtension);
+                    OtherSectionVulkanSettingsGUI(platform, settingsExtension);
+                    OtherSectionIdentificationGUI(platform, settingsExtension);
+                }
                 OtherSectionConfigurationGUI(platform, settingsExtension);
                 OtherSectionScriptCompilationGUI(platform);
                 OtherSectionOptimizationGUI(platform);
@@ -2369,7 +2385,7 @@ namespace UnityEditor
                         using (var propertyScope = new EditorGUI.PropertyScope(horizontal.rect, GUIContent.none, m_APICompatibilityLevel))
                         {
                             var currentAPICompatibilityLevel = GetApiCompatibilityLevelForTarget(platform.namedBuildTarget);
-                            var availableCompatibilityLevels = new ApiCompatibilityLevel[] { ApiCompatibilityLevel.NET_4_6, ApiCompatibilityLevel.NET_Standard_2_0 };
+                            var availableCompatibilityLevels = new ApiCompatibilityLevel[] { ApiCompatibilityLevel.NET_Unity_4_8, ApiCompatibilityLevel.NET_Standard };
                             currentAPICompatibilityLevel = BuildEnumPopup(
                                 SettingsContent.apiCompatibilityLevel,
                                 currentAPICompatibilityLevel,
@@ -2495,25 +2511,28 @@ namespace UnityEditor
                 settingsExtension.ConfigurationSectionGUI();
 
             // Active input handling
-            using (var vertical = new EditorGUILayout.VerticalScope())
+            if (platform.namedBuildTarget != NamedBuildTarget.Server)
             {
-                var currValue = m_ActiveInputHandler.intValue;
-
-                using (var propertyScope = new EditorGUI.PropertyScope(vertical.rect, GUIContent.none, m_ActiveInputHandler))
+                using (var vertical = new EditorGUILayout.VerticalScope())
                 {
-                    m_ActiveInputHandler.intValue = EditorGUILayout.Popup(SettingsContent.activeInputHandling, m_ActiveInputHandler.intValue, SettingsContent.activeInputHandlingOptions);
-                }
+                    var currValue = m_ActiveInputHandler.intValue;
 
-                if (m_ActiveInputHandler.intValue != currValue)
-                {
-                    // Give the user a chance to change mind and revert changes.
-                    if (ShouldRestartEditorToApplySetting())
+                    using (var propertyScope = new EditorGUI.PropertyScope(vertical.rect, GUIContent.none, m_ActiveInputHandler))
                     {
-                        m_ActiveInputHandler.serializedObject.ApplyModifiedProperties();
-                        EditorApplication.RestartEditorAndRecompileScripts();
+                        m_ActiveInputHandler.intValue = EditorGUILayout.Popup(SettingsContent.activeInputHandling, m_ActiveInputHandler.intValue, SettingsContent.activeInputHandlingOptions);
                     }
-                    else
-                        m_ActiveInputHandler.intValue = currValue;
+
+                    if (m_ActiveInputHandler.intValue != currValue)
+                    {
+                        // Give the user a chance to change mind and revert changes.
+                        if (ShouldRestartEditorToApplySetting())
+                        {
+                            m_ActiveInputHandler.serializedObject.ApplyModifiedProperties();
+                            EditorApplication.RestartEditorAndRecompileScripts();
+                        }
+                        else
+                            m_ActiveInputHandler.intValue = currValue;
+                    }
                 }
             }
 
@@ -2630,6 +2649,8 @@ namespace UnityEditor
 
                     scriptingDefinesControlID = EditorGUIUtility.s_LastControlID;
                 }
+
+                EditorGUILayout.Space();
 
                 using (var vertical = new EditorGUILayout.VerticalScope())
                 {
@@ -3002,8 +3023,8 @@ namespace UnityEditor
                 {
                     { ApiCompatibilityLevel.NET_2_0, SettingsContent.apiCompatibilityLevel_NET_2_0 },
                     { ApiCompatibilityLevel.NET_2_0_Subset, SettingsContent.apiCompatibilityLevel_NET_2_0_Subset },
-                    { ApiCompatibilityLevel.NET_4_6, SettingsContent.apiCompatibilityLevel_NET_4_6 },
-                    { ApiCompatibilityLevel.NET_Standard_2_0, SettingsContent.apiCompatibilityLevel_NET_Standard_2_0 }
+                    { ApiCompatibilityLevel.NET_Unity_4_8, SettingsContent.apiCompatibilityLevel_NET_FW_Unity },
+                    { ApiCompatibilityLevel.NET_Standard, SettingsContent.apiCompatibilityLevel_NET_Standard },
                 };
             }
 

@@ -26,7 +26,7 @@ namespace UnityEditor.Search.Providers
             public static readonly Color criticalColor = new Color(204 / 255f, 51 / 255f, 0 / 255f);
         }
 
-        [MenuItem("Window/Search/Performance Trackers")]
+        [MenuItem("Window/Search/Performance Trackers", priority = 1272)]
         public static void OpenProvider()
         {
             SearchService.ShowContextual(type);

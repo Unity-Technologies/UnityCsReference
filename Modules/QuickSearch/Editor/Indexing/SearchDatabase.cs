@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using UnityEditor.Experimental;
 using UnityEngine;
 
@@ -170,7 +171,7 @@ namespace UnityEditor.Search
         public string path => m_IndexSettingsPath ?? AssetDatabase.GetAssetPath(this);
 
         internal static event Action<SearchDatabase> indexLoaded;
-        internal static SearchDatabase s_DefaultDB;
+        internal static List<SearchDatabase> s_DBs;
 
         public static SearchDatabase Create(string settingsPath)
         {
@@ -213,15 +214,6 @@ namespace UnityEditor.Search
             return types.Length == 0 || types.Contains(settings.type);
         }
 
-        public static IEnumerable<string> EnumeratePaths(IndexLocation location, params string[] types)
-        {
-            string searchDataFindAssetQuery = $"t:SearchDatabase a:{location}";
-            return AssetDatabase.FindAssets(searchDataFindAssetQuery).Select(AssetDatabase.GUIDToAssetPath)
-                .Concat(location == IndexLocation.all ? new string[] { defaultSearchDatabaseIndexPath } : new string[0])
-                .Where(path => IsValidType(path, types))
-                .OrderByDescending(p => Path.GetFileNameWithoutExtension(p));
-        }
-
         public static IEnumerable<SearchDatabase> Enumerate(params string[] types)
         {
             return Enumerate(IndexLocation.all, types);
@@ -229,25 +221,77 @@ namespace UnityEditor.Search
 
         public static IEnumerable<SearchDatabase> Enumerate(IndexLocation location, params string[] types)
         {
-            if (!s_DefaultDB && File.Exists(defaultSearchDatabaseIndexPath))
-                s_DefaultDB = Create(defaultSearchDatabaseIndexPath);
+            return EnumerateAll().Where(db =>
+            {
+                if (types != null && types.Length > 0 && Array.IndexOf(types, db.settings.type) == -1)
+                    return false;
 
-            return EnumeratePaths(location, types)
-                .Select(path => AssetDatabase.LoadAssetAtPath<SearchDatabase>(path))
-                .Concat(new[] { s_DefaultDB })
-                .Where(db => db)
-                .Select(db => { db.Log("Enumerate"); return db; });
+                if (location == IndexLocation.all)
+                    return true;
+                else if (location == IndexLocation.packages)
+                    return !string.IsNullOrEmpty(db.path) && db.path.StartsWith("Packages", StringComparison.OrdinalIgnoreCase);
+
+                return string.IsNullOrEmpty(db.path) || db.path.StartsWith("Assets", StringComparison.OrdinalIgnoreCase);
+            });
         }
 
         public static IEnumerable<SearchDatabase> EnumerateAll()
         {
-            if (!s_DefaultDB && File.Exists(defaultSearchDatabaseIndexPath))
-                s_DefaultDB = Create(defaultSearchDatabaseIndexPath);
+            if (s_DBs == null)
+            {
+                s_DBs = new List<SearchDatabase>();
+                if (File.Exists(defaultSearchDatabaseIndexPath))
+                    s_DBs.Add(Create(defaultSearchDatabaseIndexPath));
 
-            return AssetDatabase.FindAssets("t:SearchDatabase").Select(AssetDatabase.GUIDToAssetPath)
-                .Select(path => AssetDatabase.LoadAssetAtPath<SearchDatabase>(path))
-                .Concat(new[] { s_DefaultDB })
-                .Where(db => db);
+                string searchDataFindAssetQuery = $"t:{nameof(SearchDatabase)}";
+                var dbPaths = AssetDatabase.FindAssets(searchDataFindAssetQuery).Select(AssetDatabase.GUIDToAssetPath)
+                    .OrderByDescending(p => Path.GetFileNameWithoutExtension(p));
+
+                s_DBs.AddRange(dbPaths
+                    .Select(path => AssetDatabase.LoadAssetAtPath<SearchDatabase>(path))
+                    .Where(db => db));
+
+                SearchMonitor.contentRefreshed -= TrackAssetIndexChanges;
+                SearchMonitor.contentRefreshed += TrackAssetIndexChanges;
+            }
+
+            return s_DBs.Where(db => db);
+        }
+
+        private static IEnumerable<string> FilterIndexes(IEnumerable<string> paths)
+        {
+            return paths.Where(u => u.EndsWith(".index", StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static void TrackAssetIndexChanges(string[] updated, string[] deleted, string[] moved)
+        {
+            if (s_DBs == null)
+                return;
+
+            bool updateViews = false;
+            foreach (var p in FilterIndexes(updated))
+            {
+                var db = Find(p);
+                if (db)
+                    continue;
+                s_DBs.Add(AssetDatabase.LoadAssetAtPath<SearchDatabase>(p));
+                updateViews = true;
+            }
+
+            foreach (var p in FilterIndexes(deleted))
+            {
+                var db = Find(p);
+                if (db)
+                    updateViews |= s_DBs.Remove(db);
+            }
+
+            if (updateViews || s_DBs.RemoveAll(db => !db) > 0)
+            {
+                EditorApplication.delayCall -= SearchService.RefreshWindows;
+                EditorApplication.delayCall += SearchService.RefreshWindows;
+            }
+
+            Providers.FindProvider.Update(updated, deleted, moved);
         }
 
         public static Settings LoadSettings(string settingsPath)
@@ -293,24 +337,29 @@ namespace UnityEditor.Search
             DeleteBackupIndex();
         }
 
-        public static void ImportAsset(string settingsPath)
+        private static SearchDatabase Find(string path)
         {
-            if (s_DefaultDB && s_DefaultDB.path == settingsPath)
-            {
-                s_DefaultDB.DeleteBackupIndex();
-                s_DefaultDB.Reload(settingsPath);
-            }
+            return EnumerateAll().Where(db => string.Equals(db.path, path, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+        }
+
+        public static SearchDatabase ImportAsset(string settingsPath)
+        {
+            var currentDb = Find(settingsPath);
+            if (currentDb)
+                currentDb.DeleteBackupIndex();
+
+            AssetDatabase.ImportAsset(settingsPath);
+            if (currentDb)
+                currentDb.Reload(settingsPath);
             else
             {
-                if (settingsPath == defaultSearchDatabaseIndexPath)
-                {
-                    s_DefaultDB = Create(settingsPath);
-                }
-                else
-                {
-                    AssetDatabase.ImportAsset(settingsPath);
-                }
+                currentDb = AssetDatabase.LoadAssetAtPath<SearchDatabase>(settingsPath);
+                if (!currentDb)
+                    currentDb = Create(settingsPath);
+                s_DBs.Add(currentDb);
             }
+
+            return currentDb;
         }
 
         internal void OnEnable()
@@ -426,7 +475,11 @@ namespace UnityEditor.Search
                 Dispatcher.Enqueue(() =>
                 {
                     if (!this)
+                    {
+                        loadTask.Resolve(null, completed: true);
                         return;
+                    }
+
                     var diff = SearchMonitor.GetDiff(index.timestamp, deletedAssets, path =>
                     {
                         if (index.SkipEntry(path, true))
@@ -583,59 +636,57 @@ namespace UnityEditor.Search
             return 1;
         }
 
-        private byte[] CombineIndexes(Settings settings, IndexArtifact[] artifacts, Task task, bool autoResolve)
+        private void CombineIndexes(Settings settings, IndexArtifact[] artifacts, Task task, bool autoResolve)
         {
-            var completed = 0;
-            var combineIndexer = new SearchIndexer();
-            var indexName = settings.name.ToLowerInvariant();
-
             task.Report("Combining indexes...", -1f);
 
-            combineIndexer.Start();
-            for (int i = 0; i < artifacts.Length; ++i)
+            var completed = 0;
+            var searchArtifacts = new ConcurrentBag<SearchIndexer>();
+            var tloop = Parallel.ForEach(artifacts, (a, state) =>
             {
-                IndexArtifact a = artifacts[i];
                 if (task.Canceled())
-                    return null;
+                {
+                    state.Stop();
+                    return;
+                }
 
                 if (a == null || a.path == null)
-                    continue;
+                    return;
 
-                var si = new SearchIndexer();
+                var si = new SearchIndexer(Path.GetFileName(a.source));
+                task.Report($"Reading {si.name}...");
                 if (!si.ReadIndexFromDisk(a.path))
-                    continue;
+                    return;
 
                 if (task.Canceled())
-                    return null;
+                    return;
 
-                task.Report($"Combining {a.source}...");
-                combineIndexer.CombineIndexes(si, baseScore: settings.baseScore, (di, indexer) => AddIndexNameArea(di, indexer, indexName));
+                searchArtifacts.Add(si);
                 task.Report(completed++, artifacts.Length);
-            }
+            });
+
+            if (!tloop.IsCompleted)
+                task.Cancel();
 
             if (task.Canceled())
-                return null;
+                return;
+
+            // Combine all search index artifacts into one large binary stream.
+            var combineIndexer = new SearchIndexer();
+            var artifactCount = searchArtifacts.Count;
+            var indexName = settings.name.ToLowerInvariant();
+
+            task.Report($"Combining...");
+            combineIndexer.Start();
+            combineIndexer.CombineIndexes(searchArtifacts, settings.baseScore, indexName, (progress, name) =>
+            {
+                task.Report($"Combining {name}...");
+                task.Report(progress, artifactCount);
+            });
 
             task.Report($"Sorting {combineIndexer.indexCount} indexes...", -1f);
-
-            if (task.async)
-            {
-                if (autoResolve)
-                {
-                    combineIndexer.Finish((bytes) => task.Resolve(new TaskData(bytes, combineIndexer)), null, saveBytes: true);
-                }
-                else
-                {
-                    combineIndexer.Finish(() => task.Resolve(new TaskData(null, combineIndexer), completed: false));
-                }
-            }
-            else
-            {
-                combineIndexer.Finish(removedDocuments: null);
-                return combineIndexer.SaveBytes();
-            }
-
-            return null;
+            byte[] bytes = autoResolve ? combineIndexer.SaveBytes() : null;
+            Dispatcher.Enqueue(() => task.Resolve(new TaskData(bytes, combineIndexer), completed: autoResolve));
         }
 
         private static void AddIndexNameArea(int documentIndex, SearchIndexer indexer, string indexName)
@@ -859,8 +910,7 @@ namespace UnityEditor.Search
             var defaultIndexFilename = Path.GetFileNameWithoutExtension(defaultSearchDatabaseIndexPath);
             var defaultIndexFolder = Path.GetDirectoryName(defaultSearchDatabaseIndexPath);
             var defaultDbIndexPath = SearchDatabaseImporter.CreateTemplateIndex("_Default", defaultIndexFolder, defaultIndexFilename);
-            ImportAsset(defaultDbIndexPath);
-            return s_DefaultDB;
+            return ImportAsset(defaultDbIndexPath);
         }
     }
 }

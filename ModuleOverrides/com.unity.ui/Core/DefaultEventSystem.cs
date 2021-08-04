@@ -188,7 +188,7 @@ namespace UnityEngine.UIElements
                 var panel = panels[i];
                 if (panel is BaseRuntimePanel runtimePanel)
                 {
-                    if (panel.GetCapturingElement(pointerId) != null)
+                    if (panel.GetCapturingElement(pointerId) is VisualElement ve && ve.panel == panel)
                     {
                         runtimePanel.ScreenToPanel(mousePosition, delta, out var panelPosition, out var panelDelta, true);
 

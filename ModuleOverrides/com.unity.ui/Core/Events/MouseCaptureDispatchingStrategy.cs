@@ -44,7 +44,10 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            if (panel != null && captureVE != null && captureVE.panel.contextType != panel.contextType)
+            // Case 1342115: mouse position is in local panel coordinates; sending event to a target from a different
+            // panel will lead to a wrong position, so we don't allow it. Note that in general the mouse-down-move-up
+            // sequence still works properly because the OS captures the mouse on the starting EditorWindow.
+            if (panel != null && captureVE != null && captureVE.panel != panel)
             {
                 return;
             }

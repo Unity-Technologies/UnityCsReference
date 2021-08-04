@@ -338,8 +338,7 @@ namespace UnityEditor.Search
             if (sceneRootObjects != null && sceneRootObjects.Length > 0)
                 goRoots.AddRange(sceneRootObjects);
 
-            return SceneModeUtility.GetObjects(goRoots.ToArray(), true)
-                .Where(o => (o.hideFlags & HideFlags.HideInHierarchy) != HideFlags.HideInHierarchy).ToArray();
+            return SceneModeUtility.GetObjects(goRoots.ToArray(), true);
         }
 
         /// <summary>

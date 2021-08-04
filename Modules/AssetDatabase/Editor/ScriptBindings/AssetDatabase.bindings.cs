@@ -802,6 +802,9 @@ namespace UnityEditor
         [FreeFunction("AssetDatabase::GetCacheServerEnableUpload")]
         public extern static bool GetCacheServerEnableUpload();
 
+        [FreeFunction("AssetDatabase::WaitForPendingCacheServerRequestsToComplete")]
+        extern internal static void WaitForPendingCacheServerRequestsToComplete();
+
         [FreeFunction("AssetDatabase::IsDirectoryMonitoringEnabled")]
         public extern static bool IsDirectoryMonitoringEnabled();
 

@@ -5,6 +5,7 @@
 using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Search;
 
 namespace UnityEditor.Search
 {
@@ -75,6 +76,11 @@ namespace UnityEditor.Search
         internal override SearchContext CreateQueryContext(ISearchQuery query)
         {
             return SearchService.CreateContext(context?.GetProviders(), query.searchText, context?.options ?? SearchFlags.Default);
+        }
+
+        protected override void DrawSyncSearchButton()
+        {
+            // Do nothing
         }
 
         public static QuickSearch ShowPicker(SearchViewState args)

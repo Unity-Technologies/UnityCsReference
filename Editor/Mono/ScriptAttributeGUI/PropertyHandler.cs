@@ -134,7 +134,11 @@ namespace UnityEditor
         // returns true if children needs to be drawn separately
         public bool OnGUI(Rect position, SerializedProperty property, GUIContent label, bool includeChildren)
         {
-            Rect visibleArea = new Rect(0, 0, float.MaxValue, float.MaxValue);
+            var screenPos = GUIUtility.GUIToScreenPoint(position.position);
+            screenPos.y = Mathf.Clamp(screenPos.y, 0, Screen.height);
+
+            Rect visibleArea = new Rect(screenPos.x, screenPos.y, Screen.width, Screen.height);
+            visibleArea = GUIUtility.ScreenToGUIRect(visibleArea);
             return OnGUI(position, property, label, includeChildren, visibleArea);
         }
 
@@ -428,7 +432,7 @@ namespace UnityEditor
 
             FieldInfo listInfo = null;
             Queue<string> propertyName = new Queue<string>(property.propertyPath.Split(".".ToCharArray(), StringSplitOptions.RemoveEmptyEntries));
-            var type = property.serializedObject.targetObject.GetType();
+            Type type = property.serializedObject.targetObject.GetType();
             var name = propertyName.Dequeue();
             listInfo = type.GetField(name, fieldFilter);
 
@@ -448,16 +452,34 @@ namespace UnityEditor
             // if it has a non-reorderable attribute
             while (propertyName.Count > 0)
             {
-                Type t = listInfo.FieldType;
+                try
+                {
+                    // We should at least try to get the type from object instance
+                    // in order to handle interfaces and abstractions correctly
+                    type = listInfo.GetValue(property.serializedObject.targetObject).GetType();
+                }
+                catch
+                {
+                    type = listInfo.FieldType;
+                }
 
-                if (t.IsArray) t = t.GetElementType();
-                else if (t.IsArrayOrList()) t = t.GetGenericArguments().Single();
+                if (type.IsArray) type = type.GetElementType();
+                else if (type.IsArrayOrList()) type = type.GetGenericArguments().Single();
 
-                FieldInfo f = t.GetField(propertyName.Dequeue(), fieldFilter);
-                if (f != null) listInfo = f;
+                FieldInfo field = type.GetField(propertyName.Dequeue(), fieldFilter);
+                if (field != null) listInfo = field;
             }
 
-            return !TypeCache.GetFieldsWithAttribute(typeof(NonReorderableAttribute)).Any(f => f.Equals(listInfo));
+            // Since we're using TypeCache to find NonReorderableAttribute, we will need to manually check base fields
+            List<FieldInfo> baseFields = new List<FieldInfo>();
+            baseFields.Add(listInfo);
+            while ((type = type.BaseType) != null)
+            {
+                var field = type.GetField(listInfo.Name, fieldFilter);
+                if (field != null) baseFields.Add(field);
+            }
+
+            return !TypeCache.GetFieldsWithAttribute(typeof(NonReorderableAttribute)).Any(f => baseFields.Any(b => f.Equals(b)));
         }
 
         internal static bool UseReorderabelListControl(SerializedProperty property) => IsNonStringArray(property) && IsArrayReorderable(property);

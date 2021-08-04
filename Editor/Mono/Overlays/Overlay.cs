@@ -54,6 +54,8 @@ namespace UnityEditor.Overlays
         public event Action<bool> collapsedChanged;
         bool m_Collapsed;
 
+        internal bool dontSaveInLayout {get; set;}
+
         static VisualTreeAsset s_TreeAsset;
         event Action displayNameChanged;
         string m_DisplayName;
@@ -301,6 +303,7 @@ namespace UnityEditor.Overlays
             m_RootVisualElement = new VisualElement();
             treeAsset.CloneTree(m_RootVisualElement);
 
+            m_RootVisualElement.usageHints = UsageHints.DynamicTransform;
             m_RootVisualElement.AddToClassList(ussClassName);
             m_ContentRoot = m_RootVisualElement.Q("overlay-content");
             m_ContentRoot.renderHints = RenderHints.ClipWithScissors;
@@ -422,8 +425,7 @@ namespace UnityEditor.Overlays
             else
             {
                 rootVisualElement.style.position = Position.Relative;
-                rootVisualElement.style.left = 0;
-                rootVisualElement.style.top = 0;
+                rootVisualElement.transform.position = Vector3.zero;
                 rootVisualElement.RemoveFromClassList(k_Floating);
             }
 

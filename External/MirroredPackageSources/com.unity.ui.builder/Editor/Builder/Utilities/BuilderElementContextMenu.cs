@@ -193,7 +193,7 @@ namespace Unity.UI.Builder
                 : DropdownMenuAction.Status.Disabled);
 
             var linkedInstancedVTA = documentElement?.GetProperty(BuilderConstants.ElementLinkedInstancedVisualTreeAssetVEPropertyName) as VisualTreeAsset;
-            var linkedVEA = documentElement?.GetProperty(BuilderConstants.ElementLinkedVisualElementAssetVEPropertyName);
+            var linkedVEA = documentElement?.GetVisualElementAsset();
             var linkedTemplateVEA = linkedVEA as TemplateAsset;
 
             var activeOpenUXML = document.activeOpenUXMLFile;

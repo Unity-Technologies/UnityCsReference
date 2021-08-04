@@ -125,23 +125,6 @@ namespace UnityEditor.Search.Providers
         internal const string type = "asset";
         private const string displayName = "Project";
 
-        internal static bool reloadAssetIndexes = true;
-        private static List<SearchDatabase> m_AssetIndexes = null;
-        private static List<SearchDatabase> assetIndexes
-        {
-            get
-            {
-                if (reloadAssetIndexes || m_AssetIndexes == null)
-                {
-                    SearchMonitor.contentRefreshed -= TrackAssetIndexChanges;
-                    m_AssetIndexes = SearchDatabase.Enumerate().ToList();
-                    reloadAssetIndexes = false;
-                    SearchMonitor.contentRefreshed += TrackAssetIndexChanges;
-                }
-                return m_AssetIndexes;
-            }
-        }
-
         [SearchItemProvider]
         internal static SearchProvider CreateProvider()
         {
@@ -273,7 +256,7 @@ namespace UnityEditor.Search.Providers
             return item.context?.searchView?.displayMode == DisplayMode.Grid;
         }
 
-        private static AssetMetaInfo GetInfo(SearchItem item)
+        private static AssetMetaInfo GetInfo(in SearchItem item)
         {
             return (AssetMetaInfo)item.data;
         }
@@ -350,7 +333,8 @@ namespace UnityEditor.Search.Providers
             var ft = token.LastIndexOfAny(SearchUtils.KeywordsValueDelimiters);
             if (ft >= 0)
                 token = token.Substring(0, ft);
-            return assetIndexes.SelectMany(db => db.index.GetKeywords()
+            var dbs = SearchDatabase.EnumerateAll();
+            return dbs.SelectMany(db => db.index.GetKeywords()
                 .Where(kw => kw.StartsWith(token, StringComparison.OrdinalIgnoreCase)))
                 .Select(kw => new SearchProposition(kw));
         }
@@ -373,26 +357,6 @@ namespace UnityEditor.Search.Providers
         private static string GetTypeHelpText(in Type t)
         {
             return $"{t.FullName}\n{t.Assembly.Location}";
-        }
-
-        private static IEnumerable<string> FilterIndexes(IEnumerable<string> paths)
-        {
-            return paths.Where(u => u.EndsWith(".index", StringComparison.OrdinalIgnoreCase));
-        }
-
-        private static void TrackAssetIndexChanges(string[] updated, string[] deleted, string[] moved)
-        {
-            var loaded = assetIndexes?.Where(db => db).Select(db => db.path).ToArray() ?? new string[0];
-            if (FilterIndexes(updated).Except(loaded).Count() > 0 || loaded.Intersect(FilterIndexes(deleted)).Count() > 0)
-                reloadAssetIndexes = true;
-
-            if (deleted.Length > 0)
-            {
-                EditorApplication.delayCall -= SearchService.RefreshWindows;
-                EditorApplication.delayCall += SearchService.RefreshWindows;
-            }
-
-            FindProvider.Update(updated, deleted, moved);
         }
 
         private static void StartDrag(SearchItem item, SearchContext context)
@@ -422,19 +386,8 @@ namespace UnityEditor.Search.Providers
             }
 
             // Search indexes that are ready
-            bool allIndexesReady = false;
-            var useIndexing = !context.options.HasAny(SearchFlags.NoIndexing) && assetIndexes.Count > 0;
-            if (useIndexing)
-            {
-                allIndexesReady = assetIndexes.All(db => db.ready);
-                if (allIndexesReady)
-                {
-                    foreach (var db in assetIndexes)
-                        yield return SearchIndexes(context.searchQuery, context, provider, db);
-                }
-            }
-
-            if (!useIndexing || !allIndexesReady || context.wantsMore)
+            var useIndexing = !context.options.HasAny(SearchFlags.NoIndexing);
+            if (!useIndexing || context.wantsMore)
             {
                 // Perform a quick search on asset paths
                 var findOptions = FindOptions.Words | FindOptions.Regex | FindOptions.Glob | (context.wantsMore ? FindOptions.Fuzzy : FindOptions.None);
@@ -443,9 +396,9 @@ namespace UnityEditor.Search.Providers
             }
 
             // Finally wait for indexes that are being built to end the search.
-            if (useIndexing && !allIndexesReady && !context.options.HasAny(SearchFlags.Synchronous))
+            if (useIndexing)
             {
-                foreach (var db in assetIndexes)
+                foreach (var db in SearchDatabase.EnumerateAll().OrderBy(db => !db.ready))
                     yield return SearchIndexes(context.searchQuery, context, provider, db);
             }
         }
@@ -610,7 +563,7 @@ namespace UnityEditor.Search.Providers
             {
                 PropertyEditor.OpenPropertyEditor(objs[0]);
             }
-            else
+            else if (objs.Length > 0)
             {
                 var firstPropertyEditor = PropertyEditor.OpenPropertyEditor(objs[0]);
                 EditorApplication.delayCall += () =>

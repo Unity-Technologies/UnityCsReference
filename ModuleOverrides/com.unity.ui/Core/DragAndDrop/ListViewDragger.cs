@@ -169,7 +169,9 @@ namespace UnityEngine.UIElements
                     else
                     {
                         var item = targetListView.GetRecycledItemFromIndex(dragPosition.insertAtIndex - 1);
+                        // *begin-nonstandard-formatting*
                         item ??= targetListView.GetRecycledItemFromIndex(dragPosition.insertAtIndex);
+                        // *end-nonstandard-formatting*
                         PlaceHoverBarAtElement(item.rootElement);
                     }
 

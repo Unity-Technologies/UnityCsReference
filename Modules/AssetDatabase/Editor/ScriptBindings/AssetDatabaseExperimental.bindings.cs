@@ -242,5 +242,8 @@ namespace UnityEditor.Experimental
         {
             return GetOnDemandArtifactProgress(new ArtifactKey(new GUID(guid), importerType));
         }
+
+        [FreeFunction()]
+        internal extern static Hash128 GetArtifactStaticDependencyHash(ArtifactID artifactId);
     }
 }

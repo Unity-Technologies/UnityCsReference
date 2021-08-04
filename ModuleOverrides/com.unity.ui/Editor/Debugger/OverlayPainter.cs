@@ -77,7 +77,7 @@ namespace UnityEditor.UIElements.Debugger
                 var overlayData = kvp.Value;
 
                 DrawOverlayData(mgc, overlayData);
-                if (overlayData.alpha < Mathf.Epsilon)
+                if (overlayData.alpha < UIRUtility.k_Epsilon)
                 {
                     m_CleanUpOverlay.Add(kvp.Key);
                 }

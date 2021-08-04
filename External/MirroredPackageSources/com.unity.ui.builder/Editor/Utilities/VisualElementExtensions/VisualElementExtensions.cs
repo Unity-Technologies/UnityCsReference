@@ -118,6 +118,11 @@ namespace Unity.UI.Builder
             return vea;
         }
 
+        public static void SetVisualElementAsset(this VisualElement element, VisualElementAsset vea)
+        {
+            element.SetProperty(BuilderConstants.ElementLinkedVisualElementAssetVEPropertyName, vea);
+        }
+
         public static StyleSheet GetStyleSheet(this VisualElement element)
         {
             if (element == null)

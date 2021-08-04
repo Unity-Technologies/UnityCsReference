@@ -141,7 +141,7 @@ namespace UnityEditorInternal
             public GUIContent iconToolbarMinus = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove selection from the list");
             public readonly GUIStyle draggingHandle = "RL DragHandle";
             public readonly GUIStyle headerBackground = "RL Header";
-            private readonly GUIStyle emptyHeaderBackground = "RL Empty Header";
+            public readonly GUIStyle emptyHeaderBackground = "RL Empty Header";
             public readonly GUIStyle footerBackground = "RL Footer";
             public readonly GUIStyle boxBackground = "RL Background";
             public readonly GUIStyle preButton = "RL FooterButton";
@@ -250,8 +250,6 @@ namespace UnityEditorInternal
                     {
                         list.serializedProperty.GetArrayElementAtIndex(list.index).objectReferenceValue = value;
                     }
-
-                    list.serializedProperty.serializedObject.ApplyModifiedProperties();
                 }
                 else
                 {
@@ -315,7 +313,6 @@ namespace UnityEditorInternal
                                 currentProperty = nextProperty;
                             }
                         }
-                        list.serializedProperty.serializedObject.ApplyModifiedProperties();
                     }
                     else
                     {
@@ -385,12 +382,7 @@ namespace UnityEditorInternal
                     EditorGUIUtility.labelWidth = FieldLabelSize(rect, prop);
 
                     var handler = ScriptAttributeUtility.GetHandler(prop);
-                    EditorGUI.BeginChangeCheck();
                     handler.OnGUI(rect, prop, null, true);
-                    if (EditorGUI.EndChangeCheck())
-                    {
-                        prop.serializedObject.ApplyModifiedProperties();
-                    }
                     if (Event.current.type == EventType.ContextClick && rect.Contains(Event.current.mousePosition)) Event.current.Use();
 
                     EditorGUIUtility.labelWidth = oldLabelWidth;
@@ -781,25 +773,6 @@ namespace UnityEditorInternal
             return GetElementYOffset(m_Count - 1) + GetElementHeight(m_Count - 1) + listElementPadding;
         }
 
-        void EnsureValidProperty(SerializedProperty property)
-        {
-            if (!property.isValid)
-            {
-                ClearCache();
-                CacheIfNeeded();
-            }
-
-            try
-            {
-                ScriptAttributeUtility.GetHandler(property);
-            }
-            catch
-            {
-                ClearCache();
-                CacheIfNeeded();
-            }
-        }
-
         int recursionCounter = 0;
         Rect lastRect = Rect.zero;
         private void DoListElements(Rect listRect, Rect visibleRect)
@@ -854,8 +827,6 @@ namespace UnityEditorInternal
                             m_NonDragTargetIndices.Add(i);
                     }
                     m_NonDragTargetIndices.Insert(targetIndex, -1);
-
-                    if (m_Elements != null) EnsureValidProperty(m_PropertyCache.Last().property);
 
                     // now draw each element in the list (excluding the active element)
                     var targetSeen = false;
@@ -937,8 +908,6 @@ namespace UnityEditorInternal
                 }
                 else
                 {
-                    if (m_Elements != null) EnsureValidProperty(m_PropertyCache.Last().property);
-
                     // if we aren't dragging, we just draw all of the elements in order
                     for (int i = 0; i < m_Count; i++)
                     {
@@ -992,14 +961,10 @@ namespace UnityEditorInternal
                         {
                             ClearCacheRecursive();
                             CacheIfNeeded();
+                            InspectorWindow.RepaintAllInspectors();
                             if ((m_Count = count) >= i) break;
                         }
                         m_PropertyCache[i].lastControlCount = currentControlCount;
-
-                        // If an event was consumed in the course of running this for loop, then there is
-                        // a good chance the array data has changed and it is dangerous for us to continue
-                        // rendering it in this frame.
-                        if (Event.current.type == EventType.Used) break;
                     }
                 }
 
@@ -1276,7 +1241,6 @@ namespace UnityEditorInternal
 
                                 // if we are working with Serialized Properties, we can handle it for you
                                 m_Elements.MoveArrayElement(index, targetIndex);
-                                m_SerializedObject.ApplyModifiedPropertiesWithoutUndo();
                             }
                             else if (m_ElementList != null)
                             {

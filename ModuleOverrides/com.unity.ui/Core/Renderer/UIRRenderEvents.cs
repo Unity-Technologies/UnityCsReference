@@ -20,7 +20,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
     internal static class RenderEvents
     {
-        private static readonly float VisibilityTreshold = Mathf.Epsilon;
+        private static readonly float VisibilityTreshold = UIRUtility.k_Epsilon;
 
         internal static void ProcessOnClippingChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, ref ChainBuilderStats stats)
         {

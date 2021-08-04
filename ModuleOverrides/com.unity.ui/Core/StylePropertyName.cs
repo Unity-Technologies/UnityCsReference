@@ -35,7 +35,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Creates from a <see cref="StylePropertyName"/> from a string.
+        /// Initializes and returns an instance of <see cref="StylePropertyName"/> from a string.
         /// </summary>
         public StylePropertyName(string name)
         {
@@ -47,22 +47,39 @@ namespace UnityEngine.UIElements
             }
         }
 
-        /// <undoc/>
+        /// <summary>
+        /// Checks if the StylePropertyName is null or empty.
+        /// </summary>
+        /// <param name="propertyName">StylePropertyName you want to check.</param>
+        /// <returns>True if propertyName is invalid. False otherwise.</returns>
         public static bool IsNullOrEmpty(StylePropertyName propertyName) { return propertyName.id == StylePropertyId.Unknown; }
 
-        /// <undoc/>
+        /// <summary>
+        /// Determines if the StylePropertyNames are equal.
+        /// </summary>
+        /// <param name="lhs">First StylePropertyName.</param>
+        /// <param name="rhs">Second StylePropertyName.</param>
+        /// <returns>True if both StylePropertyNames are equal. False otherwise.</returns>
         public static bool operator==(StylePropertyName lhs, StylePropertyName rhs)
         {
             return lhs.id == rhs.id;
         }
 
-        /// <undoc/>
+        /// <summary>
+        /// Determines if the StylePropertyNames are not equal.
+        /// </summary>
+        /// <param name="lhs">First StylePropertyName.</param>
+        /// <param name="rhs">Second StylePropertyName.</param>
+        /// <returns>True if the StylePropertyNames are not equal. False otherwise.</returns>
         public static bool operator!=(StylePropertyName lhs, StylePropertyName rhs)
         {
             return lhs.id != rhs.id;
         }
 
-        /// <undoc/>
+        /// <summary>
+        /// Implicit string operator.
+        /// </summary>
+        /// <param name="name">Name of the property you want to create a new StylePropertyName with.</param>
         public static implicit operator StylePropertyName(string name)
         {
             return new StylePropertyName(name);
