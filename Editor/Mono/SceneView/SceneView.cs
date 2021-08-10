@@ -2874,7 +2874,7 @@ namespace UnityEditor
             SceneVisibilityManager.instance.enableSceneVisibility = m_SceneVisActive;
             ResetIfNaN();
 
-            m_Camera.transform.rotation = m_2DMode ? Quaternion.identity : m_Rotation.value;
+            m_Camera.transform.rotation = m_2DMode && !m_Rotation.isAnimating ? Quaternion.identity : m_Rotation.value;
 
             float fov = m_Ortho.Fade(perspectiveFov, 0);
 
