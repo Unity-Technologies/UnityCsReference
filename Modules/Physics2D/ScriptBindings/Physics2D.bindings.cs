@@ -3161,8 +3161,15 @@ namespace UnityEngine
                 throw new NullReferenceException("Cannot get contacts as the provided list is NULL.");
 
             contacts.Clear();
-            contacts.AddRange(GetContacts_Internal());
-            return contactCount;
+
+            // Copy only the number of contacts available as this array can become larger than the number of current contacts.
+            var contactArray = GetContacts_Internal();
+            for (var i = 0; i < m_ContactCount; ++i)
+            {
+                contacts.Add(contactArray[i]);
+            }
+
+            return m_ContactCount;
         }
     };
 

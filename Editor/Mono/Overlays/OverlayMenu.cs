@@ -20,6 +20,7 @@ namespace UnityEditor.Overlays
         static VisualTreeAsset s_TreeAsset;
 
         readonly ListView m_ListRoot;
+        readonly Toggle m_Toggle;
         TextElement m_DropdownText;
         readonly Button m_Dropdown;
         readonly OverlayCanvas m_Canvas;
@@ -37,6 +38,12 @@ namespace UnityEditor.Overlays
                 s_TreeAsset.CloneTree(this);
 
             AddToClassList(ussClassName);
+
+            m_Toggle = this.Q<Toggle>("overlay-toggle");
+            m_Toggle.RegisterCallback<ChangeEvent<bool>>((evt) =>
+            {
+                canvas.SetOverlaysEnabled(evt.newValue);
+            });
 
             m_ListRoot = this.Q<ListView>("OverlayList");
             m_ListRoot.makeItem = CreateListItem;
@@ -68,8 +75,16 @@ namespace UnityEditor.Overlays
                     CheckIfShouldHide(evt.relatedTarget as VisualElement);
             });
 
+            canvas.overlaysEnabledChanged += OnOverlayEnabledChanged;
+
             focusable = true;
             Hide();
+        }
+
+        void OnOverlayEnabledChanged(bool visibility)
+        {
+            m_Toggle.SetValueWithoutNotify(visibility);
+            m_Dropdown.SetEnabled(visibility);
         }
 
         void CheckIfShouldHide(VisualElement focused)
@@ -138,6 +153,8 @@ namespace UnityEditor.Overlays
             style.height = menuRect.height;
 
             style.display = DisplayStyle.Flex;
+
+            OnOverlayEnabledChanged(m_Canvas.overlaysEnabled);
             Focus();
         }
 

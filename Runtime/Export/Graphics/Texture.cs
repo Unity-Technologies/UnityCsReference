@@ -42,7 +42,19 @@ namespace UnityEngine
         public RenderTextureFormat colorFormat
         {
             get { return GraphicsFormatUtility.GetRenderTextureFormat(graphicsFormat); }
-            set { graphicsFormat = SystemInfo.GetCompatibleFormat(GraphicsFormatUtility.GetGraphicsFormat(value, sRGB), FormatUsage.Render); }
+            set
+            {
+                GraphicsFormat requestedFormat = GraphicsFormatUtility.GetGraphicsFormat(value, sRGB);
+
+                if (requestedFormat == GraphicsFormat.DepthAuto || requestedFormat == GraphicsFormat.ShadowAuto)
+                {
+                    graphicsFormat = requestedFormat;
+                }
+                else
+                {
+                    graphicsFormat = SystemInfo.GetCompatibleFormat(requestedFormat, FormatUsage.Render);
+                }
+            }
         }
 
         public bool sRGB
@@ -95,8 +107,17 @@ namespace UnityEngine
         }
 
         public RenderTextureDescriptor(int width, int height, RenderTextureFormat colorFormat, int depthBufferBits, int mipCount)
-            : this(width, height, SystemInfo.GetCompatibleFormat(GraphicsFormatUtility.GetGraphicsFormat(colorFormat, false), FormatUsage.Render), depthBufferBits, mipCount)
         {
+            GraphicsFormat requestedFormat = GraphicsFormatUtility.GetGraphicsFormat(colorFormat, false);
+
+            if (requestedFormat == GraphicsFormat.DepthAuto || requestedFormat == GraphicsFormat.ShadowAuto)
+            {
+                this = new RenderTextureDescriptor(width, height, requestedFormat, depthBufferBits, mipCount);
+            }
+            else
+            {
+                this = new RenderTextureDescriptor(width, height, SystemInfo.GetCompatibleFormat(requestedFormat, FormatUsage.Render), depthBufferBits, mipCount);
+            }
         }
 
         [uei.ExcludeFromDocs]
@@ -354,6 +375,12 @@ namespace UnityEngine
         internal static GraphicsFormat GetCompatibleFormat(RenderTextureFormat renderTextureFormat, RenderTextureReadWrite readWrite)
         {
             GraphicsFormat requestedFormat = GraphicsFormatUtility.GetGraphicsFormat(renderTextureFormat, readWrite);
+
+            if (requestedFormat == GraphicsFormat.DepthAuto || requestedFormat == GraphicsFormat.ShadowAuto)
+            {
+                return requestedFormat;
+            }
+
             GraphicsFormat compatibleFormat = SystemInfo.GetCompatibleFormat(requestedFormat, FormatUsage.Render);
 
             if (requestedFormat == compatibleFormat)

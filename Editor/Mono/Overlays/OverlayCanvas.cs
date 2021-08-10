@@ -235,15 +235,22 @@ namespace UnityEditor.Overlays
             }
         }
 
+        public event Action<bool> overlaysEnabledChanged;
+
         public bool overlaysEnabled => containers.All(x => x.style.display != DisplayStyle.None);
 
         public void SetOverlaysEnabled(bool visible)
         {
+            if (visible == overlaysEnabled)
+                return;
+
             foreach (var container in containers)
                 container.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
             foreach (var toolbar in toolbarZones)
                 toolbar.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
             floatingContainer.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+
+            overlaysEnabledChanged?.Invoke(visible);
         }
 
         public void Show(Overlay overlay)
