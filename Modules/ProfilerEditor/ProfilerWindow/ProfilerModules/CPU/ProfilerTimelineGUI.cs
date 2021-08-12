@@ -151,8 +151,10 @@ namespace UnityEditorInternal
             public GUIStyle rollUpArrow = "ProfilerTimelineRollUpArrow";
             public GUIStyle bottomShadow = "BottomShadowInwards";
 
-            public string localizedStringTotal = L10n.Tr("Total");
-            public string localizedStringInstances = L10n.Tr("Instances");
+            public string localizedStringTotalAcrossFrames = L10n.Tr("\n{0} total over {1} frames on thread '{2}'");
+            public string localizedStringTotalAcumulatedTime = L10n.Tr("\n\nCurrent frame accumulated time:");
+            public string localizedStringTotalInThread = L10n.Tr("\n{0} for {1} instances on thread '{2}'");
+            public string localizedStringTotalInFrame = L10n.Tr("\n{0} for {1} instances over {2} threads");
 
             public Color frameDelimiterColor = Color.white.RGBMultiplied(0.4f);
             Color m_RangeSelectionColorLight = new Color32(255, 255, 255, 90);
@@ -204,12 +206,17 @@ namespace UnityEditorInternal
 
         class SelectedEntryInfo : EntryInfo
         {
+            public const int invalidInstancIdCount = -1;
+            public const float invalidDuration = -1.0f;
             // The associated GameObjects instance ID. Negative means Native Object, Positive means Managed Object, 0 means not set (as in, no object associated)
             public int instanceId = 0;
             public string metaData = string.Empty;
 
-            public float totalDuration = -1.0f;
-            public int instanceCount = -1;
+            public float totalDurationForThread = invalidDuration;
+            public int instanceCountForThread = invalidInstancIdCount;
+            public float totalDurationForFrame = invalidDuration;
+            public int instanceCountForFrame = invalidInstancIdCount;
+            public int threadCount = 0;
             public string callstackInfo = string.Empty;
 
             public List<RawFrameDataView.FlowEvent> FlowEvents { get; } = new List<RawFrameDataView.FlowEvent>();
@@ -221,8 +228,11 @@ namespace UnityEditorInternal
                 this.instanceId = 0;
                 this.metaData = string.Empty;
 
-                this.totalDuration = -1.0f;
-                this.instanceCount = -1;
+                this.totalDurationForThread = invalidDuration;
+                this.instanceCountForThread = invalidInstancIdCount;
+                this.totalDurationForFrame = invalidDuration;
+                this.instanceCountForFrame = invalidInstancIdCount;
+                this.threadCount = 0;
                 this.callstackInfo = string.Empty;
 
                 FlowEvents.Clear();
@@ -584,8 +594,11 @@ namespace UnityEditorInternal
                     m_SelectedEntry.instanceId = instanceInfoArgs.out_Id;
                     m_SelectedEntry.time = timingInfoArgs.out_LocalStartTime;
                     m_SelectedEntry.duration = timingInfoArgs.out_Duration;
-                    m_SelectedEntry.totalDuration = timingInfoArgs.out_TotalDurationForFrame;
-                    m_SelectedEntry.instanceCount = timingInfoArgs.out_InstanceCountForFrame;
+                    m_SelectedEntry.totalDurationForThread = timingInfoArgs.out_TotalDurationForThread;
+                    m_SelectedEntry.instanceCountForThread = timingInfoArgs.out_InstanceCountForThread;
+                    m_SelectedEntry.totalDurationForFrame = timingInfoArgs.out_TotalDurationForFrame;
+                    m_SelectedEntry.instanceCountForFrame = timingInfoArgs.out_InstanceCountForFrame;
+                    m_SelectedEntry.threadCount = timingInfoArgs.out_ThreadCountForFrame;
                     m_SelectedEntry.relativeYPos = posArgs.out_EntryYMaxPos + topMargin;
                     m_SelectedEntry.name = posArgs.out_EntryName;
                     m_SelectedEntry.callstackInfo = instanceInfoArgs.out_CallstackInfo;
@@ -678,7 +691,7 @@ namespace UnityEditorInternal
             {
                 t = m_SelectedEntry.time;
                 dt = m_SelectedEntry.duration;
-                if (m_SelectedEntry.instanceCount <= 0 || dt <= 0.0f)
+                if (m_SelectedEntry.instanceCountForFrame <= 0 || dt <= 0.0f)
                 {
                     t = 0.0f;
                     dt = frameMS;
@@ -688,7 +701,7 @@ namespace UnityEditorInternal
             m_TimeArea.SetShownHRangeInsideMargins(t - dt * 0.2f, t + dt * 1.2f);
 
             // [Case 1248631] The Analyzer may set m_SelectedEntry via reflection whilst m_SelectedThread is not assigned until later in DoProfilerFrame. Therefore it's possible we get here with a null m_SelectedThread.
-            if (m_SelectedEntry.instanceCount >= 0 && verticallyFrameSelected && m_SelectedThread != null)
+            if (m_SelectedEntry.instanceCountForFrame >= 0 && verticallyFrameSelected && m_SelectedThread != null)
             {
                 if (m_SelectedEntry.relativeYPos > m_SelectedThread.height)
                 {
@@ -1022,6 +1035,127 @@ namespace UnityEditorInternal
             return ((m_SelectedEntry.frameId >= firstDrawnFrameIndex) && (m_SelectedEntry.frameId <= lastDrawnFrameIndex));
         }
 
+        static RawFrameDataView GetFrameDataForThreadId(int frameIndex, int threadIndex, ulong threadId)
+        {
+            RawFrameDataView frameData = ProfilerDriver.GetRawFrameDataView(frameIndex, threadIndex);
+            // Check for valid data
+            if (!frameData.valid)
+                return null;
+
+            // If threadId matches for the same index we found our thread.
+            // (When new thread starts it might change the order of threads)
+            if (frameData.threadId == threadId)
+                return frameData;
+
+            // Overwise do a scan across all threads matching threadId.
+            frameData.Dispose();
+
+            // Skip main thread which is always 0
+            for (var i = 1;; ++i)
+            {
+                // Skip already inspected thread
+                if (threadIndex == i)
+                    continue;
+
+                frameData = ProfilerDriver.GetRawFrameDataView(frameIndex, i);
+                // Check is this is the last thread.
+                if (!frameData.valid)
+                    return null;
+
+                // Check if we found correct thread.
+                if (frameData.threadId == threadId)
+                    return frameData;
+
+                // Continue lookup and dispose nonmatching thread.
+                frameData.Dispose();
+            }
+        }
+
+        static void GetSampleTimeInNeighboringFrames(bool previousFrames, int sampleIndex, int markerId, int frameIndex, int threadIndex, ulong threadId, List<int> slicedSampleIndexList, ref ulong totalAsyncDurationNs, ref int totalAsyncFramesCount)
+        {
+            var sampleDepth = slicedSampleIndexList.IndexOf(sampleIndex);
+            if (sampleDepth == -1)
+                return;
+
+            var startFrame = previousFrames ? frameIndex - 1 : frameIndex + 1;
+            var frameDirection = previousFrames ? -1 : 1;
+            for (var i = startFrame;; i += frameDirection)
+            {
+                // Filter out frames which are beyond visible range
+                if (i < ProfilerDriver.firstFrameIndex || i > ProfilerDriver.lastFrameIndex)
+                    break;
+
+                var startedPreviousFrame = false;
+                var timeNs = 0UL;
+                using (var frameData = GetFrameDataForThreadId(i, threadIndex, threadId))
+                {
+                    // Thread not found
+                    if (frameData == null)
+                        return;
+
+                    var sampleCount = frameData.sampleCount;
+                    // Check for root only sample
+                    if (sampleCount == 1)
+                        return;
+
+                    // Sliced samples must have matching hierarchies on both sides of frame slice.
+                    // It is expensive to reconstruct hierarchy back from the raw event data, thus we store it in the frame data.
+                    // The list represents the sample hierarchy active at the frame boundary.
+                    if (previousFrames)
+                        frameData.GetSamplesContinuedInNextFrame(slicedSampleIndexList);
+                    else
+                        frameData.GetSamplesStartedInPreviousFrame(slicedSampleIndexList);
+                    if (sampleDepth >= slicedSampleIndexList.Count)
+                        return;
+
+                    var otherFrameSampleIndex = slicedSampleIndexList[sampleDepth];
+                    // Verify marker is the same
+                    if (frameData.GetSampleMarkerId(otherFrameSampleIndex) != markerId)
+                        return;
+
+                    // Sample found - catch the duration
+                    timeNs = frameData.GetSampleTimeNs(otherFrameSampleIndex);
+
+                    // Check out if sample started even earlier
+                    if (previousFrames)
+                        frameData.GetSamplesStartedInPreviousFrame(slicedSampleIndexList);
+                    else
+                        frameData.GetSamplesContinuedInNextFrame(slicedSampleIndexList);
+                    startedPreviousFrame = slicedSampleIndexList.Contains(otherFrameSampleIndex);
+                }
+
+                if (timeNs != 0)
+                {
+                    totalAsyncDurationNs += timeNs;
+                    totalAsyncFramesCount++;
+                }
+                if (!startedPreviousFrame)
+                    break;
+            }
+        }
+
+        static readonly List<int> s_CachedSamplesStartedInPreviousFrame = new List<int>();
+        static readonly List<int> s_CachedSamplesContinuedInNextFrame = new List<int>();
+
+        internal static void CalculateTotalAsyncDuration(int selectedSampleIndex, int frameIndex, int selectedThreadIndex, out string selectedThreadName, out ulong totalAsyncDurationNs, out int totalAsyncFramesCount)
+        {
+            ulong selectedThreadId;
+            int selectedMarkerId;
+            using (var frameData = ProfilerDriver.GetRawFrameDataView(frameIndex, selectedThreadIndex))
+            {
+                selectedThreadId = frameData.threadId;
+                selectedThreadName = frameData.threadName;
+                selectedMarkerId = frameData.GetSampleMarkerId(selectedSampleIndex);
+                frameData.GetSamplesStartedInPreviousFrame(s_CachedSamplesStartedInPreviousFrame);
+                frameData.GetSamplesContinuedInNextFrame(s_CachedSamplesContinuedInNextFrame);
+                totalAsyncDurationNs = frameData.GetSampleTimeNs(selectedSampleIndex);
+            }
+            totalAsyncFramesCount = 1;
+
+            GetSampleTimeInNeighboringFrames(true, selectedSampleIndex, selectedMarkerId, frameIndex, selectedThreadIndex, selectedThreadId, s_CachedSamplesStartedInPreviousFrame, ref totalAsyncDurationNs, ref totalAsyncFramesCount);
+            GetSampleTimeInNeighboringFrames(false, selectedSampleIndex, selectedMarkerId, frameIndex, selectedThreadIndex, selectedThreadId, s_CachedSamplesContinuedInNextFrame, ref totalAsyncDurationNs, ref totalAsyncFramesCount);
+        }
+
         void DoSelectionTooltip(int frameIndex, Rect fullRect)
         {
             // Draw selected tooltip
@@ -1033,12 +1167,42 @@ namespace UnityEditorInternal
             System.Text.StringBuilder text = new System.Text.StringBuilder();
             text.Append(UnityString.Format("{0}\n{1}", m_SelectedEntry.name, durationString));
 
-            // Show total duration if more than one instance
-            if (m_SelectedEntry.instanceCount > 1)
+            // Calculate total time of the sample across visible frames
+            var selectedThreadIndex = m_SelectedEntry.threadId;
+            int selectedSampleIndex = m_SelectedEntry.nativeIndex + 1;
+            string selectedThreadName;
+            ulong totalAsyncDurationNs;
+            int totalAsyncFramesCount;
+
+            // Check if sample is sliced and started in previous frames
+            CalculateTotalAsyncDuration(selectedSampleIndex, frameIndex, selectedThreadIndex, out selectedThreadName, out totalAsyncDurationNs, out totalAsyncFramesCount);
+
+            // Add total time to the tooltip
+            if (totalAsyncFramesCount > 1)
             {
-                string totalDurationString = UnityString.Format(m_SelectedEntry.totalDuration >= 1.0 ? "{0:f2}ms" : "{0:f3}ms", m_SelectedEntry.totalDuration);
-                text.Append(string.Format("\n{0}: {1} ({2} {3})", styles.localizedStringTotal, totalDurationString, m_SelectedEntry.instanceCount, styles.localizedStringInstances));
+                var totalAsyncDuration = totalAsyncDurationNs * 1e-6f;
+                var totalAsyncDurationString = UnityString.Format(totalAsyncDuration >= 1.0 ? "{0:f2}ms" : "{0:f3}ms", totalAsyncDuration);
+                text.Append(string.Format(styles.localizedStringTotalAcrossFrames, totalAsyncDurationString, totalAsyncFramesCount, selectedThreadName));
             }
+
+            // Show total duration if more than one instance
+            if (m_SelectedEntry.instanceCountForThread > 1 || m_SelectedEntry.instanceCountForFrame > 1)
+            {
+                text.Append(styles.localizedStringTotalAcumulatedTime);
+
+                if (m_SelectedEntry.instanceCountForThread > 1)
+                {
+                    string totalDurationForThreadString = UnityString.Format(m_SelectedEntry.totalDurationForThread >= 1.0 ? "{0:f2}ms" : "{0:f3}ms", m_SelectedEntry.totalDurationForThread);
+                    text.Append(string.Format(styles.localizedStringTotalInThread, totalDurationForThreadString, m_SelectedEntry.instanceCountForThread, selectedThreadName));
+                }
+
+                if (m_SelectedEntry.instanceCountForFrame > m_SelectedEntry.instanceCountForThread)
+                {
+                    string totalDurationForFrameString = UnityString.Format(m_SelectedEntry.totalDurationForFrame >= 1.0 ? "{0:f2}ms" : "{0:f3}ms", m_SelectedEntry.totalDurationForFrame);
+                    text.Append(string.Format(styles.localizedStringTotalInFrame, totalDurationForFrameString, m_SelectedEntry.instanceCountForFrame, m_SelectedEntry.threadCount));
+                }
+            }
+
 
             if (m_SelectedEntry.metaData.Length > 0)
             {
