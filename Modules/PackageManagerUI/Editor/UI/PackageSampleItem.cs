@@ -79,7 +79,7 @@ namespace UnityEditor.PackageManager.UI
                 {
                     // Highlight import path
                     var currentPath = Directory.GetCurrentDirectory();
-                    var importRelativePath = m_Sample.importPath.Replace(currentPath, "");
+                    var importRelativePath = m_Sample.importPath.Replace(currentPath + Path.DirectorySeparatorChar, "");
                     var obj = m_AssetDatabase.LoadMainAssetAtPath(importRelativePath);
                     m_Selection.activeObject = obj;
                     EditorGUIUtility.PingObject(obj);

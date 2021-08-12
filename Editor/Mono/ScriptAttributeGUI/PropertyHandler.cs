@@ -366,18 +366,23 @@ namespace UnityEditor
                 method.Invoke(target, new object[] {});
         }
 
+        static List<Component> s_CachedComponents = new List<Component>();
+
         internal void TestInvalidateCache()
         {
             GameObject activeObject = Selection.activeObject as GameObject;
             if (activeObject != null)
             {
-                var components = activeObject.GetComponents(typeof(Component));
+                activeObject.GetComponents(s_CachedComponents);
+                var componentCount = s_CachedComponents.Count;
+                s_CachedComponents.Clear();
+
                 if (s_LastInspectionTarget != activeObject.GetInstanceID() ||
-                    s_LastInspectorNumComponents != components.Length)
+                    s_LastInspectorNumComponents != componentCount)
                 {
                     ClearCache();
                     s_LastInspectionTarget = activeObject.GetInstanceID();
-                    s_LastInspectorNumComponents = components.Length;
+                    s_LastInspectorNumComponents = componentCount;
                 }
             }
         }
@@ -398,7 +403,7 @@ namespace UnityEditor
 
             FieldInfo listInfo = null;
             Queue<string> propertyName = new Queue<string>(property.propertyPath.Split(".".ToCharArray(), StringSplitOptions.RemoveEmptyEntries));
-            var type = property.serializedObject.targetObject.GetType();
+            Type type = property.serializedObject.targetObject.GetType();
             var name = propertyName.Dequeue();
             listInfo = type.GetField(name, fieldFilter);
 
@@ -418,16 +423,34 @@ namespace UnityEditor
             // if it has a non-reorderable attribute
             while (propertyName.Count > 0)
             {
-                Type t = listInfo.FieldType;
+                try
+                {
+                    // We should at least try to get the type from object instance
+                    // in order to handle interfaces and abstractions correctly
+                    type = listInfo.GetValue(property.serializedObject.targetObject).GetType();
+                }
+                catch
+                {
+                    type = listInfo.FieldType;
+                }
 
-                if (t.IsArray) t = t.GetElementType();
-                else if (t.IsArrayOrList()) t = t.GetGenericArguments().Single();
+                if (type.IsArray) type = type.GetElementType();
+                else if (type.IsArrayOrList()) type = type.GetGenericArguments().Single();
 
-                FieldInfo f = t.GetField(propertyName.Dequeue(), fieldFilter);
-                if (f != null) listInfo = f;
+                FieldInfo field = type.GetField(propertyName.Dequeue(), fieldFilter);
+                if (field != null) listInfo = field;
             }
 
-            return !TypeCache.GetFieldsWithAttribute(typeof(NonReorderableAttribute)).Any(f => f.Equals(listInfo));
+            // Since we're using TypeCache to find NonReorderableAttribute, we will need to manually check base fields
+            List<FieldInfo> baseFields = new List<FieldInfo>();
+            baseFields.Add(listInfo);
+            while ((type = type.BaseType) != null)
+            {
+                var field = type.GetField(listInfo.Name, fieldFilter);
+                if (field != null) baseFields.Add(field);
+            }
+
+            return !TypeCache.GetFieldsWithAttribute(typeof(NonReorderableAttribute)).Any(f => baseFields.Any(b => f.Equals(b)));
         }
 
         internal static bool UseReorderabelListControl(SerializedProperty property) => IsNonStringArray(property) && IsArrayReorderable(property);

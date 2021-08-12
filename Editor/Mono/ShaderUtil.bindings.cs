@@ -282,5 +282,15 @@ namespace UnityEditor
         }
 
         extern private static void ApplyMaterialPropertyToMaterialPropertyBlockImpl(System.Object materialProperty, int propertyMask, System.Object propertyBlock);
+
+        extern public static BuiltinShaderDefine[] GetShaderPlatformKeywordsForBuildTarget(ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, GraphicsTier tier);
+
+        public static BuiltinShaderDefine[] GetShaderPlatformKeywordsForBuildTarget(ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget)
+        {
+            return GetShaderPlatformKeywordsForBuildTarget(shaderCompilerPlatform, buildTarget, GraphicsTier.Tier1);
+        }
+
+        extern internal static ShaderData.VariantCompileInfo CompileShaderVariant([NotNull] Shader shader, int subShaderIndex, int passId,
+            ShaderType shaderType, BuiltinShaderDefine[] platformKeywords, string[] keywords, ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, GraphicsTier tier);
     }
 }

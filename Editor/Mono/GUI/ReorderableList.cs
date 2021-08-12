@@ -384,7 +384,7 @@ namespace UnityEditorInternal
                     {
                         prop.serializedObject.ApplyModifiedProperties();
                     }
-                    if (Event.current.type == EventType.MouseDown && Event.current.button == 1 && rect.Contains(Event.current.mousePosition)) Event.current.Use();
+                    if (Event.current.type == EventType.ContextClick && rect.Contains(Event.current.mousePosition)) Event.current.Use();
 
                     EditorGUIUtility.labelWidth = oldLabelWidth;
                     return;
@@ -744,19 +744,6 @@ namespace UnityEditorInternal
             return GetElementYOffset(m_Count - 1) + GetElementHeight(m_Count - 1) + listElementPadding;
         }
 
-        void EnsureValidProperty(SerializedProperty property)
-        {
-            try
-            {
-                ScriptAttributeUtility.GetHandler(property);
-            }
-            catch
-            {
-                ClearCache();
-                CacheIfNeeded();
-            }
-        }
-
         int recursionCounter = 0;
         Rect lastRect = Rect.zero;
         private void DoListElements(Rect listRect, Rect visibleRect)
@@ -818,7 +805,6 @@ namespace UnityEditorInternal
                     {
                         if (visibleRect.y > GetElementYOffset(i) + GetElementHeight(i)) continue;
                         if (visibleRect.y + visibleRect.height < GetElementYOffset(i > 0 ? i - 1 : i)) break;
-                        if (m_Elements != null) EnsureValidProperty(m_PropertyCache[i].property);
 
                         var nonDragTargetIndex = m_NonDragTargetIndices[i];
                         if (nonDragTargetIndex != -1)
@@ -895,7 +881,6 @@ namespace UnityEditorInternal
                     {
                         if (visibleRect.y > GetElementYOffset(i) + GetElementHeight(i)) continue;
                         if (visibleRect.y + visibleRect.height < GetElementYOffset(i > 0 ? i - 1 : i)) break;
-                        if (m_Elements != null) EnsureValidProperty(m_PropertyCache[i].property);
 
                         int initialProperties = EditorGUI.s_PropertyCount;
 

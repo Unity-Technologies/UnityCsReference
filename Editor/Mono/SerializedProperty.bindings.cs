@@ -167,10 +167,7 @@ namespace UnityEditor
                 if (!this.isValidDisplayNameCache)
                 {
                     this.isValidDisplayNameCache = true;
-                    using (new LocalizationGroup(m_SerializedObject.targetObject))
-                    {
-                        m_CachedLocalizedDisplayName = L10n.Tr(displayName);
-                    }
+                    m_CachedLocalizedDisplayName = L10n.Tr(displayName, m_SerializedObject.targetObject);
                 }
                 return m_CachedLocalizedDisplayName;
             }
@@ -182,12 +179,9 @@ namespace UnityEditor
             {
                 string[] names = enumDisplayNames;
                 var res = new string[names.Length];
-                using (new LocalizationGroup(m_SerializedObject.targetObject))
+                for (var i = 0; i < res.Length; ++i)
                 {
-                    for (var i = 0; i < res.Length; ++i)
-                    {
-                        res[i] = L10n.Tr(names[i]);
-                    }
+                    res[i] = L10n.Tr(names[i], m_SerializedObject.targetObject);
                 }
                 return res;
             }
@@ -453,6 +447,19 @@ namespace UnityEditor
 
         [NativeName("GetSerializedPropertyTypeName")]
         private extern string GetSerializedPropertyTypeNameInternal();
+
+        // Type name of the property is "float" (RO)
+        internal bool isTypeFloat
+        {
+            get
+            {
+                Verify(VerifyFlags.IteratorNotAtEnd);
+                return IsSerializedPropertyTypeFloatInternal();
+            }
+        }
+
+        [NativeName("IsSerializedPropertyTypeFloat")]
+        private extern bool IsSerializedPropertyTypeFloatInternal();
 
         // Type name of the element of an Array property (RO)
         public string arrayElementType

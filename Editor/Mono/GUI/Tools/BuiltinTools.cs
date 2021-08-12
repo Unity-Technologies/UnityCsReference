@@ -73,7 +73,13 @@ namespace UnityEditor
         protected virtual bool ShouldToolGUIBeDisabled(out GUIContent disabledLabel)
         {
             disabledLabel = Handles.s_StaticLabel;
-            return (!Tools.s_Hidden && EditorApplication.isPlaying && GameObjectUtility.ContainsStatic(Selection.gameObjects));
+
+            if (EditorApplication.isPlaying && !Tools.s_Hidden)
+            {
+                var selectedGameObjects = Selection.gameObjects;
+                return GameObjectUtility.ContainsMainStageGameObjects(selectedGameObjects) && GameObjectUtility.ContainsStatic(selectedGameObjects);
+            }
+            return false;
         }
 
         protected bool IsDisabledByPrefabPropertyPatching(string partialPropertyName, out GUIContent disabledLabel)

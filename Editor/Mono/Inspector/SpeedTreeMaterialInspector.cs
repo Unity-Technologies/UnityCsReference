@@ -170,7 +170,9 @@ namespace UnityEditor
         {
             EditorGUI.BeginChangeCheck();
             EditorGUI.showMixedValue = hasMixedEnable;
-            enable = EditorGUI.ToggleLeft(EditorGUILayout.GetControlRect(false, GUILayout.ExpandWidth(false)), prop.displayName, enable);
+            Rect controlRect = EditorGUILayout.GetControlRect(false, GUILayout.ExpandWidth(false));
+            controlRect.width = controlRect.width > EditorGUIUtility.fieldWidth ? controlRect.width - EditorGUIUtility.fieldWidth : controlRect.width;
+            enable = EditorGUI.ToggleLeft(controlRect, prop.displayName, enable);
             EditorGUI.showMixedValue = false;
             bool? retValue = EditorGUI.EndChangeCheck() ? (bool?)enable : null;
 

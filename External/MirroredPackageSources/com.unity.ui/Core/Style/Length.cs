@@ -24,6 +24,9 @@ namespace UnityEngine.UIElements
     /// </summary>
     public struct Length : IEquatable<Length>
     {
+        // Float clamping value (2 ^ 23).
+        private const float k_MaxValue = 8388608.0f;
+
         /// <summary>
         /// Creates a percentage <see cref="Length"/> from a float.
         /// </summary>
@@ -39,7 +42,9 @@ namespace UnityEngine.UIElements
         public float value
         {
             get { return m_Value; }
-            set { m_Value = value; }
+
+            // Clamp values to prevent floating point calculation inaccuracies in Yoga.
+            set => m_Value = Mathf.Clamp(value, -k_MaxValue, k_MaxValue);
         }
 
         /// <summary>
@@ -66,9 +71,9 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// <see cref="LengthUnit.Pixel"/> is the default unit.
         /// </remarks>
-        public Length(float value, LengthUnit unit)
+        public Length(float value, LengthUnit unit) : this()
         {
-            m_Value = value;
+            this.value = value;
             m_Unit = unit;
         }
 

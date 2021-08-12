@@ -229,6 +229,9 @@ namespace UnityEditor
                         {
                             var actualObject = property != null ? property.objectReferenceValue : obj;
                             var contextMenu = new GenericMenu();
+
+                            if (FillPropertyContextMenu(property, null, contextMenu) != null)
+                                contextMenu.AddSeparator("");
                             contextMenu.AddItem(GUIContent.Temp("Properties..."), false, () => PropertyEditor.OpenPropertyEditor(actualObject));
                             contextMenu.DropDown(position);
                         }

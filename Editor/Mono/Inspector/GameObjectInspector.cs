@@ -230,14 +230,25 @@ namespace UnityEditor
             m_PreviewCache.Clear();
         }
 
+        private static StaticEditorFlags[] s_StaticEditorFlagValues;
+
         private static bool ShowMixedStaticEditorFlags(StaticEditorFlags mask)
         {
             uint countedBits = 0;
             uint numFlags = 0;
-            foreach (var i in Enum.GetValues(typeof(StaticEditorFlags)))
+
+            if (s_StaticEditorFlagValues == null)
+            {
+                var values = Enum.GetValues(typeof(StaticEditorFlags));
+                s_StaticEditorFlagValues = new StaticEditorFlags[values.Length];
+                for (var i = 0; i < values.Length; ++i)
+                    s_StaticEditorFlagValues[i] = (StaticEditorFlags)values.GetValue(i);
+            }
+
+            foreach (var i in s_StaticEditorFlagValues)
             {
                 numFlags++;
-                if ((mask & (StaticEditorFlags)i) > 0)
+                if ((mask & i) > 0)
                     countedBits++;
             }
 

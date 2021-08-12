@@ -913,6 +913,25 @@ namespace UnityEngine.Rendering
         BlendIndices,
     }
 
+    // Keep in sync with ShaderParamType, GfxDeviceTypes.h
+    public enum ShaderParamType
+    {
+        Float = 0,
+        Int,
+        Bool,
+        Half,
+        Short,
+        UInt,
+    }
+
+    // Keep in sync with ShaderConstantType, ShaderUtil.bindings.h
+    public enum ShaderConstantType
+    {
+        Vector = 0,
+        Matrix,
+        Struct,
+    }
+
     // Match Camera::OpaqueSortMode on C++ side
     public enum OpaqueSortMode
     {

@@ -3,18 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditor;
-using UnityEditorInternal;
 using UnityEngine.Internal;
 using UnityEngine.Assertions;
-
 using System;
-using System.Threading;
-using System.Collections;
 using System.Collections.Generic;
-using System.Security;
-using System.Security.Cryptography;
 using System.Reflection;
+using JetBrains.Annotations;
 
 namespace UnityEditor
 {
@@ -24,28 +18,72 @@ namespace UnityEditor
     public static class L10n
     {
         static object lockObject = new object();
-        static Hashtable s_GroupNames = new Hashtable();
+        static Dictionary<Assembly, string> s_GroupNames = new Dictionary<Assembly, string>(128);
 
-        static string GetGroupName(System.Reflection.Assembly assembly)
+        private readonly struct LocKey : IEquatable<LocKey>
         {
-            var name = (string)s_GroupNames[assembly];
-            if (name == null)
+            [NotNull] public readonly string defaultString;
+            [NotNull] public readonly string groupName;
+
+            public LocKey(string _defaultString, string _groupName)
             {
-                object[] attrobjs = assembly.GetCustomAttributes(typeof(LocalizationAttribute), true /* inherit */);
-                if (attrobjs != null && attrobjs.Length > 0 && attrobjs[0] != null)
+                defaultString = _defaultString ?? string.Empty;
+                groupName = _groupName ?? string.Empty;
+            }
+
+            public bool Equals(LocKey other)
+            {
+                return defaultString == other.defaultString && groupName == other.groupName;
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is LocKey other && Equals(other);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
                 {
-                    var locAttr = (LocalizationAttribute)attrobjs[0];
-                    string locGroupName = locAttr.locGroupName;
-                    if (locGroupName == null)
-                        locGroupName = assembly.GetName().Name;
-                    name = locGroupName;
-                    lock (lockObject)
-                    {
-                        s_GroupNames[assembly] = name;
-                    }
+                    return (defaultString.GetHashCode() * 397) ^ groupName.GetHashCode();
                 }
             }
-            return name;
+        }
+
+        static Dictionary<LocKey, string> s_LocalizedStringCache = new Dictionary<LocKey, string>(10 << 10);
+
+        internal static void ClearCache()
+        {
+            lock (lockObject)
+                s_LocalizedStringCache.Clear();
+        }
+
+        internal static string GetGroupName(System.Reflection.Assembly assembly)
+        {
+            if (assembly == null)
+                return null;
+
+            lock (lockObject)
+            {
+                if (!s_GroupNames.TryGetValue(assembly, out var name))
+                {
+                    var attrobjs = assembly.GetCustomAttributes(typeof(LocalizationAttribute), true /* inherit */);
+                    if (attrobjs.Length > 0 && attrobjs[0] != null)
+                    {
+                        var locAttr = (LocalizationAttribute)attrobjs[0];
+                        string locGroupName = locAttr.locGroupName;
+                        if (locGroupName == null)
+                            locGroupName = assembly.GetName().Name;
+                        name = locGroupName;
+                        s_GroupNames[assembly] = name;
+                    }
+                    else
+                    {
+                        s_GroupNames[assembly] = null;
+                    }
+                }
+                return name;
+            }
         }
 
         /// <summary>
@@ -54,18 +92,36 @@ namespace UnityEditor
         /// </Summary>
         public static string Tr(string str)
         {
+            return Tr(str, Assembly.GetCallingAssembly());
+        }
+
+        internal static string Tr(string str, object context)
+        {
+            return Tr(str, context?.GetType().Assembly);
+        }
+
+        internal static string Tr(string str, Assembly groupAssembly)
+        {
             if (!LocalizationDatabase.enableEditorLocalization)
                 return str;
 
-            var groupName = GetGroupName(Assembly.GetCallingAssembly());
-            if (groupName != null)
+            if (string.IsNullOrEmpty(str))
+                return str;
+
+            lock (lockObject)
             {
-                var new_str = LocalizationDatabase.GetLocalizedStringWithGroupName(str, groupName);
-                return new_str;
-            }
-            else
-            {
-                return LocalizationDatabase.GetLocalizedString(str);
+                var groupName = GetGroupName(groupAssembly);
+                var key = new LocKey(str, groupName);
+
+                if (s_LocalizedStringCache.TryGetValue(key, out var localized))
+                    return localized;
+
+                localized = (groupName != null)
+                    ? LocalizationDatabase.GetLocalizedStringWithGroupName(str, groupName)
+                    : LocalizationDatabase.GetLocalizedString(str);
+
+                s_LocalizedStringCache[key] = localized;
+                return localized;
             }
         }
 
@@ -461,15 +517,7 @@ namespace UnityEditor
 
         void initialize(System.Reflection.Assembly assembly)
         {
-            string groupName = null;
-            object[] attrobjs = assembly.GetCustomAttributes(typeof(LocalizationAttribute), true /* inherit */);
-            if (attrobjs != null && attrobjs.Length > 0 && attrobjs[0] != null) // focus on only the first.
-            {
-                LocalizationAttribute locAttr = (LocalizationAttribute)attrobjs[0];
-                groupName = locAttr.locGroupName;
-                if (groupName == null)
-                    groupName = assembly.GetName().Name;
-            }
+            string groupName = L10n.GetGroupName(assembly);
             LocalizationGroupStack.Push(groupName);
             m_Pushed = true;
             m_LocGroupName = groupName;

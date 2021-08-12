@@ -101,6 +101,12 @@ namespace UnityEditor.Profiling
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern void GetFlowEvents(List<FlowEvent> outFlowEvents);
 
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        internal extern void GetSamplesStartedInPreviousFrame(List<int> outSampleIndexList);
+
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        internal extern void GetSamplesContinuedInNextFrame(List<int> outSampleIndexList);
+
         public override bool Equals(object obj)
         {
             var dataViewObj = obj as RawFrameDataView;

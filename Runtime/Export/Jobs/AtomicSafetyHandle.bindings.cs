@@ -68,6 +68,9 @@ namespace Unity.Collections.LowLevel.Unsafe
         [ThreadSafe]
         public static extern void Release(AtomicSafetyHandle handle);
 
+        [ThreadSafe]
+        public static extern bool IsDefaultValue(in AtomicSafetyHandle handle);
+
         // Marks the AtomicSafetyHandle so that it cannot be disposed of.
         [ThreadSafe]
         public static extern void PrepareUndisposable(ref AtomicSafetyHandle handle);
@@ -165,14 +168,25 @@ namespace Unity.Collections.LowLevel.Unsafe
                 CheckWriteAndThrowNoEarlyOut(handle);
         }
 
+        // When the handle is of a non-default value, checks whether it is still valid
+        // If not (already destroyed) throws an exception.
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        public static unsafe void ValidateNonDefaultHandle(in AtomicSafetyHandle handle)
+        {
+            if (!IsDefaultValue(handle))
+            {
+                CheckExistsAndThrow(handle);
+            }
+        }
+
         // Checks if the handle is still valid.
         // If not (already destroyed) throws an exception.
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        public static unsafe void CheckExistsAndThrow(AtomicSafetyHandle handle)
+        public static unsafe void CheckExistsAndThrow(in AtomicSafetyHandle handle)
         {
             var versionPtr = (int*)handle.versionNode;
             if (handle.version != ((*versionPtr) & ReadWriteDisposeCheck))
-                throw new InvalidOperationException("The NativeArray has been deallocated, it is not allowed to access it");
+                throw new ObjectDisposedException("The NativeArray has been disposed, it is not allowed to access it");
         }
 
         [ThreadSafe]
