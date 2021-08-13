@@ -23,10 +23,24 @@ namespace UnityEditor
         ARM64 = 1 << 1,
 
         // x86
-        // X86 = 1 << 2,
+        X86 = 1 << 2,
+
+        // x86_64
+        X86_64 = 1 << 3,
 
         // All architectures
         All = 0xffffffff,
+    }
+
+    // Target devices.
+    public enum AndroidTargetDevices
+    {
+        // All devices. The Android aplication is allowed to run on all devices.
+        AllDevices = 0,
+        // Only run the Android aplication on mobile phones, tablets, and TV devices, not on any Chrome OS devices.
+        PhonesTabletsAndTVDevicesOnly = 1,
+        // Only run the Android application on Chrome OS devices, not on any Android mobile phones, tablets, or TV devices.
+        ChromeOSDevicesOnly = 2,
     }
 
     // Supported Android SDK versions
@@ -247,6 +261,9 @@ namespace UnityEditor
             // Gamepad support level for Android TV
             internal static extern AndroidGamepadSupportLevel androidGamepadSupportLevel { get; set; }
 
+            // Disable Chrome OS's default behaviour of converting mouse and touchpad input events into touchscreen input events.
+            public static extern bool chromeosInputEmulation { get; set; }
+
             // Returns Android banner list
             internal static extern AndroidBanner[] GetAndroidBanners();
 
@@ -283,6 +300,8 @@ namespace UnityEditor
                 [NativeMethod("SetBuildApkPerCpuArchitecture")]
                 set;
             }
+
+            public static extern AndroidTargetDevices androidTargetDevices { get; set; }
 
             // Android splash screen scale mode
             public static extern AndroidSplashScreenScale splashScreenScale
@@ -458,6 +477,14 @@ namespace UnityEditor
 
             // App Bundle size which should cause warning message appear
             internal static extern int appBundleSizeToValidate { get; set; }
+
+            public static extern bool optimizedFramePacing
+            {
+                [NativeMethod("GetAndroidUseSwappy")]
+                get;
+                [NativeMethod("SetAndroidUseSwappy")]
+                set;
+            }
         }
     }
 }

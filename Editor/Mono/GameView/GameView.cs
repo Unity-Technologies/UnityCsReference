@@ -847,8 +847,8 @@ namespace UnityEditor
             if (EditorApplication.isPlayingOrWillChangePlaymode)
                 EditorGUIUtility.AddCursorRect(viewInWindow, MouseCursor.CustomCursor);
 
-            // Gain mouse lock when clicking on game view content
-            if (type == EventType.MouseDown && viewInWindow.Contains(Event.current.mousePosition))
+            // Gain mouse lock when clicking on game view content, unless game is paused
+            if (!EditorApplication.isPaused && type == EventType.MouseDown && viewInWindow.Contains(Event.current.mousePosition))
             {
                 AllowCursorLockAndHide(true);
             }
@@ -960,7 +960,8 @@ namespace UnityEditor
 
                 // Do not use mouse or touch events if mousepos is outside game view rect (fix for case 380995: Gameview tab's context menu is not appearing on right click)
                 // Placed after event queueing above to ensure scripts can react on mouse up events.
-                bool useEvent = mousePosInGameViewRect;
+                bool isKey = Event.current.rawType == EventType.KeyDown || Event.current.rawType == EventType.KeyUp;
+                bool useEvent = mousePosInGameViewRect || isKey;
 
                 // Don't use command events, or they won't be sent to other views.
                 if (type == EventType.ExecuteCommand || type == EventType.ValidateCommand)

@@ -14,9 +14,14 @@ namespace UnityEditor.IMGUI.Controls
 
         private static readonly Matrix4x4 s_XHandleOffset =
             Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(90f, Vector3.forward), Vector3.one);
+        private static readonly Matrix4x4 s_xArticulationOffset =
+            Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(180f, Vector3.forward), Vector3.one);
         private static readonly Matrix4x4 s_ZHandleOffset =
             Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(90f, Vector3.left), Vector3.one);
+        private static readonly Matrix4x4 s_zArticulationOffset =
+            Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(180f, Vector3.right) * Quaternion.AngleAxis(180f, Vector3.up), Vector3.one);
 
+        Matrix4x4 xArticulationOffset, zArticulationOffset;
         private static readonly float s_LockedColorAmount = 0.5f;
         private static readonly Color s_LockedColor = new Color(0.5f, 0.5f, 0.5f, 0f);
 
@@ -288,6 +293,22 @@ namespace UnityEditor.IMGUI.Controls
 
         public void DrawHandle()
         {
+            DrawHandle(false);
+        }
+
+        public void DrawHandle(bool usingArticulations)
+        {
+            if (usingArticulations)
+            {
+                xArticulationOffset = s_xArticulationOffset;
+                zArticulationOffset = s_zArticulationOffset;
+            }
+            else
+            {
+                xArticulationOffset = Matrix4x4.identity;
+                zArticulationOffset = Matrix4x4.identity;
+            }
+
             m_SecondaryAxesMatrix = Handles.matrix;
 
             // ensure handle colors are up to date
@@ -324,7 +345,7 @@ namespace UnityEditor.IMGUI.Controls
                     }
                     else
                     {
-                        using (new Handles.DrawingScope(Handles.matrix * s_XHandleOffset))
+                        using (new Handles.DrawingScope(Handles.matrix * s_XHandleOffset * xArticulationOffset))
                             DrawArc(m_XMinHandle, m_XMaxHandle, xHandleColor * fillScalar, ArcType.Solid);
                     }
                     break;
@@ -366,7 +387,7 @@ namespace UnityEditor.IMGUI.Controls
                         }
                         break;
                     case ConfigurableJointMotion.Limited:
-                        using (new Handles.DrawingScope(Handles.matrix * s_ZHandleOffset))
+                        using (new Handles.DrawingScope(Handles.matrix * s_ZHandleOffset * zArticulationOffset))
                             DrawArc(m_ZMinHandle, m_ZMaxHandle, zHandleColor * fillScalar, ArcType.Solid);
                         drawZ = true;
                         break;
@@ -387,7 +408,7 @@ namespace UnityEditor.IMGUI.Controls
             m_ZMaxHandle.GetControlIDs();
             if (drawX)
             {
-                using (new Handles.DrawingScope(Handles.matrix * s_XHandleOffset))
+                using (new Handles.DrawingScope(Handles.matrix * s_XHandleOffset * xArticulationOffset))
                 {
                     DrawArc(m_XMinHandle, m_XMaxHandle, xHandleColor, ArcType.Wire);
 
@@ -406,7 +427,7 @@ namespace UnityEditor.IMGUI.Controls
                 }
                 if (drawZ)
                 {
-                    using (new Handles.DrawingScope(Handles.matrix * s_ZHandleOffset))
+                    using (new Handles.DrawingScope(Handles.matrix * s_ZHandleOffset * zArticulationOffset))
                     {
                         DrawArc(m_ZMinHandle, m_ZMaxHandle, zHandleColor, ArcType.Wire);
 
@@ -476,7 +497,7 @@ namespace UnityEditor.IMGUI.Controls
 
         private void DrawXMinHandle()
         {
-            using (new Handles.DrawingScope(Handles.matrix * s_XHandleOffset))
+            using (new Handles.DrawingScope(Handles.matrix * s_XHandleOffset * xArticulationOffset))
             {
                 m_XMinHandle.DrawHandle();
                 m_XMinHandle.angle = Mathf.Clamp(m_XMinHandle.angle, xRange.x, m_XMaxHandle.angle);
@@ -485,7 +506,7 @@ namespace UnityEditor.IMGUI.Controls
 
         private void DrawXMaxHandle()
         {
-            using (new Handles.DrawingScope(Handles.matrix * s_XHandleOffset))
+            using (new Handles.DrawingScope(Handles.matrix * s_XHandleOffset * xArticulationOffset))
             {
                 m_XMaxHandle.DrawHandle();
                 m_XMaxHandle.angle = Mathf.Clamp(m_XMaxHandle.angle, m_XMinHandle.angle, xRange.y);
@@ -512,7 +533,7 @@ namespace UnityEditor.IMGUI.Controls
 
         private void DrawZMinHandle()
         {
-            using (new Handles.DrawingScope(m_SecondaryAxesMatrix * s_ZHandleOffset))
+            using (new Handles.DrawingScope(m_SecondaryAxesMatrix * s_ZHandleOffset * zArticulationOffset))
             {
                 m_ZMinHandle.DrawHandle();
                 m_ZMinHandle.angle = Mathf.Clamp(m_ZMinHandle.angle, zRange.x, m_ZMaxHandle.angle);
@@ -521,7 +542,7 @@ namespace UnityEditor.IMGUI.Controls
 
         private void DrawZMaxHandle()
         {
-            using (new Handles.DrawingScope(m_SecondaryAxesMatrix * s_ZHandleOffset))
+            using (new Handles.DrawingScope(m_SecondaryAxesMatrix * s_ZHandleOffset * zArticulationOffset))
             {
                 m_ZMaxHandle.DrawHandle();
                 m_ZMaxHandle.angle = Mathf.Clamp(m_ZMaxHandle.angle, m_ZMinHandle.angle, zRange.y);
