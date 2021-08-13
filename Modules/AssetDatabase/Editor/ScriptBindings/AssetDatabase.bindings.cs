@@ -342,6 +342,18 @@ namespace UnityEditor
         [FreeFunction("AssetDatabase::SaveAssets")]
         extern public static void SaveAssets();
 
+        [FreeFunction("AssetDatabase::SaveAssetIfDirty")]
+        extern public static void SaveAssetIfDirty(GUID guid);
+
+        public static void SaveAssetIfDirty(Object obj)
+        {
+            string guidString;
+            long localID;
+
+            if (TryGetGUIDAndLocalFileIdentifier(obj.GetInstanceID(), out guidString, out localID))
+                SaveAssetIfDirty(new GUID(guidString));
+        }
+
         extern public static Texture GetCachedIcon(string path);
         extern public static void SetLabels(Object obj, string[] labels);
         extern private static void GetAllLabelsImpl(object labelsList, object scoresList);

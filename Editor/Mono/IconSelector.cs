@@ -48,6 +48,7 @@ namespace UnityEditor
         void OnEnable()
         {
             hideFlags = HideFlags.DontSave;
+            Undo.undoRedoPerformed += UndoCloseWindow;
         }
 
         void OnDisable()
@@ -56,6 +57,7 @@ namespace UnityEditor
 
             s_LastClosedTime = System.DateTime.Now.Ticks / System.TimeSpan.TicksPerMillisecond;
             s_IconSelector = null;
+            Undo.undoRedoPerformed -= UndoCloseWindow;
         }
 
         void SaveIconChanges()
@@ -247,6 +249,12 @@ namespace UnityEditor
                 if (GUI.Button(noneButtonRect, m_NoneButtonContent, m_Styles.noneButton))
                     SetIconForSelectedObjects(null);
             }
+        }
+
+        void UndoCloseWindow()
+        {
+            Close();
+            GUI.changed = true;
         }
 
         private void CloseWindow()

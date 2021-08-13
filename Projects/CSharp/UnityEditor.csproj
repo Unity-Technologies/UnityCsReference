@@ -4444,6 +4444,9 @@
     <Compile Include="..\..\Modules\AssetPipelineEditor\ImportSettings\VideoClipImporterInspector.cs">
       <Link>Modules\AssetPipelineEditor\ImportSettings\VideoClipImporterInspector.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\AssetPipelineEditor\Public\AndroidAssetPackImporter.bindings.cs">
+      <Link>Modules\AssetPipelineEditor\Public\AndroidAssetPackImporter.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\AssetPipelineEditor\Public\AudioImporter.bindings.cs">
       <Link>Modules\AssetPipelineEditor\Public\AudioImporter.bindings.cs</Link>
     </Compile>
@@ -5601,6 +5604,15 @@
     </Compile>
     <Compile Include="..\..\Modules\Physics2DEditor\Managed\Physics2DMenuItem.cs">
       <Link>Modules\Physics2DEditor\Managed\Physics2DMenuItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsEditor\ArticulationBodyEditorCommon.cs">
+      <Link>Modules\PhysicsEditor\ArticulationBodyEditorCommon.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsEditor\ArticulationBodyJointLimitTool.cs">
+      <Link>Modules\PhysicsEditor\ArticulationBodyJointLimitTool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsEditor\ArticulatonBodyAnchorTransformTool.cs">
+      <Link>Modules\PhysicsEditor\ArticulatonBodyAnchorTransformTool.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PhysicsEditor\ScriptBindings\ColliderUtil.bindings.cs">
       <Link>Modules\PhysicsEditor\ScriptBindings\ColliderUtil.bindings.cs</Link>

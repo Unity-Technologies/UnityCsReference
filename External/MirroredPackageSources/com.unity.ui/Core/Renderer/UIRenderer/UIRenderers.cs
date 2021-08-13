@@ -145,7 +145,13 @@ namespace UnityEngine.UIElements.UIR
                     break;
                 }
                 case CommandType.PushView:
-                    var vt = new ViewTransform() { transform = owner.worldTransform, clipRect = RectToClipSpace(owner.worldClip) };
+                    var parent = owner.hierarchy.parent;
+                    Vector4 clipRect;
+                    if (parent != null)
+                        clipRect = RectToClipSpace(parent.worldClip);
+                    else
+                        clipRect = UIRUtility.ToVector4(DrawParams.k_FullNormalizedRect);
+                    var vt = new ViewTransform() { transform = owner.worldTransform, clipRect = clipRect };
                     drawParams.view.Push(vt);
                     GL.modelview = vt.transform;
                     break;

@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor.AnimatedValues;
+using UnityEditor.IMGUI.Controls;
+using UnityEditor.EditorTools;
 using UnityEngine;
 
 namespace UnityEditor
@@ -144,7 +146,15 @@ namespace UnityEditor
             serializedObject.Update();
 
             ArticulationBody body = (ArticulationBody)target;
+            if (!body.isRoot)
+            {
+                using (new EditorGUI.DisabledScope(body.gameObject.activeInHierarchy == false))
+                {
+                    EditorGUILayout.EditorToolbarForTarget(EditorGUIUtility.TrTempContent("Edit Joints"), target);
+                }
+            }
 
+            EditorGUILayout.Space(5);
             EditorGUILayout.PropertyField(m_Mass, Styles.mass);
             CollisionDetectionMode collisionDetectionMode = (CollisionDetectionMode)m_CollisionDetectionMode.intValue;
 
@@ -182,6 +192,7 @@ namespace UnityEditor
                 QuaternionAsEulerAnglesPropertyField(Styles.anchorRotation, m_AnchorRotation, body.anchorRotation);
                 if (EditorGUI.EndChangeCheck())
                 {
+                    Undo.RecordObject(target, "Changing Articulation body anchor position/rotation");
                     body.anchorPosition = m_AnchorPosition.vector3Value;
                     body.anchorRotation = m_AnchorRotation.quaternionValue;
 
@@ -203,6 +214,7 @@ namespace UnityEditor
 
                     if (EditorGUI.EndChangeCheck())
                     {
+                        Undo.RecordObject(target, "Changing Articulation body parent anchor position/rotation");
                         body.parentAnchorPosition = m_ParentAnchorPosition.vector3Value;
                         body.parentAnchorRotation = m_ParentAnchorRotation.quaternionValue;
                     }
@@ -326,237 +338,6 @@ namespace UnityEditor
             }
         }
 
-        protected virtual void OnSceneGUI()
-        {
-            ArticulationBody body = (ArticulationBody)target;
-
-            if (body.isRoot)
-                return;
-
-            ArticulationBody parentBody = FindEnabledParentArticulationBody(body);
-
-            {
-                Vector3 localAnchorT = body.anchorPosition;
-                Quaternion localAnchorR = body.anchorRotation;
-
-                EditorGUI.BeginChangeCheck();
-
-                DisplayProperAnchorHandle(body, ref localAnchorT, ref localAnchorR);
-
-                if (EditorGUI.EndChangeCheck())
-                {
-                    Undo.RecordObject(target, "Changing Articulation body anchor position/rotation");
-                    m_AnchorPosition.vector3Value = localAnchorT;
-                    m_AnchorRotation.quaternionValue = localAnchorR;
-
-                    body.anchorPosition = m_AnchorPosition.vector3Value;
-                    body.anchorRotation = m_AnchorRotation.quaternionValue;
-                }
-            }
-
-            if (!m_ComputeParentAnchor.boolValue)
-            {
-                Vector3 localAnchorT = body.parentAnchorPosition;
-                Quaternion localAnchorR = body.parentAnchorRotation;
-
-                EditorGUI.BeginChangeCheck();
-
-                DisplayProperAnchorHandle(parentBody, ref localAnchorT, ref localAnchorR);
-
-                if (EditorGUI.EndChangeCheck())
-                {
-                    Undo.RecordObject(target, "Changing Articulation body parent anchor position/rotation");
-                    m_ParentAnchorPosition.vector3Value = localAnchorT;
-                    m_ParentAnchorRotation.quaternionValue = localAnchorR;
-
-                    body.parentAnchorPosition = m_ParentAnchorPosition.vector3Value;
-                    body.parentAnchorRotation = m_ParentAnchorRotation.quaternionValue;
-                }
-            }
-
-            DisplayJointLimits(body);
-        }
-
-        private void DisplayJointLimits(ArticulationBody body)
-        {
-            ArticulationBody parentBody = FindEnabledParentArticulationBody(body);
-
-            Matrix4x4 parentAnchorSpace = Matrix4x4.TRS(parentBody.transform.TransformPoint(body.parentAnchorPosition), parentBody.transform.rotation * body.parentAnchorRotation, Vector3.one);
-
-            // this is root body no joint limits
-            if (parentBody == null)
-                return;
-
-            if (body.jointType == ArticulationJointType.PrismaticJoint)
-            {
-                ShowPrismaticLimits(body, parentBody, parentAnchorSpace);
-                return;
-            }
-
-            if (body.jointType == ArticulationJointType.RevoluteJoint)
-            {
-                ShowRevoluteLimits(body, parentBody, parentAnchorSpace);
-                return;
-            }
-
-            if (body.jointType == ArticulationJointType.SphericalJoint)
-            {
-                ShowSphericalLimits(body, parentBody, parentAnchorSpace);
-                return;
-            }
-        }
-
-        private void ShowPrismaticLimits(ArticulationBody body, ArticulationBody parentBody, Matrix4x4 parentAnchorSpace)
-        {
-            // if prismatic and unlocked - nothing to visualise
-            if (body.linearLockX == ArticulationDofLock.FreeMotion || body.linearLockY == ArticulationDofLock.FreeMotion || body.linearLockZ == ArticulationDofLock.FreeMotion)
-                return;
-
-            float dashSize = 5;
-
-            // compute the primary axis of the prismatic
-            Vector3 primaryAxis = Vector3.zero;
-            ArticulationDrive drive = body.xDrive;
-
-            if (body.linearLockX == ArticulationDofLock.LimitedMotion)
-            {
-                primaryAxis = Vector3.right;
-                drive = body.xDrive;
-            }
-            else if (body.linearLockY == ArticulationDofLock.LimitedMotion)
-            {
-                primaryAxis = Vector3.up;
-                drive = body.yDrive;
-            }
-            else if (body.linearLockZ == ArticulationDofLock.LimitedMotion)
-            {
-                primaryAxis = Vector3.forward;
-                drive = body.zDrive;
-            }
-
-            // now show the valid movement along the axis as well as limits
-            using (new Handles.DrawingScope(parentAnchorSpace))
-            {
-                Vector3 lowerPoint = primaryAxis * drive.lowerLimit;
-                Vector3 upperPoint = primaryAxis * drive.upperLimit;
-
-                Quaternion orientation = Quaternion.LookRotation(primaryAxis);
-
-                Handles.color = Color.red;
-                Handles.CylinderHandleCap(0, lowerPoint, orientation, CapScale, EventType.Repaint);
-
-                Handles.color = Color.green;
-                Handles.CylinderHandleCap(0, upperPoint, orientation, CapScale, EventType.Repaint);
-
-                Handles.color = Color.white;
-                Handles.DrawDottedLine(lowerPoint, upperPoint, dashSize);
-            }
-        }
-
-        private void ShowAngularLimitSpan(bool freeMotion, ArticulationBody body, ArticulationBody parentBody, Color color, Vector3 axis, Matrix4x4 space, ArticulationDrive drive, Vector3 zeroDirection)
-        {
-            // check if it's a free span - show only a solid disc in this case
-            if (freeMotion)
-            {
-                using (new Handles.DrawingScope(space))
-                {
-                    color.a = 0.3f;
-                    Handles.color = color;
-                    Handles.DrawSolidDisc(Vector3.zero, axis, GizmoLinearSize);
-                }
-
-                return;
-            }
-
-            // here we know the angle is limited - show a span
-            float totalAngle = drive.upperLimit - drive.lowerLimit;
-
-            Quaternion zeroPose = Quaternion.FromToRotation(Vector3.forward, Vector3.Cross(axis, zeroDirection));
-
-            Quaternion lowerRotation = Quaternion.AngleAxis(drive.lowerLimit, axis);
-            Quaternion upperRotation = Quaternion.AngleAxis(drive.upperLimit, axis);
-
-            Vector3 from = lowerRotation * zeroDirection;
-            Vector3 to = upperRotation * zeroDirection;
-
-            // Nb: Cylinder cap is oriented along Z
-            using (new Handles.DrawingScope(space))
-            {
-                color.a = 0.3f;
-                Handles.color = color;
-                Handles.DrawSolidArc(Vector3.zero, axis, from, totalAngle, GizmoLinearSize);
-
-                Handles.color = Color.red;
-                Handles.CylinderHandleCap(0, from * GizmoLinearSize, lowerRotation * zeroPose, CapScale, EventType.Repaint);
-
-                Handles.color = Color.green;
-                Handles.CylinderHandleCap(0, to * GizmoLinearSize, upperRotation * zeroPose, CapScale, EventType.Repaint);
-            }
-        }
-
-        private void ShowRevoluteLimits(ArticulationBody body, ArticulationBody parentBody, Matrix4x4 parentAnchorSpace)
-        {
-            bool free = (body.twistLock == ArticulationDofLock.FreeMotion);
-
-            ShowAngularLimitSpan(free, body, parentBody, Color.red, Vector3.right, parentAnchorSpace, body.xDrive, Vector3.forward);
-        }
-
-        // this is a variant that draws cross
-        private void ShowSphericalLimits(ArticulationBody body, ArticulationBody parentBody, Matrix4x4 parentAnchorSpace)
-        {
-            // swing z
-            if (body.swingZLock != ArticulationDofLock.LockedMotion)
-            {
-                bool free = (body.swingZLock == ArticulationDofLock.FreeMotion);
-                ShowAngularLimitSpan(free, body, parentBody, Color.blue, Vector3.forward, parentAnchorSpace, body.zDrive, Vector3.right);
-            }
-
-            // swing y
-            if (body.swingYLock != ArticulationDofLock.LockedMotion)
-            {
-                bool free = (body.swingYLock == ArticulationDofLock.FreeMotion);
-                ShowAngularLimitSpan(free, body, parentBody, Color.green, Vector3.up, parentAnchorSpace, body.yDrive, Vector3.right);
-            }
-
-            // twist
-            if (body.twistLock != ArticulationDofLock.LockedMotion)
-            {
-                bool free = (body.twistLock == ArticulationDofLock.FreeMotion);
-                ShowAngularLimitSpan(free, body, parentBody, Color.red, Vector3.right, parentAnchorSpace, body.xDrive, Vector3.forward);
-            }
-        }
-
-        private void DisplayProperAnchorHandle(ArticulationBody body, ref Vector3 anchorPos, ref Quaternion anchorRot)
-        {
-            float handleScaling = 0.5f;
-
-            var bodySpace = Matrix4x4.TRS(body.transform.position, body.transform.rotation, Vector3.one * handleScaling);
-
-            // Need to pre-scale in body space because our handle matrix is scaled, we will remove scaling after reading back
-            anchorPos *= (1 / handleScaling);
-
-            using (new Handles.DrawingScope(bodySpace))
-            {
-                if (Tools.current == Tool.Move)
-                {
-                    anchorPos = Handles.PositionHandle(anchorPos, anchorRot);
-                }
-
-                if (Tools.current == Tool.Rotate)
-                {
-                    anchorRot = Handles.RotationHandle(anchorRot, anchorPos);
-                }
-
-                if (Tools.current == Tool.Transform)
-                {
-                    Handles.TransformHandle(ref anchorPos, ref anchorRot);
-                }
-            }
-
-            // Don't forget to remove scaling
-            anchorPos *= handleScaling;
-        }
-
         private void DoDriveInspector(SerializedProperty drive, ArticulationDofLock dofLock)
         {
             // If lockedMotion - don't render any drive inspector fields
@@ -622,16 +403,6 @@ namespace UnityEditor
         public override bool RequiresConstantRepaint()
         {
             return m_RequiresConstantRepaint;
-        }
-
-        private ArticulationBody FindEnabledParentArticulationBody(ArticulationBody body)
-        {
-            ArticulationBody parent = body.transform.parent.GetComponentInParent<ArticulationBody>();
-            while (parent && !parent.enabled)
-            {
-                parent = parent.transform.parent.GetComponentInParent<ArticulationBody>();
-            }
-            return parent;
         }
     }
 }

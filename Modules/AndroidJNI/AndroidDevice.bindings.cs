@@ -7,8 +7,15 @@ using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine.Android
 {
+    public enum AndroidHardwareType
+    {
+        Generic,
+        ChromeOS
+    }
+
     public class AndroidDevice
     {
+        static public AndroidHardwareType hardwareType => AndroidHardwareType.Generic;
         static public void SetSustainedPerformanceMode(bool enabled) {}
     }
 }

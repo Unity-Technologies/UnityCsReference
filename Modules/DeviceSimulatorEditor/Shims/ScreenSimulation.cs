@@ -55,6 +55,7 @@ namespace UnityEditor.DeviceSimulation
             }
         }
 
+        private bool m_IsRenderingOutsideSafeArea;
         public Rect ScreenSpaceSafeArea { get; private set; }
 
         private ScreenOrientation m_DeviceOrientation;
@@ -96,6 +97,7 @@ namespace UnityEditor.DeviceSimulation
 
             // Set the full screen mode.
             m_IsFullScreen = !m_DeviceInfo.IsAndroidDevice() || playerSettings.androidStartInFullscreen;
+            m_IsRenderingOutsideSafeArea = !m_DeviceInfo.IsAndroidDevice() || playerSettings.androidRenderOutsideSafeArea;
 
             // Calculate the right orientation.
             var settingOrientation = SimulatorUtilities.ToScreenOrientation(playerSettings.defaultOrientation);
@@ -128,11 +130,8 @@ namespace UnityEditor.DeviceSimulation
             m_CurrentWidth = IsRenderingLandscape ? initHeight : initWidth;
             m_CurrentHeight = IsRenderingLandscape ? initWidth : initHeight;
 
-            if (!m_IsFullScreen)
-            {
-                CalculateScreenResolutionForScreenMode(out m_CurrentWidth, out m_CurrentHeight);
-                CalculateInsets();
-            }
+            CalculateInsets();
+            CalculateResolutionWithInsets(out m_CurrentWidth, out m_CurrentHeight);
             CalculateSafeAreaAndCutouts();
 
             ShimManager.UseShim(this);
@@ -166,14 +165,15 @@ namespace UnityEditor.DeviceSimulation
             m_RenderedOrientation = orientation;
             OnOrientationChanged?.Invoke(m_AutoRotation);
 
+            CalculateInsets();
+
             // We only change the resolution if we never set the resolution by calling Screen.SetResolution().
-            if (!m_IsFullScreen && !m_WasResolutionSet)
+            if (!m_WasResolutionSet)
             {
-                CalculateScreenResolutionForScreenMode(out int tempWidth, out int tempHeight);
+                CalculateResolutionWithInsets(out int tempWidth, out int tempHeight);
                 SetResolution(tempWidth, tempHeight);
             }
 
-            CalculateInsets();
             CalculateSafeAreaAndCutouts();
         }
 
@@ -293,7 +293,20 @@ namespace UnityEditor.DeviceSimulation
             if (!m_DeviceInfo.IsAndroidDevice())
                 return;
 
+            var safeArea = m_SupportedOrientations[ScreenOrientation.Portrait].safeArea;
             var inset = Vector4.zero;
+
+            if (!m_IsRenderingOutsideSafeArea)
+            {
+                inset = new Vector4
+                {
+                    x = safeArea.x,
+                    y = m_Screen.height - safeArea.height - safeArea.y,
+                    z = m_Screen.width - safeArea.width - safeArea.x,
+                    w = safeArea.y
+                };
+            }
+
             if (!m_IsFullScreen)
             {
                 switch (m_RenderedOrientation)
@@ -301,11 +314,16 @@ namespace UnityEditor.DeviceSimulation
                     case ScreenOrientation.Portrait:
                     case ScreenOrientation.LandscapeLeft:
                     case ScreenOrientation.LandscapeRight:
-                        inset = new Vector4(0, 0, 0, m_Screen.navigationBarHeight);
+                        inset.w += m_Screen.navigationBarHeight;
                         break;
                     case ScreenOrientation.PortraitUpsideDown:
-                        var topInset = m_Screen.height - m_SupportedOrientations[ScreenOrientation.Portrait].safeArea.height + m_Screen.navigationBarHeight;
-                        inset = new Vector4(0, topInset, 0, 0);
+                        if (m_IsRenderingOutsideSafeArea)
+                        {
+                            inset.y = m_Screen.height - safeArea.height - safeArea.y;
+                        }
+
+                        inset.y += m_Screen.navigationBarHeight;
+
                         break;
                 }
             }
@@ -363,40 +381,18 @@ namespace UnityEditor.DeviceSimulation
             OnResolutionChanged?.Invoke(m_CurrentWidth, m_CurrentHeight);
         }
 
-        private void CalculateScreenResolutionForScreenMode(out int width, out int height)
+        private void CalculateResolutionWithInsets(out int width, out int height)
         {
-            int heightInPortraitOrientation;
+            var screenWidthInOrientation = IsRenderingLandscape ? m_Screen.height : m_Screen.width;
+            var screenHeightInOrientation = IsRenderingLandscape ? m_Screen.width : m_Screen.height;
 
-            if (m_IsFullScreen)
-            {
-                heightInPortraitOrientation = m_Screen.height;
-            }
-            else
-            {
-                if (m_RenderedOrientation == ScreenOrientation.PortraitUpsideDown)
-                {
-                    var safeArea = m_SupportedOrientations[ScreenOrientation.PortraitUpsideDown].safeArea;
-                    heightInPortraitOrientation = (int)(safeArea.height - m_Screen.navigationBarHeight);
-                }
-                else
-                {
-                    heightInPortraitOrientation = m_Screen.height - m_Screen.navigationBarHeight;
-                }
-            }
+            var insetsInOrientation = InsetsInCurrentOrientation;
 
-            var scaledWidthInPortraitOrientation = Mathf.RoundToInt(m_Screen.width * m_DpiRatio);
-            var scaledHeightInPortraitOrientation = Mathf.RoundToInt(heightInPortraitOrientation * m_DpiRatio);
+            var widthInOrientation = screenWidthInOrientation - insetsInOrientation.x - insetsInOrientation.z;
+            var heightInOrientation = screenHeightInOrientation - insetsInOrientation.y - insetsInOrientation.w;
 
-            if (IsRenderingLandscape)
-            {
-                width = scaledHeightInPortraitOrientation;
-                height = scaledWidthInPortraitOrientation;
-            }
-            else
-            {
-                width = scaledWidthInPortraitOrientation;
-                height = scaledHeightInPortraitOrientation;
-            }
+            width = Mathf.RoundToInt(widthInOrientation * m_DpiRatio);
+            height = Mathf.RoundToInt(heightInOrientation * m_DpiRatio);
         }
 
         public void Enable()
@@ -488,7 +484,7 @@ namespace UnityEditor.DeviceSimulation
                 // We only change the resolution if we never set the resolution by calling Screen.SetResolution().
                 if (!m_WasResolutionSet)
                 {
-                    CalculateScreenResolutionForScreenMode(out int tempWidth, out int tempHeight);
+                    CalculateResolutionWithInsets(out int tempWidth, out int tempHeight);
                     SetResolution(tempWidth, tempHeight);
                 }
                 else

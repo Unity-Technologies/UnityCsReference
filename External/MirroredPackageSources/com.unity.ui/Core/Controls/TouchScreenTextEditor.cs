@@ -51,6 +51,14 @@ namespace UnityEngine.UIElements
                     }
                 }
             }
+            else
+            {
+                // TouchScreenKeyboard should no longer be used, presumably because a hardware keyboard is now available.
+                textInputField.editorEngine.keyboardOnScreen.active = false;
+                textInputField.editorEngine.keyboardOnScreen = null;
+
+                m_TouchKeyboardPoller.Pause();
+            }
         }
 
         public override void ExecuteDefaultActionAtTarget(EventBase evt)

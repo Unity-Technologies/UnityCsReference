@@ -17,6 +17,7 @@ namespace UnityEditor.DeviceSimulation
         public ResolutionScalingMode resolutionScalingMode = ResolutionScalingMode.Disabled;
         public int targetDpi;
         public bool androidStartInFullscreen = true;
+        public bool androidRenderOutsideSafeArea = true;
 
         public UIOrientation defaultOrientation = UIOrientation.AutoRotation;
         public bool allowedPortrait = true;
@@ -36,6 +37,7 @@ namespace UnityEditor.DeviceSimulation
             resolutionScalingMode = (ResolutionScalingMode)serializedSettings.FindProperty("resolutionScalingMode").intValue;
             targetDpi = serializedSettings.FindProperty("targetPixelDensity").intValue;
             androidStartInFullscreen = serializedSettings.FindProperty("androidStartInFullscreen").boolValue;
+            androidRenderOutsideSafeArea = serializedSettings.FindProperty("androidRenderOutsideSafeArea").boolValue;
 
             defaultOrientation = PlayerSettings.defaultInterfaceOrientation;
             allowedPortrait = PlayerSettings.allowedAutorotateToPortrait;

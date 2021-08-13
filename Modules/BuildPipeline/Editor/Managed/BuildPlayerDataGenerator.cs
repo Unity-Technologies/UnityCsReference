@@ -18,9 +18,9 @@ namespace UnityEditor.Build.Player
         private static BuildPlayerDataGenerator _buildPlayerDataGenerator = new BuildPlayerDataGenerator(new BuildPlayerDataGeneratorProcess(), new DirectoryIOProvider());
 
         [RequiredByNativeCode]
-        public static void GenerateForAssemblies(string[] assemblies, string[] searchPaths, BuildTarget buildTarget, bool isEditor)
+        public static bool GenerateForAssemblies(string[] assemblies, string[] searchPaths, BuildTarget buildTarget, bool isEditor)
         {
-            _buildPlayerDataGenerator.GenerateForAssemblies(assemblies, searchPaths, buildTarget, isEditor);
+            return _buildPlayerDataGenerator.GenerateForAssemblies(assemblies, searchPaths, buildTarget, isEditor);
         }
     }
 
@@ -50,7 +50,7 @@ namespace UnityEditor.Build.Player
             m_DirectoryIo = directoryIO;
         }
 
-        public void GenerateForAssemblies(string[] assemblies, string[] searchPaths, BuildTarget buildTarget, bool isEditor)
+        public bool GenerateForAssemblies(string[] assemblies, string[] searchPaths, BuildTarget buildTarget, bool isEditor)
         {
             CreateCleanFolder(isEditor);
             var staticSearchPaths = GetStaticSearchPaths(buildTarget);
@@ -72,7 +72,7 @@ namespace UnityEditor.Build.Player
                 GeneratedTypeDbName = "TypeDb-All.json",
                 GeneratedRuntimeInitializeOnLoadName = runtimeInitOnLoadFileName,
             };
-            m_BuildPlayerDataGeneratorProcess.Execute(buildPlayerDataGeneratorOptions);
+            return m_BuildPlayerDataGeneratorProcess.Execute(buildPlayerDataGeneratorOptions);
         }
 
         private void CreateCleanFolder(bool isEditor)

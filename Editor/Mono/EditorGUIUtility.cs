@@ -1027,6 +1027,7 @@ namespace UnityEditor
             s_TextGUIContents = new Hashtable();
             s_GUIContents = new Hashtable();
             s_IconGUIContents = new Hashtable();
+            L10n.ClearCache();
             EditorUtility.Internal_UpdateMenuTitleForLanguage(newLanguage);
             LocalizationDatabase.currentEditorLanguage = newLanguage;
             EditorApplication.RequestRepaintAllViews();

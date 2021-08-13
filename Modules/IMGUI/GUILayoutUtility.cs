@@ -16,6 +16,22 @@ namespace UnityEngine
     // Utility functions for implementing and extending the GUILayout class.
     public partial class GUILayoutUtility
     {
+        internal readonly struct LayoutCacheState
+        {
+            public readonly int id;
+            public readonly GUILayoutGroup topLevel;
+            public readonly GenericStack layoutGroups;
+            public readonly GUILayoutGroup windows;
+
+            public LayoutCacheState(LayoutCache cache)
+            {
+                id = cache.id;
+                topLevel = cache.topLevel;
+                layoutGroups = cache.layoutGroups;
+                windows = cache.windows;
+            }
+        }
+
         [System.Diagnostics.DebuggerDisplay("id={id}, groups={layoutGroups.Count}")]
         internal sealed class LayoutCache
         {
@@ -24,13 +40,15 @@ namespace UnityEngine
             internal GenericStack layoutGroups = new GenericStack();
             internal GUILayoutGroup windows = new GUILayoutGroup();
 
+            public LayoutCacheState State => new LayoutCacheState(this);
+
             internal LayoutCache(int instanceID = -1)
             {
                 id = instanceID;
                 layoutGroups.Push(topLevel);
             }
 
-            internal LayoutCache(LayoutCache other)
+            internal void CopyState(LayoutCacheState other)
             {
                 id = other.id;
                 topLevel = other.topLevel;
@@ -377,6 +395,7 @@ namespace UnityEngine
         internal static GUILayoutGroup topLevel => current.topLevel;
 
         public static Rect GetRect(GUIContent content, GUIStyle style)                                 { return DoGetRect(content, style, null); }
+
         // Reserve layout space for a rectangle for displaying some contents with a specific style.
         public static Rect GetRect(GUIContent content, GUIStyle style, params GUILayoutOption[] options)       { return DoGetRect(content, style, options); }
 
@@ -430,6 +449,7 @@ namespace UnityEngine
         public static Rect GetRect(float width, float height)                                      { return DoGetRect(width, width, height, height, GUIStyle.none, null); }
         public static Rect GetRect(float width, float height, GUIStyle style)                      {return DoGetRect(width, width, height, height, style, null); }
         public static Rect GetRect(float width, float height, params GUILayoutOption[] options)    {return DoGetRect(width, width, height, height, GUIStyle.none, options); }
+
         // Reserve layout space for a rectangle with a fixed content area.
         public static Rect GetRect(float width, float height, GUIStyle style, params GUILayoutOption[] options)
         {return DoGetRect(width, width, height, height, style, options); }
@@ -443,6 +463,7 @@ namespace UnityEngine
         public static Rect GetRect(float minWidth, float maxWidth, float minHeight, float maxHeight, params GUILayoutOption[] options)
         { return DoGetRect(minWidth, maxWidth, minHeight, maxHeight, GUIStyle.none, options); }
         // Reserve layout space for a flexible rect.
+
         public static Rect GetRect(float minWidth, float maxWidth, float minHeight, float maxHeight, GUIStyle style, params GUILayoutOption[] options)
         { return DoGetRect(minWidth, maxWidth, minHeight, maxHeight, style, options); }
         static Rect DoGetRect(float minWidth, float maxWidth, float minHeight, float maxHeight, GUIStyle style, GUILayoutOption[] options)
