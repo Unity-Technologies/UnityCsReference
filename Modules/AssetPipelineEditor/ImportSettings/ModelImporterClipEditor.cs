@@ -288,13 +288,25 @@ namespace UnityEditor
             m_DefaultClipsSerializedObject = new SerializedObject(target);
             m_ClipAnimations = m_DefaultClipsSerializedObject.FindProperty("m_ClipAnimations");
             m_AnimationType = m_DefaultClipsSerializedObject.FindProperty("m_AnimationType");
-            m_ClipAnimations.arraySize = 0;
+            m_ClipAnimations.ClearArray();
 
             int clipListIndex = m_ClipList.index;
-            foreach (TakeInfo takeInfo in singleImporter.importedTakeInfos)
+            var allClipNames = new HashSet<string>();
+            m_ClipAnimations.arraySize = singleImporter.importedTakeInfos.Length;
+            var arrayElemProp = m_ClipAnimations.FindPropertyRelative("Array.size");
+            for (int i = 0; i < singleImporter.importedTakeInfos.Length; i++)
             {
-                AddClip(takeInfo);
+                TakeInfo takeInfo = singleImporter.importedTakeInfos[i];
+
+                string uniqueName = MakeUniqueClipName(takeInfo.defaultClipName, allClipNames);
+                allClipNames.Add(uniqueName);
+
+                arrayElemProp.Next(false);
+                AnimationClipInfoProperties info = new AnimationClipInfoProperties(arrayElemProp);
+                info.name = uniqueName;
+                InitAnimationClipInfoProperties(info, takeInfo);
             }
+            UpdateList();
 
             //Attempt to maintain the previous clip index, now we've reverted to default clips
             m_ClipList.index = Mathf.Min(clipListIndex, m_ClipList.list.Count);
@@ -823,36 +835,36 @@ namespace UnityEditor
             return name.Substring(0, openingBracket - 1);
         }
 
-        string FindNextAvailableName(string baseName)
+        string FindNextAvailableName(string baseName, HashSet<string> allClipNames)
         {
-            string[] allClipNames = new string[m_ClipAnimations.arraySize];
-            for (int i = 0; i < m_ClipAnimations.arraySize; ++i)
-            {
-                AnimationClipInfoProperties clip = ((ClipInformation)m_ClipList.list[i]).property;
-                allClipNames[i] = clip.name;
-            }
-            Array.Sort(allClipNames, StringComparer.InvariantCulture);
             string resultName = baseName;
-            for (var i = 0; i < allClipNames.Length; i++)
+            int occurences = 0;
+            while (allClipNames.Contains(resultName))
             {
-                var found = Array.BinarySearch(allClipNames, resultName);
-                if (found < 0)
-                {
-                    return resultName;
-                }
-
-                var nextNumber = i + 1;
-                resultName = baseName +  " (" + nextNumber + ")";
+                occurences++;
+                resultName = baseName + " (" + occurences + ")";
             }
 
             return resultName;
         }
 
-        string MakeUniqueClipName(string name)
+        string MakeUniqueClipName(string name, HashSet<string> allClipNames = null)
         {
             int dummy;
             string baseName = RemoveDuplicateSuffix(name, out dummy);
-            return FindNextAvailableName(baseName);
+
+            if (allClipNames == null)
+            {
+                // If no collection was provided, the current list of clips is used.
+                allClipNames = new HashSet<string>();
+                for (int i = 0; i < m_ClipAnimations.arraySize; ++i)
+                {
+                    AnimationClipInfoProperties clip = ((ClipInformation)m_ClipList.list[i]).property;
+                    allClipNames.Add(clip.name);
+                }
+            }
+
+            return FindNextAvailableName(baseName, allClipNames);
         }
 
         void RemoveClip(int index)
@@ -882,6 +894,12 @@ namespace UnityEditor
             AnimationClipInfoProperties info = new AnimationClipInfoProperties(property);
 
             info.name = uniqueName;
+            InitAnimationClipInfoProperties(info, takeInfo);
+            UpdateList();
+        }
+
+        void InitAnimationClipInfoProperties(AnimationClipInfoProperties info, TakeInfo takeInfo)
+        {
             SetupTakeNameAndFrames(info, takeInfo);
             info.internalID = 0L;
             info.wrapMode = (int)WrapMode.Default;
@@ -905,7 +923,6 @@ namespace UnityEditor
 
             info.ClearEvents();
             info.ClearCurves();
-            UpdateList();
         }
 
         private AvatarMask m_Mask = null;
@@ -1014,11 +1031,12 @@ namespace UnityEditor
         private void SetBodyMaskDefaultValues(AnimationClipInfoProperties clipInfo)
         {
             SerializedProperty bodyMask = clipInfo.bodyMaskProperty;
-            bodyMask.ClearArray();
+            bodyMask.arraySize = (int)AvatarMaskBodyPart.LastBodyPart;
+            var prop = bodyMask.FindPropertyRelative("Array.size");
             for (int i = 0; i < (int)AvatarMaskBodyPart.LastBodyPart; ++i)
             {
-                bodyMask.InsertArrayElementAtIndex(i);
-                bodyMask.GetArrayElementAtIndex(i).intValue = 1;
+                prop.Next(false);
+                prop.intValue = 1;
             }
         }
 

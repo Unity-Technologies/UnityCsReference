@@ -130,7 +130,7 @@ namespace UnityEditor
                     // Settings; process event even for disabled UI
                     var wasEnabled = GUI.enabled;
                     GUI.enabled = true;
-                    var showMenu = GUI.Button(settingsRect, EditorGUI.GUIContents.titleSettingsIcon, Styles.settingsStyle);
+                    var showMenu = EditorGUI.DropdownButton(settingsRect, GUIContent.none, FocusType.Passive, EditorStyles.optionsButtonStyle);
                     GUI.enabled = wasEnabled;
                     if (showMenu)
                     {

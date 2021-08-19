@@ -39,6 +39,9 @@ namespace UnityEditor
         const float kValueFieldWidth = 200.0f;
         const float kArrayValuePopupBtnWidth = 25.0f;
 
+        private static bool s_KeywordsUnfolded = false;
+        private static bool s_PropertiesUnfolded = true;
+
         internal class Styles
         {
             public static Texture2D errorIcon = EditorGUIUtility.LoadIcon("console.erroricon.sml");
@@ -49,6 +52,8 @@ namespace UnityEditor
             public static GUIContent showSurface = EditorGUIUtility.TrTextContent("Show generated code", "Show generated code of a surface shader");
             public static GUIContent showFF = EditorGUIUtility.TrTextContent("Show generated code", "Show generated code of a fixed function shader");
             public static GUIContent showCurrent = EditorGUIUtility.TrTextContent("Compile and show code \u007C \u25BE");  // vertical bar & dropdow arrow - due to lacking editor style of "mini button with a dropdown"
+            public static GUIContent overridableKeywords = EditorGUIUtility.TrTextContent("Overridable", "Shader keywords overridable by global shader keyword state");
+            public static GUIContent notOverridableKeywords = EditorGUIUtility.TrTextContent("Not overridable", "Shader keywords not overridable by global shader keyword state");
 
             public static GUIStyle messageStyle = "CN StatusInfo";
             public static GUIStyle evenBackground = "CN EntryBackEven";
@@ -161,22 +166,35 @@ namespace UnityEditor
 
         private void ShowKeywords(Shader s)
         {
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.PrefixLabel("Keywords", EditorStyles.miniButton);
-
-            Rect buttonRect = GUILayoutUtility.GetRect(Styles.arrayValuePopupButton, GUI.skin.button, GUILayout.MinWidth(kValueFieldWidth));
-            buttonRect.width = kArrayValuePopupBtnWidth;
-            if (GUI.Button(buttonRect, Styles.arrayValuePopupButton, EditorStyles.miniButton))
+            EditorGUILayout.BeginVertical();
+            s_KeywordsUnfolded = EditorGUILayout.Foldout(s_KeywordsUnfolded, "Keywords");
+            if (s_KeywordsUnfolded)
             {
-                var keywords = ShaderUtil.GetShaderLocalKeywords(s);
+                var keywords = s.keywordSpace.keywords;
+                var overridable = new List<LocalKeyword>();
+                var nonOverridable = new List<LocalKeyword>();
 
-                PopupWindowWithoutFocus.Show(
-                    buttonRect,
-                    new KeywordsPopup(keywords, 150.0f),
-                    new[] { PopupLocation.Left, PopupLocation.Below, PopupLocation.Right });
+                foreach (var k in keywords)
+                {
+                    if (k.isOverridable)
+                        overridable.Add(k);
+                    else
+                        nonOverridable.Add(k);
+                }
+
+                overridable.Sort((x, y) => string.CompareOrdinal(x.name, y.name));
+                nonOverridable.Sort((x, y) => string.CompareOrdinal(x.name, y.name));
+
+                EditorGUILayout.LabelField(Styles.overridableKeywords, EditorStyles.boldLabel);
+                foreach (var k in overridable)
+                    EditorGUILayout.LabelField(k.name);
+
+                EditorGUILayout.LabelField(Styles.notOverridableKeywords, EditorStyles.boldLabel);
+                foreach (var k in nonOverridable)
+                    EditorGUILayout.LabelField(k.name);
             }
 
-            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.EndVertical();
         }
 
         private void ShowShaderCodeArea(Shader s)
@@ -190,13 +208,16 @@ namespace UnityEditor
         private static void ShowShaderProperties(Shader s)
         {
             GUILayout.Space(kSpace);
-            GUILayout.Label("Properties:", EditorStyles.boldLabel);
-            int n = s.GetPropertyCount();
-            for (int i = 0; i < n; ++i)
+            s_PropertiesUnfolded = EditorGUILayout.Foldout(s_PropertiesUnfolded, "Properties");
+            if (s_PropertiesUnfolded)
             {
-                string pname = s.GetPropertyName(i);
-                string pdesc = s.GetPropertyDescription(i) + " (" + s.GetPropertyType(i) + ")";
-                EditorGUILayout.LabelField(pname, pdesc);
+                int n = s.GetPropertyCount();
+                for (int i = 0; i < n; ++i)
+                {
+                    string pname = s.GetPropertyName(i);
+                    string pdesc = s.GetPropertyDescription(i) + " (" + s.GetPropertyType(i) + ")";
+                    EditorGUILayout.LabelField(pname, pdesc);
+                }
             }
         }
 
@@ -460,56 +481,6 @@ namespace UnityEditor
                 GUILayout.Button(Styles.no, GUI.skin.label);
             }
             EditorGUILayout.EndHorizontal();
-        }
-    }
-
-    internal class KeywordsPopup : PopupWindowContent
-    {
-        private Vector2 m_ScrollPos = Vector2.zero;
-        private string[] m_Keywords;
-        private bool m_KeywordsExpanded;
-        private float m_WindowWidth;
-
-        private static readonly GUIStyle m_Style = EditorStyles.miniLabel;
-
-        public KeywordsPopup(string[] keywords, float windowWidth)
-        {
-            m_Keywords = keywords;
-            m_KeywordsExpanded = true;
-            m_WindowWidth = windowWidth;
-        }
-
-        public override Vector2 GetWindowSize()
-        {
-            var numValues = m_Keywords.Length + 4;
-            var lineHeight = m_Style.lineHeight + m_Style.padding.vertical + m_Style.margin.top;
-            return new Vector2(m_WindowWidth, Math.Min(lineHeight * numValues, 250.0f));
-        }
-
-        public override void OnGUI(Rect rect)
-        {
-            m_ScrollPos = EditorGUILayout.BeginScrollView(m_ScrollPos);
-
-            m_KeywordsExpanded = KeywordsFoldout(m_KeywordsExpanded, "Keywords", m_Keywords);
-
-            EditorGUILayout.EndScrollView();
-        }
-
-        private bool KeywordsFoldout(bool expanded, string name, string[] values)
-        {
-            expanded = EditorGUILayout.Foldout(expanded, name, true, m_Style);
-
-            if (expanded)
-            {
-                EditorGUI.indentLevel++;
-                for (int i = 0; i < values.Length; ++i)
-                {
-                    EditorGUILayout.LabelField(values[i], m_Style);
-                }
-                EditorGUI.indentLevel--;
-            }
-
-            return expanded;
         }
     }
 
