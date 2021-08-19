@@ -44,10 +44,7 @@ namespace UnityEngine.Rendering
         public bool IsEnabled(ShaderKeyword keyword)
         {
             CheckKeywordCompatible(keyword);
-            if (keyword.m_IsLocal || !keyword.IsValid())
-                return IsKeywordNameEnabled(this, keyword.m_Name);
-
-            return IsGlobalKeywordEnabled(this, keyword.m_Index);
+            return IsKeywordNameEnabled(this, keyword.m_Name);
         }
 
         public bool IsEnabled(GlobalKeyword keyword)

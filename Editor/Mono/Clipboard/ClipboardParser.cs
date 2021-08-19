@@ -247,11 +247,39 @@ namespace UnityEditor
             return idx;
         }
 
+        public static int ParseEnumPropertyFlag(string text, SerializedProperty prop)
+        {
+            if (!text.StartsWith(kEnumPrefix))
+                return -1;
+            var val = text.Substring(kEnumPrefix.Length);
+            if (string.IsNullOrEmpty(val))
+                return -1;
+
+            try
+            {
+                var flag = Convert.ToInt32(val, 2);
+
+                if (flag > -1)
+                    return flag;
+                return -1;
+            }
+            catch
+            {
+                return -1;
+            }
+        }
+
         public static void ParseEnumProperty(string text, SerializedProperty prop)
         {
             var idx = ParseEnumPropertyIndex(text, prop);
             if (idx >= 0)
                 prop.enumValueIndex = idx;
+            else
+            {
+                var flag = ParseEnumPropertyFlag(text, prop);
+                if (flag >= 0)
+                    prop.enumValueFlag = flag;
+            }
         }
 
         public static string WriteEnumProperty(SerializedProperty prop)
@@ -261,7 +289,12 @@ namespace UnityEditor
             var idx = prop.enumValueIndex;
             var names = prop.enumDisplayNames;
             if (idx < 0 || idx >= names.Length)
-                return string.Empty;
+            {
+                var binary = Convert.ToString(prop.enumValueFlag, 2);
+                binary = binary.PadLeft(names.Length, '0');
+                return $"{kEnumPrefix}{binary}";
+            }
+
             return $"{kEnumPrefix}{names[idx]}";
         }
 

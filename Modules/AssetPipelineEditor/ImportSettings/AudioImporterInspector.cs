@@ -69,11 +69,12 @@ namespace UnityEditor
                 settings.sampleSettingOverrides = new List<AudioImporterPlatformSettings>(validPlatforms.Count());
                 foreach (BuildPlatform platform in validPlatforms)
                 {
-                    var platformName = platform.name;
+                    var buildTargetGroup = platform.namedBuildTarget.ToBuildTargetGroup();
+                    var platformName = BuildPipeline.GetBuildTargetGroupName(buildTargetGroup); // override sample settings are per platform group
                     var sample = audioImporter.GetOverrideSampleSettings(platformName);
                     settings.sampleSettingOverrides.Add(new AudioImporterPlatformSettings()
                     {
-                        platform = platform.namedBuildTarget.ToBuildTargetGroup(),
+                        platform = buildTargetGroup,
                         isOverridden = audioImporter.ContainsSampleSettingsOverride(platformName),
                         settings = sample
                     });

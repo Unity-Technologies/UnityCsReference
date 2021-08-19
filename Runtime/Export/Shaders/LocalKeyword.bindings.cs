@@ -22,9 +22,11 @@ namespace UnityEngine.Rendering
         [FreeFunction("ShaderScripting::GetKeywordCount")] extern private static uint GetComputeShaderKeywordCount(ComputeShader shader);
         [FreeFunction("ShaderScripting::GetKeywordIndex")] extern private static uint GetComputeShaderKeywordIndex(ComputeShader shader, string keyword);
         [FreeFunction("keywords::GetKeywordType")] extern private static ShaderKeywordType GetKeywordType(LocalKeywordSpace spaceInfo, uint keyword);
+        [FreeFunction("keywords::IsKeywordValid")] extern private static bool IsValid(LocalKeywordSpace spaceInfo, uint keyword);
 
         public string name { get { return m_Name; } }
         public bool isOverridable { get { return IsOverridable(this); } }
+        public bool isValid { get { return IsValid(m_SpaceInfo, m_Index); } }
         public ShaderKeywordType type { get { return GetKeywordType(m_SpaceInfo, m_Index); } }
 
         public LocalKeyword(Shader shader, string name)

@@ -256,7 +256,8 @@ namespace UnityEditor
                 case SerializedPropertyType.Color: colorValue = targetProperty.colorValue; break;
                 case SerializedPropertyType.ObjectReference: objectReferenceValue = targetProperty.objectReferenceValue; break;
                 case SerializedPropertyType.LayerMask: intValue = targetProperty.intValue; break;
-                case SerializedPropertyType.Enum: enumValueIndex = targetProperty.enumValueIndex; break;
+                case SerializedPropertyType.Enum: enumValueIndex = targetProperty.enumValueIndex >= 0 ? targetProperty.enumValueIndex : 0;
+                    intValue = targetProperty.intValue >= 0 ? targetProperty.intValue : intValue; break;
                 case SerializedPropertyType.Vector2: vector2Value = targetProperty.vector2Value; break;
                 case SerializedPropertyType.Vector3: vector3Value = targetProperty.vector3Value; break;
                 case SerializedPropertyType.Vector4: vector4Value = targetProperty.vector4Value; break;
@@ -1184,6 +1185,13 @@ namespace UnityEditor
                 Verify(VerifyFlags.IteratorNotAtEnd);
                 SetEnumValueIndexInternal(value);
             }
+        }
+
+        // Enum flag value
+        public int enumValueFlag
+        {
+            get { return intValue; }
+            set { intValue = value; }
         }
 
         [NativeName("GetEnumValueIndex")]
