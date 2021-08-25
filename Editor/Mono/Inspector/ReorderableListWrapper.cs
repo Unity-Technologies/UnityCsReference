@@ -105,11 +105,6 @@ namespace UnityEditorInternal
             return m_HeaderHeight + (includeChildren && Property.isExpanded && m_ReorderableList != null ? Constants.kHeaderPadding + m_ReorderableList.GetHeight() : 0.0f);
         }
 
-        public void Draw(GUIContent label, Rect r, bool includeChildren)
-        {
-            Draw(label, r, ReorderableList.Defaults.infinityRect, includeChildren);
-        }
-
         public void Draw(GUIContent label, Rect r, Rect visibleArea, bool includeChildren)
         {
             r.xMin += EditorGUI.indent;

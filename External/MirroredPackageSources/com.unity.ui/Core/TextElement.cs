@@ -221,7 +221,7 @@ namespace UnityEngine.UIElements
                 size = MeasureTextSize(truncatedText, 0, MeasureMode.Undefined,
                     0, MeasureMode.Undefined);
 
-                if (Math.Abs(size.x - width) < Mathf.Epsilon)
+                if (Math.Abs(size.x - width) < UIRUtility.k_Epsilon)
                     return truncatedText;
 
                 if (textOverflowPosition == TextOverflowPosition.Start)

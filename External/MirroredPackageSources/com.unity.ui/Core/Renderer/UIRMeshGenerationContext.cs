@@ -394,7 +394,7 @@ namespace UnityEngine.UIElements
 
                         // Intersect the stretched rect with the destination rect to compute the new UVs
                         var newRect = RectIntersection(rect, stretchedRect);
-                        if (newRect.width < Mathf.Epsilon || newRect.height < Mathf.Epsilon)
+                        if (newRect.width < UIRUtility.k_Epsilon || newRect.height < UIRUtility.k_Epsilon)
                             newRect = Rect.zero;
                         else
                         {

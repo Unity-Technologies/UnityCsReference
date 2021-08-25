@@ -360,7 +360,7 @@ namespace UnityEngine.UIElements
         void ComputeValueAndDirectionFromDrag(float sliderLength, float dragElementLength, float dragElementPos)
         {
             var totalRange = sliderLength - dragElementLength;
-            if (Mathf.Abs(totalRange) < Mathf.Epsilon)
+            if (Mathf.Abs(totalRange) < UIRUtility.k_Epsilon)
                 return;
 
             float normalizedDragElementPosition = Mathf.Max(0f, Mathf.Min(dragElementPos, totalRange)) / totalRange;
@@ -435,7 +435,7 @@ namespace UnityEngine.UIElements
         internal virtual void ComputeValueAndDirectionFromClick(float sliderLength, float dragElementLength, float dragElementPos, float dragElementLastPos)
         {
             var totalRange = sliderLength - dragElementLength;
-            if (Mathf.Abs(totalRange) < Mathf.Epsilon)
+            if (Mathf.Abs(totalRange) < UIRUtility.k_Epsilon)
                 return;
 
             var isPositionDecreasing = dragElementLastPos < dragElementPos;

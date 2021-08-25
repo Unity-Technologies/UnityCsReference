@@ -1007,7 +1007,11 @@ namespace UnityEngine
 
             // Is inside label AND inside guiclip visible rect (prevents tooltips on labels that are clipped)
             if (!String.IsNullOrEmpty(content.tooltip) && position.Contains(evt.mousePosition) && GUIClip.visibleRect.Contains(evt.mousePosition))
-                GUIStyle.SetMouseTooltip(content.tooltip, position);
+            {
+                if (!GUIStyle.IsTooltipActive(content.tooltip))
+                    s_ToolTipRect = new Rect(evt.mousePosition, Vector2.zero);
+                GUIStyle.SetMouseTooltip(content.tooltip, s_ToolTipRect);
+            }
         }
 
         internal static bool DoToggle(Rect position, int id, bool value, GUIContent content, GUIStyle style)
