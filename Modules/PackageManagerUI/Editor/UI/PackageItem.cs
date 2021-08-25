@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using UnityEngine.UIElements;
 
@@ -12,7 +11,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal class PackageItem : VisualElement, ISelectableItem
     {
         // Note that the height here is only the height of the main item (i.e, version list is not expanded)
-        internal const float k_MainItemHeight = 25.0f;
+        internal const int k_MainItemHeight = 25;
         private const string k_SelectedClassName = "selected";
         private const string k_ExpandedClassName = "expanded";
 
@@ -24,24 +23,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         public IPackageVersion targetVersion => package?.versions.primary;
         public VisualElement element => this;
 
-        private bool m_VisibleInScrollView;
-        public bool visibleInScrollView
-        {
-            get => m_VisibleInScrollView;
-            set
-            {
-                if (value == m_VisibleInScrollView)
-                    return;
-
-                m_VisibleInScrollView = value;
-                RefreshState();
-                RefreshSpinner();
-                if (m_VisibleInScrollView)
-                {
-                    Refresh();
-                }
-            }
-        }
+        // Since the layout for Feature and Non-Feature are different, we want to keep track of the current layout
+        // and only call BuildMainItem again when there's a layout change
+        private bool? m_IsFeatureLayout = null;
 
         internal PackageGroup packageGroup { get; set; }
 
@@ -67,20 +51,29 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageDatabase = packageDatabase;
         }
 
-        public PackageItem(PageManager pageManager, PackageManagerProjectSettingsProxy settingsProxy, PackageDatabase packageDatabase, IPackage package, VisualState state)
+        public PackageItem(PageManager pageManager, PackageManagerProjectSettingsProxy settingsProxy, PackageDatabase packageDatabase)
         {
             ResolveDependencies(pageManager, settingsProxy, packageDatabase);
+        }
 
-            BuildMainItem(package);
+        public void SetPackageAndVisualState(IPackage package, VisualState state)
+        {
+            var isFeature = package?.Is(PackageType.Feature) == true;
+            if (m_IsFeatureLayout != isFeature)
+            {
+                Clear();
+                BuildMainItem(isFeature);
+            }
 
             UpdateExpanderUI(false);
-
             SetPackage(package);
             UpdateVisualState(state);
         }
 
-        private void BuildMainItem(IPackage package)
+        private void BuildMainItem(bool isFeature)
         {
+            m_IsFeatureLayout = isFeature;
+
             m_MainItem = new VisualElement {name = "mainItem"};
             m_MainItem.OnLeftClick(SelectMainItem);
             Add(m_MainItem);
@@ -98,7 +91,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_LeftContainer.Add(m_ExpanderHidden);
 
             m_NameLabel = new Label {name = "packageName", classList = {"name"}};
-            if (package?.Is(PackageType.Feature) == true)
+            if (isFeature)
             {
                 m_MainItem.AddToClassList("feature");
                 m_NumPackagesInFeature = new Label() { name = "numPackages" };
@@ -134,7 +127,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_StateIcon = new VisualElement { name = "stateIcon", classList = { "status" } };
             m_StateContainer.Add(m_StateIcon);
 
-            if (package != null && package.Is(PackageType.Feature))
+            if (isFeature)
             {
                 m_InfoStateIcon = new VisualElement { name = "versionState" };
                 m_StateContainer.Add(m_InfoStateIcon);
@@ -176,10 +169,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (m_NumPackagesInFeature != null)
                 m_NumPackagesInFeature.text = string.Format(L10n.Tr("{0} packages"), package.versions.primary?.dependencies?.Length ?? 0);
 
-            var expandable = !package.Is(PackageType.BuiltIn | PackageType.Feature);
+            var expandable = !package.Is(PackageType.BuiltIn | PackageType.Feature | PackageType.AssetStore);
             UIUtils.SetElementDisplay(m_ArrowExpander, expandable);
-            UIUtils.SetElementDisplay(m_VersionLabel, expandable);
             UIUtils.SetElementDisplay(m_ExpanderHidden, !expandable);
+
+            var showVersionLabel = !package.Is(PackageType.BuiltIn | PackageType.Feature);
+            UIUtils.SetElementDisplay(m_VersionLabel, showVersionLabel);
+
             UIUtils.SetElementDisplay(m_LockedIcon, false);
 
             if (!expandable && UIUtils.IsElementVisible(m_VersionsContainer))
@@ -241,22 +237,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 StartSpinner();
             }
-        }
-
-        private void RefreshSpinner()
-        {
-            if (!m_VisibleInScrollView)
-            {
-                StopSpinner();
-                return;
-            }
-
-            var state = package?.state ?? PackageState.None;
-            var progress = package?.progress ?? PackageProgress.None;
-            if (state != PackageState.InProgress || progress == PackageProgress.None)
-                StopSpinner();
-            else
-                StartSpinner();
         }
 
         private void GetState()

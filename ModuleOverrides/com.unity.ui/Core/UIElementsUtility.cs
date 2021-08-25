@@ -127,6 +127,8 @@ namespace UnityEngine.UIElements
 
         // When not in editor, this will be all white, so no impact on the overall color, except for the multiplication done on the color.
         internal static Color editorPlayModeTintColor = Color.white;
+        // The usual height used for a control, such as a one-line text field. See --unity-metrics-single_line-height and EditorGUIUtility.singleLineHeight.
+        internal static float singleLineHeight = 18;
 
         internal static Action<IMGUIContainer> s_BeginContainerCallback;
         internal static Action<IMGUIContainer> s_EndContainerCallback;

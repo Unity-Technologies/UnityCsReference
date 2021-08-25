@@ -16,7 +16,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal const string k_OtherPackageGroupName = "Other";
 
         internal const int k_DefaultPageSize = 25;
-        private const int k_MaxFetchItemCountPerFrame = 5;
 
         private static readonly RefreshOptions[] k_RefreshOptionsByTab =
         {
@@ -29,15 +28,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual event Action<IPackageVersion> onSelectionChanged = delegate {};
         public virtual event Action<IEnumerable<VisualState>> onVisualStateChange = delegate {};
-        public virtual event Action<IPage, IEnumerable<IPackage>, IEnumerable<IPackage>, bool> onListUpdate = delegate {};
+        public virtual event Action<ListUpdateArgs> onListUpdate = delegate {};
         public virtual event Action<IPage> onListRebuild = delegate {};
         public virtual event Action<IPage> onSubPageAdded = delegate {};
 
         public virtual event Action onRefreshOperationStart = delegate {};
         public virtual event Action onRefreshOperationFinish = delegate {};
         public virtual event Action<UIError> onRefreshOperationError = delegate {};
-
-        public virtual event Action<IPackage> onPackageRefreshed = delegate {};
 
         private Dictionary<RefreshOptions, long> m_RefreshTimestamps = new Dictionary<RefreshOptions, long>();
         private Dictionary<RefreshOptions, UIError> m_RefreshErrors = new Dictionary<RefreshOptions, UIError>();
@@ -71,14 +68,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [NonSerialized]
         private Dictionary<string, PackageSelectionObject> m_PackageSelectionObjects = new Dictionary<string, PackageSelectionObject>();
-
-        [SerializeField]
-        private List<string> m_SerializedFetchDetailsQueue = new List<string>();
-
-        [NonSerialized]
-        private readonly List<string> m_CurrentFetchDetails = new List<string>();
-        [NonSerialized]
-        private Queue<string> m_FetchDetailsQueue = new Queue<string>();
 
         [NonSerialized]
         private ApplicationProxy m_Application;
@@ -139,8 +128,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SerializedRefreshErrorsValues = m_RefreshErrors.Values.ToArray();
 
             m_SerializedPackageSelectionInstanceIds = m_PackageSelectionObjects.Select(kp => kp.Value.GetInstanceID()).ToArray();
-
-            m_SerializedFetchDetailsQueue = m_FetchDetailsQueue.ToList();
         }
 
         public void OnAfterDeserialize()
@@ -158,8 +145,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             for (var i = 0; i < m_SerializedRefreshErrorsKeys.Length; i++)
                 m_RefreshErrors[m_SerializedRefreshErrorsKeys[i]] = m_SerializedRefreshErrorsValues[i];
-
-            m_FetchDetailsQueue = new Queue<string>(m_SerializedFetchDetailsQueue);
         }
 
         public virtual PackageSelectionObject GetPackageSelectionObject(IPackage package, IPackageVersion version = null, bool createIfNotFound = false)
@@ -344,9 +329,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             onVisualStateChange?.Invoke(visualStates);
         }
 
-        private void TriggerOnPageUpdate(IPage page, IEnumerable<IPackage> addedOrUpdated, IEnumerable<IPackage> removed, bool reorder)
+        private void TriggerOnPageUpdate(ListUpdateArgs args)
         {
-            onListUpdate?.Invoke(page, addedOrUpdated, removed, reorder);
+            onListUpdate?.Invoke(args);
         }
 
         private void TriggerOnPageRebuild(IPage page)
@@ -390,12 +375,44 @@ namespace UnityEditor.PackageManager.UI.Internal
             SelectInInspector(package, version, forceSelectInInspector);
         }
 
-        public virtual void RefreshSelected()
+        // Returns true if selection is updated after this call, otherwise returns false
+        public virtual bool UpdateSelectionIfCurrentSelectionIsInvalid()
         {
-            GetPageFromTab().RefreshSelected();
+            var page = GetCurrentPage();
+            var selectedVisualState = page.GetSelectedVisualState();
 
-            GetPageFromTab().GetSelectedPackageAndVersion(out var package, out _);
-            onPackageRefreshed?.Invoke(package);
+            // Re-select the primary version of a package if the previous selected version could not be found anymore (while the package could still be found)
+            // This could happen when we uninstall a package or when we change from a package with a placeholder versions to a real package with real versions.
+            if (selectedVisualState?.visible == true)
+            {
+                m_PackageDatabase.GetPackageAndVersion(selectedVisualState.packageUniqueId, selectedVisualState.selectedVersionId, out IPackage package, out IPackageVersion version);
+                if (package != null)
+                {
+                    if (version != null)
+                        return false;
+                    SetSelected(package, package?.versions.primary);
+                    return true;
+                }
+            }
+
+            var firstVisible = page.visualStates.FirstOrDefault(v => v.visible && v.packageUniqueId != selectedVisualState?.packageUniqueId);
+            if (firstVisible == null)
+            {
+                if (selectedVisualState == null)
+                    return false;
+                ClearSelection();
+            }
+            else
+            {
+                m_PackageDatabase.GetPackageAndVersion(firstVisible.packageUniqueId, firstVisible.selectedVersionId, out IPackage package, out IPackageVersion version);
+                SetSelected(package, version);
+            }
+            return true;
+        }
+
+        public virtual void TriggerOnSelectionChanged()
+        {
+            GetPageFromTab().TriggerOnSelectionChanged();
         }
 
         private void SelectInInspector(IPackage package, IPackageVersion version, bool forceSelectInInspector)
@@ -474,9 +491,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnFilterChanged(PackageFilterTab filterTab)
         {
-            if (m_PackageFiltering.previousFilterTab == PackageFilterTab.AssetStore)
-                ClearFetchDetailsQueue();
-
             var page = GetPageFromTab(filterTab);
 
             page.ResetUserUnlockedState();
@@ -577,7 +591,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     foreach (var package in entitlements)
                         package.ClearErrors(error => error.errorCode == UIErrorCode.Forbidden);
-                    RefreshSelected();
+                    TriggerOnSelectionChanged();
                 }
             }
 
@@ -710,8 +724,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
             m_Selection.onSelectionChanged += OnEditorSelectionChanged;
-
-            EditorApplication.update += FetchDetailsFromQueue;
         }
 
         public void OnDisable()
@@ -735,8 +747,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
             m_Selection.onSelectionChanged -= OnEditorSelectionChanged;
-
-            EditorApplication.update -= FetchDetailsFromQueue;
         }
 
         public virtual void Reload()
@@ -745,7 +755,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             InitializeRefreshTimestamps();
 
             ClearPages();
-            ClearFetchDetailsQueue();
 
             InitializeSubPages();
 
@@ -929,33 +938,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var filterTab = tab ?? m_PackageFiltering.currentFilterTab;
             return IsInitialFetchingDone(GetRefreshOptionsByTab(filterTab));
-        }
-
-        public virtual void SetFetchDetailsQueue(IEnumerable<string> packageUniqueIds)
-        {
-            m_FetchDetailsQueue = new Queue<string>(packageUniqueIds.Where(p => !m_CurrentFetchDetails.Contains(p)));
-        }
-
-        public virtual void ClearFetchDetailsQueue()
-        {
-            m_FetchDetailsQueue.Clear();
-            m_CurrentFetchDetails.Clear();
-        }
-
-        private void FetchDetailsFromQueue()
-        {
-            if (m_FetchDetailsQueue.Count == 0 || !m_UnityConnect.isUserLoggedIn)
-                return;
-
-            for (var i = 0; i < k_MaxFetchItemCountPerFrame && m_FetchDetailsQueue.Any(); i++)
-            {
-                var packageId = m_FetchDetailsQueue.Dequeue();
-                if (long.TryParse(packageId, out var productId))
-                {
-                    m_CurrentFetchDetails.Add(packageId);
-                    m_AssetStoreClient.FetchDetail(productId, package => { m_CurrentFetchDetails.Remove(package.uniqueId); });
-                }
-            }
         }
 
         public virtual void SetPackagesUserUnlockedState(IEnumerable<string> packageUniqueIds, bool unlocked)

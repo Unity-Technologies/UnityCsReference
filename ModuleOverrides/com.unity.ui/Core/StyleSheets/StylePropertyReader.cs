@@ -559,19 +559,7 @@ namespace UnityEngine.UIElements.StyleSheets
                         var handle = sp.values[i];
                         if (handle.IsVarFunction())
                         {
-                            var result = m_Resolver.ResolveVarFunction(ref i);
-                            if (result != StyleVariableResolver.Result.Valid)
-                            {
-                                // Resolve failed
-                                // When this happens, the computed value of the property is either the property’s
-                                // inherited value or its initial value depending on whether the property is inherited or not.
-                                // This is the same behavior as the unset keyword so we simply resolve to that value.
-                                var unsetHandle = new StyleValueHandle() { valueType = StyleValueType.Keyword, valueIndex = (int)StyleValueKeyword.Unset};
-                                m_Values.Add(new StylePropertyValue() { sheet = m_Sheet, handle = unsetHandle });
-                                ++count;
-
-                                valid = false;
-                            }
+                            valid = m_Resolver.ResolveVarFunction(ref i);
                         }
                         else
                         {
@@ -579,10 +567,20 @@ namespace UnityEngine.UIElements.StyleSheets
                         }
                     }
 
-                    if (valid)
+                    if (valid && m_Resolver.ValidateResolvedValues())
                     {
                         m_Values.AddRange(m_Resolver.resolvedValues);
                         count += m_Resolver.resolvedValues.Count;
+                    }
+                    else
+                    {
+                        // Resolve failed
+                        // When this happens, the computed value of the property is either the property’s
+                        // inherited value or its initial value depending on whether the property is inherited or not.
+                        // This is the same behavior as the unset keyword so we simply resolve to that value.
+                        var unsetHandle = new StyleValueHandle() { valueType = StyleValueType.Keyword, valueIndex = (int)StyleValueKeyword.Unset};
+                        m_Values.Add(new StylePropertyValue() { sheet = m_Sheet, handle = unsetHandle });
+                        ++count;
                     }
                 }
                 else

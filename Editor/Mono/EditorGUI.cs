@@ -8580,6 +8580,7 @@ namespace UnityEditor
             static Dictionary<Type, GUIContent[]> s_EnumTypeLocalizedGUIContents = new Dictionary<Type, GUIContent[]>();
             static Dictionary<int, GUIContent[]> s_SerializedPropertyEnumLocalizedGUIContents = new Dictionary<int, GUIContent[]>();
             static Dictionary<Type, bool> s_IsEnumTypeUsingFlagsAttribute = new Dictionary<Type, bool>();
+            static Dictionary<Type, string[]> s_SerializedPropertyEnumDisplayNames = new Dictionary<Type, string[]>();
 
             internal static GUIContent[] GetEnumTypeLocalizedGUIContents(Type enumType, EnumData enumData)
             {
@@ -8617,6 +8618,20 @@ namespace UnityEditor
 
                 result = EditorGUIUtility.TempContent(property.enumLocalizedDisplayNames);
                 s_SerializedPropertyEnumLocalizedGUIContents[hashCode] = result;
+                return result;
+            }
+
+            internal static string[] GetEnumDisplayNames(SerializedProperty property)
+            {
+                Type enumType;
+                ScriptAttributeUtility.GetFieldInfoFromProperty(property, out enumType);
+
+                string[] result;
+                if (!s_SerializedPropertyEnumDisplayNames.TryGetValue(enumType, out result))
+                {
+                    result = property.enumDisplayNames;
+                    s_SerializedPropertyEnumDisplayNames.Add(enumType, result);
+                }
                 return result;
             }
 

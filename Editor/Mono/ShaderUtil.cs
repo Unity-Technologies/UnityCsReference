@@ -57,6 +57,11 @@ namespace UnityEditor
             public string SourceCode { get { return ShaderUtil.GetShaderPassSourceCode(SourceShader, SubshaderIndex, m_PassIndex); } }
             public string Name { get { return ShaderUtil.GetShaderPassName(SourceShader, SubshaderIndex, m_PassIndex); } }
 
+            public bool HasShaderStage(ShaderType shaderType)
+            {
+                return ShaderUtil.PassHasShaderStage(SourceShader, SubshaderIndex, m_PassIndex, shaderType);
+            }
+
             internal static GraphicsTier kNoGraphicsTier = (GraphicsTier)(-1);
 
             public VariantCompileInfo CompileVariant(ShaderType shaderType, string[] keywords,
@@ -125,49 +130,49 @@ namespace UnityEditor
         //
         public struct VariantCompileInfo
         {
-            public bool Success;
-            public ShaderMessage[] Messages;
+            public bool Success { get; }
+            public ShaderMessage[] Messages { get; }
 
-            public byte[] ShaderData;
+            public byte[] ShaderData { get; }
 
-            public VertexAttribute[] Attributes;
-            public ConstantBufferInfo[] ConstantBuffers;
-            public TextureBindingInfo[] TextureBindings;
+            public VertexAttribute[] Attributes { get; }
+            public ConstantBufferInfo[] ConstantBuffers { get; }
+            public TextureBindingInfo[] TextureBindings { get; }
         }
 
         [DebuggerDisplay("cbuffer {Name} ({Size} bytes)")]
         public struct ConstantBufferInfo
         {
-            public string Name;
-            public int Size;
-            public ConstantInfo[] Fields;
+            public string Name { get; }
+            public int Size { get; }
+            public ConstantInfo[] Fields { get; }
         }
 
         [DebuggerDisplay("{ConstantType} {Name} ({DataType} {Columns}x{Rows})")]
         public struct ConstantInfo
         {
-            public string Name;
-            public int Index;
-            public ShaderConstantType ConstantType;
-            public ShaderParamType DataType;
-            public int Rows;
-            public int Columns;
-            public int ArraySize;
+            public string Name { get; }
+            public int Index { get; }
+            public ShaderConstantType ConstantType { get; }
+            public ShaderParamType DataType { get; }
+            public int Rows { get; }
+            public int Columns { get; }
+            public int ArraySize { get; }
 
             // only relevant if ConstantType == Struct
-            public int StructSize;
-            public ConstantInfo[] StructFields;
+            public int StructSize { get; }
+            public ConstantInfo[] StructFields { get; }
         }
 
         [DebuggerDisplay("{Dim} {Name}")]
         public struct TextureBindingInfo
         {
-            public string Name;
-            public int Index;
-            public int SamplerIndex;
-            public bool Multisampled;
-            public int ArraySize;
-            public TextureDimension Dim;
+            public string Name { get; }
+            public int Index { get; }
+            public int SamplerIndex { get; }
+            public bool Multisampled { get; }
+            public int ArraySize { get; }
+            public TextureDimension Dim { get; }
         }
     }
 
@@ -192,6 +197,8 @@ namespace UnityEditor
             var errors = GetShaderMessages(shader);
             return errors.Any(x => x.severity == ShaderCompilerMessageSeverity.Warning);
         }
+
+        internal static extern bool PassHasShaderStage(Shader s, int subshaderIndex, int passIndex, ShaderType shaderType);
 
         internal static bool MaterialsUseInstancingShader(SerializedProperty materialsArray)
         {

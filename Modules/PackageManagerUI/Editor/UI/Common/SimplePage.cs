@@ -65,21 +65,27 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override void OnPackagesChanged(IEnumerable<IPackage> added, IEnumerable<IPackage> removed, IEnumerable<IPackage> preUpdate, IEnumerable<IPackage> postUpdate)
         {
-            var addOrUpdateList = new List<IPackage>();
-            var removeList = removed.Where(p => Contains(p)).ToList();
+            var addList = new List<IPackage>();
+            var updateList = new List<IPackage>();
+            var removeList = removed.Where(Contains).ToList();
             foreach (var package in added.Concat(postUpdate))
             {
                 if (m_PackageFiltering.FilterByCurrentTab(package))
-                    addOrUpdateList.Add(package);
+                {
+                    if (Contains(package))
+                        updateList.Add(package);
+                    else
+                        addList.Add(package);
+                }
                 else if (Contains(package))
                     removeList.Add(package);
             }
 
-            if (addOrUpdateList.Any() || removeList.Any())
+            if (addList.Any() || updateList.Any() || removeList.Any())
             {
                 RebuildOrderedVisualStates();
 
-                TriggerOnListUpdate(addOrUpdateList, removeList, capability.supportLocalReordering && addOrUpdateList.Any());
+                TriggerOnListUpdate(addList, updateList, removeList);
 
                 RefreshVisualStates();
             }

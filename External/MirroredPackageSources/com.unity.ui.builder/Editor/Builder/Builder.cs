@@ -244,8 +244,8 @@ namespace Unity.UI.Builder
 
         void SetStyleUpdaterTraversal()
         {
-            var updater = rootVisualElement.panel as BaseVisualElementPanel;
-            var styleUpdater = updater.GetUpdater(VisualTreeUpdatePhase.Styles) as VisualTreeStyleUpdater;
+            var panel = rootVisualElement.panel as BaseVisualElementPanel;
+            var styleUpdater = panel.GetUpdater(VisualTreeUpdatePhase.Styles) as VisualTreeStyleUpdater;
 
             styleUpdater.traversal = new BuilderVisualTreeStyleUpdaterTraversal(m_Viewport.documentRootElement);
         }

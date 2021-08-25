@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
@@ -1878,6 +1877,8 @@ namespace UnityEditor.UIElements.Bindings
         private int lastFieldValueIndex;
 
         private List<string> originalChoices;
+        private List<int> displayIndexToEnumIndex;
+        private List<int> enumIndexToDisplayIndex;
         private int originalIndex;
 
         public static void CreateBind(PopupField<string> field,  SerializedObjectBindingContext context,
@@ -1899,16 +1900,43 @@ namespace UnityEditor.UIElements.Bindings
             this.originalChoices = field.choices;
             this.originalIndex = field.index;
 
+            // We need to keep bidirectional lists of indices to translate between Popup choice index and
+            // SerializedProperty enumValueIndex because the Popup choices might be displayed in another language
+            // (using property.enumLocalizedDisplayNames), or in another display order (using enumData.displayNames).
+            // We need to build the bidirectional lists when we assign field.choices, using any of the above options.
+
+            if (displayIndexToEnumIndex == null)
+                displayIndexToEnumIndex = new List<int>();
+            else
+                displayIndexToEnumIndex.Clear();
+
+            if (enumIndexToDisplayIndex == null)
+                enumIndexToDisplayIndex = new List<int>();
+            else
+                enumIndexToDisplayIndex.Clear();
+
             Type enumType;
             ScriptAttributeUtility.GetFieldInfoFromProperty(property, out enumType);
             if (enumType != null)
             {
                 var enumData = EnumDataUtility.GetCachedEnumData(enumType, true);
-                this.field.choices = enumData.displayNames.ToList();
+                field.choices = new List<string>(enumData.displayNames);
+
+                var propertyDisplayNames = EditorGUI.EnumNamesCache.GetEnumDisplayNames(property);
+                foreach (var fieldChoice in field.choices)
+                    displayIndexToEnumIndex.Add(Array.IndexOf(propertyDisplayNames, fieldChoice));
+                foreach (var propertyChoice in propertyDisplayNames)
+                    enumIndexToDisplayIndex.Add(field.choices.IndexOf(propertyChoice));
             }
             else
             {
-                this.field.choices = property.enumLocalizedDisplayNames.ToList();
+                field.choices = new List<string>(property.enumLocalizedDisplayNames);
+
+                for (int i = 0; i < field.choices.Count; i++)
+                {
+                    displayIndexToEnumIndex.Add(i);
+                    enumIndexToDisplayIndex.Add(i);
+                }
             }
 
             var originalValue = this.lastFieldValueIndex = c.index;
@@ -1942,10 +1970,9 @@ namespace UnityEditor.UIElements.Bindings
             }
 
             int propValueIndex = p.enumValueIndex;
-            if (propValueIndex != lastFieldValueIndex)
+            if (lastFieldValueIndex != enumIndexToDisplayIndex[propValueIndex])
             {
-                lastFieldValueIndex = propValueIndex;
-                c.index = propValueIndex;
+                c.index = lastFieldValueIndex = enumIndexToDisplayIndex[propValueIndex];
             }
         }
 
@@ -1963,9 +1990,9 @@ namespace UnityEditor.UIElements.Bindings
 
         protected override bool SyncFieldValueToProperty()
         {
-            if (lastFieldValueIndex != boundProperty.enumValueIndex)
+            if (boundProperty.enumValueIndex != displayIndexToEnumIndex[lastFieldValueIndex])
             {
-                boundProperty.enumValueIndex = lastFieldValueIndex;
+                boundProperty.enumValueIndex = displayIndexToEnumIndex[lastFieldValueIndex];
                 boundProperty.m_SerializedObject.ApplyModifiedProperties();
                 return true;
             }

@@ -253,6 +253,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     PackageManagerWindow.instance?.Close();
                     m_PageManager.Reload();
+                    ServicesContainer.instance.Resolve<AssetStoreCallQueue>().Clear();
                 };
 
                 dropdownItem = toolbarSettingsMenu.AddBuiltInDropdownItem();
