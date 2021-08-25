@@ -851,7 +851,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return (settings.CompilationOptions & EditorScriptCompilationOptions.BuildingForEditor) == EditorScriptCompilationOptions.BuildingForEditor;
         }
 
-        static bool IsCompatibleWithPlatformAndDefines(TargetAssembly assembly, ScriptAssemblySettings settings)
+        public static bool IsCompatibleWithPlatformAndDefines(TargetAssembly assembly, ScriptAssemblySettings settings)
         {
             return assembly.IsCompatibleFunc == null || assembly.IsCompatibleFunc(settings, assembly.Defines);
         }

@@ -151,6 +151,7 @@ namespace UnityEditor
             public static readonly GUIContent cameraUsageDescription = EditorGUIUtility.TrTextContent("Camera Usage Description*", "String shown to the user when requesting permission to use the device camera. Written to the NSCameraUsageDescription field in Xcode project's info.plist file");
             public static readonly GUIContent locationUsageDescription = EditorGUIUtility.TrTextContent("Location Usage Description*", "String shown to the user when requesting permission to access the device location. Written to the NSLocationWhenInUseUsageDescription field in Xcode project's info.plist file.");
             public static readonly GUIContent microphoneUsageDescription = EditorGUIUtility.TrTextContent("Microphone Usage Description*", "String shown to the user when requesting to use the device microphone. Written to the NSMicrophoneUsageDescription field in Xcode project's info.plist file");
+            public static readonly GUIContent bluetoothUsageDescription = EditorGUIUtility.TrTextContent("Bluetooth Usage Description*", "String shown to the user when requesting to use the device bluetooth. Written to the NSBluetoothAlwaysUsageDescription field in Xcode project's info.plist file");
             public static readonly GUIContent muteOtherAudioSources = EditorGUIUtility.TrTextContent("Mute Other Audio Sources*");
             public static readonly GUIContent prepareIOSForRecording = EditorGUIUtility.TrTextContent("Prepare iOS for Recording");
             public static readonly GUIContent forceIOSSpeakersWhenRecording = EditorGUIUtility.TrTextContent("Force iOS Speakers when Recording");
@@ -281,6 +282,7 @@ namespace UnityEditor
         SerializedProperty m_CameraUsageDescription;
         SerializedProperty m_LocationUsageDescription;
         SerializedProperty m_MicrophoneUsageDescription;
+        SerializedProperty m_BluetoothUsageDescription;
 
         SerializedProperty m_IPhoneScriptCallOptimization;
         SerializedProperty m_AotOptions;
@@ -520,6 +522,7 @@ namespace UnityEditor
             m_CameraUsageDescription        = FindPropertyAssert("cameraUsageDescription");
             m_LocationUsageDescription      = FindPropertyAssert("locationUsageDescription");
             m_MicrophoneUsageDescription    = FindPropertyAssert("microphoneUsageDescription");
+            m_BluetoothUsageDescription     = FindPropertyAssert("bluetoothUsageDescription");
 
             m_EnableInternalProfiler        = FindPropertyAssert("enableInternalProfiler");
             m_ActionOnDotNetUnhandledException  = FindPropertyAssert("actionOnDotNetUnhandledException");
@@ -2386,12 +2389,15 @@ namespace UnityEditor
             // Privacy permissions
             bool showPrivacyPermissions =
                 targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS ||
-                platform.defaultTarget == BuildTarget.StandaloneOSX;
+                targetGroup == BuildTargetGroup.Standalone;
 
             if (showPrivacyPermissions)
             {
                 EditorGUILayout.PropertyField(m_CameraUsageDescription, SettingsContent.cameraUsageDescription);
                 EditorGUILayout.PropertyField(m_MicrophoneUsageDescription, SettingsContent.microphoneUsageDescription);
+
+                if (targetGroup == BuildTargetGroup.Standalone)
+                    EditorGUILayout.PropertyField(m_BluetoothUsageDescription, SettingsContent.bluetoothUsageDescription);
 
                 if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS)
                     EditorGUILayout.PropertyField(m_LocationUsageDescription, SettingsContent.locationUsageDescription);

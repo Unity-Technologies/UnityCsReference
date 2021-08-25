@@ -57,6 +57,11 @@ namespace UnityEditor
             public string SourceCode { get { return ShaderUtil.GetShaderPassSourceCode(SourceShader, SubshaderIndex, m_PassIndex); } }
             public string Name { get { return ShaderUtil.GetShaderPassName(SourceShader, SubshaderIndex, m_PassIndex); } }
 
+            public bool HasShaderStage(ShaderType shaderType)
+            {
+                return ShaderUtil.PassHasShaderStage(SourceShader, SubshaderIndex, m_PassIndex, shaderType);
+            }
+
             internal static GraphicsTier kNoGraphicsTier = (GraphicsTier)(-1);
 
             public VariantCompileInfo CompileVariant(ShaderType shaderType, string[] keywords,
@@ -185,6 +190,8 @@ namespace UnityEditor
             var errors = GetShaderMessages(shader);
             return errors.Any(x => x.severity == ShaderCompilerMessageSeverity.Error);
         }
+
+        internal static extern bool PassHasShaderStage(Shader s, int subshaderIndex, int passIndex, ShaderType shaderType);
 
         internal static bool MaterialsUseInstancingShader(SerializedProperty materialsArray)
         {
