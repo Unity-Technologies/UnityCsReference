@@ -110,12 +110,12 @@ namespace UnityEditor.Scripting
 
         private static string AssemblySearchPathArgument(IEnumerable<string> configurationSourceDirectories = null)
         {
-            var searchPath = Path.Combine(MonoInstallationFinder.GetFrameWorksFolder(), "Managed") + ","
-                + "+" + Application.dataPath;
+            var searchPath = Path.Combine(MonoInstallationFinder.GetFrameWorksFolder(), "Managed").Escape(Path.PathSeparator) + Path.PathSeparator
+                + "+" + Application.dataPath.Escape(Path.PathSeparator);
 
             if (configurationSourceDirectories != null)
             {
-                var searchPathFromConfigSources = configurationSourceDirectories.Aggregate("", (acc, curr) =>  acc + ",+" + curr);
+                var searchPathFromConfigSources = configurationSourceDirectories.Aggregate("", (acc, curr) =>  acc + $"{Path.PathSeparator}+" + curr.Escape(Path.PathSeparator));
                 searchPath += searchPathFromConfigSources;
             }
 
@@ -142,5 +142,10 @@ namespace UnityEditor.Scripting
         {
             return " --timestamp " + DateTime.Now.Ticks + " ";
         }
+    }
+
+    internal static class StringExtensions
+    {
+        public static string Escape(this string str, char value) => str.Replace($"{value}", $"\\{value}");
     }
 }

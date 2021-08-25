@@ -23,6 +23,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual event Action<bool> onInternetReachabilityChange = delegate {};
         public virtual event Action onFinishCompiling = delegate {};
         public virtual event Action<PlayModeStateChange> onPlayModeStateChanged = delegate {};
+        public virtual event Action update = delegate {};
 
         public virtual string userAppDataPath => InternalEditorUtility.userAppDataFolder;
 
@@ -64,19 +65,25 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_IsInternetReachable = Application.internetReachability == NetworkReachability.ReachableViaLocalAreaNetwork;
             m_LastInternetCheck = EditorApplication.timeSinceStartup;
-            EditorApplication.update += CheckInternetReachability;
+            EditorApplication.update += OnUpdate;
             EditorApplication.playModeStateChanged += PlayModeStateChanged;
         }
 
         public void OnDisable()
         {
-            EditorApplication.update -= CheckInternetReachability;
+            EditorApplication.update -= OnUpdate;
             EditorApplication.playModeStateChanged -= PlayModeStateChanged;
         }
 
         private void PlayModeStateChanged(PlayModeStateChange state)
         {
             onPlayModeStateChanged?.Invoke(state);
+        }
+
+        private void OnUpdate()
+        {
+            CheckInternetReachability();
+            update?.Invoke();
         }
 
         private void CheckInternetReachability()

@@ -16,7 +16,7 @@ namespace UnityEditor.Experimental.GraphView
             if (selection.Count == 0)
                 return false;
 
-            return !selection.Cast<GraphElement>().Any(ge => ge == null || ge is Group || !ge.IsGroupable());
+            return !selection.Cast<GraphElement>().Any(ge => !(ge is Edge) && (ge == null || ge is Group || !ge.IsGroupable()));
         }
 
         public bool DragLeave(DragLeaveEvent evt, IEnumerable<ISelectable> selection, IDropTarget leftTarget, ISelection dragSource)

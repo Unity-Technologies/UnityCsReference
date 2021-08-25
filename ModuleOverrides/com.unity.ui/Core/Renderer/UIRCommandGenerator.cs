@@ -433,22 +433,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
             {
                 Vertex v = source[i];
 
-                var unit = Vector2.one.normalized;
-                var scaled = mat.MultiplyVector(unit);
-                var circle = (Vector4)mat.MultiplyPoint3x4(new Vector3(v.circle.x, v.circle.y, 0));
-                if (Mathf.Abs(scaled.x) >= Mathf.Abs(scaled.y))
-                    circle.z = mat.MultiplyVector(new Vector3(v.circle.z, 0, 0)).magnitude;
-                else
-                    circle.z = mat.MultiplyVector(new Vector3(0, v.circle.z, 0)).magnitude;
-
-                var uv = v.uv;
-                if (v.circle.w > Tessellation.kEpsilon)
-                {
-                    // UV stores inner-circle's center
-                    uv = mat.MultiplyPoint3x4(new Vector3(v.uv.x, v.uv.y, 0));
-                    circle.w = mat.MultiplyVector(new Vector3(v.circle.w, 0, 0)).magnitude;
-                }
-
                 v.position = mat.MultiplyPoint3x4(v.position);
                 v.xformClipPages = xformClipPages;
 
@@ -466,8 +450,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     v.opacityColorPages.a = textCoreSettingsPage.g;
                     v.ids.a = ids.a;
                 }
-                v.circle = circle;
-                v.uv = uv;
                 v.textureId = textureId;
                 target[i] = v;
             }
@@ -481,22 +463,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
             for (int i = 0; i < count; i++)
             {
                 Vertex v = source[i];
-
-                var unit = Vector2.one.normalized;
-                var scaled = mat.MultiplyVector(unit);
-                var circle = (Vector4)mat.MultiplyPoint3x4(new Vector3(v.circle.x, v.circle.y, 0));
-                if (Mathf.Abs(scaled.x) >= Mathf.Abs(scaled.y))
-                    circle.z = mat.MultiplyVector(new Vector3(v.circle.z, 0, 0)).magnitude;
-                else
-                    circle.z = mat.MultiplyVector(new Vector3(0, v.circle.z, 0)).magnitude;
-
-                var uv = v.uv;
-                if (v.circle.w > Tessellation.kEpsilon)
-                {
-                    // UV stores inner-circle's center
-                    uv = mat.MultiplyPoint3x4(new Vector3(v.uv.x, v.uv.y, 0));
-                    circle.w = mat.MultiplyVector(new Vector3(v.circle.w, 0, 0)).magnitude;
-                }
 
                 v.position = mat.MultiplyPoint3x4(v.position);
                 vec.x = v.uv.x;
@@ -518,8 +484,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     v.opacityColorPages.a = textCoreSettingsPage.g;
                     v.ids.a = ids.a;
                 }
-                v.circle = circle;
-                v.uv = uv;
                 v.textureId = textureId;
                 target[i] = v;
             }
@@ -637,32 +601,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
             {
                 var v = oldVerts[i];
                 v.position = nudgeTransform.MultiplyPoint3x4(v.position);
-                newVerts[i] = v;
-            }
-
-            for (int i = 0; i < vertCount; ++i)
-            {
-                Vertex v = newVerts[i];
-
-                var unit = Vector2.one.normalized;
-                var scaled = nudgeTransform.MultiplyVector(unit);
-                var circle = (Vector4)nudgeTransform.MultiplyPoint3x4(new Vector3(v.circle.x, v.circle.y, 0));
-                if (Mathf.Abs(scaled.x) >= Mathf.Abs(scaled.y))
-                    circle.z = nudgeTransform.MultiplyVector(new Vector3(v.circle.z, 0, 0)).magnitude;
-                else
-                    circle.z = nudgeTransform.MultiplyVector(new Vector3(0, v.circle.z, 0)).magnitude;
-
-                var uv = v.uv;
-                if (v.circle.w > Tessellation.kEpsilon)
-                {
-                    // UV stores inner-circle's center
-                    uv = nudgeTransform.MultiplyPoint3x4(new Vector3(v.uv.x, v.uv.y, 0));
-                    circle.w = nudgeTransform.MultiplyVector(new Vector3(v.circle.w, 0, 0)).magnitude;
-                }
-
-                v.circle = circle;
-                v.uv = uv;
-
                 newVerts[i] = v;
             }
         }

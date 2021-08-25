@@ -231,6 +231,10 @@ namespace UnityEngine.UIElements
         // Case 1297053: ScrollableWidth/Height may contain some numerical imprecisions.
         const float k_SizeThreshold = 0.001f;
 
+        VisualElement m_AttachedRootVisualContainer;
+        float m_SingleLineHeight = UIElementsUtility.singleLineHeight;
+        const string k_SingleLineHeightPropertyName = "--unity-metrics-single_line-height";
+
         const float k_ScrollPageOverlapFactor = 0.1f;
         internal const float k_UnsetPageSizeValue = -1.0f;
 
@@ -769,6 +773,10 @@ namespace UnityEngine.UIElements
                 return;
             }
 
+            m_AttachedRootVisualContainer = GetRootVisualContainer();
+            m_AttachedRootVisualContainer?.RegisterCallback<CustomStyleResolvedEvent>(OnRootCustomStyleResolved);
+            ReadSingleLineHeight();
+
             if (evt.destinationPanel.contextType == ContextType.Player)
             {
                 m_ContentAndVerticalScrollContainer.RegisterCallback<PointerDownEvent>(OnPointerDown, TrickleDown.TrickleDown);
@@ -787,6 +795,9 @@ namespace UnityEngine.UIElements
             {
                 return;
             }
+
+            m_AttachedRootVisualContainer?.UnregisterCallback<CustomStyleResolvedEvent>(OnRootCustomStyleResolved);
+            m_AttachedRootVisualContainer = null;
 
             if (evt.originPanel.contextType == ContextType.Player)
             {
@@ -1309,11 +1320,7 @@ namespace UnityEngine.UIElements
             if (canUseVerticalScroll)
             {
                 var oldVerticalValue = verticalScroller.value;
-
-                if (evt.delta.y < 0)
-                    verticalScroller.ScrollPageUp(Mathf.Abs(evt.delta.y));
-                else if (evt.delta.y > 0)
-                    verticalScroller.ScrollPageDown(Mathf.Abs(evt.delta.y));
+                verticalScroller.value += evt.delta.y * (verticalScroller.lowValue < verticalScroller.highValue ? 1f : -1f) * m_SingleLineHeight;
 
                 if (verticalScroller.value != oldVerticalValue)
                 {
@@ -1325,11 +1332,7 @@ namespace UnityEngine.UIElements
             if (canUseHorizontalScroll)
             {
                 var oldHorizontalValue = horizontalScroller.value;
-
-                if (horizontalScrollDelta < 0)
-                    horizontalScroller.ScrollPageUp(Mathf.Abs(horizontalScrollDelta));
-                else if (horizontalScrollDelta > 0)
-                    horizontalScroller.ScrollPageDown(Mathf.Abs(horizontalScrollDelta));
+                horizontalScroller.value += horizontalScrollDelta * (horizontalScroller.lowValue < horizontalScroller.highValue ? 1f : -1f) * m_SingleLineHeight;
 
                 if (horizontalScroller.value != oldHorizontalValue)
                 {
@@ -1340,6 +1343,27 @@ namespace UnityEngine.UIElements
 
             if (updateContentViewTransform)
                 UpdateContentViewTransform();
+        }
+
+        void OnRootCustomStyleResolved(CustomStyleResolvedEvent evt)
+        {
+            ReadSingleLineHeight();
+        }
+
+        void ReadSingleLineHeight()
+        {
+            if (m_AttachedRootVisualContainer?.computedStyle.customProperties != null &&
+                m_AttachedRootVisualContainer.computedStyle.customProperties.TryGetValue(k_SingleLineHeightPropertyName, out var customProp))
+            {
+                if (customProp.sheet.TryReadDimension(customProp.handle, out var dimension))
+                {
+                    m_SingleLineHeight = dimension.value;
+                }
+            }
+            else
+            {
+                m_SingleLineHeight = UIElementsUtility.singleLineHeight;
+            }
         }
     }
 }

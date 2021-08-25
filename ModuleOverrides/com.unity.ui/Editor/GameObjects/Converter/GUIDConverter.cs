@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -60,10 +61,35 @@ namespace UnityEditor.UIElements
                 target = "m_Script: {fileID: 11500000, guid: f21c074d86024caca2a0034ce4f53f73, type: 3}",
                 replacement = "m_Script: {fileID: 19102, guid: 0000000000000000e000000000000000, type: 0}"
             },
+            // Text Core assets
             new AssetConversionRecord() {
                 assetType = nameof(PanelTextSettings),
                 target = "m_Script: {fileID: 11500000, guid: 83edbd52c03fc4d319804b472b97f952, type: 3}",
                 replacement = "m_Script: {fileID: 19103, guid: 0000000000000000e000000000000000, type: 0}"
+            },
+            new AssetConversionRecord()
+            {
+                assetType = nameof(FontAsset),
+                target = "m_Script: {fileID: 11500000, guid: 9a8fdda5b4c5f6544bbac8a17c59089c, type: 3}",
+                replacement = "m_Script: {fileID: 19001, guid: 0000000000000000e000000000000000, type: 0}"
+            },
+            new AssetConversionRecord()
+            {
+                assetType = nameof(SpriteAsset),
+                target = "m_Script: {fileID: 11500000, guid: 39b57e6027b777d419a52a4b7aebe947, type: 3}",
+                replacement = "m_Script: {fileID: 19002, guid: 0000000000000000e000000000000000, type: 0}"
+            },
+            new AssetConversionRecord()
+            {
+                assetType = nameof(TextColorGradient),
+                target = "m_Script: {fileID: 11500000, guid: b9227ee934001d646b6873072461c7ac, type: 3}",
+                replacement = "m_Script: {fileID: 19003, guid: 0000000000000000e000000000000000, type: 0}"
+            },
+            new AssetConversionRecord()
+            {
+                assetType = nameof(TextStyleSheet),
+                target = "m_Script: {fileID: 11500000, guid: 59db50dea4e43b042ba63605012274c8, type: 3}",
+                replacement = "m_Script: {fileID: 19004, guid: 0000000000000000e000000000000000, type: 0}"
             }
         };
 
@@ -512,7 +538,7 @@ namespace UnityEditor.UIElements
             typeof(MonoScript),
             typeof(RenderTexture),
             typeof(Shader),
-            typeof(TextAsset),
+            typeof(UnityEngine.TextAsset),
             typeof(Texture2D),
             typeof(Texture2DArray),
             typeof(Texture3D),

@@ -118,11 +118,17 @@ namespace UnityEngine.UIElements
 
     internal class StyleVariableResolver
     {
-        public enum Result
+        private enum Result
         {
             Valid,
             Invalid,
             NotFound
+        }
+
+        private struct ResolveContext
+        {
+            public StyleSheet sheet;
+            public StyleValueHandle[] handles;
         }
 
         // Max resolves is to protect against long variables : https://drafts.csswg.org/css-variables/#long-variables
@@ -132,11 +138,13 @@ namespace UnityEngine.UIElements
         private StylePropertyValueMatcher m_Matcher = new StylePropertyValueMatcher();
         private List<StylePropertyValue> m_ResolvedValues = new List<StylePropertyValue>();
         private Stack<string> m_ResolvedVarStack = new Stack<string>();
-        private Expression m_ValidationExpression;
 
         private StyleProperty m_Property;
-        private StyleSheet m_Sheet;
-        private StyleValueHandle[] m_Handles;
+        private Stack<ResolveContext> m_ContextStack = new Stack<ResolveContext>();
+        private ResolveContext m_CurrentContext;
+
+        private StyleSheet currentSheet => m_CurrentContext.sheet;
+        private StyleValueHandle[] currentHandles => m_CurrentContext.handles;
 
         public List<StylePropertyValue> resolvedValues => m_ResolvedValues;
         public StyleVariableContext variableContext { get; set; }
@@ -144,58 +152,72 @@ namespace UnityEngine.UIElements
         public void Init(StyleProperty property, StyleSheet sheet, StyleValueHandle[] handles)
         {
             m_ResolvedValues.Clear();
-            m_Sheet = sheet;
+            m_ContextStack.Clear();
+
             m_Property = property;
-            m_Handles = handles;
+            PushContext(sheet, handles);
+        }
+
+        private void PushContext(StyleSheet sheet, StyleValueHandle[] handles)
+        {
+            m_CurrentContext = new ResolveContext() { sheet = sheet, handles = handles };
+            m_ContextStack.Push(m_CurrentContext);
+        }
+
+        private void PopContext()
+        {
+            m_ContextStack.Pop();
+            m_CurrentContext = m_ContextStack.Peek();
         }
 
         public void AddValue(StyleValueHandle handle)
         {
-            m_ResolvedValues.Add(new StylePropertyValue() {sheet = m_Sheet, handle = handle});
+            m_ResolvedValues.Add(new StylePropertyValue() {sheet = currentSheet, handle = handle});
         }
 
-        public Result ResolveVarFunction(ref int index)
+        public bool ResolveVarFunction(ref int index)
         {
             m_ResolvedVarStack.Clear();
-            m_ValidationExpression = null;
 
-            if (!m_Property.isCustomProperty)
-            {
-                string syntax;
-                if (!StylePropertyCache.TryGetSyntax(m_Property.name, out syntax))
-                {
-                    Debug.LogAssertion($"Unknown style property {m_Property.name}");
-                    return Result.Invalid;
-                }
+            ParseVarFunction(currentSheet, currentHandles, ref index, out var argc, out var varName);
 
-                m_ValidationExpression = s_SyntaxParser.Parse(syntax);
-            }
+            var result = ResolveVarFunction(ref index, argc, varName);
+            return result == Result.Valid;
+        }
 
-            int argc;
-            string varName;
-            ParseVarFunction(m_Sheet, m_Handles, ref index, out argc, out varName);
-
+        private Result ResolveVarFunction(ref int index, int argc, string varName)
+        {
             var result = ResolveVariable(varName);
-            if (result != Result.Valid)
+            if (result == Result.NotFound && argc > 1)
             {
                 // var() fallback
-                if (result == Result.NotFound && argc > 1 && !m_Property.isCustomProperty)
+                var h = currentHandles[++index];
+                Debug.Assert(h.valueType == StyleValueType.CommaSeparator, $"Unexpected value type {h.valueType} in var function");
+                if (h.valueType == StyleValueType.CommaSeparator && index + 1 < currentHandles.Length)
                 {
-                    var h = m_Handles[++index];
-                    Debug.Assert(h.valueType == StyleValueType.CommaSeparator, $"Unexpected value type {h.valueType} in var function");
-                    if (h.valueType == StyleValueType.CommaSeparator && index + 1 < m_Handles.Length)
-                    {
-                        ++index;
-                        result = ResolveFallback(ref index);
-                    }
-                }
-                else
-                {
-                    m_ResolvedValues.Clear();
+                    ++index;
+                    result = ResolveFallback(ref index);
                 }
             }
 
             return result;
+        }
+
+        public bool ValidateResolvedValues()
+        {
+            // Cannot validate custom property before it's assigned so it's always true in this case
+            if (m_Property.isCustomProperty)
+                return true;
+
+            if (!StylePropertyCache.TryGetSyntax(m_Property.name, out var syntax))
+            {
+                Debug.LogAssertion($"Unknown style property {m_Property.name}");
+                return false;
+            }
+
+            var validationExpression = s_SyntaxParser.Parse(syntax);
+            var result = m_Matcher.Match(validationExpression, m_ResolvedValues);
+            return result.success;
         }
 
         private Result ResolveVariable(string variableName)
@@ -214,18 +236,22 @@ namespace UnityEngine.UIElements
             var result = Result.Valid;
             for (int i = 0; i < sv.handles.Length && result == Result.Valid; ++i)
             {
+                if (m_ResolvedValues.Count + 1 > kMaxResolves)
+                    return Result.Invalid;
+
                 var h = sv.handles[i];
                 if (h.IsVarFunction())
                 {
-                    int argc;
-                    string varName;
-                    ParseVarFunction(sv.sheet, sv.handles, ref i, out argc, out varName);
-                    result = ResolveVariable(varName);
+                    PushContext(sv.sheet, sv.handles);
+
+                    ParseVarFunction(sv.sheet, sv.handles, ref i, out var argc, out var varName);
+                    result = ResolveVarFunction(ref i, argc, varName);
+
+                    PopContext();
                 }
                 else
                 {
-                    var spv = new StylePropertyValue() { sheet = sv.sheet, handle = h};
-                    result = ValidateResolve(spv);
+                    m_ResolvedValues.Add(new StylePropertyValue() { sheet = sv.sheet, handle = h});
                 }
             }
             m_ResolvedVarStack.Pop();
@@ -233,34 +259,15 @@ namespace UnityEngine.UIElements
             return result;
         }
 
-        private Result ValidateResolve(StylePropertyValue spv)
-        {
-            if (m_ResolvedValues.Count + 1 > kMaxResolves)
-                return Result.Invalid;
-
-            m_ResolvedValues.Add(spv);
-
-            // Cannot validate custom property before it's assigned so it's always true in this case
-            if (m_Property.isCustomProperty)
-                return Result.Valid;
-
-            var result = m_Matcher.Match(m_ValidationExpression, m_ResolvedValues);
-            if (!result.success)
-                m_ResolvedValues.RemoveAt(m_ResolvedValues.Count - 1);
-            return result.success ? Result.Valid : Result.Invalid;
-        }
-
         private Result ResolveFallback(ref int index)
         {
             var result = Result.Valid;
-            for (; index < m_Handles.Length && result == Result.Valid; ++index)
+            for (; index < currentHandles.Length && result == Result.Valid; ++index)
             {
-                var h = m_Handles[index];
+                var h = currentHandles[index];
                 if (h.IsVarFunction())
                 {
-                    int argc;
-                    string varName;
-                    ParseVarFunction(m_Sheet, m_Handles, ref index, out argc, out varName);
+                    ParseVarFunction(currentSheet, currentHandles, ref index, out var argc, out var varName);
                     result = ResolveVariable(varName);
 
                     if (result == Result.NotFound)
@@ -268,9 +275,9 @@ namespace UnityEngine.UIElements
                         // Nested fallback like : var(--unknown, var(--unknown2, 10px))
                         if (argc > 1)
                         {
-                            h = m_Handles[++index];
+                            h = currentHandles[++index];
                             Debug.Assert(h.valueType == StyleValueType.CommaSeparator, $"Unexpected value type {h.valueType} in var function");
-                            if (h.valueType == StyleValueType.CommaSeparator && index + 1 < m_Handles.Length)
+                            if (h.valueType == StyleValueType.CommaSeparator && index + 1 < currentHandles.Length)
                             {
                                 ++index;
                                 result = ResolveFallback(ref index);
@@ -280,8 +287,7 @@ namespace UnityEngine.UIElements
                 }
                 else
                 {
-                    var spv = new StylePropertyValue() { sheet = m_Sheet, handle = h};
-                    result = ValidateResolve(spv);
+                    m_ResolvedValues.Add(new StylePropertyValue() { sheet = currentSheet, handle = h});
                 }
             }
 

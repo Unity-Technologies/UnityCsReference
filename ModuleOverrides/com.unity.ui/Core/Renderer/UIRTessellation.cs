@@ -11,6 +11,7 @@ namespace UnityEngine.UIElements.UIR
     internal static class Tessellation
     {
         internal static float kEpsilon = 0.001f;
+        internal static float kUnusedArc = -9999.9f; // An unlikely value used for arcs, radius is normalized at 1.0f
         internal static UInt16 kSubdivisions = 6;
 
         static ProfilerMarker s_MarkerTessellateRect = new ProfilerMarker("TessellateRect");
@@ -600,7 +601,7 @@ namespace UnityEngine.UIElements.UIR
             else
                 center = new Vector3(rect.xMin + rect.width / 2, rect.yMin + rect.height / 2, posZ);
 
-            var flags = new Color32(0, 0, 1, colorPage.isValid ? (byte)1 : (byte)0);
+            var flags = new Color32(0, 0, 0, colorPage.isValid ? (byte)1 : (byte)0);
             var page = new Color32(0, 0, colorPage.pageAndID.r, colorPage.pageAndID.g);
             var ids = new Color32(0, 0, 0, colorPage.pageAndID.b);
 
@@ -637,14 +638,12 @@ namespace UnityEngine.UIElements.UIR
 
             var mid = (v0.position + v1.position) / 2.0f;
             var v = center.position - mid;
+            var dist = v.magnitude;
+            float ratio = dist / radius;
 
-            var c = v0.position + v;
-            v0.circle = new Vector4(c.x, c.y, radius, 0.0f);
-
-            c = v1.position + v;
-            v1.circle = new Vector4(c.x, c.y, radius, 0.0f);
-
-            center.circle = new Vector4(center.position.x, center.position.y, radius, 0.0f);
+            center.circle = new Vector4(0.0f, 0.0f, kUnusedArc, kUnusedArc);
+            v0.circle = new Vector4(ratio, 0.0f, kUnusedArc, kUnusedArc);
+            v1.circle = new Vector4(ratio, 0.0f, kUnusedArc, kUnusedArc);
 
             // Set arc flags
             v0.flags.b = 1;
@@ -672,6 +671,10 @@ namespace UnityEngine.UIElements.UIR
             var p2 = new Vector3(rect.x + rect.width, rect.y + rect.height, posZ);
             var p3 = new Vector3(rect.x, rect.y + rect.height, posZ);
 
+            const float kOffset = 2.0f;
+            var size = new Vector2(Mathf.Abs(p1.x - p0.x), Mathf.Abs(p2.y - p1.y));
+            var ratio = new Vector2((size.x + kOffset) / size.x, (size.y + kOffset) / size.y);
+
             // Add offset on smoothed edge to give more space for AA
             var circleP0 = Vector4.zero;
             var circleP1 = Vector4.zero;
@@ -680,24 +683,24 @@ namespace UnityEngine.UIElements.UIR
             switch (smoothedEdge)
             {
                 case Edges.Left:
-                    p0.x -= 1; p3.x -= 1;
-                    circleP0 = circleP1 = new Vector4(p1.x, p1.y, rect.width, 0.0f);
-                    circleP2 = circleP3 = new Vector4(p2.x, p2.y, rect.width, 0.0f);
+                    p0.x -= kOffset; p3.x -= kOffset;
+                    circleP0 = circleP3 = new Vector4(ratio.x, 0.0f, kUnusedArc, kUnusedArc);
+                    circleP1 = circleP2 = new Vector4(0.0f, 0.0f, kUnusedArc, kUnusedArc);
                     break;
                 case Edges.Top:
-                    p0.y -= 1; p1.y -= 1;
-                    circleP0 = circleP3 = new Vector4(p3.x, p3.y, rect.height, 0.0f);
-                    circleP1 = circleP2 = new Vector4(p2.x, p2.y, rect.height, 0.0f);
+                    p0.y -= kOffset; p1.y -= kOffset;
+                    circleP0 = circleP1 = new Vector4(0.0f, ratio.y, kUnusedArc, kUnusedArc);
+                    circleP2 = circleP3 = new Vector4(0.0f, 0.0f, kUnusedArc, kUnusedArc);
                     break;
                 case Edges.Right:
-                    p1.x += 1; p2.x += 1;
-                    circleP0 = circleP1 = new Vector4(p0.x, p0.y, rect.width, 0.0f);
-                    circleP2 = circleP3 = new Vector4(p3.x, p3.y, rect.width, 0.0f);
+                    p1.x += kOffset; p2.x += kOffset;
+                    circleP1 = circleP2 = new Vector4(ratio.x, 0.0f, kUnusedArc, kUnusedArc);
+                    circleP0 = circleP3 = new Vector4(0.0f, 0.0f, kUnusedArc, kUnusedArc);
                     break;
                 case Edges.Bottom:
-                    p2.y += 1; p3.y += 1;
-                    circleP0 = circleP3 = new Vector4(p0.x, p0.y, rect.height, 0.0f);
-                    circleP1 = circleP2 = new Vector4(p1.x, p1.y, rect.height, 0.0f);
+                    p2.y += kOffset; p3.y += kOffset;
+                    circleP2 = circleP3 = new Vector4(0.0f, ratio.y, kUnusedArc, kUnusedArc);
+                    circleP0 = circleP1 = new Vector4(0.0f, 0.0f, kUnusedArc, kUnusedArc);
                     break;
                 default: break;
             }
@@ -750,41 +753,79 @@ namespace UnityEngine.UIElements.UIR
             // Carefully inflate in the direction of the miter diagonal.
             if (smoothedEdge == Edges.Left)
             {
+                var aBackup = a;
+                var bBackup = b;
+
+                a.x -= 2.0f;
+                b.x += 2.0f;
+                c.x += 2.0f;
+                d.x -= 2.0f;
+
+                float width = b.x - a.x;
+                var circleL = new Vector4(width / (rect.width + 2.0f), 0.0f, width / 2.0f, 0.0f);
+                var circleR = Vector4.zero;
+
+                var v0 = new Vertex() { position = a, tint = color, flags = flags, circle = circleL, opacityColorPages = page, ids = ids };
+                var v1 = new Vertex() { position = b, tint = color, flags = flags, circle = circleR, opacityColorPages = page, ids = ids };
+                var v2 = new Vertex() { position = c, tint = color, flags = flags, circle = circleR, opacityColorPages = page, ids = ids };
+                var v3 = new Vertex() { position = d, tint = color, flags = flags, circle = circleL, opacityColorPages = page, ids = ids };
+
+                // Compute the value of "b" with the miter offset, add some extra space, then interpolate the
+                // circle values.
+                a = aBackup;
+                b = bBackup;
                 b.y += miterOffset;
-                var v = (b - a).normalized * 1.4142f;
+                var v = (b - a).normalized * 1.4142f * 2.0f;
                 a -= v;
                 b += v;
-                c.x += 1.0f;
-                d.x -= 1.0f;
 
-                // Arc center is on column x = rect.x + rect.width + 1
-                float x = rect.x + rect.width + 1.0f;
-                float outer = rect.width + 1.0f;
-                float inner = 1.0f;
+                v0.circle = GetInterpolatedCircle(a, ref v0, ref v1, ref v2);
+                v0.position = a;
+                v1.circle = GetInterpolatedCircle(b, ref v0, ref v1, ref v2);
+                v1.position = b;
 
-                mesh.SetNextVertex(new Vertex() { position = a, tint = color, flags = flags, circle = new Vector4(x, a.y, outer, inner), uv = new Vector2(x, a.y), opacityColorPages = page, ids = ids });
-                mesh.SetNextVertex(new Vertex() { position = b, tint = color, flags = flags, circle = new Vector4(x, b.y, outer, inner), uv = new Vector2(x, b.y), opacityColorPages = page, ids = ids });
-                mesh.SetNextVertex(new Vertex() { position = c, tint = color, flags = flags, circle = new Vector4(x, c.y, outer, inner), uv = new Vector2(x, c.y), opacityColorPages = page, ids = ids });
-                mesh.SetNextVertex(new Vertex() { position = d, tint = color, flags = flags, circle = new Vector4(x, d.y, outer, inner), uv = new Vector2(x, d.y), opacityColorPages = page, ids = ids });
+                mesh.SetNextVertex(v0);
+                mesh.SetNextVertex(v1);
+                mesh.SetNextVertex(v2);
+                mesh.SetNextVertex(v3);
             }
             else
             {
+                var aBackup = a;
+                var dBackup = d;
+
+                a.y -= 2.0f;
+                b.y -= 2.0f;
+                c.y += 2.0f;
+                d.y += 2.0f;
+
+                float height = d.y - a.y;
+                var circleT = new Vector4(0.0f, height / (rect.height + 2.0f), 0.0f, height / 2.0f);
+                var circleB = Vector4.zero;
+
+                var v0 = new Vertex() { position = a, tint = color, flags = flags, circle = circleT, opacityColorPages = page, ids = ids };
+                var v1 = new Vertex() { position = b, tint = color, flags = flags, circle = circleT, opacityColorPages = page, ids = ids };
+                var v2 = new Vertex() { position = c, tint = color, flags = flags, circle = circleB, opacityColorPages = page, ids = ids };
+                var v3 = new Vertex() { position = d, tint = color, flags = flags, circle = circleB, opacityColorPages = page, ids = ids };
+
+                // Compute the value of "d" with the miter offset, add some extra space, then interpolate the
+                // circle values.
+                a = aBackup;
+                d = dBackup;
                 d.x += miterOffset;
-                var v = (d - a).normalized * 1.4142f;
+                var v = (d - a).normalized * 1.4142f * 2.0f;
                 a -= v;
                 d += v;
-                b.y -= 1;
-                c.y += 1;
 
-                // Arc center is on row y = rect.y + rect.height + 1
-                float y = rect.y + rect.height + 1.0f;
-                float outer = rect.height + 1.0f;
-                float inner = 1.0f;
+                v0.circle = GetInterpolatedCircle(a, ref v0, ref v1, ref v2);
+                v0.position = a;
+                v3.circle = GetInterpolatedCircle(d, ref v0, ref v1, ref v2);
+                v3.position = d;
 
-                mesh.SetNextVertex(new Vertex() { position = a, tint = color, flags = flags, circle = new Vector4(a.x, y, outer, inner), uv = new Vector2(a.x, y), opacityColorPages = page, ids = ids });
-                mesh.SetNextVertex(new Vertex() { position = b, tint = color, flags = flags, circle = new Vector4(b.x, y, outer, inner), uv = new Vector2(b.x, y), opacityColorPages = page, ids = ids });
-                mesh.SetNextVertex(new Vertex() { position = c, tint = color, flags = flags, circle = new Vector4(c.x, y, outer, inner), uv = new Vector2(c.x, y), opacityColorPages = page, ids = ids });
-                mesh.SetNextVertex(new Vertex() { position = d, tint = color, flags = flags, circle = new Vector4(d.x, y, outer, inner), uv = new Vector2(d.x, y), opacityColorPages = page, ids = ids });
+                mesh.SetNextVertex(v0);
+                mesh.SetNextVertex(v1);
+                mesh.SetNextVertex(v2);
+                mesh.SetNextVertex(v3);
             }
 
             UInt16 currentIndex = vertexCount;
@@ -797,38 +838,6 @@ namespace UnityEngine.UIElements.UIR
 
             vertexCount += 4;
             indexCount += 6;
-        }
-
-        static void FillEllipseData(Vector2 ellipseCenter, Vector2 outerRad, Vector2 innerRad, ref Vertex vertex)
-        {
-            float r = Mathf.Min(outerRad.x, outerRad.y);
-
-            // Position of the POI relative to the center of the elipse
-            var position = (Vector2)vertex.position;
-            Vector2 relativePos = position - ellipseCenter;
-
-            // Center should be offset by r when relativePos = radius (respectively for x and y)
-            var circleCenter = position - relativePos * r / outerRad;
-            vertex.circle = new Vector4(circleCenter.x, circleCenter.y, r, 0.0f);
-
-            // Now, do the same for the inner radius
-            r = Mathf.Min(innerRad.x, innerRad.y);
-            circleCenter = position - relativePos * r / innerRad;
-            vertex.uv = circleCenter;
-            vertex.circle.w = r;
-        }
-
-        static Vector3 GetInterpolatedEllipseData(Vector2 ellipseCenter, Vector2 radius, Vector2 position)
-        {
-            float r = Mathf.Min(radius.x, radius.y);
-
-            // Position of the POI relative to the center of the elipse
-            Vector2 relativePos = position - ellipseCenter;
-
-            // Center should be offset by r when relativePos = radius (respectively for x and y)
-            var circleCenter = position - relativePos * r / radius;
-
-            return new Vector3(circleCenter.x, circleCenter.y, r);
         }
 
         static Vector4 GetInterpolatedCircle(Vector2 p, ref Vertex v0, ref Vertex v1, ref Vertex v2)
@@ -874,8 +883,6 @@ namespace UnityEngine.UIElements.UIR
             var topPage = new Color32(0, 0, topColorPage.pageAndID.r, topColorPage.pageAndID.g);
             var topIds = new Color32(0, 0, 0, topColorPage.pageAndID.b);
 
-            float r = Mathf.Min(radius.x, radius.y); // This is arbitrary since we have a degree of freedom.
-
             var bottomRight = new Vertex();
             var bottomLeft = bottomRight;
             var topLeft = bottomRight;
@@ -886,10 +893,10 @@ namespace UnityEngine.UIElements.UIR
             topLeft.position = new Vector3(center.x - radius.x, center.y - radius.y, posZ);
             topRight.position = new Vector3(center.x, center.y - radius.y, posZ);
 
-            bottomRight.circle = new Vector4(center.x, center.y, r, 0.0f);
-            bottomLeft.circle = new Vector4(center.x - radius.x + r, center.y, r, 0.0f);
-            topLeft.circle = new Vector4(center.x - radius.x + r, center.y - radius.y + r, r, 0.0f);
-            topRight.circle = new Vector4(center.x, center.y - radius.y + r, r, 0.0f);
+            bottomRight.circle = new Vector4(0.0f, 0.0f, kUnusedArc, kUnusedArc);
+            bottomLeft.circle = new Vector4(1.0f, 0.0f, kUnusedArc, kUnusedArc);
+            topLeft.circle = new Vector4(1.0f, 1.0f, kUnusedArc, kUnusedArc);
+            topRight.circle = new Vector4(0.0f, 1.0f, kUnusedArc, kUnusedArc);
 
             if (miterOffset != Vector2.zero)
             {
@@ -960,7 +967,7 @@ namespace UnityEngine.UIElements.UIR
                 indexCount += 6;
                 return;
             }
-            Vector2 innerRadius = new Vector2(outerRadius.x - leftWidth, outerRadius.y - topWidth);
+            var innerRadius = new Vector2(outerRadius.x - leftWidth, outerRadius.y - topWidth);
 
             var leftFlags = new Color32(0, 0, 1, leftColorPage.isValid ? (byte)1 : (byte)0);
             var leftPage = new Color32(0, 0, leftColorPage.pageAndID.r, leftColorPage.pageAndID.g);
@@ -980,10 +987,11 @@ namespace UnityEngine.UIElements.UIR
             topLeft.position = new Vector3(center.x - outerRadius.x, center.y - outerRadius.y, posZ);
             topRight.position = new Vector3(center.x, center.y - outerRadius.y, posZ);
 
-            FillEllipseData(center, outerRadius, innerRadius, ref bottomRight);
-            FillEllipseData(center, outerRadius, innerRadius, ref bottomLeft);
-            FillEllipseData(center, outerRadius, innerRadius, ref topLeft);
-            FillEllipseData(center, outerRadius, innerRadius, ref topRight);
+            var innerRatio = outerRadius / innerRadius;
+            bottomRight.circle = new Vector4(0.0f, 0.0f, 0.0f, 0.0f);
+            bottomLeft.circle = new Vector4(1.0f, 0.0f, innerRatio.x, 0.0f);
+            topLeft.circle = new Vector4(1.0f, 1.0f, innerRatio.x, innerRatio.y);
+            topRight.circle = new Vector4(0.0f, 1.0f, 0.0f, innerRatio.y);
 
             var topLeft2 = topLeft;
             var bottomRight2 = bottomRight;
@@ -1047,12 +1055,7 @@ namespace UnityEngine.UIElements.UIR
                 {
                     var vertex = vertices[vertexStart + i];
                     vertex.position.x = rect.xMax - (vertex.position.x - rect.xMax);
-                    vertex.circle.x = rect.xMax - (vertex.circle.x - rect.xMax);
-                    if (vertex.circle.w > kEpsilon)
-                        // UV stores inner-circle's center
-                        vertex.uv.x = rect.xMax - (vertex.uv.x - rect.xMax);
-                    else
-                        vertex.uv.x = -vertex.uv.x;
+                    vertex.uv.x = -vertex.uv.x;
                     vertices[vertexStart + i] = vertex;
                 }
             }
@@ -1062,12 +1065,7 @@ namespace UnityEngine.UIElements.UIR
                 {
                     var vertex = vertices[vertexStart + i];
                     vertex.position.y = rect.yMax - (vertex.position.y - rect.yMax);
-                    vertex.circle.y = rect.yMax - (vertex.circle.y - rect.yMax);
-                    if (vertex.circle.w > kEpsilon)
-                        // UV stores inner-circle's center
-                        vertex.uv.y = rect.yMax - (vertex.uv.y - rect.yMax);
-                    else
-                        vertex.uv.y = -vertex.uv.y;
+                    vertex.uv.y = -vertex.uv.y;
                     vertices[vertexStart + i] = vertex;
                 }
             }

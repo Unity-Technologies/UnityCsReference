@@ -613,32 +613,42 @@ namespace UnityEditor.UIElements
 
                     if (enumType != null && enumType.IsDefined(typeof(FlagsAttribute), false))
                     {
+                        // We should use property.longValue instead of intValue once long enum types are supported.
                         var enumData = EnumDataUtility.GetCachedEnumData(enumType);
                         if (originalField != null && originalField is EnumFlagsField enumFlagsField)
                         {
                             enumFlagsField.choices = enumData.displayNames.ToList();
                             enumFlagsField.value = (Enum)Enum.ToObject(enumType, property.intValue);
                         }
-                        return ConfigureField<EnumFlagsField, Enum>(originalField as EnumFlagsField, property, () => new EnumFlagsField
-                        {
-                            choices = enumData.displayNames.ToList(),
-                            value = (Enum)Enum.ToObject(enumType, property.intValue)
-                        });
+                        return ConfigureField<EnumFlagsField, Enum>(originalField as EnumFlagsField, property,
+                            () => new EnumFlagsField
+                            {
+                                choices = enumData.displayNames.ToList(),
+                                value = (Enum)Enum.ToObject(enumType, property.intValue)
+                            });
                     }
                     else
                     {
-                        var popupEntries = enumType != null
-                            ? EnumDataUtility.GetCachedEnumData(enumType).displayNames.ToList()
-                            : property.enumDisplayNames.ToList();
+                        // We need to use property.enumDisplayNames[property.enumValueIndex] as the source of truth for
+                        // the popup index, because enumData.displayNames and property.enumDisplayNames might not be
+                        // in the same order.
+                        var enumData = enumType != null ? (EnumData?)EnumDataUtility.GetCachedEnumData(enumType) : null;
+                        var propertyDisplayNames = EditorGUI.EnumNamesCache.GetEnumDisplayNames(property);
+                        var popupEntries = (enumData?.displayNames ?? propertyDisplayNames).ToList();
                         if (originalField != null && originalField is PopupField<string> popupField)
                         {
                             popupField.choices = popupEntries;
-                            popupField.index = property.enumValueIndex;
+                            popupField.index = enumData != null
+                                ? Array.IndexOf(enumData.Value.displayNames, propertyDisplayNames[property.enumValueIndex])
+                                : property.enumValueIndex;
                         }
-                        return ConfigureField<PopupField<string>, string>(originalField as PopupField<string>, property, () => new PopupField<string>(popupEntries, property.enumValueIndex)
-                        {
-                            index = property.enumValueIndex
-                        });
+                        return ConfigureField<PopupField<string>, string>(originalField as PopupField<string>, property,
+                            () => new PopupField<string>(popupEntries, property.enumValueIndex)
+                            {
+                                index = enumData != null
+                                    ? Array.IndexOf(enumData.Value.displayNames, propertyDisplayNames[property.enumValueIndex])
+                                    : property.enumValueIndex
+                            });
                     }
                 }
                 case SerializedPropertyType.Vector2:

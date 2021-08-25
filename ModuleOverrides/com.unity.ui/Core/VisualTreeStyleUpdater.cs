@@ -75,7 +75,11 @@ namespace UnityEngine.UIElements
         public VisualTreeStyleUpdaterTraversal traversal
         {
             get => m_StyleContextHierarchyTraversal;
-            set => m_StyleContextHierarchyTraversal = value;
+            set
+            {
+                m_StyleContextHierarchyTraversal = value;
+                panel?.visualTree.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Layout | VersionChangeType.Transform);
+            }
         }
 
         private static readonly string s_Description = "Update Style";
