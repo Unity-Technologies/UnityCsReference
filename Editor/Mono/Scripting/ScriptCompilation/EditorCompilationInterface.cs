@@ -387,6 +387,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
+        public static EditorCompilation.TargetAssemblyInfo[] GetCompatibleTargetAssemblyInfos(EditorScriptCompilationOptions definesOptions, BuildTargetGroup platformGroup, BuildTarget platform, string[] extraScriptingDefines)
+        {
+            var scriptAssemblySettings = Instance.CreateScriptAssemblySettings(platformGroup, platform, definesOptions, extraScriptingDefines);
+            return Instance.GetTargetAssemblyInfos(scriptAssemblySettings);
+        }
+
+        [RequiredByNativeCode]
         public static EditorCompilation.TargetAssemblyInfo GetTargetAssembly(string scriptPath)
         {
             return Instance.GetTargetAssembly(scriptPath);

@@ -408,7 +408,11 @@ namespace UnityEngine
             get
             {
                 RuntimePlatform platform = Application.platform;
-                return platform == RuntimePlatform.PS4
+                return platform == RuntimePlatform.GameCoreXboxOne
+                    || platform == RuntimePlatform.GameCoreXboxSeries
+                    || platform == RuntimePlatform.PS4
+                    || platform == RuntimePlatform.PS5
+                    || platform == RuntimePlatform.Switch
                     || platform == RuntimePlatform.XboxOne;
             }
         }

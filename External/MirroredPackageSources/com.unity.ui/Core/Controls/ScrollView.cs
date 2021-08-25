@@ -671,7 +671,7 @@ namespace UnityEngine.UIElements
                 direction = -1f;
             }
 
-            if (Mathf.Abs(delta) < Mathf.Epsilon)
+            if (Mathf.Abs(delta) < UIRUtility.k_Epsilon)
             {
                 return initialScrollOffset;
             }
@@ -909,8 +909,8 @@ namespace UnityEngine.UIElements
 
         void UpdateScrollers(bool displayHorizontal, bool displayVertical)
         {
-            float horizontalFactor = contentContainer.layout.width > Mathf.Epsilon ? contentViewport.layout.width / contentContainer.layout.width : 1f;
-            float verticalFactor = contentContainer.layout.height > Mathf.Epsilon ? contentViewport.layout.height / contentContainer.layout.height : 1f;
+            float horizontalFactor = contentContainer.layout.width > UIRUtility.k_Epsilon ? contentViewport.layout.width / contentContainer.layout.width : 1f;
+            float verticalFactor = contentContainer.layout.height > UIRUtility.k_Epsilon ? contentViewport.layout.height / contentContainer.layout.height : 1f;
 
             horizontalScroller.Adjust(horizontalFactor);
             verticalScroller.Adjust(verticalFactor);

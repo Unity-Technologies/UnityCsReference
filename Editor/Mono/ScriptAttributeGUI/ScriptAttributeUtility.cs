@@ -241,16 +241,6 @@ namespace UnityEditor
             return GetFieldInfoFromPropertyPath(classType, fieldPath, out type);
         }
 
-        private static Type GetManagedReferenceTypeHostForField(SerializedProperty property)
-        {
-            if (!property.isReferencingAManagedReferenceField)
-                throw new ArgumentException("Property not referencing an element of a polymorphic instance");
-
-            var objectTypename = property.GetFullyQualifiedTypenameForCurrentTypeTreeInternal();
-
-            return Type.GetType(objectTypename);
-        }
-
         /// <summary>
         /// Returns the field info and type for the property. Contrary to GetFieldInfoAndStaticTypeFromProperty,
         /// when confronted with a managed reference the dynamic instance type is returned.

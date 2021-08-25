@@ -14,6 +14,7 @@ namespace UnityEditor.Build.Content
     [StructLayout(LayoutKind.Sequential)]
     public struct BuildUsageTagGlobal
     {
+        // Ensure changes here match changes in Runtime/Serialize/BuildUsageTags.h
         internal uint m_LightmapModesUsed;
         internal uint m_LegacyLightmapModesUsed;
         internal uint m_DynamicLightmapsUsed;
@@ -23,6 +24,8 @@ namespace UnityEditor.Build.Content
         internal bool m_ShadowMasksUsed;
         internal bool m_SubtractiveUsed;
         internal bool m_HybridRendererPackageUsed;
+        internal bool m_BuildForLivelink;
+        internal bool m_BuildForServer;
 
         public static BuildUsageTagGlobal operator|(BuildUsageTagGlobal x, BuildUsageTagGlobal y)
         {
@@ -36,6 +39,8 @@ namespace UnityEditor.Build.Content
             results.m_ShadowMasksUsed = x.m_ShadowMasksUsed | y.m_ShadowMasksUsed;
             results.m_SubtractiveUsed = x.m_SubtractiveUsed | y.m_SubtractiveUsed;
             results.m_HybridRendererPackageUsed = x.m_HybridRendererPackageUsed | y.m_HybridRendererPackageUsed;
+            results.m_BuildForLivelink = x.m_BuildForLivelink | y.m_BuildForLivelink;
+            results.m_BuildForServer = x.m_BuildForServer | y.m_BuildForServer;
             return results;
         }
     }
