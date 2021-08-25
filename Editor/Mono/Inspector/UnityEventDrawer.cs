@@ -92,7 +92,7 @@ namespace UnityEditorInternal
 
                 SerializedProperty listenersArray = prop.FindPropertyRelative("m_PersistentCalls.m_Calls");
                 state.m_ReorderableList =
-                    new ReorderableList(prop.serializedObject, listenersArray, false, true, true, true)
+                    new ReorderableList(prop.serializedObject, listenersArray, true, true, true, true)
                 {
                     drawHeaderCallback = DrawEventHeader,
                     drawElementCallback = DrawEvent,
@@ -400,52 +400,10 @@ namespace UnityEditorInternal
             if (tgtobj == null)
                 return new UnityEvent();
 
-            UnityEventBase ret = null;
-            Type ft = tgtobj.GetType();
-            var bindflags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-            do
-            {
-                ret = GetDummyEventHelper(prop.propertyPath, ft, bindflags);
-                //no need to look for public members again since the base type covered that
-                bindflags = BindingFlags.Instance | BindingFlags.NonPublic;
-                ft = ft.BaseType;
-            }
-            while (ret == null && ft != null);
-            // go up the class hierarchy if it exists and the property is not found on the child
-            return (ret == null) ? new UnityEvent() : ret;
-        }
-
-        private static UnityEventBase GetDummyEventHelper(string propPath, Type targetObjectType, BindingFlags flags)
-        {
-            if (targetObjectType == null)
-                return null;
-            while (propPath.Length != 0)
-            {
-                //we could have a leftover '.' if the previous iteration handled an array element
-                if (propPath.StartsWith(kDotString))
-                    propPath = propPath.Substring(1);
-
-                var splits = propPath.Split(kDotSeparator, 2);
-                var newField = targetObjectType.GetField(splits[0], flags);
-                if (newField == null)
-                    return GetDummyEventHelper(propPath, targetObjectType.BaseType, flags);
-
-                targetObjectType = newField.FieldType;
-                if (targetObjectType.IsArrayOrList())
-                    targetObjectType = targetObjectType.GetArrayOrListElementType();
-
-                //the last item in the property path could have been an array element
-                //bail early in that case
-                if (splits.Length == 1)
-                    break;
-
-                propPath = splits[1];
-                if (propPath.StartsWith(kArrayDataString))
-                    propPath = propPath.Split(kClosingSquareBraceSeparator, 2)[1];
-            }
-            if (targetObjectType.IsSubclassOf(typeof(UnityEventBase)))
-                return Activator.CreateInstance(targetObjectType) as UnityEventBase;
-            return null;
+            ScriptAttributeUtility.GetFieldInfoAndStaticTypeFromProperty(prop, out var propType);
+            if (propType.IsSubclassOf(typeof(UnityEventBase)))
+                return Activator.CreateInstance(propType) as UnityEventBase;
+            return new UnityEvent();
         }
 
         struct ValidMethodMap

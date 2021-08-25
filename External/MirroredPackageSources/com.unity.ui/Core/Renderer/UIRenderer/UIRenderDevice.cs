@@ -624,8 +624,8 @@ namespace UnityEngine.UIElements.UIR
             Matrix4x4 matProj = Utility.GetUnityProjectionMatrix();
             Matrix4x4 matVPInv = (matProj * drawParams.view.Peek().transform).inverse;
             Vector3 v = matVPInv.MultiplyVector(new Vector3(_PixelClipInvView.x, _PixelClipInvView.y));
-            _PixelClipInvView.z = 1 / (Mathf.Abs(v.x) + Mathf.Epsilon);
-            _PixelClipInvView.w = 1 / (Mathf.Abs(v.y) + Mathf.Epsilon);
+            _PixelClipInvView.z = 1 / (Mathf.Abs(v.x) + UIRUtility.k_Epsilon);
+            _PixelClipInvView.w = 1 / (Mathf.Abs(v.y) + UIRUtility.k_Epsilon);
 
             props.SetVector(s_PixelClipInvViewPropID, _PixelClipInvView);
         }

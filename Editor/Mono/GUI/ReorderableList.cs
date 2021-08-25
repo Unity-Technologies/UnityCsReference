@@ -141,7 +141,7 @@ namespace UnityEditorInternal
             public GUIContent iconToolbarMinus = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove selection from the list");
             public readonly GUIStyle draggingHandle = "RL DragHandle";
             public readonly GUIStyle headerBackground = "RL Header";
-            private readonly GUIStyle emptyHeaderBackground = "RL Empty Header";
+            public readonly GUIStyle emptyHeaderBackground = "RL Empty Header";
             public readonly GUIStyle footerBackground = "RL Footer";
             public readonly GUIStyle boxBackground = "RL Background";
             public readonly GUIStyle preButton = "RL FooterButton";
@@ -250,8 +250,6 @@ namespace UnityEditorInternal
                     {
                         list.serializedProperty.GetArrayElementAtIndex(list.index).objectReferenceValue = value;
                     }
-
-                    list.serializedProperty.serializedObject.ApplyModifiedProperties();
                 }
                 else
                 {
@@ -315,7 +313,6 @@ namespace UnityEditorInternal
                                 currentProperty = nextProperty;
                             }
                         }
-                        list.serializedProperty.serializedObject.ApplyModifiedProperties();
                     }
                     else
                     {
@@ -385,12 +382,7 @@ namespace UnityEditorInternal
                     EditorGUIUtility.labelWidth = FieldLabelSize(rect, prop);
 
                     var handler = ScriptAttributeUtility.GetHandler(prop);
-                    EditorGUI.BeginChangeCheck();
                     handler.OnGUI(rect, prop, null, true);
-                    if (EditorGUI.EndChangeCheck())
-                    {
-                        prop.serializedObject.ApplyModifiedProperties();
-                    }
 
                     EditorGUIUtility.labelWidth = oldLabelWidth;
                     if (Event.current.type == EventType.ContextClick && rect.Contains(Event.current.mousePosition)) Event.current.Use();
@@ -969,6 +961,7 @@ namespace UnityEditorInternal
                         {
                             ClearCacheRecursive();
                             CacheIfNeeded();
+                            InspectorWindow.RepaintAllInspectors();
                             if ((m_Count = count) >= i) break;
                         }
                         m_PropertyCache[i].lastControlCount = currentControlCount;
@@ -1248,7 +1241,6 @@ namespace UnityEditorInternal
 
                                 // if we are working with Serialized Properties, we can handle it for you
                                 m_Elements.MoveArrayElement(index, targetIndex);
-                                m_SerializedObject.ApplyModifiedPropertiesWithoutUndo();
                             }
                             else if (m_ElementList != null)
                             {

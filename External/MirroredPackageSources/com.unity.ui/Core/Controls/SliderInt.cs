@@ -141,7 +141,7 @@ namespace UnityEngine.UIElements
             else
             {
                 var totalRange = sliderLength - dragElementLength;
-                if (Mathf.Abs(totalRange) < Mathf.Epsilon)
+                if (Mathf.Abs(totalRange) < UIRUtility.k_Epsilon)
                     return;
 
                 var adjustedPageDirection = (int)pageSize;

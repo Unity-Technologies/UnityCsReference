@@ -21,15 +21,18 @@ namespace UnityEditor
             }
 
             [NativeProperty("MacAppStoreCategory")]
-            extern internal static string applicationCategoryType  { get; set; }
+            public extern static string applicationCategoryType  { get; set; }
 
-            // these two are internal because we are not yet sure if we want to have them back in general PlayerSettings
+            // these three WERE internal because we are not yet sure if we want to have them back in general PlayerSettings
             // as we have several platforms that might want to use it
             [NativeProperty("CameraUsageDescription")]
-            internal extern static string cameraUsageDescription { get; set; }
+            public extern static string cameraUsageDescription { get; set; }
 
             [NativeProperty("MicrophoneUsageDescription")]
-            internal extern static string microphoneUsageDescription { get; set; }
+            public extern static string microphoneUsageDescription { get; set; }
+
+            [NativeProperty("BluetoothUsageDescription")]
+            public extern static string bluetoothUsageDescription { get; set; }
         }
     }
 }

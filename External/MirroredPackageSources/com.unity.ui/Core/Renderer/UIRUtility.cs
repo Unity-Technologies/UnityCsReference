@@ -5,6 +5,10 @@ namespace UnityEngine.UIElements
         public static readonly string k_DefaultShaderName = UIR.Shaders.k_Runtime;
         public static readonly string k_DefaultWorldSpaceShaderName = UIR.Shaders.k_RuntimeWorld;
 
+        // We provide our own epsilon to avoid issues such as case 1335430. Some native plugin
+        // disable float-denormalization, which can lead to the wrong Mathf.Epsilon being used.
+        public const float k_Epsilon = 1.0E-30f;
+
         public const float k_ClearZ = 0.99f; // At the far plane like standard Unity rendering
         public const float k_MeshPosZ = 0.0f; // The correct z value to use to draw a shape
         public const float k_MaskPosZ = 1.0f; // The correct z value to use to mark a clipping shape
@@ -17,10 +21,10 @@ namespace UnityEngine.UIElements
         public static bool IsRoundRect(VisualElement ve)
         {
             var style = ve.resolvedStyle;
-            return !(style.borderTopLeftRadius < Mathf.Epsilon &&
-                style.borderTopRightRadius < Mathf.Epsilon &&
-                style.borderBottomLeftRadius < Mathf.Epsilon &&
-                style.borderBottomRightRadius < Mathf.Epsilon);
+            return !(style.borderTopLeftRadius < k_Epsilon &&
+                style.borderTopRightRadius < k_Epsilon &&
+                style.borderBottomLeftRadius < k_Epsilon &&
+                style.borderBottomRightRadius < k_Epsilon);
         }
 
         public static void Multiply2D(this Quaternion rotation, ref Vector2 point)

@@ -1105,6 +1105,9 @@
     <Compile Include="..\..\Modules\AssetBundle\Managed\AssetBundleCreateRequest.bindings.cs">
       <Link>Modules\AssetBundle\Managed\AssetBundleCreateRequest.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\AssetBundle\Managed\AssetBundleLoadingCache.bindings.cs">
+      <Link>Modules\AssetBundle\Managed\AssetBundleLoadingCache.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\AssetBundle\Managed\AssetBundleManifest.bindings.cs">
       <Link>Modules\AssetBundle\Managed\AssetBundleManifest.bindings.cs</Link>
     </Compile>
