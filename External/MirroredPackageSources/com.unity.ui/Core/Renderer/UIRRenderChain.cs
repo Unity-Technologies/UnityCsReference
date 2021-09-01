@@ -226,6 +226,13 @@ namespace UnityEngine.UIElements.UIR
                 RenderChainStaticIndexAllocator.FreeIndex(m_StaticIndex);
             m_StaticIndex = -1;
 
+            var ve = GetFirstElementInPanel(m_FirstCommand?.owner);
+            while (ve != null)
+            {
+                ResetTextures(ve);
+                ve = ve.renderChainData.next;
+            }
+
             UIRUtility.Destroy(m_DefaultMat);
             UIRUtility.Destroy(m_DefaultWorldSpaceMat);
             m_DefaultMat = m_DefaultWorldSpaceMat = null;

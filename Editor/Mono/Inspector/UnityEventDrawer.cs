@@ -11,6 +11,7 @@ using UnityEngine;
 using UnityEditor;
 using UnityEngine.Events;
 using Object = UnityEngine.Object;
+using UnityEngine.Pool;
 
 namespace UnityEditorInternal
 {
@@ -393,7 +394,7 @@ namespace UnityEditorInternal
             m_LastSelectedIndex = list.index;
         }
 
-        static UnityEventBase GetDummyEvent(SerializedProperty prop)
+        internal static UnityEventBase GetDummyEvent(SerializedProperty prop)
         {
             //Use the SerializedProperty path to iterate through the fields of the inspected targetObject
             Object tgtobj = prop.serializedObject.targetObject;
@@ -475,7 +476,7 @@ namespace UnityEditorInternal
             return dummyEvent.FindMethod(methodName, uObject.GetType(), modeEnum, argumentType) != null;
         }
 
-        static GenericMenu BuildPopupList(Object target, UnityEventBase dummyEvent, SerializedProperty listener)
+        internal static GenericMenu BuildPopupList(Object target, UnityEventBase dummyEvent, SerializedProperty listener)
         {
             //special case for components... we want all the game objects targets there!
             var targetToUse = target;
@@ -504,28 +505,54 @@ namespace UnityEditorInternal
             MethodInfo delegateMethod = delegateType.GetMethod("Invoke");
             var delegateArgumentsTypes = delegateMethod.GetParameters().Select(x => x.ParameterType).ToArray();
 
-            GeneratePopUpForType(menu, targetToUse, false, listener, delegateArgumentsTypes);
+            var duplicateNames = DictionaryPool<string, int>.Get();
+            var duplicateFullNames = DictionaryPool<string, int>.Get();
+
+            GeneratePopUpForType(menu, targetToUse, targetToUse.GetType().Name, listener, delegateArgumentsTypes);
+            duplicateNames[targetToUse.GetType().Name] = 0;
             if (targetToUse is GameObject)
             {
                 Component[] comps = (targetToUse as GameObject).GetComponents<Component>();
-                var duplicateNames = comps.Where(c => c != null).Select(c => c.GetType().Name).GroupBy(x => x).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
+
+                // Collect all the names and record how many times the same name is used.
+                foreach (Component comp in comps)
+                {
+                    var duplicateIndex = 0;
+                    if (duplicateNames.TryGetValue(comp.GetType().Name, out duplicateIndex))
+                        duplicateIndex++;
+                    duplicateNames[comp.GetType().Name] = duplicateIndex;
+                }
+
                 foreach (Component comp in comps)
                 {
                     if (comp == null)
                         continue;
 
-                    GeneratePopUpForType(menu, comp, duplicateNames.Contains(comp.GetType().Name), listener, delegateArgumentsTypes);
-                }
-            }
+                    var compType = comp.GetType();
+                    string targetName = compType.Name;
+                    int duplicateIndex = 0;
 
+                    // Is this name used multiple times? If so then use the full name plus an index if there are also duplicates of this. (case 1309997)
+                    if (duplicateNames[compType.Name] > 0)
+                    {
+                        if (duplicateFullNames.TryGetValue(compType.FullName, out duplicateIndex))
+                            targetName = $"{compType.FullName} ({duplicateIndex})";
+                        else
+                            targetName = compType.FullName;
+                    }
+                    GeneratePopUpForType(menu, comp, targetName, listener, delegateArgumentsTypes);
+                    duplicateFullNames[compType.FullName] = duplicateIndex + 1;
+                }
+
+                DictionaryPool<string, int>.Release(duplicateNames);
+                DictionaryPool<string, int>.Release(duplicateFullNames);
+            }
             return menu;
         }
 
-        private static void GeneratePopUpForType(GenericMenu menu, Object target, bool useFullTargetName, SerializedProperty listener, Type[] delegateArgumentsTypes)
+        private static void GeneratePopUpForType(GenericMenu menu, Object target, string targetName, SerializedProperty listener, Type[] delegateArgumentsTypes)
         {
             var methods = new List<ValidMethodMap>();
-            string targetName = useFullTargetName ? target.GetType().FullName : target.GetType().Name;
-
             bool didAddDynamic = false;
 
             // skip 'void' event defined on the GUI as we have a void prebuilt type!
