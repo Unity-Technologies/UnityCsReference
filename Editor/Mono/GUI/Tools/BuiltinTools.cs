@@ -55,16 +55,25 @@ namespace UnityEditor
             if (!StageUtility.IsGameObjectRenderedByCamera(Selection.activeTransform.gameObject, Camera.current))
                 return;
 
-            bool isStatic = (!Tools.s_Hidden && EditorApplication.isPlaying && GameObjectUtility.ContainsStatic(Selection.gameObjects));
-            using (new EditorGUI.DisabledScope(isStatic))
+            bool isDisabled = ShouldToolGUIBeDisabled();
+            using (new EditorGUI.DisabledScope(isDisabled))
             {
                 Vector3 handlePosition = Tools.handlePosition;
-                ToolGUI(view, handlePosition, isStatic);
+                ToolGUI(view, handlePosition, isDisabled);
                 Handles.ShowStaticLabelIfNeeded(handlePosition);
             }
         }
 
         protected abstract void ToolGUI(SceneView view, Vector3 handlePosition, bool isStatic);
+        protected virtual bool ShouldToolGUIBeDisabled()
+        {
+            if (EditorApplication.isPlaying && !Tools.s_Hidden)
+            {
+                var selectedGameObjects = Selection.gameObjects;
+                return GameObjectUtility.ContainsMainStageGameObjects(selectedGameObjects) && GameObjectUtility.ContainsStatic(selectedGameObjects);
+            }
+            return false;
+        }
     }
 
     static class ManipulationToolUtility

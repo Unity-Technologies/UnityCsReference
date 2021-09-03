@@ -30,6 +30,8 @@ namespace UnityEditor.UIElements
         // This property to alleviate the fact we have to cast all the time
         TextValueInput textValueInput => (TextValueInput)textInputBase;
 
+        private BaseFieldMouseDragger m_Dragger;
+
         protected abstract string ValueToString(TValueType value);
         protected abstract TValueType StringToValue(string str);
 
@@ -46,6 +48,7 @@ namespace UnityEditor.UIElements
             : base(label, maxLength, Char.MinValue, textValueInput)
         {
             SetValueWithoutNotify(default(TValueType));
+            onIsReadOnlyChanged += OnIsReadOnlyChanged;
         }
 
         public abstract void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, TValueType startValue);
@@ -70,12 +73,25 @@ namespace UnityEditor.UIElements
             }
         }
 
+        private void OnIsReadOnlyChanged(bool newValue)
+        {
+            EnableLabelDragger(!newValue);
+        }
 
         protected void AddLabelDragger<TDraggerType>()
         {
-            var dragger = new FieldMouseDragger<TDraggerType>((IValueField<TDraggerType>) this);
-            dragger.SetDragZone(labelElement);
-            labelElement.AddToClassList(labelDraggerVariantUssClassName);
+            m_Dragger = new FieldMouseDragger<TDraggerType>((IValueField<TDraggerType>) this);
+            EnableLabelDragger(!isReadOnly);
+        }
+
+        private void EnableLabelDragger(bool enable)
+        {
+            if (m_Dragger != null)
+            {
+                m_Dragger.SetDragZone(enable ? labelElement : null);
+
+                labelElement.EnableInClassList(labelDraggerVariantUssClassName, enable);
+            }
         }
 
         public override void SetValueWithoutNotify(TValueType newValue)

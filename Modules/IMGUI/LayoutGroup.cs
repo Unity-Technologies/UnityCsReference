@@ -49,6 +49,8 @@ namespace UnityEngine
         public override int marginTop => m_MarginTop;
         public override int marginBottom => m_MarginBottom;
 
+        private static readonly GUILayoutEntry none = new GUILayoutEntry(0, 1, 0, 1, GUIStyle.none);
+
         public GUILayoutGroup() : base(0, 0, 0, 0, GUIStyle.none) {}
 
         public GUILayoutGroup(GUIStyle _style, GUILayoutOption[] options) : base(0, 0, 0, 0, _style)
@@ -123,7 +125,9 @@ namespace UnityEngine
                 return e;
             }
 
-            throw new ArgumentException("Getting control " + m_Cursor + "'s position in a group with only " + entries.Count + " controls when doing " + Event.current.rawType + "\nAborting");
+            if (Event.current.type == EventType.Repaint)
+                throw new ArgumentException("Getting control " + m_Cursor + "'s position in a group with only " + entries.Count + " controls when doing " + Event.current.rawType + "\nAborting");
+            return none;
         }
 
         //* undocumented

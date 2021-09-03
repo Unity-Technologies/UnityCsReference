@@ -39,6 +39,8 @@ namespace UnityEditor
         const float kValueFieldWidth = 200.0f;
         const float kArrayValuePopupBtnWidth = 25.0f;
 
+        private static bool s_PropertiesUnfolded = true;
+
         internal class Styles
         {
             public static Texture2D errorIcon = EditorGUIUtility.LoadIcon("console.erroricon.sml");
@@ -185,13 +187,16 @@ namespace UnityEditor
         private static void ShowShaderProperties(Shader s)
         {
             GUILayout.Space(kSpace);
-            GUILayout.Label("Properties:", EditorStyles.boldLabel);
-            int n = s.GetPropertyCount();
-            for (int i = 0; i < n; ++i)
+            s_PropertiesUnfolded = EditorGUILayout.Foldout(s_PropertiesUnfolded, "Properties");
+            if (s_PropertiesUnfolded)
             {
-                string pname = s.GetPropertyName(i);
-                string pdesc = s.GetPropertyDescription(i) + " (" + s.GetPropertyType(i) + ")";
-                EditorGUILayout.LabelField(pname, pdesc);
+                int n = s.GetPropertyCount();
+                for (int i = 0; i < n; ++i)
+                {
+                    string pname = s.GetPropertyName(i);
+                    string pdesc = s.GetPropertyDescription(i) + " (" + s.GetPropertyType(i) + ")";
+                    EditorGUILayout.LabelField(pname, pdesc);
+                }
             }
         }
 

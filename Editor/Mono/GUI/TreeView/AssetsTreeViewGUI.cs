@@ -19,12 +19,22 @@ namespace UnityEditor
         const float k_IconOverlayPadding = 7f;
 
         internal static ScalableGUIContent s_OpenFolderIcon = new ScalableGUIContent(null, null, EditorResources.openedFolderIconName);
+        internal static ScalableGUIContent s_EmptyFolderIcon = new ScalableGUIContent(null, null, EditorResources.emptyFolderIconName);
 
         internal static Texture2D openFolderTexture
         {
             get
             {
                 GUIContent folderContent = s_OpenFolderIcon;
+                return folderContent.image as Texture2D;
+            }
+        }
+
+        internal static Texture2D emptyFolderTexture
+        {
+            get
+            {
+                GUIContent folderContent = s_EmptyFolderIcon;
                 return folderContent.image as Texture2D;
             }
         }
@@ -147,11 +157,13 @@ namespace UnityEditor
                 icon = AssetDatabase.GetCachedIcon(path);
             }
 
-            AssetsTreeViewDataSource.FolderTreeItemBase folderItem = item as AssetsTreeViewDataSource.FolderTreeItemBase;
-
-            if (folderItem != null && m_TreeView.data.IsExpanded(folderItem))
+            var folderItem = item as AssetsTreeViewDataSource.FolderTreeItemBase;
+            if (folderItem != null)
             {
-                icon = openFolderTexture;
+                if (folderItem.IsEmpty)
+                    icon = emptyFolderTexture;
+                else if (m_TreeView.data.IsExpanded(folderItem))
+                    icon = openFolderTexture;
             }
 
             return icon;

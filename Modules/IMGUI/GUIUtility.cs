@@ -351,7 +351,8 @@ namespace UnityEngine
 
         internal static bool HitTest(Rect rect, Vector2 point, bool isDirectManipulationDevice)
         {
-            int offset = isDirectManipulationDevice ? 3 : 0;
+            // Increased picking zone for touch is reverted following this bug 1272071, it seems too impactful for pen user at the moment, need to add this when being able to differentiate between Pen and Finger
+            int offset = 0; // isDirectManipulationDevice ? 3 : 0;
             return HitTest(rect, point, offset);
         }
 

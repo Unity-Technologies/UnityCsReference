@@ -81,10 +81,19 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Calls the methods in its invocation list when <see cref="isReadOnly"/> changes.
+        /// </summary>
+        protected event Action<bool> onIsReadOnlyChanged;
+
         public bool isReadOnly
         {
             get { return m_TextInputBase.isReadOnly; }
-            set { m_TextInputBase.isReadOnly = value; }
+            set
+            {
+                m_TextInputBase.isReadOnly = value;
+                onIsReadOnlyChanged?.Invoke(value);
+            }
         }
 
         // Password field (indirectly lossy behaviour when activated via multiline)
