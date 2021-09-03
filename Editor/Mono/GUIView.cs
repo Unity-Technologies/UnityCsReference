@@ -104,10 +104,20 @@ namespace UnityEditor
         // Call into C++ here to move the underlying NSViews around
         internal override void SetWindow(ContainerWindow win)
         {
-            base.SetWindow(win);
+            ContainerWindow oldWindow = this.window;
+            base.SetWindow(win); // Sets this.window(m_Window) to win
             Internal_Init(m_DepthBufferBits, m_AntiAliasing);
-            if (win)
+            if (!win)
+            {
+                // Tell the native ContainerWindow we were attached to that we
+                // are no longer attached to it.
+                Internal_UnsetWindow(oldWindow);
+            }
+            else
+            {
                 Internal_SetWindow(win);
+            }
+
             Internal_SetAutoRepaint(m_AutoRepaintOnSceneChange);
             Internal_SetPosition(windowPosition);
             Internal_SetWantsMouseMove(m_EventInterests.wantsMouseMove);

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
+using Unity.Profiling;
 
 namespace UnityEngine.UIElements.UIR.Implementation
 {
@@ -19,6 +20,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
     internal static class RenderEvents
     {
+        private static readonly float VisibilityTreshold = Mathf.Epsilon;
+        static readonly ProfilerMarker k_NudgeVerticesMarker = new ProfilerMarker("UIR.NudgeVertices");
+
         internal static Shader ResolveShader(Shader shader)
         {
             if (shader == null)
@@ -39,8 +43,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         internal static void ProcessOnOpacityChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, ref ChainBuilderStats stats)
         {
+            bool hierarchical = (ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.OpacityHierarchy) != 0;
             stats.recursiveOpacityUpdates++;
-            DepthFirstOnOpacityChanged(renderChain, ve.hierarchy.parent != null ? ve.hierarchy.parent.renderChainData.compositeOpacity : 1.0f, ve, dirtyID, ref stats);
+            DepthFirstOnOpacityChanged(renderChain, ve.hierarchy.parent != null ? ve.hierarchy.parent.renderChainData.compositeOpacity : 1.0f, ve, dirtyID, hierarchical, ref stats);
         }
 
         internal static void ProcessOnTransformOrSizeChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, UIRenderDevice device, ref ChainBuilderStats stats)
@@ -390,35 +395,47 @@ namespace UnityEngine.UIElements.UIR.Implementation
             }
         }
 
-        static void DepthFirstOnOpacityChanged(RenderChain renderChain, float parentCompositeOpacity, VisualElement ve, uint dirtyID, ref ChainBuilderStats stats)
+        static void DepthFirstOnOpacityChanged(RenderChain renderChain, float parentCompositeOpacity, VisualElement ve, uint dirtyID, bool hierarchical, ref ChainBuilderStats stats)
         {
             if (dirtyID == ve.renderChainData.dirtyID)
                 return;
 
             ve.renderChainData.dirtyID = dirtyID; // Prevent reprocessing of the same element in the same pass
             stats.recursiveOpacityUpdatesExpanded++;
+            float oldOpacity = ve.renderChainData.compositeOpacity;
             float newOpacity = ve.resolvedStyle.opacity * parentCompositeOpacity;
-            if (newOpacity == ve.renderChainData.compositeOpacity)
-                return; // Nothing changed effectively
 
-            bool becameVisible = (ve.renderChainData.compositeOpacity < Mathf.Epsilon && newOpacity >= Mathf.Epsilon);
-            ve.renderChainData.compositeOpacity = newOpacity;
+            const float meaningfullOpacityChange = 0.0001f;
+
+            bool visiblityTresholdPassed = (oldOpacity < VisibilityTreshold ^ newOpacity < VisibilityTreshold);
+            bool becameVisible = oldOpacity < VisibilityTreshold && newOpacity >= VisibilityTreshold;
+            bool compositeOpacityChanged = Mathf.Abs(oldOpacity - newOpacity) > meaningfullOpacityChange || visiblityTresholdPassed;
+
+            if (compositeOpacityChanged)
+            {
+                // Avoid updating cached opacity if it changed too little, because we don't want slow changes to
+                // update the cache and never trigger the compositeOpacityChanged condition.
+                // The only small change allowed is when we cross the "visible" boundary of VisibilityTreshold
+                ve.renderChainData.compositeOpacity = newOpacity;
+            }
 
             bool changedOpacityID = false;
-            if (newOpacity != parentCompositeOpacity)
+            bool hasDistinctOpacity = newOpacity < parentCompositeOpacity - meaningfullOpacityChange; //assume 0 <= opacity <= 1
+            if (hasDistinctOpacity)
             {
                 if (ve.renderChainData.opacityID.owned == 0)
                 {
                     changedOpacityID = true;
                     ve.renderChainData.opacityID = renderChain.shaderInfoAllocator.AllocOpacity();
                 }
-                if (ve.renderChainData.opacityID.IsValid())
+                if ((changedOpacityID || compositeOpacityChanged) && ve.renderChainData.opacityID.IsValid())
                     renderChain.shaderInfoAllocator.SetOpacityValue(ve.renderChainData.opacityID, newOpacity);
             }
             else if (ve.renderChainData.opacityID.owned == 0)
             {
                 // Just follow my parent's alloc
-                if (ve.hierarchy.parent != null && !ve.renderChainData.opacityID.Equals(ve.hierarchy.parent.renderChainData.opacityID))
+                if (ve.hierarchy.parent != null &&
+                    !ve.renderChainData.opacityID.Equals(ve.hierarchy.parent.renderChainData.opacityID))
                 {
                     changedOpacityID = true;
                     ve.renderChainData.opacityID = ve.hierarchy.parent.renderChainData.opacityID;
@@ -427,8 +444,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
             }
             else
             {
-                // I have an owned allocation, but I must match my paren't opacity, just set the opacity rather than free and inherit our parent's
-                if (ve.renderChainData.opacityID.IsValid())
+                // I have an owned allocation, but I must match my parent's opacity, just set the opacity rather than free and inherit our parent's
+                if (compositeOpacityChanged && ve.renderChainData.opacityID.IsValid())
                     renderChain.shaderInfoAllocator.SetOpacityValue(ve.renderChainData.opacityID, newOpacity);
             }
 
@@ -437,10 +454,15 @@ namespace UnityEngine.UIElements.UIR.Implementation
             else if (changedOpacityID && ((ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.Visuals) == 0))
                 renderChain.UIEOnVisualsChanged(ve, false); // Changed opacity ID, must update vertices.. we don't do it hierarchical here since our children will go through this too
 
-            // Recurse on children
-            int childrenCount = ve.hierarchy.childCount;
-            for (int i = 0; i < childrenCount; i++)
-                DepthFirstOnOpacityChanged(renderChain, newOpacity, ve.hierarchy[i], dirtyID, ref stats);
+            if (compositeOpacityChanged || changedOpacityID || hierarchical)
+            {
+                // Recurse on children
+                int childrenCount = ve.hierarchy.childCount;
+                for (int i = 0; i < childrenCount; i++)
+                {
+                    DepthFirstOnOpacityChanged(renderChain, newOpacity, ve.hierarchy[i], dirtyID, hierarchical, ref stats);
+                }
+            }
         }
 
         static void DepthFirstOnTransformOrSizeChanged(RenderChain renderChain, VisualElement parent, VisualElement ve, uint dirtyID, UIRenderDevice device, bool isAncestorOfChangeSkinned, bool transformChanged, ref ChainBuilderStats stats)
@@ -850,6 +872,10 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 }
             }
 
+            // When we have a closing mesh, we must have an opening mesh. At least we assumed where we decide
+            // whether we must nudge or not: we only test whether the opening mesh is non-null.
+            Debug.Assert(ve.renderChainData.closingData == null || ve.renderChainData.data != null);
+
             var closingInfo = painter.closingInfo;
             painter.Reset();
             return closingInfo;
@@ -978,6 +1004,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         static bool NudgeVerticesToNewSpace(VisualElement ve, UIRenderDevice device)
         {
+            k_NudgeVerticesMarker.Begin();
+
             Debug.Assert(!ve.renderChainData.disableNudging);
 
             Matrix4x4 newTransform;
@@ -1004,14 +1032,38 @@ namespace UnityEngine.UIElements.UIR.Implementation
             error += Mathf.Abs(newTransform.m22 - reconstructedNewTransform.m22);
             error += Mathf.Abs(newTransform.m23 - reconstructedNewTransform.m23);
             if (error > kMaxAllowedDeviation)
+            {
+                k_NudgeVerticesMarker.End();
                 return false;
-
+            }
             ve.renderChainData.verticesSpace = newTransform; // This is the new space of the vertices
 
-            int vertCount = (int)ve.renderChainData.data.allocVerts.size;
-            NativeSlice<Vertex> oldVerts = ve.renderChainData.data.allocPage.vertices.cpuData.Slice((int)ve.renderChainData.data.allocVerts.start, vertCount);
+            DoNudgeVertices(ve, device, ve.renderChainData.data, ref nudgeTransform, false);
+            if (ve.renderChainData.closingData != null)
+                DoNudgeVertices(ve, device, ve.renderChainData.closingData, ref nudgeTransform, true);
+
+            k_NudgeVerticesMarker.End();
+            return true;
+        }
+
+        static void DoNudgeVertices(VisualElement ve, UIRenderDevice device, MeshHandle mesh, ref Matrix4x4 nudgeTransform, bool isClosingMesh)
+        {
+            int vertCount = (int)mesh.allocVerts.size;
+            NativeSlice<Vertex> oldVerts = mesh.allocPage.vertices.cpuData.Slice((int)mesh.allocVerts.start, vertCount);
             NativeSlice<Vertex> newVerts;
-            device.Update(ve.renderChainData.data, (uint)vertCount, out newVerts);
+            device.Update(mesh, (uint)vertCount, out newVerts);
+
+            if (isClosingMesh) // Displacement start/end is not applicable for closing mesh where displacement isn't supported
+            {
+                // Position-only transform loop
+                for (int i = 0; i < vertCount; i++)
+                {
+                    var v = oldVerts[i];
+                    v.position = nudgeTransform.MultiplyPoint3x4(v.position);
+                    newVerts[i] = v;
+                }
+                return;
+            }
 
             int vertsBeforeUVDisplacement = ve.renderChainData.displacementUVStart;
             int vertsAfterUVDisplacement = ve.renderChainData.displacementUVEnd;
@@ -1040,8 +1092,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 v.position = nudgeTransform.MultiplyPoint3x4(v.position);
                 newVerts[i] = v;
             }
-
-            return true;
         }
 
         static RenderChainCommand InjectMeshDrawCommand(RenderChain renderChain, VisualElement ve, ref RenderChainCommand cmdPrev, ref RenderChainCommand cmdNext, MeshHandle mesh, int indexCount, int indexOffset, Material material, Texture custom, Texture font)

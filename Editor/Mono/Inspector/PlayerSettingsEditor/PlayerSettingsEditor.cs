@@ -2105,7 +2105,7 @@ namespace UnityEditor
 
             bool showPrivacyPermissions =
                 targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS ||
-                platform.defaultTarget == BuildTarget.StandaloneOSX;
+                targetGroup == BuildTargetGroup.Standalone;
 
             if (showPrivacyPermissions)
             {

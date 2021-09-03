@@ -7,7 +7,36 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
-    public class FieldMouseDragger<T>
+    /// <summary>
+    /// Provides the base class for field mouse draggers.
+    /// </summary>
+    public abstract class BaseFieldMouseDragger
+    {
+        /// <summary>
+        /// Sets the drag zone for the driven field.
+        /// </summary>
+        /// <param name="dragElement">The target of the drag operation.</param>
+        public void SetDragZone(VisualElement dragElement)
+        {
+            SetDragZone(dragElement, new Rect(0, 0, -1, -1));
+        }
+
+        /// <summary>
+        /// Sets the drag zone for the driven field.
+        /// </summary>
+        /// <param name="dragElement">The target of the drag operation.</param>
+        /// <param name="hotZone">The rectangle that contains the drag zone.</param>
+        public abstract void SetDragZone(VisualElement dragElement, Rect hotZone);
+    }
+
+    /// <summary>
+    /// Provides dragging on a visual element to change a value field.
+    /// </summary>
+    /// <description>
+    /// To create a field mouse dragger use <see cref="FieldMouseDragger{T}.FieldMouseDragger(IValueField{T})"/>
+    /// and then set the drag zone using <see cref="BaseFieldMouseDragger.SetDragZone(VisualElement)"/>
+    /// </description>
+    public class FieldMouseDragger<T> : BaseFieldMouseDragger
     {
         public FieldMouseDragger(IValueField<T> drivenField)
         {
@@ -24,12 +53,8 @@ namespace UnityEditor.UIElements
         public bool dragging { get; set; }
         public T startValue { get; set; }
 
-        public void SetDragZone(VisualElement dragElement)
-        {
-            SetDragZone(dragElement, new Rect(0, 0, -1, -1));
-        }
-
-        public void SetDragZone(VisualElement dragElement, Rect hotZone)
+        /// <inheritdoc />
+        public sealed override void SetDragZone(VisualElement dragElement, Rect hotZone)
         {
             if (m_DragElement != null)
             {

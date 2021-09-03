@@ -1954,7 +1954,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return false;
         }
 
-        ScriptAssemblySettings CreateScriptAssemblySettings(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget, EditorScriptCompilationOptions options)
+        public ScriptAssemblySettings CreateScriptAssemblySettings(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget, EditorScriptCompilationOptions options)
         {
             var predefinedAssembliesCompilerOptions = new ScriptCompilerOptions();
 
@@ -2123,6 +2123,53 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             return CompileStatus.Idle;
+        }
+
+        static bool ShouldAddTargetAssemblyToList(TargetAssembly targetAssembly, ScriptAssemblySettings scriptAssemblySettings)
+        {
+            if (scriptAssemblySettings != null)
+            {
+                return EditorBuildRules.IsCompatibleWithPlatformAndDefines(targetAssembly, scriptAssemblySettings);
+            }
+            return true;
+        }
+
+        public TargetAssemblyInfo[] GetTargetAssemblyInfos(ScriptAssemblySettings scriptAssemblySettings = null)
+        {
+            TargetAssembly[] predefindTargetAssemblies = EditorBuildRules.GetPredefinedTargetAssemblies();
+
+            TargetAssemblyInfo[] targetAssemblyInfo = new TargetAssemblyInfo[predefindTargetAssemblies.Length + (customTargetAssemblies?.Count ?? 0)];
+
+            int assembliesSize = 0;
+            foreach (var assembly in predefindTargetAssemblies)
+            {
+                if (!ShouldAddTargetAssemblyToList(assembly, scriptAssemblySettings))
+                {
+                    continue;
+                }
+
+                targetAssemblyInfo[assembliesSize] = ToTargetAssemblyInfo(predefindTargetAssemblies[assembliesSize]);
+                assembliesSize++;
+            }
+
+            if (customTargetAssemblies != null)
+            {
+                foreach (var entry in customTargetAssemblies)
+                {
+                    var customTargetAssembly = entry.Value;
+
+                    if (!ShouldAddTargetAssemblyToList(customTargetAssembly, scriptAssemblySettings))
+                    {
+                        continue;
+                    }
+
+                    targetAssemblyInfo[assembliesSize] = ToTargetAssemblyInfo(customTargetAssembly);
+                    assembliesSize++;
+                }
+                Array.Resize(ref targetAssemblyInfo, assembliesSize);
+            }
+
+            return targetAssemblyInfo;
         }
 
         public TargetAssemblyInfo[] GetTargetAssemblies()
