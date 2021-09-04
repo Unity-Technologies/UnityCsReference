@@ -375,6 +375,12 @@ namespace Unity.UI.Builder
                 return;
 
             minSizeSpecialElement.RemoveFromHierarchy();
+
+            // HACK - Since recent changes in UITK, computed style is updated only when its matchingRuleHash has changed.
+            // This causes an issue where the height of a newly dropped VisualElement remains 100px even after added a child.
+            // Resetting ComputedStyle.matchingRulesHash is a workaround to force the VisualElement.computedStyle's yogaNode 
+            // to be updated even when the matchingRulesHash has not changed. see VisualElement.SetComputedStyle in VisualElement.cs.
+            element.computedStyle.matchingRulesHash = -1;
         }
 
         public static VisualElement GetFirstAncestorWithClass(this VisualElement element, string className)

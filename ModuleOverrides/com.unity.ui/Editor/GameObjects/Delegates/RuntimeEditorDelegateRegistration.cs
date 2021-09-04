@@ -18,6 +18,7 @@ namespace UnityEditor.UIElements
             AssetOperationsAccess.LoadThemeAtPath = LoadAssetAtPath<ThemeStyleSheet>;
             PanelSettings.CreateRuntimePanelDebug = UIElementsEditorRuntimeUtility.CreateRuntimePanelDebug;
             PanelSettings.GetOrCreateDefaultTheme = PanelSettingsCreator.GetOrCreateDefaultTheme;
+            PanelSettings.SetPanelSettingsAssetDirty = SetAssetDirty;
             // This is a copy of an assignment in the Editor module used only for 2020.1 compatibility and should be
             // removed when support for 2020.1 is dropped.
             VisualTreeAssetChangeTrackerUpdater.IsEditorPlaying = IsEditorPlaying;
@@ -33,6 +34,11 @@ namespace UnityEditor.UIElements
         internal static T LoadAssetAtPath<T>(string asset) where T : UnityEngine.Object
         {
             return AssetDatabase.LoadAssetAtPath<T>(asset);
+        }
+
+        internal static void SetAssetDirty(Object asset)
+        {
+            EditorUtility.SetDirty(asset);
         }
 
         internal static int GetAssetDirtyCount(Object asset)

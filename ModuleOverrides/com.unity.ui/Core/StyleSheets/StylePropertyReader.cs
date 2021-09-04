@@ -248,8 +248,13 @@ namespace UnityEngine.UIElements.StyleSheets
                     if (font == null)
                         fontAsset = value.sheet.ReadAssetReference(value.handle) as FontAsset;
 
-                    if (fontAsset == null && font == null)
-                        Debug.LogWarning("Invalid font reference");
+                    break;
+                }
+
+                case StyleValueType.Keyword:
+                {
+                    if (value.handle.valueIndex != (int)StyleValueKeyword.None)
+                        Debug.LogWarning("Invalid keyword for font " + (StyleValueKeyword)value.handle.valueIndex);
 
                     break;
                 }
@@ -290,8 +295,14 @@ namespace UnityEngine.UIElements.StyleSheets
                 {
                     font = value.sheet.ReadAssetReference(value.handle) as Font;
 
-                    if (font == null)
-                        Debug.LogWarning("Invalid font reference");
+                    break;
+                }
+
+                case StyleValueType.Keyword:
+                {
+                    if (value.handle.valueIndex != (int)StyleValueKeyword.None)
+                        Debug.LogWarning("Invalid keyword for font " + (StyleValueKeyword)value.handle.valueIndex);
+
                     break;
                 }
 

@@ -75,19 +75,18 @@ namespace UnityEditor.UIElements.StyleSheets
             return DeclareDependencyAndLoad(path, null);
         }
 
+        private static readonly string kThemePrefix = $"{ThemeRegistry.kThemeScheme}://";
+
         // Allow overriding this in tests
         public virtual UnityEngine.Object DeclareDependencyAndLoad(string path, string subAssetPath)
         {
-            var prefix = $"{ThemeRegistry.kThemeScheme}://";
-
-            if (path.StartsWith(prefix))
+            if (path.StartsWith(kThemePrefix))
             {
-                var themeName = path.Substring(prefix.Length);
+                var themeName = path.Substring(kThemePrefix.Length);
 
-                if (!ThemeRegistry.themes.ContainsKey(themeName))
+                if (!ThemeRegistry.themes.TryGetValue(themeName, out var themePath))
                     return null;
 
-                var themePath = ThemeRegistry.themes[themeName];
                 var themeAssetToCopy = EditorGUIUtility.Load(themePath);
                 Debug.Assert(themeAssetToCopy != null, $"Theme not found searching for '{themeName}' at <{themePath}>.");
 

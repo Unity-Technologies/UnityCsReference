@@ -126,6 +126,7 @@ namespace UnityEditor
             public static readonly GUIContent handlesLineThickness = EditorGUIUtility.TrTextContent("Line Thickness", "Thickness of manipulator tool handle lines in UI points (0 = single pixel)");
             public static readonly GUIContent createObjectsAtWorldOrigin = EditorGUIUtility.TrTextContent("Create Objects at Origin", "Enable this preference to instantiate new 3D objects at World coordinates 0,0,0. Disable it to instantiate them at the Scene pivot (in front of the Scene view Camera).");
             public static readonly GUIContent enableConstrainProportionsScalingForNewObjects = EditorGUIUtility.TrTextContent("Create Objects with Constrained Proportions scale on", "If enabled, scale in the transform component will be set to constrain proportions for new GameObjects by default");
+            public static readonly GUIContent useInspectorExpandedStateContent = EditorGUIUtility.TrTextContent("Auto-hide gizmos", "Automatically hide gizmos of Components collapsed in the Inspector");
         }
 
         class LanguageProperties
@@ -781,7 +782,7 @@ namespace UnityEditor
             GUILayout.Label("General", EditorStyles.boldLabel);
             m_Create3DObjectsAtOrigin = EditorGUILayout.Toggle(SceneViewProperties.createObjectsAtWorldOrigin, m_Create3DObjectsAtOrigin);
             m_EnableConstrainProportionsScalingForNewObjects = EditorGUILayout.Toggle(SceneViewProperties.enableConstrainProportionsScalingForNewObjects, m_EnableConstrainProportionsScalingForNewObjects);
-
+            AnnotationUtility.useInspectorExpandedState = EditorGUILayout.Toggle(SceneViewProperties.useInspectorExpandedStateContent, AnnotationUtility.useInspectorExpandedState);
 
             GUILayout.Label("Handles", EditorStyles.boldLabel);
             Handles.s_LineThickness.value = EditorGUILayout.IntSlider(SceneViewProperties.handlesLineThickness, (int)Handles.s_LineThickness.value, 0, 5);

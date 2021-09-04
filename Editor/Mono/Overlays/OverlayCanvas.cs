@@ -115,7 +115,6 @@ namespace UnityEditor.Overlays
         List<VisualElement> toolbarZones { get; set; }
 
         readonly Dictionary<VisualElement, Overlay> m_OverlaysByVE = new Dictionary<VisualElement, Overlay>();
-        bool m_Initialized;
 
         VisualElement m_OriginGhost;
         public OverlayDestinationMarker destinationMarker { get; private set; }
@@ -504,15 +503,12 @@ namespace UnityEditor.Overlays
             return null;
         }
 
-        public bool initialized => m_Initialized;
-
         internal void Initialize(EditorWindow containerWindow)
         {
             this.containerWindow = containerWindow;
 
             rootVisualElement.Add(menu);
 
-            m_Initialized = true;
             AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
             //get all overlays for window type.
             var overlayTypes = OverlayUtilities.GetOverlaysForType(containerWindow.GetType());
@@ -545,8 +541,6 @@ namespace UnityEditor.Overlays
         void OnBeforeAssemblyReload()
         {
             AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeAssemblyReload;
-            containerWindow = null;
-            m_Initialized = false;
             foreach (var overlay in m_Overlays)
                 overlay.rootVisualElement.UnregisterCallback<GeometryChangedEvent>(overlay.OnGeometryChanged);
         }

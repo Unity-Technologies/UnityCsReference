@@ -118,24 +118,18 @@ namespace UnityEngine.Rendering
         }
 
         // sceneCullingMask default is native kDefaultSceneCullingMask
-        [Obsolete("Will become removed in 2022.2, and replaced with a new API", false)]
         public extern int AddBatch(Mesh mesh, int subMeshIndex, Material material, int layer, ShadowCastingMode castShadows, bool receiveShadows, bool invertCulling, Bounds bounds, int instanceCount, MaterialPropertyBlock customProps, GameObject associatedSceneObject, UInt64 sceneCullingMask = 1UL << 63, UInt32 renderingLayerMask = 0xffffffff);
 
-        [Obsolete("Will become removed in 2022.2, and replaced with a new API", false)]
         public extern void  SetBatchFlags(int batchIndex, UInt64 flags);
-        [Obsolete("Will become removed in 2022.2, and replaced with a new API", false)]
         unsafe public void SetBatchPropertyMetadata(int batchIndex, NativeArray<int> cbufferLengths, NativeArray<int> cbufferMetadata)
         {
             InternalSetBatchPropertyMetadata(batchIndex, (IntPtr)cbufferLengths.GetUnsafeReadOnlyPtr(), cbufferLengths.Length, (IntPtr)cbufferMetadata.GetUnsafeReadOnlyPtr(), cbufferMetadata.Length);
         }
 
-        [Obsolete("Will become removed in 2022.2, and replaced with a new API", false)]
         extern private void InternalSetBatchPropertyMetadata(int batchIndex, IntPtr cbufferLengths, int cbufferLengthsCount, IntPtr cbufferMetadata, int cbufferMetadataCount);
 
-        [Obsolete("Will become removed in 2022.2, and replaced with a new API", false)]
         public extern void SetInstancingData(int batchIndex, int instanceCount, MaterialPropertyBlock customProps);
 
-        [Obsolete("Will become removed in 2022.2, and replaced with a new API", false)]
         unsafe public NativeArray<Matrix4x4> GetBatchMatrices(int batchIndex)
         {
             int matricesCount = 0;
@@ -145,7 +139,6 @@ namespace UnityEngine.Rendering
             return arr;
         }
 
-        [Obsolete("Will become removed in 2022.2, and replaced with a new API", false)]
         unsafe public NativeArray<int> GetBatchScalarArrayInt(int batchIndex, string propertyName)
         {
             int elementCount = 0;
@@ -156,7 +149,6 @@ namespace UnityEngine.Rendering
             return arr;
         }
 
-        [Obsolete("Will become removed in 2022.2, and replaced with a new API", false)]
         unsafe public NativeArray<float> GetBatchScalarArray(int batchIndex, string propertyName)
         {
             int elementCount = 0;
@@ -167,7 +159,6 @@ namespace UnityEngine.Rendering
             return arr;
         }
 
-        [Obsolete("Will become removed in 2022.2, and replaced with a new API", false)]
         unsafe public NativeArray<int> GetBatchVectorArrayInt(int batchIndex, string propertyName)
         {
             int elementCount = 0;
@@ -178,7 +169,6 @@ namespace UnityEngine.Rendering
             return arr;
         }
 
-        [Obsolete("Will become removed in 2022.2, and replaced with a new API", false)]
         unsafe public NativeArray<Vector4> GetBatchVectorArray(int batchIndex, string propertyName)
         {
             int elementCount = 0;
@@ -189,7 +179,6 @@ namespace UnityEngine.Rendering
             return arr;
         }
 
-        [Obsolete("Will become removed in 2022.2, and replaced with a new API", false)]
         unsafe public NativeArray<Matrix4x4> GetBatchMatrixArray(int batchIndex, string propertyName)
         {
             int elementCount = 0;
@@ -200,7 +189,6 @@ namespace UnityEngine.Rendering
             return arr;
         }
 
-        [Obsolete("Will become removed in 2022.2, and replaced with a new API", false)]
         unsafe public NativeArray<int> GetBatchScalarArrayInt(int batchIndex, int propertyName)
         {
             int elementCount = 0;
@@ -211,7 +199,6 @@ namespace UnityEngine.Rendering
             return arr;
         }
 
-        [Obsolete("Will become removed in 2022.2, and replaced with a new API", false)]
         unsafe public NativeArray<float> GetBatchScalarArray(int batchIndex, int propertyName)
         {
             int elementCount = 0;
@@ -222,7 +209,6 @@ namespace UnityEngine.Rendering
             return arr;
         }
 
-        [Obsolete("Will become removed in 2022.2, and replaced with a new API", false)]
         unsafe public NativeArray<int> GetBatchVectorArrayInt(int batchIndex, int propertyName)
         {
             int elementCount = 0;
@@ -233,7 +219,6 @@ namespace UnityEngine.Rendering
             return arr;
         }
 
-        [Obsolete("Will become removed in 2022.2, and replaced with a new API", false)]
         unsafe public NativeArray<Vector4> GetBatchVectorArray(int batchIndex, int propertyName)
         {
             int elementCount = 0;
@@ -244,7 +229,6 @@ namespace UnityEngine.Rendering
             return arr;
         }
 
-        [Obsolete("Will become removed in 2022.2, and replaced with a new API", false)]
         unsafe public NativeArray<Matrix4x4> GetBatchMatrixArray(int batchIndex, int propertyName)
         {
             int elementCount = 0;
@@ -255,21 +239,14 @@ namespace UnityEngine.Rendering
             return arr;
         }
 
-        [Obsolete("Will become removed in 2022.2, and replaced with a new API", false)]
         extern public void SetBatchBounds(int batchIndex, Bounds bounds);
 
-        [Obsolete("Will become removed in 2022.2, and replaced with a new API", false)]
         public extern int GetNumBatches();
-        [Obsolete("Will become removed in 2022.2, and replaced with a new API", false)]
         public extern void RemoveBatch(int index);
 
-        [Obsolete("Will become removed in 2022.2, and replaced with a new API", false)]
         unsafe extern void* GetBatchMatrices(int batchIndex, out int matrixCount);
-        [Obsolete("Will become removed in 2022.2, and replaced with a new API", false)]
         unsafe extern void* GetBatchScalarArray(int batchIndex, string propertyName, out int elementCount);
-        [Obsolete("Will become removed in 2022.2, and replaced with a new API", false)]
         unsafe extern void* GetBatchVectorArray(int batchIndex, string propertyName, out int elementCount);
-        [Obsolete("Will become removed in 2022.2, and replaced with a new API", false)]
         unsafe extern void* GetBatchMatrixArray(int batchIndex, string propertyName, out int elementCount);
         [NativeName("GetBatchScalarArray")]
         unsafe extern void* GetBatchScalarArray_Internal(int batchIndex, int propertyName, out int elementCount);
@@ -281,7 +258,6 @@ namespace UnityEngine.Rendering
         extern private AtomicSafetyHandle GetBatchArraySafetyHandle(int batchIndex, string propertyName);
         [NativeName("GetBatchArraySafetyHandle")]
         extern private AtomicSafetyHandle GetBatchArraySafetyHandle_Int(int batchIndex, int propertyName);
-        [Obsolete("Will become removed in 2022.2, and replaced with a new API", false)]
         public extern void EnableVisibleIndicesYArray(bool enabled);
 
         static extern IntPtr Create(BatchRendererGroup group);

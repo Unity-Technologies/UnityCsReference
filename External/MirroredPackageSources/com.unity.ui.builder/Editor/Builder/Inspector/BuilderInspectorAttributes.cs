@@ -209,14 +209,8 @@ namespace Unity.UI.Builder
 
             // Setup field binding path.
             fieldElement.bindingPath = attribute.name;
-
-            // Tooltip.
-            var label = fieldElement.Q<Label>();
-            if (label != null)
-                label.tooltip = attribute.name;
-            else
-                fieldElement.tooltip = attribute.name;
-
+            fieldElement.tooltip = attribute.name;
+			
             // Context menu.
             fieldElement.AddManipulator(new ContextualMenuManipulator(BuildAttributeFieldContextualMenu));
 

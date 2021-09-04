@@ -545,7 +545,7 @@ namespace UnityEngine.UIElements
             using (k_ImmediateCallbackMarker.Auto())
             {
                 var offset = elementPanel.repaintData.currentOffset;
-                m_CachedClippingRect = ComputeAAAlignedBound(worldClipImmediate, offset);
+                m_CachedClippingRect = ComputeAAAlignedBound(worldClip, offset);
                 m_CachedTransform = offset * worldTransform;
 
                 HandleIMGUIEvent(elementPanel.repaintData.repaintEvent, m_CachedTransform, m_CachedClippingRect, onGUIHandler, true);
