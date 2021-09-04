@@ -41,6 +41,7 @@ namespace UnityEditor.Mono.BuildPipeline
         {
             public BuildDataInputFile[] scenes;
             public BuildDataInputFile[] inputFiles;
+            public string[] enabledModules;
             public string[] resourcePaths;
             public BuildOptions buildOptions;
             public string unityVersion;
@@ -131,6 +132,13 @@ namespace UnityEditor.Mono.BuildPipeline
                 }
             }
 
+            var enabledModules = ModuleMetadata.GetModuleNames()
+                .Where(m => ModuleMetadata.GetModuleIncludeSettingForModule(m) != ModuleIncludeSetting.ForceExclude);
+            if (!enabledModules.SequenceEqual(buildData.enabledModules))
+            {
+                Console.WriteLine($"Rebuiding Data files because enabled modules have changed");
+                return true;
+            }
 
             Console.WriteLine("Not rebuiding Data files -- no changes");
             return false;
@@ -162,7 +170,10 @@ namespace UnityEditor.Mono.BuildPipeline
                 inputFiles = inputFiles.ToArray(),
                 buildOptions = report.summary.options & BuildData.BuildOptionsMask,
                 unityVersion = Application.unityVersion,
-                resourcePaths = ResourcesAPIInternal.GetAllPaths("").OrderBy(p => p).ToArray()
+                resourcePaths = ResourcesAPIInternal.GetAllPaths("").OrderBy(p => p).ToArray(),
+                enabledModules = ModuleMetadata.GetModuleNames()
+                    .Where(m => ModuleMetadata.GetModuleIncludeSettingForModule(m) != ModuleIncludeSetting.ForceExclude)
+                    .ToArray()
             };
             buildDataPath.ToNPath().WriteAllText(JsonUtility.ToJson(buildData));
         }

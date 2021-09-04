@@ -39,16 +39,14 @@ namespace UnityEditor.UIElements
         internal static ThemeStyleSheet GetOrCreateDefaultTheme()
         {
             // Create unity default theme if it is not there
-            var defaultTssPath = ThemeRegistry.kUnityRuntimeThemePath;
-
-            var defaultTssAsset = AssetDatabase.LoadAssetAtPath<ThemeStyleSheet>(defaultTssPath);
+            var defaultTssAsset = AssetDatabase.LoadAssetAtPath<ThemeStyleSheet>(ThemeRegistry.kUnityRuntimeThemePath);
             if (defaultTssAsset == null)
             {
                 CreateDirectoryRecursively(ThemeRegistry.kUnityThemesPath);
-                File.WriteAllText(defaultTssPath, GetTssTemplateContent());
+                File.WriteAllText(ThemeRegistry.kUnityRuntimeThemePath, GetTssTemplateContent());
                 AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
 
-                defaultTssAsset = AssetDatabase.LoadAssetAtPath<ThemeStyleSheet>(defaultTssPath);
+                defaultTssAsset = AssetDatabase.LoadAssetAtPath<ThemeStyleSheet>(ThemeRegistry.kUnityRuntimeThemePath);
             }
 
             return defaultTssAsset;

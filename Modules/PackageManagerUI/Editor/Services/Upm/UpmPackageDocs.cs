@@ -15,51 +15,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         // the link in the description text.
         internal const string k_BuiltinPackageDocsUrlKey = "Scripting API: ";
 
-        private static Version ParseShortVersion(string shortVersionId)
-        {
-            try
-            {
-                var versionToken = shortVersionId.Split('@')[1];
-                return new Version(versionToken);
-            }
-            catch (Exception)
-            {
-                // Keep default version 0.0 on exception
-                return new Version();
-            }
-        }
-
-        // Method content must be matched in package manager doc tools
-        private static string GetPackageUrlRedirect(string packageName, string shortVersionId)
-        {
-            var redirectUrl = "";
-            if (packageName == "com.unity.ads")
-                redirectUrl = "https://docs.unity3d.com/Manual/UnityAds.html";
-            else if (packageName == "com.unity.analytics")
-            {
-                if (ParseShortVersion(shortVersionId) < new Version(3, 2))
-                    redirectUrl = "https://docs.unity3d.com/Manual/UnityAnalytics.html";
-            }
-            else if (packageName == "com.unity.purchasing")
-                redirectUrl = "https://docs.unity3d.com/Manual/UnityIAP.html";
-            else if (packageName == "com.unity.standardevents")
-                redirectUrl = "https://docs.unity3d.com/Manual/UnityAnalyticsStandardEvents.html";
-            else if (packageName == "com.unity.xiaomi")
-                redirectUrl = "https://unity3d.com/cn/partners/xiaomi/guide";
-            else if (packageName == "com.unity.shadergraph")
-            {
-                if (ParseShortVersion(shortVersionId) < new Version(4, 1))
-                    redirectUrl = "https://github.com/Unity-Technologies/ShaderGraph/wiki";
-            }
-            return redirectUrl;
-        }
-
-        public static string GetPackageUrlRedirect(IPackageVersion version)
-        {
-            var upmVersion = version as UpmPackageVersion;
-            return upmVersion == null ? string.Empty : GetPackageUrlRedirect(upmVersion.name, upmVersion.shortVersionId);
-        }
-
         public static string[] SplitBuiltinDescription(UpmPackageVersion version)
         {
             if (string.IsNullOrEmpty(version?.packageInfo?.description))
@@ -144,12 +99,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!string.IsNullOrEmpty(upmVersion.licensesUrl))
                 return upmVersion.licensesUrl;
 
-            string url;
-            if (!string.IsNullOrEmpty(GetPackageUrlRedirect(upmVersion)))
-                url = "https://unity3d.com/legal/licenses/Unity_Companion_License";
-            else
-                url = $"http://docs.unity3d.com/Packages/{upmVersion.shortVersionId}/license/index.html";
-            return url;
+            return $"http://docs.unity3d.com/Packages/{upmVersion.shortVersionId}/license/index.html";
         }
 
         public static string GetOfflineLicenses(IOProxy IOProxy, IPackageVersion version)
@@ -179,7 +129,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var upmVersion = version as UpmPackageVersion;
             if (!string.IsNullOrEmpty(upmVersion?.changelogUrl))
                 return true;
-            return upmVersion != null && !version.HasTag(PackageTag.BuiltIn | PackageTag.Feature) && string.IsNullOrEmpty(GetPackageUrlRedirect(version));
+            return upmVersion != null && !version.HasTag(PackageTag.BuiltIn | PackageTag.Feature);
         }
 
         public static bool HasLicenses(IPackageVersion version)

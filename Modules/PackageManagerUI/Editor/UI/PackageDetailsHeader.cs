@@ -277,22 +277,37 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshVersionInfoIcon()
         {
-            var isInstalledVersionDifferentThanRequested = UpmPackageVersion.IsDifferentVersionThanRequested(m_Package?.versions.installed);
-            UIUtils.SetElementDisplay(versionInfoIcon, isInstalledVersionDifferentThanRequested);
-
-            if (!isInstalledVersionDifferentThanRequested)
+            var installed = m_Package?.versions?.installed;
+            if (installed == null)
+            {
+                UIUtils.SetElementDisplay(versionInfoIcon, false);
                 return;
+            }
 
-            var installedVersionString = m_Package?.versions.installed.versionString;
-            if (UpmPackageVersion.IsRequestedButOverriddenVersion(m_Package, m_Version))
-                versionInfoIcon.tooltip = string.Format(
-                    L10n.Tr("Unity installed version {0} because another package depends on it (version {0} overrides version {1})."),
-                    installedVersionString, m_Version.versionString);
-            else if (m_Version.isInstalled && UpmPackageVersion.IsDifferentVersionThanRequested(m_Version))
-                versionInfoIcon.tooltip = L10n.Tr("At least one other package depends on this version of the package.");
-            else
-                versionInfoIcon.tooltip = string.Format(
-                    L10n.Tr("At least one other package depends on version {0} of this package."), installedVersionString);
+            var installedVersionString = installed.versionString;
+            if (UpmPackageVersion.IsDifferentVersionThanRequested(installed))
+            {
+                UIUtils.SetElementDisplay(versionInfoIcon, true);
+
+                if (UpmPackageVersion.IsRequestedButOverriddenVersion(m_Package, m_Version))
+                    versionInfoIcon.tooltip = string.Format(L10n.Tr("Unity installed version {0} because another package depends on it (version {0} overrides version {1})."),
+                        installedVersionString, m_Version.versionString);
+                else if (m_Version.isInstalled)
+                    versionInfoIcon.tooltip = L10n.Tr("At least one other package depends on this version of the package.");
+                else
+                    versionInfoIcon.tooltip = string.Format(L10n.Tr("At least one other package depends on version {0} of this package."), installedVersionString);
+                return;
+            }
+
+            if (m_Version?.isInstalled == true &&  m_Package?.state != PackageState.InstalledAsDependency
+                && installed.version?.IsEqualOrPatchOf(m_Package?.versions?.recommended.version) != true)
+            {
+                UIUtils.SetElementDisplay(versionInfoIcon, true);
+                versionInfoIcon.tooltip = string.Format(L10n.Tr("The installed version {0} is not verified for your Unity version. The recommended one is {1}."), installedVersionString, m_Package?.versions?.recommended.versionString);
+                return;
+            }
+
+            UIUtils.SetElementDisplay(versionInfoIcon, false);
         }
 
         private void RefreshRegistry()

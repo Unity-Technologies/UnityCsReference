@@ -158,6 +158,16 @@ namespace Unity.UI.Builder
             m_StyleSelectorElementContainer = this.Q(BuilderConstants.StyleSelectorElementContainerName);
             m_DocumentRootElement = this.Q("document");
             m_DocumentRootElement.StretchToParentSize();
+
+            // Load stylesheets specific to the document element.
+            var documentSheet = BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(BuilderConstants.UIBuilderPackagePath + "/Viewport/BuilderDocument.uss");
+            var documentThemeSheet = EditorGUIUtility.isProSkin
+                ? BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(BuilderConstants.UIBuilderPackagePath + "/Viewport/BuilderDocumentDark.uss")
+                : BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(BuilderConstants.UIBuilderPackagePath + "/Viewport/BuilderDocumentLight.uss");
+
+            m_DocumentRootElement.styleSheets.Add(documentSheet);
+            m_DocumentRootElement.styleSheets.Add(documentThemeSheet);
+
             m_Canvas.documentRootElement = m_DocumentRootElement;
             m_EditorLayer = this.Q("__unity-editor-layer");
             m_EditorLayer.AddToClassList(BuilderConstants.HiddenStyleClassName);

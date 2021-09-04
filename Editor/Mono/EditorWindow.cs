@@ -57,11 +57,12 @@ namespace UnityEditor
             {
                 if (this is ISupportsOverlays)
                 {
-                    if (!overlayCanvas.initialized)
+                    if (!m_OverlaysInitialized)
                     {
                         var ve = overlayCanvas.rootVisualElement;
                         baseRootVisualElement.Add(ve);
                         overlayCanvas.Initialize(this);
+                        m_OverlaysInitialized = true;
                     }
 
                     return overlayCanvas.windowRoot;
@@ -79,6 +80,10 @@ namespace UnityEditor
         OverlayCanvas m_OverlayCanvas = new OverlayCanvas();
 
         internal OverlayCanvas overlayCanvas => m_OverlayCanvas;
+        [NonSerialized]
+        bool m_OverlaysInitialized;
+
+        internal bool overlaysInitialized => m_OverlaysInitialized;
 
         [HideInInspector]
         [SerializeField]

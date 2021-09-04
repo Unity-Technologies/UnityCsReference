@@ -645,7 +645,7 @@ namespace UnityEditor
         };
         static public string GetPlaybackEngineDownloadURL(string moduleName)
         {
-            if (moduleName == "PS4" || moduleName == "XboxOne")
+            if (moduleName == "PS4" || moduleName == "PS5" || moduleName == "XboxOne")
                 return "https://unity3d.com/platform-installation";
 
             string fullVersion = InternalEditorUtility.GetFullUnityVersion();
@@ -777,7 +777,7 @@ namespace UnityEditor
                 GUILayout.Label(EditorGUIUtility.TextContent(string.Format(styles.noModuleLoaded, BuildPlatforms.instance.GetModuleDisplayName(namedBuildTarget, buildTarget))));
                 string url = "";
 
-                if (!isEditorinstalledWithHub || (moduleName == "PS4" || moduleName == "XboxOne"))
+                if (!isEditorinstalledWithHub || (moduleName == "PS4" || moduleName == "PS5" || moduleName == "XboxOne"))
                 {
                     if (GUILayout.Button(styles.openDownloadPage, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
                     {
@@ -827,10 +827,12 @@ namespace UnityEditor
                 string niceName = BuildPipeline.GetBuildTargetGroupDisplayName(namedBuildTarget.ToBuildTargetGroup());
                 string licenseMsg = "Your license does not cover {0} Publishing.";
                 string buttonMsg = "Go to Our Online Store";
+                string licenseURL = styles.shopURL;
                 if (BuildTargetDiscovery.PlatformHasFlag(buildTarget, TargetAttributes.IsConsole))
                 {
                     licenseMsg += " Please see the {0} section of the Platform Module Installation documentation for more details.";
                     buttonMsg = "Platform Module Installation";
+                    licenseURL = "https://unity3d.com/platform-installation";
                 }
                 else if (BuildTargetDiscovery.PlatformHasFlag(buildTarget, TargetAttributes.IsStandalonePlatform))
                     buttonMsg = "";
@@ -839,7 +841,7 @@ namespace UnityEditor
                 {
                     EditorGUIUtility.TextContent(string.Format(L10n.Tr(licenseMsg), niceName)),
                     EditorGUIUtility.TextContent(L10n.Tr(buttonMsg)),
-                    new GUIContent(styles.shopURL)
+                    new GUIContent(licenseURL)
                 };
 
                 GUILayout.Label(notLicensedMessage[0], EditorStyles.wordWrappedLabel);

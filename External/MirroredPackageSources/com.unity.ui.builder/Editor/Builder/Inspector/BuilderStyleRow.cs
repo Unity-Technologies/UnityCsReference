@@ -25,17 +25,5 @@ namespace Unity.UI.Builder
         }
 
         public override VisualElement contentContainer => m_Container == null ? this : m_Container;
-
-        public static void ReAssignTooltipToChild(VisualElement field)
-        {
-            // Hack for lack of better options (I still want to set the tooltips in UXML!).
-            var label = field.Q<Label>();
-            if (label != null && !string.IsNullOrEmpty(field.tooltip))
-            {
-                var tooltipTemp = field.tooltip;
-                field.tooltip = null;
-                label.tooltip = tooltipTemp;
-            }
-        }
     }
 }

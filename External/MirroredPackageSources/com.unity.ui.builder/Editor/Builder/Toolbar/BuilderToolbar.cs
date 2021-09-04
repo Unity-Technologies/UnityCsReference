@@ -639,6 +639,8 @@ namespace Unity.UI.Builder
                     themeStyleSheet = EditorGUIUtility.isProSkin ? UIElementsEditorUtility.GetCommonDarkStyleSheet() : UIElementsEditorUtility.GetCommonLightStyleSheet();
                     break;
                 case BuilderDocument.CanvasTheme.Custom:
+                    m_Viewport.canvas.defaultBackgroundElement.style.display = DisplayStyle.None;
+                    m_Viewport.canvas.checkerboardBackgroundElement.style.display = DisplayStyle.Flex;
                     m_LastCustomTheme = customThemeSheet;
                     themeStyleSheet = customThemeSheet;
                     break;

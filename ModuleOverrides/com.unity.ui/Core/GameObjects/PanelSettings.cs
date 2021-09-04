@@ -402,7 +402,7 @@ namespace UnityEngine.UIElements
         internal static Func<ILiveReloadAssetTracker<StyleSheet>> CreateLiveReloadStyleSheetAssetTracker;
         internal static Action<IPanel> CreateRuntimePanelDebug;
         internal static Func<ThemeStyleSheet> GetOrCreateDefaultTheme;
-
+        internal static Action<PanelSettings> SetPanelSettingsAssetDirty;
 
         internal static void SetupLiveReloadPanelTrackers(bool isLiveReloadOn)
         {
@@ -487,8 +487,11 @@ namespace UnityEngine.UIElements
             // This is no guarantee, but it's the best we can do at the moment.
             referenceDpi = Screen.dpi;
             scaleMode = PanelScaleMode.ConstantPhysicalSize;
-            themeStyleSheet = GetOrCreateDefaultTheme?.Invoke();
+            themeUss = GetOrCreateDefaultTheme?.Invoke();
             m_AtlasBlitShader = m_RuntimeShader = m_RuntimeWorldShader = null;
+
+            SetPanelSettingsAssetDirty?.Invoke(this);
+
             InitializeShaders();
         }
 
@@ -701,6 +704,8 @@ namespace UnityEngine.UIElements
             }
         }
 
+        private float m_OldReferenceDpi;
+        private float m_OldFallbackDpi;
         private StyleSheet m_OldThemeUss;
         private RenderTexture m_OldTargetTexture;
         private float m_OldSortingOrder;
@@ -708,17 +713,28 @@ namespace UnityEngine.UIElements
 
         private void OnValidate()
         {
-            // reassigning via the properties will re-run the value bounds check on the dpi values
-            referenceDpi = m_ReferenceDpi;
-            fallbackDpi = m_FallbackDpi;
-
-            if (m_Scale < 0.0f || m_ScaleMode != PanelScaleMode.ConstantPixelSize)
-            {
-                m_Scale = k_DefaultScaleValue;
-            }
+            bool isDirty = false;
 
             if (m_IsLoaded)
             {
+                // reassigning via the properties will re-run the value bounds check on the dpi values
+                if (m_OldReferenceDpi != m_ReferenceDpi)
+                {
+                    referenceDpi = m_ReferenceDpi;
+                    isDirty = true;
+                }
+                if (m_OldFallbackDpi != m_FallbackDpi)
+                {
+                    fallbackDpi = m_FallbackDpi;
+                    isDirty = true;
+                }
+
+                if (m_Scale < 0.0f || (m_ScaleMode != PanelScaleMode.ConstantPixelSize && m_Scale != k_DefaultScaleValue))
+                {
+                    m_Scale = k_DefaultScaleValue;
+                    isDirty = true;
+                }
+
                 if (m_OldThemeUss != themeUss)
                 {
                     var root = visualTree;
@@ -731,16 +747,19 @@ namespace UnityEngine.UIElements
 
                         ApplyThemeStyleSheet(root);
                     }
+                    isDirty = true;
                 }
 
                 if (m_OldTargetTexture != m_TargetTexture)
                 {
                     targetTexture = m_TargetTexture;
+                    isDirty = true;
                 }
 
                 if (m_OldSortingOrder != m_SortingOrder)
                 {
                     sortingOrder = m_SortingOrder;
+                    isDirty = true;
                 }
             }
             else
@@ -748,9 +767,16 @@ namespace UnityEngine.UIElements
                 m_IsLoaded = true;
             }
 
+            m_OldReferenceDpi = m_ReferenceDpi;
+            m_OldFallbackDpi = m_FallbackDpi;
             m_OldThemeUss = themeUss;
             m_OldTargetTexture = m_TargetTexture;
             m_OldSortingOrder = m_SortingOrder;
+
+            if (isDirty)
+            {
+                SetPanelSettingsAssetDirty?.Invoke(this);
+            }
         }
 
     }

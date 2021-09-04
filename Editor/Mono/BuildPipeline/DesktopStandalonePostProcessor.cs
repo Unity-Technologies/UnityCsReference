@@ -79,7 +79,7 @@ internal abstract class DesktopStandalonePostProcessor : BeeBuildPostprocessor
                 return "Currently selected scripting backend (IL2CPP) is not installed.";
         }
 
-        return null;
+        return base.PrepareForBuild(options, target);
     }
 
     internal class ScriptingImplementations : DefaultScriptingImplementations

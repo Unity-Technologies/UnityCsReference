@@ -77,7 +77,6 @@ namespace Unity.UI.Builder
                         }
                         else
                         {
-                            BuilderStyleRow.ReAssignTooltipToChild(styleField);
                             m_StyleFields.BindStyleField(styleRow, bindingPath, styleField);
                         }
 
