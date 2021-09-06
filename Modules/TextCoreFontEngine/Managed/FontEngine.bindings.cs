@@ -942,6 +942,11 @@ namespace UnityEngine.TextCore.LowLevel
         [NativeMethod(Name = "TextCore::FontEngine::ReleaseSharedTextureData", IsThreadSafe = true, IsFreeFunction = true)]
         internal extern static void ReleaseSharedTexture();
 
+        /// <summary>
+        /// Internal function used to control if texture changes resulting from adding glyphs to an atlas texture will be uploaded to the graphic device immediately or delayed and batched.
+        /// </summary>
+        [NativeMethod(Name = "TextCore::FontEngine::SetTextureUploadMode", IsThreadSafe = true, IsFreeFunction = true)]
+        internal extern static void SetTextureUploadMode(bool shouldUploadImmediately);
 
         /// <summary>
         /// Internal function used to add glyph to atlas texture.

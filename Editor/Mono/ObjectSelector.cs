@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Text.RegularExpressions;
 using JetBrains.Annotations;
 using UnityEditor.AnimatedValues;
@@ -15,11 +14,7 @@ using UnityEditor.SearchService;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Audio;
-using UnityEngine.SearchService;
 using UnityObject = UnityEngine.Object;
-#pragma warning disable 618
-using SelectorHandlerType = System.Func<UnityEditor.SearchService.ObjectSelectorTargetInfo, UnityEngine.Object[], UnityEditor.SearchService.ObjectSelectorSearchContext, bool>;
-#pragma warning restore 618
 using Scene = UnityEngine.SceneManagement.Scene;
 
 namespace UnityEditor
@@ -205,8 +200,6 @@ namespace UnityEditor
             NotifySelectorClosed(false);
             if (m_ListArea != null)
                 m_StartGridSize.value = m_ListArea.gridSize;
-
-            Undo.CollapseUndoOperations(m_ModalUndoGroup);
 
             if (s_SharedObjectSelector == this)
                 s_SharedObjectSelector = null;
@@ -485,13 +478,6 @@ namespace UnityEditor
             {
                 m_SearchSessionHandler.BeginSession(() =>
                 {
-                    #pragma warning disable 618
-                    SelectorHandlerType selectorConstraint = null;
-                    #pragma warning restore 618
-                    if (m_EditedProperty != null)
-                    {
-                        selectorConstraint = GetSelectorHandlerFromProperty(m_EditedProperty);
-                    }
                     return new SearchService.ObjectSelectorSearchContext
                     {
                         currentObject = obj,
@@ -500,10 +486,6 @@ namespace UnityEditor
                         requiredTypeNames = m_RequiredTypes,
                         allowedInstanceIds = allowedInstanceIDs,
                         visibleObjects = allowSceneObjects ? SearchService.VisibleObjects.All : SearchService.VisibleObjects.Assets,
-
-                        #pragma warning disable 618
-                        selectorConstraint = selectorConstraint
-                        #pragma warning restore 618
                     };
                 });
 
@@ -1071,180 +1053,7 @@ namespace UnityEditor
             m_OnObjectSelectorClosed?.Invoke(currentObject);
 
             SendEvent(ObjectSelectorClosedCommand, exitGUI);
+            Undo.CollapseUndoOperations(m_ModalUndoGroup);
         }
-
-        #pragma warning disable 618
-        SelectorHandlerType GetSelectorHandlerFromProperty(SerializedProperty property)
-        {
-            var fieldInfo = ScriptAttributeUtility.GetFieldInfoFromProperty(property, out _);
-            if (fieldInfo == null)
-                return null;
-
-            return GetSelectorHandlerFromFieldInfo(fieldInfo);
-        }
-
-        static SelectorHandlerType GetSelectorHandlerFromFieldInfo(FieldInfo fieldInfo)
-        {
-            var customHandlerAttributes = fieldInfo.GetCustomAttributes(typeof(Attribute), false)
-                .Where(attr => !(attr is ObjectSelectorHandlerWithLabelsAttribute) && !(attr is ObjectSelectorHandlerWithTagsAttribute))
-                .Select(attr => GetCustomSelectorHandlerForAttribute(attr as Attribute))
-                .Where(attr => attr != null).ToList();
-            var handlersWithLabelsAttribute = fieldInfo.GetCustomAttributes(typeof(ObjectSelectorHandlerWithLabelsAttribute), false).OfType<ObjectSelectorHandlerWithLabelsAttribute>().ToList();
-            var handlersWithTagsAttribute = fieldInfo.GetCustomAttributes(typeof(ObjectSelectorHandlerWithTagsAttribute), false).OfType<ObjectSelectorHandlerWithTagsAttribute>().ToList();
-
-            var totalCount = customHandlerAttributes.Count + handlersWithLabelsAttribute.Count + handlersWithTagsAttribute.Count;
-            if (totalCount == 0)
-                return null;
-
-            if (totalCount > 1)
-            {
-                Debug.LogWarning($"Multiple {GetSelectorHandlerAttributeName()} attributes detected on member \"{fieldInfo.Name}\" of \"{fieldInfo.DeclaringType}\". Keeping only the first found.");
-            }
-
-            if (customHandlerAttributes.Count > 0)
-            {
-                var methodInfo = customHandlerAttributes[0];
-                if (!ValidateSelectorHandlerSignature(methodInfo))
-                    return null;
-
-                return CreateSelectorHandlerFunction(methodInfo);
-            }
-
-            if (handlersWithLabelsAttribute.Count > 0)
-            {
-                var handlerWithLabelsAttribute = handlersWithLabelsAttribute[0];
-                return CreateSelectorHandlerWithLabelsFunction(handlerWithLabelsAttribute.labels, handlerWithLabelsAttribute.matchAll);
-            }
-
-            if (handlersWithTagsAttribute.Count > 0)
-            {
-                var handlerWithTagsAttribute = handlersWithTagsAttribute[0];
-                return CreateSelectorHandlerWithTagsFunction(handlerWithTagsAttribute.tags);
-            }
-
-            return null;
-        }
-
-        static MethodInfo GetCustomSelectorHandlerForAttribute(Attribute attribute)
-        {
-            var methodsWithHandler = TypeCache.GetMethodsWithAttribute(typeof(ObjectSelectorHandlerAttribute));
-            foreach (var methodWithHandler in methodsWithHandler)
-            {
-                var selectorHandlerAttributes = methodWithHandler.GetCustomAttributes(typeof(ObjectSelectorHandlerAttribute), false).OfType<ObjectSelectorHandlerAttribute>();
-                foreach (var selectorHandlerAttribute in selectorHandlerAttributes)
-                {
-                    if (selectorHandlerAttribute.attributeType == attribute.GetType())
-                        return methodWithHandler;
-                }
-            }
-
-            return null;
-        }
-
-        static bool ValidateSelectorHandlerSignature(MethodInfo mi)
-        {
-            if (mi.ReturnType != typeof(bool))
-            {
-                Debug.LogWarning($"{GetSelectorHandlerAttributeName()} \"{mi.Name}\" must return a boolean.");
-                return false;
-            }
-
-            var paramTypes = new[] { typeof(ObjectSelectorTargetInfo), typeof(UnityObject[]), typeof(SearchService.ObjectSelectorSearchContext) };
-            var parameters = mi.GetParameters();
-            if (parameters.Length != paramTypes.Length)
-            {
-                Debug.LogWarning($"{GetSelectorHandlerAttributeName()} \"{mi.Name}\" must have {paramTypes.Length} parameters.");
-                return false;
-            }
-
-            for (var i = 0; i < paramTypes.Length; ++i)
-            {
-                var currentParam = parameters[i];
-                var currentType = paramTypes[i];
-                if (currentParam.ParameterType != currentType)
-                {
-                    Debug.LogWarning($"Parameter \"{currentParam.Name}\" of {GetSelectorHandlerAttributeName()} \"{mi.Name}\" must be of type \"{currentType}\".");
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        static SelectorHandlerType CreateSelectorHandlerFunction(MethodInfo methodInfo)
-        {
-            return Delegate.CreateDelegate(typeof(SelectorHandlerType), methodInfo) as SelectorHandlerType;
-        }
-
-        static SelectorHandlerType CreateSelectorHandlerWithLabelsFunction(string[] requiredLabels, bool matchAll)
-        {
-            if (matchAll)
-            {
-                return (target, editedObjects, context) =>
-                {
-                    var assetGuid = target.globalObjectId.assetGUID;
-                    var labels = AssetDatabase.GetLabels(assetGuid);
-                    foreach (var label in requiredLabels)
-                    {
-                        if (!labels.Contains(label))
-                            return false;
-                    }
-                    return true;
-                };
-            }
-            else
-            {
-                return (target, editedObjects, context) =>
-                {
-                    var assetGuid = target.globalObjectId.assetGUID;
-                    var labels = AssetDatabase.GetLabels(assetGuid);
-                    foreach (var label in requiredLabels)
-                    {
-                        if (labels.Contains(label))
-                            return true;
-                    }
-                    return false;
-                };
-            }
-        }
-
-        static SelectorHandlerType CreateSelectorHandlerWithTagsFunction(string[] requiredTags)
-        {
-            return (target, editedObjects, context) =>
-            {
-                string tag = null;
-                if (target.targetObject == null)
-                    return false;
-                switch (target.targetObject)
-                {
-                    case GameObject go:
-                        tag = go.tag;
-                        break;
-                    case Component comp:
-                        tag = comp.tag;
-                        break;
-                    default:
-                        return false;
-                }
-
-                foreach (var t in requiredTags)
-                {
-                    if (tag == t)
-                        return true;
-                }
-                return false;
-            };
-        }
-
-        static string GetSelectorHandlerAttributeName()
-        {
-            var objectSelectorName = nameof(ObjectSelectorHandlerAttribute);
-            var index = objectSelectorName.LastIndexOf("Attribute");
-            if (index > -1)
-                objectSelectorName = objectSelectorName.Remove(index);
-            return objectSelectorName;
-        }
-
-        #pragma warning restore 618
     }
 }

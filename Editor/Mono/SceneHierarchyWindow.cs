@@ -307,6 +307,13 @@ namespace UnityEditor
                 sceneHierarchyWindow.RebuildStageHeader();
         }
 
+        internal static void ReloadAllHierarchyWindows()
+        {
+            var sceneHierarchyWindows = SceneHierarchyWindow.GetAllSceneHierarchyWindows();
+            foreach (SceneHierarchyWindow sceneHierarchyWindow in sceneHierarchyWindows)
+                sceneHierarchyWindow.ReloadData();
+        }
+
         internal void RebuildStageHeader()
         {
             m_StageHandling.CacheStageHeaderContent();

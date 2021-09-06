@@ -22,6 +22,7 @@ namespace UnityEditor
             UIElementsUtility.s_BeginContainerCallback = OnBeginContainer;
             UIElementsUtility.s_EndContainerCallback = OnEndContainer;
 
+            Panel.initEditorUpdaterFunc = EditorPanel.InitEditorUpdater;
             Panel.loadResourceFunc = StyleSheetResourceUtil.LoadResource;
             StylePropertyReader.getCursorIdFunc = UIElementsEditorUtility.GetCursorId;
             Panel.TimeSinceStartup = () => (long)(EditorApplication.timeSinceStartup * 1000.0f);
@@ -112,23 +113,10 @@ namespace UnityEditor
                 while (iterator.MoveNext())
                 {
                     var panel = iterator.Current.Value;
-                    var trackers = panel.GetVisualTreeAssetTrackersListCopy();
+                    panel.liveReloadSystem.OnVisualTreeAssetsImported(uxmlModifiedAssets, uxmlDeletedAssets);
 
-                    if (trackers != null)
-                    {
-                        foreach (var tracker in trackers)
-                        {
-                            tracker.OnAssetsImported(uxmlModifiedAssets, uxmlDeletedAssets);
-                        }
-                    }
-
-                    var styleSheetTracker = (panel as BaseVisualElementPanel)?.m_LiveReloadStyleSheetAssetTracker;
-
-                    if (styleSheetTracker != null)
-                    {
-                        // ussModifiedAssets is null but we don't care for those, only deleted ones (that we'll stop tracking).
-                        styleSheetTracker.OnAssetsImported(ussModifiedAssets, ussDeletedAssets);
-                    }
+                    // ussModifiedAssets is null but we don't care for those, only deleted ones (that we'll stop tracking).
+                    panel.liveReloadSystem.OnStyleSheetAssetsImported(ussModifiedAssets, ussDeletedAssets);
                 }
 
                 if (ussImportedAssets.Count > 0 || ussDeletedAssets.Count > 0)

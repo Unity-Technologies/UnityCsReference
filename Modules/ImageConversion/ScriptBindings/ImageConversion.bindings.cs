@@ -60,16 +60,16 @@ namespace UnityEngine
         }
 
         [FreeFunctionAttribute("ImageConversionBindings::EncodeArrayToTGA", true)]
-        extern public static byte[] EncodeArrayToTGA(System.Array input, GraphicsFormat format, uint width, uint height, uint rowBytes = 0);
+        extern public static byte[] EncodeArrayToTGA(System.Array array, GraphicsFormat format, uint width, uint height, uint rowBytes = 0);
 
         [FreeFunctionAttribute("ImageConversionBindings::EncodeArrayToPNG", true)]
-        extern public static byte[] EncodeArrayToPNG(System.Array input, GraphicsFormat format, uint width, uint height, uint rowBytes = 0);
+        extern public static byte[] EncodeArrayToPNG(System.Array array, GraphicsFormat format, uint width, uint height, uint rowBytes = 0);
 
         [FreeFunctionAttribute("ImageConversionBindings::EncodeArrayToJPG", true)]
-        extern public static byte[] EncodeArrayToJPG(System.Array input, GraphicsFormat format, uint width, uint height, uint rowBytes = 0, int quality = 75);
+        extern public static byte[] EncodeArrayToJPG(System.Array array, GraphicsFormat format, uint width, uint height, uint rowBytes = 0, int quality = 75);
 
         [FreeFunctionAttribute("ImageConversionBindings::EncodeArrayToEXR", true)]
-        extern public static byte[] EncodeArrayToEXR(System.Array input, GraphicsFormat format, uint width, uint height, uint rowBytes = 0, Texture2D.EXRFlags flags = Texture2D.EXRFlags.None);
+        extern public static byte[] EncodeArrayToEXR(System.Array array, GraphicsFormat format, uint width, uint height, uint rowBytes = 0, Texture2D.EXRFlags flags = Texture2D.EXRFlags.None);
 
         public static NativeArray<byte> EncodeNativeArrayToTGA<T>(NativeArray<T> input, GraphicsFormat format, uint width, uint height, uint rowBytes = 0) where T : struct
         {
@@ -138,5 +138,19 @@ namespace UnityEngine
 
         [FreeFunctionAttribute("ImageConversionBindings::UnsafeEncodeNativeArrayToEXR", true)]
         unsafe extern static void* UnsafeEncodeNativeArrayToEXR(void* array, ref int sizeInBytes, GraphicsFormat format, uint width, uint height, uint rowBytes = 0, Texture2D.EXRFlags flags = Texture2D.EXRFlags.None);
+
+        [FreeFunctionAttribute("ImageConversionBindings::LoadImageAtPathInternal", true)]
+        unsafe extern static void* LoadImageAtPathInternal(string path, ref int width, ref int height, ref int rowBytes, ref GraphicsFormat format);
+        unsafe internal static NativeArray<byte> LoadImageDataAtPath(string path, ref int width, ref int height, ref int rowBytes, ref GraphicsFormat format)
+        {
+            var buffer = LoadImageAtPathInternal(path, ref width, ref height, ref rowBytes, ref format);
+            var size = height * rowBytes;
+            var output = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<byte>(buffer, size, Allocator.Persistent);
+            var safety = AtomicSafetyHandle.Create();
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref output, safety);
+            AtomicSafetyHandle.SetAllowReadOrWriteAccess(safety, true);
+            return output;
+        }
+
     }
 }

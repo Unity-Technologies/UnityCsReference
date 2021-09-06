@@ -136,7 +136,7 @@ namespace UnityEditorInternal
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static void ResetToolToPrevious()
         {
-            EditorToolManager.RestorePreviousTool();
+            ToolManager.RestorePreviousTool();
         }
 
         [Obsolete("Use signature passing Func<Bounds> rather than Bounds.")]
@@ -238,7 +238,7 @@ namespace UnityEditorInternal
                 var activeToolIsEditModeTool = EditorToolManager.activeTool is NoneTool;
 
                 if (s_EditMode != SceneViewEditMode.None && activeToolIsEditModeTool)
-                    ToolManager.RestorePreviousPersistentTool();
+                    ToolManager.RestorePreviousTool();
 
                 EditModeToolStateChanged(owner, mode);
                 return;

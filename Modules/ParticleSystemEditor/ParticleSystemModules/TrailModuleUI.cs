@@ -16,6 +16,7 @@ namespace UnityEditor
             public GUIContent lifetime = EditorGUIUtility.TrTextContent("Lifetime", "How long each trail will last, relative to the life of the particle.");
             public GUIContent minVertexDistance = EditorGUIUtility.TrTextContent("Minimum Vertex Distance", "The minimum distance each trail can travel before adding a new vertex.");
             public GUIContent textureMode = EditorGUIUtility.TrTextContent("Texture Mode", "Should the U coordinate be stretched or tiled?");
+            public GUIContent textureScale = EditorGUIUtility.TrTextContent("Texture Scale", "Scale the texture along the UV coordinates using this multiplier.");
             public GUIContent worldSpace = EditorGUIUtility.TrTextContent("World Space", "Trail points will be dropped in world space, even if the particle system is simulating in local space.");
             public GUIContent dieWithParticles = EditorGUIUtility.TrTextContent("Die with Particles", "The trails will disappear when their owning particles die.");
             public GUIContent sizeAffectsWidth = EditorGUIUtility.TrTextContent("Size affects Width", "The trails will use the particle size to control their width.");
@@ -41,7 +42,8 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Stretch"),
                 EditorGUIUtility.TrTextContent("Tile"),
                 EditorGUIUtility.TrTextContent("DistributePerSegment"),
-                EditorGUIUtility.TrTextContent("RepeatPerSegment")
+                EditorGUIUtility.TrTextContent("RepeatPerSegment"),
+                EditorGUIUtility.TrTextContent("Static")
             };
         }
         private static Texts s_Texts;
@@ -51,6 +53,7 @@ namespace UnityEditor
         SerializedMinMaxCurve m_Lifetime;
         SerializedProperty m_MinVertexDistance;
         SerializedProperty m_TextureMode;
+        SerializedProperty m_TextureScale;
         SerializedProperty m_WorldSpace;
         SerializedProperty m_DieWithParticles;
         SerializedProperty m_SizeAffectsWidth;
@@ -84,6 +87,7 @@ namespace UnityEditor
             m_Lifetime = new SerializedMinMaxCurve(this, s_Texts.lifetime, "lifetime");
             m_MinVertexDistance = GetProperty("minVertexDistance");
             m_TextureMode = GetProperty("textureMode");
+            m_TextureScale = GetProperty("textureScale");
             m_WorldSpace = GetProperty("worldSpace");
             m_DieWithParticles = GetProperty("dieWithParticles");
             m_SizeAffectsWidth = GetProperty("sizeAffectsWidth");
@@ -121,6 +125,7 @@ namespace UnityEditor
             }
 
             GUIPopup(s_Texts.textureMode, m_TextureMode, s_Texts.textureModeOptions);
+            GUIVector2Field(s_Texts.textureScale, m_TextureScale);
             GUIToggle(s_Texts.sizeAffectsWidth, m_SizeAffectsWidth);
 
             if (!m_Mode.hasMultipleDifferentValues)

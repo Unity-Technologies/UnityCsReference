@@ -34,11 +34,13 @@ namespace UnityEditor
             public static readonly GUIContent simplifyPreview = EditorGUIUtility.TrTextContent("Simplify Preview", "Show a preview of the simplified version of the line.");
             public static readonly GUIContent subdivide = EditorGUIUtility.TrTextContent("Subdivide Selected" , "Inserts a new point in between selected adjacent points.");
             public static readonly GUIContent textureMode = EditorGUIUtility.TrTextContent("Texture Mode", "Should the U coordinate be stretched or tiled?");
+            public static readonly GUIContent textureScale = EditorGUIUtility.TrTextContent("Texture Scale", "Scale the texture along the UV coordinates using this multiplier.");
             public static readonly GUIContent tolerance = EditorGUIUtility.TrTextContent("Tolerance", "Used to evaluate which points should be removed from the line. A higher value results in a simpler line (fewer points). A value of 0 results in the exact same line with little to no reduction.");
             public static readonly GUIStyle richTextMiniLabel = new GUIStyle(EditorStyles.miniLabel) { richText = true };
             public static readonly GUIContent shadowBias = EditorGUIUtility.TrTextContent("Shadow Bias", "Apply a shadow bias to prevent self-shadowing artifacts. The specified value is the proportion of the line width at each segment.");
             public static readonly GUIContent generateLightingData = EditorGUIUtility.TrTextContent("Generate Lighting Data", "Toggle generation of normal and tangent data, for use in lit shaders.");
             public static readonly GUIContent sceneTools = EditorGUIUtility.TrTextContent("Scene Tools");
+            public static readonly GUIContent applyActiveColorSpace = EditorGUIUtility.TrTextContent("Apply Active Color Space", "When using Linear Rendering, colors will be converted appropriately before being passed to the GPU.");
 
             public static readonly GUIContent[] toolContents =
             {
@@ -84,12 +86,15 @@ namespace UnityEditor
         private SerializedProperty m_ShadowBias;
         private SerializedProperty m_GenerateLightingData;
         private SerializedProperty m_Loop;
+        private SerializedProperty m_ApplyActiveColorSpace;
         private SerializedProperty m_NumCapVertices;
         private SerializedProperty m_NumCornerVertices;
         private SerializedProperty m_Positions;
         private SerializedProperty m_PositionsSize;
         private SerializedProperty m_TextureMode;
+        private SerializedProperty m_TextureScale;
         private SerializedProperty m_UseWorldSpace;
+        private SerializedProperty m_MaskInteraction;
 
         private LineRendererPositionsView m_PositionsView;
 
@@ -130,6 +135,7 @@ namespace UnityEditor
             m_CurveEditor.OnEnable(serializedObject);
 
             m_Loop = serializedObject.FindProperty("m_Loop");
+            m_ApplyActiveColorSpace = serializedObject.FindProperty("m_ApplyActiveColorSpace");
             m_Positions = serializedObject.FindProperty("m_Positions");
             m_PositionsSize = serializedObject.FindProperty("m_Positions.Array.size");
             m_ColorGradient = serializedObject.FindProperty("m_Parameters.colorGradient");
@@ -137,9 +143,11 @@ namespace UnityEditor
             m_NumCapVertices = serializedObject.FindProperty("m_Parameters.numCapVertices");
             m_Alignment = serializedObject.FindProperty("m_Parameters.alignment");
             m_TextureMode = serializedObject.FindProperty("m_Parameters.textureMode");
+            m_TextureScale = serializedObject.FindProperty("m_Parameters.textureScale");
             m_GenerateLightingData = serializedObject.FindProperty("m_Parameters.generateLightingData");
             m_ShadowBias = serializedObject.FindProperty("m_Parameters.shadowBias");
             m_UseWorldSpace = serializedObject.FindProperty("m_UseWorldSpace");
+            m_MaskInteraction = serializedObject.FindProperty("m_MaskInteraction");
 
             m_PositionsView = new LineRendererPositionsView(m_Positions);
             m_PositionsView.selectionChangedCallback += PositionsViewSelectionChanged;
@@ -420,6 +428,8 @@ namespace UnityEditor
             if (EditorGUI.EndChangeCheck())
                 ResetSimplifyPreview();
 
+            EditorGUILayout.PropertyField(m_ApplyActiveColorSpace, Styles.applyActiveColorSpace);
+
             m_ShowPositionsAnimation.target = m_Positions.isExpanded = EditorGUILayout.Foldout(m_Positions.isExpanded, Styles.positions, true);
             if (m_ShowPositionsAnimation.faded > 0)
             {
@@ -445,9 +455,11 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_NumCapVertices, Styles.numCapVertices);
             EditorGUILayout.PropertyField(m_Alignment, Styles.alignment);
             EditorGUILayout.PropertyField(m_TextureMode, Styles.textureMode);
+            EditorGUILayout.PropertyField(m_TextureScale, Styles.textureScale);
             EditorGUILayout.PropertyField(m_ShadowBias, Styles.shadowBias);
             EditorGUILayout.PropertyField(m_GenerateLightingData, Styles.generateLightingData);
             EditorGUILayout.PropertyField(m_UseWorldSpace);
+            EditorGUILayout.PropertyField(m_MaskInteraction);
 
             DrawMaterials();
             LightingSettingsGUI(false);

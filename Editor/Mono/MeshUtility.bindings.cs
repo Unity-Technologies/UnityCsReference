@@ -27,8 +27,9 @@ namespace UnityEditor
         extern public static void SetMeshCompression(Mesh mesh, ModelImporterMeshCompression compression);
         extern public static ModelImporterMeshCompression GetMeshCompression(Mesh mesh);
 
-        [NativeName("SetPerTriangleUV2")] extern private static void SetPerTriangleUV2NoCheck(Mesh src, Vector2[] triUV);
-        public static void SetPerTriangleUV2(Mesh src, Vector2[] triUV)
+        [NativeName("SetPerTriangleUV2")]
+        static extern bool SetPerTriangleUV2NoCheck(Mesh src, Vector2[] triUV);
+        public static bool SetPerTriangleUV2(Mesh src, Vector2[] triUV)
         {
             if (triUV == null)
                 throw new ArgumentNullException("triUV");
@@ -37,9 +38,9 @@ namespace UnityEditor
             if (uvCount != 3 * triCount)
             {
                 Debug.LogError("mesh contains " + triCount + " triangles but " + uvCount + " uvs are provided");
-                return;
+                return false;
             }
-            SetPerTriangleUV2NoCheck(src, triUV);
+            return SetPerTriangleUV2NoCheck(src, triUV);
         }
 
         extern internal static Vector2[] ComputeTextureBoundingHull(Texture texture, int vertexCount);

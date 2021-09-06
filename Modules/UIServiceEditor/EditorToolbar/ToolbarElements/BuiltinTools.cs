@@ -23,9 +23,12 @@ namespace UnityEditor.Toolbars
 
             EditorToolbarUtility.SetupChildrenAsButtonStrip(this);
 
-            var customToolButton = new LastCustomToolButton();
-            customToolButton.AddToClassList(EditorToolbarUtility.aloneStripElementClassName);
-            Add(customToolButton);
+            if (EditorToolUtility.GetNonBuiltinToolCount() > 0)
+            {
+                var customToolButton = new LastCustomToolButton();
+                customToolButton.AddToClassList(EditorToolbarUtility.aloneStripElementClassName);
+                Add(customToolButton);
+            }
 
             // Only show the contexts dropdown if there are non-builtin contexts available
             if (EditorToolUtility.toolContextsInProject > 1)
@@ -34,6 +37,8 @@ namespace UnityEditor.Toolbars
                 contexts.AddToClassList(EditorToolbarUtility.aloneStripElementClassName);
                 Insert(0, contexts);
             }
+
+            Add(new ComponentToolsStrip());
         }
     }
 }

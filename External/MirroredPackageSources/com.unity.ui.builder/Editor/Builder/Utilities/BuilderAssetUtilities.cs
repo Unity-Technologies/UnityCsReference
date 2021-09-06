@@ -157,7 +157,7 @@ namespace Unity.UI.Builder
                 veaParent = document.visualTreeAsset.GetRootUXMLElement(); // UXML Root Element
 
             var vea = makeVisualElementAsset(document.visualTreeAsset, veaParent, ve);
-            ve.SetProperty(BuilderConstants.ElementLinkedVisualElementAssetVEPropertyName, vea);
+            ve.SetVisualElementAsset(vea);
             ve.SetProperty(BuilderConstants.ElementLinkedBelongingVisualTreeAssetVEPropertyName, document.visualTreeAsset);
 
             if (index >= 0)

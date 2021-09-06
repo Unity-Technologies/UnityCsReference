@@ -436,25 +436,58 @@ namespace UnityEditor
 
         public static void DrawWireCube(Vector3 center, Vector3 size)
         {
-            Vector3 halfsize = size * 0.5f;
+            if (Event.current.type != EventType.Repaint || lineTransparency.a <= 0)
+                return;
 
-            Vector3[] points = new Vector3[10];
-            points[0] = center + new Vector3(-halfsize.x, -halfsize.y, -halfsize.z);
-            points[1] = center + new Vector3(-halfsize.x, halfsize.y, -halfsize.z);
-            points[2] = center + new Vector3(halfsize.x, halfsize.y, -halfsize.z);
-            points[3] = center + new Vector3(halfsize.x, -halfsize.y, -halfsize.z);
-            points[4] = center + new Vector3(-halfsize.x, -halfsize.y, -halfsize.z);
+            HandleUtility.ApplyWireMaterial(zTest);
+            GL.Color(color * lineTransparency);
 
-            points[5] = center + new Vector3(-halfsize.x, -halfsize.y, halfsize.z);
-            points[6] = center + new Vector3(-halfsize.x, halfsize.y, halfsize.z);
-            points[7] = center + new Vector3(halfsize.x, halfsize.y, halfsize.z);
-            points[8] = center + new Vector3(halfsize.x, -halfsize.y, halfsize.z);
-            points[9] = center + new Vector3(-halfsize.x, -halfsize.y, halfsize.z);
+            GL.PushMatrix();
+            GL.MultMatrix(matrix);
 
-            Handles.DrawPolyLine(points);
-            Handles.DrawLine(points[1], points[6]);
-            Handles.DrawLine(points[2], points[7]);
-            Handles.DrawLine(points[3], points[8]);
+            GL.Begin(GL.LINE_STRIP);
+            Vector3 p1, p2, p3, p6, p7, p8;
+            {
+                Vector3 halfsize = size * 0.5f;
+                GL.Vertex(center + new Vector3(-halfsize.x, -halfsize.y, -halfsize.z));
+                p1 = center + new Vector3(-halfsize.x, halfsize.y, -halfsize.z);
+                GL.Vertex(p1);
+                p2 = center + new Vector3(halfsize.x, halfsize.y, -halfsize.z);
+                GL.Vertex(p2);
+                p3 = center + new Vector3(halfsize.x, -halfsize.y, -halfsize.z);
+                GL.Vertex(p3);
+                GL.Vertex(center + new Vector3(-halfsize.x, -halfsize.y, -halfsize.z));
+                GL.Vertex(center + new Vector3(-halfsize.x, -halfsize.y, halfsize.z));
+
+                p6 = center + new Vector3(-halfsize.x, halfsize.y, halfsize.z);
+                GL.Vertex(p6);
+                p7 = center + new Vector3(halfsize.x, halfsize.y, halfsize.z);
+                GL.Vertex(p7);
+                p8 = center + new Vector3(halfsize.x, -halfsize.y, halfsize.z);
+                GL.Vertex(p8);
+                GL.Vertex(center + new Vector3(-halfsize.x, -halfsize.y, halfsize.z));
+            }
+            GL.End();
+            GL.Begin(GL.LINES);
+            {
+                GL.Vertex(p1);
+                GL.Vertex(p6);
+            }
+            GL.End();
+            GL.Begin(GL.LINES);
+            {
+                GL.Vertex(p2);
+                GL.Vertex(p7);
+            }
+            GL.End();
+            GL.Begin(GL.LINES);
+            {
+                GL.Vertex(p3);
+                GL.Vertex(p8);
+            }
+            GL.End();
+
+            GL.PopMatrix();
         }
 
         public static bool ShouldRenderGizmos()
@@ -1467,6 +1500,8 @@ namespace UnityEditor
         /// *listonly*
         public static void SetCamera(Camera camera)
         {
+            if (Event.current == null)
+                return;
             if (Event.current.type == EventType.Repaint)
                 Internal_SetupCamera(camera);
             else

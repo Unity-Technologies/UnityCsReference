@@ -25,6 +25,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             return version.Major == olderVersion?.Major && version.Minor == olderVersion?.Minor && version > olderVersion;
         }
 
+        public static bool IsEqualOrPatchOf(this SemVersion version, SemVersion? olderVersion)
+        {
+            return version.Major == olderVersion?.Major && version.Minor == olderVersion?.Minor && version >= olderVersion;
+        }
+
         public static bool IsMajorMinorPatchEqualTo(this SemVersion version, SemVersion? compareVersion)
         {
             return version.Major == compareVersion?.Major && version.Minor == compareVersion?.Minor && version.Patch == compareVersion?.Patch;

@@ -3,11 +3,13 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Bee.BeeDriver;
 using NiceIO;
 using ScriptCompilationBuildProgram.Data;
 using Unity.Profiling;
+using UnityEditor.Build.Player;
 using UnityEditor.Compilation;
 using UnityEditor.PackageManager;
 using UnityEditor.Scripting.Compilers;
@@ -47,6 +49,38 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (LocalizationDatabase.currentEditorLanguage != SystemLanguage.English && EditorPrefs.GetBool("Editor.kEnableCompilerMessagesLocalization", false))
                 localization = LocalizationDatabase.GetCulture(LocalizationDatabase.currentEditorLanguage);
 
+
+            var assembliesToScanForTypeDB = new HashSet<string>();
+            var searchPaths = new HashSet<string>(BuildPlayerDataGenerator.GetStaticSearchPaths(buildTarget));
+            var options = EditorScriptCompilationOptions.BuildingIncludingTestAssemblies;
+            if (buildingForEditor)
+                options |= EditorScriptCompilationOptions.BuildingForEditor;
+            foreach (var a in editorCompilation.GetAllScriptAssemblies(options, null))
+            {
+                if (!a.Flags.HasFlag(AssemblyFlags.EditorOnly))
+                {
+                    var path = a.FullPath.ToNPath();
+                    assembliesToScanForTypeDB.Add(path.ToString());
+                    searchPaths.Add(path.Parent.ToString());
+                }
+            }
+
+            var precompileAssemblies = editorCompilation.PrecompiledAssemblyProvider.GetPrecompiledAssembliesDictionary(
+                buildingForEditor,
+                BuildPipeline.GetBuildTargetGroup(buildTarget), buildTarget);
+            if (precompileAssemblies != null)
+            {
+                foreach (var a in precompileAssemblies)
+                {
+                    if (!a.Value.Flags.HasFlag(AssemblyFlags.EditorOnly))
+                    {
+                        var path = a.Value.Path.ToNPath();
+                        assembliesToScanForTypeDB.Add(path.ToString());
+                        searchPaths.Add(path.Parent.ToString());
+                    }
+                }
+            }
+
             beeDriver.DataForBuildProgram.Add(new ScriptCompilationData
             {
                 OutputDirectory = outputDirectory,
@@ -57,7 +91,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 CodegenAssemblies = codeGenAssemblies,
                 Debug = debug,
                 BuildTarget = buildTarget.ToString(),
-                Localization = localization
+                Localization = localization,
+                EnableDiagnostics = editorCompilation.EnableDiagnostics,
+                BuildPlayerDataOutput = $"Library/BuildPlayerData/{(buildingForEditor ? "Editor" : "Player")}",
+                ExtractRuntimeInitializeOnLoads = !buildingForEditor,
+                AssembliesToScanForTypeDB = assembliesToScanForTypeDB.OrderBy(p => p).ToArray(),
+                SearchPaths = searchPaths.OrderBy(p => p).ToArray()
             });
         }
 
@@ -96,6 +135,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 LanguageVersion = a.CompilerOptions.LanguageVersion,
                 Analyzers = a.CompilerOptions.RoslynAnalyzerDllPaths,
                 UseDeterministicCompilation = a.CompilerOptions.UseDeterministicCompilation,
+                SuppressCompilerWarnings = (a.Flags & AssemblyFlags.SuppressCompilerWarnings) != 0,
                 Asmdef = a.AsmDefPath,
                 CustomCompilerOptions = a.CompilerOptions.AdditionalCompilerArguments,
                 BclDirectories = MonoLibraryHelpers.GetSystemReferenceDirectories(a.CompilerOptions.ApiCompatibilityLevel),

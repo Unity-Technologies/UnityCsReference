@@ -15,8 +15,32 @@ namespace UnityEngine.UIElements
         private IInput m_Input;
         internal IInput input
         {
-            get => m_Input ?? (m_Input = new Input());
+            get => m_Input ?? (m_Input = GetDefaultInput());
             set => m_Input = value;
+        }
+
+        private IInput GetDefaultInput()
+        {
+            IInput input = new Input();
+            try
+            {
+                // When legacy input manager is disabled, any query to Input will throw an InvalidOperationException
+                input.GetAxisRaw(m_HorizontalAxis);
+            }
+            catch (InvalidOperationException)
+            {
+                input = new NoInput();
+                Debug.LogWarning(
+                    "UI Toolkit is currently relying on the legacy Input Manager for its active input source, " +
+                    "but the legacy Input Manager is not available using your current Project Settings. " +
+                    "Some UI Toolkit functionality might be missing or not working properly as a result. " +
+                    "To fix this problem, you can enable \"Input Manager (old)\" or \"Both\" in the " +
+                    "Active Input Source setting of the Player section. " +
+                    "UI Toolkit is using its internal default event system to process input. " +
+                    "Alternatively, you may activate new Input System support with UI Toolkit by " +
+                    "adding an EventSystem component to your active scene.");
+            }
+            return input;
         }
 
         private bool ShouldIgnoreEventsOnAppNotFocused()
@@ -40,6 +64,8 @@ namespace UnityEngine.UIElements
         private readonly string m_CancelButton = "Cancel";
         private readonly float m_InputActionsPerSecond = 10;
         private readonly float m_RepeatDelay = 0.5f;
+
+        private bool m_SendingTouchEvents;
 
         private Event m_Event = new Event();
         private BaseRuntimePanel m_FocusedPanel;
@@ -69,7 +95,11 @@ namespace UnityEngine.UIElements
             if (!isAppFocused && ShouldIgnoreEventsOnAppNotFocused() && updateMode == UpdateMode.IgnoreIfAppNotFocused)
                 return;
 
+            // touch needs to take precedence because of the mouse emulation layer
+            m_SendingTouchEvents = ProcessTouchEvents();
+
             SendIMGUIEvents();
+
             SendInputEvents();
         }
 
@@ -84,24 +114,26 @@ namespace UnityEngine.UIElements
                 {
                     SendFocusBasedEvent(self => UIElementsRuntimeUtility.CreateEvent(self.m_Event), this);
                 }
-                else if (m_Event.type == EventType.ScrollWheel)
+                else if (!m_SendingTouchEvents && input.mousePresent)
                 {
                     var screenPosition = GetLocalScreenPosition(m_Event, out var targetDisplay);
-                    SendPositionBasedEvent(screenPosition, m_Event.delta, PointerId.mousePointerId, targetDisplay, (panelPosition, panelDelta, self) =>
+                    if (m_Event.type == EventType.ScrollWheel)
                     {
-                        self.m_Event.mousePosition = panelPosition;
-                        return UIElementsRuntimeUtility.CreateEvent(self.m_Event);
-                    }, this);
-                }
-                else
-                {
-                    var screenPosition = GetLocalScreenPosition(m_Event, out var targetDisplay);
-                    SendPositionBasedEvent(screenPosition, m_Event.delta, PointerId.mousePointerId, targetDisplay, (panelPosition, panelDelta, self) =>
+                        SendPositionBasedEvent(screenPosition, m_Event.delta, PointerId.mousePointerId, targetDisplay, (panelPosition, panelDelta, self) =>
+                        {
+                            self.m_Event.mousePosition = panelPosition;
+                            return UIElementsRuntimeUtility.CreateEvent(self.m_Event);
+                        }, this);
+                    }
+                    else
                     {
-                        self.m_Event.mousePosition = panelPosition;
-                        self.m_Event.delta = panelDelta;
-                        return UIElementsRuntimeUtility.CreateEvent(self.m_Event);
-                    }, this, deselectIfNoTarget: m_Event.type == EventType.MouseDown);
+                        SendPositionBasedEvent(screenPosition, m_Event.delta, PointerId.mousePointerId, targetDisplay, (panelPosition, panelDelta, self) =>
+                        {
+                            self.m_Event.mousePosition = panelPosition;
+                            self.m_Event.delta = panelDelta;
+                            return UIElementsRuntimeUtility.CreateEvent(self.m_Event);
+                        }, this, deselectIfNoTarget: m_Event.type == EventType.MouseDown);
+                    }
                 }
             }
         }
@@ -124,8 +156,6 @@ namespace UnityEngine.UIElements
             {
                 SendFocusBasedEvent(self => NavigationCancelEvent.GetPooled(), this);
             }
-
-            ProcessTouchEvents();
         }
 
         internal void SendFocusBasedEvent<TArg>(Func<TArg, EventBase> evtFactory, TArg arg)
@@ -188,7 +218,7 @@ namespace UnityEngine.UIElements
                 var panel = panels[i];
                 if (panel is BaseRuntimePanel runtimePanel)
                 {
-                    if (panel.GetCapturingElement(pointerId) != null)
+                    if (panel.GetCapturingElement(pointerId) is VisualElement ve && ve.panel == panel)
                     {
                         runtimePanel.ScreenToPanel(mousePosition, delta, out var panelPosition, out var panelDelta, true);
 
@@ -208,34 +238,60 @@ namespace UnityEngine.UIElements
                 }
             }
 
+            // Find a candidate panel for the event
             // Try all the panels, from closest to deepest
+            BaseRuntimePanel candidatePanel = null;
+            Vector2 candidateMousePosition = Vector2.zero;
+            Vector2 candidateDelta = Vector2.zero;
             for (var i = panels.Count - 1; i >= 0; i--)
             {
-                var panel = panels[i];
-                if (panel is BaseRuntimePanel runtimePanel && (targetDisplay == null || runtimePanel.targetDisplay == targetDisplay))
+                if (panels[i] is BaseRuntimePanel runtimePanel && (targetDisplay == null || runtimePanel.targetDisplay == targetDisplay))
                 {
-                    if (!runtimePanel.ScreenToPanel(mousePosition, delta, out var panelPosition, out var panelDelta) ||
-                        runtimePanel.Pick(panelPosition) == null)
-                        continue;
-
-                    using (EventBase evt = evtFactory(panelPosition, panelDelta, arg))
+                    if (runtimePanel.ScreenToPanel(mousePosition, delta, out candidateMousePosition, out candidateDelta) &&
+                        runtimePanel.Pick(candidateMousePosition) != null)
                     {
-                        runtimePanel.visualTree.SendEvent(evt);
-
-                        if (evt.processedByFocusController)
-                        {
-                            UpdateFocusedPanel(runtimePanel);
-                        }
-
-                        // We filter through panel.Pick, so only 1 panel receives an event. The others are blocked.
-                        return;
+                        candidatePanel = runtimePanel;
+                        break;
                     }
                 }
             }
 
-            if (deselectIfNoTarget)
+            BaseRuntimePanel lastActivePanel = PointerDeviceState.GetPanel(pointerId, ContextType.Player) as BaseRuntimePanel;
+            if (lastActivePanel != null && lastActivePanel != candidatePanel)
             {
-                focusedPanel = null;
+                // Send an event to the last panel the pointer was in, so it can dispatch [Mouse|Pointer][Out|Leave] events.
+                lastActivePanel.ScreenToPanel(mousePosition, delta, out var panelPosition, out var panelDelta, true);
+                using (EventBase lastActivePanelEvent = evtFactory(panelPosition, panelDelta, arg))
+                {
+                    lastActivePanel.visualTree.SendEvent(lastActivePanelEvent);
+                }
+            }
+
+            if (candidatePanel != null)
+            {
+                using (EventBase evt = evtFactory(candidateMousePosition, candidateDelta, arg))
+                {
+                    candidatePanel.visualTree.SendEvent(evt);
+
+                    if (evt.processedByFocusController)
+                    {
+                        UpdateFocusedPanel(candidatePanel);
+                    }
+                }
+            }
+            else
+            {
+                if (lastActivePanel == null)
+                {
+                    // Mouse and pointer events calls PointerDeviceState.SavePointerPosition in their PreDispatch().
+                    // If we did not send any event, we need to manually update the pointer position.
+                    PointerDeviceState.SavePointerPosition(pointerId, mousePosition, null, ContextType.Player);
+                }
+
+                if (deselectIfNoTarget)
+                {
+                    focusedPanel = null;
+                }
             }
         }
 
@@ -383,14 +439,25 @@ namespace UnityEngine.UIElements
             float GetAxisRaw(string axis);
             int touchCount { get; }
             Touch GetTouch(int index);
+            bool mousePresent { get; }
         }
 
-        internal class Input : IInput
+        private class Input : IInput
         {
             public bool GetButtonDown(string button) => UnityEngine.Input.GetButtonDown(button);
             public float GetAxisRaw(string axis) => UnityEngine.Input.GetAxis(axis);
             public int touchCount => UnityEngine.Input.touchCount;
             public Touch GetTouch(int index) => UnityEngine.Input.GetTouch(index);
+            public bool mousePresent => UnityEngine.Input.mousePresent;
+        }
+
+        private class NoInput : IInput
+        {
+            public bool GetButtonDown(string button) => false;
+            public float GetAxisRaw(string axis) => 0f;
+            public int touchCount => 0;
+            public Touch GetTouch(int index) => default;
+            public bool mousePresent => false;
         }
     }
 }

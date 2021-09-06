@@ -410,7 +410,10 @@ namespace UnityEditor
 
         internal bool canEditMultipleObjects
         {
-            get { return GetType().GetCustomAttributes(typeof(CanEditMultipleObjects), false).Length > 0; }
+            get
+            {
+                return Attribute.IsDefined(GetType(), typeof(CanEditMultipleObjects), false);
+            }
         }
 
         internal virtual IPreviewable preview

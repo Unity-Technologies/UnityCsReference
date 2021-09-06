@@ -181,7 +181,13 @@ namespace UnityEditor
         NET_Micro = 5,
 
         // .NET Standard 2.0
-        NET_Standard_2_0 = 6
+        NET_Standard_2_0 = 6,
+
+        // Latest .NET Standard version Unity supports
+        NET_Standard = NET_Standard_2_0,
+
+        // .NET Framework 8 + .NET Standard 2.1 APIs
+        NET_Unity_4_8 = NET_4_6,
     }
 
     public enum ManagedStrippingLevel
@@ -189,7 +195,8 @@ namespace UnityEditor
         Disabled = 0,
         Low = 1,
         Medium = 2,
-        High = 3
+        High = 3,
+        Minimal = 4,
     }
 
     // What to do on uncaught .NET exception (on iOS)
@@ -257,6 +264,13 @@ namespace UnityEditor
         PVRTC = 4,
         DXTC = 5,
         BPTC = 6
+    }
+
+    public enum InsecureHttpOption
+    {
+        NotAllowed = 0,
+        DevelopmentOnly = 1,
+        AlwaysAllowed = 2,
     }
 
     // Player Settings is where you define various parameters for the final game that you will build in Unity. Some of these values are used in the Resolution Dialog that launches when you open a standalone game.
@@ -763,7 +777,7 @@ namespace UnityEditor
 
         internal static string[] ConvertScriptingDefineStringToArray(string defines)
         {
-            return defines.Split(defineSplits);
+            return defines.Split(defineSplits, StringSplitOptions.RemoveEmptyEntries);
         }
 
         internal static string ConvertScriptingDefineArrayToString(string[] defines)
@@ -809,7 +823,7 @@ namespace UnityEditor
 
         // [Obsolete("Use GetScriptingDefineSymbols(NamedBuildTarget buildTarget, out string[] defines) instead")]
         public static void GetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup, out string[] defines) =>
-            defines = GetScriptingDefineSymbolsForGroup(targetGroup).Split(';');
+            defines = ConvertScriptingDefineStringToArray(GetScriptingDefineSymbolsForGroup(targetGroup));
 
         // [Obsolete("Use SetScriptingDefineSymbols(NamedBuildTarget buildTarget, string defines) instead")]
         public static void SetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup, string defines) =>
@@ -909,14 +923,16 @@ namespace UnityEditor
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
         [NativeMethod("GetUserScriptingDefineSymbols")]
         private static extern string GetScriptingDefineSymbolsInternal(string buildTargetName);
-        public static string GetScriptingDefineSymbols(NamedBuildTarget buildTarget) => GetScriptingDefineSymbolsInternal(buildTarget.TargetName);
-        public static void GetScriptingDefineSymbols(NamedBuildTarget buildTarget, out string[] defines) => defines = GetScriptingDefineSymbols(buildTarget).Split(';');
+        public static string GetScriptingDefineSymbols(NamedBuildTarget buildTarget) =>
+            GetScriptingDefineSymbolsInternal(buildTarget.TargetName);
+        public static void GetScriptingDefineSymbols(NamedBuildTarget buildTarget, out string[] defines) =>
+            defines = ConvertScriptingDefineStringToArray(GetScriptingDefineSymbols(buildTarget));
 
         // Set user-specified symbols for script compilation for the given build target group.
         public static void SetScriptingDefineSymbols(NamedBuildTarget buildTarget, string defines)
         {
             if (!string.IsNullOrEmpty(defines))
-                defines = string.Join(";", defines.Split(defineSplits, StringSplitOptions.RemoveEmptyEntries));
+                defines = string.Join(";", ConvertScriptingDefineStringToArray(defines));
 
             SetScriptingDefineSymbolsInternal(buildTarget.TargetName, defines);
         }
@@ -1435,6 +1451,9 @@ namespace UnityEditor
         // Should unused [[Mesh]] components be excluded from game build?
         public static extern bool stripUnusedMeshComponents { get; set; }
 
+        // Don't do fuzzy variant selection in the player. If the requested variant is not there, use error shader.
+        public static extern bool strictShaderVariantMatching { get; set; }
+
         // Should unused mips be excluded from texture build?
         public static extern bool mipStripping { get; set; }
 
@@ -1529,6 +1548,8 @@ namespace UnityEditor
         [StaticAccessor("GetPlayerSettings()")]
         [NativeMethod("OnVirtualTexturingChanged")]
         internal static extern bool OnVirtualTexturingChanged();
+
+        public static extern InsecureHttpOption insecureHttpOption { get; set; }
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
         public static extern ShaderPrecisionModel GetShaderPrecisionModel();

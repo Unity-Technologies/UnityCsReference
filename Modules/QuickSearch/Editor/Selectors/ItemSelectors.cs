@@ -94,5 +94,44 @@ namespace UnityEditor.Search
                 return Styles.itemLabelrightAligned;
             return Styles.itemLabelLeftAligned;
         }
+
+        [SearchColumnProvider("size")]
+        internal static void InitializeItemSizeColumn(SearchColumn column)
+        {
+            column.drawer = args =>
+            {
+                var itemStyle = GetItemContentStyle(args.column);
+                if (Utils.TryGetNumber(args.value, out var n))
+                    GUI.Label(args.rect, Utils.FormatBytes((long)n), itemStyle);
+                else
+                    GUI.Label(args.rect, args.value?.ToString() ?? string.Empty, itemStyle);
+                return args.value;
+            };
+        }
+
+        [SearchColumnProvider("count")]
+        internal static void InitializeCountColumn(SearchColumn column)
+        {
+            column.drawer = args =>
+            {
+                var itemStyle = GetItemContentStyle(args.column);
+                if (Utils.TryGetNumber(args.value, out var n))
+                    GUI.Label(args.rect, Utils.FormatCount((ulong)n), itemStyle);
+                else
+                    GUI.Label(args.rect, args.value?.ToString() ?? string.Empty, itemStyle);
+                return args.value;
+            };
+        }
+
+        [SearchColumnProvider("selectable")]
+        internal static void InitializeSelectableColumn(SearchColumn column)
+        {
+            column.drawer = args =>
+            {
+                var itemStyle = GetItemContentStyle(args.column);
+                EditorGUI.SelectableLabel(args.rect, args.value?.ToString() ?? string.Empty, itemStyle);
+                return args.value;
+            };
+        }
     }
 }

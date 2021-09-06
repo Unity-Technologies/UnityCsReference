@@ -68,6 +68,26 @@ namespace UnityEditor
         GUIContent[] m_RootMotionBoneList;
 
         private ExposeTransformEditor m_ExposeTransformEditor;
+        private SerializedObject m_AvatarSourceSerializedObject;
+
+        SerializedObject avatarSourceSerializedObject
+        {
+            get
+            {
+                // to keep the serialized object in sync with the current source avatar
+                Object currentAvatar = m_AvatarSource?.objectReferenceValue;
+                if (currentAvatar == null || currentAvatar != m_AvatarSourceSerializedObject?.targetObject)
+                {
+                    m_AvatarSourceSerializedObject?.Dispose();
+                    m_AvatarSourceSerializedObject = null;
+                    if (currentAvatar != null)
+                        m_AvatarSourceSerializedObject = new SerializedObject(currentAvatar);
+                }
+
+                m_AvatarSourceSerializedObject?.Update();
+                return m_AvatarSourceSerializedObject;
+            }
+        }
 
         private ModelImporterAnimationType animationType
         {
@@ -75,7 +95,6 @@ namespace UnityEditor
             set { m_AnimationType.intValue = (int)value; }
         }
 
-        bool m_AvatarCopyIsUpToDate;
         private bool m_CanMultiEditTransformList;
 
         bool m_IsBiped = false;
@@ -156,9 +175,6 @@ namespace UnityEditor
 
             m_CanMultiEditTransformList = CanMultiEditTransformList();
 
-            // Check if avatar definition is same as the one it's copied from
-            CheckIfAvatarCopyIsUpToDate();
-
             m_IsBiped = false;
             m_BipedMappingReport = new List<string>();
 
@@ -168,6 +184,12 @@ namespace UnityEditor
             {
                 ResetAvatar();
             }
+        }
+
+        internal override void OnDisable()
+        {
+            if (m_AvatarSourceSerializedObject != null)
+                m_AvatarSourceSerializedObject.Dispose();
         }
 
         private void UpdateBipedMappingReport()
@@ -195,19 +217,19 @@ namespace UnityEditor
             return true;
         }
 
-        void CheckIfAvatarCopyIsUpToDate()
+        bool AvatarCopyIsUpToDate()
         {
             if (!(animationType == ModelImporterAnimationType.Human || animationType == ModelImporterAnimationType.Generic) || m_AvatarSource.objectReferenceValue == null)
-            {
-                m_AvatarCopyIsUpToDate = true;
-                return;
-            }
+                return true;
 
-            // Get SerializedObject of this importer and the importer of the source avatar
-            string path = AssetDatabase.GetAssetPath(m_AvatarSource.objectReferenceValue);
-            ModelImporter sourceImporter = AssetImporter.GetAtPath(path) as ModelImporter;
+            SerializedProperty humanDescription = serializedObject.FindProperty("m_HumanDescription");
 
-            m_AvatarCopyIsUpToDate = DoesHumanDescriptionMatch(singleImporter, sourceImporter);
+            //Because of the constraint that Editors must share an Animation Source, if we have a mix of different human descriptions, then *at least* one is out of date
+            if (humanDescription.hasMultipleDifferentValues)
+                return false;
+
+            //Does the HumanDescription in the Importer match the one in the referenced Avatar?
+            return SerializedProperty.DataEquals(humanDescription, avatarSourceSerializedObject.FindProperty("m_HumanDescription"));
         }
 
         internal override void OnDestroy()
@@ -400,35 +422,41 @@ namespace UnityEditor
             }
         }
 
-        void CheckAvatar(Avatar sourceAvatar)
+        bool IsAvatarValid(Avatar newAvatar)
         {
-            if (sourceAvatar != null)
+            if (newAvatar != null)
             {
-                if (sourceAvatar.isHuman && (animationType != ModelImporterAnimationType.Human))
+                if (newAvatar.isHuman && (animationType != ModelImporterAnimationType.Human))
                 {
                     if (EditorUtility.DisplayDialog("Assigning a Humanoid Avatar on a Generic Rig",
                         "Do you want to change Animation Type to Humanoid ?", "Yes", "No"))
                     {
                         animationType = ModelImporterAnimationType.Human;
+                        return true;
                     }
                     else
                     {
-                        m_AvatarSource.objectReferenceValue = null;
+                        //New Avatar is invalid
+                        return false;
                     }
                 }
-                else if (!sourceAvatar.isHuman && (animationType != ModelImporterAnimationType.Generic))
+                else if (!newAvatar.isHuman && (animationType != ModelImporterAnimationType.Generic))
                 {
                     if (EditorUtility.DisplayDialog("Assigning a Generic Avatar on a Humanoid Rig",
                         "Do you want to change Animation Type to Generic ?", "Yes", "No"))
                     {
                         animationType = ModelImporterAnimationType.Generic;
+                        return true;
                     }
                     else
                     {
-                        m_AvatarSource.objectReferenceValue = null;
+                        //New Avatar is invalid
+                        return false;
                     }
                 }
             }
+
+            return true;
         }
 
         void CopyAvatarGUI()
@@ -439,28 +467,33 @@ With this option, this model will not create any avatar but only import animatio
 
             EditorGUILayout.BeginHorizontal();
 
+            Avatar previousAvatar = (Avatar)m_AvatarSource.objectReferenceValue;
             EditorGUI.BeginChangeCheck();
             EditorGUILayout.ObjectField(m_AvatarSource, typeof(Avatar), GUIContent.Temp("Source"), ValidateAvatarSource);
             var sourceAvatar = m_AvatarSource.objectReferenceValue as Avatar;
             if (EditorGUI.EndChangeCheck())
             {
-                CheckAvatar(sourceAvatar);
+                if (IsAvatarValid(sourceAvatar))
+                {
+                    AvatarSetupTool.ClearAll(m_HumanBoneArray, m_Skeleton);
 
-                AvatarSetupTool.ClearAll(m_HumanBoneArray, m_Skeleton);
-
-                if (sourceAvatar != null)
-                    CopyHumanDescriptionFromOtherModel(sourceAvatar);
-
-                m_AvatarCopyIsUpToDate = true;
+                    if (sourceAvatar != null)
+                        CopyHumanDescriptionFromOtherModel(sourceAvatar);
+                }
+                else
+                    //Avatar is invalid so revert to the previous Avatar
+                    m_AvatarSource.objectReferenceValue = previousAvatar;
             }
 
-            if (sourceAvatar != null && !m_AvatarSource.hasMultipleDifferentValues && !m_AvatarCopyIsUpToDate)
+            if (sourceAvatar != null && !m_AvatarSource.hasMultipleDifferentValues && !AvatarCopyIsUpToDate())
             {
                 if (GUILayout.Button(Styles.UpdateMuscleDefinitionFromSource, EditorStyles.miniButton))
                 {
-                    AvatarSetupTool.ClearAll(m_HumanBoneArray, m_Skeleton);
-                    CopyHumanDescriptionFromOtherModel(sourceAvatar);
-                    m_AvatarCopyIsUpToDate = true;
+                    if (IsAvatarValid(sourceAvatar))
+                    {
+                        AvatarSetupTool.ClearAll(m_HumanBoneArray, m_Skeleton);
+                        CopyHumanDescriptionFromOtherModel(sourceAvatar);
+                    }
                 }
             }
 
@@ -517,6 +550,8 @@ With this option, this model will not create any avatar but only import animatio
 
         public override void OnInspectorGUI()
         {
+            serializedObject.Update();
+
             string errors = m_RigImportErrors.stringValue;
             string warnings = m_RigImportWarnings.stringValue;
 
@@ -541,6 +576,10 @@ With this option, this model will not create any avatar but only import animatio
             if (EditorGUI.EndChangeCheck())
             {
                 m_AvatarSource.objectReferenceValue = null;
+
+                if (m_AvatarSourceSerializedObject != null)
+                    m_AvatarSourceSerializedObject.Dispose();
+                m_AvatarSourceSerializedObject = null;
 
                 if (animationType == ModelImporterAnimationType.Legacy)
                     m_AnimationCompression.intValue = (int)ModelImporterAnimationCompression.KeyframeReduction;
@@ -631,19 +670,6 @@ With this option, this model will not create any avatar but only import animatio
             return new SerializedObject(importer);
         }
 
-        static bool DoesHumanDescriptionMatch(ModelImporter importer, ModelImporter otherImporter)
-        {
-            SerializedObject so = new SerializedObject(new Object[] { importer, otherImporter });
-
-            so.maxArraySizeForMultiEditing = Math.Max(importer.transformPaths.Length, otherImporter.transformPaths.Length);
-            SerializedProperty prop = so.FindProperty("m_HumanDescription");
-            bool matches = !prop.hasMultipleDifferentValues;
-
-            so.Dispose();
-
-            return matches;
-        }
-
         static void CopyHumanDescriptionToDestination(SerializedObject sourceObject, SerializedObject targetObject)
         {
             targetObject.CopyFromSerializedProperty(sourceObject.FindProperty("m_HumanDescription"));
@@ -651,11 +677,11 @@ With this option, this model will not create any avatar but only import animatio
 
         private void CopyHumanDescriptionFromOtherModel(Avatar sourceAvatar)
         {
-            string srcAssetPath = AssetDatabase.GetAssetPath(sourceAvatar);
-            SerializedObject srcImporter = GetModelImporterSerializedObject(srcAssetPath);
-
-            CopyHumanDescriptionToDestination(srcImporter, serializedObject);
-            srcImporter.Dispose();
+            //This could be an Avatar sub-asset, or a distinct avatar asset
+            using (SerializedObject avatarSerializedObject = new SerializedObject(sourceAvatar))
+            {
+                CopyHumanDescriptionToDestination(avatarSerializedObject, serializedObject);
+            }
         }
 
         private void SetupReferencedClip(string otherModelImporterPath)

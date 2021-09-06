@@ -92,6 +92,13 @@ namespace UnityEditor
                 Init(true);
         }
 
+        internal bool HandleShortcutEvent(Event evt)
+        {
+            if (m_ParticleEffectUI != null)
+                return m_ParticleEffectUI.HandleShortcutEvent(evt);
+            return false;
+        }
+
         void UndoRedoPerformed()
         {
             Init(true);

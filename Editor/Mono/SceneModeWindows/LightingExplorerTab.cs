@@ -15,7 +15,10 @@ namespace UnityEditor
 
         internal GUIContent title { get { return m_Title; } }
 
-        public LightingExplorerTab(string title, Func<UnityEngine.Object[]> objects, Func<LightingExplorerTableColumn[]> columns, bool showFilterGUI = true)
+        public LightingExplorerTab(string title, Func<UnityEngine.Object[]> objects, Func<LightingExplorerTableColumn[]> columns)
+            : this(title, objects, columns, true) {}
+
+        public LightingExplorerTab(string title, Func<UnityEngine.Object[]> objects, Func<LightingExplorerTableColumn[]> columns, bool showFilterGUI)
         {
             if (objects() == null)
                 throw new ArgumentException("Objects are not allowed to be null", "objects");

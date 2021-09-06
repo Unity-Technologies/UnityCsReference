@@ -83,7 +83,7 @@ namespace UnityEditor.Search
             Dispose(false);
         }
 
-        [Obsolete("ResetFilter has been deprecated and there is no replacement.", error: false)]
+        [Obsolete("ResetFilter has been deprecated and there is no replacement.", error: true)]
         public void ResetFilter(bool enableAll)
         {
             throw new NotSupportedException();

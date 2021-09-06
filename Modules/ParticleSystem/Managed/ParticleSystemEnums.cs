@@ -229,6 +229,13 @@ namespace UnityEngine
         Custom = 2                  // The value is driven by user script, a property in the inspector or animation.
     }
 
+    // Which physics gravity to apply
+    public enum ParticleSystemGravitySource
+    {
+        Physics3D = 0,
+        Physics2D = 1
+    };
+
     // The mode used for velocity inheritence
     public enum ParticleSystemInheritVelocityMode
     {
@@ -356,7 +363,8 @@ namespace UnityEngine
         Stretch = 0,                // Stretch the texture over the entire trail length.
         Tile = 1,                   // Repeat the texture along the trail.
         DistributePerSegment = 2,   // Stretch the texture over the entire trail, but treat each segment as though it is of equal length.
-        RepeatPerSegment = 3        // Repeat the texture along the trail, at a rate of one repetition per segment.
+        RepeatPerSegment = 3,       // Repeat the texture along the trail, at a rate of one repetition per segment.
+        Static = 4                  // UVs don't move when points are added/removed from the trails.
     }
 
     // The mode used to generate new points in a shape

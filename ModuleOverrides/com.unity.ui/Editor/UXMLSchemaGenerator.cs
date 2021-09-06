@@ -59,8 +59,10 @@ namespace UnityEditor.UIElements
             }
         }
 
-        public static void UpdateSchemaFiles()
+        public static void UpdateSchemaFiles(bool saveSelectedObject = false)
         {
+            var selectedObject = Selection.activeObject;
+
             Directory.CreateDirectory(k_SchemaFolder);
             using (var it = GenerateSchemaFiles(k_SchemaFolder + "/").GetEnumerator())
             {
@@ -80,6 +82,10 @@ namespace UnityEditor.UIElements
             }
 
             AssetDatabase.Refresh();
+
+            // Ensure that the selected object has not changed. Needed for UIElementsTemplate.CreateUXMLTemplate()
+            if (saveSelectedObject)
+                Selection.activeObject = selectedObject;
         }
 
         internal static Dictionary<string, string> GetNamespacePrefixDictionary()

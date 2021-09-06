@@ -3,11 +3,26 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor.Overlays;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
+    sealed class LegacyOverlay : IMGUIOverlay, ITransientOverlay
+    {
+        public OverlayWindow data { get; set; }
+
+        public bool showRequested {get; set; }
+
+        public override void OnGUI()
+        {
+            data?.sceneViewFunc?.Invoke(data.target, (SceneView)containerWindow);
+        }
+
+        public bool visible => showRequested;
+    }
+
     // Deprecated. Use `TransientSceneViewOverlay` instead.
     class SceneViewOverlay
     {
@@ -47,17 +62,32 @@ namespace UnityEditor
         // pass window parameter to render in sceneviews that are not the active view.
         public static void Window(GUIContent title, WindowFunction sceneViewFunc, int order, WindowDisplayOption option)
         {
+            Window(title, sceneViewFunc, order, null, option);
         }
 
         [Obsolete(k_ObsoleteMessage)]
         // pass window parameter to render in sceneviews that are not the active view.
         public static void Window(GUIContent title, WindowFunction sceneViewFunc, int order, Object target, WindowDisplayOption option, EditorWindow window = null)
         {
+            if (Event.current.type != EventType.Layout)
+                return;
+
+            ShowWindow(new OverlayWindow(title, sceneViewFunc, order, target, option));
         }
 
         [Obsolete(k_ObsoleteMessage)]
         public static void ShowWindow(OverlayWindow window)
         {
+            if (Event.current.type != EventType.Layout)
+                return;
+
+            if (SceneView.currentDrawingSceneView == null)
+            {
+                Debug.Log("SceneViewOverlay.ShowWindow can only be called from the scene view GUI");
+                return;
+            }
+
+            SceneView.currentDrawingSceneView.ShowLegacyOverlay(window);
         }
     }
 

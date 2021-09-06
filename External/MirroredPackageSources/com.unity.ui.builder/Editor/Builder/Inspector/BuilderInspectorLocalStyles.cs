@@ -77,7 +77,6 @@ namespace Unity.UI.Builder
                         }
                         else
                         {
-                            BuilderStyleRow.ReAssignTooltipToChild(styleField);
                             m_StyleFields.BindStyleField(styleRow, bindingPath, styleField);
                         }
 
@@ -213,7 +212,7 @@ namespace Unity.UI.Builder
         /// </summary>
         void GenerateTransitionPropertiesContent()
         {
-            ref var content = ref TransitionPropertyDropdownContent.Content;
+            var content = new CategoryDropdownContent();
             content.AppendValue(new CategoryDropdownContent.ValueItem
             {
                 value = "all",
@@ -226,7 +225,7 @@ namespace Unity.UI.Builder
                 if (string.IsNullOrWhiteSpace(groupName) || groupName == "Transition Animations")
                     continue;
 
-                content.AppendCategory(new CategoryDropdownContent.Category{ name = groupName });
+                content.AppendCategory(new CategoryDropdownContent.Category { name = groupName });
 
                 foreach (var element in kvp.Value)
                 {
@@ -241,7 +240,7 @@ namespace Unity.UI.Builder
                         if (!string.IsNullOrWhiteSpace(styleId.ToString()))
                         {
                             content.AppendValue(
-                            new CategoryDropdownContent.ValueItem
+                                new CategoryDropdownContent.ValueItem
                                 {
                                     categoryName = groupName,
                                     value = styleName,
@@ -301,6 +300,9 @@ namespace Unity.UI.Builder
                 value = "ignored",
                 displayName = "ignored"
             });
+
+            TransitionPropertyDropdownContent.Content = content;
         }
+
     }
 }

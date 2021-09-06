@@ -7,6 +7,7 @@ namespace ScriptCompilationBuildProgram.Data
     public static class Constants
     {
         public const string ScriptAssembliesTarget = "ScriptAssemblies";
+        public const string ScriptAssembliesAndTypeDBTarget = "ScriptAssembliesAndTypeDB";
         public const string MovedFromExtension = "mvfrm";
     }
 
@@ -21,6 +22,11 @@ namespace ScriptCompilationBuildProgram.Data
         public bool Debug;
         public string BuildTarget;
         public string Localization;
+        public string BuildPlayerDataOutput;
+        public bool ExtractRuntimeInitializeOnLoads;
+        public bool EnableDiagnostics;
+        public string[] AssembliesToScanForTypeDB;
+        public string[] SearchPaths;
     }
 
     public class AssemblyData
@@ -34,6 +40,7 @@ namespace ScriptCompilationBuildProgram.Data
         public string RuleSet;
         public string LanguageVersion;
         public bool UseDeterministicCompilation;
+        public bool SuppressCompilerWarnings;
         public string[] Analyzers = new string[0];
         public string Asmdef;
         public string[] BclDirectories = new string[0];

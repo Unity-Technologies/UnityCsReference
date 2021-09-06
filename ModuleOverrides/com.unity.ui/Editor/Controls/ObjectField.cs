@@ -346,7 +346,7 @@ namespace UnityEditor.UIElements
             });
         }
 
-        private void OnObjectChanged(Object obj)
+        internal void OnObjectChanged(Object obj)
         {
             value = TryReadComponentFromGameObject(obj, objectType);
         }

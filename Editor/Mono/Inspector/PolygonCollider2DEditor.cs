@@ -11,7 +11,8 @@ namespace UnityEditor
     [CanEditMultipleObjects]
     internal class PolygonCollider2DEditor : Collider2DEditorBase
     {
-        SerializedProperty m_Points;
+        private SerializedProperty m_Points;
+        private SerializedProperty m_UseDelaunayMesh;
 
         public override void OnEnable()
         {
@@ -19,6 +20,7 @@ namespace UnityEditor
 
             m_Points = serializedObject.FindProperty("m_Points");
             m_AutoTiling = serializedObject.FindProperty("m_AutoTiling");
+            m_UseDelaunayMesh = serializedObject.FindProperty("m_UseDelaunayMesh");
             m_Points.isExpanded = false;
         }
 
@@ -30,7 +32,7 @@ namespace UnityEditor
             {
                 EditorGUILayout.HelpBox(Styles.s_ColliderEditDisableHelp.text, MessageType.Info);
                 if (EditorTools.ToolManager.activeToolType == typeof(PolygonCollider2DTool))
-                    EditorTools.ToolManager.RestorePreviousPersistentTool();
+                    EditorTools.ToolManager.RestorePreviousTool();
             }
             else
             {
@@ -40,6 +42,8 @@ namespace UnityEditor
             // Grab this as the offset to the top of the drag target.
             GUILayout.Space(5);
             base.OnInspectorGUI();
+
+            EditorGUILayout.PropertyField(m_UseDelaunayMesh);
 
             if (targets.Length == 1)
             {
@@ -86,7 +90,7 @@ namespace UnityEditor
                     }
 
                     if (EditorTools.ToolManager.activeToolType == typeof(PolygonCollider2DTool))
-                        EditorTools.ToolManager.RestorePreviousPersistentTool();
+                        EditorTools.ToolManager.RestorePreviousTool();
                 }
 
                 return;

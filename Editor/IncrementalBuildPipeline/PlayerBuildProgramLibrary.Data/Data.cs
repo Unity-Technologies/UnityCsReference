@@ -35,6 +35,7 @@ namespace PlayerBuildProgramLibrary.Data
         public bool GenerateIdeProject;
         public bool Development;
         public Services Services;
+        public string[] ManagedAssemblies;
         public StreamingAssetsFile[] StreamingAssetsFiles;
     }
 
@@ -47,7 +48,6 @@ namespace PlayerBuildProgramLibrary.Data
     {
         public string[] LinkXmlFiles = new string[0];
         public string[] AssembliesToProcess = new string[0];
-        public string[] SearchDirectories = new string[0];
         public string EditorToLinkerData;
         public string Runtime;
         public string Profile;

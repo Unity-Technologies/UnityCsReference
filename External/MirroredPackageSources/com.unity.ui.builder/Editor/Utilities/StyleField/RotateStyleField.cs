@@ -77,7 +77,7 @@ namespace Unity.UI.Builder
         static readonly string s_VisualInputName = "unity-visual-input";
         public static readonly string s_RotateXFieldName = "x-field";
 
-        DimensionStyleField m_RotateXField;
+        AngleStyleField m_RotateXField;
 
         public RotateStyleField() : this(null) { }
 
@@ -94,23 +94,13 @@ namespace Unity.UI.Builder
 
             visualInput = this.Q(s_VisualInputName);
 
-            m_RotateXField = this.Q<DimensionStyleField>(s_RotateXFieldName);
+            m_RotateXField = this.Q<AngleStyleField>(s_RotateXFieldName);
 
             m_RotateXField.RegisterValueChangedCallback(e =>
             {
                 UpdateRotateField();
                 e.StopPropagation();
             });
-
-            m_RotateXField.option = StyleFieldConstants.UnitDegree;
-            m_RotateXField.units.Clear();
-            m_RotateXField.units.Add(StyleFieldConstants.UnitDegree);
-            m_RotateXField.units.Add(StyleFieldConstants.UnitGrad);
-            m_RotateXField.units.Add(StyleFieldConstants.UnitRad);
-            m_RotateXField.units.Add(StyleFieldConstants.UnitTurn);
-            m_RotateXField.populatesOptionsMenuFromParentRow = false;
-           
-            m_RotateXField.UpdateOptionsMenu();
 
             value = new BuilderRotate()
             {
@@ -127,7 +117,22 @@ namespace Unity.UI.Builder
         void RefreshSubFields()
         {
             m_RotateXField.SetValueWithoutNotify(value.x.ToString());
-            m_RotateXField.dragStep = value.x.unit == Dimension.Unit.Turn ? 0.1f : 1;
+
+            float step = 1;
+
+            switch (value.x.unit)
+            {
+                case Dimension.Unit.Turn:
+                    step = 0.05f;
+                    break;
+                case Dimension.Unit.Radian:
+                    step = Mathf.Deg2Rad;
+                    break;
+                default:
+                    break;
+            }
+
+            m_RotateXField.dragStep = step;
         }
 
         void UpdateRotateField()

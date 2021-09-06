@@ -26,7 +26,19 @@ namespace Unity.UI.Builder
 
         static readonly string s_DefaultKeyword = StyleFieldConstants.KeywordInitial;
 
-        public new class UxmlTraits : BaseField<string>.UxmlTraits {}
+        public new class UxmlTraits : BaseField<string>.UxmlTraits {
+            UxmlBoolAttributeDescription m_ShowOptions = new UxmlBoolAttributeDescription { name = "show-options", defaultValue = true };
+
+            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            {
+                base.Init(ve, bag, cc);
+                var field = (StyleField<T>)ve;
+                if (field != null)
+                {
+                    field.showOptions = m_ShowOptions.GetValueFromBag(bag, cc);
+                }
+            }
+        }
 
         TextField m_TextField;
         PopupField<string> m_OptionsPopup;
@@ -38,6 +50,12 @@ namespace Unity.UI.Builder
 
         protected TextField textField => m_TextField;
         protected PopupField<string> optionsPopup => m_OptionsPopup;
+
+        public bool showOptions
+        {
+            get => m_OptionsPopup.style.display == DisplayStyle.Flex;
+            set => m_OptionsPopup.style.display = value ? DisplayStyle.Flex : DisplayStyle.None;
+        }
 
         public T innerValue { get; protected set; }
 

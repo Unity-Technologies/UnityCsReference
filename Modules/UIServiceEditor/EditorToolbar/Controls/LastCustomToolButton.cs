@@ -39,7 +39,7 @@ namespace UnityEditor.Toolbars
         {
             if (evt.newValue)
             {
-                var last = EditorToolManager.GetLastCustomTool();
+                var last = EditorToolManager.lastCustomTool;
 
                 if (last == null || last is NoneTool)
                     DropDownMenu();
@@ -48,28 +48,28 @@ namespace UnityEditor.Toolbars
             }
             else
             {
-                ToolManager.RestorePreviousPersistentTool();
+                ToolManager.RestorePreviousTool();
             }
         }
 
         void DropDownMenu()
         {
-            EditorToolGUI.DropDownComponentToolsContextMenu(worldBound);
+            EditorToolGUI.ShowCustomGlobalToolsContextMenu(worldBound);
         }
 
         void UpdateState()
         {
-            SetValueWithoutNotify(Tools.current == Tool.Custom);
+            var last = EditorToolManager.lastCustomTool;
+            SetValueWithoutNotify(ToolManager.IsActiveTool(last));
         }
 
         void UpdateContents()
         {
-            var last = EditorToolManager.GetLastCustomTool();
+            var last = EditorToolManager.lastCustomTool;
             var content = EditorToolUtility.GetToolbarIcon(last);
             icon = content.image as Texture2D;
             tooltip = content.tooltip;
             SetEnabled(EditorToolUtility.GetNonBuiltinToolCount() > 0);
-
             UpdateState();
         }
     }

@@ -10,6 +10,7 @@ namespace UnityEngine.Playables
 {
     public static class AnimationPlayableUtilities
     {
+        [Obsolete("This function is no longer used as it overrides the Time Update Mode of the Playable Graph. Refer to the documentation for an example of an equivalent function.")]
         static public void Play(Animator animator, Playable playable, PlayableGraph graph)
         {
             AnimationPlayableOutput playableOutput = AnimationPlayableOutput.Create(graph, "AnimationClip", animator);

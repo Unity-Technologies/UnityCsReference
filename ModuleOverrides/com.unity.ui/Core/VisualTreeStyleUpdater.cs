@@ -75,7 +75,11 @@ namespace UnityEngine.UIElements
         public VisualTreeStyleUpdaterTraversal traversal
         {
             get => m_StyleContextHierarchyTraversal;
-            set => m_StyleContextHierarchyTraversal = value;
+            set
+            {
+                m_StyleContextHierarchyTraversal = value;
+                panel?.visualTree.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Layout | VersionChangeType.Transform);
+            }
         }
 
         private static readonly string s_Description = "Update Style";
@@ -164,6 +168,7 @@ namespace UnityEngine.UIElements
         public StyleVariableContext variableContext;
         public VisualElement currentElement;
         public Action<VisualElement, MatchResultInfo> processResult;
+        public AncestorFilter ancestorFilter = new AncestorFilter();
 
         public StyleMatchingContext(Action<VisualElement, MatchResultInfo> processResult)
         {
@@ -357,7 +362,11 @@ namespace UnityEngine.UIElements
                 }
             }
 
+            m_StyleMatchingContext.ancestorFilter.PushElement(element);
+
             Recurse(element, depth);
+
+            m_StyleMatchingContext.ancestorFilter.PopElement();
 
             m_StyleMatchingContext.variableContext = originalVariableContext;
             if (m_StyleMatchingContext.styleSheetCount > originalStyleSheetCount)

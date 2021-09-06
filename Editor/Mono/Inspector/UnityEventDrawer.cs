@@ -11,6 +11,7 @@ using UnityEngine;
 using UnityEditor;
 using UnityEngine.Events;
 using Object = UnityEngine.Object;
+using UnityEngine.Pool;
 
 namespace UnityEditorInternal
 {
@@ -92,7 +93,7 @@ namespace UnityEditorInternal
 
                 SerializedProperty listenersArray = prop.FindPropertyRelative("m_PersistentCalls.m_Calls");
                 state.m_ReorderableList =
-                    new ReorderableList(prop.serializedObject, listenersArray, false, true, true, true)
+                    new ReorderableList(prop.serializedObject, listenersArray, true, true, true, true)
                 {
                     drawHeaderCallback = DrawEventHeader,
                     drawElementCallback = DrawEvent,
@@ -393,59 +394,17 @@ namespace UnityEditorInternal
             m_LastSelectedIndex = list.index;
         }
 
-        static UnityEventBase GetDummyEvent(SerializedProperty prop)
+        internal static UnityEventBase GetDummyEvent(SerializedProperty prop)
         {
             //Use the SerializedProperty path to iterate through the fields of the inspected targetObject
             Object tgtobj = prop.serializedObject.targetObject;
             if (tgtobj == null)
                 return new UnityEvent();
 
-            UnityEventBase ret = null;
-            Type ft = tgtobj.GetType();
-            var bindflags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-            do
-            {
-                ret = GetDummyEventHelper(prop.propertyPath, ft, bindflags);
-                //no need to look for public members again since the base type covered that
-                bindflags = BindingFlags.Instance | BindingFlags.NonPublic;
-                ft = ft.BaseType;
-            }
-            while (ret == null && ft != null);
-            // go up the class hierarchy if it exists and the property is not found on the child
-            return (ret == null) ? new UnityEvent() : ret;
-        }
-
-        private static UnityEventBase GetDummyEventHelper(string propPath, Type targetObjectType, BindingFlags flags)
-        {
-            if (targetObjectType == null)
-                return null;
-            while (propPath.Length != 0)
-            {
-                //we could have a leftover '.' if the previous iteration handled an array element
-                if (propPath.StartsWith(kDotString))
-                    propPath = propPath.Substring(1);
-
-                var splits = propPath.Split(kDotSeparator, 2);
-                var newField = targetObjectType.GetField(splits[0], flags);
-                if (newField == null)
-                    return GetDummyEventHelper(propPath, targetObjectType.BaseType, flags);
-
-                targetObjectType = newField.FieldType;
-                if (targetObjectType.IsArrayOrList())
-                    targetObjectType = targetObjectType.GetArrayOrListElementType();
-
-                //the last item in the property path could have been an array element
-                //bail early in that case
-                if (splits.Length == 1)
-                    break;
-
-                propPath = splits[1];
-                if (propPath.StartsWith(kArrayDataString))
-                    propPath = propPath.Split(kClosingSquareBraceSeparator, 2)[1];
-            }
-            if (targetObjectType.IsSubclassOf(typeof(UnityEventBase)))
-                return Activator.CreateInstance(targetObjectType) as UnityEventBase;
-            return null;
+            ScriptAttributeUtility.GetFieldInfoAndStaticTypeFromProperty(prop, out var propType);
+            if (propType.IsSubclassOf(typeof(UnityEventBase)))
+                return Activator.CreateInstance(propType) as UnityEventBase;
+            return new UnityEvent();
         }
 
         struct ValidMethodMap
@@ -517,7 +476,7 @@ namespace UnityEditorInternal
             return dummyEvent.FindMethod(methodName, uObject.GetType(), modeEnum, argumentType) != null;
         }
 
-        static GenericMenu BuildPopupList(Object target, UnityEventBase dummyEvent, SerializedProperty listener)
+        internal static GenericMenu BuildPopupList(Object target, UnityEventBase dummyEvent, SerializedProperty listener)
         {
             //special case for components... we want all the game objects targets there!
             var targetToUse = target;
@@ -546,28 +505,54 @@ namespace UnityEditorInternal
             MethodInfo delegateMethod = delegateType.GetMethod("Invoke");
             var delegateArgumentsTypes = delegateMethod.GetParameters().Select(x => x.ParameterType).ToArray();
 
-            GeneratePopUpForType(menu, targetToUse, false, listener, delegateArgumentsTypes);
+            var duplicateNames = DictionaryPool<string, int>.Get();
+            var duplicateFullNames = DictionaryPool<string, int>.Get();
+
+            GeneratePopUpForType(menu, targetToUse, targetToUse.GetType().Name, listener, delegateArgumentsTypes);
+            duplicateNames[targetToUse.GetType().Name] = 0;
             if (targetToUse is GameObject)
             {
                 Component[] comps = (targetToUse as GameObject).GetComponents<Component>();
-                var duplicateNames = comps.Where(c => c != null).Select(c => c.GetType().Name).GroupBy(x => x).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
+
+                // Collect all the names and record how many times the same name is used.
+                foreach (Component comp in comps)
+                {
+                    var duplicateIndex = 0;
+                    if (duplicateNames.TryGetValue(comp.GetType().Name, out duplicateIndex))
+                        duplicateIndex++;
+                    duplicateNames[comp.GetType().Name] = duplicateIndex;
+                }
+
                 foreach (Component comp in comps)
                 {
                     if (comp == null)
                         continue;
 
-                    GeneratePopUpForType(menu, comp, duplicateNames.Contains(comp.GetType().Name), listener, delegateArgumentsTypes);
-                }
-            }
+                    var compType = comp.GetType();
+                    string targetName = compType.Name;
+                    int duplicateIndex = 0;
 
+                    // Is this name used multiple times? If so then use the full name plus an index if there are also duplicates of this. (case 1309997)
+                    if (duplicateNames[compType.Name] > 0)
+                    {
+                        if (duplicateFullNames.TryGetValue(compType.FullName, out duplicateIndex))
+                            targetName = $"{compType.FullName} ({duplicateIndex})";
+                        else
+                            targetName = compType.FullName;
+                    }
+                    GeneratePopUpForType(menu, comp, targetName, listener, delegateArgumentsTypes);
+                    duplicateFullNames[compType.FullName] = duplicateIndex + 1;
+                }
+
+                DictionaryPool<string, int>.Release(duplicateNames);
+                DictionaryPool<string, int>.Release(duplicateFullNames);
+            }
             return menu;
         }
 
-        private static void GeneratePopUpForType(GenericMenu menu, Object target, bool useFullTargetName, SerializedProperty listener, Type[] delegateArgumentsTypes)
+        private static void GeneratePopUpForType(GenericMenu menu, Object target, string targetName, SerializedProperty listener, Type[] delegateArgumentsTypes)
         {
             var methods = new List<ValidMethodMap>();
-            string targetName = useFullTargetName ? target.GetType().FullName : target.GetType().Name;
-
             bool didAddDynamic = false;
 
             // skip 'void' event defined on the GUI as we have a void prebuilt type!

@@ -25,9 +25,12 @@ namespace UnityEditor.Search
         IEnumerable<SearchItem> GetRows();
         SearchTable GetSearchTable();
         void SetSelection(IEnumerable<SearchItem> items);
+        void DoubleClick(SearchItem item);
         void SetDirty();
         void AddColumnHeaderContextMenuItems(GenericMenu menu, SearchColumn sourceColumn);
+        bool AddColumnHeaderContextMenuItems(GenericMenu menu);
         bool OpenContextualMenu(Event evt, SearchItem item);
+        bool IsReadOnly();
     }
 
     class PropertyItem : TreeViewItem
@@ -41,6 +44,15 @@ namespace UnityEditor.Search
         }
 
         public SearchItem GetData() { return m_Data; }
+    }
+
+    class PropertyColumn : MultiColumnHeaderState.Column
+    {
+
+        public PropertyColumn(SearchColumn c)
+        {
+            userDataObj = c;
+        }
     }
 
     class PropertyTable : TreeView, IDisposable
@@ -59,11 +71,12 @@ namespace UnityEditor.Search
             public PropertyTableColumnHeader(ITableView tableView)
                 : base(new MultiColumnHeaderState(ConvertColumns(tableView.GetColumns())))
             {
+                height = 22f;
                 canSort = true;
                 m_TableView = tableView;
-                allowDraggingColumnsToReorder = true;
                 sortingChanged += mch => m_TableView.SetDirty();
                 visibleColumnsChanged += mch => m_TableView.SetDirty();
+                allowDraggingColumnsToReorder = true;
                 columnSettingsChanged += OnColumnSettingsChanged;
                 columnsSwapped += OnColumnsSwapped;
             }
@@ -73,11 +86,10 @@ namespace UnityEditor.Search
                 var headerColumns = new List<MultiColumnHeaderState.Column>();
                 foreach (var c in searchColumns)
                 {
-                    headerColumns.Add(new MultiColumnHeaderState.Column()
+                    headerColumns.Add(new PropertyColumn(c)
                     {
-                        userDataObj = c,
                         width = c.width,
-                        headerContent = c.content,
+                        headerContent = new GUIContent(c.content),
                         canSort = c.options.HasFlag(SearchColumnFlags.CanSort),
                         sortedAscending = !c.options.HasFlag(SearchColumnFlags.SortedDescending),
                         headerTextAlignment = GetHeaderTextAligment(c.options),
@@ -104,8 +116,14 @@ namespace UnityEditor.Search
 
             protected override void AddColumnHeaderContextMenuItems(GenericMenu menu)
             {
+                var isFullMenuOverride = m_TableView.AddColumnHeaderContextMenuItems(menu);
+                if (isFullMenuOverride)
+                    return;
+
+                var mousePosition = Event.current.mousePosition;
+                var windowMousePosition = Utils.Unclip(new Rect(mousePosition, Vector2.zero)).position;
+
                 var activeColumn = currentColumnIndex;
-                var mousePosition = GUIClip.UnclipToWindow(Event.current.mousePosition);
 
                 if (state.columns.Length > 1)
                 {
@@ -120,24 +138,25 @@ namespace UnityEditor.Search
                     }
                 }
 
-                // If the table view is readonly, we can't change the columns
-                if (!(m_TableView is TableView))
-                    return;
 
                 if (activeColumn != -1)
                 {
-                    if (state.columns[activeColumn].userDataObj is SearchColumn sourceColumn)
+                    if (state.columns[activeColumn] is PropertyColumn pc && pc.userDataObj is SearchColumn sourceColumn)
                         m_TableView.AddColumnHeaderContextMenuItems(menu, sourceColumn);
                 }
 
+                // If the table view is readonly, we can't change the columns
+                if (m_TableView.IsReadOnly())
+                    return;
+
                 menu.AddSeparator("");
-                menu.AddItem(EditorGUIUtility.TrTextContent("Add Column..."), false, () => m_TableView.AddColumn(mousePosition, activeColumn));
+                menu.AddItem(new GUIContent("Add Column..."), false, () => m_TableView.AddColumn(windowMousePosition, activeColumn));
 
                 if (activeColumn != -1)
                 {
                     var colName = state.columns[activeColumn].headerContent.text;
-                    menu.AddItem(EditorGUIUtility.TrTextContent($"Edit {colName}..."), false, EditColumn, activeColumn);
-                    menu.AddItem(EditorGUIUtility.TrTextContent($"Remove {colName}"), false, () =>
+                    menu.AddItem(new GUIContent($"Edit {colName}..."), false, EditColumn, activeColumn);
+                    menu.AddItem(new GUIContent($"Remove {colName}"), false, () =>
                     {
                         if (state.columns.Length == 1)
                             ResetColumnLayout();
@@ -147,10 +166,7 @@ namespace UnityEditor.Search
                 }
 
                 menu.AddSeparator("");
-                menu.AddItem(EditorGUIUtility.TrTextContent("Reset Columns"), false, ResetColumnLayout);
-                menu.AddSeparator("");
-                menu.AddItem(EditorGUIUtility.TrTextContent("Export Report..."), false, ExportJson);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Export CSV..."), false, ExportCsv);
+                menu.AddItem(new GUIContent("Reset Columns"), false, ResetColumnLayout);
             }
 
             private void EditColumn(object userData)
@@ -190,7 +206,7 @@ namespace UnityEditor.Search
             public override void OnGUI(Rect rect, float xScroll)
             {
                 // If the table view is readonly, we can't change the columns or export the table
-                if (!(m_TableView is TableView))
+                if (m_TableView.IsReadOnly())
                 {
                     base.OnGUI(rect, xScroll);
                     return;
@@ -199,21 +215,11 @@ namespace UnityEditor.Search
                 var moreButtonRects = GetMoreButtonRect(rect, 1);
 
                 GUI.Label(rect, GUIContent.none, DefaultStyles.background);
-                if (GUI.Button(moreButtonRects[0], Styles.addMoreColumns, EditorStyles.iconButton))
+                if (GUI.Button(moreButtonRects[0], Styles.addMoreColumns, Styles.actionButton))
                     m_TableView.AddColumn(moreButtonRects[0].center - new Vector2(200f, 0), -1);
 
                 rect.xMax = moreButtonRects[0].xMin;
                 base.OnGUI(rect, xScroll);
-            }
-
-            private void ExportJson()
-            {
-                SearchReport.Export(m_TableView.GetSearchTable().name, m_TableView.GetColumns(), m_TableView.GetRows(), m_TableView.context);
-            }
-
-            private void ExportCsv()
-            {
-                SearchReport.ExportAsCsv(m_TableView.GetSearchTable().name, m_TableView.GetColumns(), m_TableView.GetRows(), m_TableView.context);
             }
 
             private Rect[] GetMoreButtonRect(Rect headerRect, int numButtons)
@@ -248,6 +254,7 @@ namespace UnityEditor.Search
         private readonly ITableView m_TableView;
         private List<TreeViewItem> m_Items;
         private Rect m_ViewRect;
+        private int m_FrameColumnIndex = -1;
 
         public PropertyTable(string serializationUID, ITableView tableView)
             : base(new TreeViewState(), new PropertyTableColumnHeader(tableView))
@@ -276,6 +283,15 @@ namespace UnityEditor.Search
             m_ViewRect.yMin -= 20;
             m_ViewRect.yMax += 20;
             base.OnGUI(tableRect);
+
+            if (m_FrameColumnIndex >= 0)
+            {
+                //multiColumnHeader.UpdateColumnHeaderRects(tableRect);
+                var rect = multiColumnHeader.GetColumnRect(m_FrameColumnIndex);
+                state.scrollPos.x = rect.position.x;
+                m_FrameColumnIndex = -1;
+                Repaint();
+            }
         }
 
         public void Dispose()
@@ -286,6 +302,7 @@ namespace UnityEditor.Search
 
         protected override TreeViewItem BuildRoot()
         {
+            m_Items = null;
             return new PropertyItem(-1, -1, null);
         }
 
@@ -297,9 +314,42 @@ namespace UnityEditor.Search
             if (multiColumnHeader.sortedColumnIndex >= 0)
                 Sort(m_Items, multiColumnHeader.sortedColumnIndex);
 
-            TreeViewUtility.SetChildParentReferences(m_Items, root);
+            Utils.SetChildParentReferences(m_Items, root);
 
             return m_Items;
+        }
+
+        protected override bool CanStartDrag(CanStartDragArgs args)
+        {
+            if (args.draggedItem is PropertyItem pi)
+                return pi.GetData()?.provider?.startDrag != null;
+            return false;
+        }
+
+        protected override void SetupDragAndDrop(SetupDragAndDropArgs args)
+        {
+            var selectedObjects = args.draggedItemIDs.Select(i => GetObject(i)).Where(o => o).ToArray();
+            if (selectedObjects.Length == 0)
+                return;
+            var paths = selectedObjects.Select(i => GetAssetPath(i)).ToArray();
+            Utils.StartDrag(selectedObjects, paths, paths[0]);
+        }
+
+        private string GetAssetPath(UnityEngine.Object obj)
+        {
+            return SearchUtils.GetObjectPath(obj);
+        }
+
+        private UnityEngine.Object GetObject(int id)
+        {
+            if (FindItem(id, rootItem) is PropertyItem pi)
+                return pi.GetData().ToObject();
+            return null;
+        }
+
+        protected override DragAndDropVisualMode HandleDragAndDrop(DragAndDropArgs args)
+        {
+            return DragAndDropVisualMode.None;
         }
 
         private void HandleContextualMenu(Event evt, Rect rowRect, PropertyItem item)
@@ -331,6 +381,11 @@ namespace UnityEditor.Search
         protected override void SelectionChanged(IList<int> selectedIds)
         {
             m_TableView.SetSelection(FindRows(selectedIds).Select(e => ((PropertyItem)e).GetData()));
+        }
+
+        protected override void DoubleClickedItem(int id)
+        {
+            m_TableView.DoubleClick(((PropertyItem)FindItem(id, rootItem)).GetData());
         }
 
         protected override void KeyEvent()
@@ -376,8 +431,8 @@ namespace UnityEditor.Search
             {
                 destination.columns[i].sortedAscending = source.columns[i].sortedAscending;
 
-                if (!(source.columns[i].userDataObj is SearchColumn sourceColumn) ||
-                    !(destination.columns[i].userDataObj is SearchColumn destColumn) ||
+                if (!(((PropertyColumn)source.columns[i]).userDataObj is SearchColumn sourceColumn) ||
+                    !(((PropertyColumn)destination.columns[i]).userDataObj is SearchColumn destColumn) ||
                     string.Equals(sourceColumn.name, destColumn.name))
                 {
                     // Only makes sense if the property is the same property name
@@ -389,11 +444,11 @@ namespace UnityEditor.Search
         private void CellGUI(Rect cellRect, PropertyItem item, int columnIndex, int itemId)
         {
             CenterRectUsingSingleLineHeight(ref cellRect);
-            var unclipRect = GUIClip.Unclip(cellRect);
+            var unclipRect = Utils.Unclip(cellRect);
             if (!unclipRect.Overlaps(m_ViewRect))
                 return;
 
-            var column = (SearchColumn)multiColumnHeader.GetColumn(columnIndex).userDataObj;
+            var column = (SearchColumn)((PropertyColumn)multiColumnHeader.GetColumn(columnIndex)).userDataObj;
             if (column.drawer == null && column.getter == null)
                 return;
 
@@ -459,7 +514,7 @@ namespace UnityEditor.Search
             else
             {
                 var itemStyle = ItemSelectors.GetItemContentStyle(column);
-                EditorGUI.SelectableLabel(cellRect, value.ToString(), itemStyle);
+                GUI.Label(cellRect, value.ToString(), itemStyle);
             }
         }
 
@@ -528,7 +583,12 @@ namespace UnityEditor.Search
 
         private SearchColumn Col(int idx)
         {
-            return multiColumnHeader.state.columns[idx].userDataObj as SearchColumn;
+            return ((PropertyColumn)multiColumnHeader.state.columns[idx]).userDataObj as SearchColumn;
+        }
+
+        public void FrameColumn(int columnIndex)
+        {
+            m_FrameColumnIndex = multiColumnHeader.GetVisibleColumnIndex(Math.Max(0, columnIndex));
         }
     }
 }

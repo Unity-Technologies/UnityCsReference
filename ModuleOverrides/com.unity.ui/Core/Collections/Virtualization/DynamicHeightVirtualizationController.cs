@@ -33,25 +33,23 @@ namespace UnityEngine.UIElements
             m_FillCallback = Fill;
             m_GeometryChangedCallback = OnRecycledItemGeometryChanged;
             m_IndexOutOfBoundsPredicate = IsIndexOutOfBounds;
+
+            collectionView.destroyItem += element =>
+            {
+                foreach (var item in m_ListView.activeItems)
+                {
+                    if (item.rootElement == element)
+                    {
+                        UnregisterItemHeight(item.index, element.layout.height);
+                        break;
+                    }
+                }
+            };
         }
 
         public override void Refresh(bool rebuild)
         {
             base.Refresh(rebuild);
-
-            if (rebuild)
-            {
-                m_ListView.m_ScrollOffset.y = 0;
-                m_ScrollView.verticalScroller.slider.SetValueWithoutNotify(0);
-                m_ItemHeightCache.Clear();
-                m_WaitingCache.Clear();
-                m_AverageHeight = InitialAverageHeight;
-                m_AccumulatedHeight = 0;
-                m_ForcedFirstVisibleItem = -1;
-                m_ForcedLastVisibleItem = -1;
-                m_StickToBottom = false;
-                m_StoredPadding = 0;
-            }
 
             m_WaitingCache.RemoveWhere(m_IndexOutOfBoundsPredicate);
 
@@ -115,16 +113,22 @@ namespace UnityEngine.UIElements
             // the ScrollView's OnGeometryChanged() didn't update the low
             // and highValues.
             var scrollableHeight = Mathf.Max(0, contentHeight - m_ScrollView.contentViewport.layout.height);
+            var scrollOffset = Mathf.Min(offset, scrollableHeight);
             m_ScrollView.verticalScroller.slider.SetHighValueWithoutNotify(scrollableHeight);
-            m_ScrollView.verticalScroller.value = Mathf.Min(offset, scrollableHeight);
+            m_ScrollView.verticalScroller.value = scrollOffset;
             m_ListView.m_ScrollOffset.y = m_ScrollView.verticalScroller.value;
             m_ScrollView.contentContainer.style.paddingTop = firstItemPadding;
             m_StoredPadding = firstItemPadding;
 
             if (layoutPass == 0)
+            {
                 Fill();
+                OnScroll(new Vector2(0, scrollOffset));
+            }
             else if (m_ScheduledItem == null)
+            {
                 m_ScheduledItem = m_ListView.schedule.Execute(m_FillCallback);
+            }
         }
 
         public override void OnScroll(Vector2 scrollOffset)
@@ -471,6 +475,21 @@ namespace UnityEngine.UIElements
             m_AverageHeight = m_ListView.ResolveItemHeight(count > 0 ? m_AccumulatedHeight / count : m_AccumulatedHeight);
 
             m_ItemHeightCache[index] = resolvedHeight;
+        }
+
+        void UnregisterItemHeight(int index, float height)
+        {
+            if (height <= 0)
+                return;
+
+            if (!m_ItemHeightCache.TryGetValue(index, out var value))
+                return;
+
+            m_AccumulatedHeight -= value;
+            m_ItemHeightCache.Remove(index);
+
+            var count = m_ItemHeightCache.Count;
+            m_AverageHeight = m_ListView.ResolveItemHeight(count > 0 ? m_AccumulatedHeight / count : m_AccumulatedHeight);
         }
 
         void OnRecycledItemGeometryChanged(ReusableCollectionItem item)

@@ -7,48 +7,28 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
+    [InitializeOnLoad]
     internal static class EditorDelegateRegistration
     {
-        [InitializeOnLoadMethod]
-        static void Initialize()
+        static EditorDelegateRegistration()
         {
-            VisualTreeAssetChangeTrackerUpdater.IsEditorPlaying = IsEditorPlaying;
-            DefaultEventSystem.IsEditorRemoteConnected = IsEditorRemoteConnected;
-            VisualTreeAssetChangeTrackerUpdater.UpdateGameView = EditorApplication.QueuePlayerLoopUpdate;
-            AssetOperationsAccess.GetAssetPath = GetAssetPath;
-            AssetOperationsAccess.GetAssetDirtyCount = GetAssetDirtyCount;
-            PanelTextSettings.EditorGUIUtilityLoad = EditorGUIUtilityLoad;
-            PanelTextSettings.GetCurrentLanguage = GetCurrentLanguage;
+            DefaultEventSystem.IsEditorRemoteConnected = () => EditorApplication.isRemoteConnected;
+            PanelTextSettings.EditorGUIUtilityLoad = path => EditorGUIUtility.Load(path);
+            PanelTextSettings.GetCurrentLanguage = () => LocalizationDatabase.currentEditorLanguage;
+
+            UIDocument.IsEditorPlaying = () => EditorApplication.isPlaying;
+            UIDocument.IsEditorPlayingOrWillChangePlaymode = () => EditorApplication.isPlayingOrWillChangePlaymode;
+
+            PanelSettings.CreateRuntimePanelDebug = UIElementsEditorRuntimeUtility.CreateRuntimePanelDebug;
+            PanelSettings.GetOrCreateDefaultTheme = PanelSettingsCreator.GetOrCreateDefaultTheme;
+            DropdownUtility.MakeDropdownFunc = CreateGenericOSMenu;
+            PanelSettings.SetPanelSettingsAssetDirty = EditorUtility.SetDirty;
+
         }
 
-        internal static SystemLanguage GetCurrentLanguage()
+        private static GenericOSMenu CreateGenericOSMenu()
         {
-            return LocalizationDatabase.currentEditorLanguage;
-        }
-
-        internal static bool IsEditorPlaying()
-        {
-            return EditorApplication.isPlaying;
-        }
-
-        internal static bool IsEditorRemoteConnected()
-        {
-            return EditorApplication.isRemoteConnected;
-        }
-
-        internal static string GetAssetPath(Object asset)
-        {
-            return AssetDatabase.GetAssetPath(asset);
-        }
-
-        internal static int GetAssetDirtyCount(Object asset)
-        {
-            return EditorUtility.GetDirtyCount(asset);
-        }
-
-        internal static Object EditorGUIUtilityLoad(string path)
-        {
-            return EditorGUIUtility.Load(path);
+            return new GenericOSMenu();
         }
     }
 }

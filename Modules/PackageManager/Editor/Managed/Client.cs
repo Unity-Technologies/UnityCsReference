@@ -71,6 +71,13 @@ namespace UnityEditor.PackageManager
             return new AddScopedRegistryRequest(operationId, status);
         }
 
+        internal static ClearCacheRootRequest ClearCacheRoot()
+        {
+            long operationId;
+            var status = ClearCacheRoot(out operationId);
+            return new ClearCacheRootRequest(operationId, status);
+        }
+
         public static EmbedRequest Embed(string packageName)
         {
             if (string.IsNullOrWhiteSpace(packageName))
@@ -102,6 +109,13 @@ namespace UnityEditor.PackageManager
             long operationId;
             var status = GetCachedPackages(out operationId, registryId);
             return new GetCachedPackagesRequest(operationId, status);
+        }
+
+        internal static GetCacheRootRequest GetCacheRoot()
+        {
+            long operationId;
+            var status = GetCacheRoot(out operationId);
+            return new GetCacheRootRequest(operationId, status);
         }
 
         internal static ListBuiltInPackagesRequest ListBuiltInPackages()
@@ -166,6 +180,13 @@ namespace UnityEditor.PackageManager
             long operationId;
             var status = Search(out operationId, options);
             return new PerformSearchRequest(operationId, status);
+        }
+
+        internal static SetCacheRootRequest SetCacheRoot(string newPath)
+        {
+            long operationId;
+            var status = SetCacheRoot(out operationId, newPath);
+            return new SetCacheRootRequest(operationId, status);
         }
 
         public static ResetToEditorDefaultsRequest ResetToEditorDefaults()

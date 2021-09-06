@@ -15,12 +15,6 @@ namespace UnityEditor
         private readonly IDirectoryIO m_DirectoryIO;
         private readonly IFileIO m_FileIO;
 
-        public BuildPlayerDataExtractor(IDirectoryIO mDirectoryIo, IFileIO mFileIo)
-        {
-            m_DirectoryIO = mDirectoryIo;
-            m_FileIO = mFileIo;
-        }
-
         public BuildPlayerDataExtractor()
         {
             m_DirectoryIO = new DirectoryIOProvider();
@@ -29,7 +23,7 @@ namespace UnityEditor
 
         public AssemblyInfoManaged[] ExtractAssemblyTypeInfo(bool isEditor)
         {
-            var buildPlayerDataGeneratorHelper = new BuildPlayerDataGenerator(new BuildPlayerDataGeneratorProcess(), new DirectoryIOProvider());
+            var buildPlayerDataGeneratorHelper = new BuildPlayerDataGenerator();
             return ExtractAssemblyTypeInfoFromFiles(buildPlayerDataGeneratorHelper.GetTypeDbFilePaths(isEditor));
         }
 

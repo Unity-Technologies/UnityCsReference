@@ -205,8 +205,8 @@ namespace UnityEditor.PackageManager.UI
             var upmRegistryClient = ServicesContainer.instance.Resolve<UpmRegistryClient>();
             upmRegistryClient.CheckRegistriesChanged();
 
-            var upmCache = ServicesContainer.instance.Resolve<UpmCache>();
-            upmCache.SetInstalledPackageInfos(PackageInfo.GetAllRegisteredPackages());
+            var upmClient = ServicesContainer.instance.Resolve<UpmClient>();
+            upmClient.List(true);
         }
 
         private static void OnRegisteredPackages(PackageRegistrationEventArgs args)

@@ -84,6 +84,8 @@ namespace UnityEditor
 
         internal void SelectProviderByName(string name)
         {
+            if (m_TreeView == null)
+                Init();
             m_TreeView.FocusSelection(name.GetHashCode());
         }
 
@@ -206,6 +208,7 @@ namespace UnityEditor
         private void OnSettingsProviderChanged()
         {
             Init();
+            RestoreSelection();
             Repaint();
         }
 

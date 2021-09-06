@@ -269,6 +269,13 @@ namespace UnityEditor
             return result;
         }
 
+        string FormatFilterTokenForSearchEngine(string token)
+        {
+            if (SearchService.ProjectSearch.HasEngineOverride())
+                return $"{token}=";
+            return $"{token}:";
+        }
+
         internal string FilterToSearchFieldString()
         {
             string result = "";
@@ -276,8 +283,8 @@ namespace UnityEditor
                 result += m_NameFilter;
 
             // See SearchUtility.cs for search tokens
-            AddToString("t:", m_ClassNames, ref result);
-            AddToString("l:", m_AssetLabels, ref result);
+            AddToString(FormatFilterTokenForSearchEngine("t"), m_ClassNames, ref result);
+            AddToString(FormatFilterTokenForSearchEngine("l"), m_AssetLabels, ref result);
             AddToString("v:", m_VersionControlStates, ref result);
             AddToString("s:", m_SoftLockControlStates, ref result);
             AddToString("b:", m_AssetBundleNames, ref result);

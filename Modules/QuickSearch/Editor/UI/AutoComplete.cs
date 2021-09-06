@@ -16,6 +16,8 @@ namespace UnityEditor.Search
         private static string s_LastInput;
         private static int s_CurrentSelection = 0;
         private static List<SearchProposition> s_FilteredList = null;
+        private static List<float> s_ItemLabelWidths = null;
+        private static List<float> s_ItemTooltipWidths = null;
 
         private static Rect position;
         private static Rect parent { get; set; }
@@ -56,8 +58,7 @@ namespace UnityEditor.Search
                 return false;
 
             parent = parentRect;
-            options = new SearchPropositionOptions(context.searchText, te.cursorIndex);
-
+            options = new SearchPropositionOptions(context, te.cursorIndex);
             propositions = SearchProposition.Fetch(context, options);
 
             enabled = propositions.Count > 0;
@@ -131,6 +132,20 @@ namespace UnityEditor.Search
             else
                 replaceFrom++;
 
+            var activeProviders = SearchService.GetActiveProviders();
+            foreach (var provider in activeProviders)
+            {
+                if (replaceFrom + provider.filterId.Length > searchText.Length || provider.filterId.Length == 1)
+                    continue;
+
+                var stringViewTest = new StringView(searchText, replaceFrom, replaceFrom + provider.filterId.Length);
+                if (stringViewTest == provider.filterId)
+                {
+                    replaceFrom += provider.filterId.Length;
+                    break;
+                }
+            }
+
             var replaceTo = IndexOfDelimiter(searchText, cursorPos);
             if (replaceTo == -1)
                 replaceTo = searchText.Length;
@@ -199,6 +214,8 @@ namespace UnityEditor.Search
             s_CurrentSelection = 0;
             s_LastInput = null;
             s_FilteredList = null;
+            s_ItemTooltipWidths = null;
+            s_ItemLabelWidths = null;
         }
 
         private static void UpdateCompleteList(in TextEditor te, in SearchPropositionOptions baseOptions = null)
@@ -209,6 +226,9 @@ namespace UnityEditor.Search
             var maxVisibleCount = Mathf.FloorToInt(position.height / EditorStyles.toolbarDropDown.fixedHeight);
             BuildCompleteList(options.tokens, maxVisibleCount, 0.4f);
 
+            s_ItemLabelWidths = new List<float>();
+            s_ItemTooltipWidths = new List<float>();
+
             var maxLabelSize = 100f;
             var gc = new GUIContent();
             foreach (var e in s_FilteredList)
@@ -216,18 +236,21 @@ namespace UnityEditor.Search
                 var sf = 5.0f;
                 gc.text = e.label;
                 Styles.autoCompleteItemLabel.CalcMinMaxWidth(gc, out var minWidth, out var maxWidth);
+                s_ItemLabelWidths.Add(maxWidth);
                 sf += maxWidth;
 
                 if (!string.IsNullOrEmpty(e.help))
                 {
                     gc.text = e.help;
                     Styles.autoCompleteTooltip.CalcMinMaxWidth(gc, out minWidth, out maxWidth);
+                    s_ItemTooltipWidths.Add(maxWidth);
                     sf += maxWidth;
                 }
 
-                if (sf > maxLabelSize)
+                if (sf > maxLabelSize && sf < parent.width)
                     maxLabelSize = sf;
             }
+
             position.width = maxLabelSize;
             var xOffscreen = parent.width - position.xMax;
             if (xOffscreen < 0)
@@ -240,6 +263,7 @@ namespace UnityEditor.Search
         {
             var uniqueSrc = new List<SearchProposition>(propositions);
             int srcCnt = uniqueSrc.Count;
+
             s_FilteredList = new List<SearchProposition>(Math.Min(maxCount, srcCnt));
 
             // Start with - slow
@@ -248,6 +272,7 @@ namespace UnityEditor.Search
             s_FilteredList.Sort();
 
             // Contains - very slow
+            inputs = FilterInputWords(inputs);
             SelectPropositions(ref srcCnt, maxCount, uniqueSrc, (p) =>
             {
                 if (inputs.Any(i => p.label.IndexOf(i, StringComparison.OrdinalIgnoreCase) != -1))
@@ -258,21 +283,29 @@ namespace UnityEditor.Search
             });
 
             // Levenshtein Distance - very very slow.
-            var lvInputs = inputs.Where(i => i.Length > 3).Select(input => input.Replace("<", "").Replace("=", "").Replace(">", "")).ToArray();
-            if (levenshteinDistance > 0f && lvInputs.All(i => i.Length > 3) && s_FilteredList.Count < maxCount)
+            if (levenshteinDistance > 0f && inputs.Length > 0 && s_FilteredList.Count < maxCount)
             {
                 levenshteinDistance = Mathf.Clamp01(levenshteinDistance);
                 SelectPropositions(ref srcCnt, maxCount, uniqueSrc, p =>
                 {
-                    return lvInputs.Any(levenshteinInput =>
+                    return inputs.Any(levenshteinInput =>
                     {
                         int distance = Utils.LevenshteinDistance(p.label, levenshteinInput, caseSensitive: false);
-                        return (int)(levenshteinDistance * p.label.Length) > distance;
+                        return (int)(levenshteinDistance * p.label.Length) >= distance;
                     });
                 });
             }
 
             s_CurrentSelection = Math.Max(-1, Math.Min(s_CurrentSelection, s_FilteredList.Count - 1));
+        }
+
+        private static string[] FilterInputWords(in IEnumerable<string> words)
+        {
+            return words.Where(i => i.Length > 3).Select(w => w
+                .Replace("<", "")
+                .Replace("=", "")
+                .Replace(">", "")
+                .Replace("#m_", "#")).Distinct().ToArray();
         }
 
         private static void SelectPropositions(ref int srcCnt, int maxCount, List<SearchProposition> source, Func<SearchProposition, bool> compare)
@@ -304,7 +337,7 @@ namespace UnityEditor.Search
                 Rect lineRect = new Rect(1, 10, position.width - 2, Styles.autoCompleteItemLabel.fixedHeight);
                 for (int i = 0; i < cnt; i++)
                 {
-                    if (DrawItem(evt, lineRect, i == s_CurrentSelection, s_FilteredList[i]))
+                    if (DrawItem(evt, lineRect, i == s_CurrentSelection, s_FilteredList[i], i))
                     {
                         result = s_FilteredList[i];
                         return true;
@@ -334,10 +367,22 @@ namespace UnityEditor.Search
             return label;
         }
 
-        private static bool DrawItem(Event evt, Rect rect, bool selected, SearchProposition item)
+        private static bool DrawItem(Event evt, Rect rect, bool selected, SearchProposition item, int index)
         {
             var itemSelected = selected && evt.type == EventType.KeyDown && IsKeySelection(evt);
-            if (itemSelected || GUI.Button(rect, Utils.TrimText(HightlightLabel(item.label)), selected ? Styles.autoCompleteSelectedItemLabel : Styles.autoCompleteItemLabel))
+            string trimmedLabel;
+            if (s_ItemLabelWidths[index] > position.width)
+            {
+                var width = position.width - s_ItemTooltipWidths[index] - 20f;
+                var numCharacters = Styles.autoCompleteItemLabel.GetNumCharactersThatFitWithinWidth(item.label, width);
+                trimmedLabel = Utils.TrimText(HightlightLabel(item.label), numCharacters);
+            }
+            else
+            {
+                trimmedLabel = Utils.TrimText(HightlightLabel(item.label));
+            }
+
+            if (itemSelected || GUI.Button(rect, trimmedLabel, selected ? Styles.autoCompleteSelectedItemLabel : Styles.autoCompleteItemLabel))
             {
                 evt.Use();
                 GUI.changed = true;

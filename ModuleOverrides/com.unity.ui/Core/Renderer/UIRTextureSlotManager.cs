@@ -16,7 +16,8 @@ namespace UnityEngine.UIElements.UIR
                 slotIds[i] = Shader.PropertyToID($"_Texture{i}");
         }
 
-        static readonly int k_SlotCount;
+        internal static readonly int k_SlotCount;
+        internal static readonly int k_SlotSize = 2; // Number of float4 per slot
 
         internal static readonly int[] slotIds;
         internal static readonly int textureTableId = Shader.PropertyToID("_TextureInfo");
@@ -32,7 +33,7 @@ namespace UnityEngine.UIElements.UIR
         {
             m_Textures = new TextureId[k_SlotCount];
             m_Tickets = new int[k_SlotCount];
-            m_GpuTextures = new Vector4[k_SlotCount];
+            m_GpuTextures = new Vector4[k_SlotCount * k_SlotSize];
 
             Reset();
         }
@@ -46,7 +47,7 @@ namespace UnityEngine.UIElements.UIR
             {
                 m_Textures[i] = TextureId.invalid;
                 m_Tickets[i] = -1;
-                m_GpuTextures[i] = new Vector4(-1, 1f, 1f, 0);
+                SetGpuData(i, TextureId.invalid, 1, 1, 0);
             }
         }
 
@@ -95,14 +96,23 @@ namespace UnityEngine.UIElements.UIR
             return slot;
         }
 
-        public void Bind(TextureId id, int slot, MaterialPropertyBlock mat)
+        public void Bind(TextureId id, float sdfScale, int slot, MaterialPropertyBlock mat)
         {
             Texture tex = textureRegistry.GetTexture(id);
             m_Textures[slot] = id;
             MarkUsed(slot);
-            m_GpuTextures[slot] = new Vector4(id.ConvertToGpu(), 1f / tex.width, 1f / tex.height, 0);
+            SetGpuData(slot, id, tex.width, tex.height, sdfScale);
             mat.SetTexture(slotIds[slot], tex);
             mat.SetVectorArray(textureTableId, m_GpuTextures);
+        }
+
+        public void SetGpuData(int slotIndex, TextureId id, int textureWidth, int textureHeight, float sdfScale)
+        {
+            int offset = slotIndex * k_SlotSize;
+            float texelWidth = 1f / textureWidth;
+            float texelHeight = 1f / textureHeight;
+            m_GpuTextures[offset + 0] = new Vector4(id.ConvertToGpu(), texelWidth, texelHeight, sdfScale);
+            m_GpuTextures[offset + 1] = new Vector4(textureWidth, textureHeight, 0, 0);
         }
 
         // Overridable for tests

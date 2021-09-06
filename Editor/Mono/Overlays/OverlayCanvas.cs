@@ -20,6 +20,7 @@ namespace UnityEditor.Overlays
         public bool collapsed;
         public bool displayed;
         public Vector2 snapOffset;
+        public Vector2 snapOffsetDelta;
         public SnapCorner snapCorner;
         public string id;
         public int index = k_InvalidIndex;
@@ -37,6 +38,7 @@ namespace UnityEditor.Overlays
             collapsed = other.collapsed;
             displayed = other.displayed;
             snapOffset = other.snapOffset;
+            snapOffsetDelta = other.snapOffsetDelta;
             snapCorner = other.snapCorner;
             id = other.id;
             index = other.index;
@@ -83,6 +85,7 @@ namespace UnityEditor.Overlays
         OverlayMenu m_Menu;
 
         List<Overlay> m_Overlays = new List<Overlay>();
+        List<LegacyOverlay> m_LegacyOverlays = new List<LegacyOverlay>();
         Dictionary<string, OverlayContainer> m_ContainerFromId = new Dictionary<string, OverlayContainer>();
 
         [SerializeField]
@@ -112,12 +115,12 @@ namespace UnityEditor.Overlays
         List<VisualElement> toolbarZones { get; set; }
 
         readonly Dictionary<VisualElement, Overlay> m_OverlaysByVE = new Dictionary<VisualElement, Overlay>();
-        bool m_Initialized;
 
         VisualElement m_OriginGhost;
         public OverlayDestinationMarker destinationMarker { get; private set; }
 
         public IEnumerable<Overlay> overlays => m_Overlays.AsReadOnly();
+        internal IEnumerable<LegacyOverlay> legacyOverlays => m_LegacyOverlays;
 
         VisualElement m_WindowRoot;
         internal VisualElement windowRoot => m_WindowRoot;
@@ -231,15 +234,22 @@ namespace UnityEditor.Overlays
             }
         }
 
+        public event Action<bool> overlaysEnabledChanged;
+
         public bool overlaysEnabled => containers.All(x => x.style.display != DisplayStyle.None);
 
         public void SetOverlaysEnabled(bool visible)
         {
+            if (visible == overlaysEnabled)
+                return;
+
             foreach (var container in containers)
                 container.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
             foreach (var toolbar in toolbarZones)
                 toolbar.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
             floatingContainer.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+
+            overlaysEnabledChanged?.Invoke(visible);
         }
 
         public void Show(Overlay overlay)
@@ -261,7 +271,6 @@ namespace UnityEditor.Overlays
             //to pop the overlay menu
             rootVisualElement.RegisterCallback<MouseOverEvent>(OnMouseEnter);
             rootVisualElement.RegisterCallback<MouseMoveEvent>(OnMouseMove);
-
 
             //this is used to clamp overlays to floating container bounds.
             floatingContainer.RegisterCallback<GeometryChangedEvent>(GeometryChanged);
@@ -322,9 +331,14 @@ namespace UnityEditor.Overlays
 
             foreach (var overlay in m_Overlays)
             {
-                //force an update of the floating position
-                overlay.floatingPosition = overlay.floatingPosition;
+                using (new Overlay.LockedAnchor(overlay))
+                    overlay.floatingPosition = overlay.floatingPosition; //force an update of the floating position
+
                 overlay.UpdateAbsolutePosition();
+
+                //Register the geometrychanged callback to the overlay if it was not registered before,
+                //this is not doing anything if it has already been registered
+                overlay.rootVisualElement.RegisterCallback<GeometryChangedEvent>(overlay.OnGeometryChanged);
             }
         }
 
@@ -376,6 +390,27 @@ namespace UnityEditor.Overlays
             }
 
             OnOverlayAdded(overlay);
+        }
+
+        internal LegacyOverlay GetOrCreateLegacyOverlay(string id, string title)
+        {
+            var overlay = m_Overlays.Find(o => o.id == id) as LegacyOverlay;
+
+            if (overlay == null)
+            {
+                overlay = (LegacyOverlay)OverlayUtilities.CreateOverlay(typeof(LegacyOverlay), this);
+                overlay.InitializeFromAttribute(new OverlayAttribute(null, id, title));
+                overlay.dontSaveInLayout = true;
+                m_Overlays.Add(overlay);
+                m_LegacyOverlays.Add(overlay);
+                OnOverlayAdded(overlay);
+
+                m_OverlaysByVE[overlay.rootVisualElement] = overlay;
+
+                defaultContainer.AddToBottom(overlay);
+            }
+
+            return overlay;
         }
 
         void OnOverlayAdded(Overlay overlay)
@@ -468,15 +503,12 @@ namespace UnityEditor.Overlays
             return null;
         }
 
-        public bool initialized => m_Initialized;
-
         internal void Initialize(EditorWindow containerWindow)
         {
             this.containerWindow = containerWindow;
 
             rootVisualElement.Add(menu);
 
-            m_Initialized = true;
             AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
             //get all overlays for window type.
             var overlayTypes = OverlayUtilities.GetOverlaysForType(containerWindow.GetType());
@@ -509,8 +541,8 @@ namespace UnityEditor.Overlays
         void OnBeforeAssemblyReload()
         {
             AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeAssemblyReload;
-            containerWindow = null;
-            m_Initialized = false;
+            foreach (var overlay in m_Overlays)
+                overlay.rootVisualElement.UnregisterCallback<GeometryChangedEvent>(overlay.OnGeometryChanged);
         }
 
         //returns first overlay, spacer or ghost that is docked
@@ -581,6 +613,9 @@ namespace UnityEditor.Overlays
                 for (var index = 0; index < overlays.Count; index++)
                 {
                     var overlay = overlays[index];
+                    if (overlay.dontSaveInLayout)
+                        continue;
+
                     var data = CreateSaveData(index, overlay);
                     m_SaveData.Add(data);
                 }
@@ -611,7 +646,8 @@ namespace UnityEditor.Overlays
                 layout = overlay.layout,
                 id = overlay.id,
                 snapCorner = overlay.floatingSnapCorner,
-                snapOffset = overlay.floatingSnapOffset
+                snapOffset = overlay.floatingSnapOffset - overlay.m_SnapOffsetDelta,
+                snapOffsetDelta = overlay.m_SnapOffsetDelta
             };
             return saveData;
         }
@@ -662,7 +698,7 @@ namespace UnityEditor.Overlays
                     container.AddToBottom(overlay);
                 }
 
-                overlay.LoadFromSerializedData(data.displayed, data.collapsed, data.floating, data.snapOffset, data.layout, data.snapCorner, container);
+                overlay.LoadFromSerializedData(data.displayed, data.collapsed, data.floating, data.snapOffset, data.snapOffsetDelta, data.layout, data.snapCorner, container);
 
                 if (overlay.floating)
                     floatingContainer.Add(overlay.rootVisualElement);

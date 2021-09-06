@@ -419,7 +419,7 @@ namespace UnityEngine.UIElements
 
                         // Intersect the stretched rect with the destination rect to compute the new UVs
                         var newRect = RectIntersection(rect, stretchedRect);
-                        if (newRect.width < Mathf.Epsilon || newRect.height < Mathf.Epsilon)
+                        if (newRect.width < UIRUtility.k_Epsilon || newRect.height < UIRUtility.k_Epsilon)
                             newRect = Rect.zero;
                         else
                         {
@@ -649,7 +649,6 @@ namespace UnityEngine.UIElements
             public bool wordWrap;
             public float wordWrapWidth;
             public bool richText;
-            public Material material;
             public Color playmodeTintColor;
             public TextOverflow textOverflow;
             public TextOverflowPosition textOverflowPosition;
@@ -669,7 +668,6 @@ namespace UnityEngine.UIElements
                 hashCode = (hashCode * 397) ^ wordWrap.GetHashCode();
                 hashCode = (hashCode * 397) ^ wordWrapWidth.GetHashCode();
                 hashCode = (hashCode * 397) ^ richText.GetHashCode();
-                hashCode = (hashCode * 397) ^ (material != null ? material.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ playmodeTintColor.GetHashCode();
                 hashCode = (hashCode * 397) ^ textOverflow.GetHashCode();
                 hashCode = (hashCode * 397) ^ textOverflowPosition.GetHashCode();

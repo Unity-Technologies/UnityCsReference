@@ -51,6 +51,7 @@ namespace UnityEditor
             public static GUIContent enableCookiesInLightmapper = EditorGUIUtility.TrTextContent("Enable baked cookies support", "Determines whether cookies should be evaluated by the Progressive Lightmapper during Global Illumination calculations. Introduced in version 2020.1. ");
 
             public static GUIContent spritePacker = EditorGUIUtility.TrTextContent("Sprite Packer");
+            public static readonly GUIContent spriteMaxCacheSize = EditorGUIUtility.TrTextContent("Max SpriteAtlas Cache Size (GB)", "The size of the Sprite Atlas Cache folder will be kept below this maximum value when possible. Change requires Editor restart.");
 
             public static GUIContent cSharpProjectGeneration = EditorGUIUtility.TrTextContent("C# Project Generation");
             public static GUIContent additionalExtensionsToInclude = EditorGUIUtility.TrTextContent("Additional extensions to include");
@@ -140,6 +141,7 @@ namespace UnityEditor
             new PopupElement("Sprite Atlas V1 - Enabled For Builds"),
             new PopupElement("Sprite Atlas V1 - Always Enabled"),
             new PopupElement("Sprite Atlas V2 (Experimental) - Enabled"),
+            new PopupElement("Sprite Atlas V2 (Experimental) - Enabled for Builds"),
         };
         private static readonly int spritePackDeprecatedEnums = 2;
 
@@ -241,6 +243,7 @@ namespace UnityEditor
         SerializedProperty m_UseLegacyProbeSampleCount;
         SerializedProperty m_DisableCookiesInLightmapper;
         SerializedProperty m_SpritePackerMode;
+        SerializedProperty m_SpritePackerCacheSize;
         SerializedProperty m_Bc7TextureCompressor;
         SerializedProperty m_EtcTextureCompressorBehavior;
         SerializedProperty m_EtcTextureFastCompressor;
@@ -303,6 +306,9 @@ namespace UnityEditor
 
             m_SpritePackerMode = serializedObject.FindProperty("m_SpritePackerMode");
             Assert.IsNotNull(m_SpritePackerMode);
+
+            m_SpritePackerCacheSize = serializedObject.FindProperty("m_SpritePackerCacheSize");
+            Assert.IsNotNull(m_SpritePackerCacheSize);
 
             m_Bc7TextureCompressor = serializedObject.FindProperty("m_Bc7TextureCompressor");
             Assert.IsNotNull(m_Bc7TextureCompressor);
@@ -536,10 +542,11 @@ namespace UnityEditor
             GUI.enabled = editorEnabled;
 
             // Legacy Packer has been deprecated.
+            EditorGUILayout.IntSlider(m_SpritePackerCacheSize, 1, 200, Content.spriteMaxCacheSize);
             index = Mathf.Clamp(m_SpritePackerMode.intValue - spritePackDeprecatedEnums, 0, spritePackerPopupList.Length - 1);
             CreatePopupMenu(Content.mode.text, spritePackerPopupList, index, SetSpritePackerMode);
 
-            if (m_SpritePackerMode.intValue != (int)SpritePackerMode.SpriteAtlasV2)
+            if (m_SpritePackerMode.intValue < (int)SpritePackerMode.SpriteAtlasV2)
             {
                 var message = "Sprite Atlas V2 (Experimental) supports CacheServer with Importer workflow. Please take a backup of your project before switching to V2.";
                 EditorGUILayout.HelpBox(message, MessageType.Info, true);
@@ -1023,7 +1030,7 @@ namespace UnityEditor
             if (m_IsGlobalSettings)
             {
                 EditorSettings.spritePackerMode = (SpritePackerMode)popupIndex;
-                if (popupIndex == (int)SpritePackerMode.SpriteAtlasV2)
+                if (popupIndex >= (int)SpritePackerMode.SpriteAtlasV2)
                 {
                     UnityEditor.U2D.SpriteAtlasImporter.MigrateAllSpriteAtlases();
                 }

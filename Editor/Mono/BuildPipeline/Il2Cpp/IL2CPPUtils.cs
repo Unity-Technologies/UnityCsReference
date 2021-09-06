@@ -260,7 +260,9 @@ namespace UnityEditorInternal
         {
             "NET_4_0=1",
             "UNITY_AOT=1",
-            "NET_STANDARD_2_0=1"
+            "NET_STANDARD_2_0=1",
+            "NET_UNITY_4_8=1",
+            "NET_STANDARD=1",
         }).ToArray();
 
         public const string BinaryMetadataSuffix = "-metadata.dat";
@@ -326,8 +328,8 @@ namespace UnityEditorInternal
                 case ApiCompatibilityLevel.NET_2_0:
                     return "net20";
 
-                case ApiCompatibilityLevel.NET_4_6:
-                case ApiCompatibilityLevel.NET_Standard_2_0:
+                case ApiCompatibilityLevel.NET_Unity_4_8:
+                case ApiCompatibilityLevel.NET_Standard:
                     return "unityaot-" + BuildTargetDiscovery.GetPlatformProfileSuffix(target);
 
                 default:
@@ -348,8 +350,8 @@ namespace UnityEditorInternal
 
             switch (PlayerSettings.GetApiCompatibilityLevel(targetGroup))
             {
-                case ApiCompatibilityLevel.NET_4_6:
-                case ApiCompatibilityLevel.NET_Standard_2_0:
+                case ApiCompatibilityLevel.NET_Unity_4_8:
+                case ApiCompatibilityLevel.NET_Standard:
                     return true;
 
                 default:
@@ -369,8 +371,8 @@ namespace UnityEditorInternal
                     defines.AddRange(BaseDefines20);
                     break;
 
-                case ApiCompatibilityLevel.NET_4_6:
-                case ApiCompatibilityLevel.NET_Standard_2_0:
+                case ApiCompatibilityLevel.NET_Unity_4_8:
+                case ApiCompatibilityLevel.NET_Standard:
                     defines.AddRange(BaseDefines46);
                     break;
 
@@ -407,7 +409,8 @@ namespace UnityEditorInternal
                     defines.Add("IL2CPP_ENABLE_WRITE_BARRIER_VALIDATION=1");
                 }
 
-                var hasIncrementalGCTimeSlice = PlayerSettings.gcIncremental && (apiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6 || apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard_2_0);
+                var hasIncrementalGCTimeSlice = PlayerSettings.gcIncremental && (apiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6 || apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard_2_0 ||
+                    apiCompatibilityLevel == ApiCompatibilityLevel.NET_Unity_4_8 || apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard);
 
                 if (hasGCBarrierValidation || hasIncrementalGCTimeSlice)
                 {
@@ -442,7 +445,8 @@ namespace UnityEditorInternal
                 if (hasGCBarrierValidation)
                     arguments.Add("--write-barrier-validation");
 
-                var hasIncrementalGCTimeSlice = PlayerSettings.gcIncremental && (apiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6 || apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard_2_0);
+                var hasIncrementalGCTimeSlice = PlayerSettings.gcIncremental && (apiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6 || apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard_2_0 ||
+                    apiCompatibilityLevel == ApiCompatibilityLevel.NET_Unity_4_8 || apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard);
                 if (hasIncrementalGCTimeSlice)
                     arguments.Add("--incremental-g-c-time-slice=3");
             }
@@ -599,7 +603,7 @@ namespace UnityEditorInternal
             // IL2CPP does not support a managed stripping level of disabled. If the player settings
             // do try this (which should not be possible from the editor), use Low instead.
             if (managedStrippingLevel == ManagedStrippingLevel.Disabled)
-                managedStrippingLevel = ManagedStrippingLevel.Low;
+                managedStrippingLevel = ManagedStrippingLevel.Minimal;
             AssemblyStripper.StripAssemblies(managedDir, m_PlatformProvider.CreateUnityLinkerPlatformProvider(), m_PlatformProvider, m_RuntimeClassRegistry, managedStrippingLevel);
 
             Directory.CreateDirectory(m_TempFolder);

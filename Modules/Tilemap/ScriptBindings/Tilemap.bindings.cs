@@ -563,6 +563,9 @@ namespace UnityEngine.Tilemaps
     [NativeType(Header = "Modules/Tilemap/Public/TilemapCollider2D.h")]
     public sealed partial class TilemapCollider2D : Collider2D
     {
+        // Get/Set Delaunay mesh usage.
+        extern public bool useDelaunayMesh { get; set; }
+
         public extern uint maximumTileChangeCount
         {
             get;

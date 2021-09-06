@@ -215,7 +215,7 @@ namespace UnityEngine.UIElements
 
             if (((IMouseEventInternal)this).triggeredByOS)
             {
-                PointerDeviceState.SavePointerPosition(PointerId.mousePointerId, mousePosition, panel);
+                PointerDeviceState.SavePointerPosition(PointerId.mousePointerId, mousePosition, panel, panel.contextType);
             }
         }
 
@@ -642,6 +642,13 @@ namespace UnityEngine.UIElements
             WheelEvent e = GetPooled();
             e.delta = delta;
             e.mousePosition = mousePosition;
+            return e;
+        }
+
+        internal static WheelEvent GetPooled(Vector3 delta, IPointerEvent pointerEvent)
+        {
+            WheelEvent e = GetPooled(pointerEvent);
+            e.delta = delta;
             return e;
         }
 

@@ -1569,11 +1569,11 @@ namespace UnityEditor
                     colorMaskText += '0';
                 else
                 {
-                    if ((blendState.writeMask & 2) != 0)
+                    if ((blendState.writeMask & 8) != 0)
                         colorMaskText += 'R';
                     if ((blendState.writeMask & 4) != 0)
                         colorMaskText += 'G';
-                    if ((blendState.writeMask & 8) != 0)
+                    if ((blendState.writeMask & 2) != 0)
                         colorMaskText += 'B';
                     if ((blendState.writeMask & 1) != 0)
                         colorMaskText += 'A';

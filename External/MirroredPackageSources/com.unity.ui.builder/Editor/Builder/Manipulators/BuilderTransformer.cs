@@ -35,7 +35,7 @@ namespace Unity.UI.Builder
 
         protected void OnStartDrag(VisualElement handle)
         {
-            bool isScaledOrRotated = m_Target.computedStyle.rotate != Rotate.None() || m_Target.computedStyle.scale != Scale.Initial();
+            bool isScaledOrRotated = !Mathf.Approximately(m_Target.computedStyle.rotate.angle.value, 0) || m_Target.computedStyle.scale != Scale.Initial();
 
             if (isScaledOrRotated)
             {

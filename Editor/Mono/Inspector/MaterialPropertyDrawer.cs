@@ -609,7 +609,7 @@ namespace UnityEditor
 
         public override float GetPropertyHeight(MaterialProperty prop, string label, MaterialEditor editor)
         {
-            if (prop.type != MaterialProperty.PropType.Float && prop.type != MaterialProperty.PropType.Range)
+            if (prop.type != MaterialProperty.PropType.Float && prop.type != MaterialProperty.PropType.Range && prop.type != MaterialProperty.PropType.Int)
             {
                 return EditorGUI.kSingleLineHeight * 2.5f;
             }

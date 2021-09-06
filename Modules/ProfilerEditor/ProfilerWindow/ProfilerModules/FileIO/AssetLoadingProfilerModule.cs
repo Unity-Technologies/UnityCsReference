@@ -13,7 +13,7 @@ using UnityEditor;
 namespace UnityEditorInternal.Profiling
 {
     [Serializable]
-    [ProfilerModuleMetadata("Asset Loading", typeof(LocalizationResource), IconPath = "Profiler.Custom")]
+    [ProfilerModuleMetadata("Asset Loading", typeof(LocalizationResource), IconPath = "Profiler.AssetLoading")]
     internal class AssetLoadingProfilerModule : ProfilerModuleBase
     {
         AssetLoadingProfilerView m_AssetLoadingProfilerView;
@@ -31,7 +31,7 @@ namespace UnityEditorInternal.Profiling
 
         static readonly string k_FileIOCountersCategoryName = ProfilerCategory.Loading.Name;
 
-        public AssetLoadingProfilerModule() : base(ProfilerModuleChartType.StackedTimeArea) {}
+        public AssetLoadingProfilerModule() : base(ProfilerModuleChartType.StackedArea) {}
 
         private protected override int defaultOrderIndex => 15;
 
@@ -57,7 +57,6 @@ namespace UnityEditorInternal.Profiling
         private protected override ProfilerChart InstantiateChart(float defaultChartScale, float chartMaximumScaleInterpolationValue)
         {
             var chart = base.InstantiateChart(defaultChartScale, chartMaximumScaleInterpolationValue);
-            chart.ShowGrid = false;
             var localizedTooltipFormat = LocalizationDatabase.GetLocalizedString("A chart showing performance counters related to '{0}'. These only include bytes read through the AsyncReadManager.");
             chart.Tooltip = string.Format(localizedTooltipFormat, DisplayName);
             return chart;

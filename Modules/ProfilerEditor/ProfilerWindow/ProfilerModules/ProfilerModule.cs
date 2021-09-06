@@ -389,9 +389,9 @@ namespace Unity.Profiling.Editor
 
         void InitializeChart()
         {
-            var isStackedFillChartType = (ChartType == ProfilerModuleChartType.StackedTimeArea);
-            var chartScale = (isStackedFillChartType) ? 0.001f : 1f;
-            var chartMaximumScaleInterpolationValue = (isStackedFillChartType) ? -1f : 0f;
+            var isStackedTimeAreaChartType = ChartType == ProfilerModuleChartType.StackedTimeArea;
+            var chartScale = (isStackedTimeAreaChartType) ? 0.001f : 1f;
+            var chartMaximumScaleInterpolationValue = (isStackedTimeAreaChartType) ? -1f : 0f;
             m_Chart = InstantiateChart(chartScale, chartMaximumScaleInterpolationValue);
             m_Chart.ConfigureChartSeries(ProfilerUserSettings.frameCount, ChartCounters);
             ConfigureChartSelectionCallbacks();

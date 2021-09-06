@@ -704,6 +704,7 @@ namespace UnityEditor
 
             // Update the current callstack capture mode.
             m_CurrentCallstackRecordMode = ProfilerDriver.memoryRecordMode;
+            ProfilerWindowAnalytics.OnProfilerWindowAwake();
         }
 
         void OnPlaymodeStateChanged(PlayModeStateChange stateChange)
@@ -728,6 +729,7 @@ namespace UnityEditor
 
         void OnDestroy()
         {
+            ProfilerWindowAnalytics.OnProfilerWindowDestroy();
             // We're being temporary "hidden" on maximize, do nothing
             if (WindowLayout.GetMaximizedWindow() != null)
                 return;
@@ -744,8 +746,6 @@ namespace UnityEditor
             {
                 ProfilerDriver.enabled = m_Recording;
             }
-
-            ProfilerWindowAnalytics.OnProfilerWindowFocused();
         }
 
         void OnLostFocus()
@@ -760,8 +760,6 @@ namespace UnityEditor
                     module.OnLostFocus();
                 }
             }
-
-            ProfilerWindowAnalytics.OnProfilerWindowLostFocus();
         }
 
         void IHasCustomMenu.AddItemsToMenu(GenericMenu menu)

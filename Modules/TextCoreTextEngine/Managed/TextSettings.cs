@@ -279,6 +279,7 @@ namespace UnityEngine.TextCore.Text
 
         protected FontAsset GetCachedFontAssetInternal(Font font)
         {
+
             if (m_FontLookup == null)
             {
                 m_FontLookup = new Dictionary<int, FontAsset>();
@@ -290,20 +291,27 @@ namespace UnityEngine.TextCore.Text
             if (m_FontLookup.ContainsKey(id))
                 return m_FontLookup[id];
 
-            //Debug.Log("Creating new Dynamic Runtime Font Asset for [" + font.name + "].");
-
-            FontAsset fontAsset = null;
+            FontAsset fontAsset;
             if (font.name == "System Normal")
+            {
                 fontAsset = FontAsset.CreateFontAsset("Lucida Grande", "Regular");
+            }
             else
+            {
+                //Debug.Log("Creating new Dynamic Runtime Font Asset for [" + font.name + "].");
                 fontAsset = FontAsset.CreateFontAsset(font, 90, 9, GlyphRenderMode.SDFAA, 1024, 1024, AtlasPopulationMode.Dynamic);
-            fontAsset.hideFlags = HideFlags.DontSave;
-            fontAsset.atlasTextures[0].hideFlags = HideFlags.DontSave;
-            fontAsset.material.hideFlags = HideFlags.DontSave;
-            fontAsset.isMultiAtlasTexturesEnabled = true;
+            }
 
-            m_FontReferences.Add(new FontReferenceMap(font, fontAsset));
-            m_FontLookup.Add(id, fontAsset);
+            if (fontAsset != null)
+            {
+                fontAsset.hideFlags = HideFlags.DontSave;
+                fontAsset.atlasTextures[0].hideFlags = HideFlags.DontSave;
+                fontAsset.material.hideFlags = HideFlags.DontSave;
+                fontAsset.isMultiAtlasTexturesEnabled = true;
+
+                m_FontReferences.Add(new FontReferenceMap(font, fontAsset));
+                m_FontLookup.Add(id, fontAsset);
+            }
 
             return fontAsset;
         }

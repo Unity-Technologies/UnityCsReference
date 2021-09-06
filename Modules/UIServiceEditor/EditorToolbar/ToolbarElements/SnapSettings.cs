@@ -45,7 +45,7 @@ namespace UnityEditor.Toolbars
 
         void OnOnclicked()
         {
-            OverlayPopupWindow.ShowOverlayPopup<SnapSettingsWindow>(this, new Vector2(300, 88));
+            OverlayPopupWindow.Show<SnapSettingsWindow>(this, new Vector2(300, 88));
         }
 
         void UpdateGridSnapEnableState()

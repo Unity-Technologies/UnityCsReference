@@ -14,6 +14,7 @@ namespace UnityEditor.UIElements.Inspector
     {
         const string k_DefaultStyleSheetPath = "UIPackageResources/StyleSheets/Inspector/PanelSettingsInspector.uss";
         const string k_InspectorVisualTreeAssetPath = "UIPackageResources/UXML/Inspector/PanelSettingsInspector.uxml";
+        private const string k_StyleClassThemeMissing = "unity-panel-settings-inspector--theme-warning--hidden";
 
         private static StyleSheet k_DefaultStyleSheet = null;
 
@@ -37,33 +38,35 @@ namespace UnityEditor.UIElements.Inspector
         private PropertyField m_ClearColorField;
         private PropertyField m_ColorClearValueField;
 
-        private FloatField m_SortOrderField;
+        private HelpBox m_MissingThemeHelpBox;
 
         private void ConfigureFields()
         {
             // Using MandatoryQ instead of just Q to make sure modifications of the UXML file don't make the
             // necessary elements disappear unintentionally.
-            m_ThemeStyleSheetField = m_RootVisualElement.MandatoryQ<ObjectField>("themeStyleSheet");
+            m_MissingThemeHelpBox = m_RootVisualElement.MandatoryQ<HelpBox>("missing-theme-warning");
+
+            m_ThemeStyleSheetField = m_RootVisualElement.MandatoryQ<ObjectField>("theme-style-sheet");
             m_ThemeStyleSheetField.objectType = typeof(ThemeStyleSheet);
 
-            m_UITKTextSettings = m_RootVisualElement.MandatoryQ<ObjectField>("textSettings");
+            m_UITKTextSettings = m_RootVisualElement.MandatoryQ<ObjectField>("text-settings");
             m_UITKTextSettings.objectType = typeof(PanelTextSettings);
 
-            m_TargetTextureField = m_RootVisualElement.MandatoryQ<ObjectField>("targetTexture");
+            m_TargetTextureField = m_RootVisualElement.MandatoryQ<ObjectField>("target-texture");
             m_TargetTextureField.objectType = typeof(RenderTexture);
 
-            m_ScaleModeField = m_RootVisualElement.MandatoryQ<EnumField>("scaleMode");
-            m_ScreenMatchModeField = m_RootVisualElement.MandatoryQ<EnumField>("screenMatchMode");
+            m_ScaleModeField = m_RootVisualElement.MandatoryQ<EnumField>("scale-mode");
+            m_ScreenMatchModeField = m_RootVisualElement.MandatoryQ<EnumField>("screen-match-mode");
 
-            m_ScaleModeConstantPixelSizeGroup = m_RootVisualElement.MandatoryQ("scaleModeConstantPixelSize");
-            m_ScaleModeScaleWithScreenSizeGroup = m_RootVisualElement.MandatoryQ("scaleModeScaleWithScreenSize");
-            m_ScaleModeContantPhysicalSizeGroup = m_RootVisualElement.MandatoryQ("scaleModeConstantPhysicalSize");
+            m_ScaleModeConstantPixelSizeGroup = m_RootVisualElement.MandatoryQ("scale-mode-constant-pixel-size");
+            m_ScaleModeScaleWithScreenSizeGroup = m_RootVisualElement.MandatoryQ("scale-mode-scale-with-screen-size");
+            m_ScaleModeContantPhysicalSizeGroup = m_RootVisualElement.MandatoryQ("scale-mode-constant-physical-size");
 
             m_ScreenMatchModeMatchWidthOrHeightGroup =
-                m_RootVisualElement.MandatoryQ("screenMatchModeMatchWidthOrHeight");
+                m_RootVisualElement.MandatoryQ("screen-match-mode-match-width-or-height");
 
-            m_ClearColorField = m_RootVisualElement.MandatoryQ<PropertyField>("clearColor");
-            m_ColorClearValueField = m_RootVisualElement.MandatoryQ<PropertyField>("colorClearValue");
+            m_ClearColorField = m_RootVisualElement.MandatoryQ<PropertyField>("clear-color");
+            m_ColorClearValueField = m_RootVisualElement.MandatoryQ<PropertyField>("color-clear-value");
 
             var choices = new List<int> {0, 1, 2, 3, 4, 5, 6, 7};
             var targetDisplayField = new PopupField<int>("Target Display", choices, 0, i => $"Display {i + 1}", i => $"Display {i + 1}");
@@ -71,9 +74,6 @@ namespace UnityEditor.UIElements.Inspector
 
             m_TargetTextureField.parent.Add(targetDisplayField);
             targetDisplayField.PlaceInFront(m_TargetTextureField);
-
-            m_SortOrderField = m_RootVisualElement.MandatoryQ<FloatField>("sortingOrder");
-            m_SortOrderField.isDelayed = true;
         }
 
         private void BindFields()
@@ -84,7 +84,8 @@ namespace UnityEditor.UIElements.Inspector
                 UpdateScreenMatchModeValues((PanelScreenMatchMode)evt.newValue));
             m_ClearColorField.RegisterCallback<ChangeEvent<bool>>(evt =>
                 UpdateColorClearValue(evt.newValue));
-            m_SortOrderField.RegisterCallback<ChangeEvent<float>>(evt => SetSortOrder(evt));
+
+            m_ThemeStyleSheetField.RegisterValueChangedCallback(evt => UpdateHelpBoxDisplay());
         }
 
         private void UpdateScaleModeValues(PanelScaleMode scaleMode)
@@ -127,14 +128,12 @@ namespace UnityEditor.UIElements.Inspector
             m_ColorClearValueField.SetEnabled(newClearColor);
         }
 
-        private void SetSortOrder(ChangeEvent<float> evt)
+        void UpdateHelpBoxDisplay()
         {
             PanelSettings panelSettings = (PanelSettings)target;
+            bool displayHelpBox = panelSettings.themeStyleSheet == null;
 
-            if (panelSettings.sortingOrder != evt.newValue)
-            {
-                m_SortOrderField.schedule.Execute(() => panelSettings.ApplySortingOrder());
-            }
+            m_MissingThemeHelpBox.EnableInClassList(k_StyleClassThemeMissing, !displayHelpBox);
         }
 
         public override VisualElement CreateInspectorGUI()
@@ -167,7 +166,7 @@ namespace UnityEditor.UIElements.Inspector
             UpdateScaleModeValues(panelSettings.scaleMode);
             UpdateScreenMatchModeValues(panelSettings.screenMatchMode);
             UpdateColorClearValue(panelSettings.clearColor);
-
+            UpdateHelpBoxDisplay();
             return m_RootVisualElement;
         }
     }

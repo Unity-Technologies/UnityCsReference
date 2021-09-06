@@ -223,6 +223,8 @@ namespace UnityEditor
         [NonSerialized]
         private Action m_NextSearchOffDelegate;
 
+        internal static float searchUpdateDelaySeconds => SearchUtils.debounceThresholdMs / 1000f;
+
         ProjectBrowser()
         {
         }
@@ -727,6 +729,11 @@ namespace UnityEditor
                 string guid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(instanceID));
                 EditorApplication.projectWindowItemOnGUI(guid, rect);
             }
+
+            if (EditorApplication.projectWindowItemInstanceOnGUI != null)
+            {
+                EditorApplication.projectWindowItemInstanceOnGUI(instanceID, rect);
+            }
         }
 
         private void InitOneColumnView()
@@ -1169,13 +1176,16 @@ namespace UnityEditor
         {
             SetAsLastInteractedProjectBrowser();
 
-            Selection.activeObject = null;
             int[] instanceIDs = m_ListArea.GetSelection();
             if (instanceIDs.Length > 0)
             {
                 Selection.instanceIDs = instanceIDs;
                 m_SearchFilter.searchArea = m_LastLocalAssetsSearchArea; // local asset was selected
                 m_InternalSelectionChange = true;
+            }
+            else
+            {
+                Selection.activeObject = null;
             }
 
             m_FocusSearchField = false;
@@ -1283,9 +1293,14 @@ namespace UnityEditor
 
         internal void SetFolderSelection(int[] selectedInstanceIDs, bool revealSelectionAndFrameLastSelected)
         {
+            SetFolderSelection(selectedInstanceIDs, revealSelectionAndFrameLastSelected, true);
+        }
+
+        private void SetFolderSelection(int[] selectedInstanceIDs, bool revealSelectionAndFrameLastSelected, bool folderWasSelected)
+        {
             m_FolderTree.SetSelection(selectedInstanceIDs, revealSelectionAndFrameLastSelected);
             SetFoldersInSearchFilter(selectedInstanceIDs);
-            FolderTreeSelectionChanged(true);
+            FolderTreeSelectionChanged(folderWasSelected);
         }
 
         void AssetTreeItemDoubleClickedCallback(int instanceID)
@@ -2405,7 +2420,7 @@ namespace UnityEditor
                 m_SearchFieldText = m_lastSearchFilter;
 
                 m_NextSearchOffDelegate?.Invoke();
-                m_NextSearchOffDelegate = EditorApplication.CallDelayed(UpdateSearchDelayed, SearchUtils.debounceThresholdMs / 1000f);
+                m_NextSearchOffDelegate = EditorApplication.CallDelayed(UpdateSearchDelayed, searchUpdateDelaySeconds);
             }
 
             SearchService.SearchService.DrawOpenSearchButton(this, m_SearchFieldText);
@@ -2439,16 +2454,16 @@ namespace UnityEditor
                 else if (m_ViewMode == ViewMode.TwoColumns)
                 {
                     // Revert to last selected folders
-                    if ((GUIUtility.keyboardControl == 0 || !keyboardValidation) && m_LastFolders != null && m_LastFolders.Length > 0)
+                    if (GUIUtility.keyboardControl == 0 || !keyboardValidation || SelectionIsFavorite())
                     {
-                        m_SearchFilter.folders = m_LastFolders;
-                        if (m_FolderTree != null)
-                            SetFolderSelection(GetFolderInstanceIDs(m_LastFolders), true);
+                        RevertToLastSelectedFolder(false);
                     }
                 }
             }
             else
             {
+                if (m_ViewMode == ViewMode.TwoColumns && SelectionIsFavorite())
+                    RevertToLastSelectedFolder(false);
                 InitSearchMenu();
             }
 
@@ -3013,6 +3028,26 @@ namespace UnityEditor
                 s_Styles = new Styles();
 
             m_LockTracker.ShowButton(r, s_Styles.lockButton);
+        }
+
+        internal bool SelectionIsFavorite()
+        {
+            if (m_FolderTree.GetSelection().Length != 1)
+                return false;
+
+            int selectionID = m_FolderTree.GetSelection()[0];
+            ItemType type = GetItemType(selectionID);
+            return type == ItemType.SavedFilter;
+        }
+
+        private void RevertToLastSelectedFolder(bool folderWasSelected)
+        {
+            if (m_LastFolders != null && m_LastFolders.Length > 0)
+            {
+                m_SearchFilter.folders = m_LastFolders;
+                if (m_FolderTree != null)
+                    SetFolderSelection(GetFolderInstanceIDs(m_LastFolders), true, folderWasSelected);
+            }
         }
 
         internal class SavedFiltersContextMenu

@@ -59,6 +59,7 @@ namespace UnityEditor
         private ManagedDebuggerToggle m_ManagedDebuggerToggle = null;
         private CacheServerToggle m_CacheServerToggle = null;
         const double k_CheckUnresponsiveFrequencyInSecond = 0.5;
+        const float k_ShowProgressThreshold = 0.5f;
         private double m_LastUpdate;
 
         private bool showBakeMode
@@ -74,7 +75,7 @@ namespace UnityEditor
         {
             get
             {
-                return Progress.running;
+                return Progress.running && Progress.GetMaxElapsedTime() > k_ShowProgressThreshold;
             }
         }
 
@@ -365,7 +366,7 @@ namespace UnityEditor
             if (!this)
                 return;
 
-            if (!showProgress)
+            if (!Progress.running)
             {
                 // If we enter here, it means the last remaining progresses just finished or paused.
                 ClearProgressStatus();

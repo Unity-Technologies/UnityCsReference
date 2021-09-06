@@ -124,33 +124,45 @@ namespace UnityEditor.Search
             return s_CustomObjectIndexers.TryGetValue(objectType, out customIndexers);
         }
 
-        static void LoadCustomObjectIndexers()
+        public static Hash128 RefreshCustomIndexers()
         {
             Hash128 globalIndexersHash = default;
             foreach (var customIndexerMethodInfo in TypeCache.GetMethodsWithAttribute<CustomObjectIndexerAttribute>())
             {
-                var customIndexerAttribute = customIndexerMethodInfo.GetCustomAttribute<CustomObjectIndexerAttribute>();
-                var indexerType = customIndexerAttribute.type;
-                if (indexerType == null)
-                    continue;
-
-                if (!ValidateCustomIndexerMethodSignature(customIndexerMethodInfo))
-                    continue;
-
-                if (!(Delegate.CreateDelegate(typeof(CustomIndexerHandler), customIndexerMethodInfo) is CustomIndexerHandler customIndexerAction))
-                    continue;
-
-                if (!s_CustomObjectIndexers.TryGetValue(indexerType, out var indexerList))
+                try
                 {
-                    indexerList = new List<CustomIndexerHandler>();
-                    s_CustomObjectIndexers.Add(indexerType, indexerList);
+                    var customIndexerAttribute = customIndexerMethodInfo.GetCustomAttribute<CustomObjectIndexerAttribute>();
+                    var indexerType = customIndexerAttribute.type;
+                    if (indexerType == null)
+                        continue;
+
+                    if (!ValidateCustomIndexerMethodSignature(customIndexerMethodInfo))
+                        continue;
+
+                    if (!(Delegate.CreateDelegate(typeof(CustomIndexerHandler), customIndexerMethodInfo) is CustomIndexerHandler customIndexerAction))
+                        continue;
+
+                    if (!s_CustomObjectIndexers.TryGetValue(indexerType, out var indexerList))
+                    {
+                        indexerList = new List<CustomIndexerHandler>();
+                        s_CustomObjectIndexers.Add(indexerType, indexerList);
+                    }
+                    indexerList.Add(customIndexerAction);
+
+                    var customIndexerHash = ComputeCustomIndexerHash(customIndexerMethodInfo, customIndexerAttribute);
+                    HashUtilities.AppendHash(ref customIndexerHash, ref globalIndexersHash);
                 }
-                indexerList.Add(customIndexerAction);
-
-                var customIndexerHash = ComputeCustomIndexerHash(customIndexerMethodInfo, customIndexerAttribute);
-                HashUtilities.AppendHash(ref customIndexerHash, ref globalIndexersHash);
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"Cannot load CustomObjectIndexer with method: {customIndexerMethodInfo.Name} ({ex.Message})");
+                }
             }
+            return globalIndexersHash;
+        }
 
+        static void LoadCustomObjectIndexers()
+        {
+            var globalIndexersHash = RefreshCustomIndexers();
             if (!AssetDatabaseAPI.IsAssetImportWorkerProcess())
                 EditorApplication.delayCall += () => AssetDatabaseAPI.RegisterCustomDependency(nameof(CustomObjectIndexerAttribute), globalIndexersHash);
         }

@@ -159,12 +159,12 @@ namespace UnityEditor.Toolbars
 
         void UpdatePlayState()
         {
-            m_PlayButton.value = EditorApplication.isPlayingOrWillChangePlaymode;
+            m_PlayButton.SetValueWithoutNotify(EditorApplication.isPlayingOrWillChangePlaymode);
         }
 
         void UpdatePauseState()
         {
-            m_PauseButton.value = EditorApplication.isPaused;
+            m_PauseButton.SetValueWithoutNotify(EditorApplication.isPaused);
         }
 
         void UpdateStepState()

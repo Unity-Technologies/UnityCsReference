@@ -6,17 +6,6 @@ using System;
 
 namespace UnityEngine.UIElements
 {
-    [Flags]
-    enum DynamicAtlasFiltersInternal
-    {
-        None = 0,
-        Readability = 1 << 0,
-        Size = 1 << 1,
-        Format = 1 << 2,
-        ColorSpace = 1 << 3,
-        FilterMode = 1 << 4,
-    }
-
     /// <summary>
     /// Contains the settings used by the dynamic atlas system.
     /// </summary>
@@ -56,7 +45,7 @@ namespace UnityEngine.UIElements
 
         [HideInInspector]
         [SerializeField]
-        DynamicAtlasFiltersInternal m_ActiveFilters;
+        DynamicAtlasFilters m_ActiveFilters;
 
         /// <summary>
         /// Defines the filters that the dynamic atlas system uses to exclude textures from the texture atlas.
@@ -64,7 +53,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// When you assign a delegate to the atlas's custom filter, activeFilters is passed to the custom filter.
         /// </remarks>
-        public DynamicAtlasFilters activeFilters { get => (DynamicAtlasFilters)m_ActiveFilters; set => m_ActiveFilters = (DynamicAtlasFiltersInternal)value; }
+        public DynamicAtlasFilters activeFilters { get => m_ActiveFilters; set => m_ActiveFilters = (DynamicAtlasFilters)value; }
 
         /// <summary>
         /// Default filters for a dynamic atlas.

@@ -652,7 +652,7 @@ namespace UnityEngine.UIElements
             e.deltaPosition = touch.deltaPosition;
             e.deltaTime = touch.deltaTime;
             e.clickCount = touch.tapCount;
-            e.pressure = Mathf.Abs(touch.maximumPossiblePressure) > Mathf.Epsilon ? touch.pressure / touch.maximumPossiblePressure : 1f;
+            e.pressure = Mathf.Abs(touch.maximumPossiblePressure) > UIRUtility.k_Epsilon ? touch.pressure / touch.maximumPossiblePressure : 1f;
             e.tangentialPressure = 0;
 
             e.altitudeAngle = touch.altitudeAngle;
@@ -730,7 +730,7 @@ namespace UnityEngine.UIElements
 
             if (((IPointerEventInternal)this).triggeredByOS)
             {
-                PointerDeviceState.SavePointerPosition(pointerId, position, panel);
+                PointerDeviceState.SavePointerPosition(pointerId, position, panel, panel.contextType);
             }
         }
 
@@ -982,7 +982,7 @@ namespace UnityEngine.UIElements
             {
                 panel.ReleasePointer(pointerId);
                 BaseVisualElementPanel basePanel = panel as BaseVisualElementPanel;
-                basePanel?.ClearCachedElementUnderPointer(this);
+                basePanel?.ClearCachedElementUnderPointer(pointerId, this);
             }
 
             if (panel.ShouldSendCompatibilityMouseEvents(this))
@@ -1042,7 +1042,7 @@ namespace UnityEngine.UIElements
             {
                 panel.ReleasePointer(pointerId);
                 BaseVisualElementPanel basePanel = panel as BaseVisualElementPanel;
-                basePanel?.ClearCachedElementUnderPointer(this);
+                basePanel?.ClearCachedElementUnderPointer(pointerId, this);
             }
 
             if (panel.ShouldSendCompatibilityMouseEvents(this))

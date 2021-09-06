@@ -31,7 +31,8 @@ namespace UnityEditor
         AlwaysOn = 2,
         BuildTimeOnlyAtlas = 3,
         AlwaysOnAtlas = 4,
-        SpriteAtlasV2 = 5
+        SpriteAtlasV2 = 5,
+        SpriteAtlasV2Build = 6,
     }
 
     public enum LineEndingsMode

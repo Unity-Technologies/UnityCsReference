@@ -179,6 +179,38 @@ namespace UnityEditor
             return vec;
         }
 
+        public static Vector2 GUIVector2Field(GUIContent guiContent, SerializedProperty vecProp, params GUILayoutOption[] layoutOptions)
+        {
+            Rect r = GetControlRect(kSingleLineHeight, layoutOptions);
+            guiContent = EditorGUI.BeginProperty(r, guiContent, vecProp);
+            r = PrefixLabel(r, guiContent);
+
+            GUIContent[] labels = { new GUIContent("X"), new GUIContent("Y") };
+            float elementWidth = (r.width - 2 * kSpacingSubLabel) / 2f;
+            r.width = elementWidth;
+
+            SerializedProperty cur = vecProp.Copy();
+            cur.Next(true);
+
+            Vector2 vec = vecProp.vector2Value;
+
+            for (int i = 0; i < 2; ++i)
+            {
+                EditorGUI.BeginProperty(r, GUIContent.none, cur);
+                Label(r, labels[i]);
+                EditorGUI.BeginChangeCheck();
+                float newValue = FloatDraggable(r, cur.floatValue, 1.0f, 25.0f, "g5");
+                if (EditorGUI.EndChangeCheck())
+                    cur.floatValue = newValue;
+                EditorGUI.EndProperty();
+                cur.Next(false);
+                r.x += elementWidth + kSpacingSubLabel;
+            }
+
+            EditorGUI.EndProperty();
+            return vec;
+        }
+
         public static float GUIFloat(GUIContent guiContent, SerializedProperty floatProp, params GUILayoutOption[] layoutOptions)
         {
             return GUIFloat(guiContent, floatProp, kFormatString, layoutOptions);
@@ -258,11 +290,10 @@ namespace UnityEditor
             string[] m_FlagNames = new string[0];
             int[] m_FlagValues = new int[0];
             TagManager.GetDefinedLayers(ref m_FlagNames, ref m_FlagValues);
-            var toggleLabel = MaskFieldGUI.GetMaskButtonValue(layerMaskProp.intValue, m_FlagNames, m_FlagValues);
+            MaskFieldGUI.GetMaskButtonValue(layerMaskProp.intValue, m_FlagNames, m_FlagValues, out var toggleLabel, out var toggleLabelMixed);
 
             // the returned rect is off by two pixels so we adjust its position manually
             Rect rect = GetControlRect(kSingleLineHeight, layoutOptions);
-            toggleLabel = layerMaskProp.hasMultipleDifferentValues ? "—" : toggleLabel;
             rect.y -= 2;
 
             // adjusting the rect further to have proper alignment
@@ -271,7 +302,8 @@ namespace UnityEditor
             rect.x -= 2;
             rect.y += 2;
 
-            bool toggled = EditorGUI.DropdownButton(rect, new GUIContent(toggleLabel), FocusType.Keyboard, ParticleSystemStyles.Get().popup);
+            var toggleContent = layerMaskProp.hasMultipleDifferentValues ? EditorGUI.mixedValueContent : MaskFieldGUI.DoMixedLabel(toggleLabel, toggleLabelMixed, rect, ParticleSystemStyles.Get().popup);
+            bool toggled = EditorGUI.DropdownButton(rect, toggleContent, FocusType.Keyboard, ParticleSystemStyles.Get().popup);
             if (toggled)
             {
                 PopupWindowWithoutFocus.Show(rect, new MaskFieldDropDown(layerMaskProp));

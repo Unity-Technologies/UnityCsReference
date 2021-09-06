@@ -89,6 +89,7 @@ namespace UnityEngine.UIElements
                 new TextField.UxmlFactory(),
                 new TemplateContainer.UxmlFactory(),
                 new Box.UxmlFactory(),
+                new EnumField.UxmlFactory(),
                 new DropdownField.UxmlFactory(),
                 new HelpBox.UxmlFactory(),
                 new PopupWindow.UxmlFactory(),

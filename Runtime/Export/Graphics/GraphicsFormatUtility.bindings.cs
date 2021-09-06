@@ -52,11 +52,11 @@ namespace UnityEngine
                 }
 
                 [FreeFunction(IsThreadSafe = true)]
-                extern private static GraphicsFormat GetDepthStencilFormat_Native(int minimumDepthBits);
+                extern private static GraphicsFormat GetDepthStencilFormatFromBitsLegacy_Native(int minimumDepthBits);
 
-                public static GraphicsFormat GetDepthStencilFormat(int minimumDepthBits)
+                internal static GraphicsFormat GetDepthStencilFormat(int minimumDepthBits)
                 {
-                    return GetDepthStencilFormat_Native(minimumDepthBits);
+                    return GetDepthStencilFormatFromBitsLegacy_Native(minimumDepthBits);
                 }
 
                 [FreeFunction(IsThreadSafe = true)]

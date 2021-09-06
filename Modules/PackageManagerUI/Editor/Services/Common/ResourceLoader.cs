@@ -39,7 +39,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 "StyleSheets/PackageManager/PackageStatusBar.uss",
                 "StyleSheets/PackageManager/PackageToolbar.uss",
                 "StyleSheets/PackageManager/ProgressBar.uss",
-                "StyleSheets/PackageManager/FeatureDependencies.uss"
+                "StyleSheets/PackageManager/FeatureDependencies.uss",
+                "StyleSheets/PackageManager/PackagePlatformList.uss"
             };
 
             internal static readonly string filtersDropdown = "StyleSheets/PackageManager/Filters.uss";

@@ -56,7 +56,7 @@ namespace UnityEditorInternal
             m_Name = name;
             m_LocalizedName = localizedName;
             m_IconName = iconName;
-            ShowGrid = true;
+            ShowGrid = (type == ProfilerModuleChartType.StackedTimeArea);
 
             var localizedTooltipFormat = LocalizationDatabase.GetLocalizedString("A chart showing performance counters related to '{0}'.");
             Tooltip = string.Format(localizedTooltipFormat, m_LocalizedName);
@@ -217,7 +217,7 @@ namespace UnityEditorInternal
 
         public void UpdateScaleValuesIfNecessary(int firstEmptyFrame, int firstFrame, int frameCount)
         {
-            if (m_Type == ProfilerModuleChartType.StackedTimeArea)
+            if (m_Type.IsStackedChartType())
             {
                 ComputeChartScaleValue(firstEmptyFrame, firstFrame, frameCount);
             }
@@ -247,7 +247,8 @@ namespace UnityEditorInternal
             if (timeMaxExcludeFirst != 0.0f)
                 timeMax = timeMaxExcludeFirst;
 
-            timeMax = Mathf.Clamp(timeMax * m_DataScale, k_ChartMinClamp, k_ChartMaxClamp);
+            if (m_Type == ProfilerModuleChartType.StackedTimeArea)
+                timeMax = Mathf.Clamp(timeMax * m_DataScale, k_ChartMinClamp, k_ChartMaxClamp);
 
             // Do not apply the new scale immediately, but gradually go towards it
             if (m_MaximumScaleInterpolationValue > 0.0f)

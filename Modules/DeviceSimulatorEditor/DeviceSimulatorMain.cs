@@ -45,6 +45,7 @@ namespace UnityEditor.DeviceSimulation
             {
                 m_DeviceIndex = value;
                 InitSimulation();
+                PlayModeAnalytics.SimulatorSelectDeviceEvent(currentDevice.deviceInfo.friendlyName);
             }
         }
 
@@ -61,6 +62,8 @@ namespace UnityEditor.DeviceSimulation
             m_TouchInput = new TouchEventManipulator(m_DeviceSimulator);
             m_UserInterface = new UserInterfaceController(this, rootVisualElement, serializedState, m_PluginController, m_TouchInput);
             InitSimulation();
+
+            PlayModeAnalytics.SimulatorEnableEvent(m_PluginController.GetPluginNames());
         }
 
         public void Dispose()
@@ -117,6 +120,7 @@ namespace UnityEditor.DeviceSimulation
                     break;
                 }
             }
+            PlayModeAnalytics.SimulatorSelectDeviceEvent(currentDevice.deviceInfo.friendlyName);
         }
 
         public SimulatorState SerializeSimulatorState()

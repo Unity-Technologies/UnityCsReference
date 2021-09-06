@@ -6,7 +6,7 @@ using System;
 
 namespace UnityEditor.SearchService
 {
-    [Obsolete("Project has been deprecated. Use ProjectSearch instead (UnityUpgradable) -> ProjectSearch", false)]
+    [Obsolete("Project has been deprecated. Use ProjectSearch instead (UnityUpgradable) -> ProjectSearch", error: true)]
     public static class Project
     {
         public const SearchEngineScope EngineScope = SearchEngineScope.Project;

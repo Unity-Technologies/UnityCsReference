@@ -545,7 +545,7 @@ namespace UnityEngine.UIElements
             using (k_ImmediateCallbackMarker.Auto())
             {
                 var offset = elementPanel.repaintData.currentOffset;
-                m_CachedClippingRect = ComputeAAAlignedBound(worldClipImmediate, offset);
+                m_CachedClippingRect = ComputeAAAlignedBound(worldClip, offset);
                 m_CachedTransform = offset * worldTransform;
 
                 HandleIMGUIEvent(elementPanel.repaintData.repaintEvent, m_CachedTransform, m_CachedClippingRect, onGUIHandler, true);
@@ -792,14 +792,27 @@ namespace UnityEngine.UIElements
             AddToClassList(ussFoldoutChildDepthClassNames[depth]);
         }
 
+        static Event s_DefaultMeasureEvent = new Event() { type = EventType.Layout };
+        static Event s_MeasureEvent = new Event() { type = EventType.Layout };
+        static Event s_CurrentEvent = new Event() { type = EventType.Layout };
         protected internal override Vector2 DoMeasure(float desiredWidth, MeasureMode widthMode, float desiredHeight, MeasureMode heightMode)
         {
             float measuredWidth = float.NaN;
             float measuredHeight = float.NaN;
 
+            bool restoreCurrentEvent = false;
             if (widthMode != MeasureMode.Exactly || heightMode != MeasureMode.Exactly)
             {
-                var evt = new Event { type = EventType.Layout };
+                if (Event.current != null)
+                {
+                    // The call to DoOnGUI below overwrite Event.current with the event pass in.
+                    // If Even.current is not null we need to save it so we can restore it at the end of DoMeasure.
+                    s_CurrentEvent.CopyFrom(Event.current);
+                    restoreCurrentEvent = true;
+                }
+
+                s_MeasureEvent.CopyFrom(s_DefaultMeasureEvent);
+
                 var layoutRect = layout;
                 // Make sure the right width/height will be used at the final stage of the calculation
                 switch (widthMode)
@@ -821,9 +834,12 @@ namespace UnityEngine.UIElements
                 // pass Rect.zero for the clipping rect as this eventually sets the
                 // global GUIClip.visibleRect which IMGUI code could be using to influence
                 // size. See case 1111923 and 1158089.
-                DoOnGUI(evt, m_CachedTransform, m_CachedClippingRect, true, layoutRect, onGUIHandler, true);
+                DoOnGUI(s_MeasureEvent, m_CachedTransform, m_CachedClippingRect, true, layoutRect, onGUIHandler, true);
                 measuredWidth = layoutMeasuredWidth;
                 measuredHeight = layoutMeasuredHeight;
+
+                if (restoreCurrentEvent)
+                    Event.current.CopyFrom(s_CurrentEvent);
             }
 
             switch (widthMode)

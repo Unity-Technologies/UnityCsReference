@@ -239,6 +239,8 @@ namespace UnityEditor
             if (hasTargetUsingVTMaterial)
                 return true;
 
+            bool mipsHaveChanged = false;
+
             foreach (TextureMipLevels textureInfo in m_TextureMipLevels)
             {
                 if (textureInfo.texture == null)
@@ -248,11 +250,16 @@ namespace UnityEditor
                 if (textureInfo.texture.loadedMipmapLevel != textureInfo.lastMipmapLevel)
                 {
                     textureInfo.lastMipmapLevel = textureInfo.texture.loadedMipmapLevel;
-                    return true;
+
+                    if (textureInfo.lastMipmapLevel == mipLevel)
+                    {
+                        // Don't early out- We need to finish the loop to update them all this frame
+                        mipsHaveChanged = true;
+                    }
                 }
             }
 
-            return false;
+            return mipsHaveChanged;
         }
 
         internal void SetCubemapIntensity(float intensity)
@@ -718,9 +725,10 @@ namespace UnityEditor
             RenderTexture rt = t as RenderTexture;
             if (rt != null)
             {
-                if (!SystemInfo.IsFormatSupported(rt.graphicsFormat, FormatUsage.Render))
-                    return; // can't do this RT format
-                rt.Create();
+                if (rt.Create() == false)
+                {
+                    return;
+                }
             }
 
             if (IsCubemap())

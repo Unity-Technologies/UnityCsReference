@@ -984,23 +984,10 @@ namespace UnityEditor
             }
             set
             {
-                Avatar avatar = value;
                 if (value != null)
-                {
-                    ModelImporter importer = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(value)) as ModelImporter;
+                    humanDescription = value.humanDescription;
 
-                    if (importer != null)
-                    {
-                        humanDescription = importer.humanDescription;
-                    }
-                    else
-                    {
-                        Debug.LogError("Avatar must be from a ModelImporter, otherwise use ModelImporter.humanDescription");
-                        avatar = null;
-                    }
-                }
-
-                SetSourceAvatarInternal(this, avatar);
+                SetSourceAvatarInternal(this, value);
             }
         }
 

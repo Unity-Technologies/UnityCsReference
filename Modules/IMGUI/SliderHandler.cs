@@ -159,7 +159,22 @@ namespace UnityEngine
             if (GUIUtility.hotControl != id || !hover || IsEmptySlider())
                 return currentValue;
 
-            if (GUIUtility.HitTest(ThumbRect(), CurrentEvent()))
+            var thumbRect = ThumbRect();
+
+            // If the slider is horizontal then use its entire height to hit test on the thumb
+            if (this.horiz)
+            {
+                thumbRect.y = position.y;
+                thumbRect.height = position.height;
+            }
+            // ... otherwise use the entire width
+            else
+            {
+                thumbRect.x = position.x;
+                thumbRect.width = position.width;
+            }
+
+            if (GUIUtility.HitTest(thumbRect, CurrentEvent()))
             {
                 if (GUI.scrollTroughSide != 0) // if was scrolling with "trough" and the thumb reached mouse - sliding action over
                 {

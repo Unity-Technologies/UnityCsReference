@@ -72,7 +72,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
 
-            PackageManagerWindowAnalytics.SendEvent("importSample", m_Version.uniqueId);
+            if (previousImports.Count < 1)
+                PackageManagerWindowAnalytics.SendEvent("importSample", m_Version.uniqueId);
+            else
+                PackageManagerWindowAnalytics.SendEvent("reimportSample", m_Version.uniqueId);
 
             if (m_Sample.Import(Sample.ImportOptions.OverridePreviousImports))
             {

@@ -118,7 +118,6 @@ namespace UnityEditorInternal
     }
 
     [NativeHeader("Modules/ProfilerEditor/Public/ProfilerSession.h")]
-    [NativeHeader("Modules/Profiler/Instrumentation/InstrumentationProfiler.h")]
     [NativeHeader("Modules/ProfilerEditor/ProfilerHistory/ProfilerProperty.h")]
     [NativeHeader("Modules/ProfilerEditor/Public/EditorProfilerConnection.h")]
     [NativeHeader("Modules/Profiler/Runtime/CollectProfilerStats.h")]
@@ -328,6 +327,10 @@ namespace UnityEditorInternal
         {
             return new RawFrameDataView(frameIndex, threadIndex);
         }
+
+        [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
+        [NativeMethod("GetFramesBelongToSameSession")]
+        internal static extern bool GetFramesBelongToSameSession(int frame1, int frame2);
 
         public static event Action<int, int> NewProfilerFrameRecorded;
 
@@ -556,13 +559,5 @@ namespace UnityEditorInternal
         [StaticAccessor("EditorProfilerConnection::Get()", StaticAccessorType.Dot)]
         [NativeMethod("SendSetAudioCaptureFlags")]
         static public extern void SetAudioCaptureFlags(int flags);
-
-        [StaticAccessor("EditorProfilerConnection::Get()", StaticAccessorType.Dot)]
-        [NativeMethod("SendBeginInstrumentFunction")]
-        static public extern void BeginInstrumentFunction(string fullName);
-
-        [StaticAccessor("EditorProfilerConnection::Get()", StaticAccessorType.Dot)]
-        [NativeMethod("SendEndInstrumentFunction")]
-        static public extern void EndInstrumentFunction(string fullName);
     }
 }

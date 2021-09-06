@@ -5,6 +5,7 @@
 using UnityEngine.Bindings;
 using System.Collections.Generic;
 using UnityEngine.Scripting;
+using System;
 
 namespace UnityEditor
 {
@@ -30,6 +31,8 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/MenuController.h")]
     public sealed class Menu
     {
+        internal static event Action menuChanged;
+
         [NativeMethod("MenuController::SetChecked", true)]
         public static extern void SetChecked(string menuPath, bool isChecked);
 
@@ -60,5 +63,14 @@ namespace UnityEditor
 
         [FreeFunction("MenuController::AddSeparator")]
         internal static extern void AddSeparator(string name, int priority);
+
+        [FreeFunction("MenuController::RebuildAllMenus")]
+        internal static extern void RebuildAllMenus();
+
+        [RequiredByNativeCode]
+        private static void OnMenuChanged()
+        {
+            menuChanged?.Invoke();
+        }
     }
 }

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Assertions;
 using UnityEngine.UIElements.Experimental;
 using UnityEngine.UIElements.StyleSheets;
 
@@ -64,8 +65,6 @@ namespace UnityEngine.UIElements
 
         bool IStylePropertyAnimations.Start(StylePropertyId id, Length from, Length to, int durationMs, int delayMs, Func<float, float> easingCurve)
         {
-            if (!TryConvertLengthUnits(id, ref from, ref to))
-                return false;
             return GetStylePropertyAnimationSystem().StartTransition(this, id, from, to, durationMs, delayMs, easingCurve);
         }
 
@@ -111,8 +110,6 @@ namespace UnityEngine.UIElements
 
         bool IStylePropertyAnimations.Start(StylePropertyId id, Translate from, Translate to, int durationMs, int delayMs, Func<float, float> easingCurve)
         {
-            if (!TryConvertTranslateUnits(ref from, ref to))
-                return false;
             return GetStylePropertyAnimationSystem().StartTransition(this, id, from, to, durationMs, delayMs, easingCurve);
         }
 
@@ -123,8 +120,6 @@ namespace UnityEngine.UIElements
 
         bool IStylePropertyAnimations.Start(StylePropertyId id, TransformOrigin from, TransformOrigin to, int durationMs, int delayMs, Func<float, float> easingCurve)
         {
-            if (!TryConvertTransformOriginUnits(ref from, ref to))
-                return false;
             return GetStylePropertyAnimationSystem().StartTransition(this, id, from, to, durationMs, delayMs, easingCurve);
         }
 
@@ -155,35 +150,132 @@ namespace UnityEngine.UIElements
                 GetStylePropertyAnimationSystem().GetAllAnimations(this, outPropertyIds);
         }
 
-        private bool TryConvertLengthUnits(StylePropertyId id, ref Length from, ref Length to)
+        internal bool TryConvertLengthUnits(StylePropertyId id, ref Length from, ref Length to, int subPropertyIndex = 0)
         {
             if (from.IsAuto() || from.IsNone() || to.IsAuto() || to.IsNone())
                 return false;
-            if (Mathf.Approximately(from.value, 0))
-                from.unit = to.unit;
-            else if (from.unit != to.unit)
+
+            if (float.IsNaN(from.value) || float.IsNaN(to.value))
                 return false;
+
+            if (from.unit == to.unit)
+                return true;
+
+            // At the moment, LengthUnit only accepts Pixel and Percent. A slightly more complicated conversion might
+            // be needed when we have multiple units to account for, e.g. from -> px -> to.
+            if (to.unit == LengthUnit.Pixel)
+            {
+                if (Mathf.Approximately(from.value, 0))
+                {
+                    from = new Length(0, LengthUnit.Pixel);
+                    return true;
+                }
+
+                var parentSize = GetParentSizeForLengthConversion(id, subPropertyIndex);
+                if (parentSize == null || !(parentSize.Value >= 0)) // Reject NaN and negative values
+                    return false;
+                from = new Length(from.value * parentSize.Value / 100, LengthUnit.Pixel);
+            }
+            else
+            {
+                // When more units are supported, this Assert will make sure we remember to implement them here.
+                Assert.AreEqual(LengthUnit.Percent, to.unit);
+
+                var parentSize = GetParentSizeForLengthConversion(id, subPropertyIndex);
+                if (parentSize == null || !(parentSize.Value > 0)) // Reject NaN, zero, and negative values
+                    return false;
+                from = new Length(from.value * 100 / parentSize.Value, LengthUnit.Percent);
+            }
+
             return true;
         }
 
         // Changes the from TransformOrigin so that it apply the same result as before, but with the unit of the "to" value
         // return false if not possible
-        private bool TryConvertTransformOriginUnits(ref TransformOrigin from, ref TransformOrigin to)
+        internal bool TryConvertTransformOriginUnits(ref TransformOrigin from, ref TransformOrigin to)
         {
-            if (from.x.unit != to.x.unit || from.y.unit != to.y.unit)
+            Length fromX = from.x, fromY = from.y, toX = to.x, toY = to.y;
+            if (!TryConvertLengthUnits(StylePropertyId.TransformOrigin, ref fromX, ref toX, 0))
+                return false;
+            if (!TryConvertLengthUnits(StylePropertyId.TransformOrigin, ref fromY, ref toY, 1))
                 return false;
 
+            from.x = fromX;
+            from.y = fromY;
             return true;
         }
 
         // Changes the from Translate so that it apply the same result as before, but with the unit of the "to"
         // return false if not possible
-        private bool TryConvertTranslateUnits(ref Translate from, ref Translate to)
+        internal bool TryConvertTranslateUnits(ref Translate from, ref Translate to)
         {
-            if (from.x.unit != to.x.unit || from.y.unit != to.y.unit)
+            Length fromX = from.x, fromY = from.y, toX = to.x, toY = to.y;
+            if (!TryConvertLengthUnits(StylePropertyId.Translate, ref fromX, ref toX, 0))
+                return false;
+            if (!TryConvertLengthUnits(StylePropertyId.Translate, ref fromY, ref toY, 1))
                 return false;
 
+            from.x = fromX;
+            from.y = fromY;
             return true;
+        }
+
+        private float? GetParentSizeForLengthConversion(StylePropertyId id, int subPropertyIndex = 0)
+        {
+            switch (id)
+            {
+                case StylePropertyId.Bottom:
+                case StylePropertyId.Top:
+                case StylePropertyId.Height:
+                case StylePropertyId.MaxHeight:
+                case StylePropertyId.MinHeight:
+                    return hierarchy.parent?.resolvedStyle.height;
+
+                case StylePropertyId.Left:
+                case StylePropertyId.Right:
+                case StylePropertyId.Width:
+                case StylePropertyId.MaxWidth:
+                case StylePropertyId.MinWidth:
+
+                case StylePropertyId.MarginBottom:
+                case StylePropertyId.MarginTop:
+                case StylePropertyId.MarginLeft:
+                case StylePropertyId.MarginRight:
+
+                case StylePropertyId.PaddingBottom: //The size of the padding as a percentage, relative to the width of the containing block. Must be nonnegative.
+                case StylePropertyId.PaddingTop:
+                case StylePropertyId.PaddingLeft:
+                case StylePropertyId.PaddingRight:
+                    return hierarchy.parent?.resolvedStyle.width;
+
+                case StylePropertyId.FlexBasis:
+                    if (hierarchy.parent == null) return null;
+                    switch (hierarchy.parent.resolvedStyle.flexDirection)
+                    {
+                        case FlexDirection.Column: case FlexDirection.ColumnReverse:
+                            return hierarchy.parent.resolvedStyle.height;
+                        default:
+                            return hierarchy.parent.resolvedStyle.width;
+                    }
+
+                case StylePropertyId.BorderBottomLeftRadius: //Refer to the corresponding dimension of the border box
+                case StylePropertyId.BorderBottomRightRadius:
+                case StylePropertyId.BorderTopLeftRadius:
+                case StylePropertyId.BorderTopRightRadius:
+                    // Technically a border-radius is made of 2 values (Vector2) but currently we only support one value in the style
+                    return resolvedStyle.width;
+
+                case StylePropertyId.FontSize: //Specifies extra spacing as a percentage of the affected character’s advance width.
+                case StylePropertyId.LetterSpacing: //No percentage values
+                case StylePropertyId.UnityParagraphSpacing: //No CSS equivalent
+                case StylePropertyId.WordSpacing: //Specifies extra spacing as a percentage of the affected character’s advance width.
+                    return null;
+
+                case StylePropertyId.Translate:
+                case StylePropertyId.TransformOrigin:
+                    return subPropertyIndex == 0 ? resolvedStyle.width : resolvedStyle.height;
+            }
+            return null;
         }
     }
 }

@@ -214,7 +214,8 @@ namespace UnityEditor
             if (state.activeRootGameObject != null)
                 clips = AnimationUtility.GetAnimationClips(state.activeRootGameObject);
 
-            Array.Sort(clips, (AnimationClip clip1, AnimationClip clip2) => CurveUtility.GetClipName(clip1).CompareTo(CurveUtility.GetClipName(clip2)));
+            //Using AlphaNum/Natural Compare to sort clips
+            Array.Sort(clips, (AnimationClip clip1, AnimationClip clip2) => EditorUtility.NaturalCompareObjectNames(clip1, clip2));
 
             return clips;
         }

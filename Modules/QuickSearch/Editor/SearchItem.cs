@@ -332,14 +332,10 @@ namespace UnityEditor.Search
             return ToObject(typeof(T)) as T;
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <returns></returns>
-        [Obsolete("This API will be removed")]
+        [Obsolete("This API will be removed", error: true)]
         public string ToGlobalId()
         {
-            return $"{provider?.id ?? "unknown"}:{id}";
+            throw new NotSupportedException("Obsolete");
         }
 
         /// <summary>
@@ -559,12 +555,16 @@ namespace UnityEditor.Search
             }
             if (string.Equals("label", name, StringComparison.OrdinalIgnoreCase))
             {
+                options |= SearchItemOptions.Compacted;
                 field = new Field(name, GetLabel(context ?? this.context, true));
+                options &= ~SearchItemOptions.Compacted;
                 return field.value != null;
             }
             if (string.Equals("description", name, StringComparison.OrdinalIgnoreCase))
             {
+                options |= SearchItemOptions.Compacted;
                 field = new Field(name, GetDescription(context ?? this.context, true));
+                options &= ~SearchItemOptions.Compacted;
                 return field.value != null;
             }
 

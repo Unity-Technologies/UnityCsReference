@@ -14,7 +14,7 @@ namespace UnityEngine.UIElements
         bool IsTrackingAssets();
         bool CheckTrackedAssetsDirty();
         void UpdateAssetDirtyCount(T asset, int newDirtyCount);
-        void OnAssetsImported(HashSet<T> changedAssets, HashSet<string> deletedAssets);
+        bool OnAssetsImported(HashSet<T> changedAssets, HashSet<string> deletedAssets);
         void OnTrackedAssetChanged();
     }
 }

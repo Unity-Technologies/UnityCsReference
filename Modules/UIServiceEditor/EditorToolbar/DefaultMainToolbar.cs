@@ -35,7 +35,8 @@ namespace UnityEditor
                 "Editor Utility/Layers",
                 "Editor Utility/Search",
                 "Editor Utility/Modes",
-                "Package Manager/PreviewPackagesInUse");
+                "Package Manager/PreviewPackagesInUse",
+                "Editor Utility/Undo");
 
             EditorToolbarUtility.LoadStyleSheets("MainToolbar", root);
             return root;

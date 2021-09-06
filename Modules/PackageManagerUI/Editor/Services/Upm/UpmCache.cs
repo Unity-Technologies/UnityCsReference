@@ -185,7 +185,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             // Since we have no easy way to compare two package info and know which one is newer with the current implementation,
             // we want to keep what's stored in the searchPackageInfos as up to date as possible,
             if (timestamp > m_SearchPackageInfosTimestamp)
-                foreach (var newInfo in updatedInfos.Where(info => m_SearchPackageInfos.ContainsKey(info.name)))
+                foreach (var newInfo in updatedInfos.Where(info => m_SearchPackageInfos.ContainsKey(info.name) && info.errors.Length == 0))
                     m_SearchPackageInfos[newInfo.name] = newInfo;
 
             if (updatedInfos.Any())

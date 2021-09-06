@@ -34,6 +34,8 @@ namespace UnityEditor.Profiling.ModuleEditor
         ModuleListViewController m_ModuleListViewController;
         ModuleDetailsViewController m_ModuleDetailsViewController;
 
+        internal List<ModuleData> Modules => m_Modules;
+
         public event Action<ReadOnlyCollection<ModuleData>, ReadOnlyCollection<ModuleData>> onChangesConfirmed;
 
         public static ModuleEditorWindow Present(List<ProfilerModule> modules, bool isConnectedToEditor)
@@ -128,8 +130,11 @@ namespace UnityEditor.Profiling.ModuleEditor
 
         void OnModuleAtIndexSelected(ModuleData module, int index)
         {
-            m_ModuleDetailsViewController.SetModule(module);
             m_SelectedIndex = index;
+            if (index != k_InvalidIndex)
+                m_ModuleDetailsViewController.SetModule(module);
+            else
+                m_ModuleDetailsViewController.SetNoModuleSelected();
         }
 
         void CreateModule()
@@ -176,13 +181,9 @@ namespace UnityEditor.Profiling.ModuleEditor
 
             var firstEditableModuleIndex = IndexOfFirstEditableModule();
             if (firstEditableModuleIndex != k_InvalidIndex)
-            {
                 m_ModuleListViewController.SelectModuleAtIndex(firstEditableModuleIndex);
-            }
             else
-            {
-                m_ModuleDetailsViewController.SetNoModuleSelected();
-            }
+                m_ModuleListViewController.ClearSelection();
         }
 
         void ConfirmChanges()

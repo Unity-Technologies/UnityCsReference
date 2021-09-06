@@ -198,6 +198,8 @@ namespace UnityEngine.Device
 
         public static bool supportsMultisampleResolveDepth => ShimManager.systemInfoShim.supportsMultisampleResolveDepth;
 
+        public static bool supportsMultisampleResolveStencil => ShimManager.systemInfoShim.supportsMultisampleResolveStencil;
+
         public static bool IsFormatSupported(GraphicsFormat format, FormatUsage usage)
         {
             return ShimManager.systemInfoShim.IsFormatSupported(format, usage);

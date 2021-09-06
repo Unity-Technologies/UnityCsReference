@@ -25,9 +25,8 @@ namespace UnityEditor.UIElements
                 // Get the path of the selected folder or asset.
                 filePath = AssetDatabase.GUIDToAssetPath(Selection.assetGUIDs[0]);
 
-                // Get the file extension of the selected asset as it might need to be removed.
-                string fileExtension = Path.GetExtension(filePath);
-                if (fileExtension != "")
+                // If the path points to a file, asset should be created in the directory that file is in
+                if (File.Exists(filePath))
                 {
                     filePath = Path.GetDirectoryName(filePath);
                 }
@@ -40,15 +39,14 @@ namespace UnityEditor.UIElements
         private static void CreateUXMAsset()
         {
             var folder = GetCurrentFolder();
-            var path = AssetDatabase.GenerateUniqueAssetPath(folder + "/NewUXMLTemplate.uxml");
             var contents = CreateUXMLTemplate(folder);
             var icon = EditorGUIUtility.IconContent<VisualTreeAsset>().image as Texture2D;
-            ProjectWindowUtil.CreateAssetWithContent(path, contents, icon);
+            ProjectWindowUtil.CreateAssetWithContent("NewUXMLTemplate.uxml", contents, icon);
         }
 
         public static string CreateUXMLTemplate(string folder, string uxmlContent = "")
         {
-            UxmlSchemaGenerator.UpdateSchemaFiles();
+            UxmlSchemaGenerator.UpdateSchemaFiles(true);
 
             string[] pathComponents = folder.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
             List<string> backDots = new List<string>();

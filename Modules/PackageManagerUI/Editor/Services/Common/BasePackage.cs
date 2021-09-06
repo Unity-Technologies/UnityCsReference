@@ -40,7 +40,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (primary.isInstalled && !primary.isDirectDependency)
                     return PackageState.InstalledAsDependency;
 
-                if (primary != recommended && ((primary.isInstalled && primary != latestKeyVersion) || primary is AssetStorePackageVersion))
+                if (primary != recommended && ((primary.isInstalled && primary != latestKeyVersion) || primary is AssetStorePackageVersion) && !primary.HasTag(PackageTag.Local))
                     return PackageState.UpdateAvailable;
 
                 if (versions.importAvailable != null)

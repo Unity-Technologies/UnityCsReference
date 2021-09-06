@@ -4,6 +4,7 @@
 
 using System;
 using UnityEditor.SceneManagement;
+using UnityEditorInternal;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -188,7 +189,8 @@ namespace UnityEditor
             else if (visualType == ObjectFieldVisualType.LargePreview)
                 EditorGUIUtility.SetIconSize(new Vector2(64, 64));
 
-            if ((eventType == EventType.MouseDown && Event.current.button == 1 || eventType == EventType.ContextClick) &&
+            if ((eventType == EventType.MouseDown && Event.current.button == 1 ||
+                (eventType == EventType.ContextClick && visualType == ObjectFieldVisualType.IconAndText)) &&
                 position.Contains(Event.current.mousePosition))
             {
                 var actualObject = property != null ? property.objectReferenceValue : obj;
@@ -350,7 +352,24 @@ namespace UnityEditor
                         if (evt.keyCode == KeyCode.Backspace || (evt.keyCode == KeyCode.Delete && (evt.modifiers & EventModifiers.Shift) == 0))
                         {
                             if (property != null)
-                                property.objectReferenceValue = null;
+                            {
+                                if (property.propertyPath.EndsWith("]"))
+                                {
+                                    var parentArrayPropertyPath = property.propertyPath.Substring(0, property.propertyPath.LastIndexOf(".Array.data[", StringComparison.Ordinal));
+                                    var parentArrayProperty = property.serializedObject.FindProperty(parentArrayPropertyPath);
+                                    bool isReorderableList = PropertyHandler.s_reorderableLists.ContainsKey(ReorderableListWrapper.GetPropertyIdentifier(parentArrayProperty));
+
+                                    // If it's an element of an non-orderable array, remove that element from the array
+                                    if (!isReorderableList)
+                                        TargetChoiceHandler.DeleteArrayElement(property);
+                                    else
+                                        property.objectReferenceValue = null;
+                                }
+                                else
+                                {
+                                    property.objectReferenceValue = null;
+                                }
+                            }
                             else
                                 obj = null;
 

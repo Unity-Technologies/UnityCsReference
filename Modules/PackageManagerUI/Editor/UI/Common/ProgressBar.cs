@@ -35,7 +35,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             currentProgressBar.style.width = Length.Percent(0);
         }
 
-        public void UpdateProgress(IOperation operation)
+        public bool UpdateProgress(IOperation operation)
         {
             var showProgressBar = operation != null && operation.isProgressTrackable && operation.isProgressVisible;
             UIUtils.SetElementDisplay(this, showProgressBar);
@@ -47,6 +47,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 currentProgressBar.style.width = Length.Percent(percentage * 100.0f);
                 currentProgressBar.MarkDirtyRepaint();
             }
+            return showProgressBar;
         }
 
         private VisualElementCache cache { get; }

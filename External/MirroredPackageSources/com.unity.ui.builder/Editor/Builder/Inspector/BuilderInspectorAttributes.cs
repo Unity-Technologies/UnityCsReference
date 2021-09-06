@@ -13,6 +13,33 @@ namespace Unity.UI.Builder
 {
     internal class BuilderInspectorAttributes : IBuilderInspectorSection
     {
+        static readonly Dictionary<Type, TypeInfo> s_CachedTypeInfos = new Dictionary<Type, TypeInfo>();
+
+        static readonly UnityEngine.Pool.ObjectPool<BuilderAttributeTypeName> s_TypeNameItemPool =
+            new UnityEngine.Pool.ObjectPool<BuilderAttributeTypeName>(
+                () => new BuilderAttributeTypeName(),
+                null,
+                c => c.ClearType());
+
+        static TypeInfo GetTypeInfo(Type type)
+        {
+            if (!s_CachedTypeInfos.TryGetValue(type, out var typeInfo))
+                s_CachedTypeInfos[type] = typeInfo = new TypeInfo(type);
+            return typeInfo;
+        }
+
+        internal readonly struct TypeInfo
+        {
+            public readonly Type type;
+            public readonly string value;
+
+            public TypeInfo(Type type)
+            {
+                this.type = type;
+                this.value = $"{type.FullName}, {type.Assembly.GetName().Name}";
+            }
+        }
+
         BuilderInspector m_Inspector;
         BuilderSelection m_Selection;
         PersistedFoldout m_AttributesSection;
@@ -107,27 +134,51 @@ namespace Unity.UI.Builder
             BindableElement fieldElement;
             if (attribute is UxmlStringAttributeDescription)
             {
-                var uiField = new TextField(fieldLabel);
-                if (attribute.name.Equals("name") || attribute.name.Equals("view-data-key"))
-                    uiField.RegisterValueChangedCallback(e =>
-                    {
-                        OnValidatedAttributeValueChange(e, BuilderNameUtilities.attributeRegex, BuilderConstants.AttributeValidationSpacialCharacters);
-                    });
-                else if (attribute.name.Equals("binding-path"))
-                    uiField.RegisterValueChangedCallback(e =>
-                    {
-                        OnValidatedAttributeValueChange(e, BuilderNameUtilities.bindingPathAttributeRegex, BuilderConstants.BindingPathAttributeValidationSpacialCharacters);
-                    });
-                else
-                    uiField.RegisterValueChangedCallback(OnAttributeValueChange);
-
-                if (attribute.name.Equals("text"))
+                // Hard-coded
+                if (attribute.name.Equals("value") && currentVisualElement is EnumField enumField)
                 {
-                    uiField.multiline = true;
-                    uiField.AddToClassList(BuilderConstants.InspectorMultiLineTextFieldClassName);
+                    var uiField = new EnumField("Value");
+                    if (null != enumField.value)
+                        uiField.Init(enumField.value, enumField.includeObsoleteValues);
+                    else
+                        uiField.SetValueWithoutNotify(null);
+                    uiField.RegisterValueChangedCallback(evt =>
+                        PostAttributeValueChange(uiField, uiField.value.ToString()));
+                    fieldElement = uiField;
                 }
+                else if (attribute.name.Equals("value") && currentVisualElement is TagField tagField)
+                {
+                    var uiField = new TagField("Value");
+                    uiField.RegisterValueChangedCallback(evt =>
+                        PostAttributeValueChange(uiField, uiField.value.ToString()));
+                    fieldElement = uiField;
+                }
+                else
+                {
+                    var uiField = new TextField(fieldLabel);
+                    if (attribute.name.Equals("name") || attribute.name.Equals("view-data-key"))
+                        uiField.RegisterValueChangedCallback(e =>
+                        {
+                            OnValidatedAttributeValueChange(e, BuilderNameUtilities.attributeRegex,
+                                BuilderConstants.AttributeValidationSpacialCharacters);
+                        });
+                    else if (attribute.name.Equals("binding-path"))
+                        uiField.RegisterValueChangedCallback(e =>
+                        {
+                            OnValidatedAttributeValueChange(e, BuilderNameUtilities.bindingPathAttributeRegex,
+                                BuilderConstants.BindingPathAttributeValidationSpacialCharacters);
+                        });
+                    else
+                        uiField.RegisterValueChangedCallback(OnAttributeValueChange);
 
-                fieldElement = uiField;
+                    if (attribute.name.Equals("text") || attribute.name.Equals("label"))
+                    {
+                        uiField.multiline = true;
+                        uiField.AddToClassList(BuilderConstants.InspectorMultiLineTextFieldClassName);
+                    }
+
+                    fieldElement = uiField;
+                }
             }
             else if (attribute is UxmlFloatAttributeDescription)
             {
@@ -143,9 +194,24 @@ namespace Unity.UI.Builder
             }
             else if (attribute is UxmlIntAttributeDescription)
             {
-                var uiField = new IntegerField(fieldLabel);
-                uiField.RegisterValueChangedCallback(OnAttributeValueChange);
-                fieldElement = uiField;
+                if (attribute.name.Equals("value") && currentVisualElement is LayerField)
+                {
+                    var uiField = new LayerField("Value");
+                    uiField.RegisterValueChangedCallback(OnAttributeValueChange);
+                    fieldElement = uiField;
+                }
+                else if (attribute.name.Equals("value") && currentVisualElement is LayerMaskField)
+                {
+                    var uiField = new LayerMaskField("Value");
+                    uiField.RegisterValueChangedCallback(OnAttributeValueChange);
+                    fieldElement = uiField;
+                }
+                else
+                {
+                    var uiField = new IntegerField(fieldLabel);
+                    uiField.RegisterValueChangedCallback(OnAttributeValueChange);
+                    fieldElement = uiField;
+                }
             }
             else if (attribute is UxmlLongAttributeDescription)
             {
@@ -169,13 +235,48 @@ namespace Unity.UI.Builder
                      !attributeType.GetGenericArguments()[0].IsEnum &&
                      attributeType.GetGenericArguments()[0] is Type)
             {
-                var uiField = new TextField(fieldLabel);
-                uiField.isDelayed = true;
-                uiField.RegisterValueChangedCallback(e =>
+                var desiredType = attributeType.GetGenericArguments()[0];
+
+                var uiField = new TextField(fieldLabel) {isDelayed = true};
+
+                var completer = new FieldSearchCompleter<TypeInfo>(uiField);
+                uiField.RegisterCallback<AttachToPanelEvent, FieldSearchCompleter<TypeInfo>>((evt, c) =>
                 {
-                    OnValidatedTypeAttributeChange(e, attributeType.GetGenericArguments()[0]);
-                });
+                    // When possible, the popup should have the same width as the input field, so that the auto-complete
+                    // characters will try to match said input field.
+                    c.popup.anchoredControl = ((VisualElement)evt.target).Q(className: "unity-text-field__input");
+                }, completer);
+                completer.matcherCallback += (str, info) => info.value.IndexOf(str, StringComparison.OrdinalIgnoreCase) >= 0;
+                completer.itemHeight = 36;
+                completer.dataSourceCallback += () =>
+                {
+                    return TypeCache.GetTypesDerivedFrom(desiredType)
+                        .Where(t => !t.IsGenericType)
+                        // Remove UIBuilder types from the list
+                        .Where(t => t.Assembly != GetType().Assembly)
+                        .Select(GetTypeInfo);
+                };
+                completer.getTextFromDataCallback += info => info.value;
+                completer.makeItem = () => s_TypeNameItemPool.Get();
+                completer.destroyItem = e =>
+                {
+                    if (e is BuilderAttributeTypeName typeItem)
+                        s_TypeNameItemPool.Release(typeItem);
+                };
+                completer.bindItem = (v, i) =>
+                {
+                    if (v is BuilderAttributeTypeName l)
+                        l.SetType(completer.results[i].type, completer.textField.text);
+                };
+
+                uiField.RegisterValueChangedCallback(e => OnValidatedTypeAttributeChange(e, desiredType));
+
                 fieldElement = uiField;
+                uiField.RegisterCallback<DetachFromPanelEvent, FieldSearchCompleter<TypeInfo>>((evt, c) =>
+                {
+                    c.popup.RemoveFromHierarchy();
+                }, completer);
+                uiField.userData = completer;
             }
             else if (attributeType.IsGenericType && attributeType.GetGenericArguments()[0].IsEnum)
             {
@@ -209,14 +310,8 @@ namespace Unity.UI.Builder
 
             // Setup field binding path.
             fieldElement.bindingPath = attribute.name;
-
-            // Tooltip.
-            var label = fieldElement.Q<Label>();
-            if (label != null)
-                label.tooltip = attribute.name;
-            else
-                fieldElement.tooltip = attribute.name;
-
+            fieldElement.tooltip = attribute.name;
+			
             // Context menu.
             fieldElement.AddManipulator(new ContextualMenuManipulator(BuildAttributeFieldContextualMenu));
 
@@ -276,13 +371,51 @@ namespace Unity.UI.Builder
             {
                 veValueAbstract = fieldInfo.GetValue(currentVisualElement, null);
             }
+
             if (veValueAbstract == null)
+            {
+                if (currentVisualElement is EnumField && attribute.name == "value")
+                    fieldElement.SetEnabled(false);
                 return;
+            }
 
             var attributeType = attribute.GetType();
             var vea = currentVisualElement.GetVisualElementAsset();
 
-            if (attribute is UxmlStringAttributeDescription && fieldElement is TextField)
+            if (attribute is UxmlStringAttributeDescription &&
+                attribute.name == "value" &&
+                currentVisualElement is EnumField enumField
+                && fieldElement is EnumField inputEnumField)
+            {
+                var hasValue = enumField.value != null;
+                if (hasValue)
+                    inputEnumField.Init(enumField.value, enumField.includeObsoleteValues);
+                else
+                    inputEnumField.SetValueWithoutNotify(null);
+                inputEnumField.SetEnabled(hasValue);
+            }
+            else if (attribute is UxmlStringAttributeDescription &&
+                     attribute.name == "value" &&
+                     currentVisualElement is TagField tagField
+                     && fieldElement is TagField inputTagField)
+            {
+                inputTagField.SetValueWithoutNotify(tagField.value);
+            }
+            else if (attribute is UxmlIntAttributeDescription &&
+                     attribute.name == "value" &&
+                     currentVisualElement is LayerField layerField
+                     && fieldElement is LayerField inputLayerField)
+            {
+                inputLayerField.SetValueWithoutNotify(layerField.value);
+            }
+            else if (attribute is UxmlIntAttributeDescription &&
+                     attribute.name == "value" &&
+                     currentVisualElement is LayerMaskField layerMaskField
+                     && fieldElement is LayerMaskField inputLayerMaskField)
+            {
+                inputLayerMaskField.SetValueWithoutNotify(layerMaskField.value);
+            }
+            else if (attribute is UxmlStringAttributeDescription && fieldElement is TextField)
             {
                 (fieldElement as TextField).SetValueWithoutNotify(GetAttributeStringValue(veValueAbstract));
             }
@@ -429,6 +562,16 @@ namespace Unity.UI.Builder
                 var a = attribute as UxmlStringAttributeDescription;
                 var f = fieldElement as TextField;
                 f.SetValueWithoutNotify(a.defaultValue);
+            }
+            else if (attribute is UxmlStringAttributeDescription && fieldElement is EnumField &&
+                     currentVisualElement is EnumField)
+            {
+                var a = attribute as UxmlStringAttributeDescription;
+                var f = fieldElement as EnumField;
+                if (null == f.type)
+                    f.SetValueWithoutNotify(null);
+                else
+                    f.SetValueWithoutNotify((Enum)Enum.ToObject(f.type, 0));
             }
             else if (attribute is UxmlFloatAttributeDescription && fieldElement is FloatField)
             {
@@ -610,8 +753,21 @@ namespace Unity.UI.Builder
         void UnsetAttributeProperty(DropdownMenuAction action)
         {
             var fieldElement = action.userData as BindableElement;
-            var attributeName = fieldElement.bindingPath;
+            UnsetAttributeProperty(fieldElement);
 
+            // When unsetting the type value for an enum field, we also need to clear the value field as well.
+            if (currentVisualElement is EnumField && fieldElement.bindingPath == "type")
+            {
+                // If the current value is not defined in the new enum type, we need to clear the property because
+                // it will otherwise throw an exception.
+                var valueField = root.Query<EnumField>().Where(f => f.label == "Value").First();
+                UnsetAttributeProperty(valueField);
+            }
+        }
+
+        void UnsetAttributeProperty(BindableElement fieldElement)
+        {
+            var attributeName = fieldElement.bindingPath;
             // Undo/Redo
             Undo.RegisterCompleteObjectUndo(m_Inspector.visualTreeAsset, BuilderConstants.ChangeAttributeValueUndoMessage);
 
@@ -649,6 +805,7 @@ namespace Unity.UI.Builder
 
                 // Notify of changes.
                 m_Selection.NotifyOfHierarchyChange(m_Inspector);
+                Refresh();
             }
         }
 
@@ -663,9 +820,11 @@ namespace Unity.UI.Builder
             var field = evt.target as TextField;
             var typeName = evt.newValue;
             var fullTypeName = typeName;
+
+            Type type = null;
             if (!string.IsNullOrEmpty(typeName))
             {
-                var type = Type.GetType(fullTypeName, false);
+                type = Type.GetType(fullTypeName, false);
 
                 // Try some auto-fixes.
                 if (type == null)
@@ -699,8 +858,18 @@ namespace Unity.UI.Builder
                 }
             }
 
-            field.SetValueWithoutNotify(fullTypeName);
+            if (currentVisualElement is EnumField)
+            {
+                // If the current value is not defined in the new enum type, we need to clear the property because
+                // it will otherwise throw an exception.
+                var valueField = root.Query<EnumField>().Where(f => f.label == "Value").First();
+                UnsetAttributeProperty(valueField);
+            }
+
+            field.value = fullTypeName;
             PostAttributeValueChange(field, fullTypeName);
+
+            Refresh();
         }
 
         void OnValidatedAttributeValueChange(ChangeEvent<string> evt, Regex regex, string message)
@@ -731,7 +900,7 @@ namespace Unity.UI.Builder
 
         void OnAttributeValueChange(ChangeEvent<int> evt)
         {
-            var field = evt.target as IntegerField;
+            var field = evt.target as BaseField<int>;
             PostAttributeValueChange(field, evt.newValue.ToString());
         }
 

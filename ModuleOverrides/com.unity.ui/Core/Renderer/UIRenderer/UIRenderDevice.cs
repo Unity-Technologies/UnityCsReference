@@ -98,8 +98,6 @@ namespace UnityEngine.UIElements.UIR
         private static bool m_SubscribedToNotifications; // Not thread safe for now
         private static bool m_SynchronousFree; // This is set on domain unload or app quit, so it is irreversible
 
-        static readonly int s_FontTexPropID = Shader.PropertyToID("_FontTex");
-        static readonly int s_FontTexSDFScaleID = Shader.PropertyToID("_FontTexSDFScale");
         static readonly int s_PixelClipInvViewPropID = Shader.PropertyToID("_PixelClipInvView");
         static readonly int s_GradientSettingsTexID = Shader.PropertyToID("_GradientSettingsTex");
         static readonly int s_ShaderInfoTexID = Shader.PropertyToID("_ShaderInfoTex");
@@ -650,8 +648,8 @@ namespace UnityEngine.UIElements.UIR
             Matrix4x4 matProj = Utility.GetUnityProjectionMatrix();
             Matrix4x4 matVPInv = (matProj * drawParams.view.Peek().transform).inverse;
             Vector3 v = matVPInv.MultiplyVector(new Vector3(_PixelClipInvView.x, _PixelClipInvView.y));
-            _PixelClipInvView.z = 1 / (Mathf.Abs(v.x) + Mathf.Epsilon);
-            _PixelClipInvView.w = 1 / (Mathf.Abs(v.y) + Mathf.Epsilon);
+            _PixelClipInvView.z = 1 / (Mathf.Abs(v.x) + UIRUtility.k_Epsilon);
+            _PixelClipInvView.w = 1 / (Mathf.Abs(v.y) + UIRUtility.k_Epsilon);
 
             props.SetVector(s_PixelClipInvViewPropID, _PixelClipInvView);
         }
@@ -699,7 +697,7 @@ namespace UnityEngine.UIElements.UIR
         // Before leaving an iteration over a command, the state that is altered by a draw command must be applied.
         // This must ONLY be called after stash/kick of the previous ranges has been performed.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        void ApplyDrawCommandState(RenderChainCommand cmd, int textureSlot, Material newMat, bool newMatDiffers, bool newFontDiffers, ref EvaluationState st)
+        void ApplyDrawCommandState(RenderChainCommand cmd, int textureSlot, Material newMat, bool newMatDiffers, ref EvaluationState st)
         {
             if (newMatDiffers)
             {
@@ -714,21 +712,11 @@ namespace UnityEngine.UIElements.UIR
                 if (textureSlot < 0)
                 {
                     textureSlot = m_TextureSlotManager.FindOldestSlot();
-                    m_TextureSlotManager.Bind(cmd.state.texture, textureSlot, st.stateMatProps);
+                    m_TextureSlotManager.Bind(cmd.state.texture, cmd.state.sdfScale, textureSlot, st.stateMatProps);
                     st.mustApplyStateBlock = true;
                 }
                 else
                     m_TextureSlotManager.MarkUsed(textureSlot);
-            }
-
-            if (newFontDiffers)
-            {
-                st.mustApplyStateBlock = true;
-                st.curState.font = cmd.state.font;
-                st.stateMatProps.SetTexture(s_FontTexPropID, cmd.state.font);
-
-                st.curState.fontTexSDFScale = cmd.state.fontTexSDFScale;
-                st.stateMatProps.SetFloat(s_FontTexSDFScaleID, st.curState.fontTexSDFScale);
             }
 
             if (cmd.state.stencilRef != st.curState.stencilRef)
@@ -803,8 +791,6 @@ namespace UnityEngine.UIElements.UIR
 
             if (fullyCreated)
             {
-                if (head != null && head.state.fontTexSDFScale != 0)
-                    m_StandardMatProps.SetFloat(s_FontTexSDFScaleID, head.state.fontTexSDFScale);
                 if (gradientSettings != null)
                     m_StandardMatProps.SetTexture(s_GradientSettingsTexID, gradientSettings);
                 if (shaderInfo != null)
@@ -853,7 +839,6 @@ namespace UnityEngine.UIElements.UIR
                 int textureSlot = -1; // This avoids looping to find the index again in ApplyDrawCommandState
                 Material newMat = null; // This avoids repeating the null check in ApplyDrawCommandState
                 bool newMatDiffers = false; // This avoids repeating the material comparison in ApplyDrawCommandState
-                bool newFontDiffers = false; // This avoid repeating the texture comparison in ApplyDrawCommandState
 
                 // Preprocessing here. We determine whether the command requires to break the batch, and how it should
                 // be processed afterwards to avoid redundant computations. ** The state must NOT be altered in any way **
@@ -886,14 +871,6 @@ namespace UnityEngine.UIElements.UIR
                             stashRange = true;
                             kickRanges = true;
                         }
-                    }
-
-                    if (head.state.font != null && head.state.font != st.curState.font)
-                    {
-                        mustApplyCmdState = true;
-                        newFontDiffers = true;
-                        stashRange = true;
-                        kickRanges = true;
                     }
 
                     if (head.state.stencilRef != st.curState.stencilRef)
@@ -961,7 +938,7 @@ namespace UnityEngine.UIElements.UIR
                     m_DrawStats.totalIndices += (uint)head.indexCount;
 
                     if (mustApplyCmdState)
-                        ApplyDrawCommandState(head, textureSlot, newMat, newMatDiffers, newFontDiffers, ref st);
+                        ApplyDrawCommandState(head, textureSlot, newMat, newMatDiffers, ref st);
                     head = head.next;
                     continue;
                 }
@@ -1011,7 +988,7 @@ namespace UnityEngine.UIElements.UIR
                 } // If kick ranges
 
                 if (head.type == CommandType.Draw && mustApplyCmdState)
-                    ApplyDrawCommandState(head, textureSlot, newMat, newMatDiffers, newFontDiffers, ref st);
+                    ApplyDrawCommandState(head, textureSlot, newMat, newMatDiffers, ref st);
 
                 head = head.next;
             } // While there are commands to execute
@@ -1090,6 +1067,23 @@ namespace UnityEngine.UIElements.UIR
             Utility.DrawRanges(ib.BufferPointer, vStream, 1, new IntPtr(ranges.GetUnsafePtr()), ranges.Length, m_VertexDecl);
         }
 
+        // Used for testing purposes only (e.g. performance test warmup)
+        internal void WaitOnAllCpuFences()
+        {
+            for (int i = 0; i < m_Fences.Length; ++i)
+                WaitOnCpuFence(m_Fences[i]);
+        }
+
+        void WaitOnCpuFence(uint fence)
+        {
+            if (fence != 0 && !Utility.CPUFencePassed(fence))
+            {
+                s_MarkerFence.Begin();
+                Utility.WaitForCPUFencePassed(fence);
+                s_MarkerFence.End();
+            }
+        }
+
         public void AdvanceFrame()
         {
             s_MarkerAdvanceFrame.Begin();
@@ -1102,12 +1096,7 @@ namespace UnityEngine.UIElements.UIR
             {
                 int fenceIndex = (int)(m_FrameIndex % m_Fences.Length);
                 uint fence = m_Fences[fenceIndex];
-                if (fence != 0 && !Utility.CPUFencePassed(fence))
-                {
-                    s_MarkerFence.Begin();
-                    Utility.WaitForCPUFencePassed(fence);
-                    s_MarkerFence.End();
-                }
+                WaitOnCpuFence(fence);
                 m_Fences[fenceIndex] = 0;
             }
 

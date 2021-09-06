@@ -22,5 +22,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         BuildingUseDeterministicCompilation = 1 << 9,
         BuildingWithRoslynAnalysis = 1 << 10,
         BuildingWithoutScriptUpdater = 1 << 11,
+        BuildingExtractTypeDB = 1 << 12,
     }
 }

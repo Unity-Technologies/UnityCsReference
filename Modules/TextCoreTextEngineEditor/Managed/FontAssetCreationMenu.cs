@@ -155,7 +155,7 @@ namespace UnityEditor.TextCore.Text
                 // Make sure the selection is a font file
                 if (target == null || target.GetType() != typeof(Font))
                 {
-                    Debug.LogWarning("Selected Object [" + target.name + "] is not a Font file. A Font file must be selected in order to create a Font Asset.", target);
+                    Debug.LogWarning("Selected Object [" + target?.name + "] is not a Font file. A Font file must be selected in order to create a Font Asset.", target);
                     continue;
                 }
 

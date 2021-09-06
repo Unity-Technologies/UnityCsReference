@@ -32,6 +32,7 @@ namespace UnityEditor
         public SerializedMinMaxCurve m_RotationY;
         public SerializedMinMaxCurve m_RotationZ;
         public SerializedProperty m_RandomizeRotationDirection;
+        public SerializedProperty m_GravitySource;
         public SerializedMinMaxCurve m_GravityModifier;
         public SerializedProperty m_EmitterVelocity;
         public SerializedProperty m_EmitterVelocityMode;
@@ -60,6 +61,7 @@ namespace UnityEditor
             public GUIContent rotation = EditorGUIUtility.TrTextContent("Start Rotation", "The start rotation of particles in degrees.");
             public GUIContent randomizeRotationDirection = EditorGUIUtility.TrTextContent("Flip Rotation", "Cause some particles to spin in the opposite direction. (Set between 0 and 1, where a higher value causes more to flip)");
             public GUIContent autoplay = EditorGUIUtility.TrTextContent("Play On Awake*", "If enabled, the system will start playing automatically. Note that this setting is shared between all Particle Systems in the current particle effect.");
+            public GUIContent gravitySource = EditorGUIUtility.TrTextContent("Gravity Source", "Use 2D or 3D physics gravity");
             public GUIContent gravity = EditorGUIUtility.TrTextContent("Gravity Modifier", "Scales the gravity defined in Physics Manager");
             public GUIContent scalingMode = EditorGUIUtility.TrTextContent("Scaling Mode", "Use the combined scale from our entire hierarchy, just this local particle node, or only apply scale to the shape module.");
             public GUIContent simulationSpace = EditorGUIUtility.TrTextContent("Simulation Space", "Makes particle positions simulate in world, local or custom space. In local space they stay relative to their own Transform, and in custom space they are relative to the custom Transform.");
@@ -120,6 +122,12 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Transform"),
                 EditorGUIUtility.TrTextContent("Rigidbody"),
                 EditorGUIUtility.TrTextContent("Custom")
+            };
+
+            public GUIContent[] gravitySources = new GUIContent[]
+            {
+                EditorGUIUtility.TrTextContent("3D Physics"),
+                EditorGUIUtility.TrTextContent("2D Physics")
             };
         }
         private static Texts s_Texts;
@@ -196,6 +204,7 @@ namespace UnityEditor
             m_RotationY.m_DefaultCurveScalar = Mathf.PI;
             m_RotationZ.m_DefaultCurveScalar = Mathf.PI;
             m_RandomizeRotationDirection = GetProperty("randomizeRotationDirection");
+            m_GravitySource = GetProperty("gravitySource");
             m_GravityModifier = new SerializedMinMaxCurve(this, s_Texts.gravity, "gravityModifier", kUseSignedRange);
             m_MaxNumParticles = GetProperty("maxNumParticles");
         }
@@ -293,6 +302,7 @@ namespace UnityEditor
             GUIFloat(s_Texts.randomizeRotationDirection, m_RandomizeRotationDirection);
             GUIMinMaxGradient(s_Texts.color, m_Color, false);
 
+            GUIPopup(s_Texts.gravitySource, m_GravitySource, s_Texts.gravitySources);
             GUIMinMaxCurve(s_Texts.gravity, m_GravityModifier);
             int space = GUIPopup(s_Texts.simulationSpace, m_SimulationSpace, s_Texts.simulationSpaces);
             if (space == 2 && m_CustomSimulationSpace != null)

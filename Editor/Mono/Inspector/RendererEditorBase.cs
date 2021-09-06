@@ -322,6 +322,23 @@ namespace UnityEditor
             }
         }
 
+        private static string[] m_DefaultPrefixedRenderingLayerNames;
+        internal static string[] defaultPrefixedRenderingLayerNames
+        {
+            get
+            {
+                if (m_DefaultPrefixedRenderingLayerNames == null)
+                {
+                    m_DefaultPrefixedRenderingLayerNames = new string[32];
+                    for (int i = 0; i < m_DefaultPrefixedRenderingLayerNames.Length; ++i)
+                    {
+                        m_DefaultPrefixedRenderingLayerNames[i] = string.Format("{0}: {1}", i, defaultRenderingLayerNames[i]);
+                    }
+                }
+                return m_DefaultPrefixedRenderingLayerNames;
+            }
+        }
+
         private SerializedProperty m_SortingOrder;
         private SerializedProperty m_SortingLayerID;
         private SerializedProperty m_DynamicOccludee;
@@ -341,7 +358,7 @@ namespace UnityEditor
 
             public static readonly GUIContent dynamicOcclusion = EditorGUIUtility.TrTextContent("Dynamic Occlusion", "Controls if dynamic occlusion culling should be performed for this renderer.");
             public static readonly GUIContent motionVectors = EditorGUIUtility.TrTextContent("Motion Vectors", "Specifies whether the Mesh Renders 'Per Object Motion', 'Camera Motion', or 'No Motion' vectors to the Camera Motion Vector Texture.");
-            public static readonly GUIContent skinnedMotionVectors = EditorGUIUtility.TrTextContent("Skinned Motion Vectors", "Enabling skinned motion vectors will use double precision motion vectors for the skinned mesh. This increases accuracy of motion vectors at the cost of additional memory usage.");
+            public static readonly GUIContent skinnedMotionVectors = EditorGUIUtility.TrTextContent("Skinned Motion Vectors", "Enabling Skinned Motion Vectors will allow generation of high precision motion vectors for the Skinned Mesh. This is achieved by keeping the skinning results of the previous frame in memory thus increasing the memory usage.");
             public static readonly GUIContent renderingLayerMask = EditorGUIUtility.TrTextContent("Rendering Layer Mask", "Mask that can be used with SRP DrawRenderers command to filter renderers outside of the normal layering system.");
             public static readonly GUIContent rendererPriority = EditorGUIUtility.TrTextContent("Priority", "Sets the priority value that the render pipeline uses to calculate the rendering order.");
             public static readonly GUIContent rayTracingModeStyle = EditorGUIUtility.TrTextContent("Ray Tracing Mode", "Describes how renderer will update for ray tracing");
@@ -474,9 +491,9 @@ namespace UnityEditor
 
             var renderer = target;
             var mask = (int)renderer.renderingLayerMask;
-            var layerNames = srpAsset.renderingLayerMaskNames;
+            var layerNames = srpAsset.prefixedRenderingLayerMaskNames;
             if (layerNames == null)
-                layerNames = defaultRenderingLayerNames;
+                layerNames = defaultPrefixedRenderingLayerNames;
 
             EditorGUI.BeginChangeCheck();
 

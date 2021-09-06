@@ -98,6 +98,7 @@ namespace Unity.UI.Builder
 
         public TransformOriginStyleField(string label) : base(label)
         {
+            AddToClassList(BuilderConstants.InspectorContainerClassName);
             AddToClassList(s_FieldClassName);
             styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(s_UssPathNoExt + (EditorGUIUtility.isProSkin ? "Dark" : "Light") + ".uss"));
             styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(s_UssPathNoExt + ".uss"));

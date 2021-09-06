@@ -171,7 +171,7 @@ namespace UnityEditor.Compilation
 
         private void InvokeBuildFinished(BeeDriverResult result)
         {
-            activeBeeBuild.editorCompilation.ProcessCompilationResult(activeBeeBuild.assemblies, result, this);
+            activeBeeBuild.editorCompilation.ProcessCompilationResult(activeBeeBuild.assemblies, result, false, this);
             try
             {
                 buildFinished?.Invoke(assemblyPath, EditorCompilation.ConvertCompilerMessages(BeeScriptCompilation

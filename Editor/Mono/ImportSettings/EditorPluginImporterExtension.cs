@@ -17,13 +17,16 @@ namespace UnityEditor
         internal enum EditorPluginCPUArchitecture
         {
             AnyCPU,
-            x86,
-            x86_64
+            [InspectorName("Intel 64-bit")]
+            x86_64,
+            [InspectorName("Apple silicon")]
+            ARM64
         }
 
         internal enum EditorPluginOSArchitecture
         {
             AnyOS,
+            [InspectorName("macOS")]
             OSX,
             Windows,
             Linux
@@ -48,17 +51,77 @@ namespace UnityEditor
             }
         }
 
-        public EditorPluginImporterExtension() : base(GetProperties())
+        internal class CPUProperty : Property
         {
+            private readonly Func<Enum, bool> validArch;
+
+            public CPUProperty(GUIContent name, string key, EditorPluginCPUArchitecture defaultValue, Func<Enum, bool> validArch)
+                : base(name, key, defaultValue, BuildPipeline.GetEditorTargetName())
+            {
+                this.validArch = validArch;
+            }
+
+            internal override void Reset(PluginImporterInspector inspector)
+            {
+                string valueString = inspector.importer.GetEditorData(key);
+                ParseStringValue(inspector, valueString);
+            }
+
+            internal override void Apply(PluginImporterInspector inspector)
+            {
+                inspector.importer.SetEditorData(key, value.ToString());
+            }
+
+            internal override void OnGUI(PluginImporterInspector inspector)
+            {
+                value = EditorGUILayout.EnumPopup(name, (Enum)value, validArch, false);
+            }
         }
 
-        private static Property[] GetProperties()
+        private CPUProperty editorCPUProperty;
+        private EditorProperty editorOSProperty;
+
+        public EditorPluginImporterExtension() : base(null)
         {
-            return new[]
+            editorCPUProperty = new CPUProperty(EditorGUIUtility.TrTextContent("CPU", "The processor architectiure that this plugin is compatible with"), "CPU", EditorPluginCPUArchitecture.AnyCPU, (Enum e) => CanSelectArch(e));
+            editorOSProperty = new EditorProperty(EditorGUIUtility.TrTextContent("OS", "The Editor operating system that this plugin is compatible with"), "OS", EditorPluginOSArchitecture.AnyOS);
+
+            properties = new Property[] { editorOSProperty, editorCPUProperty };
+        }
+
+        public override void OnPlatformSettingsGUI(PluginImporterInspector inspector)
+        {
+            EditorGUI.BeginChangeCheck();
+
+            editorOSProperty.OnGUI(inspector);
+            editorCPUProperty.OnGUI(inspector);
+
+            if (EditorGUI.EndChangeCheck())
             {
-                new EditorProperty(EditorGUIUtility.TrTextContent("CPU", "Is plugin compatible with 32bit or 64bit Editor?"), "CPU", EditorPluginCPUArchitecture.AnyCPU),
-                new EditorProperty(EditorGUIUtility.TrTextContent("OS", "Is plugin compatible with Windows, OS X or Linux Editor?"), "OS", EditorPluginOSArchitecture.AnyOS),
-            };
+                if (!CanSelectArch(editorCPUProperty.value as Enum))
+                    editorCPUProperty.value = EditorPluginCPUArchitecture.AnyCPU;
+
+                hasModified = true;
+            }
+        }
+
+        private bool CanSelectArch(Enum value)
+        {
+            var arch = (EditorPluginCPUArchitecture)value;
+            var os = (EditorPluginOSArchitecture)editorOSProperty.value;
+
+            switch (os)
+            {
+                case EditorPluginOSArchitecture.AnyOS:
+                    return arch == EditorPluginCPUArchitecture.AnyCPU;
+                case EditorPluginOSArchitecture.OSX:
+                    return true;
+                case EditorPluginOSArchitecture.Windows:
+                case EditorPluginOSArchitecture.Linux:
+                    return arch != EditorPluginCPUArchitecture.ARM64;
+                default:
+                    return false;
+            }
         }
     }
 }

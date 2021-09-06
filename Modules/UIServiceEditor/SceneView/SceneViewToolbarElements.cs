@@ -5,7 +5,6 @@
 using UnityEditor.Overlays;
 using UnityEditorInternal;
 using UnityEditor.Snap;
-using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 using FrameCapture = UnityEngine.Apple.FrameCapture;
@@ -312,7 +311,13 @@ namespace UnityEditor.Toolbars
 
         void OnClickableOnclicked()
         {
-            GridSettingsWindow.ShowDropDownAtTrigger(this, containerWindow as SceneView);
+            if (!(containerWindow is SceneView view))
+                return;
+
+            var w = PopupWindowBase.Show<GridSettingsWindow>(this, new Vector2(300, 88));
+
+            if(w != null)
+                w.Init(view);
         }
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
@@ -528,17 +533,17 @@ namespace UnityEditor.Toolbars
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
         {
-            clicked += OnOnclicked;
+            clicked += OnClicked;
         }
 
-        void OnOnclicked()
+        void OnClicked()
         {
-            OverlayPopupWindow.ShowOverlayPopup<SnapIncrementSettingsWindow>(this, new Vector2(300, 88));
+            OverlayPopupWindow.Show<SnapIncrementSettingsWindow>(this, new Vector2(300, 88));
         }
 
         void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
-            clicked -= OnOnclicked;
+            clicked -= OnClicked;
         }
     }
 }

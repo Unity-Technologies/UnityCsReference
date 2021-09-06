@@ -85,6 +85,8 @@ namespace UnityEditor
 
         List<XRDisplaySubsystem> m_DisplaySubsystems = new List<XRDisplaySubsystem>();
 
+        internal override bool liveReloadPreferenceDefault => true;
+
         internal static class Styles
         {
             public static GUIContent gizmosContent = EditorGUIUtility.TrTextContent("Gizmos");
@@ -307,6 +309,8 @@ namespace UnityEditor
             Undo.undoRedoPerformed += UndoRedoPerformed;
 
             targetSize = targetRenderSize;
+
+            PlayModeAnalytics.GameViewEnableEvent();
         }
 
         public void OnDisable()
@@ -319,6 +323,8 @@ namespace UnityEditor
             {
                 DestroyImmediate(m_RenderTexture);
             }
+
+            PlayModeAnalytics.GameViewDisableEvent();
         }
 
         [UsedImplicitly] // This is here because NGUI uses it via reflection (noted in https://confluence.hq.unity3d.com/display/DEV/Game+View+Bucket)
@@ -967,7 +973,8 @@ namespace UnityEditor
 
                 // Do not use mouse or touch events if mousepos is outside game view rect (fix for case 380995: Gameview tab's context menu is not appearing on right click)
                 // Placed after event queueing above to ensure scripts can react on mouse up events.
-                bool useEvent = mousePosInGameViewRect;
+                bool isKey = Event.current.rawType == EventType.KeyDown || Event.current.rawType == EventType.KeyUp;
+                bool useEvent = mousePosInGameViewRect || isKey;
 
                 // Don't use command events, or they won't be sent to other views.
                 if (type == EventType.ExecuteCommand || type == EventType.ValidateCommand)

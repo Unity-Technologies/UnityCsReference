@@ -53,34 +53,46 @@ namespace UnityEngine.Networking
         internal enum UnityWebRequestError
         {
             OK = 0,     // No Error
-            Unknown,
-            SDKError,     // SDK error, such as initialization failed
-            UnsupportedProtocol,
-            MalformattedUrl,
-            CannotResolveProxy,
-            CannotResolveHost,
-            CannotConnectToHost,
-            AccessDenied,
-            GenericHttpError,
-            WriteError,
-            ReadError,
-            OutOfMemory,
-            Timeout,
-            HTTPPostError,
-            SSLCannotConnect,
-            Aborted,
-            TooManyRedirects,
-            ReceivedNoData,
-            SSLNotSupported,
-            FailedToSendData,
-            FailedToReceiveData,
-            SSLCertificateError,
-            SSLCipherNotAvailable,
-            SSLCACertError,
-            UnrecognizedContentEncoding,
-            LoginFailed,
-            SSLShutdownFailed,
-            NoInternetConnection
+            OKCached = 1,
+            Unknown = 2,
+            SDKError = 3,     // SDK error, such as initialization failed
+            UnsupportedProtocol = 4,
+            MalformattedUrl = 5,
+            CannotResolveProxy = 6,
+            CannotResolveHost = 7,
+            CannotConnectToHost = 8,
+            AccessDenied = 9,
+            GenericHttpError = 10,
+            WriteError = 11,
+            ReadError = 12,
+            OutOfMemory = 13,
+            Timeout = 14,
+            HTTPPostError = 15,
+            SSLCannotConnect = 16,
+            Aborted = 17,
+            TooManyRedirects = 18,
+            ReceivedNoData = 19,
+            SSLNotSupported = 20,
+            FailedToSendData = 21,
+            FailedToReceiveData = 22,
+            SSLCertificateError = 23,
+            SSLCipherNotAvailable = 24,
+            SSLCACertError = 25,
+            UnrecognizedContentEncoding = 26,
+            LoginFailed = 27,
+            SSLShutdownFailed = 28,
+            RedirectLimitInvalid = 29,
+            InvalidRedirect = 30,
+            CannotModifyRequest = 31,
+            HeaderNameContainsInvalidCharacters = 32,
+            HeaderValueContainsInvalidCharacters = 33,
+            CannotOverrideSystemHeaders = 34,
+            AlreadySent = 35,
+            InvalidMethod = 36,
+            NotImplemented = 37,
+            NoInternetConnection = 38,
+            DataProcessingError = 39,
+            InsecureConnectionNotAllowed = 40,
         }
 
         public enum Result
@@ -391,7 +403,7 @@ namespace UnityEngine.Networking
                 // We need to sanitize the incoming URL so it's a proper absolute URL
                 // This permits us to allow relative URLs and correct minor user mistakes.
 
-                string localUrl = "http://localhost/";
+                string localUrl = "https://localhost/";
 
                 InternalSetUrl(WebRequestUtils.MakeInitialUrl(value, localUrl));
             }

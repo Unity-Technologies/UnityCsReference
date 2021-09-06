@@ -10,14 +10,12 @@ namespace Unity.UI.Builder
     {
         static readonly string s_DummyText = " ";
         static readonly string s_TextAttributeName = "text";
-        static readonly float s_TextEditorMinWidth = 16;
-        static readonly float s_TextEditorMinHeight = 16;
 
         static BuilderViewport s_Viewport;
 
         static UxmlAttributeDescription s_EditedTextAttribute;
         static VisualElement s_EditedElement;
-        static VisualElement s_EditedTextElement;
+        static TextElement s_EditedTextElement;
 
         internal static void GetAlignmentFromTextAnchor(TextAnchor anchor, out Align align, out Justify justifyContent)
         {
@@ -53,9 +51,9 @@ namespace Unity.UI.Builder
             }
         }
 
-        static void GetAttributeToEdit(VisualElement editedElement, Vector2 pos, out VisualElement textElement, out string attributeName)
+        static void GetAttributeToEdit(VisualElement editedElement, Vector2 pos, out TextElement textElement, out string attributeName)
         {
-            VisualElement labelElement = null;
+            TextElement labelElement = null;
 
             textElement = null;
             attributeName = null;
@@ -84,9 +82,9 @@ namespace Unity.UI.Builder
                 textElement = labelElement;
                 attributeName = "label";
             }
-            else if (editedElement is TextElement)
+            else if (editedElement is TextElement editorTextElement)
             {
-                textElement = editedElement;
+                textElement = editorTextElement;
                 attributeName = s_TextAttributeName;
             }
         }
@@ -135,8 +133,11 @@ namespace Unity.UI.Builder
             textInput.style.unityTextAlign = textElement.resolvedStyle.unityTextAlign;
             textInput.style.fontSize = textElement.resolvedStyle.fontSize;
             textInput.style.unityFontStyleAndWeight = textElement.resolvedStyle.unityFontStyleAndWeight;
+            textInput.style.whiteSpace = s_EditedTextElement.resolvedStyle.whiteSpace;
+            textInput.style.width = s_EditedTextElement.resolvedStyle.width;
+            textInput.style.height = s_EditedTextElement.resolvedStyle.height;
 
-            textEditor.multiline = value != null && value.Contains("\n");
+            textEditor.multiline = true;
 
             GetAlignmentFromTextAnchor(textElement.resolvedStyle.unityTextAlign, out var alignItems, out var justifyContent);
 
@@ -164,7 +165,7 @@ namespace Unity.UI.Builder
 
         static void UpdateTextEditorGeometry()
         {
-            // The text element may have been removed from its hierarchy if the text is emoty. This is the case with Fields.
+            // The text element may have been removed from its hierarchy if the text is empty. This is the case with Fields.
             if (s_EditedTextElement.panel == null)
                 return;
 
@@ -178,8 +179,9 @@ namespace Unity.UI.Builder
 
             textEditorContainer.style.left = textElementPos.x;
             textEditorContainer.style.top = textElementPos.y;
-            textEditorContainer.style.width = Mathf.Max(s_TextEditorMinWidth, s_EditedTextElement.layout.width);
-            textEditorContainer.style.height = Mathf.Max(s_TextEditorMinHeight, s_EditedTextElement.layout.height);
+            var textInput = textEditorContainer.Q(TextField.textInputUssName);
+            textInput.style.width = s_EditedTextElement.layout.width;
+            textInput.style.height = s_EditedTextElement.layout.height;
         }
 
         public static void CloseEditor()

@@ -17,6 +17,7 @@ using UnityEditor.Modules;
 using GraphicsDeviceType = UnityEngine.Rendering.GraphicsDeviceType;
 using Object = UnityEngine.Object;
 using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
+using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using UnityEditor.Connect;
 using UnityEditor.Utils;
 
@@ -55,7 +56,7 @@ namespace UnityEditor
 
             public const float kButtonWidth = 110;
 
-            public string shopURL = "https://store.unity3d.com/shop/";
+            public string shopURL = "https://store.unity.com/products/unity-pro";
 
             public GUIContent GetDownloadErrorForTarget(BuildTarget target)
             {
@@ -162,6 +163,19 @@ namespace UnityEditor
         static bool BuildLocationIsValid(string path)
         {
             return path.Length > 0 && Directory.Exists(FileUtil.DeleteLastPathNameComponent(path));
+        }
+
+        [RequiredByNativeCode]
+        static bool BuildPlayerAndRunEnabled()
+        {
+            var buildTarget = EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget();
+            NamedBuildTarget namedBuildTarget = EditorUserBuildSettingsUtils.CalculateSelectedNamedBuildTarget();
+            BuildPlatform platform = BuildPlatforms.instance.BuildPlatformFromNamedBuildTarget(namedBuildTarget);
+            string module = ModuleManager.GetTargetStringFrom(platform.namedBuildTarget.ToBuildTargetGroup(), buildTarget);
+            IBuildWindowExtension buildWindowExtension = ModuleManager.GetBuildWindowExtension(module);
+
+            bool buildPlayerAndRunEnabled = buildWindowExtension != null ? buildWindowExtension.EnabledBuildAndRunButton() && !(EditorUserBuildSettings.installInBuildFolder) : !(EditorUserBuildSettings.installInBuildFolder);
+            return buildPlayerAndRunEnabled;
         }
 
         // This overload is used by the Build & Run menu item & hot key - prompt for location only if the configured
@@ -349,19 +363,21 @@ namespace UnityEditor
                 bool showRequired = requireEnabled == 0;
                 foreach (BuildPlatform gt in BuildPlatforms.instance.buildPlatforms)
                 {
-                    var available = IsBuildTargetGroupSupported(gt.namedBuildTarget.ToBuildTargetGroup(), gt.defaultTarget) && BuildPipeline.LicenseCheck(gt.defaultTarget);
-                    if (available != showRequired)
+                    var installed = IsBuildTargetGroupInstalled(gt.namedBuildTarget.ToBuildTargetGroup(), gt.defaultTarget);
+
+                    // All installed build targets will be shown on the first pass (showRequired = true)
+                    if (installed != showRequired)
                         continue;
 
-                    // Some build targets are not publicly available, show them only when they are actually in use
-                    if (!available && !gt.forceShowTarget)
+                    // Some build targets are not publicly available, show them only when they are installed
+                    if (!installed && gt.hideInUi)
                         continue;
 
                     // Some build targets are only compatible with specific OS
                     if (!IsBuildTargetCompatibleWithOS(gt.defaultTarget))
                         continue;
 
-                    GUI.contentColor = available ? Color.white : new Color(1, 1, 1, 0.5f);
+                    GUI.contentColor = installed ? Color.white : new Color(1, 1, 1, 0.5f);
                     ShowOption(gt, gt.title, even ? styles.evenRow : styles.oddRow);
                     even = !even;
                 }
@@ -534,6 +550,14 @@ namespace UnityEditor
                 return BuildPipeline.IsBuildTargetSupported(targetGroup, target);
         }
 
+        internal static bool IsBuildTargetGroupInstalled(BuildTargetGroup targetGroup, BuildTarget target)
+        {
+            if (targetGroup == BuildTargetGroup.Standalone)
+                return true;
+            else
+                return BuildPipeline.GetPlaybackEngineDirectory(target, BuildOptions.None, false) != string.Empty;
+        }
+
         static bool IsAnyStandaloneModuleLoaded()
         {
             return ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneLinux64) ||
@@ -635,7 +659,7 @@ namespace UnityEditor
         };
         static public string GetPlaybackEngineDownloadURL(string moduleName)
         {
-            if (moduleName == "PS4" || moduleName == "XboxOne")
+            if (moduleName == "PS4" || moduleName == "PS5" || moduleName == "XboxOne")
                 return "https://unity3d.com/platform-installation";
 
             string fullVersion = InternalEditorUtility.GetFullUnityVersion();
@@ -767,7 +791,7 @@ namespace UnityEditor
                 GUILayout.Label(EditorGUIUtility.TextContent(string.Format(styles.noModuleLoaded, BuildPlatforms.instance.GetModuleDisplayName(namedBuildTarget, buildTarget))));
                 string url = "";
 
-                if (!isEditorinstalledWithHub || (moduleName == "PS4" || moduleName == "XboxOne"))
+                if (!isEditorinstalledWithHub || (moduleName == "PS4" || moduleName == "PS5" || moduleName == "XboxOne"))
                 {
                     if (GUILayout.Button(styles.openDownloadPage, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
                     {
@@ -817,10 +841,12 @@ namespace UnityEditor
                 string niceName = BuildPipeline.GetBuildTargetGroupDisplayName(namedBuildTarget.ToBuildTargetGroup());
                 string licenseMsg = "Your license does not cover {0} Publishing.";
                 string buttonMsg = "Go to Our Online Store";
+                string licenseURL = styles.shopURL;
                 if (BuildTargetDiscovery.PlatformHasFlag(buildTarget, TargetAttributes.IsConsole))
                 {
-                    licenseMsg += "Please see the {0} section of the Platform Module Installation documentation for more details.";
+                    licenseMsg += " Please see the {0} section of the Platform Module Installation documentation for more details.";
                     buttonMsg = "Platform Module Installation";
+                    licenseURL = "https://unity3d.com/platform-installation";
                 }
                 else if (BuildTargetDiscovery.PlatformHasFlag(buildTarget, TargetAttributes.IsStandalonePlatform))
                     buttonMsg = "";
@@ -829,7 +855,7 @@ namespace UnityEditor
                 {
                     EditorGUIUtility.TextContent(string.Format(L10n.Tr(licenseMsg), niceName)),
                     EditorGUIUtility.TextContent(L10n.Tr(buttonMsg)),
-                    new GUIContent(styles.shopURL)
+                    new GUIContent(licenseURL)
                 };
 
                 GUILayout.Label(notLicensedMessage[0], EditorStyles.wordWrappedLabel);
@@ -914,8 +940,9 @@ namespace UnityEditor
 
                     if (EditorUserBuildSettings.allowDebugging && PlayerSettings.GetScriptingBackend(namedBuildTarget) == ScriptingImplementation.IL2CPP)
                     {
-                        var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(namedBuildTarget);
-                        bool isDebuggerUsable = apiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6 || apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard_2_0;
+                        var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(namedBuildTarget.ToBuildTargetGroup());
+                        bool isDebuggerUsable = apiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6 || apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard_2_0 ||
+                            apiCompatibilityLevel == ApiCompatibilityLevel.NET_Unity_4_8 || apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard;
 
                         if (!isDebuggerUsable)
                             EditorGUILayout.HelpBox("Script debugging is only supported with IL2CPP on .NET 4.x and .NET Standard 2.0 API Compatibility Levels.", MessageType.Warning);

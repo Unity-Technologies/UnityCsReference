@@ -61,6 +61,8 @@ namespace UnityEditor
 
         private static extern void OpenProjectInternal(string projectPath, string[] args);
 
+        internal static extern void OpenFileGeneric(string path);
+
         // Saves all serializable assets that have not yet been written to disk (eg. Materials)
         [System.Obsolete("Use AssetDatabase.SaveAssets instead (UnityUpgradable) -> AssetDatabase.SaveAssets()", true)]
         public static void SaveAssets() {}

@@ -64,13 +64,18 @@ namespace UnityEditor.Search.Providers
                 if (context == null || context.searchView == null || context.searchView.displayMode == DisplayMode.List)
                 {
                     var transformPath = SearchUtils.GetTransformPath(go.transform);
-                    var components = go.GetComponents<Component>();
-                    if (components.Length > 2 && components[1] && components[components.Length - 1])
-                        item.label = $"{transformPath} ({components[1].GetType().Name}..{components[components.Length - 1].GetType().Name})";
-                    else if (components.Length > 1 && components[1])
-                        item.label = $"{transformPath} ({components[1].GetType().Name})";
+                    if (item.options.HasAny(SearchItemOptions.Compacted))
+                        item.label = transformPath;
                     else
-                        item.label = $"{transformPath} ({item.id})";
+                    {
+                        var components = go.GetComponents<Component>();
+                        if (components.Length > 2 && components[1] && components[components.Length - 1])
+                            item.label = $"{transformPath} ({components[1].GetType().Name}..{components[components.Length - 1].GetType().Name})";
+                        else if (components.Length > 1 && components[1])
+                            item.label = $"{transformPath} ({components[1].GetType().Name})";
+                        else
+                            item.label = $"{transformPath} ({item.id})";
+                    }
 
                     if (context != null)
                     {

@@ -127,9 +127,9 @@ namespace UnityEngine
         // Cloud Rendering
         CloudRendering = 35,
         // Game Core
+        GameCoreXboxSeries = 36, // GameCoreXboxSeries intentionally set to the same as GameCoreScarlett
         [System.Obsolete("GameCoreScarlett is deprecated, please use GameCoreXboxSeries (UnityUpgradable) -> GameCoreXboxSeries", false)]
         GameCoreScarlett = 36,
-        GameCoreXboxSeries = 36, // GameCoreXboxSeries intentionally set to the same as GameCoreScarlett
         GameCoreXboxOne = 37,
         // PS5
         PS5 = 38,

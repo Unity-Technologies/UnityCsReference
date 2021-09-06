@@ -405,7 +405,9 @@ namespace UnityEditor.U2D
                     if (GUILayout.Button("Pack Preview"))
                     {
                         GUI.FocusControl(null);
+                        SpriteAtlasUtility.EnableV2Import(true);
                         ApplyAndImport();
+                        SpriteAtlasUtility.EnableV2Import(false);
                         m_HasChanged = false;
                     }
                 }

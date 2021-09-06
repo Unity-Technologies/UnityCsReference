@@ -296,7 +296,9 @@ namespace UnityEditor.Search
 
         private bool LoadEditor(SearchItem item, List<UnityEngine.Object> targets)
         {
+            item.options |= SearchItemOptions.FullDescription;
             var itemObject = item.ToObject();
+            item.options &= ~SearchItemOptions.FullDescription;
             if (!itemObject)
                 return false;
 

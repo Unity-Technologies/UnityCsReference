@@ -108,7 +108,7 @@ namespace UnityEditor
             }
 
             // Calculate size and position tooltip view
-            m_Style = EditorStyles.tooltip;
+            m_Style = new GUIStyle(EditorStyles.tooltip) { richText = true };
             s_CloseState = CloseState.Idle;
 
             this.hostView = hostView;

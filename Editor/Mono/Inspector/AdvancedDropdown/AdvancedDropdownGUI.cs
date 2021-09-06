@@ -165,18 +165,22 @@ namespace UnityEditor.IMGUI.Controls
 
         internal virtual string DrawSearchFieldControl(string searchString)
         {
-            const float kBorderWidth = 1f;
             var controlRect = GUILayoutUtility.GetRect(0, 0, Styles.searchFieldStyle);
-
-            controlRect.height = Styles.searchFieldStyle.fixedHeight;
-            controlRect.xMin += kBorderWidth;
-            controlRect.xMax -= kBorderWidth;
-            controlRect.yMin += kBorderWidth;
-            m_SearchRect = Styles.searchFieldStyle.margin.Add(controlRect);
+            m_SearchRect = CalculateSearchRect(ref controlRect);
             EditorGUI.DrawRect(m_SearchRect, Styles.searchBackgroundColor);
             var newSearch = EditorGUI.ToolbarSearchField(controlRect, searchString, false);
 
             return newSearch;
+        }
+
+        Rect CalculateSearchRect(ref Rect controlRect)
+        {
+            const float kBorderWidth = 1f;
+            controlRect.height = Styles.searchFieldStyle.fixedHeight;
+            controlRect.xMin += kBorderWidth;
+            controlRect.xMax -= kBorderWidth;
+            controlRect.yMin += kBorderWidth;
+            return Styles.searchFieldStyle.margin.Add(controlRect);
         }
 
         internal Rect GetAnimRect(Rect position, float anim)
@@ -220,6 +224,26 @@ namespace UnityEditor.IMGUI.Controls
             {
                 maxWidth += arrowWidth;
             }
+
+            // other size calculations may rely on m_HeaderRect and m_SearchRect, which wont be populated until the first time they are drawn
+            // so they need to be calculated here if needed.
+            if (m_HeaderRect == default(Rect))
+            {
+                var headerContent = GUIContent.Temp(dataSource.mainTree.name, dataSource.mainTree.icon);
+                var headerSize = Styles.header.CalcSize(headerContent);
+                if (maxWidth > headerSize.x)
+                    headerSize.x = maxWidth;
+                headerSize.y = Styles.header.CalcHeight(headerContent, maxWidth);
+                m_HeaderRect = new Rect(0, 0, headerSize.x, headerSize.y);
+            }
+            if (m_SearchRect == default(Rect))
+            {
+                var controlRectSize = Styles.searchFieldStyle.CalcSize(GUIContent.none);
+                controlRectSize.x = maxWidth;
+                var controlRect = new Rect(0, 0, controlRectSize.x, controlRectSize.y);
+                m_SearchRect = CalculateSearchRect(ref controlRect);
+            }
+
             return new Vector2(maxWidth, maxHeight);
         }
 

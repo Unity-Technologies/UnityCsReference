@@ -84,8 +84,9 @@ namespace UnityEditor
             string sanitizedNewAssetResourceFile = newAssetResourceFile != null ? newAssetResourceFile.ConvertSeparatorsToUnity() : newAssetResourceFile;
 
             string uniquePath;
-            if (!sanitizedFilePath.StartsWith("assets/", System.StringComparison.CurrentCultureIgnoreCase))
+            if (!sanitizedFilePath.StartsWith("assets/", System.StringComparison.CurrentCultureIgnoreCase) && !sanitizedFilePath.StartsWith("packages/", System.StringComparison.CurrentCultureIgnoreCase))
             {
+                // If sanitizedFilePath is not already a full asset path, we need to get the full path
                 uniquePath = AssetDatabase.GetUniquePathNameAtSelectedPath(sanitizedFilePath);
             }
             else

@@ -51,7 +51,7 @@ namespace UnityEditor.IMGUI.Controls
         public float customFoldoutYOffset = 0f;
         public float extraInsertionMarkerIndent = 0f;
         public float extraSpaceBeforeIconAndLabel { get; set; }
-
+        public bool drawSelection { get; set; } = true;
         public float halfDropBetweenHeight { get { return k_HalfDropBetweenHeight; } }
 
         public virtual float topRowMargin { get { return k_TopRowMargin; } }
@@ -391,7 +391,7 @@ namespace UnityEditor.IMGUI.Controls
                 DrawItemBackground(rect, row, item, selected, focused);
 
                 // Draw selection
-                if (selected)
+                if (selected && drawSelection)
                     selectionStyle.Draw(rect, false, false, true, focused);
 
                 bool hasDragHandling = m_TreeView.dragging != null;

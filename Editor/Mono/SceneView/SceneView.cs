@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using UnityEditor.AnimatedValues;
 using UnityEditor.SceneManagement;
@@ -93,6 +94,28 @@ namespace UnityEditor
 
         static SceneView s_ActiveViewForOverlays;
         IEnumerable<Overlay> m_TransientOverlays;
+
+        static string GetLegacyOverlayId(OverlayWindow overlayData)
+        {
+            return "legacy-overlay::" + overlayData.title.text;
+        }
+
+        internal void ShowLegacyOverlay(OverlayWindow overlayData)
+        {
+            var overlay = overlayCanvas.GetOrCreateLegacyOverlay(GetLegacyOverlayId(overlayData), overlayData.title.text);
+            if (overlay != null)
+            {
+                overlay.data = overlayData;
+                overlay.showRequested = true;
+            }
+        }
+
+        void LegacyOverlayPreOnGUI()
+        {
+            if (Event.current.type == EventType.Layout)
+                foreach (var legacyOverlay in overlayCanvas.legacyOverlays)
+                    legacyOverlay.showRequested = false;
+        }
 
         static void UpdateTransientOverlayDisplay()
         {
@@ -1128,7 +1151,10 @@ namespace UnityEditor
         public override void OnEnable()
         {
             baseRootVisualElement.Insert(0, prefabToolbar);
+            bool overlaysInitializedBefore = overlaysInitialized;
             rootVisualElement.Add(cameraViewVisualElement);
+            CopyOverlaysLayoutIfNeeded(overlaysInitializedBefore);
+
             m_OrientationGizmo = overlayCanvas.overlays.FirstOrDefault(x => x is SceneOrientationGizmo) as SceneOrientationGizmo;
 
             titleContent = GetLocalizedTitleContent();
@@ -1260,6 +1286,15 @@ namespace UnityEditor
         void GridOnGridVisibilityChanged(bool visible)
         {
             gridVisibilityChanged?.Invoke(visible);
+        }
+
+        void CopyOverlaysLayoutIfNeeded(bool overlaysInitialized)
+        {
+            if (!overlaysInitialized && s_SceneViews.Count > 0)
+            {
+                lastActiveSceneView.overlayCanvas.CopySaveData(out var overlaySaveData);
+                overlayCanvas.ApplySaveData(overlaySaveData);
+            }
         }
 
         protected virtual bool SupportsStageHandling()
@@ -2196,11 +2231,16 @@ namespace UnityEditor
                     overlay.displayed = shouldShow && transient.visible;
             }
 
+            foreach (var legacyOverlay in overlayCanvas.legacyOverlays)
+                legacyOverlay.displayed = shouldShow && legacyOverlay.visible;
+
+            LegacyOverlayPreOnGUI();
+
             s_CurrentDrawingSceneView = this;
 
             Event evt = Event.current;
 
-            if (evt.type == EventType.Repaint)
+            if (evt.type == EventType.Layout)
             {
                 s_MouseRects.Clear();
                 Tools.InvalidateHandlePosition(); // Some cases that should invalidate the cached position are not handled correctly yet so we refresh it once per frame
@@ -2847,7 +2887,7 @@ namespace UnityEditor
             SceneVisibilityManager.instance.enableSceneVisibility = m_SceneVisActive;
             ResetIfNaN();
 
-            m_Camera.transform.rotation = m_2DMode ? Quaternion.identity : m_Rotation.value;
+            m_Camera.transform.rotation = m_2DMode && !m_Rotation.isAnimating ? Quaternion.identity : m_Rotation.value;
 
             float fov = m_Ortho.Fade(perspectiveFov, 0);
 
@@ -3500,56 +3540,97 @@ namespace UnityEditor
             HandleUtility.handleMaterial.SetColor("_Color", kSceneViewFrontLight * 1.5f);
         }
 
-        void CallOnSceneGUI()
+
+        struct EditorActionCache
         {
-            foreach (Editor editor in activeEditors)
+            private readonly Dictionary<Type, Action<Editor>> m_Cache;
+            private readonly string m_MethodName;
+
+            public EditorActionCache(string methodName)
             {
-                if (!drawGizmos || !EditorGUIUtility.IsGizmosAllowedForObject(editor.target))
-                    continue;
+                m_MethodName = methodName;
+                m_Cache = new Dictionary<Type, Action<Editor>>();
+            }
 
-                MethodInfo method = editor.GetType().GetMethod(
-                    "OnSceneGUI",
-                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.FlattenHierarchy,
-                    null,
-                    Type.EmptyTypes,
-                    null);
-
-                if (method != null)
+            public Action<Editor> GetAction(Type type)
+            {
+                if (!m_Cache.TryGetValue(type, out var onSceneGui))
                 {
-                    MethodInfo methodEnabled = editor.GetType().GetMethod(
-                        "IsSceneGUIEnabled",
-                        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.FlattenHierarchy,
+                    MethodInfo method = type.GetMethod(
+                        m_MethodName,
+                        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.FlattenHierarchy,
                         null,
                         Type.EmptyTypes,
                         null);
-
-                    bool enabled = (methodEnabled != null) ? (bool)methodEnabled.Invoke(null, null) : true;
-                    if (enabled)
+                    if (method == null)
+                        m_Cache[type] = null;
+                    else
                     {
-                        using (new EditorPerformanceMarker($"Editor.{editor.GetType().Name}.OnSceneGUI", editor.GetType()).Auto())
-                        {
-                            Editor.m_AllowMultiObjectAccess = true;
-                            for (int n = 0; n < editor.targets.Length; n++)
-                            {
-                                ResetOnSceneGUIState();
-                                editor.referenceTargetIndex = n;
-
-                                EditorGUI.BeginChangeCheck();
-                                // Ironically, only allow multi object access inside OnSceneGUI if editor does NOT support multi-object editing.
-                                // since there's no harm in going through the serializedObject there if there's always only one target.
-                                Editor.m_AllowMultiObjectAccess = !editor.canEditMultipleObjects;
-                                method.Invoke(editor, null);
-                                Editor.m_AllowMultiObjectAccess = true;
-                                if (EditorGUI.EndChangeCheck())
-                                    editor.serializedObject.SetIsDifferentCacheDirty();
-                            }
-
-                            ResetOnSceneGUIState();
-                        }
+                        var param = Expression.Parameter(typeof(Editor), "a");
+                        onSceneGui = m_Cache[type] = Expression.Lambda<Action<Editor>>(
+                            Expression.Call(Expression.Convert(param, type), method),
+                            param
+                        ).Compile();
                     }
-                    // This would mean that OnSceneGUI has changed the scene and it is not drawn
-                    if (s_CurrentDrawingSceneView == null)
-                        GUIUtility.ExitGUI();
+                }
+
+                return onSceneGui;
+            }
+        }
+
+        private static EditorActionCache s_OnSceneGuiCache = new EditorActionCache("OnSceneGUI");
+        private static EditorActionCache s_OnPreSceneGuiCache = new EditorActionCache("OnPreSceneGUI");
+
+        void CallOnSceneGUI()
+        {
+            if (drawGizmos)
+            {
+                foreach (Editor editor in activeEditors)
+                {
+                    if (!EditorGUIUtility.IsGizmosAllowedForObject(editor.target))
+                        continue;
+
+                    var onSceneGui = s_OnSceneGuiCache.GetAction(editor.GetType());
+                    if (onSceneGui != null)
+                    {
+                        MethodInfo methodEnabled = editor.GetType().GetMethod(
+                            "IsSceneGUIEnabled",
+                            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static |
+                            BindingFlags.FlattenHierarchy,
+                            null,
+                            Type.EmptyTypes,
+                            null);
+
+                        bool enabled = (methodEnabled != null) ? (bool) methodEnabled.Invoke(null, null) : true;
+                        if (enabled)
+                        {
+                            using (new EditorPerformanceMarker($"Editor.{editor.GetType().Name}.OnSceneGUI", editor.GetType()).Auto())
+                            {
+                                Editor.m_AllowMultiObjectAccess = true;
+                                bool canEditMultipleObjects = editor.canEditMultipleObjects;
+                                for (int n = 0; n < editor.targets.Length; n++)
+                                {
+                                    ResetOnSceneGUIState();
+                                    editor.referenceTargetIndex = n;
+
+                                    EditorGUI.BeginChangeCheck();
+                                    // Ironically, only allow multi object access inside OnSceneGUI if editor does NOT support multi-object editing.
+                                    // since there's no harm in going through the serializedObject there if there's always only one target.
+                                    Editor.m_AllowMultiObjectAccess = !canEditMultipleObjects;
+                                    onSceneGui(editor);
+                                    Editor.m_AllowMultiObjectAccess = true;
+                                    if (EditorGUI.EndChangeCheck())
+                                        editor.serializedObject.SetIsDifferentCacheDirty();
+                                }
+
+                                ResetOnSceneGUIState();
+                            }
+                        }
+
+                        // This would mean that OnSceneGUI has changed the scene and it is not drawn
+                        if (s_CurrentDrawingSceneView == null)
+                            GUIUtility.ExitGUI();
+                    }
                 }
             }
 
@@ -3593,19 +3674,23 @@ namespace UnityEditor
                 if (comp && !comp.gameObject.activeInHierarchy)
                     continue;
 
-                MethodInfo method = editor.GetType().GetMethod("OnPreSceneGUI", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
+                var onPreSceneGui = s_OnPreSceneGuiCache.GetAction(editor.GetType());
 
-                if (method != null)
+                if (onPreSceneGui != null)
                 {
-                    Editor.m_AllowMultiObjectAccess = true;
-                    for (int n = 0; n < editor.targets.Length; n++)
+                    using (new EditorPerformanceMarker($"Editor.{editor.GetType().Name}.OnPreSceneGUI", editor.GetType()).Auto())
                     {
-                        editor.referenceTargetIndex = n;
-                        // Ironically, only allow multi object access inside OnPreSceneGUI if editor does NOT support multi-object editing.
-                        // since there's no harm in going through the serializedObject there if there's always only one target.
-                        Editor.m_AllowMultiObjectAccess = !editor.canEditMultipleObjects;
-                        method.Invoke(editor, null);
+                        bool canEditMultipleObjects = editor.canEditMultipleObjects;
                         Editor.m_AllowMultiObjectAccess = true;
+                        for (int n = 0; n < editor.targets.Length; n++)
+                        {
+                            editor.referenceTargetIndex = n;
+                            // Ironically, only allow multi object access inside OnPreSceneGUI if editor does NOT support multi-object editing.
+                            // since there's no harm in going through the serializedObject there if there's always only one target.
+                            Editor.m_AllowMultiObjectAccess = !canEditMultipleObjects;
+                            onPreSceneGui(editor);
+                            Editor.m_AllowMultiObjectAccess = true;
+                        }
                     }
                 }
             }

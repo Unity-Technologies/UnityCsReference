@@ -597,7 +597,7 @@ namespace UnityEngine.UIElements
                         return CreateError();
                     }
                 }
-                else if (asset.fullTypeName == "UnityEditor.UIElements.ProgressBar")
+                else if (asset.fullTypeName == "UnityEditor.UIElements.ProgressBar" || asset.fullTypeName.StartsWith("UnityEditor.UIElements.EnumField"))
                 {
                     string runtimeTypeName = asset.fullTypeName.Replace("UnityEditor", "UnityEngine");
                     if (!VisualElementFactoryRegistry.TryGetValue(runtimeTypeName, out factoryList))

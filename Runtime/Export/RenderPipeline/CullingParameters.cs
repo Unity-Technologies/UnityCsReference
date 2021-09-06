@@ -316,10 +316,26 @@ namespace UnityEngine.Rendering
         float m_StereoSeparationDistance;
 
         private int m_maximumVisibleLights;
+
+        bool m_ConservativeEnclosingSphere;
+        int m_NumIterationsEnclosingSphere;
+
         public int maximumVisibleLights
         {
             get { return m_maximumVisibleLights; }
             set { m_maximumVisibleLights = value; }
+        }
+
+        public bool conservativeEnclosingSphere
+        {
+            get { return m_ConservativeEnclosingSphere; }
+            set { m_ConservativeEnclosingSphere = value; }
+        }
+
+        public int numIterationsEnclosingSphere
+        {
+            get { return m_NumIterationsEnclosingSphere; }
+            set { m_NumIterationsEnclosingSphere = value; }
         }
 
         public int cullingPlaneCount
@@ -504,7 +520,9 @@ namespace UnityEngine.Rendering
                 && m_StereoViewMatrix.Equals(other.m_StereoViewMatrix)
                 && m_StereoProjectionMatrix.Equals(other.m_StereoProjectionMatrix)
                 && m_StereoSeparationDistance.Equals(other.m_StereoSeparationDistance)
-                && m_maximumVisibleLights == other.m_maximumVisibleLights;
+                && m_maximumVisibleLights == other.m_maximumVisibleLights
+                && m_ConservativeEnclosingSphere == other.m_ConservativeEnclosingSphere
+                && m_NumIterationsEnclosingSphere == other.m_NumIterationsEnclosingSphere;
         }
 
         public override bool Equals(object obj)
@@ -535,6 +553,8 @@ namespace UnityEngine.Rendering
                 hashCode = (hashCode * 397) ^ m_StereoProjectionMatrix.GetHashCode();
                 hashCode = (hashCode * 397) ^ m_StereoSeparationDistance.GetHashCode();
                 hashCode = (hashCode * 397) ^ m_maximumVisibleLights;
+                hashCode = (hashCode * 397) ^ m_ConservativeEnclosingSphere.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_NumIterationsEnclosingSphere.GetHashCode();
                 return hashCode;
             }
         }

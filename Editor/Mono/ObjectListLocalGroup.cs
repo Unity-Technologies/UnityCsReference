@@ -981,8 +981,14 @@ namespace UnityEditor
                 }
 
                 // User hook for rendering stuff on top of items (notice it being called after rendering but before mouse handling to make user able to react on mouse events)
-                if (EditorApplication.projectWindowItemOnGUI != null && filterItem != null && m_Owner.allowUserRenderingHook)
-                    EditorApplication.projectWindowItemOnGUI(filterItem.guid, itemRect);
+                if (filterItem != null && m_Owner.allowUserRenderingHook)
+                {
+                    if (EditorApplication.projectWindowItemOnGUI != null)
+                        EditorApplication.projectWindowItemOnGUI(filterItem.guid, itemRect);
+
+                    if (EditorApplication.projectWindowItemInstanceOnGUI != null)
+                        EditorApplication.projectWindowItemInstanceOnGUI(filterItem.instanceID, itemRect);
+                }
 
                 // Mouse handling (must be after rename overlay to ensure overlay get mouseevents)
                 if (m_Owner.allowDragging)

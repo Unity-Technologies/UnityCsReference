@@ -67,7 +67,7 @@ namespace UnityEditor
         SerializedProperty m_AOMaxDistance;
         SerializedProperty m_CompAOExponent;
         SerializedProperty m_CompAOExponentDirect;
-        SerializedProperty m_TextureCompression;
+        SerializedProperty m_LightmapCompression;
         SerializedProperty m_FinalGather;
         SerializedProperty m_FinalGatherRayCount;
         SerializedProperty m_FinalGatherFiltering;
@@ -104,6 +104,7 @@ namespace UnityEditor
         SerializedProperty m_ForceWhiteAlbedo;
         SerializedProperty m_ForceUpdates;
         SerializedProperty m_FilterMode;
+        SerializedProperty m_TiledBaking;
 
         enum DenoiserTarget
         {
@@ -132,6 +133,18 @@ namespace UnityEditor
             public static readonly int[] lightmapMaxSizeValues = { 32, 64, 128, 256, 512, 1024, 2048, 4096 };
             public static readonly GUIContent[] lightmapMaxSizeStrings = Array.ConvertAll(lightmapMaxSizeValues, (x) => new GUIContent(x.ToString()));
 
+            // Keep in sync with GI/Progressive/LightmapTilingMode.h
+            public static readonly int[] tiledBakingValues = { 0, 1, 2, 3, 4, -1 };
+            public static readonly GUIContent[] tiledBakingStrings =
+            {
+                EditorGUIUtility.TrTextContent("Auto"),
+                EditorGUIUtility.TrTextContent("4 Tiles"),
+                EditorGUIUtility.TrTextContent("16 Tiles"),
+                EditorGUIUtility.TrTextContent("64 Tiles"),
+                EditorGUIUtility.TrTextContent("256 Tiles"),
+                EditorGUIUtility.TrTextContent("Disabled"),
+            };
+
             // must match LightmapMixedBakeMode
             public static readonly int[] mixedModeValues = { 0, 1, 2 };
             public static readonly GUIContent[] mixedModeStrings =
@@ -156,6 +169,21 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Mixed lights provide realtime direct lighting while indirect light is baked into lightmaps and light probes."),
                 EditorGUIUtility.TrTextContent("Mixed lights provide baked direct and indirect lighting for static objects. Dynamic objects receive realtime direct lighting and cast shadows on static objects using the main directional light in the scene."),
                 EditorGUIUtility.TrTextContent("Mixed lights provide realtime direct lighting. Indirect lighting gets baked into lightmaps and light probes. Shadowmasks and light probes occlusion get generated for baked shadows. ")
+            };
+
+            public static readonly int[] lightmapCompressionValues =
+            {
+                (int)LightmapCompression.None,
+                (int)LightmapCompression.LowQuality,
+                (int)LightmapCompression.NormalQuality,
+                (int)LightmapCompression.HighQuality
+            };
+            public static readonly GUIContent[] lightmapCompressionStrings =
+            {
+                EditorGUIUtility.TrTextContent("None"),
+                EditorGUIUtility.TrTextContent("Low Quality"),
+                EditorGUIUtility.TrTextContent("Normal Quality"),
+                EditorGUIUtility.TrTextContent("High Quality")
             };
 
             public static readonly GUIContent lightmapperNotSupportedWarning = EditorGUIUtility.TrTextContent("This lightmapper is not supported by the current Render Pipeline. The Editor will use ");
@@ -184,11 +212,12 @@ namespace UnityEditor
             public static readonly GUIContent filterMode = EditorGUIUtility.TrTextContent("Filter Mode");
             public static readonly GUIContent exportTrainingData = EditorGUIUtility.TrTextContent("Export Training Data", "Exports unfiltered textures, normals, positions.");
             public static readonly GUIContent trainingDataDestination = EditorGUIUtility.TrTextContent("Destination", "Destination for the training data, for example 'mysetup/30samples'. Will still be located at the first level in the project folder. ");
-            public static readonly GUIContent indirectResolution = EditorGUIUtility.TrTextContent("Indirect Resolution", "Sets the resolution in texels that are used per unit for objects being lit by indirect lighting. The larger the value, the more significant the impact will be on the time it takes to bake the lighting.");
-            public static readonly GUIContent lightmapResolution = EditorGUIUtility.TrTextContent("Lightmap Resolution", "Sets the resolution in texels that are used per unit for objects being lit by baked global illumination. Larger values will result in increased time to calculate the baked lighting.");
+            public static readonly GUIContent indirectResolution = EditorGUIUtility.TrTextContent("Indirect Resolution", "Sets the resolution in texels that are used per unit for objects being lit by indirect lighting. The higher this value is, the more time the Editor needs to bake lighting.");
+            public static readonly GUIContent lightmapResolution = EditorGUIUtility.TrTextContent("Lightmap Resolution", "Sets the resolution in texels used per unit for objects lit by baked global illumination. The higher this value is, the more time the Editor needs to bake lighting.");
             public static readonly GUIContent padding = EditorGUIUtility.TrTextContent("Lightmap Padding", "Sets the separation in texels between shapes in the baked lightmap.");
             public static readonly GUIContent lightmapMaxSize = EditorGUIUtility.TrTextContent("Max Lightmap Size", "Sets the max size of the full lightmap Texture in pixels. Values are squared, so a setting of 1024 can produce a 1024x1024 pixel sized lightmap.");
-            public static readonly GUIContent textureCompression = EditorGUIUtility.TrTextContent("Compress Lightmaps", "Controls whether the baked lightmap is compressed or not. When enabled, baked lightmaps are compressed to reduce required storage space but some artifacting may be present due to compression.");
+            public static readonly GUIContent lightmapCompression = EditorGUIUtility.TrTextContent("Lightmap Compression", "Compresses baked lightmaps created using this Lighting Settings Asset. Lower quality compression reduces memory and storage requirements, at the cost of more visual artifacts. Higher quality compression requires more memory and storage, but provides better visual results.");
+            public static readonly GUIContent tiledBaking = EditorGUIUtility.TrTextContent("Tiled baking", "Determines the tiled baking mode. Auto: Memory status triggers tiling. If Auto is not enabled, bakes may fail. Disabled: Never use tiling.");
             public static readonly GUIContent ambientOcclusion = EditorGUIUtility.TrTextContent("Ambient Occlusion", "Specifies whether to include ambient occlusion or not in the baked lightmap result. Enabling this results in simulating the soft shadows that occur in cracks and crevices of objects when light is reflected onto them.");
             public static readonly GUIContent ambientOcclusionContribution = EditorGUIUtility.TrTextContent("Indirect Contribution", "Adjusts the contrast of ambient occlusion applied to indirect lighting. The larger the value, the more contrast is applied to the ambient occlusion for indirect lighting.");
             public static readonly GUIContent ambientOcclusionContributionDirect = EditorGUIUtility.TrTextContent("Direct Contribution", "Adjusts the contrast of ambient occlusion applied to the direct lighting. The larger the value is, the more contrast is applied to the ambient occlusion for direct lighting. This effect is not physically accurate.");
@@ -292,7 +321,7 @@ namespace UnityEditor
                 m_AOMaxDistance = lso.FindProperty("m_AOMaxDistance");
                 m_CompAOExponent = lso.FindProperty("m_CompAOExponent");
                 m_CompAOExponentDirect = lso.FindProperty("m_CompAOExponentDirect");
-                m_TextureCompression = lso.FindProperty("m_TextureCompression");
+                m_LightmapCompression = lso.FindProperty("m_LightmapCompression");
                 m_FinalGather = lso.FindProperty("m_FinalGather");
                 m_FinalGatherRayCount = lso.FindProperty("m_FinalGatherRayCount");
                 m_FinalGatherFiltering = lso.FindProperty("m_FinalGatherFiltering");
@@ -328,6 +357,7 @@ namespace UnityEditor
                 m_ForceUpdates = lso.FindProperty("m_ForceUpdates");
                 m_FilterMode = lso.FindProperty("m_FilterMode");
                 m_BounceScale = lso.FindProperty("m_BounceScale");
+                m_TiledBaking = lso.FindProperty("m_PVRTiledBaking");
             }
         }
 
@@ -565,8 +595,11 @@ namespace UnityEditor
                                         //EditorGUI.indentLevel--;
                                     }
 
-                                    EditorGUILayout.PropertyField(m_PVRMinBounces, Styles.minBounces);
-                                    EditorGUILayout.PropertyField(m_PVRBounces, Styles.maxBounces);
+                                    // Case 1320615: clamping of min bounces can be annoying because it resets when typing in a new max bounce value.
+                                    int minBouncesValue = EditorGUILayout.DelayedIntField(Styles.minBounces, m_PVRMinBounces.intValue);
+                                    int maxBouncesValue = EditorGUILayout.DelayedIntField(Styles.maxBounces, m_PVRBounces.intValue);
+                                    m_PVRBounces.intValue = maxBouncesValue;
+                                    m_PVRMinBounces.intValue = minBouncesValue;
 
                                     // Filtering
                                     EditorGUILayout.PropertyField(m_PVRFilteringMode, Styles.filteringMode);
@@ -681,7 +714,7 @@ namespace UnityEditor
 
                             EditorGUILayout.IntPopup(m_LightmapMaxSize, Styles.lightmapMaxSizeStrings, Styles.lightmapMaxSizeValues, Styles.lightmapMaxSize);
 
-                            EditorGUILayout.PropertyField(m_TextureCompression, Styles.textureCompression);
+                            EditorGUILayout.IntPopup(m_LightmapCompression, Styles.lightmapCompressionStrings, Styles.lightmapCompressionValues, Styles.lightmapCompression);
 
                             EditorGUILayout.PropertyField(m_AmbientOcclusion, Styles.ambientOcclusion);
                             if (m_AmbientOcclusion.boolValue)
@@ -761,6 +794,8 @@ namespace UnityEditor
 
                 EditorGUILayout.PropertyField(m_FilterMode, Styles.filterMode);
                 EditorGUILayout.Slider(m_BounceScale, 0.0f, 10.0f, Styles.bounceScale);
+                if (m_BakeBackend.intValue == (int)LightingSettings.Lightmapper.ProgressiveGPU)
+                    EditorGUILayout.IntPopup(m_TiledBaking, Styles.tiledBakingStrings, Styles.tiledBakingValues, Styles.tiledBaking);
 
                 EditorGUI.indentLevel--;
                 EditorGUILayout.Space();

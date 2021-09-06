@@ -61,7 +61,7 @@ namespace UnityEditor.Search.Providers
             public string tag;
             public string[] types;
             public string[] words;
-            public string[] refs;
+            public HashSet<int> refs;
             public string[] attrs;
 
             public int? layer;
@@ -156,7 +156,7 @@ namespace UnityEditor.Search.Providers
         #region search_query_error_example
         public IEnumerable<T> Search(SearchContext context, SearchProvider provider, IEnumerable<T> subset = null)
         {
-            var query = m_QueryEngine.Parse(ConvertSelectors(context.searchQuery), true);
+            var query = m_QueryEngine.Parse(context.searchQuery, true);
             if (!query.valid)
             {
                 context.AddSearchQueryErrors(query.errors.Select(e => new SearchQueryError(e, context, provider)));
@@ -168,12 +168,6 @@ namespace UnityEditor.Search.Providers
         }
 
         #endregion
-
-        static readonly Regex k_HashPropertyFilterFunctionRegex = new Regex(@"([#][^><=!:\s]+)[><=!:]");
-        static string ConvertSelectors(string queryStr)
-        {
-            return ParserUtils.ReplaceSelectorInExpr(queryStr, (selector, cleanedSelector) => $"p({cleanedSelector})", k_HashPropertyFilterFunctionRegex);
-        }
 
         public virtual bool GetId(T obj, string op, int instanceId)
         {
@@ -215,47 +209,9 @@ namespace UnityEditor.Search.Providers
             if (property == null)
                 return SearchValue.invalid;
 
-            var v = ConvertPropertyValue(property);
+            var v = SearchValue.ConvertPropertyValue(property);
             so?.Dispose();
             return v;
-        }
-
-        public static SearchValue ConvertPropertyValue(in SerializedProperty sp)
-        {
-            switch (sp.propertyType)
-            {
-                case SerializedPropertyType.Integer: return new SearchValue(Convert.ToDouble(sp.intValue));
-                case SerializedPropertyType.Boolean: return new SearchValue(sp.boolValue);
-                case SerializedPropertyType.Float: return new SearchValue(sp.floatValue);
-                case SerializedPropertyType.String: return new SearchValue(sp.stringValue);
-                case SerializedPropertyType.Enum: return new SearchValue(sp.enumNames[sp.enumValueIndex]);
-                case SerializedPropertyType.ObjectReference: return new SearchValue(sp.objectReferenceValue?.name);
-                case SerializedPropertyType.Bounds: return new SearchValue(sp.boundsValue.size.magnitude);
-                case SerializedPropertyType.BoundsInt: return new SearchValue(sp.boundsIntValue.size.magnitude);
-                case SerializedPropertyType.Rect: return new SearchValue(sp.rectValue.size.magnitude);
-                case SerializedPropertyType.Color: return new SearchValue(sp.colorValue);
-                case SerializedPropertyType.Generic: break;
-                case SerializedPropertyType.LayerMask: break;
-                case SerializedPropertyType.Vector2: break;
-                case SerializedPropertyType.Vector3: break;
-                case SerializedPropertyType.Vector4: break;
-                case SerializedPropertyType.ArraySize: break;
-                case SerializedPropertyType.Character: break;
-                case SerializedPropertyType.AnimationCurve: break;
-                case SerializedPropertyType.Gradient: break;
-                case SerializedPropertyType.Quaternion: break;
-                case SerializedPropertyType.ExposedReference: break;
-                case SerializedPropertyType.FixedBufferSize: break;
-                case SerializedPropertyType.Vector2Int: break;
-                case SerializedPropertyType.Vector3Int: break;
-                case SerializedPropertyType.RectInt: break;
-                case SerializedPropertyType.ManagedReference: break;
-            }
-
-            if (sp.isArray)
-                return new SearchValue(sp.arraySize);
-
-            return SearchValue.invalid;
         }
 
         protected string ToReplacementValue(SerializedProperty sp, string replacement)
@@ -328,7 +284,7 @@ namespace UnityEditor.Search.Providers
             return CompareWords(op, value.ToLowerInvariant(), god.types);
         }
 
-        private void BuildReferences(UnityEngine.Object obj, ICollection<string> refs)
+        private void BuildReferences(UnityEngine.Object obj, ICollection<int> refs)
         {
             if (!obj)
                 return;
@@ -338,13 +294,13 @@ namespace UnityEditor.Search.Providers
                 var next = p.NextVisible(true);
                 while (next)
                 {
-                    AddPropertyReferences(p, refs);
+                    AddPropertyReferences(obj, p, refs);
                     next = p.NextVisible(p.hasVisibleChildren);
                 }
             }
         }
 
-        private void AddPropertyReferences(SerializedProperty p, ICollection<string> refs)
+        private void AddPropertyReferences(UnityEngine.Object obj, SerializedProperty p, ICollection<int> refs)
         {
             if (p.propertyType != SerializedPropertyType.ObjectReference || !p.objectReferenceValue)
                 return;
@@ -353,9 +309,11 @@ namespace UnityEditor.Search.Providers
             if (string.IsNullOrEmpty(refValue) && p.objectReferenceValue is GameObject go)
                 refValue = SearchUtils.GetTransformPath(go.transform);
 
-            if (!string.IsNullOrEmpty(refValue) && !refs.Contains(refValue))
+            if (!string.IsNullOrEmpty(refValue))
                 AddReference(p.objectReferenceValue, refValue, refs);
-            refs.Add(p.objectReferenceValue.GetInstanceID().ToString());
+            refs.Add(p.objectReferenceValue.GetInstanceID());
+            if (p.objectReferenceValue is Component c)
+                refs.Add(c.gameObject.GetInstanceID());
 
             // Add custom object cases
             if (p.objectReferenceValue is Material material)
@@ -365,18 +323,18 @@ namespace UnityEditor.Search.Providers
             }
         }
 
-        private bool AddReference(UnityEngine.Object refObj, string refValue, ICollection<string> refs)
+        private bool AddReference(UnityEngine.Object refObj, string refValue, ICollection<int> refs)
         {
             if (string.IsNullOrEmpty(refValue))
                 return false;
 
             if (refValue[0] == '/')
                 refValue = refValue.Substring(1);
+            refs.Add(refValue.ToLowerInvariant().GetHashCode());
 
             var refType = refObj?.GetType().Name;
             if (refType != null)
-                refs.Add(refType.ToLowerInvariant());
-            refs.Add(refValue.ToLowerInvariant());
+                refs.Add(refType.ToLowerInvariant().GetHashCode());
 
             return true;
         }
@@ -387,7 +345,7 @@ namespace UnityEditor.Search.Providers
 
             if (god.refs == null)
             {
-                var refs = new HashSet<string>();
+                var refs = new HashSet<int>();
 
                 BuildReferences(obj, refs);
 
@@ -406,10 +364,13 @@ namespace UnityEditor.Search.Providers
                     }
                 }
 
-                god.refs = refs.ToArray();
+                refs.Remove(obj.GetHashCode());
+                god.refs = refs;
             }
 
-            return CompareWords(op, value.ToLowerInvariant(), god.refs);
+            if (Utils.TryParse(value, out int instanceId))
+                return god.refs.Contains(instanceId);
+            return god.refs.Contains(value.ToLowerInvariant().GetHashCode());
         }
 
         protected bool CompareWords(string op, string value, IEnumerable<string> words, StringComparison stringComparison = StringComparison.Ordinal)

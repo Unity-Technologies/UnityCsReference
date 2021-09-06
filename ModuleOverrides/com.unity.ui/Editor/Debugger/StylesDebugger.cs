@@ -160,10 +160,12 @@ namespace UnityEditor.UIElements.Debugger
 
         private void DrawProperties()
         {
+            EditorGUILayout.Space();
             EditorGUILayout.LabelField(Styles.elementStylesContent, Styles.KInspectorTitle);
 
             m_SelectedElement.name = EditorGUILayout.TextField("Name", m_SelectedElement.name);
             EditorGUILayout.LabelField("Debug Id", m_SelectedElement.controlid.ToString());
+            m_SelectedElement.tooltip = EditorGUILayout.TextField("Tooltip", m_SelectedElement.tooltip);
             var textElement = m_SelectedElement as ITextElement;
             if (textElement != null)
             {
@@ -224,6 +226,7 @@ namespace UnityEditor.UIElements.Debugger
         {
             if (m_MatchedRulesExtractor.selectedElementStylesheets != null && m_MatchedRulesExtractor.selectedElementStylesheets.Count > 0)
             {
+                EditorGUILayout.Space();
                 EditorGUILayout.LabelField(Styles.stylesheetsContent, Styles.KInspectorTitle);
                 foreach (string sheet in m_MatchedRulesExtractor.selectedElementStylesheets)
                 {
@@ -234,6 +237,7 @@ namespace UnityEditor.UIElements.Debugger
 
             if (m_MatchedRulesExtractor.selectedElementRules != null && m_MatchedRulesExtractor.selectedElementRules.Count > 0)
             {
+                EditorGUILayout.Space();
                 EditorGUILayout.LabelField(Styles.selectorsContent, Styles.KInspectorTitle);
                 int i = 0;
                 foreach (var rule in m_MatchedRulesExtractor.selectedElementRules)
@@ -315,7 +319,7 @@ namespace UnityEditor.UIElements.Debugger
 
         internal static class Styles
         {
-            public static GUIStyle KInspectorTitle = "WhiteLargeCenterLabel";
+            public static GUIStyle KInspectorTitle = new GUIStyle("In TitleText") { alignment = TextAnchor.MiddleCenter };
 
             public static readonly GUIContent elementStylesContent = EditorGUIUtility.TrTextContent("Element styles");
             public static readonly GUIContent uxmlContent = EditorGUIUtility.TrTextContent("UXML Dump");
@@ -386,10 +390,13 @@ namespace UnityEditor.UIElements.Debugger
 
         public IEnumerable<MatchedRule> GetMatchedRules() => selectedElementRules;
 
-        private void FindStyleSheets(VisualElement cursor, StyleMatchingContext matchingContext)
+        private void SetupParents(VisualElement cursor, StyleMatchingContext matchingContext)
         {
             if (cursor.hierarchy.parent != null)
-                FindStyleSheets(cursor.hierarchy.parent, matchingContext);
+                SetupParents(cursor.hierarchy.parent, matchingContext);
+
+            // We populate the ancestor filter in order for the Bloom filter detection to work.
+            matchingContext.ancestorFilter.PushElement(cursor);
 
             if (cursor.styleSheetList == null)
                 return;
@@ -425,7 +432,7 @@ namespace UnityEditor.UIElements.Debugger
         public void FindMatchingRules(VisualElement target)
         {
             var matchingContext = new StyleMatchingContext((element, info) => {}) { currentElement = target };
-            FindStyleSheets(target, matchingContext);
+            SetupParents(target, matchingContext);
 
             matchRecords.Clear();
             StyleSelectorHelper.FindMatches(matchingContext, matchRecords);

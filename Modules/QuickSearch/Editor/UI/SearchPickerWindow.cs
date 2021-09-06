@@ -5,6 +5,7 @@
 using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Search;
 
 namespace UnityEditor.Search
 {
@@ -38,7 +39,8 @@ namespace UnityEditor.Search
 
         protected override IEnumerable<SearchItem> FetchItems()
         {
-            yield return SearchItem.none;
+            if (!viewState.excludeNoneItem)
+                yield return SearchItem.none;
             foreach (var item in SearchService.GetItems(context))
             {
                 if (filterCallback != null && !filterCallback(item))
@@ -77,6 +79,16 @@ namespace UnityEditor.Search
             return SearchService.CreateContext(context?.GetProviders(), query.searchText, context?.options ?? SearchFlags.Default);
         }
 
+        protected override void DrawSyncSearchButton()
+        {
+            // Do nothing
+        }
+
+        protected override bool IsSavedSearchQueryEnabled()
+        {
+            return m_ViewState.HasFlag(SearchViewFlags.EnableSearchQuery);
+        }
+
         public static QuickSearch ShowPicker(SearchViewState args)
         {
             var qs = Create<SearchPickerWindow>(args.LoadDefaults(SearchFlags.OpenPicker));
@@ -91,7 +103,7 @@ namespace UnityEditor.Search
             // The window position can only be set one frame later.
             Utils.CallDelayed(() =>
             {
-                if (args.centered)
+                if (args.HasFlag(SearchViewFlags.Centered))
                     qs.position = args.position = Utils.GetMainWindowCenteredPosition(args.hasWindowSize ? args.windowSize : qs.position.size);
                 qs.Focus();
             });

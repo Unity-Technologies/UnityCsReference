@@ -13,6 +13,12 @@ namespace UnityEditor.U2D
     [NativeHeader("Editor/Src/2D/SpriteAtlas/SpriteAtlasPackingUtilities.h")]
     public class SpriteAtlasUtility
     {
+        [FreeFunction("SpriteAtlasExtensions::EnableV2Import")]
+        extern internal static void EnableV2Import(bool onOff);
+
+        [FreeFunction("SpriteAtlasExtensions::CleanupAtlasPacking")]
+        extern public static void CleanupAtlasPacking();
+
         [FreeFunction("CollectAllSpriteAtlasesAndPack")]
         extern public static void PackAllAtlases(BuildTarget target, bool canCancel = true);
 

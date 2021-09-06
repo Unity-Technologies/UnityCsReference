@@ -11,6 +11,8 @@ using UnityEngine.Internal;
 
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
+[assembly: InternalsVisibleTo("Unity.AudioMixer.Tests")]
+
 namespace UnityEngine
 {
     // These are speaker types defined for use with [[AudioSettings.speakerMode]].

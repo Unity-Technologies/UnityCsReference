@@ -394,6 +394,8 @@ namespace UnityEditor
 
                 int folderDepth = property.depth;
                 int[] expanded = { folderInstanceID };
+                Dictionary<string , List<FilterResult>> subAssets = new Dictionary<string, List<FilterResult>>();
+                List<FilterResult> parentAssets = new List<FilterResult>();
                 while (property.Next(expanded))
                 {
                     if (property.depth <= folderDepth)
@@ -401,13 +403,43 @@ namespace UnityEditor
 
                     FilterResult result = new FilterResult();
                     CopyPropertyData(ref result, property);
-                    list.Add(result);
+                    //list.Add(result);
 
                     // Fetch sub assets by expanding the main asset (ignore folders)
                     if (property.hasChildren && !property.isFolder)
                     {
+                        parentAssets.Add(result);
+                        List<FilterResult>  subAssetList = new List<FilterResult>();
+                        subAssets.Add(result.guid, subAssetList);
                         System.Array.Resize(ref expanded, expanded.Length + 1);
                         expanded[expanded.Length - 1] = property.instanceID;
+                    }
+                    else
+                    {
+                        List<FilterResult> subAssetList;
+                        if (subAssets.TryGetValue(result.guid, out subAssetList))
+                        {
+                            subAssetList.Add(result);
+                            subAssets[result.guid] = subAssetList;
+                        }
+                        else
+                        {
+                            parentAssets.Add(result);
+                        }
+                    }
+                }
+                parentAssets.Sort((result1, result2) => EditorUtility.NaturalCompare(result1.name, result2.name));
+                foreach (FilterResult result in parentAssets)
+                {
+                    list.Add(result);
+                    List<FilterResult> subAssetList;
+                    if (subAssets.TryGetValue(result.guid, out subAssetList))
+                    {
+                        subAssetList.Sort((result1, result2) => EditorUtility.NaturalCompare(result1.name, result2.name));
+                        foreach (FilterResult subasset in subAssetList)
+                        {
+                            list.Add(subasset);
+                        }
                     }
                 }
             }

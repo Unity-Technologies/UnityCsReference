@@ -872,7 +872,7 @@ namespace UnityEngine
         public const int DefaultRaycastLayers = ~IgnoreRaycastLayer;
         public const int AllLayers = ~0;
 
-        extern public static Vector3 gravity {[ThreadSafe] get; set; }
+        extern public static Vector3 gravity { [ThreadSafe] get; set; }
         extern public static float defaultContactOffset { get; set; }
         extern public static float sleepThreshold { get; set; }
         extern public static bool queriesHitTriggers { get; set; }
@@ -885,7 +885,7 @@ namespace UnityEngine
         extern static public float defaultMaxAngularSpeed { get; set; }
         extern static public bool improvedPatchFriction { get; set; }
 
-        [NativeProperty("DefaultPhysicsSceneHandle")]
+        [NativeProperty("DefaultPhysicsSceneHandle", true, TargetType.Function, true)]
         extern public static PhysicsScene defaultPhysicsScene { get; }
 
         extern public static void IgnoreCollision([NotNull("NullExceptionObject")] Collider collider1, [NotNull("NullExceptionObject")] Collider collider2, [DefaultValue("true")] bool ignore);

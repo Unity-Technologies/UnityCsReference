@@ -6,7 +6,7 @@ using System;
 
 namespace UnityEditor.SearchService
 {
-    [Obsolete("Scene has been deprecated. Use SceneSearch instead (UnityUpgradable) -> SceneSearch", false)]
+    [Obsolete("Scene has been deprecated. Use SceneSearch instead (UnityUpgradable) -> SceneSearch", error: true)]
     public static class Scene
     {
         public const SearchEngineScope EngineScope = SearchEngineScope.Scene;

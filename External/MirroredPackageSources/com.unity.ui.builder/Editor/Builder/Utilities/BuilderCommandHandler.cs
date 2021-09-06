@@ -514,7 +514,7 @@ namespace Unity.UI.Builder
                 BuilderAssetUtilities.AddElementToAsset(m_PaneWindow.document, unpackedVE, templateContainerIndex + 1);
 
                 var linkedInstancedVTA = elementToUnpack.GetProperty(BuilderConstants.ElementLinkedInstancedVisualTreeAssetVEPropertyName) as VisualTreeAsset;
-                var linkedTA = elementToUnpack.GetProperty(BuilderConstants.ElementLinkedVisualElementAssetVEPropertyName) as TemplateAsset;
+                var linkedTA = elementToUnpack.GetVisualElementAsset() as TemplateAsset;
                 var linkedVTACopy = linkedInstancedVTA.DeepCopy();
                 var unpackedVEA = unpackedVE.GetVisualElementAsset();
                 var templateContainerVEA = elementToUnpack.GetVisualElementAsset();

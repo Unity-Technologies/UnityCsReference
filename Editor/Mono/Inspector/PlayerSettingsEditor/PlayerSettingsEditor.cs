@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using UnityEditor.Modules;
 using UnityEditorInternal.VR;
 using UnityEngine.Events;
@@ -90,6 +91,7 @@ namespace UnityEditor
             public static readonly GUIContent iPhoneScriptCallOptimization = EditorGUIUtility.TrTextContent("Script Call Optimization*");
             public static readonly GUIContent enableInternalProfiler = EditorGUIUtility.TrTextContent("Enable Internal Profiler* (Deprecated)", "Internal profiler counters should be accessed by scripts using UnityEngine.Profiling::Profiler API.");
             public static readonly GUIContent stripUnusedMeshComponents = EditorGUIUtility.TrTextContent("Optimize Mesh Data*", "Remove unused mesh components");
+            public static readonly GUIContent strictShaderVariantMatching = EditorGUIUtility.TrTextContent("Strict shader variant matching*", "When enabled, if a shader variant is missing, Unity uses the error shader and displays an error in the Console.");
             public static readonly GUIContent mipStripping = EditorGUIUtility.TrTextContent("Texture MipMap Stripping*", "Remove unused texture levels from package builds, reducing package size on disk. Limits the texture quality settings to the highest mip that was included during the build.");
             public static readonly GUIContent enableFrameTimingStats = EditorGUIUtility.TrTextContent("Frame Timing Stats", "Enable gathering of CPU/GPU frame timing statistics.");
             public static readonly GUIContent useOSAutoRotation = EditorGUIUtility.TrTextContent("Use Animated Autorotation", "If set OS native animated autorotation method will be used. Otherwise orientation will be changed immediately.");
@@ -117,8 +119,8 @@ namespace UnityEditor
             public static readonly GUIContent displayResolutionDialogHiddenLabel = EditorGUIUtility.TrTextContent("Hidden by Default (Deprecated)");
             public static readonly GUIContent displayResolutionDialogDeprecationWarning = EditorGUIUtility.TrTextContent("The Display Resolution Dialog has been deprecated and will be removed in a future version.");
             public static readonly GUIContent visibleInBackground = EditorGUIUtility.TrTextContent("Visible In Background");
-            public static readonly GUIContent allowFullscreenSwitch = EditorGUIUtility.TrTextContent("Allow Fullscreen Switch");
-            public static readonly GUIContent useFlipModelSwapChain = EditorGUIUtility.TrTextContent("Use DXGI Flip Model Swapchain for D3D11", "Flip model ensures the best performance. Disable this to fallback to Windows 7-style BltBlt model. This setting affects only D3D11 graphics API.");
+            public static readonly GUIContent allowFullscreenSwitch = EditorGUIUtility.TrTextContent("Allow Fullscreen Switch*");
+            public static readonly GUIContent useFlipModelSwapChain = EditorGUIUtility.TrTextContent("Use DXGI Flip Model Swapchain for D3D11", "Flip model ensures the best performance. Disable this to fallback to Windows 7-style BitBlt model. This setting affects only D3D11 graphics API.");
             public static readonly GUIContent use32BitDisplayBuffer = EditorGUIUtility.TrTextContent("Use 32-bit Display Buffer*", "If set Display Buffer will be created to hold 32-bit color values. Use it only if you see banding, as it has performance implications.");
             public static readonly GUIContent disableDepthAndStencilBuffers = EditorGUIUtility.TrTextContent("Disable Depth and Stencil*");
             public static readonly GUIContent preserveFramebufferAlpha = EditorGUIUtility.TrTextContent("Render Over Native UI*", "Enable this option ONLY if you want Unity to render on top of the native Android or iOS UI.");
@@ -160,7 +162,14 @@ namespace UnityEditor
             public static readonly GUIContent prepareIOSForRecording = EditorGUIUtility.TrTextContent("Prepare iOS for Recording");
             public static readonly GUIContent forceIOSSpeakersWhenRecording = EditorGUIUtility.TrTextContent("Force iOS Speakers when Recording");
             public static readonly GUIContent UIRequiresPersistentWiFi = EditorGUIUtility.TrTextContent("Requires Persistent WiFi*");
-            public static readonly GUIContent iOSAllowHTTPDownload = EditorGUIUtility.TrTextContent("Allow downloads over HTTP (nonsecure)*");
+            public static readonly GUIContent insecureHttpOption = EditorGUIUtility.TrTextContent("Allow downloads over HTTP*", "");
+            public static readonly GUIContent insecureHttpWarning = EditorGUIUtility.TrTextContent("Plain text HTTP connections are not secure and can make your application vulnerable to attacks.");
+            public static readonly GUIContent[] insecureHttpOptions =
+            {
+                EditorGUIUtility.TrTextContent("Not allowed"),
+                EditorGUIUtility.TrTextContent("Allowed in development builds"),
+                EditorGUIUtility.TrTextContent("Always allowed"),
+            };
             public static readonly GUIContent iOSURLSchemes = EditorGUIUtility.TrTextContent("Supported URL schemes*");
             public static readonly GUIContent iOSExternalAudioInputNotSupported = EditorGUIUtility.TrTextContent("Audio input from Bluetooth microphones is not supported when Mute Other Audio Sources is off.");
             public static readonly GUIContent aotOptions = EditorGUIUtility.TrTextContent("AOT Compilation Options*");
@@ -182,6 +191,7 @@ namespace UnityEditor
             public static readonly GUIContent scriptingIL2CPP = EditorGUIUtility.TrTextContent("IL2CPP");
             public static readonly GUIContent scriptingDefault = EditorGUIUtility.TrTextContent("Default");
             public static readonly GUIContent strippingDisabled = EditorGUIUtility.TrTextContent("Disabled");
+            public static readonly GUIContent strippingMinimal = EditorGUIUtility.TrTextContent("Minimal");
             public static readonly GUIContent strippingLow = EditorGUIUtility.TrTextContent("Low");
             public static readonly GUIContent strippingMedium = EditorGUIUtility.TrTextContent("Medium");
             public static readonly GUIContent strippingHigh = EditorGUIUtility.TrTextContent("High");
@@ -190,6 +200,8 @@ namespace UnityEditor
             public static readonly GUIContent apiCompatibilityLevel_NET_2_0_Subset = EditorGUIUtility.TrTextContent(".NET 2.0 Subset");
             public static readonly GUIContent apiCompatibilityLevel_NET_4_6 = EditorGUIUtility.TrTextContent(".NET 4.x");
             public static readonly GUIContent apiCompatibilityLevel_NET_Standard_2_0 = EditorGUIUtility.TrTextContent(".NET Standard 2.0");
+            public static readonly GUIContent apiCompatibilityLevel_NET_FW_Unity = EditorGUIUtility.TrTextContent(".NET Framework");
+            public static readonly GUIContent apiCompatibilityLevel_NET_Standard = EditorGUIUtility.TrTextContent(".NET Standard");
             public static readonly GUIContent scriptCompilationTitle = EditorGUIUtility.TrTextContent("Script Compilation");
             public static readonly GUIContent allowUnsafeCode = EditorGUIUtility.TrTextContent("Allow 'unsafe' Code", "Allow compilation of unsafe code for predefined assemblies (Assembly-CSharp.dll, etc.)");
             public static readonly GUIContent useDeterministicCompilation = EditorGUIUtility.TrTextContent("Use Deterministic Compilation", "Compile with -deterministic compilation flag");
@@ -215,6 +227,7 @@ namespace UnityEditor
             public static readonly GUIContent stereo360CaptureCheckbox = EditorGUIUtility.TrTextContent("360 Stereo Capture*");
             public static readonly GUIContent uploadClearedTextureDataAfterCreationFromScript = EditorGUIUtility.TrTextContent("Upload Cleared Texture Data", "When set, if you create a Texture from script the initial data is cleared and automatically uploaded to video memory. This was the default behavior in previous Unity versions. In most cases this upload is not needed and wastes bandwith because the GPU data gets overwritten anyway. You typically upload (by calling Apply) or copy new data into the new texture right after you create it. Only turn this on for debugging purposes or if your project depends on having the GPU texture data cleared.");
             public static readonly GUIContent forceSRGBBlit = EditorGUIUtility.TrTextContent("Force SRGB blit", "Force SRGB blit for Linear color space.");
+            public static readonly GUIContent notApplicableInfo = EditorGUIUtility.TrTextContent("Not applicable for this platform.");
 
             public static string undoChangedBatchingString { get { return LocalizationDatabase.GetLocalizedString("Changed Batching Settings"); } }
             public static string undoChangedGraphicsAPIString { get { return LocalizationDatabase.GetLocalizedString("Changed Graphics API Settings"); } }
@@ -231,8 +244,8 @@ namespace UnityEditor
             public static readonly string allowUnsafeCodeModified = "Allow 'unsafe' code setting modified";
             public static readonly string apiCompatibilityLevelModified = "API Compatibility level modified";
             public static readonly string useDeterministicCompilationModified = "Use deterministic compilation modified";
-            public static readonly string playerSettingsModified = "Player settings modified";
             public static readonly string additionalCompilerArgumentsModified = "Additional compiler arguments modified";
+            public static readonly string activeBuildTargetGroupModified = "Active build target group modified";
         }
 
         PlayerSettingsSplashScreenEditor m_SplashScreenEditor;
@@ -312,7 +325,7 @@ namespace UnityEditor
         SerializedProperty m_UIRequiresFullScreen;
         SerializedProperty m_UIStatusBarStyle;
 
-        SerializedProperty m_IOSAllowHTTPDownload;
+        SerializedProperty m_InsecureHttpOption;
         SerializedProperty m_SubmitAnalytics;
 
         SerializedProperty m_IOSURLSchemes;
@@ -351,6 +364,7 @@ namespace UnityEditor
 
         SerializedProperty m_ActiveColorSpace;
         SerializedProperty m_StripUnusedMeshComponents;
+        SerializedProperty m_StrictShaderVariantMatching;
         SerializedProperty m_MipStripping;
         SerializedProperty m_VertexChannelCompressionMask;
         SerializedProperty m_MetalAPIValidation;
@@ -444,7 +458,6 @@ namespace UnityEditor
         bool serializedSuppressCommonWarnings = true;
         bool serializedAllowUnsafeCode = false;
         string serializedScriptingDefines;
-        ApiCompatibilityLevel serializedAPICompatibilityLevel;
         bool serializedUseDeterministicCompilation;
 
         List<string> scriptingDefinesList;
@@ -456,6 +469,7 @@ namespace UnityEditor
         ReorderableList additionalCompilerArgumentsReorderableList;
 
         ISettingEditorExtension[] m_SettingsExtensions;
+        private HashSet<string> m_Reasons = new HashSet<string>();
 
         // Section animation state
         const int kNumberGUISections = 6;
@@ -468,7 +482,6 @@ namespace UnityEditor
         bool isPreset = false;
         bool isPresetWindowOpen = false;
         bool hasPresetWindowClosed = false;
-        bool scriptRecompileRequired = false;
 
         public SerializedProperty FindPropertyAssert(string name)
         {
@@ -500,6 +513,7 @@ namespace UnityEditor
             m_UIStatusBarStyle              = FindPropertyAssert("uIStatusBarStyle");
             m_ActiveColorSpace              = FindPropertyAssert("m_ActiveColorSpace");
             m_StripUnusedMeshComponents     = FindPropertyAssert("StripUnusedMeshComponents");
+            m_StrictShaderVariantMatching   = FindPropertyAssert("strictShaderVariantMatching");
             m_MipStripping                  = FindPropertyAssert("mipStripping");
             m_VertexChannelCompressionMask  = FindPropertyAssert("VertexChannelCompressionMask");
             m_MetalAPIValidation            = FindPropertyAssert("metalAPIValidation");
@@ -522,7 +536,7 @@ namespace UnityEditor
             m_PrepareIOSForRecording        = FindPropertyAssert("Prepare IOS For Recording");
             m_ForceIOSSpeakersWhenRecording = FindPropertyAssert("Force IOS Speakers When Recording");
             m_UIRequiresPersistentWiFi      = FindPropertyAssert("uIRequiresPersistentWiFi");
-            m_IOSAllowHTTPDownload          = FindPropertyAssert("iosAllowHTTPDownload");
+            m_InsecureHttpOption            = FindPropertyAssert("insecureHttpOption");
             m_SubmitAnalytics               = FindPropertyAssert("submitAnalytics");
 
             m_IOSURLSchemes                 = FindPropertyAssert("iOSURLSchemes");
@@ -638,7 +652,6 @@ namespace UnityEditor
             serializedAllowUnsafeCode = m_AllowUnsafeCode.boolValue;
             serializedAdditionalCompilerArguments = GetAdditionalCompilerArgumentsForGroup(namedBuildTarget);
             serializedScriptingDefines = GetScriptingDefineSymbolsForGroup(namedBuildTarget);
-            serializedAPICompatibilityLevel = GetApiCompatibilityLevelForTarget(namedBuildTarget);
             serializedUseDeterministicCompilation = m_UseDeterministicCompilation.boolValue;
 
             InitReorderableScriptingDefineSymbolsList(namedBuildTarget);
@@ -652,7 +665,7 @@ namespace UnityEditor
                 if (EditorUtility.DisplayDialog("Scripting Define Symbols Have Been Modified", "Do you want to apply changes?", "Apply", "Revert"))
                 {
                     SetScriptingDefineSymbolsForGroup(lastNamedBuildTarget, scriptingDefinesList.ToArray());
-                    RecompileScripts(RecompileReason.scriptingDefineSymbolsModified);
+                    SetReason(RecompileReason.scriptingDefineSymbolsModified);
                 }
 
                 hasScriptingDefinesBeenModified = false;
@@ -663,10 +676,16 @@ namespace UnityEditor
                 if (EditorUtility.DisplayDialog("Additional Compiler Arguments Have Been Modified", "Do you want to apply changes?", "Apply", "Revert"))
                 {
                     SetAdditionalCompilerArgumentsForGroup(lastNamedBuildTarget, additionalCompilerArgumentsList.ToArray());
-                    RecompileScripts(RecompileReason.additionalCompilerArgumentsModified);
+                    SetReason(RecompileReason.additionalCompilerArgumentsModified);
                 }
 
                 hasAdditionalCompilerArgumentsBeenModified = false;
+            }
+
+            if (HasReasonToCompile())
+            {
+                serializedObject.ApplyModifiedProperties();
+                RecompileScripts();
             }
 
             // Ensure script compilation handling is returned to to EditorOnlyPlayerSettings
@@ -718,98 +737,54 @@ namespace UnityEditor
                 PlayerSettings.isHandlingScriptRecompile = false;
         }
 
-        private void CheckConsistency(BuildPlatform platform)
+        private void SetReason(string reason)
         {
             if (isPreset)
+            {
                 return;
-
-            // Scripting define symbols
-            var currentDefines = GetScriptingDefineSymbolsForGroup(platform.namedBuildTarget);
-            if (serializedScriptingDefines != currentDefines)
-            {
-                if (!hasScriptingDefinesBeenModified)
-                {
-                    serializedScriptingDefines = currentDefines;
-                    UpdateScriptingDefineSymbolsLists();
-                }
-
-                if (platform.IsActive())
-                    scriptRecompileRequired = true;
             }
 
-            // Additional compiler arguments
-            var currentAdditionalCompilerArguments = GetAdditionalCompilerArgumentsForGroup(platform.namedBuildTarget);
-            if (!serializedAdditionalCompilerArguments.SequenceEqual(currentAdditionalCompilerArguments))
-            {
-                if (!hasAdditionalCompilerArgumentsBeenModified)
-                {
-                    serializedAdditionalCompilerArguments = currentAdditionalCompilerArguments;
-                    UpdateAdditionalCompilerArgumentsLists();
-                }
-
-                if (platform.IsActive())
-                    scriptRecompileRequired = true;
-            }
-
-            // API compatibility level
-            var currentAPICompatibilityLevel = GetApiCompatibilityLevelForTarget(platform.namedBuildTarget);
-            if (serializedAPICompatibilityLevel != currentAPICompatibilityLevel)
-            {
-                serializedAPICompatibilityLevel = currentAPICompatibilityLevel;
-                if (platform.IsActive())
-                    scriptRecompileRequired = true;
-            }
-
-            // Use determinisitc compilation
-            if (serializedUseDeterministicCompilation != m_UseDeterministicCompilation.boolValue)
-            {
-                serializedUseDeterministicCompilation = m_UseDeterministicCompilation.boolValue;
-                scriptRecompileRequired = true;
-            }
-
-            // Allow unsafe code
-            if (serializedAllowUnsafeCode != m_AllowUnsafeCode.boolValue)
-            {
-                serializedAllowUnsafeCode = m_AllowUnsafeCode.boolValue;
-                scriptRecompileRequired = true;
-            }
-
-            // Stack trace log type
-            foreach (LogType logType in Enum.GetValues(typeof(LogType)))
-            {
-                var globalLogType = PlayerSettings.GetGlobalStackTraceLogType(logType);
-                var serializedLogType = (StackTraceLogType)m_StackTraceTypes.GetArrayElementAtIndex((int)logType).intValue;
-
-                if (serializedLogType != globalLogType)
-                    PlayerSettings.SetGlobalStackTraceLogType(logType, serializedLogType);
-            }
+            m_Reasons.Add(reason);
         }
 
-        private void RecompileScripts(string reason)
+        private string ConvertReasonsToString()
         {
-            if (isPreset)
-                return;
+            var sb = new StringBuilder();
+            foreach (var reason in m_Reasons)
+            {
+                sb.AppendLine(reason);
+            }
 
-            if (isPresetWindowOpen)
+            return sb.ToString();
+        }
+
+        private void RecompileScripts()
+        {
+            if (isPreset || isPresetWindowOpen)
             {
-                scriptRecompileRequired = true;
+                return;
             }
-            else
-            {
-                scriptRecompileRequired = false;
-                PlayerSettings.RecompileScripts(reason);
-            }
+
+            var reasons = ConvertReasonsToString();
+            PlayerSettings.RecompileScripts(reasons);
+            m_Reasons.Clear();
+        }
+
+        private bool HasReasonToCompile()
+        {
+            return m_Reasons.Count > 0;
         }
 
         private void OnPresetSelectorClosed()
         {
+            hasPresetWindowClosed = false;
+
             if (isPreset)
                 return;
 
-            if (scriptRecompileRequired)
+            if (HasReasonToCompile())
             {
-                PlayerSettings.RecompileScripts(RecompileReason.playerSettingsModified);
-                scriptRecompileRequired = false;
+                RecompileScripts();
             }
 
             PlayerSettings.isHandlingScriptRecompile = true;
@@ -849,7 +824,6 @@ namespace UnityEditor
             if (!isPreset)
             {
                 CheckUpdatePresetSelectorStatus();
-                CheckConsistency(platform);
             }
 
             GUILayout.Label(string.Format(L10n.Tr("Settings for {0}"), validPlatforms[selectedPlatform].title.text));
@@ -886,7 +860,10 @@ namespace UnityEditor
             if (hasPresetWindowClosed)
             {
                 OnPresetSelectorClosed();
-                hasPresetWindowClosed = false;
+            }
+            else if (HasReasonToCompile())
+            {
+                RecompileScripts();
             }
         }
 
@@ -942,6 +919,11 @@ namespace UnityEditor
             GUILayout.Label(SettingsContent.sharedBetweenPlatformsInfo, EditorStyles.miniLabel);
         }
 
+        internal static void ShowNoSettings()
+        {
+            GUILayout.Label(SettingsContent.notApplicableInfo, EditorStyles.miniLabel);
+        }
+
         private static bool TargetSupportsOptionalBuiltinSplashScreen(BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension)
         {
             if (settingsExtension != null)
@@ -955,7 +937,12 @@ namespace UnityEditor
             if (BeginSettingsBox(sectionIndex, SettingsContent.resolutionPresentationTitle))
             {
                 // PLEASE DO NOT COPY SETTINGS TO APPEAR MULTIPLE PLACES IN THE CODE! See top of file for more info.
-
+                if (namedBuildTarget == NamedBuildTarget.Server)
+                {
+                    ShowNoSettings();
+                    EditorGUILayout.Space();
+                }
+                else
                 {
                     // Resolution itself
 
@@ -1126,7 +1113,7 @@ namespace UnityEditor
         {
             if (target == BuildTarget.WebGL)
             {
-                if (graphicsDeviceType == GraphicsDeviceType.OpenGLES2) return "WebGL 1";
+                if (graphicsDeviceType == GraphicsDeviceType.OpenGLES2) return "WebGL 1 (Deprecated)";
                 if (graphicsDeviceType == GraphicsDeviceType.OpenGLES3) return "WebGL 2";
             }
             string name = graphicsDeviceType.ToString();
@@ -1143,10 +1130,10 @@ namespace UnityEditor
         // Parses a GraphicsDeviceType from a string.
         static private GraphicsDeviceType GraphicsDeviceTypeFromString(string graphicsDeviceType)
         {
-            if (graphicsDeviceType == "WebGL 1") return GraphicsDeviceType.OpenGLES2;
-            if (graphicsDeviceType == "WebGL 2") return GraphicsDeviceType.OpenGLES3;
             graphicsDeviceType = graphicsDeviceType.Replace(" (Deprecated)", "");
             graphicsDeviceType = graphicsDeviceType.Replace(" (Experimental)", "");
+            if (graphicsDeviceType == "WebGL 1") return GraphicsDeviceType.OpenGLES2;
+            if (graphicsDeviceType == "WebGL 2") return GraphicsDeviceType.OpenGLES3;
             return (GraphicsDeviceType)Enum.Parse(typeof(GraphicsDeviceType), graphicsDeviceType, true);
         }
 
@@ -1635,9 +1622,12 @@ namespace UnityEditor
             if (BeginSettingsBox(sectionIndex, SettingsContent.otherSettingsTitle))
             {
                 // PLEASE DO NOT COPY SETTINGS TO APPEAR MULTIPLE PLACES IN THE CODE! See top of file for more info.
-                OtherSectionRenderingGUI(platform, settingsExtension);
-                OtherSectionVulkanSettingsGUI(platform, settingsExtension);
-                OtherSectionIdentificationGUI(platform, settingsExtension);
+                if (platform.namedBuildTarget != NamedBuildTarget.Server)
+                {
+                    OtherSectionRenderingGUI(platform, settingsExtension);
+                    OtherSectionVulkanSettingsGUI(platform, settingsExtension);
+                    OtherSectionIdentificationGUI(platform, settingsExtension);
+                }
                 OtherSectionConfigurationGUI(platform, settingsExtension);
                 OtherSectionScriptCompilationGUI(platform);
                 OtherSectionOptimizationGUI(platform);
@@ -2294,7 +2284,7 @@ namespace UnityEditor
             else
             {
                 if (backend == ScriptingImplementation.IL2CPP)
-                    return ManagedStrippingLevel.Low;
+                    return ManagedStrippingLevel.Minimal;
                 else
                     return ManagedStrippingLevel.Disabled;
             }
@@ -2307,6 +2297,17 @@ namespace UnityEditor
             else
                 // See comment in EditorOnlyPlayerSettings regarding defaultApiCompatibilityLevel
                 return (ApiCompatibilityLevel)m_DefaultAPICompatibilityLevel.intValue;
+        }
+
+        private void SetApiCompatibilityLevelForTarget(
+            string targetGroup,
+            ApiCompatibilityLevel apiCompatibilityLevel)
+        {
+            if (m_APICompatibilityLevel.TryGetMapEntry(targetGroup, out _))
+                m_APICompatibilityLevel.SetMapValue(targetGroup, (int)apiCompatibilityLevel);
+            else
+                // See comment in EditorOnlyPlayerSettings regarding defaultApiCompatibilityLevel
+                m_DefaultAPICompatibilityLevel.intValue = (int)apiCompatibilityLevel;
         }
 
         private void OtherSectionConfigurationGUI(BuildPlatform platform, ISettingEditorExtension settingsExtension)
@@ -2368,21 +2369,22 @@ namespace UnityEditor
                         using (var propertyScope = new EditorGUI.PropertyScope(horizontal.rect, GUIContent.none, m_APICompatibilityLevel))
                         {
                             var currentAPICompatibilityLevel = GetApiCompatibilityLevelForTarget(platform.namedBuildTarget);
-                            var availableCompatibilityLevels = new ApiCompatibilityLevel[] { ApiCompatibilityLevel.NET_4_6, ApiCompatibilityLevel.NET_Standard_2_0 };
-                            currentAPICompatibilityLevel = BuildEnumPopup(
+                            var availableCompatibilityLevels = new ApiCompatibilityLevel[] { ApiCompatibilityLevel.NET_Unity_4_8, ApiCompatibilityLevel.NET_Standard };
+                            var newAPICompatibilityLevel = BuildEnumPopup(
                                 SettingsContent.apiCompatibilityLevel,
                                 currentAPICompatibilityLevel,
                                 availableCompatibilityLevels,
                                 GetNiceApiCompatibilityLevelNames(availableCompatibilityLevels)
                             );
 
-                            if (serializedAPICompatibilityLevel != currentAPICompatibilityLevel)
+                            if (newAPICompatibilityLevel != currentAPICompatibilityLevel)
                             {
-                                m_APICompatibilityLevel.SetMapValue(platform.namedBuildTarget.TargetName, (int)currentAPICompatibilityLevel);
-                                serializedAPICompatibilityLevel = currentAPICompatibilityLevel;
+                                SetApiCompatibilityLevelForTarget(platform.namedBuildTarget.TargetName, newAPICompatibilityLevel);
 
                                 if (platform.IsActive())
-                                    RecompileScripts(RecompileReason.apiCompatibilityLevelModified);
+                                {
+                                    SetReason(RecompileReason.apiCompatibilityLevelModified);
+                                }
                             }
                         }
                     }
@@ -2436,6 +2438,10 @@ namespace UnityEditor
                     (PlayerSettings.GetScriptingBackend(platform.namedBuildTarget) != ScriptingImplementation.Mono2x) ? SettingsContent.assemblyVersionValidationEditorOnly : SettingsContent.assemblyVersionValidation);
             }
 
+            var insecureHttp = BuildEnumPopup(m_InsecureHttpOption, SettingsContent.insecureHttpOption, new[] { InsecureHttpOption.NotAllowed, InsecureHttpOption.DevelopmentOnly, InsecureHttpOption.AlwaysAllowed }, SettingsContent.insecureHttpOptions);
+            if (insecureHttp == InsecureHttpOption.AlwaysAllowed)
+                EditorGUILayout.HelpBox(SettingsContent.insecureHttpWarning.text, MessageType.Warning);
+
             // Privacy permissions
             bool showPrivacyPermissions =
                 platform.namedBuildTarget == NamedBuildTarget.iOS || platform.namedBuildTarget == NamedBuildTarget.tvOS;
@@ -2485,7 +2491,6 @@ namespace UnityEditor
                         EditorGUILayout.PropertyField(m_ForceIOSSpeakersWhenRecording, SettingsContent.forceIOSSpeakersWhenRecording);
                     }
                     EditorGUILayout.PropertyField(m_UIRequiresPersistentWiFi, SettingsContent.UIRequiresPersistentWiFi);
-                    EditorGUILayout.PropertyField(m_IOSAllowHTTPDownload, SettingsContent.iOSAllowHTTPDownload);
                     EditorGUILayout.PropertyField(m_IOSURLSchemes, SettingsContent.iOSURLSchemes, true);
                 }
             }
@@ -2494,25 +2499,28 @@ namespace UnityEditor
                 settingsExtension.ConfigurationSectionGUI();
 
             // Active input handling
-            using (var vertical = new EditorGUILayout.VerticalScope())
+            if (platform.namedBuildTarget != NamedBuildTarget.Server)
             {
-                var currValue = m_ActiveInputHandler.intValue;
-
-                using (var propertyScope = new EditorGUI.PropertyScope(vertical.rect, GUIContent.none, m_ActiveInputHandler))
+                using (var vertical = new EditorGUILayout.VerticalScope())
                 {
-                    m_ActiveInputHandler.intValue = EditorGUILayout.Popup(SettingsContent.activeInputHandling, m_ActiveInputHandler.intValue, SettingsContent.activeInputHandlingOptions);
-                }
+                    var currValue = m_ActiveInputHandler.intValue;
 
-                if (m_ActiveInputHandler.intValue != currValue)
-                {
-                    // Give the user a chance to change mind and revert changes.
-                    if (ShouldRestartEditorToApplySetting())
+                    using (var propertyScope = new EditorGUI.PropertyScope(vertical.rect, GUIContent.none, m_ActiveInputHandler))
                     {
-                        m_ActiveInputHandler.serializedObject.ApplyModifiedProperties();
-                        EditorApplication.RestartEditorAndRecompileScripts();
+                        m_ActiveInputHandler.intValue = EditorGUILayout.Popup(SettingsContent.activeInputHandling, m_ActiveInputHandler.intValue, SettingsContent.activeInputHandlingOptions);
                     }
-                    else
-                        m_ActiveInputHandler.intValue = currValue;
+
+                    if (m_ActiveInputHandler.intValue != currValue)
+                    {
+                        // Give the user a chance to change mind and revert changes.
+                        if (ShouldRestartEditorToApplySetting())
+                        {
+                            m_ActiveInputHandler.serializedObject.ApplyModifiedProperties();
+                            EditorApplication.RestartEditorAndRecompileScripts();
+                        }
+                        else
+                            m_ActiveInputHandler.intValue = currValue;
+                    }
                 }
             }
 
@@ -2620,7 +2628,7 @@ namespace UnityEditor
                             UpdateScriptingDefineSymbolsLists();
 
                             if (platform.IsActive())
-                                RecompileScripts(RecompileReason.scriptingDefineSymbolsModified);
+                                SetReason(RecompileReason.scriptingDefineSymbolsModified);
                         }
 
                         // Set previous GUIState
@@ -2629,6 +2637,8 @@ namespace UnityEditor
 
                     scriptingDefinesControlID = EditorGUIUtility.s_LastControlID;
                 }
+
+                EditorGUILayout.Space();
 
                 using (var vertical = new EditorGUILayout.VerticalScope())
                 {
@@ -2662,7 +2672,7 @@ namespace UnityEditor
 
                                     if (platform.IsActive())
                                     {
-                                        RecompileScripts(RecompileReason.additionalCompilerArgumentsModified);
+                                        SetReason(RecompileReason.additionalCompilerArgumentsModified);
                                     }
                                 }
                             }
@@ -2676,7 +2686,7 @@ namespace UnityEditor
             if (serializedSuppressCommonWarnings != m_SuppressCommonWarnings.boolValue)
             {
                 serializedSuppressCommonWarnings = m_SuppressCommonWarnings.boolValue;
-                RecompileScripts(RecompileReason.suppressCommonWarningsModified);
+                SetReason(RecompileReason.suppressCommonWarningsModified);
             }
 
             // Allow unsafe code
@@ -2684,7 +2694,7 @@ namespace UnityEditor
             if (serializedAllowUnsafeCode != m_AllowUnsafeCode.boolValue)
             {
                 serializedAllowUnsafeCode = m_AllowUnsafeCode.boolValue;
-                RecompileScripts(RecompileReason.allowUnsafeCodeModified);
+                SetReason(RecompileReason.allowUnsafeCodeModified);
             }
 
             // Use deterministic compliation
@@ -2692,7 +2702,7 @@ namespace UnityEditor
             if (serializedUseDeterministicCompilation != m_UseDeterministicCompilation.boolValue)
             {
                 serializedUseDeterministicCompilation = m_UseDeterministicCompilation.boolValue;
-                RecompileScripts(RecompileReason.useDeterministicCompilationModified);
+                SetReason(RecompileReason.useDeterministicCompilationModified);
             }
 
             EditorGUILayout.PropertyField(m_EnableRoslynAnalyzers, SettingsContent.enableRoslynAnalyzers);
@@ -2844,13 +2854,14 @@ namespace UnityEditor
             m_VertexChannelCompressionMask.intValue = (int)vertexFlags;
 
             EditorGUILayout.PropertyField(m_StripUnusedMeshComponents, SettingsContent.stripUnusedMeshComponents);
+            EditorGUILayout.PropertyField(m_StrictShaderVariantMatching, SettingsContent.strictShaderVariantMatching);
             EditorGUILayout.PropertyField(m_MipStripping, SettingsContent.mipStripping);
 
             EditorGUILayout.Space();
         }
 
-        static ManagedStrippingLevel[] mono_levels = new ManagedStrippingLevel[] { ManagedStrippingLevel.Disabled, ManagedStrippingLevel.Low, ManagedStrippingLevel.Medium, ManagedStrippingLevel.High };
-        static ManagedStrippingLevel[] il2cpp_levels = new ManagedStrippingLevel[] { ManagedStrippingLevel.Low, ManagedStrippingLevel.Medium, ManagedStrippingLevel.High };
+        static ManagedStrippingLevel[] mono_levels = new ManagedStrippingLevel[] { ManagedStrippingLevel.Disabled, ManagedStrippingLevel.Minimal, ManagedStrippingLevel.Low, ManagedStrippingLevel.Medium, ManagedStrippingLevel.High };
+        static ManagedStrippingLevel[] il2cpp_levels = new ManagedStrippingLevel[] { ManagedStrippingLevel.Low, ManagedStrippingLevel.Minimal, ManagedStrippingLevel.Medium, ManagedStrippingLevel.High };
         // stripping levels vary based on scripting backend
         private ManagedStrippingLevel[] GetAvailableManagedStrippingLevels(ScriptingImplementation backend)
         {
@@ -3001,8 +3012,8 @@ namespace UnityEditor
                 {
                     { ApiCompatibilityLevel.NET_2_0, SettingsContent.apiCompatibilityLevel_NET_2_0 },
                     { ApiCompatibilityLevel.NET_2_0_Subset, SettingsContent.apiCompatibilityLevel_NET_2_0_Subset },
-                    { ApiCompatibilityLevel.NET_4_6, SettingsContent.apiCompatibilityLevel_NET_4_6 },
-                    { ApiCompatibilityLevel.NET_Standard_2_0, SettingsContent.apiCompatibilityLevel_NET_Standard_2_0 }
+                    { ApiCompatibilityLevel.NET_Unity_4_8, SettingsContent.apiCompatibilityLevel_NET_FW_Unity },
+                    { ApiCompatibilityLevel.NET_Standard, SettingsContent.apiCompatibilityLevel_NET_Standard },
                 };
             }
 
@@ -3016,6 +3027,7 @@ namespace UnityEditor
                 m_NiceManagedStrippingLevelNames = new Dictionary<ManagedStrippingLevel, GUIContent>
                 {
                     { ManagedStrippingLevel.Disabled, SettingsContent.strippingDisabled },
+                    { ManagedStrippingLevel.Minimal, SettingsContent.strippingMinimal },
                     { ManagedStrippingLevel.Low, SettingsContent.strippingLow },
                     { ManagedStrippingLevel.Medium, SettingsContent.strippingMedium },
                     { ManagedStrippingLevel.High, SettingsContent.strippingHigh },

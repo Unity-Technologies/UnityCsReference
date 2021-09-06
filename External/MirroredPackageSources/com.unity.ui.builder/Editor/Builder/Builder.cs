@@ -27,6 +27,8 @@ namespace Unity.UI.Builder
         public BuilderCanvas canvas => m_Viewport.canvas;
         public BuilderHierarchy hierarchy => m_Hierarchy;
 
+        internal override bool liveReloadPreferenceDefault => true;
+
         public bool codePreviewVisible
         {
             get { return document.codePreviewVisible; }
@@ -75,6 +77,8 @@ namespace Unity.UI.Builder
 
         static GUIContent s_WarningContent;
 
+        public static GUIContent lastWarning => s_WarningContent;
+
         public static void ShowWarning(string message)
         {
             if (s_WarningContent == null)
@@ -82,6 +86,11 @@ namespace Unity.UI.Builder
 
             s_WarningContent.text = message;
             ActiveWindow.ShowNotification(s_WarningContent, 4);
+        }
+
+        public static void ResetWarning()
+        {
+            s_WarningContent = null;
         }
 
         public override void CreateUI()
@@ -205,7 +214,7 @@ namespace Unity.UI.Builder
         {
             return m_Toolbar.NewDocument(checkForUnsavedChanges, unloadAllSubdocuments);
         }
-        
+
         public override void SaveChanges()
         {
             m_Toolbar.SaveDocument(false);
@@ -244,8 +253,8 @@ namespace Unity.UI.Builder
 
         void SetStyleUpdaterTraversal()
         {
-            var updater = rootVisualElement.panel as BaseVisualElementPanel;
-            var styleUpdater = updater.GetUpdater(VisualTreeUpdatePhase.Styles) as VisualTreeStyleUpdater;
+            var panel = rootVisualElement.panel as BaseVisualElementPanel;
+            var styleUpdater = panel.GetUpdater(VisualTreeUpdatePhase.Styles) as VisualTreeStyleUpdater;
 
             styleUpdater.traversal = new BuilderVisualTreeStyleUpdaterTraversal(m_Viewport.documentRootElement);
         }

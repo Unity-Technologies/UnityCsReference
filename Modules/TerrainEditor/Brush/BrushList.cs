@@ -243,6 +243,8 @@ namespace UnityEditor
             if (brushes.Length != 0)
             {
                 int columns = (int)(EditorGUIUtility.currentViewWidth - 150) / approxSize;
+                if (columns <= 0)
+                    columns = 1;
                 int rows = (int)Mathf.Ceil((brushes.Length + columns - 1) / columns);
                 Rect r = GUILayoutUtility.GetAspectRect((float)columns / (float)rows);
                 Event evt = Event.current;

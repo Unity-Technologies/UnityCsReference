@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Profiling;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEditorInternal;
@@ -100,7 +101,6 @@ namespace UnityEditor
 
         static Vector3 s_HandlePosition;
         static bool s_HandlePositionComputed;
-
         internal static Vector3 cachedHandlePosition
         {
             get
@@ -134,6 +134,7 @@ namespace UnityEditor
             }
         }
 
+        private static ProfilerMarker s_GetHandlePositionMarker = new ProfilerMarker($"{nameof(Tools)}.{nameof(GetHandlePosition)}");
         internal static Vector3 GetHandlePosition()
         {
             Transform t = Selection.activeTransform;
@@ -141,26 +142,31 @@ namespace UnityEditor
                 return new Vector3(Mathf.Infinity, Mathf.Infinity, Mathf.Infinity);
 
             Vector3 totalOffset = handleOffset + handleRotation * localHandleOffset;
-
-            switch (get.m_PivotMode)
+            using (s_GetHandlePositionMarker.Auto())
             {
-                case PivotMode.Center:
+                switch (get.m_PivotMode)
                 {
-                    if (current == Tool.Rect)
-                        return handleRotation * InternalEditorUtility.CalculateSelectionBoundsInSpace(Vector3.zero, handleRotation, rectBlueprintMode).center + totalOffset;
-                    else
-                        return InternalEditorUtility.CalculateSelectionBounds(true, false).center + totalOffset;
-                }
-                case PivotMode.Pivot:
-                {
-                    if (current == Tool.Rect && rectBlueprintMode && InternalEditorUtility.SupportsRectLayout(t))
-                        return t.parent.TransformPoint(new Vector3(t.localPosition.x, t.localPosition.y, 0)) + totalOffset;
-                    else
-                        return t.position + totalOffset;
-                }
-                default:
-                {
-                    return new Vector3(Mathf.Infinity, Mathf.Infinity, Mathf.Infinity);
+                    case PivotMode.Center:
+                    {
+                        if (current == Tool.Rect)
+                            return handleRotation * InternalEditorUtility
+                                .CalculateSelectionBoundsInSpace(Vector3.zero, handleRotation, rectBlueprintMode)
+                                .center + totalOffset;
+                        else
+                            return InternalEditorUtility.CalculateSelectionBounds(true, false).center + totalOffset;
+                    }
+                    case PivotMode.Pivot:
+                    {
+                        if (current == Tool.Rect && rectBlueprintMode && InternalEditorUtility.SupportsRectLayout(t))
+                            return t.parent.TransformPoint(new Vector3(t.localPosition.x, t.localPosition.y, 0)) +
+                                   totalOffset;
+                        else
+                            return t.position + totalOffset;
+                    }
+                    default:
+                    {
+                        return new Vector3(Mathf.Infinity, Mathf.Infinity, Mathf.Infinity);
+                    }
                 }
             }
         }

@@ -27,6 +27,8 @@ namespace UnityEditor.Search.Providers
         private static QueryEngine<MenuData> queryEngine = null;
         private static List<MenuData> menus;
 
+        private static Delayer debounce;
+
         [SearchItemProvider]
         internal static SearchProvider CreateProvider()
         {
@@ -42,6 +44,11 @@ namespace UnityEditor.Search.Providers
 
             queryEngine.SetNestedQueryHandler((q, f) => q.Split(',').Select(w => w.Trim()));
             queryEngine.SetFilterNestedQueryTransformer<string, string>("id", s => s);
+
+            debounce = Delayer.Debounce(_ => TriggerBackgroundUpdate(itemNames, shortcuts));
+
+            Menu.menuChanged -= OnMenuChanged;
+            Menu.menuChanged += OnMenuChanged;
 
             return new SearchProvider(type, displayName)
             {
@@ -76,6 +83,19 @@ namespace UnityEditor.Search.Providers
                 fetchThumbnail = (item, context) => Icons.shortcut
             };
         }
+
+        private static void OnMenuChanged()
+        {
+            debounce.Execute();
+        }
+
+        private static void TriggerBackgroundUpdate(List<string> itemNames, List<string> shortcuts)
+        {
+            GetMenuInfo(itemNames, shortcuts);
+            menus = null;
+            System.Threading.Tasks.Task.Run(() => BuildMenus(itemNames));
+        }
+
 
         private static void BuildMenus(List<string> itemNames)
         {

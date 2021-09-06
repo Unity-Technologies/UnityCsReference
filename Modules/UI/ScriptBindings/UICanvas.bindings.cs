@@ -15,6 +15,12 @@ namespace UnityEngine
         WorldSpace = 2
     }
 
+    public enum StandaloneRenderResize
+    {
+        Enabled = 0,
+        Disabled = 1
+    }
+
     [Flags]
     public enum AdditionalCanvasShaderChannels
     {
@@ -56,7 +62,7 @@ namespace UnityEngine
         public extern Canvas rootCanvas { get; }
 
         public extern Vector2 renderingDisplaySize { get; }
-
+        public extern StandaloneRenderResize updateRectTransformForStandalone { get; set; }
 
         internal static Action<int> externBeginRenderOverlays { get; set; }
         internal static Action<int, int> externRenderOverlaysBefore { get; set; }

@@ -268,6 +268,21 @@ namespace UnityEditor.SceneManagement
         }
 
         [UsedByNativeCode]
+        internal static bool IsAssetPathOpenInAnyPrefabStage(string path)
+        {
+            foreach (var stage in StageNavigationManager.instance.stageHistory)
+            {
+                var prefabStage = stage as PrefabStage;
+                if (prefabStage != null && prefabStage.isValid && prefabStage.assetPath == path)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        [UsedByNativeCode]
         internal static bool IsGameObjectThePrefabRootInAnyPrefabStage(GameObject gameObject)
         {
             PrefabStage prefabStage = GetCurrentPrefabStage();

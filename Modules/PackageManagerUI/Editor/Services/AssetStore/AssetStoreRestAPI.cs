@@ -23,7 +23,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private const string k_TermsCheckUri = "/-/api/terms/check";
         private const string k_TermsAcceptUri = "/-/api/terms/accept";
 
-        internal const int k_ProductUpdateDetailsChunkSize = 30;
         internal const int k_MaxRetries = 3;
         internal const int k_ClientErrorResponseCode = 400;
         internal const int k_ServerErrorResponseCode = 500;
@@ -72,9 +71,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         [NonSerialized]
-        private Queue<string> m_Queue;
-
-        [NonSerialized]
         private UnityConnectProxy m_UnityConnect;
         [NonSerialized]
         private AssetStoreOAuth m_AssetStoreOAuth;
@@ -95,15 +91,18 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual void GetPurchases(string query, Action<Dictionary<string, object>> doneCallbackAction, Action<UIError> errorCallbackAction)
         {
-            // Abort any previous request
-            m_HttpClientFactory.AbortByTag($"GetPurchases{query}");
-
             HandleHttpRequest(() =>
             {
                 var httpRequest = m_HttpClientFactory.GetASyncHTTPClient($"{host}{k_PurchasesUri}{query ?? string.Empty}");
                 httpRequest.tag = $"GetPurchases{query}";
                 return httpRequest;
             }, doneCallbackAction, errorCallbackAction);
+        }
+
+        public virtual void AbortGetPurchases(string query)
+        {
+            // Abort any previous request
+            m_HttpClientFactory.AbortByTag($"GetPurchases{query}");
         }
 
         public virtual void GetCategories(Action<Dictionary<string, object>> doneCallbackAction, Action<UIError> errorCallbackAction)
@@ -186,39 +185,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 });
         }
 
-        public virtual void GetChunkProductUpdateDetails(int chunkSize, Action<IEnumerable<IDictionary<string, object>>> doneCallbackAction, Action<UIError> errorCallbackAction)
-        {
-            if (m_Queue?.Any() != true)
-            {
-                doneCallbackAction?.Invoke(null);
-                return;
-            }
-
-            var partialInfos = new List<AssetStoreLocalInfo>(chunkSize);
-            while (m_Queue.Any() && partialInfos.Count < chunkSize)
-            {
-                var productId = m_Queue.Dequeue();
-                var localInfo = m_AssetStoreCache.GetLocalInfo(productId);
-                if (localInfo?.updateInfoFetched == false)
-                    partialInfos.Add(localInfo);
-            }
-
-            var localInfosJsonData = Json.Serialize(partialInfos.Select(info => info?.ToDictionary() ?? new Dictionary<string, string>()).ToList());
-
-            HandleHttpRequest(() => m_HttpClientFactory.PostASyncHTTPClient($"{host}{k_UpdateInfoUri}", localInfosJsonData),
-                result =>
-                {
-                    var ret = result["result"] as Dictionary<string, object>;
-                    var results = ret?.GetList<IDictionary<string, object>>("results");
-                    if (results != null)
-                        doneCallbackAction?.Invoke(results);
-                },
-                error =>
-                {
-                    errorCallbackAction?.Invoke(error);
-                });
-        }
-
         public virtual void GetProductUpdateDetail(IEnumerable<string> productIds, Action<Dictionary<string, object>> doneCallbackAction)
         {
             if (productIds?.Any() != true)
@@ -227,38 +193,30 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
 
-            var updateDetails = new List<IDictionary<string, object>>();
-
-            // We want to prioritize new fetch update details calls as those are more likely to be the ones users are interested in
-            m_Queue = new Queue<string>(productIds.Concat(m_Queue?.ToArray() ?? Enumerable.Empty<string>()));
-
-            void ErrorCallBack(UIError error)
+            var localInfos = new List<AssetStoreLocalInfo>();
+            foreach (var productId in productIds)
             {
-                var ret = new Dictionary<string, object>
-                {
-                    ["errorMessage"] = error.message,
-                    ["errorCode"] = error.operationErrorCode
-                };
-                doneCallbackAction?.Invoke(ret);
+                var localInfo = m_AssetStoreCache.GetLocalInfo(productId);
+                if (localInfo?.updateInfoFetched == false)
+                    localInfos.Add(localInfo);
             }
+            var localInfosJsonData = Json.Serialize(localInfos.Select(info => info?.ToDictionary() ?? new Dictionary<string, string>()).ToList());
 
-            void ChunkCallbackAction(IEnumerable<IDictionary<string, object>> chunkUpdateDetails)
-            {
-                if (chunkUpdateDetails != null)
-                    updateDetails.AddRange(chunkUpdateDetails);
-
-                if (!m_Queue.Any())
+            HandleHttpRequest(() => m_HttpClientFactory.PostASyncHTTPClient($"{host}{k_UpdateInfoUri}", localInfosJsonData),
+                result =>
                 {
-                    doneCallbackAction?.Invoke(new Dictionary<string, object>
+                    var ret = result["result"] as Dictionary<string, object>;
+                    doneCallbackAction?.Invoke(ret);
+                },
+                error =>
+                {
+                    var ret = new Dictionary<string, object>
                     {
-                        {"results", updateDetails}
-                    });
-                }
-                else
-                    GetChunkProductUpdateDetails(k_ProductUpdateDetailsChunkSize, ChunkCallbackAction, ErrorCallBack);
-            }
-
-            GetChunkProductUpdateDetails(k_ProductUpdateDetailsChunkSize, ChunkCallbackAction, ErrorCallBack);
+                        ["errorMessage"] = error.message,
+                        ["errorCode"] = error.operationErrorCode
+                    };
+                    doneCallbackAction?.Invoke(ret);
+                });
         }
 
         public virtual void CheckTermsAndConditions(Action<Dictionary<string, object>> doneCallbackAction, Action<UIError> errorCallbackAction)

@@ -3,9 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using Unity.Collections;
 
 namespace UnityEngine.UIElements.UIR.Implementation
 {
@@ -20,7 +17,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
     internal static class RenderEvents
     {
-        private static readonly float VisibilityTreshold = Mathf.Epsilon;
+        private static readonly float VisibilityTreshold = UIRUtility.k_Epsilon;
 
         internal static void ProcessOnClippingChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, ref ChainBuilderStats stats)
         {
@@ -108,7 +105,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
             ve.renderChainData.transformID = UIRVEShaderInfoAllocator.identityTransform;
             ve.renderChainData.clipRectID = UIRVEShaderInfoAllocator.infiniteClipRect;
             ve.renderChainData.opacityID = UIRVEShaderInfoAllocator.fullOpacity;
-            ve.renderChainData.backgroundColorID = BMPAlloc.Invalid; // Rely on vertex tint color by default
+            ve.renderChainData.colorID = BMPAlloc.Invalid; // Rely on vertex tint color by default
+            ve.renderChainData.backgroundColorID = BMPAlloc.Invalid;
             ve.renderChainData.borderLeftColorID = BMPAlloc.Invalid;
             ve.renderChainData.borderTopColorID = BMPAlloc.Invalid;
             ve.renderChainData.borderRightColorID = BMPAlloc.Invalid;
@@ -218,6 +216,11 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 {
                     renderChain.shaderInfoAllocator.FreeOpacity(ve.renderChainData.opacityID);
                     ve.renderChainData.opacityID = UIRVEShaderInfoAllocator.fullOpacity;
+                }
+                if (RenderChainVEData.AllocatesID(ve.renderChainData.colorID))
+                {
+                    renderChain.shaderInfoAllocator.FreeColor(ve.renderChainData.colorID);
+                    ve.renderChainData.colorID = BMPAlloc.Invalid;
                 }
                 if (RenderChainVEData.AllocatesID(ve.renderChainData.backgroundColorID))
                 {
@@ -510,9 +513,10 @@ namespace UnityEngine.UIElements.UIR.Implementation
             {
                 // A parent already called UIEOnVisualsChanged with hierarchical=true
             }
-            else if (changedOpacityID && ((ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.Visuals) == 0))
+            else if (changedOpacityID && ((ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.Visuals) == 0) &&
+                     (ve.renderChainData.data != null || ve.renderChainData.closingData != null))
             {
-                renderChain.UIEOnVisualsChanged(ve, false); // Changed opacity ID, must update vertices.. we don't do it hierarchical here since our children will go through this too
+                renderChain.UIEOnOpacityIdChanged(ve); // Changed opacity ID, must update vertices.. we don't do it hierarchical here since our children will go through this too
             }
 
             if (compositeOpacityChanged || changedOpacityID || hierarchical)
@@ -544,6 +548,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 if (InitColorIDs(renderChain, ve))
                     // New colors were allocated, we need to update the visuals
                     shouldUpdateVisuals = true;
+
                 SetColorValues(renderChain, ve);
 
                 if (ve is ITextElement && !RenderEvents.UpdateTextCoreSettings(renderChain, ve))
@@ -637,6 +642,13 @@ namespace UnityEngine.UIElements.UIR.Implementation
             if (wasHierarchyHidden != ve.renderChainData.isHierarchyHidden)
                 hierarchical = true;
 
+            if (!hierarchical && (ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.AllVisuals) == RenderDataDirtyTypes.VisualsOpacityId)
+            {
+                stats.opacityIdUpdates++;
+                CommandGenerator.UpdateOpacityId(ve, renderChain);
+                return;
+            }
+
             UpdateWorldFlipsWinding(ve);
 
             Debug.Assert(ve.renderChainData.clipMethod != ClipMethod.Undetermined);
@@ -674,7 +686,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             // so there's no need for a color match with the default TextCore settings.
             bool useDefaultColor = !NeedsColorID(ve) || settings.faceColor == Color.white;
 
-            if (useDefaultColor && settings.outlineWidth == 0.0f && settings.underlayOffset == Vector2.zero && settings.underlaySoftness == 0.0f && !allocatesID)
+            if (useDefaultColor && !NeedsTextCoreSettings(ve) && !allocatesID)
             {
                 // Use default TextCore settings
                 ve.renderChainData.textCoreSettingsID = UIRVEShaderInfoAllocator.defaultTextCoreSettings;
@@ -804,10 +816,25 @@ namespace UnityEngine.UIElements.UIR.Implementation
             return (ve.renderHints & RenderHints.DynamicColor) == RenderHints.DynamicColor;
         }
 
+        internal static bool NeedsTextCoreSettings(VisualElement ve)
+        {
+            // We may require a color ID when using non-trivial TextCore settings.
+            var settings = TextUtilities.GetTextCoreSettingsForElement(ve);
+            if (settings.outlineWidth != 0.0f || settings.underlayOffset != Vector2.zero || settings.underlaySoftness != 0.0f)
+                return true;
+
+            return false;
+        }
+
         static bool InitColorIDs(RenderChain renderChain, VisualElement ve)
         {
             var style = ve.resolvedStyle;
             bool hasAllocated = false;
+            if (!ve.renderChainData.colorID.IsValid() && style.color != Color.white)
+            {
+                ve.renderChainData.colorID = renderChain.shaderInfoAllocator.AllocColor();
+                hasAllocated = true;
+            }
             if (!ve.renderChainData.backgroundColorID.IsValid() && style.backgroundColor != Color.clear)
             {
                 ve.renderChainData.backgroundColorID = renderChain.shaderInfoAllocator.AllocColor();
@@ -843,6 +870,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         static void ResetColorIDs(VisualElement ve)
         {
+            ve.renderChainData.colorID = BMPAlloc.Invalid;
             ve.renderChainData.backgroundColorID = BMPAlloc.Invalid;
             ve.renderChainData.borderLeftColorID = BMPAlloc.Invalid;
             ve.renderChainData.borderTopColorID = BMPAlloc.Invalid;
@@ -854,6 +882,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
         static void SetColorValues(RenderChain renderChain, VisualElement ve)
         {
             var style = ve.resolvedStyle;
+            if (ve.renderChainData.colorID.IsValid())
+                renderChain.shaderInfoAllocator.SetColorValue(ve.renderChainData.colorID, style.color);
             if (ve.renderChainData.backgroundColorID.IsValid())
                 renderChain.shaderInfoAllocator.SetColorValue(ve.renderChainData.backgroundColorID, style.backgroundColor);
             if (ve.renderChainData.borderLeftColorID.IsValid())

@@ -43,20 +43,20 @@ namespace UnityEngine.UIElements.UIR
         internal static void MakeSolidRect(MeshGenerationContextUtils.RectangleParams rectParams, float posZ, AllocMeshData meshAlloc)
         {
             if (!rectParams.HasRadius(Tessellation.kEpsilon))
-                Tessellation.TessellateQuad(rectParams, posZ, meshAlloc);
+                Tessellation.TessellateQuad(rectParams, posZ, meshAlloc, false);
             else
                 Tessellation.TessellateRect(rectParams, posZ, meshAlloc, false);
         }
 
         internal static void MakeTexturedRect(MeshGenerationContextUtils.RectangleParams rectParams, float posZ, AllocMeshData meshAlloc, ColorPage colorPage)
         {
-            if (rectParams.leftSlice <= Mathf.Epsilon &&
-                rectParams.topSlice <= Mathf.Epsilon &&
-                rectParams.rightSlice <= Mathf.Epsilon &&
-                rectParams.bottomSlice <= Mathf.Epsilon)
+            if (rectParams.leftSlice <= UIRUtility.k_Epsilon &&
+                rectParams.topSlice <= UIRUtility.k_Epsilon &&
+                rectParams.rightSlice <= UIRUtility.k_Epsilon &&
+                rectParams.bottomSlice <= UIRUtility.k_Epsilon)
             {
                 if (!rectParams.HasRadius(Tessellation.kEpsilon))
-                    MakeQuad(rectParams.rect, rectParams.uv, rectParams.color, posZ, meshAlloc, colorPage);
+                    Tessellation.TessellateQuad(rectParams, posZ, meshAlloc, true);
                 else Tessellation.TessellateRect(rectParams, posZ, meshAlloc, true);
             }
             else if (rectParams.texture == null)
@@ -149,7 +149,7 @@ namespace UnityEngine.UIElements.UIR
         internal static void UpdateText(NativeArray<TextVertex> uiVertices,
             Vector2 offset, Matrix4x4 transform,
             Color32 xformClipPages, Color32 ids, Color32 flags, Color32 opacityPageSettingIndex,
-            NativeSlice<Vertex> vertices)
+            NativeSlice<Vertex> vertices, TextureId textureId)
         {
             int vertexCount = LimitTextVertices(uiVertices.Length, false);
             Debug.Assert(vertexCount == vertices.Length);
@@ -165,7 +165,8 @@ namespace UnityEngine.UIElements.UIR
                     xformClipPages = xformClipPages,
                     ids = ids,
                     flags = flags,
-                    opacityColorPages = opacityPageSettingIndex
+                    opacityColorPages = opacityPageSettingIndex,
+                    textureId = textureId.ConvertToGpu()
                 };
             }
         }
@@ -358,10 +359,10 @@ namespace UnityEngine.UIElements.UIR
                 };
             }
 
-            if (rectParams.leftSlice <= Mathf.Epsilon &&
-                rectParams.topSlice <= Mathf.Epsilon &&
-                rectParams.rightSlice <= Mathf.Epsilon &&
-                rectParams.bottomSlice <= Mathf.Epsilon)
+            if (rectParams.leftSlice <= UIRUtility.k_Epsilon &&
+                rectParams.topSlice <= UIRUtility.k_Epsilon &&
+                rectParams.rightSlice <= UIRUtility.k_Epsilon &&
+                rectParams.bottomSlice <= UIRUtility.k_Epsilon)
             {
                 MeshBuilder.MakeVectorGraphicsStretchBackground(vertices, vi.indices, vi.size.x, vi.size.y, rectParams.rect, rectParams.uv, rectParams.scaleMode, rectParams.color, settingIndexOffset, meshAlloc, out finalVertexCount, out finalIndexCount);
             }

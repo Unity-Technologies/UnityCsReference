@@ -8,7 +8,6 @@ namespace BeeBuildProgramCommon.Data
     {
         public string Name;
         public string ResolvedPath;
-        public bool Immutable;
     }
 
     public class ConfigurationData

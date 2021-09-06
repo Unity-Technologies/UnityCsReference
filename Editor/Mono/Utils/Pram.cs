@@ -47,7 +47,6 @@ namespace UnityEditor.Mono.Utils
 
         public Program CreateProgram(IEnumerable<string> arguments)
         {
-            // *begin-nonstandard-formatting*
             var logLevelArgument = LogLevel switch
             {
                 PramLogLevel.Quiet => "--quiet",
@@ -56,7 +55,6 @@ namespace UnityEditor.Mono.Utils
                 PramLogLevel.Trace => "--trace",
                 _ => throw new ArgumentOutOfRangeException()
             };
-            // *end-nonstandard-formatting*
             var providerLoadPathArguments = ProviderLoadPaths.Select(p => $"--provider-load-path={p.InQuotes()}");
 
             return new NetCoreProgram(pramDll.ToString(SlashMode.Native),

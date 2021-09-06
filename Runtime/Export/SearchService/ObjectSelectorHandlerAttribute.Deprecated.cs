@@ -6,7 +6,7 @@ using System;
 
 namespace UnityEngine.SearchService
 {
-    [Obsolete("ObjectSelectorHandlerWithLabelsAttribute has been deprecated. Use SearchContextAttribute instead.")]
+    [Obsolete("ObjectSelectorHandlerWithLabelsAttribute has been deprecated. Use SearchContextAttribute instead.", error: true)]
     [AttributeUsage(AttributeTargets.Field)]
     public class ObjectSelectorHandlerWithLabelsAttribute : Attribute
     {
@@ -26,7 +26,7 @@ namespace UnityEngine.SearchService
         }
     }
 
-    [Obsolete("ObjectSelectorHandlerWithTagsAttribute has been deprecated. Use SearchContextAttribute instead.")]
+    [Obsolete("ObjectSelectorHandlerWithTagsAttribute has been deprecated. Use SearchContextAttribute instead.", error: true)]
     [AttributeUsage(AttributeTargets.Field)]
     public class ObjectSelectorHandlerWithTagsAttribute : Attribute
     {

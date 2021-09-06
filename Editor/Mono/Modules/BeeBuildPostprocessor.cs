@@ -11,6 +11,7 @@ using Bee.BeeDriver;
 using NiceIO;
 using PlayerBuildProgramLibrary.Data;
 using UnityEditor.Build;
+using UnityEditor.Build.Reporting;
 using UnityEditor.CrashReporting;
 using UnityEditor.Scripting;
 using UnityEditor.Scripting.ScriptCompilation;
@@ -118,13 +119,11 @@ namespace UnityEditor.Modules
             // IL2CPP does not support a managed stripping level of disabled. If the player settings
             // do try this (which should not be possible from the editor), use Low instead.
             if (GetUseIl2Cpp(args) && strippingLevel == ManagedStrippingLevel.Disabled)
-                strippingLevel = ManagedStrippingLevel.Low;
+                strippingLevel = ManagedStrippingLevel.Minimal;
 
             if (strippingLevel > ManagedStrippingLevel.Disabled)
             {
                 var rcr = args.usedClassRegistry;
-
-                NPath managedAssemblyFolderPath = $"{args.stagingAreaData}/Managed";
 
                 var additionalArgs = new List<string>();
 
@@ -143,8 +142,9 @@ namespace UnityEditor.Modules
                 if (UnityEditor.CrashReporting.CrashReportingSettings.enabled)
                     engineStrippingFlags.Add("EnableCrashReporting");
 
+                NPath managedAssemblyFolderPath = $"{args.stagingAreaData}/Managed";
                 var linkerRunInformation = new UnityLinkerRunInformation(managedAssemblyFolderPath.MakeAbsolute().ToString(), null, args.target,
-                    rcr, strippingLevel, null);
+                    rcr, strippingLevel, null, args.report);
                 AssemblyStripper.WriteEditorData(linkerRunInformation);
 
                 return new LinkerConfig
@@ -153,22 +153,18 @@ namespace UnityEditor.Modules
                     EditorToLinkerData = linkerRunInformation.EditorToLinkerDataPath.ToNPath().MakeAbsolute().ToString(),
                     AssembliesToProcess = rcr.GetUserAssemblies()
                         .Where(s => rcr.IsDLLUsed(s))
-                        .Select(s => $"{managedAssemblyFolderPath}/{s}")
-                        .Concat(Directory.GetFiles(managedAssemblyFolderPath.ToString(), "I18N*.dll", SearchOption.TopDirectoryOnly))
                         .ToArray(),
-                    SearchDirectories = new[] {managedAssemblyFolderPath.MakeAbsolute().ToString()},
                     Runtime = GetUseIl2Cpp(args) ? "il2cpp" : "mono",
                     Profile = IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(
                         PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup), args.target),
-                    // *begin-nonstandard-formatting*
                     Ruleset = strippingLevel switch
                     {
+                        ManagedStrippingLevel.Minimal => "Minimal",
                         ManagedStrippingLevel.Low => "Conservative",
                         ManagedStrippingLevel.Medium => "Aggressive",
                         ManagedStrippingLevel.High => "Experimental",
                         _ => throw new ArgumentException($"Unhandled {nameof(ManagedStrippingLevel)} value")
                     },
-                    // *end-nonstandard-formatting*
                     AdditionalArgs = additionalArgs.ToArray(),
                     ModulesAssetPath = $"{BuildPipeline.GetPlaybackEngineDirectory(args.target, 0)}/modules.asset",
                     AllowDebugging = (args.report.summary.options & BuildOptions.AllowDebugging) == BuildOptions.AllowDebugging,
@@ -221,7 +217,9 @@ namespace UnityEditor.Modules
                 GcWBarrierValidation = platformHasIncrementalGC && PlayerSettings.gcWBarrierValidation,
                 GcIncremental = platformHasIncrementalGC && PlayerSettings.gcIncremental &&
                     (apiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6 ||
-                        apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard_2_0),
+                        apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard_2_0 ||
+                        apiCompatibilityLevel == ApiCompatibilityLevel.NET_Unity_4_8 ||
+                        apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard),
                 CreateSymbolFiles = !GetDevelopment(args) || CrashReportingSettings.enabled,
                 AdditionalCppFiles = PluginImporter.GetImporters(args.target)
                     .Where(imp => DesktopPluginImporterExtension.IsCppPluginFile(imp.assetPath))
@@ -255,6 +253,12 @@ namespace UnityEditor.Modules
             },
             StreamingAssetsFiles = BuildPlayerContext.ActiveInstance.StreamingAssets
                 .Select(e => new StreamingAssetsFile { File = e.src.ToString(), RelativePath = e.dst.ToString() })
+                .ToArray(),
+            ManagedAssemblies = args.report.files
+                .Where(file => file.role == "ManagedLibrary" || file.role == "DependentManagedLibrary" || file.role == "ManagedEngineAPI")
+                .Select(file => file.path.ToNPath())
+                .GroupBy(file => file.FileName)
+                .Select(group => group.First().ToString())
                 .ToArray()
         };
 
@@ -348,12 +352,15 @@ namespace UnityEditor.Modules
             }
         }
 
-        void Il2CPPResultProcessor(NodeResult node)
+        // Some node types produce meaningful, human readable error messages,
+        // but the output files names are Unity internals, not helpful to users.
+        // For such nodes, directly print the output if the action fails.
+        void PrintStdoutOnErrorProcessor(NodeResult node)
         {
             if (node.exitcode != 0)
-                // IL2cpp reports nice errors, but the output file node will just point to the profiler output, which
-                // is not useful error reporting. So just dump the output directly.
                 Debug.LogError(node.stdout);
+            else
+                DefaultResultProcessor(node);
         }
 
         void UnityLinkerResultProcessor(NodeResult node)
@@ -366,8 +373,10 @@ namespace UnityEditor.Modules
 
         public BeeBuildPostprocessor()
         {
-            ResultProcessors["IL2CPP_CodeGen"] = Il2CPPResultProcessor;
+            ResultProcessors["IL2CPP_CodeGen"] = PrintStdoutOnErrorProcessor;
             ResultProcessors["UnityLinker"] = UnityLinkerResultProcessor;
+            ResultProcessors["ExtractUsedFeatures"] = PrintStdoutOnErrorProcessor;
+
         }
 
         protected void DefaultResultProcessor(NodeResult node, bool printErrors = true, bool printWarnings = true)
@@ -445,12 +454,6 @@ namespace UnityEditor.Modules
         {
             try
             {
-                // Remove any previous file entries in the build report.
-                // We can track any file written by the backend ourselves.
-                // Once all platforms use the Bee backend, we can remove a lot
-                // of code to add file entries in the native build pipeline.
-                args.report.DeleteAllFileEntries();
-
                 if ((args.options & BuildOptions.CleanBuildCache) == BuildOptions.CleanBuildCache)
                     CleanBuildOutput(args);
 
@@ -458,6 +461,12 @@ namespace UnityEditor.Modules
 
                 SetupBeeDriver(args);
                 args.report.EndBuildStep(buildStep);
+
+                // Remove any previous file entries in the build report.
+                // We can track any file written by the backend ourselves.
+                // Once all platforms use the Bee backend, we can remove a lot
+                // of code to add file entries in the native build pipeline.
+                args.report.DeleteAllFileEntries();
 
                 buildStep = args.report.BeginBuildStep("Incremental player build");
 
@@ -507,7 +516,30 @@ namespace UnityEditor.Modules
             }
         }
 
+        public override void PostProcessCompletedBuild(BuildPostProcessArgs args)
+        {
+            base.PostProcessCompletedBuild(args);
+
+            if (PlayerSettings.GetManagedStrippingLevel(BuildPipeline.GetBuildTargetGroup(args.target)) == ManagedStrippingLevel.Disabled)
+                return;
+
+            if (Driver.DataFromBuildProgram == null)
+                return;
+
+            var strippingInfo = GetStrippingInfoFromBuild(args);
+            if (strippingInfo != null && EditorBuildOutputPath != null)
+            {
+                args.report.AddAppendix(strippingInfo);
+                var linkerToEditorData = AssemblyStripper.ReadLinkerToEditorData(EditorBuildOutputPath.ToString());
+                AssemblyStripper.UpdateBuildReport(linkerToEditorData, strippingInfo);
+            }
+        }
+
         protected virtual bool GetCreateSolution(BuildPostProcessArgs args) => false;
+
+        protected virtual NPath EditorBuildOutputPath => null;
+
+        protected virtual StrippingInfo GetStrippingInfoFromBuild(BuildPostProcessArgs args) => null;
 
         protected virtual bool IsPluginCompatibleWithCurrentBuild(BuildTarget buildTarget, PluginImporter imp)
         {

@@ -131,6 +131,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void Stop()
         {
             m_Timestamp = DateTime.Now.Ticks;
+            m_AssetStoreRestAPI.AbortGetPurchases(QueryToString(m_AdjustedQueryArgs));
             FinalizedOperation();
         }
 

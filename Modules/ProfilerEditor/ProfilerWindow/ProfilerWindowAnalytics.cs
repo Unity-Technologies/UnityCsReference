@@ -2,7 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using UnityEditorInternal;
 using UnityEngine;
@@ -36,14 +38,24 @@ namespace UnityEditor
         public string details;
     }
 
+    [Serializable]
     internal struct ProfilerAnalyticsViewUsability
     {
         public string element;
         public uint mouseEvents;
         public uint keyboardEvents;
-        public string param;
         public double time;
     }
+
+    [Serializable]
+    internal struct ProfilerAnalyticsViewUsabilitySession
+    {
+        public ProfilerAnalyticsViewUsability[] session;
+        public uint mouseEvents;
+        public uint keyboardEvents;
+        public double time;
+    }
+
     internal struct ProfilerAnalyticsCapture
     {
         public bool deepProfileEnabled;
@@ -60,7 +72,7 @@ namespace UnityEditor
         const string k_VendorKey = "unity.profiler";
         const string k_ProfilerSaveLoad = "profilerSaveLoad";
         const string k_ProfilerConnection = "profilerConnection";
-        const string k_ProfilerElementUsability = "profilerElementUsability";
+        const string k_ProfilerElementUsability = "profilerSessionElementUsability";
         const string k_ProfilerCapture = "profilerCapture";
 
         // events registered
@@ -76,21 +88,18 @@ namespace UnityEditor
         public static string profilerCPUModuleHierarchy = profilerCPUModule + ".hierarchy";
         public static string profilerCPUModuleSearch = profilerCPUModule + ".search";
 
-        static ProfilerAnalyticsViewUsability ProfilerSession;
+        static ProfilerAnalyticsViewUsabilitySession ProfilerSession;
         static ProfilerAnalyticsViewUsability CurrentView;
         static List<ProfilerAnalyticsViewUsability> Views;
 
         static ProfilerAnalyticsCapture Capture;
         static bool Capturing;
 
-        public static void OnProfilerWindowFocused()
+        public static void OnProfilerWindowAwake()
         {
-            ProfilerSession = new ProfilerAnalyticsViewUsability();
-            ProfilerSession.element = profilerWindowElement;
-            ProfilerSession.time = EditorApplication.timeSinceStartup;
-
             Views = new List<ProfilerAnalyticsViewUsability>();
             CurrentView = new ProfilerAnalyticsViewUsability();
+            ProfilerSession = new ProfilerAnalyticsViewUsabilitySession();
         }
 
         static bool RegisterEvent(string eventName)
@@ -99,7 +108,7 @@ namespace UnityEditor
             return analyticsResult == AnalyticsResult.Ok;
         }
 
-        public static void OnProfilerWindowLostFocus()
+        public static void OnProfilerWindowDestroy()
         {
             ProfilerSession.time = EditorApplication.timeSinceStartup - ProfilerSession.time;
             if (!EditorAnalytics.enabled)
@@ -112,9 +121,10 @@ namespace UnityEditor
             if (ProfilerSession.keyboardEvents == 0 && ProfilerSession.mouseEvents == 0)
                 return;
 
-            Views.Insert(0, ProfilerSession);
-            Views.Add(CurrentView);
-            EditorAnalytics.SendEventWithLimit(k_ProfilerElementUsability, Views.ToArray());
+            SwitchActiveView(CurrentView.element);
+            ProfilerSession.session = Views.ToArray();
+
+            EditorAnalytics.SendEventWithLimit(k_ProfilerElementUsability, ProfilerSession);
         }
 
         public static void SendSaveLoadEvent(ProfilerAnalyticsSaveLoadData data)
@@ -160,7 +170,7 @@ namespace UnityEditor
                 return;
             }
 
-            AddNewView(element);
+            SwitchActiveView(element);
             CurrentView.mouseEvents++;
         }
 
@@ -172,16 +182,37 @@ namespace UnityEditor
                 return;
             }
 
-            AddNewView(element);
+            SwitchActiveView(element);
             CurrentView.keyboardEvents++;
         }
 
-        public static void AddNewView(string element)
+        public static void SwitchActiveView(string element)
         {
-            if (!string.IsNullOrEmpty(CurrentView.element))
+            if (!EditorAnalytics.enabled)
+                return;
+
+            if (Views == null)
+                Views = new List<ProfilerAnalyticsViewUsability>();
+
+            var idx = Views.FindIndex(x => x.element == element);
+
+            if (idx == -1)
             {
+                Views.Add(new ProfilerAnalyticsViewUsability()
+                {
+                    time = 0,
+                    element = element
+                });
+            }
+            else
+            {
+                idx = Views.FindIndex(x => x.element == CurrentView.element);
                 CurrentView.time = EditorApplication.timeSinceStartup - CurrentView.time;
-                Views.Add(CurrentView);
+                var view = Views[idx];
+                view.keyboardEvents += CurrentView.keyboardEvents;
+                view.mouseEvents += CurrentView.mouseEvents;
+                view.time += CurrentView.time;
+                Views[idx] = view;
             }
 
             CurrentView = new ProfilerAnalyticsViewUsability();

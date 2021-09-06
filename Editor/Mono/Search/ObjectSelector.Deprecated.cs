@@ -7,7 +7,7 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor.SearchService
 {
-    [Obsolete("ObjectSelector has been deprecated. Use ObjectSelectorSearch instead (UnityUpgradable) -> ObjectSelectorSearch", false)]
+    [Obsolete("ObjectSelector has been deprecated. Use ObjectSelectorSearch instead (UnityUpgradable) -> ObjectSelectorSearch", error: true)]
     public static class ObjectSelector
     {
         public const SearchEngineScope EngineScope = SearchEngineScope.ObjectSelector;
@@ -23,7 +23,7 @@ namespace UnityEditor.SearchService
         }
     }
 
-    [Obsolete("ObjectSelectorHandlerAttribute has been deprecated. Use SearchContextAttribute instead.")]
+    [Obsolete("ObjectSelectorHandlerAttribute has been deprecated. Use SearchContextAttribute instead.", error: true)]
     [AttributeUsage(AttributeTargets.Method)]
     public class ObjectSelectorHandlerAttribute : Attribute
     {
@@ -35,7 +35,7 @@ namespace UnityEditor.SearchService
         }
     }
 
-    [Obsolete("ObjectSelectorTargetInfo has been deprecated.")]
+    [Obsolete("ObjectSelectorTargetInfo has been deprecated.", error: true)]
     public struct ObjectSelectorTargetInfo
     {
         public GlobalObjectId globalObjectId { get; }
@@ -57,7 +57,7 @@ namespace UnityEditor.SearchService
 
     public partial class ObjectSelectorSearchContext : ISearchContext
     {
-        [Obsolete("selectorConstraint has been deprecated.")]
+        [Obsolete("selectorConstraint has been deprecated.", error: true)]
         public Func<ObjectSelectorTargetInfo, Object[], ObjectSelectorSearchContext, bool> selectorConstraint { get; set; }
     }
 }

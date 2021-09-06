@@ -9,9 +9,27 @@ using System.Linq;
 
 namespace UnityEngine.UIElements
 {
-    [Serializable]
-    internal class StyleComplexSelector
+    // Salt values used to create distinct selector part hash results for the Bloom filter selector search optimization.
+    enum Salt
     {
+        TagNameSalt = 13,
+        IdSalt = 17,
+        ClassSalt = 19
+    }
+
+    // Storage for up to 4 selector part hash values; used to query the Bloom filter for a visual element during a visual tree style update hierarchical traversal.
+    unsafe struct Hashes
+    {
+        public const int kSize = 4;
+        public fixed int hashes[kSize];
+    }
+
+    [Serializable]
+    internal class StyleComplexSelector : ISerializationCallbackReceiver
+    {
+        // Hash keys for the most relevant parts of a complex selector to use against the style sheet's Bloom filter.
+        [NonSerialized] public Hashes ancestorHashes;
+
         [SerializeField]
         int m_Specificity;
 
@@ -28,15 +46,18 @@ namespace UnityEngine.UIElements
             }
         }
 
-        // This reference is set at runtime as convenience, but is not serialzed
+        // This reference is set at runtime as convenience, but is not serialized
         public StyleRule rule { get; internal set; }
 
         // A complex selector can be considered simple if it's made of only one selector
+        [NonSerialized]
+        private bool m_isSimple;
+
         public bool isSimple
         {
             get
             {
-                return selectors.Length == 1;
+                return m_isSimple;
             }
         }
 
@@ -52,7 +73,15 @@ namespace UnityEngine.UIElements
             internal set
             {
                 m_Selectors = value;
+                m_isSimple = m_Selectors.Length == 1;
             }
+        }
+
+        public void OnBeforeSerialize() {}
+
+        public virtual void OnAfterDeserialize()
+        {
+            m_isSimple = m_Selectors.Length == 1;
         }
 
         [SerializeField]
@@ -129,6 +158,95 @@ namespace UnityEngine.UIElements
         public override string ToString()
         {
             return string.Format("[{0}]", string.Join(", ", m_Selectors.Select(x => x.ToString()).ToArray()));
+        }
+
+        // Sort StyleSelectorPart elements in decreasing type order, then decreasing value order.
+        private static int StyleSelectorPartCompare(StyleSelectorPart x, StyleSelectorPart y)
+        {
+            if (y.type < x.type)
+                return -1;
+            else if (y.type > x.type)
+                return 1;
+            else
+                return y.value.CompareTo(x.value);
+        }
+
+        static List<StyleSelectorPart> m_HashList = new List<StyleSelectorPart>();
+
+        unsafe internal void CalculateHashes()
+        {
+            if (isSimple)
+                return;
+
+            // Collect all selector parts except for the last selector, as a visual element was already
+            // matched against the last selector when the time comes to query the Bloom filter.
+            for (int i = selectors.Length - 2; i > -1; i--)
+            {
+                m_HashList.AddRange(selectors[i].parts);
+            }
+
+            m_HashList.RemoveAll(p =>
+                p.type != StyleSelectorType.Class
+                && p.type != StyleSelectorType.ID
+                && p.type != StyleSelectorType.Type);
+
+            // The ancestorHashes member contains up to 4 hash keys that will be used to query the Bloom
+            // filter during a hierarchical Visual Element traversal. The Bloom filter contains the hash
+            // values of all the ID, Class and Type strings of visited Visual Elements. In order for any
+            // complex selector to match, all of its hash keys must be found in the Bloom filter. We use
+            // the most relevant parts for the search for performance reasons and it can't produce false
+            // rejections.
+
+            // Sort parts in decreasing type order, then value order, i.e. in ID, Class, Type order.
+            m_HashList.Sort(StyleSelectorPartCompare);
+
+            // Add unique parts from left to right.
+            bool isFirstEntry = true;
+
+            StyleSelectorType lastType = StyleSelectorType.Unknown;
+            string lastValue = "";
+
+            int partIndex = 0;
+
+            int max = Math.Min(Hashes.kSize, m_HashList.Count);
+            for (int i = 0; i < max; i++)
+            {
+                if (isFirstEntry)
+                {
+                    isFirstEntry = false;
+                }
+                else
+                {
+                    // Skip duplicate parts
+                    while ((partIndex < m_HashList.Count) && m_HashList[partIndex].type == lastType && m_HashList[partIndex].value == lastValue)
+                    {
+                        partIndex++;
+                    }
+
+                    if (partIndex == m_HashList.Count)
+                        break;
+                }
+
+                lastType = m_HashList[partIndex].type;
+                lastValue = m_HashList[partIndex].value;
+
+                Salt salt;
+                if (lastType == StyleSelectorType.ID)
+                {
+                    salt = Salt.IdSalt;
+                }
+                else if (lastType == StyleSelectorType.Class)
+                {
+                    salt = Salt.ClassSalt;
+                }
+                else
+                {
+                    salt = Salt.TagNameSalt;
+                }
+                ancestorHashes.hashes[i] = lastValue.GetHashCode() * (int)salt;
+            }
+
+            m_HashList.Clear();
         }
     }
 }

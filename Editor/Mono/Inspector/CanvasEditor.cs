@@ -27,6 +27,7 @@ namespace UnityEditor
         SerializedProperty m_TargetDisplay;
         SerializedProperty m_OverrideSorting;
         SerializedProperty m_ShaderChannels;
+        SerializedProperty m_UpdateRectTransformForStandalone;
 
         AnimBool m_OverlayMode;
         AnimBool m_CameraMode;
@@ -45,6 +46,7 @@ namespace UnityEditor
             public static GUIContent m_SortingOrderStyle = EditorGUIUtility.TrTextContent("Order in Layer", "Renderer's order within a sorting layer");
             public static GUIContent m_ShaderChannel = EditorGUIUtility.TrTextContent("Additional Shader Channels");
             public static GUIContent pixelPerfectContent = EditorGUIUtility.TrTextContent("Pixel Perfect");
+            public static GUIContent standaloneRenderResize = EditorGUIUtility.TrTextContent("Resize Canvas", "For manual Camera.Render calls should the canvas resize to match the destination target.");
         }
 
         private bool m_AllNested = false;
@@ -78,6 +80,7 @@ namespace UnityEditor
             m_OverrideSorting = serializedObject.FindProperty("m_OverrideSorting");
             m_PixelPerfectOverride = serializedObject.FindProperty("m_OverridePixelPerfect");
             m_ShaderChannels = serializedObject.FindProperty("m_AdditionalShaderChannelsFlag");
+            m_UpdateRectTransformForStandalone = serializedObject.FindProperty("m_UpdateRectTransformForStandalone");
 
             m_OverlayMode = new AnimBool(m_RenderMode.intValue == 0);
             m_OverlayMode.valueChanged.AddListener(Repaint);
@@ -143,7 +146,7 @@ namespace UnityEditor
             if (EditorGUI.EndChangeCheck())
             {
                 var rectTransforms = targets.Select(c => (c as Canvas).transform).ToArray();
-                Undo.RegisterCompleteObjectUndo(rectTransforms, "Inspector");
+                Undo.RegisterCompleteObjectUndo(rectTransforms, "Modified RectTransform Values");
                 serializedObject.ApplyModifiedProperties();
                 foreach (Canvas canvas in targets)
                 {
@@ -178,7 +181,10 @@ namespace UnityEditor
                         MessageType.Warning);
 
                 if (m_Camera.objectReferenceValue != null)
+                {
                     EditorGUILayout.PropertyField(m_PlaneDistance);
+                    EditorGUILayout.PropertyField(m_UpdateRectTransformForStandalone, Styles.standaloneRenderResize);
+                }
 
                 EditorGUILayout.Space();
 
@@ -209,7 +215,10 @@ namespace UnityEditor
             bool pixelPerfectValue = m_PixelPerfect.boolValue;
 
             EditorGUI.BeginChangeCheck();
-            pixelPerfectValue = EditorGUILayout.Toggle(Styles.pixelPerfectContent, pixelPerfectValue);
+            var rect = EditorGUILayout.GetControlRect();
+            EditorGUI.BeginProperty(rect, Styles.pixelPerfectContent, m_PixelPerfect);
+            pixelPerfectValue = EditorGUI.Toggle(rect, Styles.pixelPerfectContent, pixelPerfectValue);
+            EditorGUI.EndProperty();
 
             if (EditorGUI.EndChangeCheck())
             {
@@ -290,10 +299,11 @@ namespace UnityEditor
                     AllNestedCanvases();
                 }
 
-                int newShaderChannelValue = 0;
                 EditorGUI.BeginChangeCheck();
-                newShaderChannelValue = EditorGUILayout.MaskField(Styles.m_ShaderChannel, m_ShaderChannels.intValue, shaderChannelOptions);
-
+                var rect = EditorGUILayout.GetControlRect();
+                EditorGUI.BeginProperty(rect, Styles.m_ShaderChannel, m_ShaderChannels);
+                var newShaderChannelValue = EditorGUI.MaskField(rect, Styles.m_ShaderChannel, m_ShaderChannels.intValue, shaderChannelOptions);
+                EditorGUI.EndProperty();
 
                 if (EditorGUI.EndChangeCheck())
                     m_ShaderChannels.intValue = newShaderChannelValue;

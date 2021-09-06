@@ -14,11 +14,9 @@ namespace UnityEditor.UIElements
         [MenuItem("Assets/Create/UI Toolkit/Style Sheet", false, 603, false)]
         private static void CreateUSSAsset()
         {
-            var folder = GetCurrentFolder();
-            var path = AssetDatabase.GenerateUniqueAssetPath(folder + "/NewUSSFile.uss");
             var contents = "VisualElement {}";
             var icon = EditorGUIUtility.IconContent<StyleSheet>().image as Texture2D;
-            ProjectWindowUtil.CreateAssetWithContent(path, contents, icon);
+            ProjectWindowUtil.CreateAssetWithContent("NewUSSFile.uss", contents, icon);
         }
 
         [MenuItem("Assets/Create/UI Toolkit/TSS Theme File", false, 604, false)]
@@ -28,11 +26,9 @@ namespace UnityEditor.UIElements
                 CommandService.Execute(nameof(CreateTSSFile), CommandHint.Menu);
             else
             {
-                var folder = GetCurrentFolder();
-                var path = AssetDatabase.GenerateUniqueAssetPath(folder + "/NewTSSFile.tss");
                 var contents = "VisualElement {}";
                 var icon = EditorGUIUtility.IconContent<ThemeStyleSheet>().image as Texture2D;
-                ProjectWindowUtil.CreateAssetWithContent(path, contents, icon);
+                ProjectWindowUtil.CreateAssetWithContent("NewTSSFile.tss", contents, icon);
             }
         }
 
@@ -43,11 +39,9 @@ namespace UnityEditor.UIElements
                 CommandService.Execute(nameof(CreateDefaultRuntimeTSSFile), CommandHint.Menu);
             else
             {
-                var folder = GetCurrentFolder();
-                var path = AssetDatabase.GenerateUniqueAssetPath(folder + "/" + ThemeRegistry.kUnityRuntimeThemeFileName);
                 var contents = "@import url(\"" + ThemeRegistry.kThemeScheme + "://default\");\nVisualElement {}";
                 var icon = EditorGUIUtility.IconContent<ThemeStyleSheet>().image as Texture2D;
-                ProjectWindowUtil.CreateAssetWithContent(path, contents, icon);
+                ProjectWindowUtil.CreateAssetWithContent(ThemeRegistry.kUnityRuntimeThemeFileName, contents, icon);
             }
         }
     }

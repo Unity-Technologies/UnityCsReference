@@ -10,7 +10,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class DropdownButton : VisualElement, IToolbarMenuElement
+    internal class DropdownButton : VisualElement, IToolbarMenuElement, ITextElement
     {
         internal new class UxmlFactory : UxmlFactory<DropdownButton> {}
 

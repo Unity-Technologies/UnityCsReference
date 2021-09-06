@@ -84,11 +84,7 @@ namespace UnityEditor.EditorTools
 
         internal static int GetNonBuiltinToolCount()
         {
-            var globalToolsCount = GetCustomEditorToolsForType(null).Count();
-            var customToolsCount = EditorToolManager.GetCustomEditorToolsCount(true);
-            var totalCount = globalToolsCount + customToolsCount;
-
-            return totalCount;
+            return GetCustomEditorToolsForType(null).Count();
         }
 
         internal static bool IsComponentEditor(Type type)
@@ -118,7 +114,7 @@ namespace UnityEditor.EditorTools
                 case Tool.View:
                     return (EditorTool)EditorToolManager.GetSingleton(typeof(ViewModeTool));
                 case Tool.Custom:
-                    return EditorToolManager.GetLastTool(x => GetEnumWithEditorTool(x) == Tool.Custom);
+                    return EditorToolManager.lastCustomTool;
                 case Tool.None:
                     return EditorToolManager.GetSingleton<NoneTool>();
                 default:
@@ -127,7 +123,7 @@ namespace UnityEditor.EditorTools
                         goto case Tool.None;
 
                     // Tool types can resolve to either global or instance tools
-                    if (IsCustomEditorTool(resolved))
+                    if (IsComponentTool(resolved))
                     {
                         var instance = EditorToolManager.GetComponentTool(resolved);
                         if (instance == null)
@@ -147,6 +143,17 @@ namespace UnityEditor.EditorTools
             }
         }
 
+        static Tool GetToolTypeInContext(EditorToolContext ctx, Type type)
+        {
+            for (int i = (int)Tool.Move; i < (int)Tool.Custom; i++)
+            {
+                if (ctx.ResolveTool((Tool)i) == type)
+                    return (Tool)i;
+            }
+
+            return Tool.Custom;
+        }
+
         internal static Tool GetEnumWithEditorTool(EditorTool tool, EditorToolContext ctx = null)
         {
             if (tool == null || tool is NoneTool)
@@ -157,13 +164,7 @@ namespace UnityEditor.EditorTools
 
             var type = tool.GetType();
 
-            for (int i = (int)Tool.Move; i < (int)Tool.Custom; i++)
-            {
-                if ((ctx == null ? EditorToolManager.activeToolContext : ctx).ResolveTool((Tool)i) == type)
-                    return (Tool)i;
-            }
-
-            return Tool.Custom;
+            return GetToolTypeInContext(ctx != null ? ctx : EditorToolManager.activeToolContext, type);
         }
 
         internal static bool IsManipulationTool(Tool tool)
@@ -175,7 +176,7 @@ namespace UnityEditor.EditorTools
                 || tool == Tool.Transform;
         }
 
-        internal static bool IsCustomEditorTool(Type type)
+        internal static bool IsComponentTool(Type type)
         {
             return s_ToolCache.GetTargetType(type) != null;
         }

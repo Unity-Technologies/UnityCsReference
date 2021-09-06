@@ -126,8 +126,7 @@ namespace UnityEngine
             bool prevWinding = false;
             foreach (GameObject go in gos)
             {
-                MeshFilter filter = go.GetComponent(typeof(MeshFilter)) as MeshFilter;
-                if (filter == null)
+                if (!go.TryGetComponent(out MeshFilter filter))
                     continue;
 
                 Mesh instanceMesh = filter.sharedMesh;
@@ -140,10 +139,8 @@ namespace UnityEngine
                 if (!StaticBatchingHelper.IsMeshBatchable(instanceMesh))
                     continue;
 
-                Renderer renderer = filter.GetComponent<Renderer>();
-
                 // reject if has not renderer or renderer is disabled
-                if (renderer == null || !renderer.enabled)
+                if (!filter.TryGetComponent(out Renderer renderer) || !renderer.enabled)
                     continue;
 
                 // reject if already combined for static batching
@@ -324,8 +321,7 @@ namespace UnityEngine
             {
                 if (go == null)
                     return null;
-                MeshFilter filter = go.GetComponent(typeof(MeshFilter)) as MeshFilter;
-                if (filter == null)
+                if (!go.TryGetComponent(out MeshFilter filter))
                     return null;
 
                 return filter.GetComponent<Renderer>();
@@ -335,8 +331,7 @@ namespace UnityEngine
             {
                 if (go == null)
                     return null;
-                var filter = go.GetComponent<MeshFilter>();
-                if (filter == null)
+                if (!go.TryGetComponent(out MeshFilter filter))
                     return null;
                 return filter.sharedMesh;
             }

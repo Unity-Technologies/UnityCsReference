@@ -379,16 +379,16 @@ namespace UnityEditor
 
             DrawTabs(m_TabAreaRect);
             HandleSplitView(); //fogbugz 1169963: in order to easily use the splitter in the gameView, it must be prioritized over DrawView(). Side effect for touch is that splitter picking zones might overlap other controls but the tabs still have higher priority so the user can undock the window in that case
-            DrawView(viewRect, dockAreaRect);
+            DrawView(dockAreaRect);
 
             DrawTabScrollers(m_TabAreaRect);
 
             EditorGUI.ShowRepaints();
         }
 
-        private void DrawView(Rect viewRect, Rect dockAreaRect)
+        private void DrawView(Rect dockAreaRect)
         {
-            InvokeOnGUI(dockAreaRect, viewRect);
+            InvokeOnGUI(dockAreaRect);
             RenderToHMDIfNecessary();
         }
 
@@ -531,7 +531,7 @@ namespace UnityEditor
                                 EditorGUIUtility.AddCursorRect(new Rect(0, 0, position.width, SplitView.kGrabDist), MouseCursor.SplitResizeUpDown, id);
                             if (idx != sp.children.Length - 1)
                                 EditorGUIUtility.AddCursorRect(
-                                    new Rect(0, position.height - SplitView.kGrabDist, position.width, SplitView.kGrabDist),
+                                    new Rect(0, position.height - SplitView.kGrabDist + 1, position.width, SplitView.kGrabDist),
                                     MouseCursor.SplitResizeUpDown, id);
                         }
                         else // horizontal
@@ -541,7 +541,7 @@ namespace UnityEditor
                                     id);
                             if (idx != sp.children.Length - 1)
                                 EditorGUIUtility.AddCursorRect(
-                                    new Rect(position.width - SplitView.kGrabDist, 0, SplitView.kGrabDist, position.height),
+                                    new Rect(position.width - SplitView.kGrabDist + 1, 0, SplitView.kGrabDist, position.height),
                                     MouseCursor.SplitResizeLeftRight, id);
                         }
                     }
@@ -1181,7 +1181,7 @@ namespace UnityEditor
             if (actualView)
                 actualView.m_Pos = new Rect(GUIUtility.GUIToScreenPoint(Vector2.zero), viewRect.size);
 
-            InvokeOnGUI(maximizedViewRect, viewRect);
+            InvokeOnGUI(maximizedViewRect);
         }
 
         protected override RectOffset GetBorderSize()

@@ -91,12 +91,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
                         if (predefinedAssemblyNames == null)
                         {
                             predefinedAssemblyNames = new HashSet<string>(EditorBuildRules.PredefinedTargetAssemblyNames);
-                            var net46 = MonoLibraryHelpers
-                                .GetSystemLibraryReferences(ApiCompatibilityLevel.NET_4_6).Select(Path.GetFileNameWithoutExtension);
-                            var netstandard20 = MonoLibraryHelpers
-                                .GetSystemLibraryReferences(ApiCompatibilityLevel.NET_Standard_2_0).Select(Path.GetFileNameWithoutExtension);
-                            predefinedAssemblyNames.UnionWith(net46);
-                            predefinedAssemblyNames.UnionWith(netstandard20);
+                            var netfw = MonoLibraryHelpers
+                                .GetSystemLibraryReferences(ApiCompatibilityLevel.NET_Unity_4_8).Select(Path.GetFileNameWithoutExtension);
+                            var netstandard21 = MonoLibraryHelpers
+                                .GetSystemLibraryReferences(ApiCompatibilityLevel.NET_Standard).Select(Path.GetFileNameWithoutExtension);
+                            predefinedAssemblyNames.UnionWith(netfw);
+                            predefinedAssemblyNames.UnionWith(netstandard21);
                         }
 
                         CheckPredefinedAssemblyNames(

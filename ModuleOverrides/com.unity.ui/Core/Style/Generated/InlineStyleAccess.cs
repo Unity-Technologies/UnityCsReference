@@ -326,7 +326,7 @@ namespace UnityEngine.UIElements
             {
                 if (SetStyleValue(StylePropertyId.Color, value))
                 {
-                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Repaint);
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Color);
                 }
             }
         }

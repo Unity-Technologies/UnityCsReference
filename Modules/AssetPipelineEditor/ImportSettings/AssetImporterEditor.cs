@@ -266,6 +266,8 @@ namespace UnityEditor.AssetImporters
             }
             else // newly created editor
             {
+                var editors = Resources.FindObjectsOfTypeAll(this.GetType()).Cast<AssetImporterEditor>();
+
                 CheckExtraDataArray();
                 var loadedIds = new List<int>(t.Length);
                 for (int i = 0; i < t.Length; ++i)
@@ -289,7 +291,6 @@ namespace UnityEditor.AssetImporters
 
                     // proceed to an editor count check to make sure we have the proper number of instances saved.
                     // If it is not the case, then a dispose was not done properly.
-                    var editors = Resources.FindObjectsOfTypeAll(this.GetType()).Cast<AssetImporterEditor>();
                     int count = editors.Count(e => !Unsupported.IsDestroyScriptableObject(e) && e.targets.Contains(t[i]));
                     if (s_UnreleasedInstances != null)
                     {

@@ -13,6 +13,7 @@ namespace UnityEditor
     {
         private SerializedProperty m_MaximumTileChangeCount;
         private SerializedProperty m_ExtrusionFactor;
+        private SerializedProperty m_UseDelaunayMesh;
 
         private new static class Styles
         {
@@ -29,6 +30,7 @@ namespace UnityEditor
             base.OnEnable();
             m_MaximumTileChangeCount = serializedObject.FindProperty("m_MaximumTileChangeCount");
             m_ExtrusionFactor = serializedObject.FindProperty("m_ExtrusionFactor");
+            m_UseDelaunayMesh = serializedObject.FindProperty("m_UseDelaunayMesh");
         }
 
         public override void OnInspectorGUI()
@@ -37,6 +39,7 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_MaximumTileChangeCount, Styles.maximumTileChangeCountLabel);
             using (new EditorGUI.DisabledScope(!(target as TilemapCollider2D).usedByComposite))
                 EditorGUILayout.PropertyField(m_ExtrusionFactor, Styles.extrusionFactorLabel);
+            EditorGUILayout.PropertyField(m_UseDelaunayMesh);
             base.OnInspectorGUI();
             serializedObject.ApplyModifiedProperties();
 

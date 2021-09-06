@@ -351,66 +351,13 @@ namespace UnityEditor
                 minimumSize = new Vector2(270, 308);
                 m_CurrentShader = shader;
                 m_OnSelectedShaderPopup = onSelectedShaderPopup;
-                m_DataSource = new CallbackDataSource(BuildRoot);
+                m_DataSource = new ShaderDropdownDataSource(m_CurrentShader);
                 m_Gui = new MaterialDropdownGUI(m_DataSource);
             }
 
             protected override AdvancedDropdownItem BuildRoot()
             {
-                var root = new AdvancedDropdownItem("Shaders");
-
-                var shaders = ShaderUtil.GetAllShaderInfo();
-                var shaderList = new List<string>();
-                var legacyList = new List<string>();
-                var notSupportedList = new List<string>();
-                var failedCompilationList = new List<string>();
-
-                foreach (var shader in shaders)
-                {
-                    if (shader.name.StartsWith("Deprecated") || shader.name.StartsWith("Hidden"))
-                    {
-                        continue;
-                    }
-                    if (shader.hasErrors)
-                    {
-                        failedCompilationList.Add(shader.name);
-                        continue;
-                    }
-                    if (!shader.supported)
-                    {
-                        notSupportedList.Add(shader.name);
-                        continue;
-                    }
-                    if (shader.name.StartsWith("Legacy Shaders/"))
-                    {
-                        legacyList.Add(shader.name);
-                        continue;
-                    }
-                    shaderList.Add(shader.name);
-                }
-
-                shaderList.Sort((s1, s2) =>
-                {
-                    var order = s2.Count(c => c == '/') - s1.Count(c => c == '/');
-                    if (order == 0)
-                    {
-                        order = s1.CompareTo(s2);
-                    }
-
-                    return order;
-                });
-                legacyList.Sort();
-                notSupportedList.Sort();
-                failedCompilationList.Sort();
-
-                shaderList.ForEach(s => AddShaderToMenu("", root, s, s));
-                if (legacyList.Any() || notSupportedList.Any() || failedCompilationList.Any())
-                    root.AddSeparator();
-                legacyList.ForEach(s => AddShaderToMenu("", root, s, s));
-                notSupportedList.ForEach(s => AddShaderToMenu("Not supported/", root, s, "Not supported/" + s));
-                failedCompilationList.ForEach(s => AddShaderToMenu("Failed to compile/", root, s, "Failed to compile/" + s));
-
-                return root;
+                return m_DataSource.mainTree;
             }
 
             protected override void ItemSelected(AdvancedDropdownItem item)
@@ -418,37 +365,190 @@ namespace UnityEditor
                 m_OnSelectedShaderPopup(((ShaderDropdownItem)item).fullName);
             }
 
-            private void AddShaderToMenu(string prefix, AdvancedDropdownItem parent, string fullShaderName, string shaderName)
+            internal class ShaderDropdownDataSource : AdvancedDropdownDataSource
             {
-                var shaderNameParts = shaderName.Split('/');
-                if (shaderNameParts.Length > 1)
+                Shader m_CurrentShader;
+                internal ShaderDropdownDataSource(Shader currentShader) { m_CurrentShader = currentShader; }
+
+                protected override AdvancedDropdownItem FetchData()
                 {
-                    AddShaderToMenu(prefix, FindOrCreateChild(parent, shaderName), fullShaderName, shaderName.Substring(shaderNameParts[0].Length + 1));
-                }
-                else
-                {
-                    var item = new ShaderDropdownItem(prefix, fullShaderName, shaderName);
-                    parent.AddChild(item);
-                    if (m_CurrentShader != null && m_CurrentShader.name == fullShaderName)
+                    m_SearchableElements = new List<AdvancedDropdownItem>();
+                    var root = new AdvancedDropdownItem("Shaders");
+
+                    var shaders = ShaderUtil.GetAllShaderInfo();
+                    var shaderList = new List<string>();
+                    var legacyList = new List<string>();
+                    var notSupportedList = new List<string>();
+                    var failedCompilationList = new List<string>();
+
+                    foreach (var shader in shaders)
                     {
-                        m_DataSource.selectedIDs.Add(item.id);
+                        if (shader.name.StartsWith("Deprecated") || shader.name.StartsWith("Hidden"))
+                        {
+                            continue;
+                        }
+                        if (shader.hasErrors)
+                        {
+                            failedCompilationList.Add(shader.name);
+                            continue;
+                        }
+                        if (!shader.supported)
+                        {
+                            notSupportedList.Add(shader.name);
+                            continue;
+                        }
+                        if (shader.name.StartsWith("Legacy Shaders/"))
+                        {
+                            legacyList.Add(shader.name);
+                            continue;
+                        }
+                        shaderList.Add(shader.name);
+                    }
+
+                    shaderList.Sort();
+                    var unnestedList =  shaderList.Where(s => s.Count(c => c == '/') == 0).ToList();
+                    shaderList = shaderList.Where(s => s.Count(c => c == '/') > 0).ToList();
+                    shaderList.AddRange(unnestedList);
+
+                    legacyList.Sort();
+                    notSupportedList.Sort();
+                    failedCompilationList.Sort();
+
+                    shaderList.ForEach(s => AddShaderToMenu("", root, s, s));
+                    if (legacyList.Any() || notSupportedList.Any() || failedCompilationList.Any())
+                        root.AddSeparator();
+                    legacyList.ForEach(s => AddShaderToMenu("", root, s, s));
+                    notSupportedList.ForEach(s => AddShaderToMenu("Not supported/", root, s, "Not supported/" + s));
+                    failedCompilationList.ForEach(s => AddShaderToMenu("Failed to compile/", root, s, "Failed to compile/" + s));
+
+                    return root;
+                }
+
+                private void AddShaderToMenu(string prefix, AdvancedDropdownItem parent, string fullShaderName, string shaderName)
+                {
+                    var shaderNameParts = shaderName.Split('/');
+                    if (shaderNameParts.Length > 1)
+                    {
+                        AddShaderToMenu(prefix, FindOrCreateChild(parent, shaderName), fullShaderName, shaderName.Substring(shaderNameParts[0].Length + 1));
+                    }
+                    else
+                    {
+                        var item = new ShaderDropdownItem(prefix, fullShaderName, shaderName);
+                        parent.AddChild(item);
+                        m_SearchableElements.Add(item);
+                        if (m_CurrentShader != null && m_CurrentShader.name == fullShaderName)
+                        {
+                            selectedIDs.Add(item.id);
+                        }
                     }
                 }
-            }
 
-            private AdvancedDropdownItem FindOrCreateChild(AdvancedDropdownItem parent, string path)
-            {
-                var shaderNameParts = path.Split('/');
-                var group = shaderNameParts[0];
-                foreach (var child in parent.children)
+                private AdvancedDropdownItem FindOrCreateChild(AdvancedDropdownItem parent, string path)
                 {
-                    if (child.name == group)
-                        return child;
+                    var shaderNameParts = path.Split('/');
+                    var group = shaderNameParts[0];
+                    foreach (var child in parent.children)
+                    {
+                        if (child.name == group)
+                            return child;
+                    }
+
+                    var item = new AdvancedDropdownItem(group);
+                    parent.AddChild(item);
+                    return item;
                 }
 
-                var item = new AdvancedDropdownItem(group);
-                parent.AddChild(item);
-                return item;
+                protected override AdvancedDropdownItem Search(string searchString)
+                {
+                    if (string.IsNullOrEmpty(searchString) || m_SearchableElements == null)
+                        return null;
+
+                    // Support multiple search words separated by spaces.
+                    var searchWords = searchString.ToLower().Split(' ');
+                    var matched = new List<List<AdvancedDropdownItem>>();
+                    matched.Add(new List<AdvancedDropdownItem>());
+
+                    bool found = false;
+                    foreach (var e in m_SearchableElements)
+                    {
+                        if (e.children.Any())
+                            continue;
+
+                        var menuItem = (ShaderDropdownItem)e;
+                        var name = menuItem.fullName.ToLower().Replace(" ", "");
+                        if (AddMatchItem(e, name, searchWords, matched))
+                            found = true;
+                    }
+                    if (!found)
+                    {
+                        foreach (var e in m_SearchableElements)
+                        {
+                            var menuItem = (ShaderDropdownItem)e;
+                            var name = menuItem.fullName.Replace(" ", "");
+                            AddMatchItem(e, name, searchWords, matched);
+                        }
+                    }
+
+                    var searchTree = new AdvancedDropdownItem("Shaders");
+                    for (int i = 0; i < matched.Count; i++)
+                    {
+                        matched[i].Sort((s2, s1) =>
+                        {
+                            var order = (int)((s2 as ShaderDropdownItem)?.fullName.Count(c => c == '/') - (s1 as ShaderDropdownItem)?.fullName.Count(c => c == '/'));
+                            if (order == 0)
+                                order = s2.name.CompareTo(s1.name);
+                            return order;
+                        });
+
+
+                        foreach (var element in matched[i])
+                        {
+                            searchTree.AddChild(element);
+                        }
+                    }
+
+                    return searchTree;
+                }
+
+                protected bool AddMatchItem(AdvancedDropdownItem e, string fullName, string[] searchWords, List<List<AdvancedDropdownItem>> matched)
+                {
+                    int index = -1;
+                    var splitName = searchWords[0].Contains('/') && searchWords.Length == 1 ? new string[1] { fullName } : fullName.Split('/');
+
+                    // See if we match ALL the search words.
+                    for (var w = 0; w < searchWords.Length; w++)
+                    {
+                        index = -1;
+
+                        for (int i = 0; i < splitName.Length; i++)
+                        {
+                            if (splitName[i].Contains(searchWords[w]))
+                            {
+                                if(i >= index)
+                                    index = i;
+                            }
+                            else if(i == splitName.Length - 1 && index == -1)
+                                return false;
+                        }
+                    }
+
+                    // index 0 is reserved for Shader name matches thus the actual index is always higher by one
+                    index++;
+
+                    if (index == splitName.Length)
+                        index = 0;
+
+                    if (index >= matched.Count)
+                    {
+                        for (int i = matched.Count; i <= index; i++)
+                        {
+                            matched.Add(new List<AdvancedDropdownItem>());
+                        }
+                    }
+
+                    matched[index].Add(e);
+                    return true;
+                }
             }
 
             private class ShaderDropdownItem : AdvancedDropdownItem
@@ -470,16 +570,80 @@ namespace UnityEditor
             private class MaterialDropdownGUI : AdvancedDropdownGUI
             {
                 public MaterialDropdownGUI(AdvancedDropdownDataSource dataSource)
-                    : base(dataSource) {}
+                    : base(dataSource) { m_DataSource = dataSource; }
+
+                AdvancedDropdownDataSource m_DataSource;
+
+                private static class Styles
+                {
+                    internal static GUIStyle lineStyleFaint = new GUIStyle("DD ItemStyle");
+                    internal static GUIStyle checkMark = "DD ItemCheckmark";
+                    public static GUIContent checkMarkContent = new GUIContent("✔");
+
+                    static Styles()
+                    {
+                        float val = EditorGUIUtility.isProSkin ? 0.5f : 0.25f;
+                        lineStyleFaint.active.textColor = new Color(val, val, val, 1f);
+                        lineStyleFaint.focused.textColor = new Color(val, val, val, 1f);
+                        lineStyleFaint.hover.textColor = new Color(val, val, val, 1f);
+                        lineStyleFaint.normal.textColor = new Color(val, val, val, 1f);
+                    }
+                }
 
                 internal override void DrawItem(AdvancedDropdownItem item, string name, Texture2D icon, bool enabled, bool drawArrow, bool selected, bool hasSearch)
                 {
                     var newScriptItem = item as ShaderDropdownItem;
+                    string text;
                     if (hasSearch && newScriptItem != null)
                     {
-                        name = string.Format("{0} ({1})", newScriptItem.name, newScriptItem.prefix + newScriptItem.fullName);
+                        DrawSearchItem(item, newScriptItem.name, newScriptItem.prefix + newScriptItem.fullName, selected);
+                        text = newScriptItem.fullName.Contains('/') ? $"{name} ({newScriptItem.fullName})" : name;
                     }
-                    base.DrawItem(item, name, icon, enabled, drawArrow, selected, hasSearch);
+                    else
+                    {
+                        text = name;
+                        base.DrawItem(item, name, icon, enabled, drawArrow, selected, hasSearch);
+                    }
+
+                    if (Event.current.type == EventType.Repaint && hasSearch)
+                    {
+                        var tooltipRect = GUILayoutUtility.GetLastRect();
+                        GUI.Label(tooltipRect, new GUIContent("", text));
+                    }
+                }
+
+                private void DrawSearchItem(AdvancedDropdownItem item, string name, string path, bool selected)
+                {
+                    path = $" ({path.Substring(0, path.Length - name.Length).Trim('/')})";
+                    path = path.Equals(" ()") ? "" : path; // if the path we're left with is equal to " ()" - scrap it
+
+                    var contentWithIcon = new GUIContent(name, path);
+
+                    var rect = GUILayoutUtility.GetRect(contentWithIcon, Styles.lineStyleFaint, GUILayout.ExpandWidth(true));
+                    var fullRect = new Rect(rect);
+
+                    if (Event.current.type != EventType.Repaint)
+                        return;
+
+                    bool checkMark = false;
+                    if (m_DataSource.selectedIDs.Any() && m_DataSource.selectedIDs.Contains(item.id))
+                    {
+                        checkMark = true;
+                        var checkMarkRect = new Rect(fullRect);
+                        checkMarkRect.width = iconSize.x + 1;
+                        Styles.checkMark.Draw(checkMarkRect, Styles.checkMarkContent, selected, selected, selected, selected);
+                    }
+
+                    var emptySpace = Styles.lineStyleFaint.CalcSize(contentWithIcon);
+                    rect.x += emptySpace.x + iconSize.x + 1;
+
+                    if (!checkMark)
+                        lineStyle.Draw(fullRect, new GUIContent(), selected, selected, selected, selected);
+
+                    fullRect.x += iconSize.x + 1;
+                    lineStyle.Draw(fullRect, contentWithIcon, selected & checkMark, selected & checkMark, selected & checkMark, selected & checkMark);
+
+                    Styles.lineStyleFaint.Draw(rect, new GUIContent(path, path), selected, false, false, false);
                 }
             }
         }
@@ -832,7 +996,9 @@ namespace UnityEditor
             EditorGUIUtility.labelWidth = 0f;
 
             // fix for case 1245429 where we sometimes get a rounding issue when converting between gamma and linear, which causes us to break the slider
-            float value = Mathf.Clamp(prop.floatValue, prop.rangeLimits.x, prop.rangeLimits.y);
+            // we need to check if the range is inverted before clamping (case 1351151)
+            bool invert = prop.rangeLimits.x > prop.rangeLimits.y;
+            float value = Mathf.Clamp(prop.floatValue, invert ? prop.rangeLimits.y : prop.rangeLimits.x, invert ? prop.rangeLimits.x : prop.rangeLimits.y);
 
             float newValue = EditorGUI.PowerSlider(position, label, value, prop.rangeLimits.x, prop.rangeLimits.y, power);
             EditorGUI.showMixedValue = false;

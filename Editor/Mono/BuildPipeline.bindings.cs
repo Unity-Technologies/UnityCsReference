@@ -145,13 +145,14 @@ namespace UnityEditor
         CollectDependencies = 2, // 1 << 1
 
         // Forces inclusion of the entire asset.
-        [Obsolete("This has been made obsolete. It is always enabled in the new AssetBundle build system introduced in 5.0.")]
+        [Obsolete("This has been made obsolete. It is always disabled in the new AssetBundle build system introduced in 5.0.")]
         CompleteAssets = 4, // 1 << 2
 
         // Do not include type information within the AssetBundle.
         DisableWriteTypeTree = 8, // 1 << 3
 
         // Builds an asset bundle using a hash for the id of the object stored in the asset bundle.
+        [Obsolete("This has been made obsolete. It is always enabled in the new AssetBundle build system introduced in 5.0.")]
         DeterministicAssetBundle = 16, // 1 << 4
 
         // Force rebuild the asset bundle.
@@ -334,6 +335,10 @@ namespace UnityEditor
             if (!ValidateLocationPathNameForBuildTargetGroup(locationPathName, buildTargetGroup, target, subtarget, options, out locationPathNameError))
                 throw new ArgumentException(locationPathNameError);
 
+            string scenesError;
+            if (!ValidateScenePaths(scenes, out scenesError))
+                throw new ArgumentException(scenesError);
+
             if ((options & BuildOptions.AcceptExternalModificationsToPlayer) == BuildOptions.AcceptExternalModificationsToPlayer)
             {
                 CanAppendBuild canAppend = BuildCanBeAppended(target, locationPathName);
@@ -341,6 +346,12 @@ namespace UnityEditor
                     throw new InvalidOperationException("The build target does not support build appending.");
                 if (canAppend == CanAppendBuild.No)
                     throw new InvalidOperationException("The build cannot be appended.");
+            }
+
+            if (scenes != null)
+            {
+                for (int i = 0; i < scenes.Length; i++)
+                    scenes[i] = scenes[i].Replace('\\', '/').Replace("//", "/");
             }
 
             try
@@ -379,6 +390,27 @@ namespace UnityEditor
                         "Provided path: '{1}', expected a path with the extension '.{2}'.", target, locationPathName,
                         extensionForBuildTarget);
                     return false;
+                }
+            }
+
+            errorMessage = "";
+
+            return true;
+        }
+
+        internal static bool ValidateScenePaths(string[] scenes, out string errorMessage)
+        {
+            if (scenes != null)
+            {
+                for (int i = 0; i < scenes.Length; i++)
+                {
+                    string scenePath = scenes[i].Replace('\\', '/');
+
+                    if (scenePath.Contains("///"))
+                    {
+                        errorMessage = string.Format("Scene path \"{0}\" contains invalid directory separators.", scenes[i]);
+                        return false;
+                    }
                 }
             }
 
@@ -612,12 +644,22 @@ namespace UnityEditor
 
         public static string GetPlaybackEngineDirectory(BuildTarget target, BuildOptions options)
         {
+            return GetPlaybackEngineDirectory(target, options, true);
+        }
+
+        public static string GetPlaybackEngineDirectory(BuildTarget target, BuildOptions options, bool assertUnsupportedPlatforms)
+        {
             BuildTargetGroup buildTargetGroup = GetBuildTargetGroup(target);
-            return GetPlaybackEngineDirectory(buildTargetGroup, target, options);
+            return GetPlaybackEngineDirectory(buildTargetGroup, target, options, assertUnsupportedPlatforms);
+        }
+
+        public static string GetPlaybackEngineDirectory(BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options)
+        {
+            return GetPlaybackEngineDirectory(buildTargetGroup, target, options, true);
         }
 
         [FreeFunction(IsThreadSafe = true)]
-        public static extern string GetPlaybackEngineDirectory(BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options);
+        public static extern string GetPlaybackEngineDirectory(BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options, bool assertUnsupportedPlatforms);
 
         [FreeFunction(IsThreadSafe = true)]
         internal static extern string GetPlaybackEngineExtensionDirectory(BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options);

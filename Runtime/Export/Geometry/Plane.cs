@@ -54,11 +54,11 @@ namespace UnityEngine
             m_Distance = -Vector3.Dot(m_Normal, a);
         }
 
-        // Sets a plane using a point that lies within it plus a normal to orient it (note that the normal must be a normalized vector).
+        // Sets a plane using a point that lies within it plus a normal to orient it
         public void SetNormalAndPosition(Vector3 inNormal, Vector3 inPoint)
         {
             m_Normal = Vector3.Normalize(inNormal);
-            m_Distance = -Vector3.Dot(inNormal, inPoint);
+            m_Distance = -Vector3.Dot(m_Normal, inPoint);
         }
 
         // Sets a plane using three points that lie within it.  The points go around clockwise as you look down on the top surface of the plane.

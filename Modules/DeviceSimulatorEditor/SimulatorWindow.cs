@@ -43,7 +43,6 @@ namespace UnityEditor.DeviceSimulation
 
             m_Main = new DeviceSimulatorMain(m_SimulatorState, rootVisualElement, this);
             s_SimulatorInstances.Add(this);
-
             InitPlayModeViewSwapMenu();
         }
 
@@ -64,6 +63,8 @@ namespace UnityEditor.DeviceSimulation
         {
             s_SimulatorInstances.Remove(this);
             m_Main.Dispose();
+
+            PlayModeAnalytics.SimulatorDisableEvent();
         }
 
         void Update()

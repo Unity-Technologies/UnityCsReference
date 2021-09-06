@@ -24,16 +24,16 @@ namespace UnityEditor.Search
         public static bool HasAll(this SearchPropositionFlags flags, SearchPropositionFlags all) => (flags & all) == all;
     }
 
-    readonly struct SearchProposition : IEquatable<SearchProposition>, IComparable<SearchProposition>
+    public readonly struct SearchProposition : IEquatable<SearchProposition>, IComparable<SearchProposition>
     {
-        public readonly string label;
-        public readonly string replacement;
-        public readonly string help;
-        public readonly int priority;
-        public readonly TextCursorPlacement moveCursor;
-        public readonly Texture2D icon;
+        internal readonly string label;
+        internal readonly string replacement;
+        internal readonly string help;
+        internal readonly int priority;
+        internal readonly TextCursorPlacement moveCursor;
+        internal readonly Texture2D icon;
 
-        public bool valid => label != null && replacement != null;
+        internal bool valid => label != null && replacement != null;
 
         public SearchProposition(string label, string replacement = null, string help = null,
                                  int priority = int.MaxValue, TextCursorPlacement moveCursor = TextCursorPlacement.MoveAutoComplete,
@@ -86,7 +86,7 @@ namespace UnityEditor.Search
             return $"{label} > {replacement}";
         }
 
-        public static SortedSet<SearchProposition> Fetch(SearchContext context, in SearchPropositionOptions options)
+        internal static SortedSet<SearchProposition> Fetch(SearchContext context, in SearchPropositionOptions options)
         {
             var propositions = new SortedSet<SearchProposition>();
 
@@ -130,19 +130,19 @@ namespace UnityEditor.Search
         }
     }
 
-    class SearchPropositionOptions
+    public class SearchPropositionOptions
     {
         static readonly char[] s_Delimiters = new[] { '{', '}', '[', ']', '=', ',' };
-        static readonly char[] s_ExtendedDelimiters = new[] { '{', '}', '[', ']', '=', ':' };
+        static readonly char[] s_ExtendedDelimiters = new[] { '{', '}', '[', ']', '=', ':', ',' };
 
-        public readonly string query;
-        public readonly int cursor;
-        public readonly SearchPropositionFlags flags;
+        internal readonly string query;
+        internal readonly int cursor;
+        internal readonly SearchPropositionFlags flags;
 
         private string m_Word;
         private string[] m_Tokens;
 
-        public string word
+        internal string word
         {
             get
             {
@@ -152,7 +152,7 @@ namespace UnityEditor.Search
             }
         }
 
-        public string[] tokens
+        internal string[] tokens
         {
             get
             {
@@ -168,32 +168,32 @@ namespace UnityEditor.Search
             }
         }
 
-        public bool StartsWith(string token)
+        internal bool StartsWith(string token)
         {
             return tokens.Any(t => t.StartsWith(token, StringComparison.OrdinalIgnoreCase));
         }
 
-        public bool StartsWith(params string[] tokens)
+        internal bool StartsWith(params string[] tokens)
         {
             return tokens.Any(t => StartsWith(t));
         }
 
-        public SearchPropositionOptions(SearchPropositionFlags flags)
+        internal SearchPropositionOptions(SearchPropositionFlags flags)
             : this(string.Empty, 0, flags)
         {
         }
 
-        public SearchPropositionOptions(string query, int cursor)
+        internal SearchPropositionOptions(string query, int cursor)
             : this(query, cursor, SearchPropositionFlags.None)
         {
         }
 
-        public SearchPropositionOptions(string query, SearchPropositionFlags flags)
+        internal SearchPropositionOptions(string query, SearchPropositionFlags flags)
             : this(query, query != null ? query.Length : 0, flags)
         {
         }
 
-        public SearchPropositionOptions(string query, int cursor, SearchPropositionFlags flags)
+        internal SearchPropositionOptions(string query, int cursor, SearchPropositionFlags flags)
         {
             this.query = query;
             this.cursor = cursor;
@@ -202,18 +202,37 @@ namespace UnityEditor.Search
             m_Tokens = null;
         }
 
-        public static bool IsExtendedDelimiter(char ch)
+        internal SearchPropositionOptions(in SearchContext context, int cursor)
+        {
+            this.query = context.searchText;
+            this.cursor = cursor;
+            this.flags = SearchPropositionFlags.None;
+            var subQuery = GetTokenAtCursorPosition(query, cursor, IsDelimiter);
+            foreach (var p in context.providers)
+            {
+                if (!subQuery.StartsWith(p.filterId, StringComparison.Ordinal))
+                    continue;
+                subQuery = subQuery.Substring(p.filterId.Length).Trim();
+            }
+            var exToken = GetTokenAtCursorPosition(query, cursor, IsExtendedDelimiter);
+            if (string.IsNullOrEmpty(exToken))
+                m_Tokens = new string[] { subQuery };
+            else
+                m_Tokens = new string[] { subQuery, exToken };
+        }
+
+        internal static bool IsExtendedDelimiter(char ch)
         {
             return char.IsWhiteSpace(ch) || Array.IndexOf(s_ExtendedDelimiters, ch) != -1;
         }
 
-        public static bool IsDelimiter(char ch)
+        internal static bool IsDelimiter(char ch)
         {
             return char.IsWhiteSpace(ch) || Array.IndexOf(s_Delimiters, ch) != -1;
         }
 
-        public bool HasAny(SearchPropositionFlags f) => (flags & f) != 0;
-        public bool HasAll(SearchPropositionFlags all) => (flags & all) == all;
+        internal bool HasAny(SearchPropositionFlags f) => (flags & f) != 0;
+        internal bool HasAll(SearchPropositionFlags all) => (flags & all) == all;
 
         private static string GetWordAtCursorPosition(string txt, int cursorIndex, out int startPos, out int endPos)
         {
@@ -232,7 +251,10 @@ namespace UnityEditor.Search
 
         private static string GetTokenAtCursorPosition(string txt, int cursorIndex, out int startPos, out int endPos, Func<char, bool> check)
         {
-            if (txt.Length > 0 && (cursorIndex == txt.Length || IsDelimiter(txt[cursorIndex])))
+            while (cursorIndex >= txt.Length)
+                cursorIndex--;
+
+            if (txt.Length > 0 && IsDelimiter(txt[cursorIndex]))
                 cursorIndex--;
 
             startPos = cursorIndex;

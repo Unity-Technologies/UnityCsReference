@@ -245,8 +245,8 @@ namespace UnityEditorInternal
                 Styles.rightPane.Draw(r, false, false, active, false);
 
                 r.height -= 1.0f; // do not draw the bottom pixel
-                if (type == ProfilerModuleChartType.StackedTimeArea)
-                    DrawChartStacked(selectedFrame, cdata, r, active);
+                if (type.IsStackedChartType())
+                    DrawChartStacked(selectedFrame, cdata, r, active, type);
                 else
                     DrawChartLine(selectedFrame, cdata, r, active);
             }
@@ -395,7 +395,7 @@ namespace UnityEditorInternal
             }
         }
 
-        private void DrawChartStacked(int selectedFrame, ChartViewData cdata, Rect r, bool chartActive)
+        private void DrawChartStacked(int selectedFrame, ChartViewData cdata, Rect r, bool chartActive, ProfilerModuleChartType type)
         {
             HandleUtility.ApplyWireMaterial();
 
@@ -419,7 +419,7 @@ namespace UnityEditorInternal
             DrawSelectedFrame(selectedFrame, cdata, r);
 
             DrawGridStacked(r, cdata);
-            DrawLabels(r, cdata, selectedFrame, ProfilerModuleChartType.StackedTimeArea);
+            DrawLabels(r, cdata, selectedFrame, type);
         }
 
         internal static void DoLabel(float x, float y, string text, float alignment)
@@ -500,7 +500,7 @@ namespace UnityEditorInternal
 
             // get values of all series and cumulative value of all enabled stacks
             m_SelectedFrameValues.Clear();
-            var stacked = chartType == ProfilerModuleChartType.StackedTimeArea;
+            var stacked = chartType.IsStackedChartType();
             var numLabels = 0;
 
             for (int s = 0; s < data.numSeries; ++s)
@@ -957,7 +957,7 @@ namespace UnityEditorInternal
                 if (i == m_DragItemIndex)
                     controlPosition.y = mousePosition.y - m_DragDownPos.y;
 
-                if (chartType == ProfilerModuleChartType.StackedTimeArea)
+                if (chartType.IsStackedChartType())
                 {
                     Rect dragHandlePosition = controlPosition;
                     dragHandlePosition.xMin = dragHandlePosition.xMax - elementPosition.height;

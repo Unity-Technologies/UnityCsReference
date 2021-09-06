@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -25,11 +26,12 @@ namespace UnityEditorInternal
         public readonly bool performEngineStripping;
         public readonly IIl2CppPlatformProvider il2CppPlatformProvider;
         public readonly UnityLinkerBuildPipelineData pipelineData;
+        public readonly BuildReport buildReport;
 
         public UnityLinkerRunInformation(string managedAssemblyFolderPath,
                                          BaseUnityLinkerPlatformProvider platformProvider, BuildTarget buildTarget,
                                          RuntimeClassRegistry rcr, ManagedStrippingLevel managedStrippingLevel,
-                                         IIl2CppPlatformProvider il2CppPlatformProvider)
+                                         IIl2CppPlatformProvider il2CppPlatformProvider, BuildReport buildReport = null)
         {
             this.managedAssemblyFolderPath = managedAssemblyFolderPath;
             target = buildTarget;
@@ -37,6 +39,7 @@ namespace UnityEditorInternal
             this.rcr = rcr;
             this.managedStrippingLevel = managedStrippingLevel;
             this.il2CppPlatformProvider = il2CppPlatformProvider;
+            this.buildReport = buildReport;
             pipelineData = new UnityLinkerBuildPipelineData(target, managedAssemblyFolderPath);
 
             buildTargetGroup = BuildPipeline.GetBuildTargetGroup(buildTarget);
@@ -48,7 +51,9 @@ namespace UnityEditorInternal
 
         public string ModulesAssetFilePath => platformProvider.modulesAssetFile;
 
-        public BuildReport BuildReport => il2CppPlatformProvider == null ? null : il2CppPlatformProvider.buildReport;
+        // *begin-nonstandard-formatting*
+        public BuildReport BuildReport => buildReport ?? il2CppPlatformProvider?.buildReport;
+        // *end-nonstandard-formatting*
 
         public StrippingInfo BuildReportData => BuildReport == null ? null : StrippingInfo.GetBuildReportData(BuildReport);
 

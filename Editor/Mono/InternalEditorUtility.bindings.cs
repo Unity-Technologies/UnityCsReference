@@ -928,8 +928,12 @@ namespace UnityEditorInternal
         [FreeFunction("HandleProjectWindowFileDrag")]
         internal static extern DragAndDropVisualMode HandleProjectWindowFileDrag(string newParentPath, string[] paths, bool perform, int defaultPromptAction);
 
+        //Drag and drop current selection to project window
+        //Set prefabVariantCreationModeDialogChoice to -1 to allow dialogs to be shown.
+        //If set to 0 or 1 no dialogs will be shown. Using a value of 0 is similar to choosing PrefabVariantCreationMode::kOriginal and a value of 1 is similar to choosing PrefabVariantCreationMode::kVariant from the "Create Prefab or Variant" dialog if dropping a Prefab instance to the Project Browser.
+        //Non-zero values also blocks the "Cyclic References" error dialog, and it defaults the "Possibly unwanted Prefab replacement" menu to return "Replace Anyway".
         [FreeFunction("InternalEditorUtilityBindings::DragAndDropPrefabsFromHierarchyToProjectWindow")]
-        internal static extern DragAndDropVisualMode DragAndDropPrefabsFromHierarchyToProjectWindow(string destAssetGuid, bool perform, int dialogOption);
+        internal static extern DragAndDropVisualMode DragAndDropPrefabsFromHierarchyToProjectWindow(string destAssetGuid, bool perform, int prefabVariantCreationModeDialogChoice);
 
         [FreeFunction]
         [NativeHeader("Editor/Src/Undo/DefaultParentObjectUndo.h")]

@@ -25,22 +25,36 @@ namespace UnityEditor
 
         int m_AllLayersMask = 0;
 
+        bool m_SingleSelection = false;
+        EditorUtility.SelectMenuItemFunction m_MaskChangeCallback;
+
         float m_windowSize = 100.0f;
         public MaskFieldDropDown(SerializedProperty property)
         {
             m_SerializedProperty = property;
+            m_SingleSelection = false;
+        }
+
+        public MaskFieldDropDown(string[] optionNames, int[] optionMaskValues, int mask, EditorUtility.SelectMenuItemFunction maskChangeCallback)
+        {
+            // these are not flag values, i.e. 1, 2, 4...
+            // but the mask & flagValue[0..n] for each possible flag value
+            // this is to ensure backwards compatibility with everything that uses MaskFieldGUI.GetSelectedValueForControl
+            m_OptionMaskValues = (uint[])(object)optionMaskValues;
+            m_OptionNames = optionNames;
+            m_SelectionMatch = new SelectionModes[] { SelectionModes.All };
+            m_SelectionMaskValues = new uint[] { (uint)mask };
+
+            m_SingleSelection = true;
+            m_MaskChangeCallback = maskChangeCallback;
+
+            for (int i = 2; i < m_OptionMaskValues.Length; i++)
+                m_AllLayersMask |= ((int)m_SelectionMaskValues[0] ^ (int)m_OptionMaskValues[i]);
         }
 
         public override Vector2 GetWindowSize()
         {
-            var rowCount = 2;
-            for (var i = 0; i < m_LayerCount; i++)
-            {
-                var s = InternalEditorUtility.GetLayerName(i);
-                if (s != string.Empty)
-                    rowCount++;
-            }
-
+            var rowCount = m_OptionNames[0] == "Nothing" ? m_OptionNames.Length : m_OptionNames.Length + 2;
             return new Vector2(m_windowSize, (EditorGUI.kSingleLineHeight + 2) * rowCount);
         }
 
@@ -71,19 +85,67 @@ namespace UnityEditor
             GUI.Label(rect, GUIContent.none, backgroundStyle);
         }
 
+        void DrawGUIForArrays()
+        {
+            for (int i = 0; i < m_OptionNames.Length; i++)
+            {
+                bool toggleVal = (m_SelectionMaskValues[0] & m_OptionMaskValues[i]) == m_OptionMaskValues[i];
+                if (m_SelectionMaskValues[0] != 0 && i == 0)
+                    toggleVal = false;
+                if ((m_SelectionMaskValues[0] == int.MaxValue || m_SelectionMaskValues[0] == m_AllLayersMask) && i == 1)
+                    toggleVal = true;
+
+                EditorGUI.BeginChangeCheck();
+                var guiRect = EditorGUILayout.GetControlRect(false, EditorGUI.kSingleLineHeight);
+                guiRect.width = GetWindowSize().x;
+                guiRect.x = 0;
+                DrawListBackground(guiRect, i % 2 == 0);
+                var value = GUI.Toggle(guiRect, toggleVal, m_OptionNames[i], Styles.menuItem);
+
+                if (EditorGUI.EndChangeCheck())
+                {
+                    m_SelectionMaskValues[0] = m_OptionMaskValues[i];
+                    var oldMaskValues = m_OptionMaskValues.Clone();
+                    RecalculateMasks();
+                    m_MaskChangeCallback.Invoke(oldMaskValues, null, i);
+                }
+            }
+        }
+
+        void RecalculateMasks()
+        {
+            m_OptionMaskValues[0] = 0;
+            m_OptionMaskValues[1] = int.MaxValue;
+
+            for (var flagIndex = 2; flagIndex < m_OptionMaskValues.Length; flagIndex++)
+            {
+                var flagValue = (m_SelectionMaskValues[0] & m_OptionMaskValues[flagIndex]) == 0 ? (int)Math.Log((m_SelectionMaskValues[0] & ~m_OptionMaskValues[flagIndex]), 2) : (int)Math.Log((m_SelectionMaskValues[0] & m_OptionMaskValues[flagIndex]), 2);
+                var flagSet = ((m_SelectionMaskValues[0] & flagValue) == flagValue);
+                var newMask = (flagSet ? m_SelectionMaskValues[0] & ~flagValue : (int)m_SelectionMaskValues[0] | flagValue);
+
+                m_OptionMaskValues[flagIndex] = (uint)newMask;
+            }
+        }
+
         public override void OnGUI(Rect rect)
         {
             if (Event.current.type == EventType.MouseMove)
                 Event.current.Use();
-
-            if (m_SerializedProperty.propertyType != SerializedPropertyType.LayerMask)
-                return;
 
             if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape)
             {
                 editorWindow.Close();
                 GUIUtility.ExitGUI();
             }
+
+            if (m_SingleSelection)
+            {
+                DrawGUIForArrays();
+                return;
+            }
+
+            if (m_SerializedProperty.propertyType != SerializedPropertyType.LayerMask)
+                return;
 
             var isNothing = m_SerializedProperty.intValue == 0;
             var isEverything = m_SerializedProperty.intValue == int.MaxValue;
@@ -158,13 +220,16 @@ namespace UnityEditor
 
         public override void OnOpen()
         {
-            m_SelectionMatch = new SelectionModes[m_LayerCount];
-            GetMultiSelectionValues(m_SerializedProperty, out m_SelectionMaskValues, out m_SelectionMatch, m_LayerCount);
-            int[] definedLayers = new int[m_SelectionMaskValues.Length];
-            TagManager.GetDefinedLayers(ref m_OptionNames, ref definedLayers);
-            m_OptionMaskValues = definedLayers.Select(v => (uint)v).ToArray();
-            for (int i = 0; i < m_OptionMaskValues.Length; i++)
-                m_AllLayersMask |= (int)m_OptionMaskValues[i];
+            if (!m_SingleSelection)
+            {
+                m_SelectionMatch = new SelectionModes[m_LayerCount];
+                GetMultiSelectionValues(m_SerializedProperty, out m_SelectionMaskValues, out m_SelectionMatch, m_LayerCount);
+                int[] definedLayers = new int[m_SelectionMaskValues.Length];
+                TagManager.GetDefinedLayers(ref m_OptionNames, ref definedLayers);
+                m_OptionMaskValues = definedLayers.Select(v => (uint)v).ToArray();
+                for (int i = 0; i < m_OptionMaskValues.Length; i++)
+                    m_AllLayersMask |= (int)m_OptionMaskValues[i];
+            }
 
             for (int i = 0; i < m_OptionNames.Length; i++)
             {
@@ -180,6 +245,8 @@ namespace UnityEditor
         public override void OnClose()
         {
             Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+            Event.current?.Use();
+            MaskFieldGUI.DestroyMaskCallBackInfo();
             base.OnClose();
         }
 

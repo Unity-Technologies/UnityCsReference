@@ -239,6 +239,24 @@ namespace UnityEditor
                 set;
             }
 
+            [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
+            extern public static int NVNGraphicsFirmwareMemory
+            {
+                [NativeMethod("GetSwitchNVNGraphicsFirmwareMemory")]
+                get;
+                [NativeMethod("SetSwitchNVNGraphicsFirmwareMemory")]
+                set;
+            }
+
+            [StaticAccessor("PlayerSettings", StaticAccessorType.DoubleColon)]
+            extern public static int defaultSwitchNVNGraphicsFirmwareMemory { get; }
+
+            [StaticAccessor("PlayerSettings", StaticAccessorType.DoubleColon)]
+            extern public static int minimumSwitchNVNGraphicsFirmwareMemory { get; }
+
+            [StaticAccessor("PlayerSettings", StaticAccessorType.DoubleColon)]
+            extern public static int maximumSwitchNVNGraphicsFirmwareMemory { get; }
+
             // Controls the behavior of Switch's auto-changing screen resolution
             [NativeProperty("switchScreenResolutionBehavior", TargetType.Field)]
             extern public static ScreenResolutionBehavior screenResolutionBehavior { get; set; }
@@ -587,6 +605,14 @@ namespace UnityEditor
             // Number of micro seconds used by switchUseMicroSleepForYield
             [NativeProperty("switchMicroSleepForYieldTime", TargetType.Field)]
             extern public static int switchMicroSleepForYieldTime { get; set; }
+
+            //Enable the RamDisk support
+            [NativeProperty("switchEnableRamDiskSupport", TargetType.Field)]
+            extern public static bool switchEnableRamDiskSupport { get; set; }
+
+            //To specify how much space should be allocated for the ram disk
+            [NativeProperty("switchRamDiskSpaceSize", TargetType.Field)]
+            extern public static int switchRamDiskSpaceSize { get; set; }
         }
     }
 }

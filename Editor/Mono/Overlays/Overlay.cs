@@ -54,6 +54,8 @@ namespace UnityEditor.Overlays
         public event Action<bool> collapsedChanged;
         bool m_Collapsed;
 
+        internal bool dontSaveInLayout {get; set;}
+
         static VisualTreeAsset s_TreeAsset;
         event Action displayNameChanged;
         string m_DisplayName;
@@ -163,7 +165,11 @@ namespace UnityEditor.Overlays
             else
             {
                 m_CollapsedContent.RemoveFromHierarchy();
-                m_ContentRoot.Add(m_CurrentContent ?? (m_CurrentContent = CreateContent(layout)));
+                bool layoutSupported = (layout & supportedLayouts) == layout;
+                m_Layout = layoutSupported ? layout : Layout.Panel;
+                m_ContentRoot.Add(m_CurrentContent ??= CreateContent(layout));
+                if(!layoutSupported)
+                    layoutChanged?.Invoke(layout);
             }
 
             UpdateStyling();
@@ -301,6 +307,7 @@ namespace UnityEditor.Overlays
             m_RootVisualElement = new VisualElement();
             treeAsset.CloneTree(m_RootVisualElement);
 
+            m_RootVisualElement.usageHints = UsageHints.DynamicTransform;
             m_RootVisualElement.AddToClassList(ussClassName);
             m_ContentRoot = m_RootVisualElement.Q("overlay-content");
             m_ContentRoot.renderHints = RenderHints.ClipWithScissors;
@@ -312,7 +319,6 @@ namespace UnityEditor.Overlays
             header.AddManipulator(contextClick);
             header.AddManipulator(dragger);
             m_CollapsedContent = m_RootVisualElement.Q(k_CollapsedContent);
-            rootVisualElement.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
 
             var iconElement = m_RootVisualElement.Q<Label>(classes: k_CollapsedIconButton);
             var iconTexture = EditorGUIUtility.LoadIcon(EditorGUIUtility.GetIconPathFromAttribute(GetType()));
@@ -332,6 +338,10 @@ namespace UnityEditor.Overlays
             m_RootVisualElement.Insert(0, m_BeforeDropZone = new OverlayDropZone(this, OverlayDropZone.Placement.Before));
             m_RootVisualElement.Add(m_AfterDropZone = new OverlayDropZone(this, OverlayDropZone.Placement.After));
             m_RootVisualElement.tooltip = L10n.Tr(displayName);
+
+            collapsedChanged += b => m_DisplayChanged = true;
+            floatingChanged += b => m_DisplayChanged = true;
+            layoutChanged += b => m_DisplayChanged = true;
 
             layout = Layout.Panel;
             OnCollapsedChanged(collapsed);
@@ -419,8 +429,7 @@ namespace UnityEditor.Overlays
             else
             {
                 rootVisualElement.style.position = Position.Relative;
-                rootVisualElement.style.left = 0;
-                rootVisualElement.style.top = 0;
+                rootVisualElement.transform.position = Vector3.zero;
                 rootVisualElement.RemoveFromClassList(k_Floating);
             }
 
@@ -482,6 +491,7 @@ namespace UnityEditor.Overlays
             bool collapsed,
             bool floating,
             Vector2 floatingSnapOffset,
+            Vector2 snapOffsetDelta,
             Layout layout,
             SnapCorner snapCorner,
             OverlayContainer container)
@@ -497,7 +507,7 @@ namespace UnityEditor.Overlays
 
             // We need to set this property after the call to UpdateStyling() as the assignment triggers
             // OverlayPlacement.UpdateAbsolutePosition() which depends on the style being up to date.
-            this.floatingSnapOffset = floatingSnapOffset;
+            SetSnappingOffset(floatingSnapOffset, snapOffsetDelta);
             OnCollapsedChanged(collapsed);
 
             layoutChanged?.Invoke(m_Layout);

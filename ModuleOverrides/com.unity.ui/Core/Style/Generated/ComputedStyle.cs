@@ -1279,7 +1279,7 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.Color:
                     inheritedData.Write().color = newValue;
-                    ve.IncrementVersion(VersionChangeType.Repaint | VersionChangeType.StyleSheet);
+                    ve.IncrementVersion(VersionChangeType.Color | VersionChangeType.StyleSheet);
                     break;
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     rareData.Write().unityBackgroundImageTintColor = newValue;

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using JetBrains.Annotations;
 using Unity.Profiling;
 using UnityEngine.Assertions;
+using UnityEngine.Pool;
 using UnityEngine.UIElements.Experimental;
 using UnityEngine.UIElements.StyleSheets;
 
@@ -39,6 +40,18 @@ namespace UnityEngine.UIElements
 
     internal class StylePropertyAnimationSystem : IStylePropertyAnimationSystem
     {
+        [Flags]
+        private enum TransitionState
+        {
+            None = 0,
+            Running = 1 << 0,
+            Started = 1 << 1,
+            Ended = 1 << 2,
+            Canceled = 1 << 3
+        }
+
+        private long m_CurrentTimeMs = 0;
+
         private struct AnimationDataSet<TTimingData, TStyleData>
         {
             private const int InitialSize = 2;
@@ -210,6 +223,56 @@ namespace UnityEngine.UIElements
 
         abstract class Values<T> : Values
         {
+            private long m_CurrentTimeMs = 0;
+            private class TransitionEventsFrameState
+            {
+                private static readonly UnityEngine.Pool.ObjectPool<Queue<EventBase>> k_EventQueuePool = new UnityEngine.Pool.ObjectPool<Queue<EventBase>>(() => new Queue<EventBase>(4));
+
+                // Contains the transition state that changed during the frame.
+                public readonly Dictionary<ElementPropertyPair, TransitionState> elementPropertyStateDelta = new Dictionary<ElementPropertyPair, TransitionState>(ElementPropertyPair.Comparer);
+                // Contains the events that were queued during the frame, which are collapsed if needed when QueueTransitionCancelEvent is called.
+                public readonly Dictionary<ElementPropertyPair, Queue<EventBase>> elementPropertyQueuedEvents = new Dictionary<ElementPropertyPair, Queue<EventBase>>(ElementPropertyPair.Comparer);
+                public IPanel panel;
+
+                private int m_ChangesCount;
+
+                public static Queue<EventBase> GetPooledQueue()
+                {
+                    return k_EventQueuePool.Get();
+                }
+
+                public void RegisterChange()
+                {
+                    m_ChangesCount++;
+                }
+
+                public void UnregisterChange()
+                {
+                    m_ChangesCount--;
+                }
+
+                public bool StateChanged()
+                {
+                    return m_ChangesCount > 0;
+                }
+
+                public void Clear()
+                {
+                    foreach (var kvp in elementPropertyQueuedEvents)
+                    {
+                        elementPropertyStateDelta[kvp.Key] = TransitionState.None;
+                        kvp.Value.Clear();
+                        k_EventQueuePool.Release(kvp.Value);
+                    }
+                    elementPropertyQueuedEvents.Clear();
+                    panel = null;
+                    m_ChangesCount = 0;
+                }
+            }
+
+            private TransitionEventsFrameState m_CurrentFrameEventsState = new TransitionEventsFrameState();
+            private TransitionEventsFrameState m_NextFrameEventsState = new TransitionEventsFrameState();
+
             public struct TimingData
             {
                 public long startTimeMs;
@@ -240,75 +303,162 @@ namespace UnityEngine.UIElements
 
             public abstract Func<T, T, bool> SameFunc { get; }
 
+            protected virtual bool ConvertUnits(VisualElement owner, StylePropertyId prop, ref T a, ref T b)
+            {
+                return true;
+            }
+
             protected Values()
             {
                 running = AnimationDataSet<TimingData, StyleData>.Create();
                 completed = AnimationDataSet<EmptyData, T>.Create();
+                m_CurrentTimeMs = Panel.TimeSinceStartupMs();
             }
 
-            private void SendTransitionRunEvent(VisualElement ve, int runningIndex)
+            private void SwapFrameStates()
             {
-                ref var timingData = ref running.timing[runningIndex];
-                long elapsedTimeMs = timingData.delayMs < 0 ? Mathf.Min(Mathf.Max(-timingData.delayMs, 0), timingData.durationMs) : 0;
-                using (s_EventProfilerMarker.Auto())
+                TransitionEventsFrameState temp = m_CurrentFrameEventsState;
+                m_CurrentFrameEventsState = m_NextFrameEventsState;
+                m_NextFrameEventsState = temp;
+            }
+
+            private void QueueEvent(EventBase evt, ElementPropertyPair epp)
+            {
+                evt.target = epp.element;
+                Queue<EventBase> queue;
+
+                if (!m_NextFrameEventsState.elementPropertyQueuedEvents.TryGetValue(epp, out queue))
                 {
-                    using (var evt = TransitionRunEvent.GetPooled(new StylePropertyName(running.properties[runningIndex]), elapsedTimeMs / 1000.0f))
+                    queue = TransitionEventsFrameState.GetPooledQueue();
+                    m_NextFrameEventsState.elementPropertyQueuedEvents.Add(epp, queue);
+                }
+                queue.Enqueue(evt);
+
+                if (m_NextFrameEventsState.panel == null)
+                    m_NextFrameEventsState.panel = epp.element.panel;
+                m_NextFrameEventsState.RegisterChange();
+            }
+
+            private void ClearEventQueue(ElementPropertyPair epp)
+            {
+                Queue<EventBase> queue;
+                if (m_NextFrameEventsState.elementPropertyQueuedEvents.TryGetValue(epp, out queue))
+                {
+                    while (queue.Count > 0)
                     {
-                        evt.target = ve;
-                        ve.SendEvent(evt);
+                        queue.Dequeue().Dispose();
+                        m_NextFrameEventsState.UnregisterChange();
                     }
                 }
             }
 
-            private void SendTransitionStartEvent(VisualElement ve, int runningIndex)
+            private void QueueTransitionRunEvent(VisualElement ve, int runningIndex)
             {
                 ref var timingData = ref running.timing[runningIndex];
-                long elapsedTimeMs = timingData.delayMs < 0 ? Mathf.Min(Mathf.Max(-timingData.delayMs, 0), timingData.durationMs) : 0;
-                using (s_EventProfilerMarker.Auto())
-                {
-                    using (var evt = TransitionStartEvent.GetPooled(new StylePropertyName(running.properties[runningIndex]), elapsedTimeMs / 1000.0f))
-                    {
-                        evt.target = ve;
-                        ve.SendEvent(evt);
-                    }
-                }
+                var stylePropertyId = running.properties[runningIndex];
+                var elapsedTimeMs = timingData.delayMs < 0 ? Mathf.Min(Mathf.Max(-timingData.delayMs, 0), timingData.durationMs) : 0;
+                var epp = new ElementPropertyPair(ve, stylePropertyId);
+                var evt = TransitionRunEvent.GetPooled(new StylePropertyName(stylePropertyId), elapsedTimeMs / 1000.0f);
+
+                if (m_NextFrameEventsState.elementPropertyStateDelta.ContainsKey(epp))
+                    m_NextFrameEventsState.elementPropertyStateDelta[epp] |= TransitionState.Running;
+                else
+                    m_NextFrameEventsState.elementPropertyStateDelta.Add(epp, TransitionState.Running);
+
+                QueueEvent(evt, epp);
             }
 
-            private void SendTransitionEndEvent(VisualElement ve, int runningIndex)
+            private void QueueTransitionStartEvent(VisualElement ve, int runningIndex)
             {
                 ref var timingData = ref running.timing[runningIndex];
-                using (s_EventProfilerMarker.Auto())
+                var stylePropertyId = running.properties[runningIndex];
+                var elapsedTimeMs = timingData.delayMs < 0 ? Mathf.Min(Mathf.Max(-timingData.delayMs, 0), timingData.durationMs) : 0;
+                var epp = new ElementPropertyPair(ve, stylePropertyId);
+                var evt = TransitionStartEvent.GetPooled(new StylePropertyName(stylePropertyId), elapsedTimeMs / 1000.0f);
+
+                if (m_NextFrameEventsState.elementPropertyStateDelta.ContainsKey(epp))
+                    m_NextFrameEventsState.elementPropertyStateDelta[epp] |= TransitionState.Started;
+                else
+                    m_NextFrameEventsState.elementPropertyStateDelta.Add(epp, TransitionState.Started);
+
+                QueueEvent(evt, epp);
+            }
+
+            private void QueueTransitionEndEvent(VisualElement ve, int runningIndex)
+            {
+                ref var timingData = ref running.timing[runningIndex];
+                var stylePropertyId = running.properties[runningIndex];
+                var epp = new ElementPropertyPair(ve, stylePropertyId);
+                var evt = TransitionEndEvent.GetPooled(new StylePropertyName(stylePropertyId), timingData.durationMs / 1000.0f);
+
+                if (m_NextFrameEventsState.elementPropertyStateDelta.ContainsKey(epp))
+                    m_NextFrameEventsState.elementPropertyStateDelta[epp] |= TransitionState.Ended;
+                else
+                    m_NextFrameEventsState.elementPropertyStateDelta.Add(epp, TransitionState.Ended);
+
+                QueueEvent(evt, epp);
+            }
+
+            private void QueueTransitionCancelEvent(VisualElement ve, int runningIndex, long panelElapsedMs)
+            {
+                ref var timingData = ref running.timing[runningIndex];
+                var stylePropertyId = running.properties[runningIndex];
+                var elapsedTimeMs = timingData.isStarted ? panelElapsedMs - timingData.startTimeMs : 0;
+                var epp = new ElementPropertyPair(ve, stylePropertyId);
+
+                if (timingData.delayMs < 0)
                 {
-                    using (var evt = TransitionEndEvent.GetPooled(new StylePropertyName(running.properties[runningIndex]), timingData.durationMs / 1000.0f))
+                    elapsedTimeMs = -timingData.delayMs + elapsedTimeMs;
+                }
+
+                var evt = TransitionCancelEvent.GetPooled(new StylePropertyName(stylePropertyId), elapsedTimeMs / 1000.0f);
+
+                if (m_NextFrameEventsState.elementPropertyStateDelta.ContainsKey(epp))
+                {
+                    // Delta is empty, set delta to Cancel, OR
+                    // Delta already contains Cancel, set delta to Cancel (removing run and start from the delta).
+                    // e.g. (cancel, run, start) + (cancel) = (cancel)
+                    if (m_NextFrameEventsState.elementPropertyStateDelta[epp] == TransitionState.None ||
+                        (m_NextFrameEventsState.elementPropertyStateDelta[epp] & TransitionState.Canceled) == TransitionState.Canceled)
                     {
-                        evt.target = ve;
-                        ve.SendEvent(evt);
+                        m_NextFrameEventsState.elementPropertyStateDelta[epp] = TransitionState.Canceled;
+                        ClearEventQueue(epp);
+                        QueueEvent(evt, epp);
                     }
+                    // Delta contains something but not Cancel, clearing delta.
+                    else
+                    {
+                        m_NextFrameEventsState.elementPropertyStateDelta[epp] = TransitionState.None;
+                        ClearEventQueue(epp);
+                    }
+                }
+                else
+                {
+                    m_NextFrameEventsState.elementPropertyStateDelta.Add(epp, TransitionState.Canceled);
+                    QueueEvent(evt, epp);
                 }
             }
 
             private void SendTransitionCancelEvent(VisualElement ve, int runningIndex, long panelElapsedMs)
             {
                 ref var timingData = ref running.timing[runningIndex];
-                long elapsedTimeMs = timingData.isStarted ? panelElapsedMs - timingData.startTimeMs : 0;
+                var stylePropertyId = running.properties[runningIndex];
+                var elapsedTimeMs = timingData.isStarted ? panelElapsedMs - timingData.startTimeMs : 0;
+
                 if (timingData.delayMs < 0)
                 {
                     elapsedTimeMs = -timingData.delayMs + elapsedTimeMs;
                 }
 
-                using (s_EventProfilerMarker.Auto())
+                using (var evt = TransitionCancelEvent.GetPooled(new StylePropertyName(stylePropertyId), elapsedTimeMs / 1000.0f))
                 {
-                    using (var evt = TransitionCancelEvent.GetPooled(new StylePropertyName(running.properties[runningIndex]), elapsedTimeMs / 1000.0f))
-                    {
-                        evt.target = ve;
-                        ve.SendEvent(evt);
-                    }
+                    evt.target = ve;
+                    ve.SendEvent(evt);
                 }
             }
 
             public sealed override void CancelAllAnimations()
             {
-                long panelElapsedMs = Panel.TimeSinceStartupMs();
                 var runningCount = running.count;
                 if (runningCount > 0)
                 {
@@ -318,11 +468,13 @@ namespace UnityEngine.UIElements
                         for (int i = 0; i < runningCount; ++i)
                         {
                             var ve = running.elements[i];
-                            SendTransitionCancelEvent(ve, i, panelElapsedMs);
+                            // We send the event instantly instead of queuing it in the case of a panel change, to make sure it is sent while the panel is still the old one.
+                            SendTransitionCancelEvent(ve, i, m_CurrentTimeMs);
                             ForceComputedStyleEndValue(i);
                             ve.styleAnimation.runningAnimationCount--;
                         }
                     }
+
                     running.RemoveAll();
                 }
 
@@ -337,19 +489,22 @@ namespace UnityEngine.UIElements
 
             public sealed override void CancelAllAnimations(VisualElement ve)
             {
-                long panelElapsedMs = Panel.TimeSinceStartupMs();
                 int count = running.count;
 
-                using (new EventDispatcherGate(ve.panel.dispatcher))
+                if (count > 0)
                 {
                     // Loop forward to send the events in the proper order, even though it means we have to loop twice through the running data set.
-                    for (var i = 0; i < count; ++i)
+                    using (new EventDispatcherGate(running.elements[0].panel.dispatcher))
                     {
-                        if (running.elements[i] == ve)
+                        for (var i = 0; i < count; ++i)
                         {
-                            SendTransitionCancelEvent(ve, i, panelElapsedMs);
-                            ForceComputedStyleEndValue(i);
-                            running.elements[i].styleAnimation.runningAnimationCount--;
+                            if (running.elements[i] == ve)
+                            {
+                                // We send the event instantly instead of queuing it in the case of a panel change, to make sure it is sent while the panel is still the old one.
+                                SendTransitionCancelEvent(ve, i, m_CurrentTimeMs);
+                                ForceComputedStyleEndValue(i);
+                                running.elements[i].styleAnimation.runningAnimationCount--;
+                            }
                         }
                     }
                 }
@@ -369,21 +524,18 @@ namespace UnityEngine.UIElements
 
             public sealed override void CancelAnimation(VisualElement ve, StylePropertyId id)
             {
-                using (new EventDispatcherGate(ve.panel.dispatcher))
+                if (running.IndexOf(ve, id, out int runningIndex))
                 {
-                    if (running.IndexOf(ve, id, out int runningIndex))
-                    {
-                        SendTransitionCancelEvent(ve, runningIndex, Panel.TimeSinceStartupMs());
-                        ForceComputedStyleEndValue(runningIndex);
-                        running.Remove(runningIndex);
-                        ve.styleAnimation.runningAnimationCount--;
-                    }
+                    QueueTransitionCancelEvent(ve, runningIndex, m_CurrentTimeMs);
+                    ForceComputedStyleEndValue(runningIndex);
+                    running.Remove(runningIndex);
+                    ve.styleAnimation.runningAnimationCount--;
+                }
 
-                    if (completed.IndexOf(ve, id, out int completedIndex))
-                    {
-                        completed.Remove(completedIndex);
-                        ve.styleAnimation.completedAnimationCount--;
-                    }
+                if (completed.IndexOf(ve, id, out int completedIndex))
+                {
+                    completed.Remove(completedIndex);
+                    ve.styleAnimation.completedAnimationCount--;
                 }
             }
 
@@ -448,108 +600,112 @@ namespace UnityEngine.UIElements
 
                 int combinedDuration = Mathf.Max(0, durationMs) + delayMs;
 
-                using (new EventDispatcherGate(owner.panel.dispatcher))
+                if (!ConvertUnits(owner, prop, ref style.startValue, ref style.endValue))
+                    return false;
+
+                // There was a prior completed animation
+                if (completed.IndexOf(owner, prop, out var completedIndex))
                 {
-                    // There was a prior completed animation
-                    if (completed.IndexOf(owner, prop, out var completedIndex))
+                    // 1. If all of the following are true:
+                    // - the element does not have a completed transition for the property or the end value of the
+                    //   completed transition is different from the after-change style for the property,
+                    if (SameFunc(endValue, completed.style[completedIndex]))
                     {
-                        // 1. If all of the following are true:
-                        // - the element does not have a completed transition for the property or the end value of the
-                        //   completed transition is different from the after-change style for the property,
-                        if (SameFunc(endValue, completed.style[completedIndex]))
-                        {
-                            return false;
-                        }
-
-                        // 1. If all of the following are true:
-                        // - the combined duration is greater than 0s,
-                        if (combinedDuration <= 0)
-                        {
-                            return false;
-                        }
-
-                        // 2. If the element has a completed transition for the property and the end value of the completed
-                        // transition is different from the after-change style for the property, then implementations must
-                        // remove the completed transition from the set of completed transitions.
-                        completed.Remove(completedIndex);
-                        owner.styleAnimation.completedAnimationCount--;
+                        return false;
                     }
 
-                    // Existing animation? See if we can retarget the new one to better fit the old one.
-                    if (running.IndexOf(owner, prop, out var index))
-                    {
-                        long panelElapsedMs = Panel.TimeSinceStartupMs();
-
-                        // 4. If the element has a running transition for the property, there is a matching transition-
-                        // property value, and the end value of the running transition is not equal to the value of the
-                        // property in the after-change style, then:
-                        if (SameFunc(endValue, running.style[index].endValue))
-                        {
-                            return false;
-                        }
-
-                        // 4.1. If the current value of the property in the running transition is equal to the value of the
-                        // property in the after-change style then implementations must cancel the running transition.
-                        if (SameFunc(endValue, running.style[index].currentValue))
-                        {
-                            SendTransitionCancelEvent(owner, index, panelElapsedMs);
-                            running.Remove(index);
-                            owner.styleAnimation.runningAnimationCount--;
-                            return false;
-                        }
-
-                        // 4.2. Otherwise, if the combined duration is less than or equal to 0s [...],
-                        // then implementations must cancel the running transition.
-                        if (combinedDuration <= 0)
-                        {
-                            SendTransitionCancelEvent(owner, index, panelElapsedMs);
-                            running.Remove(index);
-                            owner.styleAnimation.runningAnimationCount--;
-
-                            return false;
-                        }
-
-                        style.startValue = running.style[index].currentValue;
-                        style.currentValue = style.startValue;
-
-                        // 4.3 Otherwise, if the reversing-adjusted start value of the running transition is the same as
-                        // the value of the property in the after-change style, implementations must cancel the running
-                        // transition and start a new transition whose reversing-adjusted start value is the end value
-                        // of the running transition, [...]
-                        if (SameFunc(endValue, running.style[index].startValue))
-                        {
-                            float rsf = timing.reversingShorteningFactor = ComputeReversingShorteningFactor(index);
-                            timing.startTimeMs = currentTimeMs + ComputeReversingDelay(delayMs, rsf);
-                            timing.durationMs = ComputeReversingDuration(durationMs, rsf);
-                            style.reversingAdjustedStartValue = running.style[index].endValue;
-                        }
-
-                        running.timing[index].isStarted = false;
-                        SendTransitionCancelEvent(owner, index, panelElapsedMs);
-                        SendTransitionRunEvent(owner, index);
-                        running.Replace(index, timing, style);
-                        return true;
-                    }
-
-                    // According to the W3 standard, 0-duration anims don't exist, and simply don't start a transition.
                     // 1. If all of the following are true:
                     // - the combined duration is greater than 0s,
                     if (combinedDuration <= 0)
+                    {
                         return false;
+                    }
 
-                    // 1. If all of the following are true:
-                    // - the before-change style is different from the after-change style for that property
-                    if (SameFunc(startValue, endValue))
-                        return false;
-
-                    // If we reached this point, then all the criteria are satisfied to start a new animation.
-                    // Note that animations that no longer have a matching transition-property will be cancelled
-                    // by the style updating system, so we don't need to account for that here.
-
-                    running.Add(owner, prop, timing, style);
-                    owner.styleAnimation.runningAnimationCount++;
-                    SendTransitionRunEvent(owner, running.count - 1);
+                    // 2. If the element has a completed transition for the property and the end value of the completed
+                    // transition is different from the after-change style for the property, then implementations must
+                    // remove the completed transition from the set of completed transitions.
+                    completed.Remove(completedIndex);
+                    owner.styleAnimation.completedAnimationCount--;
                 }
+
+                // Existing animation? See if we can retarget the new one to better fit the old one.
+                if (running.IndexOf(owner, prop, out var index))
+                {
+                    // 4. If the element has a running transition for the property, there is a matching transition-
+                    // property value, and the end value of the running transition is not equal to the value of the
+                    // property in the after-change style, then:
+                    if (SameFunc(endValue, running.style[index].endValue))
+                    {
+                        return false;
+                    }
+
+                    // 4.1. If the current value of the property in the running transition is equal to the value of the
+                    // property in the after-change style then implementations must cancel the running transition.
+                    if (SameFunc(endValue, running.style[index].currentValue))
+                    {
+                        QueueTransitionCancelEvent(owner, index, currentTimeMs);
+                        running.Remove(index);
+                        owner.styleAnimation.runningAnimationCount--;
+                        return false;
+                    }
+
+                    // 4.2. Otherwise, if the combined duration is less than or equal to 0s [...],
+                    // then implementations must cancel the running transition.
+                    if (combinedDuration <= 0)
+                    {
+                        QueueTransitionCancelEvent(owner, index, currentTimeMs);
+                        running.Remove(index);
+                        owner.styleAnimation.runningAnimationCount--;
+                        return false;
+                    }
+
+                    style.startValue = running.style[index].currentValue;
+                    if (!ConvertUnits(owner, prop, ref style.startValue, ref style.endValue))
+                    {
+                        QueueTransitionCancelEvent(owner, index, currentTimeMs);
+                        running.Remove(index);
+                        owner.styleAnimation.runningAnimationCount--;
+                        return false;
+                    }
+                    style.currentValue = style.startValue;
+
+                    // 4.3 Otherwise, if the reversing-adjusted start value of the running transition is the same as
+                    // the value of the property in the after-change style, implementations must cancel the running
+                    // transition and start a new transition whose reversing-adjusted start value is the end value
+                    // of the running transition, [...]
+                    if (SameFunc(endValue, running.style[index].reversingAdjustedStartValue))
+                    {
+                        float rsf = timing.reversingShorteningFactor = ComputeReversingShorteningFactor(index);
+                        timing.startTimeMs = currentTimeMs + ComputeReversingDelay(delayMs, rsf);
+                        timing.durationMs = ComputeReversingDuration(durationMs, rsf);
+                        style.reversingAdjustedStartValue = running.style[index].endValue;
+                    }
+
+                    running.timing[index].isStarted = false;
+                    QueueTransitionCancelEvent(owner, index, currentTimeMs);
+                    QueueTransitionRunEvent(owner, index);
+                    running.Replace(index, timing, style);
+                    return true;
+                }
+
+                // According to the W3 standard, 0-duration anims don't exist, and simply don't start a transition.
+                // 1. If all of the following are true:
+                // - the combined duration is greater than 0s,
+                if (combinedDuration <= 0)
+                    return false;
+
+                // 1. If all of the following are true:
+                // - the before-change style is different from the after-change style for that property
+                if (SameFunc(startValue, endValue))
+                    return false;
+
+                // If we reached this point, then all the criteria are satisfied to start a new animation.
+                // Note that animations that no longer have a matching transition-property will be cancelled
+                // by the style updating system, so we don't need to account for that here.
+
+                running.Add(owner, prop, timing, style);
+                owner.styleAnimation.runningAnimationCount++;
+                QueueTransitionRunEvent(owner, running.count - 1);
 
                 return true;
             }
@@ -564,9 +720,36 @@ namespace UnityEngine.UIElements
 
             public sealed override void Update(long currentTimeMs)
             {
+                m_CurrentTimeMs = currentTimeMs;
                 UpdateProgress(currentTimeMs);
                 UpdateValues();
                 UpdateComputedStyle();
+                if (m_NextFrameEventsState.StateChanged())
+                    ProcessEventQueue();
+            }
+
+            private void ProcessEventQueue()
+            {
+                SwapFrameStates();
+
+                EventDispatcher d = m_CurrentFrameEventsState.panel?.dispatcher;
+                using (new EventDispatcherGate(d))
+                {
+                    foreach (var kvp in m_CurrentFrameEventsState.elementPropertyQueuedEvents)
+                    {
+                        var epp = kvp.Key;
+                        var queue = kvp.Value;
+                        var element = kvp.Key.element;
+
+                        while (queue.Count > 0)
+                        {
+                            var evt = queue.Dequeue();
+                            element.SendEvent(evt);
+                            evt.Dispose();
+                        }
+                    }
+                    m_CurrentFrameEventsState.Clear();
+                }
             }
 
             private void UpdateProgress(long currentTimeMs)
@@ -574,49 +757,45 @@ namespace UnityEngine.UIElements
                 int n = running.count;
                 if (n > 0)
                 {
-                    // All running.elements are in the same Panel, thus we can use the first one to gate the EventDispatcher.
-                    using (new EventDispatcherGate(running.elements[0].panel.dispatcher))
+                    for (int i = 0; i < n; i++)
                     {
-                        for (int i = 0; i < n; i++)
+                        ref var timing = ref running.timing[i];
+                        if (currentTimeMs < timing.startTimeMs)
                         {
-                            ref var timing = ref running.timing[i];
-                            if (currentTimeMs < timing.startTimeMs)
+                            // We implement transition delay by running the animation and forcing the interpolation to be
+                            // frozen at the start value for the duration of the delay. This might not conform entirely
+                            // with the W3 standard, but there is no external system to support and test this property
+                            // so this is a reasonable start.
+                            timing.easedProgress = 0;
+                        }
+                        else if (currentTimeMs >= timing.startTimeMs + timing.durationMs)
+                        {
+                            ref var style = ref running.style[i];
+                            ref var owner = ref running.elements[i];
+
+                            style.currentValue =
+                                style.endValue; // Force end value no matter what the easing curve says.
+                            UpdateComputedStyle(i);
+                            completed.Add(owner, running.properties[i], EmptyData.Default, style.endValue);
+                            owner.styleAnimation.runningAnimationCount--;
+                            owner.styleAnimation.completedAnimationCount++;
+
+                            QueueTransitionEndEvent(owner, i);
+                            running.Remove(i);
+
+                            i--;
+                            n--;
+                        }
+                        else
+                        {
+                            if (!timing.isStarted)
                             {
-                                // We implement transition delay by running the animation and forcing the interpolation to be
-                                // frozen at the start value for the duration of the delay. This might not conform entirely
-                                // with the W3 standard, but there is no external system to support and test this property
-                                // so this is a reasonable start.
-                                timing.easedProgress = 0;
+                                timing.isStarted = true;
+                                QueueTransitionStartEvent(running.elements[i], i);
                             }
-                            else if (currentTimeMs >= timing.startTimeMs + timing.durationMs)
-                            {
-                                ref var style = ref running.style[i];
-                                ref var owner = ref running.elements[i];
 
-                                style.currentValue =
-                                    style.endValue; // Force end value no matter what the easing curve says.
-                                UpdateComputedStyle(i);
-                                completed.Add(owner, running.properties[i], EmptyData.Default, style.endValue);
-                                owner.styleAnimation.runningAnimationCount--;
-                                owner.styleAnimation.completedAnimationCount++;
-
-                                SendTransitionEndEvent(owner, i);
-                                running.Remove(i);
-
-                                i--;
-                                n--;
-                            }
-                            else
-                            {
-                                if (!timing.isStarted)
-                                {
-                                    timing.isStarted = true;
-                                    SendTransitionStartEvent(running.elements[i], i);
-                                }
-
-                                var progress = (currentTimeMs - timing.startTimeMs) / (float)timing.durationMs;
-                                timing.easedProgress = timing.easingCurve(progress);
-                            }
+                            var progress = (currentTimeMs - timing.startTimeMs) / (float)timing.durationMs;
+                            timing.easedProgress = timing.easingCurve(progress);
                         }
                     }
                 }
@@ -696,6 +875,11 @@ namespace UnityEngine.UIElements
             public override Func<Length, Length, bool> SameFunc { get; } = IsSame;
 
             private static bool IsSame(Length a, Length b) => a.unit == b.unit && Mathf.Approximately(a.value, b.value);
+
+            protected sealed override bool ConvertUnits(VisualElement owner, StylePropertyId prop, ref Length a, ref Length b)
+            {
+                return owner.TryConvertLengthUnits(prop, ref a, ref b);
+            }
 
             internal static Length Lerp(Length a, Length b, float t) =>
                 new Length(Mathf.LerpUnclamped(a.value, b.value, t), b.unit);
@@ -988,6 +1172,11 @@ namespace UnityEngine.UIElements
             public override Func<Translate, Translate, bool> SameFunc { get; } = IsSame;
             private static bool IsSame(Translate a, Translate b) => a == b;
 
+            protected sealed override bool ConvertUnits(VisualElement owner, StylePropertyId prop, ref Translate a, ref Translate b)
+            {
+                return owner.TryConvertTranslateUnits(ref a, ref b);
+            }
+
             protected sealed override void UpdateComputedStyle()
             {
                 int n = running.count;
@@ -1022,6 +1211,12 @@ namespace UnityEngine.UIElements
         {
             public override Func<TransformOrigin, TransformOrigin, bool> SameFunc { get; } = IsSame;
             private static bool IsSame(TransformOrigin a, TransformOrigin b) => a == b;
+
+            protected sealed override bool ConvertUnits(VisualElement owner, StylePropertyId prop, ref TransformOrigin a, ref TransformOrigin b)
+            {
+                return owner.TryConvertTransformOriginUnits(ref a, ref b);
+            }
+
             protected sealed override void UpdateComputedStyle()
             {
                 int n = running.count;
@@ -1069,6 +1264,11 @@ namespace UnityEngine.UIElements
 
         // All the value lists with ongoing animations. Add and remove Values objects when animations come in/out.
         private readonly List<Values> m_AllValues = new List<Values>();
+
+        public StylePropertyAnimationSystem()
+        {
+            m_CurrentTimeMs = Panel.TimeSinceStartupMs();
+        }
 
         private T GetOrCreate<T>(ref T values) where T : new()
         {
@@ -1212,20 +1412,18 @@ namespace UnityEngine.UIElements
 
         long CurrentTimeMs()
         {
-            return Panel.TimeSinceStartupMs();
+            return m_CurrentTimeMs;
         }
 
         public void Update()
         {
+            m_CurrentTimeMs = Panel.TimeSinceStartupMs();
             var count = m_AllValues.Count;
             for (int i = 0; i < count; i++)
             {
-                m_AllValues[i].Update(CurrentTimeMs());
+                m_AllValues[i].Update(m_CurrentTimeMs);
             }
         }
-
-        private static readonly string s_EventDescription = "StylePropertyAnimation TransitionEvent";
-        private static readonly ProfilerMarker s_EventProfilerMarker = new ProfilerMarker(s_EventDescription);
     }
 
     internal class EmptyStylePropertyAnimationSystem : IStylePropertyAnimationSystem

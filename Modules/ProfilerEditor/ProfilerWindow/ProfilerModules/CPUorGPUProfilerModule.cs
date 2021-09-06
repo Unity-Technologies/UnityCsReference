@@ -395,7 +395,7 @@ namespace UnityEditorInternal.Profiling
                 return;
             m_ViewType = viewtype;
 
-            ProfilerWindowAnalytics.AddNewView(m_ViewType == ProfilerViewType.Timeline
+            ProfilerWindowAnalytics.SwitchActiveView(m_ViewType == ProfilerViewType.Timeline
                 ? ProfilerWindowAnalytics.profilerCPUModuleTimeline
                 : ProfilerWindowAnalytics.profilerCPUModuleHierarchy);
 

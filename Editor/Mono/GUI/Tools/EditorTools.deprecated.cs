@@ -50,7 +50,7 @@ namespace UnityEditor.EditorTools
 
         public static void RestorePreviousPersistentTool()
         {
-            ToolManager.RestorePreviousPersistentTool();
+            ToolManager.RestorePreviousTool();
         }
 
         public static bool IsActiveTool(EditorTool tool)

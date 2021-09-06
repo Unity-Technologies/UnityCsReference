@@ -14,6 +14,8 @@ namespace UnityEditor.AddComponent
         private static readonly string kSearchHeader = L10n.Tr("Search");
         AdvancedDropdownState m_State;
 
+        internal static readonly string kScriptHeader = "Component/Scripts/";
+
         public AddComponentDataSource(AdvancedDropdownState state)
         {
             m_State = state;
@@ -24,35 +26,51 @@ namespace UnityEditor.AddComponent
             return RebuildTree();
         }
 
+        struct MenuItemData
+        {
+            public string path;
+            public string command;
+            public bool isLegacy;
+        }
+
         protected AdvancedDropdownItem RebuildTree()
         {
             m_SearchableElements = new List<AdvancedDropdownItem>();
             AdvancedDropdownItem root = new ComponentDropdownItem("ROOT");
-            var menuDictionary = GetMenuDictionary();
-            menuDictionary.Sort(CompareItems);
-            for (var i = 0; i < menuDictionary.Count; i++)
+            List<MenuItemData> menuItems = GetSortedMenuItems();
+
+            Dictionary<string, int> pathHashCodeMap = new Dictionary<string, int>();
+
+            for (var i = 0; i < menuItems.Count; i++)
             {
-                var menu = menuDictionary[i];
-                if (menu.Value == "ADD")
+                var menu = menuItems[i];
+                if (menu.command == "ADD")
                 {
                     continue;
                 }
 
-                var menuPath = menu.Key;
-                var paths = menuPath.Split('/');
+                var paths = menu.path.Split('/');
 
                 var parent = root;
                 for (var j = 0; j < paths.Length; j++)
                 {
                     var path = paths[j];
+
                     if (j == paths.Length - 1)
                     {
-                        var element = new ComponentDropdownItem(path, L10n.Tr(path), menuPath, menu.Value);
+                        var element = new ComponentDropdownItem(path, L10n.Tr(path), menu.path, menu.command, menu.isLegacy);
                         parent.AddChild(element);
                         m_SearchableElements.Add(element);
                         continue;
                     }
-                    var group = (ComponentDropdownItem)parent.children.SingleOrDefault(c => c.name == path);
+
+                    if (!pathHashCodeMap.TryGetValue(path, out int pathHashCode))
+                    {
+                        pathHashCode = path.GetHashCode();
+                        pathHashCodeMap[path] = pathHashCode;
+                    }
+
+                    var group = (ComponentDropdownItem)parent.children.SingleOrDefault(c => c.id == pathHashCode);
                     if (group == null)
                     {
                         group = new ComponentDropdownItem(path, L10n.Tr(path));
@@ -68,31 +86,44 @@ namespace UnityEditor.AddComponent
             return root;
         }
 
-        private static List<KeyValuePair<string, string>> GetMenuDictionary()
+        static List<MenuItemData> GetSortedMenuItems()
         {
             var menus = Unsupported.GetSubmenus("Component");
             var commands = Unsupported.GetSubmenusCommands("Component");
 
-            var menuDictionary = new Dictionary<string, string>(menus.Length);
+            var menuItems = new List<MenuItemData>(menus.Length);
+            var legacyMenuItems = new List<MenuItemData>(menus.Length);
+            const string kLegacyString = "legacy";
+
             for (var i = 0; i < menus.Length; i++)
             {
-                menuDictionary.Add(menus[i], commands[i]);
-            }
-            return menuDictionary.ToList();
-        }
+                var menuPath = menus[i];
+                bool isLegacy = menuPath.ToLower().Contains(kLegacyString);
+                var item = new MenuItemData
+                {
+                    path = menuPath,
+                    command = commands[i],
+                    isLegacy = isLegacy
+                };
 
-        private int CompareItems(KeyValuePair<string, string> x, KeyValuePair<string, string> y)
-        {
-            var legacyString = "legacy";
-            var isStr1Legacy = x.Key.ToLower().Contains(legacyString);
-            var isStr2Legacy = y.Key.ToLower().Contains(legacyString);
-            if (isStr1Legacy && isStr2Legacy)
-                return x.Key.CompareTo(y.Key);
-            if (isStr1Legacy)
-                return 1;
-            if (isStr2Legacy)
-                return -1;
-            return x.Key.CompareTo(y.Key);
+                if (isLegacy)
+                {
+                    legacyMenuItems.Add(item);
+                }
+                else
+                {
+                    menuItems.Add(item);
+                }
+            }
+
+            int comparison(MenuItemData x, MenuItemData y) => string.CompareOrdinal(x.path, y.path);
+
+            menuItems.Sort(comparison);
+            legacyMenuItems.Sort(comparison);
+
+            menuItems.AddRange(legacyMenuItems);
+
+            return menuItems;
         }
 
         protected override AdvancedDropdownItem Search(string searchString)
@@ -111,7 +142,12 @@ namespace UnityEditor.AddComponent
             foreach (var e in m_SearchableElements)
             {
                 var addComponentItem = (ComponentDropdownItem)e;
-                var name = addComponentItem.searchableName.ToLower().Replace(" ", "");
+                string name;
+                if (addComponentItem.menuPath.StartsWith(kScriptHeader))
+                    name = addComponentItem.menuPath.Remove(0, kScriptHeader.Length).ToLower().Replace(" ", "");
+                else
+                    name = addComponentItem.searchableName.ToLower().Replace(" ", "");
+
                 if (AddMatchItem(e, name, searchWords, matchesStart, matchesWithin))
                     found = true;
             }

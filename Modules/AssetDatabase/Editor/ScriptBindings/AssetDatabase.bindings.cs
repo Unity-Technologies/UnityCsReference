@@ -710,8 +710,9 @@ namespace UnityEditor
         internal extern static int GetArtifactInfoCount_Internal(GUID guid);
 
         internal extern static void GetCurrentRevisions_Internal(GUID[] guids, [Out] ArtifactInfo[] artifactInfos);
-
         internal extern static int GetCurrentRevisionsCount_Internal();
+
+        internal extern static void GetImportActivityWindowStartupData_Internal([Out] ArtifactInfo[] allCurrentRevisions, [Out] ArtifactInfo[] longestDurationAssets, [Out] ArtifactInfo[] mostDependencyAssets);
 
         internal static ArtifactInfo[] GetCurrentRevisions(GUID[] guids)
         {
@@ -724,6 +725,27 @@ namespace UnityEditor
 
             GetCurrentRevisions_Internal(guids, artifactInfos);
             return artifactInfos;
+        }
+
+        internal static void GetImportActivityWindowStartupData(out ArtifactInfo[] artifactInfos, out ArtifactInfo[] longestDurationAssets, out ArtifactInfo[] mostDependencyAssets)
+        {
+            var currentRevisionsCount = GetCurrentRevisionsCount_Internal();
+            artifactInfos = new ArtifactInfo[currentRevisionsCount];
+            for (int i = 0; i < currentRevisionsCount; ++i)
+            {
+                artifactInfos[i] = new ArtifactInfo();
+            }
+
+            longestDurationAssets = new ArtifactInfo[20];
+            mostDependencyAssets = new ArtifactInfo[20];
+
+            for (int i = 0; i < longestDurationAssets.Length; ++i)
+            {
+                longestDurationAssets[i] = new ArtifactInfo();
+                mostDependencyAssets[i] = new ArtifactInfo();
+            }
+
+            GetImportActivityWindowStartupData_Internal(artifactInfos, longestDurationAssets, mostDependencyAssets);
         }
 
         internal static ArtifactInfo[] GetArtifactInfos(GUID guid)
@@ -801,6 +823,9 @@ namespace UnityEditor
 
         [FreeFunction("AssetDatabase::GetCacheServerEnableUpload")]
         public extern static bool GetCacheServerEnableUpload();
+
+        [FreeFunction("AssetDatabase::WaitForPendingCacheServerRequestsToComplete")]
+        extern internal static void WaitForPendingCacheServerRequestsToComplete();
 
         [FreeFunction("AssetDatabase::IsDirectoryMonitoringEnabled")]
         public extern static bool IsDirectoryMonitoringEnabled();

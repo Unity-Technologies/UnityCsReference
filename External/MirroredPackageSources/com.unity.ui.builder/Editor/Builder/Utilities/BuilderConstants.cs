@@ -49,7 +49,7 @@ namespace Unity.UI.Builder
         public const string SettingsUIPath = UIBuilderPackagePath + "/Settings";
         public const string LibraryUssPathNoExt = UIBuilderPackagePath + "/Library/BuilderLibrary";
         public const string InspectorUssPathNoExt = UIBuilderPackagePath + "/Inspector/BuilderInspector";
-        
+
         public const string UIBuilderTestsTestFilesPath = UIBuilderTestsRootPath + "/TestFiles";
         const string BuilderDocumentDiskJsonFileName = "UIBuilderDocument.json";
         const string BuilderDocumentDiskJsonFolderPath = "Library/UIBuilder";
@@ -140,7 +140,6 @@ namespace Unity.UI.Builder
         public static readonly string ContextMenuUnsetAllMessage = "Unset All";
         public static readonly string ContextMenuViewVariableMessage = "View Variable";
         public static readonly string ContextMenuSetVariableMessage = "Set Variable";
-        public static readonly string FontCannotBeNoneMessage = "UI Builder: Font cannot be set to none.";
         public static readonly string InspectorClassPillDoubleClickToCreate = "Double-click to create new USS selector.";
         public static readonly string InspectorClassPillDoubleClickToSelect = "Double-click to select and edit USS selector.";
         public static readonly string InspectorLocalStylesSectionTitleForSelector = "Styles";
@@ -230,6 +229,7 @@ namespace Unity.UI.Builder
 
         // Library Content
         public const string LibraryContainersSectionHeaderName = "Containers";
+        public const string LibraryEditorContainersSectionHeaderName = "Containers";
         public const string LibraryControlsSectionHeaderName = "Controls";
         public const string LibraryAssetsSectionHeaderName = "UI Documents (UXML)";
         public const string LibraryCustomControlsSectionHeaderName = "Custom Controls (C#)";
@@ -299,8 +299,8 @@ namespace Unity.UI.Builder
         // Generic Dialog Messages
         public static readonly string DialogOkOption = "Ok";
         public static readonly string DialogCancelOption = "Cancel";
-        public static readonly string DialogDiscardOption = "Discard";
-        public static readonly string DialogAbortActionOption = "Abort {0}";
+        public static readonly string DialogDiscardOption = "Discard changes and {0}";
+        public static readonly string DialogAbortActionOption = "Do not {0}";
         public static readonly string DialogSaveActionOption = "Save";
         public static readonly string DialogDontSaveActionOption = "Discard";
 
@@ -316,10 +316,11 @@ namespace Unity.UI.Builder
 
         // Error Dialog Messages
         public static readonly string ErrorDialogNotice = "UI Builder: Notice";
+
         public static readonly string ErrorIncompatibleFileActionMessage =
-            "You are about to {0}:\n\n{1}\n\nwhich is currently open in the UI Builder. " +
-            "If you {0} the file, the UI Builder document will close, " +
-            "and you will lose any unsaved changes. Would you like to {0} the file anyway?";
+            "You are about to {0}:\n\n{1}\n\n" +
+            "This file is currently open in the UI Builder. " +
+            "If you {0} the file, the UI Builder document will close the current document, and discard any unsaved changes.";
         public static readonly string InvalidUXMLOrUSSAssetNameSuffix = "[UNSUPPORTED_IN_UI_BUILDER]";
         public static readonly string InvalidUSSDialogTitle = "UI Builder - Unable to parse USS file.";
         public static readonly string InvalidUSSDialogMessage = "UI Builder Failed to open {0}.uss asset. This may be due to invalid USS syntax or USS syntax the UI Builder does not yet support (ie. Variables). Check console for details.";

@@ -417,8 +417,7 @@ namespace UnityEditor
 
         public static bool HasEnumProperty(SerializedProperty prop)
         {
-            var idx = ClipboardParser.ParseEnumPropertyIndex(stringValue, prop);
-            return idx >= 0;
+            return ClipboardParser.ParseEnumPropertyIndex(stringValue, prop) >= 0 || ClipboardParser.ParseEnumPropertyFlag(stringValue, prop) >= 0;
         }
 
         public static void GetEnumProperty(SerializedProperty prop)

@@ -71,7 +71,7 @@ namespace UnityEngine
         [FreeFunction("Scripting::CreateScriptableObject")]
         extern static ScriptableObject CreateScriptableObjectInstanceFromName(string className);
 
-        [FreeFunction("Scripting::CreateScriptableObjectWithType")]
+        [NativeMethod(Name = "Scripting::CreateScriptableObjectWithType", IsFreeFunction = true, ThrowsException = true)]
         extern internal static ScriptableObject CreateScriptableObjectInstanceFromType(Type type, bool applyDefaultsAndReset);
 
         [FreeFunction("Scripting::ResetAndApplyDefaultInstances")]

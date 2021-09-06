@@ -36,6 +36,11 @@ namespace UnityEditor.Search
             return false;
         }
 
+        public virtual bool IsValid()
+        {
+            return true;
+        }
+
         public virtual bool AcceptRename(string oldName, string newName)
         {
             return false;
@@ -120,18 +125,14 @@ namespace UnityEditor.Search
                 SearchQuery.RemoveSearchQuery(m_Query);
                 treeView.RemoveItem(this);
             });
-            if ((ISearchQuery)m_Query == treeView.GetCurrentQuery())
-            {
-                menu.AddSeparator("");
-                menu.AddItem(new GUIContent("Unselect"), false, () => treeView.ClearSelection());
-            }
-
             menu.ShowAsContext();
         }
 
         public override bool AcceptRename(string oldName, string newName)
         {
-            m_Query.name = newName;
+            var trimmedName = Utils.Simplify(newName);
+            m_Query.name = trimmedName;
+            displayName = trimmedName;
             SearchQuery.SaveSearchQuery(m_Query);
             return true;
         }
@@ -159,6 +160,11 @@ namespace UnityEditor.Search
             return true;
         }
 
+        public override bool IsValid()
+        {
+            return m_Query;
+        }
+
         public override void OpenContextualMenu()
         {
             var menu = new GenericMenu();
@@ -180,9 +186,8 @@ namespace UnityEditor.Search
                 m_Query.icon = newIcon;
                 EditorUtility.SetDirty(m_Query);
             }));
-            menu.AddItem(new GUIContent("Edit"), false, () => Selection.activeObject = m_Query);
+            menu.AddItem(new GUIContent("Edit in Inspector"), false, () => Selection.activeObject = m_Query);
             menu.AddItem(new GUIContent(Utils.GetRevealInFinderLabel()), false, () => EditorUtility.RevealInFinder(AssetDatabase.GetAssetPath(m_Query)));
-            menu.AddItem(new GUIContent("Ping"), false, () => Utils.PingAsset(AssetDatabase.GetAssetPath(m_Query)));
             menu.AddSeparator("");
             menu.AddItem(new GUIContent("Delete"), false, () =>
             {
@@ -192,24 +197,20 @@ namespace UnityEditor.Search
                 AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(m_Query));
                 treeView.RemoveItem(this);
             });
-            if ((ISearchQuery)m_Query == treeView.GetCurrentQuery())
-            {
-                menu.AddSeparator("");
-                menu.AddItem(new GUIContent("Unselect"), false, () => treeView.ClearSelection());
-            }
-
             menu.ShowAsContext();
         }
 
         public override bool AcceptRename(string oldName, string newName)
         {
-            m_Query.name = newName;
+            var trimmedName = Utils.Simplify(newName);
+            m_Query.name = trimmedName;
+            displayName = trimmedName;
             return true;
         }
 
         public override void Open()
         {
-            treeView.searchView.ExecuteSearchQuery(m_Query, SearchAnalytics.GenericEventType.QuickSearchSavedSearchesExecuted);
+            treeView.searchView.ExecuteSearchQuery(m_Query);
         }
     }
 }

@@ -51,6 +51,12 @@ namespace UnityEngine
         // The number of LOD levels
         extern public int lodCount  {[NativeMethod("GetLODCount")] get; }
 
+        public extern bool lastLODBillboard
+        {
+            [NativeMethod("GetLastLODIsBillboard")] get;
+            [NativeMethod("SetLastLODIsBillboard")] set;
+        }
+
         // The fade mode
         extern public LODFadeMode fadeMode  { get; set; }
 

@@ -169,6 +169,39 @@ namespace UnityEngine.TextCore.Text
         internal FaceInfo m_FaceInfo;
 
         /// <summary>
+        ///
+        /// </summary>
+        internal int familyNameHashCode
+        {
+            get
+            {
+                if (m_FamilyNameHashCode == 0)
+                    m_FamilyNameHashCode = TextUtilities.GetHashCodeCaseInSensitive(m_FaceInfo.familyName);
+
+                return m_FamilyNameHashCode;
+            }
+            set => m_FamilyNameHashCode = value;
+        }
+        private int m_FamilyNameHashCode;
+
+        /// <summary>
+        ///
+        /// </summary>
+        internal int styleNameHashCode
+        {
+            get
+            {
+                if (m_StyleNameHashCode == 0)
+                    m_StyleNameHashCode = TextUtilities.GetHashCodeCaseInSensitive(m_FaceInfo.styleName);
+
+                return m_StyleNameHashCode;
+            }
+            set => m_StyleNameHashCode = value;
+        }
+        private int m_StyleNameHashCode;
+
+
+        /// <summary>
         /// Array containing font assets to be used as alternative typefaces for the various potential font weights of this font asset.
         /// </summary>
         public FontWeightPair[] fontWeightTable
@@ -530,6 +563,10 @@ namespace UnityEngine.TextCore.Text
             // Load Font Face
             if (FontEngine.LoadFontFace(font, samplingPointSize, faceIndex) != FontEngineError.Success)
             {
+                if (font.name == "Arial")
+                {
+                    return FontAsset.CreateFontAsset("Arial", "Regular");
+                }
                 Debug.LogWarning("Unable to load font face for [" + font.name + "]. Make sure \"Include Font Data\" is enabled in the Font Import Settings.", font);
                 return null;
             }
@@ -554,6 +591,7 @@ namespace UnityEngine.TextCore.Text
             }
 
             fontAsset.atlasPopulationMode = atlasPopulationMode;
+            // Need to eventually add support for setting default state related to Clear Dynamic Data on Build.
 
             fontAsset.atlasWidth = atlasWidth;
             fontAsset.atlasHeight = atlasHeight;
@@ -605,7 +643,7 @@ namespace UnityEngine.TextCore.Text
                 fontAsset.material = tmp_material;
             }
 
-            fontAsset.freeGlyphRects = new List<GlyphRect>(8) {new GlyphRect(0, 0, atlasWidth - packingModifier, atlasHeight - packingModifier)};
+            fontAsset.freeGlyphRects = new List<GlyphRect>(8) { new GlyphRect(0, 0, atlasWidth - packingModifier, atlasHeight - packingModifier) };
             fontAsset.usedGlyphRects = new List<GlyphRect>(8);
 
             // Set the name of the font asset resources for tracking in the profiler
@@ -652,6 +690,7 @@ namespace UnityEngine.TextCore.Text
 
         private void OnValidate()
         {
+            // Make sure our lookup dictionary have been initialized.
             if (m_CharacterLookupDictionary == null || m_GlyphLookupDictionary == null)
                 ReadFontAssetDefinition();
         }
@@ -674,6 +713,20 @@ namespace UnityEngine.TextCore.Text
 
             // Add synthesized characters and adjust face metrics
             AddSynthesizedCharactersAndFaceMetrics();
+
+            // Set Cap Line using the capital letter 'X'
+            if (m_FaceInfo.capLine == 0 && m_CharacterLookupDictionary.ContainsKey('X'))
+            {
+                uint glyphIndex = m_CharacterLookupDictionary['X'].glyphIndex;
+                m_FaceInfo.capLine = m_GlyphLookupDictionary[glyphIndex].metrics.horizontalBearingY;
+            }
+
+            // Set Mean Line using the lowercase letter 'x'
+            if (m_FaceInfo.meanLine == 0 && m_CharacterLookupDictionary.ContainsKey('x'))
+            {
+                uint glyphIndex = m_CharacterLookupDictionary['x'].glyphIndex;
+                m_FaceInfo.meanLine = m_GlyphLookupDictionary[glyphIndex].metrics.horizontalBearingY;
+            }
 
             // Adjust Font Scale for compatibility reasons
             if (m_FaceInfo.scale == 0)
@@ -703,7 +756,10 @@ namespace UnityEngine.TextCore.Text
                 Debug.LogWarning("Replacing missing shader on font asset [" + name + "] with [" + m_Material.shader.name + "] shader.", m_Material);
             }
 
-            // Compute Hashcode for the material name
+            // Compute hash codes for various properties of the font asset used for lookup.
+            hashCode = TextUtilities.GetHashCodeCaseInSensitive(name);
+            familyNameHashCode = TextUtilities.GetHashCodeCaseInSensitive(m_FaceInfo.familyName);
+            styleNameHashCode = TextUtilities.GetHashCodeCaseInSensitive(m_FaceInfo.styleName);
             materialHashCode = TextUtilities.GetHashCodeCaseInSensitive(this.name + s_DefaultMaterialSuffix);
 
             // Add reference to font asset in TMP Resource Manager
@@ -794,10 +850,12 @@ namespace UnityEngine.TextCore.Text
             }
 
             // Clear internal fallback references
+            /*
             if (FallbackSearchQueryLookup == null)
                 FallbackSearchQueryLookup = new HashSet<int>();
             else
                 FallbackSearchQueryLookup.Clear();
+            */
         }
 
         internal void InitializeGlyphPaidAdjustmentRecordsLookupDictionary()
@@ -827,13 +885,13 @@ namespace UnityEngine.TextCore.Text
         {
             k_AddSynthesizedCharactersMarker.Begin();
 
-            bool isFontLoaded = false;
+            bool isFontFaceLoaded = false;
 
             if (m_AtlasPopulationMode == AtlasPopulationMode.Dynamic || m_AtlasPopulationMode == AtlasPopulationMode.DynamicOS)
             {
-                isFontLoaded = LoadFontFace() == FontEngineError.Success;
+                isFontFaceLoaded = LoadFontFace() == FontEngineError.Success;
 
-                if (!isFontLoaded && !InternalDynamicOS)
+                if (!isFontFaceLoaded && !InternalDynamicOS)
                     Debug.LogWarning("Unable to load font face for [" + this.name + "] font asset.", this);
             }
 
@@ -841,59 +899,45 @@ namespace UnityEngine.TextCore.Text
 
             // Non visible and control characters with no metrics
             // Add End of Text \u0003
-            AddSynthesizedCharacter(0x03, isFontLoaded, true);
+            AddSynthesizedCharacter(0x03, isFontFaceLoaded, true);
 
             // Add Tab \u0009
-            AddSynthesizedCharacter(0x09, isFontLoaded, true);
+            AddSynthesizedCharacter(0x09, isFontFaceLoaded, true);
 
             // Add Line Feed (LF) \u000A
-            AddSynthesizedCharacter(0x0A, isFontLoaded);
+            AddSynthesizedCharacter(0x0A, isFontFaceLoaded);
 
             // Add Vertical Tab (VT) \u000B
-            AddSynthesizedCharacter(0x0B, isFontLoaded);
+            AddSynthesizedCharacter(0x0B, isFontFaceLoaded);
 
             // Add Carriage Return (CR) \u000D
-            AddSynthesizedCharacter(0x0D, isFontLoaded);
+            AddSynthesizedCharacter(0x0D, isFontFaceLoaded);
 
             // Add Arabic Letter Mark \u061C
-            AddSynthesizedCharacter(0x061C, isFontLoaded);
+            AddSynthesizedCharacter(0x061C, isFontFaceLoaded);
 
             // Add Zero Width Space <ZWSP> \u2000B
-            AddSynthesizedCharacter(0x200B, isFontLoaded);
+            AddSynthesizedCharacter(0x200B, isFontFaceLoaded);
 
             // Add Left-To-Right Mark \u200E
-            AddSynthesizedCharacter(0x200E, isFontLoaded);
+            AddSynthesizedCharacter(0x200E, isFontFaceLoaded);
 
             // Add Right-To-Left Mark \u200F
-            AddSynthesizedCharacter(0x200F, isFontLoaded);
+            AddSynthesizedCharacter(0x200F, isFontFaceLoaded);
 
             // Add Line Separator \u2028
-            AddSynthesizedCharacter(0x2028, isFontLoaded);
+            AddSynthesizedCharacter(0x2028, isFontFaceLoaded);
 
             // Add Paragraph Separator \u2029
-            AddSynthesizedCharacter(0x2029, isFontLoaded);
+            AddSynthesizedCharacter(0x2029, isFontFaceLoaded);
 
             // Add Word Joiner <WJ> / Zero Width Non-Breaking Space \u2060
-            AddSynthesizedCharacter(0x2060, isFontLoaded);
-
-            // Set Cap Line using the capital letter 'X'
-            if (m_FaceInfo.capLine == 0 && m_CharacterLookupDictionary.ContainsKey('X'))
-            {
-                uint glyphIndex = m_CharacterLookupDictionary['X'].glyphIndex;
-                m_FaceInfo.capLine = m_GlyphLookupDictionary[glyphIndex].metrics.horizontalBearingY;
-            }
-
-            // Set Mean Line using the lowercase letter 'x'
-            if (m_FaceInfo.meanLine == 0 && m_CharacterLookupDictionary.ContainsKey('x'))
-            {
-                uint glyphIndex = m_CharacterLookupDictionary['x'].glyphIndex;
-                m_FaceInfo.meanLine = m_GlyphLookupDictionary[glyphIndex].metrics.horizontalBearingY;
-            }
+            AddSynthesizedCharacter(0x2060, isFontFaceLoaded);
 
             k_AddSynthesizedCharactersMarker.End();
         }
 
-        void AddSynthesizedCharacter(uint unicode, bool isFontLoaded, bool addImmediately = false)
+        void AddSynthesizedCharacter(uint unicode, bool isFontFaceLoaded, bool addImmediately = false)
         {
             // Check if unicode is already present in the font asset
             if (m_CharacterLookupDictionary.ContainsKey(unicode))
@@ -901,7 +945,7 @@ namespace UnityEngine.TextCore.Text
 
             Glyph glyph;
 
-            if (isFontLoaded)
+            if (isFontFaceLoaded)
             {
                 // Check if unicode is present in font file
                 if (FontEngine.GetGlyphIndex(unicode) != 0)
@@ -929,14 +973,14 @@ namespace UnityEngine.TextCore.Text
             m_CharacterLookupDictionary.Add(unicode, new Character(unicode, this, glyph));
         }
 
-        internal HashSet<int> FallbackSearchQueryLookup = new HashSet<int>();
+        //internal HashSet<int> FallbackSearchQueryLookup = new HashSet<int>();
 
         internal void AddCharacterToLookupCache(uint unicode, Character character)
         {
             m_CharacterLookupDictionary.Add(unicode, character);
 
             // Add font asset to fallback references.
-            FallbackSearchQueryLookup.Add(character.textAsset.instanceID);
+            //FallbackSearchQueryLookup.Add(character.textAsset.instanceID);
         }
 
         /// <summary>
@@ -1390,7 +1434,7 @@ namespace UnityEngine.TextCore.Text
         private static List<FontAsset> k_FontAssets_FontFeaturesUpdateQueue = new List<FontAsset>();
         private static HashSet<int> k_FontAssets_FontFeaturesUpdateQueueLookup = new HashSet<int>();
 
-        private static List<FontAsset> k_FontAssets_AtlasTexturesUpdateQueue = new List<FontAsset>();
+        private static List<Texture2D> k_FontAssets_AtlasTexturesUpdateQueue = new List<Texture2D>();
         private static HashSet<int> k_FontAssets_AtlasTexturesUpdateQueueLookup = new HashSet<int>();
 
         /// <summary>
@@ -1424,32 +1468,42 @@ namespace UnityEngine.TextCore.Text
         }
 
         /// <summary>
-        ///
+        /// Register Atlas Texture for Apply()
         /// </summary>
-        /// <param name="fontAsset"></param>
-        internal static void RegisterFontAssetForAtlasTextureUpdate(FontAsset fontAsset)
+        /// <param name="texture">The texture on which to call Apply().</param>
+        internal static void RegisterAtlasTextureForApply(Texture2D texture)
         {
-            int instanceID = fontAsset.instanceID;
+            int instanceID = texture.GetInstanceID();
 
             if (k_FontAssets_AtlasTexturesUpdateQueueLookup.Add(instanceID))
-                k_FontAssets_AtlasTexturesUpdateQueue.Add(fontAsset);
+                k_FontAssets_AtlasTexturesUpdateQueue.Add(texture);
         }
 
         /// <summary>
         ///
         /// </summary>
-        internal static void UpdateAtlasTexturesForFontAssetsInQueue()
+        internal static void UpdateAtlasTexturesInQueue()
         {
             int count = k_FontAssets_AtlasTexturesUpdateQueueLookup.Count;
 
             for (int i = 0; i < count; i++)
-                k_FontAssets_AtlasTexturesUpdateQueue[i].TryAddGlyphsToAtlasTextures();
+                k_FontAssets_AtlasTexturesUpdateQueue[i].Apply(false, false);
 
             if (count > 0)
             {
                 k_FontAssets_AtlasTexturesUpdateQueue.Clear();
                 k_FontAssets_AtlasTexturesUpdateQueueLookup.Clear();
             }
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        internal static void UpdateFontAssetInUpdateQueue()
+        {
+            UpdateAtlasTexturesInQueue();
+
+            UpdateFontFeaturesForFontAssetsInQueue();
         }
 
         /// <summary>
@@ -2168,21 +2222,24 @@ namespace UnityEngine.TextCore.Text
             //    }
             //}
 
+            // Make sure atlas texture is readable.
+            if (m_AtlasTextures[m_AtlasTextureIndex].isReadable == false)
+            {
+                Debug.LogWarning("Unable to add the requested character to font asset [" + this.name + "]'s atlas texture. Please make the texture [" + m_AtlasTextures[m_AtlasTextureIndex].name + "] readable.", m_AtlasTextures[m_AtlasTextureIndex]);
+
+                k_TryAddCharacterMarker.End();
+                return false;
+            }
+
             // Resize the Atlas Texture to the appropriate size
             if (m_AtlasTextures[m_AtlasTextureIndex].width == 0 || m_AtlasTextures[m_AtlasTextureIndex].height == 0)
             {
-                // TODO: Need texture to be readable.
-                if (m_AtlasTextures[m_AtlasTextureIndex].isReadable == false)
-                {
-                    Debug.LogWarning("Unable to add the requested character to font asset [" + this.name + "]'s atlas texture. Please make the texture [" + m_AtlasTextures[m_AtlasTextureIndex].name + "] readable.", m_AtlasTextures[m_AtlasTextureIndex]);
-
-                    k_TryAddCharacterMarker.End();
-                    return false;
-                }
-
                 m_AtlasTextures[m_AtlasTextureIndex].Reinitialize(m_AtlasWidth, m_AtlasHeight);
                 FontEngine.ResetAtlasTexture(m_AtlasTextures[m_AtlasTextureIndex]);
             }
+
+            // Set texture upload mode to batching texture.Apply()
+            FontEngine.SetTextureUploadMode(false);
 
             // Try adding glyph to local atlas texture
             if (FontEngine.TryAddGlyphToTexture(glyphIndex, m_AtlasPadding, GlyphPackingMode.BestShortSideFit, m_FreeGlyphRects, m_UsedGlyphRects, m_AtlasRenderMode, m_AtlasTextures[m_AtlasTextureIndex], out glyph))
@@ -2204,6 +2261,9 @@ namespace UnityEngine.TextCore.Text
 
                 if (shouldGetFontFeatures)
                     RegisterFontAssetForFontFeatureUpdate(this);
+
+                RegisterAtlasTextureForApply(m_AtlasTextures[m_AtlasTextureIndex]);
+                FontEngine.SetTextureUploadMode(true);
 
                 // Makes the changes to the font asset persistent.
                 RegisterResourceForUpdate?.Invoke(this);
@@ -2238,6 +2298,9 @@ namespace UnityEngine.TextCore.Text
 
                     if (shouldGetFontFeatures)
                         RegisterFontAssetForFontFeatureUpdate(this);
+
+                    RegisterAtlasTextureForApply(m_AtlasTextures[m_AtlasTextureIndex]);
+                    FontEngine.SetTextureUploadMode(true);
 
                     RegisterResourceForUpdate?.Invoke(this);
 
@@ -2339,7 +2402,7 @@ namespace UnityEngine.TextCore.Text
                 m_GlyphsToRender.Add(glyph);
 
                 // Register font asset to render and add glyphs to atlas textures
-                RegisterFontAssetForAtlasTextureUpdate(this);
+                //RegisterFontAssetForAtlasTextureUpdate(this);
 
                 // Makes the changes to the font asset persistent.
                 RegisterResourceForUpdate?.Invoke(this);

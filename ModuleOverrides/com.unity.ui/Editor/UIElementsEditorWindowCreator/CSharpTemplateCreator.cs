@@ -2,21 +2,37 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
+using System.Text;
+
 namespace UnityEditor.UIElements
 {
     static partial class UIElementsTemplate
     {
-        public static string CreateCSharpTemplate(string cSharpName, string uxmlName, string ussName, string folder)
+        public static string CreateCSharpTemplate(string cSharpName, bool addUXMLReference, bool addUSSLabel)
         {
-            var csTemplate = string.Format(@"using UnityEditor;
+            var stringBuilder = new StringBuilder();
+            stringBuilder.AppendFormat(@"using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEditor.UIElements;
-
 
 public class {0} : EditorWindow
-{{
+{{", cSharpName);
+
+            if (addUXMLReference)
+            {
+                stringBuilder.AppendLine(@"
+    [SerializeField]
+    private VisualTreeAsset m_VisualTreeAsset = default;");
+            }
+
+            if (addUSSLabel)
+            {
+                stringBuilder.AppendLine(@"
+    [SerializeField]
+    private StyleSheet m_StyleSheet = default;");
+            }
+
+            stringBuilder.AppendFormat(@"
     [MenuItem(""Window/UI Toolkit/{0}"")]
     public static void ShowExample()
     {{
@@ -31,34 +47,35 @@ public class {0} : EditorWindow
 
         // VisualElements objects can contain other VisualElement following a tree hierarchy.
         VisualElement label = new Label(""Hello World! From C#"");
-        root.Add(label);", cSharpName);
-
-            if (uxmlName != string.Empty)
+        root.Add(label);
+", cSharpName);
+            if (addUXMLReference)
             {
-                csTemplate = csTemplate + string.Format(@"
-
-        // Import UXML
-        var visualTree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(""{0}/{1}.uxml"");
-        VisualElement labelFromUXML = visualTree.Instantiate();
-        root.Add(labelFromUXML);", folder, uxmlName);
+                stringBuilder.Append(@"
+        // Instantiate UXML
+        VisualElement labelFromUXML = m_VisualTreeAsset.Instantiate();
+        root.Add(labelFromUXML);");
             }
 
-            if (ussName != string.Empty)
+            if (addUSSLabel)
             {
-                csTemplate += string.Format(@"
-
-        // A stylesheet can be added to a VisualElement.
-        // The style will be applied to the VisualElement and all of its children.
-        var styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(""{0}/{1}.uss"");
+                stringBuilder.Append(@"
+        // Add label
         VisualElement labelWithStyle = new Label(""Hello World! With Style"");
-        labelWithStyle.styleSheets.Add(styleSheet);
-        root.Add(labelWithStyle);", folder, ussName);
+        labelWithStyle.AddToClassList(""custom-label"");
+        labelWithStyle.styleSheets.Add(m_StyleSheet);
+        root.Add(labelWithStyle);");
             }
 
-            csTemplate += @"
+            stringBuilder.AppendLine(@"
     }
-}";
-            return csTemplate;
+}");
+            var template = stringBuilder.ToString();
+
+            // Normalize line endings
+            template = ProjectWindowUtil.SetLineEndings(template, EditorSettings.lineEndingsForNewScripts);
+
+            return template;
         }
     }
 }

@@ -12,6 +12,7 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine
 {
+    [UnityEngine.ExcludeFromPreset]
     [NativeHeader("Runtime/Graphics/Mesh/MeshScriptBindings.h")]
     public sealed partial class Mesh
     {

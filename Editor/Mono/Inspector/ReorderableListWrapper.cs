@@ -28,6 +28,8 @@ namespace UnityEditorInternal
         SerializedProperty m_OriginalProperty;
         SerializedProperty m_ArraySize;
 
+        internal static Rect s_ToolTipRect;
+
         int m_LastArraySize = -1;
         internal SerializedProperty Property
         {
@@ -105,12 +107,7 @@ namespace UnityEditorInternal
             return m_HeaderHeight + (includeChildren && Property.isExpanded && m_ReorderableList != null ? Constants.kHeaderPadding + m_ReorderableList.GetHeight() : 0.0f);
         }
 
-        public void Draw(GUIContent label, Rect r, bool includeChildren)
-        {
-            Draw(label, r, ReorderableList.Defaults.infinityRect, includeChildren);
-        }
-
-        public void Draw(GUIContent label, Rect r, Rect visibleArea, bool includeChildren)
+        public void Draw(GUIContent label, Rect r, Rect visibleArea, string tooltip, bool includeChildren)
         {
             r.xMin += EditorGUI.indent;
             var prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
@@ -122,19 +119,33 @@ namespace UnityEditorInternal
             Rect sizeRect = new Rect(headerRect.xMax - Constants.kArraySizeWidth - EditorGUI.indent * EditorGUI.indentLevel, headerRect.y,
                 Constants.kArraySizeWidth + EditorGUI.indent * EditorGUI.indentLevel, m_HeaderHeight);
 
-            EventType prevType = Event.current.type;
+            Event evt = Event.current;
+            EventType prevType = evt.type;
+            if (!string.IsNullOrEmpty(tooltip) && prevType == EventType.Repaint)
+            {
+                bool hovered = headerRect.Contains(evt.mousePosition);
+
+                if (hovered && GUIClip.visibleRect.Contains(evt.mousePosition))
+                {
+                    if (!GUIStyle.IsTooltipActive(tooltip))
+                        s_ToolTipRect = new Rect(evt.mousePosition, Vector2.zero);
+                    GUIStyle.SetMouseTooltip(tooltip, s_ToolTipRect);
+                }
+            }
             if (Event.current.type == EventType.MouseUp && sizeRect.Contains(Event.current.mousePosition))
             {
                 Event.current.type = EventType.Used;
             }
 
+            EditorGUI.BeginChangeCheck();
+            if (!m_OriginalProperty.hasMultipleDifferentValues) EditorGUI.BeginProperty(headerRect, GUIContent.none, m_OriginalProperty);
+
             bool prevEnabled = GUI.enabled;
             GUI.enabled = true;
-            EditorGUI.BeginChangeCheck();
-
-            if (!m_OriginalProperty.hasMultipleDifferentValues) EditorGUI.BeginProperty(headerRect, GUIContent.none, m_OriginalProperty);
             Property.isExpanded = EditorGUI.BeginFoldoutHeaderGroup(headerRect, Property.isExpanded, label ?? GUIContent.Temp(Property.displayName));
             EditorGUI.EndFoldoutHeaderGroup();
+            GUI.enabled = prevEnabled;
+
             if (!m_OriginalProperty.hasMultipleDifferentValues) EditorGUI.EndProperty();
 
             if (EditorGUI.EndChangeCheck())
@@ -146,7 +157,6 @@ namespace UnityEditorInternal
 
                 m_ReorderableList.ClearCacheRecursive();
             }
-            GUI.enabled = prevEnabled;
 
             if (!includeChildren) return;
 

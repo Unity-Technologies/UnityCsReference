@@ -102,7 +102,7 @@ namespace UnityEditor.TextCore.Text
         SerializedProperty m_PropTintAllSprites;
         SerializedProperty m_PropParseEscapeCharacters;
         SerializedProperty m_PropMissingGlyphCharacter;
-        // SerializedProperty m_PropClearDynamicDataOnBuild;
+        SerializedProperty m_PropClearDynamicDataOnBuild;
 
         //SerializedProperty m_DynamicAtlasTextureManager;
         SerializedProperty m_GetFontFeaturesAtRuntime;
@@ -180,7 +180,7 @@ namespace UnityEditor.TextCore.Text
             m_PropTintAllSprites = serializedObject.FindProperty("m_enableTintAllSprites");
             m_PropParseEscapeCharacters = serializedObject.FindProperty("m_enableParseEscapeCharacters");
             m_PropMissingGlyphCharacter = serializedObject.FindProperty("m_MissingCharacterUnicode");
-            //m_PropClearDynamicDataOnBuild = serializedObject.FindProperty("m_ClearDynamicDataOnBuild");
+            m_PropClearDynamicDataOnBuild = serializedObject.FindProperty("m_ClearDynamicDataOnBuild");
 
             m_PropDisplayWarnings = serializedObject.FindProperty("m_DisplayWarnings");
 
@@ -243,7 +243,7 @@ namespace UnityEditor.TextCore.Text
             EditorGUI.indentLevel = 1;
             //EditorGUILayout.PropertyField(m_GetFontFeaturesAtRuntime, Styles.getFontFeaturesAtRuntime);
             EditorGUILayout.PropertyField(m_PropMissingGlyphCharacter, Styles.missingGlyphLabel);
-            // EditorGUILayout.PropertyField(m_PropClearDynamicDataOnBuild, Styles.clearDynamicDataOnBuildLabel);
+            EditorGUILayout.PropertyField(m_PropClearDynamicDataOnBuild, Styles.clearDynamicDataOnBuildLabel);
             EditorGUILayout.PropertyField(m_PropDisplayWarnings, Styles.disableWarningsLabel);
             //EditorGUILayout.PropertyField(m_DynamicAtlasTextureManager, Styles.dynamicAtlasTextureManager);
             EditorGUI.indentLevel = 0;

@@ -14,7 +14,7 @@ namespace UnityEditor
             public static readonly GUIContent fixedTimestepLabel =  EditorGUIUtility.TrTextContent("Fixed Timestep", "A framerate-independent interval that dictates when physics calculations and FixedUpdate() events are performed.");
             public static readonly GUIContent maxAllowedTimestepLabel =  EditorGUIUtility.TrTextContent("Maximum Allowed Timestep", "A framerate-independent interval that caps the worst-case scenario when framerate is low. Physics calculations and FixedUpdate() events will not be performed for longer time than specified.");
             public static readonly GUIContent timeScaleLabel = EditorGUIUtility.TrTextContent("Time Scale", "The speed at which time progresses. Change this value to simulate bullet-time effects. A value of 1 means real-time. A value of .5 means half speed; a value of 2 is double speed.");
-            public static readonly GUIContent maxParticleTimestepLabel = EditorGUIUtility.TrTextContent("Maximum Particle Timestep", "The maximum time that should be allowed to process particles for a frame.");
+            public static readonly GUIContent maxParticleTimestepLabel = EditorGUIUtility.TrTextContent("Maximum Particle Timestep", "The maximum frame delta time Unity permits for a single iteration of the Particle System update. If the delta time is larger than this value, Unity will run the Particle System update multiple times during the frame with smaller timesteps. This preserves the quality of the simulation.");
         }
 
         SerializedProperty m_FixedTimestepProperty;

@@ -236,6 +236,20 @@ namespace UnityEditor.Scripting.ScriptCompilation
     {
         public static SemVersion Parse(string version, bool strict = false)
         {
+            if (TryParse(version, out var result) && result.HasValue)
+            {
+                return result.Value;
+            }
+            throw new ArgumentException($"{version} is not valid Semantic Version");
+        }
+
+        public static bool TryParse(string version, out SemVersion? result)
+        {
+            if (string.IsNullOrEmpty(version))
+            {
+                result = null;
+                return false;
+            }
             int cursor = 0;
 
             int major = 0;
@@ -247,17 +261,22 @@ namespace UnityEditor.Scripting.ScriptCompilation
             //Doing this instead because RegEx is impressively slow
             try
             {
-                major = int.Parse(VersionUtils.ConsumeVersionComponentFromString(version, ref cursor, x => !char.IsDigit(x)));
-                if (cursor < version.Length && version[cursor] == '.')
+                if (!VersionUtils.TryConsumeIntVersionComponentFromString(version, ref cursor, x => !char.IsDigit(x), out major))
                 {
-                    cursor++;
-                    minor = int.Parse(VersionUtils.ConsumeVersionComponentFromString(version, ref cursor, x => !char.IsDigit(x)) ?? "0");
+                    result = null;
+                    return false;
                 }
 
                 if (cursor < version.Length && version[cursor] == '.')
                 {
                     cursor++;
-                    patch = int.Parse(VersionUtils.ConsumeVersionComponentFromString(version, ref cursor, x => !char.IsDigit(x)) ?? "0");
+                    VersionUtils.TryConsumeIntVersionComponentFromString(version, ref cursor, x => !char.IsDigit(x), out minor, zeroIfEmpty: true);
+                }
+
+                if (cursor < version.Length && version[cursor] == '.')
+                {
+                    cursor++;
+                    VersionUtils.TryConsumeIntVersionComponentFromString(version, ref cursor, x => !char.IsDigit(x), out patch, zeroIfEmpty: true);
                 }
 
                 if (cursor < version.Length && version[cursor] == '-')
@@ -274,25 +293,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
             catch (Exception)
             {
-                throw new ArgumentException($"{version} is not valid Semantic Version");
-            }
-
-
-            return new SemVersion(major, minor, patch, prerelease, build);
-        }
-
-        public static bool TryParse(string versionString, out SemVersion? result)
-        {
-            try
-            {
-                result = SemVersionParser.Parse(versionString);
-                return true;
-            }
-            catch (Exception)
-            {
                 result = null;
                 return false;
             }
+
+
+            result = new SemVersion(major, minor, patch, prerelease, build);
+            return true;
         }
     }
 }

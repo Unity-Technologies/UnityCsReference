@@ -43,6 +43,9 @@ namespace Unity.Burst.LowLevel
         [FreeFunction("DefaultBurstLogCallback", isThreadSafe: true)]
         public static extern unsafe void Log(void* userData, BurstLogType logType, byte* message, byte* filename, int lineNumber);
 
+        [FreeFunction("DefaultBurstRuntimeLogCallback", isThreadSafe: true)]
+        public static extern unsafe void RuntimeLog(void* userData, BurstLogType logType, byte* message, byte* filename, int lineNumber);
+
         public static extern bool LoadBurstLibrary(string fullPathToLibBurstGenerated);
     }
 }

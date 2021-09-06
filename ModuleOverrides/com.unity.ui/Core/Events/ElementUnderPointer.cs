@@ -67,28 +67,18 @@ namespace UnityEngine.UIElements
             return new Vector2(float.MinValue, float.MinValue);
         }
 
-        internal void SetTemporaryElementUnderPointer(VisualElement newElementUnderPointer, EventBase triggerEvent)
+        internal void SetTemporaryElementUnderPointer(VisualElement newElementUnderPointer, int pointerId, EventBase triggerEvent)
         {
-            SetElementUnderPointer(newElementUnderPointer, triggerEvent, temporary: true);
+            SetElementUnderPointer(newElementUnderPointer, pointerId, triggerEvent, temporary: true);
         }
 
-        internal void SetElementUnderPointer(VisualElement newElementUnderPointer, EventBase triggerEvent)
+        internal void SetElementUnderPointer(VisualElement newElementUnderPointer, int pointerId, EventBase triggerEvent)
         {
-            SetElementUnderPointer(newElementUnderPointer, triggerEvent, temporary: false);
+            SetElementUnderPointer(newElementUnderPointer, pointerId, triggerEvent, temporary: false);
         }
 
-        void SetElementUnderPointer(VisualElement newElementUnderPointer, EventBase triggerEvent, bool temporary)
+        void SetElementUnderPointer(VisualElement newElementUnderPointer, int pointerId, EventBase triggerEvent, bool temporary)
         {
-            int pointerId = -1;
-            if (triggerEvent is IPointerEvent)
-            {
-                pointerId = ((IPointerEvent)triggerEvent).pointerId;
-            }
-            else if (triggerEvent is IMouseEvent)
-            {
-                pointerId = PointerId.mousePointerId;
-            }
-
             Debug.Assert(pointerId >= 0);
 
             m_IsPickingPointerTemporaries[pointerId] = temporary;
@@ -112,7 +102,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal void CommitElementUnderPointers(EventDispatcher dispatcher)
+        internal void CommitElementUnderPointers(EventDispatcher dispatcher, ContextType contextType)
         {
             for (var i = 0; i < m_TopElementUnderPointer.Length; i++)
             {
@@ -141,7 +131,7 @@ namespace UnityEngine.UIElements
                 {
                     using (new EventDispatcherGate(dispatcher))
                     {
-                        Vector2 position = PointerDeviceState.GetPointerPosition(i);
+                        Vector2 position = PointerDeviceState.GetPointerPosition(i, contextType);
 
                         PointerEventsHelper.SendOverOut(previous, current, null, position, i);
                         PointerEventsHelper.SendEnterLeave<PointerLeaveEvent, PointerEnterEvent>(

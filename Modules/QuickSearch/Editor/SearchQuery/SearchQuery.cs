@@ -20,16 +20,21 @@ namespace UnityEditor.Search
         string filePath { get; }
         string guid { get; }
         long creationTime { get; }
+        long lastUsedTime { get; }
+        int itemCount { get; }
 
-        ResultViewState GetResultViewState();
+        SearchViewState GetResultViewState();
         IEnumerable<string> GetProviderIds();
+        IEnumerable<string> GetProviderTypes();
     }
 
     enum SearchQuerySortOrder
     {
         AToZ,
         ZToA,
-        CreationTime
+        CreationTime,
+        MostRecentlyUsed,
+        ItemCount
     }
 
     [Serializable]
@@ -68,32 +73,42 @@ namespace UnityEditor.Search
             }
         }
 
+        private long m_LastUsedTime;
+        public long lastUsedTime
+        {
+            get
+            {
+                using (var view = SearchMonitor.GetView())
+                {
+                    var recordKey = PropertyDatabase.CreateRecordKey(guid, QuickSearch.k_LastUsedTimePropertyName);
+                    if (view.TryLoadProperty(recordKey, out object data))
+                        m_LastUsedTime = (long)data;
+                }
+
+                return m_LastUsedTime;
+            }
+        }
+
+        private int m_ItemCount = -1;
+        public int itemCount
+        {
+            get
+            {
+                using (var view = SearchMonitor.GetView())
+                {
+                    var recordKey = PropertyDatabase.CreateRecordKey(guid, QuickSearch.k_QueryItemsNumberPropertyName);
+                    if (view.TryLoadProperty(recordKey, out object data))
+                        m_ItemCount = (int)data;
+                }
+
+                return m_ItemCount;
+            }
+        }
+
         public string description;
         public string name;
         public SearchViewState viewState;
         public SearchTable tableConfig;
-
-        public static SearchQuery Create(SearchViewState state, SearchTable table)
-        {
-            var uq = new SearchQuery();
-            uq.m_GUID = GUID.Generate().ToString();
-            uq.name = uq.description = state.context.searchText;
-            uq.Set(state, table);
-            return uq;
-        }
-
-        public void Set(SearchViewState state, SearchTable table)
-        {
-            if (viewState == null)
-                viewState = new SearchViewState();
-            viewState.Assign(state);
-            tableConfig = table?.Clone();
-        }
-
-        public override int GetHashCode()
-        {
-            return filePath.GetHashCode();
-        }
 
         private static List<SearchQuery> s_SearchQueries;
         public static IEnumerable<SearchQuery> searchQueries
@@ -112,6 +127,40 @@ namespace UnityEditor.Search
         }
 
         public static IEnumerable<SearchQuery> userQueries => searchQueries.Where(IsUserQuery);
+
+        public SearchQuery()
+        {
+            m_GUID = Guid.NewGuid().ToString("N");
+            viewState = new SearchViewState();
+        }
+
+        public SearchQuery(SearchContext context, SearchTable table = null)
+            : this()
+        {
+            viewState = new SearchViewState(context);
+            tableConfig = table;
+        }
+
+        public static SearchQuery Create(SearchViewState state, SearchTable table)
+        {
+            var uq = new SearchQuery();
+            uq.name = uq.description = Utils.Simplify(state.context.searchText);
+            uq.Set(state, table ?? state.tableConfig);
+            return uq;
+        }
+
+        public void Set(SearchViewState state, SearchTable table)
+        {
+            if (viewState == null)
+                viewState = new SearchViewState();
+            viewState.Assign(state);
+            tableConfig = table?.Clone();
+        }
+
+        public override int GetHashCode()
+        {
+            return filePath.GetHashCode();
+        }
 
         public static bool IsUserQuery(SearchQuery query)
         {
@@ -186,7 +235,7 @@ namespace UnityEditor.Search
             if (!Directory.Exists(folder))
                 Directory.CreateDirectory(folder);
             var queryJson = EditorJsonUtility.ToJson(query, true);
-            File.WriteAllText(query.filePath, queryJson);
+            Utils.WriteTextFileToDisk(query.filePath, queryJson);
         }
 
         public IEnumerable<string> GetProviderIds()
@@ -194,9 +243,14 @@ namespace UnityEditor.Search
             return viewState.GetProviderIds();
         }
 
-        public ResultViewState GetResultViewState()
+        public IEnumerable<string> GetProviderTypes()
         {
-            return new ResultViewState(tableConfig)
+            return viewState.GetProviderTypes();
+        }
+
+        public SearchViewState GetResultViewState()
+        {
+            return new SearchViewState(tableConfig)
             {
                 group = null,
                 itemSize = viewState.itemSize
@@ -220,7 +274,7 @@ namespace UnityEditor.Search
                 "Texture",
                 typeof(Texture));
             viewState.title = "Query Icon";
-            viewState.SetSearchViewFlags(SearchViewFlags.CompactView);
+            viewState.SetSearchViewFlags(SearchViewFlags.GridView);
             SearchService.ShowPicker(viewState);
         }
 

@@ -65,5 +65,8 @@ namespace UnityEngine.Audio
 
         [NativeMethod]
         public extern bool GetFloat(string name, out float value);
+
+        [NativeMethod("AudioMixerBindings::GetAbsoluteAudibilityFromGroup", HasExplicitThis = true, IsFreeFunction = true)]
+        internal extern float GetAbsoluteAudibilityFromGroup(AudioMixerGroup group);
     }
 }

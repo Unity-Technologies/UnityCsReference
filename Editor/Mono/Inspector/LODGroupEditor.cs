@@ -101,8 +101,6 @@ namespace UnityEditor
             m_PrimitiveCountLabel = LODGroupGUI.GUIStyles.m_TriangleCountLabel;
             ResetFoldoutLists();
             UpdateRendererMeshListCounts();
-            // reset all foldouts after object selection changes
-            Array.ForEach(m_LODGroupFoldoutHeaderValues, val => val.value = false);
 
             m_TargetTransform = (target as LODGroup)?.gameObject?.transform;
 
@@ -135,7 +133,16 @@ namespace UnityEditor
             Rect triCountLabelRect = new Rect(rect.x + objectFieldRect.width + 10, rect.y, size.x, EditorGUI.kSingleLineHeight);
             GUI.Label(triCountLabelRect, labelText);
 
-            labelText = $"{m_SubmeshCounts[m_ReorderableListIndex]} Sub Mesh(es).";
+            var subMeshCount = "0";
+            var renderer = prop.objectReferenceValue as Renderer;
+            if (renderer != null)
+            {
+                MeshFilter meshFilter;
+                if (renderer.TryGetComponent(out meshFilter) && meshFilter.sharedMesh != null)
+                    subMeshCount = meshFilter.sharedMesh.subMeshCount.ToString();
+            }
+
+            labelText = $"{subMeshCount} Sub Mesh(es).";
             size = EditorStyles.label.CalcSize(new GUIContent(labelText));
             triCountLabelRect.x += triCountLabelRect.width;
             triCountLabelRect.width = size.x;
@@ -344,13 +351,13 @@ namespace UnityEditor
             for (int i = 0; i < count; i++)
             {
                 if (targets.Length == 1)
-                    DrawLODGroupFoldout(camera, i, m_LODGroupFoldoutHeaderValues[i]);
+                    DrawLODGroupFoldout(camera, i, ref m_LODGroupFoldoutHeaderValues[i]);
                 else
                     DrawLODTransitionPropertyField(camera, i, count);
             }
         }
 
-        void DrawLODGroupFoldout(Camera camera, int lodGroupIndex, SavedBool foldoutState)
+        void DrawLODGroupFoldout(Camera camera, int lodGroupIndex, ref SavedBool foldoutState)
         {
             var totalTriCount = m_PrimitiveCounts.Length > 0 ? m_PrimitiveCounts[lodGroupIndex].Sum() : 0;
             var lod0TriCount = m_PrimitiveCounts[0].Sum();
@@ -527,7 +534,7 @@ namespace UnityEditor
                     {
                         for (int subMeshIndex = 0; subMeshIndex < rendererMesh.subMeshCount; subMeshIndex++)
                         {
-                            m_PrimitiveCounts[i][j] = (int)rendererMesh.GetIndexCount(subMeshIndex) / 3;
+                            m_PrimitiveCounts[i][j] += (int)rendererMesh.GetIndexCount(subMeshIndex) / 3;
                         }
                     }
                 }

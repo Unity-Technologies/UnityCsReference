@@ -375,10 +375,9 @@ namespace UnityEditor
                 {
                     var targetTexture = this.targetTexture.objectReferenceValue as RenderTexture;
                     if (targetTexture
-                        && targetTexture.antiAliasing > 1
-                        && deferred)
+                        && targetTexture.antiAliasing > 1)
                     {
-                        EditorGUILayout.HelpBox("Manual MSAA target set with deferred rendering. This will lead to undefined behavior.", MessageType.Warning, true);
+                        EditorGUILayout.HelpBox("The target texture is using MSAA. Note that this will not affect MSAA behaviour of this camera. MSAA rendering for cameras is configured through the 'MSAA' camera setting and related project settings. The target texture will always contain resolved pixel data.", MessageType.Warning, true);
                     }
                 }
             }

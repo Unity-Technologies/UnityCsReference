@@ -4,10 +4,9 @@
 
 
 // If you wish to modify this template do so and then regenerate the unity
-// events with the command line as shown below from within the directory
-// that the template lives in.
+// events with the command line as shown below:
 //
-// perl ../../Tools/Build/GenerateUnityEvents.pl 5 UnityEvent.template .
+// ./jam GenerateUnityEventClasses
 
 using System;
 using System.Reflection;
@@ -20,7 +19,7 @@ namespace UnityEngine.Events
     public delegate void UnityAction();
 
     [Serializable]
-    public  class UnityEvent : UnityEventBase
+    public class UnityEvent : UnityEventBase
     {
         [RequiredByNativeCode]
         public UnityEvent() {}
@@ -69,7 +68,7 @@ namespace UnityEngine.Events
                         var cachedCurCall = calls[i];
                         if (m_InvokeArray == null)
                             m_InvokeArray = new object[0];
-
+                        
                         cachedCurCall.Invoke(m_InvokeArray);
                     }
                 }

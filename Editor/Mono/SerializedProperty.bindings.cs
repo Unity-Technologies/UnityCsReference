@@ -196,6 +196,7 @@ namespace UnityEditor
         {
             SerializedProperty property = CopyInternal();
             property.m_SerializedObject = m_SerializedObject;
+            property.m_CachedLocalizedDisplayName = m_CachedLocalizedDisplayName;
             return property;
         }
 
@@ -256,7 +257,8 @@ namespace UnityEditor
                 case SerializedPropertyType.Color: colorValue = targetProperty.colorValue; break;
                 case SerializedPropertyType.ObjectReference: objectReferenceValue = targetProperty.objectReferenceValue; break;
                 case SerializedPropertyType.LayerMask: intValue = targetProperty.intValue; break;
-                case SerializedPropertyType.Enum: enumValueIndex = targetProperty.enumValueIndex; break;
+                case SerializedPropertyType.Enum: enumValueIndex = targetProperty.enumValueIndex >= 0 ? targetProperty.enumValueIndex : 0;
+                    intValue = targetProperty.intValue >= 0 ? targetProperty.intValue : intValue; break;
                 case SerializedPropertyType.Vector2: vector2Value = targetProperty.vector2Value; break;
                 case SerializedPropertyType.Vector3: vector3Value = targetProperty.vector3Value; break;
                 case SerializedPropertyType.Vector4: vector4Value = targetProperty.vector4Value; break;
@@ -505,17 +507,28 @@ namespace UnityEditor
         private extern int GetDepthInternal();
 
         // Full path of the property (RO)
+        private string m_PropertyPath = "";
+        private int m_PropertyPathHash = 0;
         public string propertyPath
         {
             get
             {
                 Verify();
-                return GetPropertyPathInternal();
+                int hash = GetHashCodeForPropertyPathInternal();
+                if (m_PropertyPathHash != hash)
+                {
+                    m_PropertyPathHash = hash;
+                    m_PropertyPath = GetPropertyPathInternal();
+                }
+                return m_PropertyPath;
             }
         }
 
         [NativeName("GetPropertyPath")]
         private extern string GetPropertyPathInternal();
+
+        [NativeName("GetHashCodeForPropertyPath")]
+        private extern int GetHashCodeForPropertyPathInternal();
 
         internal int hashCodeForPropertyPathWithoutArrayIndex
         {
@@ -1186,6 +1199,13 @@ namespace UnityEditor
             }
         }
 
+        // Enum flag value
+        public int enumValueFlag
+        {
+            get { return intValue; }
+            set { intValue = value; }
+        }
+
         [NativeName("GetEnumValueIndex")]
         private extern int GetEnumValueIndexInternal();
 
@@ -1706,5 +1726,17 @@ namespace UnityEditor
             [NativeMethod("IsValid")]
             get;
         }
+
+        public uint contentHash
+        {
+            get
+            {
+                Verify(VerifyFlags.IteratorNotAtEnd);
+                return GetContentHashInternal();
+            }
+        }
+
+        [NativeMethod("GetContentHash")]
+        extern private uint GetContentHashInternal();
     }
 }

@@ -112,14 +112,17 @@
     <Compile Include="..\..\External\Yoga\csharp\Facebook.Yoga\YogaWrap.cs">
       <Link>External\Yoga\csharp\Facebook.Yoga\YogaWrap.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\unitytls\builds\CSharp\BindingsUnity\TLSAgent.gen.bindings.cs">
+      <Link>External\unitytls\builds\CSharp\BindingsUnity\TLSAgent.gen.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\unitytls\builds\CSharp\UnityTLSNativeLibrary.cs">
+      <Link>External\unitytls\builds\CSharp\UnityTLSNativeLibrary.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\AlignmentUtils.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\AlignmentUtils.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Atlas.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Atlas.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\BaseLiveReloadAssetTracker.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\BaseLiveReloadAssetTracker.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\BindableElement.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\BindableElement.cs</Link>
@@ -181,6 +184,9 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\BaseField.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\BaseField.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\BasePopupField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\BasePopupField.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\BaseSlider.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\BaseSlider.cs</Link>
     </Compile>
@@ -201,6 +207,9 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\DropdownField.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\DropdownField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\EnumField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\EnumField.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\Foldout.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\Foldout.cs</Link>
@@ -240,6 +249,9 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\MinMaxSlider.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\MinMaxSlider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\PopupField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\PopupField.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\PopupWindow.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\PopupWindow.cs</Link>
@@ -303,6 +315,9 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\TwoPaneSplitViewResizer.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\TwoPaneSplitViewResizer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\CountingBloomFilter.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\CountingBloomFilter.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Cursor.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Cursor.cs</Link>
@@ -523,6 +538,9 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\ILiveReloadAssetTracker.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\ILiveReloadAssetTracker.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\ILiveReloadSystem.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\ILiveReloadSystem.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\IMGUIContainer.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\IMGUIContainer.cs</Link>
     </Compile>
@@ -534,9 +552,6 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\ImmediateModeElement.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\ImmediateModeElement.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\InjectedEditor\PackageEditorAtlasMonitor.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\InjectedEditor\PackageEditorAtlasMonitor.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\InteractionEnums.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\InteractionEnums.cs</Link>
@@ -603,6 +618,9 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRMeshGenerationContext.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRMeshGenerationContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIROpacityIdAccelerator.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIROpacityIdAccelerator.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRRenderChain.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRRenderChain.cs</Link>
@@ -1018,9 +1036,6 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualTreeAnimationUpdater.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\VisualTreeAnimationUpdater.cs</Link>
     </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualTreeAssetChangeTrackerUpdater.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\VisualTreeAssetChangeTrackerUpdater.cs</Link>
-    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualTreeHierarchyTracker.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\VisualTreeHierarchyTracker.cs</Link>
     </Compile>
@@ -1069,6 +1084,9 @@
     <Compile Include="..\..\Modules\Accessibility\VisionUtility.cs">
       <Link>Modules\Accessibility\VisionUtility.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\AndroidJNI\AndroidAssetPacks.bindings.cs">
+      <Link>Modules\AndroidJNI\AndroidAssetPacks.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\AndroidJNI\AndroidDevice.bindings.cs">
       <Link>Modules\AndroidJNI\AndroidDevice.bindings.cs</Link>
     </Compile>
@@ -1107,6 +1125,9 @@
     </Compile>
     <Compile Include="..\..\Modules\Animation\Managed\IAnimationJobPlayable.cs">
       <Link>Modules\Animation\Managed\IAnimationJobPlayable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\Managed\IAnimationPreviewable.cs">
+      <Link>Modules\Animation\Managed\IAnimationPreviewable.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Animation\Managed\IAnimationWindowPreview.cs">
       <Link>Modules\Animation\Managed\IAnimationWindowPreview.cs</Link>
@@ -2515,9 +2536,6 @@
     <Compile Include="..\..\Runtime\Export\Hashing\SpookyHash.cs">
       <Link>Runtime\Export\Hashing\SpookyHash.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\HotReload\HotReloadDeserializer.bindings.cs">
-      <Link>Runtime\Export\HotReload\HotReloadDeserializer.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\IMGUI\GUIElement.bindings.cs">
       <Link>Runtime\Export\IMGUI\GUIElement.bindings.cs</Link>
     </Compile>
@@ -2893,6 +2911,9 @@
     <Compile Include="..\..\Runtime\Export\Scripting\Il2CppEagerStaticClassConstructionAttribute.cs">
       <Link>Runtime\Export\Scripting\Il2CppEagerStaticClassConstructionAttribute.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\InspectorOrderAttribute.cs">
+      <Link>Runtime\Export\Scripting\InspectorOrderAttribute.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\LayerMask.bindings.cs">
       <Link>Runtime\Export\Scripting\LayerMask.bindings.cs</Link>
     </Compile>
@@ -3010,8 +3031,14 @@
     <Compile Include="..\..\Runtime\Export\Serialization\UnitySurrogateSelector.cs">
       <Link>Runtime\Export\Serialization\UnitySurrogateSelector.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Shaders\ComputeBuffer.bindings.cs">
+      <Link>Runtime\Export\Shaders\ComputeBuffer.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Shaders\ComputeShader.bindings.cs">
       <Link>Runtime\Export\Shaders\ComputeShader.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Shaders\ComputeShader.cs">
+      <Link>Runtime\Export\Shaders\ComputeShader.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Shaders\GlobalKeyword.bindings.cs">
       <Link>Runtime\Export\Shaders\GlobalKeyword.bindings.cs</Link>
@@ -3025,8 +3052,29 @@
     <Compile Include="..\..\Runtime\Export\Shaders\LocalKeywordSpace.bindings.cs">
       <Link>Runtime\Export\Shaders\LocalKeywordSpace.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Shaders\Material.bindings.cs">
+      <Link>Runtime\Export\Shaders\Material.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Shaders\Material.cs">
+      <Link>Runtime\Export\Shaders\Material.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Shaders\MaterialPropertyBlock.bindings.cs">
+      <Link>Runtime\Export\Shaders\MaterialPropertyBlock.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Shaders\MaterialPropertyBlock.cs">
+      <Link>Runtime\Export\Shaders\MaterialPropertyBlock.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Shaders\PassIdentifier.bindings.cs">
+      <Link>Runtime\Export\Shaders\PassIdentifier.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Shaders\PlatformKeywordSet.cs">
       <Link>Runtime\Export\Shaders\PlatformKeywordSet.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Shaders\RayTracingShader.bindings.cs">
+      <Link>Runtime\Export\Shaders\RayTracingShader.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Shaders\RayTracingShader.cs">
+      <Link>Runtime\Export\Shaders\RayTracingShader.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Shaders\Shader.bindings.cs">
       <Link>Runtime\Export\Shaders\Shader.bindings.cs</Link>
@@ -3045,6 +3093,12 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Shaders\ShaderProperties.cs">
       <Link>Runtime\Export\Shaders\ShaderProperties.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Shaders\ShaderVariantCollection.bindings.cs">
+      <Link>Runtime\Export\Shaders\ShaderVariantCollection.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Shaders\ShaderVariantCollection.cs">
+      <Link>Runtime\Export\Shaders\ShaderVariantCollection.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Snapping\SnapAxis.cs">
       <Link>Runtime\Export\Snapping\SnapAxis.cs</Link>
@@ -3287,7 +3341,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\..\artifacts\UnityEngine.dll\Debug</OutputPath>
-    <DefineConstants>COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_HUB_LICENSE;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_BJM_API;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_GAMECORE_API;UNITY_GAMECORE_SCARLETT_API;UNITY_GAMECORE_XBOXONE_API;UNITY_IPHONE_API;UNITY_LUMIN_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
+    <DefineConstants>COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ACCELERATOR_CLIENT_DEBUGGING;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_HUB_LICENSE;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MANAGED_UNITYTLS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_BJM_API;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_GAMECORE_API;UNITY_GAMECORE_SCARLETT_API;UNITY_GAMECORE_XBOXONE_API;UNITY_IPHONE_API;UNITY_LUMIN_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <NoWarn>0626</NoWarn>

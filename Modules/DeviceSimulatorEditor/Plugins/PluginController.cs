@@ -92,6 +92,11 @@ namespace UnityEditor.DeviceSimulation
             return pluginUI;
         }
 
+        public string[] GetPluginNames()
+        {
+            return plugins.Select(p => p.resolvedTitle).ToArray();
+        }
+
         public void Dispose()
         {
             foreach (var plugin in plugins)

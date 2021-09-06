@@ -16,7 +16,7 @@ namespace UnityEditor.Networking.PlayerConnection
         EditorWindow parentWindow { get; }
         GUIContent notificationMessage { get; }
         bool deepProfilingSupported { get; }
-        void AddItemsToMenu(ConnectionTreeViewWindow connectionTreeViewWindow, Rect position, Func<bool> disabler = null);
+        void AddItemsToTree(ConnectionTreeViewWindow connectionTreeViewWindow, Rect position);
         string connectionDisplayName { get; set; }
     }
 
@@ -49,7 +49,6 @@ namespace UnityEditor.Networking.PlayerConnection
 
     public static class PlayerConnectionGUI
     {
-        private static ConnectionTreeViewWindow ctvw;
         public static void ConnectionTargetSelectionDropdown(Rect rect, IConnectionState state, GUIStyle style = null)
         {
             var internalState = state as IConnectionStateInternal;
@@ -60,13 +59,11 @@ namespace UnityEditor.Networking.PlayerConnection
                 else
                     internalState.parentWindow.RemoveNotification();
             }
-            // *begin-nonstandard-formatting*
             style ??= Styles.defaultDropdown;
-            // *end-nonstandard-formatting*
             if (!UnityEditor.EditorGUI.DropdownButton(rect, Styles.dropdownButton, FocusType.Keyboard, style))
                 return;
 
-            ctvw = new ConnectionTreeViewWindow(internalState, rect);
+            ConnectionTreeViewWindow ctvw = new ConnectionTreeViewWindow(internalState, rect);
             PopupWindow.Show(rect, ctvw);
         }
     }
@@ -197,27 +194,29 @@ namespace UnityEditor.Networking.PlayerConnection
             }
         }
 
-        public virtual void AddItemsToMenu(ConnectionTreeViewWindow menu, Rect position, Func<bool> disabler = null)
+        public virtual void AddItemsToTree(ConnectionTreeViewWindow menu, Rect position)
         {
             bool hasAnyConnectionOpen = false;
-            AddAvailablePlayerConnections(menu, ref hasAnyConnectionOpen, disabler);
-            AddAvailableDeviceConnections(menu, ref hasAnyConnectionOpen, disabler);
-            AddLastConnectedIP(menu, ref hasAnyConnectionOpen, disabler);
+            AddAvailablePlayerConnections(menu, ref hasAnyConnectionOpen);
+            AddAvailableDeviceConnections(menu, ref hasAnyConnectionOpen);
+            AddLastConnectedIP(menu, ref hasAnyConnectionOpen);
 
             // Case 810030: Check if player is connected using AutoConnect Profiler feature via 'connect <ip> string in PlayerConnectionConfigFile
             // In that case ProfilerDriver.GetAvailableProfilers() won't return the connected player
             // But we still want to show that it's connected, because the data is incoming
             if (!ProfilerDriver.IsConnectionEditor() && !hasAnyConnectionOpen)
             {
-                menu.AddDisabledItem(new ConnectionDropDownItem(Content.AutoconnectedPlayer.text, ProfilerDriver.connectedProfiler, Content.DirectConnection, ConnectionDropDownItem.ConnectionMajorGroup.Direct, () => true, null, null));
+                menu.AddDisabledItem(new ConnectionDropDownItem(Content.AutoconnectedPlayer.text, ProfilerDriver.connectedProfiler, Content.DirectConnection, ConnectionDropDownItem.ConnectionMajorGroup.Direct, () => true, null));
             }
 
-            AddConnectionViaEnterIPWindow(menu, GUIUtility.GUIToScreenRect(position), disabler);
+            AddConnectionViaEnterIPWindow(menu, GUIUtility.GUIToScreenRect(position));
         }
 
         internal static void DirectIPConnect(string ip)
         {
             // Profiler.DirectIPConnect is a blocking call, so a notification message is used to show the progress
+            if (ProfilerDriver.connectedProfiler == PLAYER_DIRECT_IP_CONNECT_GUID)
+                return;
             s_NotificationMessage = Content.ConnectingToPlayerMessage;
             ProfilerDriver.DirectIPConnect(ip);
             s_NotificationMessage = null;
@@ -233,7 +232,7 @@ namespace UnityEditor.Networking.PlayerConnection
             SuccessfullyConnectedToPlayer(url);
         }
 
-        void AddLastConnectedIP(ConnectionTreeViewWindow menuOptions, ref bool hasOpenConnection, Func<bool> disabler)
+        void AddLastConnectedIP(ConnectionTreeViewWindow menuOptions, ref bool hasOpenConnection)
         {
             string lastIP = AttachToPlayerPlayerIPWindow.GetLastIPString();
             if (string.IsNullOrEmpty(lastIP))
@@ -243,10 +242,10 @@ namespace UnityEditor.Networking.PlayerConnection
             hasOpenConnection |= isConnected;
             menuOptions.AddItem(new ConnectionDropDownItem(lastIP, PLAYER_DIRECT_IP_CONNECT_GUID,
                 Content.DirectConnection, ConnectionDropDownItem.ConnectionMajorGroup.Direct, () => ProfilerDriver.connectedProfiler == PLAYER_DIRECT_IP_CONNECT_GUID,
-                () => DirectIPConnect(lastIP), disabler));
+                () => DirectIPConnect(lastIP)));
         }
 
-        static string GetConnectionName(int guid)
+        internal static string GetConnectionName(int guid)
         {
             // Connection identifier is constructed in the PlayerConnection::ConstructWhoamiString()
             // in a form "{platform name}(host name or ip)[:port]
@@ -293,7 +292,7 @@ namespace UnityEditor.Networking.PlayerConnection
                         if (!menuOptions.HasItem(Content.Playmode.text) && !name.StartsWith("Profiler-"))
                         {
                             menuOptions.AddItem(new ConnectionDropDownItem(Content.Playmode.text, guid, Content.Editor,
-                                ConnectionDropDownItem.ConnectionMajorGroup.Local,
+                                ConnectionDropDownItem.ConnectionMajorGroup.Editor,
                                 () => ProfilerDriver.connectedProfiler == guid &&
                                 !m_EditorModeTargetConnectionStatus(EditorConnectionTarget
                                     .MainEditorProcessPlaymode),
@@ -302,11 +301,10 @@ namespace UnityEditor.Networking.PlayerConnection
                                     ProfilerDriver.connectedProfiler = guid;
                                     SuccessfullyConnectedToPlayer(connectionName,
                                         EditorConnectionTarget.MainEditorProcessPlaymode);
-                                },
-                                null));
+                                }));
 
                             menuOptions.AddItem(new ConnectionDropDownItem(Content.Editmode.text, guid, Content.Editor,
-                                ConnectionDropDownItem.ConnectionMajorGroup.Local,
+                                ConnectionDropDownItem.ConnectionMajorGroup.Editor,
                                 () => ProfilerDriver.connectedProfiler == guid &&
                                 m_EditorModeTargetConnectionStatus(EditorConnectionTarget
                                     .MainEditorProcessEditmode),
@@ -315,8 +313,7 @@ namespace UnityEditor.Networking.PlayerConnection
                                     ProfilerDriver.connectedProfiler = guid;
                                     SuccessfullyConnectedToPlayer(connectionName,
                                         EditorConnectionTarget.MainEditorProcessEditmode);
-                                },
-                                null));
+                                }));
                         }
                     }
                     else
@@ -331,17 +328,15 @@ namespace UnityEditor.Networking.PlayerConnection
                                 {
                                     SuccessfullyConnectedToPlayer(connectionName);
                                 }
-                            }
-                            , disabler));
+                            }));
                     }
                 }
                 else
-                    menuOptions.AddDisabledItem(new ConnectionDropDownItem(name, guid, null, ConnectionDropDownItem.ConnectionMajorGroup.Unknown, () => ProfilerDriver.connectedProfiler == guid, null, () => true));
+                    menuOptions.AddDisabledItem(new ConnectionDropDownItem(name, guid, null, ConnectionDropDownItem.ConnectionMajorGroup.Unknown, () => ProfilerDriver.connectedProfiler == guid, null));
             }
         }
 
-        void AddAvailableDeviceConnections(ConnectionTreeViewWindow menuOptions, ref bool hasOpenConnection,
-            Func<bool> func)
+        void AddAvailableDeviceConnections(ConnectionTreeViewWindow menuOptions, ref bool hasOpenConnection)
         {
             foreach (var device in DevDeviceList.GetDevices())
             {
@@ -356,10 +351,10 @@ namespace UnityEditor.Networking.PlayerConnection
                 menuOptions.AddItem(new ConnectionDropDownItem(
                     device.type == "Android"
                     ? device.name.Substring(device.name.IndexOf('(') + 1).TrimEnd(')')
-                    : device.name, PLAYER_DIRECT_URL_CONNECT_GUID, "Tethered Devices" ,
+                    : device.name, PLAYER_DIRECT_URL_CONNECT_GUID, "Devices" ,
                     ConnectionDropDownItem.ConnectionMajorGroup.Local,
                     () => ProfilerDriver.connectedProfiler == PLAYER_DIRECT_URL_CONNECT_GUID &&
-                    ProfilerDriver.directConnectionUrl == url, () => DirectURLConnect(url), null, true, device.type == "iOS" ? "IPhonePlayer" : device.type));
+                    ProfilerDriver.directConnectionUrl == url, () => DirectURLConnect(url), true, device.type == "iOS" ? "IPhonePlayer" : device.type));
             }
         }
 
@@ -370,7 +365,7 @@ namespace UnityEditor.Networking.PlayerConnection
             {
                 AttachToPlayerPlayerIPWindow.Show(buttonScreenRect);
                 GUIUtility.ExitGUI(); // clear the gui state to prevent hot control issues
-            }, disabler));
+            }));
         }
 
         private bool disposed = false; // To detect redundant calls

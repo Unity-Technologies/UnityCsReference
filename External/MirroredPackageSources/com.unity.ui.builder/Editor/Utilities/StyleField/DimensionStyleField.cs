@@ -77,6 +77,8 @@ namespace Unity.UI.Builder
             }
         }
 
+        public Func<float, Dimension.Unit, Dimension.Unit, float> valueConverter { get; set; }
+
         public DimensionStyleField() : this(string.Empty) { }
 
         public DimensionStyleField(string label) : base(label)
@@ -139,15 +141,18 @@ namespace Unity.UI.Builder
             return m_Units;
         }
 
+        protected bool TryParseValue(string val, out float value)
+        {
+            var num = new string(val.Where((c) => Char.IsDigit(c) || c == '.' || c == '-').ToArray());
+            return float.TryParse(num, out value);
+        }
+
         protected override bool SetInnerValueFromValue(string val)
         {
             if (styleKeywords.Contains(val))
                 return false;
 
-            var num = new string(val.Where((c) => Char.IsDigit(c) || c == '.' || c == '-').ToArray());
-            float length;
-            var result = float.TryParse(num, out length);
-            if (!result)
+            if (!TryParseValue(val, out var length))
                 return false;
 
             if (isKeyword)
@@ -166,7 +171,18 @@ namespace Unity.UI.Builder
             if (string.IsNullOrEmpty(unit) || !m_Units.Contains(unit))
                 return false;
 
+            var oldUnit = option;
+
             option = unit;
+
+            // If only the unit was set then try to convert the inner value using the new unit and old unit
+            if (!TryParseValue(val, out float result) &&
+                (valueConverter != null) &&
+                StyleFieldConstants.StringToDimensionUnitMap.TryGetValue(oldUnit, out var oldUnitEnum) &&
+                StyleFieldConstants.StringToDimensionUnitMap.TryGetValue(unit, out var unitEnum))
+            {
+                innerValue = valueConverter.Invoke(innerValue, oldUnitEnum, unitEnum);
+            }
             return true;
         }
 

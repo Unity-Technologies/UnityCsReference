@@ -34,17 +34,24 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Creates a new StyleScale from either a <see cref="Scale"/> or a <see cref="StyleKeyword"/>.
+        /// Creates a new StyleScale from a <see cref="Scale"/>.
         /// </summary>
         public StyleScale(Scale v)
             : this(v, StyleKeyword.Undefined)
         {}
 
         /// <summary>
-        /// Creates a new StyleScale from either a <see cref="Scale"/> or a <see cref="StyleKeyword"/>.
+        /// Creates a new StyleScale from a <see cref="StyleKeyword"/>.
         /// </summary>
         public StyleScale(StyleKeyword keyword)
             : this(default(Scale), keyword)
+        {}
+
+        /// <summary>
+        /// Creates a new StyleScale from a <see cref="Vector2"/>.
+        /// </summary>
+        public StyleScale(Vector2 scale)
+            : this(new Scale(scale))
         {}
 
         internal StyleScale(Scale v, StyleKeyword keyword)
@@ -55,6 +62,12 @@ namespace UnityEngine.UIElements
 
         private Scale m_Value;
         private StyleKeyword m_Keyword;
+
+        /// <undoc/>
+        public static implicit operator StyleScale(Vector2 scale)
+        {
+            return new Scale(scale);
+        }
 
         /// <undoc/>
         public static bool operator==(StyleScale lhs, StyleScale rhs)

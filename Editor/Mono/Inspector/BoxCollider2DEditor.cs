@@ -50,7 +50,7 @@ namespace UnityEditor
                 EditorGUILayout.HelpBox(Styles.s_ColliderEditDisableHelp.text, MessageType.Info);
 
                 if (ToolManager.activeToolType == typeof(BoxCollider2DTool))
-                    ToolManager.RestorePreviousPersistentTool();
+                    ToolManager.RestorePreviousTool();
             }
             else
                 EditorGUILayout.EditorToolbarForTarget(EditorGUIUtility.TrTempContent("Edit Collider"), this);

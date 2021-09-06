@@ -133,6 +133,7 @@ namespace UnityEditor
             "OnPostprocessTexture3D",
             "OnPostprocessTexture2DArray"
         };
+
         static readonly string[] k_IHVImporterPostprocessors =
         {
             "OnPostprocessTexture",
@@ -159,6 +160,30 @@ namespace UnityEditor
         {
             "OnPreprocessLightDescription",
         };
+        static readonly string[] k_TexturePreprocessors =
+        {
+            "OnPreprocessTexture",
+        };
+        static readonly string[] k_Texture2DPostprocessors =
+        {
+            "OnPostprocessTexture",
+        };
+        static readonly string[] k_Texture2DArrayPostprocessors =
+        {
+            "OnPostprocessTexture2DArray"
+        };
+        static readonly string[] k_Texture3DPostprocessors =
+        {
+            "OnPostprocessTexture3D"
+        };
+        static readonly string[] k_TextureCubePostprocessors =
+        {
+            "OnPostprocessCubemap"
+        };
+        static readonly string[] k_SpritePostprocessors =
+        {
+            "OnPostprocessSprites",
+        };
 
         static Dictionary<string, string[]> s_PostprocessorMethodsByDependencyKey;
         static Dictionary<Type, string[]> s_StaticPostprocessorMethodsByImporterType;
@@ -168,7 +193,6 @@ namespace UnityEditor
         {
             s_StaticPostprocessorMethodsByImporterType = new Dictionary<Type, string[]>();
             s_StaticPostprocessorMethodsByImporterType.Add(typeof(ModelImporter), k_ModelImporterPostprocessors);
-            s_StaticPostprocessorMethodsByImporterType.Add(typeof(TextureImporter), k_TextureImporterPostprocessors);
             s_StaticPostprocessorMethodsByImporterType.Add(typeof(IHVImageFormatImporter), k_IHVImporterPostprocessors);
             s_StaticPostprocessorMethodsByImporterType.Add(typeof(SpeedTreeImporter), k_SpeedTreeImporterPostprocessors);
             s_StaticPostprocessorMethodsByImporterType.Add(typeof(AudioImporter), k_AudioImporterPostprocessors);
@@ -176,10 +200,17 @@ namespace UnityEditor
 
             s_DynamicPostprocessorMethodsByImporterType = new Dictionary<Type, string[]>();
             s_DynamicPostprocessorMethodsByImporterType.Add(typeof(ModelImporter), k_DynamicModelImporterPostprocessors);
+            s_DynamicPostprocessorMethodsByImporterType.Add(typeof(TextureImporter), k_TextureImporterPostprocessors);
 
             s_PostprocessorMethodsByDependencyKey = new Dictionary<string, string[]>();
             s_PostprocessorMethodsByDependencyKey.Add(kCameraPostprocessorDependencyName, k_CameraPostprocessors);
             s_PostprocessorMethodsByDependencyKey.Add(kLightPostprocessorDependencyName, k_LightPostprocessors);
+            s_PostprocessorMethodsByDependencyKey.Add(kTexturePreprocessorDependencyName, k_TexturePreprocessors);
+            s_PostprocessorMethodsByDependencyKey.Add(kTexture2DPostprocessorDependencyName, k_Texture2DPostprocessors);
+            s_PostprocessorMethodsByDependencyKey.Add(kTexture2DArrayPostprocessorDependencyName, k_Texture2DArrayPostprocessors);
+            s_PostprocessorMethodsByDependencyKey.Add(kTexture3DPostprocessorDependencyName, k_Texture3DPostprocessors);
+            s_PostprocessorMethodsByDependencyKey.Add(kTextureCubePostprocessorDependencyName, k_TextureCubePostprocessors);
+            s_PostprocessorMethodsByDependencyKey.Add(kTextureSpritePostprocessorDependencyName, k_SpritePostprocessors);
         }
 
         [Serializable]
@@ -204,17 +235,31 @@ namespace UnityEditor
 
         [RequiredByNativeCode]
         // Postprocess on all assets once an automatic import has completed
-        static void PostprocessAllAssets(string[] importedAssets, string[] addedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromPathAssets)
+        static void PostprocessAllAssets(string[] importedAssets, string[] addedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromPathAssets, bool didDomainReload)
         {
             object[] args = { importedAssets, deletedAssets, movedAssets, movedFromPathAssets };
+
+            object[] argsWithDidDomainReload = { importedAssets, deletedAssets, movedAssets, movedFromPathAssets, didDomainReload};
             foreach (var assetPostprocessorClass in GetCachedAssetPostprocessorClasses())
             {
                 const string methodName = "OnPostprocessAllAssets";
-                MethodInfo method = assetPostprocessorClass.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                MethodInfo method = assetPostprocessorClass.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static, null, new Type[] { typeof(string).MakeArrayType(), typeof(string).MakeArrayType(), typeof(string).MakeArrayType(), typeof(string).MakeArrayType() }, null);
+
                 if (method != null)
                 {
-                    using (new EditorPerformanceMarker($"{assetPostprocessorClass.Name}.{methodName}", assetPostprocessorClass).Auto())
-                        InvokeMethod(method, args);
+                    if (importedAssets.Length != 0 || addedAssets.Length != 0 || deletedAssets.Length != 0 || movedAssets.Length != 0 || movedFromPathAssets.Length != 0)
+                        using (new EditorPerformanceMarker($"{assetPostprocessorClass.Name}.{methodName}", assetPostprocessorClass).Auto())
+                            InvokeMethod(method, args);
+                }
+                else
+                {
+                    // OnPostprocessAllAssets with didDomainReload parameter
+                    method = assetPostprocessorClass.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static, null, new Type[] { typeof(string).MakeArrayType(), typeof(string).MakeArrayType(), typeof(string).MakeArrayType(), typeof(string).MakeArrayType(), typeof(bool)}, null);
+                    if (method != null)
+                    {
+                        using (new EditorPerformanceMarker($"{assetPostprocessorClass.Name}.{methodName}", assetPostprocessorClass).Auto())
+                            InvokeMethod(method, argsWithDidDomainReload);
+                    }
                 }
             }
 
@@ -280,18 +325,29 @@ namespace UnityEditor
 
         internal const string kCameraPostprocessorDependencyName = "postprocessor/camera";
         internal const string kLightPostprocessorDependencyName = "postprocessor/light";
+        internal const string kTexture2DPostprocessorDependencyName = "postprocessor/texture2D";
+        internal const string kTextureCubePostprocessorDependencyName = "postprocessor/textureCube";
+        internal const string kTexture3DPostprocessorDependencyName = "postprocessor/texture3D";
+        internal const string kTexture2DArrayPostprocessorDependencyName = "postprocessor/texture2DArray";
+        internal const string kTextureSpritePostprocessorDependencyName = "postprocessor/textureSprite";
+        internal const string kTexturePreprocessorDependencyName = "postprocessor/texturePreprocessor";
 
         static Stack<SortedSet<AssetPostprocessor>> m_PostprocessStack = null;
         static SortedSet<AssetPostprocessor> m_ImportProcessors = null;
 
         static Type[] m_PostprocessorClasses = null;
         static string m_MeshProcessorsHashString = null;
-        static string m_TextureProcessorsHashString = null;
         static string m_AudioProcessorsHashString = null;
         static string m_SpeedTreeProcessorsHashString = null;
         static string m_PrefabProcessorsHashString = null;
         static string m_CameraProcessorsHashString = null;
         static string m_LightProcessorsHashString = null;
+        static string m_Texture2DProcessorsHashString = null;
+        static string m_TextureCubeProcessorsHashString = null;
+        static string m_Texture3DPostprocessorDependencyName = null;
+        static string m_Texture2DArrayDependencyName = null;
+        static string m_TextureSpriteDependencyName = null;
+        static string m_TexturePreprocessorDependencyName = null;
 
         static Dictionary<Type, SortedSet<AssetPostprocessor.PostprocessorInfo>> s_StaticPostprocessorsPerImporterType = new Dictionary<Type, SortedSet<AssetPostprocessor.PostprocessorInfo>>();
         static Dictionary<Type, SortedSet<AssetPostprocessor.PostprocessorInfo>> s_DynamicPostprocessorsPerImporterType = new Dictionary<Type, SortedSet<AssetPostprocessor.PostprocessorInfo>>();
@@ -627,51 +683,107 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        static string GetTextureProcessorsHashString()
+        static void PreprocessTexture(string pathName, AssetImportContext context)
         {
-            if (m_TextureProcessorsHashString != null)
-                return m_TextureProcessorsHashString;
+            if (context != null)
+            {
+                context.DependsOnCustomDependency(kTexturePreprocessorDependencyName);
+            }
 
-            m_TextureProcessorsHashString = BuildStaticDependencyHashString(GetSortedStaticPostprocessorTypes(typeof(TextureImporter)));
-            return m_TextureProcessorsHashString;
+            CallPostProcessMethods("OnPreprocessTexture", null);
         }
 
         [RequiredByNativeCode]
-        static void PreprocessTexture(string pathName)
+        static void PreprocessTextureFromScript(string pathName)
         {
             CallPostProcessMethods("OnPreprocessTexture", null);
         }
 
         [RequiredByNativeCode]
-        static void PostprocessTexture(Texture2D tex, string pathName)
+        static void PostprocessTexture(Texture2D tex, string pathName, AssetImportContext context)
+        {
+            if (context != null)
+            {
+                context.DependsOnCustomDependency(kTexture2DPostprocessorDependencyName);
+            }
+            object[] args = { tex };
+            CallPostProcessMethods("OnPostprocessTexture", args);
+        }
+
+        [RequiredByNativeCode]
+        static void PostprocessTextureFromScript(Texture2D tex, string pathName)
         {
             object[] args = { tex };
             CallPostProcessMethods("OnPostprocessTexture", args);
         }
 
         [RequiredByNativeCode]
-        static void PostprocessCubemap(Cubemap tex, string pathName)
+        static void PostprocessCubemap(Cubemap tex, string pathName, AssetImportContext context)
+        {
+            if (context != null)
+            {
+                context.DependsOnCustomDependency(kTextureCubePostprocessorDependencyName);
+            }
+            object[] args = { tex };
+            CallPostProcessMethods("OnPostprocessCubemap", args);
+        }
+
+        [RequiredByNativeCode]
+        static void PostprocessCubemapFromScript(Cubemap tex, string pathName)
         {
             object[] args = { tex };
             CallPostProcessMethods("OnPostprocessCubemap", args);
         }
 
         [RequiredByNativeCode]
-        static void PostprocessTexture3D(Texture3D tex, string pathName)
+        static void PostprocessTexture3D(Texture3D tex, string pathName, AssetImportContext context)
+        {
+            if (context != null)
+            {
+                context.DependsOnCustomDependency(kTexture3DPostprocessorDependencyName);
+            }
+            object[] args = { tex };
+            CallPostProcessMethods("OnPostprocessTexture3D", args);
+        }
+
+        [RequiredByNativeCode]
+        static void PostprocessTexture3DFromScript(Texture3D tex, string pathName)
         {
             object[] args = { tex };
             CallPostProcessMethods("OnPostprocessTexture3D", args);
         }
 
         [RequiredByNativeCode]
-        static void PostprocessTexture2DArray(Texture2DArray tex, string pathName)
+        static void PostprocessTexture2DArray(Texture2DArray tex, string pathName, AssetImportContext context)
+        {
+            if (context != null)
+            {
+                context.DependsOnCustomDependency(kTexture2DArrayPostprocessorDependencyName);
+            }
+            object[] args = { tex };
+            CallPostProcessMethods("OnPostprocessTexture2DArray", args);
+        }
+
+        [RequiredByNativeCode]
+        static void PostprocessTexture2DArrayFromScript(Texture2DArray tex, string pathName)
         {
             object[] args = { tex };
             CallPostProcessMethods("OnPostprocessTexture2DArray", args);
         }
 
         [RequiredByNativeCode]
-        static void PostprocessSprites(Texture2D tex, string pathName, Sprite[] sprites)
+        static void PostprocessSprites(Texture2D tex, string pathName, Sprite[] sprites, AssetImportContext context)
+        {
+            if (context != null)
+            {
+                context.DependsOnCustomDependency(kTextureSpritePostprocessorDependencyName);
+            }
+            object[] args = { tex, sprites };
+            CallPostProcessMethods("OnPostprocessSprites", args);
+        }
+
+        [RequiredByNativeCode]
+        static void PostprocessSpritesFromScript(Texture2D tex, string pathName, Sprite[] sprites)
         {
             object[] args = { tex, sprites };
             CallPostProcessMethods("OnPostprocessSprites", args);
@@ -742,6 +854,12 @@ namespace UnityEditor
         {
             AssetDatabase.RegisterCustomDependency(kCameraPostprocessorDependencyName, Hash128.Compute(GetCameraProcessorsHashString()));
             AssetDatabase.RegisterCustomDependency(kLightPostprocessorDependencyName, Hash128.Compute(GetLightProcessorsHashString()));
+            AssetDatabase.RegisterCustomDependency(kTexture2DPostprocessorDependencyName, Hash128.Compute(GetTexture2DProcessorsHashString()));
+            AssetDatabase.RegisterCustomDependency(kTextureCubePostprocessorDependencyName, Hash128.Compute(GetTextureCubeProcessorsHashString()));
+            AssetDatabase.RegisterCustomDependency(kTexture3DPostprocessorDependencyName, Hash128.Compute(GetTexture3DProcessorsHashString()));
+            AssetDatabase.RegisterCustomDependency(kTexture2DArrayPostprocessorDependencyName, Hash128.Compute(GetTexture2DArrayProcessorsHashString()));
+            AssetDatabase.RegisterCustomDependency(kTextureSpritePostprocessorDependencyName, Hash128.Compute(GetTextureSpriteProcessorsHashString()));
+            AssetDatabase.RegisterCustomDependency(kTexturePreprocessorDependencyName, Hash128.Compute(GetTexturePreProcessorsHashString()));
         }
 
         static void GetProcessorHashString(string methodName, ref string hashString)
@@ -787,6 +905,48 @@ namespace UnityEditor
         {
             GetProcessorHashString("OnPreprocessLightDescription", ref m_LightProcessorsHashString);
             return m_LightProcessorsHashString;
+        }
+
+        [RequiredByNativeCode]
+        static string GetTexturePreProcessorsHashString()
+        {
+            GetProcessorHashString("OnPreprocessTexture", ref m_TexturePreprocessorDependencyName);
+            return m_TexturePreprocessorDependencyName;
+        }
+
+        [RequiredByNativeCode]
+        static string GetTexture2DProcessorsHashString()
+        {
+            GetProcessorHashString("OnPostprocessTexture", ref m_Texture2DProcessorsHashString);
+            return m_Texture2DProcessorsHashString;
+        }
+
+        [RequiredByNativeCode]
+        static string GetTextureCubeProcessorsHashString()
+        {
+            GetProcessorHashString("OnPostprocessCubemap", ref m_TextureCubeProcessorsHashString);
+            return m_TextureCubeProcessorsHashString;
+        }
+
+        [RequiredByNativeCode]
+        static string GetTexture3DProcessorsHashString()
+        {
+            GetProcessorHashString("OnPostprocessTexture3D", ref m_Texture3DPostprocessorDependencyName);
+            return m_Texture3DPostprocessorDependencyName;
+        }
+
+        [RequiredByNativeCode]
+        static string GetTexture2DArrayProcessorsHashString()
+        {
+            GetProcessorHashString("OnPostprocessTexture2DArray", ref m_Texture2DArrayDependencyName);
+            return m_Texture2DArrayDependencyName;
+        }
+
+        [RequiredByNativeCode]
+        static string GetTextureSpriteProcessorsHashString()
+        {
+            GetProcessorHashString("OnPostprocessSprites", ref m_TextureSpriteDependencyName);
+            return m_TextureSpriteDependencyName;
         }
 
         static bool IsAssetPostprocessorAnalyticsEnabled()

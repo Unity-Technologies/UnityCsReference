@@ -6,13 +6,12 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
+    [InitializeOnLoad]
     internal static class LiveReloadTrackerCreator
     {
-        [InitializeOnLoadMethod]
-        static void Initialize()
+        static LiveReloadTrackerCreator()
         {
             UIDocument.CreateLiveReloadVisualTreeAssetTracker = CreateVisualTreeAssetTrackerInstance;
-            PanelSettings.CreateLiveReloadStyleSheetAssetTracker = CreateStyleSheetAssetTrackerInstance;
 
             DefaultEditorWindowBackend.SetupLiveReloadPanelTrackers = PanelSettings.SetupLiveReloadPanelTrackers;
         }
@@ -20,14 +19,6 @@ namespace UnityEditor.UIElements
         internal static ILiveReloadAssetTracker<VisualTreeAsset> CreateVisualTreeAssetTrackerInstance(UIDocument owner)
         {
             return new UIDocumentVisualTreeAssetTracker(owner);
-        }
-
-        internal static ILiveReloadAssetTracker<StyleSheet> CreateStyleSheetAssetTrackerInstance()
-        {
-            if (DefaultEditorWindowBackend.IsGameViewWindowLiveReloadOn())
-                return new LiveReloadStyleSheetAssetTracker();
-
-            return null;
         }
     }
 

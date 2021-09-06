@@ -171,6 +171,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Graphics/Texture2D.h")]
     [NativeHeader("Runtime/Graphics/GeneratedTextures.h")]
     [UsedByNativeCode]
+    [ExcludeFromPreset]
     public sealed partial class Texture2D : Texture
     {
         extern public TextureFormat format { [NativeName("GetTextureFormat")] get; }
@@ -507,6 +508,7 @@ namespace UnityEngine
     }
 
     [NativeHeader("Runtime/Graphics/Texture2DArray.h")]
+    [ExcludeFromPreset]
     public sealed partial class Texture2DArray : Texture
     {
         extern static public int allSlices { [NativeName("GetAllTextureLayersIdentifier")] get; }

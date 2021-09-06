@@ -21,7 +21,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
             public NativeSlice<Vertex> vertices;
             public NativeSlice<UInt16> indices;
             public Material material; // Responsible for enabling immediate clipping
-            public Texture custom, font;
             public float fontTexSDFScale;
             public TextureId texture;
             public RenderChainCommand customCommand;
@@ -393,8 +392,12 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 m_CurrentEntry.clipRectID = m_ClipRectID;
                 m_CurrentEntry.stencilRef = m_StencilRef;
                 m_CurrentEntry.maskDepth = m_MaskDepth;
-                MeshBuilder.MakeText(textVertices, localOffset,  new MeshBuilder.AllocMeshData() { alloc = m_AllocRawVertsIndicesDelegate });
-                m_CurrentEntry.font = textParams.font.material.mainTexture;
+                MeshBuilder.MakeText(textVertices, localOffset, new MeshBuilder.AllocMeshData() { alloc = m_AllocRawVertsIndicesDelegate });
+
+                var texture = textParams.font.material.mainTexture;
+                m_CurrentEntry.texture = TextureRegistry.instance.Acquire(texture);
+                m_Owner.AppendTexture(currentElement, texture, m_CurrentEntry.texture, false);
+
                 m_Entries.Add(m_CurrentEntry);
                 totalVertices += m_CurrentEntry.vertices.Length;
                 totalIndices += m_CurrentEntry.indices.Length;
@@ -432,11 +435,18 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 }
                 else
                 {
+                    var texture = textInfo.meshInfo[i].material.mainTexture;
+                    var sdfScale = textInfo.meshInfo[i].material.GetFloat(TextShaderUtilities.ID_GradientScale);
+
                     m_CurrentEntry.isTextEntry = true;
-                    m_CurrentEntry.fontTexSDFScale = textInfo.meshInfo[i].material.GetFloat(TextShaderUtilities.ID_GradientScale);
-                    m_CurrentEntry.font = textInfo.meshInfo[i].material.mainTexture;
+                    m_CurrentEntry.fontTexSDFScale = sdfScale;
+                    m_CurrentEntry.texture = TextureRegistry.instance.Acquire(texture);
+                    m_Owner.AppendTexture(currentElement, texture, m_CurrentEntry.texture, false);
 
                     bool isDynamicColor = RenderEvents.NeedsColorID(currentElement);
+                    // Set the dynamic-color hint on TextCore fancy-text or the EditorUIE shader applies the
+                    // tint over the fragment output, affecting the outline/shadows.
+                    isDynamicColor = isDynamicColor || RenderEvents.NeedsTextCoreSettings(currentElement);
 
                     MeshBuilder.MakeText(
                         textInfo.meshInfo[i],
@@ -454,7 +464,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         public void DrawRectangle(MeshGenerationContextUtils.RectangleParams rectParams)
         {
-            if (rectParams.rect.width < Mathf.Epsilon || rectParams.rect.height < Mathf.Epsilon)
+            if (rectParams.rect.width < UIRUtility.k_Epsilon || rectParams.rect.height < UIRUtility.k_Epsilon)
                 return; // Nothing to draw
 
             if (currentElement.panel.contextType == ContextType.Editor)
@@ -509,7 +519,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         public void DrawVisualElementBackground()
         {
-            if (currentElement.layout.width <= Mathf.Epsilon || currentElement.layout.height <= Mathf.Epsilon)
+            if (currentElement.layout.width <= UIRUtility.k_Epsilon || currentElement.layout.height <= UIRUtility.k_Epsilon)
                 return;
 
             var style = currentElement.computedStyle;
@@ -615,7 +625,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         public void DrawVisualElementBorder()
         {
-            if (currentElement.layout.width >= Mathf.Epsilon && currentElement.layout.height >= Mathf.Epsilon)
+            if (currentElement.layout.width >= UIRUtility.k_Epsilon && currentElement.layout.height >= UIRUtility.k_Epsilon)
             {
                 var style = currentElement.computedStyle;
                 if (style.borderLeftColor != Color.clear && style.borderLeftWidth > 0.0f ||
@@ -855,7 +865,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         void GenerateStencilClipEntryForRoundedRectBackground()
         {
-            if (currentElement.layout.width <= Mathf.Epsilon || currentElement.layout.height <= Mathf.Epsilon)
+            if (currentElement.layout.width <= UIRUtility.k_Epsilon || currentElement.layout.height <= UIRUtility.k_Epsilon)
                 return;
 
             var style = currentElement.computedStyle;
@@ -949,6 +959,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
     internal class UIRTextUpdatePainter : IStylePainter, IDisposable
     {
+        RenderChain m_Owner;
         VisualElement m_CurrentElement;
         int m_TextEntryIndex;
         NativeArray<Vertex> m_DudVerts;
@@ -958,8 +969,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         public MeshGenerationContext meshGenerationContext { get; }
 
-        public UIRTextUpdatePainter()
+        public UIRTextUpdatePainter(RenderChain renderChain)
         {
+            m_Owner = renderChain;
             meshGenerationContext = new MeshGenerationContext(this);
         }
 
@@ -1038,11 +1050,33 @@ namespace UnityEngine.UIElements.UIR.Implementation
             {
                 var textEntry = m_CurrentElement.renderChainData.textEntries[m_TextEntryIndex++];
 
+                // Only acquire the texture if it is not already acquired.
+                // Text updates don't go through the usual ResetTextures() code path, so we
+                // should avoid increasing the ref-count for no good reason.
+                var texture = textParams.font.material.mainTexture;
+                var textureId = TextureId.invalid;
+                for (var node = m_CurrentElement.renderChainData.textures; node != null; node = node.next)
+                {
+                    if (node.data.source == texture)
+                    {
+                        textureId = node.data.actual;
+                        break;
+                    }
+                }
+
+                if (textureId == TextureId.invalid)
+                {
+                    textureId = TextureRegistry.instance.Acquire(texture);
+                    m_Owner.AppendTexture(m_CurrentElement, texture, textureId, false);
+                }
+
+                textEntry.command.state.texture = textureId;
+
                 Vector2 localOffset = TextNative.GetOffset(textSettings, textParams.rect);
                 MeshBuilder.UpdateText(textVertices, localOffset, m_CurrentElement.renderChainData.verticesSpace,
                     m_XFormClipPages, m_IDs, m_Flags, m_OpacityColorPages,
-                    m_MeshDataVerts.Slice(textEntry.firstVertex, textEntry.vertexCount));
-                textEntry.command.state.font = textParams.font.material.mainTexture;
+                    m_MeshDataVerts.Slice(textEntry.firstVertex, textEntry.vertexCount),
+                    textureId);
             }
         }
     }

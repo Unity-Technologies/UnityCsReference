@@ -752,7 +752,6 @@ namespace UnityEngine
 namespace UnityEngine
 {
     // Stores light probes for the scene.
-    [NativeAsStruct]
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Runtime/Export/Graphics/Graphics.bindings.h")]
     public sealed partial class LightProbes : Object
@@ -760,7 +759,7 @@ namespace UnityEngine
         private LightProbes() {}
 
         public static event Action tetrahedralizationCompleted;
-
+        [RequiredByNativeCode]
         private static void Internal_CallTetrahedralizationCompletedFunction()
         {
             if (tetrahedralizationCompleted != null)
@@ -768,7 +767,7 @@ namespace UnityEngine
         }
 
         public static event Action needsRetetrahedralization;
-
+        [RequiredByNativeCode]
         private static void Internal_CallNeedsRetetrahedralizationFunction()
         {
             if (needsRetetrahedralization != null)

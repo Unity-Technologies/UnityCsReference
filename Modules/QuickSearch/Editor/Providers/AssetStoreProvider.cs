@@ -377,7 +377,7 @@ namespace UnityEditor.Search.Providers
                 label += " (Free)";
             }
 
-            var description = $"{doc.publisher} - {doc.category_slug}";
+            var description = $"{doc.name_en_US} - {doc.publisher} - {doc.category_slug}";
             var item = provider.CreateItem(context, doc.id, score, label, description, null, doc);
             item.options &= ~SearchItemOptions.FuzzyHighlight;
             item.options &= ~SearchItemOptions.Highlight;

@@ -180,7 +180,7 @@ namespace Unity.UI.Builder
                 }
             }
 
-            return (Texture2D)EditorGUIUtility.IconContent("UxmlScript Icon").image;
+            return (Texture2D)EditorGUIUtility.IconContent("VisualTreeAsset Icon").image;
         }
 
         static void GenerateProjectContentTrees()
@@ -229,11 +229,16 @@ namespace Unity.UI.Builder
                     }),
                 new BuilderLibraryTreeItem("ScrollView", "ScrollView", typeof(ScrollView), () => new ScrollView()),
                 new BuilderLibraryTreeItem("ListView", "ListView", typeof(ListView), () => new ListView()),
-                new BuilderLibraryTreeItem("IMGUI Container", "VisualElement", typeof(IMGUIContainer), () => new IMGUIContainer()),
                 new BuilderLibraryTreeItem("GroupBox", "VisualElement", typeof(GroupBox), () => new GroupBox()),
             };
             containersItem.AddChildren(containersItemList);
             controlsTree.Add(containersItem);
+
+            var editorContainersItemList = new BuilderLibraryTreeItem(BuilderConstants.LibraryEditorContainersSectionHeaderName, null, null, null, null, new List<TreeViewItem<string>>
+            {
+                new BuilderLibraryTreeItem("IMGUI Container", "VisualElement", typeof(IMGUIContainer), () => new IMGUIContainer()),
+            }){ isEditorOnly = true, isHeader = true };
+
 
             var controlsItem = new BuilderLibraryTreeItem(BuilderConstants.LibraryControlsSectionHeaderName, null, null, null, null, new List<TreeViewItem<string>>
             {
@@ -249,6 +254,8 @@ namespace Unity.UI.Builder
 
                 new BuilderLibraryTreeItem("Progress Bar", nameof(ProgressBar), typeof(ProgressBar), () => new ProgressBar() { title = "my-progress", value = 22 }),
                 new BuilderLibraryTreeItem("Dropdown", "Dropdown", typeof(DropdownField), () => new DropdownField("Dropdown")),
+                new BuilderLibraryTreeItem("Enum", nameof(EnumField), typeof(EnumField), () => new EnumField("Enum", TextAlignment.Center)),
+
                 new BuilderLibraryTreeItem("Radio Button", nameof(RadioButton), typeof(RadioButton), () => new RadioButton("Radio Button")),
                 new BuilderLibraryTreeItem("Radio Button Group", nameof(RadioButtonGroup), typeof(RadioButtonGroup), () => new RadioButtonGroup("Radio Button Group")),
             }) { isHeader = true };
@@ -296,8 +303,6 @@ namespace Unity.UI.Builder
 
             var choiceFields = new BuilderLibraryTreeItem("Choice Fields", null, null, null, null, new List<TreeViewItem<string>>
             {
-                new BuilderLibraryTreeItem("Enum", nameof(EnumField), typeof(EnumField), () => new EnumField("Enum", TextAlignment.Center)),
-
                 // No UXML support for PopupField.
                 //new LibraryTreeItem("Popup", () => new PopupField<string>("Normal Field", choices, 0)),
 
@@ -324,6 +329,7 @@ namespace Unity.UI.Builder
                 new BuilderLibraryTreeItem("PropertyField", nameof(PropertyField), typeof(PropertyField), () => new PropertyField())
             }) { isEditorOnly = true, isHeader = true };
 
+            controlsTree.Add(editorContainersItemList);
             controlsTree.Add(controlsItem);
             controlsTree.Add(numericFields);
             controlsTree.Add(valueFields);

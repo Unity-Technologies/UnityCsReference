@@ -8,13 +8,33 @@ using System.Globalization;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// Reprensents the scale applied as an element's transformations. The center point that will not move when the scaling is applied is the <see cref="TransformOrigin"/>.
+    /// Represents the scale applied as element transformations. The center point that doesn't move when the scaling is applied is the <see cref="TransformOrigin"/>.
     /// </summary>
     public struct Scale : IEquatable<Scale>
     {
-        /// <undoc/>
+        /// <summary>
+        /// Creates a new Scale from a <see cref="Vector2"/>.
+        /// </summary>
+        public Scale(Vector2 scale)
+        {
+            m_Scale = new Vector3(scale.x, scale.y, 1.0f);
+            m_IsNone = false;
+        }
+
+        /// <summary>
+        /// Creates a new Scale from a <see cref="Vector3"/>.
+        /// </summary>
+        /// <remarks>
+        /// Scaling in the Z axis is currently unsupported. Consequently, if a Z value different
+        /// than 1.0f is provided, a warning is issued and the Z value is forced to 1.0f.
+        /// </remarks>
         public Scale(Vector3 scale)
         {
+            if (!Mathf.Approximately(1.0f, scale.z))
+            {
+                Debug.LogWarning("Assigning Z scale different than 1.0f, this is not yet supported. Forcing the value to 1.0f.");
+                scale.z = 1.0f;
+            }
             m_Scale = scale;
             m_IsNone = false;
         }
@@ -45,6 +65,12 @@ namespace UnityEngine.UIElements
         private bool m_IsNone;
 
         internal bool IsNone() => m_IsNone;
+
+        /// <undoc/>
+        public static implicit operator Scale(Vector2 scale)
+        {
+            return new Scale(scale);
+        }
 
         /// <undoc/>
         public static bool operator==(Scale lhs, Scale rhs)

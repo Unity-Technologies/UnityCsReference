@@ -15,7 +15,7 @@ namespace UnityEditor.Build
         // short name used for texture settings, etc.
         public string name;
         public NamedBuildTarget namedBuildTarget;
-        public bool forceShowTarget;
+        public bool hideInUi;
         public string tooltip;
         public BuildTarget defaultTarget;
 
@@ -28,19 +28,19 @@ namespace UnityEditor.Build
         public GUIContent title => m_Title;
         public Texture2D smallIcon => ((GUIContent)m_SmallTitle).image as Texture2D;
 
-        public BuildPlatform(string locTitle, string iconId, NamedBuildTarget namedBuildTarget, BuildTarget defaultTarget, bool forceShowTarget)
-            : this(locTitle, "", iconId, namedBuildTarget, defaultTarget, forceShowTarget)
+        public BuildPlatform(string locTitle, string iconId, NamedBuildTarget namedBuildTarget, BuildTarget defaultTarget, bool hideInUi)
+            : this(locTitle, "", iconId, namedBuildTarget, defaultTarget, hideInUi)
         {
         }
 
-        public BuildPlatform(string locTitle, string tooltip, string iconId, NamedBuildTarget namedBuildTarget, BuildTarget defaultTarget, bool forceShowTarget)
+        public BuildPlatform(string locTitle, string tooltip, string iconId, NamedBuildTarget namedBuildTarget, BuildTarget defaultTarget, bool hideInUi)
         {
             this.namedBuildTarget = namedBuildTarget;
             name = namedBuildTarget.TargetName;
             m_Title = new ScalableGUIContent(locTitle, null, iconId);
             m_SmallTitle = new ScalableGUIContent(null, null, iconId + ".Small");
             this.tooltip = tooltip;
-            this.forceShowTarget = forceShowTarget;
+            this.hideInUi = hideInUi;
             this.defaultTarget = defaultTarget;
         }
     }
@@ -82,7 +82,7 @@ namespace UnityEditor.Build
             buildPlatformsList.Add(new BuildPlatformWithSubtarget(BuildPipeline.GetBuildTargetGroupDisplayName(BuildTargetGroup.Standalone), "", "BuildSettings.Standalone",
                 NamedBuildTarget.Standalone, standaloneTarget, (int)StandaloneBuildSubtarget.Player, true));
 
-            buildPlatformsList.Add(new BuildPlatformWithSubtarget("Dedicated Server", "", "BuildSettings.Standalone",
+            buildPlatformsList.Add(new BuildPlatformWithSubtarget("Dedicated Server", "", "BuildSettings.DedicatedServer",
                 NamedBuildTarget.Server, standaloneTarget, (int)StandaloneBuildSubtarget.Server, true));
 
             foreach (var target in buildTargets)
@@ -95,7 +95,7 @@ namespace UnityEditor.Build
                         target.iconName,
                         namedBuildTarget,
                         target.buildTargetPlatformVal,
-                        !target.HasFlag(TargetAttributes.HideInUI)));
+                        target.HasFlag(TargetAttributes.HideInUI)));
                 }
             }
 

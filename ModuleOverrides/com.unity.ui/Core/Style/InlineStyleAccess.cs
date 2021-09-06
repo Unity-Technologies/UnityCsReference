@@ -4,13 +4,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements.StyleSheets;
-using UnityEngine.Yoga;
 
 namespace UnityEngine.UIElements
 {
@@ -451,7 +449,7 @@ namespace UnityEngine.UIElements
             var sv = new StyleValue();
             if (TryGetStyleValue(id, ref sv))
             {
-                if (sv.length == inlineValue.value && sv.keyword == inlineValue.keyword)
+                if (sv.length == inlineValue.ToLength() && sv.keyword == inlineValue.keyword)
                     return false;
             }
             else if (inlineValue.keyword == StyleKeyword.Null)
@@ -628,8 +626,7 @@ namespace UnityEngine.UIElements
             if (TryGetStyleValue(id, ref sv))
             {
                 var font = sv.resource.IsAllocated ? sv.resource.Target as Font : null;
-                var obj = sv.resource.Target as Object;
-                var fontAsset = sv.resource.IsAllocated ? obj as FontAsset : null;
+                var fontAsset = sv.resource.IsAllocated ? sv.resource.Target as FontAsset : null;
                 if ((font == inlineValue.value.font && fontAsset == inlineValue.value.fontAsset) && sv.keyword == inlineValue.keyword)
                     return false;
 
@@ -664,15 +661,12 @@ namespace UnityEngine.UIElements
             var sv = new StyleValue();
             if (TryGetStyleValue(id, ref sv))
             {
-                if (sv.resource.IsAllocated)
-                {
-                    var font = sv.resource.IsAllocated ? sv.resource.Target as Font : null;
-                    if (font == inlineValue.value && sv.keyword == inlineValue.keyword)
-                        return false;
+                var font = sv.resource.IsAllocated ? sv.resource.Target as Font : null;
+                if (font == inlineValue.value && sv.keyword == inlineValue.keyword)
+                    return false;
 
-                    if (sv.resource.IsAllocated)
-                        sv.resource.Free();
-                }
+                if (sv.resource.IsAllocated)
+                    sv.resource.Free();
             }
             else if (inlineValue.keyword == StyleKeyword.Null)
             {
@@ -697,8 +691,14 @@ namespace UnityEngine.UIElements
             var sv = new StyleValueManaged();
             if (TryGetStyleValueManaged(id, ref sv))
             {
-                if (sv.value is List<T> list && inlineValue.value != null && list.SequenceEqual(inlineValue.value) && sv.keyword == inlineValue.keyword)
-                    return false;
+                if (sv.keyword == inlineValue.keyword)
+                {
+                    if (sv.value == null && inlineValue.value == null)
+                        return false;
+
+                    if (sv.value is List<T> list && inlineValue.value != null && list.SequenceEqual(inlineValue.value))
+                        return false;
+                }
             }
             else if (inlineValue.keyword == StyleKeyword.Null)
             {

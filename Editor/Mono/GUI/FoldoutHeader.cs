@@ -32,7 +32,7 @@ namespace UnityEditor
 
     public sealed partial class EditorGUI
     {
-        static bool s_FoldoutHeaderGroupActive;
+        static int s_FoldoutHeaderGroupActive;
         private static readonly int s_FoldoutHeaderHash = "FoldoutHeader".GetHashCode();
 
         public static bool BeginFoldoutHeaderGroup(Rect position, bool foldout, string content, [DefaultValue("EditorStyles.foldoutHeader")]
@@ -52,12 +52,13 @@ namespace UnityEditor
 
             if (style == null)
                 style = EditorStyles.foldoutHeader;
-            if (s_FoldoutHeaderGroupActive)
+
+            s_FoldoutHeaderGroupActive++;
+            if (s_FoldoutHeaderGroupActive > 1)
             {
-                EditorGUI.HelpBox(position, L10n.Tr("You can't nest Foldout Headers, end it with EndHeaderFoldoutGroup."), MessageType.Error);
+                EditorGUI.HelpBox(position, L10n.Tr("You can't nest Foldout Headers, end it with EndFoldoutHeaderGroup."), MessageType.Error);
                 return false;
             }
-            s_FoldoutHeaderGroupActive = true;
 
             const float iconSize = 16;
             Rect menuRect = new Rect
@@ -105,7 +106,7 @@ namespace UnityEditor
 
         public static void EndFoldoutHeaderGroup()
         {
-            s_FoldoutHeaderGroupActive = false;
+            s_FoldoutHeaderGroupActive--;
         }
     }
 }

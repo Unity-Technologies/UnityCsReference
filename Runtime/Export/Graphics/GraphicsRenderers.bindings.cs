@@ -206,12 +206,14 @@ namespace UnityEngine
         extern public void SetPosition(int index, Vector3 position);
         extern public Vector3 GetPosition(int index);
 
-        extern public float shadowBias { get; set; }
+        extern public Vector2 textureScale      { get; set; }
+        extern public float shadowBias          { get; set; }
 
         extern public bool generateLightingData { get; set; }
 
         extern public LineTextureMode textureMode { get; set; }
         extern public LineAlignment   alignment   { get; set; }
+        extern public SpriteMaskInteraction maskInteraction { get; set; }
 
         extern public void Clear();
 
@@ -282,12 +284,14 @@ namespace UnityEngine
         extern public void SetPosition(int index, Vector3 position);
         extern public Vector3 GetPosition(int index);
 
+        extern public Vector2 textureScale      { get; set; }
         extern public float shadowBias          { get; set; }
 
         extern public bool generateLightingData { get; set; }
 
         extern public LineTextureMode textureMode { get; set; }
         extern public LineAlignment   alignment   { get; set; }
+        extern public SpriteMaskInteraction maskInteraction { get; set; }
 
         extern public void Simplify(float tolerance);
 

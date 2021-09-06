@@ -15,7 +15,7 @@ namespace UnityEditor.Search
     delegate string SearchSelectorHandler2(SearchItem item);
 
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-    class SearchSelectorAttribute : Attribute
+    public class SearchSelectorAttribute : Attribute
     {
         public SearchSelectorAttribute(string pattern, int priority = 100, string provider = null, bool printable = true)
         {
@@ -35,10 +35,10 @@ namespace UnityEditor.Search
             this.printable = printable;
         }
 
-        public Regex pattern { get; private set; }
-        public int priority { get; private set; }
-        public string provider { get; private set; }
-        public bool printable { get; private set; }
+        internal Regex pattern { get; private set; }
+        internal int priority { get; private set; }
+        internal string provider { get; private set; }
+        internal bool printable { get; private set; }
     }
 
     readonly struct SelectorGroup
@@ -75,18 +75,18 @@ namespace UnityEditor.Search
         }
     }
 
-    readonly struct SearchSelectorArgs
+    public readonly struct SearchSelectorArgs
     {
-        public readonly SelectorGroup[] groups;
+        internal readonly SelectorGroup[] groups;
         public readonly SearchItem current;
 
-        public string name => groups.Length < 2 ? null : groups[1].value;
-        public string path => groups[0].value;
+        internal string name => groups.Length < 2 ? null : groups[1].value;
+        internal string path => groups[0].value;
 
-        public string this[int index] => groups[index + 1].value;
-        public string this[string captureName] => groups.FirstOrDefault(g => string.Equals(captureName, g.name, StringComparison.OrdinalIgnoreCase)).value;
+        internal string this[int index] => groups[index + 1].value;
+        internal string this[string captureName] => groups.FirstOrDefault(g => string.Equals(captureName, g.name, StringComparison.OrdinalIgnoreCase)).value;
 
-        public SearchSelectorArgs(SelectorMatch match, SearchItem current)
+        internal SearchSelectorArgs(SelectorMatch match, SearchItem current)
         {
             groups = match.groups;
             this.current = current;
@@ -148,7 +148,7 @@ namespace UnityEditor.Search
             }
         }
 
-        private static void RefreshSelectors()
+        internal static void RefreshSelectors()
         {
             Func<MethodInfo, SearchSelectorAttribute, Delegate, SearchSelector> generator = (mi, attribute, handler) =>
             {
@@ -167,7 +167,7 @@ namespace UnityEditor.Search
                 MethodSignature.FromDelegate<SearchSelectorHandler1>(),
                 MethodSignature.FromDelegate<SearchSelectorHandler2>()
             };
-            selectors = ReflectionUtils.LoadAllMethodsWithAttribute(generator, supportedSignatures)
+            selectors = ReflectionUtils.LoadAllMethodsWithAttribute(generator, supportedSignatures, ReflectionUtils.AttributeLoaderBehavior.DoNotThrowOnValidation)
                 .Where(s => s.valid)
                 .OrderBy(s => s.priority)
                 .OrderBy(s => string.IsNullOrEmpty(s.provider))

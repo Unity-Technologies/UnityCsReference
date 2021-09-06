@@ -18,6 +18,9 @@ namespace UnityEditor
     {
         const int kInvalidSceneHandle = 0;
 
+        [FreeFunction]
+        internal static extern void SmartResetObjectToDefault([NotNull] Object target);
+
         [FreeFunction(ThrowsException = true)]
         static extern Object CreateDefaultInstance([NotNull] Type type);
 
@@ -150,6 +153,11 @@ namespace UnityEditor
             renderer.material = Material.GetDefaultMaterial();
             go.SetActive(true);
             return go;
+        }
+
+        public static void PlaceGameObject(GameObject go, GameObject parent = null)
+        {
+            GOCreationCommands.Place(go, parent);
         }
     }
 }

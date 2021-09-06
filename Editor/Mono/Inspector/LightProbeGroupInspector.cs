@@ -522,12 +522,11 @@ namespace UnityEditor
             public static readonly GUIContent selectAll = EditorGUIUtility.TrTextContent("Select All");
             public static readonly GUIContent duplicateSelected = EditorGUIUtility.TrTextContent("Duplicate Selected");
             public static readonly GUIContent performDeringing = EditorGUIUtility.TrTextContent("Remove Ringing", "When enabled, removes visible overshooting often observed as ringing on objects affected by intense lighting at the expense of reduced contrast.");
-            public static readonly GUIContent editModeButton;
 
-            static Styles()
-            {
-                editModeButton = EditorGUIUtility.IconContent("EditCollider");
-            }
+            // Toolbar
+            public static readonly GUIContent editModeButton = EditorGUIUtility.TrIconContent("EditCollider", "Edit Light Probes");
+            public static readonly EditMode.SceneViewEditMode[] toolbarModes = {EditMode.SceneViewEditMode.LightProbeGroup};
+            public static readonly GUIContent[] toolbarButtons = { editModeButton };
         }
         private LightProbeGroupEditor m_Editor;
 
@@ -619,19 +618,20 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
 
             m_Editor.PullProbePositions();
-            EditMode.DoEditModeInspectorModeButton(
-                EditMode.SceneViewEditMode.LightProbeGroup,
-                "Edit Light Probes",
-                Styles.editModeButton,
-                this
-            );
+
+            EditorGUILayout.BeginHorizontal();
+            {
+                GUILayout.FlexibleSpace();
+                EditMode.DoInspectorToolbar(Styles.toolbarModes, Styles.toolbarButtons, this);
+                GUILayout.FlexibleSpace();
+            }
+            EditorGUILayout.EndHorizontal();
 
             GUILayout.Space(3);
-            EditorGUI.BeginDisabledGroup(EditMode.editMode != EditMode.SceneViewEditMode.LightProbeGroup);
-
             m_Editor.drawTetrahedra.value = EditorGUILayout.Toggle(Styles.showWireframe, m_Editor.drawTetrahedra.value);
             m_Editor.deringProbes = EditorGUILayout.Toggle(Styles.performDeringing, m_Editor.deringProbes);
 
+            EditorGUI.BeginDisabledGroup(EditMode.editMode != EditMode.SceneViewEditMode.LightProbeGroup);
             EditorGUI.BeginDisabledGroup(m_Editor.SelectedCount == 0);
 
             EditorGUI.BeginChangeCheck();

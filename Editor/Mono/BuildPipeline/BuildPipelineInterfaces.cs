@@ -518,6 +518,12 @@ namespace UnityEditor.Build
         }
 
         [RequiredByNativeCode]
+        internal static bool HasOnPostBuildPlayerScriptDLLs()
+        {
+            return (processors.buildPlayerScriptDLLProcessors != null && processors.buildPlayerScriptDLLProcessors.Any());
+        }
+
+        [RequiredByNativeCode]
         internal static void OnPostBuildPlayerScriptDLLs(BuildReport report)
         {
             if (processors.buildPlayerScriptDLLProcessors != null)

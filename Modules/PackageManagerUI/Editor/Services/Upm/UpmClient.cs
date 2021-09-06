@@ -109,7 +109,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual bool IsAnyExperimentalPackagesInUse()
         {
-            return PackageInfo.GetAll().Any(info => (info.version.Contains("-preview") || info.version.Contains("-exp.") || info.version.StartsWith("0.")) && IsUnityPackage(info));
+            return PackageInfo.GetAllRegisteredPackages().Any(info => (info.version.Contains("-preview") || info.version.Contains("-exp.") || info.version.StartsWith("0.")) && IsUnityPackage(info));
         }
 
         public void OnBeforeSerialize()
@@ -127,26 +127,26 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_PackagesToExtraFetchForRegistryVersions.Add(packageName);
         }
 
-        public virtual bool isAddRemoveOrEmbedInProgress
-        {
-            get { return addOperation.isInProgress || removeOperation.isInProgress || addAndRemoveOperation.isInProgress || embedOperation.isInProgress; }
-        }
+        public virtual bool isAddRemoveOrEmbedInProgress => (m_AddOperation?.isInProgress  ?? false) ||
+        (m_RemoveOperation?.isInProgress  ?? false) ||
+        (m_AddAndRemoveOperation?.isInProgress  ?? false) ||
+        (m_EmbedOperation?.isInProgress  ?? false);
 
         public virtual bool IsEmbedInProgress(string packageName)
         {
-            return embedOperation.isInProgress && embedOperation.packageName == packageName;
+            return (m_EmbedOperation?.isInProgress  ?? false) && m_EmbedOperation.packageName == packageName;
         }
 
         public virtual bool IsRemoveInProgress(string packageName)
         {
-            return (removeOperation.isInProgress && removeOperation.packageName == packageName)
-                || (addAndRemoveOperation.isInProgress && addAndRemoveOperation.packagesNamesToRemove.Contains(packageName));
+            return ((m_RemoveOperation?.isInProgress  ?? false) && m_RemoveOperation.packageName == packageName) ||
+                ((m_AddAndRemoveOperation?.isInProgress  ?? false) && m_AddAndRemoveOperation.packagesNamesToRemove.Contains(packageName));
         }
 
         public virtual bool IsAddInProgress(string packageId)
         {
-            return (addOperation.isInProgress && addOperation.packageId == packageId)
-                || (addAndRemoveOperation.isInProgress && addAndRemoveOperation.packageIdsToAdd.Contains(packageId));;
+            return ((m_AddOperation?.isInProgress  ?? false) && m_AddOperation.packageId == packageId) ||
+                ((m_AddAndRemoveOperation?.isInProgress  ?? false) && m_AddAndRemoveOperation.packageIdsToAdd.Contains(packageId));
         }
 
         public virtual void AddById(string packageId)
@@ -166,7 +166,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var packageId = string.IsNullOrEmpty(addOperation.packageId) ? addOperation.specialUniqueId : addOperation.packageId;
                 Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] Error adding package: {0}."), packageId));
             };
-            onAddOperation(addOperation);
+            onAddOperation?.Invoke(addOperation);
         }
 
         private void OnProcessAddResult(IOperation operation, Request<PackageInfo> request)
@@ -298,9 +298,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (isAddRemoveOrEmbedInProgress)
                 return;
             embedOperation.Embed(packageName, m_UpmCache.GetProductId(packageName));
+            SetupEmbedOperation();
+        }
+
+        private void SetupEmbedOperation()
+        {
             embedOperation.onProcessResult += (request) => OnProcessAddResult(embedOperation, request);
             embedOperation.onOperationError += (op, error) => Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] Error embedding package: {0}."), embedOperation.packageName));
-            onEmbedOperation(embedOperation);
+            onEmbedOperation?.Invoke(embedOperation);
         }
 
         public virtual void RemoveByName(string packageName)
@@ -338,7 +343,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             removeOperation.onProcessResult += OnProcessRemoveResult;
             removeOperation.onOperationError += (op, error) => Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] Error removing package: {0}."), removeOperation.packageName));
-            onRemoveOperation(removeOperation);
+            onRemoveOperation?.Invoke(removeOperation);
         }
 
         private void OnProcessRemoveResult(RemoveRequest request)
@@ -413,7 +418,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 // remove the created package that's created before asset store info was fetched
                 // such that there won't be two entries of the same package
                 if (oldInfo == null && m_UpmCache.IsPackageInstalled(packageInfo.name))
-                    onPackagesChanged(new[] { CreateUpmPackage(null, null, packageInfo.name) });
+                    onPackagesChanged?.Invoke(new[] { CreateUpmPackage(null, null, packageInfo.name) });
 
                 m_UpmCache.SetProductPackageInfo(productId, packageInfo);
             }
@@ -659,16 +664,37 @@ namespace UnityEditor.PackageManager.UI.Internal
         // Restore operations that's interrupted by domain reloads
         private void RestoreInProgressOperations()
         {
-            if (addOperation.isInProgress)
+            if (m_AddOperation?.isInProgress ?? false)
+            {
                 SetupAddOperation();
+                m_AddOperation.RestoreProgress();
+            }
 
-            if (removeOperation.isInProgress)
+            if (m_RemoveOperation?.isInProgress ?? false)
+            {
                 SetupRemoveOperation();
+                m_RemoveOperation.RestoreProgress();
+            }
 
-            if (addAndRemoveOperation.isInProgress)
+            if (m_EmbedOperation?.isInProgress ?? false)
+            {
+                SetupEmbedOperation();
+                m_EmbedOperation.RestoreProgress();
+            }
+
+            if (m_AddAndRemoveOperation?.isInProgress ?? false)
+            {
                 SetupAddAndRemoveOperation();
+                m_AddAndRemoveOperation.RestoreProgress();
+            }
 
-            if (searchOperation.isInProgress)
+            if (m_ListOperation?.isInProgress ?? false)
+                List();
+
+            if (m_ListOfflineOperation?.isInProgress ?? false)
+                List(true);
+
+            if (m_SearchOperation?.isInProgress ?? false)
                 SearchAll();
 
             foreach (var packageName in m_PackagesToExtraFetchForRegistryVersions)
@@ -712,7 +738,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual bool IsUnityPackage(PackageInfo packageInfo)
         {
-            if (!(packageInfo?.registry?.isDefault ?? false) || string.IsNullOrEmpty(packageInfo.registry?.url))
+            if (!(packageInfo?.registry?.isDefault ?? false) || string.IsNullOrEmpty(packageInfo.registry?.url) || !packageInfo.versions.all.Any())
                 return false;
 
             if (m_RegistriesUrl.TryGetValue(packageInfo.registry.url, out var isUnityRegistry))

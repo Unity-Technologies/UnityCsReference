@@ -13,16 +13,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal new class UxmlFactory : UxmlFactory<PackageDetailsBody> {}
 
         private const string k_EmptyDescriptionClass = "empty";
+        private const int k_maxDescriptionCharacters = 10000;
 
         private ResourceLoader m_ResourceLoader;
-        private ApplicationProxy m_Application;
         private PackageDatabase m_PackageDatabase;
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
             m_ResourceLoader = container.Resolve<ResourceLoader>();
-            m_Application = container.Resolve<ApplicationProxy>();
             m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
             m_PackageDatabase = container.Resolve<PackageDatabase>();
         }
@@ -66,6 +65,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             sampleList.SetPackageVersion(m_Version);
             UIUtils.SetElementDisplay(disabledInfoBox, m_Version.HasTag(PackageTag.Disabled));
 
+            SetEnabled(m_Package?.hasEntitlementsError != true);
+
             RefreshDependencies();
             RefreshLabels();
             RefreshDescription();
@@ -73,6 +74,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             RefreshSizeAndSupportedUnityVersions();
             RefreshPurchasedDate();
             RefreshSourcePath();
+            RefreshPlatformList();
+        }
+
+        private void RefreshPlatformList()
+        {
+            packagePlatformList.SetPackageVersion(m_Version);
         }
 
         private void RefreshDependencies()
@@ -156,9 +163,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void RefreshDescription()
         {
             var hasDescription = !string.IsNullOrEmpty(m_Version.description);
+            var desc = hasDescription ? m_Version.description : L10n.Tr("There is no description for this package.");
+            if (desc.Length > k_maxDescriptionCharacters)
+                desc = desc.Substring(0, k_maxDescriptionCharacters);
             detailDesc.EnableInClassList(k_EmptyDescriptionClass, !hasDescription);
             detailDesc.style.maxHeight = int.MaxValue;
-            detailDesc.SetValueWithoutNotify(hasDescription ? m_Version.description : L10n.Tr("There is no description for this package."));
+            detailDesc.SetValueWithoutNotify(desc);
             UIUtils.SetElementDisplay(detailDescMore, false);
             UIUtils.SetElementDisplay(detailDescLess, false);
             m_DescriptionExpanded = !m_Package.Is(PackageType.AssetStore);
@@ -291,5 +301,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private PackageDetailsImages detailsImages => cache.Get<PackageDetailsImages>("detailImagesContainer");
 
         private FeatureDependencies featureDependencies => cache.Get<FeatureDependencies>("featureDependencies");
+        private PackagePlatformList packagePlatformList => cache.Get<PackagePlatformList>("detailPlatformList");
     }
 }

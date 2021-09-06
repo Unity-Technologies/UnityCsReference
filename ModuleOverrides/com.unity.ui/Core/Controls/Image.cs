@@ -270,16 +270,18 @@ namespace UnityEngine.UIElements
             if (image == null && sprite == null && vectorImage == null)
                 return;
 
+            var alignedRect = GUIUtility.AlignRectToDevice(contentRect);
+
             var rectParams = new MeshGenerationContextUtils.RectangleParams();
             if (image != null)
-                rectParams = MeshGenerationContextUtils.RectangleParams.MakeTextured(contentRect, uv, image, scaleMode, panel.contextType);
+                rectParams = MeshGenerationContextUtils.RectangleParams.MakeTextured(alignedRect, uv, image, scaleMode, panel.contextType);
             else if (sprite != null)
             {
                 var slices = Vector4.zero;
-                rectParams = MeshGenerationContextUtils.RectangleParams.MakeSprite(contentRect, sprite, scaleMode, panel.contextType, false, ref slices);
+                rectParams = MeshGenerationContextUtils.RectangleParams.MakeSprite(alignedRect, sprite, scaleMode, panel.contextType, false, ref slices);
             }
             else if (vectorImage != null)
-                rectParams = MeshGenerationContextUtils.RectangleParams.MakeVectorTextured(contentRect, uv, vectorImage, scaleMode, panel.contextType);
+                rectParams = MeshGenerationContextUtils.RectangleParams.MakeVectorTextured(alignedRect, uv, vectorImage, scaleMode, panel.contextType);
             rectParams.color = tintColor;
             mgc.Rectangle(rectParams);
         }

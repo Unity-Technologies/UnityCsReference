@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -29,6 +30,7 @@ namespace Unity.UI.Builder
         // List view properties
         int m_ItemHeight;
         Func<VisualElement> m_MakeItem;
+        Action<VisualElement> m_DestroyItem;
         Action<VisualElement, int> m_BindItem;
 
         // UI parts
@@ -151,6 +153,16 @@ namespace Unity.UI.Builder
             }
         }
 
+        public Action<VisualElement> destroyItem
+        {
+            get => m_DestroyItem;
+            set
+            {
+                m_DestroyItem = value;
+                UpdatePopup();
+            }
+        }
+
         public Action<VisualElement, int> bindItem
         {
             get => m_BindItem;
@@ -167,6 +179,7 @@ namespace Unity.UI.Builder
             {
                 m_Popup.listView.fixedItemHeight = m_ItemHeight;
                 m_Popup.listView.makeItem = m_MakeItem;
+                m_Popup.listView.destroyItem = m_DestroyItem;
                 m_Popup.listView.bindItem = m_BindItem;
                 m_Popup.anchoredControl = textField;
             }
@@ -212,7 +225,7 @@ namespace Unity.UI.Builder
                             textField.value = GetTextFromData(results[index]);
                             textField.Q(TextField.textInputUssName).Blur();
                         };
-                        m_Popup.onSelectionChange += (index) => onSelectionChange(index != -1 ? results[index] : default(TData));
+                        m_Popup.onSelectionChange += (index) => onSelectionChange?.Invoke(index != -1 ? results[index] : default(TData));
                         UpdatePopup();
                     }
                 }
@@ -476,6 +489,9 @@ namespace Unity.UI.Builder
             AddToClassList(s_UssClassName);
 
             listView = new ListView();
+            var sv = listView.Q<ScrollView>();
+            sv.style.flexGrow = 0;
+            sv.style.flexShrink = 1;
             listView.Q<ScrollView>().horizontalScrollerVisibility = ScrollerVisibility.Hidden;
             listView.onItemsChosen += (obj) =>
             {
@@ -493,6 +509,10 @@ namespace Unity.UI.Builder
 
             // Avoid focus change when clicking on the popup
             listView.Q<ScrollView>().contentContainer.focusable = true;
+            listView.Query<Scroller>().ForEach(s =>
+            {
+                s.focusable = false;
+            });
             listView.focusable = false;
             listView.delegatesFocus = false;
             this.RegisterCallback<PointerDownEvent>(e =>
@@ -513,7 +533,7 @@ namespace Unity.UI.Builder
 
         public void Refresh()
         {
-            listView.Rebuild();
+            listView.RefreshItems();
 
             listView.ClearSelection();
             m_ResultLabel.text = (listView.itemsSource != null ? listView.itemsSource.Count : 0) + " found";

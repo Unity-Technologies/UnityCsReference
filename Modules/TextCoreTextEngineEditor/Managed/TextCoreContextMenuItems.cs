@@ -324,6 +324,7 @@ namespace UnityEditor.TextCore.Text
                 Selection.activeObject = fontAsset;
 
             fontAsset.ClearFontAssetData(true);
+            TextResourceManager.RebuildFontAssetCache();
 
             TextEventManager.ON_FONT_PROPERTY_CHANGED(true, fontAsset);
         }

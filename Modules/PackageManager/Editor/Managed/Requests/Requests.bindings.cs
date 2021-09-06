@@ -40,6 +40,13 @@ namespace UnityEditor.PackageManager.Requests
         private static extern RegistryInfo GetOperationData(long operationId);
     }
 
+    internal partial class ClearCacheRootRequest
+    {
+        [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]
+        [StaticAccessor("PackageManager::ClearCacheRoot", StaticAccessorType.DoubleColon)]
+        private static extern CacheRootConfig GetOperationData(long operationId);
+    }
+
     public partial class EmbedRequest
     {
         [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]
@@ -52,6 +59,13 @@ namespace UnityEditor.PackageManager.Requests
         [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]
         [StaticAccessor("PackageManager::GetCachedPackages", StaticAccessorType.DoubleColon)]
         private static extern CachedPackageInfo[] GetOperationData(long operationId);
+    }
+
+    internal partial class GetCacheRootRequest
+    {
+        [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]
+        [StaticAccessor("PackageManager::GetCacheRoot", StaticAccessorType.DoubleColon)]
+        private static extern CacheRootConfig GetOperationData(long operationId);
     }
 
     internal partial class GetRegistriesRequest
@@ -94,6 +108,13 @@ namespace UnityEditor.PackageManager.Requests
         [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]
         [StaticAccessor("PackageManager::GetPackageInfo", StaticAccessorType.DoubleColon)]
         private static extern PackageInfo[] GetOperationData(long operationId);
+    }
+
+    internal partial class SetCacheRootRequest
+    {
+        [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]
+        [StaticAccessor("PackageManager::SetCacheRoot", StaticAccessorType.DoubleColon)]
+        private static extern CacheRootConfig GetOperationData(long operationId);
     }
 
     internal partial class UpdateScopedRegistryRequest

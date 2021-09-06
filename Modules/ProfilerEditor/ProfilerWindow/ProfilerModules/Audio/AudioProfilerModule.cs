@@ -19,7 +19,8 @@ namespace UnityEditorInternal.Profiling
 
         Vector2 m_PaneScroll_AudioChannels = Vector2.zero;
         Vector2 m_PaneScroll_AudioDSPLeft = Vector2.zero;
-        Vector2 m_PaneScroll_AudioDSPRight = Vector2.zero;
+        Vector2 m_PaneScroll_AudioDSPRight_ScrollPos = Vector2.zero;
+        Vector2 m_PaneScroll_AudioDSPRight_Size = new Vector2(10000, 20000);
         Vector2 m_PaneScroll_AudioClips = Vector2.zero;
 
         [SerializeField]
@@ -30,6 +31,9 @@ namespace UnityEditorInternal.Profiling
 
         [SerializeField]
         float m_DSPGraphZoomFactor = 1.0f;
+
+        [SerializeField]
+        bool m_DSPGraphHorizontalLayout = false;
 
         [SerializeField]
         private AudioProfilerGroupTreeViewState m_AudioProfilerGroupTreeViewState;
@@ -55,6 +59,7 @@ namespace UnityEditorInternal.Profiling
         const string k_ShowInactiveDSPChainsSettingsKey = "Profiler.MemoryProfilerModule.ShowInactiveDSPChains";
         const string k_HighlightAudibleDSPChainsSettingsKey = "Profiler.MemoryProfilerModule.HighlightAudibleDSPChains";
         const string k_DSPGraphZoomFactorSettingsKey = "Profiler.MemoryProfilerModule.DSPGraphZoomFactor";
+        const string k_DSPGraphHorizontalLayoutSettingsKey = "Profiler.MemoryProfilerModule.DSPGraphHorizontalLayout";
         const string k_AudioProfilerGroupTreeViewStateSettingsKey = "Profiler.MemoryProfilerModule.AudioProfilerGroupTreeViewState";
         const string k_AudioProfilerClipTreeViewStateSettingsKey = "Profiler.MemoryProfilerModule.AudioProfilerClipTreeViewState";
 
@@ -72,6 +77,7 @@ namespace UnityEditorInternal.Profiling
             m_ShowInactiveDSPChains = EditorPrefs.GetBool(k_ShowInactiveDSPChainsSettingsKey, m_ShowInactiveDSPChains);
             m_HighlightAudibleDSPChains = EditorPrefs.GetBool(k_HighlightAudibleDSPChainsSettingsKey, m_HighlightAudibleDSPChains);
             m_DSPGraphZoomFactor = SessionState.GetFloat(k_DSPGraphZoomFactorSettingsKey, m_DSPGraphZoomFactor);
+            m_DSPGraphHorizontalLayout = EditorPrefs.GetBool(k_DSPGraphHorizontalLayoutSettingsKey, m_DSPGraphHorizontalLayout);
             var restoredAudioProfilerGroupTreeViewState = SessionState.GetString(k_AudioProfilerGroupTreeViewStateSettingsKey, string.Empty);
             if (!string.IsNullOrEmpty(restoredAudioProfilerGroupTreeViewState))
             {
@@ -99,6 +105,7 @@ namespace UnityEditorInternal.Profiling
             EditorPrefs.SetBool(k_ShowInactiveDSPChainsSettingsKey, m_ShowInactiveDSPChains);
             EditorPrefs.SetBool(k_HighlightAudibleDSPChainsSettingsKey, m_HighlightAudibleDSPChains);
             SessionState.SetFloat(k_DSPGraphZoomFactorSettingsKey, m_DSPGraphZoomFactor);
+            EditorPrefs.SetBool(k_DSPGraphHorizontalLayoutSettingsKey, m_DSPGraphHorizontalLayout);
             if (m_AudioProfilerGroupTreeViewState != null)
                 SessionState.SetString(k_AudioProfilerGroupTreeViewStateSettingsKey, EditorJsonUtility.ToJson(m_AudioProfilerGroupTreeViewState));
             if (m_AudioProfilerGroupTreeViewState != null)
@@ -131,14 +138,15 @@ namespace UnityEditorInternal.Profiling
                     m_ShowInactiveDSPChains = GUILayout.Toggle(m_ShowInactiveDSPChains, "Show inactive", EditorStyles.toolbarButton);
                     if (m_ShowInactiveDSPChains)
                         m_HighlightAudibleDSPChains = GUILayout.Toggle(m_HighlightAudibleDSPChains, "Highlight audible", EditorStyles.toolbarButton);
+                    m_DSPGraphHorizontalLayout = GUILayout.Toggle(m_DSPGraphHorizontalLayout, "Horizontal Layout", EditorStyles.toolbarButton);
                     GUILayout.FlexibleSpace();
                     EditorGUILayout.EndHorizontal();
 
                     var graphRect = DrawAudioStatsPane(ref m_PaneScroll_AudioDSPLeft);
 
-                    m_PaneScroll_AudioDSPRight = GUI.BeginScrollView(graphRect, m_PaneScroll_AudioDSPRight, new Rect(0, 0, 10000, 20000));
+                    m_PaneScroll_AudioDSPRight_ScrollPos = GUI.BeginScrollView(graphRect, m_PaneScroll_AudioDSPRight_ScrollPos, new Rect(0, 0, m_PaneScroll_AudioDSPRight_Size.x, m_PaneScroll_AudioDSPRight_Size.y));
 
-                    var clippingRect = new Rect(m_PaneScroll_AudioDSPRight.x, m_PaneScroll_AudioDSPRight.y, graphRect.width, graphRect.height);
+                    var clippingRect = new Rect(m_PaneScroll_AudioDSPRight_ScrollPos.x, m_PaneScroll_AudioDSPRight_ScrollPos.y, graphRect.width, graphRect.height);
 
                     if (m_AudioProfilerDSPView == null)
                         m_AudioProfilerDSPView = new AudioProfilerDSPView();
@@ -149,13 +157,11 @@ namespace UnityEditorInternal.Profiling
                     {
                         using (property)
                         {
-                            m_AudioProfilerDSPView.OnGUI(clippingRect, property, m_ShowInactiveDSPChains, m_HighlightAudibleDSPChains, ref m_DSPGraphZoomFactor, ref m_PaneScroll_AudioDSPRight);
+                            m_AudioProfilerDSPView.OnGUI(clippingRect, property, m_ShowInactiveDSPChains, m_HighlightAudibleDSPChains, m_DSPGraphHorizontalLayout, ref m_DSPGraphZoomFactor, ref m_PaneScroll_AudioDSPRight_ScrollPos, ref m_PaneScroll_AudioDSPRight_Size);
                         }
                     }
 
                     GUI.EndScrollView();
-
-                    ProfilerWindow.Repaint();
                 }
                 else if (m_ShowDetailedAudioPane == ProfilerAudioView.Clips)
                 {
@@ -286,6 +292,8 @@ namespace UnityEditorInternal.Profiling
                 EditorGUILayout.EndHorizontal();
                 DrawDetailsViewText(position);
             }
+
+            ProfilerWindow.Repaint();
         }
 
         bool AudioDeepProfileToggle()

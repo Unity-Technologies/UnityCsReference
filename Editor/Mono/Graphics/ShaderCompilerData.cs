@@ -16,6 +16,7 @@ namespace UnityEditor.Rendering
         private ShaderType m_ShaderType;
         private PassType m_PassType;
         private string m_PassName;
+        private PassIdentifier m_PassIdentifier;
 
         public ShaderType shaderType
         {
@@ -31,6 +32,8 @@ namespace UnityEditor.Rendering
         {
             get { return m_PassName; }
         }
+
+        public PassIdentifier pass { get { return m_PassIdentifier; } }
     }
 
     [StructLayout(LayoutKind.Sequential)]

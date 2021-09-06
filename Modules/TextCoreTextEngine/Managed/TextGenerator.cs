@@ -316,6 +316,10 @@ namespace UnityEngine.TextCore.Text
 
             Profiler.BeginSample("TextGenerator.GenerateText");
             textGenerator.Prepare(settings, textInfo);
+
+            // Update font asset atlas textures and font features.
+            FontAsset.UpdateFontAssetInUpdateQueue();
+
             textGenerator.GenerateTextMesh(settings, textInfo);
             Profiler.EndSample();
         }
@@ -811,7 +815,7 @@ namespace UnityEngine.TextCore.Text
 
                     // The sprite scale calculations are based on the font asset assigned to the text object.
                     float spriteScale = (m_CurrentFontSize / m_CurrentFontAsset.faceInfo.pointSize * m_CurrentFontAsset.faceInfo.scale);
-                    currentElementScale = m_CurrentFontAsset.faceInfo.ascentLine / sprite.glyph.metrics.height * sprite.scale * spriteScale;
+                    currentElementScale = m_CurrentFontAsset.faceInfo.ascentLine / sprite.glyph.metrics.height * sprite.scale * spriteScale * generationSettings.scale;
 
                     m_CachedTextElement = sprite;
 
@@ -838,7 +842,7 @@ namespace UnityEngine.TextCore.Text
                     // Re-calculate font scale as the font asset may have changed.
                     m_FontScale = m_CurrentFontSize * smallCapsMultiplier / m_CurrentFontAsset.faceInfo.pointSize * m_CurrentFontAsset.faceInfo.scale;
 
-                    currentElementScale = m_FontScale * m_FontScaleMultiplier * m_CachedTextElement.scale;
+                    currentElementScale = m_FontScale * m_FontScaleMultiplier * m_CachedTextElement.scale * generationSettings.scale;
 
                     textInfo.textElementInfo[m_CharacterCount].elementType = TextElementType.Character;
                     textInfo.textElementInfo[m_CharacterCount].scale = currentElementScale;

@@ -636,6 +636,11 @@ namespace UnityEngine
             get { return SupportsMultisampleResolveDepth(); }
         }
 
+        public static bool supportsMultisampleResolveStencil
+        {
+            get { return SupportsMultisampleResolveStencil(); }
+        }
+
         [Obsolete("Vertex program support is required in Unity 5.0+")]
         public static bool supportsVertexPrograms { get { return true; } }
 
@@ -893,7 +898,7 @@ namespace UnityEngine
         [FreeFunction("ScriptingGraphicsCaps::IsFormatSupported")]
         extern public static bool IsFormatSupported(GraphicsFormat format, FormatUsage usage);
 
-        [FreeFunction("ScriptingGraphicsCaps::GetCompatibleFormat")]
+        [FreeFunction("ScriptingGraphicsCaps::GetCompatibleFormat", ThrowsException = true)]
         extern public static GraphicsFormat GetCompatibleFormat(GraphicsFormat format, FormatUsage usage);
 
         [FreeFunction("ScriptingGraphicsCaps::GetGraphicsFormat")]
@@ -919,5 +924,8 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsMultisampleResolveDepth")]
         static extern bool SupportsMultisampleResolveDepth();
+
+        [FreeFunction("ScriptingGraphicsCaps::SupportsMultisampleResolveStencil")]
+        static extern bool SupportsMultisampleResolveStencil();
     }
 }

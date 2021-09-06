@@ -130,8 +130,11 @@ namespace UnityEditor
             GUI.Box(position, GUIContent.none);
 
             // Gradient texture
+            Color oldColor = GUI.color;
+            GUI.color = Color.white;            //Dont want the Playmode tint to be applied to gradient textures.
             if (gradientTexture != null)
                 GUI.DrawTexture(r2, gradientTexture, ScaleMode.StretchToFill, true);
+            GUI.color = oldColor;
 
             // HDR label
             float maxColorComponent = GetMaxColorComponent(gradient);
@@ -593,8 +596,11 @@ namespace UnityEditor
                 return;
             }
 
+            Color color = GUI.color;
+            GUI.color = Color.white;            //Dont want the Playmode tint to be applied to gradient textures.
             GUIStyle gs = EditorGUIUtility.GetBasicTextureStyle(preview);
             gs.Draw(position, false, false, false, false);
+            GUI.color = color;
 
             // HDR label
             if (maxColorComponent > 1.0f)

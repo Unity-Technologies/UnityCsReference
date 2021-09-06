@@ -397,7 +397,7 @@ namespace Unity.UI.Builder
             var vea = new VisualElementAsset(fullTypeName);
             VisualTreeAssetUtilities.InitializeElement(vea);
 
-            visualElement.SetProperty(BuilderConstants.ElementLinkedVisualElementAssetVEPropertyName, vea);
+            visualElement.SetVisualElementAsset(vea);
             visualElement.SetProperty(BuilderConstants.ElementLinkedBelongingVisualTreeAssetVEPropertyName, vta);
 
             var overriddenAttributes = visualElement.GetOverriddenAttributes();

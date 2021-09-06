@@ -51,6 +51,12 @@ namespace UnityEditor
         static Dictionary<Type, Type[]> m_subClasses = new Dictionary<Type, Type[]>();
 
         /// <summary>
+        /// The same set of assemblies as <see cref="loadedAssemblies"/>, but
+        /// sorted topologically according to each assembly's assembly references.
+        /// </summary>
+        private static Assembly[] m_topologicallySortedAssemblies;
+
+        /// <summary>
         /// The currently loaded editor assemblies
         /// (This is kept up to date from <see cref="SetLoadedEditorAssemblies"/>)
         /// </summary>
@@ -111,16 +117,29 @@ namespace UnityEditor
 
             // clear cached subtype -> types when assemblies change
             m_subClasses.Clear();
+
+            m_topologicallySortedAssemblies = AssemblyHelper.TopologicalSort(loadedAssemblies);
         }
 
         static ProfilerMarkerWithStringData _profilerMarkerProcessInitializeOnLoadAttributes = ProfilerMarkerWithStringData.Create("ProcessInitializeOnLoadAttribute", "Type");
         static ProfilerMarkerWithStringData _profilerMarkerProcessInitializeOnLoadMethodAttributes = ProfilerMarkerWithStringData.Create("ProcessInitializeOnLoadMethodAttribute", "MethodInfo");
+        private static readonly ProfilerMarker _profilerMarkerSortTypes = new ProfilerMarker("SortTypesTopologically");
 
         [RequiredByNativeCode]
         private static void ProcessInitializeOnLoadAttributes(Type[] types)
         {
             bool reportTimes = (bool)Debug.GetDiagnosticSwitch("EnableDomainReloadTimings").value;
-            foreach (var type in types)
+
+            IEnumerable<Type> sortedTypes;
+            using (_profilerMarkerSortTypes.Auto())
+            {
+                // Sort types according to topologically-sorted assemblies, such that we guarantee that
+                // [InitializeOnLoad] classes in assemblies referenced by a given assembly will have been
+                // initialized prior to that assembly's own [InitializeOnLoad] classes.
+                sortedTypes = types.OrderBy(x => Array.IndexOf(m_topologicallySortedAssemblies, x.Assembly));
+            }
+
+            foreach (Type type in sortedTypes)
             {
                 using (new EditorPerformanceMarker($"InitializeOnLoad {type.Name}", type).Auto())
                 using (_profilerMarkerProcessInitializeOnLoadAttributes.Auto(reportTimes, () => type.AssemblyQualifiedName))

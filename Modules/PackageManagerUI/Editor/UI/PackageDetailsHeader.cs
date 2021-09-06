@@ -80,7 +80,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             scopedRegistryInfoBox.Q<Button>().clickable.clicked += OnInfoBoxClickMore;
         }
 
-        public void Refresh(IPackage package, IPackageVersion version, IEnumerable<IPackageVersion> featureSets)
+        public void Refresh(IPackage package, IPackageVersion version)
         {
             m_Package = package;
             m_Version = version;
@@ -88,19 +88,26 @@ namespace UnityEditor.PackageManager.UI.Internal
             detailTitle.SetValueWithoutNotify(m_Version.displayName);
             detailsLinks.Refresh(m_Package, m_Version);
 
-            RefreshFeatureSetElements(featureSets);
-
+            RefreshFeatureSetElements();
             RefreshAuthor();
             RefreshTags();
             RefreshVersionLabel();
             RefreshVersionInfoIcon();
             RefreshRegistry();
-
+            RefreshEntitlement();
             RefreshEmbeddedFeatureSetWarningBox();
+            RefreshHiddenAssetInfo();
         }
 
-        private void RefreshFeatureSetElements(IEnumerable<IPackageVersion> featureSets)
+        private void RefreshHiddenAssetInfo()
         {
+            bool showHiddenInfoBox = m_Package is AssetStorePackage && (m_Package as AssetStorePackage).isHidden;
+            UIUtils.SetElementDisplay(hiddenAssetInfoBoxContainer, showHiddenInfoBox);
+        }
+
+        private void RefreshFeatureSetElements()
+        {
+            var featureSets = m_PackageDatabase.GetFeatureDependents(m_Package.versions.installed);
             RefreshUsedInFeatureSetMessage(featureSets);
             RefreshFeatureSetDependentVersionDifferentInfoBox(featureSets);
             RefreshLockIcons(featureSets);
@@ -253,7 +260,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_Application.OpenURL(authorLink);
         }
 
-        public void RefreshEntitlement()
+        private void RefreshEntitlement()
         {
             var showEntitlement = m_Package.hasEntitlements;
             UIUtils.SetElementDisplay(detailEntitlement, showEntitlement);
@@ -277,22 +284,37 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshVersionInfoIcon()
         {
-            var isInstalledVersionDifferentThanRequested = UpmPackageVersion.IsDifferentVersionThanRequested(m_Package?.versions.installed);
-            UIUtils.SetElementDisplay(versionInfoIcon, isInstalledVersionDifferentThanRequested);
-
-            if (!isInstalledVersionDifferentThanRequested)
+            var installed = m_Package?.versions?.installed;
+            if (installed == null)
+            {
+                UIUtils.SetElementDisplay(versionInfoIcon, false);
                 return;
+            }
 
-            var installedVersionString = m_Package?.versions.installed.versionString;
-            if (UpmPackageVersion.IsRequestedButOverriddenVersion(m_Package, m_Version))
-                versionInfoIcon.tooltip = string.Format(
-                    L10n.Tr("Unity installed version {0} because another package depends on it (version {0} overrides version {1})."),
-                    installedVersionString, m_Version.versionString);
-            else if (m_Version.isInstalled && UpmPackageVersion.IsDifferentVersionThanRequested(m_Version))
-                versionInfoIcon.tooltip = L10n.Tr("At least one other package depends on this version of the package.");
-            else
-                versionInfoIcon.tooltip = string.Format(
-                    L10n.Tr("At least one other package depends on version {0} of this package."), installedVersionString);
+            var installedVersionString = installed.versionString;
+            if (UpmPackageVersion.IsDifferentVersionThanRequested(installed))
+            {
+                UIUtils.SetElementDisplay(versionInfoIcon, true);
+
+                if (UpmPackageVersion.IsRequestedButOverriddenVersion(m_Package, m_Version))
+                    versionInfoIcon.tooltip = string.Format(L10n.Tr("Unity installed version {0} because another package depends on it (version {0} overrides version {1})."),
+                        installedVersionString, m_Version.versionString);
+                else if (m_Version.isInstalled)
+                    versionInfoIcon.tooltip = L10n.Tr("At least one other package depends on this version of the package.");
+                else
+                    versionInfoIcon.tooltip = string.Format(L10n.Tr("At least one other package depends on version {0} of this package."), installedVersionString);
+                return;
+            }
+
+            if (m_Version?.isInstalled == true &&  m_Package?.state != PackageState.InstalledAsDependency
+                                               && installed.version?.IsEqualOrPatchOf(m_Package?.versions?.recommended.version) != true)
+            {
+                UIUtils.SetElementDisplay(versionInfoIcon, true);
+                versionInfoIcon.tooltip = string.Format(L10n.Tr("The installed version {0} is not verified for your Unity version. The recommended one is {1}."), installedVersionString, m_Package?.versions?.recommended.versionString);
+                return;
+            }
+
+            UIUtils.SetElementDisplay(versionInfoIcon, false);
         }
 
         private void RefreshRegistry()
@@ -304,8 +326,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 scopedRegistryInfoBox.text = k_InfoBoxReadMoreText[(int)InfoBoxState.ScopedRegistry];
                 UIUtils.SetElementDisplay(scopedRegistryInfoBox, !registry.isDefault);
-                detailRegistryName.text = registry.isDefault ? "Unity" : registry.name;
-                detailRegistryName.tooltip = registry.url;
+                if (!m_Version.packageInfo.versions.all.Any())
+                {
+                    detailRegistryName.text = L10n.Tr("Unknown");
+                    detailRegistryName.tooltip = string.Empty;
+                }
+                else
+                {
+                    detailRegistryName.text = registry.isDefault ? "Unity" : registry.name;
+                    detailRegistryName.tooltip = registry.url;
+                }
             }
             if (m_Version.HasTag(PackageTag.Experimental))
             {
@@ -364,5 +394,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private HelpBox featureSetDependentVersionDifferentInfoBox => cache.Get<HelpBox>("featureSetDependentVersionDifferentInfoBox");
         private VisualElement lockedIcon => cache.Get<VisualElement>("lockedIcon");
         private HelpBox embeddedFeatureSetWarningBox => cache.Get<HelpBox>("embeddedFeatureSetWarningBox");
+        private VisualElement hiddenAssetInfoBoxContainer => cache.Get<VisualElement>("hiddenAssetInfoBoxContainer");
     }
 }

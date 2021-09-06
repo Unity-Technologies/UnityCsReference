@@ -48,7 +48,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 }
             }
 
-            var packageResolvePathsAndNames = PackageManager.PackageInfo.GetAll().Where(p => new NPath(p.resolvedPath).ToString().Contains("Library/PackageCache")).Select(p => (p.resolvedPath, p.name)).ToArray();
+            var packageResolvePathsAndNames = PackageManager.PackageInfo.GetAllRegisteredPackages().Where(p => new NPath(p.resolvedPath).ToString().Contains("Library/PackageCache")).Select(p => (p.resolvedPath, p.name)).ToArray();
 
             string VirtualizedPathFor(NPath file)
             {

@@ -13,6 +13,7 @@ namespace UnityEditor.UIElements.Inspector
         const string k_DefaultStyleSheetPath = "UIPackageResources/StyleSheets/Inspector/UIDocumentInspector.uss";
         const string k_InspectorVisualTreeAssetPath = "UIPackageResources/UXML/Inspector/UIDocumentInspector.uxml";
         private const string k_StyleClassWithParentHidden = "unity-ui-document-inspector--with-parent--hidden";
+        private const string k_StyleClassPanelMissing = "unity-ui-document-inspector--panel-missing--hidden";
 
         private static StyleSheet k_DefaultStyleSheet = null;
 
@@ -25,34 +26,30 @@ namespace UnityEditor.UIElements.Inspector
         private ObjectField m_SourceAssetField;
 
         private HelpBox m_DrivenByParentWarning;
-
-        private FloatField m_SortOrderField;
+        private HelpBox m_MissingPanelSettings;
 
         private void ConfigureFields()
         {
             // Using MandatoryQ instead of just Q to make sure modifications of the UXML file don't make the
             // necessary elements disappear unintentionally.
-            m_DrivenByParentWarning = m_RootVisualElement.MandatoryQ<HelpBox>("drivenByParentWarning");
+            m_DrivenByParentWarning = m_RootVisualElement.MandatoryQ<HelpBox>("driven-by-parent-warning");
+            m_MissingPanelSettings = m_RootVisualElement.MandatoryQ<HelpBox>("missing-panel-warning");
 
-            m_PanelSettingsField = m_RootVisualElement.MandatoryQ<ObjectField>("panelSettingsField");
+            m_PanelSettingsField = m_RootVisualElement.MandatoryQ<ObjectField>("panel-settings-field");
             m_PanelSettingsField.objectType = typeof(PanelSettings);
 
-            m_ParentField = m_RootVisualElement.MandatoryQ<ObjectField>("parentField");
+            m_ParentField = m_RootVisualElement.MandatoryQ<ObjectField>("parent-field");
             m_ParentField.objectType = typeof(UIDocument);
             m_ParentField.SetEnabled(false);
 
-            m_SourceAssetField = m_RootVisualElement.MandatoryQ<ObjectField>("sourceAssetField");
+            m_SourceAssetField = m_RootVisualElement.MandatoryQ<ObjectField>("source-asset-field");
             m_SourceAssetField.objectType = typeof(VisualTreeAsset);
-
-            m_SortOrderField = m_RootVisualElement.MandatoryQ<FloatField>("sortOrderField");
-            m_SortOrderField.isDelayed = true;
         }
 
         private void BindFields()
         {
             m_ParentField.RegisterCallback<ChangeEvent<Object>>(evt => UpdateValues());
             m_PanelSettingsField.RegisterCallback<ChangeEvent<Object>>(evt => UpdateValues());
-            m_SortOrderField.RegisterCallback<ChangeEvent<float>>(evt => SetSortOrder(evt));
         }
 
         private void UpdateValues()
@@ -63,18 +60,10 @@ namespace UnityEditor.UIElements.Inspector
             m_DrivenByParentWarning.EnableInClassList(k_StyleClassWithParentHidden, isNotDrivenByParent);
             m_ParentField.EnableInClassList(k_StyleClassWithParentHidden, isNotDrivenByParent);
 
+            bool displayPanelMissing = !(isNotDrivenByParent && uiDocument.panelSettings == null);
+            m_MissingPanelSettings.EnableInClassList(k_StyleClassPanelMissing, displayPanelMissing);
+
             m_PanelSettingsField.SetEnabled(isNotDrivenByParent);
-        }
-
-        private void SetSortOrder(ChangeEvent<float> evt)
-        {
-            // The field is bound, but we need to do extra operations when the value changes.
-            UIDocument uiDocument = (UIDocument)target;
-
-            if (uiDocument.sortingOrder != evt.newValue)
-            {
-                m_SortOrderField.schedule.Execute(() => uiDocument.ApplySortingOrder());
-            }
         }
 
         public override VisualElement CreateInspectorGUI()

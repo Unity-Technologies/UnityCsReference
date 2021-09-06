@@ -676,22 +676,24 @@ namespace UnityEditor
             ClearVersionControlBarState();
         }
 
-        private void OnObjectChanged(ChangeGameObjectOrComponentPropertiesEventArgs args)
-        {
-            if (args.instanceId != GetInspectedObject()?.GetInstanceID())
-                return;
-            UpdateWindowObjectNameTitle();
-        }
-
         private void OnObjectChanged(ref ObjectChangeEventStream stream)
         {
+            var inspectedObject = GetInspectedObject();
+            if (inspectedObject == null)
+                return;
+            var inspectedInstanceId = inspectedObject.GetInstanceID();
+
             for (int i = 0; i < stream.length; ++i)
             {
                 var eventType = stream.GetEventType(i);
                 if (eventType == ObjectChangeKind.ChangeGameObjectOrComponentProperties)
                 {
                     stream.GetChangeGameObjectOrComponentPropertiesEvent(i, out var e);
-                    OnObjectChanged(e);
+                    if (e.instanceId == inspectedInstanceId)
+                    {
+                        UpdateWindowObjectNameTitle();
+                        return;
+                    }
                 }
             }
         }

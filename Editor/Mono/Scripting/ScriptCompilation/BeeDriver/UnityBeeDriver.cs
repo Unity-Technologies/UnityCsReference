@@ -17,7 +17,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
     {
         public static BeeBuildProgramCommon.Data.PackageInfo[] GetPackageInfos(string projectDirectory)
         {
-            return PackageManager.PackageInfo.GetAll().Select(p =>
+            return PackageManager.PackageInfo.GetAllRegisteredPackages().Select(p =>
             {
                 NPath resolvedPath = new NPath(p.resolvedPath);
                 if (resolvedPath.IsChildOf(projectDirectory))
@@ -27,7 +27,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 {
                     Name = p.name,
                     ResolvedPath = resolvedPath.ToString(),
-                    Immutable = (p.source != PackageSource.Embedded && p.source != PackageSource.Local)
                 };
             }).ToArray();
         }

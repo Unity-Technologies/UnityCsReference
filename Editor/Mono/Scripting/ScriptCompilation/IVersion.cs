@@ -52,5 +52,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
             cursor += length;
             return value.Substring(newIndex, length);
         }
+
+        public static bool TryConsumeIntVersionComponentFromString(string value, ref int cursor, Func<char, bool> isEnd, out int result, bool zeroIfEmpty = false)
+        {
+            var part = ConsumeVersionComponentFromString(value, ref cursor, isEnd);
+            if (zeroIfEmpty && part.Length == 0)
+            {
+                result = 0;
+                return true;
+            }
+            return int.TryParse(part, out result);
+        }
     }
 }

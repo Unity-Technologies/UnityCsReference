@@ -9,31 +9,31 @@ using UnityEditor.AssetImporters;
 namespace UnityEditor.Search
 {
     [Flags]
-    enum IndexingOptions : byte
+    public enum IndexingOptions : byte
     {
+        None         = 0,
         Types        = 1 << 0,      // Index type information about objects
         Properties   = 1 << 1,      // Index serialized properties of objects
         Extended     = 1 << 2,      // Index all sub-assets and objects as new documents
         Dependencies = 1 << 3,      // Index object dependencies (i.e. ref:<name>)
+
+        Keep         = 1 << 6,      // Indicate that the index should not get deleted after resolution.
+
+        Temporary    = 1 << 7,      // Indicate that the index should be created under Temp/...
+
+        All = Types | Properties | Extended | Dependencies
+    }
+
+    static class IndexingOptionsExtensions
+    {
+        public static bool HasAny(this IndexingOptions flags, IndexingOptions f) => (flags & f) != 0;
+        public static bool HasAll(this IndexingOptions flags, IndexingOptions all) => (flags & all) == all;
+        public static bool HasNone(this IndexingOptions flags, IndexingOptions f) => (flags & f) == 0;
     }
 
     abstract class SearchIndexEntryImporter : ScriptedImporter
     {
-        // 1- Add extended options to index as many properties as possible
-        // 2- Add a dependency on the container folder of the asset so it gets re-indexed when the folder gets renamed
-        // 3- Index colors with a # sign instead of just the hexadecimal value.
-        // 4- Optimize the scene indexing content
-        // 5- Fix indexing error reporting
-        // 6- Fix LoadAllAssetRepresentationsAtPath sub asset validation
-        // 7- Index all sub-assets and objects when using extended=true
-        // 8- Index sub-assets using types=true
-        // 9- Fix sub objects dependencies indexation
-        // 10- Fix sub asset document name (could be an invalid path)
-        // 11- Do not index objects with hide flags DontSave
-        // 12- Update the prefab content indexing
-        // 13- Improve scene search index artifacts combine.
-        // 14- Fix sub asset property indexing if option is disabled.
-        public const int version = (14 << 18) ^ SearchIndexEntry.version;
+        public const int version = SearchIndexEntry.version;
 
         protected abstract IndexingOptions options { get; }
 

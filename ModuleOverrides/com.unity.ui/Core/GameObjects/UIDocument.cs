@@ -160,6 +160,7 @@ namespace UnityEngine.UIElements
 
                     if (m_PanelSettings != null)
                     {
+                        SetupVisualTreeAssetTracker();
                         m_PanelSettings.AttachAndInsertUIDocumentToVisualTree(this);
                     }
                 }
@@ -260,7 +261,7 @@ namespace UnityEngine.UIElements
                 }
 
                 m_SortingOrder = value;
-                AddRootVisualElementToTree();
+                ApplySortingOrder();
             }
         }
 
@@ -400,6 +401,7 @@ namespace UnityEngine.UIElements
             if (m_RootVisualElement != null)
             {
                 m_RootVisualElement.RemoveFromHierarchy();
+                m_PanelSettings?.panel.liveReloadSystem.UnregisterVisualTreeAssetTracker(m_RootVisualElement);
                 m_RootVisualElement = null;
             }
 
@@ -428,11 +430,7 @@ namespace UnityEngine.UIElements
             m_RootVisualElement.pickingMode = PickingMode.Ignore;
 
             // Setting the live reload tracker has to be done prior to attaching to panel in order to work properly
-            if (m_LiveReloadVisualTreeAssetTracker == null)
-            {
-                m_LiveReloadVisualTreeAssetTracker = CreateLiveReloadVisualTreeAssetTracker.Invoke(this);
-            }
-            m_RootVisualElement.visualTreeAssetTracker = m_LiveReloadVisualTreeAssetTracker;
+            SetupVisualTreeAssetTracker();
 
             if (isActiveAndEnabled)
             {
@@ -504,7 +502,8 @@ namespace UnityEngine.UIElements
             {
                 m_RootVisualElement.RemoveFromHierarchy();
                 // Unhook tracking, we're going down (but only after we detach from the panel).
-                m_RootVisualElement.visualTreeAssetTracker = null;
+                if (m_PanelSettings != null)
+                    m_PanelSettings.panel.liveReloadSystem.UnregisterVisualTreeAssetTracker(m_RootVisualElement);
                 m_RootVisualElement = null;
             }
         }
@@ -574,6 +573,18 @@ namespace UnityEngine.UIElements
             AddRootVisualElementToTree();
 
             SetupRootClassList();
+        }
+
+        private void SetupVisualTreeAssetTracker()
+        {
+            if (m_RootVisualElement == null)
+                return;
+
+            if (m_LiveReloadVisualTreeAssetTracker == null)
+            {
+                m_LiveReloadVisualTreeAssetTracker = CreateLiveReloadVisualTreeAssetTracker.Invoke(this);
+            }
+            m_PanelSettings?.panel.liveReloadSystem.RegisterVisualTreeAssetTracker(m_LiveReloadVisualTreeAssetTracker, m_RootVisualElement);
         }
 
         internal void OnLiveReloadOptionChanged()
@@ -651,6 +662,7 @@ namespace UnityEngine.UIElements
         }
 
         private VisualTreeAsset m_OldUxml = null;
+        private float m_OldSortingOrder = k_DefaultSortingOrder;
 
         private void OnValidate()
         {
@@ -672,6 +684,12 @@ namespace UnityEngine.UIElements
                 var tempPanelSettings = m_PanelSettings;
                 m_PanelSettings = m_PreviousPanelSettings;
                 panelSettings = tempPanelSettings;
+            }
+
+            if (m_OldSortingOrder != m_SortingOrder)
+            {
+                m_OldSortingOrder = m_SortingOrder;
+                ApplySortingOrder();
             }
         }
 

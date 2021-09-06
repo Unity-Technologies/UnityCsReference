@@ -6,6 +6,7 @@ using System.Globalization;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Rendering;
+using UnityEngine.Animations;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -148,6 +149,7 @@ namespace UnityEditor
         GameObject                  m_DirectionInstance;
         GameObject                  m_PivotInstance;
         GameObject                  m_RootInstance;
+        IAnimationPreviewable[]     m_Previewables;
         float                       m_BoundingVolumeScale;
         Motion                      m_SourcePreviewMotion;
         Animator                    m_SourceScenePreviewAnimator;
@@ -341,6 +343,7 @@ namespace UnityEditor
                 m_PreviewInstance = EditorUtility.InstantiateForAnimatorPreview(go);
                 previewUtility.AddSingleGO(m_PreviewInstance);
 
+                m_Previewables = m_PreviewInstance.GetComponentsInChildren<IAnimationPreviewable>();
                 var bounds = GameObjectInspector.GetRenderableBounds(m_PreviewInstance);
 
                 m_BoundingVolumeScale = Mathf.Max(bounds.size.x, Mathf.Max(bounds.size.y, bounds.size.z));
@@ -719,6 +722,8 @@ namespace UnityEditor
 
 
             SetPreviewCharacterEnabled(true, m_ShowReference);
+            foreach (var previewable in m_Previewables)
+                previewable.OnPreviewUpdate();
             previewUtility.Render(m_Option != PreviewPopupOptions.DefaultModel);
             SetPreviewCharacterEnabled(false, false);
 

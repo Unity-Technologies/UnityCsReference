@@ -129,7 +129,7 @@ namespace UnityEngine
         extern private void GetTrailDataInternal(ref Trails trailData);
         public Trails GetTrails()
         {
-            var result = new Trails() { positions = new List<Vector4>(), frontPositions = new List<int>(), backPositions = new List<int>(), positionCounts = new List<int>() };
+            var result = new Trails() { positions = new List<Vector4>(), frontPositions = new List<int>(), backPositions = new List<int>(), positionCounts = new List<int>(), textureOffsets = new List<float>() };
             GetTrailDataInternal(ref result);
             return result;
         }

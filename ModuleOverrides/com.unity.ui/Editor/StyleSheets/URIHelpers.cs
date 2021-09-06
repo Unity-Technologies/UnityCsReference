@@ -70,6 +70,20 @@ namespace UnityEditor.UIElements.StyleSheets
             return u.ToString();
         }
 
+        public static string EncodeUri(string uri)
+        {
+            uri = uri.Replace("&", "&amp;"); // Has to be done first!
+            uri = uri.Replace("\"", "&quot;");
+            uri = uri.Replace("\'", "&apos;");
+            uri = uri.Replace("<", "&lt;");
+            uri = uri.Replace(">", "&gt;");
+            uri = uri.Replace("\n", "&#10;");
+            uri = uri.Replace("\r", "");
+            uri = uri.Replace("\t", "&#x9;");
+
+            return uri;
+        }
+
         public struct URIValidationResponse
         {
             public URIValidationResult result;

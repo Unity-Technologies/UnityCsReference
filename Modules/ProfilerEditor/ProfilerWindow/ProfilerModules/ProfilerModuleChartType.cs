@@ -8,5 +8,14 @@ namespace Unity.Profiling.Editor
     {
         Line = 0,
         StackedTimeArea, // Legacy. Stacked charts were originally only built for use with time, e.g. they show an FPS grid and don't scale appropriately for other units.
+        StackedArea,
+    }
+
+    static class ProfilerModuleChartTypeExtensions
+    {
+        public static bool IsStackedChartType(this ProfilerModuleChartType chartType)
+        {
+            return chartType == ProfilerModuleChartType.StackedTimeArea || chartType == ProfilerModuleChartType.StackedArea;
+        }
     }
 }

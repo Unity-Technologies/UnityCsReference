@@ -11,8 +11,11 @@ namespace UnityEngine.UIElements.UIR.Implementation
 {
     static class CommandGenerator
     {
+        static readonly ProfilerMarker k_GenerateEntries = new ProfilerMarker("UIR.GenerateEntries");
         static readonly ProfilerMarker k_ConvertEntriesToCommandsMarker = new ProfilerMarker("UIR.ConvertEntriesToCommands");
+        static readonly ProfilerMarker k_GenerateClosingCommandsMarker = new ProfilerMarker("UIR.GenerateClosingCommands");
         static readonly ProfilerMarker k_NudgeVerticesMarker = new ProfilerMarker("UIR.NudgeVertices");
+        static readonly ProfilerMarker k_UpdateOpacityIdMarker = new ProfilerMarker("UIR.UpdateOpacityId");
 
         static void GetVerticesTransformInfo(VisualElement ve, out Matrix4x4 transform)
         {
@@ -41,8 +44,10 @@ namespace UnityEngine.UIElements.UIR.Implementation
         public static UIRStylePainter.ClosingInfo PaintElement(RenderChain renderChain, VisualElement ve, ref ChainBuilderStats stats)
         {
             var device = renderChain.device;
+
             var isClippingWithStencil = ve.renderChainData.clipMethod == ClipMethod.Stencil;
-            if ((UIRUtility.IsElementSelfHidden(ve) && !isClippingWithStencil) || ve.renderChainData.isHierarchyHidden)
+            var isClippingWithScissors = ve.renderChainData.clipMethod == ClipMethod.Scissor;
+            if ((UIRUtility.IsElementSelfHidden(ve) && !isClippingWithStencil && !isClippingWithScissors) || ve.renderChainData.isHierarchyHidden)
             {
                 if (ve.renderChainData.data != null)
                 {
@@ -80,6 +85,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             ResetCommands(renderChain, ve);
             renderChain.ResetTextures(ve);
 
+            k_GenerateEntries.Begin();
             var painter = renderChain.painter;
             painter.Begin(ve);
 
@@ -92,10 +98,11 @@ namespace UnityEngine.UIElements.UIR.Implementation
             }
             else
             {
-                // Even though the element hidden, we still have to push the stencil shape in case any children are visible.
-                if (ve.renderChainData.clipMethod == ClipMethod.Stencil)
+                // Even though the element hidden, we still have to push the stencil shape or setup the scissors in case any children are visible.
+                if (isClippingWithScissors || isClippingWithStencil)
                     painter.ApplyVisualElementClipping();
             }
+            k_GenerateEntries.End();
 
             MeshHandle data = ve.renderChainData.data;
 
@@ -214,7 +221,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                         if (entry.isClipRegisterEntry)
                             painter.LandClipRegisterMesh(targetVerticesSlice, targetIndicesSlice, entryIndexOffset);
 
-                        var cmd = InjectMeshDrawCommand(renderChain, ve, ref cmdPrev, ref cmdNext, data, entryIndexCount, indicesFilled, entry.material, entry.texture, entry.font, entry.stencilRef);
+                        var cmd = InjectMeshDrawCommand(renderChain, ve, ref cmdPrev, ref cmdNext, data, entryIndexCount, indicesFilled, entry.material, entry.texture, entry.stencilRef);
                         if (entry.isTextEntry && ve.renderChainData.usesLegacyText)
                         {
                             if (ve.renderChainData.textEntries == null)
@@ -224,7 +231,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                         else if (entry.isTextEntry)
                         {
                             // Set font atlas texture gradient scale
-                            cmd.state.fontTexSDFScale = entry.fontTexSDFScale;
+                            cmd.state.sdfScale = entry.fontTexSDFScale;
                         }
 
                         vertsFilled += entry.vertices.Length;
@@ -267,6 +274,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
             if (painter.closingInfo.needsClosing)
             {
+                k_GenerateClosingCommandsMarker.Begin();
                 RenderChainCommand cmdPrev = oldClosingCmdPrev, cmdNext = oldClosingCmdNext;
                 if (commandsAndClosingCommandsWereConsecutive)
                 {
@@ -308,7 +316,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
                 if (painter.closingInfo.clipperRegisterIndices.Length > 0)
                 {
-                    var cmd = InjectClosingMeshDrawCommand(renderChain, ve, ref cmdPrev, ref cmdNext, null, 0, 0, null, TextureId.invalid, null, painter.closingInfo.maskStencilRef);
+                    var cmd = InjectClosingMeshDrawCommand(renderChain, ve, ref cmdPrev, ref cmdNext, null, 0, 0, null, TextureId.invalid, painter.closingInfo.maskStencilRef);
                     painter.LandClipUnregisterMeshDrawCommand(cmd); // Placeholder command that will be filled actually later
                 }
                 if (painter.closingInfo.popViewMatrix)
@@ -327,6 +335,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     cmd.owner = ve;
                     InjectClosingCommandInBetween(renderChain, cmd, ref cmdPrev, ref cmdNext);
                 }
+                k_GenerateClosingCommandsMarker.End();
             }
 
             // When we have a closing mesh, we must have an opening mesh. At least we assumed where we decide
@@ -347,7 +356,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
         static Material CreateBlitShader(float colorConversion)
         {
             if (s_blitShader == null)
-                s_blitShader = Shader.Find("Hidden/UIE-ColorConversionBlit");
+                s_blitShader = Shader.Find(Shaders.k_ColorConversionBlit);
 
             Debug.Assert(s_blitShader != null, "UI Tollkit Render Event: Shader Not found");
             var blitMaterial = new Material(s_blitShader);
@@ -433,25 +442,10 @@ namespace UnityEngine.UIElements.UIR.Implementation
             {
                 Vertex v = source[i];
 
-                var unit = Vector2.one.normalized;
-                var scaled = mat.MultiplyVector(unit);
-                var circle = (Vector4)mat.MultiplyPoint3x4(new Vector3(v.circle.x, v.circle.y, 0));
-                if (Mathf.Abs(scaled.x) >= Mathf.Abs(scaled.y))
-                    circle.z = mat.MultiplyVector(new Vector3(v.circle.z, 0, 0)).magnitude;
-                else
-                    circle.z = mat.MultiplyVector(new Vector3(0, v.circle.z, 0)).magnitude;
-
-                var uv = v.uv;
-                if (v.circle.w > Tessellation.kEpsilon)
-                {
-                    // UV stores inner-circle's center
-                    uv = mat.MultiplyPoint3x4(new Vector3(v.uv.x, v.uv.y, 0));
-                    circle.w = mat.MultiplyVector(new Vector3(v.circle.w, 0, 0)).magnitude;
-                }
-
                 v.position = mat.MultiplyPoint3x4(v.position);
                 v.xformClipPages = xformClipPages;
 
+                // WARNING: Changes here must be replicated in UpdateOpacityId!!!
                 v.ids.r = ids.r;
                 v.ids.g = ids.g;
                 v.ids.b = ids.b;
@@ -466,8 +460,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     v.opacityColorPages.a = textCoreSettingsPage.g;
                     v.ids.a = ids.a;
                 }
-                v.circle = circle;
-                v.uv = uv;
                 v.textureId = textureId;
                 target[i] = v;
             }
@@ -481,22 +473,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
             for (int i = 0; i < count; i++)
             {
                 Vertex v = source[i];
-
-                var unit = Vector2.one.normalized;
-                var scaled = mat.MultiplyVector(unit);
-                var circle = (Vector4)mat.MultiplyPoint3x4(new Vector3(v.circle.x, v.circle.y, 0));
-                if (Mathf.Abs(scaled.x) >= Mathf.Abs(scaled.y))
-                    circle.z = mat.MultiplyVector(new Vector3(v.circle.z, 0, 0)).magnitude;
-                else
-                    circle.z = mat.MultiplyVector(new Vector3(0, v.circle.z, 0)).magnitude;
-
-                var uv = v.uv;
-                if (v.circle.w > Tessellation.kEpsilon)
-                {
-                    // UV stores inner-circle's center
-                    uv = mat.MultiplyPoint3x4(new Vector3(v.uv.x, v.uv.y, 0));
-                    circle.w = mat.MultiplyVector(new Vector3(v.circle.w, 0, 0)).magnitude;
-                }
 
                 v.position = mat.MultiplyPoint3x4(v.position);
                 vec.x = v.uv.x;
@@ -518,8 +494,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     v.opacityColorPages.a = textCoreSettingsPage.g;
                     v.ids.a = ids.a;
                 }
-                v.circle = circle;
-                v.uv = uv;
                 v.textureId = textureId;
                 target[i] = v;
             }
@@ -558,6 +532,28 @@ namespace UnityEngine.UIElements.UIR.Implementation
             int indexCount = source.Length;
             for (int i = 0; i < indexCount; i++)
                 target[i] = (UInt16)(source[i] + indexOffset);
+        }
+
+        public static void UpdateOpacityId(VisualElement ve, RenderChain renderChain)
+        {
+            k_UpdateOpacityIdMarker.Begin();
+
+            if (ve.renderChainData.data != null)
+                DoUpdateOpacityId(ve, renderChain, ve.renderChainData.data);
+
+            if (ve.renderChainData.closingData != null)
+                DoUpdateOpacityId(ve, renderChain, ve.renderChainData.closingData);
+
+            k_UpdateOpacityIdMarker.End();
+        }
+
+        static void DoUpdateOpacityId(VisualElement ve, RenderChain renderChain, MeshHandle mesh)
+        {
+            int vertCount = (int)mesh.allocVerts.size;
+            NativeSlice<Vertex> oldVerts = mesh.allocPage.vertices.cpuData.Slice((int)mesh.allocVerts.start, vertCount);
+            renderChain.device.Update(mesh, (uint)vertCount, out NativeSlice<Vertex> newVerts);
+            Color32 opacityData = renderChain.shaderInfoAllocator.OpacityAllocToVertexData(ve.renderChainData.opacityID);
+            renderChain.opacityIdAccelerator.CreateJob(oldVerts, newVerts, opacityData, vertCount);
         }
 
         public static bool NudgeVerticesToNewSpace(VisualElement ve, UIRenderDevice device)
@@ -639,39 +635,13 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 v.position = nudgeTransform.MultiplyPoint3x4(v.position);
                 newVerts[i] = v;
             }
-
-            for (int i = 0; i < vertCount; ++i)
-            {
-                Vertex v = newVerts[i];
-
-                var unit = Vector2.one.normalized;
-                var scaled = nudgeTransform.MultiplyVector(unit);
-                var circle = (Vector4)nudgeTransform.MultiplyPoint3x4(new Vector3(v.circle.x, v.circle.y, 0));
-                if (Mathf.Abs(scaled.x) >= Mathf.Abs(scaled.y))
-                    circle.z = nudgeTransform.MultiplyVector(new Vector3(v.circle.z, 0, 0)).magnitude;
-                else
-                    circle.z = nudgeTransform.MultiplyVector(new Vector3(0, v.circle.z, 0)).magnitude;
-
-                var uv = v.uv;
-                if (v.circle.w > Tessellation.kEpsilon)
-                {
-                    // UV stores inner-circle's center
-                    uv = nudgeTransform.MultiplyPoint3x4(new Vector3(v.uv.x, v.uv.y, 0));
-                    circle.w = nudgeTransform.MultiplyVector(new Vector3(v.circle.w, 0, 0)).magnitude;
-                }
-
-                v.circle = circle;
-                v.uv = uv;
-
-                newVerts[i] = v;
-            }
         }
 
-        static RenderChainCommand InjectMeshDrawCommand(RenderChain renderChain, VisualElement ve, ref RenderChainCommand cmdPrev, ref RenderChainCommand cmdNext, MeshHandle mesh, int indexCount, int indexOffset, Material material, TextureId texture, Texture font, int stencilRef)
+        static RenderChainCommand InjectMeshDrawCommand(RenderChain renderChain, VisualElement ve, ref RenderChainCommand cmdPrev, ref RenderChainCommand cmdNext, MeshHandle mesh, int indexCount, int indexOffset, Material material, TextureId texture, int stencilRef)
         {
             var cmd = renderChain.AllocCommand();
             cmd.type = CommandType.Draw;
-            cmd.state = new State { material = material, texture = texture, font = font, stencilRef = stencilRef };
+            cmd.state = new State { material = material, texture = texture, stencilRef = stencilRef };
             cmd.mesh = mesh;
             cmd.indexOffset = indexOffset;
             cmd.indexCount = indexCount;
@@ -680,12 +650,12 @@ namespace UnityEngine.UIElements.UIR.Implementation
             return cmd;
         }
 
-        static RenderChainCommand InjectClosingMeshDrawCommand(RenderChain renderChain, VisualElement ve, ref RenderChainCommand cmdPrev, ref RenderChainCommand cmdNext, MeshHandle mesh, int indexCount, int indexOffset, Material material, TextureId texture, Texture font, int stencilRef)
+        static RenderChainCommand InjectClosingMeshDrawCommand(RenderChain renderChain, VisualElement ve, ref RenderChainCommand cmdPrev, ref RenderChainCommand cmdNext, MeshHandle mesh, int indexCount, int indexOffset, Material material, TextureId texture, int stencilRef)
         {
             var cmd = renderChain.AllocCommand();
             cmd.type = CommandType.Draw;
             cmd.closing = true;
-            cmd.state = new State { material = material, texture = texture, font = font, stencilRef = stencilRef };
+            cmd.state = new State { material = material, texture = texture, stencilRef = stencilRef };
             cmd.mesh = mesh;
             cmd.indexOffset = indexOffset;
             cmd.indexCount = indexCount;

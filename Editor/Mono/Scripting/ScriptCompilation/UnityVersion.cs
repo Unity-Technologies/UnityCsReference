@@ -249,14 +249,25 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public static UnityVersion.UnityReleaseType ParseUnityReleaseType(char releaseType)
         {
+            if (TryParseUnityReleaseType(releaseType, out var result))
+            {
+                return result;
+            }
+            throw new ArgumentException($"UnityVersionTypeTraits does not recognize release type symbol '{releaseType}'.");
+        }
+
+        public static bool TryParseUnityReleaseType(char releaseType, out UnityVersion.UnityReleaseType result)
+        {
             for (int i = (int)UnityVersion.UnityReleaseType.kAlphaRelease; i < (int)UnityVersion.UnityReleaseType.kNumUnityReleaseTypes; ++i)
             {
                 if (releaseType == k_ValidReleaseTypeSymbols[i])
                 {
-                    return (UnityVersion.UnityReleaseType)i;
+                    result = (UnityVersion.UnityReleaseType)i;
+                    return true;
                 }
             }
-            throw new ArgumentException($"UnityVersionTypeTraits does not recognize release type symbol '{releaseType}'.");
+            result = UnityVersion.UnityReleaseType.kNumUnityReleaseTypes;
+            return false;
         }
     }
 
@@ -267,8 +278,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             string nextVersionComponent = VersionUtils.ConsumeVersionComponentFromString(version, ref cursor, x => !char.IsDigit(x));
             if (!String.IsNullOrEmpty(nextVersionComponent))
             {
-                versionComponent = int.Parse(nextVersionComponent);
-                return true;
+                return int.TryParse(nextVersionComponent, out versionComponent);
             }
             return false;
         }
@@ -287,14 +297,26 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             if (cursor < version.Length && UnityVersionTypeTraits.IsAllowedUnityReleaseTypeIdentifier(version[cursor]))
             {
-                releaseType = UnityVersionTypeTraits.ParseUnityReleaseType(version[cursor]);
-                cursor++;
-                return true;
+                if (UnityVersionTypeTraits.TryParseUnityReleaseType(version[cursor], out releaseType))
+                {
+                    cursor++;
+                    return true;
+                }
             }
             return false;
         }
 
         public static UnityVersion Parse(string version, bool strict = false)
+        {
+            if (TryParse(version, out var result, strict) && result.HasValue)
+            {
+                return result.Value;
+            }
+
+            throw new ArgumentException($"'{version}' is not a valid Unity Version");
+        }
+
+        public static bool TryParse(string version, out UnityVersion? result, bool strict = false)
         {
             int cursor = 0;
 
@@ -331,28 +353,17 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
             catch (Exception)
             {
-                throw new ArgumentException($"'{version}' is not a valid Unity Version");
+                result = null;
+                return false;
             }
             if (!isValid)
-            {
-                throw new ArgumentException($"'{version}' is not a valid Unity Version");
-            }
-
-            return new UnityVersion(major, minor, revision, releaseType, incrementalVersion, suffix);
-        }
-
-        public static bool TryParse(string versionString, out UnityVersion? result)
-        {
-            try
-            {
-                result = UnityVersionParser.Parse(versionString);
-                return true;
-            }
-            catch (Exception)
             {
                 result = null;
                 return false;
             }
+
+            result = new UnityVersion(major, minor, revision, releaseType, incrementalVersion, suffix);
+            return true;
         }
     }
 }

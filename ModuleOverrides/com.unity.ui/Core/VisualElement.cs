@@ -451,7 +451,8 @@ namespace UnityEngine.UIElements
             }
             set
             {
-                style.scale = new Scale(value);
+                // This is the older API where Z-scaling doesn't make sense, forcing the value to Vector2.
+                style.scale = new Scale((Vector2)value);
             }
         }
 
@@ -638,8 +639,7 @@ namespace UnityEngine.UIElements
             get
             {
                 var bb = boundingBox;
-                TransformAlignedRect(ref bb);
-                bb.position += layout.position;
+                TransformAlignedRectToParentSpace(ref bb);
                 return bb;
             }
         }
@@ -697,9 +697,9 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                var l = layout;
-                TransformAlignedRect(ref l);
-                return l;
+                var r = rect;
+                TransformAlignedRectToParentSpace(ref r);
+                return r;
             }
         }
 
@@ -779,12 +779,19 @@ namespace UnityEngine.UIElements
 
             if (hierarchy.parent != null)
             {
-                var mat = pivottedMatrixWithLayout;
-                MultiplyMatrix34(ref hierarchy.parent.worldTransformRef,  ref mat, out m_WorldTransformCache);
+                if (hasDefaultRotationAndScale)
+                {
+                    TranslateMatrix34(ref hierarchy.parent.worldTransformRef, positionWithLayout, out m_WorldTransformCache);
+                }
+                else
+                {
+                    var mat = pivotedMatrixWithLayout;
+                    MultiplyMatrix34(ref hierarchy.parent.worldTransformRef,  ref mat, out m_WorldTransformCache);
+                }
             }
             else
             {
-                m_WorldTransformCache = pivottedMatrixWithLayout;
+                m_WorldTransformCache = pivotedMatrixWithLayout;
             }
 
             isWorldTransformInverseDirty = true;
@@ -805,7 +812,6 @@ namespace UnityEngine.UIElements
 
         private Rect m_WorldClip = Rect.zero;
         private Rect m_WorldClipMinusGroup = Rect.zero;
-        private Rect m_WorldClipImmediate = Rect.zero;
         private bool m_WorldClipIsInfinite = false;
         internal Rect worldClip
         {
@@ -830,18 +836,6 @@ namespace UnityEngine.UIElements
                     isWorldClipDirty = false;
                 }
                 return m_WorldClipMinusGroup;
-            }
-        }
-        internal Rect worldClipImmediate
-        {
-            get
-            {
-                if (isWorldClipDirty)
-                {
-                    UpdateWorldClip();
-                    isWorldClipDirty = false;
-                }
-                return m_WorldClipImmediate;
             }
         }
 
@@ -876,7 +870,6 @@ namespace UnityEngine.UIElements
             if (hierarchy.parent != null)
             {
                 m_WorldClip = hierarchy.parent.worldClip;
-                m_WorldClipImmediate = hierarchy.parent.worldClipImmediate;
 
                 bool parentWorldClipIsInfinite = hierarchy.parent.worldClipIsInfinite;
                 if (hierarchy.parent != renderChainData.groupTransformAncestor) // Accessing render data here?
@@ -896,9 +889,8 @@ namespace UnityEngine.UIElements
                     // be the last operation that's performed.
                     Rect wb = SubstractBorderPadding(worldBound);
 
-                    m_WorldClip = parentWorldClipIsInfinite ? wb : CombineClipRects(wb, m_WorldClip);
+                    m_WorldClip = CombineClipRects(wb, m_WorldClip);
                     m_WorldClipMinusGroup = parentWorldClipIsInfinite ? wb : CombineClipRects(wb, m_WorldClipMinusGroup);
-                    m_WorldClipImmediate = CombineClipRects(wb, m_WorldClipImmediate);
 
                     m_WorldClipIsInfinite = false;
                 }
@@ -909,7 +901,7 @@ namespace UnityEngine.UIElements
             }
             else
             {
-                m_WorldClipImmediate = m_WorldClipMinusGroup = m_WorldClip = (panel != null) ? panel.visualTree.rect : s_InfiniteRect;;
+                m_WorldClipMinusGroup = m_WorldClip = (panel != null) ? panel.visualTree.rect : s_InfiniteRect;;
                 m_WorldClipIsInfinite = true;
             }
         }
@@ -976,22 +968,24 @@ namespace UnityEngine.UIElements
                 PseudoStates diff = m_PseudoStates ^ value;
                 if ((int)diff > 0)
                 {
-                    m_PseudoStates = value;
-
-                    if ((m_PseudoStates & PseudoStates.Root) == PseudoStates.Root)
+                    if ((value & PseudoStates.Root) == PseudoStates.Root)
                         isRootVisualContainer = true;
-
 
                     // If only the root changed do not trigger a new style update since the root
                     // pseudo state change base on the current style sheet when selectors are matched.
-                    if (diff == PseudoStates.Root)
-                        return;
-
-                    if ((triggerPseudoMask & m_PseudoStates) != 0
-                        || (dependencyPseudoMask & ~m_PseudoStates) != 0)
+                    if (diff != PseudoStates.Root)
                     {
-                        IncrementVersion(VersionChangeType.StyleSheet);
+                        var added = diff & value;
+                        var removed = diff & m_PseudoStates;
+
+                        if ((triggerPseudoMask & added) != 0
+                            || (dependencyPseudoMask & removed) != 0)
+                        {
+                            IncrementVersion(VersionChangeType.StyleSheet);
+                        }
                     }
+
+                    m_PseudoStates = value;
                 }
             }
         }
@@ -1137,11 +1131,6 @@ namespace UnityEngine.UIElements
             {
                 pseudoStates = pseudoStates | PseudoStates.Focus;
             }
-            else
-            {
-                HandlePanelAttachmentEvents(evt);
-            }
-
         }
 
         public sealed override void Focus()
@@ -1186,6 +1175,7 @@ namespace UnityEngine.UIElements
                 using (pDispatcherGate)
                 using (panelDispatcherGate)
                 {
+                    elementPanel?.liveReloadSystem.StopTracking(elements);
                     foreach (var e in elements)
                     {
                         e.WillChangePanel(p);
@@ -1212,6 +1202,7 @@ namespace UnityEngine.UIElements
                     {
                         e.HasChangedPanel(previousPanel);
                     }
+                    p?.liveReloadSystem.StartTracking(elements);
                 }
             }
             finally

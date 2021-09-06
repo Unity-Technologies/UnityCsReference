@@ -121,7 +121,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (newTab != PackageFilterTab.UnityRegistry && m_PageManager.GetRefreshTimestamp(PackageFilterTab.UnityRegistry) == 0 && m_ApplicationProxy.isUpmRunning)
                 DelayRefresh(PackageFilterTab.UnityRegistry);
 
-            m_ExtensionManager.OnWindowCreated(this, packageDetails.extensionContainer, packageDetails.toolbarExtensions);
+            m_ExtensionManager.OnWindowCreated(this, packageDetails.extensionContainer, packageDetails.toolbar.extensions);
         }
 
         private void DelayRefresh(PackageFilterTab tab, string subPage = "")
@@ -131,7 +131,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (!m_ApplicationProxy.isBatchMode)
                     Debug.Log(L10n.Tr("[Package Manager Window] UPM server is not running. Please check that your Editor was not launched with '-noUpm' command line option."));
 
-                packageList.HidePackagesShowMessage(false, false, L10n.Tr("UPM server is not running"));
+                packageList.HideListShowMessage(false, false, L10n.Tr("UPM server is not running"));
                 packageStatusbar.DisableRefresh();
                 SetToolbarsEnabled(false);
                 return;
@@ -219,7 +219,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 else
                 {
                     m_PageManager.Refresh(RefreshOptions.UpmList | RefreshOptions.UpmSearch);
-                    m_PageManager.RefreshSelected();
+                    m_PageManager.TriggerOnSelectionChanged();
                 }
             }
             else
@@ -227,7 +227,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (entitlements.Any())
                 {
                     m_PageManager.Refresh(RefreshOptions.UpmList | RefreshOptions.UpmSearch);
-                    m_PageManager.RefreshSelected();
+                    m_PageManager.TriggerOnSelectionChanged();
                 }
             }
         }
@@ -358,9 +358,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void SetToolbarsEnabled(bool value)
         {
-            packageManagerToolbar.SetEnabled(value);
+            packageManagerToolbar.SetEnabledExceptForSearchBar(value);
             packageSubPageFilterBar.SetEnabled(value);
-            packageDetails.packageToolbarContainer.SetEnabled(value);
+            packageDetails.toolbar.SetEnabled(value);
         }
 
         public void SelectFilterSubPage(string filterTabOrSubPage = "")

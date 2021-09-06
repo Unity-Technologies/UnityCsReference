@@ -58,6 +58,7 @@ namespace UnityEngine
             extern public float startRotationZMultiplier { get; [NativeThrows] set; }
             extern public float flipRotation { get; [NativeThrows] set; }
             extern public MinMaxGradient startColor { get; [NativeThrows] set; }
+            extern public ParticleSystemGravitySource gravitySource { get; [NativeThrows] set; }
             extern public MinMaxCurve gravityModifier { get; [NativeThrows] set; }
             extern public float gravityModifierMultiplier { get; [NativeThrows] set; }
             extern public ParticleSystemSimulationSpace simulationSpace { get; [NativeThrows] set; }
@@ -448,12 +449,18 @@ namespace UnityEngine
             extern public bool multiplyColliderForceByParticleSpeed { get; [NativeThrows] set; }
             extern public bool multiplyColliderForceByParticleSize { get; [NativeThrows] set; }
 
+            [NativeThrows]
             extern public void AddPlane(Transform transform);
+            [NativeThrows]
             extern public void RemovePlane(int index);
             public void RemovePlane(Transform transform) { RemovePlaneObject(transform); }
+            [NativeThrows]
             extern private void RemovePlaneObject(Transform transform);
+            [NativeThrows]
             extern public void SetPlane(int index, Transform transform);
+            [NativeThrows]
             extern public Transform GetPlane(int index);
+            [NativeThrows]
             extern public int planeCount { get; }
 
             [Obsolete("enableInteriorCollisions property is deprecated and is no longer required and has no effect on the particle system.", false)]
@@ -484,6 +491,7 @@ namespace UnityEngine
             extern public void SetCollider(int index, Component collider);
             [NativeThrows]
             extern public Component GetCollider(int index);
+            [NativeThrows]
             extern public int colliderCount { get; }
         }
 
@@ -585,6 +593,7 @@ namespace UnityEngine
             extern public float lifetimeMultiplier { get; [NativeThrows] set; }
             extern public float minVertexDistance { get; [NativeThrows] set; }
             extern public ParticleSystemTrailTextureMode textureMode { get; [NativeThrows] set; }
+            extern public Vector2 textureScale { get; [NativeThrows] set; }
             extern public bool worldSpace { get; [NativeThrows] set; }
             extern public bool dieWithParticles { get; [NativeThrows] set; }
             extern public bool sizeAffectsWidth { get; [NativeThrows] set; }

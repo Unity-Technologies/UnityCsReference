@@ -37,7 +37,8 @@ namespace UnityEditor.UIElements
 
             internal override void OnVisualTreeAssetChanged()
             {
-                m_Owner.RecreateWindow();
+                if (m_Owner.editorWindowModel != null)
+                    m_Owner.RecreateWindow();
             }
         }
 
@@ -51,6 +52,7 @@ namespace UnityEditor.UIElements
             {
                 base.OnCreate(model);
 
+                m_LiveReloadVisualTreeAssetTracker = new EditorWindowVisualTreeAssetTracker(this);
                 m_PlayModeDarkenColor = UIElementsUtility.editorPlayModeTintColor =
                     EditorApplication.isPlayingOrWillChangePlaymode ? editorWindowModel.playModeTintColor : Color.white;
 
@@ -71,7 +73,7 @@ namespace UnityEditor.UIElements
                 // Window is non-null when set by deserialization; it's usually null when OnCreate is called.
                 if (editorWindowModel.window != null)
                 {
-                    RegisterWindow();
+                    RegisterWindow(true);
                 }
             }
             catch (Exception e)
@@ -109,24 +111,19 @@ namespace UnityEditor.UIElements
         }
 
         private bool m_WindowRegistered;
-        void RegisterWindow()
+        void RegisterWindow(bool duringOnCreate = false)
         {
             if (m_WindowRegistered)
                 return;
 
             EditorWindow window = editorWindowModel.window;
-            if (m_LiveReloadVisualTreeAssetTracker == null)
-            {
-                m_LiveReloadVisualTreeAssetTracker = new EditorWindowVisualTreeAssetTracker(this);
-                m_Panel.m_LiveReloadStyleSheetAssetTracker = new LiveReloadStyleSheetAssetTracker();
 
-                // Live Reload is off by default for all Editor Windows, except for the Game View
-                m_LiveReloadPreferenceKey = GetWindowLiveReloadPreferenceKey(editorWindowModel.window.GetType());
-                m_Panel.enableAssetReload = EditorPrefs.GetBool(m_LiveReloadPreferenceKey, editorWindowModel.window is GameView);
-            }
+            // Live Reload is off by default for all Editor Windows, except for the ones overriding liveReloadPreferenceDefault (Game View, UI Builder)
+            m_LiveReloadPreferenceKey = GetWindowLiveReloadPreferenceKey(editorWindowModel.window.GetType());
+            m_Panel.enableAssetReload = EditorPrefs.GetBool(m_LiveReloadPreferenceKey, editorWindowModel.window.liveReloadPreferenceDefault);
 
             var root = window.baseRootVisualElement;
-            root.visualTreeAssetTracker = m_LiveReloadVisualTreeAssetTracker;
+            m_Panel.liveReloadSystem.RegisterVisualTreeAssetTracker(m_LiveReloadVisualTreeAssetTracker, root);
             if (root.hierarchy.parent != m_Panel.visualTree)
             {
                 AddRootElement(root);
@@ -141,7 +138,7 @@ namespace UnityEditor.UIElements
             UpdateStyleMargins();
             m_WindowRegistered = true;
 
-            SendInitializeIfNecessary();
+            SendInitializeIfNecessary(duringOnCreate);
         }
 
         void UnregisterWindow()
@@ -326,29 +323,28 @@ namespace UnityEditor.UIElements
         }
 
         private static readonly string k_InitializedWindowPropertyName = "Initialized";
-        void SendInitializeIfNecessary()
+        void SendInitializeIfNecessary(bool duringOnCreate = false)
         {
             if (editorWindowModel == null)
                 return;
 
             var window = editorWindowModel.window;
 
-
             if (window != null)
             {
                 var rootElement = window.rootVisualElement;
 
-                //we make sure styles have been applied
-                UIElementsEditorUtility.AddDefaultEditorStyleSheets(rootElement);
+                if (EditorApplication.isUpdating || duringOnCreate)
+                {
+                    rootElement.schedule.Execute(() => { SendInitializeIfNecessary(false); });
+                    return;
+                }
 
                 if (rootElement.GetProperty(k_InitializedWindowPropertyName) != null)
                     return;
 
-                if (EditorApplication.isUpdating)
-                {
-                    EditorApplication.delayCall += SendInitializeIfNecessary;
-                    return;
-                }
+                //we make sure styles have been applied
+                UIElementsEditorUtility.AddDefaultEditorStyleSheets(rootElement);
 
                 rootElement.SetProperty(k_InitializedWindowPropertyName, true);
 
@@ -398,8 +394,8 @@ namespace UnityEditor.UIElements
 
         private void AddLiveReloadOptionToMenu(GenericMenu menu)
         {
-            // Live Reload is off by default for all Editor Windows, except for the Game View
-            panel.enableAssetReload = EditorPrefs.GetBool(m_LiveReloadPreferenceKey, editorWindowModel.window is GameView);
+            // Live Reload is off by default for all Editor Windows, except for the ones overriding liveReloadPreferenceDefault (Game View, UI Builder)
+            panel.enableAssetReload = EditorPrefs.GetBool(m_LiveReloadPreferenceKey, editorWindowModel.window.liveReloadPreferenceDefault);
             menu.AddItem(EditorGUIUtility.TextContent(k_LiveReloadMenuText), panel.enableAssetReload, ToggleLiveReloadForWindowType, editorWindowModel.window);
         }
 

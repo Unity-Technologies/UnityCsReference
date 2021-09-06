@@ -113,6 +113,14 @@ namespace UnityEditor
         internal static void CreateEmptyParent()
         {
             Transform[] selected = Selection.transforms;
+            GameObject defaultParentObject = SceneView.GetDefaultParentObjectIfSet()?.gameObject;
+            string defaultParentObjectSceneGUID = defaultParentObject?.scene.guid;
+
+            // Clear default parent object so we could always reparent and move the new parent to the scene we need
+            if (defaultParentObject != null)
+            {
+                SceneHierarchy.ClearDefaultParentObject(defaultParentObjectSceneGUID);
+            }
 
             // If selected object is a prefab, get the its root object
             if (selected.Length > 0)
@@ -188,6 +196,12 @@ namespace UnityEditor
                 }
 
                 SceneHierarchyWindow.lastInteractedHierarchyWindow.SetExpanded(go.GetInstanceID(), true);
+            }
+
+            // Set back default parent object if we have one
+            if (defaultParentObject != null)
+            {
+                SceneHierarchy.UpdateSessionStateInfoAndActiveParentObjectValuesForScene(defaultParentObjectSceneGUID, defaultParentObject.GetInstanceID());
             }
         }
 

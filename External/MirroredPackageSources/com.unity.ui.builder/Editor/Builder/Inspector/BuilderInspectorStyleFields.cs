@@ -345,8 +345,6 @@ namespace Unity.UI.Builder
                     foldoutElement.UpdateFromChildFields();
                     foldoutElement.header.AddToClassList(BuilderConstants.InspectorLocalStyleOverrideClassName);
                 });
-
-                BuilderStyleRow.ReAssignTooltipToChild(field);
             }
             foldoutElement.header.SetProperty(BuilderConstants.FoldoutFieldPropertyName, foldoutElement);
             foldoutElement.headerInputField.RegisterValueChangedCallback(FoldoutNumberFieldOnValueChange);
@@ -377,8 +375,6 @@ namespace Unity.UI.Builder
 
                     foldoutElement.header.AddToClassList(BuilderConstants.InspectorLocalStyleOverrideClassName);
                 });
-
-                BuilderStyleRow.ReAssignTooltipToChild(field);
             }
             foldoutElement.header.SetProperty(BuilderConstants.FoldoutFieldPropertyName, foldoutElement);
             foldoutElement.headerInputField.RegisterValueChangedCallback(FoldoutColorFieldOnValueChange);
@@ -1894,12 +1890,6 @@ namespace Unity.UI.Builder
         void OnFieldValueChangeFont(ChangeEvent<Object> e, string styleName)
         {
             var field = e.target as ObjectField;
-            if (e.newValue == null && field.objectType == typeof(Font))
-            {
-                Debug.Log(BuilderConstants.FontCannotBeNoneMessage);
-                field.SetValueWithoutNotify(e.previousValue);
-                return;
-            }
 
             var styleProperty = GetOrCreateStylePropertyByStyleName(styleName);
             var isNewValue = styleProperty.values.Length == 0;

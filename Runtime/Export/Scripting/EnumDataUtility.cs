@@ -30,9 +30,15 @@ namespace UnityEngine
         {
             EnumData enumData;
             if (excludeObsolete && s_NonObsoleteEnumData.TryGetValue(enumType, out enumData))
+            {
                 return enumData;
+            }
+
             if (!excludeObsolete && s_EnumData.TryGetValue(enumType, out enumData))
+            {
                 return enumData;
+            }
+
             enumData = new EnumData { underlyingType = Enum.GetUnderlyingType(enumType) };
             enumData.unsigned =
                 enumData.underlyingType == typeof(byte)
@@ -111,10 +117,13 @@ namespace UnityEngine
             enumData.flags = enumType.IsDefined(typeof(FlagsAttribute), false);
             enumData.serializable = enumData.underlyingType != typeof(long) && enumData.underlyingType != typeof(ulong);
 
+            HandleInspectorOrderAttribute(enumType, ref enumData);
+
             if (excludeObsolete)
                 s_NonObsoleteEnumData[enumType] = enumData;
             else
                 s_EnumData[enumType] = enumData;
+
             return enumData;
         }
 
@@ -166,6 +175,57 @@ namespace UnityEngine
             }
 
             return Enum.Parse(enumType, value.ToString()) as Enum;
+        }
+
+        internal static void HandleInspectorOrderAttribute(Type enumType, ref EnumData enumData)
+        {
+            var attribute = Attribute.GetCustomAttribute(enumType, typeof(InspectorOrderAttribute)) as InspectorOrderAttribute;
+            if (attribute == null)
+                return;
+
+            int size = enumData.displayNames.Length;
+            int[] indexes = new int[size];
+
+            for (int i = 0; i < size; i++)
+            {
+                indexes[i] = i;
+            }
+
+            switch (attribute.m_inspectorSort)
+            {
+                case InspectorSort.ByValue:
+                    int[] data = new int[size];
+                    Array.Copy(enumData.flagValues, data, size);
+                    Array.Sort(data, indexes);
+                    break;
+                default:
+                    string[] sortData = new string[size];
+                    Array.Copy(enumData.displayNames, sortData, size);
+                    Array.Sort(sortData, indexes, StringComparer.Ordinal);
+                    break;
+            }
+
+            if (attribute.m_sortDirection == InspectorSortDirection.Descending)
+                Array.Reverse(indexes);
+
+            Enum[] values = new Enum[size];
+            int[] flagValues = new int[size];
+            string[] displayNames = new string[size];
+            string[] tooltip = new string[size];
+
+            for (int i = 0; i < size; i++)
+            {
+                int index = indexes[i];
+                values[i] = enumData.values[index];
+                flagValues[i] = enumData.flagValues[index];
+                displayNames[i] = enumData.displayNames[index];
+                tooltip[i] = enumData.tooltip[index];
+            }
+
+            enumData.values = values;
+            enumData.flagValues = flagValues;
+            enumData.displayNames = displayNames;
+            enumData.tooltip = tooltip;
         }
 
         private static bool CheckObsoleteAddition(FieldInfo field, bool excludeObsolete)

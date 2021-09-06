@@ -76,6 +76,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public IVersionDefinesConsoleLogs VersionDefinesConsoleLogs { get; set; } = new VersionDefinesConsoleLogs();
         public ICompilationSetupWarningTracker CompilationSetupWarningTracker { get; set; } = new CompilationSetupWarningTracker();
         public ISafeModeInfo SafeModeInfo { get; set; } = new SafeModeInfo();
+        public bool EnableDiagnostics => (bool)Debug.GetDiagnosticSwitch("EnableDomainReloadTimings").value;
 
         internal string projectDirectory = string.Empty;
         Dictionary<string, string> allScripts = new Dictionary<string, string>();
@@ -939,11 +940,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             WarnIfThereAreAssembliesWithoutAnyScripts(scriptAssemblySettings, scriptAssemblies);
 
-            if (scriptAssemblySettings.BuildingForEditor)
-            {
-                m_ScriptsForEditorHaveBeenCompiledSinceLastDomainReload = true;
-            }
-
             var debug = scriptAssemblySettings.CodeOptimization == CodeOptimization.Debug;
 
             //we're going to hash the output directory path into the dag name. We do this because when users build players into different directories,
@@ -966,11 +962,23 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 assemblies = scriptAssemblies,
             };
 
-            BeeScriptCompilation.AddScriptCompilationData(activeBeeBuild.Driver, this, activeBeeBuild.assemblies, debug, scriptAssemblySettings.OutputDirectory, buildTarget, scriptAssemblySettings.BuildingForEditor);
+            BeeScriptCompilation.AddScriptCompilationData(
+                activeBeeBuild.Driver,
+                this,
+                activeBeeBuild.assemblies,
+                debug,
+                scriptAssemblySettings.OutputDirectory,
+                buildTarget,
+                scriptAssemblySettings.BuildingForEditor
+            );
 
             InvokeCompilationStarted(activeBeeBuild);
 
-            activeBeeBuild.Driver.BuildAsync(Constants.ScriptAssembliesTarget);
+            if (scriptAssemblySettings.CompilationOptions.HasFlag(EditorScriptCompilationOptions.BuildingExtractTypeDB))
+                activeBeeBuild.Driver.BuildAsync(Constants.ScriptAssembliesAndTypeDBTarget);
+            else
+                activeBeeBuild.Driver.BuildAsync(Constants.ScriptAssembliesTarget);
+
             return CompileStatus.CompilationStarted;
         }
 
@@ -1031,6 +1039,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 additionalCompilationArguments.Add("/nowarn:0169");
                 additionalCompilationArguments.Add("/nowarn:0649");
+
+                // The msbuild tool disables warnings 1701 and 1702 by default, so Unity should do the same.
+                additionalCompilationArguments.Add("/nowarn:1701");
+                additionalCompilationArguments.Add("/nowarn:1702");
             }
 
             var additionalCompilationArgumentsArray = additionalCompilationArguments.Where(s => !string.IsNullOrEmpty(s)).Distinct().ToArray();
@@ -1168,7 +1180,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 return CompileStatus.Compiling;
             }
 
-            var messagesForNodeResults = ProcessCompilationResult(activeBeeBuild.assemblies, result, activeBeeBuild);
+            var messagesForNodeResults = ProcessCompilationResult(activeBeeBuild.assemblies, result, activeBeeBuild.settings.BuildingForEditor, activeBeeBuild);
 
             int logIdentifier = activeBeeBuild.settings.BuildingForEditor
                 //these numbers are "randomly picked". they are used to so that when you log a message with a certain identifier, later all messages with that identifier can be cleared.
@@ -1202,22 +1214,17 @@ namespace UnityEditor.Scripting.ScriptCompilation
             _logCompilationMessages = false;
         }
 
-        public CompilerMessage[][] ProcessCompilationResult(ScriptAssembly[] assemblies, BeeDriverResult result, object context)
+        public CompilerMessage[][] ProcessCompilationResult(ScriptAssembly[] assemblies, BeeDriverResult result, bool buildingForEditor, object context)
         {
             var compilerMessagesForNodeResults = BeeScriptCompilation.ParseAllNodeResultsIntoCompilerMessages(result.NodeResults, this);
-            InvokeAssemblyCompilationFinished(assemblies, result, compilerMessagesForNodeResults);
+            InvokeAssemblyCompilationFinished(assemblies, result, buildingForEditor, compilerMessagesForNodeResults);
             InvokeCompilationFinished(context);
             return compilerMessagesForNodeResults;
         }
 
-        void InvokeAssemblyCompilationFinished(ScriptAssembly[] assemblies, BeeDriverResult beeDriverResult, CompilerMessage[][] compilerMessagesForNodeResults)
+        void InvokeAssemblyCompilationFinished(ScriptAssembly[] assemblies, BeeDriverResult beeDriverResult, bool buildingForEditor, CompilerMessage[][] compilerMessagesForNodeResults)
         {
             bool Belongs(ScriptAssembly scriptAssembly, NodeResult nodeResult) => new NPath(nodeResult.outputfile).FileName == scriptAssembly.Filename;
-
-            if (assemblyCompilationFinished == null)
-            {
-                return;
-            }
 
             //we want to send callbacks for assemblies that were copied, for assemblies that failed to compile, but not for assemblies that were compiled but not copied (because they ended up identically)
             bool RequiresCallbackInvocation(ScriptAssembly scriptAssembly)
@@ -1233,6 +1240,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     continue;
                 }
 
+                // Only set this flag if we actually changed any assemblies
+                if (buildingForEditor)
+                    m_ScriptsForEditorHaveBeenCompiledSinceLastDomainReload = true;
+
                 var nodeResultIndicesRelatedToAssembly = beeDriverResult.NodeResults
                     .Select((result, index) => (result, index))
                     .Where(c => Belongs(scriptAssembly, c.result))
@@ -1244,29 +1255,51 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
         }
 
-        public TargetAssemblyInfo[] GetTargetAssemblyInfos()
+        public TargetAssemblyInfo[] GetTargetAssemblyInfos(ScriptAssemblySettings scriptAssemblySettings = null)
         {
             TargetAssembly[] predefindTargetAssemblies = EditorBuildRules.GetPredefinedTargetAssemblies();
 
             TargetAssemblyInfo[] targetAssemblyInfo = new TargetAssemblyInfo[predefindTargetAssemblies.Length + (customTargetAssemblies?.Count ?? 0)];
 
-            for (int i = 0; i < predefindTargetAssemblies.Length; ++i)
+            int assembliesSize = 0;
+            foreach (var assembly in predefindTargetAssemblies)
             {
-                targetAssemblyInfo[i] = ToTargetAssemblyInfo(predefindTargetAssemblies[i]);
+                if (!ShouldAddTargetAssemblyToList(assembly, scriptAssemblySettings))
+                {
+                    continue;
+                }
+
+                targetAssemblyInfo[assembliesSize] = ToTargetAssemblyInfo(predefindTargetAssemblies[assembliesSize]);
+                assembliesSize++;
             }
 
             if (customTargetAssemblies != null)
             {
-                int i = predefindTargetAssemblies.Length;
                 foreach (var entry in customTargetAssemblies)
                 {
                     var customTargetAssembly = entry.Value;
-                    targetAssemblyInfo[i] = ToTargetAssemblyInfo(customTargetAssembly);
-                    i++;
+
+                    if (!ShouldAddTargetAssemblyToList(customTargetAssembly, scriptAssemblySettings))
+                    {
+                        continue;
+                    }
+
+                    targetAssemblyInfo[assembliesSize] = ToTargetAssemblyInfo(customTargetAssembly);
+                    assembliesSize++;
                 }
+                Array.Resize(ref targetAssemblyInfo, assembliesSize);
             }
 
             return targetAssemblyInfo;
+
+            bool ShouldAddTargetAssemblyToList(TargetAssembly targetAssembly, ScriptAssemblySettings scriptAssemblySettings)
+            {
+                if (scriptAssemblySettings != null)
+                {
+                    return EditorBuildRules.IsCompatibleWithPlatformAndDefines(targetAssembly, scriptAssemblySettings);
+                }
+                return true;
+            }
         }
 
         TargetAssembly[] GetTargetAssemblies()
@@ -1421,7 +1454,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public string[] GetTargetAssemblyDefines(TargetAssembly targetAssembly, ScriptAssemblySettings settings)
         {
             var versionMetaDatas = GetVersionMetaDatas();
-            var editorOnlyCompatibleDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTargetGroup, settings.BuildTarget, ApiCompatibilityLevel.NET_4_6);
+            var editorOnlyCompatibleDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTargetGroup, settings.BuildTarget, ApiCompatibilityLevel.NET_Unity_4_8);
             var playerAssembliesDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTargetGroup, settings.BuildTarget, settings.PredefinedAssembliesCompilerOptions.ApiCompatibilityLevel);
 
             return GetTargetAssemblyDefines(targetAssembly, versionMetaDatas, editorOnlyCompatibleDefines, playerAssembliesDefines, settings);
@@ -1434,7 +1467,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var allTargetAssemblies = customScriptAssemblies.Values.ToArray()
                 .Concat(predefinedTargetAssemblies ?? new TargetAssembly[0]);
 
-            string[] editorOnlyCompatibleDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTargetGroup, settings.BuildTarget, ApiCompatibilityLevel.NET_4_6);
+            string[] editorOnlyCompatibleDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTargetGroup, settings.BuildTarget, ApiCompatibilityLevel.NET_Unity_4_8);
 
             var playerAssembliesDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTargetGroup, settings.BuildTarget, settings.PredefinedAssembliesCompilerOptions.ApiCompatibilityLevel);
 

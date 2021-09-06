@@ -18,6 +18,7 @@ namespace UnityEditor
         private SerializedProperty m_VertexDistance;
         private SerializedProperty m_EdgeRadius;
         private SerializedProperty m_OffsetDistance;
+        private SerializedProperty m_UseDelaunayMesh;
         readonly AnimBool m_ShowEdgeRadius = new AnimBool();
         readonly AnimBool m_ShowManualGenerationButton = new AnimBool();
 
@@ -30,6 +31,7 @@ namespace UnityEditor
             m_VertexDistance = serializedObject.FindProperty("m_VertexDistance");
             m_EdgeRadius = serializedObject.FindProperty("m_EdgeRadius");
             m_OffsetDistance = serializedObject.FindProperty("m_OffsetDistance");
+            m_UseDelaunayMesh = serializedObject.FindProperty("m_UseDelaunayMesh");
             m_ShowEdgeRadius.value = targets.Count(x => (x as CompositeCollider2D).geometryType == CompositeCollider2D.GeometryType.Polygons) == 0;
             m_ShowEdgeRadius.valueChanged.AddListener(Repaint);
             m_ShowManualGenerationButton.value = targets.Count(x => (x as CompositeCollider2D).generationType != CompositeCollider2D.GenerationType.Manual) == 0;
@@ -49,6 +51,13 @@ namespace UnityEditor
             base.OnInspectorGUI();
 
             EditorGUILayout.PropertyField(m_GeometryType);
+
+            // Only show the ability to select the Delaunay mesh if polygon geometry type is selected.
+            if (targets.All(x => (x as CompositeCollider2D).geometryType == CompositeCollider2D.GeometryType.Polygons))
+            {
+                EditorGUILayout.PropertyField(m_UseDelaunayMesh);
+            }
+
             EditorGUILayout.PropertyField(m_GenerationType);
             EditorGUILayout.PropertyField(m_VertexDistance);
             EditorGUILayout.PropertyField(m_OffsetDistance);

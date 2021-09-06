@@ -17,6 +17,7 @@ using System.Runtime.InteropServices;
 using UnityEditor.VisualStudioIntegration;
 using UnityEngine.Scripting;
 using Debug = UnityEngine.Debug;
+using Unity.Profiling;
 
 namespace UnityEditor
 {
@@ -419,6 +420,80 @@ namespace UnityEditor
             }
 
             return assemblies;
+        }
+
+        /// <summary>
+        /// Performs a depth-first-search topological sort on the input assemblies,
+        /// based on the outgoing assembly references from each assembly. The
+        /// returned list is sorted such that assembly A appears before any
+        /// assemblies that depend (directly or indirectly) on assembly A.
+        /// </summary>
+        internal static Assembly[] TopologicalSort(Assembly[] assemblies)
+        {
+            using var _ = new ProfilerMarker("SortAssembliesTopologically").Auto();
+
+            var assembliesByName = new Dictionary<string, int>(assemblies.Length);
+            for (var i = 0; i < assemblies.Length; i++)
+            {
+                assembliesByName[assemblies[i].GetName().Name] = i;
+            }
+
+            var result = new Assembly[assemblies.Length];
+            var resultIndex = 0;
+
+            var visited = new TopologicalSortVisitStatus[assemblies.Length];
+
+            void VisitAssembly(int index)
+            {
+                var visitStatus = visited[index];
+
+                switch (visitStatus)
+                {
+                    case TopologicalSortVisitStatus.Visiting:
+                        // We have a cyclic dependency between assemblies. This should really be an error, but...
+                        // We need to allow cyclic dependencies between assemblies, because the rest of Unity allows them.
+                        // For example if you make an assembly override for UnityEngine.AccessibilityModule.dll,
+                        // it will reference UnityEditor.CoreModule.dll, which in turn references
+                        // UnityEngine.AccessibilityModule.dll... and that doesn't trigger an error.
+                        // The topological sort won't be correct in this case, but it's better than erroring-out.
+                        break;
+
+                    case TopologicalSortVisitStatus.NotVisited:
+                        visited[index] = TopologicalSortVisitStatus.Visiting;
+
+                        var assembly = assemblies[index];
+
+                        var assemblyReferences = assembly.GetReferencedAssemblies();
+                        foreach (var assemblyReference in assemblyReferences)
+                        {
+                            // It's okay if we can't resolve the assembly. It just means that the referenced assembly
+                            // is not in the input set of assemblies, so we wouldn't be able to sort it anyway.
+                            if (assembliesByName.TryGetValue(assemblyReference.Name, out var referencedAssembly))
+                            {
+                                VisitAssembly(referencedAssembly);
+                            }
+                        }
+
+                        visited[index] = TopologicalSortVisitStatus.Visited;
+
+                        result[resultIndex++] = assembly;
+                        break;
+                }
+            }
+
+            for (var i = 0; i < assemblies.Length; i++)
+            {
+                VisitAssembly(i);
+            }
+
+            return result;
+        }
+
+        private enum TopologicalSortVisitStatus : byte
+        {
+            NotVisited,
+            Visiting,
+            Visited
         }
     }
 }

@@ -186,7 +186,7 @@ namespace UnityEditor.Search
         /// <returns>The newly created search item attached to the current search provider.</returns>
         public SearchItem CreateItem(SearchContext context, string id, int score, string label, string description, Texture2D thumbnail, object data)
         {
-            if (context.options.HasAny(SearchFlags.Debug))
+            if (context?.options.HasAny(SearchFlags.Debug) ?? false)
             {
                 // Debug sorting
                 description = $"DEBUG: id={id} - label={label} - description={description} - thumbnail={thumbnail} - data={data}";
@@ -360,12 +360,12 @@ namespace UnityEditor.Search
         /// <summary>
         /// Provider can return a list of words that will help the user complete his search query.
         /// </summary>
-        internal Func<SearchContext, SearchPropositionOptions, IEnumerable<SearchProposition>> fetchPropositions;
+        public Func<SearchContext, SearchPropositionOptions, IEnumerable<SearchProposition>> fetchPropositions;
 
         /// <summary>
         /// Fetch search tables that are used to display search result using a table view.
         /// </summary>
-        internal Func<SearchContext, IEnumerable<SearchItem>, IEnumerable<SearchColumn>> fetchColumns;
+        public Func<SearchContext, IEnumerable<SearchItem>, IEnumerable<SearchColumn>> fetchColumns;
 
         /// <summary>
         /// Called when the QuickSearchWindow is opened. Allow the Provider to perform some caching.
@@ -387,8 +387,12 @@ namespace UnityEditor.Search
         /// </summary>
         public Func<bool> isEnabledForContextualSearch;
 
+        /// <summary>
+        /// List of actions the search provider supports.
+        /// </summary>
+        public List<SearchAction> actions { get; internal set; }
+
         // INTERNAL
-        internal List<SearchAction> actions;
         internal double fetchTime;
         internal double loadTime;
         internal double enableTime;

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine.Bindings;
 using UnityEngine.Experimental.Rendering;
+using UnityEngine.Internal;
 
 namespace UnityEngine.Rendering
 {
@@ -425,7 +426,7 @@ namespace UnityEngine.Rendering
             Internal_ResolveAntiAliasedSurface(rt, target);
         }
 
-        public void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int submeshIndex, int shaderPass, MaterialPropertyBlock properties)
+        public void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, [DefaultValue("0")] int submeshIndex, [DefaultValue("-1")] int shaderPass, [DefaultValue("null")] MaterialPropertyBlock properties)
         {
             if (mesh == null)
                 throw new ArgumentNullException("mesh");
@@ -442,22 +443,25 @@ namespace UnityEngine.Rendering
             Internal_DrawMesh(mesh, matrix, material, submeshIndex, shaderPass, properties);
         }
 
+        [ExcludeFromDocs]
         public void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int submeshIndex, int shaderPass)
         {
             DrawMesh(mesh, matrix, material, submeshIndex, shaderPass, null);
         }
 
+        [ExcludeFromDocs]
         public void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int submeshIndex)
         {
             DrawMesh(mesh, matrix, material, submeshIndex, -1);
         }
 
+        [ExcludeFromDocs]
         public void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material)
         {
             DrawMesh(mesh, matrix, material, 0);
         }
 
-        public void DrawRenderer(Renderer renderer, Material material, int submeshIndex, int shaderPass)
+        public void DrawRenderer(Renderer renderer, Material material, [DefaultValue("0")] int submeshIndex, [DefaultValue("-1")] int shaderPass)
         {
             if (renderer == null)
                 throw new ArgumentNullException("renderer");
@@ -474,11 +478,13 @@ namespace UnityEngine.Rendering
             Internal_DrawRenderer(renderer, material, submeshIndex, shaderPass);
         }
 
+        [ExcludeFromDocs]
         public void DrawRenderer(Renderer renderer, Material material, int submeshIndex)
         {
             DrawRenderer(renderer, material, submeshIndex, -1);
         }
 
+        [ExcludeFromDocs]
         public void DrawRenderer(Renderer renderer, Material material)
         {
             DrawRenderer(renderer, material, 0);
@@ -489,7 +495,7 @@ namespace UnityEngine.Rendering
             Internal_DrawRendererList(rendererList);
         }
 
-        public void DrawProcedural(Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, int vertexCount, int instanceCount, MaterialPropertyBlock properties)
+        public void DrawProcedural(Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, int vertexCount, [DefaultValue("1")] int instanceCount, [DefaultValue("null")] MaterialPropertyBlock properties)
         {
             if (material == null)
                 throw new ArgumentNullException("material");
@@ -499,11 +505,13 @@ namespace UnityEngine.Rendering
             Internal_DrawProcedural(matrix, material, shaderPass, topology, vertexCount, instanceCount, properties);
         }
 
+        [ExcludeFromDocs]
         public void DrawProcedural(Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, int vertexCount, int instanceCount)
         {
             DrawProcedural(matrix, material, shaderPass, topology, vertexCount, instanceCount, null);
         }
 
+        [ExcludeFromDocs]
         public void DrawProcedural(Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, int vertexCount)
         {
             DrawProcedural(matrix, material, shaderPass, topology, vertexCount, 1);

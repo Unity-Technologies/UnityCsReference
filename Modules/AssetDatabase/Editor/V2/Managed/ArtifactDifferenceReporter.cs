@@ -59,7 +59,7 @@ namespace UnityEditor
         public static string kSourceAsset_HashOfSourceAssetByGUID = "SourceAsset/HashOfSourceAssetByGUID";
         public static string kSourceAsset_MetaFileHash = "SourceAsset/MetaFileHash";
         public static string kArtifact_HashOfContent = "Artifact/HashOfContent";
-        public static string kArtifact_HashOfGuidsOfChildren = "Artifact/HashOfGuidsOfChildren";
+        public static string kArtifact_HashOfGuidsOfChildren = "SourceAsset/HashOfGuidsOfChildren";
         public static string kArtifact_FileIdOfMainObject = "Artifact/Property"; //Manual check
         public static string kImportParameter_Platform = "ImportParameter/Platform";
         public static string kEnvironment_TextureImportCompression = "Environment/TextureImportCompression";

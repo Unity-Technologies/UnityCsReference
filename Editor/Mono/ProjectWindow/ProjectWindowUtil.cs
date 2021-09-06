@@ -58,6 +58,27 @@ namespace UnityEditor
             }
         }
 
+        internal class DoCreateNewDefaultAsset : EndNameEditAction
+        {
+            public override void Action(int instanceId, string pathName, string resourceFile)
+            {
+                var cleanPath = AssetDatabase.GenerateUniqueAssetPath(pathName);
+                AssetDatabase.CreateAsset(EditorUtility.InstanceIDToObject(instanceId),
+                    cleanPath);
+                var obj = AssetDatabase.LoadMainAssetAtPath(cleanPath);
+                var name = obj.name;
+                ObjectFactory.SmartResetObjectToDefault(obj);
+                obj.name = name;
+                AssetDatabase.SaveAssetIfDirty(obj);
+                ProjectWindowUtil.FrameObjectInProjectWindow(instanceId);
+            }
+
+            public override void Cancelled(int instanceId, string pathName, string resourceFile)
+            {
+                Selection.activeObject = null;
+            }
+        }
+
         internal class DoCreateNewAsset : EndNameEditAction
         {
             public override void Action(int instanceId, string pathName, string resourceFile)
@@ -129,10 +150,15 @@ namespace UnityEditor
             public override void Action(int instanceId, string pathName, string resourceFile)
             {
                 var empty = new GameObject("New Prefab");
-                bool success;
-                Object o = PrefabUtility.SaveAsPrefabAsset(empty, pathName, out success);
-                DestroyImmediate(empty);
-                ProjectWindowUtil.ShowCreatedAsset(o);
+                try
+                {
+                    Object o = PrefabUtility.SaveAsPrefabAsset(empty, pathName, out _);
+                    ProjectWindowUtil.ShowCreatedAsset(o);
+                }
+                finally
+                {
+                    DestroyImmediate(empty);
+                }
             }
         }
 
@@ -247,6 +273,12 @@ namespace UnityEditor
                     action.Cancelled(instanceId, pathName, resourceFile);
                 action.CleanUp();
             }
+        }
+
+        [UsedByNativeCode]
+        private static void CreateDefaultAsset(Object asset, string pathName)
+        {
+            StartNameEditingIfProjectWindowExists(asset.GetInstanceID(), ScriptableObject.CreateInstance<DoCreateNewDefaultAsset>(), pathName, AssetPreview.GetMiniThumbnail(asset), null);
         }
 
         // Create a standard Object-derived asset.
@@ -878,7 +910,7 @@ namespace UnityEditor
                 {
                     if (i < maxCount)
                     {
-                        infotext.AppendLine("   " + paths[i]);
+                        infotext.AppendLine(paths[i]);
                     }
 
                     if (paths[i].EndsWith(".prefab", StringComparison.OrdinalIgnoreCase))
@@ -893,9 +925,9 @@ namespace UnityEditor
 
                 if (paths.Count > maxCount)
                 {
-                    infotext.AppendLine("   ...");
+                    infotext.AppendLine("...");
                 }
-                infotext.AppendLine();
+                infotext.AppendLine("");
                 infotext.AppendLine(L10n.Tr("You cannot undo the delete assets action."));
 
                 if (containsPrefab)

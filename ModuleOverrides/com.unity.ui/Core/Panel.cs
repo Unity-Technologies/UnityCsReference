@@ -286,7 +286,11 @@ namespace UnityEngine.UIElements
         public abstract void UpdateAssetTrackers();
         public abstract void DirtyStyleSheets();
 
-        public bool enableAssetReload { get; set; }
+        public bool enableAssetReload
+        {
+            get => liveReloadSystem.enable;
+            set => liveReloadSystem.enable = value;
+        }
 
         private float m_Scale = 1;
         internal float scale
@@ -414,52 +418,6 @@ namespace UnityEngine.UIElements
 
         internal abstract IVisualTreeUpdater GetEditorUpdater(VisualTreeEditorUpdatePhase phase);
 
-        internal ILiveReloadAssetTracker<StyleSheet> m_LiveReloadStyleSheetAssetTracker
-        {
-            get =>
-                (GetEditorUpdater(VisualTreeEditorUpdatePhase.AssetChange) as
-                    VisualTreeAssetChangeTrackerUpdater)?.m_LiveReloadStyleSheetAssetTracker;
-            set
-            {
-                if (GetEditorUpdater(VisualTreeEditorUpdatePhase.AssetChange) is VisualTreeAssetChangeTrackerUpdater updater)
-                {
-                    updater.m_LiveReloadStyleSheetAssetTracker = value;
-                }
-            }
-        }
-
-        internal void StartVisualTreeAssetTracking(ILiveReloadAssetTracker<VisualTreeAsset> tracker,
-            VisualElement visualElementUsingAsset)
-        {
-            (GetEditorUpdater(VisualTreeEditorUpdatePhase.AssetChange) as
-                VisualTreeAssetChangeTrackerUpdater)?.StartVisualTreeAssetTracking(tracker, visualElementUsingAsset);
-        }
-
-        internal void StopVisualTreeAssetTracking(VisualElement visualElementUsingAsset)
-        {
-            (GetEditorUpdater(VisualTreeEditorUpdatePhase.AssetChange) as
-                VisualTreeAssetChangeTrackerUpdater)?.StopVisualTreeAssetTracking(visualElementUsingAsset);
-        }
-
-        public void OnTextElementAdded(TextElement element)
-        {
-            (GetEditorUpdater(VisualTreeEditorUpdatePhase.AssetChange) as
-                VisualTreeAssetChangeTrackerUpdater)?.RegisterTextElement(element);
-        }
-
-        public void OnTextElementRemoved(TextElement element)
-        {
-            (GetEditorUpdater(VisualTreeEditorUpdatePhase.AssetChange) as
-                VisualTreeAssetChangeTrackerUpdater)?.UnregisterTextElement(element);
-        }
-
-        internal HashSet<ILiveReloadAssetTracker<VisualTreeAsset>> GetVisualTreeAssetTrackersListCopy()
-        {
-            return (GetEditorUpdater(VisualTreeEditorUpdatePhase.AssetChange) as
-                VisualTreeAssetChangeTrackerUpdater)?.GetVisualTreeAssetTrackersListCopy();
-        }
-
-
         internal ElementUnderPointer m_TopElementUnderPointers = new ElementUnderPointer();
 
         internal VisualElement GetTopElementUnderPointer(int pointerId)
@@ -467,26 +425,28 @@ namespace UnityEngine.UIElements
             return m_TopElementUnderPointers.GetTopElementUnderPointer(pointerId);
         }
 
-        internal VisualElement RecomputeTopElementUnderPointer(Vector2 pointerPos, EventBase triggerEvent)
+        internal VisualElement RecomputeTopElementUnderPointer(int pointerId, Vector2 pointerPos, EventBase triggerEvent)
         {
-            VisualElement element = Pick(pointerPos);
-            m_TopElementUnderPointers.SetElementUnderPointer(element, triggerEvent);
+            VisualElement element = null;
+
+            if (PointerDeviceState.GetPanel(pointerId, contextType) == this &&
+                !PointerDeviceState.HasLocationFlag(pointerId, contextType, PointerDeviceState.LocationFlag.OutsidePanel))
+            {
+                element = Pick(pointerPos);
+            }
+
+            m_TopElementUnderPointers.SetElementUnderPointer(element, pointerId, triggerEvent);
             return element;
         }
 
-        internal void ClearCachedElementUnderPointer(EventBase triggerEvent)
+        internal void ClearCachedElementUnderPointer(int pointerId, EventBase triggerEvent)
         {
-            m_TopElementUnderPointers.SetTemporaryElementUnderPointer(null, triggerEvent);
-        }
-
-        void SetElementUnderPointer(VisualElement newElementUnderPointer, int pointerId, Vector2 pointerPos)
-        {
-            m_TopElementUnderPointers.SetElementUnderPointer(newElementUnderPointer, pointerId, pointerPos);
+            m_TopElementUnderPointers.SetTemporaryElementUnderPointer(null, pointerId, triggerEvent);
         }
 
         internal void CommitElementUnderPointers()
         {
-            m_TopElementUnderPointers.CommitElementUnderPointers(dispatcher);
+            m_TopElementUnderPointers.CommitElementUnderPointers(dispatcher, contextType);
         }
 
         internal abstract Shader standardShader { get; set; }
@@ -530,16 +490,18 @@ namespace UnityEngine.UIElements
         {
             foreach (var pointerId in PointerId.hoveringPointers)
             {
-                if (PointerDeviceState.GetPanel(pointerId) != this)
+                if (PointerDeviceState.GetPanel(pointerId, contextType) != this ||
+                    PointerDeviceState.HasLocationFlag(pointerId, contextType, PointerDeviceState.LocationFlag.OutsidePanel))
                 {
-                    SetElementUnderPointer(null, pointerId, new Vector2(float.MinValue, float.MinValue));
+                    m_TopElementUnderPointers.SetElementUnderPointer(null, pointerId, new Vector2(float.MinValue, float.MinValue));
                 }
                 else
                 {
-                    var pointerPos = PointerDeviceState.GetPointerPosition(pointerId);
+                    var pointerPos = PointerDeviceState.GetPointerPosition(pointerId, contextType);
+
                     // Here it's important to call PickAll instead of Pick to ensure we don't use the cached value.
                     VisualElement elementUnderPointer = PickAll(pointerPos, null);
-                    SetElementUnderPointer(elementUnderPointer, pointerId, pointerPos);
+                    m_TopElementUnderPointers.SetElementUnderPointer(elementUnderPointer, pointerId, pointerPos);
                 }
             }
 
@@ -547,6 +509,7 @@ namespace UnityEngine.UIElements
         }
 
         public IPanelDebug panelDebug { get; set; }
+        public ILiveReloadSystem liveReloadSystem { get; set; }
 
         public virtual void Update()
         {
@@ -560,6 +523,9 @@ namespace UnityEngine.UIElements
             focusController.ValidateInternalState(this);
         }
     }
+
+    // Strategy to initialize the editor updater
+    internal delegate void InitEditorUpdaterFunction(BaseVisualElementPanel panel, VisualTreeUpdater visualTreeUpdater);
 
     // Strategy to load assets must be provided in the context of Editor or Runtime
     internal delegate Object LoadResourceFunction(string pathName, System.Type type, float dpiScaling);
@@ -641,6 +607,8 @@ namespace UnityEngine.UIElements
         public override EventInterests IMGUIEventInterests { get; set; }
 
         internal static LoadResourceFunction loadResourceFunc { private get; set; }
+
+        internal static InitEditorUpdaterFunction initEditorUpdaterFunc { private get; set; }
 
         internal static Object LoadResource(string pathName, Type type, float dpiScaling)
         {
@@ -747,12 +715,13 @@ namespace UnityEngine.UIElements
             }
         }
 
+        // Used by tests
         internal static Panel CreateEditorPanel(ScriptableObject ownerObject)
         {
             return new Panel(ownerObject, ContextType.Editor, EventDispatcher.editorDispatcher);
         }
 
-        public Panel(ScriptableObject ownerObject, ContextType contextType, EventDispatcher dispatcher)
+        public Panel(ScriptableObject ownerObject, ContextType contextType, EventDispatcher dispatcher, InitEditorUpdaterFunction initEditorUpdater = null)
         {
             this.ownerObject = ownerObject;
             this.contextType = contextType;
@@ -761,6 +730,8 @@ namespace UnityEngine.UIElements
             cursorManager = new CursorManager();
             contextualMenuManager = null;
             m_VisualTreeUpdater = new VisualTreeUpdater(this);
+            var initFunc = initEditorUpdater ?? initEditorUpdaterFunc;
+            initFunc.Invoke(this, m_VisualTreeUpdater);
             m_RootContainer = new VisualElement
             {
                 name = VisualElementUtils.GetUniqueName("unity-panel-container"),
@@ -942,7 +913,7 @@ namespace UnityEngine.UIElements
 
         public override void UpdateAssetTrackers()
         {
-            m_VisualTreeUpdater.UpdateEditorVisualTreePhase(VisualTreeEditorUpdatePhase.AssetChange);
+            liveReloadSystem.Update();
         }
 
 
@@ -963,7 +934,7 @@ namespace UnityEngine.UIElements
 
         internal override IVisualTreeUpdater GetEditorUpdater(VisualTreeEditorUpdatePhase phase)
         {
-            return m_VisualTreeUpdater.GetEditorUpdater(phase);
+            return m_VisualTreeUpdater.visualTreeEditorUpdater.GetUpdater(phase);
         }
 
 

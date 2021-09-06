@@ -231,6 +231,10 @@ namespace UnityEngine.UIElements
         // Case 1297053: ScrollableWidth/Height may contain some numerical imprecisions.
         const float k_SizeThreshold = 0.001f;
 
+        VisualElement m_AttachedRootVisualContainer;
+        float m_SingleLineHeight = UIElementsUtility.singleLineHeight;
+        const string k_SingleLineHeightPropertyName = "--unity-metrics-single_line-height";
+
         const float k_ScrollPageOverlapFactor = 0.1f;
         internal const float k_UnsetPageSizeValue = -1.0f;
 
@@ -769,6 +773,10 @@ namespace UnityEngine.UIElements
                 return;
             }
 
+            m_AttachedRootVisualContainer = GetRootVisualContainer();
+            m_AttachedRootVisualContainer?.RegisterCallback<CustomStyleResolvedEvent>(OnRootCustomStyleResolved);
+            ReadSingleLineHeight();
+
             if (evt.destinationPanel.contextType == ContextType.Player)
             {
                 m_ContentAndVerticalScrollContainer.RegisterCallback<PointerDownEvent>(OnPointerDown, TrickleDown.TrickleDown);
@@ -787,6 +795,9 @@ namespace UnityEngine.UIElements
             {
                 return;
             }
+
+            m_AttachedRootVisualContainer?.UnregisterCallback<CustomStyleResolvedEvent>(OnRootCustomStyleResolved);
+            m_AttachedRootVisualContainer = null;
 
             if (evt.originPanel.contextType == ContextType.Player)
             {
@@ -813,10 +824,7 @@ namespace UnityEngine.UIElements
 
         void OnPointerCaptureOut(PointerCaptureOutEvent evt)
         {
-            if (evt.target == contentContainer)
-            {
-                ReleaseScrolling(evt.pointerId);
-            }
+            ReleaseScrolling(evt.pointerId, evt.target);
 
             if (m_CapturedTarget == null)
                 return;
@@ -852,7 +860,7 @@ namespace UnityEngine.UIElements
 
         private int m_ScrollingPointerId = PointerId.invalidPointerId;
         private const float k_VelocityLerpTimeFactor = 10;
-        private const float k_ScrollThresholdSquared = 25;
+        internal const float ScrollThresholdSquared = 25;
         private Vector2 m_StartPosition;
         private Vector2 m_PointerStartPosition;
         private Vector2 m_Velocity;
@@ -938,7 +946,7 @@ namespace UnityEngine.UIElements
                 direction = -1f;
             }
 
-            if (Mathf.Abs(delta) < Mathf.Epsilon)
+            if (Mathf.Abs(delta) < UIRUtility.k_Epsilon)
             {
                 return initialScrollOffset;
             }
@@ -1129,7 +1137,7 @@ namespace UnityEngine.UIElements
             }
 
             Vector2 position = evt.position;
-            if (!m_StartedMoving && (position - m_PointerStartPosition).sqrMagnitude < k_ScrollThresholdSquared)
+            if (!m_StartedMoving && (position - m_PointerStartPosition).sqrMagnitude < ScrollThresholdSquared)
                 return;
 
             m_StartedMoving = true;
@@ -1197,21 +1205,27 @@ namespace UnityEngine.UIElements
 
         void OnPointerCancel(PointerCancelEvent evt)
         {
-            if (evt.target == contentContainer)
-            {
-                ReleaseScrolling(evt.pointerId);
-            }
+            ReleaseScrolling(evt.pointerId, evt.target);
         }
 
         void OnPointerUp(PointerUpEvent evt)
         {
-            ReleaseScrolling(evt.pointerId);
+            if (ReleaseScrolling(evt.pointerId, evt.target))
+            {
+                contentContainer.panel.PreventCompatibilityMouseEvents(evt.pointerId);
+                evt.StopPropagation();
+            }
         }
 
-        void ReleaseScrolling(int pointerId)
+        bool ReleaseScrolling(int pointerId, IEventHandler target)
         {
             if (pointerId != m_ScrollingPointerId)
-                return;
+                return false;
+
+            m_ScrollingPointerId = PointerId.invalidPointerId;
+
+            if (target != contentContainer || !contentContainer.HasPointerCapture(pointerId))
+                return false;
 
             if (touchScrollBehavior == TouchScrollBehavior.Elastic || hasInertia)
             {
@@ -1228,13 +1242,13 @@ namespace UnityEngine.UIElements
             }
 
             contentContainer.ReleasePointer(pointerId);
-            m_ScrollingPointerId = PointerId.invalidPointerId;
+            return true;
         }
 
         void AdjustScrollers()
         {
-            float horizontalFactor = contentContainer.boundingBox.width > Mathf.Epsilon ? contentViewport.layout.width / contentContainer.boundingBox.width : 1f;
-            float verticalFactor = contentContainer.boundingBox.height > Mathf.Epsilon ? contentViewport.layout.height / contentContainer.boundingBox.height : 1f;
+            float horizontalFactor = contentContainer.boundingBox.width > UIRUtility.k_Epsilon ? contentViewport.layout.width / contentContainer.boundingBox.width : 1f;
+            float verticalFactor = contentContainer.boundingBox.height > UIRUtility.k_Epsilon ? contentViewport.layout.height / contentContainer.boundingBox.height : 1f;
 
             horizontalScroller.Adjust(horizontalFactor);
             verticalScroller.Adjust(verticalFactor);
@@ -1309,11 +1323,7 @@ namespace UnityEngine.UIElements
             if (canUseVerticalScroll)
             {
                 var oldVerticalValue = verticalScroller.value;
-
-                if (evt.delta.y < 0)
-                    verticalScroller.ScrollPageUp(Mathf.Abs(evt.delta.y));
-                else if (evt.delta.y > 0)
-                    verticalScroller.ScrollPageDown(Mathf.Abs(evt.delta.y));
+                verticalScroller.value += evt.delta.y * (verticalScroller.lowValue < verticalScroller.highValue ? 1f : -1f) * m_SingleLineHeight;
 
                 if (verticalScroller.value != oldVerticalValue)
                 {
@@ -1325,11 +1335,7 @@ namespace UnityEngine.UIElements
             if (canUseHorizontalScroll)
             {
                 var oldHorizontalValue = horizontalScroller.value;
-
-                if (horizontalScrollDelta < 0)
-                    horizontalScroller.ScrollPageUp(Mathf.Abs(horizontalScrollDelta));
-                else if (horizontalScrollDelta > 0)
-                    horizontalScroller.ScrollPageDown(Mathf.Abs(horizontalScrollDelta));
+                horizontalScroller.value += horizontalScrollDelta * (horizontalScroller.lowValue < horizontalScroller.highValue ? 1f : -1f) * m_SingleLineHeight;
 
                 if (horizontalScroller.value != oldHorizontalValue)
                 {
@@ -1340,6 +1346,27 @@ namespace UnityEngine.UIElements
 
             if (updateContentViewTransform)
                 UpdateContentViewTransform();
+        }
+
+        void OnRootCustomStyleResolved(CustomStyleResolvedEvent evt)
+        {
+            ReadSingleLineHeight();
+        }
+
+        void ReadSingleLineHeight()
+        {
+            if (m_AttachedRootVisualContainer?.computedStyle.customProperties != null &&
+                m_AttachedRootVisualContainer.computedStyle.customProperties.TryGetValue(k_SingleLineHeightPropertyName, out var customProp))
+            {
+                if (customProp.sheet.TryReadDimension(customProp.handle, out var dimension))
+                {
+                    m_SingleLineHeight = dimension.value;
+                }
+            }
+            else
+            {
+                m_SingleLineHeight = UIElementsUtility.singleLineHeight;
+            }
         }
     }
 }

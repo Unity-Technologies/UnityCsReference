@@ -13,6 +13,7 @@ namespace UnityEditor.Toolbars
         internal const string textClassName = EditorToolbar.elementLabelClassName;
         internal const string iconClassName = EditorToolbar.elementIconClassName;
         public new const string ussClassName = "unity-editor-toolbar-toggle";
+        internal static readonly string toggleNoIconClassName = ussClassName + "-noicon";
 
         Texture2D m_OnIcon;
         Texture2D m_OffIcon;
@@ -23,13 +24,21 @@ namespace UnityEditor.Toolbars
         public new string text
         {
             get => m_TextElement.text;
-            set => m_TextElement.text = value;
+            set
+            {
+                m_TextElement.text = value;
+                UpdateIconState();
+            }
         }
 
         public Texture2D icon
         {
             get => offIcon;
-            set => offIcon = onIcon = value;
+            set
+            {
+                offIcon = onIcon = value;
+                UpdateIconState();
+            }
         }
 
         public Texture2D onIcon
@@ -38,7 +47,7 @@ namespace UnityEditor.Toolbars
             set
             {
                 m_OnIcon = value;
-                UpdateIcon();
+                UpdateIconState();
             }
         }
 
@@ -48,7 +57,7 @@ namespace UnityEditor.Toolbars
             set
             {
                 m_OffIcon = value;
-                UpdateIcon();
+                UpdateIconState();
             }
         }
 
@@ -64,18 +73,18 @@ namespace UnityEditor.Toolbars
             var input = this.Q<VisualElement>(className: Toggle.inputUssClassName);
 
             m_IconElement = new Image { scaleMode = ScaleMode.ScaleToFit};
-            m_IconElement.AddToClassList(EditorToolbar.elementIconClassName);
+            m_IconElement.AddToClassList(iconClassName);
             input.Add(m_IconElement);
 
             m_TextElement = new TextElement();
-            m_TextElement.AddToClassList(EditorToolbar.elementLabelClassName);
+            m_TextElement.AddToClassList(textClassName);
             input.Add(m_TextElement);
 
             this.text = text;
             m_OnIcon = onIcon;
             m_OffIcon = offIcon;
 
-            UpdateIcon();
+            UpdateIconState();
         }
 
         public override void SetValueWithoutNotify(bool newValue)
@@ -87,6 +96,19 @@ namespace UnityEditor.Toolbars
         void UpdateIcon()
         {
             m_IconElement.image = value ? onIcon : offIcon;
+        }
+
+        void UpdateIconState()
+        {
+            if (icon == null && (text != null && text != string.Empty))
+            {
+                if (!m_IconElement.ClassListContains(toggleNoIconClassName))
+                    m_IconElement.AddToClassList(toggleNoIconClassName);
+            }
+            else if (icon && m_IconElement.ClassListContains(toggleNoIconClassName))
+                m_IconElement.RemoveFromClassList(toggleNoIconClassName);
+
+            UpdateIcon();
         }
     }
 }

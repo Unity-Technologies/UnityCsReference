@@ -114,11 +114,6 @@ namespace UnityEditor
             public static readonly GUIContent pleaseWait = EditorGUIUtility.TrTextContent("Please wait...");
         }
 
-        class TwoDProperties
-        {
-            public static readonly GUIContent spriteMaxCacheSize = EditorGUIUtility.TrTextContent("Max Sprite Atlas Cache Size (GB)", "The size of the Sprite Atlas Cache folder will be kept below this maximum value when possible. Change requires Editor restart");
-        }
-
         class SceneViewProperties
         {
             public static readonly GUIContent enableFilteringWhileSearching = EditorGUIUtility.TrTextContent("Enable filtering while searching", "If enabled, searching will cause non-matching items in the scene view to be greyed out");
@@ -126,6 +121,7 @@ namespace UnityEditor
             public static readonly GUIContent handlesLineThickness = EditorGUIUtility.TrTextContent("Line Thickness", "Thickness of manipulator tool handle lines in UI points (0 = single pixel)");
             public static readonly GUIContent createObjectsAtWorldOrigin = EditorGUIUtility.TrTextContent("Create Objects at Origin", "Enable this preference to instantiate new 3D objects at World coordinates 0,0,0. Disable it to instantiate them at the Scene pivot (in front of the Scene view Camera).");
             public static readonly GUIContent enableConstrainProportionsScalingForNewObjects = EditorGUIUtility.TrTextContent("Create Objects with Constrained Proportions scale on", "If enabled, scale in the transform component will be set to constrain proportions for new GameObjects by default");
+            public static readonly GUIContent useInspectorExpandedStateContent = EditorGUIUtility.TrTextContent("Auto-hide gizmos", "Automatically hide gizmos of Components collapsed in the Inspector");
         }
 
         class LanguageProperties
@@ -221,10 +217,6 @@ namespace UnityEditor
 
         SortedDictionary<string, List<KeyValuePair<string, PrefColor>>> s_CachedColors = null;
 
-        private int m_SpriteAtlasCacheSize;
-        private static int kMinSpriteCacheSizeInGigabytes = 1;
-        private static int kMaxSpriteCacheSizeInGigabytes = 200;
-
         private List<GUIContent> m_SystemFonts = new List<GUIContent>();
         private const int k_browseButtonWidth = 80;
 
@@ -283,14 +275,6 @@ namespace UnityEditor
                 return null;
             var settings = new PreferencesProvider("Preferences/GI Cache", GetSearchKeywordsFromGUIContentProperties<GICacheProperties>());
             settings.guiHandler = searchContext => { OnGUI(searchContext, settings.ShowGICache); };
-            return settings;
-        }
-
-        [UsedImplicitly, SettingsProvider]
-        internal static SettingsProvider Create2DProvider()
-        {
-            var settings = new PreferencesProvider("Preferences/2D", GetSearchKeywordsFromGUIContentProperties<TwoDProperties>());
-            settings.guiHandler = searchContext => { OnGUI(searchContext, settings.Show2D); };
             return settings;
         }
 
@@ -764,16 +748,6 @@ namespace UnityEditor
                 EditorApplication.RequestRepaintAllViews();
         }
 
-        private void Show2D(string searchContext)
-        {
-            // 2D Settings.
-            EditorGUI.BeginChangeCheck();
-
-            m_SpriteAtlasCacheSize = EditorGUILayout.IntSlider(TwoDProperties.spriteMaxCacheSize, m_SpriteAtlasCacheSize, kMinSpriteCacheSizeInGigabytes, kMaxSpriteCacheSizeInGigabytes);
-            if (EditorGUI.EndChangeCheck())
-                WritePreferences();
-        }
-
         private void ShowSceneView(string searchContext)
         {
             EditorGUI.BeginChangeCheck();
@@ -781,7 +755,7 @@ namespace UnityEditor
             GUILayout.Label("General", EditorStyles.boldLabel);
             m_Create3DObjectsAtOrigin = EditorGUILayout.Toggle(SceneViewProperties.createObjectsAtWorldOrigin, m_Create3DObjectsAtOrigin);
             m_EnableConstrainProportionsScalingForNewObjects = EditorGUILayout.Toggle(SceneViewProperties.enableConstrainProportionsScalingForNewObjects, m_EnableConstrainProportionsScalingForNewObjects);
-
+            AnnotationUtility.useInspectorExpandedState = EditorGUILayout.Toggle(SceneViewProperties.useInspectorExpandedStateContent, AnnotationUtility.useInspectorExpandedState);
 
             GUILayout.Label("Handles", EditorStyles.boldLabel);
             Handles.s_LineThickness.value = EditorGUILayout.IntSlider(SceneViewProperties.handlesLineThickness, (int)Handles.s_LineThickness.value, 0, 5);
@@ -1073,8 +1047,6 @@ namespace UnityEditor
             EditorPrefs.SetString("GICacheFolder", m_GICacheSettings.m_CachePath);
             EditorPrefs.SetInt("GICacheCompressionLevel", m_GICacheSettings.m_CompressionLevel);
 
-            EditorPrefs.SetInt("SpritePackerCacheMaximumSizeGB", m_SpriteAtlasCacheSize);
-
             foreach (IPreferenceWindowExtension extension in prefWinExtensions)
             {
                 extension.WritePreferences();
@@ -1142,8 +1114,6 @@ namespace UnityEditor
             m_GICacheSettings.m_CachePath = EditorPrefs.GetString("GICacheFolder");
             m_GICacheSettings.m_MaximumSize = EditorPrefs.GetInt("GICacheMaximumSizeGB", 10);
             m_GICacheSettings.m_CompressionLevel = EditorPrefs.GetInt("GICacheCompressionLevel");
-
-            m_SpriteAtlasCacheSize = EditorPrefs.GetInt("SpritePackerCacheMaximumSizeGB");
 
             m_ScriptDebugInfoEnabled = EditorPrefs.GetBool("ScriptDebugInfoEnabled", false);
             m_EnableEditorLocalization = EditorPrefs.GetBool("Editor.kEnableEditorLocalization", true);

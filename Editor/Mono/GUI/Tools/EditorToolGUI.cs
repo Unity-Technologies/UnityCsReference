@@ -39,9 +39,9 @@ namespace UnityEditor
                 throw new ArgumentNullException("target");
 
             if (target is Editor editor)
-                EditorToolManager.GetComponentTools(x => x.inspector == editor, s_CustomEditorTools, true);
-            else
-                EditorToolManager.GetComponentTools(x => x.target == target, s_CustomEditorTools, true);
+                target = editor.target;
+
+            EditorToolManager.GetComponentTools(x => x.target == target, s_CustomEditorTools, true);
 
             using (new PrefixScope(content))
                 EditorToolbar<EditorTool>(s_CustomEditorTools);
@@ -76,7 +76,7 @@ namespace UnityEditor
             if (EditorToolbar(null, EditorToolManager.activeTool as T, tools, out selected))
             {
                 if (ToolManager.IsActiveTool(selected))
-                    EditorToolManager.RestorePreviousTool();
+                    ToolManager.RestorePreviousTool();
                 else
                     EditorToolManager.activeTool = selected;
             }
@@ -129,7 +129,7 @@ namespace UnityEditor
                         continue;
                     }
 
-                    if (Equals(tools[i], selected))
+                    if (ReferenceEquals(tools[i], selected))
                         index = i;
 
                     enabled[i] = tools[i] is EditorTool tool && !tool.IsAvailable() ? false : true;
@@ -157,8 +157,6 @@ namespace UnityEditor
 
         static class Styles
         {
-            public static readonly GUIStyle buttonLeft = "ButtonLeft";
-            public static readonly GUIStyle buttonRight = "ButtonRight";
             public static readonly GUIContent selectionTools = EditorGUIUtility.TrTextContent("Selection");
             public static readonly GUIContent globalTools = EditorGUIUtility.TrTextContent("Global");
             public static readonly GUIContent noToolsAvailable = EditorGUIUtility.TrTextContent("No custom tools available");
@@ -233,46 +231,18 @@ namespace UnityEditor
 
         internal static void ShowComponentToolsContextMenu()
         {
-            BuildComponentToolsContextMenu().ShowAsContext();
+            BuildCustomGlobalToolsContextMenu().ShowAsContext();
         }
 
-        internal static void DropDownComponentToolsContextMenu(Rect worldBound)
+        internal static void ShowCustomGlobalToolsContextMenu(Rect worldBound)
         {
-            BuildComponentToolsContextMenu().DropDown(worldBound);
+            BuildCustomGlobalToolsContextMenu().DropDown(worldBound);
         }
 
-        static GenericMenu BuildComponentToolsContextMenu()
+        static GenericMenu BuildCustomGlobalToolsContextMenu()
         {
             var toolHistoryMenu = new GenericMenu() { allowDuplicateNames = true };
-
-            bool foundComponentTools = false, foundGlobalTools = false;
-
-            EditorToolManager.GetComponentToolsForSharedTracker(s_ToolList);
-
-            // Current selection
-            if (s_ToolList.Any())
-            {
-                foundComponentTools = true;
-                toolHistoryMenu.AddDisabledItem(Styles.selectionTools);
-
-                for (var i = 0; i < s_ToolList.Count; i++)
-                {
-                    var tool = s_ToolList[i];
-
-                    if (!EditorToolUtility.IsCustomEditorTool(tool.GetType()))
-                        continue;
-
-                    var path = new GUIContent(EditorToolUtility.GetToolMenuPath(tool));
-
-                    if (tool.IsAvailable())
-                        toolHistoryMenu.AddItem(path, false, () => { EditorToolManager.activeTool = tool; });
-                    else
-                        toolHistoryMenu.AddDisabledItem(path);
-                }
-
-                toolHistoryMenu.AddSeparator("");
-            }
-
+            bool foundGlobalTools = false;
             var global = EditorToolUtility.GetCustomEditorToolsForType(null);
 
             foreach (var tool in global)
@@ -280,11 +250,7 @@ namespace UnityEditor
                 if (tool.targetContext != null && tool.targetContext != ToolManager.activeContextType)
                     continue;
 
-                if (!foundGlobalTools)
-                {
-                    foundGlobalTools = true;
-                    toolHistoryMenu.AddDisabledItem(Styles.globalTools);
-                }
+                foundGlobalTools = true;
 
                 toolHistoryMenu.AddItem(
                     new GUIContent(EditorToolUtility.GetToolMenuPath(tool.editor)),
@@ -292,7 +258,7 @@ namespace UnityEditor
                     () => { ToolManager.SetActiveTool(tool.editor); });
             }
 
-            if (!foundComponentTools && !foundGlobalTools)
+            if (!foundGlobalTools)
                 toolHistoryMenu.AddDisabledItem(Styles.noToolsAvailable);
 
             return toolHistoryMenu;

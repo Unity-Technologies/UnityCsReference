@@ -50,6 +50,9 @@ namespace UnityEditorInternal
         public float level2;
         public int numLevels;
         public int flags;
+        public int audibilityVisitOrder;
+        public float relativeAudibility;
+        public float absoluteAudibility;
     }
 
     [System.Serializable]

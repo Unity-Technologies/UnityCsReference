@@ -74,19 +74,25 @@ namespace UnityEditor.PackageManager.UI.Internal
         // hence we don't need to trigger any list change event.
         public override void OnPackagesChanged(IEnumerable<IPackage> added, IEnumerable<IPackage> removed, IEnumerable<IPackage> preUpdate, IEnumerable<IPackage> postUpdate)
         {
-            var addOrUpdateList = new List<IPackage>();
+            var addList = new List<IPackage>();
+            var updateList = new List<IPackage>();
             var removeList = removed.Where(Contains).ToList();
             foreach (var package in added.Concat(postUpdate))
             {
                 if (m_PackageFiltering.FilterByCurrentTab(package))
-                    addOrUpdateList.Add(package);
+                {
+                    if (Contains(package))
+                        updateList.Add(package);
+                    else
+                        addList.Add(package);
+                }
                 else if (Contains(package))
                     removeList.Add(package);
             }
 
-            if (addOrUpdateList.Any() || removeList.Any())
+            if (addList.Any() || updateList.Any() || removeList.Any())
             {
-                TriggerOnListUpdate(addOrUpdateList, removeList, capability.supportLocalReordering && addOrUpdateList.Any());
+                TriggerOnListUpdate(addList, updateList, removeList);
 
                 RefreshVisualStates();
             }
@@ -145,7 +151,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override void Load(IPackage package, IPackageVersion version = null)
         {
-            if (!Contains(package))
+            var packageInPage = Contains(package);
+            if (!packageInPage)
             {
                 long productId;
                 if (package == null || !long.TryParse(package.uniqueId, out productId))
@@ -153,7 +160,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 m_VisualStateList.AddExtraItem(package.uniqueId);
             }
-            TriggerOnListUpdate(new[] { package }, Enumerable.Empty<IPackage>(), false);
+            if (!packageInPage)
+                TriggerOnListUpdate(new[] { package });
+            else
+                TriggerOnListUpdate(null, new[] { package });
+
             SetSelected(package.uniqueId, version?.uniqueId ?? package.versions.primary?.uniqueId);
         }
 
@@ -168,7 +179,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (m_PackageFiltering.currentFilterTab == PackageFilterTab.AssetStore)
             {
                 var package = m_PackageDatabase.GetPackage(uniqueId);
-                TriggerOnListUpdate(new[] { package }, Enumerable.Empty<IPackage>(), false);
+                TriggerOnListUpdate(new[] { package });
                 SetSelected(package?.uniqueId, package?.versions.primary?.uniqueId);
             }
         }
@@ -233,7 +244,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 var addedPackages = added?.Select(id => m_PackageDatabase.GetPackage(id));
                 var removedPackages = removed?.Select(id => m_PackageDatabase.GetPackage(id));
-                TriggerOnListUpdate(addedPackages, removedPackages, false);
+                TriggerOnListUpdate(addedPackages, null, removedPackages);
             }
 
             RefreshVisualStates();

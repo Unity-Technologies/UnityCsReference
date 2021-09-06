@@ -54,14 +54,7 @@ namespace Unity.UI.Builder
                 return;
 
             // Clean up value and make it ready for XML.
-            value = value.Replace("&", "&amp;"); // Has to be done first!
-            value = value.Replace("\"", "&quot;");
-            value = value.Replace("\'", "&apos;");
-            value = value.Replace("<", "&lt;");
-            value = value.Replace(">", "&gt;");
-            value = value.Replace("\n", "&#10;");
-            value = value.Replace("\r", "");
-            value = value.Replace("\t", "&#x9;");
+            value = URIHelpers.EncodeUri(value);
 
             stringBuilder.Append(" ");
             stringBuilder.Append(name);

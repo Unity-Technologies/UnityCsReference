@@ -23,7 +23,7 @@ namespace UnityEngine.UIElements
 
         Func<T, bool> m_VisibleItemPredicateDelegate;
 
-        bool VisibleItemPredicate(T i)
+        protected virtual bool VisibleItemPredicate(T i)
         {
             var isBeingDragged = false;
             if (m_ListView.dragger is ListViewDraggerAnimated dragger)
@@ -83,6 +83,7 @@ namespace UnityEngine.UIElements
                 {
                     if (hasValidBindings && isVisible)
                     {
+                        m_ListView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
                         recycledItem.index = ReusableCollectionItem.UndefinedIndex;
                         Setup(recycledItem, index);
                     }
@@ -96,7 +97,6 @@ namespace UnityEngine.UIElements
 
             if (rebuild)
             {
-                m_FirstVisibleIndex = 0;
                 m_Pool.Clear();
                 m_ActiveItems.Clear();
                 m_ScrollView.Clear();
@@ -113,7 +113,11 @@ namespace UnityEngine.UIElements
             if (newIndex >= m_ListView.itemsSource.Count || forceHide)
             {
                 recycledItem.rootElement.style.display = DisplayStyle.None;
-                m_ListView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
+                if (recycledItem.index >= 0 && recycledItem.index < m_ListView.itemsSource.Count)
+                {
+                    m_ListView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
+                    recycledItem.index = ReusableCollectionItem.UndefinedIndex;
+                }
                 return;
             }
 
@@ -152,7 +156,7 @@ namespace UnityEngine.UIElements
 
         public override void UpdateBackground()
         {
-            var currentFillHeight = k_EmptyRows.layout.size.y;
+            var currentFillHeight = float.IsNaN(k_EmptyRows.layout.size.y) ? 0 : k_EmptyRows.layout.size.y;
             var backgroundFillHeight = m_ScrollView.contentViewport.layout.size.y - m_ScrollView.contentContainer.layout.size.y - currentFillHeight;
             if (m_ListView.showAlternatingRowBackgrounds != AlternatingRowBackground.All || backgroundFillHeight <= 0)
             {
@@ -181,7 +185,7 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            var index = lastVisibleItem.index;
+            var index = lastVisibleIndex;
 
             int emptyRowCount = k_EmptyRows.hierarchy.childCount;
             for (int i = 0; i < emptyRowCount; ++i)

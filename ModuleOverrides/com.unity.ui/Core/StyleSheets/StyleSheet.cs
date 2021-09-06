@@ -270,6 +270,8 @@ namespace UnityEngine.UIElements
                     complexSel.rule = rules[complexSel.ruleIndex];
                 }
 
+                complexSel.CalculateHashes();
+
                 complexSel.orderInStyleSheet = i;
 
                 StyleSelector lastSelector = complexSel.selectors[complexSel.selectors.Length - 1];

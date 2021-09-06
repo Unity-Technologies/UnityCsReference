@@ -751,7 +751,6 @@ namespace UnityEditor
                 Vector3 pos = camera.WorldToScreenPoint(world);
                 pos.y = camera.pixelHeight - pos.y;
                 Vector2 points = EditorGUIUtility.PixelsToPoints(pos);
-                points = GUIClip.Clip(points);
                 return new Vector3(points.x, points.y, pos.z);
             }
 

@@ -28,10 +28,9 @@ namespace UnityEngine.UIElements.UIR
     internal struct State
     {
         public Material material;
-        public Texture font;
-        public float fontTexSDFScale;
         public TextureId texture;
         public int stencilRef;
+        public float sdfScale;
     }
 
     internal enum CommandType
@@ -131,7 +130,7 @@ namespace UnityEngine.UIElements.UIR
                     if (hasScissor)
                         Utility.DisableScissor(); // Disable scissor since most IMGUI code assume it's inactive
 
-                    using (new GUIClip.ParentClipScope(owner.worldTransform, owner.worldClipImmediate))
+                    using (new GUIClip.ParentClipScope(owner.worldTransform, owner.worldClip))
                     {
                         s_ImmediateOverheadMarker.End();
                         try

@@ -18,6 +18,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         private PackageDatabase m_PackageDatabase;
         private PackageManagerPrefs m_PackageManagerPrefs;
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
+        private ApplicationProxy m_Application;
+
+        private string m_Link;
+
+        private string infoBoxUrl => $"https://docs.unity3d.com/{m_Application?.shortUnityVersion}/Documentation/Manual";
 
         private void ResolveDependencies()
         {
@@ -26,6 +31,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageDatabase = container.Resolve<PackageDatabase>();
             m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
             m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
+            m_Application = container.Resolve<ApplicationProxy>();
         }
 
         private IPackageVersion m_FeatureVersion;
@@ -40,6 +46,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             cache = new VisualElementCache(root);
             SetExpanded(m_PackageManagerPrefs.featureDependenciesExpanded);
             dependenciesExpander?.RegisterValueChangedCallback(evt => SetExpanded(evt.newValue));
+            dependencyInfoBox.Q<Button>().clickable.clicked += () => m_Application.OpenURL($"{infoBoxUrl}/{m_Link}");
         }
 
         public FeatureState GetFeatureState(IPackageVersion version)
@@ -100,10 +107,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var packageVersion = m_PackageDatabase.GetPackageInFeatureVersion(dependency.name);
                 var featureState = GetFeatureState(packageVersion);
 
-                var item = new FeatureDependencyItem(version, packageVersion, featureState);
+                var item = packageVersion != null ? new FeatureDependencyItem(version, packageVersion, featureState) : new FeatureDependencyItem(dependency.name);
                 item.OnLeftClick(() =>
                 {
-                    OnDependencyItemClicked(packageVersion);
+                    OnDependencyItemClicked(packageVersion, dependency.name);
                 });
                 dependencyList.Add(item);
             }
@@ -117,21 +124,21 @@ namespace UnityEditor.PackageManager.UI.Internal
             dependenciesExpander.text = numPackages == 1 ? L10n.Tr("One Package Included") : string.Format(L10n.Tr("{0} Packages Included"), numPackages);
         }
 
-        private void OnDependencyItemClicked(IPackageVersion version)
+        private void OnDependencyItemClicked(IPackageVersion version, string dependencyName)
         {
-            m_PackageManagerPrefs.selectedFeatureDependency = version.packageUniqueId;
+            m_PackageManagerPrefs.selectedFeatureDependency = dependencyName;
             RefreshSelection(version);
         }
 
         private void RefreshSelection(IPackageVersion version = null)
         {
+            var selectedDependencyPackageId = m_PackageManagerPrefs.selectedFeatureDependency;
             if (version == null)
             {
                 var dependencies = m_FeatureVersion?.dependencies;
                 if (dependencies?.Any() != true)
                     return;
 
-                var selectedDependencyPackageId = m_PackageManagerPrefs.selectedFeatureDependency;
                 if (string.IsNullOrEmpty(selectedDependencyPackageId) || !dependencies.Any(d => d.name == selectedDependencyPackageId))
                 {
                     selectedDependencyPackageId = dependencies[0].name;
@@ -139,13 +146,26 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }
                 version = m_PackageDatabase.GetPackageInFeatureVersion(selectedDependencyPackageId);
             }
-            foreach (var item in dependencyList.Children().OfType<FeatureDependencyItem>())
-                item.EnableInClassList(k_SelectedClassName, item.packageVersion == version);
 
-            dependencyTitle.value = version.displayName;
+            // If the package is not installed and undiscoverable, we have to display the package's ID name (ex: com.unity.adaptiveperformance.samsung.android)
+            // and hide other elements in the package view
+            var showElementsInDetailsView = version != null;
+
+            UIUtils.SetElementDisplay(dependencyVersion, showElementsInDetailsView);
+            UIUtils.SetElementDisplay(dependencyLink, showElementsInDetailsView);
+            UIUtils.SetElementDisplay(dependencyInfoBox, showElementsInDetailsView);
+
+            foreach (var item in dependencyList.Children().OfType<FeatureDependencyItem>())
+                item.EnableInClassList(k_SelectedClassName, item.packageName == selectedDependencyPackageId);
+
+            dependencyTitle.value = version?.displayName ?? selectedDependencyPackageId;
+            dependencyDesc.value =  version?.description ?? L10n.Tr("This package will be automatically installed with this feature.");
+
+            if (!showElementsInDetailsView)
+                return;
 
             var installedPackageVersion = m_PackageDatabase.GetPackage(version)?.versions.installed;
-            dependencyVersion.value = installedPackageVersion != null && installedPackageVersion != version ? string.Format(L10n.Tr("Version {0} (Installed {1})"), version.versionString, installedPackageVersion.versionString) : string.Format(L10n.Tr("Version {0}"), version.versionString);
+            dependencyVersion.value = installedPackageVersion != null && installedPackageVersion.versionId != version?.versionId ? string.Format(L10n.Tr("Version {0} (Installed {1})"), version.versionString, installedPackageVersion.versionString) : string.Format(L10n.Tr("Version {0}"), version.versionString);
 
             var featureState = GetFeatureState(version);
             versionState.ClearClassList();
@@ -154,7 +174,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 versionState.AddToClassList(featureState.ToString().ToLower());
                 versionState.tooltip = string.Format(L10n.Tr("Using version {0} because at least one other package or feature depends on it"), installedPackageVersion.versionString);
             }
-            dependencyDesc.value = version.description;
 
             var tab = PackageFilterTab.UnityRegistry;
             if (version.isDirectDependency || m_SettingsProxy.enablePackageDependencies)
@@ -162,8 +181,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             dependencyLink.clickable.clicked += () => PackageManagerWindow.SelectPackageAndFilterStatic(version.name, tab);
 
             UIUtils.SetElementDisplay(dependencyInfoBox, featureState == FeatureState.Customized);
-            dependencyInfoBox.text = installedPackageVersion?.HasTag(PackageTag.Custom) ?? false ?
-                L10n.Tr("This package has been customized.") : L10n.Tr("This package has been manually changed.");
+            if (installedPackageVersion?.HasTag(PackageTag.Custom) ?? false)
+            {
+                m_Link = "fs-details.html";
+                dependencyInfoBox.text = L10n.Tr("This package has been customized.");
+            }
+            else
+            {
+                m_Link = "upm-ui-remove.html";
+                dependencyInfoBox.text = L10n.Tr("This package has been manually changed.");
+            }
         }
 
         private VisualElementCache cache { get; set; }

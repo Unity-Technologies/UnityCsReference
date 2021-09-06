@@ -15,6 +15,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public string purchasedTime;
         public string displayName;
         public List<string> tags;
+        public bool isHidden;
 
         public static AssetStorePurchaseInfo ParsePurchaseInfo(IDictionary<string, object> rawInfo)
         {
@@ -28,7 +29,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                     productId = (long)rawInfo["packageId"],
                     purchasedTime = rawInfo.GetString("grantTime"),
                     displayName = rawInfo.GetString("displayName"),
-                    tags = rawInfo.GetList<string>("tagging")?.ToList()
+                    tags = rawInfo.GetList<string>("tagging")?.ToList(),
+                    isHidden = rawInfo.Get<bool>("isHidden")
                 };
             }
             catch (Exception)

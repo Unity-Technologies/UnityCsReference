@@ -43,6 +43,7 @@ namespace UnityEditor
         public extern static Color staticColor { get; set; }
         public extern static Color rigidbodyColor { get; set; }
         public extern static Color kinematicColor { get; set; }
+        public extern static Color articulationBodyColor { get; set; }
         public extern static Color triggerColor { get; set; }
         public extern static Color sleepingBodyColor { get; set; }
         public extern static float baseAlpha { get; set; }
@@ -59,6 +60,8 @@ namespace UnityEditor
         public extern static void SetShowRigidbodies(bool show);
         public extern static bool GetShowKinematicBodies();
         public extern static void SetShowKinematicBodies(bool show);
+        public extern static bool GetShowArticulationBodies();
+        public extern static void SetShowArticulationBodies(bool show);
         public extern static bool GetShowSleepingBodies();
         public extern static void SetShowSleepingBodies(bool show);
         public extern static bool GetShowCollisionLayer(int layer);
@@ -97,6 +100,7 @@ namespace UnityEditor
             SetShowTriggers(selected);
             SetShowRigidbodies(selected);
             SetShowKinematicBodies(selected);
+            SetShowArticulationBodies(selected);
             SetShowSleepingBodies(selected);
 
             SetShowBoxColliders(selected);

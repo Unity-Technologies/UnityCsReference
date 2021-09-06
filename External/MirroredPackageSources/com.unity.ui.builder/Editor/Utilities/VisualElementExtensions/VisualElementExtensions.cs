@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
+using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
@@ -63,7 +65,7 @@ namespace Unity.UI.Builder
 
             foreach (var attribute in attributeList)
             {
-                if (attribute == null || attribute.name == null)
+                if (attribute?.name == null)
                     continue;
 
                 var veType = ve.GetType();
@@ -81,10 +83,29 @@ namespace Unity.UI.Builder
                     else if (veValueStr == "True")
                         veValueStr = "true";
 
+                    // The result of Type.ToString is not enough for us to find the correct Type.
+                    if (veValueAbstract is Type type)
+                        veValueStr = $"{type.FullName}, {type.Assembly.GetName().Name}";
+
                     var attributeValueStr = attribute.defaultValueAsString;
                     if (veValueStr == attributeValueStr)
                         continue;
+                    overriddenAttributes.Add(attribute.name, veValueStr);
+                }
+                // This is a special patch that allows to search for built-in elements' attribute specifically
+                // without needing to add to the public API.
+                // Allowing to search for internal/private properties in all cases could lead to unforeseen issues.
+                else if (ve is EnumField && camel == "type")
+                {
+                    fieldInfo = veType.GetProperty(camel, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                    var veValueAbstract = fieldInfo.GetValue(ve, null);
+                    if (!(veValueAbstract is Type type))
+                        continue;
 
+                    var veValueStr = $"{type.FullName}, {type.Assembly.GetName().Name}";
+                    var attributeValueStr = attribute.defaultValueAsString;
+                    if (veValueStr == attributeValueStr)
+                        continue;
                     overriddenAttributes.Add(attribute.name, veValueStr);
                 }
             }
@@ -116,6 +137,11 @@ namespace Unity.UI.Builder
 
             var vea = obj as VisualElementAsset;
             return vea;
+        }
+
+        public static void SetVisualElementAsset(this VisualElement element, VisualElementAsset vea)
+        {
+            element.SetProperty(BuilderConstants.ElementLinkedVisualElementAssetVEPropertyName, vea);
         }
 
         public static StyleSheet GetStyleSheet(this VisualElement element)
@@ -370,6 +396,12 @@ namespace Unity.UI.Builder
                 return;
 
             minSizeSpecialElement.RemoveFromHierarchy();
+
+            // HACK - Since recent changes in UITK, computed style is updated only when its matchingRuleHash has changed.
+            // This causes an issue where the height of a newly dropped VisualElement remains 100px even after added a child.
+            // Resetting ComputedStyle.matchingRulesHash is a workaround to force the VisualElement.computedStyle's yogaNode 
+            // to be updated even when the matchingRulesHash has not changed. see VisualElement.SetComputedStyle in VisualElement.cs.
+            element.computedStyle.matchingRulesHash = -1;
         }
 
         public static VisualElement GetFirstAncestorWithClass(this VisualElement element, string className)

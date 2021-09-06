@@ -127,9 +127,11 @@ namespace UnityEditor
 
         // Delegate to be called for every visible list item in the ProjectWindow on every OnGUI event.
         public delegate void ProjectWindowItemCallback(string guid, Rect selectionRect);
+        public delegate void ProjectWindowItemInstanceCallback(int instanceID, Rect selectionRect);
 
         // Delegate for OnGUI events for every visible list item in the ProjectWindow.
         public static ProjectWindowItemCallback projectWindowItemOnGUI;
+        public static ProjectWindowItemInstanceCallback projectWindowItemInstanceOnGUI;
 
         // Can be used to ensure repaint of the ProjectWindow.
         public static void RepaintProjectWindow()
@@ -199,11 +201,11 @@ namespace UnityEditor
 
         internal static Action CallDelayed(CallbackFunction action, double delaySeconds = 0.0f)
         {
-            var startTime = DateTime.Now;
+            var startTime = DateTime.UtcNow;
             CallbackFunction delayedHandler = null;
             delayedHandler = new CallbackFunction(() =>
             {
-                if ((DateTime.Now - startTime).TotalSeconds < delaySeconds)
+                if ((DateTime.UtcNow - startTime).TotalSeconds < delaySeconds)
                     return;
                 tick -= delayedHandler;
                 action();

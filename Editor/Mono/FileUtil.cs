@@ -367,6 +367,10 @@ namespace UnityEditor
         {
             if (AssetDatabase.IsOpenForEdit(path, out message) || AssetDatabase.MakeEditable(path))
             {
+                var fileInfo = new FileInfo(path);
+                if (fileInfo.IsReadOnly)
+                    MakeWritable(path);
+
                 try
                 {
                     File.WriteAllText(path, content);

@@ -320,8 +320,22 @@ namespace UnityEditor
                         break;
                 }
             }
+            ClampDriveLimits(m_YDrive, body.yDrive);
+            ClampDriveLimits(m_ZDrive, body.zDrive);
+            ClampDriveLimits(m_XDrive, body.xDrive);
+
             serializedObject.ApplyModifiedProperties();
             ShowBodyInfoProperties();
+        }
+
+        private void ClampDriveLimits(SerializedProperty drive, ArticulationDrive bodyDrive)
+        {
+            var lowerLimit = drive.FindPropertyRelative("lowerLimit");
+            var upperLimit = drive.FindPropertyRelative("upperLimit");
+            if (bodyDrive.lowerLimit != lowerLimit.floatValue)
+                lowerLimit.floatValue = Mathf.Min(lowerLimit.floatValue, upperLimit.floatValue);
+            if (bodyDrive.upperLimit != upperLimit.floatValue)
+                upperLimit.floatValue = Mathf.Max(lowerLimit.floatValue, upperLimit.floatValue);
         }
 
         private void SphericalJointMotionSetting(SerializedProperty axis)

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.ComponentModel;
 using UObject = UnityEngine.Object;
 
 namespace UnityEditor.EditorTools
@@ -115,7 +116,9 @@ namespace UnityEditor.EditorTools
 
         public static void RestorePreviousTool()
         {
-            EditorToolManager.RestorePreviousTool();
+            var prev = EditorToolUtility.GetEditorToolWithEnum(EditorToolManager.previousTool);
+            if (!(prev is NoneTool))
+                EditorToolManager.activeTool = prev;
         }
 
         public static void RestorePreviousPersistentTool() => EditorToolManager.RestorePreviousPersistentTool();

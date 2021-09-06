@@ -15,6 +15,7 @@ namespace UnityEditorInternal.Profiling
     internal class UIProfilerModule : ProfilerModuleBase
     {
         const int k_DefaultOrderIndex = 10;
+        static readonly string k_UIProfilerAvailableOnlyInEditorMode = LocalizationDatabase.GetLocalizedString("Data is only available when profiling Play Mode in the Editor.");
 
         protected static WeakReference instance;
         [SerializeField]
@@ -65,11 +66,18 @@ namespace UnityEditorInternal.Profiling
         public override void DrawToolbar(Rect position)
         {
             // This module still needs to be broken apart into Toolbar and View.
+            // case-1251139: We draw an empty toolbar when the profiler is not connected to an editor.
+            //               This is primary to match the other profiler's UI message display.
+            if (!ProfilerWindow.ConnectedToEditor)
+                DrawEmptyToolbar();
         }
 
         public override void DrawDetailsView(Rect position)
         {
-            sharedUISystemProfiler?.DrawUIPane(ProfilerWindow);
+            if (ProfilerWindow.ConnectedToEditor)
+                sharedUISystemProfiler?.DrawUIPane(ProfilerWindow);
+            else
+                GUILayout.Label(k_UIProfilerAvailableOnlyInEditorMode);
         }
     }
 }

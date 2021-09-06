@@ -92,11 +92,11 @@ namespace UnityEngine.UIElements
             if (evt.eventTypeId == AttachToPanelEvent.TypeId() && evt is AttachToPanelEvent attachEvent)
             {
                 textHandle = TextCoreHandle.New();
-                (attachEvent.destinationPanel as BaseVisualElementPanel)?.OnTextElementAdded(this);
+                (attachEvent.destinationPanel as BaseVisualElementPanel)?.liveReloadSystem.RegisterTextElement(this);
             }
             else if (evt.eventTypeId == DetachFromPanelEvent.TypeId() && evt is DetachFromPanelEvent detachEvent)
             {
-                (detachEvent.originPanel as BaseVisualElementPanel)?.OnTextElementRemoved(this);
+                (detachEvent.originPanel as BaseVisualElementPanel)?.liveReloadSystem.UnregisterTextElement(this);
             }
             base.HandleEvent(evt);
         }
@@ -235,7 +235,7 @@ namespace UnityEngine.UIElements
                 size = MeasureTextSize(truncatedText, 0, MeasureMode.Undefined,
                     0, MeasureMode.Undefined);
 
-                if (Math.Abs(size.x - width) < Mathf.Epsilon)
+                if (Math.Abs(size.x - width) < UIRUtility.k_Epsilon)
                     return truncatedText;
 
                 if (textOverflowPosition == TextOverflowPosition.Start)
@@ -332,16 +332,6 @@ namespace UnityEngine.UIElements
             MeasureMode heightMode)
         {
             return TextUtilities.MeasureVisualElementTextSize(this, textToMeasure, width, widthMode, height, heightMode, m_TextHandle);
-        }
-
-        /// <summary>
-        /// DO NOT USE MeasureVisualElementTextSize, use TextUtilities.MeasureVisualElementTextSize instead. This method is only there for backward compatibility reason and will soon be stripped.
-        /// </summary>
-        internal static Vector2 MeasureVisualElementTextSize(VisualElement ve, string textToMeasure, float width,
-            MeasureMode widthMode, float height, MeasureMode heightMode, TextHandle textHandle)
-        {
-            return TextUtilities.MeasureVisualElementTextSize(ve, textToMeasure, width, widthMode, height, heightMode,
-                textHandle.textHandle);
         }
 
         protected internal override Vector2 DoMeasure(float desiredWidth, MeasureMode widthMode, float desiredHeight, MeasureMode heightMode)

@@ -10,6 +10,8 @@ namespace UnityEditor.Overlays
     {
         const string k_UxmlPath = "UXML/Overlays/overlay-menu-item.uxml";
         const string k_VisibilityIconClass = "overlay-menu-item__visibility-icon";
+        const string k_ListItemClass = "unity-list-view__item";
+        const string k_MenuItemClass = "overlay-menu-item";
 
 
         readonly Label m_Title;
@@ -24,15 +26,27 @@ namespace UnityEditor.Overlays
             set
             {
                 if (m_Overlay != null)
+                {
                     m_Overlay.displayedChanged -= OnOverlayDisplayChanged;
+                    if (m_Overlay.canvas != null)
+                        m_Overlay.canvas.overlaysEnabledChanged -= OnOverlayEnabledChanged;
+                }
 
                 m_Overlay = value;
                 name = overlay.rootVisualElement.name;
                 m_Title.text = overlay.displayName;
+
                 UpdateIconVisibilityState();
 
                 if (m_Overlay != null)
+                {
                     m_Overlay.displayedChanged += OnOverlayDisplayChanged;
+                    if (m_Overlay.canvas != null)
+                    {
+                        OnOverlayEnabledChanged(m_Overlay.canvas.overlaysEnabled);
+                        m_Overlay.canvas.overlaysEnabledChanged += OnOverlayEnabledChanged;
+                    }
+                }
             }
         }
 
@@ -65,6 +79,18 @@ namespace UnityEditor.Overlays
             m_VisibilityIcon.EnableInClassList(k_VisibilityIconClass + "--invisible", !m_Overlay.displayed);
         }
 
+        void OnOverlayEnabledChanged(bool visibility)
+        {
+            SetEnabled(visibility);
+
+            //Icon highlighted
+            m_VisibilityIcon.EnableInClassList(k_VisibilityIconClass + "-enabled", visibility);
+            //Text color
+            EnableInClassList(k_MenuItemClass + "-enabled", visibility);
+            //Background highlighted
+            EnableInClassList(k_ListItemClass + "-enabled", visibility);
+        }
+
         void OnClick()
         {
             if (m_Overlay == null)
@@ -80,7 +106,7 @@ namespace UnityEditor.Overlays
 
         void OnMouseEnter(MouseOverEvent evt)
         {
-            m_Overlay?.Highlight(true);
+            m_Overlay?.Highlight(enabledSelf);
         }
     }
 }

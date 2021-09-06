@@ -170,6 +170,7 @@ namespace UnityEditor.Search
                 searchSession.context.filterType = null;
             }
             searchSession.context.searchText = query;
+            searchSession.context.options |= SearchFlags.Packages;
             var items = SearchService.GetItems(searchSession.context);
             return items.Select(item => ToPath(item));
         }
@@ -265,12 +266,24 @@ namespace UnityEditor.Search
             Action<Object, bool> selectHandler, Action<Object> trackingHandler)
         {
             var selectContext = (ObjectSelectorSearchContext)context;
-
             var viewFlags = SearchFlags.OpenPicker;
             if (Utils.IsRunningTests())
                 viewFlags |= SearchFlags.Dockable;
-            qsWindow = SearchService.ShowObjectPicker(selectHandler, trackingHandler, "",
-                selectContext.requiredTypeNames.First(), selectContext.requiredTypes.First(), flags: viewFlags) as QuickSearch;
+            SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchPickerOpens, "", "object", "ObjectSelectorEngine");
+            var searchQuery = string.Join(" ", context.requiredTypeNames.Select(tn => tn == null ? "" : $"t:{tn.ToLowerInvariant()}"));
+            if (string.IsNullOrEmpty(searchQuery))
+            {
+                searchQuery = "";
+            }
+            else
+            {
+                searchQuery += " ";
+            }
+            var viewstate = new SearchViewState(
+                SearchService.CreateContext(searchQuery, viewFlags), selectHandler, trackingHandler,
+                selectContext.requiredTypeNames.First(), selectContext.requiredTypes.First());
+
+            qsWindow = SearchService.ShowPicker(viewstate) as QuickSearch;
 
             return qsWindow != null;
         }

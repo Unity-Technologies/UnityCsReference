@@ -11,17 +11,12 @@ namespace UnityEditor
     {
         private GUIContent rotationContent = EditorGUIUtility.TrTextContent("Rotation", "The local rotation of this Game Object relative to the parent.");
 
-        private Vector3 m_EulerAngles;
-
         EditorGUI.NumberFieldValue[] m_EulerFloats =
         {
             new EditorGUI.NumberFieldValue(0.0f),
             new EditorGUI.NumberFieldValue(0.0f),
             new EditorGUI.NumberFieldValue(0.0f)
         };
-        // Some random rotation that will never be the same as the current one
-        private Vector3  m_OldEulerAngles = new Vector3(1000000, 10000000, 1000000);
-        private RotationOrder m_OldRotationOrder = RotationOrder.OrderZXY;
 
         SerializedProperty m_Rotation;
         Object[] targets;
@@ -33,7 +28,6 @@ namespace UnityEditor
         {
             this.m_Rotation = m_Rotation;
             this.targets = m_Rotation.serializedObject.targetObjects;
-            this.m_OldRotationOrder = (targets[0] as Transform).rotationOrder;
             rotationContent = label;
         }
 
@@ -44,56 +38,37 @@ namespace UnityEditor
 
         public void RotationField(bool disabled)
         {
-            Transform t = targets[0] as Transform;
-            Vector3 localEuler = t.GetLocalEulerAngles(t.rotationOrder);
-            if (
-                m_OldEulerAngles.x != localEuler.x ||
-                m_OldEulerAngles.y != localEuler.y ||
-                m_OldEulerAngles.z != localEuler.z ||
-                m_OldRotationOrder != t.rotationOrder
-            )
-            {
-                m_EulerAngles = t.GetLocalEulerAngles(t.rotationOrder);
-                m_OldRotationOrder = t.rotationOrder;
-            }
+            Transform transform0 = targets[0] as Transform;
+            Vector3 eulerAngles0 = transform0.GetLocalEulerAngles(transform0.rotationOrder);
 
-            var targetRotationOrder = t.rotationOrder;
-            bool differentRotation = false;
+            int differentRotationMask = 0b000;
             bool differentRotationOrder = false;
             for (int i = 1; i < targets.Length; i++)
             {
                 Transform otherTransform = (targets[i] as Transform);
-                if (!differentRotation)
+                if (differentRotationMask != 0b111)
                 {
                     Vector3 otherLocalEuler = otherTransform.GetLocalEulerAngles(otherTransform.rotationOrder);
-                    differentRotation = (otherLocalEuler.x != localEuler.x || otherLocalEuler.y != localEuler.y || otherLocalEuler.z != localEuler.z);
+                    for (int j = 0; j < 3; j++)
+                    {
+                        if (otherLocalEuler[j] != eulerAngles0[j])
+                            differentRotationMask |= 1 << j;
+                    }
                 }
 
-                differentRotationOrder |= otherTransform.rotationOrder != targetRotationOrder;
+                differentRotationOrder |= otherTransform.rotationOrder != transform0.rotationOrder;
             }
 
             Rect r = EditorGUILayout.GetControlRect(true, EditorGUIUtility.singleLineHeight * (EditorGUIUtility.wideMode ? 1 : 2));
             GUIContent label = EditorGUI.BeginProperty(r, rotationContent, m_Rotation);
-            m_EulerFloats[0].doubleVal = m_EulerAngles.x;
-            m_EulerFloats[1].doubleVal = m_EulerAngles.y;
-            m_EulerFloats[2].doubleVal = m_EulerAngles.z;
-
-            EditorGUI.showMixedValue = differentRotation;
+            m_EulerFloats[0].doubleVal = eulerAngles0.x;
+            m_EulerFloats[1].doubleVal = eulerAngles0.y;
+            m_EulerFloats[2].doubleVal = eulerAngles0.z;
 
             int id = GUIUtility.GetControlID(s_FoldoutHash, FocusType.Keyboard, r);
-            string rotationLabel = "";
-            if (AnimationMode.InAnimationMode() && t.rotationOrder != RotationOrder.OrderZXY)
+            if (AnimationMode.InAnimationMode() && transform0.rotationOrder != RotationOrder.OrderZXY)
             {
-                if (differentRotationOrder)
-                {
-                    rotationLabel = "Mixed";
-                }
-                else
-                {
-                    rotationLabel = (t.rotationOrder).ToString();
-                    rotationLabel = rotationLabel.Substring(rotationLabel.Length - 3);
-                }
-
+                string rotationLabel = differentRotationOrder ? "Mixed" : transform0.rotationOrder.ToString().Substring(RotationOrder.OrderXYZ.ToString().Length - 3);
                 label.text = label.text + " (" + rotationLabel + ")";
             }
 
@@ -105,7 +80,6 @@ namespace UnityEditor
             r = EditorGUI.MultiFieldPrefixLabel(r, id, label, 3);
             r.height = EditorGUIUtility.singleLineHeight;
             int eulerChangedMask = 0;
-            bool hasExpressions = false;
             using (new EditorGUI.DisabledScope(disabled))
             {
                 var eCount = m_EulerFloats.Length;
@@ -118,13 +92,10 @@ namespace UnityEditor
                 {
                     EditorGUIUtility.labelWidth = EditorGUI.GetLabelWidth(s_XYZLabels[i]);
                     EditorGUI.BeginChangeCheck();
+                    EditorGUI.showMixedValue = (differentRotationMask & (1 << i)) != 0;
                     EditorGUI.FloatField(nr, s_XYZLabels[i], ref m_EulerFloats[i]);
                     if (EditorGUI.EndChangeCheck() && m_EulerFloats[i].hasResult)
-                    {
                         eulerChangedMask |= 1 << i;
-                        if (m_EulerFloats[i].expression != null)
-                            hasExpressions = true;
-                    }
                     nr.x += w + EditorGUI.kSpacingSubLabel;
                 }
                 EditorGUIUtility.labelWidth = prevWidth;
@@ -133,29 +104,33 @@ namespace UnityEditor
 
             if (eulerChangedMask != 0)
             {
-                m_EulerAngles = new Vector3(
+                eulerAngles0 = new Vector3(
                     MathUtils.ClampToFloat(m_EulerFloats[0].doubleVal),
                     MathUtils.ClampToFloat(m_EulerFloats[1].doubleVal),
                     MathUtils.ClampToFloat(m_EulerFloats[2].doubleVal));
-                Undo.RecordObjects(targets, "Inspector");  // Generic undo title to be consistent with Position and Scale changes.
+                Undo.RecordObjects(targets, "Inspector");  // Generic undo title as remove duplicates will discard the name.
+                Undo.SetCurrentGroupName(string.Format("Set Rotation"));
                 for (var idx = 0; idx < targets.Length; ++idx)
                 {
                     var tr = targets[idx] as Transform;
                     if (tr == null)
                         continue;
-                    var trEuler = m_EulerAngles;
+                    var trEuler = tr.GetLocalEulerAngles(tr.rotationOrder);
                     // if we have any per-object expressions just entered, we need to evaluate
                     // it for each object with their own individual input value
-                    if (hasExpressions)
+                    for (int c = 0; c < 3; ++c)
                     {
-                        trEuler = tr.GetLocalEulerAngles(tr.rotationOrder);
-                        for (int c = 0; c < 3; ++c)
+                        if ((eulerChangedMask & (1 << c)) != 0)
                         {
-                            if ((eulerChangedMask & (1 << c)) != 0 && m_EulerFloats[c].expression != null)
+                            if (m_EulerFloats[c].expression != null)
                             {
-                                double trEulerComp = trEuler[c];
+                                double trEulerComp = eulerAngles0[c];
                                 if (m_EulerFloats[c].expression.Evaluate(ref trEulerComp, idx, targets.Length))
                                     trEuler[c] = MathUtils.ClampToFloat(trEulerComp);
+                            }
+                            else
+                            {
+                                trEuler[c] = MathUtils.ClampToFloat(eulerAngles0[c]);
                             }
                         }
                     }

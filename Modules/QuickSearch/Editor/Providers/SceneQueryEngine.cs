@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using System.Text.RegularExpressions;
 
 namespace UnityEditor.Search.Providers
 {
@@ -65,19 +66,28 @@ namespace UnityEditor.Search.Providers
     {
         private List<SearchProposition> m_PropertyPrositions;
 
+        static Regex SerializedPropertyRx = new Regex(@"#([\w\d\.]+)");
+
         public SceneQueryEngine(IEnumerable<GameObject> gameObjects)
             : base(gameObjects)
         {
+            m_QueryEngine.AddFilter("active", IsActive);
             m_QueryEngine.AddFilter("layer", GetLayer);
             m_QueryEngine.AddFilter("tag", GetTag);
             m_QueryEngine.AddFilter<string>("prefab", OnPrefabFilter, new[] { ":" });
             m_QueryEngine.AddFilter<string>("i", OnAttributeFilter, new[] { "=", ":" });
             m_QueryEngine.AddFilter("p", OnPropertyFilter, s => s, StringComparison.OrdinalIgnoreCase);
+            m_QueryEngine.AddFilter(SerializedPropertyRx, OnPropertyFilter);
             m_QueryEngine.AddFilter("size", GetSize);
             m_QueryEngine.AddFilter("components", GetComponentCount);
             m_QueryEngine.AddFilter("overlap", GetOverlapCount);
 
             m_QueryEngine.AddFiltersFromAttribute<SceneQueryEngineFilterAttribute, SceneQueryEngineParameterTransformerAttribute>();
+        }
+
+        private bool IsActive(GameObject go)
+        {
+            return go != null && go.activeInHierarchy;
         }
 
         bool OnPrefabFilter(GameObject go, string op, string value)
@@ -133,10 +143,23 @@ namespace UnityEditor.Search.Providers
 
         public override bool GetId(GameObject go, string op, int instanceId)
         {
-            if (instanceId == go.GetInstanceID())
-                return true;
+            int goId = go.GetInstanceID();
+            switch (op)
+            {
+                case ":":
+                case "=":
+                    if (instanceId == goId)
+                        return true;
+                    return EditorUtility.InstanceIDToObject(instanceId) is Component c && c.gameObject == go;
 
-            return EditorUtility.InstanceIDToObject(instanceId) is Component c && c.gameObject == go;
+                case "!=": return instanceId != goId;
+                case ">": return instanceId > goId;
+                case ">=": return instanceId >= goId;
+                case "<": return instanceId < goId;
+                case "<=": return instanceId <= goId;
+            }
+
+            return false;
         }
 
         int GetLayer(GameObject go)
@@ -198,6 +221,8 @@ namespace UnityEditor.Search.Providers
         {
             if (!go)
                 return SearchValue.invalid;
+            if (string.IsNullOrEmpty(propertyName))
+                return SearchValue.invalid;
 
             using (var view = SearchMonitor.GetView())
             {
@@ -251,29 +276,16 @@ namespace UnityEditor.Search.Providers
             return CompareWords(op, value.ToLowerInvariant(), god.attrs);
         }
 
-        bool IsInView(GameObject toCheck, Camera cam)
+        bool IsInView(in GameObject go, in Camera cam)
         {
-            if (!cam || !toCheck)
+            if (!cam || !go)
                 return false;
 
-            var renderer = toCheck.GetComponentInChildren<Renderer>();
-            if (!renderer)
-                return false;
-
-            Vector3 pointOnScreen = cam.WorldToScreenPoint(renderer.bounds.center);
-
-            // Is in front
-            if (pointOnScreen.z < 0)
-                return false;
-
-            // Is in FOV
-            if ((pointOnScreen.x < 0) || (pointOnScreen.x > Screen.width) ||
-                (pointOnScreen.y < 0) || (pointOnScreen.y > Screen.height))
-                return false;
-
-            if (Physics.Linecast(cam.transform.position, renderer.bounds.center, out var hit))
+            var planes = GeometryUtility.CalculateFrustumPlanes(cam);
+            var point = go.transform.position;
+            foreach (var plane in planes)
             {
-                if (hit.transform.GetInstanceID() != toCheck.GetInstanceID())
+                if (plane.GetDistanceToPoint(point) < 0)
                     return false;
             }
             return true;
@@ -311,7 +323,7 @@ namespace UnityEditor.Search.Providers
             }
             else if (go && string.Equals(value, "visible", StringComparison.Ordinal))
             {
-                return IsInView(go, SceneView.GetAllSceneCameras().FirstOrDefault());
+                return IsInView(go, SceneView.lastActiveSceneView?.camera);
             }
             else if (string.Equals(value, "hidden", StringComparison.Ordinal))
             {
@@ -333,8 +345,8 @@ namespace UnityEditor.Search.Providers
         {
             if (!options.HasAny(SearchPropositionFlags.FilterOnly))
             {
-                if (options.StartsWith("p("))
-                    return FetchPropertyPropositions(options.tokens.First().Substring(2));
+                if (options.StartsWith("#"))
+                    return FetchPropertyPropositions(options.tokens.First().Substring(1));
             }
 
             return base.FindPropositions(context, options);
@@ -361,7 +373,7 @@ namespace UnityEditor.Search.Providers
                         var next = p.NextVisible(true);
                         while (next)
                         {
-                            var label = $"p({p.name.Replace("m_", "")})";
+                            var label = $"#{p.name.Replace("m_", "")}";
                             var replacement = ToReplacementValue(p, label);
                             if (replacement != null)
                             {

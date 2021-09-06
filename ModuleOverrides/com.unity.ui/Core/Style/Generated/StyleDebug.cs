@@ -10,6 +10,7 @@
 //
 /******************************************************************************/
 using System;
+using System.Collections.Generic;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
@@ -177,6 +178,172 @@ namespace UnityEngine.UIElements
                 default:
                 {
                     Debug.LogAssertion($"Cannot get computed style value for property id {id}");
+                    return null;
+                }
+            }
+        }
+
+        public static Type GetComputedStyleType(StylePropertyId id)
+        {
+            switch (id)
+            {
+                case StylePropertyId.AlignContent:
+                    return typeof(Align);
+                case StylePropertyId.AlignItems:
+                    return typeof(Align);
+                case StylePropertyId.AlignSelf:
+                    return typeof(Align);
+                case StylePropertyId.BackgroundColor:
+                    return typeof(Color);
+                case StylePropertyId.BackgroundImage:
+                    return typeof(Background);
+                case StylePropertyId.BorderBottomColor:
+                    return typeof(Color);
+                case StylePropertyId.BorderBottomLeftRadius:
+                    return typeof(Length);
+                case StylePropertyId.BorderBottomRightRadius:
+                    return typeof(Length);
+                case StylePropertyId.BorderBottomWidth:
+                    return typeof(float);
+                case StylePropertyId.BorderLeftColor:
+                    return typeof(Color);
+                case StylePropertyId.BorderLeftWidth:
+                    return typeof(float);
+                case StylePropertyId.BorderRightColor:
+                    return typeof(Color);
+                case StylePropertyId.BorderRightWidth:
+                    return typeof(float);
+                case StylePropertyId.BorderTopColor:
+                    return typeof(Color);
+                case StylePropertyId.BorderTopLeftRadius:
+                    return typeof(Length);
+                case StylePropertyId.BorderTopRightRadius:
+                    return typeof(Length);
+                case StylePropertyId.BorderTopWidth:
+                    return typeof(float);
+                case StylePropertyId.Bottom:
+                    return typeof(Length);
+                case StylePropertyId.Color:
+                    return typeof(Color);
+                case StylePropertyId.Cursor:
+                    return typeof(Cursor);
+                case StylePropertyId.Display:
+                    return typeof(DisplayStyle);
+                case StylePropertyId.FlexBasis:
+                    return typeof(Length);
+                case StylePropertyId.FlexDirection:
+                    return typeof(FlexDirection);
+                case StylePropertyId.FlexGrow:
+                    return typeof(float);
+                case StylePropertyId.FlexShrink:
+                    return typeof(float);
+                case StylePropertyId.FlexWrap:
+                    return typeof(Wrap);
+                case StylePropertyId.FontSize:
+                    return typeof(Length);
+                case StylePropertyId.Height:
+                    return typeof(Length);
+                case StylePropertyId.JustifyContent:
+                    return typeof(Justify);
+                case StylePropertyId.Left:
+                    return typeof(Length);
+                case StylePropertyId.LetterSpacing:
+                    return typeof(Length);
+                case StylePropertyId.MarginBottom:
+                    return typeof(Length);
+                case StylePropertyId.MarginLeft:
+                    return typeof(Length);
+                case StylePropertyId.MarginRight:
+                    return typeof(Length);
+                case StylePropertyId.MarginTop:
+                    return typeof(Length);
+                case StylePropertyId.MaxHeight:
+                    return typeof(Length);
+                case StylePropertyId.MaxWidth:
+                    return typeof(Length);
+                case StylePropertyId.MinHeight:
+                    return typeof(Length);
+                case StylePropertyId.MinWidth:
+                    return typeof(Length);
+                case StylePropertyId.Opacity:
+                    return typeof(float);
+                case StylePropertyId.Overflow:
+                    return typeof(OverflowInternal);
+                case StylePropertyId.PaddingBottom:
+                    return typeof(Length);
+                case StylePropertyId.PaddingLeft:
+                    return typeof(Length);
+                case StylePropertyId.PaddingRight:
+                    return typeof(Length);
+                case StylePropertyId.PaddingTop:
+                    return typeof(Length);
+                case StylePropertyId.Position:
+                    return typeof(Position);
+                case StylePropertyId.Right:
+                    return typeof(Length);
+                case StylePropertyId.Rotate:
+                    return typeof(Rotate);
+                case StylePropertyId.Scale:
+                    return typeof(Scale);
+                case StylePropertyId.TextOverflow:
+                    return typeof(TextOverflow);
+                case StylePropertyId.TextShadow:
+                    return typeof(TextShadow);
+                case StylePropertyId.Top:
+                    return typeof(Length);
+                case StylePropertyId.TransformOrigin:
+                    return typeof(TransformOrigin);
+                case StylePropertyId.TransitionDelay:
+                    return typeof(List<TimeValue>);
+                case StylePropertyId.TransitionDuration:
+                    return typeof(List<TimeValue>);
+                case StylePropertyId.TransitionProperty:
+                    return typeof(List<StylePropertyName>);
+                case StylePropertyId.TransitionTimingFunction:
+                    return typeof(List<EasingFunction>);
+                case StylePropertyId.Translate:
+                    return typeof(Translate);
+                case StylePropertyId.UnityBackgroundImageTintColor:
+                    return typeof(Color);
+                case StylePropertyId.UnityBackgroundScaleMode:
+                    return typeof(ScaleMode);
+                case StylePropertyId.UnityFont:
+                    return typeof(Font);
+                case StylePropertyId.UnityFontDefinition:
+                    return typeof(FontDefinition);
+                case StylePropertyId.UnityFontStyleAndWeight:
+                    return typeof(FontStyle);
+                case StylePropertyId.UnityOverflowClipBox:
+                    return typeof(OverflowClipBox);
+                case StylePropertyId.UnityParagraphSpacing:
+                    return typeof(Length);
+                case StylePropertyId.UnitySliceBottom:
+                    return typeof(int);
+                case StylePropertyId.UnitySliceLeft:
+                    return typeof(int);
+                case StylePropertyId.UnitySliceRight:
+                    return typeof(int);
+                case StylePropertyId.UnitySliceTop:
+                    return typeof(int);
+                case StylePropertyId.UnityTextAlign:
+                    return typeof(TextAnchor);
+                case StylePropertyId.UnityTextOutlineColor:
+                    return typeof(Color);
+                case StylePropertyId.UnityTextOutlineWidth:
+                    return typeof(float);
+                case StylePropertyId.UnityTextOverflowPosition:
+                    return typeof(TextOverflowPosition);
+                case StylePropertyId.Visibility:
+                    return typeof(Visibility);
+                case StylePropertyId.WhiteSpace:
+                    return typeof(WhiteSpace);
+                case StylePropertyId.Width:
+                    return typeof(Length);
+                case StylePropertyId.WordSpacing:
+                    return typeof(Length);
+                default:
+                {
+                    Debug.LogAssertion($"Cannot get computed style type for property id {id}");
                     return null;
                 }
             }
@@ -589,6 +756,172 @@ namespace UnityEngine.UIElements
             }
         }
 
+        public static object ConvertComputedToInlineStyleValue(StylePropertyId id, object value)
+        {
+            switch (id)
+            {
+                case StylePropertyId.AlignContent:
+                    return (StyleEnum<Align>)(Align) value;
+                case StylePropertyId.AlignItems:
+                    return (StyleEnum<Align>)(Align) value;
+                case StylePropertyId.AlignSelf:
+                    return (StyleEnum<Align>)(Align) value;
+                case StylePropertyId.BackgroundColor:
+                    return (StyleColor)(Color)value;
+                case StylePropertyId.BackgroundImage:
+                    return (StyleBackground)(Background)value;
+                case StylePropertyId.BorderBottomColor:
+                    return (StyleColor)(Color)value;
+                case StylePropertyId.BorderBottomLeftRadius:
+                    return (StyleLength)(Length)value;
+                case StylePropertyId.BorderBottomRightRadius:
+                    return (StyleLength)(Length)value;
+                case StylePropertyId.BorderBottomWidth:
+                    return (StyleFloat)(float)value;
+                case StylePropertyId.BorderLeftColor:
+                    return (StyleColor)(Color)value;
+                case StylePropertyId.BorderLeftWidth:
+                    return (StyleFloat)(float)value;
+                case StylePropertyId.BorderRightColor:
+                    return (StyleColor)(Color)value;
+                case StylePropertyId.BorderRightWidth:
+                    return (StyleFloat)(float)value;
+                case StylePropertyId.BorderTopColor:
+                    return (StyleColor)(Color)value;
+                case StylePropertyId.BorderTopLeftRadius:
+                    return (StyleLength)(Length)value;
+                case StylePropertyId.BorderTopRightRadius:
+                    return (StyleLength)(Length)value;
+                case StylePropertyId.BorderTopWidth:
+                    return (StyleFloat)(float)value;
+                case StylePropertyId.Bottom:
+                    return (StyleLength)(Length)value;
+                case StylePropertyId.Color:
+                    return (StyleColor)(Color)value;
+                case StylePropertyId.Cursor:
+                    return (StyleCursor)(Cursor)value;
+                case StylePropertyId.Display:
+                    return (StyleEnum<DisplayStyle>)(DisplayStyle) value;
+                case StylePropertyId.FlexBasis:
+                    return (StyleLength)(Length)value;
+                case StylePropertyId.FlexDirection:
+                    return (StyleEnum<FlexDirection>)(FlexDirection) value;
+                case StylePropertyId.FlexGrow:
+                    return (StyleFloat)(float)value;
+                case StylePropertyId.FlexShrink:
+                    return (StyleFloat)(float)value;
+                case StylePropertyId.FlexWrap:
+                    return (StyleEnum<Wrap>)(Wrap) value;
+                case StylePropertyId.FontSize:
+                    return (StyleLength)(Length)value;
+                case StylePropertyId.Height:
+                    return (StyleLength)(Length)value;
+                case StylePropertyId.JustifyContent:
+                    return (StyleEnum<Justify>)(Justify) value;
+                case StylePropertyId.Left:
+                    return (StyleLength)(Length)value;
+                case StylePropertyId.LetterSpacing:
+                    return (StyleLength)(Length)value;
+                case StylePropertyId.MarginBottom:
+                    return (StyleLength)(Length)value;
+                case StylePropertyId.MarginLeft:
+                    return (StyleLength)(Length)value;
+                case StylePropertyId.MarginRight:
+                    return (StyleLength)(Length)value;
+                case StylePropertyId.MarginTop:
+                    return (StyleLength)(Length)value;
+                case StylePropertyId.MaxHeight:
+                    return (StyleLength)(Length)value;
+                case StylePropertyId.MaxWidth:
+                    return (StyleLength)(Length)value;
+                case StylePropertyId.MinHeight:
+                    return (StyleLength)(Length)value;
+                case StylePropertyId.MinWidth:
+                    return (StyleLength)(Length)value;
+                case StylePropertyId.Opacity:
+                    return (StyleFloat)(float)value;
+                case StylePropertyId.Overflow:
+                    return (StyleEnum<Overflow>)(Overflow)(OverflowInternal) value;
+                case StylePropertyId.PaddingBottom:
+                    return (StyleLength)(Length)value;
+                case StylePropertyId.PaddingLeft:
+                    return (StyleLength)(Length)value;
+                case StylePropertyId.PaddingRight:
+                    return (StyleLength)(Length)value;
+                case StylePropertyId.PaddingTop:
+                    return (StyleLength)(Length)value;
+                case StylePropertyId.Position:
+                    return (StyleEnum<Position>)(Position) value;
+                case StylePropertyId.Right:
+                    return (StyleLength)(Length)value;
+                case StylePropertyId.Rotate:
+                    return (StyleRotate)(Rotate)value;
+                case StylePropertyId.Scale:
+                    return (StyleScale)(Scale)value;
+                case StylePropertyId.TextOverflow:
+                    return (StyleEnum<TextOverflow>)(TextOverflow) value;
+                case StylePropertyId.TextShadow:
+                    return (StyleTextShadow)(TextShadow)value;
+                case StylePropertyId.Top:
+                    return (StyleLength)(Length)value;
+                case StylePropertyId.TransformOrigin:
+                    return (StyleTransformOrigin)(TransformOrigin)value;
+                case StylePropertyId.TransitionDelay:
+                    return (StyleList<TimeValue>)(List<TimeValue>) value;
+                case StylePropertyId.TransitionDuration:
+                    return (StyleList<TimeValue>)(List<TimeValue>) value;
+                case StylePropertyId.TransitionProperty:
+                    return (StyleList<StylePropertyName>)(List<StylePropertyName>) value;
+                case StylePropertyId.TransitionTimingFunction:
+                    return (StyleList<EasingFunction>)(List<EasingFunction>) value;
+                case StylePropertyId.Translate:
+                    return (StyleTranslate)(Translate)value;
+                case StylePropertyId.UnityBackgroundImageTintColor:
+                    return (StyleColor)(Color)value;
+                case StylePropertyId.UnityBackgroundScaleMode:
+                    return (StyleEnum<ScaleMode>)(ScaleMode) value;
+                case StylePropertyId.UnityFont:
+                    return (StyleFont)(Font)value;
+                case StylePropertyId.UnityFontDefinition:
+                    return (StyleFontDefinition)(FontDefinition)value;
+                case StylePropertyId.UnityFontStyleAndWeight:
+                    return (StyleEnum<FontStyle>)(FontStyle) value;
+                case StylePropertyId.UnityOverflowClipBox:
+                    return (StyleEnum<OverflowClipBox>)(OverflowClipBox) value;
+                case StylePropertyId.UnityParagraphSpacing:
+                    return (StyleLength)(Length)value;
+                case StylePropertyId.UnitySliceBottom:
+                    return (StyleInt)(int)value;
+                case StylePropertyId.UnitySliceLeft:
+                    return (StyleInt)(int)value;
+                case StylePropertyId.UnitySliceRight:
+                    return (StyleInt)(int)value;
+                case StylePropertyId.UnitySliceTop:
+                    return (StyleInt)(int)value;
+                case StylePropertyId.UnityTextAlign:
+                    return (StyleEnum<TextAnchor>)(TextAnchor) value;
+                case StylePropertyId.UnityTextOutlineColor:
+                    return (StyleColor)(Color)value;
+                case StylePropertyId.UnityTextOutlineWidth:
+                    return (StyleFloat)(float)value;
+                case StylePropertyId.UnityTextOverflowPosition:
+                    return (StyleEnum<TextOverflowPosition>)(TextOverflowPosition) value;
+                case StylePropertyId.Visibility:
+                    return (StyleEnum<Visibility>)(Visibility) value;
+                case StylePropertyId.WhiteSpace:
+                    return (StyleEnum<WhiteSpace>)(WhiteSpace) value;
+                case StylePropertyId.Width:
+                    return (StyleLength)(Length)value;
+                case StylePropertyId.WordSpacing:
+                    return (StyleLength)(Length)value;
+                default:
+                {
+                    Debug.LogAssertion($"Cannot convert computed style value to inline style value for property id {id}");
+                    return null;
+                }
+            }
+        }
+
         public static Type GetInlineStyleType(StylePropertyId id)
         {
             switch (id)
@@ -852,6 +1185,57 @@ namespace UnityEngine.UIElements
         public static StylePropertyId[] GetInheritedProperties()
         {
             return new[] {StylePropertyId.Color, StylePropertyId.FontSize, StylePropertyId.LetterSpacing, StylePropertyId.TextShadow, StylePropertyId.UnityFont, StylePropertyId.UnityFontDefinition, StylePropertyId.UnityFontStyleAndWeight, StylePropertyId.UnityParagraphSpacing, StylePropertyId.UnityTextAlign, StylePropertyId.UnityTextOutlineColor, StylePropertyId.UnityTextOutlineWidth, StylePropertyId.Visibility, StylePropertyId.WhiteSpace, StylePropertyId.WordSpacing};
+        }
+
+        public static bool IsDiscreteTypeProperty(StylePropertyId id)
+        {
+            switch (id)
+            {
+                case StylePropertyId.AlignContent:
+                    return true;
+                case StylePropertyId.AlignItems:
+                    return true;
+                case StylePropertyId.AlignSelf:
+                    return true;
+                case StylePropertyId.BackgroundImage:
+                    return true;
+                case StylePropertyId.Cursor:
+                    return true;
+                case StylePropertyId.Display:
+                    return true;
+                case StylePropertyId.FlexDirection:
+                    return true;
+                case StylePropertyId.FlexWrap:
+                    return true;
+                case StylePropertyId.JustifyContent:
+                    return true;
+                case StylePropertyId.Overflow:
+                    return true;
+                case StylePropertyId.Position:
+                    return true;
+                case StylePropertyId.TextOverflow:
+                    return true;
+                case StylePropertyId.UnityBackgroundScaleMode:
+                    return true;
+                case StylePropertyId.UnityFont:
+                    return true;
+                case StylePropertyId.UnityFontDefinition:
+                    return true;
+                case StylePropertyId.UnityFontStyleAndWeight:
+                    return true;
+                case StylePropertyId.UnityOverflowClipBox:
+                    return true;
+                case StylePropertyId.UnityTextAlign:
+                    return true;
+                case StylePropertyId.UnityTextOverflowPosition:
+                    return true;
+                case StylePropertyId.Visibility:
+                    return true;
+                case StylePropertyId.WhiteSpace:
+                    return true;
+                default:
+                    return false;
+            }
         }
     }
 }

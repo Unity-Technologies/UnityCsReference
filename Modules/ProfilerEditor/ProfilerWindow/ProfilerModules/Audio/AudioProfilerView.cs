@@ -537,27 +537,21 @@ namespace UnityEditorInternal
 
         private class AudioProfilerDSPNode
         {
-            public AudioProfilerDSPNode(AudioProfilerDSPNode firstTarget, AudioProfilerDSPInfo info, int x, int y, int level)
+            public AudioProfilerDSPNode(AudioProfilerDSPInfo info)
             {
-                this.firstTarget = firstTarget;
                 this.info = info;
-                this.x = x;
-                this.y = y;
-                this.level = level;
-                this.maxY = y;
                 audible = (info.flags & AUDIOPROFILER_DSPFLAGS_ACTIVE) != 0 && (info.flags & AUDIOPROFILER_DSPFLAGS_BYPASS) == 0;
-                if (firstTarget != null)
-                    audible &= firstTarget.audible;
             }
 
-            public AudioProfilerDSPNode firstTarget;
             public AudioProfilerDSPInfo info;
+            public List<AudioProfilerDSPNode> parents;
+            public List<AudioProfilerDSPNode> children;
             public int x;
             public int y;
+            public int w;
+            public int h;
             public int level;
-            public int maxY;
 #pragma warning disable 649
-            public int targetPort;
             public bool audible;
         }
 
@@ -568,14 +562,14 @@ namespace UnityEditorInternal
                 this.source = source;
                 this.target = target;
                 this.info = info;
-                this.targetPort = target.targetPort;
             }
 
             public AudioProfilerDSPNode source;
             public AudioProfilerDSPNode target;
             public AudioProfilerDSPInfo info;
-            public int targetPort;
         }
+
+        GUIStyle m_FontStyle;
 
         private void DrawRectClipped(Rect r, Color col, string name, Rect c, float zoomFactor)
         {
@@ -591,15 +585,8 @@ namespace UnityEditorInternal
             if (ax >= bx || ay >= by)
                 return;
 
-            if (name == null)
-            {
-                EditorGUI.DrawRect(s, col);
-            }
-            else
-            {
-                GUI.color = col;
-                GUI.Button(s, name);
-            }
+            GUI.color = col;
+            GUI.Button(s, name, m_FontStyle);
         }
 
         // Cohen-Sutherland out code
@@ -613,14 +600,217 @@ namespace UnityEditorInternal
             return code;
         }
 
-        public void OnGUI(Rect clippingRect, ProfilerProperty property, bool showInactiveDSPChains, bool highlightAudibleDSPChains, ref float zoomFactor, ref Vector2 scrollPos)
+        public void DrawArrow(Color color, float arrowThickness, float lineThickness, float shorten, Vector3 start, Vector3 end)
         {
-            if (Event.current.type == EventType.ScrollWheel && clippingRect.Contains(Event.current.mousePosition) && Event.current.shift)
+            var length = (end - start).magnitude;
+            if (length < 0.001f)
+                return;
+
+            var forward = (end - start) / length;
+            var right = Vector3.Cross(Vector3.forward, forward).normalized;
+
+            var width = arrowThickness * 0.5f;
+            var height = arrowThickness * 0.7f;
+
+            start += forward * shorten;
+            end -= forward * shorten;
+
+            var arrowHead = new Vector3[3]
             {
-                float zoomStep = 1.05f;
+                end,
+                end - forward * height + right * width,
+                end - forward * height - right * width
+            };
+
+            var arrowLine = new Vector3[2]
+            {
+                start,
+                end - forward * height
+            };
+
+            Handles.color = color;
+            Handles.DrawAAPolyLine(lineThickness, 2, arrowLine);
+            Handles.DrawAAConvexPolygon(arrowHead);
+        }
+
+        const int connectionWidth = 40;
+        const int connectionHeight = 10;
+        const int nodeWidth = 120;
+        const int nodeHeight = 60;
+        const int nodeMargin = 50;
+
+        int nodeSpacingX;
+        int nodeSpacingY;
+
+        bool horizontalLayout = false;
+
+        bool UpdateLevels(AudioProfilerDSPNode node, int level)
+        {
+            foreach (var parent in node.parents)
+                if (parent.level != -1 &&
+                    level <= parent.level)
+                    level = parent.level + 1;
+
+            bool changed = false;
+            if (node.level == -1 ||
+                node.level != level)
+            {
+                changed = true;
+                node.level = level;
+            }
+
+            foreach (var child in node.children)
+                changed |= UpdateLevels(child, level + 1);
+
+            return changed;
+        }
+
+        void UpdatePositions(AudioProfilerDSPNode node, int p)
+        {
+            if (((horizontalLayout) ? node.y : node.x) != -1)
+                return;
+
+            var s = (horizontalLayout) ? nodeHeight : nodeWidth;
+
+            if (horizontalLayout)
+                node.y = p;
+            else
+                node.x = p;
+
+            foreach (var child in node.children)
+            {
+                UpdatePositions(child, p);
+
+                var size = (horizontalLayout) ? child.h : child.w;
+                s += size;
+                p += size;
+            }
+
+            if (horizontalLayout)
+            {
+                if (node.x == -1)
+                {
+                    node.x = node.level * (nodeWidth + nodeSpacingX);
+                    node.h = (s > nodeHeight) ? (s - nodeHeight) : (nodeHeight + nodeSpacingY);
+                }
+            }
+            else
+            {
+                if (node.y == -1)
+                {
+                    node.y = node.level * (nodeHeight + nodeSpacingY);
+                    node.w = (s > nodeWidth) ? (s - nodeWidth) : (nodeWidth + nodeSpacingX);
+                }
+            }
+        }
+
+        void DoDSPNodeLayout(List<AudioProfilerDSPNode> nodes, List<AudioProfilerDSPWire> wires, ProfilerProperty property)
+        {
+            // Add space for wire weights that typically fall between two nodes
+            nodeSpacingX = 10;
+            nodeSpacingY = 10;
+            if (horizontalLayout)
+                nodeSpacingX += connectionWidth;
+            else
+                nodeSpacingY += connectionHeight;
+
+            foreach (var node in nodes)
+            {
+                node.level = -1;
+                node.x = -1;
+                node.y = -1;
+                node.w = nodeWidth;
+                node.h = nodeHeight;
+                node.parents = new List<AudioProfilerDSPNode>();
+                node.children = new List<AudioProfilerDSPNode>();
+            }
+
+            foreach (var wire in wires)
+            {
+                wire.target.children.Add(wire.source);
+                wire.source.parents.Add(wire.target);
+            }
+
+            for (int iter = 0; iter < 10; iter++)
+            {
+                var changed = false;
+                foreach (var node in nodes)
+                    changed |= UpdateLevels(node, 0);
+                if (!changed)
+                    break;
+            }
+
+            foreach (var node in nodes)
+            {
+                var start = 0;
+                if (horizontalLayout)
+                {
+                    foreach (var t in nodes)
+                        if (node.y != -1 && node.y + node.h > start)
+                            start = node.y + node.h;
+                    start += nodeSpacingY;
+                }
+                else
+                {
+                    foreach (var t in nodes)
+                        if (node.x != -1 && node.x + node.w > start)
+                            start = node.x + node.w;
+                    start += nodeSpacingX;
+                }
+
+                UpdatePositions(node, start);
+            }
+
+            var x = 0;
+            var y = 0;
+            foreach (var node in nodes)
+            {
+                if (horizontalLayout)
+                {
+                    node.y += (node.h - nodeHeight) / 2;
+                    node.h = nodeHeight;
+                }
+                else
+                {
+                    node.x += (node.w - nodeWidth) / 2;
+                    node.w = nodeWidth;
+                }
+
+                x = Math.Min(x, node.x);
+                y = Math.Min(y, node.y);
+            }
+
+            foreach (var node in nodes)
+            {
+                node.x += nodeMargin - x;
+                node.y += nodeMargin - y;
+            }
+        }
+
+        public void OnGUI(Rect clippingRect, ProfilerProperty property, bool showInactiveDSPChains, bool highlightAudibleDSPChains, bool _horizontalLayout, ref float zoomFactor, ref Vector2 scrollPos, ref Vector2 virtualSize)
+        {
+            horizontalLayout = _horizontalLayout;
+
+            if (Event.current.type == EventType.ScrollWheel && clippingRect.Contains(Event.current.mousePosition) && (Event.current.shift || Event.current.command))
+            {
+                // x = internal unscaled position
+                // x_screen = x * zoomFactor - scrollPosX
+                // mousePosX = scrollPosX  + relativeMousePosX
+                //             scrollPosX1 + relativeMousePosX = x * zoomFactor1
+                //             scrollPosX2 + relativeMousePosX = x * zoomFactor2
+                //                           relativeMousePosX = x * zoomFactor1 - scrollPosX1
+                //                                             = x * zoomFactor2 - scrollPosX2
+                // x = mousePosX / zoomFactor1
+                // scrollPosX2 = scrollPosX1 - x0 * (zoomFactor1 - zoomFactor2)
+                //             = scrollPosX1 - (zoomFactor1 - zoomFactor2) * mousePosX / zoomFactor1
+                //             = scrollPosX1 - (1 - zoomFactor2 / zoomFactor1) * mousePosX
+                float zoomStep = 1.025f;
+                var delta = Event.current.mousePosition - clippingRect.min;
                 var oldZoomFactor = zoomFactor;
-                zoomFactor *= (Event.current.delta.y > 0) ? zoomStep : (1.0f / zoomStep);
-                scrollPos += (Event.current.mousePosition - scrollPos) * (zoomFactor - oldZoomFactor);
+                zoomFactor *= (Event.current.delta.y < 0) ? zoomStep : (1.0f / zoomStep);
+                zoomFactor = Mathf.Clamp(zoomFactor, 0.25f, 4.0f);
+                scrollPos -= (1.0f - zoomFactor / oldZoomFactor) * Event.current.mousePosition;
+                m_FontStyle = null;
                 Event.current.Use();
                 return;
             }
@@ -628,54 +818,111 @@ namespace UnityEditorInternal
             if (Event.current.type != EventType.Repaint)
                 return;
 
-            int cw = 64, ch = 16, w = 140, h = 30, xspacing = cw + 10, yspacing = 5;
-            var nodes = new Dictionary<int, AudioProfilerDSPNode>();
+            var nodeDictionary = new Dictionary<int, AudioProfilerDSPNode>();
+            var nodes = new List<AudioProfilerDSPNode>();
             var wires = new List<AudioProfilerDSPWire>();
             var dspInfo = property.GetAudioProfilerDSPInfo();
             if (dspInfo == null)
                 return;
 
-            // Figure out where to place all this stuff and how much screen estate the branches need.
-            bool isRootNode = true;
+            if (m_FontStyle == null)
+            {
+                m_FontStyle = new GUIStyle(GUI.skin.button);
+                m_FontStyle.fontSize = (int)(zoomFactor * 7.0f);
+                m_FontStyle.wordWrap = true;
+            }
+
             foreach (var info in dspInfo)
             {
                 if (!showInactiveDSPChains && (info.flags & AUDIOPROFILER_DSPFLAGS_ACTIVE) == 0)
                     continue;
 
-                if (!nodes.ContainsKey(info.id))
+                if (!nodeDictionary.ContainsKey(info.id))
                 {
-                    var firstTarget = nodes.ContainsKey(info.target) ? nodes[info.target] : null;
-                    if (firstTarget != null)
-                    {
-                        nodes[info.id] = new AudioProfilerDSPNode(firstTarget, info, firstTarget.x + w + xspacing, firstTarget.maxY, firstTarget.level + 1);
-                        firstTarget.maxY += h + yspacing;
-                        var p = firstTarget;
-                        while (p != null)
-                        {
-                            p.maxY = Mathf.Max(p.maxY, firstTarget.maxY);
-                            p = p.firstTarget;
-                        }
-                    }
-                    else if (isRootNode)
-                    {
-                        isRootNode = false;
-                        nodes[info.id] = new AudioProfilerDSPNode(firstTarget, info, 10 + (w / 2), 10 + (h / 2), 1);
-                    }
-                    if (firstTarget != null)
-                        wires.Add(new AudioProfilerDSPWire(nodes[info.id], firstTarget, info));
+                    var node = new AudioProfilerDSPNode(info);
+                    nodeDictionary[info.id] = node;
+                    nodes.Add(node);
                 }
-                else
-                {
-                    // Same node, but containing an additional target connection (i.e. for reverb mix connections)
-                    wires.Add(new AudioProfilerDSPWire(nodes[info.id], nodes[info.target], info));
-                }
+
+                if (info.target != 0)
+                    wires.Add(new AudioProfilerDSPWire(nodeDictionary[info.id], nodeDictionary[info.target], info));
             }
 
-            // Center node relative to its child branch
-            foreach (var _node in nodes)
+            DoDSPNodeLayout(nodes, wires, property);
+
+            virtualSize.x = 0;
+            virtualSize.y = 0;
+
+            foreach (var node in nodes)
             {
-                var node = _node.Value;
-                node.y += ((node.maxY == node.y) ? (h + yspacing) : (node.maxY - node.y)) / 2;
+                virtualSize.x = Mathf.Max(virtualSize.x, (node.x + nodeWidth) * zoomFactor);
+                virtualSize.y = Mathf.Max(virtualSize.y, (node.y + nodeHeight) * zoomFactor);
+            }
+
+            virtualSize.x += nodeMargin * zoomFactor;
+            virtualSize.y += nodeMargin * zoomFactor;
+
+            // Now draw the nodes
+            foreach (var node in nodes)
+            {
+                var info = node.info;
+                var name = property.GetAudioProfilerNameByOffset(info.nameOffset);
+
+                float cpuLoad = 0.01f * info.cpuLoad; // Result is in 0..100 range
+                float cpuColoring = 0.1f; // Color 10% CPU load red
+
+                bool active = (info.flags & AUDIOPROFILER_DSPFLAGS_ACTIVE) != 0;
+                bool bypass = (info.flags & AUDIOPROFILER_DSPFLAGS_BYPASS) != 0;
+
+                var color = new Color(
+                    (!active || bypass) ? 0.5f : Mathf.Clamp(2.0f * cpuColoring * cpuLoad, 0.0f, 1.0f),
+                    (!active || bypass) ? 0.5f : Mathf.Clamp(2.0f - 2.0f * cpuColoring * cpuLoad, 0.0f, 1.0f),
+                    bypass ? 1.0f : active ? 0.0f : 0.5f,
+                    (!highlightAudibleDSPChains || node.audible) ? 1.0f : 0.4f);
+
+                name = name.Replace("ChannelGroup", "Group");
+                name = name.Replace("FMOD Channel DSPHead Unit", "Channel DSP Head");
+                name = name.Replace("FMOD Channel", "Channel");
+                name = name.Replace("FMOD WaveTable Unit", "Wavetable");
+                name = name.Replace("FMOD Resampler Unit", "Resampler");
+
+                float vuWidth = 4.0f;
+                float vuAlpha = 0.5f;
+
+                float nodeX = node.x;
+                float nodeW = nodeWidth;
+
+                if (info.numLevels >= 1)
+                {
+                    float p = nodeHeight * Mathf.Clamp(info.level1, 0.0f, 1.0f);
+                    DrawRectClipped(new Rect(nodeX, node.y, vuWidth, nodeHeight), new Color(0.0f, 0.0f, 0.0f, vuAlpha), null, clippingRect, zoomFactor);
+                    DrawRectClipped(new Rect(nodeX, node.y + nodeHeight - p, vuWidth, p), new Color(1.0f, 0.5f, 0.0f, 1.0f), null, clippingRect, zoomFactor);
+                    nodeX += vuWidth;
+                    nodeW -= vuWidth;
+                }
+
+                if (info.numLevels >= 2)
+                {
+                    float p = nodeHeight * Mathf.Clamp(info.level2, 0.0f, 1.0f);
+                    DrawRectClipped(new Rect(nodeX, node.y, vuWidth, nodeHeight), new Color(0.0f, 0.0f, 0.0f, vuAlpha), null, clippingRect, zoomFactor);
+                    DrawRectClipped(new Rect(nodeX, node.y + nodeHeight - p, vuWidth, p), new Color(1.0f, 0.5f, 0.0f, 1.0f), null, clippingRect, zoomFactor);
+                    nodeX += vuWidth;
+                    nodeW -= vuWidth;
+                }
+
+                var s = name;
+                if ((node.info.flags & AUDIOPROFILER_DSPFLAGS_ACTIVE) == 0)
+                    s += " [OFF]";
+                if ((node.info.flags & AUDIOPROFILER_DSPFLAGS_BYPASS) != 0)
+                    s += " [BYP]";
+                if (name == "Send")
+                    s += UnityString.Format(" ({0:0.00} dB)", 20.0f * Math.Log10(node.info.level1));
+                s += "\n";
+                if (name == "VUFader" || name == "EmbeddedFader")
+                    s += UnityString.Format("Vol: {0:0.00} dB\nVU: {1:0.00} dB\n", 20.0f * Math.Log10(node.info.level1), 20.0f * Math.Log10(node.info.level2));
+                s += UnityString.Format("Rel. audibility: {0:0.00} dB\nAbs. audibility: {1:0.00} dB\nAud. order:{2}\n", 20.0f * Math.Log10(node.info.relativeAudibility), 20.0f * Math.Log10(node.info.absoluteAudibility), node.info.audibilityVisitOrder);
+
+                DrawRectClipped(new Rect(nodeX, node.y, nodeW, nodeHeight), color, s, clippingRect, zoomFactor);
             }
 
             // Let's draw some wires!
@@ -685,19 +932,28 @@ namespace UnityEditorInternal
                 var source = wire.source;
                 var target = wire.target;
                 var info = wire.info;
-                var p1 = new Vector3((source.x - w * 0.5f) * zoomFactor, source.y * zoomFactor, 0.0f);
-                var p2 = new Vector3((target.x + w * 0.5f) * zoomFactor, (target.y + wire.targetPort * portSpacing) * zoomFactor, 0.0f);
+                Vector3 p1, p2;
+                if (horizontalLayout)
+                {
+                    p1 = new Vector3(source.x * zoomFactor, (source.y + nodeHeight * 0.5f) * zoomFactor, 0.0f);
+                    p2 = new Vector3((target.x + nodeWidth) * zoomFactor, (target.y + nodeHeight * 0.5f + (wire.info.targetPort - (wire.target.children.Count - 1) * 0.5f) * portSpacing) * zoomFactor, 0.0f);
+                }
+                else
+                {
+                    p1 = new Vector3((source.x + nodeWidth * 0.5f) * zoomFactor, source.y * zoomFactor, 0.0f);
+                    p2 = new Vector3((target.x + nodeWidth * 0.5f + (wire.info.targetPort - (wire.target.children.Count - 1) * 0.5f) * portSpacing) * zoomFactor, (target.y + nodeHeight) * zoomFactor, 0.0f);
+                }
                 var c1 = GetOutCode(p1, clippingRect);
                 var c2 = GetOutCode(p2, clippingRect);
                 if ((c1 & c2) == 0)
                 {
-                    float thickness = 3.0f;
-                    Handles.color = new Color(info.weight, 0.0f, 0.0f, (!highlightAudibleDSPChains || source.audible) ? 1.0f : 0.4f);
-                    Handles.DrawAAPolyLine(thickness, 2, new Vector3[] { p1, p2 });
+                    var alpha = (!highlightAudibleDSPChains || source.audible) ? 0.7f : 0.3f;
+                    DrawArrow(new Color(0.0f, 0.0f, 0.0f, alpha), 7.0f * zoomFactor, 3.0f * zoomFactor, 0.0f, p1, p2);
+                    DrawArrow(new Color(1.0f, info.weight, 0.0f, alpha), 5.0f * zoomFactor, 2.0f * zoomFactor, zoomFactor, p1, p2);
                 }
             }
 
-            // Draw connection weights on top of wires
+            // Draw connection weights on top
             foreach (var wire in wires)
             {
                 var source = wire.source;
@@ -705,56 +961,14 @@ namespace UnityEditorInternal
                 var info = wire.info;
                 if (info.weight != 1.0f && target != null)
                 {
-                    int cx = source.x - ((xspacing + w) / 2);
-                    int cy = (int)(target.y + ((cx - target.x - w * 0.5f) * (float)(source.y - target.y) / (float)(source.x - target.x - w)));
+                    var cx = (source.x + target.x + nodeWidth) * 0.5f;
+                    var cy = (source.y + target.y + nodeHeight) * 0.5f;
                     DrawRectClipped(
-                        new Rect(cx - (cw / 2), cy - (ch / 2), cw, ch),
-                        new Color(1.0f, 0.3f, 0.2f, (!highlightAudibleDSPChains || source.audible) ? 1.0f : 0.4f),
-                        UnityString.Format("{0:0.00}%", 100.0f * info.weight),
+                        new Rect(cx - connectionWidth * 0.5f, cy - connectionHeight * 0.5f, connectionWidth, connectionHeight),
+                        new Color(1.0f, info.weight, 0.0f, (!highlightAudibleDSPChains || source.audible) ? 0.7f : 0.3f),
+                        UnityString.Format($"{(int)(100.0f * info.weight)}%"),
                         clippingRect,
                         zoomFactor);
-                }
-            }
-
-            // Now draw the nodes
-            foreach (var _node in nodes)
-            {
-                var node = _node.Value;
-                var info = node.info;
-                if (!nodes.ContainsKey(info.target) || node.firstTarget != nodes[info.target])
-                    continue;
-                var name = property.GetAudioProfilerNameByOffset(info.nameOffset);
-                float cpuLoad = 0.01f * info.cpuLoad; // Result is in 0..100 range
-                float cpuColoring = 0.1f; // Color 10% CPU load red
-                bool active = (info.flags & AUDIOPROFILER_DSPFLAGS_ACTIVE) != 0;
-                bool bypass = (info.flags & AUDIOPROFILER_DSPFLAGS_BYPASS) != 0;
-                var color = new Color(
-                    (!active || bypass) ? 0.5f : Mathf.Clamp(2.0f * cpuColoring * cpuLoad, 0.0f, 1.0f),
-                    (!active || bypass) ? 0.5f : Mathf.Clamp(2.0f - 2.0f * cpuColoring * cpuLoad, 0.0f, 1.0f),
-                    bypass ? 1.0f : active ? 0.0f : 0.5f,
-                    (!highlightAudibleDSPChains || node.audible) ? 1.0f : 0.4f);
-                name = name.Replace("ChannelGroup", "Group");
-                name = name.Replace("FMOD Channel", "Channel");
-                name = name.Replace("FMOD WaveTable Unit", "Wavetable");
-                name = name.Replace("FMOD Resampler Unit", "Resampler");
-                name = name.Replace("FMOD Channel DSPHead Unit", "Channel DSP");
-                name = name.Replace("FMOD Channel DSPHead Unit", "Channel DSP");
-                name += UnityString.Format(" ({0:0.00}%)", cpuLoad);
-                DrawRectClipped(new Rect(node.x - w * 0.5f, node.y - h * 0.5f, w, h), color, name, clippingRect, zoomFactor);
-                if (node.audible)
-                {
-                    if (info.numLevels >= 1)
-                    {
-                        float p = (h - 6) * Mathf.Clamp(info.level1, 0.0f, 1.0f);
-                        DrawRectClipped(new Rect(node.x - w * 0.5f + 3, node.y - h * 0.5f + 3, 4, h - 6), Color.black, null, clippingRect, zoomFactor);
-                        DrawRectClipped(new Rect(node.x - w * 0.5f + 3, node.y - h * 0.5f - 3 + h - p, 4, p), Color.red, null, clippingRect, zoomFactor);
-                    }
-                    if (info.numLevels >= 2)
-                    {
-                        float p = (h - 6) * Mathf.Clamp(info.level2, 0.0f, 1.0f);
-                        DrawRectClipped(new Rect(node.x - w * 0.5f + 8, node.y - h * 0.5f + 3, 4, h - 6), Color.black, null, clippingRect, zoomFactor);
-                        DrawRectClipped(new Rect(node.x - w * 0.5f + 8, node.y - h * 0.5f - 3 + h - p, 4, p), Color.red, null, clippingRect, zoomFactor);
-                    }
                 }
             }
         }

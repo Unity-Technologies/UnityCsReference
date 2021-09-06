@@ -207,6 +207,8 @@ namespace UnityEngine
 
         public virtual bool supportsMultisampleResolveDepth => UnityEngine.SystemInfo.supportsMultisampleResolveDepth;
 
+        public virtual bool supportsMultisampleResolveStencil => UnityEngine.SystemInfo.supportsMultisampleResolveStencil;
+
         public virtual bool IsFormatSupported(GraphicsFormat format, FormatUsage usage)
         {
             return UnityEngine.SystemInfo.IsFormatSupported(format, usage);

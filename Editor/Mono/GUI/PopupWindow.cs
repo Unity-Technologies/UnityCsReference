@@ -10,7 +10,6 @@ namespace UnityEditor
      Note that content of PopupWindow do not survive assembly reloading because it derives from interface PopupWindowContent.
      E.g use it for short lived content where closing on lost focus is ok.
      */
-
     public abstract class PopupWindowContent
     {
         public EditorWindow editorWindow { get; internal set; }

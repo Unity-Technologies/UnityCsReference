@@ -29,12 +29,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         static public void BeginSection(string name)
         {
-            m_ProfilerSections.Push(TinyProfiler.Section(name));
+            if (m_CurrentPlayerBuildProfilerOutputFile != null)
+                m_ProfilerSections.Push(TinyProfiler.Section(name));
         }
 
         static public void EndSection()
         {
-            m_ProfilerSections.Pop().Dispose();
+            if (m_CurrentPlayerBuildProfilerOutputFile != null)
+                m_ProfilerSections.Pop().Dispose();
         }
 
         static public NPath GetTraceEventsOutputForNewBeeDriver()

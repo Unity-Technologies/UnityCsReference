@@ -134,6 +134,16 @@ namespace UnityEditor
             set { SessionState.SetBool("ExpandedStateDebug", value); }
         }
 
+        internal static bool s_DebugPreviewScenes
+        {
+            get { return EditorSceneManager.GetPreviewScenesVisibleInHierarchy(); }
+            set
+            {
+                EditorSceneManager.SetPreviewScenesVisibleInHierarchy(value);
+                SceneHierarchyWindow.ReloadAllHierarchyWindows();
+            }
+        }
+
         internal bool hasSearchFilter
         {
             get { return !string.IsNullOrEmpty(m_SearchFilter); }
@@ -245,6 +255,7 @@ namespace UnityEditor
         {
             if (m_TreeViewState == null)
                 m_TreeViewState = new TreeViewState();
+            m_TreeViewState.searchString = ""; // search string is controlled by m_SearchFilter, clearing old layouts, case 1346524
 
             if (m_SortingObjects == null)
                 SetUpSortMethodLists();
@@ -275,7 +286,6 @@ namespace UnityEditor
             gui.renameEnded += ItemRenameEnded;
 
             m_TreeView.Init(treeViewRect, dataSource, gui, dragging);
-
             m_TreeView.ReloadData();
         }
 
@@ -653,8 +663,8 @@ namespace UnityEditor
             if (setActiveScene)
             {
                 // scene header selected
-                if (scene.isLoaded && !EditorSceneManager.IsPreviewScene(scene))
-                    EditorSceneManager.SetActiveScene(scene);
+                if (scene.isLoaded && SceneManager.CanSetAsActiveScene(scene))
+                    SceneManager.SetActiveScene(scene);
             }
             else
             {
@@ -1351,7 +1361,7 @@ namespace UnityEditor
             if (scene.isLoaded)
             {
                 var content = EditorGUIUtility.TrTextContent("Set Active Scene");
-                if (hasMultipleScenes && SceneManager.GetActiveScene() != scene)
+                if (hasMultipleScenes && SceneManager.CanSetAsActiveScene(scene))
                     menu.AddItem(content, false, SetSceneActive, scene);
                 else
                     menu.AddDisabledItem(content);
@@ -2036,6 +2046,7 @@ namespace UnityEditor
                 menu.AddItem(new GUIContent("DEVELOPER/Debug Mode - Hierarchy "), s_Debug, () => s_Debug = !s_Debug);
                 menu.AddItem(new GUIContent("DEVELOPER/Debug Mode - Prefab Scene"), s_DebugPrefabStage, () => s_DebugPrefabStage = !s_DebugPrefabStage);
                 menu.AddItem(new GUIContent("DEVELOPER/Debug Mode - Expanded State Persistence"), s_DebugPersistingExpandedState, () => s_DebugPersistingExpandedState = !s_DebugPersistingExpandedState);
+                menu.AddItem(new GUIContent("DEVELOPER/Debug Mode - Preview Scenes"), s_DebugPreviewScenes, () => s_DebugPreviewScenes = !s_DebugPreviewScenes);
             }
         }
 

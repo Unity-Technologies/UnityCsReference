@@ -10,6 +10,8 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEditor.SceneManagement;
 using UnityObject = UnityEngine.Object;
+using UnityEditor.Experimental;
+using System.IO;
 
 namespace UnityEditor
 {
@@ -32,6 +34,7 @@ namespace UnityEditor
             public static GUIContent staticContent = EditorGUIUtility.TrTextContent("Static", "Enable the checkbox to mark this GameObject as static for all systems.\n\nDisable the checkbox to mark this GameObject as not static for all systems.\n\nUse the drop-down menu to mark as this GameObject as static or not static for individual systems.");
             public static GUIContent layerContent = EditorGUIUtility.TrTextContent("Layer", "The layer that this GameObject is in.\n\nChoose Add Layer... to edit the list of available layers.");
             public static GUIContent tagContent = EditorGUIUtility.TrTextContent("Tag", "The tag that this GameObject has.\n\nChoose Untagged to remove the current tag.\n\nChoose Add Tag... to edit the list of available tags.");
+            public static GUIContent staticPreviewContent = EditorGUIUtility.TrTextContent("Static Preview", "This asset is greater than 8MB so, by default, the Asset Preview displays a static preview.\nTo view the asset interactively, click the Asset Preview.");
 
             public static float tagFieldWidth => EditorGUI.CalcPrefixLabelWidth(Styles.tagContent, EditorStyles.boldLabel);
             public static float layerFieldWidth => EditorGUI.CalcPrefixLabelWidth(Styles.layerContent, EditorStyles.boldLabel);
@@ -80,6 +83,7 @@ namespace UnityEditor
             }
         }
         const float kIconSize = 24;
+        const long kMaxPreviewFileSizeInKB = 8000; // 8 MB
 
         class PreviewData : IDisposable
         {
@@ -92,21 +96,61 @@ namespace UnityEditor
 
             public Bounds renderableBounds { get; private set; }
 
-            public PreviewData(UnityObject targetObject)
+            public bool useStaticAssetPreview { get; set; }
+
+            public PreviewData(UnityObject targetObject, bool creatingStaticPreview = false)
             {
                 renderUtility = new PreviewRenderUtility();
                 renderUtility.camera.fieldOfView = 30.0f;
-                UpdateGameObject(targetObject);
+                if (!creatingStaticPreview)
+                    useStaticAssetPreview = IsPrefabFileTooLargeForInteractivePreview(targetObject);
+                if (!useStaticAssetPreview)
+                    UpdateGameObject(targetObject);
             }
 
             public void UpdateGameObject(UnityObject targetObject)
             {
                 UnityObject.DestroyImmediate(gameObject);
                 gameObject = EditorUtility.InstantiateForAnimatorPreview(targetObject);
-                var prefabGo = PrefabUtility.GetOriginalSourceOrVariantRoot(targetObject);
-                prefabAssetPath = AssetDatabase.GetAssetPath(prefabGo);
                 renderUtility.AddManagedGO(gameObject);
                 renderableBounds = GetRenderableBounds(gameObject);
+            }
+
+            // Very large prefabs takes too long to instantiate for the interactive preview so we
+            // fall back to the static preview for such prefabs
+            bool IsPrefabFileTooLargeForInteractivePreview(UnityObject prefabObject)
+            {
+                string prefabAssetPath = AssetDatabase.GetAssetPath(prefabObject);
+                if (string.IsNullOrEmpty(prefabAssetPath))
+                    return false;
+
+                string guidString = AssetDatabase.AssetPathToGUID(prefabAssetPath);
+                if (string.IsNullOrEmpty(guidString))
+                    return false;
+
+                var artifactKey = new ArtifactKey(new GUID(guidString));
+                var artifactID = AssetDatabaseExperimental.LookupArtifact(artifactKey);
+                AssetDatabaseExperimental.GetArtifactPaths(artifactID, out var paths);
+                if (paths.Length != 1)
+                {
+                    Debug.LogError("Prefabs should just have one artifact");
+                    return false;
+                }
+
+                string importedPrefabPath = Path.GetFullPath(paths[0]);
+                if (!System.IO.File.Exists(importedPrefabPath))
+                {
+                    Debug.LogError("Could not find prefab artifact on disk");
+                    return false;
+                }
+
+                long length = new System.IO.FileInfo(importedPrefabPath).Length;
+                long fileSizeInKB = length / 1024;
+
+                // Keep for debugging
+                //Debug.Log("Imported prefab: " + prefabAssetPath + ". File size: " + fileSizeInKB + " KB" + " (guid " + importedPrefabPath + ")");
+
+                return fileSizeInKB > kMaxPreviewFileSizeInKB;
             }
 
             public void Dispose()
@@ -123,6 +167,7 @@ namespace UnityEditor
         Dictionary<int, PreviewData> m_PreviewInstances = new Dictionary<int, PreviewData>();
         Dictionary<int, Texture> m_PreviewCache;
         Vector2 m_PreviewDir;
+        Vector2 m_StaticPreviewLabelSize;
         Rect m_PreviewRect;
         bool m_PlayModeObjects;
         bool m_IsAsset;
@@ -143,6 +188,8 @@ namespace UnityEditor
                 m_PreviewDir = new Vector2(0, 0);
             else
                 m_PreviewDir = new Vector2(120, -20);
+
+            m_StaticPreviewLabelSize = new Vector2(0, 0);
 
             m_Name = serializedObject.FindProperty("m_Name");
             m_IsActive = serializedObject.FindProperty("m_IsActive");
@@ -668,20 +715,21 @@ namespace UnityEditor
                     continue;
 
                 var previewData = pair.Value;
-                previewData.UpdateGameObject(targets[index]);
+                if (!previewData.useStaticAssetPreview)
+                    previewData.UpdateGameObject(targets[index]);
             }
             ClearPreviewCache();
         }
 
-        PreviewData GetPreviewData()
+        PreviewData GetPreviewData(bool creatingStaticPreview = false)
         {
             PreviewData previewData;
             if (!m_PreviewInstances.TryGetValue(referenceTargetIndex, out previewData))
             {
-                previewData = new PreviewData(target);
+                previewData = new PreviewData(target, creatingStaticPreview);
                 m_PreviewInstances.Add(referenceTargetIndex, previewData);
             }
-            if (!previewData.gameObject)
+            if (!previewData.gameObject && !previewData.useStaticAssetPreview)
                 ReloadPreviewInstances();
             return previewData;
         }
@@ -856,9 +904,8 @@ namespace UnityEditor
             GUI.enabled = true;
         }
 
-        private void DoRenderPreview()
+        private void DoRenderPreview(PreviewData previewData)
         {
-            var previewData = GetPreviewData();
             var bounds = previewData.renderableBounds;
             float halfSize = Mathf.Max(bounds.extents.magnitude, 0.0001f);
             float distance = halfSize * 3.8f;
@@ -888,20 +935,57 @@ namespace UnityEditor
                 return null;
             }
 
-            var previewUtility = GetPreviewData().renderUtility;
-            previewUtility.BeginStaticPreview(new Rect(0, 0, width, height));
+            var previewData = GetPreviewData(true);
 
-            DoRenderPreview();
+            previewData.renderUtility.BeginStaticPreview(new Rect(0, 0, width, height));
 
-            return previewUtility.EndStaticPreview();
+            DoRenderPreview(previewData);
+
+            return previewData.renderUtility.EndStaticPreview();
+        }
+
+        void DrawAssetPreviewTexture(Rect rect)
+        {
+            Texture2D icon = AssetPreview.GetAssetPreview(target);
+            if (!icon)
+            {
+                // We have a static preview it just hasn't been loaded yet. Repaint until we have it loaded.
+                if (AssetPreview.IsLoadingAssetPreview(target.GetInstanceID()))
+                    Repaint();
+            }
+            else
+            {
+                var scaleMode = ScaleMode.ScaleToFit;
+                GUI.DrawTexture(rect, icon, scaleMode);
+
+                if (m_StaticPreviewLabelSize.x == 0.0f && m_StaticPreviewLabelSize.y == 0.0f)
+                    m_StaticPreviewLabelSize = GUI.skin.label.CalcSize(Styles.staticPreviewContent);
+
+                // Only render overlay text if there is space enough
+                if (rect.width >= m_StaticPreviewLabelSize.x && rect.height >= m_StaticPreviewLabelSize.y + GUI.skin.label.padding.vertical)
+                {
+                    using (new EditorGUI.DisabledScope(true))
+                    {
+                        GUI.Label(new Rect(rect.x, rect.yMax - (m_StaticPreviewLabelSize.y + GUI.skin.label.padding.vertical), rect.width, m_StaticPreviewLabelSize.y), Styles.staticPreviewContent, EditorStyles.centeredGreyMiniLabel);
+                    }
+                }
+            }
         }
 
         public override void OnPreviewGUI(Rect r, GUIStyle background)
         {
-            if (!ShaderUtil.hardwareSupportsRectRenderTexture)
+            var previewData = GetPreviewData();
+
+            if (previewData.useStaticAssetPreview && GUI.Button(r, GUIContent.none))
+            {
+                previewData.useStaticAssetPreview = false;
+                previewData.UpdateGameObject(target);
+            }
+
+            if (previewData.useStaticAssetPreview || !ShaderUtil.hardwareSupportsRectRenderTexture)
             {
                 if (Event.current.type == EventType.Repaint)
-                    EditorGUI.DropShadowLabel(new Rect(r.x, r.y, r.width, 40), "Preview requires\nrender texture support");
+                    DrawAssetPreviewTexture(r);
                 return;
             }
 
@@ -931,7 +1015,7 @@ namespace UnityEditor
             else
             {
                 previewUtility.BeginPreview(r, background);
-                DoRenderPreview();
+                DoRenderPreview(previewData);
                 previewUtility.EndAndDrawPreview(r);
                 var copy = new RenderTexture(previewUtility.renderTexture);
                 var previous = RenderTexture.active;

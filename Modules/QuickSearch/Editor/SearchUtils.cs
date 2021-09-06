@@ -150,17 +150,25 @@ namespace UnityEditor.Search
             return obj.name;
         }
 
+        static ulong GetStableHash(in UnityEngine.Object obj, in ulong assetHash = 0)
+        {
+            var fileIdHint = Utils.GetFileIDHint(obj);
+            if (fileIdHint == 0)
+                fileIdHint = (ulong)obj.GetInstanceID();
+            return fileIdHint * 1181783497276652981UL + assetHash;
+        }
+
         /// <summary>
         /// Return a unique document key owning the object
         /// </summary>
-        internal static ulong GetDocumentKey(UnityEngine.Object obj)
+        internal static ulong GetDocumentKey(in UnityEngine.Object obj)
         {
             if (!obj)
                 return ulong.MaxValue;
             if (obj is GameObject go)
-                return GetTransformPath(go.transform).GetHashCode64();
+                return GetStableHash(go, (ulong)(GetHierarchyAssetPath(go)?.GetHashCode() ?? 0));
             if (obj is Component c)
-                return GetTransformPath(c.gameObject.transform).GetHashCode64();
+                return GetDocumentKey(c.gameObject);
             var assetPath = AssetDatabase.GetAssetPath(obj);
             if (string.IsNullOrEmpty(assetPath))
                 return ulong.MaxValue;
@@ -338,8 +346,7 @@ namespace UnityEditor.Search
             if (sceneRootObjects != null && sceneRootObjects.Length > 0)
                 goRoots.AddRange(sceneRootObjects);
 
-            return SceneModeUtility.GetObjects(goRoots.ToArray(), true)
-                .Where(o => (o.hideFlags & HideFlags.HideInHierarchy) != HideFlags.HideInHierarchy).ToArray();
+            return SceneModeUtility.GetObjects(goRoots.ToArray(), true);
         }
 
         /// <summary>
@@ -445,6 +452,15 @@ namespace UnityEditor.Search
                 s_GroupProviders[groupId] = groupProvider;
 
             return groupProvider;
+        }
+
+        public static string GetAssetPath(in SearchItem item)
+        {
+            if (item.provider.type == Providers.AssetProvider.type)
+                return Providers.AssetProvider.GetAssetPath(item);
+            if (item.provider.type == "dep")
+                return AssetDatabase.GUIDToAssetPath(item.id);
+            return null;
         }
     }
 }

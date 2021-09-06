@@ -398,8 +398,12 @@ namespace UnityEditor
                 set;
             }
 
-            [NativeProperty("IOSAllowHTTPDownload")]
-            public extern static bool allowHTTPDownload { get; set; }
+            [Obsolete("Use PlayerSettings.insecureHttpOption", false)]
+            public static bool allowHTTPDownload
+            {
+                get { return PlayerSettings.insecureHttpOption == InsecureHttpOption.AlwaysAllowed; }
+                set { PlayerSettings.insecureHttpOption = value ? InsecureHttpOption.AlwaysAllowed : InsecureHttpOption.NotAllowed; }
+            }
 
             [NativeProperty("AppleDeveloperTeamID")]
             private extern static string appleDeveloperTeamIDInternal

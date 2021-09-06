@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using NiceIO;
 using UnityEditor.Build.Reporting;
 using UnityEditor.Modules;
 using UnityEditor.Scripting;
@@ -292,8 +293,8 @@ namespace UnityEditorInternal
             if (runInformation.rcr != null)
             {
                 linkXmlFiles.Add(WriteMethodsToPreserveBlackList(runInformation.rcr));
-                linkXmlFiles.Add(WriteTypesInScenesBlacklist(managedAssemblyFolderPath, runInformation.rcr));
-                linkXmlFiles.Add(WriteSerializedTypesBlacklist(managedAssemblyFolderPath, runInformation.rcr));
+                linkXmlFiles.Add(WriteTypesInScenesBlacklist(runInformation));
+                linkXmlFiles.Add(WriteSerializedTypesBlacklist(runInformation));
             }
 
             linkXmlFiles.AddRange(ProcessBuildPipelineGenerateAdditionalLinkXmlFiles(runInformation));
@@ -314,9 +315,17 @@ namespace UnityEditorInternal
             return SanitizeLinkXmlFilePaths(linkXmlFiles, runInformation).ToList();
         }
 
-        private static string WriteTypesInScenesBlacklist(string managedAssemblyDirectory, RuntimeClassRegistry rcr)
+        static bool BuildFileMatchesAssembly(BuildFile file, string assemblyName)
         {
-            var items = rcr.GetAllManagedTypesInScenes();
+            return file.path.ToNPath().FileNameWithoutExtension == assemblyName &&
+                (file.role == "ManagedLibrary" ||
+                    file.role == "DependentManagedLibrary" ||
+                    file.role == "ManagedEngineAPI");
+        }
+
+        private static string WriteTypesInScenesBlacklist(UnityLinkerRunInformation runInformation)
+        {
+            var items = runInformation.rcr.GetAllManagedTypesInScenes();
 
             var sb = new StringBuilder();
             sb.AppendLine("<linker>");
@@ -326,10 +335,11 @@ namespace UnityEditorInternal
                 // ex: [UnityEditor.TestRunner.dll] UnityEditor.TestTools.TestRunner.TestListCacheData
                 //
                 // Filter anything out where the assembly doesn't exist so that UnityLinker can be strict about preservations in link xml files
-                if (!File.Exists(Path.Combine(managedAssemblyDirectory, assemblyTypePair.Key)))
+                var filename = assemblyTypePair.Key.ToNPath().FileNameWithoutExtension;
+                if (runInformation.BuildReport.files.All(file => !BuildFileMatchesAssembly(file, filename)))
                     continue;
 
-                sb.AppendLine($"\t<assembly fullname=\"{Path.GetFileNameWithoutExtension(assemblyTypePair.Key)}\">");
+                sb.AppendLine($"\t<assembly fullname=\"{filename}\">");
                 foreach (var type in assemblyTypePair.Value.OrderBy(s => s))
                 {
                     sb.AppendLine($"\t\t<type fullname=\"{type}\" preserve=\"nothing\"/>");
@@ -338,23 +348,21 @@ namespace UnityEditorInternal
             }
             sb.AppendLine("</linker>");
 
-            var path = Path.Combine(managedAssemblyDirectory, "TypesInScenes.xml");
+            var path = Path.Combine(runInformation.managedAssemblyFolderPath, "TypesInScenes.xml");
             File.WriteAllText(path, sb.ToString());
             return path;
         }
 
-        private static string WriteSerializedTypesBlacklist(string managedAssemblyDirectory, RuntimeClassRegistry rcr)
+        private static string WriteSerializedTypesBlacklist(UnityLinkerRunInformation runInformation)
         {
-            var items = rcr.GetAllSerializedClassesAsString();
-
+            var items = runInformation.rcr.GetAllSerializedClassesAsString();
             var oneOrMoreItemsWritten = false;
             var sb = new StringBuilder();
             sb.AppendLine("<linker>");
             foreach (var assemblyTypePair in items.OrderBy(t => t.Key))
             {
                 // Filter anything out where the assembly doesn't exist so that UnityLinker can be strict about preservations in link xml files
-                var assemblyPathWithoutExtension = Path.Combine(managedAssemblyDirectory, assemblyTypePair.Key);
-                if (!File.Exists($"{assemblyPathWithoutExtension}.dll") && !File.Exists($"{assemblyPathWithoutExtension}.exe") && !File.Exists($"{assemblyPathWithoutExtension}.winmd"))
+                if (runInformation.BuildReport.files.All(file => !BuildFileMatchesAssembly(file, assemblyTypePair.Key)))
                     continue;
 
                 sb.AppendLine($"\t<assembly fullname=\"{assemblyTypePair.Key}\">");
@@ -371,7 +379,7 @@ namespace UnityEditorInternal
             if (!oneOrMoreItemsWritten)
                 return null;
 
-            var path = Path.Combine(managedAssemblyDirectory, "SerializedTypes.xml");
+            var path = Path.Combine(runInformation.managedAssemblyFolderPath, "SerializedTypes.xml");
             File.WriteAllText(path, sb.ToString());
             return path;
         }

@@ -145,7 +145,7 @@ namespace Unity.UI.Builder
                 }
 
                 var newItem = new BuilderLibraryTreeItem(
-                    known.uxmlName, "CustomCSharpElement", elementType, () => known.Create(asset, context));
+                    known.uxmlName, elementType.Equals(typeof(TemplateContainer)) ? nameof(TemplateContainer) : "CustomCSharpElement", elementType, () => known.Create(asset, context));
                 newItem.hasPreview = true;
 
                 if (string.IsNullOrEmpty(split[0]))
@@ -251,7 +251,7 @@ namespace Unity.UI.Builder
                 AddCategoriesToStack(projectCategory, categoryStack, split);
 
                 var vta = asset.pptrValue as VisualTreeAsset;
-                var newItem = new BuilderLibraryTreeItem(asset.name + ".uxml", null, typeof(TemplateContainer),
+                var newItem = new BuilderLibraryTreeItem(asset.name + ".uxml", nameof(TemplateContainer), typeof(TemplateContainer),
                     () =>
                     {
                         if (vta == null)
@@ -270,7 +270,10 @@ namespace Unity.UI.Builder
                         return vea;
                     },
                     null, vta);
-                newItem.SetIcon((Texture2D) EditorGUIUtility.IconContent("UxmlScript Icon").image);
+                if (newItem.icon == null)
+                {
+                    newItem.SetIcon((Texture2D) EditorGUIUtility.IconContent("VisualTreeAsset Icon").image);
+                }
                 newItem.hasPreview = true;
 
                 if (categoryStack.Count == 0)

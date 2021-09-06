@@ -88,6 +88,7 @@ namespace Unity.UI.Builder
         public BuilderSelection selection => m_Selection;
         public BuilderDocument document => m_PaneWindow.document;
         public BuilderPaneWindow paneWindow => m_PaneWindow;
+        public BuilderInspectorAttributes attributeSection => m_AttributesSection;
 
         public StyleSheet styleSheet
         {

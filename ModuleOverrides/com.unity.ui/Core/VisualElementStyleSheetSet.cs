@@ -43,7 +43,7 @@ namespace UnityEngine.UIElements
             m_Element.styleSheetList.Add(styleSheet);
             m_Element.IncrementVersion(VersionChangeType.StyleSheet);
 
-            m_Element.elementPanel?.m_LiveReloadStyleSheetAssetTracker?.StartTrackingAsset(styleSheet);
+            m_Element.elementPanel?.liveReloadSystem.StartStyleSheetAssetTracking(styleSheet);
         }
 
         /// <summary>
@@ -56,13 +56,10 @@ namespace UnityEngine.UIElements
 
             if (m_Element.elementPanel != null)
             {
-                var tracker = m_Element.elementPanel.m_LiveReloadStyleSheetAssetTracker;
-                if (tracker != null)
+                var liveReloadSystem = m_Element.elementPanel.liveReloadSystem;
+                foreach (var styleSheet in m_Element.styleSheetList)
                 {
-                    foreach (var styleSheet in m_Element.styleSheetList)
-                    {
-                        tracker.StopTrackingAsset(styleSheet);
-                    }
+                    liveReloadSystem.StopStyleSheetAssetTracking(styleSheet);
                 }
             }
 
@@ -86,7 +83,7 @@ namespace UnityEngine.UIElements
                 }
                 m_Element.IncrementVersion(VersionChangeType.StyleSheet);
 
-                m_Element.elementPanel?.m_LiveReloadStyleSheetAssetTracker?.StopTrackingAsset(styleSheet);
+                m_Element.elementPanel?.liveReloadSystem.StopStyleSheetAssetTracking(styleSheet);
 
                 return true;
             }
@@ -114,12 +111,9 @@ namespace UnityEngine.UIElements
 
                 if (m_Element.elementPanel != null)
                 {
-                    var tracker = m_Element.elementPanel.m_LiveReloadStyleSheetAssetTracker;
-                    if (tracker != null)
-                    {
-                        tracker.StopTrackingAsset(old);
-                        tracker.StartTrackingAsset(@new);
-                    }
+                    var liveReloadSystem = m_Element.elementPanel.liveReloadSystem;
+                    liveReloadSystem.StopStyleSheetAssetTracking(old);
+                    liveReloadSystem.StartStyleSheetAssetTracking(@new);
                 }
             }
         }

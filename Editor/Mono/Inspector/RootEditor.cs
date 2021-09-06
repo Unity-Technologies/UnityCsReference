@@ -49,7 +49,14 @@ namespace UnityEditor
             if (editors.Length != 1)
                 return true;
 
-            return kSRootEditor.All(desc => desc.rootEditorType != editors[0].GetType());
+            foreach (var e in editors)
+            {
+                var fittingRootEditor = kSRootEditor.FirstOrDefault(rootEditor => rootEditor.rootEditorType == e.GetType());
+                if (fittingRootEditor == null)
+                    continue;
+                return fittingRootEditor.supportsAddComponent;
+            }
+            return false;
         }
 
         internal static Type FindRootEditor(UnityEngine.Object[] objects)

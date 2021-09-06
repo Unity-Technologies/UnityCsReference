@@ -93,7 +93,7 @@ namespace UnityEditor
 
             public static GUIContent bakeCustomButtonText = EditorGUIUtility.TrTextContent("Bake", "Bakes Reflection Probe's cubemap, overwriting the existing cubemap texture asset (if any).");
             public static GUIContent runtimeSettingsHeader = EditorGUIUtility.TrTextContent("Runtime Settings", "These settings are used by objects when they render with the cubemap of this probe");
-            public static GUIContent backgroundColorText = EditorGUIUtility.TrTextContent("Background", "Camera clears the screen to this color before rendering.");
+            public static GUIContent backgroundColorText = EditorGUIUtility.TrTextContent("Background Color", "Camera clears the screen to this color before rendering.");
             public static GUIContent clearFlagsText = EditorGUIUtility.TrTextContent("Clear Flags");
             public static GUIContent intensityText = EditorGUIUtility.TrTextContent("Intensity");
             public static GUIContent resolutionText = EditorGUIUtility.TrTextContent("Resolution");
@@ -107,6 +107,7 @@ namespace UnityEditor
             public static GUIContent renderDynamicObjects = EditorGUIUtility.TrTextContent("Dynamic Objects", "If enabled dynamic objects are also rendered into the cubemap");
             public static GUIContent timeSlicing = EditorGUIUtility.TrTextContent("Time Slicing", "If enabled this probe will update over several frames, to help reduce the impact on the frame rate");
             public static GUIContent refreshMode = EditorGUIUtility.TrTextContent("Refresh Mode", "Controls how this probe refreshes in the Player");
+            public static GUIContent useOcclusionCulling = EditorGUIUtility.TrTextContent("Occlusion Culling");
 
             public static GUIContent typeText = EditorGUIUtility.TrTextContent("Type", "'Baked Cubemap' uses the 'Auto Baking' mode from the Lighting window. If it is enabled, then baking is automatic otherwise manual bake is needed (use the bake button below). \n'Custom' can be used if a custom cubemap is wanted. \n'Realtime' can be used to dynamically re-render the cubemap during runtime (via scripting).");
             public static GUIContent[] reflectionProbeMode = { EditorGUIUtility.TrTextContent("Baked"), EditorGUIUtility.TrTextContent("Custom"), EditorGUIUtility.TrTextContent("Realtime") };
@@ -523,7 +524,7 @@ namespace UnityEditor
                 EditorGUILayout.IntPopup(m_ClearFlags, Styles.clearFlags, Styles.clearFlagsValues, Styles.clearFlagsText);
                 EditorGUILayout.PropertyField(m_BackgroundColor, Styles.backgroundColorText);
                 EditorGUILayout.PropertyField(m_CullingMask);
-                EditorGUILayout.PropertyField(m_UseOcclusionCulling);
+                EditorGUILayout.PropertyField(m_UseOcclusionCulling, Styles.useOcclusionCulling);
                 EditorGUILayout.PropertiesField(EditorGUI.s_ClipingPlanesLabel, m_NearAndFarProperties, EditorGUI.s_NearAndFarLabels, EditorGUI.kNearFarLabelsWidth);
 
                 EditorGUI.indentLevel--;
@@ -559,6 +560,25 @@ namespace UnityEditor
             return (p != null && p.texture != null);
         }
 
+        void CreateTextureInspector(Texture texture, ref Editor previousEditor)
+        {
+            switch (texture)
+            {
+                case Cubemap _:
+                    Editor.CreateCachedEditor(texture, typeof(CubemapInspector), ref previousEditor);
+                    break;
+                case CustomRenderTexture _:
+                    Editor.CreateCachedEditor(texture, typeof(CustomRenderTextureEditor), ref previousEditor);
+                    break;
+                case RenderTexture _:
+                    Editor.CreateCachedEditor(texture, typeof(RenderTextureEditor), ref previousEditor);
+                    break;
+                default:
+                    Editor.CreateCachedEditor(texture, typeof(TextureInspector), ref previousEditor);
+                    break;
+            }
+        }
+
         public override bool HasPreviewGUI()
         {
             if (targets.Length > 1)
@@ -568,7 +588,7 @@ namespace UnityEditor
             if (ValidPreviewSetup())
             {
                 Editor editor = m_CubemapEditor;
-                Editor.CreateCachedEditor(((ReflectionProbe)target).texture, null, ref editor);
+                CreateTextureInspector(((ReflectionProbe)target).texture, ref editor);
                 m_CubemapEditor = editor as TextureInspector;
             }
 
@@ -613,7 +633,7 @@ namespace UnityEditor
             if (p != null && p.texture != null && targets.Length == 1)
             {
                 Editor editor = m_CubemapEditor;
-                Editor.CreateCachedEditor(p.texture, null, ref editor);
+                CreateTextureInspector(p.texture, ref editor);
                 m_CubemapEditor = editor as TextureInspector;
             }
 

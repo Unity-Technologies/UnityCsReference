@@ -57,6 +57,15 @@ namespace UnityEditor
 
                 dropDownRect.size = EditorGUI.GetObjectIconDropDownSize(iconRect.width, iconRect.height);
                 EditorGUI.ObjectIconDropDown(dropDownRect, assetTargets, true, null, m_Icon);
+
+                Event evt = Event.current;
+                if (EventType.ValidateCommand == evt.type && (evt.commandName == "Undo Icon On GameObject" || evt.commandName == "Redo Icon On GameObject"))
+                {
+                    MonoScript monoScript = assetTargets[0] as MonoScript;
+                    IconSelector.CopyIconToImporter(monoScript);
+                    GUI.changed = true;
+                    evt.Use();
+                }
             }
             else
             {

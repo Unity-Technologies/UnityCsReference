@@ -32,6 +32,12 @@ namespace Unity.UI.Builder
             if (m_Selection.selectionType != BuilderSelectionType.StyleSelector)
                 return;
 
+            if (evt.newValue.Length == 0)
+            {
+                Refresh();
+                return;
+            }
+
             if (evt.newValue == evt.previousValue)
                 return;
 

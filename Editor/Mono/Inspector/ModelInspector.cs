@@ -225,7 +225,10 @@ namespace UnityEditor
         {
             var format = attr.format;
             var dimension = attr.dimension;
-            return $"{format} x {dimension} ({ConvertFormatToSize(format) * dimension} bytes)";
+            var str = $"{format} x {dimension} ({ConvertFormatToSize(format) * dimension} bytes)";
+            if (attr.stream != 0)
+                str += $", stream {attr.stream}";
+            return str;
         }
 
         static long CalcTotalIndices(Mesh mesh)

@@ -17,12 +17,24 @@ namespace UnityEditor.Networking.PlayerConnection
         private static string portPattern = @":\d{4,}";
         private static string ipPattern = @"@\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}";
         private static string localHostPattern = @" (Localhost prohibited)";
-        public static readonly string kTetheredDevices = L10n.Tr("Tethered Devices");
+        public static readonly string kDevices = L10n.Tr("Devices");
+
+        internal static class Content
+        {
+            public static string PlayerLogging = L10n.Tr("Player Logging");
+            public static string FullLog = L10n.Tr("Full Log [Developer Mode Only]");
+            public static string Logging = L10n.Tr("Logging");
+        }
 
         public static string GetToolbarContent(string connectionName)
         {
             var projectNameFromConnectionIdentifier = GetProjectNameFromConnectionIdentifier(ProfilerDriver.connectedProfiler);
             return $"{GetPlayerNameFromIDString(GetIdString(connectionName))}{(string.IsNullOrEmpty(projectNameFromConnectionIdentifier) ? "" : $" - {projectNameFromConnectionIdentifier}")}";
+        }
+
+        public static string GetPlayerNameFromId(int id)
+        {
+            return GetPlayerNameFromIDString(GetIdString(GeneralConnectionState.GetConnectionName(id)));
         }
 
         public static string GetIdString(string id)
@@ -93,7 +105,6 @@ namespace UnityEditor.Networking.PlayerConnection
 
         public static GUIContent GetIcon(string name)
         {
-            // *begin-nonstandard-formatting*
             var content = name switch
             {
                 "Editor" => EditorGUIUtility.IconContent("d_SceneAsset Icon"),
@@ -120,11 +131,10 @@ namespace UnityEditor.Networking.PlayerConnection
                 "EmbeddedLinuxX86" => EditorGUIUtility.IconContent("BuildSettings.EmbeddedLinux.Small"),
                 "PS4" => EditorGUIUtility.IconContent("BuildSettings.PS4.Small"),
                 "PS5" => EditorGUIUtility.IconContent("BuildSettings.PS5.Small"),
-                "Tethered Devices" => EditorGUIUtility.IconContent("BuildSettings.Standalone.Small"),
+                "Devices" => EditorGUIUtility.IconContent("BuildSettings.Standalone.Small"),
                 "<unknown>" => EditorGUIUtility.IconContent("BuildSettings.Broadcom"),
                 _ => EditorGUIUtility.IconContent("BuildSettings.Broadcom")
             };
-            // *end-nonstandard-formatting*
             return content;
         }
     }
@@ -134,7 +144,7 @@ namespace UnityEditor.Networking.PlayerConnection
         public Func<bool> m_Connected;
         public Action m_OnSelected;
         public string m_SubGroup;
-        public Func<bool> m_Disabled;
+        public bool m_Disabled;
         public string ProjectName;
         public float ProjectNameSize;
         public ConnectionMajorGroup m_TopLevelGroup;
@@ -146,10 +156,6 @@ namespace UnityEditor.Networking.PlayerConnection
         internal string Port;
         internal float PortSize;
         internal bool OldConnectionFormat;
-        // *begin-nonstandard-formatting*
-        public static GUIStyle sMenuItem => s_MenuItem ??= "TV Line";
-        // *end-nonstandard-formatting*
-        private static GUIStyle s_MenuItem;
         public bool IsDevice;
         public GUIContent IconContent;
 
@@ -160,6 +166,7 @@ namespace UnityEditor.Networking.PlayerConnection
 
         internal enum ConnectionMajorGroup
         {
+            Editor,
             Logging,
             Local,
             Remote,
@@ -170,6 +177,7 @@ namespace UnityEditor.Networking.PlayerConnection
 
         internal static string[] ConnectionMajorGroupLabels =
         {
+            "Editor",
             "Logging",
             "Local",
             "Remote",
@@ -179,23 +187,22 @@ namespace UnityEditor.Networking.PlayerConnection
         };
 
         public ConnectionDropDownItem(string content, int connectionId, string subGroup, ConnectionMajorGroup topLevelGroup, Func<bool> connected, Action onSelected,
-                                      Func<bool> disable, bool isDevice = false, string iconString = null)
+                                       bool isDevice = false, string iconString = null)
         {
             var idString = ConnectionUIHelper.GetIdString(content);
-            DisplayName = subGroup == ConnectionUIHelper.kTetheredDevices ? content : ConnectionUIHelper.GetPlayerNameFromIDString(idString);
-            DisplayNameSize = sMenuItem.CalcSize(GUIContent.Temp(DisplayName)).x;
+            DisplayName = subGroup == ConnectionUIHelper.kDevices ? content : ConnectionUIHelper.GetPlayerNameFromIDString(idString);
+            DisplayNameSize = ConnectionDropDownStyles.sTVLine.CalcSize(GUIContent.Temp(DisplayName)).x;
 
-            ProjectName = subGroup == ConnectionUIHelper.kTetheredDevices ? "" : ConnectionUIHelper.GetProjectNameFromConnectionIdentifier(connectionId);
-            ProjectNameSize = sMenuItem.CalcSize(GUIContent.Temp(ProjectName)).x;
+            ProjectName = subGroup == ConnectionUIHelper.kDevices ? "" : ConnectionUIHelper.GetProjectNameFromConnectionIdentifier(connectionId);
+            ProjectNameSize = ConnectionDropDownStyles.sTVLine.CalcSize(GUIContent.Temp(ProjectName)).x;
 
             IP = ConnectionUIHelper.GetIP(connectionId);
-            IPSize = sMenuItem.CalcSize(GUIContent.Temp(IP)).x;
+            IPSize = ConnectionDropDownStyles.sTVLine.CalcSize(GUIContent.Temp(IP)).x;
 
             Port = ConnectionUIHelper.GetPort(connectionId);
-            PortSize = sMenuItem.CalcSize(GUIContent.Temp(Port)).x;
+            PortSize = ConnectionDropDownStyles.sTVLine.CalcSize(GUIContent.Temp(Port)).x;
 
             m_ConnectionId = connectionId;
-            m_Disabled = disable;
             m_Connected = connected;
             m_OnSelected = onSelected;
             m_SubGroup = string.IsNullOrEmpty(subGroup) ? ConnectionUIHelper.GetRuntimePlatformFromIDString(idString) : subGroup;
@@ -210,7 +217,7 @@ namespace UnityEditor.Networking.PlayerConnection
             {
                 if (idString == "Editor" || idString == "Main Editor Process")
                 {
-                    m_TopLevelGroup = ConnectionMajorGroup.Local;
+                    m_TopLevelGroup = ConnectionMajorGroup.Editor;
                     m_SubGroup = "Editor";
                 }
                 else
@@ -222,7 +229,7 @@ namespace UnityEditor.Networking.PlayerConnection
             }
 
             displayName = DisplayName + ProjectName;
-            id = GetHashCode();
+            id = GenerateID();
             IsDevice = isDevice;
             if (isDevice)
             {
@@ -230,7 +237,7 @@ namespace UnityEditor.Networking.PlayerConnection
             }
         }
 
-        public override int GetHashCode()
+        public int GenerateID()
         {
             return (DisplayName + ProjectName + IP + Port).GetHashCode();
         }
@@ -278,18 +285,18 @@ namespace UnityEditor.Networking.PlayerConnection
     internal class ConnectionTreeView : TreeView
     {
         public List<ConnectionDropDownItem> dropDownItems = new List<ConnectionDropDownItem>(0);
-        private readonly Color SeparatorColor = new Color(0.5f, 0.5f, 0.5f, 0.5f);
-        public string search = "";
-        private const int ToggleRectWidth = 16;
-        private const float SeparatorLineWidth = 1f;
-        private const float SeparatorVerticalPadding = 2f;
 
-        public ConnectionTreeView(TreeViewState state, ConnectionDropDownMultiColumnHeader multiColumnHeader) : base(state, multiColumnHeader)
+        public string search = "";
+        public float DisplayNameIndent => 2 * depthIndentWidth + ConnectionDropDownStyles.ToggleRectWidth + (2 * ConnectionDropDownStyles.SeparatorVerticalPadding) + ConnectionDropDownStyles.SeparatorLineWidth;
+        Action m_CloseWindow;
+
+        public ConnectionTreeView(TreeViewState state, ConnectionDropDownMultiColumnHeader multiColumnHeader, Action closeWindow) : base(state, multiColumnHeader)
         {
-            showAlternatingRowBackgrounds = true;
+            showAlternatingRowBackgrounds = false;
             baseIndent = 0;
             depthIndentWidth = foldoutWidth;
             rowHeight = 20f;
+            m_CloseWindow = closeWindow;
         }
 
         protected override TreeViewItem BuildRoot()
@@ -297,6 +304,14 @@ namespace UnityEditor.Networking.PlayerConnection
             var root = new TreeViewItem { id = -1, depth = -1, displayName = "Root" };
             foreach (var connectionType in dropDownItems.OrderBy(x => x.m_TopLevelGroup).GroupBy(x => x.m_TopLevelGroup))
             {
+                if (connectionType.Key == ConnectionDropDownItem.ConnectionMajorGroup.Editor)
+                {
+                    foreach (var connectionDropDownItem in connectionType)
+                    {
+                        root.AddChild(connectionDropDownItem);
+                    }
+                    continue;
+                }
                 // connection major group
                 var i = new TreeViewItem { displayName = ConnectionDropDownItem.ConnectionMajorGroupLabels[(int)connectionType.Key]};
                 i.id = (i.displayName + root.displayName).GetHashCode();
@@ -340,7 +355,7 @@ namespace UnityEditor.Networking.PlayerConnection
         {
             if (name == item.displayName) return item;
 
-            var newItem = new TreeViewItem {displayName = name, id = (name + item.parent.displayName).GetHashCode()};
+            var newItem = new TreeViewItem { displayName = name, id = (name + item.parent.displayName).GetHashCode() };
             item.AddChild(newItem);
             return newItem;
         }
@@ -372,8 +387,16 @@ namespace UnityEditor.Networking.PlayerConnection
         protected override void SingleClickedItem(int id)
         {
             var t = dropDownItems.Find(x => x.id == id);
-            if (t is ConnectionDropDownItem && (!t.m_Disabled?.Invoke() ?? true))
+            if (t is ConnectionDropDownItem && !t.m_Disabled)
+            {
                 t.m_OnSelected?.Invoke();
+                m_CloseWindow.Invoke();
+                EditorGUIUtility.ExitGUI();
+                return;
+            }
+
+            var item = FindItem(id, rootItem);
+            controller.UserInputChangedExpandedState(item, FindRowOfItem(item), !IsExpanded(id));
         }
 
         protected override void RowGUI(RowGUIArgs args)
@@ -382,7 +405,7 @@ namespace UnityEditor.Networking.PlayerConnection
 
             if (item is ConnectionDropDownItem cddi)
             {
-                GUI.enabled = (!cddi.m_Disabled?.Invoke() ?? true);
+                GUI.enabled = !cddi.m_Disabled;
                 if (GUI.enabled && args.selected && Event.current.keyCode == KeyCode.Return)
                 {
                     cddi.m_OnSelected?.Invoke();
@@ -414,10 +437,10 @@ namespace UnityEditor.Networking.PlayerConnection
                         rect.x += GetContentIndent(item) - foldoutWidth;
 
                         EditorGUI.BeginChangeCheck();
-                        rect.width = ToggleRectWidth;
+                        rect.width = ConnectionDropDownStyles.ToggleRectWidth;
                         var isConnected = cddi.m_Connected?.Invoke() ?? false;
                         GUI.Label(rect, (isConnected ? EditorGUIUtility.IconContent("Valid") : GUIContent.none));
-                        rect.x += ToggleRectWidth;
+                        rect.x += ConnectionDropDownStyles.ToggleRectWidth;
                         if (cddi.IsDevice)
                         {
                             EditorGUI.LabelField(new Rect(rect.x, rect.y, rowHeight, rowHeight), cddi.IconContent);
@@ -426,8 +449,8 @@ namespace UnityEditor.Networking.PlayerConnection
                         var textRect = cellRect;
                         textRect.x = rect.x;
                         textRect.width = cellRect.width - (textRect.x - cellRect.x);
-                        GUI.Label(textRect,  cddi.DisplayName);
 
+                        GUI.Label(textRect, TruncateString(cddi.DisplayName, textRect.width));
                         if (EditorGUI.EndChangeCheck())
                         {
                             cddi.m_OnSelected.Invoke();
@@ -439,7 +462,7 @@ namespace UnityEditor.Networking.PlayerConnection
                         if (item.depth <= 0)
                         {// major group headers
                             if (args.row != 0)
-                                EditorGUI.DrawRect(new Rect(r.x, r.y, args.rowRect.width, 1f), SeparatorColor);
+                                EditorGUI.DrawRect(new Rect(r.x, r.y, args.rowRect.width, 1f), ConnectionDropDownStyles.SeparatorColor);
                             r.x += GetContentIndent(item);
                             r.width = args.rowRect.width - GetContentIndent(item);
                             GUI.Label(r, item.displayName, EditorStyles.boldLabel);
@@ -454,24 +477,25 @@ namespace UnityEditor.Networking.PlayerConnection
                     break;
 
                 case ConnectionDropDownColumns.ProjectName:
-                    if (cddi?.DisplayProjectName() ?? false)
+                    if(item.depth > 1)
                     {
                         DrawVerticalSeparatorLine(cellRect);
-                        GUI.Label(cellRect, cddi.ProjectName);
+                        GUI.Label(cellRect, TruncateString(cddi.ProjectName, cellRect.width));
+
                     }
                     break;
                 case ConnectionDropDownColumns.IP:
-                    if (cddi?.DisplayIP() ?? false)
+                    if(item.depth > 1)
                     {
                         DrawVerticalSeparatorLine(cellRect);
-                        GUI.Label(cellRect, cddi.IP);
+                        GUI.Label(cellRect, TruncateString(cddi.IP,cellRect.width));
                     }
                     break;
                 case ConnectionDropDownColumns.Port:
-                    if (cddi?.DisplayPort() ?? false)
+                    if(item.depth > 1)
                     {
                         DrawVerticalSeparatorLine(cellRect);
-                        GUI.Label(cellRect, cddi.Port);
+                        GUI.Label(cellRect, TruncateString(cddi.Port, cellRect.width));
                     }
                     break;
                 default:
@@ -479,11 +503,25 @@ namespace UnityEditor.Networking.PlayerConnection
             }
         }
 
+        string TruncateString(string s, float maxwidth)
+        {
+            if (ConnectionDropDownStyles.sTVLine.CalcSize(GUIContent.Temp(s)).x < maxwidth)
+                return s;
+
+            maxwidth -= ConnectionDropDownStyles.sTVLine.CalcSize(GUIContent.Temp("...")).x;
+            while (ConnectionDropDownStyles.sTVLine.CalcSize(GUIContent.Temp(s)).x > maxwidth)
+            {
+                s = s.Remove(s.Length - 1, 1);
+            }
+
+            return s + "...";
+        }
+
         private void DrawVerticalSeparatorLine(Rect cellRect)
         {
             EditorGUI.DrawRect(
-                new Rect(cellRect.x - 2, cellRect.y + SeparatorVerticalPadding, SeparatorLineWidth,
-                    cellRect.height - 2 * SeparatorVerticalPadding), SeparatorColor);
+                new Rect(cellRect.x - 4, cellRect.y + ConnectionDropDownStyles.SeparatorVerticalPadding, ConnectionDropDownStyles.SeparatorLineWidth,
+                    cellRect.height - 2 * ConnectionDropDownStyles.SeparatorVerticalPadding), ConnectionDropDownStyles.SeparatorColor);
         }
 
         public float GetHeight()
@@ -495,48 +533,74 @@ namespace UnityEditor.Networking.PlayerConnection
         }
     }
 
+    internal class ConnectionDropDownStyles
+    {
+        internal static float searchFieldPadding = 12f;
+        internal static float searchFieldVerticalSpacing = 12f;
+
+        internal static GUIStyle sConnectionTrouble = "MenuItem";
+        internal static GUIStyle sTVLine = "TV Line";
+
+        internal static readonly Color SeparatorColor = new Color(0.5f, 0.5f, 0.5f, 0.5f);
+        internal static int ToggleRectWidth = 16;
+        internal static float SeparatorLineWidth = 1f;
+        internal static float SeparatorVerticalPadding = 2f;
+        public static float troubleShootBtnPadding = 10f;
+    }
+
     internal class ConnectionTreeViewWindow : PopupWindowContent
     {
         private ConnectionTreeView m_connectionTreeView;
         private SearchField m_SearchField;
-        private float searchFieldPadding = 12f;
-        private float searchFieldVerticalSpacing = 12f;
+
         private ConnectionDropDownMultiColumnHeader multiColumnHeader;
         private IConnectionStateInternal state;
         private static MultiColumnHeaderState multiColumnHeaderState;
         private static TreeViewState treeViewState;
         private List<ConnectionDropDownItem> connectionItems;
         private static bool firstOpen = true;
+        float loggingVerticalPadding = 3f;
+        float searchToLoggingPadding = 8f;
+        ConsoleWindow.ConsoleAttachToPlayerState consoleAttachToPlayerState;
+        bool didFocus;
+        Dictionary<int, bool> m_expandedState = new Dictionary<int, bool>();
+        bool searching;
 
         public ConnectionTreeViewWindow(IConnectionStateInternal internalState, Rect rect)
         {
             state = internalState;
-            state.AddItemsToMenu(this, rect);
+            state.AddItemsToTree(this, rect);
             if (multiColumnHeaderState == null)
             {
                 treeViewState = new TreeViewState();
                 multiColumnHeaderState = CreateDefaultMultiColumnHeaderState(100);
                 multiColumnHeader = new ConnectionDropDownMultiColumnHeader(multiColumnHeaderState);
-                m_connectionTreeView = new ConnectionTreeView(treeViewState, multiColumnHeader) { dropDownItems = connectionItems };
+                m_connectionTreeView = new ConnectionTreeView(treeViewState, multiColumnHeader, ClosePopUp) { dropDownItems = connectionItems };
                 SetMinColumnWidths();
                 return;
             }
 
             multiColumnHeader = new ConnectionDropDownMultiColumnHeader(multiColumnHeaderState);
-            m_connectionTreeView = new ConnectionTreeView(treeViewState, multiColumnHeader) { dropDownItems = connectionItems };
+            m_connectionTreeView = new ConnectionTreeView(treeViewState, multiColumnHeader, ClosePopUp) { dropDownItems = connectionItems };
         }
 
         static class Content
         {
             private static GUIStyle style = MultiColumnHeader.DefaultStyles.columnHeader;
             public static GUIContent PlayerName = new GUIContent("Player Name");
-            public static float PlayerNameMinWidth = style.CalcSize(PlayerName).x;
+            public static float PlayerNameMinWidth = 150;
             public static GUIContent ProjectName = new GUIContent("Product Name");
             public static float ProjectNameMinWidth = style.CalcSize(ProjectName).x;
             public static GUIContent IP = new GUIContent("IP");
-            public static float IPMinWidth = style.CalcSize(IP).x;
+            public static float IPMinWidth = style.CalcSize(GUIContent.Temp("00000")).x;
             public static GUIContent Port = new GUIContent("Port");
-            public static float PortMinWidth = style.CalcSize(Port).x;
+            public static float PortMinWidth = style.CalcSize(GUIContent.Temp("00000")).x;
+            public static GUIContent TroubleShoot = new GUIContent("Troubleshoot Connection Issues");
+        }
+
+        void ClosePopUp()
+        {
+            this.editorWindow.Close();
         }
 
         public override void OnClose()
@@ -566,15 +630,85 @@ namespace UnityEditor.Networking.PlayerConnection
         public override void OnGUI(Rect rect)
         {
             EditorGUI.BeginChangeCheck();
-            m_connectionTreeView.search = m_SearchField.OnGUI(new Rect(rect.x + searchFieldPadding, rect.y + searchFieldPadding, rect.width - (2 * searchFieldPadding), EditorGUI.kSingleLineHeight), m_connectionTreeView.search);
+            m_connectionTreeView.search = m_SearchField.OnGUI(new Rect(rect.x + ConnectionDropDownStyles.searchFieldPadding, rect.y + ConnectionDropDownStyles.searchFieldPadding, rect.width - (2 * ConnectionDropDownStyles.searchFieldPadding), EditorGUI.kSingleLineHeight), m_connectionTreeView.search);
+
+            if (!didFocus && !m_SearchField.HasFocus())
+            {
+                m_SearchField.SetFocus();
+                didFocus = true;
+            }
+
             if (EditorGUI.EndChangeCheck())
             {
+                if (!string.IsNullOrEmpty(m_connectionTreeView.search))
+                {
+                    if (!searching)
+                    {
+                        var rows = m_connectionTreeView.GetRows();
+                        m_expandedState.Clear();
+                        foreach (var row in rows)
+                        {
+                            m_expandedState.Add(row.id, m_connectionTreeView.IsExpanded(row.id));
+                        }
+                    }
+                    m_connectionTreeView.ExpandAll();
+                    searching = true;
+                }
+                else
+                {
+                    if (searching)
+                    {
+                        foreach (var b in m_expandedState)
+                        {
+                            m_connectionTreeView.SetExpanded(b.Key, b.Value);
+                        }
+                        searching = false;
+                    }
+
+                }
+
                 Reload();
             }
-            rect.y += EditorGUI.kSingleLineHeight + searchFieldVerticalSpacing;
+            rect.y += EditorGUI.kSingleLineHeight + ConnectionDropDownStyles.searchFieldVerticalSpacing;
+
+            if (consoleAttachToPlayerState != null)
+            {
+                rect.y += searchToLoggingPadding;
+                EditorGUI.BeginChangeCheck();
+                GUI.Toggle(new Rect(rect.x + ConnectionDropDownStyles.searchFieldPadding, rect.y, rect.width, EditorGUI.kSingleLineHeight), consoleAttachToPlayerState.IsConnected(), ConnectionUIHelper.Content.PlayerLogging);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    consoleAttachToPlayerState.PlayerLoggingOptionSelected();
+                }
+                rect.y += EditorGUI.kSingleLineHeight + loggingVerticalPadding;
+                GUI.enabled = consoleAttachToPlayerState.IsConnected();
+                m_connectionTreeView.dropDownItems.ForEach(x => x.m_Disabled = !GUI.enabled);
+
+                EditorGUI.BeginChangeCheck();
+                GUI.Toggle(new Rect(rect.x + ConnectionDropDownStyles.searchFieldPadding, rect.y, rect.width, EditorGUI.kSingleLineHeight), consoleAttachToPlayerState.IsLoggingFullLog(), ConnectionUIHelper.Content.FullLog);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    consoleAttachToPlayerState.FullLogOptionSelected();
+                }
+                rect.y += EditorGUI.kSingleLineHeight + loggingVerticalPadding;
+            }
 
             m_connectionTreeView?.OnGUI(new Rect(rect.x, rect.y, rect.width, (float)m_connectionTreeView?.totalHeight));
             rect.y += (float)m_connectionTreeView?.totalHeight;
+            GUI.enabled = true;
+
+            EditorGUI.DrawDelimiterLine(new Rect(rect.x,rect.y,rect.width,1f));
+            rect.y += 1f;
+            rect.y += ConnectionDropDownStyles.troubleShootBtnPadding / 2f;
+            if (EditorGUI.Button(rect, Content.TroubleShoot, ConnectionDropDownStyles.sConnectionTrouble))
+            {
+                var version = $"{Application.unityVersionVer}.{Application.unityVersionMaj}";
+                Application.OpenURL($"https://docs.unity3d.com/{version}/Documentation/Manual/profiler-profiling-applications.html");
+            }
+
+            if(Event.current.type == EventType.MouseMove)
+                Event.current.Use();
+
         }
 
         private void SetMinColumnWidths()
@@ -633,7 +767,7 @@ namespace UnityEditor.Networking.PlayerConnection
 
         public void AddDisabledItem(ConnectionDropDownItem connectionDropDownItem)
         {
-            connectionDropDownItem.m_Disabled = () => true;
+            connectionDropDownItem.m_Disabled = true;
             AddItem(connectionDropDownItem);
         }
 
@@ -642,11 +776,11 @@ namespace UnityEditor.Networking.PlayerConnection
             // *begin-nonstandard-formatting*
             connectionItems ??= new List<ConnectionDropDownItem>();
             // *end-nonstandard-formatting*
-            // this is a hack to show switch connected over ethernet in tethered devices
+            // this is a hack to show switch connected over ethernet in devices
             if (connectionDropDownItem.IP == "127.0.0.1" && ProfilerDriver.GetConnectionIdentifier(connectionDropDownItem.m_ConnectionId).StartsWith("Switch"))
             {
                 connectionDropDownItem.m_TopLevelGroup = ConnectionDropDownItem.ConnectionMajorGroup.Local;
-                connectionDropDownItem.m_SubGroup = "Tethered Devices";
+                connectionDropDownItem.m_SubGroup = "Devices";
                 connectionDropDownItem.IsDevice = true;
                 connectionDropDownItem.IconContent = ConnectionUIHelper.GetIcon("Switch");
                 var fullName = ProfilerDriver.GetConnectionIdentifier(connectionDropDownItem.m_ConnectionId);
@@ -670,9 +804,15 @@ namespace UnityEditor.Networking.PlayerConnection
         public override Vector2 GetWindowSize()
         {
             Vector2 v = Vector2.zero;
-            v.y +=  EditorGUI.kSingleLineHeight + searchFieldVerticalSpacing; // search field
+            v.y +=  EditorGUI.kSingleLineHeight + ConnectionDropDownStyles.searchFieldVerticalSpacing; // search field
             v.x = Mathf.Max(200, GetTotalVisibleWidth());
+            if (consoleAttachToPlayerState != null)
+            {
+                v.y += searchToLoggingPadding + 2 * (EditorGUI.kSingleLineHeight + loggingVerticalPadding);
+            }
             v.y += GetTotalTreeViewHeight();
+            v.y += EditorGUI.kSingleLineHeight;
+            v.y += ConnectionDropDownStyles.troubleShootBtnPadding;
             return v;
         }
 
@@ -683,7 +823,6 @@ namespace UnityEditor.Networking.PlayerConnection
 
         float GetLargestWidth(int idx)
         {
-            // *begin-nonstandard-formatting*
             return idx switch
             {
                 0 => GetRequiredDisplayNameColumnWidth(),
@@ -692,7 +831,6 @@ namespace UnityEditor.Networking.PlayerConnection
                 3 => GetRequiredPortColumnWidth(),
                 _ => 0
             };
-            // *end-nonstandard-formatting*
         }
 
         private float GetRequiredProjectNameColumnWidth()
@@ -704,7 +842,7 @@ namespace UnityEditor.Networking.PlayerConnection
         private float GetRequiredDisplayNameColumnWidth()
         {
             return Mathf.Max(Content.PlayerNameMinWidth,
-                connectionItems.Max(x => x.DisplayNameSize) + 20);
+                connectionItems.Max(x => x.DisplayNameSize) + m_connectionTreeView.DisplayNameIndent );
         }
 
         private float GetRequiredIPColumnWidth()
@@ -731,6 +869,11 @@ namespace UnityEditor.Networking.PlayerConnection
         public void Clear()
         {
             m_connectionTreeView?.dropDownItems.Clear();
+        }
+
+        public void SetLoggingOptions(ConsoleWindow.ConsoleAttachToPlayerState state)
+        {
+            consoleAttachToPlayerState = state;
         }
     }
 }

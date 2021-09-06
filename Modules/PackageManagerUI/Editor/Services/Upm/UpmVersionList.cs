@@ -186,17 +186,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public IPackageVersion importAvailable => null;
 
-        // Right now we only want to compare the version itself,
+        public bool isNonLifecycleVersionInstalled => CheckIsNonLifecycleVersionInstalled(installed, lifecycleVersion);
+
         // If the user installs a local, git or embedded package with the same version string as the lifecycle version, it is consider as a non lifecycle version
-        // We also consider that installation as the `lifecycle` version. We might change this behaviour later
-        public bool isNonLifecycleVersionInstalled
+        // We also consider that installation as the `lifecycle` version. Patches of lifecycle version are also considered lifecycle version.
+        // We might change this behaviour later
+        internal static bool CheckIsNonLifecycleVersionInstalled(IPackageVersion installed, IPackageVersion lifecycleVersion)
         {
-            get
-            {
-                var installed = this.installed;
-                var lifecycleVersion = this.lifecycleVersion;
-                return installed != null && lifecycleVersion != null && (installed.HasTag(PackageTag.Custom | PackageTag.Git | PackageTag.Local) || installed.version != lifecycleVersion.version);
-            }
+            return installed != null && lifecycleVersion != null && (installed.HasTag(PackageTag.Custom | PackageTag.Git) || installed.version?.IsEqualOrPatchOf(lifecycleVersion.version) != true);
         }
 
         internal void UpdateVersion(UpmPackageVersion version)

@@ -79,6 +79,7 @@ namespace UnityEngine.U2D
         ChannelTexCoord0,
         ChannelNormal,
         ChannelTangent,
+        ChannelColor,
         DataCount
     }
 
@@ -172,6 +173,23 @@ namespace UnityEngine.U2D
             texcoords = GetChannelDataArray<Vector2>(SpriteShapeDataType.ChannelTexCoord0, VertexAttribute.TexCoord0);
         }
 
+        // <summary>
+        /// Gets NativeArrays of SpriteShapeSegment.
+        /// </summary>
+        /// <param name="dataSize">Size of the NativeArray requested.</param>
+        /// <param name="indices">NativeArray of indices.</param>
+        /// <param name="vertices">NativeSlice of vertices.</param>
+        /// <param name="texcoords">NativeSlice of texture coordinate for channel 0.</param>
+        /// <param name="tangents">NativeSlice of colors.</param>
+        unsafe public void GetChannels(int dataSize, out NativeArray<ushort> indices, out NativeSlice<Vector3> vertices, out NativeSlice<Vector2> texcoords, out NativeSlice<Color32> colors)
+        {
+            SetMeshChannelInfo(dataSize, dataSize, (int)(1 << (int)VertexAttribute.Color));
+            indices = GetNativeDataArray<ushort>(SpriteShapeDataType.Index);
+            vertices = GetChannelDataArray<Vector3>(SpriteShapeDataType.ChannelVertex, VertexAttribute.Position);
+            texcoords = GetChannelDataArray<Vector2>(SpriteShapeDataType.ChannelTexCoord0, VertexAttribute.TexCoord0);
+            colors = GetChannelDataArray<Color32>(SpriteShapeDataType.ChannelColor, VertexAttribute.Color);
+        }
+
         /// <summary>
         /// Gets NativeArrays of SpriteShapeSegment.
         /// </summary>
@@ -186,6 +204,24 @@ namespace UnityEngine.U2D
             indices = GetNativeDataArray<ushort>(SpriteShapeDataType.Index);
             vertices = GetChannelDataArray<Vector3>(SpriteShapeDataType.ChannelVertex, VertexAttribute.Position);
             texcoords = GetChannelDataArray<Vector2>(SpriteShapeDataType.ChannelTexCoord0, VertexAttribute.TexCoord0);
+            tangents = GetChannelDataArray<Vector4>(SpriteShapeDataType.ChannelTangent, VertexAttribute.Tangent);
+        }
+
+        // <summary>
+        /// Gets NativeArrays of SpriteShapeSegment.
+        /// </summary>
+        /// <param name="dataSize">Size of the NativeArray requested.</param>
+        /// <param name="indices">NativeArray of indices.</param>
+        /// <param name="vertices">NativeSlice of vertices.</param>
+        /// <param name="texcoords">NativeSlice of texture coordinate for channel 0.</param>
+        /// <param name="tangents">NativeSlice of colors.</param>
+        unsafe public void GetChannels(int dataSize, out NativeArray<ushort> indices, out NativeSlice<Vector3> vertices, out NativeSlice<Vector2> texcoords, out NativeSlice<Color32> colors, out NativeSlice<Vector4> tangents)
+        {
+            SetMeshChannelInfo(dataSize, dataSize, (int)((1 << (int)VertexAttribute.Color) | (1 << (int)VertexAttribute.Tangent)));
+            indices = GetNativeDataArray<ushort>(SpriteShapeDataType.Index);
+            vertices = GetChannelDataArray<Vector3>(SpriteShapeDataType.ChannelVertex, VertexAttribute.Position);
+            texcoords = GetChannelDataArray<Vector2>(SpriteShapeDataType.ChannelTexCoord0, VertexAttribute.TexCoord0);
+            colors = GetChannelDataArray<Color32>(SpriteShapeDataType.ChannelColor, VertexAttribute.Color);
             tangents = GetChannelDataArray<Vector4>(SpriteShapeDataType.ChannelTangent, VertexAttribute.Tangent);
         }
 
@@ -204,6 +240,25 @@ namespace UnityEngine.U2D
             indices = GetNativeDataArray<ushort>(SpriteShapeDataType.Index);
             vertices = GetChannelDataArray<Vector3>(SpriteShapeDataType.ChannelVertex, VertexAttribute.Position);
             texcoords = GetChannelDataArray<Vector2>(SpriteShapeDataType.ChannelTexCoord0, VertexAttribute.TexCoord0);
+            tangents = GetChannelDataArray<Vector4>(SpriteShapeDataType.ChannelTangent, VertexAttribute.Tangent);
+            normals = GetChannelDataArray<Vector3>(SpriteShapeDataType.ChannelNormal, VertexAttribute.Normal);
+        }
+
+        // <summary>
+        /// Gets NativeArrays of SpriteShapeSegment.
+        /// </summary>
+        /// <param name="dataSize">Size of the NativeArray requested.</param>
+        /// <param name="indices">NativeArray of indices.</param>
+        /// <param name="vertices">NativeSlice of vertices.</param>
+        /// <param name="texcoords">NativeSlice of texture coordinate for channel 0.</param>
+        /// <param name="tangents">NativeSlice of colors.</param>
+        unsafe public void GetChannels(int dataSize, out NativeArray<ushort> indices, out NativeSlice<Vector3> vertices, out NativeSlice<Vector2> texcoords, out NativeSlice<Color32> colors, out NativeSlice<Vector4> tangents, out NativeSlice<Vector3> normals)
+        {
+            SetMeshChannelInfo(dataSize, dataSize, (int)((1 << (int)VertexAttribute.Color) | (1 << (int)VertexAttribute.Normal) | (1 << (int)VertexAttribute.Tangent)));
+            indices = GetNativeDataArray<ushort>(SpriteShapeDataType.Index);
+            vertices = GetChannelDataArray<Vector3>(SpriteShapeDataType.ChannelVertex, VertexAttribute.Position);
+            texcoords = GetChannelDataArray<Vector2>(SpriteShapeDataType.ChannelTexCoord0, VertexAttribute.TexCoord0);
+            colors = GetChannelDataArray<Color32>(SpriteShapeDataType.ChannelColor, VertexAttribute.Color);
             tangents = GetChannelDataArray<Vector4>(SpriteShapeDataType.ChannelTangent, VertexAttribute.Tangent);
             normals = GetChannelDataArray<Vector3>(SpriteShapeDataType.ChannelNormal, VertexAttribute.Normal);
         }

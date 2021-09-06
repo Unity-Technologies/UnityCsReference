@@ -12,6 +12,7 @@ using Object = UnityEngine.Object;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using UnityEngine.Pool;
 
 namespace UnityEditorInternal
 {
@@ -141,7 +142,7 @@ namespace UnityEditorInternal
             public GUIContent iconToolbarMinus = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove selection from the list");
             public readonly GUIStyle draggingHandle = "RL DragHandle";
             public readonly GUIStyle headerBackground = "RL Header";
-            private readonly GUIStyle emptyHeaderBackground = "RL Empty Header";
+            public readonly GUIStyle emptyHeaderBackground = "RL Empty Header";
             public readonly GUIStyle footerBackground = "RL Footer";
             public readonly GUIStyle boxBackground = "RL Background";
             public readonly GUIStyle preButton = "RL FooterButton";
@@ -236,12 +237,6 @@ namespace UnityEditorInternal
 
                 if (list.serializedProperty != null)
                 {
-                    if (list.serializedProperty.hasMultipleDifferentValues &&
-                        !EditorUtility.DisplayDialog(L10n.Tr("Changing size of the array will copy new value to all other selected objects."),
-                            L10n.Tr("Unique values in the different selected object array size properties will be lost"),
-                            L10n.Tr("OK"),
-                            L10n.Tr("Cancel"))) return;
-
                     list.serializedProperty = list.serializedProperty.serializedObject.FindProperty(list.m_PropertyPath);
                     list.serializedProperty.arraySize = list.count + 1;
                     list.index = list.serializedProperty.arraySize - 1;
@@ -250,8 +245,6 @@ namespace UnityEditorInternal
                     {
                         list.serializedProperty.GetArrayElementAtIndex(list.index).objectReferenceValue = value;
                     }
-
-                    list.serializedProperty.serializedObject.ApplyModifiedProperties();
                 }
                 else
                 {
@@ -315,7 +308,6 @@ namespace UnityEditorInternal
                                 currentProperty = nextProperty;
                             }
                         }
-                        list.serializedProperty.serializedObject.ApplyModifiedProperties();
                     }
                     else
                     {
@@ -385,19 +377,14 @@ namespace UnityEditorInternal
                     EditorGUIUtility.labelWidth = FieldLabelSize(rect, prop);
 
                     var handler = ScriptAttributeUtility.GetHandler(prop);
-                    EditorGUI.BeginChangeCheck();
                     handler.OnGUI(rect, prop, null, true);
-                    if (EditorGUI.EndChangeCheck())
-                    {
-                        prop.serializedObject.ApplyModifiedProperties();
-                    }
                     if (Event.current.type == EventType.ContextClick && rect.Contains(Event.current.mousePosition)) Event.current.Use();
 
                     EditorGUIUtility.labelWidth = oldLabelWidth;
                     return;
                 }
 
-                EditorGUI.LabelField(rect, EditorGUIUtility.TempContent((element != null) ? element.displayName : listItem.ToString()));
+                EditorGUI.LabelField(rect, EditorGUIUtility.TempContent(element?.displayName ?? listItem?.ToString() ?? "null"));
             }
 
             // draw the default element
@@ -781,25 +768,6 @@ namespace UnityEditorInternal
             return GetElementYOffset(m_Count - 1) + GetElementHeight(m_Count - 1) + listElementPadding;
         }
 
-        void EnsureValidProperty(SerializedProperty property)
-        {
-            if (!property.isValid)
-            {
-                ClearCache();
-                CacheIfNeeded();
-            }
-
-            try
-            {
-                ScriptAttributeUtility.GetHandler(property);
-            }
-            catch
-            {
-                ClearCache();
-                CacheIfNeeded();
-            }
-        }
-
         int recursionCounter = 0;
         Rect lastRect = Rect.zero;
         private void DoListElements(Rect listRect, Rect visibleRect)
@@ -854,8 +822,6 @@ namespace UnityEditorInternal
                             m_NonDragTargetIndices.Add(i);
                     }
                     m_NonDragTargetIndices.Insert(targetIndex, -1);
-
-                    if (m_Elements != null) EnsureValidProperty(m_PropertyCache.Last().property);
 
                     // now draw each element in the list (excluding the active element)
                     var targetSeen = false;
@@ -937,8 +903,6 @@ namespace UnityEditorInternal
                 }
                 else
                 {
-                    if (m_Elements != null) EnsureValidProperty(m_PropertyCache.Last().property);
-
                     // if we aren't dragging, we just draw all of the elements in order
                     for (int i = 0; i < m_Count; i++)
                     {
@@ -992,14 +956,10 @@ namespace UnityEditorInternal
                         {
                             ClearCacheRecursive();
                             CacheIfNeeded();
+                            InspectorWindow.RepaintAllInspectors();
                             if ((m_Count = count) >= i) break;
                         }
                         m_PropertyCache[i].lastControlCount = currentControlCount;
-
-                        // If an event was consumed in the course of running this for loop, then there is
-                        // a good chance the array data has changed and it is dangerous for us to continue
-                        // rendering it in this frame.
-                        if (Event.current.type == EventType.Used) break;
                     }
                 }
 
@@ -1142,7 +1102,9 @@ namespace UnityEditorInternal
                         GUI.changed = true;
                         evt.Use();
                     }
-                    if (evt.keyCode == KeyCode.Delete)
+
+                    if (Application.platform != RuntimePlatform.OSXEditor && evt.keyCode == KeyCode.Delete
+                        || Application.platform == RuntimePlatform.OSXEditor && evt.keyCode == KeyCode.Backspace && evt.modifiers.HasFlag(EventModifiers.Command))
                     {
                         scheduleRemove = true;
                         InvalidateParentCaches(m_PropertyPath);
@@ -1275,7 +1237,6 @@ namespace UnityEditorInternal
 
                                 // if we are working with Serialized Properties, we can handle it for you
                                 m_Elements.MoveArrayElement(index, targetIndex);
-                                m_SerializedObject.ApplyModifiedPropertiesWithoutUndo();
                             }
                             else if (m_ElementList != null)
                             {
@@ -1304,12 +1265,52 @@ namespace UnityEditorInternal
                             if (m_SerializedObject != null && m_Elements != null && !isOverMaxMultiEditLimit)
                             {
                                 SerializedProperty prop1 = m_Elements.GetArrayElementAtIndex(oldActiveElement);
-                                SerializedProperty prop2 = m_Elements.GetArrayElementAtIndex(newActiveElement);
-                                bool tempExpanded = prop1.isExpanded;
-                                prop1.isExpanded = prop2.isExpanded;
-                                prop2.isExpanded = tempExpanded;
+                                SerializedProperty prop2;
+                                int depth;
+                                List<bool> tempIsExpanded = ListPool<bool>.Get();
+                                var tempProp = prop1;
+                                tempIsExpanded.Add(prop1.isExpanded);
+                                bool clearGradientCache = false;
+                                int next = (oldActiveElement < newActiveElement) ? 1 : -1;
 
-                                if (prop1.propertyType == SerializedPropertyType.Gradient || prop2.propertyType == SerializedPropertyType.Gradient)
+                                for (int i = oldActiveElement + next;
+                                     (oldActiveElement < newActiveElement) ? i <= newActiveElement : i >= newActiveElement;
+                                     i += next)
+                                {
+                                    prop2 = m_Elements.GetArrayElementAtIndex(i);
+
+                                    var cprop1 = prop1.Copy();
+                                    var cprop2 = prop2.Copy();
+                                    depth = Math.Min(cprop1.depth, cprop2.depth);
+                                    while (cprop1.NextVisible(true) && cprop1.depth > depth && cprop2.NextVisible(true) && cprop2.depth > depth)
+                                    {
+                                        if (cprop1.hasVisibleChildren && cprop2.hasVisibleChildren)
+                                        {
+                                            tempIsExpanded.Add(cprop1.isExpanded);
+                                            cprop1.isExpanded = cprop2.isExpanded;
+                                        }
+                                    }
+
+                                    prop1.isExpanded = prop2.isExpanded;
+                                    if (prop1.propertyType == SerializedPropertyType.Gradient)
+                                        clearGradientCache = true;
+                                    prop1 = prop2;
+                                }
+
+                                prop1.isExpanded = tempIsExpanded[0];
+                                depth = Math.Min(prop1.depth, tempProp.depth);
+                                int k = 1;
+                                while (prop1.NextVisible(true) && prop1.depth > depth && tempProp.NextVisible(true) && tempProp.depth > depth)
+                                {
+                                    if (prop1.hasVisibleChildren && tempProp.hasVisibleChildren)
+                                    {
+                                        prop1.isExpanded = tempIsExpanded[k];
+                                        k++;
+                                    }
+                                }
+                                ListPool<bool>.Release(tempIsExpanded);
+
+                                if (clearGradientCache)
                                     GradientPreviewCache.ClearCache();
                             }
 

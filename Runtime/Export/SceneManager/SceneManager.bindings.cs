@@ -63,6 +63,9 @@ namespace UnityEngine.SceneManagement
         }
 
         [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
+        internal static extern bool CanSetAsActiveScene(Scene scene);
+
+        [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
         public static extern Scene GetActiveScene();
 
         [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]

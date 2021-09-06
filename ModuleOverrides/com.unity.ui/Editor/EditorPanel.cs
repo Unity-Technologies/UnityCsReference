@@ -56,7 +56,7 @@ namespace UnityEditor.UIElements
         }
 
         EditorPanel(ScriptableObject ownerObject)
-            : base(ownerObject, ContextType.Editor, EventDispatcher.editorDispatcher)
+            : base(ownerObject, ContextType.Editor, EventDispatcher.editorDispatcher, InitEditorUpdater)
         {
             name = ownerObject.GetType().Name;
             cursorManager = m_CursorManager;
@@ -69,6 +69,15 @@ namespace UnityEditor.UIElements
         static void OnUpdateMaterial(Material mat)
         {
             mat.SetFloat(s_EditorColorSpaceID, QualitySettings.activeColorSpace == ColorSpace.Linear ? 1 : 0);
+        }
+
+        public static void InitEditorUpdater(BaseVisualElementPanel panel, VisualTreeUpdater visualTreeUpdater)
+        {
+            var editorUpdater = new VisualTreeEditorUpdater(panel);
+            visualTreeUpdater.visualTreeEditorUpdater = editorUpdater;
+
+            var assetTracker = editorUpdater.GetUpdater(VisualTreeEditorUpdatePhase.AssetChange) as ILiveReloadSystem;
+            panel.liveReloadSystem = assetTracker;
         }
     }
 }

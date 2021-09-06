@@ -278,10 +278,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             onPackagesChanged?.Invoke(k_EmptyList, k_EmptyList, new[] { packagePreUpdate }, new[] { package });
         }
 
-        public virtual void ClearPackageErrors(IPackage package)
+        public virtual void ClearPackageErrors(IPackage package, Predicate<UIError> match = null)
         {
             var packagePreUpdate = package.Clone();
-            package.ClearErrors();
+            package.ClearErrors(match);
             onPackagesChanged?.Invoke(k_EmptyList, k_EmptyList, new[] { packagePreUpdate }, new[] { package });
         }
 

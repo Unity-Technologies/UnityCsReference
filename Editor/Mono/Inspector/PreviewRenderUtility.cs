@@ -315,6 +315,11 @@ namespace UnityEditor
                     light.enabled = true;
             }
 
+            if (Event.current != null && Event.current.type == EventType.Repaint)
+                camera.pixelRect = new Rect(0, 0, rtWidth, rtHeight);
+            else if (Event.current != null && Event.current.type == EventType.Layout)
+                camera.pixelRect = EditorGUIUtility.PointsToPixels(r);
+
             m_SavedState = new SavedRenderTargetState();
             EditorGUIUtility.SetRenderTextureNoViewport(m_RenderTexture);
             GL.LoadOrtho();

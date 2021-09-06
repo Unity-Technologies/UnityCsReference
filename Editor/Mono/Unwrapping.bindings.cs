@@ -48,18 +48,18 @@ namespace UnityEditor
         }
 
         [NativeThrows]
-        internal static extern Vector2[] GeneratePerTriangleUVImpl(Mesh src, UnwrapParam settings);
+        static extern Vector2[] GeneratePerTriangleUVImpl(Mesh src, UnwrapParam settings);
 
         // Will auto generate uv2 with default settings for provided mesh, and fill them in
-        public static void GenerateSecondaryUVSet(Mesh src)
+        public static bool GenerateSecondaryUVSet(Mesh src)
         {
-            MeshUtility.SetPerTriangleUV2(src, GeneratePerTriangleUV(src));
+            return MeshUtility.SetPerTriangleUV2(src, GeneratePerTriangleUV(src));
         }
 
         // Will auto generate uv2 with provided settings for provided mesh, and fill them in
-        public static void GenerateSecondaryUVSet(Mesh src, UnwrapParam settings)
+        public static bool GenerateSecondaryUVSet(Mesh src, UnwrapParam settings)
         {
-            MeshUtility.SetPerTriangleUV2(src, GeneratePerTriangleUV(src, settings));
+            return MeshUtility.SetPerTriangleUV2(src, GeneratePerTriangleUV(src, settings));
         }
     }
 }

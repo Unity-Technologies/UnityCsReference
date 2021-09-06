@@ -34,7 +34,7 @@ namespace UnityEditor
             }
             else
             {
-                m_LastExecutionTime = DateTime.Now.Ticks;
+                m_LastExecutionTime = DateTime.UtcNow.Ticks;
                 Debounce();
             }
         }
@@ -57,7 +57,7 @@ namespace UnityEditor
         private void Debounce()
         {
             EditorApplication.delayCall -= Debounce;
-            var currentTime = DateTime.Now.Ticks;
+            var currentTime = DateTime.UtcNow.Ticks;
             if (m_LastExecutionTime != 0 && DelayHasPassed(currentTime))
             {
                 m_Action?.Invoke(m_Context);
@@ -72,7 +72,7 @@ namespace UnityEditor
         private void Throttle()
         {
             EditorApplication.delayCall -= Throttle;
-            var currentTime = DateTime.Now.Ticks;
+            var currentTime = DateTime.UtcNow.Ticks;
             if (m_LastExecutionTime != 0 && DelayHasPassed(currentTime))
             {
                 m_Action?.Invoke(m_Context);

@@ -3161,8 +3161,15 @@ namespace UnityEngine
                 throw new NullReferenceException("Cannot get contacts as the provided list is NULL.");
 
             contacts.Clear();
-            contacts.AddRange(GetContacts_Internal());
-            return contactCount;
+
+            // Copy only the number of contacts available as this array can become larger than the number of current contacts.
+            var contactArray = GetContacts_Internal();
+            for (var i = 0; i < m_ContactCount; ++i)
+            {
+                contacts.Add(contactArray[i]);
+            }
+
+            return m_ContactCount;
         }
     };
 
@@ -4308,6 +4315,9 @@ namespace UnityEngine
     [NativeHeader("Modules/Physics2D/Public/PolygonCollider2D.h")]
     public sealed partial class PolygonCollider2D : Collider2D
     {
+        // Get/Set Delaunay mesh usage.
+        extern public bool useDelaunayMesh { get; set; }
+
         // Get/Set auto sprite tiling.
         extern public bool autoTiling { get; set; }
 
@@ -4426,6 +4436,9 @@ namespace UnityEngine
 
         // Controls when the collider generation happens.
         extern public GenerationType generationType { get; set; }
+
+        // Get/Set Delaunay mesh usage.
+        extern public bool useDelaunayMesh { get; set; }
 
         // Controls the allowed vertex distance spacing.
         extern public float vertexDistance { get; set; }

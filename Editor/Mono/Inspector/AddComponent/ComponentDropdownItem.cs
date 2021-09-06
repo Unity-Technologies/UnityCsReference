@@ -60,11 +60,11 @@ namespace UnityEditor.AddComponent
             m_SearchableNameLocalized = localized;
         }
 
-        public ComponentDropdownItem(string name, string localized, string menuPath, string command) : base(name)
+        public ComponentDropdownItem(string name, string localized, string menuPath, string command, bool isLegacy) : base(name)
         {
             m_LocalizedName = localized;
             m_MenuPath = menuPath;
-            m_IsLegacy = menuPath.Contains("Legacy");
+            m_IsLegacy = isLegacy;
 
             if (command.StartsWith("SCRIPT"))
             {

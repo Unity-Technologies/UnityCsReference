@@ -13,6 +13,17 @@ namespace UnityEditor.AddComponent
         private static class Styles
         {
             public static GUIStyle itemStyle = "DD LargeItemStyle";
+            internal static GUIStyle lineStyleFaint = new GUIStyle("DD LargeItemStyle");
+
+            static Styles()
+            {
+                float val = EditorGUIUtility.isProSkin ? 0.5f : 0.25f;
+                var color = new Color(val, val, val, 1f);
+                lineStyleFaint.active.textColor = color;
+                lineStyleFaint.focused.textColor = color;
+                lineStyleFaint.hover.textColor = color;
+                lineStyleFaint.normal.textColor = color;
+            }
         }
 
         private Vector2 m_IconSize = new Vector2(16, 16);
@@ -26,16 +37,62 @@ namespace UnityEditor.AddComponent
             m_OnCreateNewScript = onCreateNewScript;
         }
 
+        private void DrawSearchItem(string name, string path, Texture2D icon, bool selected)
+        {
+            path = string.IsNullOrEmpty(path) ? "" : $"({path})"; // if the path we're left with is equal to " ()" - scrap it
+            var contentWithIcon = new GUIContent(name, path);
+            contentWithIcon.image = icon;
+
+            var rect = GUILayoutUtility.GetRect(contentWithIcon, Styles.lineStyleFaint, GUILayout.ExpandWidth(true));
+            var fullRect = new Rect(rect);
+
+            if (Event.current.type != EventType.Repaint)
+                return;
+
+            var emptySpace = Styles.lineStyleFaint.CalcSize(contentWithIcon);
+            rect.x += emptySpace.x;
+
+            lineStyle.Draw(fullRect, contentWithIcon, selected, selected, selected, selected);
+
+            Styles.lineStyleFaint.Draw(rect, new GUIContent(path, path), selected, false, false, false);
+        }
+
         internal override void DrawItem(AdvancedDropdownItem item, string name, Texture2D icon, bool enabled, bool drawArrow, bool selected, bool hasSearch)
         {
+            bool isScript = false;
             var newScriptItem = item as NewScriptDropdownItem;
             if (newScriptItem == null)
             {
+                string namespaceName = "";
                 if (hasSearch && item is ComponentDropdownItem)
                 {
-                    name = ((ComponentDropdownItem)item).searchableNameLocalized;
+                    var componentItem = item as ComponentDropdownItem;
+                    // null check doesn't work here so comparing against "New script"
+                    if (!componentItem.displayName.Equals("New script") && componentItem.menuPath.StartsWith("Component/Scripts/"))
+                    {
+                        namespaceName = componentItem.menuPath.Substring(AddComponentDataSource.kScriptHeader.Length);
+                        var last = namespaceName.LastIndexOf("/");
+                        namespaceName = last != -1 ? namespaceName.Substring(0, last) : "";
+                        isScript = true;
+                    }
+                    else
+                        name = ((ComponentDropdownItem)item).searchableNameLocalized;
                 }
-                base.DrawItem(item, name, icon, enabled, drawArrow, selected, hasSearch);
+
+                if (string.IsNullOrEmpty(namespaceName))
+                    base.DrawItem(item, name, icon, enabled, drawArrow, selected, hasSearch);
+                else
+                    DrawSearchItem(name, namespaceName, icon, selected);
+
+                // dummy label for easy tooltips
+                // this is to allow viewing full script names in cases where they are cut off
+                if (Event.current.type == EventType.Repaint && isScript)
+                {
+                    var text = string.IsNullOrEmpty(namespaceName) ? name : $"{name} ({namespaceName})";
+                    var tooltipRect = GUILayoutUtility.GetLastRect();
+                    GUI.Label(tooltipRect, new GUIContent("", text));
+                }
+
                 return;
             }
 

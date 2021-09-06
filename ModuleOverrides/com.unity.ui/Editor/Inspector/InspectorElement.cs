@@ -338,6 +338,17 @@ namespace UnityEditor.UIElements
             if (bindEvent == null)
                 return;
 
+            // Case 1336093. nested InspectorElement for other editors have their own BindTree processes,
+            // so we need to ignore SerializedObjectBindEvent that aren't meant for them.
+            // We use the DataSource property to store a reference to the target object that is being bound
+            // so we can ignore the binding process that targets a parent inspector.
+            var dataSource = this.GetProperty(BindingExtensions.s_DataSourceProperty);
+            if (dataSource != null && dataSource != bindEvent.bindObject)
+            {
+                evt.StopPropagation();
+                return;
+            }
+
             Reset(bindEvent.bindObject);
         }
 

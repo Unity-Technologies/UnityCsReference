@@ -38,7 +38,7 @@ namespace UnityEditor
 
             bool parsed = false;
 
-            // Split filter into separate words with space or tab as seperators
+            // Split filter into separate words with space or tab as separators
             const string kFilterSeparator = " \t,*?";
 
             // Skip any separators preceding the filter
@@ -93,6 +93,8 @@ namespace UnityEditor
 
             // Support: 't:type' syntax (e.g 't:Texture2D' will show Texture2D objects)
             int index = searchString.IndexOf("t:");
+            if (index == -1)
+                index = searchString.IndexOf("t=");
             if (index == 0)
             {
                 string type = searchString.Substring(index + 2);
@@ -104,6 +106,8 @@ namespace UnityEditor
 
             // Support: 'l:assetlabel' syntax (e.g 'l:architecture' will show assets with AssetLabel 'architecture')
             index = searchString.IndexOf("l:");
+            if (index == -1)
+                index = searchString.IndexOf("l=");
             if (index == 0)
             {
                 string label = searchString.Substring(index + 2);

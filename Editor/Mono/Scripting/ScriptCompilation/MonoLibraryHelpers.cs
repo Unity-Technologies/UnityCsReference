@@ -47,19 +47,18 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var references = new List<string>();
             var monoAssemblyDirectories = GetSystemReferenceDirectories(apiCompatibilityLevel);
 
-            if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard_2_0)
+            if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard)
             {
                 references.AddRange(GetNetStandardClassLibraries());
             }
-            else if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6)
+            else if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_Unity_4_8)
             {
                 references.AddRange(GetSystemReferences().FindReferencesInDirectories(monoAssemblyDirectories));
                 references.AddRange(GetNet46SystemReferences().FindReferencesInDirectories(monoAssemblyDirectories));
 
                 // Look in the mono assembly directory for a facade folder and get a list of all the DLL's to be
                 // used later by the language compilers.
-                var monoAssemblyDirectory = MonoInstallationFinder.GetProfileDirectory("4.7.1-api", MonoInstallationFinder.MonoBleedingEdgeInstallation);
-                references.AddRange(Directory.GetFiles(Path.Combine(monoAssemblyDirectory, "Facades"), "*.dll"));
+                references.AddRange(Directory.GetFiles(Path.Combine(GetUnityReferenceProfileDirectory(), "Facades"), "*.dll"));
             }
             else
             {
@@ -78,17 +77,22 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         static string GetSystemReference(ApiCompatibilityLevel apiCompatibilityLevel)
         {
-            if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6)
-                return MonoInstallationFinder.GetProfileDirectory("4.7.1-api", MonoInstallationFinder.MonoBleedingEdgeInstallation);
+            if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_Unity_4_8)
+                return GetUnityReferenceProfileDirectory();
             if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_2_0)
                 return MonoInstallationFinder.GetProfileDirectory("2.0-api", MonoInstallationFinder.MonoBleedingEdgeInstallation);
 
             return MonoInstallationFinder.GetProfileDirectory(BuildPipeline.CompatibilityProfileToClassLibFolder(apiCompatibilityLevel), MonoInstallationFinder.MonoBleedingEdgeInstallation);
         }
 
+        private static string GetUnityReferenceProfileDirectory()
+        {
+            return Path.Combine(MonoInstallationFinder.GetFrameWorksFolder(), "UnityReferenceAssemblies", "unity-4.8-api");
+        }
+
         public static string[] GetSystemReferenceDirectories(ApiCompatibilityLevel apiCompatibilityLevel)
         {
-            if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard_2_0)
+            if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard)
             {
                 var systemReferenceDirectories = new List<string>();
                 systemReferenceDirectories.Add(NetStandardFinder.GetReferenceDirectory());
@@ -98,7 +102,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 return systemReferenceDirectories.ToArray();
             }
 
-            if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6)
+            if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_Unity_4_8)
             {
                 var systemReferenceDirectories = new List<string>();
                 var frameworkDirectory = GetSystemReference(apiCompatibilityLevel);

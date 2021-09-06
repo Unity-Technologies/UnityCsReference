@@ -247,7 +247,7 @@ namespace UnityEditor
             s_ChangedStack.Clear();
             s_PropertyStack.Clear();
             ScriptAttributeUtility.s_DrawerStack.Clear();
-            s_FoldoutHeaderGroupActive = false;
+            s_FoldoutHeaderGroupActive = 0;
         }
 
         // Property counting is required by ReorderableList. Element rendering callbacks can change and use
@@ -1246,27 +1246,6 @@ namespace UnityEditor
                     if (!string.IsNullOrEmpty(s_UnitString) && !passwordField)
                         drawText += " " + s_UnitString;
 
-                    // Only change mouse cursor if hotcontrol is not grabbed
-                    if (GUIUtility.hotControl == 0)
-                    {
-                        // if the current editor is editing this control, we can update the mouse cursor for hyperlinks
-                        // if not, we need to update it (else we won't have the hyperlinks rect)
-                        //    but it has a cost for perf so we're not doing it yet
-                        if (editor.IsEditingControl(id))
-                        {
-                            // Add the link cursor for the hyperlinks found on the editor
-                            foreach (var rect in editor.GetHyperlinksRect())
-                            {
-                                EditorGUIUtility.AddCursorRect(rect, MouseCursor.Link);
-                            }
-                        }
-
-                        var cursorRect = position;
-                        if (cancelButtonStyle != null && !String.IsNullOrEmpty(text))
-                            cursorRect.width -= cancelButtonStyle.fixedWidth;
-                        EditorGUIUtility.AddCursorRect(cursorRect, MouseCursor.Text);
-                    }
-
                     if (!editor.IsEditingControl(id))
                     {
                         BeginHandleMixedValueContentColor();
@@ -1277,6 +1256,26 @@ namespace UnityEditor
                     {
                         editor.DrawCursor(drawText);
                     }
+
+                    var cursorRect = position;
+                    if (cancelButtonStyle != null && !String.IsNullOrEmpty(text))
+                        cursorRect.width -= cancelButtonStyle.fixedWidth;
+                    if (cursorRect.Contains(evt.mousePosition))
+                    {
+                        bool showLinkCursor = false;
+                        // Add the link cursor for the hyperlinks found on the editor
+                        foreach (var rect in editor.GetHyperlinksRect())
+                        {
+                            EditorGUIUtility.AddCursorRect(rect, MouseCursor.Link);
+                            if (!showLinkCursor && rect.Contains(evt.mousePosition))
+                                showLinkCursor = true;
+                        }
+
+                        // Only change mouse cursor if hotcontrol is not grabbed
+                        if (!showLinkCursor && GUIUtility.hotControl == 0)
+                            EditorGUIUtility.AddCursorRect(cursorRect, MouseCursor.Text);
+                    }
+
                     break;
             }
 
@@ -4029,10 +4028,7 @@ namespace UnityEditor
 
             int changedFlags;
             bool changedToValue;
-            if (enumType.GetEnumUnderlyingType()  == typeof(uint))
-                return MaskFieldGUI.DoMaskField(position, id, enumValue, enumData.displayNames, enumData.flagValues, style, out changedFlags, out changedToValue, true);
-            else
-                return MaskFieldGUI.DoMaskField(position, id, enumValue, enumData.displayNames, enumData.flagValues, style, out changedFlags, out changedToValue);
+            return MaskFieldGUI.DoMaskField(position, id, enumValue, enumData.displayNames, enumData.flagValues, style, out changedFlags, out changedToValue, enumType.GetEnumUnderlyingType());
         }
 
         public static void ObjectField(Rect position, SerializedProperty property)
@@ -5405,7 +5401,7 @@ namespace UnityEditor
             position.width = Mathf.Max(position.width, 2);
             position.height = Mathf.Max(position.height, 2);
 
-            if (GUIUtility.keyboardControl == id && Event.current.type != EventType.Layout)
+            if (GUIUtility.keyboardControl == id && evt.type != EventType.Layout && GUIView.current == CurveEditorWindow.instance.delegateView)
             {
                 if (s_CurveID != id)
                 {
@@ -5454,7 +5450,7 @@ namespace UnityEditor
                     EditorStyles.colorPickerBox.Draw(position2, GUIContent.none, id, false);
                     break;
                 case EventType.ExecuteCommand:
-                    if (s_CurveID == id)
+                    if (s_CurveID == id && GUIView.current == CurveEditorWindow.instance.delegateView)
                     {
                         switch (evt.commandName)
                         {
@@ -5990,11 +5986,11 @@ namespace UnityEditor
                     break;
                 case EventType.Repaint:
                     GUIStyle foldoutStyle = EditorStyles.titlebarFoldout;
+                    var textPositionX = position.x + baseStyle.padding.left +
+                        (skipIconSpacing ? 0 : (kInspTitlebarIconWidth + kInspTitlebarSpacing));
                     Rect textRect =
-                        new Rect(
-                            position.x + baseStyle.padding.left +
-                            (skipIconSpacing ? 0 : (kInspTitlebarIconWidth + kInspTitlebarSpacing)),
-                            position.y + baseStyle.padding.top, EditorGUIUtility.labelWidth, kInspTitlebarIconWidth);
+                        new Rect(textPositionX, position.y + baseStyle.padding.top,
+                            Mathf.Max(EditorGUIUtility.labelWidth, position.xMax - textPositionX), kInspTitlebarIconWidth);
                     bool hovered = position.Contains(Event.current.mousePosition);
                     baseStyle.Draw(position, GUIContent.none, id, foldout, hovered);
                     foldoutStyle.Draw(GetInspectorTitleBarObjectFoldoutRenderRect(position, baseStyle), GUIContent.none,
@@ -7269,11 +7265,12 @@ namespace UnityEditor
                     case SerializedPropertyType.LayerMask:
                     {
                         TagManager.GetDefinedLayers(ref m_FlagNames, ref m_FlagValues);
-                        var toggleLabel = MaskFieldGUI.GetMaskButtonValue(property.intValue, m_FlagNames, m_FlagValues);
-                        toggleLabel = property.hasMultipleDifferentValues ? "—" : toggleLabel;
+                        MaskFieldGUI.GetMaskButtonValue(property.intValue, m_FlagNames, m_FlagValues, out var toggleLabel, out var toggleLabelMixed);
                         if (label != null)
                             position = PrefixLabel(position, label, EditorStyles.label);
-                        bool toggled = DropdownButton(position, new GUIContent(toggleLabel), FocusType.Keyboard, EditorStyles.layerMaskField);
+
+                        var toggleLabelContent = property.hasMultipleDifferentValues ? mixedValueContent : MaskFieldGUI.DoMixedLabel(toggleLabel, toggleLabelMixed, position, EditorStyles.layerMaskField);
+                        bool toggled = DropdownButton(position, toggleLabelContent, FocusType.Keyboard, EditorStyles.layerMaskField);
                         if (toggled)
                         {
                             PopupWindowWithoutFocus.Show(position, new MaskFieldDropDown(property));
@@ -8287,8 +8284,9 @@ namespace UnityEditor
                     : EnumPopupInternal(position, label, property.intValue, type, null, false, EditorStyles.popup);
                 if (EndChangeCheck())
                 {
+                    // When the flag is a negative we need to convert it or it will be clamped.
                     Type enumType = type.GetEnumUnderlyingType();
-                    if (enumType == typeof(uint))
+                    if (value < 0 && (enumType == typeof(uint) || enumType == typeof(ushort) || enumType == typeof(byte)))
                     {
                         property.longValue = (uint)value;
                     }
@@ -8580,6 +8578,7 @@ namespace UnityEditor
             static Dictionary<Type, GUIContent[]> s_EnumTypeLocalizedGUIContents = new Dictionary<Type, GUIContent[]>();
             static Dictionary<int, GUIContent[]> s_SerializedPropertyEnumLocalizedGUIContents = new Dictionary<int, GUIContent[]>();
             static Dictionary<Type, bool> s_IsEnumTypeUsingFlagsAttribute = new Dictionary<Type, bool>();
+            static Dictionary<Type, string[]> s_SerializedPropertyEnumDisplayNames = new Dictionary<Type, string[]>();
 
             internal static GUIContent[] GetEnumTypeLocalizedGUIContents(Type enumType, EnumData enumData)
             {
@@ -8593,6 +8592,7 @@ namespace UnityEditor
                     // Build localized data and add to cache
                     using (new LocalizationGroup(enumType))
                     {
+                        UnityEngine.EnumDataUtility.HandleInspectorOrderAttribute(enumType, ref enumData);
                         result = EditorGUIUtility.TrTempContent(enumData.displayNames, enumData.tooltip);
                         s_EnumTypeLocalizedGUIContents[enumType] = result;
                         return result;
@@ -8617,6 +8617,20 @@ namespace UnityEditor
 
                 result = EditorGUIUtility.TempContent(property.enumLocalizedDisplayNames);
                 s_SerializedPropertyEnumLocalizedGUIContents[hashCode] = result;
+                return result;
+            }
+
+            internal static string[] GetEnumDisplayNames(SerializedProperty property)
+            {
+                Type enumType;
+                ScriptAttributeUtility.GetFieldInfoFromProperty(property, out enumType);
+
+                string[] result;
+                if (!s_SerializedPropertyEnumDisplayNames.TryGetValue(enumType, out result))
+                {
+                    result = property.enumDisplayNames;
+                    s_SerializedPropertyEnumDisplayNames.Add(enumType, result);
+                }
                 return result;
             }
 
@@ -10288,7 +10302,7 @@ namespace UnityEditor
 
         internal static bool FoldoutTitlebar(bool foldout, GUIContent label, bool skipIconSpacing, GUIStyle baseStyle, GUIStyle textStyle)
         {
-            return EditorGUI.FoldoutTitlebar(GUILayoutUtility.GetRect(GUIContent.none, baseStyle), label, foldout, skipIconSpacing, baseStyle, textStyle);
+            return EditorGUI.FoldoutTitlebar(GUILayoutUtility.GetRect(GUIContent.none, baseStyle, GUILayout.ExpandWidth(true)), label, foldout, skipIconSpacing, baseStyle, textStyle);
         }
 
         // Make a label with a foldout arrow to the left of it.

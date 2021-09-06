@@ -5,7 +5,6 @@
 //#define UIR_DEBUG_CHAIN_BUILDER
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Profiling;
 
@@ -17,6 +16,7 @@ namespace UnityEngine.UIElements.UIR
         public uint recursiveClipUpdates, recursiveClipUpdatesExpanded, nonRecursiveClipUpdates;
         public uint recursiveTransformUpdates, recursiveTransformUpdatesExpanded;
         public uint recursiveOpacityUpdates, recursiveOpacityUpdatesExpanded;
+        public uint opacityIdUpdates;
         public uint colorUpdates, colorUpdatesExpanded;
         public uint recursiveVisualUpdates, recursiveVisualUpdatesExpanded, nonRecursiveVisualUpdates;
         public uint dirtyProcessed;
@@ -175,6 +175,7 @@ namespace UnityEngine.UIElements.UIR
         TextureRegistry m_TextureRegistry = TextureRegistry.instance;
 
         internal RenderChainCommand firstCommand { get { return m_FirstCommand; } }
+        public OpacityIdAccelerator opacityIdAccelerator { get; private set; }
 
         // Profiling
         static ProfilerMarker s_MarkerProcess = new ProfilerMarker("RenderChain.Process");
@@ -221,6 +222,7 @@ namespace UnityEngine.UIElements.UIR
             this.atlas = atlas;
             this.vectorImageManager = vectorImageMan;
             this.shaderInfoAllocator.Construct();
+            this.opacityIdAccelerator = new OpacityIdAccelerator();
 
             painter = new Implementation.UIRStylePainter(this);
             Font.textureRebuilt += OnFontReset;
@@ -239,6 +241,13 @@ namespace UnityEngine.UIElements.UIR
                 RenderChainStaticIndexAllocator.FreeIndex(m_StaticIndex);
             m_StaticIndex = -1;
 
+            var ve = GetFirstElementInPanel(m_FirstCommand?.owner);
+            while (ve != null)
+            {
+                ResetTextures(ve);
+                ve = ve.renderChainData.next;
+            }
+
             UIRUtility.Destroy(m_DefaultMat);
             UIRUtility.Destroy(m_DefaultWorldSpaceMat);
             m_DefaultMat = m_DefaultWorldSpaceMat = null;
@@ -249,6 +258,7 @@ namespace UnityEngine.UIElements.UIR
             vectorImageManager?.Dispose();
             shaderInfoAllocator.Dispose();
             device?.Dispose();
+            opacityIdAccelerator?.Dispose();
 
             painter = null;
             m_TextUpdatePainter = null;
@@ -398,7 +408,7 @@ namespace UnityEngine.UIElements.UIR
             m_BlockDirtyRegistration = true; // Processing visuals may call generateVisualContent, which must be restricted to the allowed operations
             m_DirtyTracker.dirtyID++;
             dirtyClass = (int)RenderDataDirtyTypeClasses.Visuals;
-            dirtyFlags = RenderDataDirtyTypes.Visuals | RenderDataDirtyTypes.VisualsHierarchy;
+            dirtyFlags = RenderDataDirtyTypes.AllVisuals;
             clearDirty = ~dirtyFlags;
             s_MarkerVisualsProcessing.Begin();
             for (int depth = m_DirtyTracker.minDepths[dirtyClass]; depth <= m_DirtyTracker.maxDepths[dirtyClass]; depth++)
@@ -417,6 +427,7 @@ namespace UnityEngine.UIElements.UIR
                     m_Stats.dirtyProcessed++;
                 }
             }
+            opacityIdAccelerator.CompleteJobs();
             s_MarkerVisualsProcessing.End();
             m_BlockDirtyRegistration = false;
 
@@ -497,7 +508,7 @@ namespace UnityEngine.UIElements.UIR
 
             s_MarkerTextRegen.Begin();
             if (m_TextUpdatePainter == null)
-                m_TextUpdatePainter = new Implementation.UIRTextUpdatePainter();
+                m_TextUpdatePainter = new Implementation.UIRTextUpdatePainter(this);
 
             var dirty = m_FirstTextElement;
             m_DirtyTextStartIndex = timeSliced ? m_DirtyTextStartIndex % m_TextElementCount : 0;
@@ -646,6 +657,17 @@ namespace UnityEngine.UIElements.UIR
                     throw new InvalidOperationException("VisualElements cannot be marked for dirty repaint under an active visual tree during generateVisualContent callback execution nor during visual tree rendering");
 
                 m_DirtyTracker.RegisterDirty(ve, RenderDataDirtyTypes.Visuals | (hierarchical ? RenderDataDirtyTypes.VisualsHierarchy : 0), RenderDataDirtyTypeClasses.Visuals);
+            }
+        }
+
+        public void UIEOnOpacityIdChanged(VisualElement ve)
+        {
+            if (ve.renderChainData.isInChain)
+            {
+                if (m_BlockDirtyRegistration)
+                    throw new InvalidOperationException("VisualElements cannot for opacity id change under an active visual tree during generateVisualContent callback execution nor during visual tree rendering");
+
+                m_DirtyTracker.RegisterDirty(ve, RenderDataDirtyTypes.VisualsOpacityId, RenderDataDirtyTypeClasses.Visuals);
             }
         }
 
@@ -954,6 +976,7 @@ namespace UnityEngine.UIElements.UIR
             GUI.Label(rc, "Clip update total\t: " + m_Stats.recursiveClipUpdatesExpanded); rc.y += y_off;
             GUI.Label(rc, "Opacity update roots\t: " + m_Stats.recursiveOpacityUpdates); rc.y += y_off;
             GUI.Label(rc, "Opacity update total\t: " + m_Stats.recursiveOpacityUpdatesExpanded); rc.y += y_off;
+            GUI.Label(rc, "Opacity ID update\t: " + m_Stats.opacityIdUpdates); rc.y += y_off;
             GUI.Label(rc, "Xform update roots\t: " + m_Stats.recursiveTransformUpdates); rc.y += y_off;
             GUI.Label(rc, "Xform update total\t: " + m_Stats.recursiveTransformUpdatesExpanded); rc.y += y_off;
             GUI.Label(rc, "Xformed by bone\t: " + m_Stats.boneTransformed); rc.y += y_off;
@@ -1002,9 +1025,12 @@ namespace UnityEngine.UIElements.UIR
         ClippingHierarchy = 1 << 3,  // Same as above, but applies to all descendants too.
         Visuals = 1 << 4,            // The visuals of the VE need to be repainted.
         VisualsHierarchy = 1 << 5,   // Same as above, but applies to all descendants too.
-        Opacity = 1 << 6,            // The opacity of the VE needs to be updated.
-        OpacityHierarchy = 1 << 7,   // Same as above, but applies to all descendants too.
-        Color = 1 << 8,              // The background color of the VE needs to be updated.
+        VisualsOpacityId = 1 << 6,   // The vertices only need their opacityId to be updated.
+        Opacity = 1 << 7,            // The opacity of the VE needs to be updated.
+        OpacityHierarchy = 1 << 8,   // Same as above, but applies to all descendants too.
+        Color = 1 << 9,              // The background color of the VE needs to be updated.
+
+        AllVisuals = Visuals | VisualsHierarchy | VisualsOpacityId
     }
 
     internal enum RenderDataDirtyTypeClasses
@@ -1042,7 +1068,7 @@ namespace UnityEngine.UIElements.UIR
         internal Matrix4x4 verticesSpace; // Transform describing the space which the vertices in 'data' are relative to
         internal int displacementUVStart, displacementUVEnd;
         internal BMPAlloc transformID, clipRectID, opacityID, textCoreSettingsID;
-        internal BMPAlloc backgroundColorID, borderLeftColorID, borderTopColorID, borderRightColorID, borderBottomColorID, tintColorID;
+        internal BMPAlloc colorID, backgroundColorID, borderLeftColorID, borderTopColorID, borderRightColorID, borderBottomColorID, tintColorID;
         internal float compositeOpacity;
         internal Color backgroundColor;
 

@@ -49,6 +49,7 @@ namespace UnityEditor
             public static GUIStyle IconLogSmallStyle;
             public static GUIStyle IconWarningSmallStyle;
             public static GUIStyle IconErrorSmallStyle;
+            public static GUIStyle ConsoleSearchNoResult;
 
             public static readonly GUIContent Clear = EditorGUIUtility.TrTextContent("Clear", "Clear console entries");
             public static readonly GUIContent ClearOnPlay = EditorGUIUtility.TrTextContent("Clear on Play");
@@ -105,6 +106,13 @@ namespace UnityEditor
                 StatusLog = "CN StatusInfo";
                 CountBadge = "CN CountBadge";
 
+                ConsoleSearchNoResult = new GUIStyle(EditorStyles.centeredGreyMiniLabel)
+                {
+                    name = "console-search-no-result",
+                    fontSize = 20,
+                    wordWrap = true
+                };
+
                 // If the console window isn't open OnEnable() won't trigger so it will end up with 0 lines,
                 // so we always make sure we read it up when we initialize here.
                 LogStyleLineCount = EditorPrefs.GetInt("ConsoleWindowLogLineCount", 2);
@@ -130,6 +138,8 @@ namespace UnityEditor
 
         bool m_HasUpdatedGuiStyles;
 
+        string m_ConsoleSearchNoResultMsg = "";
+
         ListViewState m_ListView;
         string m_ActiveText = "";
         StringBuilder m_CopyString;
@@ -154,46 +164,37 @@ namespace UnityEditor
 
         internal class ConsoleAttachToPlayerState : GeneralConnectionState
         {
-            static class Content
-            {
-                public static string PlayerLogging = L10n.Tr("Player Logging");
-                public static string FullLog = L10n.Tr("Full Log [Developer Mode Only]");
-                public static string Logging = L10n.Tr("Logging");
-            }
-
             public ConsoleAttachToPlayerState(EditorWindow parentWindow, Action<string, EditorConnectionTarget?> connectedCallback = null) : base(parentWindow, connectedCallback)
             {
                 // This is needed to force initialize the instance and the state so that messages from players are received and printed to the console (if that is the serialized state)
-                // on creation of the ConsoleWindow UI instead of when the uer first clicks on the dropdown, and triggers AddItemsToMenu.
+                // on creation of the ConsoleWindow UI instead of when the uer first clicks on the dropdown, and triggers AddItemsToTree.
                 PlayerConnectionLogReceiver.instance.State = PlayerConnectionLogReceiver.instance.State;
             }
 
-            bool IsConnected()
+            internal bool IsConnected()
             {
                 return PlayerConnectionLogReceiver.instance.State != PlayerConnectionLogReceiver.ConnectionState.Disconnected;
             }
 
-            void PlayerLoggingOptionSelected()
+            internal void PlayerLoggingOptionSelected()
             {
                 PlayerConnectionLogReceiver.instance.State = IsConnected() ? PlayerConnectionLogReceiver.ConnectionState.Disconnected : PlayerConnectionLogReceiver.ConnectionState.CleanLog;
             }
 
-            bool IsLoggingFullLog()
+            internal bool IsLoggingFullLog()
             {
                 return PlayerConnectionLogReceiver.instance.State == PlayerConnectionLogReceiver.ConnectionState.FullLog;
             }
 
-            void FullLogOptionSelected()
+            internal void FullLogOptionSelected()
             {
                 PlayerConnectionLogReceiver.instance.State = IsLoggingFullLog() ? PlayerConnectionLogReceiver.ConnectionState.CleanLog : PlayerConnectionLogReceiver.ConnectionState.FullLog;
             }
 
-            public override void AddItemsToMenu(ConnectionTreeViewWindow view, Rect position, Func<bool> disabler = null)
+            public override void AddItemsToTree(ConnectionTreeViewWindow view, Rect position)
             {
-                // option to turn logging and the connection on or of
-                view.AddItem(new ConnectionDropDownItem(Content.PlayerLogging, -2, Content.Logging, ConnectionDropDownItem.ConnectionMajorGroup.Logging, IsConnected, PlayerLoggingOptionSelected, null));
-                view.AddItem(new ConnectionDropDownItem(Content.FullLog, -2, Content.Logging, ConnectionDropDownItem.ConnectionMajorGroup.Logging, IsLoggingFullLog, FullLogOptionSelected, () => PlayerConnectionLogReceiver.instance.State == PlayerConnectionLogReceiver.ConnectionState.Disconnected));
-                base.AddItemsToMenu(view, position, () => PlayerConnectionLogReceiver.instance.State == PlayerConnectionLogReceiver.ConnectionState.Disconnected);
+                view.SetLoggingOptions(this);
+                base.AddItemsToTree(view, position);
             }
         }
 
@@ -515,6 +516,7 @@ namespace UnityEditor
             }
 
             int currCount = LogEntries.GetCount();
+            bool showSearchNoResultMessage = currCount == 0 && !String.IsNullOrEmpty(m_SearchText);
 
             if (m_ListView.totalRows != currCount)
             {
@@ -570,190 +572,209 @@ namespace UnityEditor
 
             GUILayout.EndHorizontal();
 
-            // Console entries
-            SplitterGUILayout.BeginVerticalSplit(spl);
-
-            GUIContent tempContent = new GUIContent();
-            int id = GUIUtility.GetControlID(0);
-            int rowDoubleClicked = -1;
-
-            /////@TODO: Make Frame selected work with ListViewState
-            using (new GettingLogEntriesScope(m_ListView))
+            if (showSearchNoResultMessage)
             {
-                int selectedRow = -1;
-                bool openSelectedItem = false;
-                bool collapsed = HasFlag(ConsoleFlags.Collapse);
-                float scrollPosY = m_ListView.scrollPos.y;
+                Rect r = new Rect(0, EditorGUI.kSingleLineHeight, ms_ConsoleWindow.position.width, ms_ConsoleWindow.position.height - EditorGUI.kSingleLineHeight);
+                GUI.Box(r, m_ConsoleSearchNoResultMsg, Constants.ConsoleSearchNoResult);
+            }
+            else
+            {
+                // Console entries
+                SplitterGUILayout.BeginVerticalSplit(spl);
 
-                foreach (ListViewElement el in ListViewGUI.ListView(m_ListView, ListViewOptions.wantsRowMultiSelection, Constants.Box))
+                GUIContent tempContent = new GUIContent();
+                int id = GUIUtility.GetControlID(0);
+                int rowDoubleClicked = -1;
+
+                /////@TODO: Make Frame selected work with ListViewState
+                using (new GettingLogEntriesScope(m_ListView))
                 {
-                    // Destroy latest restore entry if needed
-                    if (e.type == EventType.ScrollWheel || e.type == EventType.Used)
-                        DestroyLatestRestoreEntry();
+                    int selectedRow = -1;
+                    bool openSelectedItem = false;
+                    bool collapsed = HasFlag(ConsoleFlags.Collapse);
+                    float scrollPosY = m_ListView.scrollPos.y;
 
-                    // Make sure that scrollPos.y is always up to date after restoring last entry
-                    if (m_RestoreLatestSelection)
+                    foreach (ListViewElement el in ListViewGUI.ListView(m_ListView,
+                        ListViewOptions.wantsRowMultiSelection, Constants.Box))
                     {
-                        m_ListView.scrollPos.y = scrollPosY;
+                        // Destroy latest restore entry if needed
+                        if (e.type == EventType.ScrollWheel || e.type == EventType.Used)
+                            DestroyLatestRestoreEntry();
+
+                        // Make sure that scrollPos.y is always up to date after restoring last entry
+                        if (m_RestoreLatestSelection)
+                        {
+                            m_ListView.scrollPos.y = scrollPosY;
+                        }
+
+                        if (e.type == EventType.MouseDown && e.button == 0 && el.position.Contains(e.mousePosition))
+                        {
+                            selectedRow = m_ListView.row;
+                            DestroyLatestRestoreEntry();
+                            LogEntry entry = new LogEntry();
+                            LogEntries.GetEntryInternal(m_ListView.row, entry);
+                            m_LastActiveEntryIndex = entry.globalLineIndex;
+                            if (e.clickCount == 2)
+                                openSelectedItem = true;
+                        }
+                        else if (e.type == EventType.Repaint)
+                        {
+                            int mode = 0;
+                            string text = null;
+                            LogEntries.GetLinesAndModeFromEntryInternal(el.row, Constants.LogStyleLineCount, ref mode,
+                                ref text);
+                            bool entryIsSelected = m_ListView.selectedItems != null &&
+                                el.row < m_ListView.selectedItems.Length &&
+                                m_ListView.selectedItems[el.row];
+
+                            // offset value in x for icon and text
+                            var offset = Constants.LogStyleLineCount == 1 ? 4 : 8;
+
+                            // Draw the background
+                            GUIStyle s = el.row % 2 == 0 ? Constants.OddBackground : Constants.EvenBackground;
+                            s.Draw(el.position, false, false, entryIsSelected, false);
+
+                            // Draw the icon
+                            GUIStyle iconStyle = GetStyleForErrorMode(mode, true, Constants.LogStyleLineCount == 1);
+                            Rect iconRect = el.position;
+                            iconRect.x += offset;
+                            iconRect.y += 2;
+
+                            iconStyle.Draw(iconRect, false, false, entryIsSelected, false);
+
+                            // Draw the text
+                            tempContent.text = text;
+                            GUIStyle errorModeStyle =
+                                GetStyleForErrorMode(mode, false, Constants.LogStyleLineCount == 1);
+                            var textRect = el.position;
+                            textRect.x += offset;
+
+                            if (string.IsNullOrEmpty(m_SearchText))
+                                errorModeStyle.Draw(textRect, tempContent, id, m_ListView.row == el.row);
+                            else if (text != null)
+                            {
+                                //the whole text contains the searchtext, we have to know where it is
+                                int startIndex = text.IndexOf(m_SearchText, StringComparison.OrdinalIgnoreCase);
+                                if (startIndex == -1
+                                ) // the searchtext is not in the visible text, we don't show the selection
+                                    errorModeStyle.Draw(textRect, tempContent, id, m_ListView.row == el.row);
+                                else // the searchtext is visible, we show the selection
+                                {
+                                    int endIndex = startIndex + m_SearchText.Length;
+
+                                    const bool isActive = false;
+                                    const bool
+                                        hasKeyboardFocus =
+                                        true;     // This ensure we draw the selection text over the label.
+                                    const bool drawAsComposition = false;
+                                    Color selectionColor = GUI.skin.settings.selectionColor;
+
+                                    errorModeStyle.DrawWithTextSelection(textRect, tempContent, isActive,
+                                        hasKeyboardFocus, startIndex, endIndex, drawAsComposition, selectionColor);
+                                }
+                            }
+
+                            if (collapsed)
+                            {
+                                Rect badgeRect = el.position;
+                                tempContent.text = LogEntries.GetEntryCount(el.row)
+                                    .ToString(CultureInfo.InvariantCulture);
+                                Vector2 badgeSize = Constants.CountBadge.CalcSize(tempContent);
+
+                                if (Constants.CountBadge.fixedHeight > 0)
+                                    badgeSize.y = Constants.CountBadge.fixedHeight;
+                                badgeRect.xMin = badgeRect.xMax - badgeSize.x;
+                                badgeRect.yMin += ((badgeRect.yMax - badgeRect.yMin) - badgeSize.y) * 0.5f;
+                                badgeRect.x -= 5f;
+                                GUI.Label(badgeRect, tempContent, Constants.CountBadge);
+                            }
+                        }
                     }
 
-                    if (e.type == EventType.MouseDown && e.button == 0 && el.position.Contains(e.mousePosition))
+                    if (selectedRow != -1)
                     {
-                        selectedRow = m_ListView.row;
-                        DestroyLatestRestoreEntry();
+                        if (m_ListView.scrollPos.y >= m_ListView.rowHeight * m_ListView.totalRows - ms_LVHeight)
+                            m_ListView.scrollPos.y = m_ListView.rowHeight * m_ListView.totalRows - ms_LVHeight - 1;
+                    }
+
+                    // Make sure the selected entry is up to date
+                    if (m_ListView.totalRows == 0 || m_ListView.row >= m_ListView.totalRows || m_ListView.row < 0)
+                    {
+                        if (m_ActiveText.Length != 0)
+                        {
+                            SetActiveEntry(null);
+                            DestroyLatestRestoreEntry();
+                        }
+                    }
+                    else
+                    {
                         LogEntry entry = new LogEntry();
                         LogEntries.GetEntryInternal(m_ListView.row, entry);
-                        m_LastActiveEntryIndex = entry.globalLineIndex;
-                        if (e.clickCount == 2)
-                            openSelectedItem = true;
-                    }
-                    else if (e.type == EventType.Repaint)
-                    {
-                        int mode = 0;
-                        string text = null;
-                        LogEntries.GetLinesAndModeFromEntryInternal(el.row, Constants.LogStyleLineCount, ref mode, ref text);
-                        bool entryIsSelected = m_ListView.selectedItems != null && el.row < m_ListView.selectedItems.Length && m_ListView.selectedItems[el.row];
-
-                        // offset value in x for icon and text
-                        var offset = Constants.LogStyleLineCount == 1 ? 4 : 8;
-
-                        // Draw the background
-                        GUIStyle s = el.row % 2 == 0 ? Constants.OddBackground : Constants.EvenBackground;
-                        s.Draw(el.position, false, false, entryIsSelected, false);
-
-                        // Draw the icon
-                        GUIStyle iconStyle = GetStyleForErrorMode(mode, true, Constants.LogStyleLineCount == 1);
-                        Rect iconRect = el.position;
-                        iconRect.x += offset;
-                        iconRect.y += 2;
-
-                        iconStyle.Draw(iconRect, false, false, entryIsSelected, false);
-
-                        // Draw the text
-                        tempContent.text = text;
-                        GUIStyle errorModeStyle =
-                            GetStyleForErrorMode(mode, false, Constants.LogStyleLineCount == 1);
-                        var textRect = el.position;
-                        textRect.x += offset;
-
-                        if (string.IsNullOrEmpty(m_SearchText))
-                            errorModeStyle.Draw(textRect, tempContent, id, m_ListView.row == el.row);
-                        else if (text != null)
-                        {
-                            //the whole text contains the searchtext, we have to know where it is
-                            int startIndex = text.IndexOf(m_SearchText, StringComparison.OrdinalIgnoreCase);
-                            if (startIndex == -1) // the searchtext is not in the visible text, we don't show the selection
-                                errorModeStyle.Draw(textRect, tempContent, id, m_ListView.row == el.row);
-                            else // the searchtext is visible, we show the selection
-                            {
-                                int endIndex = startIndex + m_SearchText.Length;
-
-                                const bool isActive = false;
-                                const bool hasKeyboardFocus = true; // This ensure we draw the selection text over the label.
-                                const bool drawAsComposition = false;
-                                Color selectionColor = GUI.skin.settings.selectionColor;
-
-                                errorModeStyle.DrawWithTextSelection(textRect, tempContent, isActive, hasKeyboardFocus, startIndex, endIndex, drawAsComposition, selectionColor);
-                            }
-                        }
-
-                        if (collapsed)
-                        {
-                            Rect badgeRect = el.position;
-                            tempContent.text = LogEntries.GetEntryCount(el.row)
-                                .ToString(CultureInfo.InvariantCulture);
-                            Vector2 badgeSize = Constants.CountBadge.CalcSize(tempContent);
-
-                            if (Constants.CountBadge.fixedHeight > 0)
-                                badgeSize.y = Constants.CountBadge.fixedHeight;
-                            badgeRect.xMin = badgeRect.xMax - badgeSize.x;
-                            badgeRect.yMin += ((badgeRect.yMax - badgeRect.yMin) - badgeSize.y) * 0.5f;
-                            badgeRect.x -= 5f;
-                            GUI.Label(badgeRect, tempContent, Constants.CountBadge);
-                        }
-                    }
-                }
-
-                if (selectedRow != -1)
-                {
-                    if (m_ListView.scrollPos.y >= m_ListView.rowHeight * m_ListView.totalRows - ms_LVHeight)
-                        m_ListView.scrollPos.y = m_ListView.rowHeight * m_ListView.totalRows - ms_LVHeight - 1;
-                }
-
-                // Make sure the selected entry is up to date
-                if (m_ListView.totalRows == 0 || m_ListView.row >= m_ListView.totalRows || m_ListView.row < 0)
-                {
-                    if (m_ActiveText.Length != 0)
-                    {
-                        SetActiveEntry(null);
-                        DestroyLatestRestoreEntry();
-                    }
-                }
-                else
-                {
-                    LogEntry entry = new LogEntry();
-                    LogEntries.GetEntryInternal(m_ListView.row, entry);
-                    SetActiveEntry(entry);
-                    m_LastActiveEntryIndex = entry.globalLineIndex;
-
-
-                    // see if selected entry changed. if so - clear additional info
-                    LogEntries.GetEntryInternal(m_ListView.row, entry);
-                    if (m_ListView.selectionChanged || !m_ActiveText.Equals(entry.message))
-                    {
                         SetActiveEntry(entry);
                         m_LastActiveEntryIndex = entry.globalLineIndex;
-                    }
 
 
-                    // If copy, get the messages from selected rows
-                    if (e.type == EventType.ExecuteCommand && e.commandName == EventCommandNames.Copy && m_ListView.selectedItems != null)
-                    {
-                        m_CopyString.Clear();
-                        for (int rowIndex = 0; rowIndex < m_ListView.selectedItems.Length; rowIndex++)
+                        // see if selected entry changed. if so - clear additional info
+                        LogEntries.GetEntryInternal(m_ListView.row, entry);
+                        if (m_ListView.selectionChanged || !m_ActiveText.Equals(entry.message))
                         {
-                            if (m_ListView.selectedItems[rowIndex])
+                            SetActiveEntry(entry);
+                            m_LastActiveEntryIndex = entry.globalLineIndex;
+                        }
+
+
+                        // If copy, get the messages from selected rows
+                        if (e.type == EventType.ExecuteCommand && e.commandName == EventCommandNames.Copy &&
+                            m_ListView.selectedItems != null)
+                        {
+                            m_CopyString.Clear();
+                            for (int rowIndex = 0; rowIndex < m_ListView.selectedItems.Length; rowIndex++)
                             {
-                                LogEntries.GetEntryInternal(rowIndex, entry);
-                                m_CopyString.AppendLine(entry.message);
+                                if (m_ListView.selectedItems[rowIndex])
+                                {
+                                    LogEntries.GetEntryInternal(rowIndex, entry);
+                                    m_CopyString.AppendLine(entry.message);
+                                }
                             }
                         }
                     }
-                }
-                // Open entry using return key
-                if ((GUIUtility.keyboardControl == m_ListView.ID) && (e.type == EventType.KeyDown) &&
-                    (e.keyCode == KeyCode.Return) && (m_ListView.row != 0))
-                {
-                    selectedRow = m_ListView.row;
-                    openSelectedItem = true;
+
+                    // Open entry using return key
+                    if ((GUIUtility.keyboardControl == m_ListView.ID) && (e.type == EventType.KeyDown) &&
+                        (e.keyCode == KeyCode.Return) && (m_ListView.row != 0))
+                    {
+                        selectedRow = m_ListView.row;
+                        openSelectedItem = true;
+                    }
+
+                    if (e.type != EventType.Layout && ListViewGUI.ilvState.rectHeight != 1)
+                        ms_LVHeight = ListViewGUI.ilvState.rectHeight;
+
+                    if (openSelectedItem)
+                    {
+                        rowDoubleClicked = selectedRow;
+                        e.Use();
+                    }
                 }
 
-                if (e.type != EventType.Layout && ListViewGUI.ilvState.rectHeight != 1)
-                    ms_LVHeight = ListViewGUI.ilvState.rectHeight;
+                // Prevent dead locking in EditorMonoConsole by delaying callbacks (which can log to the console) until after LogEntries.EndGettingEntries() has been
+                // called (this releases the mutex in EditorMonoConsole so logging again is allowed). Fix for case 1081060.
+                if (rowDoubleClicked != -1)
+                    LogEntries.RowGotDoubleClicked(rowDoubleClicked);
 
-                if (openSelectedItem)
-                {
-                    rowDoubleClicked = selectedRow;
-                    e.Use();
-                }
+
+                // Display active text (We want word wrapped text with a vertical scrollbar)
+                m_TextScroll = GUILayout.BeginScrollView(m_TextScroll, Constants.Box);
+
+                string stackWithHyperlinks = StacktraceWithHyperlinks(m_ActiveText, m_CallstackTextStart);
+                float height = Constants.MessageStyle.CalcHeight(GUIContent.Temp(stackWithHyperlinks), position.width);
+                EditorGUILayout.SelectableLabel(stackWithHyperlinks, Constants.MessageStyle,
+                    GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true), GUILayout.MinHeight(height + 10));
+
+                GUILayout.EndScrollView();
+
+                SplitterGUILayout.EndVerticalSplit();
             }
-
-            // Prevent dead locking in EditorMonoConsole by delaying callbacks (which can log to the console) until after LogEntries.EndGettingEntries() has been
-            // called (this releases the mutex in EditorMonoConsole so logging again is allowed). Fix for case 1081060.
-            if (rowDoubleClicked != -1)
-                LogEntries.RowGotDoubleClicked(rowDoubleClicked);
-
-
-            // Display active text (We want word wrapped text with a vertical scrollbar)
-            m_TextScroll = GUILayout.BeginScrollView(m_TextScroll, Constants.Box);
-
-            string stackWithHyperlinks = StacktraceWithHyperlinks(m_ActiveText, m_CallstackTextStart);
-            float height = Constants.MessageStyle.CalcHeight(GUIContent.Temp(stackWithHyperlinks), position.width);
-            EditorGUILayout.SelectableLabel(stackWithHyperlinks, Constants.MessageStyle, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true), GUILayout.MinHeight(height + 10));
-
-            GUILayout.EndScrollView();
-
-            SplitterGUILayout.EndVerticalSplit();
 
             // Copy & Paste selected item
             if ((e.type == EventType.ValidateCommand || e.type == EventType.ExecuteCommand) && e.commandName == EventCommandNames.Copy && m_CopyString != null)
@@ -1001,6 +1022,7 @@ namespace UnityEditor
             }
             else
             {
+                m_ConsoleSearchNoResultMsg = $"No results for \"{filteringText}\"";
                 m_SearchText = filteringText;
                 LogEntries.SetFilteringText(filteringText); // Reset the active entry when we change the filtering text
             }
@@ -1011,8 +1033,12 @@ namespace UnityEditor
             }
             else
             {
-                SetActiveEntry(null);
-                DestroyLatestRestoreEntry();
+                // if we have an active selection before domain reload, we need to restore it. So it shouldn't set active entry to null.
+                if (m_LastActiveEntryIndex == -1)
+                {
+                    SetActiveEntry(null);
+                    DestroyLatestRestoreEntry();
+                }
             }
         }
 

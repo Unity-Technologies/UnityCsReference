@@ -399,6 +399,7 @@ namespace UnityEngine
             internal List<int> frontPositions;
             internal List<int> backPositions;
             internal List<int> positionCounts;
+            internal List<float> textureOffsets;
             internal int maxTrailCount;
             internal int maxPositionsPerTrailCount;
         }

@@ -42,6 +42,8 @@ namespace UnityEditor.SceneTemplate
 
         public bool addToDefaults;
 
+        internal bool hasCloneableDependencies => dependencies.Any(dep => dep.instantiationMode == TemplateInstantiationMode.Clone);
+
         void OnEnable()
         {
             if (dependencies == null)
@@ -50,9 +52,12 @@ namespace UnityEditor.SceneTemplate
 
         internal void BindScene(SceneAsset scene)
         {
-            templateScene = scene;
-            dependencies = new DependencyInfo[0];
-            UpdateDependencies();
+            if (templateScene != scene)
+            {
+                templateScene = scene;
+                dependencies = new DependencyInfo[0];
+                UpdateDependencies();
+            }
         }
 
         internal bool UpdateDependencies()

@@ -35,16 +35,14 @@ namespace UnityEditor.IMGUI.Controls
             m_DisplayNames = enumData.displayNames;
             m_FlagValues = enumData.flagValues;
 
-            string buttonText;
-            MaskFieldGUI.GetMenuOptions(m_Mask, m_DisplayNames, m_FlagValues, out buttonText, out m_OptionNames, out m_OptionMaskValues, out m_SelectedOptions);
+            MaskFieldGUI.GetMenuOptions(m_Mask, m_DisplayNames, m_FlagValues, out var buttonText, out var buttonTextMixed, out m_OptionNames, out m_OptionMaskValues, out m_SelectedOptions);
         }
 
         public MultiselectDataSource(int mask, string[] displayedOptions, int[] flagValues)
         {
             m_DisplayNames = displayedOptions;
             m_FlagValues = flagValues;
-            string buttonText;
-            MaskFieldGUI.GetMenuOptions(mask, displayedOptions, flagValues, out buttonText, out m_OptionNames, out m_OptionMaskValues, out m_SelectedOptions);
+            MaskFieldGUI.GetMenuOptions(mask, displayedOptions, flagValues, out var buttonText, out var buttonTextMixed, out m_OptionNames, out m_OptionMaskValues, out m_SelectedOptions);
         }
 
         protected override AdvancedDropdownItem FetchData()
@@ -80,8 +78,7 @@ namespace UnityEditor.IMGUI.Controls
         public void UpdateSelectedId(AdvancedDropdownItem item)
         {
             m_Mask = m_OptionMaskValues[item.elementIndex];
-            string buttonText;
-            MaskFieldGUI.GetMenuOptions(m_Mask, m_DisplayNames, m_FlagValues, out buttonText, out m_OptionNames, out m_OptionMaskValues, out m_SelectedOptions);
+            MaskFieldGUI.GetMenuOptions(m_Mask, m_DisplayNames, m_FlagValues, out var buttonText, out var buttonTextMixed, out m_OptionNames, out m_OptionMaskValues, out m_SelectedOptions);
             if (enumFlags != null)
                 m_EnumFlag = EnumDataUtility.IntToEnumFlags(enumFlags.GetType(), m_Mask);
             RebuildSelection(root);

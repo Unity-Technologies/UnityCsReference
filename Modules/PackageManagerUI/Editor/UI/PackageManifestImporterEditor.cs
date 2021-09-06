@@ -10,6 +10,7 @@ using UnityEditorInternal;
 using UnityEditor.AssetImporters;
 using UnityEngine;
 using Object = UnityEngine.Object;
+using UnityEditor.Callbacks;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
@@ -688,6 +689,20 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 Debug.Log($"Couldn't write package manifest file {assetPath}.");
             }
+        }
+
+        [OnOpenAsset(OnOpenAssetAttributeMode.Validate)]
+        private static bool OnOpenAsset(int instanceID, int line, int column)
+        {
+            var selected = EditorUtility.InstanceIDToObject(instanceID);
+            var assetPath = AssetDatabase.GetAssetPath(selected);
+
+            if (string.IsNullOrEmpty(assetPath))
+            {
+                return false;
+            }
+
+            return assetPath.EndsWith("/package.json", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string BuildCompletePackageName(PackageName packageName)

@@ -23,6 +23,7 @@ namespace UnityEditor.Presets
             Internal_Create(this, source);
         }
 
+        [NativeThrows]
         static extern void Internal_Create([Writable] Preset notSelf, [NotNull] Object source);
 
         public extern PropertyModification[] PropertyModifications

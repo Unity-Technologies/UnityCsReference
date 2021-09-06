@@ -38,6 +38,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override IEnumerable<PackageLink> links => m_Links;
 
         [SerializeField]
+        private bool m_IsHidden;
+        public bool isHidden => m_IsHidden;
+
+        [SerializeField]
         private List<string> m_Labels;
         public override IEnumerable<string> labels => m_Labels;
 
@@ -89,6 +93,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_Labels = purchaseInfo?.tags;
             m_PurchasedTimeTicks = !string.IsNullOrEmpty(purchaseInfo?.purchasedTime) ? DateTime.Parse(purchaseInfo?.purchasedTime).Ticks : 0;
+            m_IsHidden = purchaseInfo?.isHidden == true;
 
             if (string.IsNullOrEmpty(productInfo?.id) || string.IsNullOrEmpty(productInfo?.versionId))
                 AddError(new UIError(UIErrorCode.AssetStorePackageError, L10n.Tr("Invalid product details.")));
@@ -128,6 +133,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_VersionList = new AssetStoreVersionList(assetStoreUtils, ioProxy);
 
             m_Labels = purchaseInfo?.tags;
+            m_IsHidden = purchaseInfo?.isHidden == true;
             m_PurchasedTimeTicks = !string.IsNullOrEmpty(purchaseInfo?.purchasedTime) ? DateTime.Parse(purchaseInfo?.purchasedTime).Ticks : 0;
 
             m_UpmVersionList = package?.versions as UpmVersionList ?? new UpmVersionList();

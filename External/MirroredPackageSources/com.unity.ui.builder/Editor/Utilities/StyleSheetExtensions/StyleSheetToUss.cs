@@ -111,16 +111,26 @@ namespace Unity.UI.Builder
                     break;
                 case StyleValueType.AssetReference:
                     var assetRef = sheet.ReadAssetReference(handle);
-                    var assetPath = URIHelpers.MakeAssetUri(assetRef);
-                    str = assetRef == null ? "none" : $"url('{assetPath}')";
+                    str = GetPathValueFromAssetRef(assetRef);
                     break;
                 case StyleValueType.Variable:
                     str = sheet.ReadVariable(handle);
+                    break;
+                case StyleValueType.ScalableImage:
+                    var image = sheet.ReadScalableImage(handle);
+                    var normalImage = image.normalImage;
+                    str = GetPathValueFromAssetRef(normalImage);
                     break;
                 default:
                     throw new ArgumentException("Unhandled type " + handle.valueType);
             }
             return str;
+        }
+
+        private static string GetPathValueFromAssetRef(UnityEngine.Object assetRef)
+        {
+            var assetPath = URIHelpers.MakeAssetUri(assetRef);
+            return assetRef == null ? "none" : $"url('{assetPath}')";;
         }
 
         public static void ValueHandlesToUssString(StringBuilder sb, StyleSheet sheet, UssExportOptions options, string propertyName, StyleValueHandle[] values, ref int valueIndex, int valueCount = -1)

@@ -163,6 +163,8 @@ namespace UnityEditor
 
             public static extern string packageName { get; set; }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static extern string packageLogo { get; set; }
 
             private static extern string GetWSAImage(WSAImageType type, WSAImageScale scale);

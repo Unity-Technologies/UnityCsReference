@@ -625,7 +625,7 @@ namespace UnityEditor.UIElements.Debugger
 
         void HighlightElement(VisualElement ve, bool isFirst, bool showRepaint = true)
         {
-            var visible = ve.resolvedStyle.visibility == Visibility.Visible && ve.resolvedStyle.opacity > Mathf.Epsilon;
+            var visible = ve.resolvedStyle.visibility == Visibility.Visible && ve.resolvedStyle.opacity > UIRUtility.k_Epsilon;
             if (visible)
             {
                 if (isFirst)

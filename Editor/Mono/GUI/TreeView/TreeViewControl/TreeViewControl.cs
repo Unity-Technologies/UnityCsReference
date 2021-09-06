@@ -152,6 +152,12 @@ namespace UnityEditor.IMGUI.Controls
             set { m_GUI.k_BaseIndent = value; }
         }
 
+        internal bool drawSelection
+        {
+            get => m_GUI.drawSelection;
+            set => m_GUI.drawSelection = value;
+        }
+
         protected float foldoutWidth
         {
             get { return m_GUI.foldoutWidth; }

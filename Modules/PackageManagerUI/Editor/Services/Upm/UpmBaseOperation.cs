@@ -8,6 +8,7 @@ using UnityEditor.PackageManager.Requests;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
+    [Serializable]
     internal abstract class UpmBaseOperation : IOperation
     {
         public abstract event Action<IOperation, UIError> onOperationError;
@@ -73,6 +74,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
     }
 
+    [Serializable]
     internal abstract class UpmBaseOperation<T> : UpmBaseOperation where T : Request
     {
         public override event Action<IOperation, UIError> onOperationError = delegate {};
@@ -153,6 +155,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
+        public void RestoreProgress()
+        {
+            if (isInProgress)
+                EditorApplication.update += Progress;
+        }
+
         private void OnError(UIError error)
         {
             this.error = error;
@@ -165,7 +173,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnSuccess()
         {
-            onProcessResult(m_Request);
+            onProcessResult?.Invoke(m_Request);
             m_LastSuccessTimestamp = m_Timestamp;
             onOperationSuccess?.Invoke(this);
         }
@@ -178,6 +186,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             onOperationError = delegate {};
             onOperationFinalized = delegate {};
             onOperationSuccess = delegate {};
+            onOperationProgress = delegate {};
             onProcessResult = delegate {};
         }
     }

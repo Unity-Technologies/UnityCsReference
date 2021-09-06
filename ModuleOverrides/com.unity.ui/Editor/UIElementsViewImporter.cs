@@ -22,7 +22,7 @@ using StyleSheet = UnityEngine.UIElements.StyleSheet;
 namespace UnityEditor.UIElements
 {
     // Make sure UXML is imported after assets than can be addressed in USS
-    [ScriptedImporter(version: 7, ext: "uxml", importQueueOffset: 1100)]
+    [ScriptedImporter(version: 8, ext: "uxml", importQueueOffset: 1100)]
     [ExcludeFromPreset]
     internal class UIElementsViewImporter : ScriptedImporter
     {

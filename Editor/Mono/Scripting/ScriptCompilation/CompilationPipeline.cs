@@ -50,7 +50,7 @@ namespace UnityEditor.Compilation
         public ScriptCompilerOptions()
         {
             AllowUnsafeCode = false;
-            ApiCompatibilityLevel = ApiCompatibilityLevel.NET_4_6;
+            ApiCompatibilityLevel = ApiCompatibilityLevel.NET_Unity_4_8;
             ResponseFiles = new string[0];
             RoslynAnalyzerDllPaths = new string[0];
             LanguageVersion = "9.0";
@@ -495,7 +495,7 @@ namespace UnityEditor.Compilation
             sc.AssemblyFlags flags = sc.AssemblyFlags.None;
             if ((precompiledAssemblySources & PrecompiledAssemblySources.SystemAssembly) != 0)
             {
-                foreach (var a in MonoLibraryHelpers.GetSystemLibraryReferences(ApiCompatibilityLevel.NET_4_6))
+                foreach (var a in MonoLibraryHelpers.GetSystemLibraryReferences(ApiCompatibilityLevel.NET_Unity_4_8))
                 {
                     assemblyNames.Add(a);
                 }

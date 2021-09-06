@@ -25,11 +25,17 @@ namespace UnityEditor.PackageManager
         [FreeFunction("PackageManager::AddScopedRegistry::StartOperation")]
         private static extern NativeStatusCode AddScopedRegistry([Out] out long operationId, string name, string url, string[] scopes);
 
+        [FreeFunction("PackageManager::ClearCacheRoot::StartOperation")]
+        private static extern NativeStatusCode ClearCacheRoot([Out] out long operationId);
+
         [FreeFunction("PackageManager::Embed::StartOperation")]
         private static extern NativeStatusCode Embed([Out] out long operationId, string packageId);
 
         [FreeFunction("PackageManager::GetCachedPackages::StartOperation")]
         private static extern NativeStatusCode GetCachedPackages([Out] out long operationId, string registryId);
+
+        [FreeFunction("PackageManager::GetCacheRoot::StartOperation")]
+        private static extern NativeStatusCode GetCacheRoot([Out] out long operationId);
 
         [FreeFunction("PackageManager::GetPackageInfo::StartOperation")]
         private static extern NativeStatusCode GetPackageInfo([Out] out long operationId, string packageId, bool offlineMode);
@@ -71,6 +77,9 @@ namespace UnityEditor.PackageManager
         [FreeFunction("PackageManager::Search::StartOperation")]
         private static extern NativeStatusCode Search([Out] out long operationId, SearchOptions options);
 
+        [FreeFunction("PackageManager::SetCacheRoot::StartOperation")]
+        private static extern NativeStatusCode SetCacheRoot([Out] out long operationId, string newPath);
+
         [FreeFunction("PackageManager::UpdateScopedRegistry::StartOperation")]
         private static extern NativeStatusCode UpdateScopedRegistry([Out] out long operationId, string registryName, UpdateScopedRegistryOptions options);
     }
@@ -91,11 +100,6 @@ namespace UnityEditor.PackageManager
     {
         [NativeName("GetAllPackages")]
         public static extern PackageInfo[] GetAllRegisteredPackages();
-
-        internal static PackageInfo[] GetAll()
-        {
-            return GetAllRegisteredPackages();
-        }
 
         [NativeName("GetPredefinedPackageTypes")]
         internal static extern string[] GetPredefinedPackageTypes();

@@ -13,7 +13,7 @@ using UnityEngine;
 namespace UnityEditorInternal.Profiling
 {
     [Serializable]
-    [ProfilerModuleMetadata("File Access", typeof(LocalizationResource), IconPath = "Profiler.Custom")]
+    [ProfilerModuleMetadata("File Access", typeof(LocalizationResource), IconPath = "Profiler.FileAccess")]
     internal class FileIOProfilerModule : ProfilerModuleBase
     {
         FileIOProfilerView m_FileIOProfilerView;

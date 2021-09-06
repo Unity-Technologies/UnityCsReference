@@ -48,8 +48,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         bool hasEntitlementsError { get; }
 
+        // Use `PackageDatabase.AddPackageError` instead if you want to trigger `onPackagesChanged` events
         void AddError(UIError error);
 
+        // Use `PackageDatabase.ClearPackageErrors` instead if you want to trigger `onPackagesChanged` events
         void ClearErrors(Predicate<UIError> match = null);
 
         IPackage Clone();
