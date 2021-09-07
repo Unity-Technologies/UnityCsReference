@@ -71,7 +71,7 @@ namespace UnityEngine.UIElements
             if (!targetScrollView.contentContainer.worldBound.Contains(pointerPosition))
                 return false;
 
-            if (targetListView.selectedItems.Any())
+            if (targetListView.selectedIndices.Any())
                 return dragAndDropController.CanStartDrag(targetListView.selectedIndices);
 
             var recycledItem = GetRecycledItem(pointerPosition);
@@ -80,7 +80,7 @@ namespace UnityEngine.UIElements
 
         protected override StartDragArgs StartDrag(Vector3 pointerPosition)
         {
-            if (targetListView.selectedItems.Any())
+            if (targetListView.selectedIndices.Any())
                 return dragAndDropController.SetupDragAndDrop(targetListView.selectedIndices);
 
             var recycledItem = GetRecycledItem(pointerPosition);
@@ -126,13 +126,16 @@ namespace UnityEngine.UIElements
                 dragAndDropController.OnDrop(args);
         }
 
-        protected void HandleDragAndScroll(Vector2 pointerPosition)
+        // Internal for tests.
+        internal void HandleDragAndScroll(Vector2 pointerPosition)
         {
             var scrollUp = pointerPosition.y < targetScrollView.worldBound.yMin + k_AutoScrollAreaSize;
             var scrollDown = pointerPosition.y > targetScrollView.worldBound.yMax - k_AutoScrollAreaSize;
             if (scrollUp || scrollDown)
             {
-                targetScrollView.scrollOffset += (scrollUp ? Vector2.down : Vector2.up) * k_PanSpeed;
+                var offset = targetScrollView.scrollOffset + (scrollUp ? Vector2.down : Vector2.up) * k_PanSpeed;
+                offset.y = Mathf.Clamp(offset.y, 0f, targetScrollView.contentContainer.worldBound.height - targetScrollView.contentViewport.worldBound.height);
+                targetScrollView.scrollOffset = offset;
             }
         }
 

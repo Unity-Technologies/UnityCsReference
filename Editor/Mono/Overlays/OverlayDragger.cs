@@ -114,6 +114,7 @@ namespace UnityEditor.Overlays
             {
                 m_Overlay.container.stateLocked = true;
                 m_InitialIndex = m_Overlay.container.IndexOf(m_Overlay.rootVisualElement);
+
                 canvas.ShowOriginGhost(m_Overlay);
                 m_Overlay.floatingPosition = m_InitialLayoutPosition;
                 m_Overlay.Undock();
@@ -209,9 +210,7 @@ namespace UnityEditor.Overlays
         bool IsInOriginGhost(Vector2 mousePosition)
         {
             var isInGhost = canvas.GetOriginGhostWorldBound().Contains(mousePosition);
-
             canvas.UpdateGhostHover(isInGhost);
-
             return isInGhost;
         }
 

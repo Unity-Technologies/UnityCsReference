@@ -1683,6 +1683,11 @@ namespace UnityEditor.Search
                 }
 
                 var returnType = mi.ReturnType;
+                if (returnType == typeof(void))
+                {
+                    Debug.LogWarning($"Return parameter type of filter method \"{mi.Name}\" cannot be void.");
+                    return null;
+                }
 
                 // Basic filter
                 if (inputParams.Length == mandatoryParamCount)

@@ -21,7 +21,7 @@ namespace UnityEditor.Search
         {
             this.id = id;
             this.name = name;
-            columns = columnModels.Where(c => c != null).ToArray();
+            columns = columnModels == null ? new SearchColumn[0] : columnModels.Where(c => c != null).ToArray();
             InitFunctors();
         }
 

@@ -273,7 +273,7 @@ namespace UnityEditor.Overlays
             {
                 menu.AddItem(new GUIContent(pathPrefix + preset.name), false, () =>
                 {
-                    preset.ApplyTo(window);
+                    window.overlayCanvas.ApplyPreset(preset);
                 });
             }
 
@@ -283,9 +283,9 @@ namespace UnityEditor.Overlays
             {
                 SaveOverlayPreset.ShowWindow(window, name =>
                 {
-                    window.lastOverlayPresetName = name;
-                    CreatePresetFromOverlayState(name, window);
+                    var preset = CreatePresetFromOverlayState(name, window);
                     SaveAllPreferences();
+                    window.overlayCanvas.ApplyPreset(preset);
                 });
             });
 
@@ -314,7 +314,7 @@ namespace UnityEditor.Overlays
                             L10n.Tr("Ok"));
                         failed = true;
                     }
-                    else if (!preset.IsPresetUseableInWindow(window.GetType()))
+                    else if (!preset.CanApplyToWindow(window.GetType()))
                     {
                         EditorUtility.DisplayDialog(
                             L10n.Tr("Load Overlay Preset From Disk"),
@@ -342,7 +342,7 @@ namespace UnityEditor.Overlays
                     }
 
                     AddPreset(preset);
-                    preset.ApplyTo(window);
+                    window.overlayCanvas.ApplyPreset(preset);
                 }
             });
 

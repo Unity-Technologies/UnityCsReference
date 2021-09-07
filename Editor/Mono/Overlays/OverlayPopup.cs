@@ -32,14 +32,14 @@ namespace UnityEditor.Overlays
 
             var root = this.Q("overlay-content");
             root.renderHints = RenderHints.ClipWithScissors;
-            root.Add(overlay.CreatePanelContentSafe());
+            root.Add(overlay.CreatePanelContent());
 
             RegisterCallback<MouseEnterEvent>(evt => m_CursorIsOverPopup = true);
             RegisterCallback<MouseLeaveEvent>(evt => m_CursorIsOverPopup = false);
 
             RegisterCallback<GeometryChangedEvent>(evt =>
             {
-                var proposed = overlay.m_CollapsedContent.worldBound;
+                var proposed = overlay.collapsedButtonRect;
                 proposed.size = evt.newRect.size;
                 var placement = OverlayCanvas.ClampRectToBounds(overlay.canvas.windowRoot.worldBound, proposed);
 

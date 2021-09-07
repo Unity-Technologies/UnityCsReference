@@ -26,17 +26,6 @@ namespace UnityEditor.EditorTools
             }
         }
 
-        EditorToolSettingsOverlay()
-        {
-            ToolManager.activeToolChanged += OnToolChanged;
-        }
-
-        public override VisualElement CreatePanelContent() { CreateEditorContent(); return content; }
-
-        public VisualElement CreateHorizontalToolbarContent() { CreateEditorContent(); return content; }
-
-        public VisualElement CreateVerticalToolbarContent() { CreateEditorContent(); return content; }
-
         protected internal override Layout supportedLayouts
         {
             get
@@ -52,9 +41,40 @@ namespace UnityEditor.EditorTools
             }
         }
 
+        public EditorToolSettingsOverlay()
+        {
+            ToolManager.activeToolChanged += OnToolChanged;
+            CreateEditor();
+        }
+
+        void CreateEditor()
+        {
+            UnityObject.DestroyImmediate(m_Editor);
+            m_Editor = Editor.CreateEditor(EditorToolManager.activeTool);
+        }
+
         void OnToolChanged()
         {
-            RebuildContent(layout);
+            CreateEditor();
+            RebuildContent();
+        }
+
+        public override VisualElement CreatePanelContent()
+        {
+            CreateEditorContent();
+            return content;
+        }
+
+        public VisualElement CreateHorizontalToolbarContent()
+        {
+            CreateEditorContent();
+            return content;
+        }
+
+        public VisualElement CreateVerticalToolbarContent()
+        {
+            CreateEditorContent();
+            return content;
         }
 
         void CreateEditorContent()
@@ -62,10 +82,8 @@ namespace UnityEditor.EditorTools
             m_Content?.RemoveFromHierarchy();
             m_Content = null;
 
-            if (m_Editor != null)
-                UnityObject.DestroyImmediate(m_Editor);
-
-            m_Editor = Editor.CreateEditor(EditorToolManager.activeTool);
+            if (m_Editor == null)
+                return;
 
             switch (layout)
             {

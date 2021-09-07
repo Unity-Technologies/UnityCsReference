@@ -38,6 +38,11 @@ namespace UnityEditor.Search
             Dispose(true);
         }
 
+        public bool IsReadOnly()
+        {
+            return false;
+        }
+
         public IEnumerable<SearchItem> GetElements()
         {
             return items;
@@ -62,7 +67,7 @@ namespace UnityEditor.Search
                 }
             }
             else
-                GUI.Label(screenRect, "No table configuration selected", Styles.noResult);
+                GUI.Label(screenRect, L10n.Tr("No table configuration selected"), Styles.noResult);
         }
 
         public override void Refresh(RefreshFlags flags = RefreshFlags.Default)
@@ -220,7 +225,7 @@ namespace UnityEditor.Search
 
         public void AddColumnHeaderContextMenuItems(GenericMenu menu, SearchColumn sourceColumn)
         {
-            menu.AddItem(GUIContent.Temp("Column Format/Default"), string.IsNullOrEmpty(sourceColumn.provider), () => sourceColumn.SetProvider(null));
+            menu.AddItem(new GUIContent("Column Format/Default"), string.IsNullOrEmpty(sourceColumn.provider), () => sourceColumn.SetProvider(null));
             foreach (var scp in SearchColumnProvider.providers)
             {
                 var provider = scp.provider;
@@ -230,9 +235,18 @@ namespace UnityEditor.Search
             }
         }
 
+        public bool AddColumnHeaderContextMenuItems(GenericMenu menu)
+        {
+            return false;
+        }
+
         public void SetSelection(IEnumerable<SearchItem> items)
         {
             searchView.SetSelection(items.Select(e => searchView.results.IndexOf(e)).Where(i => i != -1).ToArray());
+        }
+
+        public void DoubleClick(SearchItem item)
+        {
         }
 
         public void SetDirty()
@@ -393,6 +407,7 @@ namespace UnityEditor.Search
         {
             SearchReport.ExportAsCsv(GetSearchTable().name, GetColumns(), GetRows(), context);
         }
+
 
         public override void DrawTabsButtons()
         {

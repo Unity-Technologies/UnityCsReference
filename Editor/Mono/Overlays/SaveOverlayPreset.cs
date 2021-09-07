@@ -30,7 +30,7 @@ namespace UnityEditor.Overlays
             SaveOverlayPreset w = GetWindowDontShow<SaveOverlayPreset>();
             w.m_Window = window;
             w.save = callback;
-            w.m_PresetName = window.lastOverlayPresetName;
+            w.m_PresetName = window.overlayCanvas.lastAppliedPresetName;
             if (string.IsNullOrEmpty(w.m_PresetName))
                 w.m_PresetName = "Default";
             w.minSize = w.maxSize = new Vector2(k_Width, k_Height);

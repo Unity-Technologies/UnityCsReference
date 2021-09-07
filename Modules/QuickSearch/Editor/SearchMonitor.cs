@@ -164,6 +164,20 @@ namespace UnityEditor.Search
             propertyDatabaseView.Invalidate(documentKey);
             propertyAliasesView.Invalidate(documentKey);
         }
+
+        public void InvalidateDocument(string documentKey)
+        {
+            SearchMonitor.Log("Invalidate document");
+            propertyDatabaseView.Invalidate(documentKey);
+            propertyAliasesView.Invalidate(documentKey);
+        }
+
+        public void Invalidate(PropertyDatabaseRecordKey recordKey)
+        {
+            SearchMonitor.Log("Invalidate record", recordKey);
+            propertyDatabaseView.Invalidate(recordKey);
+            propertyAliasesView.Invalidate(recordKey);
+        }
     }
 
     [InitializeOnLoad]
@@ -472,8 +486,8 @@ namespace UnityEditor.Search
         private static void InvalidateDocument(ulong documentKey)
         {
             s_DocumentsToInvalidate.Add(documentKey);
-            s_DelayedInvalidateOff?.Invoke();
-            s_DelayedInvalidateOff = Utils.CallDelayed(InvalidateDocuments, 1f);
+            if (s_DelayedInvalidateOff == null)
+                s_DelayedInvalidateOff = Utils.CallDelayed(InvalidateDocuments, 1f);
         }
 
         private static void InvalidateDocuments()

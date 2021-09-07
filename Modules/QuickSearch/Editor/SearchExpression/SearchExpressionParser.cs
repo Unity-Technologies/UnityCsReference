@@ -165,7 +165,7 @@ namespace UnityEditor.Search
                         return new SearchExpressionParser(attribute.name, attribute.priority, (args) => handlerNoContext(args.text.ToString()));
                     throw new CustomAttributeFormatException($"Invalid parser handler {attribute.name} using {mi.DeclaringType.FullName}.{mi.Name}");
                 },
-                supportedSignatures).ToList();
+                supportedSignatures, ReflectionUtils.AttributeLoaderBehavior.DoNotThrowOnValidation).ToList();
             parsers.Sort((a, b) => a.priority.CompareTo(b.priority));
         }
 

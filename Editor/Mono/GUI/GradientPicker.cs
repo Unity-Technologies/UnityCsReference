@@ -43,24 +43,23 @@ namespace UnityEditor
         // Static methods
         public static void Show(Gradient newGradient, bool hdr, ColorSpace colorSpace = ColorSpace.Gamma)
         {
-            GUIView currentView = GUIView.current;
-            PrepareShow(hdr, colorSpace);
-            s_GradientPicker.m_DelegateView = currentView;
-            s_GradientPicker.m_Delegate = null;
-            s_GradientPicker.Init(newGradient, hdr, colorSpace);
-
-            GradientPreviewCache.ClearCache();
+            Show(newGradient, hdr, ColorSpace.Gamma, null, GUIView.current);
         }
 
         public static void Show(Gradient newGradient, bool hdr, System.Action<Gradient> onGradientChanged)
         {
-            Show(newGradient, hdr, ColorSpace.Gamma, onGradientChanged);
+            Show(newGradient, hdr, ColorSpace.Gamma, onGradientChanged, null);
         }
 
         public static void Show(Gradient newGradient, bool hdr, ColorSpace colorSpace, System.Action<Gradient> onGradientChanged)
         {
+            Show(newGradient, hdr, ColorSpace.Gamma, onGradientChanged, null);
+        }
+
+        private static void Show(Gradient newGradient, bool hdr, ColorSpace colorSpace, System.Action<Gradient> onGradientChanged, GUIView currentView)
+        {
             PrepareShow(hdr, colorSpace);
-            s_GradientPicker.m_DelegateView = null;
+            s_GradientPicker.m_DelegateView = currentView;
             s_GradientPicker.m_Delegate = onGradientChanged;
             s_GradientPicker.Init(newGradient, hdr, colorSpace);
 
@@ -82,6 +81,7 @@ namespace UnityEditor
                 s_GradientPicker.minSize = minSize;
                 s_GradientPicker.maxSize = maxSize;
                 s_GradientPicker.wantsMouseMove = true;
+                Undo.undoRedoPerformed += s_GradientPicker.OnUndoPerformed;
             }
 
             s_GradientPicker.ShowAuxWindow(); // Use this if auto close on lost focus is wanted.
@@ -157,11 +157,13 @@ namespace UnityEditor
             if (m_GradientLibraryEditorState != null)
                 m_GradientLibraryEditorState.TransferEditorPrefsState(false);
 
+            s_GradientPicker.UnregisterEvents();
             s_GradientPicker = null;
         }
 
         public void OnDestroy()
         {
+            this.UnregisterEvents();
             m_GradientLibraryEditor.UnloadUsedLibraries();
         }
 
@@ -270,6 +272,7 @@ namespace UnityEditor
             if (s_GradientPicker == null)
                 return;
 
+            s_GradientPicker.UnregisterEvents();
             s_GradientPicker.Close();
             GUIUtility.ExitGUI();
         }
@@ -279,6 +282,16 @@ namespace UnityEditor
             if (s_GradientPicker == null)
                 return;
             s_GradientPicker.Repaint();
+        }
+
+        private void UnregisterEvents()
+        {
+            Undo.undoRedoPerformed -= this.OnUndoPerformed;
+        }
+
+        private void OnUndoPerformed()
+        {
+            this.Init(this.m_Gradient, this.m_HDR, this.m_ColorSpace);
         }
     }
 } // namespace

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Profiling;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Overlays
@@ -82,31 +83,39 @@ namespace UnityEditor.Overlays
         static VisualTreeAsset s_TreeAsset;
         static VisualTreeAsset s_DropZoneTreeAsset;
 
+        static readonly SaveData k_DefaultSaveData = new SaveData()
+        {
+            floating = false,
+            collapsed = false,
+            containerId = null,
+            displayed = false,
+            dockPosition = DockPosition.Bottom,
+            index = int.MaxValue,
+            layout = Layout.Panel
+        };
+
         OverlayMenu m_Menu;
 
+        [SerializeField]
+        string m_LastAppliedPresetName = "Default";
+
+        public string lastAppliedPresetName => m_LastAppliedPresetName;
+
         List<Overlay> m_Overlays = new List<Overlay>();
-        List<LegacyOverlay> m_LegacyOverlays = new List<LegacyOverlay>();
-        Dictionary<string, OverlayContainer> m_ContainerFromId = new Dictionary<string, OverlayContainer>();
 
         [SerializeField]
         List<SaveData> m_SaveData = new List<SaveData>();
 
-        [SerializeField] bool m_FirstInit = true;
-
         VisualElement m_RootVisualElement;
         internal EditorWindow containerWindow { get; set; }
         internal VisualElement floatingContainer { get; set; }
+        Overlay m_HoveredOverlay;
 
-        OverlayMenu menu => m_Menu == null
-        ? m_Menu = new OverlayMenu(this)
-            : m_Menu;
-
-        internal VisualElement rootVisualElement => m_RootVisualElement == null
-        ? m_RootVisualElement = CreateRoot()
-            : m_RootVisualElement;
+        OverlayMenu menu => m_Menu ??= new OverlayMenu(this);
+        internal VisualElement rootVisualElement => m_RootVisualElement ??= CreateRoot();
 
         Vector2 localMousePosition { get; set; }
-        Overlay hoveredOverlay { get; set; }
+        public Overlay hoveredOverlay => m_HoveredOverlay;
         OverlayContainer hoveredOverlayContainer { get; set; }
         OverlayContainer defaultContainer { get; set; }
         OverlayContainer defaultToolbarContainer { get; set; }
@@ -120,10 +129,28 @@ namespace UnityEditor.Overlays
         public OverlayDestinationMarker destinationMarker { get; private set; }
 
         public IEnumerable<Overlay> overlays => m_Overlays.AsReadOnly();
-        internal IEnumerable<LegacyOverlay> legacyOverlays => m_LegacyOverlays;
 
         VisualElement m_WindowRoot;
         internal VisualElement windowRoot => m_WindowRoot;
+
+        public Action afterOverlaysInitialized;
+        public event Action<bool> overlaysEnabledChanged;
+
+        public bool overlaysEnabled => containers.All(x => x.style.display != DisplayStyle.None);
+
+        public void SetOverlaysEnabled(bool visible)
+        {
+            if (visible == overlaysEnabled)
+                return;
+
+            foreach (var container in containers)
+                container.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+            foreach (var toolbar in toolbarZones)
+                toolbar.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+            floatingContainer.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+
+            overlaysEnabledChanged?.Invoke(visible);
+        }
 
         VisualElement CreateRoot()
         {
@@ -195,7 +222,7 @@ namespace UnityEditor.Overlays
             destinationMarker = new OverlayDestinationMarker { name = "dest-marker"};
             ve.Q("overlay-drop-zones").Add(destinationMarker);
 
-            EnablePicking(ve, false);
+            SetPickingMode(ve, PickingMode.Ignore);
 
             ve.RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             ve.RegisterCallback<DetachFromPanelEvent>(OnDetachedFromPanel);
@@ -204,58 +231,11 @@ namespace UnityEditor.Overlays
             return ve;
         }
 
-        void EnablePicking(VisualElement element, bool enable, string ignoreClass = "")
-        {
-            var mode = enable ? PickingMode.Position : PickingMode.Ignore;
-            EnablePicking(element, mode, ignoreClass);
-        }
-
-        void EnablePicking(VisualElement element, PickingMode mode)
+        void SetPickingMode(VisualElement element, PickingMode mode)
         {
             element.pickingMode = mode;
             foreach (var child in element.Children())
-            {
-                EnablePicking(child, mode);
-            }
-        }
-
-        void EnablePicking(VisualElement element, PickingMode mode, string ignoreClass)
-        {
-            if (string.IsNullOrEmpty(ignoreClass))
-                EnablePicking(element, mode);
-            else
-            {
-                element.pickingMode = mode;
-                foreach (var child in element.Children())
-                {
-                    if (!child.ClassListContains(ignoreClass))
-                        EnablePicking(child, mode, ignoreClass);
-                }
-            }
-        }
-
-        public event Action<bool> overlaysEnabledChanged;
-
-        public bool overlaysEnabled => containers.All(x => x.style.display != DisplayStyle.None);
-
-        public void SetOverlaysEnabled(bool visible)
-        {
-            if (visible == overlaysEnabled)
-                return;
-
-            foreach (var container in containers)
-                container.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
-            foreach (var toolbar in toolbarZones)
-                toolbar.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
-            floatingContainer.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
-
-            overlaysEnabledChanged?.Invoke(visible);
-        }
-
-        public void Show(Overlay overlay)
-        {
-            if (overlay.userControlledVisibility)
-                overlay.displayed = true;
+                SetPickingMode(child, mode);
         }
 
         void OnMouseEnterOverlayContainer(MouseEnterEvent evt)
@@ -290,17 +270,6 @@ namespace UnityEditor.Overlays
                 overlay.OnWillBeDestroyed();
         }
 
-        //clamps a visual element to the rootVisualElement's bounds, if the visual element is absolute.
-        void ClampToOverlayWindow(VisualElement ve)
-        {
-            if (ve.resolvedStyle.position == Position.Absolute)
-            {
-                var rect = ClampToOverlayWindow(ve.layout);
-                ve.style.left = rect.x;
-                ve.style.top = rect.y;
-            }
-        }
-
         internal Rect ClampToOverlayWindow(Rect rect)
         {
             return ClampRectToBounds(rootVisualElement.localBound, rect);
@@ -323,7 +292,7 @@ namespace UnityEditor.Overlays
             return rectToClamp;
         }
 
-        //clamp all overlays to  root visual element's new bounds
+        // clamp all overlays to  root visual element's new bounds
         void GeometryChanged(GeometryChangedEvent evt)
         {
             if (!overlaysEnabled)
@@ -331,6 +300,9 @@ namespace UnityEditor.Overlays
 
             foreach (var overlay in m_Overlays)
             {
+                if (overlay == null)
+                    continue;
+
                 using (new Overlay.LockedAnchor(overlay))
                     overlay.floatingPosition = overlay.floatingPosition; //force an update of the floating position
 
@@ -347,195 +319,63 @@ namespace UnityEditor.Overlays
             localMousePosition = rootVisualElement.WorldToLocal(evt.mousePosition);
         }
 
-        //returns true if toolbar container has any visible elements
-        bool ToolbarHasVisibleContent(OverlayContainer container)
-        {
-            var result = false;
-            if (container != null)
-            {
-                for (int i = 0; i < container.childCount; i++)
-                {
-                    var ve = container.ElementAt(i);
-                    if (ve.ClassListContains(OverlayContainer.spacerClassName)) continue;
-
-                    if (ve.style.display != DisplayStyle.None)
-                    {
-                        result = true;
-                        break;
-                    }
-                }
-            }
-            return result;
-        }
-
         void OnMouseEnter(MouseOverEvent evt)
         {
             localMousePosition = rootVisualElement.WorldToLocal(evt.mousePosition);
         }
 
-        //Adds overlay for type, currently only one overlay instance per type
-        void AddOverlay(Type overlayType)
-        {
-            var overlay = m_Overlays.Find(o => o.GetType().IsSubclassOf(overlayType));
-
-            if (overlay == null)
-            {
-                overlay = OverlayUtilities.CreateOverlay(overlayType, this);
-                if (m_Overlays.Find(o => o.id == overlay.id) != null)
-                {
-                    Debug.LogError($"An overlay with id ({overlay.id}) was already registered to window ({containerWindow.titleContent.text})");
-                    return;
-                }
-                m_Overlays.Add(overlay);
-            }
-
-            OnOverlayAdded(overlay);
-        }
-
-        internal LegacyOverlay GetOrCreateLegacyOverlay(string id, string title)
-        {
-            var overlay = m_Overlays.Find(o => o.id == id) as LegacyOverlay;
-
-            if (overlay == null)
-            {
-                overlay = (LegacyOverlay)OverlayUtilities.CreateOverlay(typeof(LegacyOverlay), this);
-                overlay.InitializeFromAttribute(new OverlayAttribute(null, id, title));
-                overlay.dontSaveInLayout = true;
-                m_Overlays.Add(overlay);
-                m_LegacyOverlays.Add(overlay);
-                OnOverlayAdded(overlay);
-
-                m_OverlaysByVE[overlay.rootVisualElement] = overlay;
-
-                defaultContainer.AddToBottom(overlay);
-            }
-
-            return overlay;
-        }
-
-        void OnOverlayAdded(Overlay overlay)
-        {
-            //register mouse events for hovering
-            overlay.rootVisualElement.RegisterCallback<MouseEnterEvent>(OnMouseEnterOverlay);
-            overlay.rootVisualElement.RegisterCallback<MouseLeaveEvent>(OnMouseLeaveOverlay);
-
-            overlay.displayed = overlay.userControlledVisibility;
-        }
-
-        void OnOverlayRemoved(Overlay overlay)
-        {
-            overlay.rootVisualElement.UnregisterCallback<MouseEnterEvent>(OnMouseEnterOverlay);
-            overlay.rootVisualElement.UnregisterCallback<MouseLeaveEvent>(OnMouseLeaveOverlay);
-        }
-
-        int GetOverlayContainerIndex(Overlay overlay)
-        {
-            if (overlay.container == null)
-                return -1;
-
-            int index = overlay.container.topOverlays.IndexOf(overlay);
-            if (index >= 0)
-                return index;
-
-            index = overlay.container.bottomOverlays.IndexOf(overlay);
-            if (index >= 0)
-                return index;
-
-            return -1;
-        }
-
-        //reset hovered overlay
         void OnMouseLeaveOverlay(MouseLeaveEvent evt)
         {
-            hoveredOverlay = null;
+            m_HoveredOverlay = null;
         }
 
-        //set hovered overlay
         void OnMouseEnterOverlay(MouseEnterEvent evt)
         {
             var overlay = evt.target as VisualElement;
             if (overlay != null && overlay.ClassListContains(Overlay.ussClassName))
-                hoveredOverlay = m_OverlaysByVE[overlay];
+                m_HoveredOverlay = m_OverlaysByVE[overlay];
         }
 
-        //hides current hovered overlay
         public void HideHoveredOverlay()
         {
-            if (hoveredOverlay != null)
+            if (hoveredOverlay != null && hoveredOverlay.userControlledVisibility)
+                hoveredOverlay.displayed = false;
+        }
+
+        public bool menuVisible
+        {
+            get => menu.style.display != DisplayStyle.None;
+            set
             {
-                if (hoveredOverlay.userControlledVisibility)
-                    hoveredOverlay.displayed = false;
+                if (value && !menuVisible)
+                    menu.Show(overlays, floatingContainer.localBound, localMousePosition);
+                else if (!value)
+                    menu.Hide();
             }
         }
 
-        //docks current hovered overlay
-        public void DockHoveredOverlay()
+        public void Initialize(EditorWindow window)
         {
-            if (hoveredOverlay != null) hoveredOverlay.floating = false;
-        }
-
-        //shows overlay menu at mouse position if it is within the window
-        public void ShowOverlayMenu()
-        {
-            menu.Show(overlays, floatingContainer.localBound, localMousePosition);
-        }
-
-        public bool IsOverlayMenuVisible()
-        {
-            return menu.style.display != DisplayStyle.None;
-        }
-
-        //hides overlay menu
-        public void HideOverlayMenu()
-        {
-            menu.Hide();
-        }
-
-        //returns overlay matching the id
-        public Overlay GetOverlay(string overlayId)
-        {
-            foreach (var overlay in overlays)
-            {
-                if (overlay.id == overlayId)
-                    return overlay;
-            }
-
-            return null;
-        }
-
-        internal void Initialize(EditorWindow containerWindow)
-        {
-            this.containerWindow = containerWindow;
-
+            Profiler.BeginSample("OverlayCanvas.Initialize");
+            containerWindow = window;
             rootVisualElement.Add(menu);
 
             AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
-            //get all overlays for window type.
-            var overlayTypes = OverlayUtilities.GetOverlaysForType(containerWindow.GetType());
+            var overlayTypes = OverlayUtilities.GetOverlaysForType(window.GetType());
 
-            //init all overlays
+            // init all overlays
             foreach (var overlayType in overlayTypes)
-                AddOverlay(overlayType);
+                AddOverlay(OverlayUtilities.CreateOverlay(overlayType));
 
-            for (var index = 0; index < m_Overlays.Count; index++)
+            if (m_SaveData == null || m_SaveData.Count < 1)
             {
-                var overlay = m_Overlays[index];
-                m_OverlaysByVE[overlay.rootVisualElement] = overlay;
+                var preset = OverlayPresetManager.GetDefaultPreset(window.GetType());
+                if (preset != null && preset.saveData != null)
+                    m_SaveData = new List<SaveData>(preset.saveData);
             }
 
-            if (m_FirstInit)
-            {
-                var preset = OverlayPresetManager.GetDefaultPreset(containerWindow.GetType());
-                if (preset != null)
-                    preset.ApplyTo(containerWindow);
-                else
-                    InitContainersFromSaveData();
-                m_FirstInit = false;
-            }
-            else
-            {
-                InitContainersFromSaveData();
-            }
+            RestoreOverlays();
+            Profiler.EndSample();
         }
 
         void OnBeforeAssemblyReload()
@@ -545,58 +385,21 @@ namespace UnityEditor.Overlays
                 overlay.rootVisualElement.UnregisterCallback<GeometryChangedEvent>(overlay.OnGeometryChanged);
         }
 
-        //returns first overlay, spacer or ghost that is docked
-        VisualElement GetDockedOverlay(List<VisualElement> pickingList)
-        {
-            foreach (var visualElement in pickingList)
-            {
-                if (visualElement.ClassListContains(Overlay.ussClassName) ||
-                    visualElement.ClassListContains(OverlayContainer.spacerClassName) ||
-                    visualElement.ClassListContains(k_GhostClassName))
-                {
-                    if (GetContainer(visualElement) != null)
-                        return visualElement;
-                }
-            }
-
-            return null;
-        }
-
-        //returns first OverlayContainer in parent hierarchy of the visual element
-        static OverlayContainer GetContainer(VisualElement element)
-        {
-            var parent = element.parent;
-            while (parent != null)
-            {
-                var container = parent as OverlayContainer;
-                if (container != null)
-                {
-                    return container;
-                }
-
-                parent = parent.parent;
-            }
-
-            return null;
-        }
-
         internal Rect GetOriginGhostWorldBound()
         {
             return m_OriginGhost.parent == null ? new Rect(-1000, -1000, 0, 0) : m_OriginGhost.worldBound;
         }
 
-        //hides ghost
         internal void HideOriginGhost()
         {
             m_OriginGhost.RemoveFromHierarchy();
         }
 
-        //adds a ghost to container the same size as the overlay
         internal void ShowOriginGhost(Overlay overlay)
         {
             m_OriginGhost.style.width = overlay.rootVisualElement.layout.width;
             m_OriginGhost.style.height = overlay.rootVisualElement.layout.height;
-            overlay.container.Insert(overlay.container.IndexOf(overlay.rootVisualElement), m_OriginGhost);
+            overlay.container?.Insert(overlay.container.IndexOf(overlay.rootVisualElement), m_OriginGhost);
         }
 
         internal void UpdateGhostHover(bool hovered)
@@ -613,11 +416,31 @@ namespace UnityEditor.Overlays
                 for (var index = 0; index < overlays.Count; index++)
                 {
                     var overlay = overlays[index];
+
                     if (overlay.dontSaveInLayout)
                         continue;
 
-                    var data = CreateSaveData(index, overlay);
-                    m_SaveData.Add(data);
+                    var container = overlay.container != null ? overlay.container.name : "";
+                    var dock = overlay.container != null && overlay.container.topOverlays.Contains(overlay)
+                        ? DockPosition.Top
+                        : DockPosition.Bottom;
+
+                    var saveData = new SaveData
+                    {
+                        containerId = container,
+                        index = index,
+                        dockPosition = dock,
+                        floating = overlay.floating,
+                        collapsed = overlay.collapsed,
+                        displayed = overlay.displayed,
+                        layout = overlay.layout,
+                        id = overlay.id,
+                        snapCorner = overlay.floatingSnapCorner,
+                        snapOffset = overlay.floatingSnapOffset - overlay.m_SnapOffsetDelta,
+                        snapOffsetDelta = overlay.m_SnapOffsetDelta
+                    };
+
+                    m_SaveData.Add(saveData);
                 }
             }
 
@@ -633,29 +456,7 @@ namespace UnityEditor.Overlays
             }
         }
 
-        SaveData CreateSaveData(int index, Overlay overlay)
-        {
-            var saveData = new SaveData
-            {
-                containerId = overlay.container.name,
-                index = index,
-                dockPosition = overlay.dockPosition,
-                floating = overlay.floating,
-                collapsed = overlay.collapsed,
-                displayed = overlay.displayed,
-                layout = overlay.layout,
-                id = overlay.id,
-                snapCorner = overlay.floatingSnapCorner,
-                snapOffset = overlay.floatingSnapOffset - overlay.m_SnapOffsetDelta,
-                snapOffsetDelta = overlay.m_SnapOffsetDelta
-            };
-            return saveData;
-        }
-
-        public void OnAfterDeserialize()
-        {
-            EditorApplication.delayCall += InitContainersFromSaveData;
-        }
+        public void OnAfterDeserialize() {}
 
         internal void CopySaveData(out SaveData[] saveData)
         {
@@ -668,105 +469,129 @@ namespace UnityEditor.Overlays
             }
         }
 
+        public void ApplyPreset(OverlayPreset preset)
+        {
+            if (!preset.CanApplyToWindow(containerWindow.GetType()))
+            {
+                Debug.LogError($"Cannot apply preset for type {preset.targetWindowType} to canvas of type " +
+                    $"{containerWindow.GetType()}");
+                return;
+            }
+
+            m_LastAppliedPresetName = preset.name;
+            ApplySaveData(preset.saveData);
+        }
+
         internal void ApplySaveData(SaveData[] saveData)
         {
             m_SaveData = new List<SaveData>(saveData);
-            InitContainersFromSaveData();
+            RestoreOverlays();
         }
 
-        void InitContainersFromSaveData()
+        // AddOverlay just registers the Overlay with Canvas. It does not init save data or add to a valid container.
+        void AddOverlay(Overlay overlay)
         {
-            void ApplySaveDataToOverlay(SaveData data, Overlay overlay)
+            if (m_Overlays.Find(o => o.id == overlay.id) != null)
             {
-                if (data.containerId != null && m_ContainerFromId.TryGetValue(data.containerId, out var container))
-                {
-                    // Overlays are sorted by their index in containers so we can directly add them to top or bottom without thinking of order
-                    switch (data.dockPosition)
-                    {
-                        case DockPosition.Top:
-                            container.AddToTop(overlay);
-                            break;
-
-                        case DockPosition.Bottom:
-                            container.AddToBottom(overlay);
-                            break;
-                    }
-                }
-                else
-                {
-                    container = overlay is ToolbarOverlay ? defaultToolbarContainer : defaultContainer;
-                    container.AddToBottom(overlay);
-                }
-
-                overlay.LoadFromSerializedData(data.displayed, data.collapsed, data.floating, data.snapOffset, data.snapOffsetDelta, data.layout, data.snapCorner, container);
-
-                if (overlay.floating)
-                    floatingContainer.Add(overlay.rootVisualElement);
+                Debug.LogError($"An overlay with id ({overlay.id}) was already registered to window " +
+                    $"({containerWindow.titleContent.text})");
+                return;
             }
 
-            void ApplyDefaultDataToOverlay(Overlay overlay)
-            {
-                SaveData saveData = new SaveData
-                {
-                    floating = false,
-                    collapsed = false,
-                    containerId = null,
-                    displayed = OverlayUtilities.GetIsDefaultDisplayFromAttribute(overlay.GetType()),
-                    dockPosition = DockPosition.Bottom,
-                    index = int.MaxValue, //ensure that it's added at the bottom
-                    layout = Layout.Panel,
-                };
+            overlay.canvas = this;
+            m_Overlays.Add(overlay);
+            m_OverlaysByVE[overlay.rootVisualElement] = overlay;
+            overlay.rootVisualElement.RegisterCallback<MouseEnterEvent>(OnMouseEnterOverlay);
+            overlay.rootVisualElement.RegisterCallback<MouseLeaveEvent>(OnMouseLeaveOverlay);
 
-                ApplySaveDataToOverlay(saveData, overlay);
-            }
+            // OnCreated must be invoked before contents are requested for the first time
+            overlay.OnCreated();
+        }
 
+        // GetOrCreateOverlay is used to instantiate Overlays. Do not use this method when deserializing and batch
+        // constructing Overlays, instead use AddOverlay/RestoreOverlays.
+        public T GetOrCreateOverlay<T>(string id = null) where T : Overlay, new()
+        {
+            var attrib = OverlayUtilities.GetAttribute(containerWindow.GetType(), typeof(T));
+
+            if (string.IsNullOrEmpty(id))
+                id = attrib.id;
+
+            if (m_Overlays.FirstOrDefault(x => x is T && x.id == id) is T overlay)
+                return overlay;
+
+            overlay = new T();
+            overlay.Initialize(id, attrib.ussName, attrib.displayName);
+
+            if (overlay is LegacyOverlay legacy)
+                legacy.dontSaveInLayout = true;
+
+            AddOverlay(overlay);
+            RestoreOverlay(overlay);
+
+            return overlay;
+        }
+
+        SaveData FindSaveData(Overlay overlay)
+        {
+            return m_SaveData.FirstOrDefault(x => x.id == overlay.id) ?? k_DefaultSaveData;
+        }
+
+        void RestoreOverlay(Overlay overlay, SaveData data = null)
+        {
+            if (data == null)
+                data = FindSaveData(overlay);
+
+            overlay.ApplySaveData(data);
+
+            var container = containers.FirstOrDefault(x => data.containerId == x.name);
+
+            // Overlays were implemented with the idea that they are always associated with an OverlayContainer. While
+            // this doesn't really need to be true (floating Overlays don't need a Container), the code isn't capable
+            // of handling that case. So if a valid container can't be found from the serialized data, we just add it
+            // to a default container.
+            if (container == null)
+                container = overlay is ToolbarOverlay ? defaultToolbarContainer : defaultContainer;
+
+            // Overlays are sorted by their index in containers so we can directly add them to top or bottom without
+            // thinking of order
+            if (data.dockPosition == DockPosition.Top)
+                container.AddToTop(overlay);
+            else if (data.dockPosition == DockPosition.Bottom)
+                container.AddToBottom(overlay);
+            else
+                throw new Exception("data.dockPosition is not Top or Bottom, did someone add a new one?");
+
+            if (overlay.floating)
+                floatingContainer.Add(overlay.rootVisualElement);
+
+            overlay.SetDisplayedNoCallback(data.displayed);
+            overlay.RebuildContent();
+            overlay.UpdateAbsolutePosition();
+        }
+
+        void RestoreOverlays()
+        {
             if (containers == null)
                 return;
 
-            var saveDataById = new Dictionary<string, SaveData>();
-            foreach (var saveData in m_SaveData)
-            {
-                saveDataById[saveData.id] = saveData;
-            }
-
-            m_ContainerFromId.Clear();
-            foreach (var container in containers)
-            {
-                if (!m_ContainerFromId.ContainsKey(container.name))
-                    m_ContainerFromId.Add(container.name, container);
-            }
-
-            var overlaysToAdd = new Dictionary<string, Overlay>();
+            // Clear existing Overlays
             foreach (var overlay in overlays)
-            {
                 overlay.container?.RemoveOverlay(overlay);
-                overlaysToAdd.Add(overlay.id, overlay);
-            }
 
-            //Sort by index to prepare to add in correct order
-            m_SaveData.Sort((x, y) => x.index.CompareTo(y.index));
-            foreach (var saveData in m_SaveData)
-            {
-                if (overlaysToAdd.TryGetValue(saveData.id, out var overlay))
-                {
-                    ApplySaveDataToOverlay(saveData, overlay);
-                    overlaysToAdd.Remove(overlay.id);
-                }
-            }
+            // Three steps to reinitialize a canvas:
+            // 1. Find and associate all Overlays with SaveData (using default SaveData if necessary)
+            // 2. Sort in ascending order by SaveData.index
+            // 3. Apply SaveData, insert Overlay in Container
+            var ordered = new List<Tuple<SaveData, Overlay>>();
 
-            // Apply default data to remaining overlays
-            foreach (var idToOverlayPair in overlaysToAdd)
-                ApplyDefaultDataToOverlay(idToOverlayPair.Value);
-        }
+            foreach (var o in overlays)
+                ordered.Add(new Tuple<SaveData, Overlay>(FindSaveData(o), o));
 
-        public bool IsInToolbar(Overlay overlay)
-        {
-            return !overlay.floating && IsInToolbar(overlay.container);
-        }
+            foreach (var o in ordered.OrderBy(x => x.Item1.index))
+                RestoreOverlay(o.Item2, o.Item1);
 
-        public bool IsInToolbar(OverlayContainer container)
-        {
-            return container is ToolbarOverlayContainer;
+            afterOverlaysInitialized?.Invoke();
         }
     }
 }

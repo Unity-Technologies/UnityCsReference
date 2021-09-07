@@ -221,6 +221,8 @@ namespace UnityEditor.Search.Providers
         {
             if (!go)
                 return SearchValue.invalid;
+            if (string.IsNullOrEmpty(propertyName))
+                return SearchValue.invalid;
 
             using (var view = SearchMonitor.GetView())
             {

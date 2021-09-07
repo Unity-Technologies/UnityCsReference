@@ -85,25 +85,6 @@ namespace UnityEditor
 
         internal bool overlaysInitialized => m_OverlaysInitialized;
 
-        [HideInInspector]
-        [SerializeField]
-        string m_LastOverlayPresetName;
-
-        internal event Action lastOverlayPresetNameChanged;
-
-        internal string lastOverlayPresetName
-        {
-            get => m_LastOverlayPresetName;
-            set
-            {
-                if (m_LastOverlayPresetName == value)
-                    return;
-
-                m_LastOverlayPresetName = value;
-                lastOverlayPresetNameChanged?.Invoke();
-            }
-        }
-
         private bool m_EnableViewDataPersistence;
 
         private bool m_RequestedViewDataSave;
@@ -1347,18 +1328,15 @@ namespace UnityEditor
         [Shortcut("Overlays/Hide Overlay", typeof(OverlayShortcutContext))]
         static void HideOverlay(ShortcutArguments args)
         {
-            var context = args.context as OverlayShortcutContext;
-            context.editorWindow.overlayCanvas.HideHoveredOverlay();
+            if (args.context is OverlayShortcutContext context)
+                context.editorWindow.overlayCanvas.HideHoveredOverlay();
         }
 
         [Shortcut("Overlays/Show Overlay Menu", typeof(OverlayShortcutContext), KeyCode.Space)]
         static void ShowOverlayMenu(ShortcutArguments args)
         {
-            var context = args.context as OverlayShortcutContext;
-            if (context.editorWindow.overlayCanvas.IsOverlayMenuVisible())
-                context.editorWindow.overlayCanvas.HideOverlayMenu();
-            else
-                context.editorWindow.overlayCanvas.ShowOverlayMenu();
+            if (args.context is OverlayShortcutContext context)
+                context.editorWindow.overlayCanvas.menuVisible = !context.editorWindow.overlayCanvas.menuVisible;
         }
 
         public bool TryGetOverlay(string id, out Overlay match)

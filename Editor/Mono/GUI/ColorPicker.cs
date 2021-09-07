@@ -1219,6 +1219,8 @@ namespace UnityEditor
         Texture2D m_Preview;
         static EyeDropper s_Instance;
         private static Vector2 s_PickCoordinates = Vector2.zero;
+        private bool m_IsOpened;
+        private bool m_IsCancelled;
         private bool m_Focused = false;
         private Action<Color> m_ColorPickedCallback;
 
@@ -1250,13 +1252,15 @@ namespace UnityEditor
             instance.wantsMouseMove = true;
             instance.SetEyeDropperOpen(true);
             instance.StealMouseCapture();
+            instance.m_IsOpened = true;
+            instance.m_IsCancelled = false;
         }
 
         public static void End()
         {
             if (s_Instance != null)
             {
-                s_Instance.SetEyeDropperOpen(false);
+                s_Instance.SetEyeDropperClosed();
                 s_Instance.window.Close();
                 s_Instance = null;
             }
@@ -1286,6 +1290,9 @@ namespace UnityEditor
         {
             return s_LastPickedColor;
         }
+
+        public static bool IsOpened => s_Instance?.m_IsOpened == true;
+        public static bool IsCancelled => s_Instance?.m_IsCancelled == true;
 
         static class Styles
         {
@@ -1396,7 +1403,7 @@ namespace UnityEditor
                 // We have to close helper window before we read color from screen. On Win
                 // the window covers whole desktop (see Show()) and is black with 0x01 alpha value.
                 // That might cause invalid picked color.
-                s_Instance.SetEyeDropperOpen(false);
+                this.SetEyeDropperClosed();
                 window.Close();
                 s_LastPickedColor = GetPickedColor();
                 Event.current.Use();
@@ -1412,11 +1419,18 @@ namespace UnityEditor
         {
             if (Event.current.keyCode == KeyCode.Escape)
             {
-                s_Instance.SetEyeDropperOpen(false);
+                this.m_IsCancelled = true;
+                this.SetEyeDropperClosed();
                 window.Close();
                 Event.current.Use();
                 SendEvent(EventCommandNames.EyeDropperCancelled, true);
             }
+        }
+
+        private void SetEyeDropperClosed()
+        {
+            m_IsOpened = false;
+            s_Instance.SetEyeDropperOpen(false);
         }
 
         void SendEvent(string eventName, bool exitGUI, bool focusOther = true)

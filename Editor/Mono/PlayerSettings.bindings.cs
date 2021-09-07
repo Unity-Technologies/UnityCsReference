@@ -770,7 +770,7 @@ namespace UnityEditor
 
         internal static string[] ConvertScriptingDefineStringToArray(string defines)
         {
-            return defines.Split(defineSplits);
+            return defines.Split(defineSplits, StringSplitOptions.RemoveEmptyEntries);
         }
 
         internal static string ConvertScriptingDefineArrayToString(string[] defines)
@@ -816,7 +816,7 @@ namespace UnityEditor
 
         // [Obsolete("Use GetScriptingDefineSymbols(NamedBuildTarget buildTarget, out string[] defines) instead")]
         public static void GetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup, out string[] defines) =>
-            defines = GetScriptingDefineSymbolsForGroup(targetGroup).Split(';');
+            defines = ConvertScriptingDefineStringToArray(GetScriptingDefineSymbolsForGroup(targetGroup));
 
         // [Obsolete("Use SetScriptingDefineSymbols(NamedBuildTarget buildTarget, string defines) instead")]
         public static void SetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup, string defines) =>
@@ -916,14 +916,16 @@ namespace UnityEditor
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
         [NativeMethod("GetUserScriptingDefineSymbols")]
         private static extern string GetScriptingDefineSymbolsInternal(string buildTargetName);
-        public static string GetScriptingDefineSymbols(NamedBuildTarget buildTarget) => GetScriptingDefineSymbolsInternal(buildTarget.TargetName);
-        public static void GetScriptingDefineSymbols(NamedBuildTarget buildTarget, out string[] defines) => defines = GetScriptingDefineSymbols(buildTarget).Split(';');
+        public static string GetScriptingDefineSymbols(NamedBuildTarget buildTarget) =>
+            GetScriptingDefineSymbolsInternal(buildTarget.TargetName);
+        public static void GetScriptingDefineSymbols(NamedBuildTarget buildTarget, out string[] defines) =>
+            defines = ConvertScriptingDefineStringToArray(GetScriptingDefineSymbols(buildTarget));
 
         // Set user-specified symbols for script compilation for the given build target group.
         public static void SetScriptingDefineSymbols(NamedBuildTarget buildTarget, string defines)
         {
             if (!string.IsNullOrEmpty(defines))
-                defines = string.Join(";", defines.Split(defineSplits, StringSplitOptions.RemoveEmptyEntries));
+                defines = string.Join(";", ConvertScriptingDefineStringToArray(defines));
 
             SetScriptingDefineSymbolsInternal(buildTarget.TargetName, defines);
         }

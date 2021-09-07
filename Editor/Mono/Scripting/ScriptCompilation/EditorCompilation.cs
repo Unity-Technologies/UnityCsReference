@@ -1248,29 +1248,51 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
         }
 
-        public TargetAssemblyInfo[] GetTargetAssemblyInfos()
+        public TargetAssemblyInfo[] GetTargetAssemblyInfos(ScriptAssemblySettings scriptAssemblySettings = null)
         {
             TargetAssembly[] predefindTargetAssemblies = EditorBuildRules.GetPredefinedTargetAssemblies();
 
             TargetAssemblyInfo[] targetAssemblyInfo = new TargetAssemblyInfo[predefindTargetAssemblies.Length + (customTargetAssemblies?.Count ?? 0)];
 
-            for (int i = 0; i < predefindTargetAssemblies.Length; ++i)
+            int assembliesSize = 0;
+            foreach (var assembly in predefindTargetAssemblies)
             {
-                targetAssemblyInfo[i] = ToTargetAssemblyInfo(predefindTargetAssemblies[i]);
+                if (!ShouldAddTargetAssemblyToList(assembly, scriptAssemblySettings))
+                {
+                    continue;
+                }
+
+                targetAssemblyInfo[assembliesSize] = ToTargetAssemblyInfo(predefindTargetAssemblies[assembliesSize]);
+                assembliesSize++;
             }
 
             if (customTargetAssemblies != null)
             {
-                int i = predefindTargetAssemblies.Length;
                 foreach (var entry in customTargetAssemblies)
                 {
                     var customTargetAssembly = entry.Value;
-                    targetAssemblyInfo[i] = ToTargetAssemblyInfo(customTargetAssembly);
-                    i++;
+
+                    if (!ShouldAddTargetAssemblyToList(customTargetAssembly, scriptAssemblySettings))
+                    {
+                        continue;
+                    }
+
+                    targetAssemblyInfo[assembliesSize] = ToTargetAssemblyInfo(customTargetAssembly);
+                    assembliesSize++;
                 }
+                Array.Resize(ref targetAssemblyInfo, assembliesSize);
             }
 
             return targetAssemblyInfo;
+
+            bool ShouldAddTargetAssemblyToList(TargetAssembly targetAssembly, ScriptAssemblySettings scriptAssemblySettings)
+            {
+                if (scriptAssemblySettings != null)
+                {
+                    return EditorBuildRules.IsCompatibleWithPlatformAndDefines(targetAssembly, scriptAssemblySettings);
+                }
+                return true;
+            }
         }
 
         TargetAssembly[] GetTargetAssemblies()

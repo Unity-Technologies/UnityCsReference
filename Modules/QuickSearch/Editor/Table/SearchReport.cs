@@ -332,7 +332,7 @@ namespace UnityEditor.Search
 
         public static void Save(string path, SearchContext context, IEnumerable<SearchColumn> columns, IEnumerable<SearchItem> items)
         {
-            File.WriteAllText(path, Export(context, columns, items));
+            FileUtil.WriteTextFileToDisk(path, Export(context, columns, items));
         }
 
         public static void SaveAsCsv(string path, SearchContext context, IEnumerable<SearchColumn> columns, IEnumerable<SearchItem> items)
@@ -340,7 +340,7 @@ namespace UnityEditor.Search
             var text = ExportAsCsv(context, columns, items);
             try
             {
-                File.WriteAllText(path, text);
+                FileUtil.WriteTextFileToDisk(path, text);
             }
             catch (Exception)
             {

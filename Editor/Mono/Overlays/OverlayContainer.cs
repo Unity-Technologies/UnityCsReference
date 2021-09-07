@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -43,18 +44,6 @@ namespace UnityEditor.Overlays
             UpdateDropZones();
         }
 
-        protected override void OnOverlayAdded(Overlay overlay)
-        {
-            base.OnOverlayAdded(overlay);
-            if (!IsOverlayLayoutSupported(overlay.supportedLayouts))
-            {
-                overlay.collapsed = true;
-            }
-            overlay.layout = isHorizontal
-                ? Layout.HorizontalToolbar
-                : Layout.VerticalToolbar;
-        }
-
         protected override void OnOverlayBecomeVisibleInContainer(Overlay overlay)
         {
             InitSpacer();
@@ -90,12 +79,13 @@ namespace UnityEditor.Overlays
             }
         }
 
-        public override bool IsOverlayLayoutSupported(Layout layout)
+        public override Layout preferredLayout => isHorizontal ? Layout.HorizontalToolbar : Layout.VerticalToolbar;
+
+        public override bool IsOverlayLayoutSupported(Layout requested)
         {
             if (isHorizontal)
-                return (layout & Layout.HorizontalToolbar) > 0;
-            else
-                return (layout & Layout.VerticalToolbar) > 0;
+                return (requested & Layout.HorizontalToolbar) > 0;
+            return (requested & Layout.VerticalToolbar) > 0;
         }
     }
 
@@ -137,7 +127,6 @@ namespace UnityEditor.Overlays
         public List<Overlay> topOverlays => m_TopOverlays;
         public List<Overlay> bottomOverlays => m_BottomOverlaysOverlays;
 
-        public int overlayCount => topOverlays.Count + bottomOverlays.Count;
         public int visibleOverlayCount => m_VisibleInContainer.Count;
         protected OverlayDropZoneBase beforeSpacerDropZone { get; private set; }
         protected OverlayDropZoneBase afterSpacerDropZone { get; private set; }
@@ -158,7 +147,8 @@ namespace UnityEditor.Overlays
             }
         }
 
-        Layout m_SupportedOverlayLayouts = Layout.Panel; //Used as a flag in this case
+        // This is set by querying the stylesheet for 'vertical' and 'horizontal'
+        Layout m_SupportedOverlayLayouts = 0;
 
         public const string className = "unity-overlay-container";
         public const string spacerClassName = "overlay-container__spacer";
@@ -170,14 +160,6 @@ namespace UnityEditor.Overlays
         VisualElement m_Canvas;
         bool m_StateLocked;
         readonly HashSet<Overlay> m_VisibleInContainer = new HashSet<Overlay>();
-
-        internal struct Target
-        {
-            public VisualElement ve;
-            public Rect rect;
-            public int index;
-            public Vector2 position;
-        }
 
         public OverlayContainer()
         {
@@ -200,21 +182,11 @@ namespace UnityEditor.Overlays
             EnableInClassList(k_VerticalClassName, true);
         }
 
-        public virtual bool IsOverlayLayoutSupported(Layout layout)
-        {
-            return (m_SupportedOverlayLayouts & layout) > 0;
-        }
+        public virtual Layout preferredLayout => Layout.Panel;
 
-        public Layout defaultLayout
+        public virtual bool IsOverlayLayoutSupported(Layout requested)
         {
-            get
-            {
-                if ((m_SupportedOverlayLayouts & Layout.HorizontalToolbar) == Layout.HorizontalToolbar)
-                    return Layout.HorizontalToolbar;
-                if ((m_SupportedOverlayLayouts & Layout.VerticalToolbar) == Layout.VerticalToolbar)
-                    return Layout.VerticalToolbar;
-                return Layout.Panel;
-            }
+            return (m_SupportedOverlayLayouts & requested) > 0;
         }
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
@@ -273,8 +245,7 @@ namespace UnityEditor.Overlays
 
         public void RemoveOverlay(Overlay overlay)
         {
-            if (!topOverlays.Remove(overlay)
-                && !bottomOverlays.Remove(overlay))
+            if (!topOverlays.Remove(overlay) && !bottomOverlays.Remove(overlay))
                 return;
 
             overlay.rootVisualElement.RemoveFromHierarchy();
@@ -333,19 +304,6 @@ namespace UnityEditor.Overlays
             OnOverlayAdded(overlay);
         }
 
-        public void InsertBottom(Overlay overlay)
-        {
-            if (bottomOverlays.Contains(overlay)) return;
-            bottomOverlays.Insert(0, overlay);
-            var spacerIndex = IndexOf(spacer);
-            if (spacerIndex == childCount - 1)
-                Add(overlay.rootVisualElement);
-            else
-                Insert(spacerIndex + 1, overlay.rootVisualElement);
-
-            OnOverlayAdded(overlay);
-        }
-
         public void AddToBottom(Overlay overlay)
         {
             if (bottomOverlays.Contains(overlay)) return;
@@ -354,13 +312,13 @@ namespace UnityEditor.Overlays
             OnOverlayAdded(overlay);
         }
 
-        protected virtual void OnOverlayAdded(Overlay overlay)
+        void OnOverlayAdded(Overlay overlay)
         {
             overlay.container = this;
             UpdateIsVisibleInContainer(overlay);
         }
 
-        protected virtual void OnOverlayRemoved(Overlay overlay)
+        protected void OnOverlayRemoved(Overlay overlay)
         {
             overlay.container = null;
             if (m_VisibleInContainer.Remove(overlay))

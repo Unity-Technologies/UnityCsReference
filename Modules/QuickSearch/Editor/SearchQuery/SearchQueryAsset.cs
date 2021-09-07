@@ -71,7 +71,7 @@ namespace UnityEditor.Search
 
         public static string GetQueryName(string query)
         {
-            return RemoveInvalidChars(query.Replace(":", "_").Replace(" ", "_"));
+            return RemoveInvalidChars(Utils.Simplify(query).Replace(":", "_").Replace(" ", "_"));
         }
 
         private static string RemoveInvalidChars(string filename)

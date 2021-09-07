@@ -36,7 +36,8 @@ namespace UnityEditor.Search
         // 17- Compress search index entry with same document indexes.
         // 18- Add search document flags.
         // 19- Merge SearchIndexEntry.version and SearchIndexEntryImporter.version from now on.
-        internal const int version = 0x4242E000 | 0x019;
+        // 20- Optimize search index entry document indexes serialization.
+        internal const int version = 0x4242E000 | 0x020;
 
         public enum Type : byte
         {
@@ -800,9 +801,16 @@ namespace UnityEditor.Search
                     indexWriter.Write((byte)p.type);
                     indexWriter.Write(p.score);
 
-                    indexWriter.Write(p.docs.Count);
-                    foreach (var di in p.docs)
-                        indexWriter.Write(di);
+                    if (p.docs.Count == 1)
+                    {
+                        indexWriter.Write(~p.docs.First());
+                    }
+                    else
+                    {
+                        indexWriter.Write(p.docs.Count);
+                        foreach (var di in p.docs)
+                            indexWriter.Write(di);
+                    }
                 }
 
                 // Keywords
@@ -885,6 +893,7 @@ namespace UnityEditor.Search
                 }
 
                 // Indexes
+                var oneDoc = new int[1];
                 var docs = new HashSet<int>();
                 elementCount = indexReader.ReadInt32();
                 var indexes = new List<SearchIndexEntry>(elementCount);
@@ -895,11 +904,19 @@ namespace UnityEditor.Search
                     var type = (SearchIndexEntry.Type)indexReader.ReadByte();
                     var score = indexReader.ReadInt32();
 
-                    docs.Clear();
                     var dic = indexReader.ReadInt32();
-                    for (int di = 0; di < dic; ++di)
-                        docs.Add(indexReader.ReadInt32());
-                    indexes.Add(new SearchIndexEntry(key, crc, type, score, docs));
+                    if (dic < 0)
+                    {
+                        oneDoc[0] = ~dic;
+                        indexes.Add(new SearchIndexEntry(key, crc, type, score, oneDoc));
+                    }
+                    else
+                    {
+                        docs.Clear();
+                        for (int di = 0; di < dic; ++di)
+                            docs.Add(indexReader.ReadInt32());
+                        indexes.Add(new SearchIndexEntry(key, crc, type, score, docs));
+                    }
                 }
 
                 // Keywords

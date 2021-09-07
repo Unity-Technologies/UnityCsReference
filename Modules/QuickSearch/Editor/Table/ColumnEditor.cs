@@ -25,15 +25,15 @@ namespace UnityEditor.Search
             w.editCallback = editCallback;
             w.minSize = new Vector2(k_Width, k_Height);
             w.maxSize = new Vector2(k_Width * 2f, k_Height);
-            if (column.userDataObj is SearchColumn sc)
-                w.titleContent = sc.content ?? w.GetLocalizedTitleContent();
+            if (((PropertyColumn)column).userDataObj is SearchColumn sc)
+                w.titleContent = sc.content ?? w.titleContent;
             w.ShowAuxWindow();
             return w;
         }
 
         internal void OnGUI()
         {
-            if (!(column.userDataObj is SearchColumn sc))
+            if (!(((PropertyColumn)column).userDataObj is SearchColumn sc))
                 return;
 
             EditorGUIUtility.labelWidth = 70f;
@@ -43,7 +43,7 @@ namespace UnityEditor.Search
             EditorGUI.BeginChangeCheck();
             var providers = new[] { "Default" }.Concat(SearchColumnProvider.providers.Select(p => p.provider)).ToArray();
             var selectedProvider = Math.Max(0, Array.IndexOf(providers, sc.provider));
-            selectedProvider = EditorGUILayout.Popup(GUIContent.Temp("Format"), selectedProvider, providers.Select(ObjectNames.NicifyVariableName).ToArray());
+            selectedProvider = EditorGUILayout.Popup(Utils.GUIContentTemp(L10n.Tr("Format")), selectedProvider, providers.Select(ObjectNames.NicifyVariableName).ToArray());
             if (EditorGUI.EndChangeCheck())
             {
                 sc.SetProvider(selectedProvider <= 0 ? null : providers[selectedProvider]);
@@ -54,15 +54,13 @@ namespace UnityEditor.Search
 
             var content = column.headerContent;
             using (new EditorGUIUtility.IconSizeScope(new Vector2(16, 16)))
-                content.image = EditorGUILayout.ObjectField(new GUIContent("Icon"), content.image, typeof(Texture), allowSceneObjects: false) as Texture;
-            content.text = EditorGUILayout.TextField(new GUIContent("Name"), content.text);
-            column.headerTextAlignment = (TextAlignment)EditorGUILayout.EnumPopup(new GUIContent("Alignment"), column.headerTextAlignment);
-            column.canSort = EditorGUILayout.Toggle(new GUIContent("Sortable"), column.canSort);
+                content.image = EditorGUILayout.ObjectField(EditorGUIUtility.TrTextContent("Icon"), content.image, typeof(Texture), allowSceneObjects: false) as Texture;
+            content.text = EditorGUILayout.TextField(EditorGUIUtility.TrTextContent("Name"), content.text);
+            column.headerTextAlignment = (TextAlignment)EditorGUILayout.EnumPopup(EditorGUIUtility.TrTextContent("Alignment"), column.headerTextAlignment);
+            column.canSort = EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Sortable"), column.canSort);
 
-            EditorGUI.BeginDisabled(!Unsupported.IsSourceBuild());
-            sc.path = EditorGUILayout.TextField(new GUIContent("Path"), sc.path);
-            sc.selector = EditorGUILayout.TextField(new GUIContent("Selector"), sc.selector);
-            EditorGUI.EndDisabled();
+            sc.path = EditorGUILayout.TextField(EditorGUIUtility.TrTextContent("Path"), sc.path);
+            sc.selector = EditorGUILayout.TextField(EditorGUIUtility.TrTextContent("Selector"), sc.selector);
 
             if (EditorGUI.EndChangeCheck())
             {
@@ -70,6 +68,12 @@ namespace UnityEditor.Search
                 editCallback?.Invoke(column);
             }
             GUILayout.EndVertical();
+
+            if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape)
+            {
+                Close();
+                Event.current.Use();
+            }
         }
     }
 }

@@ -34,19 +34,43 @@ namespace UnityEditor.Search
 
     static class ReflectionUtils
     {
-        public static IEnumerable<THandlerWrapper> LoadAllMethodsWithAttribute<TAttribute, THandlerWrapper>(Func<MethodInfo, TAttribute, Delegate, THandlerWrapper> generator, MethodSignature[] supportedSignatures)
+        public enum AttributeLoaderBehavior
+        {
+            ThrowOnValidation,
+            DoNotThrowOnValidation
+        }
+
+        public static IEnumerable<THandlerWrapper> LoadAllMethodsWithAttribute<TAttribute, THandlerWrapper>(Func<MethodInfo, TAttribute, Delegate, THandlerWrapper> generator, MethodSignature[] supportedSignatures, AttributeLoaderBehavior behavior = AttributeLoaderBehavior.ThrowOnValidation)
             where TAttribute : Attribute
             where THandlerWrapper : struct
         {
             return TypeCache.GetMethodsWithAttribute<TAttribute>()
-                .SelectMany(mi => LoadMethodWithAttribute(mi, generator, supportedSignatures));
+                .Select(mi =>
+                {
+                    try
+                    {
+                        return LoadMethodWithAttribute(mi, generator, supportedSignatures).ToArray();
+                    }
+                    catch (Exception ex)
+                    {
+                        if (behavior == AttributeLoaderBehavior.ThrowOnValidation)
+                            throw ex;
+                        else
+                        {
+                            UnityEngine.Debug.LogWarning($"Cannot load method: \"{mi.Name}\" with attribute: \"{typeof(TAttribute).FullName}\" ({ex.Message})");
+                        }
+                        return null;
+                    }
+                })
+                .Where(generator => generator != null)
+                .SelectMany(generator => generator);
         }
 
-        public static IEnumerable<THandlerWrapper> LoadAllMethodsWithAttribute<TAttribute, THandlerWrapper>(Func<MethodInfo, TAttribute, Delegate, THandlerWrapper> generator, MethodSignature supportedSignature)
+        public static IEnumerable<THandlerWrapper> LoadAllMethodsWithAttribute<TAttribute, THandlerWrapper>(Func<MethodInfo, TAttribute, Delegate, THandlerWrapper> generator, MethodSignature supportedSignature, AttributeLoaderBehavior behavior = AttributeLoaderBehavior.ThrowOnValidation)
             where TAttribute : Attribute
             where THandlerWrapper : struct
         {
-            return LoadAllMethodsWithAttribute(generator, new[] { supportedSignature });
+            return LoadAllMethodsWithAttribute(generator, new[] { supportedSignature }, behavior);
         }
 
         public static IEnumerable<THandlerWrapper> LoadMethodWithAttribute<TAttribute, THandlerWrapper>(MethodInfo methodInfo, Func<MethodInfo, TAttribute, Delegate, THandlerWrapper> generator, MethodSignature[] supportedSignatures)
