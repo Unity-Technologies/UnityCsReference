@@ -56,12 +56,12 @@ namespace UnityEditor.Overlays
             m_Dropdown.clicked += DropdownOnClicked;
 
             m_DropdownText = this.Q<TextElement>(classes: "preset-dropdown-text");
-            var lastSavedPreset = canvas.containerWindow.lastOverlayPresetName;
+            var lastSavedPreset = canvas.lastAppliedPresetName;
             m_DropdownText.text =  string.IsNullOrEmpty(lastSavedPreset) ? L10n.Tr("Window Preset") : lastSavedPreset;
 
-            canvas.containerWindow.lastOverlayPresetNameChanged += () =>
+            canvas.afterOverlaysInitialized += () =>
             {
-                m_DropdownText.text = canvas.containerWindow.lastOverlayPresetName;
+                m_DropdownText.text = canvas.lastAppliedPresetName;
             };
 
             RegisterCallback<FocusOutEvent>(evt =>
@@ -163,7 +163,7 @@ namespace UnityEditor.Overlays
             style.display = DisplayStyle.None;
 
             foreach (var overlay in m_OverlayToShow)
-                overlay.Highlight(false);
+                overlay.SetHighlightEnabled(false);
         }
 
         public static void SetKeepAlive(bool keepAlive)

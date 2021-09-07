@@ -25,18 +25,6 @@ namespace UnityEditor.Overlays
             }
         }
 
-        public event Action<bool> floatingChanged;
-        public event Action<Vector3> floatingPositionChanged;
-
-        bool m_DisplayChanged = true;
-
-        bool m_Floating;
-        Vector2 m_FloatingSnapOffset;
-
-        bool m_LockAnchor = false;
-        internal Vector2 m_SnapOffsetDelta = Vector2.zero;
-
-        internal DockPosition dockPosition => container.topOverlays.Contains(this) ? DockPosition.Top : DockPosition.Bottom;
         internal SnapCorner floatingSnapCorner { get; private set; } = SnapCorner.TopLeft;
 
         internal Vector2 floatingSnapOffset
@@ -54,7 +42,7 @@ namespace UnityEditor.Overlays
             }
         }
 
-        //overlay floating position in window
+        // overlay floating position in window
         public Vector2 floatingPosition
         {
             get => SnapToFloatingPosition(floatingSnapCorner, m_LockAnchor ? m_FloatingSnapOffset : floatingSnapOffset);
@@ -78,14 +66,12 @@ namespace UnityEditor.Overlays
 
         void OnFloatingChanged(bool floating)
         {
-            UpdateDropZones();
-            UpdateStyling();
+            RebuildContent();
 
             if (floating)
                 UpdateAbsolutePosition();
 
             container?.UpdateIsVisibleInContainer(this);
-            UpdateLayoutBasedOnContainer();
             floatingChanged?.Invoke(floating);
         }
 
@@ -93,17 +79,8 @@ namespace UnityEditor.Overlays
         {
             if (floating)
                 return;
-
             canvas.floatingContainer.Add(rootVisualElement);
             floating = true;
-        }
-
-        internal void SetSnappingOffset(Vector2 snapOffset, Vector2 snapOffsetDelta)
-        {
-            m_FloatingSnapOffset = snapOffset;
-            m_SnapOffsetDelta = snapOffsetDelta;
-            UpdateAbsolutePosition();
-            floatingPositionChanged?.Invoke(floatingPosition);
         }
 
         Vector2 SnapToFloatingPosition(SnapCorner corner, Vector2 snapPosition)
@@ -123,10 +100,10 @@ namespace UnityEditor.Overlays
             }
         }
 
-        void FloatingToSnapPosition(Vector2 floatingPosition, out Vector2 snapOffset)
+        void FloatingToSnapPosition(Vector2 position, out Vector2 snapOffset)
         {
             Rect containerRect = canvas.floatingContainer.localBound;
-            Rect overlayRect = new Rect(floatingPosition, rootVisualElement.localBound.size);
+            Rect overlayRect = new Rect(position, rootVisualElement.localBound.size);
             Vector2 snapCornerPosition;
             switch (floatingSnapCorner)
             {
@@ -147,7 +124,7 @@ namespace UnityEditor.Overlays
             snapOffset = overlayRect.position - snapCornerPosition;
         }
 
-        void FloatingToSnapPosition(Vector2 floatingPosition, out SnapCorner snapCorner, out Vector2 snapOffset)
+        void FloatingToSnapPosition(Vector2 position, out SnapCorner snapCorner, out Vector2 snapOffset)
         {
             Rect containerRect = canvas.floatingContainer.localBound;
             var aTopLeft = containerRect.position;
@@ -155,7 +132,7 @@ namespace UnityEditor.Overlays
             var aBottomLeft = containerRect.position + new Vector2(0, containerRect.height);
             var aBottomRight = containerRect.max;
 
-            Rect overlayRect = new Rect(floatingPosition, rootVisualElement.localBound.size);
+            Rect overlayRect = new Rect(position, rootVisualElement.localBound.size);
             var bTopLeft = overlayRect.position;
             var bTopRight = overlayRect.position + new Vector2(overlayRect.width, 0);
             var bBottomLeft = overlayRect.position + new Vector2(0, overlayRect.height);
@@ -192,27 +169,29 @@ namespace UnityEditor.Overlays
         {
             if (evt.newRect.size != evt.oldRect.size && canvas.overlaysEnabled)
             {
-                if (!m_DisplayChanged)
+                if (!m_ContentsChanged)
                     using (new LockedAnchor(this))
                         floatingPosition = floatingPosition;
-                //Force a clamp of the container
-                else
-                    floatingPosition = floatingPosition; //Force a clamp of the container
             }
-            m_DisplayChanged = false;
+
+            // When visual state changes, we need to wait until geometry recalculates to enforce bounds clamping
+            if (m_ContentsChanged)
+                floatingPosition = floatingPosition;
+
+            m_ContentsChanged = false;
         }
 
-        internal void UpdateSnapping(Vector2 floatingPosition)
+        void UpdateSnapping(Vector2 position)
         {
             if (m_LockAnchor)
             {
                 //Anchor and position are locked, we only update the offsetDelta
-                FloatingToSnapPosition(floatingPosition, out var snapOffset);
+                FloatingToSnapPosition(position, out var snapOffset);
                 m_SnapOffsetDelta = snapOffset - m_FloatingSnapOffset;
             }
             else
             {
-                FloatingToSnapPosition(floatingPosition, out var snapCorner, out var snapOffset);
+                FloatingToSnapPosition(position, out var snapCorner, out var snapOffset);
                 floatingSnapCorner = snapCorner;
                 floatingSnapOffset = snapOffset;
             }
@@ -221,9 +200,7 @@ namespace UnityEditor.Overlays
         internal void UpdateAbsolutePosition()
         {
             if (rootVisualElement.resolvedStyle.position == Position.Absolute)
-            {
                 rootVisualElement.transform.position = floatingPosition;
-            }
         }
     }
 }

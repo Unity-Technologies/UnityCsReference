@@ -133,7 +133,7 @@ namespace UnityEditor.Search
     class SearchPropositionOptions
     {
         static readonly char[] s_Delimiters = new[] { '{', '}', '[', ']', '=', ',' };
-        static readonly char[] s_ExtendedDelimiters = new[] { '{', '}', '[', ']', '=', ':' };
+        static readonly char[] s_ExtendedDelimiters = new[] { '{', '}', '[', ']', '=', ':', ',' };
 
         public readonly string query;
         public readonly int cursor;
@@ -202,7 +202,26 @@ namespace UnityEditor.Search
             m_Tokens = null;
         }
 
-        public static bool IsExtendedDelimiter(char ch)
+        internal SearchPropositionOptions(in SearchContext context, int cursor)
+        {
+            this.query = context.searchText;
+            this.cursor = cursor;
+            this.flags = SearchPropositionFlags.None;
+            var subQuery = GetTokenAtCursorPosition(query, cursor, IsDelimiter);
+            foreach (var p in context.providers)
+            {
+                if (!subQuery.StartsWith(p.filterId, StringComparison.Ordinal))
+                    continue;
+                subQuery = subQuery.Substring(p.filterId.Length).Trim();
+            }
+            var exToken = GetTokenAtCursorPosition(query, cursor, IsExtendedDelimiter);
+            if (string.IsNullOrEmpty(exToken))
+                m_Tokens = new string[] { subQuery };
+            else
+                m_Tokens = new string[] { subQuery, exToken };
+        }
+
+        internal static bool IsExtendedDelimiter(char ch)
         {
             return char.IsWhiteSpace(ch) || Array.IndexOf(s_ExtendedDelimiters, ch) != -1;
         }
@@ -232,7 +251,10 @@ namespace UnityEditor.Search
 
         private static string GetTokenAtCursorPosition(string txt, int cursorIndex, out int startPos, out int endPos, Func<char, bool> check)
         {
-            if (txt.Length > 0 && (cursorIndex == txt.Length || IsDelimiter(txt[cursorIndex])))
+            while (cursorIndex >= txt.Length)
+                cursorIndex--;
+
+            if (txt.Length > 0 && IsDelimiter(txt[cursorIndex]))
                 cursorIndex--;
 
             startPos = cursorIndex;

@@ -913,6 +913,9 @@ namespace UnityEngine.UIElements
 
             void HandleSelectionAndScroll(int index)
             {
+                if (index < 0 || index >= m_ViewController.itemsSource.Count)
+                    return;
+
                 if (selectionType == SelectionType.Multiple && shiftKey && m_SelectedIndices.Count != 0)
                 {
                     DoRangeSelection(index);
@@ -958,12 +961,18 @@ namespace UnityEngine.UIElements
                     HandleSelectionAndScroll(m_ViewController.itemsSource.Count - 1);
                     return true;
                 case KeyboardNavigationOperation.PageDown:
-                    var selectionDown = m_IsRangeSelectionDirectionUp ? m_SelectedIndices.Min() : m_SelectedIndices.Max();
-                    HandleSelectionAndScroll(Mathf.Min(viewController.itemsSource.Count - 1, selectionDown + (virtualizationController.visibleItemCount - 1)));
+                    if (m_SelectedIndices.Count > 0)
+                    {
+                        var selectionDown = m_IsRangeSelectionDirectionUp ? m_SelectedIndices.Min() : m_SelectedIndices.Max();
+                        HandleSelectionAndScroll(Mathf.Min(viewController.itemsSource.Count - 1, selectionDown + (virtualizationController.visibleItemCount - 1)));
+                    }
                     return true;
                 case KeyboardNavigationOperation.PageUp:
-                    var selectionUp = m_IsRangeSelectionDirectionUp ? m_SelectedIndices.Min() : m_SelectedIndices.Max();
-                    HandleSelectionAndScroll(Mathf.Max(0, selectionUp - (virtualizationController.visibleItemCount - 1)));
+                    if (m_SelectedIndices.Count > 0)
+                    {
+                        var selectionUp = m_IsRangeSelectionDirectionUp ? m_SelectedIndices.Min() : m_SelectedIndices.Max();
+                        HandleSelectionAndScroll(Mathf.Max(0, selectionUp - (virtualizationController.visibleItemCount - 1)));
+                    }
                     return true;
             }
 
@@ -998,7 +1007,15 @@ namespace UnityEngine.UIElements
 
         private void OnPointerDown(PointerDownEvent evt)
         {
-            ProcessPointerDown(evt);
+            if (evt.pointerType != PointerType.mouse)
+            {
+                ProcessPointerDown(evt);
+                panel.PreventCompatibilityMouseEvents(evt.pointerId);
+            }
+            else
+            {
+                ProcessPointerDown(evt);
+            }
         }
 
         private void OnPointerCancel(PointerCancelEvent evt)
@@ -1014,10 +1031,17 @@ namespace UnityEngine.UIElements
 
         private void OnPointerUp(PointerUpEvent evt)
         {
-            ProcessPointerUp(evt);
+            if (evt.pointerType != PointerType.mouse)
+            {
+                ProcessPointerUp(evt);
+                panel.PreventCompatibilityMouseEvents(evt.pointerId);
+            }
+            else
+            {
+                ProcessPointerUp(evt);
+            }
         }
 
-        private long m_TouchDownTime = 0;
         private Vector3 m_TouchDownPosition;
 
         private void ProcessPointerDown(IPointerEvent evt)
@@ -1033,7 +1057,6 @@ namespace UnityEngine.UIElements
 
             if (evt.pointerType != PointerType.mouse)
             {
-                m_TouchDownTime = ((EventBase)evt).timestamp;
                 m_TouchDownPosition = evt.position;
                 return;
             }
@@ -1054,9 +1077,8 @@ namespace UnityEngine.UIElements
 
             if (evt.pointerType != PointerType.mouse)
             {
-                var delay = ((EventBase)evt).timestamp - m_TouchDownTime;
                 var delta = evt.position - m_TouchDownPosition;
-                if (delay < 500 && delta.sqrMagnitude <= 100)
+                if (delta.sqrMagnitude <= ScrollView.ScrollThresholdSquared)
                 {
                     DoSelect(evt.localPosition, evt.clickCount, evt.actionKey, evt.shiftKey);
                 }
@@ -1382,6 +1404,13 @@ namespace UnityEngine.UIElements
                 else
                 {
                     m_LastFocusedElementIndex = -1;
+                }
+            }
+            else if (evt.eventTypeId == NavigationSubmitEvent.TypeId())
+            {
+                if (evt.target == this)
+                {
+                    m_ScrollView.contentContainer.Focus();
                 }
             }
         }

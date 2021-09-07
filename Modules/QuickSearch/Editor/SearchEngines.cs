@@ -270,10 +270,18 @@ namespace UnityEditor.Search
             if (Utils.IsRunningTests())
                 viewFlags |= SearchFlags.Dockable;
             SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchPickerOpens, "", "object", "ObjectSelectorEngine");
+            var searchQuery = string.Join(" ", context.requiredTypeNames.Select(tn => tn == null ? "" : $"t:{tn.ToLowerInvariant()}"));
+            if (string.IsNullOrEmpty(searchQuery))
+            {
+                searchQuery = "";
+            }
+            else
+            {
+                searchQuery += " ";
+            }
             var viewstate = new SearchViewState(
-                SearchService.CreateContext("", viewFlags), selectHandler, trackingHandler,
+                SearchService.CreateContext(searchQuery, viewFlags), selectHandler, trackingHandler,
                 selectContext.requiredTypeNames.First(), selectContext.requiredTypes.First());
-
 
             qsWindow = SearchService.ShowPicker(viewstate) as QuickSearch;
 

@@ -115,11 +115,8 @@ namespace UnityEditor.Search
             IndexWordComponents(documentIndex, GetPartialPath(path));
 
             var fileName = Path.GetFileNameWithoutExtension(path).ToLowerInvariant();
-            IndexWord(documentIndex, fileName, fileName.Length, true);
-            IndexProperty(documentIndex, "name", fileName, saveKeyword: false);
-
+            IndexWord(documentIndex, fileName, fileName.Length, exact: true);
             IndexWord(documentIndex, path, path.Length, exact: true);
-            IndexProperty(documentIndex, "id", path, saveKeyword: false, exact: true);
 
             if (path.StartsWith("Packages/", StringComparison.Ordinal))
                 IndexProperty(documentIndex, "a", "packages", saveKeyword: true, exact: true);
@@ -130,10 +127,10 @@ namespace UnityEditor.Search
             if (fi.Exists)
             {
                 IndexNumber(documentIndex, "size", (double)fi.Length);
-                IndexProperty(documentIndex, "ext", fi.Extension.Replace(".", "").ToLowerInvariant(), saveKeyword: false);
+                IndexProperty(documentIndex, "ext", fi.Extension.Replace(".", "").ToLowerInvariant(), saveKeyword: false, exact: true);
                 IndexNumber(documentIndex, "age", (DateTime.Now - fi.LastWriteTime).TotalDays);
 
-                foreach (var dir in Path.GetDirectoryName(path).Split(new[] { '/', '\\' }).Skip(1))
+                foreach (var dir in Path.GetDirectoryName(path).Split(new[] { '/', '\\' }).Skip(1).Reverse().Take(3))
                     IndexProperty(documentIndex, "dir", dir.ToLowerInvariant(), saveKeyword: false, exact: true);
 
                 IndexProperty(documentIndex, "t", "file", saveKeyword: true, exact: true);

@@ -61,7 +61,7 @@ namespace UnityEditor.Search.Providers
             public string tag;
             public string[] types;
             public string[] words;
-            public string[] refs;
+            public HashSet<int> refs;
             public string[] attrs;
 
             public int? layer;
@@ -322,7 +322,7 @@ namespace UnityEditor.Search.Providers
             return CompareWords(op, value.ToLowerInvariant(), god.types);
         }
 
-        private void BuildReferences(UnityEngine.Object obj, ICollection<string> refs)
+        private void BuildReferences(UnityEngine.Object obj, ICollection<int> refs)
         {
             if (!obj)
                 return;
@@ -332,13 +332,13 @@ namespace UnityEditor.Search.Providers
                 var next = p.NextVisible(true);
                 while (next)
                 {
-                    AddPropertyReferences(p, refs);
+                    AddPropertyReferences(obj, p, refs);
                     next = p.NextVisible(p.hasVisibleChildren);
                 }
             }
         }
 
-        private void AddPropertyReferences(SerializedProperty p, ICollection<string> refs)
+        private void AddPropertyReferences(UnityEngine.Object obj, SerializedProperty p, ICollection<int> refs)
         {
             if (p.propertyType != SerializedPropertyType.ObjectReference || !p.objectReferenceValue)
                 return;
@@ -347,9 +347,11 @@ namespace UnityEditor.Search.Providers
             if (string.IsNullOrEmpty(refValue) && p.objectReferenceValue is GameObject go)
                 refValue = SearchUtils.GetTransformPath(go.transform);
 
-            if (!string.IsNullOrEmpty(refValue) && !refs.Contains(refValue))
+            if (!string.IsNullOrEmpty(refValue))
                 AddReference(p.objectReferenceValue, refValue, refs);
-            refs.Add(p.objectReferenceValue.GetInstanceID().ToString());
+            refs.Add(p.objectReferenceValue.GetInstanceID());
+            if (p.objectReferenceValue is Component c)
+                refs.Add(c.gameObject.GetInstanceID());
 
             // Add custom object cases
             if (p.objectReferenceValue is Material material)
@@ -359,18 +361,18 @@ namespace UnityEditor.Search.Providers
             }
         }
 
-        private bool AddReference(UnityEngine.Object refObj, string refValue, ICollection<string> refs)
+        private bool AddReference(UnityEngine.Object refObj, string refValue, ICollection<int> refs)
         {
             if (string.IsNullOrEmpty(refValue))
                 return false;
 
             if (refValue[0] == '/')
                 refValue = refValue.Substring(1);
+            refs.Add(refValue.ToLowerInvariant().GetHashCode());
 
             var refType = refObj?.GetType().Name;
             if (refType != null)
-                refs.Add(refType.ToLowerInvariant());
-            refs.Add(refValue.ToLowerInvariant());
+                refs.Add(refType.ToLowerInvariant().GetHashCode());
 
             return true;
         }
@@ -381,7 +383,7 @@ namespace UnityEditor.Search.Providers
 
             if (god.refs == null)
             {
-                var refs = new HashSet<string>();
+                var refs = new HashSet<int>();
 
                 BuildReferences(obj, refs);
 
@@ -400,10 +402,13 @@ namespace UnityEditor.Search.Providers
                     }
                 }
 
-                god.refs = refs.ToArray();
+                refs.Remove(obj.GetHashCode());
+                god.refs = refs;
             }
 
-            return CompareWords(op, value.ToLowerInvariant(), god.refs);
+            if (Utils.TryParse(value, out int instanceId))
+                return god.refs.Contains(instanceId);
+            return god.refs.Contains(value.ToLowerInvariant().GetHashCode());
         }
 
         protected bool CompareWords(string op, string value, IEnumerable<string> words, StringComparison stringComparison = StringComparison.Ordinal)

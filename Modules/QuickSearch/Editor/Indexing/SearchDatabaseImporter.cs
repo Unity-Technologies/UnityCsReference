@@ -136,7 +136,7 @@ namespace UnityEditor.Search
 
             SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.CreateIndexFromTemplate, template);
 
-            File.WriteAllText(indexPath, templateContent);
+            Utils.WriteTextFileToDisk(indexPath, templateContent);
             return SearchDatabase.ImportAsset(indexPath)?.path ?? indexPath;
         }
 

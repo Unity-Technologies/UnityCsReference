@@ -99,12 +99,12 @@ namespace UnityEditor.Overlays
 
         void OnMouseLeave(MouseOutEvent evt)
         {
-            m_Overlay?.Highlight(false);
+            m_Overlay?.SetHighlightEnabled(false);
         }
 
         void OnMouseEnter(MouseOverEvent evt)
         {
-            m_Overlay?.Highlight(enabledSelf);
+            m_Overlay?.SetHighlightEnabled(enabledSelf);
         }
     }
 }

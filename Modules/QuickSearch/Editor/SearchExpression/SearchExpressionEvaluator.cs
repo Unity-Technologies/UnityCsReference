@@ -56,7 +56,15 @@ namespace UnityEditor.Search
 
         static EvaluatorManager()
         {
-            RefreshEvaluators();
+            try
+            {
+                RefreshEvaluators();
+            }
+            catch (Exception)
+            {
+                Debug.LogError("Error while loading evaluators");
+            }
+
             itemQueryEngine = new SearchItemQueryEngine();
         }
 
@@ -148,8 +156,10 @@ namespace UnityEditor.Search
                         AddSignature(name, attribute.signature);
                     return new SearchExpressionEvaluator(name, description, category, _handler, attribute.hints);
                 }
-                throw new CustomAttributeFormatException($"Invalid evaluator handler {attribute.name} using {mi.DeclaringType.FullName}.{mi.Name}");
-            }, supportedSignature).Distinct().Where(evaluator => evaluator.valid).ToList();
+
+                Debug.LogWarning($"Invalid evaluator handler: \"{attribute.name}\" using: \"{mi.DeclaringType.FullName}.{mi.Name}\"");
+                return new SearchExpressionEvaluator();
+            }, supportedSignature, ReflectionUtils.AttributeLoaderBehavior.DoNotThrowOnValidation).Distinct().Where(evaluator => evaluator.valid).ToList();
         }
     }
 

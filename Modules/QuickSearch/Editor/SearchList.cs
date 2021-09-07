@@ -130,7 +130,12 @@ namespace UnityEditor.Search
 
         public IEnumerable<TResult> Select<TResult>(Func<SearchItem, TResult> selector)
         {
-            return Fetch().Where(item => item != null).Select(item => selector(item));
+            return Fetch().Where(item =>
+            {
+                if (context.options.HasAny(SearchFlags.Synchronous))
+                    Dispatcher.ProcessOne();
+                return item != null;
+            }).Select(item => selector(item));
         }
 
         public virtual void InsertRange(int index, IEnumerable<SearchItem> items) { throw new NotSupportedException(); }
@@ -203,7 +208,11 @@ namespace UnityEditor.Search
                 throw new Exception("Fetch can only be used if the search list was created with a search context.");
 
             while (context.searchInProgress)
+            {
+                if (context.options.HasAny(SearchFlags.Synchronous))
+                    Dispatcher.ProcessOne();
                 yield return null;
+            }
 
             var it = GetEnumerator();
             while (it.MoveNext())
@@ -376,6 +385,7 @@ namespace UnityEditor.Search
     {
         string id { get; }
         string name { get; }
+        string type { get; }
         int count { get; }
         int priority { get; }
         IEnumerable<SearchItem> items { get; }
@@ -391,6 +401,7 @@ namespace UnityEditor.Search
         {
             public string id { get; private set; }
             public string name { get; private set; }
+            public string type { get; private set; }
             public IEnumerable<SearchItem> items => m_Items;
             public int count => m_Items.Count;
 
@@ -412,10 +423,11 @@ namespace UnityEditor.Search
             private List<SearchItem> m_Items;
             private HashSet<int> m_IdHashes;
 
-            public Group(string id, string name, int priority = int.MaxValue)
+            public Group(string id, string type, string name, int priority = int.MaxValue)
             {
                 this.id = id;
                 this.name = name;
+                this.type = type;
                 this.priority = priority;
                 m_Items = new List<SearchItem>();
                 m_IdHashes = new HashSet<int>();
@@ -479,6 +491,7 @@ namespace UnityEditor.Search
 
         string IGroup.id => "all";
         string IGroup.name => "All";
+        string IGroup.type => "all";
         int IGroup.priority => int.MinValue + 1;
         int IGroup.count => m_TotalCount;
         IEnumerable<SearchItem> IGroup.items => GetAll();
@@ -552,6 +565,11 @@ namespace UnityEditor.Search
             return m_Groups.Find(group => group.id == groupId);
         }
 
+        internal IEnumerable<IGroup> GetGroupByType(string groupType)
+        {
+            return m_Groups.Where(group => group.type == groupType);
+        }
+
         public IEnumerable<IGroup> EnumerateGroups(bool showAll = true)
         {
             if (showAll && m_Groups.Count > 1)
@@ -593,7 +611,7 @@ namespace UnityEditor.Search
         {
             var defaultGroups = context.providers
                 .Where(p => p.showDetailsOptions.HasFlag(ShowDetailsOptions.DefaultGroup))
-                .Select(p => new Group(p.id, p.name, p.priority));
+                .Select(p => new Group(p.id, p.type, p.name, p.priority));
             m_Groups.AddRange(defaultGroups);
             m_Groups.Sort((lhs, rhs) => lhs.priority.CompareTo(rhs.priority));
         }
@@ -603,7 +621,7 @@ namespace UnityEditor.Search
             var itemGroup = m_Groups.Find(g => string.Equals(g.id, searchProvider.id, StringComparison.Ordinal));
             if (itemGroup != null)
                 return itemGroup;
-            itemGroup = new Group(searchProvider.id, searchProvider.name, searchProvider.priority);
+            itemGroup = new Group(searchProvider.id, searchProvider.type, searchProvider.name, searchProvider.priority);
             m_Groups.Add(itemGroup);
             m_Groups.Sort((lhs, rhs) => lhs.priority.CompareTo(rhs.priority));
             if (!string.IsNullOrEmpty(m_CurrentGroupId))
@@ -696,6 +714,26 @@ namespace UnityEditor.Search
         {
             throw new NotSupportedException();
         }
+
+        internal int GetItemCount(IEnumerable<string> activeProviderTypes)
+        {
+            int queryItemCount = 0;
+
+            if (activeProviderTypes == null || !activeProviderTypes.Any())
+                return TotalCount;
+
+            foreach (var providerType in activeProviderTypes)
+            {
+                var groupsWithType = GetGroupByType(providerType);
+                if (groupsWithType == null || !groupsWithType.Any())
+                    continue;
+
+                foreach (var group in groupsWithType)
+                    queryItemCount += group.count;
+            }
+
+            return queryItemCount;
+        }
     }
 
     class AsyncSearchList : BaseSearchList, ISearchList
@@ -759,7 +797,11 @@ namespace UnityEditor.Search
                         yield return m_UnorderedItems[i];
                 }
                 else
+                {
+                    if (context.options.HasAny(SearchFlags.Synchronous))
+                        Dispatcher.ProcessOne();
                     yield return null; // Wait for more items...
+                }
             }
 
             for (; i < m_UnorderedItems.Count; ++i)
@@ -866,7 +908,9 @@ namespace UnityEditor.Search
                     yield return searchItem;
                 }
                 else
+                {
                     yield return null; // Wait for more items...
+                }
             }
 
             while (!m_UnorderedItems.IsEmpty)

@@ -14,14 +14,12 @@ using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEngine.UIElements;
+using UnityEditor.IMGUI.Controls;
 
 using UnityEditor.Connect;
 using UnityEditor.StyleSheets;
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("com.unity.quicksearch.tests")]
-[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("com.unity.search.extensions.editor")]
-[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.Environment.Core.Editor")]
-[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.ProceduralGraph.Editor")]
 
 namespace UnityEditor.Search
 {
@@ -210,7 +208,7 @@ namespace UnityEditor.Search
             return GUIContent.Temp(text, tooltip);
         }
 
-        internal static GUIContent GUIContentTemp(string text, Texture2D image)
+        internal static GUIContent GUIContentTemp(string text, Texture image)
         {
             return GUIContent.Temp(text, image);
         }
@@ -230,6 +228,11 @@ namespace UnityEditor.Search
                     preview = largePreview;
             }
             return preview;
+        }
+
+        internal static void SetChildParentReferences(IList<TreeViewItem> m_Items, TreeViewItem root)
+        {
+            TreeViewUtility.SetChildParentReferences(m_Items, root);
         }
 
         internal static bool IsEditorValid(Editor e)
@@ -855,6 +858,11 @@ namespace UnityEditor.Search
                 success = int.TryParse(expression, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out var temp);
                 result = (T)(object)temp;
             }
+            else if (typeof(T) == typeof(uint))
+            {
+                success = uint.TryParse(expression, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out var temp);
+                result = (T)(object)temp;
+            }
             else if (typeof(T) == typeof(double))
             {
                 if (expression == "pi")
@@ -871,6 +879,11 @@ namespace UnityEditor.Search
             else if (typeof(T) == typeof(long))
             {
                 success = long.TryParse(expression, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out var temp);
+                result = (T)(object)temp;
+            }
+            else if (typeof(T) == typeof(ulong))
+            {
+                success = ulong.TryParse(expression, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out var temp);
                 result = (T)(object)temp;
             }
             return success;
@@ -948,6 +961,11 @@ namespace UnityEditor.Search
             return GUIClip.enabled;
         }
 
+        public static Rect Unclip(in Rect r)
+        {
+            return GUIClip.Unclip(r);
+        }
+
         public static MonoScript MonoScriptFromScriptedObject(UnityEngine.Object obj)
         {
             return MonoScript.FromScriptedObject(obj);
@@ -1018,15 +1036,29 @@ namespace UnityEditor.Search
             return EditorGUIUtility.LoadIcon(name);
         }
 
+        public static ulong GetFileIDHint(in UnityEngine.Object obj)
+        {
+            return Unsupported.GetFileIDHint(obj);
+        }
+
         public static bool IsEditingTextField()
         {
             return GUIUtility.textFieldInput || EditorGUI.IsEditingTextField();
         }
 
-        static readonly Regex trimmer = new Regex(@"\s\s+");
+        static readonly Regex trimmer = new Regex(@"(\s\s+)|(\r\n|\r|\n)+");
         public static string Simplify(string text)
         {
-            return trimmer.Replace(text, " ").Trim();
+            return trimmer.Replace(text, " ").Replace("\r\n", " ").Replace('\n', ' ').Trim();
+        }
+
+        public static void OpenGraphViewer(in string searchQuery)
+        {
+        }
+
+        internal static void WriteTextFileToDisk(in string path, in string content)
+        {
+            FileUtil.WriteTextFileToDisk(path, content);
         }
     }
 

@@ -559,12 +559,16 @@ namespace UnityEditor.Search
             }
             if (string.Equals("label", name, StringComparison.OrdinalIgnoreCase))
             {
+                options |= SearchItemOptions.Compacted;
                 field = new Field(name, GetLabel(context ?? this.context, true));
+                options &= ~SearchItemOptions.Compacted;
                 return field.value != null;
             }
             if (string.Equals("description", name, StringComparison.OrdinalIgnoreCase))
             {
+                options |= SearchItemOptions.Compacted;
                 field = new Field(name, GetDescription(context ?? this.context, true));
+                options &= ~SearchItemOptions.Compacted;
                 return field.value != null;
             }
 

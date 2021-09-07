@@ -106,6 +106,8 @@ namespace UnityEditor.Search
         public static HashSet<string> searchItemFavorites = new HashSet<string>();
         public static HashSet<string> searchQueryFavorites = new HashSet<string>();
 
+        internal static event Action<string, bool> providerActivationChanged;
+
         public static int debounceMs
         {
             get { return UnityEditor.SearchUtils.debounceThresholdMs; }
@@ -125,7 +127,7 @@ namespace UnityEditor.Search
             {
                 if (!Directory.Exists("UserSettings/"))
                     Directory.CreateDirectory("UserSettings/");
-                File.WriteAllText(projectLocalSettingsPath, "{}");
+                Utils.WriteTextFileToDisk(projectLocalSettingsPath, "{}");
             }
 
             IDictionary settings = null;
@@ -280,7 +282,7 @@ namespace UnityEditor.Search
 
         static void DrawSearchServiceSettings()
         {
-            EditorGUILayout.LabelField("Search Engines", EditorStyles.largeLabel);
+            EditorGUILayout.LabelField(L10n.Tr("Search Engines"), EditorStyles.largeLabel);
             var orderedApis = UnityEditor.SearchService.SearchService.searchApis.OrderBy(api => api.displayName);
             foreach (var api in orderedApis)
             {
@@ -457,7 +459,7 @@ namespace UnityEditor.Search
 
         private static void DrawProviderSettings()
         {
-            EditorGUILayout.LabelField("Provider Settings", EditorStyles.largeLabel);
+            EditorGUILayout.LabelField(L10n.Tr("Provider Settings"), EditorStyles.largeLabel);
             foreach (var p in SearchService.OrderedProviders)
             {
                 GUILayout.BeginHorizontal();
@@ -471,6 +473,8 @@ namespace UnityEditor.Search
                 {
                     SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.PreferenceChanged, "activateProvider", p.id, p.active.ToString());
                     settings.active = p.active;
+                    if (providerActivationChanged != null)
+                        providerActivationChanged.Invoke(p.id, p.active);
                 }
 
                 using (new EditorGUI.DisabledGroupScope(!p.active))
@@ -658,19 +662,19 @@ namespace UnityEditor.Search
 
             public static GUIStyle browseBtn = new GUIStyle("Button") { fixedWidth = 70 };
 
-            public static GUIContent toggleActiveContent = new GUIContent("", "Enable or disable this provider. Disabled search provider will be completely ignored by the search service.");
-            public static GUIContent resetDefaultsContent = new GUIContent("Reset Providers Settings", "All search providers will restore their initial preferences (priority, active, default action)");
-            public static GUIContent increasePriorityContent = new GUIContent("\u2191", "Increase the provider's priority");
-            public static GUIContent decreasePriorityContent = new GUIContent("\u2193", "Decrease the provider's priority");
-            public static GUIContent trackSelectionContent = new GUIContent(
+            public static GUIContent toggleActiveContent = EditorGUIUtility.TrTextContent("", "Enable or disable this provider. Disabled search provider will be completely ignored by the search service.");
+            public static GUIContent resetDefaultsContent = EditorGUIUtility.TrTextContent("Reset Providers Settings", "All search providers will restore their initial preferences (priority, active, default action)");
+            public static GUIContent increasePriorityContent = EditorGUIUtility.TrTextContent("\u2191", "Increase the provider's priority");
+            public static GUIContent decreasePriorityContent = EditorGUIUtility.TrTextContent("\u2193", "Decrease the provider's priority");
+            public static GUIContent trackSelectionContent = EditorGUIUtility.TrTextContent(
                 "Track the current selection in the search view.",
                 "Tracking the current selection can alter other window state, such as pinging the project browser or the scene hierarchy window.");
-            public static GUIContent fetchPreviewContent = new GUIContent(
+            public static GUIContent fetchPreviewContent = EditorGUIUtility.TrTextContent(
                 "Generate an asset preview thumbnail for found items",
                 "Fetching the preview of the items can consume more memory and make searches within very large project slower.");
-            public static GUIContent dockableContent = new GUIContent("Open Search as dockable window");
-            public static GUIContent debugContent = new GUIContent("[DEV] Display additional debugging information");
-            public static GUIContent debounceThreshold = new GUIContent("Select the typing debounce threshold (ms)");
+            public static GUIContent dockableContent = EditorGUIUtility.TrTextContent("Open Search as dockable window");
+            public static GUIContent debugContent = EditorGUIUtility.TrTextContent("[DEV] Display additional debugging information");
+            public static GUIContent debounceThreshold = EditorGUIUtility.TrTextContent("Select the typing debounce threshold (ms)");
         }
 
         public static void AddSearchFavorite(string searchText)

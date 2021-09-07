@@ -17,6 +17,7 @@ namespace UnityEditor.Search
         private readonly IEnumerable<SearchColumn> m_Columns;
         private readonly AddColumnsHandler m_AddColumnsHandler;
         private readonly int m_ActiveColumnIndex;
+        private readonly Dictionary<int, SearchColumn> m_ColumnIndexes = new Dictionary<int, SearchColumn>();
 
         public delegate void AddColumnsHandler(IEnumerable<SearchColumn> descriptors, int activeColumnIndex);
 
@@ -50,11 +51,13 @@ namespace UnityEditor.Search
 
                 AdvancedDropdownItem newItem = new AdvancedDropdownItem(name)
                 {
-                    displayName = string.IsNullOrEmpty(column.content.text) ? column.content.tooltip : SearchColumn.ParseName(column.content.text),
                     icon = column.content.image as Texture2D,
+                    displayName = string.IsNullOrEmpty(column.content.text) ? column.content.tooltip : SearchColumn.ParseName(column.content.text),
                     tooltip = column.content.tooltip,
                     userData = column
                 };
+
+                m_ColumnIndexes[newItem.id] = column;
 
                 var parent = rootItem;
                 if (prefix != null)
@@ -73,7 +76,7 @@ namespace UnityEditor.Search
         protected override void ItemSelected(AdvancedDropdownItem i)
         {
             var properties = new List<SearchColumn>();
-            if (i.userData is SearchColumn column)
+            if (m_ColumnIndexes.TryGetValue(i.id, out var column))
                 properties.Add(column);
             else if (i.userData is AdvancedDropdownItem addAllItem)
                 AddAll(properties, addAllItem.children, addAllItem.children.Where(c => c.userData is SearchColumn).All(c => c.children.Any()));
@@ -116,8 +119,10 @@ namespace UnityEditor.Search
                 }
                 else
                 {
-                    AdvancedDropdownItem newItem = new AdvancedDropdownItem(p) { icon = desc.content.image as Texture2D, tooltip = desc.content.tooltip };
-                    newItem.AddChild(new AdvancedDropdownItem(k_AddlAllItemName) { userData = newItem });
+                    AdvancedDropdownItem newItem = new AdvancedDropdownItem(p)
+                    {
+                        icon = desc.content.image as Texture2D,
+                    };
                     parent.AddChild(newItem);
                     parent = newItem;
                 }
@@ -167,5 +172,6 @@ namespace UnityEditor.Search
                 properties.Add(ac);
             }
         }
+
     }
 }

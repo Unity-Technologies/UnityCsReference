@@ -398,7 +398,12 @@ namespace UnityEditor.Search.Providers
             // Finally wait for indexes that are being built to end the search.
             if (useIndexing)
             {
-                foreach (var db in SearchDatabase.EnumerateAll().OrderBy(db => !db.ready))
+                var dbs = SearchDatabase.EnumerateAll();
+                if (context.options.HasAny(SearchFlags.QueryString))
+                    dbs = dbs.Where(db => db.ready);
+                else
+                    dbs = dbs.OrderBy(db => !db.ready);
+                foreach (var db in dbs)
                     yield return SearchIndexes(context.searchQuery, context, provider, db);
             }
         }

@@ -819,6 +819,7 @@ namespace UnityEngine
         public unsafe NativeArray<T> GetPixelData<T>(int mipLevel) where T : struct
         {
             if (!isReadable) throw CreateNonReadableException(this);
+            if (mipLevel < 0 || mipLevel >= mipmapCount) throw new ArgumentException("The passed in miplevel " + mipLevel + " is invalid. It needs to be in the range 0 and " + (mipmapCount - 1));
 
             int chainOffset = GetPixelDataOffset(mipLevel);
             int arraySize = GetPixelDataSize(mipLevel);
@@ -1071,6 +1072,8 @@ namespace UnityEngine
         public unsafe NativeArray<T> GetPixelData<T>(int mipLevel, CubemapFace face) where T : struct
         {
             if (!isReadable) throw CreateNonReadableException(this);
+            if (mipLevel < 0 || mipLevel >= mipmapCount) throw new ArgumentException("The passed in miplevel " + mipLevel + " is invalid. The valid range is 0 through " + (mipmapCount - 1));
+            if ((int)face < 0 || (int)face >= 6) throw new ArgumentException("The passed in face " + face + " is invalid. The valid range is 0 through 5.");
 
             int singleElementDataSize = GetPixelDataOffset(this.mipmapCount, (int)face);
             int chainOffset = GetPixelDataOffset(mipLevel, (int)face);
@@ -1264,6 +1267,7 @@ namespace UnityEngine
         public unsafe NativeArray<T> GetPixelData<T>(int mipLevel) where T : struct
         {
             if (!isReadable) throw CreateNonReadableException(this);
+            if (mipLevel < 0 || mipLevel >= mipmapCount) throw new ArgumentException("The passed in miplevel " + mipLevel + " is invalid. The valid range is 0 through  " + (mipmapCount - 1));
 
             int chainOffset = GetPixelDataOffset(mipLevel);
             int arraySize = GetPixelDataSize(mipLevel);
@@ -1387,6 +1391,8 @@ namespace UnityEngine
         public unsafe NativeArray<T> GetPixelData<T>(int mipLevel, int element) where T : struct
         {
             if (!isReadable) throw CreateNonReadableException(this);
+            if (mipLevel < 0 || mipLevel >= mipmapCount) throw new ArgumentException("The passed in miplevel " + mipLevel + " is invalid. The valid range is 0 through " + (mipmapCount - 1));
+            if (element < 0 || element >= depth) throw new ArgumentException("The passed in element " + element + " is invalid. The valid range is 0 through " + (depth - 1));
 
             int singleElementDataSize = GetPixelDataOffset(this.mipmapCount, element);
             int chainOffset = GetPixelDataOffset(mipLevel, element);
@@ -1488,6 +1494,9 @@ namespace UnityEngine
         public unsafe NativeArray<T> GetPixelData<T>(int mipLevel, CubemapFace face, int element) where T : struct
         {
             if (!isReadable) throw CreateNonReadableException(this);
+            if (mipLevel < 0 || mipLevel >= mipmapCount) throw new ArgumentException("The passed in miplevel " + mipLevel + " is invalid. The valid range is 0 through " + (mipmapCount - 1));
+            if ((int)face < 0 || (int)face >= 6) throw new ArgumentException("The passed in face " + face + " is invalid.  The valid range is 0 through 5");
+            if (element < 0 || element >= cubemapCount) throw new ArgumentException("The passed in element " + element + " is invalid. The valid range is 0 through " + (cubemapCount - 1));
 
             int elementOffset = element * 6 + (int)face;
             int singleElementDataSize = GetPixelDataOffset(this.mipmapCount, elementOffset);

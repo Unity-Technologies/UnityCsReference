@@ -47,6 +47,7 @@ namespace UnityEditor.Search
         private const string k_IndexExtension = "index";
         private const string k_BuildText = "Build";
         private const string k_PackagesPrefix = "Packages/";
+        private const float k_ToggleMaxWidth = 151f;
         private List<IndexManagerViewModel> m_IndexSettings;
         private List<SearchDatabase> m_IndexSettingsAssets;
         private List<string> m_IndexSettingsFilePaths;
@@ -330,6 +331,8 @@ namespace UnityEditor.Search
                 value = selectedItem.hasPackagesRoot,
                 tooltip = "If checked, all packages content will be indexed."
             };
+            m_HasPackagesRoot.style.maxWidth = k_ToggleMaxWidth;
+
             m_HasPackagesRoot.RegisterValueChangedCallback(evt =>
             {
                 selectedItem.hasPackagesRoot = evt.newValue;
@@ -420,6 +423,8 @@ namespace UnityEditor.Search
                     field.SetValue(selectedItem.options, evt.newValue);
                     UpdateUnsavedChanges(true);
                 });
+
+                toggle.style.maxWidth = k_ToggleMaxWidth;
 
                 m_OptionsFoldout.Add(toggle);
                 switch (field.Name)
@@ -603,12 +608,10 @@ namespace UnityEditor.Search
 
         private void CreateIndexSettings()
         {
-            var path = EditorUtility.SaveFilePanel("Save Index Settings", Application.dataPath, selectedItem.name, k_IndexExtension);
-            if (!string.IsNullOrEmpty(path) && Utils.IsPathUnderProject(path))
-            {
-                path = path.Substring(k_ProjectPath.Length + 1); // Only the project part
+            var message = L10n.Tr("Please enter a file name for the new Index Settings.");
+            var path = EditorUtility.SaveFilePanelInProject(L10n.Tr("Save Index Settings"), selectedItem.name, k_IndexExtension, message, Application.dataPath);
+            if (!string.IsNullOrEmpty(path))
                 CreateIndexSettings(path);
-            }
         }
 
         internal void CreateIndexSettings(string path)
@@ -685,21 +688,67 @@ namespace UnityEditor.Search
                         SendSaveIndexEvent(m_IndexSettings[i]);
                         if (!m_IndexSettingsExists[i])
                         {
-                            var path = EditorUtility.SaveFilePanel("Save Index Settings", Application.dataPath, selectedItem.name, k_IndexExtension);
-                            if (!string.IsNullOrEmpty(path) && Utils.IsPathUnderProject(path))
+                            var message = L10n.Tr("Please enter a file name for the new Index Settings.");
+                            var path = EditorUtility.SaveFilePanelInProject(L10n.Tr("Save Index Settings"), selectedItem.name, k_IndexExtension, message, Application.dataPath);
+                            if (!string.IsNullOrEmpty(path))
                             {
-                                path = path.Substring(k_ProjectPath.Length + 1); // Only the project part
-                                SetupNewAsset(path);
-                                CreateOrUpdateAsset(path);
-                                SearchDatabase.ImportAsset(path);
+                                SaveNewIndexSettingsFile(path, i);
+                            }
+                            else
+                            {
+                                var selectedItem = new List<IndexManagerViewModel>() { m_IndexSettings[i] };
+                                OnSelectedIndexChanged(selectedItem);
                             }
                         }
                         else
                         {
-                            CreateOrUpdateAsset(m_IndexSettingsFilePaths[i]);
-                            SearchDatabase.ImportAsset(m_IndexSettingsFilePaths[i]);
+                            SaveExistingIndexSettingsFile(i);
                         }
                     }
+                }
+
+                if (m_IndexSettings.All(index => !index.hasUnsavedChanges))
+                    base.SaveChanges();
+            }
+        }
+
+        private void SaveNewIndexSettingsFile(string path, int currentIndex)
+        {
+            if (m_IndexSettingsExists.Where(index => !index).Count() > 1)
+            {
+                m_ListViewIndexSettings.selectedIndex = currentIndex;
+                var selectedItem = new List<IndexManagerViewModel>() { m_IndexSettings[currentIndex] };
+                OnSelectedIndexChanged(selectedItem);
+                CreateIndexSettings(path);
+            }
+            else
+            {
+                SetupNewAsset(path);
+                if (CreateOrUpdateAsset(path))
+                {
+                    m_IndexSettings[currentIndex].hasUnsavedChanges = false;
+                    m_IndexSettingsExists[currentIndex] = true;
+                    SearchDatabase.ImportAsset(path);
+                }
+            }
+        }
+
+        private void SaveExistingIndexSettingsFile(int currentIndex)
+        {
+            var subList = m_IndexSettingsExists.GetRange(0, currentIndex);
+            if (subList.Contains(false))
+            {
+                m_ListViewIndexSettings.selectedIndex = currentIndex;
+                var selectedItem = new List<IndexManagerViewModel>() { m_IndexSettings[currentIndex] };
+                OnSelectedIndexChanged(selectedItem);
+                UpdateIndexSettings();
+            }
+            else
+            {
+                if (CreateOrUpdateAsset(m_IndexSettingsFilePaths[currentIndex]))
+                {
+                    m_IndexSettings[currentIndex].hasUnsavedChanges = false;
+                    SearchDatabase.ImportAsset(m_IndexSettingsFilePaths[currentIndex]);
                 }
             }
         }
@@ -1370,7 +1419,7 @@ namespace UnityEditor.Search
         private int m_ItemHeight;
         private Label m_EmptyListViewLabel;
         internal UIToolkitListView ListView { get; private set; }
-        internal int selectedIndex { get { return ListView.selectedIndex; } }
+        internal int selectedIndex { get { return ListView.selectedIndex; } set { ListView.selectedIndex = value; } }
         internal IList itemsSource { get { return ListView.itemsSource; } set { ListView.itemsSource = value; } }
         private IndexManager m_Window;
 
