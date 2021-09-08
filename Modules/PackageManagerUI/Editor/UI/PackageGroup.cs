@@ -64,7 +64,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         internal PackageItem AddPackageItem(IPackage package, VisualState state)
         {
-            var packageItem = new PackageItem(m_ResourceLoader, m_PageManager, m_SettingsProxy, package, state) {packageGroup = this};
+            var packageItem = new PackageItem(m_ResourceLoader, m_PageManager, m_SettingsProxy) {packageGroup = this};
+            packageItem.SetPackageAndVisualState(package, state);
             groupContainer.Add(packageItem);
             return packageItem;
         }

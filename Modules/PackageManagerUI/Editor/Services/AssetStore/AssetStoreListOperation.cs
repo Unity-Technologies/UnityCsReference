@@ -13,13 +13,15 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal class AssetStoreListOperation : IOperation
     {
+        private const int k_QueryLimit = 500;
+
         public string packageUniqueId => string.Empty;
 
         public string versionUniqueId => string.Empty;
 
         [SerializeField]
         protected long m_Timestamp = 0;
-        public long timestamp { get { return m_Timestamp; } }
+        public long timestamp => m_Timestamp;
 
         public long lastSuccessTimestamp => 0;
 
@@ -45,7 +47,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private PurchasesQueryArgs m_OriginalQueryArgs;
         [SerializeField]
-        private PurchasesQueryArgs m_AjustedQueryArgs;
+        private PurchasesQueryArgs m_AdjustedQueryArgs;
 
         [SerializeField]
         private bool m_DownloadAssetsOnly;
@@ -112,14 +114,17 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             m_Result = new AssetStorePurchases(m_OriginalQueryArgs);
-            if (m_DownloadAssetsOnly && !m_AjustedQueryArgs.productIds.Any())
+            if (m_DownloadAssetsOnly && !m_AdjustedQueryArgs.productIds.Any())
             {
                 m_Result.total = 0;
                 onOperationSuccess?.Invoke(this);
                 FinalizedOperation();
                 return;
             }
-            m_AssetStoreRestAPI.GetPurchases(QueryToString(m_AjustedQueryArgs), GetPurchasesCallback, error => OnOperationError(error));
+
+            // We need to keep a local version of the current timestamp to make sure the callback timestamp is still the original one.
+            var localTimestamp = m_Timestamp;
+            m_AssetStoreRestAPI.GetPurchases(QueryToString(m_AdjustedQueryArgs), (result) => GetPurchasesCallback(result, localTimestamp), OnOperationError);
         }
 
         private void SetQueryArgs(PurchasesQueryArgs queryArgs)
@@ -127,18 +132,24 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_OriginalQueryArgs = queryArgs;
 
             m_DownloadAssetsOnly = m_OriginalQueryArgs.downloadedOnly;
+            // The GetPurchases API has a limit of maximum 1000 items (to avoid performance issues)
+            // therefore we do some adjustments to the original query args enforce that limit and split
+            // the original query to multiple batches. We make a clone before when adjusting is needed
+            m_AdjustedQueryArgs = m_OriginalQueryArgs.Clone();
+            m_AdjustedQueryArgs.limit = Math.Min(m_OriginalQueryArgs.limit, k_QueryLimit);
+
             if (m_DownloadAssetsOnly)
             {
-                m_AjustedQueryArgs = m_OriginalQueryArgs.Clone();
-                m_AjustedQueryArgs.statuses = new List<string>();
-                m_AjustedQueryArgs.productIds = m_AssetStoreCache.localInfos.Select(info => info.id).ToList();
+                m_AdjustedQueryArgs.statuses = new List<string>();
+                m_AdjustedQueryArgs.productIds = m_AssetStoreCache.localInfos.Select(info => info.id).ToList();
             }
-            else
-                m_AjustedQueryArgs = m_OriginalQueryArgs;
         }
 
-        private void GetPurchasesCallback(IDictionary<string, object> result)
+        private void GetPurchasesCallback(IDictionary<string, object> result, long operationTimestamp)
         {
+            if (operationTimestamp != m_Timestamp)
+                return;
+
             if (!m_UnityConnect.isUserLoggedIn)
             {
                 OnOperationError(new UIError(UIErrorCode.AssetStoreOperationError, L10n.Tr("User not logged in.")));
@@ -146,6 +157,20 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             m_Result.AppendPurchases(result);
+
+            if (m_OriginalQueryArgs.limit > k_QueryLimit && m_IsInProgress)
+            {
+                var numAssetsToFetch = (int)m_Result.total - m_OriginalQueryArgs.startIndex;
+                var numAlreadyFetched = m_Result.list.Count;
+                var newLimit = Math.Min(k_QueryLimit, Math.Min(numAssetsToFetch, m_OriginalQueryArgs.limit) - numAlreadyFetched);
+                if (newLimit > 0)
+                {
+                    m_AdjustedQueryArgs.startIndex = m_OriginalQueryArgs.startIndex + m_Result.list.Count;
+                    m_AdjustedQueryArgs.limit = newLimit;
+                    m_AssetStoreRestAPI.GetPurchases(QueryToString(m_AdjustedQueryArgs), (result) => GetPurchasesCallback(result, operationTimestamp), OnOperationError);
+                    return;
+                }
+            }
 
             onOperationSuccess?.Invoke(this);
             FinalizedOperation();

@@ -29,6 +29,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 new PackageDetails.UxmlFactory(),
                 new PackageTagLabel.UxmlFactory(),
                 new PackageList.UxmlFactory(),
+                new PackageListView.UxmlFactory(),
+                new PackageListScrollView.UxmlFactory(),
                 new PackageLoadBar.UxmlFactory(),
                 new PackageManagerToolbar.UxmlFactory(),
                 new PackageSampleList.UxmlFactory(),

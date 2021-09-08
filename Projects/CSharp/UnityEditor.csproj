@@ -4927,6 +4927,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreCache.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreCache.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreCallQueue.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreCallQueue.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreClient.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreClient.cs</Link>
     </Compile>
@@ -5227,6 +5230,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\InProgressView.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\InProgressView.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageListView.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageListView.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerExtension.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Interfaces\IPackageManagerExtension.cs</Link>
     </Compile>
@@ -5259,6 +5265,12 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageList.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageList.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageListScrollView.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageListScrollView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageListView.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageListView.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageLoadBar.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageLoadBar.cs</Link>

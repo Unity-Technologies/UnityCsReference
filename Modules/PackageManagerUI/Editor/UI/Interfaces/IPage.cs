@@ -7,13 +7,22 @@ using System.Collections.Generic;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
+    internal struct ListUpdateArgs
+    {
+        public IPage page;
+        public IEnumerable<IPackage> added;
+        public IEnumerable<IPackage> updated;
+        public IEnumerable<IPackage> removed;
+        public bool reorder;
+    }
+
     internal interface IPage
     {
         event Action<IPackageVersion> onSelectionChanged;
         // triggered when the state of the UI item is updated (expanded, hidden, see all versions toggled)
         event Action<IEnumerable<VisualState>> onVisualStateChange;
         // triggered when packages are added/updated or removed
-        event Action<IPage, IEnumerable<IPackage>, IEnumerable<IPackage>, bool> onListUpdate;
+        event Action<ListUpdateArgs> onListUpdate;
         event Action<IPage> onListRebuild;
         PageFilters filters { get; }
         PackageFilterTab tab { get; }
@@ -43,6 +52,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         void SetSelected(IPackage package, IPackageVersion version = null);
         void SetSelected(string packageUniqueId, string versionUniqueId);
+        void TriggerOnSelectionChanged();
         void SetExpanded(string packageUniqueId, bool value);
         void SetExpanded(IPackage package, bool value);
         void SetSeeAllVersions(string packageUniqueId, bool value);
