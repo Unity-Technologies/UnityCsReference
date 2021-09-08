@@ -12,7 +12,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal class PackageItem : VisualElement, ISelectableItem
     {
         // Note that the height here is only the height of the main item (i.e, version list is not expanded)
-        internal const float k_MainItemHeight = 25.0f;
+        internal const int k_MainItemHeight = 25;
         private const string k_SelectedClassName = "selected";
         private const string k_ExpandedClassName = "expanded";
 
@@ -23,9 +23,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public IPackageVersion targetVersion { get { return package?.versions.primary; } }
         public VisualElement element { get { return this; } }
-
-        [NonSerialized]
-        private bool m_FetchingDetail;
 
         internal PackageGroup packageGroup { get; set; }
 
@@ -51,7 +48,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SettingsProxy = settingsProxy;
         }
 
-        public PackageItem(ResourceLoader resourceLoader, PageManager pageManager, PackageManagerProjectSettingsProxy settingsProxy, IPackage package, VisualState state)
+        public PackageItem(ResourceLoader resourceLoader, PageManager pageManager, PackageManagerProjectSettingsProxy settingsProxy)
         {
             ResolveDependencies(resourceLoader, pageManager, settingsProxy);
 
@@ -64,18 +61,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             arrowExpander.RegisterValueChangedCallback(ToggleExpansion);
 
             UpdateExpanderUI(false);
-
-            SetPackage(package);
-            UpdateVisualState(state);
         }
 
-        public void BecomesVisible()
+        public void SetPackageAndVisualState(IPackage package, VisualState state)
         {
-            if (m_FetchingDetail || !(package is PlaceholderPackage) || !package.Is(PackageType.AssetStore))
-                return;
-
-            m_FetchingDetail = true;
-            m_PageManager.FetchDetail(package, () => { m_FetchingDetail = false; });
+            SetPackage(package);
+            UpdateVisualState(state);
         }
 
         public void UpdateVisualState(VisualState newVisualState)
@@ -104,21 +95,16 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         internal void SetPackage(IPackage package)
         {
-            m_FetchingDetail = false;
-
             var displayVersion = package?.versions.primary;
             if (displayVersion == null)
                 return;
 
-            // changing the package assigned to an item is not supported
-            if (this.package != null && this.package.uniqueId != package.uniqueId)
-                return;
-
+            var oldPackage = this.package;
             var oldDisplayVersion = this.package?.versions.primary;
             this.package = package;
 
-            // if the package gets updated while it's selected, we need to do some special handling
-            if (!string.IsNullOrEmpty(visualState?.selectedVersionId))
+            // if the same package gets updated while it's selected, we need to do some special handling
+            if (oldPackage?.uniqueId == package?.uniqueId && !string.IsNullOrEmpty(visualState?.selectedVersionId))
             {
                 // if the primary version was selected but there is a new primary version
                 // select the new primary version to keep the main item selected
@@ -131,12 +117,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             versionLabel.text = displayVersion.versionString;
             versionLabel.ShowTextTooltipOnSizeChange();
 
-            var expandable = !package.Is(PackageType.BuiltIn);
+            var expandable = !package.Is(PackageType.BuiltIn | PackageType.AssetStore);
             UIUtils.SetElementDisplay(arrowExpander, expandable);
-            UIUtils.SetElementDisplay(versionLabel, expandable);
             UIUtils.SetElementDisplay(expanderHidden, !expandable);
             if (!expandable && UIUtils.IsElementVisible(versionsContainer))
                 UpdateExpanderUI(false);
+
+            var showVersionLabel = !package.Is(PackageType.BuiltIn);
+            UIUtils.SetElementDisplay(versionLabel, showVersionLabel);
 
             var showVersionList = !displayVersion.HasTag(PackageTag.BuiltIn) && !string.IsNullOrEmpty(package.displayName);
             UIUtils.SetElementDisplay(versionList, showVersionList);

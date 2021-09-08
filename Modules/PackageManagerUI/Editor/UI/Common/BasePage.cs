@@ -15,7 +15,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public event Action<IPackageVersion> onSelectionChanged = delegate {};
         public event Action<IEnumerable<VisualState>> onVisualStateChange = delegate {};
-        public event Action<IPage, IEnumerable<IPackage>, IEnumerable<IPackage>, bool> onListUpdate = delegate {};
+        public event Action<ListUpdateArgs> onListUpdate = delegate {};
         public event Action<IPage> onListRebuild = delegate {};
 
         // keep track of a list of selected items by remembering the uniqueIds
@@ -89,9 +89,17 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public abstract void Rebuild();
 
-        protected void TriggerOnListUpdate(IEnumerable<IPackage> addOrUpdateList, IEnumerable<IPackage> removeList, bool reorder)
+        protected void TriggerOnListUpdate(IEnumerable<IPackage> added, IEnumerable<IPackage> updated = null, IEnumerable<IPackage> removed = null)
         {
-            onListUpdate?.Invoke(this, addOrUpdateList, removeList, reorder);
+            var args = new ListUpdateArgs
+            {
+                page = this,
+                added = added ?? Enumerable.Empty<IPackage>(),
+                updated = updated ?? Enumerable.Empty<IPackage>(),
+                removed = removed ?? Enumerable.Empty<IPackage>()
+            };
+            args.reorder = capability.supportLocalReordering && (args.added.Any() || args.updated.Any());
+            onListUpdate?.Invoke(args);
         }
 
         protected void TriggerOnListRebuild()
@@ -102,6 +110,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected void TriggerOnVisualStateChange(IEnumerable<VisualState> visualStates)
         {
             onVisualStateChange?.Invoke(visualStates);
+        }
+
+        public virtual void TriggerOnSelectionChanged()
+        {
+            TriggerOnSelectionChanged(GetSelectedVersion());
         }
 
         protected void TriggerOnSelectionChanged(IPackageVersion version)
@@ -160,7 +173,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_SelectedUniqueIds.Add(packageUniqueId);
                 }
             }
-            TriggerOnSelectionChanged(GetSelectedVersion());
+            TriggerOnSelectionChanged();
             TriggerOnVisualStateChange(new[] { GetVisualState(oldPackageUniqueId), GetVisualState(packageUniqueId) }.Where(s => s != null));
         }
 

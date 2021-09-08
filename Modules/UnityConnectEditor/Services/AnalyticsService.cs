@@ -24,7 +24,7 @@ namespace UnityEditor.Connect
         public override Notification.Topic notificationTopic => Notification.Topic.AnalyticsService;
         public override string packageName { get; }
         public override string serviceFlagName { get; }
-        public override bool shouldEnableOnProjectCreation => true;
+        public override bool shouldEnableOnProjectCreation => false;
         public override bool shouldSyncOnProjectRebind => true;
 
         static readonly AnalyticsService k_Instance;

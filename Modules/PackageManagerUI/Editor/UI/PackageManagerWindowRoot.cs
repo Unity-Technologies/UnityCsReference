@@ -120,7 +120,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (!m_ApplicationProxy.isBatchMode)
                     Debug.Log(L10n.Tr("[Package Manager Window] UPM server is not running. Please check that your Editor was not launched with '-noUpm' command line option."));
 
-                packageList.HidePackagesShowMessage(false, false, L10n.Tr("UPM server is not running"));
+                packageList.HideListShowMessage(false, false, L10n.Tr("UPM server is not running"));
                 packageStatusbar.DisableRefresh();
                 packageManagerToolbar.SetEnabled(false);
                 return;

@@ -29,7 +29,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual event Action<IPackageVersion> onSelectionChanged = delegate {};
         public virtual event Action<IEnumerable<VisualState>> onVisualStateChange = delegate {};
-        public virtual event Action<IPage, IEnumerable<IPackage>, IEnumerable<IPackage>, bool> onListUpdate = delegate {};
+        public virtual event Action<ListUpdateArgs> onListUpdate = delegate {};
         public virtual event Action<IPage> onListRebuild = delegate {};
 
         public virtual event Action onRefreshOperationStart = delegate {};
@@ -272,9 +272,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             onVisualStateChange?.Invoke(visualStates);
         }
 
-        private void TriggerOnPageUpdate(IPage page, IEnumerable<IPackage> addedOrUpdated, IEnumerable<IPackage> removed, bool reorder)
+        private void TriggerOnPageUpdate(ListUpdateArgs args)
         {
-            onListUpdate?.Invoke(page, addedOrUpdated, removed, reorder);
+            onListUpdate?.Invoke(args);
         }
 
         private void TriggerOnPageRebuild(IPage page)
@@ -311,6 +311,46 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             GetPageFromTab().SetSelected(package, version);
             SelectInInspector(package, version, forceSelectInInspector);
+        }
+
+        // Returns true if selection is updated after this call, otherwise returns false
+        public virtual bool UpdateSelectionIfCurrentSelectionIsInvalid()
+        {
+            var page = GetCurrentPage();
+            var selectedVisualState = page.GetSelectedVisualState();
+
+            // Re-select the primary version of a package if the previous selected version could not be found anymore (while the package could still be found)
+            // This could happen when we uninstall a package or when we change from a package with a placeholder versions to a real package with real versions.
+            if (selectedVisualState?.visible == true)
+            {
+                m_PackageDatabase.GetPackageAndVersion(selectedVisualState.packageUniqueId, selectedVisualState.selectedVersionId, out IPackage package, out IPackageVersion version);
+                if (package != null)
+                {
+                    if (version != null)
+                        return false;
+                    SetSelected(package, package?.versions.primary);
+                    return true;
+                }
+            }
+
+            var firstVisible = page.visualStates.FirstOrDefault(v => v.visible && v.packageUniqueId != selectedVisualState?.packageUniqueId);
+            if (firstVisible == null)
+            {
+                if (selectedVisualState == null)
+                    return false;
+                ClearSelection();
+            }
+            else
+            {
+                m_PackageDatabase.GetPackageAndVersion(firstVisible.packageUniqueId, firstVisible.selectedVersionId, out IPackage package, out IPackageVersion version);
+                SetSelected(package, version);
+            }
+            return true;
+        }
+
+        public virtual void TriggerOnSelectionChanged()
+        {
+            GetPageFromTab().TriggerOnSelectionChanged();
         }
 
         private void SelectInInspector(IPackage package, IPackageVersion version, bool forceSelectInInspector)
