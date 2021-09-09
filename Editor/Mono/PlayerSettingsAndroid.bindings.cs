@@ -532,6 +532,14 @@ namespace UnityEditor
 
             // App Bundle size which should cause warning message appear
             internal static extern int appBundleSizeToValidate { get; set; }
+
+            public static extern bool optimizedFramePacing
+            {
+                [NativeMethod("GetAndroidUseSwappy")]
+                get;
+                [NativeMethod("SetAndroidUseSwappy")]
+                set;
+            }
         }
     }
 }

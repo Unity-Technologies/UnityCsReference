@@ -218,6 +218,11 @@ namespace UnityEditor
                 handler = null;
             //Debug.Log ("drawer " + drawer);
 
+            // Special exception for KeywordEnums, as the cache doesn't have a way to
+            // determine whether a KeywordEnum has been changed or not.
+            if (handler != null && handler.propertyDrawer is MaterialKeywordEnumDrawer)
+                return handler;
+
             // Cache the handler and return. Cache even if it was null, so we can return
             // later requests fast as well.
             s_PropertyHandlers[key] = handler;

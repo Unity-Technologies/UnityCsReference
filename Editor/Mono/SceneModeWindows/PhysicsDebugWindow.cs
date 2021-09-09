@@ -33,6 +33,7 @@ namespace UnityEditor
             public static readonly GUIContent triggerColor          = EditorGUIUtility.TrTextContent("Triggers");
             public static readonly GUIContent rigidbodyColor        = EditorGUIUtility.TrTextContent("Rigidbodies");
             public static readonly GUIContent kinematicColor        = EditorGUIUtility.TrTextContent("Kinematic Bodies");
+            public static readonly GUIContent articulationBodyColor = EditorGUIUtility.TrTextContent("Articulation Bodies");
             public static readonly GUIContent sleepingBodyColor     = EditorGUIUtility.TrTextContent("Sleeping Bodies");
             public static readonly GUIContent colorVariaition       = EditorGUIUtility.TrTextContent("Variation");
             public static readonly GUIContent forceOverdraw         = EditorGUIUtility.TrTextContent("Force Overdraw", "Draws Collider geometry on top of render geometry");
@@ -52,6 +53,7 @@ namespace UnityEditor
             public static readonly GUIContent showTriggers          = EditorGUIUtility.TrTextContent("Show Triggers", "Show collision geometry from Colliders that have 'isTrigger' enabled");
             public static readonly GUIContent showRigibodies        = EditorGUIUtility.TrTextContent("Show Rigidbodies", "Show collision geometry from Rigidbodies");
             public static readonly GUIContent showKinematicBodies   = EditorGUIUtility.TrTextContent("Show Kinematic Bodies", "Show collision geometry from Kinematic Rigidbodies");
+            public static readonly GUIContent showArticulationBodies = EditorGUIUtility.TrTextContent("Show Articulation Bodies", "Show collision geometry from Articulation Bodies");
             public static readonly GUIContent showSleepingBodies    = EditorGUIUtility.TrTextContent("Show Sleeping Bodies", "Show collision geometry from Sleeping Rigidbodies");
             public static readonly GUIContent colliderTypes         = EditorGUIUtility.TrTextContent("Collider Types");
             public static readonly GUIContent showBoxCollider       = EditorGUIUtility.TrTextContent("Show BoxColliders", "Show collision geometry that is BoxCollider");
@@ -249,6 +251,10 @@ namespace UnityEditor
             PhysicsVisualizationSettings.SetShowKinematicBodies(EditorGUILayout.Toggle(
                 Style.showKinematicBodies, PhysicsVisualizationSettings.GetShowKinematicBodies()));
 
+            // Articulation Bodies
+            PhysicsVisualizationSettings.SetShowArticulationBodies(EditorGUILayout.Toggle(
+                Style.showArticulationBodies, PhysicsVisualizationSettings.GetShowArticulationBodies()));
+
             // Sleeping Bodies
             PhysicsVisualizationSettings.SetShowSleepingBodies(EditorGUILayout.Toggle(
                 Style.showSleepingBodies, PhysicsVisualizationSettings.GetShowSleepingBodies()));
@@ -316,6 +322,9 @@ namespace UnityEditor
 
                 PhysicsVisualizationSettings.kinematicColor =
                     EditorGUILayout.ColorField(Style.kinematicColor, PhysicsVisualizationSettings.kinematicColor);
+
+                PhysicsVisualizationSettings.articulationBodyColor =
+                    EditorGUILayout.ColorField(Style.articulationBodyColor, PhysicsVisualizationSettings.articulationBodyColor);
 
                 PhysicsVisualizationSettings.sleepingBodyColor =
                     EditorGUILayout.ColorField(Style.sleepingBodyColor, PhysicsVisualizationSettings.sleepingBodyColor);
