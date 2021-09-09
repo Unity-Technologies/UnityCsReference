@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Unity.Collections;
+using Unity.Profiling;
 
 namespace UnityEngine.UIElements.UIR.Implementation
 {
@@ -17,6 +18,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
     internal static class RenderEvents
     {
         private static readonly float VisibilityTreshold = Mathf.Epsilon;
+		static readonly ProfilerMarker k_NudgeVerticesMarker = new ProfilerMarker("UIR.NudgeVertices");
 
         internal static void ProcessOnClippingChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, ref ChainBuilderStats stats)
         {
@@ -875,6 +877,10 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     InjectClosingCommandInBetween(renderChain, cmd, ref cmdPrev, ref cmdNext);
                 }
             }
+			
+			// When we have a closing mesh, we must have an opening mesh. At least we assumed where we decide
+            // whether we must nudge or not: we only test whether the opening mesh is non-null.
+            Debug.Assert(ve.renderChainData.closingData == null || ve.renderChainData.data != null);
 
             var closingInfo = painter.closingInfo;
             painter.Reset();
@@ -1004,6 +1010,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         static bool NudgeVerticesToNewSpace(VisualElement ve, UIRenderDevice device)
         {
+			k_NudgeVerticesMarker.Begin();
+			
             Debug.Assert(!ve.renderChainData.disableNudging);
 
             Matrix4x4 newTransform;
@@ -1030,15 +1038,39 @@ namespace UnityEngine.UIElements.UIR.Implementation
             error += Mathf.Abs(newTransform.m22 - reconstructedNewTransform.m22);
             error += Mathf.Abs(newTransform.m23 - reconstructedNewTransform.m23);
             if (error > kMaxAllowedDeviation)
-                return false;
-
+			{
+				k_NudgeVerticesMarker.End();
+				return false;
+			}
             ve.renderChainData.verticesSpace = newTransform; // This is the new space of the vertices
 
-            int vertCount = (int)ve.renderChainData.data.allocVerts.size;
-            NativeSlice<Vertex> oldVerts = ve.renderChainData.data.allocPage.vertices.cpuData.Slice((int)ve.renderChainData.data.allocVerts.start, vertCount);
-            NativeSlice<Vertex> newVerts;
-            device.Update(ve.renderChainData.data, (uint)vertCount, out newVerts);
+            DoNudgeVertices(ve, device, ve.renderChainData.data, ref nudgeTransform, false);
+            if (ve.renderChainData.closingData != null)
+                DoNudgeVertices(ve, device, ve.renderChainData.closingData, ref nudgeTransform, true);
 
+            k_NudgeVerticesMarker.End();
+            return true;
+        }
+		
+        static void DoNudgeVertices(VisualElement ve, UIRenderDevice device, MeshHandle mesh, ref Matrix4x4 nudgeTransform, bool isClosingMesh)
+        {
+            int vertCount = (int)mesh.allocVerts.size;
+            NativeSlice<Vertex> oldVerts = mesh.allocPage.vertices.cpuData.Slice((int)mesh.allocVerts.start, vertCount);
+            NativeSlice<Vertex> newVerts;
+            device.Update(mesh, (uint)vertCount, out newVerts);
+
+			if (isClosingMesh) // Displacement start/end is not applicable for closing mesh where displacement isn't supported
+            {
+                // Position-only transform loop
+                for (int i = 0; i < vertCount; i++)
+                {
+                    var v = oldVerts[i];
+                    v.position = nudgeTransform.MultiplyPoint3x4(v.position);
+                    newVerts[i] = v;
+                }
+                return;
+            }
+ 
             int vertsBeforeUVDisplacement = ve.renderChainData.displacementUVStart;
             int vertsAfterUVDisplacement = ve.renderChainData.displacementUVEnd;
 
@@ -1066,8 +1098,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 v.position = nudgeTransform.MultiplyPoint3x4(v.position);
                 newVerts[i] = v;
             }
-
-            return true;
         }
 
         static RenderChainCommand InjectMeshDrawCommand(RenderChain renderChain, VisualElement ve, ref RenderChainCommand cmdPrev, ref RenderChainCommand cmdNext, MeshHandle mesh, int indexCount, int indexOffset, Material material, Texture custom, Texture font)

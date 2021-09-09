@@ -6,6 +6,8 @@ using System.Linq;
 using UnityEditor.Rendering;
 using UnityEngine;
 using UnityEngine.Assertions;
+using UnityEngine.Rendering;
+using DebuggerDisplayAttribute = System.Diagnostics.DebuggerDisplayAttribute;
 
 namespace UnityEditor
 {
@@ -54,6 +56,39 @@ namespace UnityEditor
 
             public string SourceCode { get { return ShaderUtil.GetShaderPassSourceCode(SourceShader, SubshaderIndex, m_PassIndex); } }
             public string Name { get { return ShaderUtil.GetShaderPassName(SourceShader, SubshaderIndex, m_PassIndex); } }
+
+            public bool HasShaderStage(ShaderType shaderType)
+            {
+                return ShaderUtil.PassHasShaderStage(SourceShader, SubshaderIndex, m_PassIndex, shaderType);
+            }
+
+            internal static GraphicsTier kNoGraphicsTier = (GraphicsTier)(-1);
+
+            public VariantCompileInfo CompileVariant(ShaderType shaderType, string[] keywords,
+                ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget)
+            {
+                var platformKeywords = ShaderUtil.GetShaderPlatformKeywordsForBuildTarget(shaderCompilerPlatform, buildTarget, kNoGraphicsTier);
+                return ShaderUtil.CompileShaderVariant(SourceShader, SubshaderIndex, m_PassIndex, shaderType, platformKeywords, keywords, shaderCompilerPlatform, buildTarget, kNoGraphicsTier);
+            }
+
+            public VariantCompileInfo CompileVariant(ShaderType shaderType, string[] keywords,
+                ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, GraphicsTier tier)
+            {
+                var platformKeywords = ShaderUtil.GetShaderPlatformKeywordsForBuildTarget(shaderCompilerPlatform, buildTarget, tier);
+                return ShaderUtil.CompileShaderVariant(SourceShader, SubshaderIndex, m_PassIndex, shaderType, platformKeywords, keywords, shaderCompilerPlatform, buildTarget, tier);
+            }
+
+            public VariantCompileInfo CompileVariant(ShaderType shaderType, string[] keywords,
+                ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, BuiltinShaderDefine[] platformKeywords)
+            {
+                return ShaderUtil.CompileShaderVariant(SourceShader, SubshaderIndex, m_PassIndex, shaderType, platformKeywords, keywords, shaderCompilerPlatform, buildTarget, kNoGraphicsTier);
+            }
+
+            public VariantCompileInfo CompileVariant(ShaderType shaderType, string[] keywords,
+                ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, BuiltinShaderDefine[] platformKeywords, GraphicsTier tier)
+            {
+                return ShaderUtil.CompileShaderVariant(SourceShader, SubshaderIndex, m_PassIndex, shaderType, platformKeywords, keywords, shaderCompilerPlatform, buildTarget, tier);
+            }
         }
 
         public int ActiveSubshaderIndex { get { return ShaderUtil.GetShaderActiveSubshaderIndex(SourceShader); } }
@@ -89,6 +124,56 @@ namespace UnityEditor
 
             return new Subshader(this, index);
         }
+
+        //
+        // Experimental reflection information and raw compiled data access.  Used for Tiny shader export.
+        //
+        public struct VariantCompileInfo
+        {
+            public bool Success;
+            public ShaderMessage[] Messages;
+
+            public byte[] ShaderData;
+
+            public VertexAttribute[] Attributes;
+            public ConstantBufferInfo[] ConstantBuffers;
+            public TextureBindingInfo[] TextureBindings;
+        }
+
+        [DebuggerDisplay("cbuffer {Name} ({Size} bytes)")]
+        public struct ConstantBufferInfo
+        {
+            public string Name;
+            public int Size;
+            public ConstantInfo[] Fields;
+        }
+
+        [DebuggerDisplay("{ConstantType} {Name} ({DataType} {Columns}x{Rows})")]
+        public struct ConstantInfo
+        {
+            public string Name;
+            public int Index;
+            public ShaderConstantType ConstantType;
+            public ShaderParamType DataType;
+            public int Rows;
+            public int Columns;
+            public int ArraySize;
+
+            // only relevant if ConstantType == Struct
+            public int StructSize;
+            public ConstantInfo[] StructFields;
+        }
+
+        [DebuggerDisplay("{Dim} {Name}")]
+        public struct TextureBindingInfo
+        {
+            public string Name;
+            public int Index;
+            public int SamplerIndex;
+            public bool Multisampled;
+            public int ArraySize;
+            public TextureDimension Dim;
+        }
     }
 
     public partial class ShaderUtil
@@ -105,6 +190,8 @@ namespace UnityEditor
             var errors = GetShaderMessages(shader);
             return errors.Any(x => x.severity == ShaderCompilerMessageSeverity.Error);
         }
+
+        internal static extern bool PassHasShaderStage(Shader s, int subshaderIndex, int passIndex, ShaderType shaderType);
 
         internal static bool MaterialsUseInstancingShader(SerializedProperty materialsArray)
         {

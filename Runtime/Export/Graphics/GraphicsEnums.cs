@@ -913,6 +913,25 @@ namespace UnityEngine.Rendering
         BlendIndices,
     }
 
+    // Keep in sync with ShaderParamType, GfxDeviceTypes.h
+    public enum ShaderParamType
+    {
+        Float = 0,
+        Int,
+        Bool,
+        Half,
+        Short,
+        UInt,
+    }
+
+    // Keep in sync with ShaderConstantType, ShaderUtil.bindings.h
+    public enum ShaderConstantType
+    {
+        Vector = 0,
+        Matrix,
+        Struct,
+    }
+
     // Match Camera::OpaqueSortMode on C++ side
     public enum OpaqueSortMode
     {
@@ -1875,6 +1894,13 @@ namespace UnityEngine.Rendering
         LegacyJobified = 3,
         NativeGraphicsJobs = 4,
         NativeGraphicsJobsWithoutRenderThread = 5,
+    }
+    public enum CameraLateLatchMatrixType
+    {
+        View = 0,
+        InverseView = 1,
+        ViewProjection = 2,
+        InverseViewProjection = 3,
     }
 
     public enum OpenGLESVersion

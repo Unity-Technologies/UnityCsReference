@@ -915,9 +915,10 @@ namespace UnityEditor
 
                 EditorGUIUtility.QueueGameViewInputEvent(Event.current);
 
-                // Do not use mouse UP event if mousepos is outside game view rect (fix for case 380995: Gameview tab's context menu is not appearing on right click)
+                // Do not use mouse or touch events if mousepos is outside game view rect (fix for case 380995: Gameview tab's context menu is not appearing on right click)
                 // Placed after event queueing above to ensure scripts can react on mouse up events.
-                bool useEvent = !(Event.current.rawType == EventType.MouseUp && !mousePosInGameViewRect);
+                bool isKey = Event.current.rawType == EventType.KeyDown || Event.current.rawType == EventType.KeyUp;
+                bool useEvent = mousePosInGameViewRect || isKey;
 
                 // Don't use command events, or they won't be sent to other views.
                 if (type == EventType.ExecuteCommand || type == EventType.ValidateCommand)

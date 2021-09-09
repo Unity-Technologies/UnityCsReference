@@ -102,6 +102,8 @@ namespace UnityEditor
             return ModuleMetadata.GetModuleIncludeSettingForObject(target) == ModuleIncludeSetting.ForceExclude;
         }
 
+        private static Dictionary<Type, ObsoleteAttribute> s_ObsoleteTypes;
+
         public static void DisplayDeprecationMessageIfNecessary(Editor editor)
         {
             if (!editor || !editor.target)
@@ -109,13 +111,23 @@ namespace UnityEditor
                 return;
             }
 
-            var obsoleteAttribute = (ObsoleteAttribute)Attribute.GetCustomAttribute(editor.target.GetType(), typeof(ObsoleteAttribute));
-            if (obsoleteAttribute == null)
+            if (s_ObsoleteTypes == null)
+            {
+                var obsoleteTypes = TypeCache.GetTypesWithAttribute<ObsoleteAttribute>();
+                s_ObsoleteTypes = new Dictionary<Type, ObsoleteAttribute>(obsoleteTypes.Count);
+                foreach (var type in obsoleteTypes)
+                {
+                    var attr = (ObsoleteAttribute)Attribute.GetCustomAttribute(type, typeof(ObsoleteAttribute));
+                    s_ObsoleteTypes[type] = attr;
+                }
+            }
+
+            if (!s_ObsoleteTypes.TryGetValue(editor.target.GetType(), out var obsoleteAttribute))
             {
                 return;
             }
 
-            string message = String.IsNullOrEmpty(obsoleteAttribute.Message) ? "This component has been marked as obsolete." : obsoleteAttribute.Message;
+            var message = string.IsNullOrEmpty(obsoleteAttribute.Message) ? "This component has been marked as obsolete." : obsoleteAttribute.Message;
             EditorGUILayout.HelpBox(message, obsoleteAttribute.IsError ? MessageType.Error : MessageType.Warning);
         }
 

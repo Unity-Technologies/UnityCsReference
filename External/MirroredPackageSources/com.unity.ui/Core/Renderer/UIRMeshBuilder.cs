@@ -40,10 +40,10 @@ namespace UnityEngine.UIElements.UIR
 
         internal static void MakeTexturedRect(MeshGenerationContextUtils.RectangleParams rectParams, float posZ, AllocMeshData meshAlloc)
         {
-            if (rectParams.leftSlice <= Mathf.Epsilon &&
-                rectParams.topSlice <= Mathf.Epsilon &&
-                rectParams.rightSlice <= Mathf.Epsilon &&
-                rectParams.bottomSlice <= Mathf.Epsilon)
+            if (rectParams.leftSlice <= UIRUtility.k_Epsilon &&
+                rectParams.topSlice <= UIRUtility.k_Epsilon &&
+                rectParams.rightSlice <= UIRUtility.k_Epsilon &&
+                rectParams.bottomSlice <= UIRUtility.k_Epsilon)
             {
                 if (!rectParams.HasRadius(Tessellation.kEpsilon))
                     MakeQuad(rectParams.rect, rectParams.uv, rectParams.color, posZ, meshAlloc);
@@ -331,10 +331,10 @@ namespace UnityEngine.UIElements.UIR
                 };
             }
 
-            if (rectParams.leftSlice <= Mathf.Epsilon &&
-                rectParams.topSlice <= Mathf.Epsilon &&
-                rectParams.rightSlice <= Mathf.Epsilon &&
-                rectParams.bottomSlice <= Mathf.Epsilon)
+            if (rectParams.leftSlice <= UIRUtility.k_Epsilon &&
+                rectParams.topSlice <= UIRUtility.k_Epsilon &&
+                rectParams.rightSlice <= UIRUtility.k_Epsilon &&
+                rectParams.bottomSlice <= UIRUtility.k_Epsilon)
             {
                 MeshBuilder.MakeVectorGraphicsStretchBackground(vertices, vi.indices, vi.size.x, vi.size.y, rectParams.rect, rectParams.uv, rectParams.scaleMode, rectParams.color, settingIndexOffset, meshAlloc, out finalVertexCount, out finalIndexCount);
             }

@@ -647,7 +647,7 @@ namespace UnityEngine.UIElements
             e.deltaPosition = touch.deltaPosition;
             e.deltaTime = touch.deltaTime;
             e.clickCount = touch.tapCount;
-            e.pressure = Mathf.Abs(touch.maximumPossiblePressure) > Mathf.Epsilon ? touch.pressure / touch.maximumPossiblePressure : 1f;
+            e.pressure = Mathf.Abs(touch.maximumPossiblePressure) > UIRUtility.k_Epsilon ? touch.pressure / touch.maximumPossiblePressure : 1f;
             e.tangentialPressure = 0;
 
             e.altitudeAngle = touch.altitudeAngle;

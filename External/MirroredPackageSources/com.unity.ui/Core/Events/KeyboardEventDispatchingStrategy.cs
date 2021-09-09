@@ -4,7 +4,7 @@ namespace UnityEngine.UIElements
     {
         public bool CanDispatchEvent(EventBase evt)
         {
-            return evt is IKeyboardEvent;
+            return (evt is IKeyboardEvent);
         }
 
         public void DispatchEvent(EventBase evt, IPanel panel)

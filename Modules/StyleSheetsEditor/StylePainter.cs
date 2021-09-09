@@ -16,6 +16,8 @@ namespace UnityEditor.StyleSheets
 
         static Dictionary<StyleState, StyleState[]> s_StatesCache = new Dictionary<StyleState, StyleState[]>();
 
+        private static Rect s_ToolTipRect = Rect.zero;
+
         internal static bool DrawStyle(GUIStyle gs, Rect position, GUIContent content, DrawStates states)
         {
             if (Highlighter.IsSearchingForIdentifier())
@@ -298,7 +300,12 @@ namespace UnityEditor.StyleSheets
 
                 // Handle tooltip and hovering region
                 if (!String.IsNullOrEmpty(content.tooltip) && contentRect.Contains(Event.current.mousePosition))
-                    GUIStyle.SetMouseTooltip(content.tooltip, contentRect);
+                {
+                    if (!GUIStyle.IsTooltipActive(content.tooltip))
+                        s_ToolTipRect = new Rect(Event.current.mousePosition, Vector2.zero);
+
+                    GUIStyle.SetMouseTooltip(content.tooltip, s_ToolTipRect);
+                }
             }
 
             // Draw border

@@ -108,12 +108,21 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// Calls the methods in its invocation list when <see cref="isReadOnly"/> changes.
+        /// </summary>
+        protected event Action<bool> onIsReadOnlyChanged;
+
+        /// <summary>
         /// Returns true if the field is read only.
         /// </summary>
         public bool isReadOnly
         {
             get { return m_TextInputBase.isReadOnly; }
-            set { m_TextInputBase.isReadOnly = value; }
+            set
+            {
+                m_TextInputBase.isReadOnly = value;
+                onIsReadOnlyChanged?.Invoke(value);
+            }
         }
 
         // Password field (indirectly lossy behaviour when activated via multiline)
@@ -433,6 +442,13 @@ namespace UnityEngine.UIElements
                 get { return TouchScreenKeyboard.isSupported && !TouchScreenKeyboard.isInPlaceEditingAllowed; }
             }
 
+            private bool m_TouchScreenTextFieldInitialized;
+            private bool touchScreenTextFieldChanged
+            {
+                get { return m_TouchScreenTextFieldInitialized != touchScreenTextField; }
+            }
+
+            private IVisualElementScheduledItem m_HardwareKeyboardPoller = null;
 
             Color m_SelectionColor = Color.clear;
             Color m_CursorColor = Color.grey;
@@ -490,7 +506,20 @@ namespace UnityEngine.UIElements
                 editorEngine = new TextEditorEngine(OnDetectFocusChange, OnCursorIndexChange);
                 editorEngine.style.richText = false;
 
-                if (touchScreenTextField)
+                InitTextEditorEventHandler();
+
+                // Make the editor style unique across all textfields
+                editorEngine.style = new GUIStyle(editorEngine.style);
+
+                RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
+                RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+                this.generateVisualContent += OnGenerateVisualContent;
+            }
+
+            private void InitTextEditorEventHandler()
+            {
+                 m_TouchScreenTextFieldInitialized = touchScreenTextField;
+                if (m_TouchScreenTextFieldInitialized)
                 {
                     editorEventHandler = new TouchScreenTextEditorEventHandler(editorEngine, this);
                 }
@@ -502,13 +531,6 @@ namespace UnityEngine.UIElements
 
                     editorEventHandler = new KeyboardTextEditorEventHandler(editorEngine, this);
                 }
-
-                // Make the editor style unique across all textfields
-                editorEngine.style = new GUIStyle(editorEngine.style);
-
-                RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
-                RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
-                this.generateVisualContent += OnGenerateVisualContent;
             }
 
             DropdownMenuAction.Status CutCopyActionStatus(DropdownMenuAction a)
@@ -591,7 +613,7 @@ namespace UnityEngine.UIElements
                     drawText = "".PadRight(text.Length, maskChar);
                 }
 
-                if (touchScreenTextField)
+                if (m_TouchScreenTextFieldInitialized)
                 {
                     var touchScreenEditor = editorEventHandler as TouchScreenTextEditorEventHandler;
                     if (touchScreenEditor != null)
@@ -851,6 +873,34 @@ namespace UnityEngine.UIElements
                 else if (evt.eventTypeId == FocusInEvent.TypeId())
                 {
                     SaveValueAndText();
+
+                    // When this input field receives focus, make sure the correct text editor is initialized
+                    // (i.e. hardware keyboard or touchscreen keyboard).
+                    if (touchScreenTextFieldChanged)
+                        InitTextEditorEventHandler();
+
+                    // When focused and the keyboard availability changes, make sure the correct text editor is
+                    // initialized under these new conditions and un-focus this input field.
+                    if (m_HardwareKeyboardPoller == null)
+                    {
+                        m_HardwareKeyboardPoller = schedule.Execute(() =>
+                        {
+                            if (touchScreenTextFieldChanged)
+                            {
+                                InitTextEditorEventHandler();
+                                Blur();
+                            }
+                        }).Every(250);
+                    }
+                    else
+                    {
+                        m_HardwareKeyboardPoller.Resume();
+                    }
+                }
+                else if (evt.eventTypeId == FocusOutEvent.TypeId())
+                {
+                    if (m_HardwareKeyboardPoller != null)
+                        m_HardwareKeyboardPoller.Pause();
                 }
                 else if (evt.eventTypeId == KeyDownEvent.TypeId())
                 {

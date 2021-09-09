@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEditor.Media;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -35,6 +37,15 @@ namespace UnityEditorInternal.Media
         public bool GetNextFrame(Texture2D tex, out MediaTime time)
         {
             return Internal_MediaDecoder_GetNextFrame(m_Ptr, tex, out time);
+        }
+
+        public int GetNextSamples(ushort trackIndex, NativeArray<float> interleavedSamples)
+        {
+            unsafe
+            {
+                return Internal_MediaDecoder_GetNextSamples(
+                    m_Ptr, trackIndex, interleavedSamples.GetUnsafePtr(), interleavedSamples.Length);
+            }
         }
 
         public bool SetPosition(MediaTime time)
@@ -89,6 +100,9 @@ namespace UnityEditorInternal.Media
 
         [FreeFunction]
         extern private static bool Internal_MediaDecoder_GetNextFrame(IntPtr decoder, [NotNull("NullExceptionObject")] Texture2D texture, out MediaTime time);
+
+        [FreeFunction]
+        unsafe extern private static int Internal_MediaDecoder_GetNextSamples(IntPtr decoder, ushort trackIndex, void* buffer, int sampleCount);
 
         [FreeFunction]
         extern private static bool Internal_MediaDecoder_SetPosition(IntPtr decoder, MediaTime time);
