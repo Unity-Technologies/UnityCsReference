@@ -783,7 +783,9 @@ namespace UnityEditor
             EditorGUIUtility.labelWidth = 0f;
 
             // fix for case 1245429 where we sometimes get a rounding issue when converting between gamma and linear, which causes us to break the slider
-            float value = Mathf.Clamp(prop.floatValue, prop.rangeLimits.x, prop.rangeLimits.y);
+            // we need to check if the range is inverted before clamping (case 1351151)
+            bool invert = prop.rangeLimits.x > prop.rangeLimits.y;
+            float value = Mathf.Clamp(prop.floatValue, invert ? prop.rangeLimits.y : prop.rangeLimits.x, invert ? prop.rangeLimits.x : prop.rangeLimits.y);
 
             float newValue = EditorGUI.PowerSlider(position, label, value, prop.rangeLimits.x, prop.rangeLimits.y, power);
             EditorGUI.showMixedValue = false;

@@ -648,6 +648,8 @@ namespace UnityEngine.UIElements
 
         void OnPointerCaptureOut(PointerCaptureOutEvent evt)
         {
+            ReleaseScrolling(evt.pointerId, evt.target);
+
             if (m_CapturedTarget == null)
                 return;
 
@@ -682,7 +684,7 @@ namespace UnityEngine.UIElements
 
         private int m_ScrollingPointerId = PointerId.invalidPointerId;
         private const float k_VelocityLerpTimeFactor = 10;
-        private const float k_ScrollThresholdSquared = 25;
+        internal const float ScrollThresholdSquared = 25;
         private Vector2 m_StartPosition;
         private Vector2 m_PointerStartPosition;
         private Vector2 m_Velocity;
@@ -958,7 +960,7 @@ namespace UnityEngine.UIElements
             }
 
             Vector2 position = evt.position;
-            if (!m_StartedMoving && (position - m_PointerStartPosition).sqrMagnitude < k_ScrollThresholdSquared)
+            if (!m_StartedMoving && (position - m_PointerStartPosition).sqrMagnitude < ScrollThresholdSquared)
                 return;
 
             m_StartedMoving = true;
@@ -1025,15 +1027,16 @@ namespace UnityEngine.UIElements
 
         void OnPointerCancel(PointerCancelEvent evt)
         {
-            if (evt.target == contentContainer)
-            {
-                ReleaseScrolling(evt);
-            }
+            ReleaseScrolling(evt.pointerId, evt.target);
         }
 
         void OnPointerUp(PointerUpEvent evt)
         {
-            ReleaseScrolling(evt);
+            if (ReleaseScrolling(evt.pointerId, evt.target))
+            {
+                contentContainer.panel.PreventCompatibilityMouseEvents(evt.pointerId);
+                evt.StopPropagation();
+            }
         }
 
         void CancelTargetAndCapturePointer<T>(T evt) where T : PointerEventBase<T>, new()
@@ -1053,10 +1056,14 @@ namespace UnityEngine.UIElements
             evt.StopPropagation();
         }
 
-        void ReleaseScrolling<T>(T evt) where T : PointerEventBase<T>, new()
+        bool ReleaseScrolling(int pointerId, IEventHandler target)
         {
-            if (evt.pointerId != m_ScrollingPointerId)
-                return;
+            if (pointerId != m_ScrollingPointerId)
+                return false;
+
+            m_ScrollingPointerId = PointerId.invalidPointerId;
+            if (target != contentContainer || !contentContainer.HasPointerCapture(pointerId))
+                return false;
 
             if (touchScrollBehavior == TouchScrollBehavior.Elastic || hasInertia)
             {
@@ -1072,8 +1079,8 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            contentContainer.ReleasePointer(evt.pointerId);
-            m_ScrollingPointerId = PointerId.invalidPointerId;
+            contentContainer.ReleasePointer(pointerId);
+            return true;
         }
 
         void UpdateScrollers(bool displayHorizontal, bool displayVertical)
