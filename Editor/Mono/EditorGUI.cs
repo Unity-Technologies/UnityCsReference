@@ -2839,7 +2839,7 @@ namespace UnityEditor
 
                 Object targetObject = property.serializedObject.targetObject;
 
-                var shouldDisplayPrefabContextMenuItems = property.prefabOverride;
+                var shouldDisplayPrefabContextMenuItems = property.prefabOverride || (linkedProperty?.prefabOverride ?? false);
 
                 // Only display the custom apply/revert menu for GameObjects/Components that are not part of a Prefab instance & variant.
                 var shouldDisplayApplyRevertProviderContextMenuItems = targetObject is IApplyRevertPropertyContextMenuItemProvider

@@ -237,7 +237,7 @@ namespace UnityEditor
                 RenderSettings.ambientLight = ambientColor;
 
                 RenderSettings.defaultReflectionMode = UnityEngine.Rendering.DefaultReflectionMode.Custom;
-                RenderSettings.customReflection = defaultEnvTexture as Cubemap;
+                RenderSettings.customReflectionTexture = defaultEnvTexture;
             }
 
             InitPreview(r);
@@ -272,7 +272,7 @@ namespace UnityEditor
                     // Most preview windows just want the light probe from the main scene so by default we copy it here. It can then be overridden if user wants.
                     RenderSettings.ambientProbe = oldProbe;
                     RenderSettings.defaultReflectionMode = UnityEngine.Rendering.DefaultReflectionMode.Custom;
-                    RenderSettings.customReflection = defaultEnvTexture as Cubemap;
+                    RenderSettings.customReflectionTexture = defaultEnvTexture;
                 }
             }
         }

@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.U2D;
 using UnityEngine.Bindings;
+using System;
 
 namespace UnityEditor.U2D
 {
@@ -27,6 +28,11 @@ namespace UnityEditor.U2D
 
         public static void PackAtlases(SpriteAtlas[] atlases, BuildTarget target, bool canCancel = true)
         {
+            if (atlases == null)
+                throw new ArgumentNullException("atlases", "Value for parameter atlases is null");
+            foreach (var atlas in atlases)
+                if (atlas == null)
+                    throw new ArgumentNullException("atlases", "One of the elements in atlases is null. Please check your Inputs.");
             PackAtlasesInternal(atlases, target, canCancel, false, true);
         }
     }

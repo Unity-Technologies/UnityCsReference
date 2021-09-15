@@ -211,6 +211,16 @@ namespace UnityEditor.UIElements.Bindings
             }
         }
 
+        internal static void RegisterRightClickMenu(Foldout field, SerializedProperty property)
+        {
+            var toggle = field.Q<Toggle>(className: Foldout.toggleUssClassName);
+            if (toggle != null)
+            {
+                toggle.userData = property.Copy();
+                toggle.RegisterCallback<MouseUpEvent>(RightClickFieldMenuEvent, InvokePolicy.IncludeDisabled);
+            }
+        }
+
         internal static void UnregisterRightClickMenu<TValue>(BaseField<TValue> field)
         {
             var fieldLabelElement = field.Q<Label>(className: BaseField<TValue>.labelUssClassName);
@@ -222,23 +232,23 @@ namespace UnityEditor.UIElements.Bindings
             if (evt.button != (int)MouseButton.RightMouse)
                 return;
 
-            var label = evt.target as Label;
-            if (label == null)
+            var element = evt.target as VisualElement;
+            if (element == null)
                 return;
 
-            var property = label.userData as SerializedProperty;
+            var property = element.userData as SerializedProperty;
             if (property == null)
                 return;
 
             var wasEnabled = GUI.enabled;
-            if (!label.enabledInHierarchy)
+            if (!element.enabledInHierarchy)
                 GUI.enabled = false;
 
             var menu = EditorGUI.FillPropertyContextMenu(property);
             GUI.enabled = wasEnabled;
 
-            var menuPosition = new Vector2(label.layout.xMin, label.layout.height);
-            menuPosition = label.LocalToWorld(menuPosition);
+            var menuPosition = new Vector2(element.layout.xMin, element.layout.height);
+            menuPosition = element.LocalToWorld(menuPosition);
             var menuRect = new Rect(menuPosition, Vector2.zero);
             menu.DropDown(menuRect);
 

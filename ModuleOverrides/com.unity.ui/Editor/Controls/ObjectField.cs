@@ -167,6 +167,14 @@ namespace UnityEditor.UIElements
                     OnDragLeave();
             }
 
+            internal override void ExecuteDefaultActionDisabledAtTarget(EventBase evt)
+            {
+                base.ExecuteDefaultActionDisabledAtTarget(evt);
+
+                if ((evt as MouseDownEvent)?.button == (int)MouseButton.LeftMouse)
+                    OnMouseDown(evt as MouseDownEvent);
+            }
+
             private void OnDragLeave()
             {
                 // Make sure we've cleared the accept drop look, whether we we in a drop operation or not.

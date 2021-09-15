@@ -29,7 +29,7 @@ namespace Unity.UI.Builder
 
         void RetrieveEditorExtensionModeSetting()
         {
-            if (m_RootElementAsset.HasAttribute(k_EditorExtensionModeAttributeName))
+            if (m_RootElementAsset != null && m_RootElementAsset.HasAttribute(k_EditorExtensionModeAttributeName))
                 m_EditorExtensionMode = Convert.ToBoolean(m_RootElementAsset.GetAttributeValue(k_EditorExtensionModeAttributeName));
             else
                 editorExtensionMode = BuilderProjectSettings.enableEditorExtensionModeByDefault;

@@ -5,6 +5,10 @@ namespace Unity.UI.Builder
 {
     internal static class BuilderDialogsUtility
     {
+        public static bool preventDialogsFromOpening { get; set; }
+
+        private static bool cannotOpenDialogs => Application.isBatchMode || preventDialogsFromOpening;
+
         public static bool DisplayDialog(string title, string message)
         {
             return DisplayDialog(title, message, BuilderConstants.DialogOkOption);
@@ -17,7 +21,7 @@ namespace Unity.UI.Builder
 
         public static bool DisplayDialog(string title, string message, string ok, string cancel)
         {
-            if (Application.isBatchMode)
+            if (cannotOpenDialogs)
                 return true;
 
             return EditorUtility.DisplayDialog(title, message, ok, cancel);
@@ -25,7 +29,7 @@ namespace Unity.UI.Builder
 
         public static int DisplayDialogComplex(string title, string message, string ok, string cancel, string alt)
         {
-            if (Application.isBatchMode)
+            if (cannotOpenDialogs)
                 return 0;
 
             return EditorUtility.DisplayDialogComplex(title, message, ok, cancel, alt);
@@ -33,7 +37,7 @@ namespace Unity.UI.Builder
 
         public static string DisplayOpenFileDialog(string title, string directory, string extension)
         {
-            if (Application.isBatchMode)
+            if (cannotOpenDialogs)
                 return null;
 
             if (string.IsNullOrEmpty(directory))
@@ -55,7 +59,7 @@ namespace Unity.UI.Builder
 
         public static string DisplaySaveFileDialog(string title, string directory, string defaultName, string extension)
         {
-            if (Application.isBatchMode)
+            if (cannotOpenDialogs)
                 return null;
 
             if (string.IsNullOrEmpty(directory))

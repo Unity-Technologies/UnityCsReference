@@ -1648,6 +1648,10 @@ namespace UnityEditor.UIElements.Bindings
             {
                 BindingsStyleHelpers.RegisterRightClickMenu(bf, property);
             }
+            else if (field is Foldout foldout)
+            {
+                BindingsStyleHelpers.RegisterRightClickMenu(foldout, property);
+            }
 
             Update();
 

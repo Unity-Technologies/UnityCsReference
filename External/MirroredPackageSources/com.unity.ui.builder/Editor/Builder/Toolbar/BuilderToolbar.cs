@@ -197,7 +197,7 @@ namespace Unity.UI.Builder
             return newFileName;
         }
 
-        public void OnAssetChange() {}
+        public void OnAssetChange() { }
 
         public AssetDeleteResult OnWillDeleteAsset(string assetPath, RemoveAssetOptions option)
         {
@@ -319,7 +319,7 @@ namespace Unity.UI.Builder
                 BuilderConstants.UIBuilderPackagePath +
                 "/SampleDocument/BuilderSampleCanvas.uxml";
             var originalAsset = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(testAsset);
-            LoadDocument(originalAsset);
+            LoadDocument(originalAsset, testAsset);
         }
 
         void NewTestVariablesDocument()
@@ -331,7 +331,7 @@ namespace Unity.UI.Builder
                 BuilderConstants.UIBuilderPackagePath +
                 "/SampleDocument/BuilderVariableSampleCanvas.uxml";
             var originalAsset = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(testAsset);
-            LoadDocument(originalAsset);
+            LoadDocument(originalAsset, testAsset);
         }
 
         internal void SaveDocument(bool isSaveAs)
@@ -373,16 +373,21 @@ namespace Unity.UI.Builder
 
         public bool ReloadDocument()
         {
-            return LoadDocument(null, false);
+            return LoadDocument(document.visualTreeAsset, false);
         }
 
-        public bool LoadDocument(VisualTreeAsset visualTreeAsset, bool unloadAllSubdocuments = true, bool assetModifiedExternally = false)
+        public bool LoadDocument(VisualTreeAsset visualTreeAsset, string assetPath)
         {
-            if (!document.CheckForUnsavedChanges(assetModifiedExternally))
+            return LoadDocument(visualTreeAsset, true, false, assetPath);
+        }
+
+        public bool LoadDocument(VisualTreeAsset visualTreeAsset, bool unloadAllSubdocuments = true, bool assetModifiedExternally = false, string assetPath = null)
+        {
+            if (!BuilderAssetUtilities.ValidateAsset(visualTreeAsset, assetPath))
                 return false;
 
-            if (visualTreeAsset == null)
-                visualTreeAsset = document.visualTreeAsset;
+            if (!document.CheckForUnsavedChanges(assetModifiedExternally))
+                return false;
 
             if (unloadAllSubdocuments)
                 document.GoToRootDocument(m_Viewport.documentRootElement, m_PaneWindow);
@@ -456,13 +461,8 @@ namespace Unity.UI.Builder
                 }
 
                 var asset = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(path);
-                if (asset == null)
-                {
-                    Debug.LogError(BuilderConstants.ToolbarSelectedAssetIsInvalidMessage);
-                    return;
-                }
 
-                LoadDocument(asset);
+                LoadDocument(asset, false, false, path);
             });
 
             m_FileMenu.menu.AppendSeparator();
@@ -787,7 +787,7 @@ namespace Unity.UI.Builder
             projectSettingsWindow.SelectProviderByName(BuilderSettingsProvider.name);
         }
 
-        public void SelectionChanged() {}
+        public void SelectionChanged() { }
 
         public void HierarchyChanged(VisualElement element, BuilderHierarchyChangeType changeType)
         {

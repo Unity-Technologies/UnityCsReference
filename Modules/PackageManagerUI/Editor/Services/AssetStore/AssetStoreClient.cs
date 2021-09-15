@@ -118,14 +118,17 @@ namespace UnityEditor.PackageManager.UI.Internal
             fetchOperation.onOperationSuccess += op =>
             {
                 var purchaseInfo = fetchOperation.result.list.FirstOrDefault();
-                if (purchaseInfo != null)
+                // If we can't find the purchase info the first time, it could be be that the asset is hidden
+                // we'll do another check
+                if (!hidden && purchaseInfo == null)
                 {
-                    m_AssetStoreCache.SetPurchaseInfo(purchaseInfo);
-                    FetchInternal(productId, purchaseInfo);
-                }
-                // might be that the asset is hidden, do another check
-                else if (!hidden)
                     StartFetchOperation(productId, true);
+                    return;
+                }
+
+                if (purchaseInfo != null)
+                    m_AssetStoreCache.SetPurchaseInfo(purchaseInfo);
+                FetchInternal(productId, purchaseInfo);
             };
             fetchOperation.Start(queryArgs);
         }

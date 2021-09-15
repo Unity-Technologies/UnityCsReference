@@ -233,11 +233,19 @@ namespace UnityEngine.Rendering
 
         public void DispatchCompute(ComputeShader computeShader, int kernelIndex, ComputeBuffer indirectBuffer, uint argsOffset)
         {
+            // currently only metal has special case for compute and indirect arguments buffers
+            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Metal && !SystemInfo.supportsIndirectArgumentsBuffer)
+                throw new InvalidOperationException("Indirect argument buffers are not supported.");
+
             Internal_DispatchComputeIndirect(computeShader, kernelIndex, indirectBuffer, argsOffset);
         }
 
         public void DispatchCompute(ComputeShader computeShader, int kernelIndex, GraphicsBuffer indirectBuffer, uint argsOffset)
         {
+            // currently only metal has special case for compute and indirect arguments buffers
+            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Metal && !SystemInfo.supportsIndirectArgumentsBuffer)
+                throw new InvalidOperationException("Indirect argument buffers are not supported.");
+
             Internal_DispatchComputeIndirectGraphicsBuffer(computeShader, kernelIndex, indirectBuffer, argsOffset);
         }
 
@@ -538,6 +546,8 @@ namespace UnityEngine.Rendering
 
         public void DrawProceduralIndirect(Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, ComputeBuffer bufferWithArgs, int argsOffset, MaterialPropertyBlock properties)
         {
+            if (!SystemInfo.supportsIndirectArgumentsBuffer)
+                throw new InvalidOperationException("Indirect argument buffers are not supported.");
             if (material == null)
                 throw new ArgumentNullException("material");
             if (bufferWithArgs == null)
@@ -560,6 +570,8 @@ namespace UnityEngine.Rendering
 
         public void DrawProceduralIndirect(GraphicsBuffer indexBuffer, Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, ComputeBuffer bufferWithArgs, int argsOffset, MaterialPropertyBlock properties)
         {
+            if (!SystemInfo.supportsIndirectArgumentsBuffer)
+                throw new InvalidOperationException("Indirect argument buffers are not supported.");
             if (indexBuffer == null)
                 throw new ArgumentNullException("indexBuffer");
             if (material == null)
@@ -581,6 +593,8 @@ namespace UnityEngine.Rendering
 
         public void DrawProceduralIndirect(Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, GraphicsBuffer bufferWithArgs, int argsOffset, MaterialPropertyBlock properties)
         {
+            if (!SystemInfo.supportsIndirectArgumentsBuffer)
+                throw new InvalidOperationException("Indirect argument buffers are not supported.");
             if (material == null)
                 throw new ArgumentNullException("material");
             if (bufferWithArgs == null)
@@ -603,6 +617,8 @@ namespace UnityEngine.Rendering
 
         public void DrawProceduralIndirect(GraphicsBuffer indexBuffer, Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, GraphicsBuffer bufferWithArgs, int argsOffset, MaterialPropertyBlock properties)
         {
+            if (!SystemInfo.supportsIndirectArgumentsBuffer)
+                throw new InvalidOperationException("Indirect argument buffers are not supported.");
             if (indexBuffer == null)
                 throw new ArgumentNullException("indexBuffer");
             if (material == null)
@@ -676,6 +692,8 @@ namespace UnityEngine.Rendering
         {
             if (!SystemInfo.supportsInstancing)
                 throw new InvalidOperationException("Instancing is not supported.");
+            if (!SystemInfo.supportsIndirectArgumentsBuffer)
+                throw new InvalidOperationException("Indirect argument buffers are not supported.");
             if (mesh == null)
                 throw new ArgumentNullException("mesh");
             if (submeshIndex < 0 || submeshIndex >= mesh.subMeshCount)
@@ -701,6 +719,8 @@ namespace UnityEngine.Rendering
         {
             if (!SystemInfo.supportsInstancing)
                 throw new InvalidOperationException("Instancing is not supported.");
+            if (!SystemInfo.supportsIndirectArgumentsBuffer)
+                throw new InvalidOperationException("Indirect argument buffers are not supported.");
             if (mesh == null)
                 throw new ArgumentNullException("mesh");
             if (submeshIndex < 0 || submeshIndex >= mesh.subMeshCount)

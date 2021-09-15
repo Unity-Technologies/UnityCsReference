@@ -6,6 +6,8 @@ using System;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using UnityEngine.Internal;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace UnityEngine
 {
@@ -105,15 +107,6 @@ namespace UnityEngine
         }
 
         public static event Action<ReflectionProbe, ReflectionProbeEvent> reflectionProbeChanged;
-
-        //temporarly disable "event is never used" warning as that is the point...
-#pragma warning disable 67
-        [Obsolete("ReflectionProbe.defaultReflectionSet has been deprecated. Use ReflectionProbe.defaultReflectionTexture. (UnityUpgradable) -> UnityEngine.ReflectionProbe.defaultReflectionTexture", true)]
-        public static event Action<Cubemap> defaultReflectionSet;
-#pragma warning restore 67
-
-        public static event Action<Texture> defaultReflectionTexture;
-
         [UnityEngine.Scripting.RequiredByNativeCode]
         private static void CallReflectionProbeEvent(ReflectionProbe probe, ReflectionProbeEvent probeEvent)
         {
@@ -122,11 +115,69 @@ namespace UnityEngine
                 callback(probe, probeEvent);
         }
 
+        // This is a temporary solution for the deprecation of defaultReflectionSet (in favor of defaultReflectionTexture)
+        // As this is a breaking API change, we hook callback registering to the old event and also invoke them when invoking the new event.
+        // This will make sure we invoke both the old and the new event handlers
+        // To be removed once we fully deprecate/remove defaultReflectionSet
+        static Dictionary<int, Action<Texture>> registeredDefaultReflectionSetActions = new Dictionary<int, Action<Texture>>();
+        static List<Action<Texture>> registeredDefaultReflectionTextureActions = new List<Action<Texture>>();
+
+        [Obsolete("ReflectionProbe.defaultReflectionSet has been deprecated. Use ReflectionProbe.defaultReflectionTexture. (UnityUpgradable) -> UnityEngine.ReflectionProbe.defaultReflectionTexture", false)]
+        public static event Action<Cubemap> defaultReflectionSet
+        {
+            add
+            {
+                // Avoids the same handler being added to old/new event.
+                // This assumes we'll not have multiple threads trying to register for the event concurrently; if that may hapen then we need to protect this (lock(registeredDefaultReflectionTextureActions) { ... })
+                if (registeredDefaultReflectionTextureActions.Any(h => h.Method == value.Method))
+                {
+                    return;
+                }
+                // Every time someone registers for listening for OldEvent we have an allocation.
+                Action<Texture> f = (b) =>
+                {
+                    if (b is Cubemap d)
+                        value(d);
+                };
+
+                defaultReflectionTexture += f;
+
+                // This assumes we'll not have multiple threads trying to register for the event concurrently; if that may hapen then we need to protect this assignment (lock(registeredDefaultReflectionSetActions) { ... })
+                registeredDefaultReflectionSetActions[value.Method.GetHashCode()] = f;
+            }
+
+            remove
+            {
+                if (registeredDefaultReflectionSetActions.TryGetValue(value.Method.GetHashCode(), out var f))
+                {
+                    defaultReflectionTexture -= f;
+                    registeredDefaultReflectionSetActions.Remove(value.Method.GetHashCode());
+                }
+            }
+        }
+        public static event Action<Texture> defaultReflectionTexture
+        {
+            add
+            {
+                // Avoids the same handler being added to old/new event.
+                if (registeredDefaultReflectionTextureActions.Any(h => h.Method == value.Method)
+                    || registeredDefaultReflectionSetActions.ContainsKey(value.Method.GetHashCode()))
+                {
+                    return;
+                }
+
+                registeredDefaultReflectionTextureActions.Add(value);
+            }
+
+            remove
+            {
+                registeredDefaultReflectionTextureActions.Remove(value);
+            }
+        }
         [UnityEngine.Scripting.RequiredByNativeCode]
         private static void CallSetDefaultReflection(Texture defaultReflectionCubemap)
         {
-            var callback = defaultReflectionTexture;
-            if (callback != null)
+            foreach (var callback in registeredDefaultReflectionTextureActions)
                 callback(defaultReflectionCubemap);
         }
     }

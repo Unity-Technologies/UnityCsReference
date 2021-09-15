@@ -13,10 +13,14 @@ namespace Unity.UI.Builder
             paneWindow.document.UpdateActiveStyleSheet(selection, styleSheet, null);
         }
 
-        public static void AddUSSToAsset(BuilderPaneWindow paneWindow, string ussPath)
+        public static bool AddUSSToAsset(BuilderPaneWindow paneWindow, string ussPath)
         {
-            BuilderAssetUtilities.AddStyleSheetToAsset(paneWindow.document, ussPath);
-            paneWindow.OnEnableAfterAllSerialization();
+            bool added = BuilderAssetUtilities.AddStyleSheetToAsset(paneWindow.document, ussPath);
+          
+            if (added)
+                paneWindow.OnEnableAfterAllSerialization();
+
+            return added;
         }
 
         public static bool CreateNewUSSAsset(BuilderPaneWindow paneWindow)
@@ -25,18 +29,16 @@ namespace Unity.UI.Builder
             if (string.IsNullOrEmpty(ussPath))
                 return false;
 
-            CreateNewUSSAsset(paneWindow, ussPath);
-
-            return true;
+            return CreateNewUSSAsset(paneWindow, ussPath);
         }
 
-        public static void CreateNewUSSAsset(BuilderPaneWindow paneWindow, string ussPath)
+        public static bool CreateNewUSSAsset(BuilderPaneWindow paneWindow, string ussPath)
         {
             // Create the file. Can be empty.
             File.WriteAllText(ussPath, string.Empty);
             AssetDatabase.Refresh();
 
-            AddUSSToAsset(paneWindow, ussPath);
+            return AddUSSToAsset(paneWindow, ussPath);
         }
 
         public static bool AddExistingUSSToAsset(BuilderPaneWindow paneWindow)
@@ -45,8 +47,7 @@ namespace Unity.UI.Builder
             if (string.IsNullOrEmpty(ussPath))
                 return false;
 
-            AddUSSToAsset(paneWindow, ussPath);
-            return true;
+            return AddUSSToAsset(paneWindow, ussPath);
         }
 
         public static void RemoveUSSFromAsset(BuilderPaneWindow paneWindow, BuilderSelection selection, VisualElement clickedElement)

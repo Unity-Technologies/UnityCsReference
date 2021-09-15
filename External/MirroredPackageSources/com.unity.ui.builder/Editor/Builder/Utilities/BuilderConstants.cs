@@ -269,7 +269,8 @@ namespace Unity.UI.Builder
         public static readonly string ToolbarCannotLoadUxmlOutsideProjectMessage = "UI Builder: Cannot load .uxml files outside the Project.";
         public static readonly string ToolbarSelectedAssetIsInvalidMessage = "UI Builder: The asset selected was not a valid UXML asset.";
         public static readonly string ToolbarUnsavedFileSuffix = "*";
-        public static readonly string ToolbarUnsavedFileDisplayMessage = "<unsaved file>" + ToolbarUnsavedFileSuffix;
+        public static readonly string ToolbarUnsavedFileDisplayText = "<unsaved file>";
+        public static readonly string ToolbarUnsavedFileDisplayMessage = ToolbarUnsavedFileDisplayText + ToolbarUnsavedFileSuffix;
 
         //
         // Undo/Redo

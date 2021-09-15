@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using uei = UnityEngine.Internal;
+using GraphicsDeviceType = UnityEngine.Rendering.GraphicsDeviceType;
 
 namespace UnityEngine
 {
@@ -92,6 +93,10 @@ namespace UnityEngine
             if (argsBuffer == null) throw new ArgumentNullException("argsBuffer");
             if (argsBuffer.m_Ptr == IntPtr.Zero) throw new System.ObjectDisposedException("argsBuffer");
 
+            // currently only metal has special case for compute and indirect arguments buffers
+            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Metal && !SystemInfo.supportsIndirectArgumentsBuffer)
+                throw new InvalidOperationException("Indirect argument buffers are not supported.");
+
             Internal_DispatchIndirect(kernelIndex, argsBuffer, argsOffset);
         }
 
@@ -105,6 +110,10 @@ namespace UnityEngine
         {
             if (argsBuffer == null) throw new ArgumentNullException("argsBuffer");
             if (argsBuffer.m_Ptr == IntPtr.Zero) throw new System.ObjectDisposedException("argsBuffer");
+
+            // currently only metal has special case for compute and indirect arguments buffers
+            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Metal && !SystemInfo.supportsIndirectArgumentsBuffer)
+                throw new InvalidOperationException("Indirect argument buffers are not supported.");
 
             Internal_DispatchIndirectGraphicsBuffer(kernelIndex, argsBuffer, argsOffset);
         }

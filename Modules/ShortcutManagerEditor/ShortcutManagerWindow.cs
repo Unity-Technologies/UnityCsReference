@@ -35,7 +35,8 @@ namespace UnityEditor.ShortcutManagement
     {
         NotBound = 0,
         BoundGlobally = 1,
-        BoundToContext = 2
+        BoundToContext = 2,
+        BoundMixed = 3
     }
 
     enum SearchOption

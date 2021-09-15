@@ -5,6 +5,7 @@ using UnityEditor;
 using UnityEditor.UIElements.Debugger;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
 {
@@ -85,7 +86,18 @@ namespace Unity.UI.Builder
 
                         if (!editorExtensionMode && propValue.sheet.IsUnityEditorStyleSheet())
                             continue;
-                        if ((compatibleTypes == null || compatibleTypes.Contains(propValue.handle.valueType)) && !varName.StartsWith("--unity-theme") && !names.Contains(varName))
+
+                        var valueType = propValue.handle.valueType;
+
+                        // If the value of the style property is a color name (red, black, ...) then threat it as a color and not an enum
+                        if (propValue.handle.valueType == StyleValueType.Enum)
+                        {
+                            var colorName = propValue.sheet.ReadAsString(propValue.handle);
+                            if (StyleSheetColor.TryGetColor(colorName.ToLower(), out var color))
+                                valueType = StyleValueType.Color;
+                        }
+
+                        if ((compatibleTypes == null || compatibleTypes.Contains(valueType)) && !varName.StartsWith("--unity-theme") && !names.Contains(varName))
                         {
                             names.Add(varName);
                             string descr = null;

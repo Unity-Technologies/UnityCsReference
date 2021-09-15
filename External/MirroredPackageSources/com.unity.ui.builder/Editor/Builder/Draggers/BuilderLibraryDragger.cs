@@ -118,6 +118,12 @@ namespace Unity.UI.Builder
                 return;
             }
 
+            if (item.makeElementAssetCallback != null && m_DragPreviewElement is TemplateContainer tempContainer)
+            {
+                if (!BuilderAssetUtilities.ValidateAsset(item.sourceAsset, item.sourceAssetPath))
+                    return;
+            }
+
             destination.RemoveMinSizeSpecialElement();
 
             // Determine if it applies and use Absolute Island insertion.

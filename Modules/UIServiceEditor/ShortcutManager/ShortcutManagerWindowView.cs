@@ -387,8 +387,8 @@ namespace UnityEditor.ShortcutManagement
         {
             var container = root.Q("legendContainer");
 
-            var labels = new[] { L10n.Tr("Unassigned Key"), L10n.Tr("Assigned Key"), L10n.Tr("Global Key") };
-            var classes = new[] { "unassigned", "contextuallyBound", "global" };
+            var labels = new[] { L10n.Tr("Unassigned Key"), L10n.Tr("Assigned Key"), L10n.Tr("Global Key"), L10n.Tr("Mixed Key") };
+            var classes = new[] { "unassigned", "contextuallyBound", "global", "mixedBound" };
 
             for (var i = 0; i < labels.Length; i++)
             {
@@ -1135,10 +1135,13 @@ namespace UnityEditor.ShortcutManagement
 
             key.RemoveFromClassList("global");
             key.RemoveFromClassList("contextuallyBound");
+            key.RemoveFromClassList("mixedBound");
 
-            if (bindingState == BindingState.BoundGlobally)
+            if (bindingState.HasFlag(BindingState.BoundMixed))
+                key.AddToClassList("mixedBound");
+            else if (bindingState.HasFlag(BindingState.BoundGlobally))
                 key.AddToClassList("global");
-            else if (bindingState == BindingState.BoundToContext)
+            else if (bindingState.HasFlag(BindingState.BoundToContext))
                 key.AddToClassList("contextuallyBound");
         }
 

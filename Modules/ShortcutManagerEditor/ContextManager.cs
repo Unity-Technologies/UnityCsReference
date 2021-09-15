@@ -78,11 +78,6 @@ namespace UnityEditor.ShortcutManagement
                 return false;
             }
 
-            if (context1 == globalContextType)
-                return true;
-            if (context2 == globalContextType)
-                return true;
-
             if (context1.IsAssignableFrom(context2) || context2.IsAssignableFrom(context1))
                 return true;
 

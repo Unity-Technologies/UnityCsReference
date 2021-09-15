@@ -481,6 +481,16 @@ namespace UnityEngine
             get { return GetMaxTextureSize(); }
         }
 
+        public static int maxTexture3DSize
+        {
+            get { return GetMaxTexture3DSize(); }
+        }
+
+        public static int maxTextureArraySlices
+        {
+            get { return GetMaxTextureArraySlices(); }
+        }
+
         public static int maxCubemapSize
         {
             get { return GetMaxCubemapSize(); }
@@ -539,6 +549,11 @@ namespace UnityEngine
         public static int maxComputeWorkGroupSizeZ
         {
             get { return GetMaxComputeWorkGroupSizeZ(); }
+        }
+
+        public static int computeSubGroupSize
+        {
+            get { return GetComputeSubGroupSize(); }
         }
 
         public static bool supportsAsyncCompute
@@ -639,6 +654,11 @@ namespace UnityEngine
         public static bool supportsMultisampleResolveStencil
         {
             get { return SupportsMultisampleResolveStencil(); }
+        }
+
+        public static bool supportsIndirectArgumentsBuffer
+        {
+            get { return SupportsIndirectArgumentsBuffer(); }
         }
 
         [Obsolete("Vertex program support is required in Unity 5.0+")]
@@ -848,6 +868,12 @@ namespace UnityEngine
         [FreeFunction("ScriptingGraphicsCaps::GetMaxTextureSize")]
         static extern int GetMaxTextureSize();
 
+        [FreeFunction("ScriptingGraphicsCaps::GetMaxTexture3DSize")]
+        static extern int GetMaxTexture3DSize();
+
+        [FreeFunction("ScriptingGraphicsCaps::GetMaxTextureArraySlices")]
+        static extern int GetMaxTextureArraySlices();
+
         [FreeFunction("ScriptingGraphicsCaps::GetMaxCubemapSize")]
         static extern int GetMaxCubemapSize();
 
@@ -865,6 +891,9 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::GetMaxComputeWorkGroupSizeZ")]
         static extern int GetMaxComputeWorkGroupSizeZ();
+
+        [FreeFunction("ScriptingGraphicsCaps::GetComputeSubGroupSize")]
+        static extern int GetComputeSubGroupSize();
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsAsyncCompute")]
         static extern bool SupportsAsyncCompute();
@@ -927,5 +956,8 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsMultisampleResolveStencil")]
         static extern bool SupportsMultisampleResolveStencil();
+
+        [FreeFunction("ScriptingGraphicsCaps::SupportsIndirectArgumentsBuffer")]
+        static extern bool SupportsIndirectArgumentsBuffer();
     }
 }

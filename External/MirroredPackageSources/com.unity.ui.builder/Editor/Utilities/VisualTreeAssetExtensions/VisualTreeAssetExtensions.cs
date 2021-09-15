@@ -97,7 +97,7 @@ namespace Unity.UI.Builder
 
         public static VisualElementAsset GetRootUXMLElement(this VisualTreeAsset vta)
         {
-            return vta.visualElementAssets[0];
+            return vta.visualElementAssets.Count > 0 ? vta.visualElementAssets[0] : null;
         }
 
         public static int GetRootUXMLElementId(this VisualTreeAsset vta)

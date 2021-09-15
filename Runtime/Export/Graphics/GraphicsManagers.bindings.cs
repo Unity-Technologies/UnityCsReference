@@ -39,7 +39,21 @@ namespace UnityEngine
         extern public static Light sun { get; set; }
         extern public static Rendering.SphericalHarmonicsL2 ambientProbe { [NativeMethod("GetFinalAmbientProbe")] get; set; }
 
-        extern public static Texture        customReflection            { get; [NativeThrows] set; }
+        [System.Obsolete(@"RenderSettings.customReflection has been deprecated in favor of RenderSettings.customReflectionTexture.", false)]
+        public static Cubemap customReflection
+        {
+            get
+            {
+                if (!(customReflectionTexture is Cubemap cube))
+                {
+                    throw new ArgumentException("RenderSettings.customReflection is currently not referencing a cubemap.");
+                }
+                return cube;
+            }
+            [NativeThrows] set => customReflectionTexture = value;
+        }
+        [NativeProperty("CustomReflection")] extern public static Texture customReflectionTexture { get; [NativeThrows] set; }
+
         extern public static float          reflectionIntensity         { get; set; }
         extern public static int            reflectionBounces           { get; set; }
 

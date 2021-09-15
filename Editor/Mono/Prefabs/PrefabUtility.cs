@@ -1152,24 +1152,32 @@ namespace UnityEditor
         {
             ThrowExceptionIfNotValidPrefabInstanceObject(instanceGameObject, false);
 
+            // Check dependencies
+            string dependentComponents = string.Join(
+                ", ",
+                GetRemovedComponentDependencies(assetComponent, instanceGameObject, OverrideOperation.Revert).Select(e => ObjectNames.GetInspectorTitle(e)).ToArray());
+            if (!string.IsNullOrEmpty(dependentComponents))
+            {
+                string error = String.Format(
+                    L10n.Tr("Can't revert removed component {0} because it depends on {1}."),
+                    ObjectNames.GetInspectorTitle(assetComponent),
+                    dependentComponents);
+                if (action == InteractionMode.UserAction)
+                {
+                    EditorUtility.DisplayDialog(L10n.Tr("Can't revert removed component"), error, L10n.Tr("OK"));
+                }
+                else
+                {
+                    Debug.LogError(error);
+                }
+                return;
+            }
+
             var actionName = "Revert Prefab removed component";
             var prefabInstanceObject = PrefabUtility.GetPrefabInstanceHandle(instanceGameObject);
 
             if (action == InteractionMode.UserAction)
             {
-                string dependentComponents = string.Join(
-                    ", ",
-                    GetRemovedComponentDependencies(assetComponent, instanceGameObject, OverrideOperation.Revert).Select(e => ObjectNames.GetInspectorTitle(e)).ToArray());
-                if (!string.IsNullOrEmpty(dependentComponents))
-                {
-                    string error = String.Format(
-                        L10n.Tr("Can't revert removed component {0} because it depends on {1}."),
-                        ObjectNames.GetInspectorTitle(assetComponent),
-                        dependentComponents);
-                    EditorUtility.DisplayDialog(L10n.Tr("Can't revert removed component"), error, L10n.Tr("OK"));
-                    return;
-                }
-
                 Undo.RegisterCompleteObjectUndo(instanceGameObject, actionName);
             }
 
@@ -1774,8 +1782,10 @@ namespace UnityEditor
 
             ReplacePrefabArgumentCheck(go, assetPath);
 
+            bool connectToInstance = ((replaceOptions & ReplacePrefabOptions.ConnectToPrefab) != 0) && !EditorUtility.IsPersistent(go);
+
             bool success = false;
-            return SavePrefab_Internal(go, assetPath, (replaceOptions & ReplacePrefabOptions.ConnectToPrefab) != 0, out success);
+            return SavePrefab_Internal(go, assetPath, connectToInstance, out success);
         }
 
         // Returns the corresponding object from its immediate source from a connected Prefab,

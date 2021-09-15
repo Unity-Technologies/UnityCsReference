@@ -525,6 +525,8 @@ namespace UnityEngine
         {
             if (!SystemInfo.supportsInstancing)
                 throw new InvalidOperationException("Instancing is not supported.");
+            if (!SystemInfo.supportsIndirectArgumentsBuffer)
+                throw new InvalidOperationException("Indirect argument buffers are not supported.");
             Internal_RenderMeshIndirect(rparams, mesh, commandBuffer, commandCount, startCommand);
         }
 
@@ -553,6 +555,8 @@ namespace UnityEngine
         {
             if (!SystemInfo.supportsInstancing)
                 throw new InvalidOperationException("Instancing is not supported.");
+            if (!SystemInfo.supportsIndirectArgumentsBuffer)
+                throw new InvalidOperationException("Indirect argument buffers are not supported.");
             Internal_RenderPrimitivesIndirect(rparams, topology, commandBuffer, commandCount, startCommand);
         }
 
@@ -560,6 +564,8 @@ namespace UnityEngine
         {
             if (!SystemInfo.supportsInstancing)
                 throw new InvalidOperationException("Instancing is not supported.");
+            if (!SystemInfo.supportsIndirectArgumentsBuffer)
+                throw new InvalidOperationException("Indirect argument buffers are not supported.");
             Internal_RenderPrimitivesIndexedIndirect(rparams, topology, indexBuffer, commandBuffer, commandCount, startCommand);
         }
 
@@ -657,6 +663,8 @@ namespace UnityEngine
         {
             if (!SystemInfo.supportsInstancing)
                 throw new InvalidOperationException("Instancing is not supported.");
+            if (!SystemInfo.supportsIndirectArgumentsBuffer)
+                throw new InvalidOperationException("Indirect argument buffers are not supported.");
             else if (mesh == null)
                 throw new ArgumentNullException("mesh");
             else if (submeshIndex < 0 || submeshIndex >= mesh.subMeshCount)
@@ -675,6 +683,8 @@ namespace UnityEngine
         {
             if (!SystemInfo.supportsInstancing)
                 throw new InvalidOperationException("Instancing is not supported.");
+            if (!SystemInfo.supportsIndirectArgumentsBuffer)
+                throw new InvalidOperationException("Indirect argument buffers are not supported.");
             else if (mesh == null)
                 throw new ArgumentNullException("mesh");
             else if (submeshIndex < 0 || submeshIndex >= mesh.subMeshCount)
@@ -703,6 +713,8 @@ namespace UnityEngine
 
         public static void DrawProceduralIndirectNow(MeshTopology topology, ComputeBuffer bufferWithArgs, int argsOffset = 0)
         {
+            if (!SystemInfo.supportsIndirectArgumentsBuffer)
+                throw new InvalidOperationException("Indirect argument buffers are not supported.");
             if (bufferWithArgs == null)
                 throw new ArgumentNullException("bufferWithArgs");
 
@@ -711,6 +723,8 @@ namespace UnityEngine
 
         public static void DrawProceduralIndirectNow(MeshTopology topology, GraphicsBuffer indexBuffer, ComputeBuffer bufferWithArgs, int argsOffset = 0)
         {
+            if (!SystemInfo.supportsIndirectArgumentsBuffer)
+                throw new InvalidOperationException("Indirect argument buffers are not supported.");
             if (indexBuffer == null)
                 throw new ArgumentNullException("indexBuffer");
             if (bufferWithArgs == null)
@@ -721,6 +735,8 @@ namespace UnityEngine
 
         public static void DrawProceduralIndirectNow(MeshTopology topology, GraphicsBuffer bufferWithArgs, int argsOffset = 0)
         {
+            if (!SystemInfo.supportsIndirectArgumentsBuffer)
+                throw new InvalidOperationException("Indirect argument buffers are not supported.");
             if (bufferWithArgs == null)
                 throw new ArgumentNullException("bufferWithArgs");
 
@@ -729,6 +745,8 @@ namespace UnityEngine
 
         public static void DrawProceduralIndirectNow(MeshTopology topology, GraphicsBuffer indexBuffer, GraphicsBuffer bufferWithArgs, int argsOffset = 0)
         {
+            if (!SystemInfo.supportsIndirectArgumentsBuffer)
+                throw new InvalidOperationException("Indirect argument buffers are not supported.");
             if (indexBuffer == null)
                 throw new ArgumentNullException("indexBuffer");
             if (bufferWithArgs == null)
@@ -751,6 +769,8 @@ namespace UnityEngine
 
         public static void DrawProceduralIndirect(Material material, Bounds bounds, MeshTopology topology, ComputeBuffer bufferWithArgs, int argsOffset = 0, Camera camera = null, MaterialPropertyBlock properties = null, ShadowCastingMode castShadows = ShadowCastingMode.On, bool receiveShadows = true, int layer = 0)
         {
+            if (!SystemInfo.supportsIndirectArgumentsBuffer)
+                throw new InvalidOperationException("Indirect argument buffers are not supported.");
             if (bufferWithArgs == null)
                 throw new ArgumentNullException("bufferWithArgs");
 
@@ -759,6 +779,8 @@ namespace UnityEngine
 
         public static void DrawProceduralIndirect(Material material, Bounds bounds, MeshTopology topology, GraphicsBuffer indexBuffer, ComputeBuffer bufferWithArgs, int argsOffset = 0, Camera camera = null, MaterialPropertyBlock properties = null, ShadowCastingMode castShadows = ShadowCastingMode.On, bool receiveShadows = true, int layer = 0)
         {
+            if (!SystemInfo.supportsIndirectArgumentsBuffer)
+                throw new InvalidOperationException("Indirect argument buffers are not supported.");
             if (indexBuffer == null)
                 throw new ArgumentNullException("indexBuffer");
             if (bufferWithArgs == null)

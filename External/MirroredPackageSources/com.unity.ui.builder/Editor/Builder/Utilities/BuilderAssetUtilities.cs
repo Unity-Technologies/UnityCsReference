@@ -42,23 +42,79 @@ namespace Unity.UI.Builder
             return assetPath == "Resources/unity_builtin_extra";
         }
 
-        public static void AddStyleSheetToAsset(
+        public static bool ValidateAsset(VisualTreeAsset asset, string path)
+        {
+            string errorMessage = null;
+
+            string errorTitle = null;
+            
+            if (asset == null)
+            {
+                if (string.IsNullOrEmpty(path))
+                    path = "<unspecified>";
+
+                if (path.StartsWith("Packages/"))
+                    errorMessage = $"The asset at path {path} is not a UXML Document.\nNote, for assets inside Packages folder, the folder name for the package needs to match the actual official package name (ie. com.example instead of Example).";
+                else
+                    errorMessage = $"The asset at path {path} is not a UXML Document.";
+                errorTitle = "Invalid Asset Type";
+            }
+            else if (asset.importedWithErrors)
+            {
+                if (string.IsNullOrEmpty(path))
+                    path = AssetDatabase.GetAssetPath(asset);
+
+                if (string.IsNullOrEmpty(path))
+                    path = "<unspecified>";
+
+                errorMessage = string.Format(BuilderConstants.InvalidUXMLDialogMessage, path);
+                errorTitle = BuilderConstants.InvalidUXMLDialogTitle;
+            }
+
+            if (errorMessage != null)
+            {
+                BuilderDialogsUtility.DisplayDialog(errorTitle, errorMessage, "Ok");
+                Debug.LogError(errorMessage);
+                return false;
+            }
+
+            return true;
+        }
+
+        public static bool AddStyleSheetToAsset(
             BuilderDocument document, string ussPath)
         {
             var styleSheet = BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(ussPath);
+
+            string errorMessage = null;
+            string errorTitle = null;
+
             if (styleSheet == null)
             {
                 if (ussPath.StartsWith("Packages/"))
-                    BuilderDialogsUtility.DisplayDialog("Invalid Asset Type", $"Asset at path {ussPath} is not a StyleSheet.\nNote, for assets inside Packages folder, the folder name for the package needs to match the actual official package name (ie. com.example instead of Example).");
+                    errorMessage = $"Asset at path {ussPath} is not a StyleSheet.\nNote, for assets inside Packages folder, the folder name for the package needs to match the actual official package name (ie. com.example instead of Example).";
                 else
-                    BuilderDialogsUtility.DisplayDialog("Invalid Asset Type", $"Asset at path {ussPath} is not a StyleSheet.");
-                return;
+                    errorMessage = $"Asset at path {ussPath} is not a StyleSheet.";
+                errorTitle = "Invalid Asset Type";
+            }
+            else if (styleSheet.importedWithErrors)
+            {
+                errorMessage = string.Format(BuilderConstants.InvalidUSSDialogMessage, ussPath);
+                errorTitle = BuilderConstants.InvalidUSSDialogTitle;
+            }
+
+            if (errorMessage != null)
+            {
+                BuilderDialogsUtility.DisplayDialog(errorTitle, errorMessage, "Ok");
+                Debug.LogError(errorMessage);
+                return false;
             }
 
             Undo.RegisterCompleteObjectUndo(
                 document.visualTreeAsset, "Add StyleSheet to UXML");
 
             document.AddStyleSheetToDocument(styleSheet, ussPath);
+            return true;
         }
 
         public static void RemoveStyleSheetFromAsset(
@@ -406,14 +462,14 @@ namespace Unity.UI.Builder
             if (asset == null)
             {
                 if (extension == BuilderConstants.UxmlExtension)
-                    return BuilderConstants.ToolbarUnsavedFileDisplayMessage + extension;
+                    return BuilderConstants.ToolbarUnsavedFileDisplayText + extension;
                 else
                     return string.Empty;
             }
 
             var assetPath = AssetDatabase.GetAssetPath(asset);
             if (string.IsNullOrEmpty(assetPath))
-                return BuilderConstants.ToolbarUnsavedFileDisplayMessage + extension;
+                return BuilderConstants.ToolbarUnsavedFileDisplayText + extension;
 
             return Path.GetFileName(assetPath) + (hasUnsavedChanges ? BuilderConstants.ToolbarUnsavedFileSuffix : "");
         }
@@ -492,7 +548,7 @@ namespace Unity.UI.Builder
             if (!success)
             {
                 Debug.LogError(message);
-                EditorUtility.DisplayDialog("Save - " + path, message, "Ok");
+                BuilderDialogsUtility.DisplayDialog("Save - " + path, message, "Ok");
             }
 
             return success;

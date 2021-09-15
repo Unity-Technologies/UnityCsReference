@@ -738,14 +738,12 @@ namespace UnityEditor.ShortcutManagement
 
             if (foundEntries)
             {
+                var state = BindingState.NotBound;
+
                 foreach (var entry in entries)
-                {
-                    if (IsGlobalContext(entry))
-                    {
-                        return BindingState.BoundGlobally;
-                    }
-                }
-                return BindingState.BoundToContext;
+                    state |= IsGlobalContext(entry) ? BindingState.BoundGlobally : BindingState.BoundToContext;
+
+                return state;
             }
 
             return BindingState.NotBound;

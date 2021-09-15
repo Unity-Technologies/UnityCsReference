@@ -73,6 +73,12 @@ namespace Unity.UI.Builder
             if (newElement == null)
                 return;
 
+            if (item.makeElementAssetCallback != null && newElement is TemplateContainer tempContainer)
+            {
+                if (!BuilderAssetUtilities.ValidateAsset(item.sourceAsset, item.sourceAssetPath))
+                    return;
+            }
+
             var activeVTARootElement = m_DocumentRootElement.Query().Where(e => e.GetVisualTreeAsset() == m_PaneWindow.document.visualTreeAsset).First();
             if (activeVTARootElement == null)
             {

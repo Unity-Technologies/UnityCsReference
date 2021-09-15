@@ -133,6 +133,15 @@ namespace Unity.UI.Builder
                     m_Preview.style.backgroundColor = info.value.sheet.ReadColor(info.value.handle);
                     m_Preview.RemoveFromClassList(BuilderConstants.HiddenStyleClassName);
                 }
+                else if (info.value.handle.valueType == StyleValueType.Enum)
+                {
+                    var colorName = info.value.sheet.ReadAsString(info.value.handle);
+                    if (StyleSheetColor.TryGetColor(colorName.ToLower(), out var color))
+                    {
+                        m_Preview.style.backgroundColor = color;
+                        m_Preview.RemoveFromClassList(BuilderConstants.HiddenStyleClassName);
+                    }
+                }
                 else if (info.value.handle.valueType == StyleValueType.ResourcePath || info.value.handle.valueType == StyleValueType.AssetReference)
                 {
                     var source = new ImageSource();

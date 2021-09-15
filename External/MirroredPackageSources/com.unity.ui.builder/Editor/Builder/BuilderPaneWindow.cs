@@ -171,9 +171,9 @@ namespace Unity.UI.Builder
             // Nothing to do by default.
         }
 
-        public virtual void LoadDocument(VisualTreeAsset asset, bool unloadAllSubdocuments = true)
+        public virtual bool LoadDocument(VisualTreeAsset asset, bool unloadAllSubdocuments = true)
         {
-            // Nothing to do by default.
+            return false;
         }
 
         public virtual bool NewDocument(bool checkForUnsavedChanges = true, bool unloadAllSubdocuments = true)

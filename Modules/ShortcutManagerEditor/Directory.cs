@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Assertions;
 
 namespace UnityEditor.ShortcutManagement
 {
@@ -52,10 +51,19 @@ namespace UnityEditor.ShortcutManagement
         {
             outputShortcuts.Clear();
             List<ShortcutEntry> entries = GetShortcutEntriesForPrimaryKey(combinationSequence);
-            if (entries == null)
-                return;
+
+            if (entries == null) return;
+
             foreach (var entry in entries)
-                if (entry.StartsWith(combinationSequence) && ShortcutEntryMatchesAnyContext(entry.context, context))
+                if (entry.StartsWith(combinationSequence) && ShortcutEntryMatchesAnyContext(entry.context, context)
+                    && entry.context != typeof(ContextManager.GlobalContext))
+                    outputShortcuts.Add(entry);
+
+            if (outputShortcuts.Count > 0) return;
+
+            foreach (var entry in entries)
+                if (entry.StartsWith(combinationSequence) && ShortcutEntryMatchesAnyContext(entry.context, context)
+                    && entry.context == typeof(ContextManager.GlobalContext))
                     outputShortcuts.Add(entry);
         }
 
@@ -63,10 +71,19 @@ namespace UnityEditor.ShortcutManagement
         {
             outputShortcuts.Clear();
             List<ShortcutEntry> entries = GetShortcutEntriesForPrimaryKey(combinationSequence);
-            if (entries == null)
-                return;
+
+            if (entries == null) return;
+
             foreach (var entry in entries)
-                if (entry.StartsWith(combinationSequence) && ShortcutEntrySatisfiesContextManager(contextManager, entry))
+                if (entry.StartsWith(combinationSequence) && ShortcutEntrySatisfiesContextManager(contextManager, entry)
+                    && entry.context != typeof(ContextManager.GlobalContext))
+                    outputShortcuts.Add(entry);
+
+            if (outputShortcuts.Count > 0) return;
+
+            foreach (var entry in entries)
+                if (entry.StartsWith(combinationSequence) && ShortcutEntrySatisfiesContextManager(contextManager, entry)
+                    && entry.context == typeof(ContextManager.GlobalContext))
                     outputShortcuts.Add(entry);
         }
 

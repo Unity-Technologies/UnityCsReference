@@ -4609,6 +4609,9 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UXMLEditorFactories.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\UXMLEditorFactories.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UXMLFactoryPreserver.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\UXMLFactoryPreserver.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UXMLSchemaGenerator.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\UXMLSchemaGenerator.cs</Link>
     </Compile>

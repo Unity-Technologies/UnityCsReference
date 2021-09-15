@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
@@ -83,6 +84,23 @@ namespace UnityEditor
 
             EditorApplication.projectWasLoaded += OnProjectWasLoaded;
             Selection.selectionChanged += OnSelectionChanged;
+            AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
+        }
+
+        private void OnAfterAssemblyReload()
+        {
+            // Case 1348788: After reloading the assemblies after a script compilation,
+            // active editors are not rebuilt automatically. If a custom editor changed
+            // the way it handles multi object editing you won't see the effect in the inspector unless
+            // you change the selection. It is a minor issue. But this call makes sure to rebuild the active
+            // editors if necessary.
+            // Note: This is only a problem when adding the attribute CanEditMultipleObjects. When the attribute is not
+            // there, the editor used for multi editing is the generic inspector. If you add the CanEditMultipleObjects attribute,
+            // a refresh is triggered and we check if the editor instance is still valid, which is the case for the generic inspector
+            // so we don't rebuild it. When removing the CanEditMultipleObjects, the refresh sees that the editor was the custom inspector
+            // but its instance is no longer valid, so it rebuilds the inspector.
+            if (EditorsForMultiEditingChanged())
+                tracker.ForceRebuild();
         }
 
         private void OnProjectWasLoaded()
@@ -127,6 +145,7 @@ namespace UnityEditor
 
             EditorApplication.projectWasLoaded -= OnProjectWasLoaded;
             Selection.selectionChanged -= OnSelectionChanged;
+            AssemblyReloadEvents.afterAssemblyReload -= OnAfterAssemblyReload;
         }
 
         static internal void RepaintAllInspectors()
@@ -437,6 +456,31 @@ namespace UnityEditor
             if (editor == null)
                 return null;
             return editor.targets;
+        }
+
+        private bool EditorsForMultiEditingChanged()
+        {
+            foreach (var editor in tracker.activeEditors)
+            {
+                if (EditorForMultiEditingChanged(editor, editor.target))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static bool EditorForMultiEditingChanged(Editor editor, Object target)
+        {
+            if (editor.targets.Length <= 1)
+                return false;
+
+            var currentEditorType = editor.GetType();
+            var expectedEditorType = CustomEditorAttributes.FindCustomEditorType(target, true);
+
+            // Going from generic to generic inspector for multi editing is correctly handled.
+            if (editor is GenericInspector && expectedEditorType == null)
+                return false;
+            return currentEditorType != expectedEditorType;
         }
     }
 }
