@@ -2872,7 +2872,7 @@ namespace UnityEditor
         }
 
         static ManagedStrippingLevel[] mono_levels = new ManagedStrippingLevel[] { ManagedStrippingLevel.Disabled, ManagedStrippingLevel.Minimal, ManagedStrippingLevel.Low, ManagedStrippingLevel.Medium, ManagedStrippingLevel.High };
-        static ManagedStrippingLevel[] il2cpp_levels = new ManagedStrippingLevel[] { ManagedStrippingLevel.Low, ManagedStrippingLevel.Minimal, ManagedStrippingLevel.Medium, ManagedStrippingLevel.High };
+        static ManagedStrippingLevel[] il2cpp_levels = new ManagedStrippingLevel[] { ManagedStrippingLevel.Minimal, ManagedStrippingLevel.Low, ManagedStrippingLevel.Medium, ManagedStrippingLevel.High };
         // stripping levels vary based on scripting backend
         private ManagedStrippingLevel[] GetAvailableManagedStrippingLevels(ScriptingImplementation backend)
         {

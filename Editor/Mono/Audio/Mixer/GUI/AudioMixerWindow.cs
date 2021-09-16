@@ -136,13 +136,13 @@ namespace UnityEditor
 
         void UpdateAfterAssetChange()
         {
-            if (m_Controller == null)
-                return;
+            if (m_Controller != null)
+            {
+                m_Controller.SanitizeGroupViews();
+                m_Controller.OnUnitySelectionChanged();
+            }
 
             m_AllControllers = FindAllAudioMixerControllers();
-
-            m_Controller.SanitizeGroupViews();
-            m_Controller.OnUnitySelectionChanged();
 
             if (m_GroupTree != null)
                 m_GroupTree.ReloadTreeData();

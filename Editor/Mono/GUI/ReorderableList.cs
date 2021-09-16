@@ -389,7 +389,7 @@ namespace UnityEditorInternal
                     return;
                 }
 
-                EditorGUI.LabelField(rect, EditorGUIUtility.TempContent((element != null) ? element.displayName : listItem.ToString()));
+                EditorGUI.LabelField(rect, EditorGUIUtility.TempContent(element?.displayName ?? listItem?.ToString() ?? "null"));
             }
 
             // draw the default element

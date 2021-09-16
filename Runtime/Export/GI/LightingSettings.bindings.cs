@@ -133,7 +133,12 @@ namespace UnityEngine
         [NativeName("Padding")]
         public extern int lightmapPadding { get; set; }
 
+        // Whether/how baked lightmap textures are compressed.
+        [NativeName("LightmapCompression")]
+        public extern LightmapCompression lightmapCompression { get; set; }
+
         // Whether to use texture compression on the generated lightmaps.
+        [System.Obsolete("Use LightingSettings.lightmapCompression instead.")]
         [NativeName("TextureCompression")]
         public extern bool compressLightmaps { get; set; }
 

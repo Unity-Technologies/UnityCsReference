@@ -209,7 +209,10 @@ namespace UnityEditor
             bool pixelPerfectValue = m_PixelPerfect.boolValue;
 
             EditorGUI.BeginChangeCheck();
-            pixelPerfectValue = EditorGUILayout.Toggle(Styles.pixelPerfectContent, pixelPerfectValue);
+            var rect = EditorGUILayout.GetControlRect();
+            EditorGUI.BeginProperty(rect, Styles.pixelPerfectContent, m_PixelPerfect);
+            pixelPerfectValue = EditorGUI.Toggle(rect, Styles.pixelPerfectContent, pixelPerfectValue);
+            EditorGUI.EndProperty();
 
             if (EditorGUI.EndChangeCheck())
             {
@@ -290,10 +293,11 @@ namespace UnityEditor
                     AllNestedCanvases();
                 }
 
-                int newShaderChannelValue = 0;
                 EditorGUI.BeginChangeCheck();
-                newShaderChannelValue = EditorGUILayout.MaskField(Styles.m_ShaderChannel, m_ShaderChannels.intValue, shaderChannelOptions);
-
+                var rect = EditorGUILayout.GetControlRect();
+                EditorGUI.BeginProperty(rect, Styles.m_ShaderChannel, m_ShaderChannels);
+                var newShaderChannelValue = EditorGUI.MaskField(rect, Styles.m_ShaderChannel, m_ShaderChannels.intValue, shaderChannelOptions);
+                EditorGUI.EndProperty();
 
                 if (EditorGUI.EndChangeCheck())
                     m_ShaderChannels.intValue = newShaderChannelValue;

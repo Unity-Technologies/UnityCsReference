@@ -181,15 +181,12 @@ namespace UnityEditor
         {
             var enumData = EnumDataUtility.GetCachedEnumData(options.GetType());
             var optionValue = EnumDataUtility.EnumFlagsToInt(enumData, options);
-            string buttonText;
-            string[] optionNames;
-            int[] optionMaskValues;
-            int[] selectedOptions;
-            MaskFieldGUI.GetMenuOptions(optionValue, enumData.displayNames, enumData.flagValues, out buttonText, out optionNames, out optionMaskValues, out selectedOptions);
+            MaskFieldGUI.GetMenuOptions(optionValue, enumData.displayNames, enumData.flagValues, out var buttonText, out var buttonTextMixed, out var optionNames, out var optionMaskValues, out var selectedOptions);
 
             var id = EditorGUIUtility.GetControlID("AdvancedDropdown".GetHashCode(), FocusType.Keyboard, rect);
 
-            if (EditorGUI.DropdownButton(id, rect, GUIContent.Temp(buttonText), EditorStyles.popup))
+            var buttonContent = MaskFieldGUI.DoMixedLabel(buttonText, buttonTextMixed, rect, EditorStyles.popup);
+            if (EditorGUI.DropdownButton(id, rect, buttonContent, EditorStyles.popup))
             {
                 s_CurrentControl = id;
                 ResetAndCreateWindow();
@@ -247,15 +244,12 @@ namespace UnityEditor
             for (int i = 0; i < flagValues.Length; ++i)
                 flagValues[i] = (1 << i);
 
-            string buttonText;
-            string[] optionNames;
-            int[] optionMaskValues;
-            int[] selectedOptions;
-            MaskFieldGUI.GetMenuOptions(mask, displayedOptions, flagValues, out buttonText, out optionNames, out optionMaskValues, out selectedOptions);
+            MaskFieldGUI.GetMenuOptions(mask, displayedOptions, flagValues, out var buttonText, out var buttonTextMixed, out var optionNames, out var optionMaskValues, out var selectedOptions);
 
             var id = EditorGUIUtility.GetControlID("AdvancedDropdown".GetHashCode(), FocusType.Keyboard, rect);
 
-            if (EditorGUI.DropdownButton(id, rect, GUIContent.Temp(buttonText), EditorStyles.popup))
+            var buttonContent = MaskFieldGUI.DoMixedLabel(buttonText, buttonTextMixed, rect, EditorStyles.popup);
+            if (EditorGUI.DropdownButton(id, rect, buttonContent, EditorStyles.popup))
             {
                 s_CurrentControl = id;
                 ResetAndCreateWindow();

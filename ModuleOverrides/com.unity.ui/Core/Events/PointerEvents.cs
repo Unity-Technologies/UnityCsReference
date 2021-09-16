@@ -767,7 +767,7 @@ namespace UnityEngine.UIElements
     /// can be cancelled.
     /// Disabled elements won't receive this event by default.
     ///
-    /// See <see cref="PointerEventBase{T}"/> to see how PointerDownEvent relates to other pointer events.
+    /// See <see cref="UIElements.PointerEventBase{T}"/> to see how PointerDownEvent relates to other pointer events.
     /// </remarks>
     public sealed class PointerDownEvent : PointerEventBase<PointerDownEvent>
     {
@@ -829,7 +829,7 @@ namespace UnityEngine.UIElements
     /// can be cancelled.
     /// Disabled elements receive this event by default.
     ///
-    /// See <see cref="PointerEventBase{T}"/> to see how PointerMoveEvent relates to other pointer events.
+    /// See <see cref="UIElements.PointerEventBase{T}"/> to see how PointerMoveEvent relates to other pointer events.
     /// </remarks>
     public sealed class PointerMoveEvent : PointerEventBase<PointerMoveEvent>
     {
@@ -908,7 +908,7 @@ namespace UnityEngine.UIElements
     /// and can be cancelled.
     /// Disabled elements receive this event by default.
     ///
-    /// See <see cref="PointerEventBase{T}"/> to see how PointerStationaryEvent relates to other pointer events.
+    /// See <see cref="UIElements.PointerEventBase{T}"/> to see how PointerStationaryEvent relates to other pointer events.
     /// </remarks>
     public sealed class PointerStationaryEvent : PointerEventBase<PointerStationaryEvent>
     {
@@ -947,7 +947,7 @@ namespace UnityEngine.UIElements
     /// and can be cancelled.
     /// Disabled elements won't receive this event by default.
     ///
-    /// See <see cref="PointerEventBase{T}"/> to see how PointerUpEvent relates to other pointer events.
+    /// See <see cref="UIElements.PointerEventBase{T}"/> to see how PointerUpEvent relates to other pointer events.
     /// </remarks>
     public sealed class PointerUpEvent : PointerEventBase<PointerUpEvent>
     {
@@ -1007,7 +1007,7 @@ namespace UnityEngine.UIElements
     /// A PointerCancelEvent can trickle down or bubble up, but cannot be cancelled.
     /// Disabled elements won't receive this event by default.
     ///
-    /// See <see cref="PointerEventBase{T}"/> to see how PointerCancelEvent relates to other pointer events.
+    /// See <see cref="UIElements.PointerEventBase{T}"/> to see how PointerCancelEvent relates to other pointer events.
     /// </remarks>
     public sealed class PointerCancelEvent : PointerEventBase<PointerCancelEvent>
     {
@@ -1070,7 +1070,7 @@ namespace UnityEngine.UIElements
     /// and can be cancelled.
     /// Disabled elements won't receive this event by default.
     ///
-    /// See <see cref="PointerEventBase{T}"/> to see how ClickEvent relates to other pointer events.
+    /// See <see cref="UIElements.PointerEventBase{T}"/> to see how ClickEvent relates to other pointer events.
     ///
     /// </remarks>
     public sealed class ClickEvent : PointerEventBase<ClickEvent>

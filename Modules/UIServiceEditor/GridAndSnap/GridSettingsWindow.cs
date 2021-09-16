@@ -22,8 +22,10 @@ namespace UnityEditor.Snap
         ButtonStripField m_GridPlane;
         Slider m_GridOpacity;
 
-        void OnEnable()
+        protected override void OnEnable()
         {
+            base.OnEnable();
+
             var mainTemplate = EditorGUIUtility.Load(k_GridSettingsWindowUxmlPath) as VisualTreeAsset;
             mainTemplate.CloneTree(rootVisualElement);
 
@@ -84,7 +86,7 @@ namespace UnityEditor.Snap
             Init(m_SceneView);
         }
 
-        void Init(SceneView sceneView)
+        public void Init(SceneView sceneView)
         {
             m_SceneView = sceneView;
             m_GridOpacity.SetValueWithoutNotify(m_SceneView.sceneViewGrids.gridOpacity);
@@ -92,12 +94,6 @@ namespace UnityEditor.Snap
             SceneViewGrid grid = m_SceneView.sceneViewGrids;
             grid.gridRenderAxisChanged += axis => { m_GridPlane.SetValueWithoutNotify((int)axis); };
             m_GridPlane.SetValueWithoutNotify((int)grid.gridAxis);
-        }
-
-        public static void ShowDropDownAtTrigger(VisualElement trigger, SceneView sceneView)
-        {
-            var w = ShowOverlayPopup<GridSettingsWindow>(trigger, new Vector2(300, 88));
-            w.Init(sceneView);
         }
     }
 }

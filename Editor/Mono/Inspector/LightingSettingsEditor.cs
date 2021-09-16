@@ -67,7 +67,7 @@ namespace UnityEditor
         SerializedProperty m_AOMaxDistance;
         SerializedProperty m_CompAOExponent;
         SerializedProperty m_CompAOExponentDirect;
-        SerializedProperty m_TextureCompression;
+        SerializedProperty m_LightmapCompression;
         SerializedProperty m_FinalGather;
         SerializedProperty m_FinalGatherRayCount;
         SerializedProperty m_FinalGatherFiltering;
@@ -158,6 +158,21 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Mixed lights provide realtime direct lighting. Indirect lighting gets baked into lightmaps and light probes. Shadowmasks and light probes occlusion get generated for baked shadows. ")
             };
 
+            public static readonly int[] lightmapCompressionValues =
+            {
+                (int)LightmapCompression.None,
+                (int)LightmapCompression.LowQuality,
+                (int)LightmapCompression.NormalQuality,
+                (int)LightmapCompression.HighQuality
+            };
+            public static readonly GUIContent[] lightmapCompressionStrings =
+            {
+                EditorGUIUtility.TrTextContent("None"),
+                EditorGUIUtility.TrTextContent("Low Quality"),
+                EditorGUIUtility.TrTextContent("Normal Quality"),
+                EditorGUIUtility.TrTextContent("High Quality")
+            };
+
             public static readonly GUIContent lightmapperNotSupportedWarning = EditorGUIUtility.TrTextContent("This lightmapper is not supported by the current Render Pipeline. The Editor will use ");
             public static readonly GUIContent enlightenLightmapperWarning = EditorGUIUtility.TrTextContent("Use the Progressive Lightmapper for Baked GI in new projects. Use Enlighten Baked GI for backwards compatibility only.");
             public static readonly GUIContent mixedModeNotSupportedWarning = EditorGUIUtility.TrTextContent("The Mixed mode is not supported by the current Render Pipeline. Fallback mode is ");
@@ -188,7 +203,7 @@ namespace UnityEditor
             public static readonly GUIContent lightmapResolution = EditorGUIUtility.TrTextContent("Lightmap Resolution", "Sets the resolution in texels that are used per unit for objects being lit by baked global illumination. Larger values will result in increased time to calculate the baked lighting.");
             public static readonly GUIContent padding = EditorGUIUtility.TrTextContent("Lightmap Padding", "Sets the separation in texels between shapes in the baked lightmap.");
             public static readonly GUIContent lightmapMaxSize = EditorGUIUtility.TrTextContent("Max Lightmap Size", "Sets the max size of the full lightmap Texture in pixels. Values are squared, so a setting of 1024 can produce a 1024x1024 pixel sized lightmap.");
-            public static readonly GUIContent textureCompression = EditorGUIUtility.TrTextContent("Compress Lightmaps", "Controls whether the baked lightmap is compressed or not. When enabled, baked lightmaps are compressed to reduce required storage space but some artifacting may be present due to compression.");
+            public static readonly GUIContent lightmapCompression = EditorGUIUtility.TrTextContent("Lightmap Compression", "Compresses baked lightmaps created using this Lighting Settings Asset. Lower quality compression reduces memory and storage requirements, at the cost of more visual artifacts. Higher quality compression requires more memory and storage, but provides better visual results.");
             public static readonly GUIContent ambientOcclusion = EditorGUIUtility.TrTextContent("Ambient Occlusion", "Specifies whether to include ambient occlusion or not in the baked lightmap result. Enabling this results in simulating the soft shadows that occur in cracks and crevices of objects when light is reflected onto them.");
             public static readonly GUIContent ambientOcclusionContribution = EditorGUIUtility.TrTextContent("Indirect Contribution", "Adjusts the contrast of ambient occlusion applied to indirect lighting. The larger the value, the more contrast is applied to the ambient occlusion for indirect lighting.");
             public static readonly GUIContent ambientOcclusionContributionDirect = EditorGUIUtility.TrTextContent("Direct Contribution", "Adjusts the contrast of ambient occlusion applied to the direct lighting. The larger the value is, the more contrast is applied to the ambient occlusion for direct lighting. This effect is not physically accurate.");
@@ -292,7 +307,7 @@ namespace UnityEditor
                 m_AOMaxDistance = lso.FindProperty("m_AOMaxDistance");
                 m_CompAOExponent = lso.FindProperty("m_CompAOExponent");
                 m_CompAOExponentDirect = lso.FindProperty("m_CompAOExponentDirect");
-                m_TextureCompression = lso.FindProperty("m_TextureCompression");
+                m_LightmapCompression = lso.FindProperty("m_LightmapCompression");
                 m_FinalGather = lso.FindProperty("m_FinalGather");
                 m_FinalGatherRayCount = lso.FindProperty("m_FinalGatherRayCount");
                 m_FinalGatherFiltering = lso.FindProperty("m_FinalGatherFiltering");
@@ -684,7 +699,7 @@ namespace UnityEditor
 
                             EditorGUILayout.IntPopup(m_LightmapMaxSize, Styles.lightmapMaxSizeStrings, Styles.lightmapMaxSizeValues, Styles.lightmapMaxSize);
 
-                            EditorGUILayout.PropertyField(m_TextureCompression, Styles.textureCompression);
+                            EditorGUILayout.IntPopup(m_LightmapCompression, Styles.lightmapCompressionStrings, Styles.lightmapCompressionValues, Styles.lightmapCompression);
 
                             EditorGUILayout.PropertyField(m_AmbientOcclusion, Styles.ambientOcclusion);
                             if (m_AmbientOcclusion.boolValue)

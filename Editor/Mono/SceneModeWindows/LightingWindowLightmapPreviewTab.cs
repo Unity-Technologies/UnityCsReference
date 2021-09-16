@@ -155,9 +155,13 @@ namespace UnityEditor
                     GUILayout.Label("Size: " + texture.width + "x" + texture.height, EditorStyles.miniBoldLabel);
 
                     if (!isRealtimeLightmap)
-                        GUILayout.Label("Format: " + texture.format + (Lightmapping.GetLightingSettingsOrDefaultsFallback().compressLightmaps ? " (compressed)" : " (uncompressed)"), EditorStyles.miniBoldLabel);
+                    {
+                        GUILayout.Label("Format: " + texture.format + (Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapCompression == LightmapCompression.None ? " (uncompressed)" : " (compressed)"), EditorStyles.miniBoldLabel);
+                    }
                     else
+                    {
                         GUILayout.Label("Format: " + texture.format, EditorStyles.miniBoldLabel);
+                    }
 
                     GUILayout.EndVertical();
                     LightmapDebugInfo(i);

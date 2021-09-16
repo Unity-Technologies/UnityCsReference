@@ -4029,10 +4029,7 @@ namespace UnityEditor
 
             int changedFlags;
             bool changedToValue;
-            if (enumType.GetEnumUnderlyingType()  == typeof(uint))
-                return MaskFieldGUI.DoMaskField(position, id, enumValue, enumData.displayNames, enumData.flagValues, style, out changedFlags, out changedToValue, true);
-            else
-                return MaskFieldGUI.DoMaskField(position, id, enumValue, enumData.displayNames, enumData.flagValues, style, out changedFlags, out changedToValue);
+            return MaskFieldGUI.DoMaskField(position, id, enumValue, enumData.displayNames, enumData.flagValues, style, out changedFlags, out changedToValue, enumType.GetEnumUnderlyingType());
         }
 
         public static void ObjectField(Rect position, SerializedProperty property)
@@ -7269,11 +7266,12 @@ namespace UnityEditor
                     case SerializedPropertyType.LayerMask:
                     {
                         TagManager.GetDefinedLayers(ref m_FlagNames, ref m_FlagValues);
-                        var toggleLabel = MaskFieldGUI.GetMaskButtonValue(property.intValue, m_FlagNames, m_FlagValues);
-                        toggleLabel = property.hasMultipleDifferentValues ? "—" : toggleLabel;
+                        MaskFieldGUI.GetMaskButtonValue(property.intValue, m_FlagNames, m_FlagValues, out var toggleLabel, out var toggleLabelMixed);
                         if (label != null)
                             position = PrefixLabel(position, label, EditorStyles.label);
-                        bool toggled = DropdownButton(position, new GUIContent(toggleLabel), FocusType.Keyboard, EditorStyles.layerMaskField);
+
+                        var toggleLabelContent = property.hasMultipleDifferentValues ? mixedValueContent : MaskFieldGUI.DoMixedLabel(toggleLabel, toggleLabelMixed, position, EditorStyles.layerMaskField);
+                        bool toggled = DropdownButton(position, toggleLabelContent, FocusType.Keyboard, EditorStyles.layerMaskField);
                         if (toggled)
                         {
                             PopupWindowWithoutFocus.Show(position, new MaskFieldDropDown(property));
@@ -8287,8 +8285,9 @@ namespace UnityEditor
                     : EnumPopupInternal(position, label, property.intValue, type, null, false, EditorStyles.popup);
                 if (EndChangeCheck())
                 {
+                    // When the flag is a negative we need to convert it or it will be clamped.
                     Type enumType = type.GetEnumUnderlyingType();
-                    if (enumType == typeof(uint))
+                    if (value < 0 && (enumType == typeof(uint) || enumType == typeof(ushort) || enumType == typeof(byte)))
                     {
                         property.longValue = (uint)value;
                     }
