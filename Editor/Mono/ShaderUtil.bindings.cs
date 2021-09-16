@@ -244,6 +244,7 @@ namespace UnityEditor
         [FreeFunction] extern internal static int GetShaderActiveSubshaderIndex([NotNull] Shader shader);
         [FreeFunction] extern internal static int GetShaderSubshaderCount([NotNull] Shader shader);
         [FreeFunction] extern internal static int GetShaderTotalPassCount([NotNull] Shader shader, int subShaderIndex);
+        [FreeFunction] extern internal static int GetSubshaderLOD([NotNull] Shader shader, int subShaderIndex);
 
         extern public static bool anythingCompiling { get; }
         extern public static bool allowAsyncCompilation { get; set; }

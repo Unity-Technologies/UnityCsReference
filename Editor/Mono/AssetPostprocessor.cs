@@ -204,17 +204,31 @@ namespace UnityEditor
 
         [RequiredByNativeCode]
         // Postprocess on all assets once an automatic import has completed
-        static void PostprocessAllAssets(string[] importedAssets, string[] addedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromPathAssets)
+        static void PostprocessAllAssets(string[] importedAssets, string[] addedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromPathAssets, bool didDomainReload)
         {
             object[] args = { importedAssets, deletedAssets, movedAssets, movedFromPathAssets };
+
+            object[] argsWithDidDomainReload = { importedAssets, deletedAssets, movedAssets, movedFromPathAssets, didDomainReload};
             foreach (var assetPostprocessorClass in GetCachedAssetPostprocessorClasses())
             {
                 const string methodName = "OnPostprocessAllAssets";
-                MethodInfo method = assetPostprocessorClass.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                MethodInfo method = assetPostprocessorClass.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static, null, new Type[] { typeof(string).MakeArrayType(), typeof(string).MakeArrayType(), typeof(string).MakeArrayType(), typeof(string).MakeArrayType() }, null);
+
                 if (method != null)
                 {
-                    using (new EditorPerformanceMarker($"{assetPostprocessorClass.Name}.{methodName}", assetPostprocessorClass).Auto())
-                        InvokeMethod(method, args);
+                    if (importedAssets.Length != 0 || addedAssets.Length != 0 || deletedAssets.Length != 0 || movedAssets.Length != 0 || movedFromPathAssets.Length != 0)
+                        using (new EditorPerformanceMarker($"{assetPostprocessorClass.Name}.{methodName}", assetPostprocessorClass).Auto())
+                            InvokeMethod(method, args);
+                }
+                else
+                {
+                    // OnPostprocessAllAssets with didDomainReload parameter
+                    method = assetPostprocessorClass.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static, null, new Type[] { typeof(string).MakeArrayType(), typeof(string).MakeArrayType(), typeof(string).MakeArrayType(), typeof(string).MakeArrayType(), typeof(bool)}, null);
+                    if (method != null)
+                    {
+                        using (new EditorPerformanceMarker($"{assetPostprocessorClass.Name}.{methodName}", assetPostprocessorClass).Auto())
+                            InvokeMethod(method, argsWithDidDomainReload);
+                    }
                 }
             }
 

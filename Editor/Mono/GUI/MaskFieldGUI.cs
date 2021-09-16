@@ -6,6 +6,8 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Pool;
+using System.Text;
 
 namespace UnityEditor
 {
@@ -107,20 +109,16 @@ namespace UnityEditor
         /// Make a field for a generic mask.
         /// This version also gives you back which flags were changed and what they were changed to.
         /// This is useful if you want to make the same change to multiple objects.
-        internal static int DoMaskField(Rect position, int controlID, int mask, string[] flagNames, int[] flagValues, GUIStyle style, out int changedFlags, out bool changedToValue, bool unsignedType = false)
+        internal static int DoMaskField(Rect position, int controlID, int mask, string[] flagNames, int[] flagValues, GUIStyle style, out int changedFlags, out bool changedToValue, Type enumType = null)
         {
             mask = MaskCallbackInfo.GetSelectedValueForControl(controlID, mask, out changedFlags, out changedToValue);
 
-            string buttonText;
-            string[] optionNames;
-            int[] optionMaskValues;
-            int[] selectedOptions;
-            GetMenuOptions(mask, flagNames, flagValues, out buttonText, out optionNames, out optionMaskValues, out selectedOptions, unsignedType);
+            GetMenuOptions(mask, flagNames, flagValues, out var buttonText, out var buttonTextMixed, out var optionNames, out var optionMaskValues, out var selectedOptions, enumType);
 
             Event evt = Event.current;
             if (evt.type == EventType.Repaint)
             {
-                GUIContent buttonContent = EditorGUI.showMixedValue ? EditorGUI.mixedValueContent : EditorGUIUtility.TempContent(buttonText);
+                var buttonContent = EditorGUI.showMixedValue ? EditorGUI.mixedValueContent : DoMixedLabel(buttonText, buttonTextMixed, position, style);
                 style.Draw(position, buttonContent, controlID, false, position.Contains(evt.mousePosition));
             }
             else if ((evt.type == EventType.MouseDown && position.Contains(evt.mousePosition)) || evt.MainActionKeyForControl(controlID))
@@ -155,10 +153,11 @@ namespace UnityEditor
             return buffer;
         }
 
-        internal static string GetMaskButtonValue(int mask, string[] flagNames, int[] flagValues)
+        internal static void GetMaskButtonValue(int mask, string[] flagNames, int[] flagValues, out string buttonText, out string buttonMixedValuesText)
         {
-            bool hasNothingName = (flagValues[0] == 0);
-            bool hasEverythingName = (flagValues[flagValues.Length - 1] == int.MaxValue);
+            const int everythingValue = ~0;
+            bool hasNothingName = flagValues[0] == 0;
+            bool hasEverythingName = flagValues[flagValues.Length - 1] == everythingValue;
 
             var nothingName = (hasNothingName ? flagNames[0] : "Nothing");
             var everythingName = (hasEverythingName ? flagNames[flagValues.Length - 1] : "Everything");
@@ -168,34 +167,83 @@ namespace UnityEditor
             var flagStartIndex = (hasNothingName ? 1 : 0);
             var flagEndIndex = flagStartIndex + flagCount;
 
-            string buttonText = "Mixed...";
-            if (mask == 0)
-                buttonText = nothingName;
-            else if (mask == int.MaxValue || mask == ~0)
-                buttonText = everythingName;
-            else
+            var flagMask = 0; // Disjunction of all flags (except 0 and everythingValue)
+            var intermediateMask = 0; // Mask used to compute new mask value for each options
+            var usedFlags = ListPool<int>.Get();
+
+            buttonText = null;
+            buttonMixedValuesText = null;
+
+            for (var flagIndex = flagStartIndex; flagIndex < flagEndIndex; flagIndex++)
             {
-                for (var flagIndex = flagStartIndex; flagIndex < flagEndIndex; flagIndex++)
+                var flagValue = flagValues[flagIndex];
+                flagMask |= flagValue;
+
+                if (mask == flagValues[flagIndex])
+                    buttonText = flagNames[flagIndex];
+
+                if ((mask & flagValue) == flagValue)
                 {
-                    if (mask == flagValues[flagIndex])
-                        buttonText = flagNames[flagIndex];
+                    intermediateMask |= flagValue;
+                    usedFlags.Add(flagIndex);
                 }
             }
 
-            return buttonText;
+            if (buttonText == null)
+            {
+                if (flagMask == intermediateMask)
+                {
+                    // If all of the available flags are set then show the Everything name.
+                    buttonText = everythingName;
+                }
+                else if (intermediateMask == 0)
+                {
+                    // If the mask is 0 or none of the actual flags are set we use the nothing name.
+                    buttonText = nothingName;
+                }
+                else
+                {
+                    buttonText = "Mixed...";
+
+                    // Extract mixed labels
+                    var sb = GenericPool<StringBuilder>.Get();
+                    sb.Append(flagNames[usedFlags[0]]);
+                    for (int i = 1; i < usedFlags.Count; ++i)
+                    {
+                        sb.Append(", ");
+                        sb.Append(flagNames[usedFlags[i]]);
+                    }
+                    buttonMixedValuesText = sb.ToString();
+
+                    sb.Clear();
+                    GenericPool<StringBuilder>.Release(sb);
+                }
+            }
+
+            ListPool<int>.Release(usedFlags);
+        }
+
+        internal static GUIContent DoMixedLabel(string label, string mixedLabel, Rect rect, GUIStyle style)
+        {
+            if (mixedLabel == null)
+                return EditorGUIUtility.TempContent(label);
+
+            var content = EditorGUIUtility.TempContent(mixedLabel);
+            var size = style.CalcSize(content);
+
+            // If the label is too large to fit then revert back to the shorter label
+            if (size.x > rect.width)
+                content = EditorGUIUtility.TempContent(label);
+
+            return content;
         }
 
         internal static void GetMenuOptions(int mask, string[] flagNames, int[] flagValues,
-            out string buttonText, out string[] optionNames, out int[] optionMaskValues, out int[] selectedOptions, bool isUnsignedType = false)
+            out string buttonText, out string buttonMixedValuesText, out string[] optionNames, out int[] optionMaskValues, out int[] selectedOptions, Type enumType = null)
         {
-            int everythingValue = int.MaxValue;
-            if (isUnsignedType)
-            {
-                everythingValue = ~0;
-            }
-
-            bool hasNothingName = (flagValues[0] == 0);
-            bool hasEverythingName = (flagValues[flagValues.Length - 1] == everythingValue);
+            const int everythingValue = ~0;
+            bool hasNothingName = flagValues[0] == 0;
+            bool hasEverythingName = flagValues[flagValues.Length - 1] == everythingValue;
 
             var nothingName = (hasNothingName ? flagNames[0] : "Nothing");
             var everythingName = (hasEverythingName ? flagNames[flagValues.Length - 1] : "Everything");
@@ -206,21 +254,6 @@ namespace UnityEditor
             // These indices refer to flags that are not 0 and everythingValue
             var flagStartIndex = (hasNothingName ? 1 : 0);
             var flagEndIndex = flagStartIndex + flagCount;
-
-            // Button text
-            buttonText = "Mixed...";
-            if (mask == 0)
-                buttonText = nothingName;
-            else if (mask == everythingValue)
-                buttonText = everythingName;
-            else
-            {
-                for (var flagIndex = flagStartIndex; flagIndex < flagEndIndex; flagIndex++)
-                {
-                    if (mask == flagValues[flagIndex])
-                        buttonText = flagNames[flagIndex];
-                }
-            }
 
             // Options names
             optionNames = GetBuffer(s_OptionNames, optionCount);
@@ -237,10 +270,6 @@ namespace UnityEditor
 
             // Selected options
             s_SelectedOptionsSet.Clear();
-            if (mask == 0)
-                s_SelectedOptionsSet.Add(0);
-            if (mask == everythingValue)
-                s_SelectedOptionsSet.Add(1);
             for (var flagIndex = flagStartIndex; flagIndex < flagEndIndex; flagIndex++)
             {
                 var flagValue = flagValues[flagIndex];
@@ -252,6 +281,56 @@ namespace UnityEditor
                     intermediateMask |= flagValue;
                 }
             }
+
+            // Button text
+            buttonText = null;
+            buttonMixedValuesText = null;
+            for (var flagIndex = flagStartIndex; flagIndex < flagEndIndex; flagIndex++)
+            {
+                // Check if a specific value is set.
+                if (mask == flagValues[flagIndex])
+                {
+                    buttonText = flagNames[flagIndex];
+                }
+            }
+
+            if (buttonText == null)
+            {
+                if (flagMask == intermediateMask)
+                {
+                    // If all of the available flags are set then show the Everything name.
+                    s_SelectedOptionsSet.Add(1);
+                    buttonText = everythingName;
+                }
+                else if (mask == 0 || s_SelectedOptionsSet.Count == 0)
+                {
+                    // If the mask is 0 or none of the actual flags are set we use the nothing name.
+                    s_SelectedOptionsSet.Add(0);
+                    buttonText = nothingName;
+                }
+                else
+                {
+                    buttonText = "Mixed...";
+
+                    // Extract mixed labels
+                    var sb = GenericPool<StringBuilder>.Get();
+
+                    var iterator = s_SelectedOptionsSet.GetEnumerator();
+                    iterator.MoveNext();
+
+                    sb.Append(flagNames[iterator.Current + flagStartIndex - 2]);
+                    while (iterator.MoveNext())
+                    {
+                        sb.Append(", ");
+                        sb.Append(flagNames[iterator.Current + flagStartIndex - 2]);
+                    }
+                    buttonMixedValuesText = sb.ToString();
+
+                    sb.Clear();
+                    GenericPool<StringBuilder>.Release(sb);
+                }
+            }
+
             selectedOptions = GetBuffer(s_SelectedOptions, s_SelectedOptionsSet.Count);
             var x = 0;
             foreach (var selected in s_SelectedOptionsSet)

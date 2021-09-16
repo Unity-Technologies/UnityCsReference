@@ -14,6 +14,9 @@ namespace UnityEngine.Rendering
     [NativeHeader("Runtime/Shaders/PassIdentifier.h")]
     public readonly struct PassIdentifier : IEquatable<PassIdentifier>
     {
+        public uint SubshaderIndex { get { return m_SubShaderIndex; } }
+        public uint PassIndex { get { return m_PassIndex; } }
+
         public override bool Equals(object o)
         {
             return o is PassIdentifier other && this.Equals(other);

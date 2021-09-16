@@ -2,23 +2,60 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.ComponentModel;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Overlays
 {
-    abstract class OverlayPopupWindow : EditorWindow
+    // This is an ugly hack to get popup windows to close when clicking on a button while the popup is already open.
+    // The problem is that popup windows close when losing focus, which clicking the trigger button does. So the button
+    // is clicked, the window loses focus and closes, then the mouse up on button requests a new window.
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    abstract class PopupWindowBase : EditorWindow
     {
-        protected const float borderWidth = 1;
+        static double s_LastClosedTime;
+        static Rect s_LastActivatorRect;
 
-        public static T ShowOverlayPopup<T>(VisualElement trigger, Vector2 size) where T : OverlayPopupWindow
+        static bool ShouldShowWindow(Rect activatorRect)
+        {
+            const double kJustClickedTime = 0.2;
+            bool justClosed = (EditorApplication.timeSinceStartup - s_LastClosedTime) < kJustClickedTime;
+            if (!justClosed || activatorRect != s_LastActivatorRect)
+            {
+                s_LastActivatorRect = activatorRect;
+                return true;
+            }
+            return false;
+        }
+
+        public static T Show<T>(VisualElement trigger, Vector2 size) where T : EditorWindow
+        {
+            return Show<T>(GUIUtility.GUIToScreenRect(trigger.worldBound), size);
+        }
+
+        public static T Show<T>(Rect activatorRect, Vector2 size) where T : EditorWindow
         {
             var windows = Resources.FindObjectsOfTypeAll<T>();
-            foreach (var window in windows)
-                window.Close();
-            var popup = CreateInstance<T>();
-            popup.Init(trigger, size);
-            return popup;
+
+            if (windows.Any())
+            {
+                foreach (var window in windows)
+                    window.Close();
+                return default;
+            }
+
+            if (ShouldShowWindow(activatorRect))
+            {
+                var popup = CreateInstance<T>();
+
+                popup.hideFlags = HideFlags.DontSave;
+                popup.ShowAsDropDown(activatorRect, size);
+                return popup;
+            }
+
+            return default;
         }
 
         void OnEnableINTERNAL()
@@ -28,25 +65,27 @@ namespace UnityEditor.Overlays
 
         void OnDisableINTERNAL()
         {
+            s_LastClosedTime = EditorApplication.timeSinceStartup;
             AssemblyReloadEvents.beforeAssemblyReload -= Close;
         }
+    }
 
-        void Init(VisualElement trigger, Vector2 size)
+    abstract class OverlayPopupWindow : PopupWindowBase
+    {
+        const float k_BorderWidth = 1;
+
+        protected virtual void OnEnable()
         {
-            var buttonRect = GUIUtility.GUIToScreenRect(trigger.worldBound);
-
             Color borderColor = EditorGUIUtility.isProSkin ? new Color(0.44f, 0.44f, 0.44f, 1f) : new Color(0.51f, 0.51f, 0.51f);
 
-            rootVisualElement.style.borderLeftWidth = borderWidth;
-            rootVisualElement.style.borderTopWidth = borderWidth;
-            rootVisualElement.style.borderRightWidth = borderWidth;
-            rootVisualElement.style.borderBottomWidth = borderWidth;
+            rootVisualElement.style.borderLeftWidth = k_BorderWidth;
+            rootVisualElement.style.borderTopWidth = k_BorderWidth;
+            rootVisualElement.style.borderRightWidth = k_BorderWidth;
+            rootVisualElement.style.borderBottomWidth = k_BorderWidth;
             rootVisualElement.style.borderLeftColor = borderColor;
             rootVisualElement.style.borderTopColor = borderColor;
             rootVisualElement.style.borderRightColor = borderColor;
             rootVisualElement.style.borderBottomColor = borderColor;
-
-            ShowAsDropDown(buttonRect, size);
         }
     }
 }

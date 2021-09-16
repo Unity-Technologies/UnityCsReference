@@ -129,6 +129,22 @@ namespace UnityEngine
         LightProbes = 2
     }
 
+    // Must match LightmapCompression enum on the C++ side
+    public enum LightmapCompression
+    {
+        // No compression.
+        None = 0,
+
+        // Compress using low-quality texture format.
+        LowQuality = 1,
+
+        // Compress using standard texture format.
+        NormalQuality = 2,
+
+        // Compress using high-quality texture format.
+        HighQuality = 3
+    }
+
     [Obsolete("See QualitySettings.names, QualitySettings.SetQualityLevel, and QualitySettings.GetQualityLevel")]
     public enum QualityLevel
     {
@@ -746,9 +762,10 @@ namespace UnityEngine
                 RGBA_ASTC12X12_UNorm = 140,
 
                 YUV2 = 141,
-                DepthAuto = 142,
-                ShadowAuto = 143,
-                VideoAuto = 144,
+                [Obsolete("Enum member GraphicsFormat.DepthAuto has been deprecated. Use GraphicsFormat.None as a color format to indicate depth only rendering and DefaultFormat to get the default depth buffer format.", false)] DepthAuto = 142,
+                [Obsolete("Enum member GraphicsFormat.ShadowAuto has been deprecated. Use GraphicsFormat.None as a color format to indicate depth only rendering and DefaultFormat to get the default shadow buffer format.", false)] ShadowAuto = 143,
+                [Obsolete("Enum member GraphicsFormat.VideoAuto has been deprecated. Use DefaultFormat instead.", false)] VideoAuto = 144,
+
 
                 RGBA_ASTC4X4_UFloat = 145,
                 RGBA_ASTC5X5_UFloat = 146,

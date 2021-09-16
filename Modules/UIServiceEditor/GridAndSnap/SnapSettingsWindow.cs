@@ -43,8 +43,10 @@ namespace UnityEditor.Snap
             SnapSelectionToGrid();
         }
 
-        void OnEnable()
+        protected override void OnEnable()
         {
+            base.OnEnable();
+
             rootVisualElement.styleSheets.Add((StyleSheet)EditorGUIUtility.Load("StyleSheets/SceneViewToolbarElements/SnapWindowsCommon.uss"));
 
             rootVisualElement.Add(new SnapSettingsHeader(L10n.Tr("Grid Snapping"), ResetValues));
@@ -117,10 +119,11 @@ namespace UnityEditor.Snap
     {
         LinkedVector3Field m_MoveLinkedField;
 
-        void OnEnable()
+        protected override void OnEnable()
         {
-            rootVisualElement.styleSheets.Add((StyleSheet)EditorGUIUtility.Load("StyleSheets/SceneViewToolbarElements/SnapWindowsCommon.uss"));
+            base.OnEnable();
 
+            rootVisualElement.styleSheets.Add((StyleSheet)EditorGUIUtility.Load("StyleSheets/SceneViewToolbarElements/SnapWindowsCommon.uss"));
             rootVisualElement.Add(new SnapSettingsHeader(L10n.Tr("Increment Snapping"), ResetValues));
 
             // Move

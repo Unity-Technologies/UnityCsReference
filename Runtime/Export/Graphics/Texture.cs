@@ -46,10 +46,12 @@ namespace UnityEngine
             {
                 GraphicsFormat requestedFormat = GraphicsFormatUtility.GetGraphicsFormat(value, sRGB);
 
+#pragma warning disable 618 // Disable deprecation warnings on the ShadowAuto and DepthAuto formats
                 if (requestedFormat == GraphicsFormat.DepthAuto || requestedFormat == GraphicsFormat.ShadowAuto)
                 {
                     graphicsFormat = requestedFormat;
                 }
+#pragma warning restore 618
                 else
                 {
                     graphicsFormat = SystemInfo.GetCompatibleFormat(requestedFormat, FormatUsage.Render);
@@ -110,10 +112,12 @@ namespace UnityEngine
         {
             GraphicsFormat requestedFormat = GraphicsFormatUtility.GetGraphicsFormat(colorFormat, false);
 
+#pragma warning disable 618 // Disable deprecation warnings on the ShadowAuto and DepthAuto formats
             if (requestedFormat == GraphicsFormat.DepthAuto || requestedFormat == GraphicsFormat.ShadowAuto)
             {
                 this = new RenderTextureDescriptor(width, height, requestedFormat, depthBufferBits, mipCount);
             }
+#pragma warning restore 618
             else
             {
                 this = new RenderTextureDescriptor(width, height, SystemInfo.GetCompatibleFormat(requestedFormat, FormatUsage.Render), depthBufferBits, mipCount);
@@ -376,10 +380,12 @@ namespace UnityEngine
         {
             GraphicsFormat requestedFormat = GraphicsFormatUtility.GetGraphicsFormat(renderTextureFormat, readWrite);
 
+#pragma warning disable 618 // Disable deprecation warnings on the ShadowAuto and DepthAuto formats
             if (requestedFormat == GraphicsFormat.DepthAuto || requestedFormat == GraphicsFormat.ShadowAuto)
             {
                 return requestedFormat;
             }
+#pragma warning restore 618
 
             GraphicsFormat compatibleFormat = SystemInfo.GetCompatibleFormat(requestedFormat, FormatUsage.Render);
 

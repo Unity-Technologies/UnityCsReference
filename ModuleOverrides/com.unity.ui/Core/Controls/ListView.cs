@@ -14,7 +14,7 @@ namespace UnityEngine.UIElements
     /// </summary>
     /// <remarks>
     /// Using <c>Animated</c> will affect the layout of the ListView, by adding drag handles before every item.
-    /// Multiple item drag is only supported in the <c>Simple</c> mode.
+    /// Multiple item drag is only supported in the <c>>Simple</c> mode.
     /// </remarks>
     public enum ListViewReorderMode
     {
@@ -32,72 +32,50 @@ namespace UnityEngine.UIElements
     /// A ListView is a vertically scrollable area that links to, and displays, a list of items.
     /// </summary>
     /// <remarks>
-    /// <p>A <see cref="ListView"/> is a <see cref="ScrollView"/> with additional logic to display a list of vertically-arranged
+    /// A <see cref="ListView"/> is a <see cref="ScrollView"/> with additional logic to display a list of vertically-arranged
     /// VisualElements. Each VisualElement in the list is bound to a corresponding element in a data-source list. The
-    /// data-source list can contain elements of any type.</p>
+    /// data-source list can contain elements of any type.
     ///
-    /// <p>The logic required to create VisualElements, and to bind them to or unbind them from the data source, varies depending
-    /// on the intended result. It's up to you to implement logic that is appropriate to your use case. For the ListView to function
-    /// correctly, you must supply at least the following:</p>
+    /// The logic required to create VisualElements, and to bind them to or unbind them from the data source, varies depending
+    /// on the intended result. For the ListView to function correctly, you must supply at least a value for
+    /// <see cref="BaseVerticalCollectionView.itemsSource">itemsSource</see>.
     ///
-    ///- <see cref="BaseVerticalCollectionView.fixedItemHeight"/>
+    /// It's also recommended to supply the following properties for more complex items:\\
+    /// - <see cref="BaseVerticalCollectionView.makeItem">makeItem</see> \\
+    /// - <see cref="BaseVerticalCollectionView.bindItem">bindItem</see> \\
+    /// - <see cref="BaseVerticalCollectionView.fixedItemHeight">fixedItemHeight</see> when using <see cref="CollectionVirtualizationMethod.FixedHeight"/>\\
     ///
-    /// It is also recommended to supply the following for more complex items:
+    /// The <c>ListView</c> creates multiple <see cref="VisualElement"/> objects for the visible items. As the user scrolls, the ListView
+    /// recycles these objects and re-binds them to new data items.
     ///
-    ///- <see cref="ListView.makeItem"/>
-    ///- <see cref="ListView.bindItem"/>
-    ///- <see cref="BaseVerticalCollectionView.fixedItemHeight"/>, in the case of <c>FixedHeight</c> ListView
-    ///
-    /// <p>The ListView creates enough VisualElements for the visible items, and supports binding many more. As the user scrolls, the ListView
-    /// recycles VisualElements and re-binds them to new data items.</p>
-    ///
-    /// <list type="bullet">
-    ///   <item>
-    ///     <description>To set the height of a single item in pixels, set the <c>item-height</c> property in UXML or the
-    ///     <see cref="ListView.itemHeight"/> property in C# to the desired value.</description>
-    ///   </item>
-    ///   <item>
-    ///     <description>To show a border around the scrollable area, set the <c>show-border</c> property in UXML or the
-    ///     <see cref="ListView.showBorder"/> property in C# to <c>true</c>.</description>
-    ///   </item>
-    ///   <item>
-    ///     <description>By default, the user can select one element in the list at a time. To change the default selection
-    ///     use the <c>selection-type</c> property in UXML or the<see cref="ListView.selectionType"/> property in C#.
-    ///        <list type="bullet">
-    ///          <item>
-    ///            <description>To allow the user to select more than one element simultaneously, set the property to
-    ///            <c>Selection.Multiple</c>.</description>
-    ///          </item>
-    ///          <item>
-    ///            <description>To prevent the user from selecting items, set the property to <c>Selection.None</c>.</description>
-    ///          </item>
-    ///        </list>
-    ///      </description>
-    ///   </item>
-    ///   <item>
-    ///     <description>By default, all rows in the ListView have same background color. To make the row background colors
+    /// To set the height of a single item in pixels, set the <c>item-height</c> property in UXML or the
+    ///     <see cref="ListView.itemHeight"/> property in C# to the desired value. \\
+    /// \\
+    /// To display a border around the scrollable area, set the <c>show-border</c> property in UXML or the
+    ///     <see cref="ListView.showBorder"/> property in C# to <c>true</c>.\\
+    ///     \\
+    /// By default, the user can select one element in the list at a time. To change the default selection
+    /// use the <c>selection-type</c> property in UXML or the<see cref="ListView.selectionType"/> property in C#.
+    ///      To allow the user to select more than one element simultaneously, set the property to <c>Selection.Multiple</c>.
+    ///     To prevent the user from selecting items, set the property to <c>Selection.None</c>.\\
+    /// \\
+    ///     By default, all rows in the ListView have same background color. To make the row background colors
     ///     alternate, set the <c>show-alternating-row-backgrounds</c> property in UXML or the
     ///     <see cref="ListView.showAlternatingRowBackgrounds"/> property in C# to
     ///     <see cref="AlternatingRowBackground.ContentOnly"/> or
-    ///     <see cref="AlternatingRowBackground.All"/>. For details, see <see cref="AlternatingRowBackground"/>.</description>
-    ///   </item>
-    ///   <item>
-    ///     <description>By default, the user can't reorder the list's elements. To allow the user to drag the elements
+    ///     <see cref="AlternatingRowBackground.All"/>. For details, see <see cref="AlternatingRowBackground"/>. \\
+    /// \\
+    ///     By default, the user can't reorder the list's elements. To allow the user to drag the elements
     ///     to reorder them, set the <c>reorderable</c> property in UXML or the <see cref="ListView.reorderable"/>
-    ///     property in C# to to true.</description>
-    ///   </item>
-    ///   <item>
-    ///     <description>To make the first item in the ListView display the number of items in the list, set the
+    ///     property in C# to <c>true</c>.\\
+    /// \\
+    /// To make the first item in the ListView display the number of items in the list, set the
     ///     <c>show-bound-collection-size</c> property in UXML or the <see cref="ListView.showBoundCollectionSize"/>
-    ///     to true. This is useful for debugging.</description>
-    ///   </item>
-    ///   <item>
-    ///     <description>By default, the ListView's scroller element only scrolls vertically.
-    ///     To enable horizontal scrolling when the displayed element is wider than the visible area, set the
+    ///     to true. This is useful for debugging. By default, the ListView's scroller element only scrolls vertically.\\
+    /// \\
+    /// To enable horizontal scrolling when the displayed element is wider than the visible area, set the
     ///     <c>horizontal-scrolling-enabled</c> property in UXML or the <see cref="ListView.horizontalScrollingEnabled"/>
-    ///     to true.</description>
-    ///   </item>
-    /// </list>
+    ///     to <c>true</c>.
     /// </remarks>
     /// <example>
     /// <code>

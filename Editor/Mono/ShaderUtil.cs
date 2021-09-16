@@ -28,6 +28,8 @@ namespace UnityEditor
 
             public int PassCount { get { return ShaderUtil.GetShaderTotalPassCount(m_Data.SourceShader, m_SubshaderIndex); } }
 
+            public int LevelOfDetail { get { return ShaderUtil.GetSubshaderLOD(m_Data.SourceShader, m_SubshaderIndex); } }
+
             public Pass GetPass(int passIndex)
             {
                 if (passIndex < 0 || passIndex >= PassCount)
