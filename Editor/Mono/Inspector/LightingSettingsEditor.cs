@@ -564,8 +564,11 @@ namespace UnityEditor
                                         //EditorGUI.indentLevel--;
                                     }
 
-                                    EditorGUILayout.PropertyField(m_PVRMinBounces, Styles.minBounces);
-                                    EditorGUILayout.PropertyField(m_PVRBounces, Styles.maxBounces);
+                                    // Case 1320615: clamping of min bounces can be annoying because it resets when typing in a new max bounce value.
+                                    int minBouncesValue = EditorGUILayout.DelayedIntField(Styles.minBounces, m_PVRMinBounces.intValue);
+                                    int maxBouncesValue = EditorGUILayout.DelayedIntField(Styles.maxBounces, m_PVRBounces.intValue);
+                                    m_PVRBounces.intValue = maxBouncesValue;
+                                    m_PVRMinBounces.intValue = minBouncesValue;
 
                                     // Filtering
                                     EditorGUILayout.PropertyField(m_PVRFilteringMode, Styles.filteringMode);

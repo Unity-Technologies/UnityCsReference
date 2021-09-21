@@ -66,6 +66,7 @@ namespace UnityEditor
     [NativeHeader("Runtime/GfxDevice/GfxDevice.h")]
     [NativeHeader("Modules/Audio/Public/AudioManager.h")]
     [NativeHeader("Runtime/Graphics/RenderTexture.h")]
+    [NativeHeader("Runtime/Profiler/MemoryProfilerStats.h")]
     public sealed class UnityStats
     {
         internal extern static DrawStats drawStats { get; }
@@ -124,8 +125,8 @@ namespace UnityEditor
         public extern static float audioStreamLoad { [FreeFunction("GetAudioManager().GetStreamLoad")] get; }
         internal extern static bool audioOutputSuspended { [FreeFunction("GetAudioManager().IsOutputSuspended")] get; }
 
-        public extern static int renderTextureCount { [FreeFunction("RenderTexture::GetCreatedRenderTextureCount")] get; }
-        public extern static int renderTextureBytes { [FreeFunction("RenderTexture::GetCreatedRenderTextureBytes")] get; }
+        public extern static int renderTextureCount { [FreeFunction("GetMemoryProfilerStats().GetRenderTextureCount")] get; }
+        public extern static int renderTextureBytes { [FreeFunction("GetMemoryProfilerStats().GetRenderTextureBytes")] get; }
 
         public static int usedTextureMemorySize
         {
