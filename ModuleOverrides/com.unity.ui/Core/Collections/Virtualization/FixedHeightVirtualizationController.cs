@@ -8,6 +8,11 @@ namespace UnityEngine.UIElements
     {
         float resolvedItemHeight => m_ListView.ResolveItemHeight();
 
+        protected override bool VisibleItemPredicate(T i)
+        {
+            return true;
+        }
+
         public FixedHeightVirtualizationController(BaseVerticalCollectionView collectionView)
             : base(collectionView) {}
 
@@ -69,7 +74,12 @@ namespace UnityEngine.UIElements
             m_ScrollView.verticalScroller.slider.SetHighValueWithoutNotify(scrollableHeight);
             m_ScrollView.verticalScroller.slider.SetValueWithoutNotify(scrollOffset);
 
-            var itemCount = Mathf.Min((int)(size.y / pixelAlignedItemHeight) + k_ExtraVisibleItems, m_ListView.itemsSource.Count);
+            // Add only extra items if the list is actually visible.
+            var itemCountFromHeight = (int)(size.y / pixelAlignedItemHeight);
+            if (itemCountFromHeight > 0)
+                itemCountFromHeight += k_ExtraVisibleItems;
+
+            var itemCount = Mathf.Min(itemCountFromHeight, m_ListView.itemsSource.Count);
 
             if (visibleItemCount != itemCount)
             {
@@ -82,8 +92,9 @@ namespace UnityEngine.UIElements
                     {
                         var lastIndex = m_ActiveItems.Count - 1;
 
-                        var poolItem = m_ActiveItems[lastIndex];
-                        m_Pool.Release(poolItem);
+                        var recycledItem = m_ActiveItems[lastIndex];
+                        m_ListView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
+                        m_Pool.Release(recycledItem);
                         m_ActiveItems.RemoveAt(lastIndex);
                     }
                 }

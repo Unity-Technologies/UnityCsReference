@@ -486,9 +486,11 @@ namespace UnityEditorInternal
 
         internal static string GetExePath(string executableFileName)
         {
-            var il2cppPath = $"{IL2CPPUtils.GetIl2CppFolder()}/build/deploy/net5.0/{executableFileName}{(Application.platform == RuntimePlatform.WindowsEditor ? ".exe" : "")}";
+            var platform = Application.platform;
+            var deployDirectory = $"{IL2CPPUtils.GetIl2CppFolder()}/build/deploy";
+            var il2cppPath = $"{deployDirectory}/{executableFileName}{(platform == RuntimePlatform.WindowsEditor ? ".exe" : "")}";
             if (!File.Exists(il2cppPath))
-                il2cppPath = $"{IL2CPPUtils.GetIl2CppFolder()}/build/deploy/net5.0/{BinaryDirectoryForPlatform(Application.platform)}/{executableFileName}{(Application.platform == RuntimePlatform.WindowsEditor ? ".exe" : "")}";
+                il2cppPath = $"{deployDirectory}/{ExpectedTargetFrameworkDirectoryNameWhenUsingCustomBuild(platform)}/{BinaryDirectoryForPlatform(platform)}/{executableFileName}{(platform == RuntimePlatform.WindowsEditor ? ".exe" : "")}";
             return il2cppPath;
         }
 
@@ -530,7 +532,19 @@ namespace UnityEditorInternal
                 return "win-x64";
             else if (platform == RuntimePlatform.LinuxEditor)
                 return "linux-x64";
+
+            var arch = RuntimeInformation.ProcessArchitecture.ToString().ToLower();
+            if (platform == RuntimePlatform.OSXEditor && arch == "arm64")
+                return "osx-arm64";
             return "osx-x64";
+        }
+
+        private static string ExpectedTargetFrameworkDirectoryNameWhenUsingCustomBuild(RuntimePlatform platform)
+        {
+            var arch = RuntimeInformation.ProcessArchitecture.ToString().ToLower();
+            if (platform == RuntimePlatform.OSXEditor && arch == "arm64")
+                return "net6.0";
+            return "net5.0";
         }
     }
 

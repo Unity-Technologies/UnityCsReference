@@ -28,6 +28,8 @@ namespace UnityEditorInternal
         SerializedProperty m_OriginalProperty;
         SerializedProperty m_ArraySize;
 
+        internal static Rect s_ToolTipRect;
+
         int m_LastArraySize = -1;
         internal SerializedProperty Property
         {
@@ -105,7 +107,7 @@ namespace UnityEditorInternal
             return m_HeaderHeight + (includeChildren && Property.isExpanded && m_ReorderableList != null ? Constants.kHeaderPadding + m_ReorderableList.GetHeight() : 0.0f);
         }
 
-        public void Draw(GUIContent label, Rect r, Rect visibleArea, bool includeChildren)
+        public void Draw(GUIContent label, Rect r, Rect visibleArea, string tooltip, bool includeChildren)
         {
             r.xMin += EditorGUI.indent;
             var prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
@@ -117,7 +119,19 @@ namespace UnityEditorInternal
             Rect sizeRect = new Rect(headerRect.xMax - Constants.kArraySizeWidth - EditorGUI.indent * EditorGUI.indentLevel, headerRect.y,
                 Constants.kArraySizeWidth + EditorGUI.indent * EditorGUI.indentLevel, m_HeaderHeight);
 
-            EventType prevType = Event.current.type;
+            Event evt = Event.current;
+            EventType prevType = evt.type;
+            if (!string.IsNullOrEmpty(tooltip) && prevType == EventType.Repaint)
+            {
+                bool hovered = headerRect.Contains(evt.mousePosition);
+
+                if (hovered && GUIClip.visibleRect.Contains(evt.mousePosition))
+                {
+                    if (!GUIStyle.IsTooltipActive(tooltip))
+                        s_ToolTipRect = new Rect(evt.mousePosition, Vector2.zero);
+                    GUIStyle.SetMouseTooltip(tooltip, s_ToolTipRect);
+                }
+            }
             if (Event.current.type == EventType.MouseUp && sizeRect.Contains(Event.current.mousePosition))
             {
                 Event.current.type = EventType.Used;

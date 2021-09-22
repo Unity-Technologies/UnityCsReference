@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEditor.Modules;
 using UnityEngine;
 
@@ -18,7 +19,7 @@ namespace UnityEditor
             AnyCPU,
             x86,
             x86_64,
-            ARM64,
+            ARM64
         }
 
         internal class DesktopSingleCPUProperty : Property
@@ -134,16 +135,19 @@ namespace UnityEditor
         private readonly DesktopSingleCPUProperty m_WindowsX86;
         private readonly DesktopSingleCPUProperty m_WindowsX86_X64;
 
-        // Linux/Mac have 1 build target in total
-        private readonly DesktopMultiCPUProperty m_Linux;
+        // Linux has 1 build target and 1 supported CPU architecture
+        private readonly DesktopSingleCPUProperty m_Linux;
+
+        // macOS has multiple architectures, but one target.
         private readonly DesktopMultiCPUProperty m_MacOS;
+
 
         public DesktopPluginImporterExtension()
             : base(null)
         {
             m_WindowsX86 = new DesktopSingleCPUProperty(BuildTarget.StandaloneWindows, DesktopPluginCPUArchitecture.x86);
             m_WindowsX86_X64 = new DesktopSingleCPUProperty(BuildTarget.StandaloneWindows64, DesktopPluginCPUArchitecture.x86_64);
-            m_Linux = new DesktopMultiCPUProperty(BuildTarget.StandaloneLinux64, DesktopPluginCPUArchitecture.x86_64);
+            m_Linux = new DesktopSingleCPUProperty(BuildTarget.StandaloneLinux64, DesktopPluginCPUArchitecture.x86_64);
             m_MacOS = new DesktopMultiCPUProperty(BuildTarget.StandaloneOSX, DesktopPluginCPUArchitecture.x86_64, DesktopPluginCPUArchitecture.ARM64);
 
             properties = new Property[]
@@ -151,7 +155,7 @@ namespace UnityEditor
                 m_WindowsX86,
                 m_WindowsX86_X64,
                 m_Linux,
-                m_MacOS,
+                m_MacOS
             };
         }
 
@@ -203,8 +207,9 @@ namespace UnityEditor
 
             if (IsUsableOnOSX(imp))
             {
-                EditorGUILayout.LabelField(EditorGUIUtility.TrTextContent("Mac OS X"), EditorStyles.boldLabel);
+                EditorGUILayout.LabelField(EditorGUIUtility.TrTextContent("macOS"), EditorStyles.boldLabel);
                 m_MacOS.OnGUI(inspector);
+                EditorGUILayout.Space();
             }
 
             if (EditorGUI.EndChangeCheck())
@@ -213,11 +218,7 @@ namespace UnityEditor
 
         public void ValidateSingleCPUTargets(PluginImporterInspector inspector)
         {
-            DesktopSingleCPUProperty[] singleCPUTargets = new[]
-            {
-                m_WindowsX86,
-                m_WindowsX86_X64
-            };
+            var singleCPUTargets = properties.OfType<DesktopSingleCPUProperty>();
 
             foreach (var target in singleCPUTargets)
             {
@@ -261,6 +262,12 @@ namespace UnityEditor
                 // Plugins for x86 are supposed to be copied to Plugins/x86
                 var cpuName = target == BuildTarget.StandaloneWindows ? nameof(DesktopPluginCPUArchitecture.x86) : nameof(DesktopPluginCPUArchitecture.x86_64);
                 return Path.Combine(cpuName, Path.GetFileName(imp.assetPath));
+            }
+
+            if (pluginForOSX)
+            {
+                // Add the correct architecture if not AnyCPU
+                return base.CalculateFinalPluginPath(platformName, imp);
             }
 
             // For files this will return filename, for directories, this will return last path component

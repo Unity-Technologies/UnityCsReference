@@ -248,7 +248,7 @@ namespace UnityEditor.Modules
             Development = (args.report.summary.options & BuildOptions.Development) == BuildOptions.Development,
             UseIl2Cpp = GetUseIl2Cpp(args),
             Architecture = GetArchitecture(args),
-            DataFolder = $"Library/PlayerDataCache/{BuildPipeline.GetBuildTargetName(args.target)}/Data",
+            DataFolder = GetDataFolderFor(args),
             Services = new Services()
             {
                 EnableAnalytics = UnityEngine.Analytics.Analytics.enabled,
@@ -269,6 +269,11 @@ namespace UnityEditor.Modules
             return absoluteInstallationPath.IsChildOf(NPath.CurrentDirectory)
                 ? absoluteInstallationPath.RelativeTo(NPath.CurrentDirectory).ToString()
                 : absoluteInstallationPath.ToString();
+        }
+
+        protected string GetDataFolderFor(BuildPostProcessArgs args)
+        {
+            return $"Library/PlayerDataCache/{BuildPipeline.GetBuildTargetName(args.target)}/Data";
         }
 
         protected virtual string GetPlatformNameForBuildProgram(BuildPostProcessArgs args) => args.target.ToString();

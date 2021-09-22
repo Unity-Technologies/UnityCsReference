@@ -18,6 +18,7 @@ namespace UnityEditor.Build.Reporting
 
         public BuildTarget platform { get; }
         public BuildTargetGroup platformGroup { get; }
+        internal int subtarget { get; }
         public BuildOptions options { get; }
         internal BuildAssetBundleOptions assetBundleOptions { get; }
         public string outputPath { get; }
@@ -35,5 +36,35 @@ namespace UnityEditor.Build.Reporting
         public BuildResult result { get; }
 
         internal BuildType buildType { get; }
+
+        private T ParseSubtarget<T, S>() where T : Enum where S : Enum
+        {
+            if (typeof(T) != typeof(S))
+                throw new ArgumentException($"Subtarget type ({typeof(T).ToString()}) is not valid for the platform ({platform}). Expected: {typeof(S).ToString()}");
+
+            if (!Enum.IsDefined(typeof(T), subtarget))
+                throw new InvalidOperationException($"The subtarget value ({subtarget}) is not a valid {typeof(T).ToString()}");
+
+            return (T)(object)subtarget;
+        }
+
+        public T GetSubtarget<T>() where T : Enum
+        {
+            switch (platform)
+            {
+                // ADD_NEW_PLATFORM_HERE
+                case BuildTarget.StandaloneWindows:
+                case BuildTarget.StandaloneWindows64:
+                case BuildTarget.StandaloneOSX:
+                case BuildTarget.StandaloneLinux64:
+                    return ParseSubtarget<T, StandaloneBuildSubtarget>();
+                case BuildTarget.PS4:
+                    return ParseSubtarget<T, PS4BuildSubtarget>();
+                case BuildTarget.XboxOne:
+                    return ParseSubtarget<T, XboxBuildSubtarget>();
+                default:
+                    throw new ArgumentException($"Subtarget property is not available for the platform ({platform})");
+            }
+        }
     }
 }
