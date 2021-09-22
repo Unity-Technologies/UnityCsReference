@@ -23,7 +23,12 @@ namespace UnityEditor.Build.Player
 
     internal interface IBuildPlayerDataGeneratorProcess
     {
-        void Execute(BuildPlayerDataGeneratorOptions options);
+/// <summary>
+/// Will execute the BuildPlayerDataGenerator process with the given options
+/// </summary>
+/// <param name="options"></param>
+/// <returns>returns true if the Execution was successful</returns>
+        bool Execute(BuildPlayerDataGeneratorOptions options);
     }
 
     internal class BuildPlayerDataGeneratorProcess : IBuildPlayerDataGeneratorProcess
@@ -35,8 +40,7 @@ namespace UnityEditor.Build.Player
         private static string buildDataGeneratorPath = Paths.Combine(EditorApplication.applicationContentsPath, "Tools",
             buildDataGenerator, buildDataGeneratorPathExe);
 
-
-        public void Execute(BuildPlayerDataGeneratorOptions options)
+        public bool Execute(BuildPlayerDataGeneratorOptions options)
         {
             Program typeDbGeneratorProcess;
             var arguments = OptionsToStringArgument(options);
@@ -65,6 +69,7 @@ namespace UnityEditor.Build.Player
                 ProcessExit(typeDbGeneratorProcess);
                 typeDbGeneratorProcess.Kill();
             }
+            return typeDbGeneratorProcess.ExitCode == 0;
         }
 
         private void ProcessExit(Program typeDbGeneratorProcess)

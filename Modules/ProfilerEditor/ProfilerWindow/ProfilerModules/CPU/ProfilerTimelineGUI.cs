@@ -4,14 +4,14 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine;
+using System.Globalization;
+using Unity.Profiling;
 using UnityEditor;
+using UnityEditor.AnimatedValues;
 using UnityEditor.Profiling;
 using UnityEditorInternal.Profiling;
+using UnityEngine;
 using Object = UnityEngine.Object;
-using UnityEditor.AnimatedValues;
-using Unity.Profiling;
-using System.Globalization;
 
 namespace UnityEditorInternal
 {
@@ -27,6 +27,12 @@ namespace UnityEditorInternal
         const float k_ThreadMinHeightCollapsed = 2.0f;
         const float k_ThreadSplitterHandleSize = 6f;
 
+        const int k_InvalidThreadIndex = -1;
+        const int k_InvalidOrCurrentFrameIndex = -1;
+
+        const int k_MaxNeighborFrames = 3;
+        const int k_MaxDisplayFrames = 1 + 2 * k_MaxNeighborFrames;
+
         static readonly float[] k_TickModulos = { 0.001f, 0.005f, 0.01f, 0.05f, 0.1f, 0.5f, 1, 5, 10, 50, 100, 500, 1000, 5000, 10000, 30000, 60000 };
         const string k_TickFormatMilliseconds = "{0}ms";
         const string k_TickFormatSeconds = "{0}s";
@@ -36,37 +42,66 @@ namespace UnityEditorInternal
         {
             public float height = 0;
             public float linesToDisplay = 2f;
-            public int threadIndex;
-            public string name;
-            public bool alive;
+            public ulong threadId;
+            public int threadIndex => threadIndices[k_MaxNeighborFrames];
+            public int[] threadIndices = new int[k_MaxDisplayFrames];
             public int maxDepth;
-            GUIContent m_Content = new GUIContent();
+            string m_Name;
 
-            public ThreadInfo(string name, int threadIndex, int maxDepth, int linesToDisplay)
+            public string name
             {
-                this.name = name;
-                m_Content.tooltip = name;
-                this.threadIndex = threadIndex;
+                get => m_Name;
+                set
+                {
+                    m_Name = value; m_Content = null;
+                }
+            }
+
+            [NonSerialized]
+            GUIContent m_Content;
+
+            public ThreadInfo(string name, ulong threadId, int threadIndex, int maxDepth, int linesToDisplay)
+            {
+                this.m_Name = name;
+                this.threadId = threadId;
+                for (var i = 0; i < k_MaxDisplayFrames; ++i)
+                    threadIndices[i] = k_InvalidThreadIndex;
+                this.threadIndices[k_MaxNeighborFrames] = threadIndex;
                 this.linesToDisplay = linesToDisplay;
                 this.maxDepth = Mathf.Max(1, maxDepth);
             }
 
-            public List<FlowEventData> ActiveFlowEvents { get; } = new List<FlowEventData>();
+            public void Reset()
+            {
+                for (var j = 0; j < k_MaxDisplayFrames; ++j)
+                    threadIndices[j] = k_InvalidThreadIndex;
+                maxDepth = -1;
+                ActiveFlowEvents?.Clear();
+            }
+
+            public void Update(string name, int threadIndex, int maxDepth)
+            {
+                if (this.name != name)
+                    this.name = name;
+                this.threadIndices[k_MaxNeighborFrames] = threadIndex;
+                this.maxDepth = Mathf.Max(1, maxDepth);
+            }
+
+            public List<FlowEventData> ActiveFlowEvents { get; private set; } = null;
+
+            public void AddFlowEvent(FlowEventData d)
+            {
+                // Most threads don't have flow events - there are no reasons to allocate memory for those.
+                if (ActiveFlowEvents == null)
+                    ActiveFlowEvents = new List<FlowEventData>();
+                ActiveFlowEvents.Add(d);
+            }
 
             public GUIContent DisplayName(bool indent)
             {
-                if (!string.IsNullOrEmpty(m_Content.text)) return m_Content;
-                GUIContent content = GUIContent.Temp(name, name);
-                var indentSize = 10;
-                if ((styles.leftPane.CalcSize(content).x + (indent ? indentSize : 0)) > Chart.kSideWidth)
-                {
-                    content.text += "...";
-                    while ((styles.leftPane.CalcSize(content).x + (indent ? indentSize : 0)) > Chart.kSideWidth)
-                    {
-                        content.text = content.text.Remove(content.text.Length - 4, 1);
-                    }
-                }
-                m_Content.text = content.text;
+                if (m_Content == null)
+                    m_Content = CreateDisplayNameForThreadOrGroup(name, indent);
+
                 return m_Content;
             }
 
@@ -77,13 +112,16 @@ namespace UnityEditorInternal
                 var results = EditorUtility.NaturalCompare(name, other.name);
                 if (results != 0)
                     return results;
-                return threadIndex.CompareTo(other.threadIndex);
+                if (threadIndex != other.threadIndex)
+                    return threadIndex < other.threadIndex ? -1 : 1;
+                return threadId.CompareTo(other.threadId);
             }
 
             public struct FlowEventData
             {
                 public RawFrameDataView.FlowEvent flowEvent;
                 public int frameIndex;
+                public int threadIndex;
 
                 public bool hasParentSampleIndex
                 {
@@ -103,7 +141,11 @@ namespace UnityEditorInternal
             public string name;
             public float height;
             public List<ThreadInfo> threads;
+            public Dictionary<ulong, ThreadInfo> threadIdMap;
             public int defaultLineCountPerThread = k_DefaultLineCountPerThread;
+
+            [NonSerialized]
+            GUIContent m_Content;
 
             public GroupInfo(string name, UnityEngine.Events.UnityAction foldoutStateChangedCallback)
                 : this(name, foldoutStateChangedCallback, false) {}
@@ -119,10 +161,31 @@ namespace UnityEditorInternal
                     this.expanded.valueChanged.AddListener(foldoutStateChangedCallback);
 
                 threads = new List<ThreadInfo>();
+                threadIdMap = new Dictionary<ulong, ThreadInfo>();
+            }
+
+            public void Clear()
+            {
+                height = 0;
+                threads.Clear();
+                threadIdMap.Clear();
+            }
+
+            public GUIContent DisplayName
+            {
+                get
+                {
+                    if (m_Content == null)
+                        m_Content = CreateDisplayNameForThreadOrGroup(name, false);
+
+                    return m_Content;
+                }
             }
         }
 
+        [NonSerialized]
         List<GroupInfo> m_Groups = null;
+        [NonSerialized]
         HashSet<DrawnFlowIndicatorCacheValue> m_DrawnFlowIndicatorsCache = new HashSet<DrawnFlowIndicatorCacheValue>(new DrawnFlowIndicatorCacheValueComparer());
 
         // Not localizable strings - should match group names in native code.
@@ -244,6 +307,8 @@ namespace UnityEditorInternal
             get { return -m_TimeArea.shownArea.y * m_TimeArea.scale.y; }
         }
 
+        int maxContextFramesToShow => m_ProfilerWindow.IsRecording() ? 1 : k_MaxNeighborFrames;
+
         [NonSerialized]
         ZoomableArea m_TimeArea;
         TickHandler m_HTicks;
@@ -251,11 +316,14 @@ namespace UnityEditorInternal
         float m_SelectedThreadY = 0.0f;
         float m_SelectedThreadYRange = 0.0f;
         ThreadInfo m_SelectedThread = null;
-        int m_LastSelectedFrameID = -1;
         float m_LastHeightForAllBars = -1;
         float m_LastFullRectHeight = -1;
         float m_MaxLinesToDisplayForTheCurrentlyModifiedSplitter = -1;
 
+        [NonSerialized]
+        int m_LastSelectedFrameIndex = k_InvalidThreadIndex;
+        [NonSerialized]
+        int m_LastMaxContextFramesToShow = -1;
         [NonSerialized]
         List<RawFrameDataView.FlowEvent> m_CachedThreadFlowEvents = new List<RawFrameDataView.FlowEvent>();
 
@@ -334,49 +402,207 @@ namespace UnityEditorInternal
             m_ProfilerWindow?.Repaint();
         }
 
-        void UpdateGroupAndThreadInfo(ProfilerFrameDataIterator iter, int frameIndex)
+        static GUIContent CreateDisplayNameForThreadOrGroup(string name, bool indent)
         {
-            iter.SetRoot(frameIndex, 0);
-            int threadCount = iter.GetThreadCount(frameIndex);
-            for (int i = 0; i < threadCount; ++i)
+            var content = GUIContent.Temp(name, name);
+
+            const int indentSize = 10;
+            bool stripped = false;
+            if ((styles.leftPane.CalcSize(content).x + (indent ? indentSize : 0)) > Chart.kSideWidth)
             {
-                iter.SetRoot(frameIndex, i);
-                string groupname = iter.GetGroupName();
-                GroupInfo group = m_Groups.Find(g => g.name == groupname);
-                if (group == null)
+                stripped = true;
+                content.text += "...";
+                while ((styles.leftPane.CalcSize(content).x + (indent ? indentSize : 0)) > Chart.kSideWidth)
                 {
-                    group = new GroupInfo(groupname, RepaintProfilerWindow);
-                    m_Groups.Add(group);
+                    content.text = content.text.Remove(content.text.Length - 4, 1);
                 }
-
-                var threads = group.threads;
-
-                ThreadInfo thread = threads.Find(t => t.threadIndex == i);
-                if (thread == null)
-                {
-                    // ProfilerFrameDataIterator.maxDepth includes the thread sample which is not getting displayed, so we store it at -1 for all intents and purposes
-                    thread = new ThreadInfo(iter.GetThreadName(), i, iter.maxDepth - 1, group.defaultLineCountPerThread);
-
-                    // the main thread gets double the size
-                    if (i == 0)
-                        thread.linesToDisplay *= 2;
-
-                    group.threads.Add(thread);
-                }
-                else if (m_LastSelectedFrameID != frameIndex)
-                {
-                    thread.maxDepth = iter.maxDepth;
-                }
-
-                thread.alive = true;
             }
 
+            var result = new GUIContent();
+            result.text = content.text;
+            if (stripped)
+                result.tooltip = name;
+
+            return result;
+        }
+
+        GroupInfo GetOrCreateGroupByName(string name)
+        {
+            var group = m_Groups.Find(g => g.name == name);
+            if (group == null)
+            {
+                group = new GroupInfo(name, RepaintProfilerWindow);
+                m_Groups.Add(group);
+            }
+
+            return group;
+        }
+
+        void AddNeighboringActiveThreads(int currentFrameIndex, int displayFrameOffset)
+        {
+            var frameIndex = currentFrameIndex + displayFrameOffset;
+            GroupInfo lastGroupLookupValue = null;
+            for (int threadIndex = 0;; ++threadIndex)
+            {
+                using (var frameData = ProfilerDriver.GetRawFrameDataView(frameIndex, threadIndex))
+                {
+                    if (frameData == null || !frameData.valid)
+                        break;
+
+                    var threadId = frameData.threadId;
+                    // If threadId is unavailable we can't match threads in different frames
+                    if (threadId == 0)
+                        break;
+
+                    var threadGroupName = frameData.threadGroupName;
+                    GroupInfo group;
+                    if (lastGroupLookupValue != null && lastGroupLookupValue.name == threadGroupName)
+                        group = lastGroupLookupValue;
+                    else
+                        group = lastGroupLookupValue = GetOrCreateGroupByName(threadGroupName);
+
+                    var maxDepth = frameData.maxDepth - 1;
+                    if (group.threadIdMap.TryGetValue(threadId, out var threadInfo))
+                    {
+                        threadInfo.threadIndices[k_MaxNeighborFrames + displayFrameOffset] = threadIndex;
+                        threadInfo.maxDepth = Mathf.Max(threadInfo.maxDepth, maxDepth);
+                    }
+                    else
+                    {
+                        // frameData.maxDepth includes the thread sample which is not getting displayed, so we store it at -1 for all intents and purposes
+                        threadInfo = new ThreadInfo(frameData.threadName, threadId, k_InvalidThreadIndex, maxDepth, group.defaultLineCountPerThread);
+                        threadInfo.threadIndices[k_MaxNeighborFrames + displayFrameOffset] = threadIndex;
+                        group.threads.Add(threadInfo);
+                        group.threadIdMap.Add(threadId, threadInfo);
+                    }
+                }
+            }
+        }
+
+        void UpdateGroupAndThreadInfo(int frameIndex)
+        {
+            // Only update groups cache when we change frame index or neighbor frames count.
+            if (m_LastSelectedFrameIndex == frameIndex && m_LastMaxContextFramesToShow == maxContextFramesToShow)
+                return;
+
+            m_LastSelectedFrameIndex = frameIndex;
+            m_LastMaxContextFramesToShow = maxContextFramesToShow;
+
+            // Mark threads terminated by nullifying name.
+            // This helps to reuse the ThreadInfo object in most cases when switching frames and eliminate allocations.
+            // Besides caching we also preserve linesToDisplay information.
             foreach (var group in m_Groups)
             {
-                group.threads.Sort();
+                for (var i = 0; i < group.threads.Count; ++i)
+                    group.threads[i].Reset();
             }
 
-            m_LastSelectedFrameID = frameIndex;
+            GroupInfo lastGroupLookupValue = null;
+
+            var canUseThreadIdForThreadAlignment = true;
+            for (int threadIndex = 0;; ++threadIndex)
+            {
+                using (var frameData = ProfilerDriver.GetRawFrameDataView(frameIndex, threadIndex))
+                {
+                    if (frameData == null || !frameData.valid)
+                        break;
+
+                    var threadGroupName = frameData.threadGroupName;
+                    var threadId = frameData.threadId;
+
+                    GroupInfo group;
+                    // Micro optimization by caching last accessed group - that guarantees hits for jobs and scripting threads.
+                    if (lastGroupLookupValue != null && lastGroupLookupValue.name == threadGroupName)
+                        group = lastGroupLookupValue;
+                    else
+                        group = lastGroupLookupValue = GetOrCreateGroupByName(threadGroupName);
+
+                    if (threadId != 0)
+                    {
+                        var maxDepth = frameData.maxDepth - 1;
+                        if (group.threadIdMap.TryGetValue(threadId, out var thread))
+                        {
+                            // Reuse existing ThreadInfo object, but update its name, index and dempth.
+                            thread.Update(frameData.threadName, threadIndex, maxDepth);
+                        }
+                        else
+                        {
+                            // frameData.maxDepth includes the thread sample which is not getting displayed, so we store it at -1 for all intents and purposes
+                            thread = new ThreadInfo(frameData.threadName, threadId, threadIndex, maxDepth, group.defaultLineCountPerThread);
+
+                            // the main thread gets double the size
+                            if (threadIndex == 0)
+                                thread.linesToDisplay *= 2;
+
+                            // Add a new thread
+                            group.threads.Add(thread);
+                            group.threadIdMap.Add(threadId, thread);
+                        }
+                    }
+                    else
+                    {
+                        // Old data compatibility path where we don't have threadId.
+                        canUseThreadIdForThreadAlignment = false;
+
+                        var threads = group.threads;
+                        ThreadInfo thread = threads.Find(t => t.threadIndex == threadIndex);
+                        if (thread == null)
+                        {
+                            // frameData.maxDepth includes the thread sample which is not getting displayed, so we store it at -1 for all intents and purposes
+                            thread = new ThreadInfo(frameData.threadName, threadId, threadIndex, frameData.maxDepth - 1, group.defaultLineCountPerThread);
+                            for (var i = 0; i < k_MaxDisplayFrames; ++i)
+                                thread.threadIndices[i] = threadIndex;
+
+                            // the main thread gets double the size
+                            if (threadIndex == 0)
+                                thread.linesToDisplay *= 2;
+
+                            group.threads.Add(thread);
+                        }
+                        else
+                        {
+                            thread.name = frameData.threadName;
+                            thread.maxDepth = frameData.maxDepth - 1;
+                        }
+                    }
+                }
+            }
+
+            // If this is a new capture with threadId support we scan neighbor frames to ensure we have a consistent view of threads
+            // across all visible frames.
+            if (canUseThreadIdForThreadAlignment)
+            {
+                for (var i = -1; i >= -m_LastMaxContextFramesToShow && frameIndex - i >= ProfilerDriver.firstFrameIndex; --i)
+                {
+                    if (!ProfilerDriver.GetFramesBelongToSameSession(frameIndex + i, frameIndex))
+                        break;
+                    AddNeighboringActiveThreads(frameIndex, i);
+                }
+
+                for (var i = 1; i <= m_LastMaxContextFramesToShow && frameIndex + i <= ProfilerDriver.lastFrameIndex; ++i)
+                {
+                    if (!ProfilerDriver.GetFramesBelongToSameSession(frameIndex + i, frameIndex))
+                        break;
+                    AddNeighboringActiveThreads(frameIndex, i);
+                }
+            }
+
+            // Sort threads by name
+            foreach (var group in m_Groups)
+            {
+                // and cleanup those that are no longer present in the view.
+                for (var i = 0; i < group.threads.Count;)
+                {
+                    if (group.threads[i].maxDepth == -1)
+                    {
+                        group.threadIdMap.Remove(group.threads[i].threadId);
+                        group.threads.RemoveAt(i);
+                    }
+                    else
+                        ++i;
+                }
+                group.threads.Sort();
+            }
         }
 
         float CalculateHeightForAllBars(Rect fullRect, out float combinedHeaderHeight, out float combinedThreadHeight)
@@ -397,6 +623,9 @@ namespace UnityEditorInternal
                 else
                 {
                     group.height = group.expanded.value ? k_GroupHeight : Math.Max(group.height, group.threads.Count * k_ThreadMinHeightCollapsed);
+                    // Ensure minimum height is k_GroupHeight.
+                    if (group.height < k_GroupHeight)
+                        group.height = k_GroupHeight;
                 }
 
                 combinedHeaderHeight += group.height;
@@ -466,7 +695,7 @@ namespace UnityEditorInternal
                 {
                     var height = groupInfo.height;
                     var expandedState = groupInfo.expanded.target;
-                    var newExpandedState = DrawBar(r, y, height, GUIContent.Temp(groupInfo.name), true, expandedState, false);
+                    var newExpandedState = DrawBar(r, y, height, groupInfo.DisplayName, true, expandedState, false);
 
                     if (newExpandedState != expandedState)
                     {
@@ -487,7 +716,7 @@ namespace UnityEditorInternal
             }
         }
 
-        void DoNativeProfilerTimeline(Rect r, int frameIndex, int maxContextFramesToShow, int threadIndex, float timeOffset, bool ghost, float scaleForThreadHeight)
+        void DoNativeProfilerTimeline(Rect r, int frameIndex, int threadIndex, float timeOffset, bool ghost, float scaleForThreadHeight)
         {
             // Add some margins to each thread view.
             Rect clipRect = r;
@@ -507,7 +736,7 @@ namespace UnityEditorInternal
                 }
                 else if (Event.current.type == EventType.MouseDown && !ghost) // Ghosts are not clickable
                 {
-                    HandleNativeProfilerTimelineInput(localRect, frameIndex, maxContextFramesToShow, threadIndex, timeOffset, topMargin, scaleForThreadHeight);
+                    HandleNativeProfilerTimelineInput(localRect, frameIndex, threadIndex, timeOffset, topMargin, scaleForThreadHeight);
                 }
             }
             GUI.EndGroup();
@@ -533,7 +762,7 @@ namespace UnityEditorInternal
             NativeProfilerTimeline.Draw(ref drawArgs);
         }
 
-        void HandleNativeProfilerTimelineInput(Rect threadRect, int frameIndex, int maxContextFramesToShow, int threadIndex, float timeOffset, float topMargin, float scaleForThreadHeight)
+        void HandleNativeProfilerTimelineInput(Rect threadRect, int frameIndex, int threadIndex, float timeOffset, float topMargin, float scaleForThreadHeight)
         {
             // Only let this thread view change mouse state if it contained the mouse pos
             Rect clippedRect = threadRect;
@@ -610,7 +839,7 @@ namespace UnityEditorInternal
                         {
                             // posArgs.out_EntryIndex is a MeshCache index which differs from sample index by 1 as root is not included into MeshCache.
                             frameData.GetSampleFlowEvents(mouseOverIndex + 1, m_SelectedEntry.FlowEvents);
-                            UpdateActiveFlowEventsForAllThreadsInAllVisibleFrames(frameIndex, maxContextFramesToShow, m_SelectedEntry.FlowEvents);
+                            UpdateActiveFlowEventsForAllThreadsInAllVisibleFrames(frameData.frameIndex, m_SelectedEntry.FlowEvents);
                         }
                     }
                 }
@@ -657,6 +886,9 @@ namespace UnityEditorInternal
         public override void Clear()
         {
             InitializeNativeTimeline();
+            m_LastSelectedFrameIndex = -1;
+            for (int i = 0; i < m_Groups.Count; i++)
+                m_Groups[i].Clear();
         }
 
         void ClearSelection()
@@ -774,45 +1006,41 @@ namespace UnityEditorInternal
             }
         }
 
-        void DoProfilerFrame(int frameIndex, int maxContextFramesToShow, Rect fullRect, bool ghost, int threadCount, float offset, float scaleForThreadHeight)
+        void DoProfilerFrame(int currentFrameIndex, int currentFrameIndexOffset, Rect fullRect, bool ghost, float offset, float scaleForThreadHeight)
         {
-            using (var iter = new ProfilerFrameDataIterator())
+            var frameIndex = currentFrameIndex + currentFrameIndexOffset;
+            float y = fullRect.y;
+
+            // the unscaled y value equating to the timeline Y range value
+            float rangeY = 0;
+            foreach (var groupInfo in m_Groups)
             {
-                int myThreadCount = iter.GetThreadCount(frameIndex);
-                if (ghost && myThreadCount != threadCount)
-                    return;
-
-                iter.SetRoot(frameIndex, 0);
-
-                float y = fullRect.y;
-
-                // the unscaled y value equating to the timeline Y range value
-                float rangeY = 0;
-                foreach (var groupInfo in m_Groups)
+                Rect r = fullRect;
+                var expanded = groupInfo.expanded.value;
+                if (expanded && groupInfo.threads.Count > 0)
                 {
-                    Rect r = fullRect;
-                    var expanded = groupInfo.expanded.value;
-                    if (expanded && groupInfo.threads.Count > 0)
+                    y += groupInfo.height;
+                    rangeY += groupInfo.height;
+                }
+
+                // When group is not expanded its header still occupies at least groupInfo.height
+                var notExpandedLeftOverY = groupInfo.height;
+
+                var groupThreadCount = groupInfo.threads.Count;
+                foreach (var threadInfo in groupInfo.threads)
+                {
+                    r.y = y;
+                    r.height = expanded ? threadInfo.height * scaleForThreadHeight : Math.Max(groupInfo.height / groupThreadCount, k_ThreadMinHeightCollapsed);
+
+                    var threadIndex = threadInfo.threadIndices[k_MaxNeighborFrames + currentFrameIndexOffset];
+                    // Draw only threads that belong to the current frame
+                    if (threadIndex != k_InvalidThreadIndex)
                     {
-                        y += groupInfo.height;
-                        rangeY += groupInfo.height;
-                    }
-
-                    // When group is not expanded its header still occupies at least groupInfo.height
-                    var notExpandedLeftOverY = groupInfo.height;
-
-                    var groupThreadCount = groupInfo.threads.Count;
-                    foreach (var threadInfo in groupInfo.threads)
-                    {
-                        r.y = y;
-                        r.height = expanded ? threadInfo.height * scaleForThreadHeight : Math.Max(groupInfo.height / groupThreadCount, k_ThreadMinHeightCollapsed);
-
                         var tr = r;
                         tr.y -= fullRect.y;
                         if (tr.yMin < m_TimeArea.shownArea.yMax && tr.yMax > m_TimeArea.shownArea.yMin)
                         {
-                            iter.SetRoot(frameIndex, threadInfo.threadIndex);
-                            DoNativeProfilerTimeline(r, frameIndex, maxContextFramesToShow, threadInfo.threadIndex, offset, ghost, scaleForThreadHeight);
+                            DoNativeProfilerTimeline(r, frameIndex, threadIndex, offset, ghost, scaleForThreadHeight);
                         }
 
                         // Save the y pos and height of the selected thread each time we draw, since it can change
@@ -823,29 +1051,33 @@ namespace UnityEditorInternal
                             m_SelectedThreadYRange = rangeY;
                             m_SelectedThread = threadInfo;
                         }
-
-                        y += r.height;
-                        rangeY += r.height;
-                        notExpandedLeftOverY -= r.height;
                     }
 
-                    // Align next thread with the next group
-                    if (notExpandedLeftOverY > 0)
-                    {
-                        y += notExpandedLeftOverY;
-                        rangeY += notExpandedLeftOverY;
-                    }
+                    y += r.height;
+                    rangeY += r.height;
+                    notExpandedLeftOverY -= r.height;
+                }
+
+                // Align next thread with the next group
+                if (notExpandedLeftOverY > 0)
+                {
+                    y += notExpandedLeftOverY;
+                    rangeY += notExpandedLeftOverY;
                 }
             }
         }
 
         void DoFlowEvents(int currentFrameIndex, int firstDrawnFrameIndex, int lastDrawnFrameIndex, Rect fullRect, float scaleForThreadHeight)
         {
+            // Do nothing when flow visualization is disabled.
             if ((cpuModule.ViewOptions & CPUorGPUProfilerModule.ProfilerViewFilteringOptions.ShowExecutionFlow) == 0)
-            {
                 return;
-            }
 
+            // Only redraw on repaint event.
+            if (m_TimeArea == null || Event.current.type != EventType.Repaint)
+                return;
+
+            // TODO: Only update cache on frame change
             m_DrawnFlowIndicatorsCache.Clear();
 
             bool hasSelectedSampleWithFlowEvents = (m_SelectedEntry.FlowEvents.Count > 0) && SelectedSampleIsVisible(firstDrawnFrameIndex, lastDrawnFrameIndex);
@@ -870,6 +1102,9 @@ namespace UnityEditorInternal
         {
             using (var frameData = ProfilerDriver.GetRawFrameDataView(currentFrameIndex, threadInfo.threadIndex))
             {
+                if (!frameData.valid)
+                    return;
+
                 frameData.GetFlowEvents(m_CachedThreadFlowEvents);
 
                 var localViewport = new Rect(Vector2.zero, fullRect.size);
@@ -886,7 +1121,7 @@ namespace UnityEditorInternal
                         };
                         if (!m_DrawnFlowIndicatorsCache.Contains(indicatorCacheValue))
                         {
-                            var sampleRect = RectForSampleOnFrameInThread(flowEvent.ParentSampleIndex, currentFrameIndex, threadInfo, threadRect, 0f, m_TimeArea.shownArea, (groupIsExpanded == false));
+                            var sampleRect = RectForSampleOnFrameInThread(flowEvent.ParentSampleIndex, currentFrameIndex, threadInfo.threadIndex, threadRect, 0f, m_TimeArea.shownArea, (groupIsExpanded == false));
                             if (sampleRect.Overlaps(localViewport))
                             {
                                 FlowIndicatorDrawer.DrawFlowIndicatorForFlowEvent(flowEvent, sampleRect);
@@ -900,12 +1135,16 @@ namespace UnityEditorInternal
 
         void ProcessActiveFlowEventsOnThread(ref FlowLinesDrawer flowLinesDrawer, ThreadInfo threadInfo, Rect threadRect, Rect fullRect, int currentFrameIndex, bool groupIsExpanded)
         {
+            if (threadInfo.ActiveFlowEvents == null)
+                return;
+
             foreach (var flowEventData in threadInfo.ActiveFlowEvents)
             {
                 var flowEvent = flowEventData.flowEvent;
                 var flowEventFrameIndex = flowEventData.frameIndex;
+                var flowEventThreadIndex = flowEventData.threadIndex;
                 var timeOffset = ProfilerFrameTimingUtility.TimeOffsetBetweenFrames(currentFrameIndex, flowEventData.frameIndex);
-                var sampleRect = RectForSampleOnFrameInThread(flowEvent.ParentSampleIndex, flowEventFrameIndex, threadInfo, threadRect, timeOffset, m_TimeArea.shownArea, (groupIsExpanded == false));
+                var sampleRect = RectForSampleOnFrameInThread(flowEvent.ParentSampleIndex, flowEventFrameIndex, flowEventThreadIndex, threadRect, timeOffset, m_TimeArea.shownArea, (groupIsExpanded == false));
 
                 // A flow event can have no parent sample if it is not enclosed within a PROFILER_AUTO scope.
                 if (flowEventData.hasParentSampleIndex)
@@ -916,7 +1155,7 @@ namespace UnityEditorInternal
                     {
                         isSelectedSample = (m_SelectedEntry.threadId == threadInfo.threadIndex) && (m_SelectedEntry.frameId == flowEventFrameIndex) && m_SelectedEntry.FlowEvents.Contains(flowEvent);
                     }
-                    flowLinesDrawer.AddFlowEvent(flowEventData, threadInfo.threadIndex, sampleRect, isSelectedSample);
+                    flowLinesDrawer.AddFlowEvent(flowEventData, sampleRect, isSelectedSample);
 
                     // A sample can have multiple flow events. Check an indicator hasn't already been drawn for this sample on this thread.
                     var indicatorCacheValue = new DrawnFlowIndicatorCacheValue()
@@ -948,8 +1187,6 @@ namespace UnityEditorInternal
         void ForEachThreadInEachGroup(Rect fullRect, float scaleForThreadHeight, Action<GroupInfo, ThreadInfo, Rect> action)
         {
             float y = fullRect.y;
-            // The unscaled y value equating to the timeline Y range value.
-            float rangeY = 0;
             foreach (var groupInfo in m_Groups)
             {
                 var threadRect = fullRect;
@@ -957,7 +1194,6 @@ namespace UnityEditorInternal
                 if (groupIsExpanded && groupInfo.threads.Count > 0)
                 {
                     y += groupInfo.height;
-                    rangeY += groupInfo.height;
                 }
 
                 // When group is not expanded its header still occupies at least groupInfo.height.
@@ -971,7 +1207,6 @@ namespace UnityEditorInternal
                     action(groupInfo, threadInfo, threadRect);
 
                     y += threadRect.height;
-                    rangeY += threadRect.height;
                     notExpandedLeftOverY -= threadRect.height;
                 }
 
@@ -979,15 +1214,14 @@ namespace UnityEditorInternal
                 if (notExpandedLeftOverY > 0)
                 {
                     y += notExpandedLeftOverY;
-                    rangeY += notExpandedLeftOverY;
                 }
             }
         }
 
-        Rect RectForSampleOnFrameInThread(int sampleIndex, int frameIndex, ThreadInfo threadInfo, Rect threadRect, float timeOffset, Rect shownAreaRect, bool isGroupCollapsed)
+        Rect RectForSampleOnFrameInThread(int sampleIndex, int frameIndex, int threadIndex, Rect threadRect, float timeOffset, Rect shownAreaRect, bool isGroupCollapsed)
         {
-            var positionInfoArgs = RawPositionInfoForSample(sampleIndex, frameIndex, threadInfo.threadIndex, threadRect, timeOffset, shownAreaRect);
-            CorrectRawPositionInfo(isGroupCollapsed, threadInfo, threadRect, ref positionInfoArgs);
+            var positionInfoArgs = RawPositionInfoForSample(sampleIndex, frameIndex, threadIndex, threadRect, timeOffset, shownAreaRect);
+            CorrectRawPositionInfo(isGroupCollapsed, threadRect, ref positionInfoArgs);
 
             var sampleRect = new Rect(new Vector2(positionInfoArgs.out_Position.x, positionInfoArgs.out_Position.y), positionInfoArgs.out_Size);
             return sampleRect;
@@ -1010,7 +1244,7 @@ namespace UnityEditorInternal
         }
 
         // NativeProfilerTimeline.GetEntryPositionInfo appears to return rects relative to the thread rect. It also appears to not account for collapsed groups and threads.
-        void CorrectRawPositionInfo(bool isGroupCollapsed, ThreadInfo threadInfo, Rect threadRect, ref NativeProfilerTimeline_GetEntryPositionInfoArgs positionInfo)
+        static void CorrectRawPositionInfo(bool isGroupCollapsed, Rect threadRect, ref NativeProfilerTimeline_GetEntryPositionInfoArgs positionInfo)
         {
             // Offset the vertical position by the thread rect's vertical position.
             positionInfo.out_Position.y += threadRect.y;
@@ -1226,20 +1460,6 @@ namespace UnityEditorInternal
 
             float x = m_TimeArea.TimeToPixel(m_SelectedEntry.time + m_SelectedEntry.duration * 0.5f, fullRect);
             ShowLargeTooltip(new Vector2(x, selectedY), fullRect, text.ToString(), selectedLineHeightVisible);
-        }
-
-        public void MarkDeadOrClearThread()
-        {
-            foreach (var group in m_Groups)
-            {
-                for (int i = group.threads.Count - 1; i >= 0; i--)
-                {
-                    if (group.threads[i].alive)
-                        group.threads[i].alive = false;
-                    else
-                        group.threads.RemoveAt(i);
-                }
-            }
         }
 
         void PrepareTicks()
@@ -1732,8 +1952,7 @@ namespace UnityEditorInternal
                     }
 
                     // Prepare group and Thread Info
-                    UpdateGroupAndThreadInfo(iter, frameIndex);
-                    MarkDeadOrClearThread();
+                    UpdateGroupAndThreadInfo(frameIndex);
 
                     HandleFrameSelected(iter.frameTimeMS);
 
@@ -1820,14 +2039,13 @@ namespace UnityEditorInternal
                     GUI.enabled = false;
 
                     // Walk backwards to find how many previous frames we need to show.
-                    int maxContextFramesToShow = m_ProfilerWindow.IsRecording() ? 1 : 3;
                     int numContextFramesToShow = maxContextFramesToShow;
                     int currentFrame = frameIndex;
                     float currentTime = 0;
                     do
                     {
                         int prevFrame = ProfilerDriver.GetPreviousFrameIndex(currentFrame);
-                        if (prevFrame == -1)
+                        if (prevFrame == k_InvalidOrCurrentFrameIndex || !ProfilerDriver.GetFramesBelongToSameSession(currentFrame, prevFrame))
                             break;
                         iter.SetRoot(prevFrame, 0);
                         currentTime -= iter.frameTimeMS;
@@ -1841,7 +2059,7 @@ namespace UnityEditorInternal
                     while (currentFrame != -1 && currentFrame != frameIndex)
                     {
                         iter.SetRoot(currentFrame, 0);
-                        DoProfilerFrame(currentFrame, maxContextFramesToShow, shownBarsUIRect, true, threadCount, currentTime, scaleForThreadHeight);
+                        DoProfilerFrame(frameIndex, currentFrame - frameIndex, shownBarsUIRect, true, currentTime, scaleForThreadHeight);
                         currentTime += iter.frameTimeMS;
                         currentFrame = ProfilerDriver.GetNextFrameIndex(currentFrame);
                     }
@@ -1855,12 +2073,13 @@ namespace UnityEditorInternal
                     {
                         if (frameIndex != currentFrame)
                         {
-                            DoProfilerFrame(currentFrame, maxContextFramesToShow, shownBarsUIRect, true, threadCount, currentTime, scaleForThreadHeight);
+                            DoProfilerFrame(frameIndex, currentFrame - frameIndex, shownBarsUIRect, true, currentTime, scaleForThreadHeight);
                             lastDrawnFrame = currentFrame;
                         }
                         iter.SetRoot(currentFrame, 0);
+                        var prevFrame = currentFrame;
                         currentFrame = ProfilerDriver.GetNextFrameIndex(currentFrame);
-                        if (currentFrame == -1)
+                        if (currentFrame == k_InvalidOrCurrentFrameIndex || !ProfilerDriver.GetFramesBelongToSameSession(currentFrame, prevFrame))
                             break;
                         currentTime += iter.frameTimeMS;
                         --numContextFramesToShow;
@@ -1871,7 +2090,7 @@ namespace UnityEditorInternal
                     // Draw center frame last to get on top
                     threadCount = 0;
                     currentTime = 0;
-                    DoProfilerFrame(frameIndex, maxContextFramesToShow, shownBarsUIRect, false, threadCount, currentTime, scaleForThreadHeight);
+                    DoProfilerFrame(frameIndex, 0, shownBarsUIRect, false, currentTime, scaleForThreadHeight);
                     DoFlowEvents(frameIndex, firstDrawnFrame, lastDrawnFrame, shownBarsUIRect, scaleForThreadHeight);
 
                     GUI.EndClip();
@@ -2018,20 +2237,18 @@ namespace UnityEditorInternal
             cpuModule?.DrawOptionsMenuPopup();
         }
 
-        void UpdateActiveFlowEventsForAllThreadsInAllVisibleFrames(int frameIndex, int maximumNumberOfContextFramesToShow, List<RawFrameDataView.FlowEvent> activeFlowEvents)
+        void UpdateActiveFlowEventsForAllThreadsInAllVisibleFrames(int frameIndex, List<RawFrameDataView.FlowEvent> activeFlowEvents)
         {
-            if (activeFlowEvents.Count == 0)
-            {
+            if (activeFlowEvents?.Count == 0)
                 return;
-            }
 
-            int firstContextFrame = IndexOfFirstContextFrame(frameIndex, maximumNumberOfContextFramesToShow);
-            int lastContextFrame = frameIndex + maximumNumberOfContextFramesToShow;
+            int firstContextFrame = IndexOfFirstContextFrame(frameIndex, maxContextFramesToShow);
+            int lastContextFrame = frameIndex + maxContextFramesToShow;
             int currentFrame = firstContextFrame;
             while ((currentFrame != -1) && (currentFrame <= lastContextFrame))
             {
                 bool clearActiveFlowEvents = (currentFrame == firstContextFrame);
-                UpdateActiveFlowEventsForAllThreadsAtFrame(currentFrame, clearActiveFlowEvents, activeFlowEvents);
+                UpdateActiveFlowEventsForAllThreadsAtFrame(frameIndex, currentFrame - frameIndex, clearActiveFlowEvents, activeFlowEvents);
 
                 currentFrame = ProfilerDriver.GetNextFrameIndex(currentFrame);
             }
@@ -2056,18 +2273,20 @@ namespace UnityEditorInternal
             return firstVisibleContextFrameIndex;
         }
 
-        void UpdateActiveFlowEventsForAllThreadsAtFrame(int frameIndex, bool clearThreadActiveFlowEvents, List<RawFrameDataView.FlowEvent> activeFlowEvents)
+        void UpdateActiveFlowEventsForAllThreadsAtFrame(int currentFrameIndex, int currentFrameIndexOffset, bool clearThreadActiveFlowEvents, List<RawFrameDataView.FlowEvent> activeFlowEvents)
         {
+            var frameIndex = currentFrameIndex + currentFrameIndexOffset;
             foreach (var groupInfo in m_Groups)
             {
                 foreach (var threadInfo in groupInfo.threads)
                 {
                     if (clearThreadActiveFlowEvents)
                     {
-                        threadInfo.ActiveFlowEvents.Clear();
+                        threadInfo.ActiveFlowEvents?.Clear();
                     }
 
-                    using (var frameData = ProfilerDriver.GetRawFrameDataView(frameIndex, threadInfo.threadIndex))
+                    var threadIndex = threadInfo.threadIndices[k_MaxNeighborFrames + currentFrameIndexOffset];
+                    using (var frameData = ProfilerDriver.GetRawFrameDataView(frameIndex, threadIndex))
                     {
                         // In case we're crossing a boundary between data (f.e. captured and loaded, or captured from different devices)
                         // Some threads present in the first part might not be present in the second part
@@ -2093,9 +2312,10 @@ namespace UnityEditorInternal
                                 var flowEventData = new ThreadInfo.FlowEventData
                                 {
                                     flowEvent = threadFlowEvent,
-                                    frameIndex = frameIndex
+                                    frameIndex = frameIndex,
+                                    threadIndex = threadIndex
                                 };
-                                threadInfo.ActiveFlowEvents.Add(flowEventData);
+                                threadInfo.AddFlowEvent(flowEventData);
                             }
                         }
                     }

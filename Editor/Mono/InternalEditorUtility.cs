@@ -363,31 +363,71 @@ namespace UnityEditorInternal
                 if (prevIndex != -1)
                     dir = (newIndex > prevIndex) ? 1 : -1;
 
-                int from, to;
-                var addExisting = true;
-                if (prevIndex < newIndex)
+                int from = 0, to = 0;
+                var addExisting = false;
+
+                bool usingArrowKeys = Event.current != null ? Event.current.keyCode == KeyCode.DownArrow || Event.current.keyCode == KeyCode.UpArrow : false;
+
+                if (selectedInstanceIDs.Count > 1)
                 {
-                    from = prevIndex;
-                    to = newIndex;
-                }
-                else if (newIndex >= firstIndex && newIndex < lastIndex)
-                {
-                    addExisting = false;
+                    var clicked = allEntryInstanceIDs.IndexOf(clickedInstanceID);
                     if (dir > 0)
                     {
-                        from = prevIndex;
+                        if (clicked > lastIndex)
+                        {
+                            from = lastIndex + 1;
+                            to = clicked;
+
+                            addExisting = true;
+                        }
+                        else
+                        {
+                            from = clicked;
+                            to = lastIndex;
+                        }
+                    }
+                    else if (dir < 0)
+                    {
+                        if (clicked < firstIndex)
+                        {
+                            from = clicked;
+                            to = firstIndex - 1;
+
+                            addExisting = true;
+                        }
+                        else
+                        {
+                            from = firstIndex;
+                            to = clicked;
+                        }
+                    }
+                }
+
+                if (!addExisting || usingArrowKeys)
+                {
+                    if (newIndex > lastIndex)
+                    {
+                        from = firstIndex;
                         to = newIndex;
+                    }
+                    else if (newIndex >= firstIndex && newIndex < lastIndex)
+                    {
+                        if (dir > 0)
+                        {
+                            from = newIndex;
+                            to = lastIndex;
+                        }
+                        else
+                        {
+                            from = firstIndex;
+                            to = newIndex;
+                        }
                     }
                     else
                     {
                         from = newIndex;
-                        to = prevIndex;
+                        to = lastIndex;
                     }
-                }
-                else
-                {
-                    from = newIndex;
-                    to = prevIndex;
                 }
 
                 // Outcomment to debug
@@ -396,22 +436,33 @@ namespace UnityEditorInternal
                 {
                     List<int> allSelectedInstanceIDs = new List<int>();
 
-                    if (addExisting)
-                        allSelectedInstanceIDs.AddRange(selectedInstanceIDs);
+                    if (addExisting && !usingArrowKeys)
+                    {
+                        allSelectedInstanceIDs.AddRange(selectedInstanceIDs.GetRange(0, selectedInstanceIDs.Count));
+                        allSelectedInstanceIDs.AddRange(allEntryInstanceIDs.GetRange(from, to - from + 1));
+                    }
+                    else
+                    {
+                        allSelectedInstanceIDs.AddRange(allEntryInstanceIDs.GetRange(from, to - from + 1));
+                    }
 
-                    allSelectedInstanceIDs.AddRange(allEntryInstanceIDs.GetRange(from, to - from + 1));
-                    return allSelectedInstanceIDs.Distinct().ToList();
+                    return allSelectedInstanceIDs;
                 }
 
                 var foundInstanceIDs = TryGetInstanceIds(allEntryInstanceIDs, allEntryGuids, from, to);
                 if (foundInstanceIDs != null)
                 {
-                    if (addExisting)
+                    // adding the entire selectedInstanceIDs would result
+                    // in the last entry being duplicated later on
+                    // thus when selecting upwards we add the existing selection - 1;
+                    // when selecting downwards don't add the last index from the new selection
+                    if (addExisting || !usingArrowKeys)
                     {
                         List<int> allSelectedInstanceIDs = new List<int>();
-                        allSelectedInstanceIDs.AddRange(selectedInstanceIDs);
-                        allSelectedInstanceIDs.AddRange(foundInstanceIDs);
-                        return allSelectedInstanceIDs.Distinct().ToList();
+                        allSelectedInstanceIDs.AddRange(selectedInstanceIDs.GetRange(0, selectedInstanceIDs.Count));
+                        allSelectedInstanceIDs.AddRange(allEntryInstanceIDs.GetRange(from, to - from + 1));
+
+                        return allSelectedInstanceIDs;
                     }
 
                     return foundInstanceIDs;

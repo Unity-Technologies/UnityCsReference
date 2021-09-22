@@ -10,7 +10,7 @@ namespace UnityEditor.Scripting.Compilers
 {
     internal abstract class CompilerOutputParserBase
     {
-        static protected CompilerMessage CreateInternalCompilerErrorMessage(string[] compileroutput)
+        protected static CompilerMessage CreateInternalCompilerErrorMessage(string[] compileroutput)
         {
             CompilerMessage message;
             message.file = "";
@@ -24,7 +24,7 @@ namespace UnityEditor.Scripting.Compilers
             return message;
         }
 
-        internal static protected CompilerMessage CreateCompilerMessageFromMatchedRegex(string line, Match m, string errorId, string informationId = null)
+        protected internal static CompilerMessage CreateCompilerMessageFromMatchedRegex(string line, Match m, string errorId, string informationId = null)
         {
             CompilerMessage message = new CompilerMessage();
 

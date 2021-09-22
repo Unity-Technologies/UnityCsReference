@@ -65,7 +65,7 @@ namespace UnityEditorInternal
 
         private SerializedObject m_SerializedObject;
         private SerializedProperty m_Elements;
-        private string m_PropertyPath;
+        private string m_PropertyPath = string.Empty;
         private IList m_ElementList;
         private bool m_Draggable;
         private float m_DraggedY;
@@ -75,6 +75,8 @@ namespace UnityEditorInternal
         private bool m_DisplayHeader;
         public bool displayAdd;
         public bool displayRemove;
+
+        bool scheduleRemove;
 
         internal bool m_IsEditable;
         internal bool m_HasPropertyDrawer;
@@ -207,7 +209,7 @@ namespace UnityEditorInternal
                         || (list.onCanRemoveCallback != null && !list.onCanRemoveCallback(list))
                         || list.isOverMaxMultiEditLimit))
                     {
-                        if (GUI.Button(removeRect, iconToolbarMinus, preButton))
+                        if (GUI.Button(removeRect, iconToolbarMinus, preButton) || GUI.enabled && list.scheduleRemove)
                         {
                             if (list.onRemoveCallback == null)
                             {
@@ -218,9 +220,12 @@ namespace UnityEditorInternal
 
                             list.onChangedCallback?.Invoke(list);
                             list.ClearCacheRecursive();
+                            GUI.changed = true;
                         }
                     }
                 }
+
+                list.scheduleRemove = false;
             }
 
             // default add button behavior
@@ -930,6 +935,11 @@ namespace UnityEditorInternal
                             GUI.changed = true;
                         }
                         m_PropertyCache[i].lastControlCount = currentControlCount;
+
+                        // If an event was consumed in the course of running this for loop, then there is
+                        // a good chance the array data has changed and it is dangerous for us to continue
+                        // rendering it in this frame.
+                        if (Event.current.type == EventType.Used) break;
                     }
                 }
 
@@ -1027,7 +1037,7 @@ namespace UnityEditorInternal
             switch (evt.GetTypeForControl(id))
             {
                 case EventType.KeyDown:
-                    if (GUIUtility.keyboardControl != id)
+                    if (GUIUtility.keyboardControl != id || m_Dragging || clicked)
                         return;
                     // if we have keyboard focus, arrow through the list
                     if (evt.keyCode == KeyCode.DownArrow)
@@ -1038,6 +1048,12 @@ namespace UnityEditorInternal
                     if (evt.keyCode == KeyCode.UpArrow)
                     {
                         m_ActiveElement -= 1;
+                        evt.Use();
+                    }
+                    if (evt.keyCode == KeyCode.Delete)
+                    {
+                        scheduleRemove = true;
+                        InvalidateParentCaches(m_PropertyPath);
                         evt.Use();
                     }
                     if (evt.keyCode == KeyCode.Escape && GUIUtility.hotControl == id)
@@ -1103,6 +1119,7 @@ namespace UnityEditorInternal
                     break;
 
                 case EventType.MouseUp:
+                    clicked = false;
                     if (!m_Draggable)
                     {
                         // if mouse up was on the same index as mouse down we fire a mouse up callback (useful if for beginning renaming on mouseup)
