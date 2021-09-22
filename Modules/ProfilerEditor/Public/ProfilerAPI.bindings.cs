@@ -304,6 +304,10 @@ namespace UnityEditorInternal
             return new RawFrameDataView(frameIndex, threadIndex);
         }
 
+        [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
+        [NativeMethod("GetFramesBelongToSameSession")]
+        internal static extern bool GetFramesBelongToSameSession(int frame1, int frame2);
+
         public static event Action<int, int> NewProfilerFrameRecorded;
 
         [RequiredByNativeCode]

@@ -69,6 +69,7 @@ namespace UnityEditor
         }
 
         private const string kMaximizeRestoreFile = "CurrentMaximizeLayout.dwlt";
+        private const string kLastLayoutName = "LastLayout.dwlt";
         private const string kDefaultLayoutName = "Default.wlt";
         // Backward compatibility: name of the old (non mode specific) per project layout
         internal const string kOldCurrentLayoutPath = "Library/CurrentLayout.dwlt";
@@ -79,6 +80,7 @@ namespace UnityEditor
         // Backward compatibility: property for old global layout (for default mode only)
         internal static string OldGlobalLayoutPath => Path.Combine(layoutsPreferencesPath, "__Current__.dwlt");
         internal static string ProjectLayoutPath => GetProjectLayoutPerMode(ModeService.currentId);
+        internal static string LastLayoutPath => Path.Combine(layoutsModePreferencesPath, kLastLayoutName);
 
         [UsedImplicitly, RequiredByNativeCode]
         public static void LoadDefaultWindowPreferences()
@@ -388,6 +390,7 @@ namespace UnityEditor
         {
             // Save Project Current Layout
             SaveWindowLayout(FileUtil.CombinePaths(Directory.GetCurrentDirectory(), GetProjectLayoutPerMode(modeId)));
+            SaveWindowLayout(FileUtil.CombinePaths(layoutsPreferencesPath, modeId, kLastLayoutName));
         }
 
         internal static string GetCurrentLayoutPath()
@@ -398,7 +401,11 @@ namespace UnityEditor
             if (!File.Exists(ProjectLayoutPath))
             {
                 currentLayoutPath = GetDefaultLayoutPath();
-                if (ModeService.currentId == ModeService.k_DefaultModeId)
+                if (File.Exists(LastLayoutPath))
+                {
+                    currentLayoutPath = LastLayoutPath;
+                }
+                else if (ModeService.currentId == ModeService.k_DefaultModeId)
                 {
                     // Backward compatibility check:
                     // Old non mode Library\CurrentLayout.dwlt
