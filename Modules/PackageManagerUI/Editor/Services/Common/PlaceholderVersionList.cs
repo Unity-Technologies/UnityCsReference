@@ -34,6 +34,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool isNonLifecycleVersionInstalled => false;
 
+        public bool hasLifecycleVersion => false;
+
         public PlaceholderVersionList(PlaceholderPackageVersion version)
         {
             m_Versions = new[] { version };

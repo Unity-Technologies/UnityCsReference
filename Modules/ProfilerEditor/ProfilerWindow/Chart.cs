@@ -1220,8 +1220,12 @@ namespace UnityEditorInternal
 
             if (overlays == null || overlays.Length != numSeries)
                 overlays = new ChartSeriesViewData[numSeries];
-            if (dataAvailable == null && series.Length > 0 && series[0].yValues != null)
-                dataAvailable = new int[series[0].yValues.Length];
+        }
+
+        public void ClearDataAvailableBuffer()
+        {
+            for (int i = 0; i < dataAvailable.Length; ++i)
+                dataAvailable[i] = 0;
         }
 
         public void AssignSelectedLabels(string[] selectedLabels)

@@ -686,6 +686,12 @@ namespace UnityEditor
 
         void AnimationSplitTable()
         {
+            if (m_ClipList.count != m_ClipAnimations.arraySize)
+            {
+                UpdateList();
+                SelectClipInList(m_ClipList);
+            }
+
             m_ClipList.DoLayoutList();
 
             EditorGUI.BeginChangeCheck();

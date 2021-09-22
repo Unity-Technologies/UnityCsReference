@@ -108,10 +108,18 @@ namespace UnityEngine
             }
         }
 
+        // Used by tests, we want touch screen keyboard to show up even if physical keyboard is connected.
+        // That's the case with Android devices on Katana, where NVIDIA shields have physical keyboards connected
+        // Meaning when clicking on input fields, touch screen keyboard won't show, since physical keyboard is present.
+        // Disabling in place editing, forces touch screen keyboard to show up.
+        internal static bool disableInPlaceEditing { get; set; }
+
         public static bool isInPlaceEditingAllowed
         {
             get
             {
+                if (disableInPlaceEditing)
+                    return false;
                 return false;
             }
         }

@@ -12,7 +12,7 @@ namespace UnityEditor
     [EditorTool("Articulation Body Joint Limit Tool", typeof(ArticulationBody))]
     class ArticulationBodyJointLimitsTool : EditorTool
     {
-        private const float CapScale = 0.08f;
+        private const float CapScale = 0.12f;
         private const float DashSize = 1f;
         private const float DashAlpha = 0.8f;
 
@@ -238,7 +238,7 @@ namespace UnityEditor
             int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType
         )
         {
-            Handles.CylinderHandleCap(controlID, position, rotation, size, eventType);
+            Handles.CylinderHandleCap(controlID, position, rotation, size * HandleUtility.GetHandleSize(position), eventType);
         }
 
         private void ShowRevoluteLimits(JointAngularLimitHandle handle, ArticulationBody body, Matrix4x4 parentAnchorSpace)

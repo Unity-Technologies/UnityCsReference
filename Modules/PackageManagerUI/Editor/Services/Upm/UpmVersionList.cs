@@ -22,12 +22,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             get
             {
                 var installed = this.installed;
-                var actualLifecycleVersion = this.actualLifecycleVersion;
-                var actualLifecycleNextVersion = this.actualLifecycleNextVersion;
+                var resolvedLifecycleVersion = this.resolvedLifecycleVersion;
+                var resolvedLifecycleNextVersion = this.resolvedLifecycleNextVersion;
 
                 // if installed is experimental, return all versions higher than it
                 if (installed?.HasTag(PackageTag.Experimental) == true)
-                    return m_Versions.Where(v => v == actualLifecycleVersion || v == actualLifecycleNextVersion
+                    return m_Versions.Where(v => v == resolvedLifecycleVersion || v == resolvedLifecycleNextVersion
                         || v.version >= installed.version).Cast<IPackageVersion>();
 
                 var recommended = this.recommended;
@@ -39,16 +39,16 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (installed != null)
                     keyVersions.Add(installed);
 
-                if (actualLifecycleVersion != null)
+                if (resolvedLifecycleVersion != null)
                 {
-                    keyVersions.Add(actualLifecycleVersion);
+                    keyVersions.Add(resolvedLifecycleVersion);
 
                     // if the lifecycle.version is Release Candidate for this Editor version, still need to check if the release version is available
                     //  and add that
-                    if (actualLifecycleVersion.HasTag(PackageTag.ReleaseCandidate) && actualLifecycleVersion.version?.HasPreReleaseVersionTag() == true)
+                    if (resolvedLifecycleVersion.HasTag(PackageTag.ReleaseCandidate) && resolvedLifecycleVersion.version?.HasPreReleaseVersionTag() == true)
                     {
                         var latestReleasePatchOfUnityLifecycleVersion = m_Versions.LastOrDefault(v => v.HasTag(PackageTag.Release) &&
-                            (v.version?.IsPatchOf(actualLifecycleVersion.version) == true || v.version?.IsMajorMinorPatchEqualTo(actualLifecycleVersion.version) == true));
+                            (v.version?.IsPatchOf(resolvedLifecycleVersion.version) == true || v.version?.IsMajorMinorPatchEqualTo(resolvedLifecycleVersion.version) == true));
 
                         if (latestReleasePatchOfUnityLifecycleVersion != null)
                             keyVersions.Add(latestReleasePatchOfUnityLifecycleVersion);
@@ -65,8 +65,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }
 
                 // now add the proper Pre-Release version to key versions; latestUnityLifecycleNextVersion takes priority
-                if (actualLifecycleNextVersion != null)
-                    keyVersions.Add(actualLifecycleNextVersion);
+                if (resolvedLifecycleNextVersion != null)
+                    keyVersions.Add(resolvedLifecycleNextVersion);
                 // if nextVersion is not set but the installed version is Pre-Release, add the latest iteration on it to key versions
                 else if (installed?.HasTag(PackageTag.PreRelease) == true)
                 {
@@ -104,7 +104,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         // the latest patch of lifecycle version if it exists, or the exact
         //  version if version is set to a pre-release
-        private IPackageVersion actualLifecycleVersion
+        private IPackageVersion resolvedLifecycleVersion
         {
             get
             {
@@ -125,7 +125,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private string m_LifecycleNextVersionString;
         private SemVersion? m_LifecycleNextVersion;
         internal string lifecycleNextVersion => m_LifecycleNextVersionString;
-        private IPackageVersion actualLifecycleNextVersion
+        private IPackageVersion resolvedLifecycleNextVersion
         {
             get
             {
@@ -164,20 +164,20 @@ namespace UnityEditor.PackageManager.UI.Internal
                 // for Unity packages, we should only recommend versions that have been tested with
                 //  the Editor; this means they have to be either version or nextVersion in the manifest
                 // version will take precedence over nextVersion
-                var actualLifecycleVersion = this.actualLifecycleVersion;
-                var actualLifecycleNextVersion = this.actualLifecycleNextVersion;
+                var resolvedLifecycleVersion = this.resolvedLifecycleVersion;
+                var resolvedLifecycleNextVersion = this.resolvedLifecycleNextVersion;
 
-                var recommendedLifecycleVersion = actualLifecycleVersion;
+                var recommendedLifecycleVersion = resolvedLifecycleVersion;
 
                 if (installed == null)
                     return recommendedLifecycleVersion
-                        ?? actualLifecycleNextVersion;
+                        ?? resolvedLifecycleNextVersion;
                 // nextVersion, since in pre-release, will only be recommended if it's higher than the installed
                 else
                 {
-                    var useNextVersion = actualLifecycleNextVersion != null && actualLifecycleNextVersion.version > installed.version;
+                    var useNextVersion = resolvedLifecycleNextVersion != null && resolvedLifecycleNextVersion.version > installed.version;
                     return recommendedLifecycleVersion
-                        ?? (useNextVersion ? actualLifecycleNextVersion : null);
+                        ?? (useNextVersion ? resolvedLifecycleNextVersion : null);
                 }
             }
         }
@@ -195,6 +195,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             return installed != null && lifecycleVersion != null && (installed.HasTag(PackageTag.Custom | PackageTag.Git) || installed.version?.IsEqualOrPatchOf(lifecycleVersion.version) != true);
         }
+
+        public bool hasLifecycleVersion => m_LifecycleVersion != null || m_LifecycleNextVersion != null;
 
         internal void UpdateVersion(UpmPackageVersion version)
         {

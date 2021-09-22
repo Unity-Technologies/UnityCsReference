@@ -1204,61 +1204,7 @@ namespace UnityEditor
 
         public static void ApplyAddedGameObject(GameObject gameObject, string assetPath, InteractionMode action)
         {
-            DateTime startTime = DateTime.UtcNow;
-
-            if (gameObject == null)
-                throw new ArgumentNullException(nameof(gameObject), "Cannot apply added GameObject. GameObject is null.");
-
-            if (!IsAddedGameObjectOverride(gameObject))
-                throw new ArgumentException("Cannot apply added GameObject. GameObject is not an added GameObject override on a Prefab instance.", nameof(gameObject));
-
-            ThrowExceptionIfInstanceIsPersistent(gameObject);
-
-            Transform instanceParent = gameObject.transform.parent;
-            if (instanceParent == null)
-                return;
-            GameObject prefabSourceGameObjectParent = GetCorrespondingObjectFromSourceAtPath(instanceParent.gameObject, assetPath);
-            if (prefabSourceGameObjectParent == null)
-                return;
-
-            var instanceRoot = GetOutermostPrefabInstanceRoot(instanceParent);
-            if (instanceRoot == null)
-                return;
-
-            var sourceRoot = prefabSourceGameObjectParent.transform.root.gameObject;
-
-            var actionName = "Apply Added GameObject";
-            if (action == InteractionMode.UserAction)
-            {
-                Undo.RegisterFullObjectHierarchyUndo(sourceRoot, actionName);
-                Undo.RegisterFullObjectHierarchyUndo(instanceRoot, actionName);
-            }
-
-            PrefabUtility.AddGameObjectsToPrefabAndConnect(
-                new GameObject[] { gameObject },
-                prefabSourceGameObjectParent);
-
-            PrefabUtility.SavePrefabAsset(sourceRoot);
-
-            if (action == InteractionMode.UserAction)
-            {
-                var createdAssetObject = GetCorrespondingObjectFromSourceInAsset(gameObject, prefabSourceGameObjectParent);
-                if (createdAssetObject != null)
-                {
-                    Undo.RegisterCreatedObjectUndoToFrontOfUndoQueue(createdAssetObject, actionName);
-
-                    EditorUtility.ForceRebuildInspectors();
-                }
-            }
-
-            Analytics.SendApplyEvent(
-                Analytics.ApplyScope.AddedGameObject,
-                instanceRoot,
-                assetPath,
-                action,
-                startTime,
-                false
-            );
+            ApplyAddedGameObjects(new GameObject[] { gameObject}, assetPath, action);
         }
 
         public static void ApplyAddedGameObjects(GameObject[] gameObjects, string assetPath, InteractionMode action)
@@ -1271,16 +1217,19 @@ namespace UnityEditor
             if (!gameObjects.Any())
                 throw new ArgumentException(nameof(gameObjects), "No GameObjects in array.");
 
-            if (!HasSameParent(gameObjects))
-                throw new ArgumentException(nameof(gameObjects), "ApplyAddedGameObjects requires that GameObjects share the same parent.");
-
             foreach (GameObject go in gameObjects)
             {
+                if (go == null)
+                    throw new ArgumentException(nameof(go), "Input GameObject is null.");
+
                 if (!IsAddedGameObjectOverride(go))
-                    throw new ArgumentException(nameof(go), "Cannot apply added GameObject. GameObject is not an added GameObject override on a Prefab instance.");
+                    throw new ArgumentException(nameof(go), $"Cannot apply added GameObject. GameObject '{go.name}' is not an added GameObject override on a Prefab instance.");
 
                 ThrowExceptionIfInstanceIsPersistent(go);
             }
+
+            if (gameObjects.Length > 1 && !HasSameParent(gameObjects))
+                throw new ArgumentException(nameof(gameObjects), "ApplyAddedGameObjects requires that GameObjects share the same parent.");
 
             GameObject gameObject = gameObjects[0];
             Transform instanceParent = gameObject.transform.parent;
@@ -1317,7 +1266,7 @@ namespace UnityEditor
                     var createdAssetObject = GetCorrespondingObjectFromSourceInAsset(go, prefabSourceGameObjectParent);
                     if (createdAssetObject != null)
                     {
-                        Undo.RegisterCreatedObjectUndo(createdAssetObject, actionName);
+                        Undo.RegisterCreatedObjectUndoToFrontOfUndoQueue(createdAssetObject, actionName);
                     }
                 }
 

@@ -27,7 +27,6 @@ namespace UnityEditorInternal
         public float m_DataScale;
         public ChartViewData m_Data;
         public ChartSeriesViewData[] m_Series;
-        string[] m_CachedSeriesCategories;
         // For some charts, every line is scaled individually, so every data series gets their own range based on their own max scale.
         // For charts that share their scale (like the Networking charts) all series get adjusted to the total max of the chart.
         // Shared scale is only used for line charts and should only be used when every series shares the same data unit.
@@ -146,17 +145,24 @@ namespace UnityEditorInternal
 
         public virtual void UpdateData(int firstEmptyFrame, int firstFrame, int frameCount)
         {
+            // Clear the data available buffer prior to iterating over chart series.
+            if (m_Series.Length > 0)
+                m_Data.ClearDataAvailableBuffer();
+
+            // Iterate over all chart series pulling counter data.
             float totalMaxValue = 1;
             for (int i = 0, count = m_Series.Length; i < count; ++i)
             {
                 float maxValue;
                 if (usesCounters)
                 {
-                    ProfilerDriver.GetCounterValuesBatch(m_Series[i].category, m_Series[i].name, firstEmptyFrame, 1.0f, m_Series[i].yValues, out maxValue);
+                    // Retrieve counter values by category name & counter name.
+                    ProfilerDriver.GetCounterValuesWithAvailabilityBatchByCategory(m_Series[i].category, m_Series[i].name, firstEmptyFrame, 1.0f, m_Series[i].yValues, m_Data.dataAvailable, out maxValue);
                 }
                 else
                 {
-                    ProfilerDriver.GetCounterValuesBatch(m_Area, m_Series[i].name, firstEmptyFrame, 1.0f, m_Series[i].yValues, out maxValue);
+                    // Retrieve counter values by area & counter name.
+                    ProfilerDriver.GetCounterValuesWithAvailabilityBatch(m_Area, m_Series[i].name, firstEmptyFrame, 1.0f, m_Series[i].yValues, m_Data.dataAvailable, out maxValue);
                 }
 
                 m_Series[i].yScale = m_DataScale;
@@ -186,15 +192,6 @@ namespace UnityEditorInternal
                 m_Data.maxValue = totalMaxValue;
             }
             m_Data.Assign(m_Series, firstEmptyFrame, firstFrame);
-
-            if (!usesCounters)
-            {
-                ProfilerDriver.GetStatisticsAvailabilityStates(m_Area, firstEmptyFrame, m_Data.dataAvailable);
-            }
-            else
-            {
-                ProfilerDriver.GetAnyStatisticsAvailableInCategories(m_CachedSeriesCategories, firstEmptyFrame, m_Data.dataAvailable);
-            }
         }
 
         public void UpdateOverlayData(int firstEmptyFrame)
@@ -262,17 +259,15 @@ namespace UnityEditorInternal
         public void ConfigureChartSeries(int historySize, ProfilerCounterDescriptor[] counters)
         {
             var chartAreaColors = ProfilerColors.chartAreaColors;
-            var categories = new HashSet<string>();
             for (int i = 0; i < counters.Length; ++i)
             {
                 var counter = counters[i];
                 var category = counter.CategoryName;
                 m_Series[i] = new ChartSeriesViewData(counter.Name, category, historySize, chartAreaColors[i % chartAreaColors.Length]);
-                categories.Add(category);
             }
 
-            m_CachedSeriesCategories = new string[categories.Count];
-            categories.CopyTo(m_CachedSeriesCategories);
+            // Allocate dataAvailable array for chart.
+            m_Data.dataAvailable = new int[historySize];
         }
 
         public void ResetChartState()

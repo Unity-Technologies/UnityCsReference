@@ -32,6 +32,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool isNonLifecycleVersionInstalled => false;
 
+        public bool hasLifecycleVersion => false;
+
         public AssetStoreVersionList(AssetStoreUtils assetStoreUtils, IOProxy ioProxy)
         {
             ResolveDependencies(assetStoreUtils, ioProxy);

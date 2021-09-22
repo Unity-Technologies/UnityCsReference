@@ -668,6 +668,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (addAndRemoveOperation.isInProgress)
                 SetupAddAndRemoveOperation();
 
+            if (listOfflineOperation.isInProgress)
+                List(true);
+
             if (searchOperation.isInProgress)
                 SearchAll();
 

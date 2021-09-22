@@ -70,6 +70,10 @@ namespace UnityEditor
 
         public static bool IsSelected(this BuildPlatform buildPlatform)
         {
+            // This is the special case for Editor target selected in the UI
+            if (EditorUserBuildSettings.selectedBuildTargetGroup == BuildTargetGroup.Unknown)
+                return buildPlatform.namedBuildTarget == NamedBuildTarget.FromBuildTargetGroup(BuildTargetGroup.Unknown);
+
             return buildPlatform.namedBuildTarget == CalculateSelectedNamedBuildTarget();
         }
 
