@@ -144,6 +144,7 @@ namespace UnityEditor
             public static readonly GUIContent mTRendering = EditorGUIUtility.TrTextContent("Multithreaded Rendering*");
             public static readonly GUIContent staticBatching = EditorGUIUtility.TrTextContent("Static Batching");
             public static readonly GUIContent dynamicBatching = EditorGUIUtility.TrTextContent("Dynamic Batching");
+            public static readonly GUIContent spriteBatchingVertexThreshold = EditorGUIUtility.TrTextContent("Sprite Batching Threshold", "Dynamic Batching is always enabled for Sprites and this controls max vertex threshold for batching. ");
             public static readonly GUIContent graphicsJobsNonExperimental = EditorGUIUtility.TrTextContent("Graphics Jobs");
             public static readonly GUIContent graphicsJobsExperimental = EditorGUIUtility.TrTextContent("Graphics Jobs (Experimental)");
             public static readonly GUIContent graphicsJobsMode = EditorGUIUtility.TrTextContent("Graphics Jobs Mode");
@@ -1777,6 +1778,12 @@ namespace UnityEditor
                         PlayerSettings.SetBatchingForPlatform(platform.defaultTarget, staticBatching, dynamicBatching);
                     }
                 }
+
+                int spriteVertexBatchingThreshold = PlayerSettings.spriteBatchVertexThreshold;
+                EditorGUI.BeginChangeCheck();
+                spriteVertexBatchingThreshold = EditorGUILayout.IntSlider(SettingsContent.spriteBatchingVertexThreshold, spriteVertexBatchingThreshold, 300, 8000);
+                if (EditorGUI.EndChangeCheck())
+                    PlayerSettings.spriteBatchVertexThreshold = spriteVertexBatchingThreshold;
             }
 
             bool hdrDisplaySupported = false;

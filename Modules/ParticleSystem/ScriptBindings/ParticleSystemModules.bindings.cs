@@ -360,6 +360,7 @@ namespace UnityEngine
             extern public ParticleSystemGameObjectFilter influenceFilter { get; [NativeThrows] set; }
             extern public LayerMask influenceMask { get; [NativeThrows] set; }
 
+            [NativeThrows]
             extern public int influenceCount { get; }
 
             extern public bool IsAffectedBy(ParticleSystemForceField field);
@@ -373,6 +374,7 @@ namespace UnityEngine
 
             [NativeThrows]
             extern public void RemoveInfluence([NotNull] ParticleSystemForceField field);
+            [NativeThrows]
             extern public void RemoveAllInfluences();
             [NativeThrows]
             extern public void SetInfluence(int index, [NotNull] ParticleSystemForceField field);

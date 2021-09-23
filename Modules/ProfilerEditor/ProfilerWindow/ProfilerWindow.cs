@@ -111,7 +111,7 @@ namespace UnityEditor
         const string k_SelectedModuleIndexPreferenceKey = "ProfilerWindow.SelectedModuleIndex";
         const string k_DynamicModulesPreferenceKey = "ProfilerWindow.DynamicModules";
 
-        static readonly Vector2 k_MinimumWindowSize = new Vector2(720f, 216f);
+        static readonly Vector2 k_MinimumWindowSize = new Vector2(880f, 216f);
 
         [NonSerialized]
         float m_FrameCountLabelMinWidth = 0;

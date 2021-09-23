@@ -17,6 +17,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         public event Action<long> onLoadAssetsChanged = delegate {};
         public event Action onInitializationFinished = delegate {};
 
+        public bool dismissPreviewPackagesInUse
+        {
+            get => PackageManagerProjectSettings.instance.dismissPreviewPackagesInUse;
+            set => PackageManagerProjectSettings.instance.dismissPreviewPackagesInUse = value;
+        }
+
         public virtual bool enablePreReleasePackages
         {
             get => PackageManagerProjectSettings.instance.enablePreReleasePackages;

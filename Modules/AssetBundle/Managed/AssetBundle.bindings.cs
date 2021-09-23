@@ -401,7 +401,7 @@ namespace UnityEngine
 
         [NativeThrows]
         [NativeMethod("UnloadAsync")]
-        public extern AsyncOperation UnloadAsync(bool unloadAllLoadedObjects);
+        public extern AssetBundleUnloadOperation UnloadAsync(bool unloadAllLoadedObjects);
 
         [NativeMethod("GetAllAssetNames")]
         public extern string[] GetAllAssetNames();

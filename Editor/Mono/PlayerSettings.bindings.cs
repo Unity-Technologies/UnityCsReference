@@ -626,6 +626,9 @@ namespace UnityEditor
             set;
         }
 
+        // Set Maximum Vertex Threshold for Sprite Batching.
+        public static extern int spriteBatchVertexThreshold { get; set; }
+
         // The image to display in the Resolution Dialog window.
         [Obsolete("resolutionDialogBanner has been removed.", false)]
         public static extern Texture2D resolutionDialogBanner { get; set; }

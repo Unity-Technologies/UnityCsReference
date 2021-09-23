@@ -97,6 +97,17 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
+        [SerializeField]
+        private bool m_DismissPreviewPackagesInUse;
+        public virtual bool dismissPreviewPackagesInUse
+        {
+            get { return m_DismissPreviewPackagesInUse; }
+            set
+            {
+                if (value != m_DismissPreviewPackagesInUse)
+                    m_DismissPreviewPackagesInUse = value;
+            }
+        }
 
         [SerializeField]
         public bool oneTimeWarningShown;

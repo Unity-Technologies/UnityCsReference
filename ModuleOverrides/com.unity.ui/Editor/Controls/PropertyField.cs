@@ -482,7 +482,8 @@ namespace UnityEditor.UIElements
                 }
             });
 
-            if (!(parent is InspectorElement inspectorElement))
+            var inspectorElement = GetFirstAncestorOfType<InspectorElement>();
+            if (inspectorElement == null)
                 return field;
 
             field.RegisterCallback<GeometryChangedEvent>(evt =>
@@ -515,9 +516,9 @@ namespace UnityEditor.UIElements
                 totalPadding += m_LabelExtraPadding;
 
                 // Formula to follow IMGUI label width settings
-                var newWidth = resolvedStyle.width * m_LabelWidthRatio - totalPadding;
+                var newWidth = inspectorElement.resolvedStyle.width * m_LabelWidthRatio - totalPadding;
                 if (Mathf.Abs(labelElement.resolvedStyle.width - newWidth) > UIRUtility.k_Epsilon)
-                    labelElement.style.width = newWidth;
+                    labelElement.style.width = Mathf.Max(0f, newWidth);
             });
 
             return field;

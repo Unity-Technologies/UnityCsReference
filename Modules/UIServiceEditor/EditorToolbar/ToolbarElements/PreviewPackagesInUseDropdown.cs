@@ -21,11 +21,11 @@ namespace UnityEditor.Toolbars
         private bool m_IsPreviewPackagesInUse;
 
         [NonSerialized]
-        private PackageManagerPrefs m_PackageManagerPrefs;
-        [NonSerialized]
         private ApplicationProxy m_ApplicationProxy;
         [NonSerialized]
         private UpmClient m_UpmClient;
+        [NonSerialized]
+        private PackageManagerProjectSettingsProxy m_SettingsProxy;
 
         private const string previewLabel = "unity-editor-toolbar-element-preview-packages-in-use__label";
         private const string previewIcon = "unity-editor-toolbar-preview-package-in-use__icon";
@@ -33,9 +33,9 @@ namespace UnityEditor.Toolbars
 
         public PreviewPackagesInUseDropdown()
         {
-            m_PackageManagerPrefs = ServicesContainer.instance.Resolve<PackageManagerPrefs>();
             m_ApplicationProxy = ServicesContainer.instance.Resolve<ApplicationProxy>();
             m_UpmClient = ServicesContainer.instance.Resolve<UpmClient>();
+            m_SettingsProxy = ServicesContainer.instance.Resolve<PackageManagerProjectSettingsProxy>();
 
             name = "PreviewPackagesInUseDropdown";
 
@@ -90,7 +90,7 @@ namespace UnityEditor.Toolbars
 
         void OnSizeChanged(GeometryChangedEvent evt)
         {
-            if (m_IsPreviewPackagesInUse && !m_PackageManagerPrefs.dismissPreviewPackagesInUse)
+            if (m_IsPreviewPackagesInUse && !m_SettingsProxy.dismissPreviewPackagesInUse)
             {
                 var toolbarRightAlign = parent;
                 var allButtonsExcludingPreviewDropdownWidth = toolbarRightAlign.Children().Where(button => button.name != "PreviewPackagesInUseDropdown").Sum(button =>
@@ -116,16 +116,17 @@ namespace UnityEditor.Toolbars
 
         void CheckAvailability()
         {
-            style.display = m_IsPreviewPackagesInUse && !m_PackageManagerPrefs.dismissPreviewPackagesInUse ? DisplayStyle.Flex : DisplayStyle.None;
+            style.display = m_IsPreviewPackagesInUse && !m_SettingsProxy.dismissPreviewPackagesInUse ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         void ShowUserMenu(Rect dropDownRect)
         {
             var menu = new GenericMenu();
 
-            menu.AddItem(EditorGUIUtility.TrTextContent("Dismiss for now"), false, () =>
+            menu.AddItem(EditorGUIUtility.TrTextContent("Dismiss"), false, () =>
             {
-                m_PackageManagerPrefs.dismissPreviewPackagesInUse = true;
+                m_SettingsProxy.dismissPreviewPackagesInUse = true;
+                m_SettingsProxy.Save();
                 style.display = DisplayStyle.None;
             });
             menu.AddSeparator("");

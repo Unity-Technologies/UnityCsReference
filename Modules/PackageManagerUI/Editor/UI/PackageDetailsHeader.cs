@@ -285,7 +285,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void RefreshVersionInfoIcon()
         {
             var installed = m_Package?.versions?.installed;
-            if (installed == null)
+            if (installed == null || m_Version == null)
             {
                 UIUtils.SetElementDisplay(versionInfoIcon, false);
                 return;
@@ -306,11 +306,30 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
 
-            if (m_Version?.isInstalled == true &&  m_Package?.state != PackageState.InstalledAsDependency
-                                               && installed.version?.IsEqualOrPatchOf(m_Package?.versions?.recommended.version) != true)
+            // In Lifecycle V2, if a Unity package doesn't have a lifecycle version (listed in the editor manifest),
+            // then that package is not considered part of the Unity Editor "product" and we need to let users know.
+            var unityVersionString = m_Application.unityVersion;
+            if (!m_Package.versions.hasLifecycleVersion && m_Package.Is(PackageType.Unity))
             {
                 UIUtils.SetElementDisplay(versionInfoIcon, true);
-                versionInfoIcon.tooltip = string.Format(L10n.Tr("The installed version {0} is not verified for your Unity version. The recommended one is {1}."), installedVersionString, m_Package?.versions?.recommended.versionString);
+                versionInfoIcon.tooltip = string.Format(L10n.Tr("This package is not officially supported for Unity {0}."), unityVersionString);
+                return;
+            }
+
+            // We want to let users know when they are using a version different than the recommended.
+            // The recommended version is the resolvedLifecycleVersion or the resolvedLifecycleNextVersion.
+            // However, we don't want to show the info icon if the version currently installed
+            // is a higher patch version of the one in the editor manifest (still considered verified).
+            var recommended = m_Package.versions.recommended;
+            if (m_Version.isInstalled
+                && m_Package.state != PackageState.InstalledAsDependency
+                && m_Package.Is(PackageType.Unity)
+                && recommended != null
+                && installed.version?.IsEqualOrPatchOf(recommended.version) != true)
+            {
+                UIUtils.SetElementDisplay(versionInfoIcon, true);
+                versionInfoIcon.tooltip = string.Format(L10n.Tr("This version is not verified for Unity {0}. We recommended using {1}."),
+                    unityVersionString, recommended.versionString);
                 return;
             }
 

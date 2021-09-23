@@ -15,7 +15,6 @@ using UnityEditor.Callbacks;
 namespace UnityEditor
 {
     [CustomEditor(typeof(MemorySettings))]
-    [ExcludeFromPreset]
     internal class MemorySettingsEditor : Editor
     {
         class Content

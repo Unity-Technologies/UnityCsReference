@@ -33,14 +33,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             set { EditorPrefs.SetBool(k_SkipRemoveConfirmationPrefs, value); }
         }
 
-        [SerializeField]
-        private bool m_DismissPreviewPackagesInUse;
-        public bool dismissPreviewPackagesInUse
-        {
-            get => m_DismissPreviewPackagesInUse;
-            set => m_DismissPreviewPackagesInUse = value;
-        }
-
         public virtual bool skipDisableConfirmation
         {
             get { return EditorPrefs.GetBool(k_SkipDisableConfirmationPrefs, false); }

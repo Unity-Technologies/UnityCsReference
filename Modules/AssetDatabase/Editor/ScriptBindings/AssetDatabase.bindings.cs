@@ -70,7 +70,8 @@ namespace UnityEditor
         kImporting = 1 << 0,
         kImportingAsset = 1 << 1,
         kPreventCustomDependencyChanges = 1 << 2,
-        kGatheringDependenciesFromSourceFile = 1 << 3
+        kGatheringDependenciesFromSourceFile = 1 << 3,
+        kPreventForceReserializeAssets = 1 << 4
     }
 
     public struct CacheServerConnectionChangedParameters
@@ -581,7 +582,8 @@ namespace UnityEditor
         extern internal static string[] GetGuidOfPathLocationImportDependencies(string path);
 
         [FreeFunction("AssetDatabase::ReSerializeAssetsForced")]
-        extern private static void ReSerializeAssetsForced(GUID[] guids, ForceReserializeAssetsOptions options);
+        [PreventExecutionInState(AssetDatabasePreventExecution.kPreventForceReserializeAssets, PreventExecutionSeverity.PreventExecution_ManagedException, "Consider calling ForceReserializeAssets from menu style entry point.")]
+        extern private static void ForceReserializeAssets(GUID[] guids, ForceReserializeAssetsOptions options);
 
 
         public static void ForceReserializeAssets(IEnumerable<string> assetPaths, ForceReserializeAssetsOptions options = ForceReserializeAssetsOptions.ReserializeAssetsAndMetadata)
@@ -625,7 +627,7 @@ namespace UnityEditor
 
             GUID[] guids = new GUID[guidList.Count];
             guidList.CopyTo(guids);
-            ReSerializeAssetsForced(guids, options);
+            ForceReserializeAssets(guids, options);
         }
 
         [FreeFunction("AssetDatabase::GetGUIDAndLocalIdentifierInFile")]

@@ -21,11 +21,11 @@ namespace UnityEditor
         private bool m_IsPreviewPackagesInUse;
 
         [NonSerialized]
-        private PackageManagerPrefs m_PackageManagerPrefs;
-        [NonSerialized]
         private ApplicationProxy m_ApplicationProxy;
         [NonSerialized]
         private UpmClient m_UpmClient;
+        [NonSerialized]
+        private PackageManagerProjectSettingsProxy m_SettingsProxy;
 
         private static class Styles
         {
@@ -81,7 +81,7 @@ namespace UnityEditor
             EditorApplication.updateMainWindowTitle += UpdateSafeModeTitle;
 
             m_UpmClient = ServicesContainer.instance.Resolve<UpmClient>();
-            m_PackageManagerPrefs = ServicesContainer.instance.Resolve<PackageManagerPrefs>();
+            m_SettingsProxy = ServicesContainer.instance.Resolve<PackageManagerProjectSettingsProxy>();
             m_ApplicationProxy = ServicesContainer.instance.Resolve<ApplicationProxy>();
             RefreshIsPreviewPackagesInUse();
 
@@ -122,7 +122,7 @@ namespace UnityEditor
                 var previewPackagesinUseWidth = k_PreviewPackagesinUseCompleteWidth;
                 var useIcon = false;
 
-                var showPreviewPackagesInUseDropDown = m_IsPreviewPackagesInUse && !m_PackageManagerPrefs.dismissPreviewPackagesInUse;
+                var showPreviewPackagesInUseDropDown = m_IsPreviewPackagesInUse && !m_SettingsProxy.dismissPreviewPackagesInUse;
                 if (showPreviewPackagesInUseDropDown)
                 {
                     useIcon = position.width < k_MinWidthChangePreviewPackageInUseToIcon;
@@ -200,8 +200,12 @@ namespace UnityEditor
         {
             var menu = new GenericMenu();
 
-            // Here hide the button : what do for now mean, reappear after opening unity
-            menu.AddItem(EditorGUIUtility.TrTextContent("Dismiss for now"), false, () => m_PackageManagerPrefs.dismissPreviewPackagesInUse = true);
+            // Here hide the button : reappear after creating a new unity project.
+            menu.AddItem(EditorGUIUtility.TrTextContent("Dismiss"), false, () =>
+            {
+                m_SettingsProxy.dismissPreviewPackagesInUse = true;
+                m_SettingsProxy.Save();
+            });
             menu.AddSeparator("");
 
             // Here we open the package manager, In-Project open and search field have experimental.

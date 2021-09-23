@@ -91,6 +91,7 @@ namespace UnityEditor
         private SavedRenderTargetState m_SavedState;
         private bool m_PixelPerfect;
         private Material m_InvisibleMaterial;
+        private bool m_previewOpened;
 
         private string m_Type;
 
@@ -144,6 +145,8 @@ namespace UnityEditor
                     }
                 }
             }
+
+            m_previewOpened = false;
         }
 
         ~PreviewRenderUtility()
@@ -211,6 +214,12 @@ namespace UnityEditor
 
         public void Cleanup()
         {
+            if (m_previewOpened)
+            {
+                Debug.LogError("Missing EndPreview() before cleanup of PreviewRenderUtility");
+                EndPreview();
+            }
+
             if (m_RenderTexture)
             {
                 Object.DestroyImmediate(m_RenderTexture);
@@ -229,6 +238,14 @@ namespace UnityEditor
 
         public void BeginPreview(Rect r, GUIStyle previewBackground)
         {
+            if(m_previewOpened)
+            {
+                Debug.LogError("Previous PreviewRenderUtility.BeginPreview() was not closed with PreviewRenderUtility.EndPreview()");
+                return;
+            }
+
+            m_previewOpened = true;
+
             Texture defaultEnvTexture = ReflectionProbe.defaultTexture;
 
             if (Unsupported.SetOverrideLightingSettings(previewScene.scene))
@@ -360,6 +377,7 @@ namespace UnityEditor
 
             m_SavedState.Restore();
             FinishFrame();
+            m_previewOpened = false;
             return m_RenderTexture;
         }
 
