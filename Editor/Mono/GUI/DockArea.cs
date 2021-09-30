@@ -377,7 +377,6 @@ namespace UnityEditor
             DrawTabScrollers(m_TabAreaRect);
 
             EditorGUI.ShowRepaints();
-            Highlighter.ControlHighlightGUI(this);
         }
 
         private void DrawView(Rect viewRect, Rect dockAreaRect)

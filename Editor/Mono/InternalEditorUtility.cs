@@ -363,31 +363,70 @@ namespace UnityEditorInternal
                 if (prevIndex != -1)
                     dir = (newIndex > prevIndex) ? 1 : -1;
 
-                int from, to;
-                var addExisting = true;
-                if (prevIndex < newIndex)
+                int from = 0, to = 0;
+                var addExisting = false;
+
+                bool usingArrowKeys = Event.current != null ? Event.current.keyCode == KeyCode.DownArrow || Event.current.keyCode == KeyCode.UpArrow : false;
+
+                if (selectedInstanceIDs.Count > 1)
                 {
-                    from = prevIndex;
-                    to = newIndex;
-                }
-                else if (newIndex >= firstIndex && newIndex < lastIndex)
-                {
-                    addExisting = false;
                     if (dir > 0)
                     {
-                        from = prevIndex;
+                        if (newIndex > lastIndex)
+                        {
+                            from = lastIndex + 1;
+                            to = newIndex;
+
+                            addExisting = true;
+                        }
+                        else
+                        {
+                            from = newIndex;
+                            to = lastIndex;
+                        }
+                    }
+                    else if (dir < 0)
+                    {
+                        if (newIndex < firstIndex)
+                        {
+                            from = newIndex;
+                            to = firstIndex - 1;
+
+                            addExisting = true;
+                        }
+                        else
+                        {
+                            from = firstIndex;
+                            to = newIndex;
+                        }
+                    }
+                }
+
+                if (!addExisting || usingArrowKeys)
+                {
+                    if (newIndex > lastIndex)
+                    {
+                        from = firstIndex;
                         to = newIndex;
+                    }
+                    else if (newIndex >= firstIndex && newIndex < lastIndex)
+                    {
+                        if (dir > 0)
+                        {
+                            from = newIndex;
+                            to = lastIndex;
+                        }
+                        else
+                        {
+                            from = firstIndex;
+                            to = newIndex;
+                        }
                     }
                     else
                     {
                         from = newIndex;
-                        to = prevIndex;
+                        to = lastIndex;
                     }
-                }
-                else
-                {
-                    from = newIndex;
-                    to = prevIndex;
                 }
 
                 // Outcomment to debug
@@ -396,25 +435,10 @@ namespace UnityEditorInternal
                 {
                     List<int> allSelectedInstanceIDs = new List<int>();
 
-                    // adding the entire selectedInstanceIDs would result
-                    // in the last entry being duplicated later on
-                    // thus when selecting upwards we add the existing selection - 1;
-                    // when selecting downwards don't add the last index from the new selection
-                    if (addExisting)
+                    if (addExisting && !usingArrowKeys)
                     {
-                        if (dir > 0)
-                        {
-                            allSelectedInstanceIDs.AddRange(selectedInstanceIDs.GetRange(0, selectedInstanceIDs.Count - 1));
-                            allSelectedInstanceIDs.AddRange(allEntryInstanceIDs.GetRange(from, to - from + 1));
-                        }
-                        else
-                        {
-                            allSelectedInstanceIDs.AddRange(selectedInstanceIDs.GetRange(0, selectedInstanceIDs.Count));
-                            allSelectedInstanceIDs.Capacity = allSelectedInstanceIDs.Count + (to - from);
-                            // this is necessary so that indices would be sorted in an ascending order
-                            for (int i = to - 1; i >= from; i--)
-                                allSelectedInstanceIDs.Add(allEntryInstanceIDs[i]);
-                        }
+                        allSelectedInstanceIDs.AddRange(selectedInstanceIDs.GetRange(0, selectedInstanceIDs.Count));
+                        allSelectedInstanceIDs.AddRange(allEntryInstanceIDs.GetRange(from, to - from + 1));
                     }
                     else
                     {
@@ -431,21 +455,11 @@ namespace UnityEditorInternal
                     // in the last entry being duplicated later on
                     // thus when selecting upwards we add the existing selection - 1;
                     // when selecting downwards don't add the last index from the new selection
-                    if (addExisting)
+                    if (addExisting && !usingArrowKeys)
                     {
                         List<int> allSelectedInstanceIDs = new List<int>();
-                        if (dir > 0)
-                        {
-                            allSelectedInstanceIDs.AddRange(selectedInstanceIDs.GetRange(0, selectedInstanceIDs.Count - 1));
-                            allSelectedInstanceIDs.AddRange(foundInstanceIDs);
-                        }
-                        else
-                        {
-                            allSelectedInstanceIDs.AddRange(selectedInstanceIDs.GetRange(0, selectedInstanceIDs.Count));
-                            // this is necessary so that indices would be sorted in an ascending order
-                            for (int i = to - 1; i >= from; i--)
-                                allSelectedInstanceIDs.Add(allEntryInstanceIDs[i]);
-                        }
+                        allSelectedInstanceIDs.AddRange(selectedInstanceIDs.GetRange(0, selectedInstanceIDs.Count));
+                        allSelectedInstanceIDs.AddRange(allEntryInstanceIDs.GetRange(from, to - from + 1));
 
                         return allSelectedInstanceIDs;
                     }
