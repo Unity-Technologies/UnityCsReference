@@ -430,6 +430,9 @@ namespace UnityEngine.Events
             if (method == null)
                 return null;
 
+            if (!method.IsStatic && target == null)
+                return null;
+
             switch (m_Mode)
             {
                 case PersistentListenerMode.EventDefined:
