@@ -4,11 +4,16 @@
 
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 namespace UnityEditor
 {
     public sealed class GenericMenu
     {
+        List<MenuItem> m_MenuItems = new List<MenuItem>();
+        public bool allowDuplicateNames { get; set; }
+        internal List<MenuItem> menuItems => m_MenuItems;
+
         // Callback function, called when a menu item is selected
         public delegate void MenuFunction();
 
@@ -18,44 +23,40 @@ namespace UnityEditor
         // Add an item to the menu
         public void AddItem(GUIContent content, bool on, MenuFunction func)
         {
-            menuItems.Add(new MenuItem(content, false, on, func));
+            m_MenuItems.Add(new MenuItem(content, false, on, func));
         }
 
         // Add an item to the menu
         public void AddItem(GUIContent content, bool on, MenuFunction2 func, object userData)
         {
-            menuItems.Add(new MenuItem(content, false, on, func, userData));
+            m_MenuItems.Add(new MenuItem(content, false, on, func, userData));
         }
 
         // Add a disabled item to the menu
         public void AddDisabledItem(GUIContent content)
         {
-            menuItems.Add(new MenuItem(content, false, false, null));
+            m_MenuItems.Add(new MenuItem(content, false, false, null));
         }
 
         // Add a disabled item to the menu
         public void AddDisabledItem(GUIContent content, bool on)
         {
-            menuItems.Add(new MenuItem(content, false, on, null));
+            m_MenuItems.Add(new MenuItem(content, false, on, null));
         }
 
         // Add a separator item to the menu
         public void AddSeparator(string path)
         {
-            menuItems.Add(new MenuItem(new GUIContent(path), true, false, null));
+            m_MenuItems.Add(new MenuItem(new GUIContent(path), true, false, null));
         }
 
         // Get number of items in the menu
         public int GetItemCount()
         {
-            return menuItems.Count;
+            return m_MenuItems.Count;
         }
 
-        public bool allowDuplicateNames {get; set; }
-
-        private ArrayList menuItems = new ArrayList();
-
-        private sealed class MenuItem
+        internal sealed class MenuItem
         {
             public GUIContent content;
             public bool separator;
@@ -92,14 +93,14 @@ namespace UnityEditor
         // Show the menu at the given screen rect
         public void DropDown(Rect position)
         {
-            string[] titles = new string[menuItems.Count];
-            bool[] enabled = new bool[menuItems.Count];
+            string[] titles = new string[m_MenuItems.Count];
+            bool[] enabled = new bool[m_MenuItems.Count];
             ArrayList selected = new ArrayList();
-            bool[] separator = new bool[menuItems.Count];
+            bool[] separator = new bool[m_MenuItems.Count];
 
-            for (int idx = 0; idx < menuItems.Count; idx++)
+            for (int idx = 0; idx < m_MenuItems.Count; idx++)
             {
-                MenuItem item = (MenuItem)menuItems[idx];
+                MenuItem item = (MenuItem)m_MenuItems[idx];
                 titles[idx] = item.content.text;
                 enabled[idx] = ((item.func != null) || (item.func2 != null));
                 separator[idx] = item.separator;
@@ -118,7 +119,7 @@ namespace UnityEditor
 
         private void CatchMenu(object userData, string[] options, int selected)
         {
-            MenuItem i = (MenuItem)menuItems[selected];
+            MenuItem i = (MenuItem)m_MenuItems[selected];
             if (i.func2 != null)
                 i.func2(i.userData);
             else if (i.func != null)
@@ -128,14 +129,14 @@ namespace UnityEditor
         // Show object context menu with builtin menu items plus the ones from this GenericMenu.
         internal void ObjectContextDropDown(Rect position, Object[] context, int contextUserData)
         {
-            string[] titles = new string[menuItems.Count];
-            bool[] enabled = new bool[menuItems.Count];
+            string[] titles = new string[m_MenuItems.Count];
+            bool[] enabled = new bool[m_MenuItems.Count];
             ArrayList selected = new ArrayList();
-            bool[] separator = new bool[menuItems.Count];
+            bool[] separator = new bool[m_MenuItems.Count];
 
-            for (int idx = 0; idx < menuItems.Count; idx++)
+            for (int idx = 0; idx < m_MenuItems.Count; idx++)
             {
-                MenuItem item = (MenuItem)menuItems[idx];
+                MenuItem item = (MenuItem)m_MenuItems[idx];
                 titles[idx] = item.content.text;
                 enabled[idx] = ((item.func != null) || (item.func2 != null));
                 separator[idx] = item.separator;

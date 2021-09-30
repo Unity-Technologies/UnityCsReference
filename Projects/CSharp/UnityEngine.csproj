@@ -925,11 +925,35 @@
     <Compile Include="..\..\Runtime\Export\Serialization\UnitySurrogateSelector.cs">
       <Link>Runtime\Export\Serialization\UnitySurrogateSelector.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Shaders\ComputeBuffer.bindings.cs">
+      <Link>Runtime\Export\Shaders\ComputeBuffer.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Shaders\ComputeShader.bindings.cs">
       <Link>Runtime\Export\Shaders\ComputeShader.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Shaders\ComputeShader.cs">
+      <Link>Runtime\Export\Shaders\ComputeShader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Shaders\Material.bindings.cs">
+      <Link>Runtime\Export\Shaders\Material.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Shaders\Material.cs">
+      <Link>Runtime\Export\Shaders\Material.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Shaders\MaterialPropertyBlock.bindings.cs">
+      <Link>Runtime\Export\Shaders\MaterialPropertyBlock.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Shaders\MaterialPropertyBlock.cs">
+      <Link>Runtime\Export\Shaders\MaterialPropertyBlock.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Shaders\PlatformKeywordSet.cs">
       <Link>Runtime\Export\Shaders\PlatformKeywordSet.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Shaders\RayTracingShader.bindings.cs">
+      <Link>Runtime\Export\Shaders\RayTracingShader.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Shaders\RayTracingShader.cs">
+      <Link>Runtime\Export\Shaders\RayTracingShader.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Shaders\Shader.bindings.cs">
       <Link>Runtime\Export\Shaders\Shader.bindings.cs</Link>
@@ -948,6 +972,12 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Shaders\ShaderProperties.cs">
       <Link>Runtime\Export\Shaders\ShaderProperties.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Shaders\ShaderVariantCollection.bindings.cs">
+      <Link>Runtime\Export\Shaders\ShaderVariantCollection.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Shaders\ShaderVariantCollection.cs">
+      <Link>Runtime\Export\Shaders\ShaderVariantCollection.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Snapping\SnapAxis.cs">
       <Link>Runtime\Export\Snapping\SnapAxis.cs</Link>
@@ -1314,6 +1344,9 @@
     </Compile>
     <Compile Include="..\..\Modules\AssetBundle\Managed\AssetBundleCreateRequest.bindings.cs">
       <Link>Modules\AssetBundle\Managed\AssetBundleCreateRequest.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AssetBundle\Managed\AssetBundleLoadingCache.bindings.cs">
+      <Link>Modules\AssetBundle\Managed\AssetBundleLoadingCache.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\AssetBundle\Managed\AssetBundleManifest.bindings.cs">
       <Link>Modules\AssetBundle\Managed\AssetBundleManifest.bindings.cs</Link>

@@ -420,5 +420,11 @@ namespace UnityEngine
         [NativeThrows]
         [FreeFunction("RecompressAssetBundleAsync_Internal")]
         internal static extern AssetBundleRecompressOperation RecompressAssetBundleAsync_Internal(string inputPath, string outputPath, BuildCompression method, UInt32 expectedCRC, ThreadPriority priority);
+
+        public static uint memoryBudgetKB
+        {
+            get { return AssetBundleLoadingCache.memoryBudgetKB; }
+            set { AssetBundleLoadingCache.memoryBudgetKB = value; }
+        }
     }
 }

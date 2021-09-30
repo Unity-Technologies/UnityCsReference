@@ -23,10 +23,24 @@ namespace UnityEditor
         ARM64 = 1 << 1,
 
         // x86
-        // X86 = 1 << 2,
+        X86 = 1 << 2,
+
+        // x86_64
+        X86_64 = 1 << 3,
 
         // All architectures
         All = 0xffffffff,
+    }
+
+    // Target devices.
+    public enum AndroidTargetDevices
+    {
+        // All devices. The Android aplication is allowed to run on all devices.
+        AllDevices = 0,
+        // Only run the Android aplication on mobile phones, tablets, and TV devices, not on any Chrome OS devices.
+        PhonesTabletsAndTVDevicesOnly = 1,
+        // Only run the Android application on Chrome OS devices, not on any Android mobile phones, tablets, or TV devices.
+        ChromeOSDevicesOnly = 2,
     }
 
     // Supported Android SDK versions
@@ -178,6 +192,60 @@ namespace UnityEditor
                 set {}
             }
 
+            // Default horizontal dimension of Android player window.
+            public static extern int defaultWindowWidth
+            {
+                [NativeMethod("GetAndroidDefaultWindowWidth")]
+                get;
+                [NativeMethod("SetAndroidDefaultWindowWidth")]
+                set;
+            }
+
+            // Default vertical dimension of Android player window.
+            public static extern int defaultWindowHeight
+            {
+                [NativeMethod("GetAndroidDefaultWindowHeight")]
+                get;
+                [NativeMethod("SetAndroidDefaultWindowHeight")]
+                set;
+            }
+
+            // Minimum horizontal dimension of Android player window.
+            public static extern int minimumWindowWidth
+            {
+                [NativeMethod("GetAndroidMinimumWindowWidth")]
+                get;
+                [NativeMethod("SetAndroidMinimumWindowWidth")]
+                set;
+            }
+
+            // Minimum vertical dimension of Android player window.
+            public static extern int minimumWindowHeight
+            {
+                [NativeMethod("GetAndroidMinimumWindowHeight")]
+                get;
+                [NativeMethod("SetAndroidMinimumWindowHeight")]
+                set;
+            }
+
+            // Should window resizing be allowed.
+            public static extern bool resizableWindow
+            {
+                [NativeMethod("GetAndroidResizableWindow")]
+                get;
+                [NativeMethod("SetAndroidResizableWindow")]
+                set;
+            }
+
+            // Full screen mode. Full screen window or windowed.
+            public static extern FullScreenMode fullscreenMode
+            {
+                [NativeMethod("GetAndroidFullscreenMode")]
+                get;
+                [NativeMethod("SetAndroidFullscreenMode")]
+                set;
+            }
+
             // Android bundle version code
             public static extern int  bundleVersionCode
             {
@@ -247,6 +315,9 @@ namespace UnityEditor
             // Gamepad support level for Android TV
             internal static extern AndroidGamepadSupportLevel androidGamepadSupportLevel { get; set; }
 
+            // Disable Chrome OS's default behaviour of converting mouse and touchpad input events into touchscreen input events.
+            public static extern bool chromeosInputEmulation { get; set; }
+
             // Returns Android banner list
             internal static extern AndroidBanner[] GetAndroidBanners();
 
@@ -281,6 +352,8 @@ namespace UnityEditor
                 [NativeMethod("SetBuildApkPerCpuArchitecture")]
                 set;
             }
+
+            public static extern AndroidTargetDevices androidTargetDevices { get; set; }
 
             // Android splash screen scale mode
             public static extern AndroidSplashScreenScale splashScreenScale
@@ -426,7 +499,8 @@ namespace UnityEditor
                 [NativeMethod("SetAndroidStartInFullscreen")]
                 set;
             }
-            // Start application in fullscreen mode
+
+            // Allow the application to render outside the safe area.
             public static extern bool renderOutsideSafeArea
             {
                 [NativeMethod("GetAndroidRenderOutsideSafeArea")]
@@ -442,7 +516,7 @@ namespace UnityEditor
             internal static extern int appBundleSizeToValidate { get; set; }
 
             // Use Swappy to decrease fluctuations in framerate
-            internal static extern bool optimizedFramePacing
+            public static extern bool optimizedFramePacing
             {
                 [NativeMethod("GetAndroidUseSwappy")]
                 get;
