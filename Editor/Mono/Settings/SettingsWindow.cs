@@ -31,6 +31,7 @@ namespace UnityEditor
         private VisualElement m_SettingsPanel;
         private VisualElement m_TreeViewContainer;
         private VisualElement m_Toolbar;
+        private bool m_ProviderChanging;
 
         private bool m_SearchFieldGiveFocus;
         const string k_SearchField = "SearchField";
@@ -205,6 +206,8 @@ namespace UnityEditor
 
         private void OnSettingsProviderChanged()
         {
+            if (m_ProviderChanging)
+                return;
             Init();
             RestoreSelection();
             Repaint();
@@ -262,6 +265,7 @@ namespace UnityEditor
             if (m_SettingsPanel == null)
                 return;
 
+            m_ProviderChanging = true;
             lastSelectedProvider?.OnDeactivate();
             m_SettingsPanel.Clear();
 
@@ -272,6 +276,7 @@ namespace UnityEditor
             }
 
             SetupIMGUIForCurrentProviderIfNeeded();
+            m_ProviderChanging = false;
         }
 
         internal void SetupIMGUIForCurrentProviderIfNeeded()

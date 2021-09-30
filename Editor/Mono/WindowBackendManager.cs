@@ -58,6 +58,7 @@ namespace UnityEditor
         void OnUnregisterWindow();
         void OnDisplayWindowMenu(GenericMenu menu);
         void ViewMarginsChanged();
+        event Action overlayGUIHandler;
     }
 
     internal interface IEditorWindowBackendSystem
