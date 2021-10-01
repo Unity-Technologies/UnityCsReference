@@ -24,12 +24,15 @@ namespace UnityEditor
             public static GUIContent joystickSource = EditorGUIUtility.TrTextContent("Joystick Source");
 
             public static GUIContent mode = EditorGUIUtility.TrTextContent("Mode");
-            public static GUIContent refresh = EditorGUIUtility.TrTextContent("Refresh");
-            public static GUIContent refreshImportMode = EditorGUIUtility.TrTextContent("Import mode", "During an asset database refresh this mode determines if the imports are done: Entirely inside the editor process (In Process). In one or more worker processes potentially in parallel by importer queue index (Out of process by queue).");
-            public static GUIContent desiredImportWorkerCount = EditorGUIUtility.TrTextContent("Desired worker count", "The desired number of import worker processes to keep around and ready for importing. The actual number of worker processes on the system can be both lower or higher that this, but the system will seek towards this number.");
+            public static GUIContent parallelImport = EditorGUIUtility.TrTextContent("Parallel Import", "During an asset database refresh some asset imports can be performed in parallel in sub processes.");
+            public static GUIContent parallelImportLearnMore = EditorGUIUtility.TrTextContent("Learn more...", "During an asset database refresh some asset imports can be performed in parallel in sub processes.");
+            public static GUIContent desiredImportWorkerCountOverride = EditorGUIUtility.TrTextContent("Override Desired Worker Count", "Override the desired worker count specified in the preferences.");
+            public static GUIContent desiredImportWorkerCount = EditorGUIUtility.TrTextContent("Desired Import Worker Count", "The desired number of import worker processes to use for importing. The actual number of worker processes on the system can be both lower or higher that this, but the system will seek towards this number when importing.");
+            public static GUIContent standbyImportWorkerCount = EditorGUIUtility.TrTextContent("Standby Import Worker Count", "The number of import worker processes to keep around in standby and ready for importing. The actual number of worker processes on the system can be both lower or higher that this, but the system will seek towards this number when worker processes are idle.");
+            public static GUIContent idleWorkerShutdownDelay = EditorGUIUtility.TrTextContent("Idle Import Worker Shutdown Delay", "When an importer worker has been idle for this amount of seconds in will be shutdown unless it would take the worker count below the standby worker count setting.");
 
             public static GUIContent cacheServer = EditorGUIUtility.TrTextContent("Cache Server (project specific)");
-            public static GUIContent assetPipeline = EditorGUIUtility.TrTextContent("Asset Pipeline (project specific)");
+            public static GUIContent assetPipeline = EditorGUIUtility.TrTextContent("Asset Pipeline");
             public static GUIContent artifactGarbageCollection = EditorGUIUtility.TrTextContent("Remove unused Artifacts on Restart", "By default, when you start the Editor, Unity removes unused artifact files in the Library folder, and removes their entries in the asset database. This is a form of \"garbage collection\". This setting allows you to turn off the asset database garbage collection, so that previous artifact revisions which are no longer used are still preserved after restarting the Editor. This is useful if you need to debug unexpected import results.");
             public static GUIContent cacheServerIPLabel = EditorGUIUtility.TrTextContent("IP address");
             public static GUIContent cacheServerNamespacePrefixLabel = EditorGUIUtility.TrTextContent("Namespace prefix", "The namespace used for looking up and storing values on the cache server");
@@ -255,6 +258,8 @@ namespace UnityEditor
         bool m_IsGlobalSettings;
 
         const string kRefreshImportModeKeyArgs = "-refreshImportMode";
+        const string kStandbyWorkerCountKeyArgs = "-standbyWorkerCount";
+        const string kIdleWorkerShutdownDelayKeyArgs = "-idleWorkerShutdownDelay";
         const string kDesiredImportWorkerCountKeyArgs = "-desiredWorkerCount";
 
         enum CacheServerConnectionState { Unknown, Success, Failure }
@@ -437,8 +442,6 @@ namespace UnityEditor
 
                 DoCacheServerSettings();
 
-                DoRefreshModeSettings();
-
                 GUI.enabled = wasEnabled;
             }
 
@@ -614,6 +617,8 @@ namespace UnityEditor
 
         private void DoAssetPipelineSettings()
         {
+            GUILayout.Space(10);
+
             GUILayout.Label(Content.assetPipeline, EditorStyles.boldLabel);
 
             EditorGUI.BeginChangeCheck();
@@ -621,6 +626,84 @@ namespace UnityEditor
             enableArtifactGarbageCollection = EditorGUILayout.Toggle(Content.artifactGarbageCollection, enableArtifactGarbageCollection);
             if (EditorGUI.EndChangeCheck())
                 EditorUserSettings.artifactGarbageCollection = enableArtifactGarbageCollection;
+
+            var overrideMode = GetCommandLineOverride(kRefreshImportModeKeyArgs);
+            if (overrideMode != null)
+            {
+                EditorGUILayout.HelpBox($"Refresh Import mode forced to {overrideMode} via command line argument. To use the mode specified here please restart Unity without the -refreshImportMode command line argument.", MessageType.Info, true);
+            }
+
+            using (new EditorGUI.DisabledScope(overrideMode != null))
+            {
+                GUILayout.BeginHorizontal();
+                var refreshMode = EditorSettings.refreshImportMode;
+                var parallelImportEnabledOld = refreshMode == AssetDatabase.RefreshImportMode.OutOfProcessPerQueue;
+                var parallelImportEnabledNew = EditorGUILayout.Toggle(Content.parallelImport, parallelImportEnabledOld);
+
+                if (parallelImportEnabledOld != parallelImportEnabledNew)
+                    EditorSettings.refreshImportMode = parallelImportEnabledNew ? AssetDatabase.RefreshImportMode.OutOfProcessPerQueue : AssetDatabase.RefreshImportMode.InProcess;
+                if (GUILayout.Button(Content.parallelImportLearnMore, EditorStyles.linkLabel))
+                    Application.OpenURL("https://docs.unity3d.com/Manual/ParallelImport.html");
+                GUILayout.EndHorizontal();
+            }
+
+            var overrideDesiredCount = GetCommandLineOverride(kDesiredImportWorkerCountKeyArgs);
+            if (overrideDesiredCount != null)
+            {
+                EditorGUILayout.HelpBox($"Desired import worker count forced to {overrideDesiredCount} via command line argument. To use the worker count specified here please restart Unity without the -desiredWorkerCount command line argument.", MessageType.Info, true);
+            }
+
+            // This min/max worker count is enforced here and in EditorUserSettings.cpp
+            // Please keep them in sync.
+            const int minWorkerCount = 1;
+            const int maxWorkerCount = 128;
+
+            using (new EditorGUI.DisabledScope(overrideDesiredCount != null))
+            {
+                var oldCount = EditorUserSettings.desiredImportWorkerCount;
+                int newCount = EditorGUILayout.IntField(Content.desiredImportWorkerCount, oldCount);
+                newCount = Mathf.Clamp(newCount, minWorkerCount, maxWorkerCount);
+
+                if (oldCount != newCount)
+                    EditorUserSettings.desiredImportWorkerCount = newCount;
+            }
+
+            var overrideStandbyCount = GetCommandLineOverride(kStandbyWorkerCountKeyArgs);
+            if (overrideStandbyCount != null)
+            {
+                EditorGUILayout.HelpBox($"Standby import worker count forced to {overrideStandbyCount} via command line argument. To use the standby worker count specified here please restart Unity without the -standbyWorkerCount command line argument.", MessageType.Info, true);
+            }
+
+            using (new EditorGUI.DisabledScope(overrideStandbyCount != null))
+            {
+                var oldCount = EditorUserSettings.standbyImportWorkerCount;
+                var newCount = EditorGUILayout.IntField(Content.standbyImportWorkerCount, oldCount);
+                int desiredWorkerCount = EditorUserSettings.desiredImportWorkerCount;
+                newCount = Mathf.Clamp(newCount, 0, desiredWorkerCount);
+
+                if (oldCount != newCount)
+                {
+                    EditorUserSettings.standbyImportWorkerCount = newCount;
+                }
+            }
+
+            var overridekIdleWorkerShutdownDelay = GetCommandLineOverride(kIdleWorkerShutdownDelayKeyArgs);
+            if (overridekIdleWorkerShutdownDelay != null)
+            {
+                EditorGUILayout.HelpBox($"Idle import worker shutdown delay forced to {overrideStandbyCount} ms. via command line argument. To use the settings specified here please restart Unity without the -idleWorkerShutdownDelay command line argument.", MessageType.Info, true);
+            }
+
+            using (new EditorGUI.DisabledScope(overridekIdleWorkerShutdownDelay != null))
+            {
+                var oldSeconds = EditorUserSettings.idleImportWorkerShutdownDelayMilliseconds / 1000.0f;
+                var newSeconds = EditorGUILayout.FloatField(Content.idleWorkerShutdownDelay, oldSeconds);
+                newSeconds = Mathf.Max(0, newSeconds);
+
+                if (oldSeconds != newSeconds)
+                {
+                    EditorUserSettings.idleImportWorkerShutdownDelayMilliseconds = (int)(newSeconds * 1000.0f);
+                }
+            }
         }
 
         private void DoCacheServerSettings()
@@ -761,42 +844,6 @@ namespace UnityEditor
                 address = argv[index + 1];
 
             return address;
-        }
-
-        private void DoRefreshModeSettings()
-        {
-            Assert.IsTrue(m_IsGlobalSettings);
-            GUILayout.Space(10);
-
-            GUILayout.Label(Content.refresh, EditorStyles.boldLabel);
-
-            var overrideMode = GetCommandLineOverride(kRefreshImportModeKeyArgs);
-            if (overrideMode != null)
-            {
-                EditorGUILayout.HelpBox($"Refresh Import mode to {overrideMode} via command line argument. To use the mode specified here please restart Unity without the -refreshImportMode command line argument.", MessageType.Info, true);
-            }
-
-            int index = Mathf.Clamp((int)EditorSettings.refreshImportMode, 0, refreshImportModePopupList.Length - 1);
-            CreatePopupMenu(serializedObject, Content.refreshImportMode, refreshImportModePopupList[index].content, refreshImportModePopupList, index, SetRefreshImportMode);
-
-            var overrideCount = GetCommandLineOverride(kDesiredImportWorkerCountKeyArgs);
-            if (overrideCount != null)
-            {
-                EditorGUILayout.HelpBox($"Desired import worker count forced to {overrideCount} via command line argument. To use the worker count specified here please restart Unity without the -desiredWorkerCount command line argument.", MessageType.Info, true);
-            }
-
-            var oldCount = EditorUserSettings.desiredImportWorkerCount;
-            var newCount = EditorGUILayout.IntField(Content.desiredImportWorkerCount, oldCount);
-
-            // This max worker count is enforced here and in EditorUserSettings.cpp
-            // Please keep them in sync.
-            const int maxWorkerCount = 128;
-
-            newCount = Mathf.Clamp(newCount, 0, maxWorkerCount);
-            if (oldCount != newCount)
-            {
-                EditorUserSettings.desiredImportWorkerCount = newCount;
-            }
         }
 
         private void DoLineEndingsSettings()

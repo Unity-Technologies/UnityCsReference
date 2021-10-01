@@ -323,5 +323,28 @@ namespace UnityEngine
             [NativeName("IsVisible")]
             get;
         }
+
+        public class Android
+        {
+            public static bool closeKeyboardOnOutsideTap
+            {
+                set
+                {
+                    TouchScreenKeyboard_SetAndroidCloseKeyboardOnOutsideTap(value);
+                }
+                get
+                {
+                    return TouchScreenKeyboard_GetAndroidCloseKeyboardOnOutsideTap();
+                }
+            }
+
+            [NativeConditional("PLATFORM_ANDROID")]
+            [FreeFunction("TouchScreenKeyboard_SetAndroidCloseKeyboardOnOutsideTap")]
+            private static extern void TouchScreenKeyboard_SetAndroidCloseKeyboardOnOutsideTap(bool enable);
+
+            [NativeConditional("PLATFORM_ANDROID")]
+            [FreeFunction("TouchScreenKeyboard_GetAndroidCloseKeyboardOnOutsideTap")]
+            private static extern bool TouchScreenKeyboard_GetAndroidCloseKeyboardOnOutsideTap();
+        }
     }
 }

@@ -17,30 +17,30 @@ namespace UnityEditor.TextCore.Text
     {
         private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
         {
+            bool textureImported = false;
             foreach (var asset in importedAssets)
             {
                 // Return if imported asset path is outside of the project.
-                if (asset.StartsWith("Assets/", StringComparison.OrdinalIgnoreCase) == false || !asset.EndsWith(".asset"))
+                if (asset.StartsWith("Assets/", StringComparison.OrdinalIgnoreCase) == false || !asset.EndsWith(".asset", StringComparison.OrdinalIgnoreCase))
                     continue;
 
                 Type assetType = AssetDatabase.GetMainAssetTypeAtPath(asset);
-
                 if (assetType == typeof(FontAsset))
                 {
                     FontAsset fontAsset = AssetDatabase.LoadAssetAtPath(asset, typeof(FontAsset)) as FontAsset;
-
-                    if (fontAsset != null)
+                    // Only refresh font asset definition if font asset was previously initialized.
+                    if (fontAsset != null && fontAsset.m_CharacterLookupDictionary != null)
                         TextEditorResourceManager.RegisterFontAssetForDefinitionRefresh(fontAsset);
+                    continue;
                 }
 
                 if (assetType == typeof(Texture2D))
-                {
-                    Texture2D tex = AssetDatabase.LoadAssetAtPath(asset, typeof(Texture2D)) as Texture2D;
-
-                    if (tex != null)
-                        TextEventManager.ON_SPRITE_ASSET_PROPERTY_CHANGED(true, tex);
-                }
+                    textureImported = true;
             }
+
+            // If textures were imported, issue callback to any potential text objects that might require updating.
+            if (textureImported)
+                TextEventManager.ON_SPRITE_ASSET_PROPERTY_CHANGED(true, null);
         }
     }
 

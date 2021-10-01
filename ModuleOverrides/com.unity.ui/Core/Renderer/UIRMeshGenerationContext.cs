@@ -649,7 +649,6 @@ namespace UnityEngine.UIElements
             public bool wordWrap;
             public float wordWrapWidth;
             public bool richText;
-            public Material material;
             public Color playmodeTintColor;
             public TextOverflow textOverflow;
             public TextOverflowPosition textOverflowPosition;
@@ -669,7 +668,6 @@ namespace UnityEngine.UIElements
                 hashCode = (hashCode * 397) ^ wordWrap.GetHashCode();
                 hashCode = (hashCode * 397) ^ wordWrapWidth.GetHashCode();
                 hashCode = (hashCode * 397) ^ richText.GetHashCode();
-                hashCode = (hashCode * 397) ^ (material != null ? material.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ playmodeTintColor.GetHashCode();
                 hashCode = (hashCode * 397) ^ textOverflow.GetHashCode();
                 hashCode = (hashCode * 397) ^ textOverflowPosition.GetHashCode();

@@ -182,11 +182,11 @@ namespace UnityEditor.TextCore.Text
             string fileNameWithExtension = Path.GetFileName(filePathWithName);
             string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(filePathWithName);
             string filePath = filePathWithName.Replace(fileNameWithExtension, "");
-
+            string uniqueAssetPath = AssetDatabase.GenerateUniqueAssetPath(filePath + fileNameWithoutExtension + ".asset");
 
             // Create new Sprite Asset
             SpriteAsset spriteAsset = ScriptableObject.CreateInstance<SpriteAsset>();
-            AssetDatabase.CreateAsset(spriteAsset, filePath + fileNameWithoutExtension + ".asset");
+            AssetDatabase.CreateAsset(spriteAsset, uniqueAssetPath);
 
             spriteAsset.version = "1.1.0";
 
@@ -310,7 +310,7 @@ namespace UnityEditor.TextCore.Text
         /// <param name="spriteAsset"></param>
         private static void AddDefaultMaterial(SpriteAsset spriteAsset)
         {
-            Shader shader = Shader.Find("Text/Sprite");
+            Shader shader = TextShaderUtilities.ShaderRef_Sprite;
             Material material = new Material(shader);
             material.SetTexture(TextShaderUtilities.ID_MainTex, spriteAsset.spriteSheet);
 

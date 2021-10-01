@@ -233,6 +233,10 @@ namespace UnityEngine.XR
         [NativeConditional("ENABLE_XR")]
         extern public RenderTexture GetRenderTextureForRenderPass(int renderPass);
 
+        [NativeMethod(Name = "GetSharedDepthTextureForRenderPass", IsThreadSafe = false)]
+        [NativeConditional("ENABLE_XR")]
+        extern public RenderTexture GetSharedDepthTextureForRenderPass(int renderPass);
+
         [NativeMethod(Name = "GetPreferredMirrorViewBlitMode", IsThreadSafe = false)]
         [NativeConditional("ENABLE_XR")]
         extern public int GetPreferredMirrorBlitMode();

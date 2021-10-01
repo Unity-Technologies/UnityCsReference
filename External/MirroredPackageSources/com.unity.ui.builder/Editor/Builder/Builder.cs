@@ -27,6 +27,8 @@ namespace Unity.UI.Builder
         public BuilderCanvas canvas => m_Viewport.canvas;
         public BuilderHierarchy hierarchy => m_Hierarchy;
 
+        internal override bool liveReloadPreferenceDefault => true;
+
         public bool codePreviewVisible
         {
             get { return document.codePreviewVisible; }

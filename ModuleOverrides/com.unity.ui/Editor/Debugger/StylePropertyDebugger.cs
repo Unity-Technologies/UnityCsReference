@@ -561,6 +561,9 @@ namespace UnityEditor.UIElements.Debugger
 
                 if (type == typeof(StyleFont))
                     val = new StyleFont();
+
+                if (type == typeof(StyleFontDefinition))
+                    val = new StyleFontDefinition();
             }
             else if (type == newValue.GetType())
             {

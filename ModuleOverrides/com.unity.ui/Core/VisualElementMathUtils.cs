@@ -15,37 +15,27 @@ namespace UnityEngine.UIElements
         }
 
         // Translate to pivot, scale, rotate, translate back, then do final translation.
-        Matrix4x4 pivottedMatrixWithLayout
+        Matrix4x4 pivotedMatrixWithLayout
         {
             get
             {
                 var transformOrigin = ResolveTransformOrigin();
-                return Matrix4x4.TRS(positionWithLayout + transformOrigin , resolvedStyle.rotate.ToQuaternion(), resolvedStyle.scale.value) * Matrix4x4.Translate(-transformOrigin);
+                var lhs = Matrix4x4.TRS(positionWithLayout + transformOrigin, ResolveRotation(), ResolveScale());
+                TranslateMatrix34InPlace(ref lhs, -transformOrigin);
+                return lhs;
             }
         }
 
-        void TransformAlignedRect(ref Rect r)
+        // Used to determine whether this VisualElement can use simplified maths for its transform calculations.
+        // Most elements will return true from this method, which should save a lot more time than it costs to evaluate.
+        internal bool hasDefaultRotationAndScale
         {
-            Vector2 pos = r.position;
-            Vector2 size = r.size;
-
-            var rotation = resolvedStyle.rotate.ToQuaternion();
-            var scale = resolvedStyle.scale.value;
-            var translation = ResolveTranslate();
-
-            pos.x *= scale.x;
-            pos.y *= scale.y;
-            size.x *= scale.x;
-            size.y *= scale.y;
-
-            rotation.Multiply2D(ref pos);
-            rotation.Multiply2D(ref size);
-
-            pos.x += translation.x;
-            pos.y += translation.y;
-
-            r = new Rect(pos, size);
-            OrderMinMaxRect(ref r);
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+            get
+            {
+                return computedStyle.rotate.angle.value == 0f &&
+                    computedStyle.scale.value == Vector3.one;
+            }
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
@@ -58,6 +48,22 @@ namespace UnityEngine.UIElements
         internal static float Max(float a, float b, float c, float d)
         {
             return Mathf.Max(Mathf.Max(a, b), Mathf.Max(c, d));
+        }
+
+        // Returns the same result as TransformAlignedRect(pivotedMatrixWithLayout, rec), but will try to use
+        // simplified calculations for elements with no scale or rotation.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        void TransformAlignedRectToParentSpace(ref Rect rect)
+        {
+            if (hasDefaultRotationAndScale)
+            {
+                rect.position += (Vector2)positionWithLayout;
+            }
+            else
+            {
+                var m = pivotedMatrixWithLayout;
+                rect = CalculateConservativeRect(ref m, rect);
+            }
         }
 
         internal static Rect CalculateConservativeRect(ref Matrix4x4 matrix, Rect rect)
@@ -93,6 +99,7 @@ namespace UnityEngine.UIElements
             return new Rect(min.x, min.y, max.x - min.x, max.y - min.y);
         }
 
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         internal static void TransformAlignedRect(ref Matrix4x4 matrix, ref Rect rect)
         {
             rect =  CalculateConservativeRect(ref matrix, rect);
@@ -159,6 +166,21 @@ namespace UnityEngine.UIElements
             res.m31 = 0;
             res.m32 = 0;
             res.m33 = 1;
+        }
+
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        static void TranslateMatrix34(ref Matrix4x4 lhs, Vector3 rhs, out Matrix4x4 res)
+        {
+            res = lhs;
+            TranslateMatrix34InPlace(ref res, rhs);
+        }
+
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        static void TranslateMatrix34InPlace(ref Matrix4x4 lhs, Vector3 rhs)
+        {
+            lhs.m03 += lhs.m00 * rhs.x + lhs.m01 * rhs.y + lhs.m02 * rhs.z;
+            lhs.m13 += lhs.m10 * rhs.x + lhs.m11 * rhs.y + lhs.m12 * rhs.z;
+            lhs.m23 += lhs.m20 * rhs.x + lhs.m21 * rhs.y + lhs.m22 * rhs.z;
         }
     }
 

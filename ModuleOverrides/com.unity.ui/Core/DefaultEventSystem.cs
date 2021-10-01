@@ -41,6 +41,8 @@ namespace UnityEngine.UIElements
         private readonly float m_InputActionsPerSecond = 10;
         private readonly float m_RepeatDelay = 0.5f;
 
+        private bool m_SendingTouchEvents;
+
         private Event m_Event = new Event();
         private BaseRuntimePanel m_FocusedPanel;
 
@@ -69,7 +71,11 @@ namespace UnityEngine.UIElements
             if (!isAppFocused && ShouldIgnoreEventsOnAppNotFocused() && updateMode == UpdateMode.IgnoreIfAppNotFocused)
                 return;
 
+            // touch needs to take precedence because of the mouse emulation layer
+            m_SendingTouchEvents = ProcessTouchEvents();
+
             SendIMGUIEvents();
+
             SendInputEvents();
         }
 
@@ -84,24 +90,26 @@ namespace UnityEngine.UIElements
                 {
                     SendFocusBasedEvent(self => UIElementsRuntimeUtility.CreateEvent(self.m_Event), this);
                 }
-                else if (m_Event.type == EventType.ScrollWheel)
+                else if (!m_SendingTouchEvents && input.mousePresent)
                 {
                     var screenPosition = GetLocalScreenPosition(m_Event, out var targetDisplay);
-                    SendPositionBasedEvent(screenPosition, m_Event.delta, PointerId.mousePointerId, targetDisplay, (panelPosition, panelDelta, self) =>
+                    if (m_Event.type == EventType.ScrollWheel)
                     {
-                        self.m_Event.mousePosition = panelPosition;
-                        return UIElementsRuntimeUtility.CreateEvent(self.m_Event);
-                    }, this);
-                }
-                else
-                {
-                    var screenPosition = GetLocalScreenPosition(m_Event, out var targetDisplay);
-                    SendPositionBasedEvent(screenPosition, m_Event.delta, PointerId.mousePointerId, targetDisplay, (panelPosition, panelDelta, self) =>
+                        SendPositionBasedEvent(screenPosition, m_Event.delta, PointerId.mousePointerId, targetDisplay, (panelPosition, panelDelta, self) =>
+                        {
+                            self.m_Event.mousePosition = panelPosition;
+                            return UIElementsRuntimeUtility.CreateEvent(self.m_Event);
+                        }, this);
+                    }
+                    else
                     {
-                        self.m_Event.mousePosition = panelPosition;
-                        self.m_Event.delta = panelDelta;
-                        return UIElementsRuntimeUtility.CreateEvent(self.m_Event);
-                    }, this, deselectIfNoTarget: m_Event.type == EventType.MouseDown);
+                        SendPositionBasedEvent(screenPosition, m_Event.delta, PointerId.mousePointerId, targetDisplay, (panelPosition, panelDelta, self) =>
+                        {
+                            self.m_Event.mousePosition = panelPosition;
+                            self.m_Event.delta = panelDelta;
+                            return UIElementsRuntimeUtility.CreateEvent(self.m_Event);
+                        }, this, deselectIfNoTarget: m_Event.type == EventType.MouseDown);
+                    }
                 }
             }
         }
@@ -124,8 +132,6 @@ namespace UnityEngine.UIElements
             {
                 SendFocusBasedEvent(self => NavigationCancelEvent.GetPooled(), this);
             }
-
-            ProcessTouchEvents();
         }
 
         internal void SendFocusBasedEvent<TArg>(Func<TArg, EventBase> evtFactory, TArg arg)
@@ -383,6 +389,7 @@ namespace UnityEngine.UIElements
             float GetAxisRaw(string axis);
             int touchCount { get; }
             Touch GetTouch(int index);
+            bool mousePresent { get; }
         }
 
         internal class Input : IInput
@@ -391,6 +398,7 @@ namespace UnityEngine.UIElements
             public float GetAxisRaw(string axis) => UnityEngine.Input.GetAxis(axis);
             public int touchCount => UnityEngine.Input.touchCount;
             public Touch GetTouch(int index) => UnityEngine.Input.GetTouch(index);
+            public bool mousePresent => UnityEngine.Input.mousePresent;
         }
     }
 }

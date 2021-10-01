@@ -120,9 +120,9 @@ namespace UnityEditor.UIElements
                 m_LiveReloadVisualTreeAssetTracker = new EditorWindowVisualTreeAssetTracker(this);
                 m_Panel.m_LiveReloadStyleSheetAssetTracker = new LiveReloadStyleSheetAssetTracker();
 
-                // Live Reload is off by default for all Editor Windows, except for the Game View
+                // Live Reload is off by default for all Editor Windows, except for the ones overriding liveReloadPreferenceDefault (Game View, UI Builder)
                 m_LiveReloadPreferenceKey = GetWindowLiveReloadPreferenceKey(editorWindowModel.window.GetType());
-                m_Panel.enableAssetReload = EditorPrefs.GetBool(m_LiveReloadPreferenceKey, editorWindowModel.window is GameView);
+                m_Panel.enableAssetReload = EditorPrefs.GetBool(m_LiveReloadPreferenceKey, editorWindowModel.window.liveReloadPreferenceDefault);
             }
 
             var root = window.baseRootVisualElement;
@@ -398,8 +398,8 @@ namespace UnityEditor.UIElements
 
         private void AddLiveReloadOptionToMenu(GenericMenu menu)
         {
-            // Live Reload is off by default for all Editor Windows, except for the Game View
-            panel.enableAssetReload = EditorPrefs.GetBool(m_LiveReloadPreferenceKey, editorWindowModel.window is GameView);
+            // Live Reload is off by default for all Editor Windows, except for the ones overriding liveReloadPreferenceDefault (Game View, UI Builder)
+            panel.enableAssetReload = EditorPrefs.GetBool(m_LiveReloadPreferenceKey, editorWindowModel.window.liveReloadPreferenceDefault);
             menu.AddItem(EditorGUIUtility.TextContent(k_LiveReloadMenuText), panel.enableAssetReload, ToggleLiveReloadForWindowType, editorWindowModel.window);
         }
 

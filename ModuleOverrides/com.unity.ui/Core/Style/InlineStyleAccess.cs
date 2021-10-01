@@ -628,8 +628,7 @@ namespace UnityEngine.UIElements
             if (TryGetStyleValue(id, ref sv))
             {
                 var font = sv.resource.IsAllocated ? sv.resource.Target as Font : null;
-                var obj = sv.resource.Target as Object;
-                var fontAsset = sv.resource.IsAllocated ? obj as FontAsset : null;
+                var fontAsset = sv.resource.IsAllocated ? sv.resource.Target as FontAsset : null;
                 if ((font == inlineValue.value.font && fontAsset == inlineValue.value.fontAsset) && sv.keyword == inlineValue.keyword)
                     return false;
 

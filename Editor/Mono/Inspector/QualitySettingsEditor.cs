@@ -93,7 +93,6 @@ namespace UnityEditor
         private int DoQualityLevelSelection(int currentQualitylevel, IList<QualitySetting> qualitySettings, Dictionary<string, int> platformDefaultQualitySettings)
         {
             GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
             GUILayout.BeginVertical();
             var selectedLevel = currentQualitylevel;
 
@@ -535,6 +534,8 @@ namespace UnityEditor
 
             if (string.IsNullOrEmpty(nameProperty.stringValue))
                 nameProperty.stringValue = "Level " + selectedLevel;
+
+            GUILayout.Label(EditorGUIUtility.TempContent("Current Active Quality Level"), EditorStyles.boldLabel);
 
             EditorGUILayout.PropertyField(nameProperty);
 

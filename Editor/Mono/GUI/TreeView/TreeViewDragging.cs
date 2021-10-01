@@ -57,7 +57,6 @@ namespace UnityEditor.IMGUI.Controls
 
         static class Constants
         {
-            public const string UndoActionName = "Drag";
             public const string GetInsertionIndexNotFound = "Did not find targetItem,; should be a child of parentItem";
         }
 
@@ -397,6 +396,8 @@ namespace UnityEditor.IMGUI.Controls
 
         void FinalizeDragPerformed(bool revertExpanded)
         {
+            string undoActionName = "Drag and Drop Multiple Objects";
+
             DragCleanup(revertExpanded);
             DragAndDrop.AcceptDrag();
 
@@ -415,7 +416,9 @@ namespace UnityEditor.IMGUI.Controls
                 newSelection[i] = (objs[i].GetInstanceID());
             }
             m_TreeView.NotifyListenersThatDragEnded(newSelection, draggedItemsFromOwnTreeView);
-            Undo.SetCurrentGroupName(Constants.UndoActionName);
+            if (objs.Count == 1)
+                undoActionName = "Drag and Drop " + objs[0].name;
+            Undo.SetCurrentGroupName(undoActionName);
         }
 
         protected virtual void HandleAutoExpansion(int itemControlID, TreeViewItem targetItem, Rect targetItemRect)

@@ -11,6 +11,10 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.TextCore.FontEngine.Tools")]
 [assembly: InternalsVisibleTo("UnityEngine.TextCoreModule")]
 [assembly: InternalsVisibleTo("UnityEngine.TextCoreTextModule")]
+
+// Used internally for testing and a few enterprise users.
+[assembly: InternalsVisibleTo("UnityEngine.TextCore.Tools")]
+
 [assembly: InternalsVisibleTo("Unity.TextCore.Editor")]
 [assembly: InternalsVisibleTo("UnityEditor.TextCoreTextModule")]
 [assembly: InternalsVisibleTo("Unity.TextMeshPro.Editor")]

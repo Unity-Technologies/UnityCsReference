@@ -1169,13 +1169,16 @@ namespace UnityEditor
         {
             SetAsLastInteractedProjectBrowser();
 
-            Selection.activeObject = null;
             int[] instanceIDs = m_ListArea.GetSelection();
             if (instanceIDs.Length > 0)
             {
                 Selection.instanceIDs = instanceIDs;
                 m_SearchFilter.searchArea = m_LastLocalAssetsSearchArea; // local asset was selected
                 m_InternalSelectionChange = true;
+            }
+            else
+            {
+                Selection.activeObject = null;
             }
 
             m_FocusSearchField = false;

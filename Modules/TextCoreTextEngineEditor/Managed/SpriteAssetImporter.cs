@@ -234,7 +234,7 @@ namespace UnityEditor.TextCore.Text
         /// <param name="spriteAsset"></param>
         static void AddDefaultMaterial(SpriteAsset spriteAsset)
         {
-            Shader shader = Shader.Find("Text/Sprite");
+            Shader shader = TextShaderUtilities.ShaderRef_Sprite;
             Material material = new Material(shader);
             material.SetTexture(TextShaderUtilities.ID_MainTex, spriteAsset.spriteSheet);
 

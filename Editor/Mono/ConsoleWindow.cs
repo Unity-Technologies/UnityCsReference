@@ -154,46 +154,37 @@ namespace UnityEditor
 
         internal class ConsoleAttachToPlayerState : GeneralConnectionState
         {
-            static class Content
-            {
-                public static string PlayerLogging = L10n.Tr("Player Logging");
-                public static string FullLog = L10n.Tr("Full Log [Developer Mode Only]");
-                public static string Logging = L10n.Tr("Logging");
-            }
-
             public ConsoleAttachToPlayerState(EditorWindow parentWindow, Action<string, EditorConnectionTarget?> connectedCallback = null) : base(parentWindow, connectedCallback)
             {
                 // This is needed to force initialize the instance and the state so that messages from players are received and printed to the console (if that is the serialized state)
-                // on creation of the ConsoleWindow UI instead of when the uer first clicks on the dropdown, and triggers AddItemsToMenu.
+                // on creation of the ConsoleWindow UI instead of when the uer first clicks on the dropdown, and triggers AddItemsToTree.
                 PlayerConnectionLogReceiver.instance.State = PlayerConnectionLogReceiver.instance.State;
             }
 
-            bool IsConnected()
+            internal bool IsConnected()
             {
                 return PlayerConnectionLogReceiver.instance.State != PlayerConnectionLogReceiver.ConnectionState.Disconnected;
             }
 
-            void PlayerLoggingOptionSelected()
+            internal void PlayerLoggingOptionSelected()
             {
                 PlayerConnectionLogReceiver.instance.State = IsConnected() ? PlayerConnectionLogReceiver.ConnectionState.Disconnected : PlayerConnectionLogReceiver.ConnectionState.CleanLog;
             }
 
-            bool IsLoggingFullLog()
+            internal bool IsLoggingFullLog()
             {
                 return PlayerConnectionLogReceiver.instance.State == PlayerConnectionLogReceiver.ConnectionState.FullLog;
             }
 
-            void FullLogOptionSelected()
+            internal void FullLogOptionSelected()
             {
                 PlayerConnectionLogReceiver.instance.State = IsLoggingFullLog() ? PlayerConnectionLogReceiver.ConnectionState.CleanLog : PlayerConnectionLogReceiver.ConnectionState.FullLog;
             }
 
-            public override void AddItemsToMenu(ConnectionTreeViewWindow view, Rect position, Func<bool> disabler = null)
+            public override void AddItemsToTree(ConnectionTreeViewWindow view, Rect position)
             {
-                // option to turn logging and the connection on or of
-                view.AddItem(new ConnectionDropDownItem(Content.PlayerLogging, -2, Content.Logging, ConnectionDropDownItem.ConnectionMajorGroup.Logging, IsConnected, PlayerLoggingOptionSelected, null));
-                view.AddItem(new ConnectionDropDownItem(Content.FullLog, -2, Content.Logging, ConnectionDropDownItem.ConnectionMajorGroup.Logging, IsLoggingFullLog, FullLogOptionSelected, () => PlayerConnectionLogReceiver.instance.State == PlayerConnectionLogReceiver.ConnectionState.Disconnected));
-                base.AddItemsToMenu(view, position, () => PlayerConnectionLogReceiver.instance.State == PlayerConnectionLogReceiver.ConnectionState.Disconnected);
+                view.SetLoggingOptions(this);
+                base.AddItemsToTree(view, position);
             }
         }
 

@@ -62,10 +62,9 @@ namespace UnityEngine.UIElements
             return GetCachedFontAssetInternal(font);
         }
 
-        internal static readonly string s_DefaultEditorPanelTextSettingPath =
-            Path.Combine(UIElementsPackageUtility.EditorResourcesBasePath, "UIPackageResources/Default Editor Text Settings.asset");
-
         internal static Func<string, Object> EditorGUIUtilityLoad;
         internal static Func<SystemLanguage> GetCurrentLanguage;
+
+        internal static readonly string s_DefaultEditorPanelTextSettingPath = "UIPackageResources/Default Editor Text Settings.asset";
     }
 }

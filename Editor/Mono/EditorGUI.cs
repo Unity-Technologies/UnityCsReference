@@ -2562,7 +2562,15 @@ namespace UnityEditor
 
                     if (!s_DelayedTextEditor.IsEditingControl(id) && s_DragCandidateState == DragCandidateState.NotDragging)
                     {
-                        bool equalValues = value.isDouble ? str.Equals(value.doubleVal) : str.Equals(value.longVal);
+                        bool equalValues = false;
+                        if (value.isDouble)
+                        {
+                            equalValues = double.TryParse(str, out var strToDouble) && Math.Abs(value.doubleVal - strToDouble) < Double.Epsilon;
+                        }
+                        else
+                        {
+                            equalValues = str.Equals(value.longVal);
+                        }
                         if (!equalValues && (!showMixedValue || (showMixedValue && k_MultiEditValueString != str)))
                         {
                             GUI.changed = true;
