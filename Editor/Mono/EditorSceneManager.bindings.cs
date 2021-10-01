@@ -20,8 +20,8 @@ namespace UnityEditor.SceneManagement
         AllowCamerasForRendering = 2,
         AllowMonoBehaviourEvents = 4,
         AllowGlobalIlluminationLights = 8,
-
-        AllFlags = 1 + 2 + 4 + 8
+        AllowAutoPlayAudioSources = 16,
+        AllFlags = 1 + 2 + 4 + 8 + 16
     }
 
     [NativeHeader("Runtime/SceneManager/SceneManager.h")]

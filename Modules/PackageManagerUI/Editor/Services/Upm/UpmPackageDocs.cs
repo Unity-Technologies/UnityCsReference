@@ -61,7 +61,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (split.Length > 1)
                     return split[1];
             }
-            return $"http://docs.unity3d.com/Packages/{upmVersion.shortVersionId}/index.html";
+            return $"https://docs.unity3d.com/Packages/{upmVersion.shortVersionId}/index.html";
         }
 
         public static string GetChangelogUrl(IPackageVersion version)
@@ -73,7 +73,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!string.IsNullOrEmpty(upmVersion.changelogUrl))
                 return upmVersion.changelogUrl;
 
-            return $"http://docs.unity3d.com/Packages/{upmVersion.shortVersionId}/changelog/CHANGELOG.html";
+            return $"https://docs.unity3d.com/Packages/{upmVersion.shortVersionId}/changelog/CHANGELOG.html";
         }
 
         public static string GetOfflineChangelog(IOProxy IOProxy, IPackageVersion version)
@@ -99,7 +99,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!string.IsNullOrEmpty(upmVersion.licensesUrl))
                 return upmVersion.licensesUrl;
 
-            return $"http://docs.unity3d.com/Packages/{upmVersion.shortVersionId}/license/index.html";
+            return $"https://docs.unity3d.com/Packages/{upmVersion.shortVersionId}/license/index.html";
         }
 
         public static string GetOfflineLicenses(IOProxy IOProxy, IPackageVersion version)

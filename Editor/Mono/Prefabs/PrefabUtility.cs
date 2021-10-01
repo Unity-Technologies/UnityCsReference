@@ -2101,11 +2101,11 @@ namespace UnityEditor
             if (PrefabUtility.IsPrefabAssetMissing(componentOrGameObject))
                 return PrefabAssetType.MissingAsset;
 
-            if (PrefabUtility.IsPartOfModelPrefab(componentOrGameObject))
-                return PrefabAssetType.Model;
-
             if (PrefabUtility.IsPartOfVariantPrefab(componentOrGameObject))
                 return PrefabAssetType.Variant;
+
+            if (PrefabUtility.IsPartOfModelPrefab(componentOrGameObject))
+                return PrefabAssetType.Model;
 
             return PrefabAssetType.Regular;
         }

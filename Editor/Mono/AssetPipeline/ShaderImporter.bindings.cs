@@ -20,6 +20,6 @@ namespace UnityEditor
 
         public extern Texture GetNonModifiableTexture(string name);
 
-        [NativeProperty("PreprocessorOverride")] extern public PreprocessorOverride preprocessorOverride { get; set; }
+        public PreprocessorOverride preprocessorOverride { get { return PreprocessorOverride.UseProjectSettings; } set {} }
     }
 }

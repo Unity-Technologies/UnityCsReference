@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditorInternal;
+using UnityEditor.Presets;
 
 namespace UnityEditor
 {
@@ -20,8 +21,6 @@ namespace UnityEditor
         ReorderableList m_LayersList;
 
         protected bool m_IsEditable = false;
-
-        private bool m_HaveRemovedTag = false;
 
         private static InitialExpansionState s_InitialExpansionState = InitialExpansionState.None;
         internal enum InitialExpansionState
@@ -48,8 +47,6 @@ namespace UnityEditor
         {
             // Tags.
             m_Tags = serializedObject.FindProperty("tags");
-
-            CheckForRemovedTags();
 
             if (m_TagsList == null)
             {
@@ -112,15 +109,6 @@ namespace UnityEditor
             Selection.activeObject = EditorApplication.tagManager;
         }
 
-        private void CheckForRemovedTags()
-        {
-            for (int i = 0; i < m_Tags.arraySize; i++)
-            {
-                if (string.IsNullOrEmpty(m_Tags.GetArrayElementAtIndex(i).stringValue))
-                    m_HaveRemovedTag = true;
-            }
-        }
-
         class EnterNamePopup : PopupWindowContent
         {
             public delegate void EnterDelegate(string str);
@@ -174,15 +162,15 @@ namespace UnityEditor
         void NewElement(Rect buttonRect, ReorderableList list)
         {
             int sizeBeforeupdate = list.count;
-            string[] tagListBeforeUpdate = InternalEditorUtility.tags;
+            string[] tagListBeforeUpdate = tagManager.tags;
 
             buttonRect.x -= 400;
             buttonRect.y -= 13;
             PopupWindow.Show(buttonRect, new EnterNamePopup(m_Tags, s => {
-                InternalEditorUtility.AddTag(s);
+                tagManager.AddTag(s);
                 serializedObject.Update();
 
-                string[] tagListAfterUpdate = InternalEditorUtility.tags;
+                string[] tagListAfterUpdate = tagManager.tags;
                 int nativeObjCount = tagListAfterUpdate.Length;
 
                 int pos = Array.IndexOf(tagListBeforeUpdate, s);
@@ -205,16 +193,19 @@ namespace UnityEditor
         {
             SerializedProperty tag = m_Tags.GetArrayElementAtIndex(list.index);
             if (tag.stringValue == "") return;
-            GameObject go = GameObject.FindWithTag(tag.stringValue);
-            if (go != null)
+
+            bool isPreset = PresetEditor.IsPreset(target);
+            if (!isPreset)
             {
-                EditorUtility.DisplayDialog("Error", "Can't remove this tag because it is being used by " + go.name, "OK");
+                GameObject go = GameObject.FindWithTag(tag.stringValue);
+                if (go != null)
+                {
+                    EditorUtility.DisplayDialog("Error", "Can't remove this tag because it is being used by " + go.name, "OK");
+                    return;
+                }
             }
-            else
-            {
-                InternalEditorUtility.RemoveTag(tag.stringValue);
-                m_HaveRemovedTag = true;
-            }
+
+            tagManager.RemoveTag(tag.stringValue);
         }
 
         private void DrawTagListElement(Rect rect, int index, bool selected, bool focused)
@@ -223,21 +214,19 @@ namespace UnityEditor
             rect.yMin += 1;
             rect.yMax -= 1;
 
-            string oldName = m_Tags.GetArrayElementAtIndex(index).stringValue;
-            if (string.IsNullOrEmpty(oldName))
-                oldName = "(Removed)";
-            EditorGUI.LabelField(rect, " Tag " + index, oldName);
+            string name = m_Tags.GetArrayElementAtIndex(index).stringValue;
+            EditorGUI.LabelField(rect, " Tag " + index, name);
         }
 
         void AddToSortLayerList(ReorderableList list)
         {
             int sizeBeforeupdate = list.count;
-            int nativeObjCount = InternalEditorUtility.GetSortingLayerCount();
+            int nativeObjCount = tagManager.GetSortingLayerCount();
 
             if (nativeObjCount <= list.count)
             {
                 serializedObject.ApplyModifiedProperties();
-                InternalEditorUtility.AddSortingLayer();
+                tagManager.AddSortingLayer();
                 serializedObject.Update();
             }
 
@@ -255,7 +244,7 @@ namespace UnityEditor
 
         public void ReorderSortLayerList(ReorderableList list)
         {
-            InternalEditorUtility.UpdateSortingLayersOrder();
+            tagManager.UpdateSortingLayersOrder();
         }
 
         private void RemoveFromSortLayerList(ReorderableList list)
@@ -263,14 +252,14 @@ namespace UnityEditor
             ReorderableList.defaultBehaviours.DoRemoveButton(list);
             serializedObject.ApplyModifiedProperties();
             serializedObject.Update();
-            InternalEditorUtility.UpdateSortingLayersOrder();
+            tagManager.UpdateSortingLayersOrder();
         }
 
         private bool CanEditSortLayerEntry(int index)
         {
-            if (index < 0 || index >= InternalEditorUtility.GetSortingLayerCount())
+            if (index < 0 || index >= tagManager.GetSortingLayerCount())
                 return false;
-            return !InternalEditorUtility.IsSortingLayerDefault(index);
+            return !tagManager.IsSortingLayerDefault(index);
         }
 
         private bool CanRemoveSortLayerEntry(ReorderableList list)
@@ -287,12 +276,12 @@ namespace UnityEditor
             bool oldEnabled = GUI.enabled;
             GUI.enabled = m_IsEditable && CanEditSortLayerEntry(index);
 
-            string oldName = InternalEditorUtility.GetSortingLayerName(index);
+            string oldName = tagManager.GetSortingLayerName(index);
             string newName = EditorGUI.TextField(rect, " Layer " + index, oldName);
             if (newName != oldName)
             {
                 serializedObject.ApplyModifiedProperties();
-                InternalEditorUtility.SetSortingLayerName(index, newName);
+                tagManager.SetSortingLayerName(index, newName);
                 serializedObject.Update();
             }
 
@@ -356,8 +345,6 @@ namespace UnityEditor
                 EditorGUI.indentLevel++;
                 m_TagsList.DoLayoutList();
                 EditorGUI.indentLevel--;
-                if (m_HaveRemovedTag)
-                    EditorGUILayout.HelpBox("There are removed tags. They will be removed from this list the next time the project is loaded.", MessageType.Info, true);
             }
 
             // Sorting layers

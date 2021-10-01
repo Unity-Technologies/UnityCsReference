@@ -122,6 +122,7 @@ namespace UnityEditor
             using (new EditorGUI.DisabledScope(!HasValidAssetList()))
             {
                 TopArea();
+                TopButtonsArea();
             }
 
             TreeViewArea(!HasValidAssetList());
@@ -145,14 +146,14 @@ namespace UnityEditor
             GUI.Label(titleRect, Styles.header, Styles.title);
         }
 
-        void BottomArea()
+        void TopButtonsArea()
         {
             // Background
-            GUILayout.BeginVertical(Styles.bottomBarBg);
-
+            GUILayout.BeginVertical();
             GUILayout.Space(8);
             GUILayout.BeginHorizontal();
             GUILayout.Space(10);
+
             if (GUILayout.Button(Styles.allText, GUILayout.Width(50)))
             {
                 m_Tree.SetAllEnabled(PackageExportTreeView.EnabledState.All);
@@ -163,6 +164,18 @@ namespace UnityEditor
                 m_Tree.SetAllEnabled(PackageExportTreeView.EnabledState.None);
             }
 
+            GUILayout.Space(10);
+            GUILayout.EndHorizontal();
+            GUILayout.Space(5);
+            GUILayout.EndVertical();
+        }
+
+        void BottomArea()
+        {
+            // Background
+            GUILayout.BeginVertical(Styles.bottomBarBg);
+            GUILayout.Space(8);
+            GUILayout.BeginHorizontal();
             GUILayout.Space(10);
 
             EditorGUI.BeginChangeCheck();
@@ -179,6 +192,7 @@ namespace UnityEditor
                 Export();
                 GUIUtility.ExitGUI();
             }
+
             GUILayout.Space(10);
             GUILayout.EndHorizontal();
             GUILayout.Space(5);

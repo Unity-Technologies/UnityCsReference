@@ -2,18 +2,26 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine;
-using UnityEditor;
-using UnityEditor.Audio;
-using System.IO;
-using System.Collections.Generic;
 using System;
+using System.Collections.Generic;
+using UnityEngine;
 
 namespace UnityEditor.Audio
 {
     [ExcludeFromPreset]
-    internal partial class AudioMixerGroupController
+    partial class AudioMixerGroupController
     {
+        public static Dictionary<AudioMixerEffectController, AudioMixerGroupController> GetEffectMapSlow(List<AudioMixerGroupController> allGroups)
+        {
+            var effectMap = new Dictionary<AudioMixerEffectController, AudioMixerGroupController>();
+
+            foreach (var g in allGroups)
+                foreach (var e in g.effects)
+                    effectMap[e] = g;
+
+            return effectMap;
+        }
+
         public void InsertEffect(AudioMixerEffectController effect, int index)
         {
             var modifiedEffectsList = new List<AudioMixerEffectController>(effects);
@@ -62,7 +70,7 @@ namespace UnityEditor.Audio
         }
     }
 
-    internal class MixerGroupControllerCompareByName : IComparer<AudioMixerGroupController>
+    class MixerGroupControllerCompareByName : IComparer<AudioMixerGroupController>
     {
         public int Compare(AudioMixerGroupController x, AudioMixerGroupController y)
         {

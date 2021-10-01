@@ -65,6 +65,7 @@ namespace UnityEditor
 
         protected extern void Internal_SetAsActiveWindow();
 
+        [NativeMethod(ThrowsException = true)]
         private extern void Internal_Init(int depthBits, int antiAliasing);
         private extern void Internal_Recreate(int depthBits, int antiAliasing);
         private extern void Internal_Close();

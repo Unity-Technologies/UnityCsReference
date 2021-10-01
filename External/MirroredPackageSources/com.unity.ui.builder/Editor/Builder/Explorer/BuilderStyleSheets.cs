@@ -41,16 +41,16 @@ namespace Unity.UI.Builder
             HighlightOverlayPainter highlightOverlayPainter,
             BuilderTooltipPreview tooltipPreview)
             : base(
-                  paneWindow,
-                  viewport,
-                  selection,
-                  classDragger,
-                  styleSheetsDragger,
-                  new BuilderStyleSheetsContextMenu(paneWindow, selection),
-                  viewport.styleSelectorElementContainer,
-                  false,
-                  highlightOverlayPainter,
-                  kToolbarPath)
+                paneWindow,
+                viewport,
+                selection,
+                classDragger,
+                styleSheetsDragger,
+                new BuilderStyleSheetsContextMenu(paneWindow, selection),
+                viewport.styleSelectorElementContainer,
+                false,
+                highlightOverlayPainter,
+                kToolbarPath)
         {
             m_TooltipPreview = tooltipPreview;
             if (m_TooltipPreview != null)
@@ -145,10 +145,12 @@ namespace Unity.UI.Builder
 
             // Update sub title.
             UpdateSubtitleFromActiveUSS();
-            
+
             // Init drag stylesheet root
             classDragger.builderStylesheetRoot = container;
             styleSheetsDragger.builderStylesheetRoot = container;
+
+            RegisterCallback<GeometryChangedEvent>(e => AdjustPosition());
         }
 
         protected override bool IsSelectedItemValid(VisualElement element)
@@ -215,9 +217,9 @@ namespace Unity.UI.Builder
                 return;
 
             if (newSelectorStr.Length == 1 && (
-                    newSelectorStr.StartsWith(BuilderConstants.UssSelectorClassNameSymbol)
-                    || newSelectorStr.StartsWith("-")
-                    || newSelectorStr.StartsWith("_")))
+                newSelectorStr.StartsWith(BuilderConstants.UssSelectorClassNameSymbol)
+                || newSelectorStr.StartsWith("-")
+                || newSelectorStr.StartsWith("_")))
                 return;
 
             if (!BuilderNameUtilities.styleSelectorRegex.IsMatch(newSelectorStr))
@@ -278,7 +280,12 @@ namespace Unity.UI.Builder
 
             m_TooltipPreview.Show();
 
-            m_TooltipPreview.style.left = this.pane.resolvedStyle.width + BuilderConstants.TooltipPreviewYOffset;
+            AdjustPosition();
+        }
+
+        void AdjustPosition()
+        {
+            m_TooltipPreview.style.left = Mathf.Max(0, this.pane.resolvedStyle.width + BuilderConstants.TooltipPreviewYOffset);
             m_TooltipPreview.style.top = m_Viewport.viewportWrapper.worldBound.y;
         }
 

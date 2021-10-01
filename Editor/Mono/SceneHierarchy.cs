@@ -455,6 +455,11 @@ namespace UnityEditor
                 treeView.data.SetExpandedIDs(sceneHandles.ToArray());
         }
 
+        void PlayModeStateChanged(PlayModeStateChange state)
+        {
+            treeViewReloadNeeded = true;
+        }
+
         void OnSceneCreated(Scene scene, NewSceneSetup setup, NewSceneMode mode)
         {
             ExpandTreeViewItem(scene.handle, true);
@@ -517,6 +522,7 @@ namespace UnityEditor
             EditorSceneManager.sceneOpened += OnSceneOpened;
             RectSelection.rectSelectionStarting += SceneViewRectSelectionStarting;
             RectSelection.rectSelectionFinished += SceneViewRectSelectionFinished;
+            EditorApplication.playModeStateChanged += PlayModeStateChanged;
 
             m_AllowAlphaNumericalSort = EditorPrefs.GetBool("AllowAlphaNumericHierarchy", false) || !InternalEditorUtility.isHumanControllingUs; // Always allow alphasorting when running automated tests so we can test alpha sorting
             SetUpSortMethodLists();
@@ -539,6 +545,7 @@ namespace UnityEditor
             EditorSceneManager.sceneOpened -= OnSceneOpened;
             RectSelection.rectSelectionStarting -= SceneViewRectSelectionStarting;
             RectSelection.rectSelectionFinished -= SceneViewRectSelectionFinished;
+            EditorApplication.playModeStateChanged -= PlayModeStateChanged;
         }
 
         internal void OnProjectWasLoaded()
@@ -857,7 +864,7 @@ namespace UnityEditor
          */
         void AddCreateGameObjectItemsToMenu(GenericMenu menu, UnityEngine.Object[] context, bool includeCreateEmptyChild, bool useCreateEmptyParentMenuItem, bool includeGameObjectInPath, int targetSceneHandle, MenuUtils.ContextMenuOrigin origin)
         {
-            ScriptingMenuItem[] menus = Menu.GetMenuItems("GameObject", false, false);
+            ScriptingMenuItem[] menus = Menu.GetMenuItems("GameObject", true, false);
             int previousMenuItemPosition = -1;
 
             foreach (var menuItem in menus)
@@ -895,10 +902,10 @@ namespace UnityEditor
                     origin,
                     previousMenuItemPosition);
 
-                MenuUtils.RemoveInvalidMenuItems(menu);
-
                 previousMenuItemPosition = menuItem.priority;
             }
+
+            MenuUtils.RemoveInvalidMenuItems(menu);
         }
 
         void BeforeCreateGameObjectMenuItemWasExecuted(string menuPath, UnityEngine.Object[] contextObjects, MenuUtils.ContextMenuOrigin origin, int userData)

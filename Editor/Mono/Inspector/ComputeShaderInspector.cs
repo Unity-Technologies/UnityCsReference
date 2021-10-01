@@ -98,20 +98,14 @@ namespace UnityEditor
         {
             ComputeShaderImporter importer = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(cs.GetInstanceID())) as ComputeShaderImporter;
 
-            bool enablePreprocessOnly = EditorSettings.cachingShaderPreprocessor;
-            if (importer && importer.preprocessorOverride == PreprocessorOverride.ForceCachingPreprocessor)
-                enablePreprocessOnly = true;
-            using (new EditorGUI.DisabledScope(!enablePreprocessOnly))
-            {
-                s_PreprocessOnly = EditorGUILayout.Toggle(Styles.togglePreprocess, s_PreprocessOnly);
-                if (s_PreprocessOnly)
-                    s_StripLineDirectives = EditorGUILayout.Toggle(Styles.toggleStripLineDirective, s_StripLineDirectives);
-            }
+            s_PreprocessOnly = EditorGUILayout.Toggle(Styles.togglePreprocess, s_PreprocessOnly);
+            if (s_PreprocessOnly)
+                s_StripLineDirectives = EditorGUILayout.Toggle(Styles.toggleStripLineDirective, s_StripLineDirectives);
 
             GUILayout.Space(kSpace);
             if (GUILayout.Button(Styles.showCompiled, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
             {
-                ShaderUtil.OpenCompiledComputeShader(cs, true, enablePreprocessOnly && s_PreprocessOnly, s_StripLineDirectives);
+                ShaderUtil.OpenCompiledComputeShader(cs, true, s_PreprocessOnly, s_StripLineDirectives);
                 GUIUtility.ExitGUI();
             }
         }

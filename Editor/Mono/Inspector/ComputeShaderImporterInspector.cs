@@ -21,8 +21,6 @@ namespace UnityEditor
             public static GUIContent overridePreprocessor = EditorGUIUtility.TrTextContent("Override preprocessor", "Select preprocessor to use for this shader.");
         }
 
-        SerializedProperty preprocessorOverride;
-
         internal override void OnHeaderControlsGUI()
         {
             GUILayout.FlexibleSpace();
@@ -32,8 +30,6 @@ namespace UnityEditor
         public override void OnEnable()
         {
             base.OnEnable();
-
-            preprocessorOverride = serializedObject.FindProperty("m_PreprocessorOverride");
         }
 
         protected override void Apply()
@@ -50,10 +46,6 @@ namespace UnityEditor
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
-
-            EditorGUILayout.PropertyField(preprocessorOverride, Styles.overridePreprocessor);
-
-            serializedObject.ApplyModifiedProperties();
 
             ApplyRevertGUI();
         }

@@ -40,8 +40,9 @@ namespace UnityEditor
             // these are not flag values, i.e. 1, 2, 4...
             // but the mask & flagValue[0..n] for each possible flag value
             // this is to ensure backwards compatibility with everything that uses MaskFieldGUI.GetSelectedValueForControl
-            m_OptionMaskValues = (uint[])(object)optionMaskValues;
-            m_OptionNames = optionNames;
+            m_OptionMaskValues = Array.ConvertAll(optionMaskValues, x=>(uint)x);
+            m_OptionNames = (string[])optionNames.Clone();
+
             m_SelectionMatch = new SelectionModes[] { SelectionModes.All };
             m_SelectionMaskValues = new uint[] { (uint)mask };
 
@@ -118,13 +119,7 @@ namespace UnityEditor
             m_OptionMaskValues[1] = int.MaxValue;
 
             for (var flagIndex = 2; flagIndex < m_OptionMaskValues.Length; flagIndex++)
-            {
-                var flagValue = (m_SelectionMaskValues[0] & m_OptionMaskValues[flagIndex]) == 0 ? (int)Math.Log((m_SelectionMaskValues[0] & ~m_OptionMaskValues[flagIndex]), 2) : (int)Math.Log((m_SelectionMaskValues[0] & m_OptionMaskValues[flagIndex]), 2);
-                var flagSet = ((m_SelectionMaskValues[0] & flagValue) == flagValue);
-                var newMask = (flagSet ? m_SelectionMaskValues[0] & ~flagValue : (int)m_SelectionMaskValues[0] | flagValue);
-
-                m_OptionMaskValues[flagIndex] = (uint)newMask;
-            }
+                m_OptionMaskValues[flagIndex] = m_SelectionMaskValues[0] ^ (uint)Math.Pow(2, flagIndex - 2);
         }
 
         public override void OnGUI(Rect rect)
@@ -188,7 +183,7 @@ namespace UnityEditor
                 var serializedObject = new SerializedObject(m_SerializedProperty.serializedObject.targetObjects[i]);
                 var property = serializedObject.FindProperty(m_SerializedProperty.propertyPath);
 
-                // Second conditopn is for backward compatibility, currently we use int.MaxValue to represent all flags set, previously we used -1 and the same value is stored in YAML files
+                // Second condition is for backward compatibility, currently we use int.MaxValue to represent all flags set, previously we used -1 and the same value is stored in YAML files
                 // So when we read the SerializedProperty we are getting -1, and the behaviour is not as expected.
                 if (property.intValue == int.MaxValue || property.intValue == -1)
                 {

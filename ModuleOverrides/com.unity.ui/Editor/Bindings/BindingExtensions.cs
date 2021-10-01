@@ -154,12 +154,24 @@ namespace UnityEditor.UIElements.Bindings
 
         internal SerializedProperty BindPropertyRelative(IBindable field, SerializedProperty parentProperty)
         {
+            var unsafeMode = parentProperty?.unsafeMode ?? false;
+
+            // We switch to unsafe mode because we don't care if the parentProperty is valid or not (using
+            // [SerializeReference], you can end up with a property that doesn't exist anymore, which would throw in
+            // "safe mode")
+            if (null != parentProperty)
+                parentProperty.unsafeMode = true;
+
             var property = parentProperty?.FindPropertyRelative(field.bindingPath);
 
+            if (null != parentProperty)
+                parentProperty.unsafeMode = unsafeMode;
+
             if (property == null)
-            {
                 property = serializedObject?.FindProperty(field.bindingPath);
-            }
+
+            // we first remove any binding that were already present
+            RemoveBinding(field);
 
             var fieldElement = field as VisualElement;
             if (property == null || fieldElement == null)
@@ -167,9 +179,6 @@ namespace UnityEditor.UIElements.Bindings
                 // Object is null or property was not found, we have nothing to do here
                 return property;
             }
-
-            //we first remove any binding that were already present
-            RemoveBinding(field);
 
             // Set enabled state before sending the event because element like PropertyField may stop the event
             SyncEditableState(fieldElement, property.editable);
@@ -750,6 +759,10 @@ namespace UnityEditor.UIElements.Bindings
                         // nothing to bind here
                         Debug.LogWarning("Serialized property type " + prop.propertyType + " does not support value tracking; callback is not set for " + prop.name);
                         values = null;
+                        break;
+                    case SerializedPropertyType.ManagedReference:
+                        values = new TrackedValues<object>(SerializedPropertyHelper.GetManagedReferenceValue,
+                            SerializedPropertyHelper.ValueEquals);
                         break;
                     default:
                         Debug.LogWarning(string.Format("Binding is not supported for {0} properties \"{1}\"", prop.type,

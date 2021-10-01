@@ -269,6 +269,12 @@ namespace UnityEditorInternal
             GetCounterValuesBatchByCategory(category, name, firstFrame, scale, buffer, out maxValue);
         }
 
+        [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
+        internal static extern void GetCounterValuesWithAvailabilityBatch(ProfilerArea area, string name, int firstFrameIndex, float scale, [Out] float[] counterValuesBuffer, [Out] int[] dataAvailableBuffer, out float maxValue);
+
+        [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
+        internal static extern void GetCounterValuesWithAvailabilityBatchByCategory(string category, string name, int firstFrameIndex, float scale, [Out] float[] counterValuesBuffer, [Out] int[] dataAvailableBuffer, out float maxValue);
+
         static public void GetGpuStatisticsAvailabilityStates(int firstFrame, [Out] GpuProfilingStatisticsAvailabilityStates[] buffer)
         {
             unsafe

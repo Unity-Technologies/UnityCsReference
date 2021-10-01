@@ -299,12 +299,12 @@ namespace UnityEditor
             internal static class Constants
             {
                 public static Texture2D folderIcon = EditorGUIUtility.FindTexture(EditorResources.folderIconName);
-                public static GUIContent badgeNew    = EditorGUIUtility.TrIconContent("PackageBadgeNew", "This is a new Asset");
-                public static GUIContent badgeDelete = EditorGUIUtility.TrIconContent("PackageBadgeDelete", "These files will be deleted!");
-                public static GUIContent badgeWarnPathConflict   = EditorGUIUtility.TrIconContent("console.warnicon", "Warning: File exists in project, but with different GUID. Will override existing asset which may be undesired.");
-                public static GUIContent badgeChange = EditorGUIUtility.TrIconContent("playLoopOff", "This file is new or has changed.");
+                public static GUIContent badgeNew = EditorGUIUtility.TrIconContent("PackageBadgeNew", "This is a new asset.");
+                public static GUIContent badgeOverride = EditorGUIUtility.TrIconContent("PackageBadgeOverride", "This project setting will be overridden!");
+                public static GUIContent badgeWarnPathConflict = EditorGUIUtility.TrIconContent("console.warnicon", "Warning: File exists in project, but with different GUID. Will override existing asset which may be undesired.");
+                public static GUIContent badgeChange = EditorGUIUtility.TrIconContent("playLoopOff", "This asset is new or has changed.");
 
-                public static GUIStyle   paddinglessStyle;
+                public static GUIStyle paddinglessStyle;
 
                 static Constants()
                 {
@@ -396,16 +396,25 @@ namespace UnityEditor
                     {
                         // FIXME: Need to enable tooltips here.
                         Texture badge = Constants.badgeNew.image;
-                        Rect labelRect = new Rect(rowRect.xMax - badge.width - 6, rowRect.y + (rowRect.height - badge.height) / 2, badge.width, badge.height);
+                        Rect labelRect = new Rect(rowRect.xMax - badge.width - 6, rowRect.y, badge.width, badge.height);
                         GUI.Label(labelRect, Constants.badgeNew, Constants.paddinglessStyle);
                     }
 
                     // 7. Show what stuff has changed
                     if (repainting && validItem && (exists || pathConflict) && assetChanged)
                     {
-                        Texture badge = Constants.badgeChange.image;
-                        Rect labelRect = new Rect(rowRect.xMax - badge.width - 6, rowRect.y, rowRect.height, rowRect.height);
-                        GUI.Label(labelRect, Constants.badgeChange, Constants.paddinglessStyle);
+                        if (PackageImportWizard.instance.IsProjectSettingStep)
+                        {
+                            Texture badge = Constants.badgeOverride.image;
+                            Rect labelRect = new Rect(rowRect.xMax - badge.width - 6, rowRect.y, badge.width, badge.height);
+                            GUI.Label(labelRect, Constants.badgeOverride, Constants.paddinglessStyle);
+                        }
+                        else
+                        {
+                            Texture badge = Constants.badgeChange.image;
+                            Rect labelRect = new Rect(rowRect.xMax - badge.width - 6, rowRect.y, rowRect.height, rowRect.height);
+                            GUI.Label(labelRect, Constants.badgeChange, Constants.paddinglessStyle);
+                        }
                     }
                 }
             }

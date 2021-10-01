@@ -286,7 +286,7 @@ namespace UnityEngine.UIElements.Experimental
         /// <returns>The children item identifiers.</returns>
         public IEnumerable<int> GetChildrenIdsForIndex(int index)
         {
-            return viewController.GetChildrenIdsByIndex(GetIdForIndex(index));
+            return viewController.GetChildrenIdsByIndex(index);
         }
 
         /// <summary>
@@ -357,6 +357,7 @@ namespace UnityEngine.UIElements.Experimental
             {
                 defaultController.AddItem(item, parentId, childIndex);
                 RefreshItems();
+                return;
             }
 
             Type dataSourceType = null;

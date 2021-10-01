@@ -9,15 +9,41 @@ namespace UnityEditor
 {
     internal class LayerMatrixGUI
     {
+        static class Styles
+        {
+            public static readonly GUIStyle rightLabel = new GUIStyle("RightLabel");
+            public static readonly GUIStyle hoverStyle = GetHoverStyle();
+        }
+
+        private static Color transparentColor = new Color(1, 1, 1, 0);
+        private static Color highlightColor = EditorGUIUtility.isProSkin? new Color(1, 1, 1, 0.2f): new Color(0,0,0, 0.2f);
+        public static GUIStyle GetHoverStyle()
+        {
+            GUIStyle style = new GUIStyle(EditorStyles.label);
+
+            Texture2D texNormal = new Texture2D(1,1){alphaIsTransparency = true};
+            texNormal.SetPixel(1,1, transparentColor);
+            texNormal.Apply();
+
+            Texture2D texHover = new Texture2D(1,1){alphaIsTransparency = true};
+            texHover.SetPixel(1,1, highlightColor);
+            texHover.Apply();
+
+            style.normal.background = texNormal;
+            style.hover.background = texHover;
+
+            return style;
+        }
+
         public delegate bool GetValueFunc(int layerA, int layerB);
         public delegate void SetValueFunc(int layerA, int layerB, bool val);
         const int kMaxLayers = 32;
+
         public static void DoGUI(GUIContent label, ref bool show, GetValueFunc getValue, SetValueFunc setValue)
         {
             const int checkboxSize = 16;
             int labelSize = 110;
             const int indent = 30;
-
             int numLayers = 0;
             for (int i = 0; i < kMaxLayers; i++)
                 if (LayerMask.LayerToName(i) != "")
@@ -110,14 +136,25 @@ namespace UnityEditor
                             }
                         }
 
-
                         Vector3 translate = new Vector3(labelSize + indent + checkboxSize * (numLayers - y) + topLeft.y + topLeft.x + 10, topLeft.y, 0);
                         GUI.matrix = Matrix4x4.TRS(translate, Quaternion.identity, Vector3.one) * Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(0, 0, 90), Vector3.one);
 
+                        var labelRect = new Rect(2 - topLeft.x, 0, labelSize, checkboxSize + 5);
                         if (hidelabel || hidelabelonscrollbar)
-                            GUI.Label(new Rect(2 - topLeft.x, 0, labelSize, checkboxSize + 5), "", "RightLabel");
+                            GUI.Label(labelRect, GUIContent.none, Styles.rightLabel);
                         else
-                            GUI.Label(new Rect(2 - topLeft.x, 0, labelSize, checkboxSize + 5), LayerMask.LayerToName(i), "RightLabel");
+                        {
+                            GUI.Label(labelRect, LayerMask.LayerToName(i), Styles.rightLabel);
+                            // Empty Transparent label used to indicate highlighted row
+                            var checkRect = new Rect(2 - topLeft.x, 1  /*This centers the highlight*/ , labelSize + 4 + (y + 1) * checkboxSize, checkboxSize);
+                            GUI.Label(checkRect, GUIContent.none, Styles.hoverStyle);
+
+                            checkRect = new Rect(
+                                GUI.matrix.MultiplyPoint(new Vector3(checkRect.position.x, checkRect.position.y + 200, 0)),
+                                GUI.matrix.MultiplyPoint(new Vector3(checkRect.size.x, checkRect.size.y, 0)));
+                            GUIView.current.MarkHotRegion(labelRect);
+                            GUIView.current.MarkHotRegion(checkRect);
+                        }
 
                         y++;
                     }
@@ -132,7 +169,14 @@ namespace UnityEditor
                     {
                         int x = 0;
                         var r = GUILayoutUtility.GetRect(indent + checkboxSize * numLayers + labelSize, checkboxSize);
-                        GUI.Label(new Rect(r.x + indent, r.y, labelSize, checkboxSize + 5), LayerMask.LayerToName(i), "RightLabel");
+                        var labelRect = new Rect(r.x + indent, r.y, labelSize, checkboxSize + 5);
+                        GUI.Label(labelRect, LayerMask.LayerToName(i), Styles.rightLabel);
+                        // Empty Transparent label used to indicate highlighted row
+                        var checkRect = new Rect(r.x + indent, r.y, labelSize + (numLayers - y) * checkboxSize, checkboxSize);
+                        GUI.Label(checkRect, GUIContent.none, Styles.hoverStyle);
+                        GUIView.current.MarkHotRegion(labelRect);
+                        GUIView.current.MarkHotRegion(checkRect);
+
                         for (int j = kMaxLayers - 1; j >= 0; j--)
                         {
                             if (LayerMask.LayerToName(j) != "")
@@ -155,7 +199,7 @@ namespace UnityEditor
                 GUILayout.BeginHorizontal();
 
                 // Padding on the left
-                GUILayout.Label("", GUILayout.Width(labelSize + 23));
+                GUILayout.Label(GUIContent.none, GUILayout.Width(labelSize + 23));
                 // Made the buttons span the entire matrix of layers
                 if (GUILayout.Button("Disable All", GUILayout.MinWidth((checkboxSize * numLayers) / 2), GUILayout.ExpandWidth(false)))
                     SetAllLayerCollisions(false, setValue);

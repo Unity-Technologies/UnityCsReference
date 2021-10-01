@@ -118,6 +118,7 @@ namespace UnityEngine
         extern public int solverIterations { get; set; }
         extern public float sleepThreshold { get; set; }
         extern public float maxAngularVelocity { get; set; }
+        extern public float maxLinearVelocity { get; set; }
         extern public void MovePosition(Vector3 position);
         extern public void MoveRotation(Quaternion rot);
         extern public void Sleep();
@@ -537,12 +538,14 @@ namespace UnityEngine
     {
         internal Vector3  m_Point;
         internal Vector3  m_Normal;
+        internal Vector3  m_Impulse;
         internal int m_ThisColliderInstanceID;
         internal int m_OtherColliderInstanceID;
         internal float m_Separation;
 
         public Vector3 point  { get { return m_Point; } }
         public Vector3 normal { get { return m_Normal; } }
+        public Vector3 impulse { get { return m_Impulse;} }
 
         public Collider thisCollider { get { return GetColliderByInstanceID(m_ThisColliderInstanceID); } }
         public Collider otherCollider { get { return GetColliderByInstanceID(m_OtherColliderInstanceID); } }

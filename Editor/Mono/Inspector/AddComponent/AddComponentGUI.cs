@@ -68,7 +68,7 @@ namespace UnityEditor.AddComponent
                 {
                     var componentItem = item as ComponentDropdownItem;
                     // null check doesn't work here so comparing against "New script"
-                    if (!componentItem.displayName.Equals("New script") && componentItem.menuPath.StartsWith("Component/Scripts/"))
+                    if (componentItem.menuPath != null && componentItem.displayName != null && !componentItem.displayName.Equals("New script") && componentItem.menuPath.StartsWith(AddComponentDataSource.kScriptHeader))
                     {
                         namespaceName = componentItem.menuPath.Substring(AddComponentDataSource.kScriptHeader.Length);
                         var last = namespaceName.LastIndexOf("/");

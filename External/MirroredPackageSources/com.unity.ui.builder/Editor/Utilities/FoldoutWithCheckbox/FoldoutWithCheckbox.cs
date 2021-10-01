@@ -7,9 +7,9 @@ namespace Unity.UI.Builder
     class FoldoutWithCheckbox : PersistedFoldout
     {
         [UsedImplicitly]
-        public new class UxmlFactory : UxmlFactory<FoldoutWithCheckbox, UxmlTraits> { }
+        public new class UxmlFactory : UxmlFactory<FoldoutWithCheckbox, UxmlTraits> {}
 
-        public new class UxmlTraits : PersistedFoldout.UxmlTraits { }
+        public new class UxmlTraits : PersistedFoldout.UxmlTraits {}
 
         const string k_UssPath = BuilderConstants.UtilitiesPath + "/FoldoutWithCheckbox/FoldoutWithCheckbox.uss";
         const string k_CheckboxClassName = "unity-foldout__checkbox";
@@ -21,7 +21,7 @@ namespace Unity.UI.Builder
         public FoldoutWithCheckbox()
         {
             m_Toggle.text = string.Empty;
-            m_Toggle.style.flexGrow = 0;
+            m_Toggle.visualInput.style.flexGrow = 0;
 
             m_Checkbox = new Toggle();
             m_Checkbox.style.flexGrow = 0;
@@ -29,7 +29,7 @@ namespace Unity.UI.Builder
             m_Checkbox.AddToClassList(k_CheckboxClassName);
             m_Checkbox.RegisterValueChangedCallback(e
                 => SetCheckboxValueWithoutNotify(e.newValue));
-            m_Header.hierarchy.Add(m_Checkbox);
+            m_Toggle.hierarchy.Add(m_Checkbox);
 
             m_Label = new Label();
             m_Label.AddToClassList(k_LabelClassName);
@@ -41,7 +41,7 @@ namespace Unity.UI.Builder
                 }
             }));
 
-            m_Header.hierarchy.Add(m_Label);
+            m_Toggle.hierarchy.Add(m_Label);
 
             styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(k_UssPath));
         }

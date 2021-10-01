@@ -152,6 +152,7 @@ namespace UnityEngine.UIElements
             removed |= m_ChildrenIds.Remove(id);
             removed |= m_ParentIds.Remove(id);
             removed |= m_Tree.Remove(id);
+            removed |= m_RootItemIds.Remove(id);
 
             return removed;
         }

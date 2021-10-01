@@ -194,14 +194,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             RefreshState();
 
-            var expansionChanged = previousVisualState.expanded != visualState.expanded;
-            var seeAllVersionsChanged = previousVisualState.seeAllVersions != visualState.seeAllVersions;
-            var needRefreshVersions = showVersionList && (expansionChanged || seeAllVersionsChanged);
-            if (needRefreshVersions)
+            if (showVersionList)
                 RefreshVersions();
 
             var selectedVersionIdOld = previousVisualState.selectedVersionId ?? string.Empty;
-            if (needRefreshVersions || selectedVersionIdOld != visualState.selectedVersionId)
+            if (showVersionList || selectedVersionIdOld != visualState.selectedVersionId)
                 RefreshSelection();
 
             RefreshTags();

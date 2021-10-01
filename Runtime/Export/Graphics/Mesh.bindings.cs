@@ -9,6 +9,7 @@ using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Jobs;
 
 namespace UnityEngine
 {
@@ -285,15 +286,10 @@ namespace UnityEngine
         [NativeMethod("OptimizeReorderVertexBuffer")] extern private void OptimizeReorderVertexBufferImpl();
     }
 
-    [NativeHeader("Runtime/Graphics/Mesh/MeshScriptBindings.h")]
-    [NativeHeader("Runtime/Graphics/Mesh/MeshCombiner.h")]
+    [NativeHeader("Runtime/Graphics/Mesh/StaticBatching.h")]
     internal struct StaticBatchingHelper
     {
-        [FreeFunction("MeshScripting::CombineMeshVerticesForStaticBatching")]
-        extern internal static Mesh InternalCombineVertices(MeshSubsetCombineUtility.MeshInstance[] meshes, string meshName);
-        [FreeFunction("MeshScripting::CombineMeshIndicesForStaticBatching")]
-        extern internal static void InternalCombineIndices(MeshSubsetCombineUtility.SubMeshInstance[] submeshes, Mesh combinedMesh);
-        [FreeFunction("IsMeshBatchable")]
-        extern internal static bool IsMeshBatchable(Mesh mesh);
+        [FreeFunction("StaticBatching::CombineMeshesForStaticBatching")]
+        extern internal static void CombineMeshes(GameObject[] gos, GameObject staticBatchRoot);
     }
 }

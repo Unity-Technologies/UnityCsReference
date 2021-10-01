@@ -2,42 +2,46 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
+using System.Linq;
+using UnityEditor.Profiling;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
-using System.Collections.Generic;
-using UnityEngine.Assertions;
-using System.Linq;
+using TreeView = UnityEngine.UIElements.Experimental.TreeView;
 
 namespace UnityEditor
 {
-    internal class ProgressWindow : EditorWindow
+    class ProgressWindow : EditorWindow
     {
-        internal const string ussPath = "StyleSheets/ProgressWindow/ProgressWindow.uss";
-        internal const string ussPathDark = "StyleSheets/ProgressWindow/ProgressWindowDark.uss";
-        internal const string ussPathLight = "StyleSheets/ProgressWindow/ProgressWindowLight.uss";
+        internal const string ussBasePath = "StyleSheets/ProgressWindow";
+        internal static readonly string ussPath = $"{ussBasePath}/ProgressWindow.uss";
+        internal static readonly string ussPathDark = $"{ussBasePath}/ProgressWindowDark.uss";
+        internal static readonly string ussPathLight = $"{ussBasePath}/ProgressWindowLight.uss";
+        internal const string k_UxmlProgressItemPath = "UXML/ProgressWindow/ProgressElement.uxml";
         public const string preferenceKey = "ProgressWindow.";
 
-        public const string kSuccessIcon = "completed_task";
-        public const string kFailedIcon = "console.erroricon";
-        public const string kCanceledIcon = "console.warnicon";
-        public const int kIconSize = 16;
+        const float k_WindowMinWidth = 100;
+        const float k_WindowMinHeight = 70;
+        const float k_WindowWidth = 400;
+        const float k_WindowHeight = 300;
 
-        private const float WindowMinWidth = 100;
-        private const float WindowMinHeight = 70;
-        private const float WindowWidth = 400;
-        private const float WindowHeight = 300;
+        static ProgressWindow s_Window;
+        static readonly string k_CheckWindowKeyName = $"{typeof(ProgressWindow).FullName}h";
+        internal static bool canHideDetails => s_Window && !s_Window.docked;
+        static ProgressOrderComparer s_ProgressComparer = new ProgressOrderComparer(true);
+        static VisualTreeAsset s_VisualProgressItemTask = null;
 
-        private ScrollView m_ScrollView;
-        private List<ProgressElement> m_Elements = new List<ProgressElement>();
-        private static ProgressWindow m_Window;
-        private Button m_DismissAllBtn;
-        private double m_LastUpdate;
+        Button m_DismissAllBtn;
+        TreeView m_TreeView;
 
-        const double k_CheckUnresponsiveDelayInSecond = 1.0;
+        Dictionary<int, List<int>> m_MissingParents;
+        HashSet<int> m_ContainedItems;
+        HashSet<int> m_ItemsNeedingExpansion;
 
-        private TaskReorderingHelper m_TaskReorderingHelper;
-
-        private static readonly string k_CheckWindowKeyName = $"{typeof(ProgressWindow).FullName}h";
+        // For testing only
+        internal TreeView treeView => m_TreeView;
+        internal Button dismissAllButton => m_DismissAllBtn;
 
         [MenuItem("Window/General/Progress", priority = 50)]
         public static void ShowDetails()
@@ -45,33 +49,22 @@ namespace UnityEditor
             ShowDetails(false);
         }
 
-        internal static bool canHideDetails => m_Window && !m_Window.docked;
-
-        internal static void HideDetails()
-        {
-            if (canHideDetails)
-            {
-                m_Window.Close();
-                m_Window = null;
-            }
-        }
-
         internal static void ShowDetails(bool shouldReposition)
         {
-            if (m_Window && m_Window.docked)
+            if (s_Window && s_Window.docked)
                 shouldReposition = false;
 
-            if (m_Window == null)
+            if (s_Window == null)
             {
                 var wins = Resources.FindObjectsOfTypeAll<ProgressWindow>();
                 if (wins.Length > 0)
-                    m_Window = wins[0];
+                    s_Window = wins[0];
             }
 
             bool newWindowCreated = false;
-            if (!m_Window)
+            if (!s_Window)
             {
-                m_Window = CreateInstance<ProgressWindow>();
+                s_Window = CreateInstance<ProgressWindow>();
                 newWindowCreated = true;
 
                 // If it is the first time this window is opened, reposition.
@@ -79,289 +72,368 @@ namespace UnityEditor
                     shouldReposition = true;
             }
 
-            m_Window.Show();
-            m_Window.Focus();
+            s_Window.Show();
+            s_Window.Focus();
 
             if (newWindowCreated && shouldReposition)
             {
                 var mainWindowRect = EditorGUIUtility.GetMainWindowPosition();
-                var size = new Vector2(WindowWidth, WindowHeight);
-                m_Window.position = new Rect(mainWindowRect.xMax - WindowWidth - 6, mainWindowRect.yMax - WindowHeight - 50, size.x, size.y);
-                m_Window.minSize = new Vector2(WindowMinWidth, WindowMinHeight);
+                var size = new Vector2(k_WindowWidth, k_WindowHeight);
+                s_Window.position = new Rect(mainWindowRect.xMax - k_WindowWidth - 6, mainWindowRect.yMax - k_WindowHeight - 50, size.x, size.y);
+                s_Window.minSize = new Vector2(k_WindowMinWidth, k_WindowMinHeight);
             }
         }
 
-        // only for tests
-        internal static Progress.Item GetProgressItem(int id)
+        internal static void HideDetails()
         {
-            if (m_Window == null)
-                return null;
-
-            foreach (var elem in m_Window.m_Elements)
+            if (canHideDetails)
             {
-                if (elem.dataSource.id == id)
-                    return elem.dataSource;
-
-                var childItem = elem.GetSubTaskItem(id);
-                if (childItem != null)
-                    return childItem;
+                s_Window.Close();
+                s_Window = null;
             }
-            return null;
         }
 
-        private void OnEnable()
+        void OnEnable()
         {
-            // using (new EditorPerformanceTracker("ProgressWindow.OnEnable"))
+            s_Window = this;
+            titleContent = EditorGUIUtility.TrTextContent("Background Tasks");
+
+            rootVisualElement.AddStyleSheetPath(ussPath);
+            if (EditorGUIUtility.isProSkin)
+                rootVisualElement.AddStyleSheetPath(ussPathDark);
+            else
+                rootVisualElement.AddStyleSheetPath(ussPathLight);
+
+            var toolbar = new UIElements.Toolbar();
+            m_DismissAllBtn = new ToolbarButton(ClearInactive)
             {
-                m_Window = this;
-                titleContent = EditorGUIUtility.TrTextContent($"Background Tasks");
+                name = "DismissAllBtn",
+                text = L10n.Tr("Clear inactive"),
+            };
+            toolbar.Add(m_DismissAllBtn);
 
-                rootVisualElement.AddStyleSheetPath(ussPath);
-                if (EditorGUIUtility.isProSkin)
-                    rootVisualElement.AddStyleSheetPath(ussPathDark);
-                else
-                    rootVisualElement.AddStyleSheetPath(ussPathLight);
-
-                var toolbar = new UIElements.Toolbar();
-                m_DismissAllBtn = new UIElements.ToolbarButton(ClearAll)
+            // This is our friend the spacer
+            toolbar.Add(new VisualElement()
+            {
+                style =
                 {
-                    name = "DismissAllBtn",
-                    text = "Clear inactive",
-                };
-                toolbar.Add(m_DismissAllBtn);
+                    flexGrow = 1
+                }
+            });
 
-                // This is our friend the spacer
-                toolbar.Add(new VisualElement()
-                {
-                    style =
-                    {
-                        flexGrow = 1
-                    }
-                });
+            rootVisualElement.Add(toolbar);
+            s_VisualProgressItemTask = EditorGUIUtility.Load(k_UxmlProgressItemPath) as VisualTreeAsset;
 
-                rootVisualElement.Add(toolbar);
+            m_TreeView = new TreeView();
+            m_TreeView.makeItem = MakeTreeViewItem;
+            m_TreeView.bindItem = BindTreeViewItem;
+            m_TreeView.unbindItem = UnbindTreeViewItem;
+            m_TreeView.destroyItem = DestroyTreeViewItem;
+            m_TreeView.fixedItemHeight = 50;
+            m_TreeView.SetRootItems(new TreeViewItemData<Progress.Item>[] {});
 
-                m_ScrollView = new ScrollView()
-                {
-                    style =
-                    {
-                        flexGrow = 1
-                    },
+            var scrollView = m_TreeView.Q<ScrollView>();
+            if (scrollView != null)
+                scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
 
-                    horizontalScrollerVisibility = ScrollerVisibility.Hidden
-                };
-                rootVisualElement.Add(m_ScrollView);
+            rootVisualElement.Add(m_TreeView);
+            m_TreeView.Rebuild();
 
-                m_TaskReorderingHelper = new TaskReorderingHelper(RemoveAtInsertAt);
-                UpdateModel();
+            // Update the treeview with the existing items
+            m_MissingParents = new Dictionary<int, List<int>>();
+            m_ContainedItems = new HashSet<int>();
+            m_ItemsNeedingExpansion = new HashSet<int>();
+            OperationsAdded(Progress.EnumerateItems().ToArray());
 
-                Progress.added += OperationWasAdded;
-                Progress.removed += OperationWasRemoved;
-                Progress.updated += OperationWasUpdated;
-
-                CheckUnresponsive();
-            }
+            Progress.added += OperationsAdded;
+            Progress.removed += OperationsRemoved;
+            Progress.updated += OperationsUpdated;
+            UpdateDismissAllButton();
         }
 
-        private void RemoveAtInsertAt(int insertIndex, int itemIndex)
+        void OnDisable()
         {
-            var elementToMove = m_Elements[itemIndex];
-            m_Elements.RemoveAt(itemIndex);
-            m_ScrollView.RemoveAt(itemIndex);
-            if (itemIndex <= insertIndex)
-                --insertIndex;
-            m_Elements.Insert(insertIndex, elementToMove);
-            m_ScrollView.Insert(insertIndex, elementToMove.rootVisualElement);
+            Progress.added -= OperationsAdded;
+            Progress.removed -= OperationsRemoved;
+            Progress.updated -= OperationsUpdated;
         }
 
-        private void OnInspectorUpdate()
+        static VisualElement MakeTreeViewItem()
         {
-            if (!Progress.running)
+            return new VisualProgressItem(s_VisualProgressItemTask);
+        }
+
+        void BindTreeViewItem(VisualElement element, int index)
+        {
+            var visualProgressItem = element as VisualProgressItem;
+            if (visualProgressItem == null)
                 return;
 
-            var now = EditorApplication.timeSinceStartup;
-            var checkUnresponsive = (now - m_LastUpdate) > k_CheckUnresponsiveDelayInSecond;
-            if (checkUnresponsive)
-                m_LastUpdate = now;
+            var progressItem = m_TreeView.GetItemDataForIndex<Progress.Item>(index);
+            visualProgressItem.BindItem(progressItem);
 
-            // using (new EditorPerformanceTracker("ProgressWindow.UpdateAnimatedState"))
+            var indentLevel = GetIndentationLevel(index);
+            var rootVE = m_TreeView.GetRootElementForIndex(index);
+            var isEven = indentLevel % 2 == 0;
+            rootVE.EnableInClassList("unity-tree-view__item-indent-even", isEven);
+            rootVE.EnableInClassList("unity-tree-view__item-indent-odd", !isEven);
+        }
+
+        void UnbindTreeViewItem(VisualElement element, int index)
+        {
+            var visualProgressItem = element as VisualProgressItem;
+            visualProgressItem?.UnbindItem();
+
+            var rootVE = m_TreeView.GetRootElementForIndex(index);
+            rootVE?.EnableInClassList("unity-tree-view__item-indent-even", false);
+            rootVE?.EnableInClassList("unity-tree-view__item-indent-odd", false);
+        }
+
+        static void DestroyTreeViewItem(VisualElement element)
+        {
+            var visualProgressItem = element as VisualProgressItem;
+            visualProgressItem?.DestroyItem();
+        }
+
+        int GetIndentationLevel(int index)
+        {
+            var level = 0;
+            var parentId = m_TreeView.GetParentIdForIndex(index);
+            while (parentId != -1)
             {
-                foreach (var progressElement in m_Elements)
-                {
-                    if (!progressElement.dataSource.running)
-                        continue;
+                ++level;
+                parentId = m_TreeView.viewController.GetParentId(parentId);
+            }
 
-                    if (checkUnresponsive)
-                        progressElement.CheckUnresponsive();
-                    progressElement.UpdateAnimatedState();
-                }
+            return level;
+        }
+
+        internal static void ClearInactive()
+        {
+            var finishedItems = Progress.EnumerateItems().Where(item => item.finished);
+            foreach (var item in finishedItems)
+            {
+                item.Remove();
             }
         }
 
-        private void OnDisable()
+        void UpdateDismissAllButton()
         {
-            Progress.added -= OperationWasAdded;
-            Progress.removed -= OperationWasRemoved;
-            Progress.updated -= OperationWasUpdated;
+            m_DismissAllBtn.SetEnabled(Progress.EnumerateItems().Any(item => item.finished));
         }
 
-        private void CheckUnresponsive()
+        void OperationsAdded(Progress.Item[] items)
         {
-            // using (new EditorPerformanceTracker("ProgressWindow.CheckUnresponsive"))
+            //using (new EditorPerformanceTracker("ProgressWindow.OperationsAdded"))
             {
-                foreach (var progressElement in m_Elements)
+                foreach (var item in items)
                 {
-                    progressElement.CheckUnresponsive();
-                }
-            }
-        }
+                    var treeViewItemData = new TreeViewItemData<Progress.Item>(item.id, item);
+                    AddTreeViewItemToTree(treeViewItemData);
 
-        private void OperationWasAdded(Progress.Item[] ops)
-        {
-            // using (new EditorPerformanceTracker("ProgressWindow.OperationWasAdded"))
-            {
-                Assert.IsNotNull(ops[0]);
-                var el = AddElement(ops[0]);
-                DismissAllBtn();
-                CheckUnresponsive();
-            }
-        }
+                    // When setting autoExpand to true, there is a possible race condition
+                    // that can happen if the item is added and removed quickly.
+                    // AutoExpand triggers a callback to be executed at a later point when makeItem is called.
+                    // By the time the callback is called, the item might have been removed.
+                    // Therefore, we expand all new items here manually.
+                    m_TreeView.viewController.ExpandItem(item.id, true);
 
-        private void OperationWasRemoved(Progress.Item[] ops)
-        {
-            // using (new EditorPerformanceTracker("ProgressWindow.OperationWasRemoved"))
-            {
-                foreach (var op in ops)
-                {
-                    Assert.IsNotNull(op);
-
-                    var id = op.id;
-
-                    var foundElement = m_Elements.Find(e => e.dataSource.id == id);
-                    if (foundElement != null)
-                    {
-                        m_ScrollView.Remove(foundElement.rootVisualElement);
-                        m_Elements.Remove(foundElement);
-                    }
-                    else
-                    {
-                        foreach (var element in m_Elements)
-                        {
-                            if (element.TryRemove(id))
-                            {
-                                break;
-                            }
-                        }
-                    }
-                }
-                CheckUnresponsive();
-                DismissAllBtn();
-            }
-        }
-
-        private void OperationWasUpdated(Progress.Item[] ops)
-        {
-            // using (new EditorPerformanceTracker("ProgressWindow.OperationWasUpdated"))
-            {
-                Assert.IsNotNull(ops[0]);
-
-                HashSet<ProgressElement> elementsSubtasksToReorder = new HashSet<ProgressElement>();
-                m_TaskReorderingHelper.Clear();
-                foreach (var op in ops)
-                {
-                    bool rootTaskFound = false;
-                    for (int i = 0; i < m_Elements.Count; ++i)
-                    {
-                        if (m_Elements[i].dataSource.id == op.id || m_Elements[i].dataSource.id == op.parentId)
-                        {
-                            if (m_Elements[i].TryUpdate(op, op.id, elementsSubtasksToReorder.Contains(m_Elements[i]))) // We need to know if we already have this root task, it allows to reset the helper status
-                            {
-                                rootTaskFound = true;
-                                if (m_Elements[i].dataSource.id == op.id)
-                                    m_TaskReorderingHelper.AddItemToReorder(op, i); // add the reordering info for the root task
-                                else
-                                    elementsSubtasksToReorder.Add(m_Elements[i]); // add the root task of the subtask we might need to reorder (the reordering info are added during TryUpdate)
-                                break;
-                            }
-                        }
-                    }
-
-                    Assert.IsTrue(rootTaskFound);
+                    // Also, if the item has no child, then the expanded state is not set.
+                    // Therefore, we need to keep track of this item to expand it when we add a child to it.
+                    if (!m_TreeView.viewController.HasChildren(item.id))
+                        m_ItemsNeedingExpansion.Add(item.id);
                 }
 
-                // After the update, we deal with sorting, first for the root tasks, then for the subtasks
-                m_TaskReorderingHelper.ReorderItems(m_Elements.Count, i => m_Elements[i].dataSource);
-                foreach (var parentElement in elementsSubtasksToReorder)
+                m_TreeView.RefreshItems();
+            }
+        }
+
+        void OperationsRemoved(Progress.Item[] items)
+        {
+            using (new EditorPerformanceTracker("ProgressWindow.OperationsRemoved"))
+            {
+                foreach (var item in items)
                 {
-                    parentElement.ReorderSubtasks();
+                    RemoveTreeViewItem(item.id);
                 }
 
-                m_DismissAllBtn.SetEnabled(m_Elements.Any(el => el.dataSource.finished));
-                CheckUnresponsive();
+                m_TreeView.Rebuild();
+                UpdateDismissAllButton();
             }
         }
 
-        private void ClearAll()
+        void OperationsUpdated(Progress.Item[] items)
         {
-            var finishedTasks = m_Elements.Where(el => el.dataSource.finished).Select(el => el.dataSource.id).ToArray();
-            foreach (var id in finishedTasks)
+            //using (new EditorPerformanceTracker("ProgressWindow.OperationsUpdated"))
             {
-                Progress.Remove(id);
-            }
-        }
+                var itemsToBeReinserted = items
+                    .Where(item => item.lastUpdates.HasAny(Progress.Updates.StatusChanged | Progress.Updates.PriorityChanged));
 
-        private void DismissAllBtn()
-        {
-            m_DismissAllBtn.SetEnabled(m_Elements.Any(el => el.dataSource.finished));
-        }
-
-        private ProgressElement AddElement(Progress.Item progressItem)
-        {
-            if (progressItem.parentId >= 0)
-            {
-                for (int i = 0; i < m_Elements.Count; ++i)
+                // The items must me reinserted in a specific order, otherwise we end up
+                // with the wrong insertion order or even with duplicates if not careful. To prevent any
+                // issues, we must reinsert all siblings together, avoiding reinserting with their parents.
+                var needsRebuild = false;
+                var siblingGroups = itemsToBeReinserted.GroupBy(item => item.parentId, item => item.id);
+                foreach (var siblings in siblingGroups)
                 {
-                    if (progressItem.parentId == m_Elements[i].dataSource.id)
-                    {
-                        m_Elements[i].AddElement(progressItem);
-                        return m_Elements[i];
-                    }
+                    ReinsertAllItems(siblings);
+                    needsRebuild = true;
                 }
+
+                if (needsRebuild)
+                {
+                    m_TreeView.Rebuild();
+                    UpdateDismissAllButton();
+                }
+                else
+                    m_TreeView.RefreshItems();
             }
-            // if there is no parent
-            var element = new ProgressElement(progressItem);
-            if (m_Elements.Count > 0)
-            {
-                int insertIndex = m_TaskReorderingHelper.FindIndexToInsertAt(progressItem, m_Elements.Count, i => m_Elements[i].dataSource);
-                m_Elements.Insert(insertIndex, element);
-                m_ScrollView.Insert(insertIndex, element.rootVisualElement);
-                return element;
-            }
-            else
-            {
-                m_Elements.Add(element);
-                m_ScrollView.Add(element.rootVisualElement);
-            }
-            return element;
         }
 
-        private void RemoveAllElements()
+        List<Progress.Item> GetSiblingItems(Progress.Item item, out int newParentId)
         {
-            m_Elements.Clear();
-            for (var i = m_ScrollView.childCount - 1; i >= 0; i--)
-                m_ScrollView.RemoveAt(i);
-        }
-
-        private void UpdateModel()
-        {
-            RemoveAllElements();
-
-            foreach (var op in Progress.EnumerateItems())
+            newParentId = item.parentId;
+            if (item.parentId == -1)
             {
-                AddElement(op);
+                var rootIds = m_TreeView.GetRootIds();
+                return rootIds?.Select(id => m_TreeView.GetItemDataForId<Progress.Item>(id)).ToList();
             }
 
-            DismissAllBtn();
+            if (!m_ContainedItems.Contains(newParentId))
+            {
+                // If the parent is missing, the item should be put at the root level for now.
+                List<int> itemIds;
+                if (!m_MissingParents.TryGetValue(item.parentId, out itemIds))
+                {
+                    itemIds = new List<int>();
+                    m_MissingParents.Add(item.parentId, itemIds);
+                }
+
+                itemIds.Add(item.id);
+                newParentId = -1;
+                return m_TreeView.GetRootIds()?.Select(id => m_TreeView.GetItemDataForId<Progress.Item>(id)).ToList();
+            }
+
+            var childrenIds = m_TreeView.viewController.GetChildrenIds(newParentId);
+            return childrenIds?.Select(id => m_TreeView.GetItemDataForId<Progress.Item>(id)).ToList();
+        }
+
+        static int GetInsertionIndex(List<Progress.Item> items, Progress.Item itemToInsert)
+        {
+            if (items == null)
+                return -1;
+            var insertionIndex = items.BinarySearch(itemToInsert, s_ProgressComparer);
+            if (insertionIndex < 0)
+                return ~insertionIndex;
+            return insertionIndex;
+        }
+
+        void ReinsertItem(int itemId)
+        {
+            var treeViewItemWithChildren = GetExistingTreeViewItemFromId(itemId);
+            RemoveTreeViewItem(itemId);
+            AddTreeViewItemToTree(treeViewItemWithChildren);
+        }
+
+        void ReinsertAllItems(IEnumerable<int> itemIds)
+        {
+            var treeViewItemsWithChildren = itemIds.Select(id => GetExistingTreeViewItemFromId(id)).ToList();
+
+            // Remove all items first
+            foreach (var treeViewItem in treeViewItemsWithChildren)
+            {
+                RemoveTreeViewItem(treeViewItem.id);
+            }
+
+            // Then reinsert them
+            foreach (var treeViewItem in treeViewItemsWithChildren)
+            {
+                AddTreeViewItemToTree(treeViewItem);
+            }
+        }
+
+        TreeViewItemData<Progress.Item> GetExistingTreeViewItemFromId(int itemId)
+        {
+            var progressItem = m_TreeView.GetItemDataForId<Progress.Item>(itemId);
+            var treeViewItem = new TreeViewItemData<Progress.Item>(itemId, progressItem);
+
+            var childrenIds = m_TreeView.viewController.GetChildrenIds(itemId);
+            if (childrenIds != null)
+            {
+                var childrenItems = childrenIds.Select(id => GetExistingTreeViewItemFromId(id));
+                treeViewItem.AddChildren(childrenItems.ToList());
+            }
+
+            return treeViewItem;
+        }
+
+        void AddTreeViewItemToTree(TreeViewItemData<Progress.Item> treeViewItem)
+        {
+            var siblings = GetSiblingItems(treeViewItem.data, out var newParentId);
+            var insertionIndex = GetInsertionIndex(siblings, treeViewItem.data);
+
+            var defaultController = m_TreeView.viewController as DefaultTreeViewController<Progress.Item>;
+            defaultController.AddItem(treeViewItem, newParentId, insertionIndex);
+
+            m_ContainedItems.Add(treeViewItem.id);
+            if (m_MissingParents.TryGetValue(treeViewItem.id, out var orphans))
+            {
+                foreach (var orphanId in orphans)
+                {
+                    ReinsertItem(orphanId);
+                }
+
+                m_MissingParents.Remove(treeViewItem.id);
+            }
+
+            if (m_ItemsNeedingExpansion.Contains(treeViewItem.data.parentId))
+            {
+                m_TreeView.viewController.ExpandItem(treeViewItem.data.parentId, true);
+                m_ItemsNeedingExpansion.Remove(treeViewItem.data.parentId);
+            }
+        }
+
+        void RemoveTreeViewItem(int progressId)
+        {
+            m_TreeView.viewController.TryRemoveItem(progressId);
+            m_ContainedItems.Remove(progressId);
+        }
+
+        // Internal functions, for testing only
+        internal int GetIndexForProgressId(int progressId)
+        {
+            return m_TreeView.viewController.GetIndexForId(progressId);
+        }
+
+        internal VisualProgressItem GetVisualProgressItemAtIndex(int index)
+        {
+            var vi = m_TreeView.GetRootElementForIndex(index);
+            return vi.Q<VisualProgressItem>(VisualProgressItem.visualElementName);
+        }
+
+        internal VisualProgressItem GetVisualProgressItem(int progressId)
+        {
+            var vi = m_TreeView.GetRootElementForId(progressId);
+            return vi.Q<VisualProgressItem>(VisualProgressItem.visualElementName);
+        }
+
+        internal void ExpandAllItems()
+        {
+            m_TreeView.ExpandAll();
+        }
+
+        internal bool IsProgressIdInTree(int progressId)
+        {
+            // Calling ToList is needed here, as GetAllItems uses an internal stacked enumerator that is a member
+            // of the viewController. If the iteration does not complete all the way, it messes with all other calls
+            // to GetAllItems!
+            var allIds = m_TreeView.viewController.GetAllItemIds().ToList();
+            return allIds.Contains(progressId);
+        }
+
+        internal bool IsProgressExpanded(int progressId)
+        {
+            return !m_TreeView.viewController.HasChildren(progressId) || m_TreeView.IsExpanded(progressId);
         }
     }
 }

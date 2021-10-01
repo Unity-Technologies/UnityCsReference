@@ -84,6 +84,8 @@ namespace UnityEditor.UIElements
         private float m_LabelWidthRatio;
         private float m_LabelExtraPadding;
 
+        SerializedProperty serializedProperty => m_SerializedProperty;
+
         /// <summary>
         /// USS class name of elements of this type.
         /// </summary>
@@ -158,15 +160,17 @@ namespace UnityEditor.UIElements
             evt.StopPropagation();
         }
 
-        private void Reset(SerializedPropertyBindEvent evt)
+        void Reset(SerializedProperty property)
         {
-            if (m_SerializedProperty != null)
+            m_SerializedProperty = property;
+
+            if (m_SerializedProperty != null && m_SerializedProperty.isValid)
             {
                 // if we already have a serialized property, determine if the property field can be reused without reset
                 // this is only supported for non propertydrawer types
-                if (m_ChildField != null && m_SerializedProperty.propertyType == evt.bindProperty.propertyType)
+                if (m_ChildField != null && m_SerializedProperty.propertyType == property.propertyType)
                 {
-                    var newField = CreateOrUpdateFieldFromProperty(evt.bindProperty, m_ChildField);
+                    var newField = CreateOrUpdateFieldFromProperty(property, m_ChildField);
                     // there was an issue where we weren't able to swap the bindings on the original field
                     if (newField != m_ChildField)
                     {
@@ -179,15 +183,16 @@ namespace UnityEditor.UIElements
                             hierarchy.Insert(childIndex, m_ChildField);
                         }
                     }
+
                     return;
                 }
             }
 
             Clear();
+            m_ChildField?.Unbind();
             m_ChildField = null;
-            var bindProperty = evt.bindProperty;
-            m_SerializedProperty = bindProperty;
-            if (bindProperty == null)
+
+            if (property == null)
                 return;
 
             ComputeNestingLevel();
@@ -196,6 +201,7 @@ namespace UnityEditor.UIElements
 
             // Case 1292133: set proper nesting level before calling CreatePropertyGUI
             var handler = ScriptAttributeUtility.GetHandler(m_SerializedProperty);
+
             using (var nestingContext = handler.ApplyNestingContext(m_DrawNestingLevel))
             {
                 if (handler.hasPropertyDrawer)
@@ -213,7 +219,7 @@ namespace UnityEditor.UIElements
                 }
                 else
                 {
-                    customPropertyGUI = CreateOrUpdateFieldFromProperty(bindProperty);
+                    customPropertyGUI = CreateOrUpdateFieldFromProperty(m_SerializedProperty);
                     m_ChildField = customPropertyGUI;
                 }
             }
@@ -223,6 +229,14 @@ namespace UnityEditor.UIElements
                 PropagateNestingLevel(customPropertyGUI);
                 hierarchy.Add(customPropertyGUI);
             }
+
+            if (m_SerializedProperty.propertyType == SerializedPropertyType.ManagedReference)
+                BindingExtensions.TrackPropertyValue(this, m_SerializedProperty, Reset);
+        }
+
+        private void Reset(SerializedPropertyBindEvent evt)
+        {
+            Reset(evt.bindProperty);
         }
 
         private VisualElement CreatePropertyIMGUIContainer()
@@ -234,37 +248,37 @@ namespace UnityEditor.UIElements
                 var originalWideMode = InspectorElement.SetWideModeForWidth(this);
                 try
                 {
-                    if (!m_SerializedProperty.isValid)
+                    if (!serializedProperty.isValid)
                         return;
 
                     EditorGUI.BeginChangeCheck();
-                    m_SerializedProperty.serializedObject.Update();
+                    serializedProperty.serializedObject.Update();
 
                     if (m_FoldoutDepth > 0)
                         EditorGUI.indentLevel += m_FoldoutDepth;
 
                     // Wait at last minute to call GetHandler, sometimes the handler cache is cleared between calls.
-                    var handler = ScriptAttributeUtility.GetHandler(m_SerializedProperty);
+                    var handler = ScriptAttributeUtility.GetHandler(serializedProperty);
                     using (var nestingContext = handler.ApplyNestingContext(m_DrawNestingLevel))
                     {
                         if (label == null)
                         {
-                            EditorGUILayout.PropertyField(m_SerializedProperty, true);
+                            EditorGUILayout.PropertyField(serializedProperty, true);
                         }
                         else if (label == string.Empty)
                         {
-                            EditorGUILayout.PropertyField(m_SerializedProperty, GUIContent.none, true);
+                            EditorGUILayout.PropertyField(serializedProperty, GUIContent.none, true);
                         }
                         else
                         {
-                            EditorGUILayout.PropertyField(m_SerializedProperty, new GUIContent(label), true);
+                            EditorGUILayout.PropertyField(serializedProperty, new GUIContent(label), true);
                         }
                     }
 
                     if (m_FoldoutDepth > 0)
                         EditorGUI.indentLevel -= m_FoldoutDepth;
 
-                    m_SerializedProperty.serializedObject.ApplyModifiedProperties();
+                    serializedProperty.serializedObject.ApplyModifiedProperties();
                     if (EditorGUI.EndChangeCheck())
                     {
                         DispatchPropertyChangedEvent();
@@ -403,6 +417,7 @@ namespace UnityEditor.UIElements
                     field = new PropertyField(property);
                     field.m_ParentPropertyField = this;
                     m_ChildrenProperties.Add(field);
+                    field.bindingPath = property.propertyPath;
 
                     if (bindNewFields)
                         field.Bind(property.serializedObject);

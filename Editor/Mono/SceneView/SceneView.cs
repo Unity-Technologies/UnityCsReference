@@ -3224,31 +3224,41 @@ namespace UnityEditor
                         break;
                     }
 
-                    bool allHandled = CallEditorDragFunctions(dragAndDropObjects);
-
-                    if (evt.type == EventType.Used || allHandled)
-                        break;
-
+                    // Allow user defined Custom Drop Handler
                     bool isPerform = evt.type == EventType.DragPerform;
-                    // call old-style C++ dragging handlers
-                    if (DragAndDrop.visualMode != DragAndDropVisualMode.Copy)
-                    {
-                        var defaultParentObject = GetDefaultParentObjectIfSet();
-                        var parent = defaultParentObject != null ? defaultParentObject : customParentForDraggedObjects;
 
-                        GameObject go = HandleUtility.PickGameObject(Event.current.mousePosition, true);
+                    var defaultParentObject = GetDefaultParentObjectIfSet();
+                    var parent = defaultParentObject != null ? defaultParentObject : customParentForDraggedObjects;
+
+                    var go = HandleUtility.PickGameObject(Event.current.mousePosition, true);
+
+                    if (DragAndDrop.HasHandler(DragAndDropWindowTarget.sceneView))
+                    {
                         DragAndDrop.visualMode = DragAndDrop.Drop(DragAndDropWindowTarget.sceneView, go, pivot, Event.current.mousePosition, parent, isPerform);
                     }
 
-                    if (isPerform && DragAndDrop.visualMode != DragAndDropVisualMode.None)
+                    // Allow editor Wrapper Drop Handler
+                    var allObjectsHandled = false;
+                    if (DragAndDrop.visualMode == DragAndDropVisualMode.None)
+                    {
+                        allObjectsHandled = CallEditorDragFunctions(dragAndDropObjects);
+                    }
+
+                    if (evt.type != EventType.Used || !allObjectsHandled)
+                    {
+                        // C++ legacy Drop Handler
+                        DragAndDrop.visualMode = InternalEditorUtility.SceneViewDrag(go, pivot, Event.current.mousePosition, parent, isPerform);
+                    }
+
+                    if (DragAndDrop.visualMode != DragAndDropVisualMode.None)
                     {
                         DragAndDrop.AcceptDrag();
-                        evt.Use();
                         // Bail out as state can be messed up by now.
                         GUIUtility.ExitGUI();
                     }
 
                     evt.Use();
+
                     break;
                 case EventType.DragExited:
                     CallEditorDragFunctions(dragAndDropObjects);

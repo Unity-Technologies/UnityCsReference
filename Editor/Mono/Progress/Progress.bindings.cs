@@ -55,6 +55,27 @@ namespace UnityEditor
             High = 10
         }
 
+        [Flags, NativeType(Header = "Editor/Src/Progress.h")]
+        internal enum Updates : uint
+        {
+            NothingChanged = 0,
+            StatusChanged = 1,
+            ProgressChanged = 1 << 1,
+            DescriptionChanged = 1 << 2,
+            TimeDisplayModeChanged = 1 << 3,
+            RemainingTimeChanged = 1 << 4,
+            PriorityChanged = 1 << 5,
+            CancellableChanged = 1 << 6,
+            PausableChanged = 1 << 7,
+            StepLabelChanged = 1 << 8,
+            CurrentStepChanged = 1 << 9,
+            TotalStepsChanged = 1 << 10,
+            ElapsedTimeSinceLastPauseChanged = 1 << 11,
+            LastResumeTimeChanged = 1 << 12,
+            EndTimeChanged = 1 << 13,
+            EverythingChanged = 0xffffffff
+        }
+
         [NativeMethod(IsFreeFunction = true, IsThreadSafe = true, Name = "Editor::Progress::Start")]
         private static extern int Internal_Start(string name, string description, Options options, int parentId);
 
@@ -157,6 +178,8 @@ namespace UnityEditor
         public static extern void SetDescription(int id, string description);
 
         public static extern long GetStartDateTime(int id);
+
+        public static extern long GetEndDateTime(int id);
 
         public static extern long GetUpdateDateTime(int id);
 
@@ -304,7 +327,7 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        private static void OnOperationStateChanged(int id)
+        private static void OnOperationStateChanged(int id, Updates progressUpdates)
         {
             if (!s_Initialized)
                 RestoreProgressItems();
@@ -314,32 +337,37 @@ namespace UnityEditor
 
             s_ProgressDirty = true;
             s_RemainingTimeDirty = true;
-            item.Dirty();
+            item.Dirty(progressUpdates);
 
             updated?.Invoke(new[] {item});
+            item.ClearUpdates();
         }
 
         [RequiredByNativeCode]
-        private static void OnOperationsStateChanged(int[] ids)
+        private static void OnOperationsStateChanged(int[] ids, Updates[] progressUpdates)
         {
             if (!s_Initialized)
                 RestoreProgressItems();
             if (ids.Length == 0) return;
 
             var items = new Item[ids.Length];
-            var i = 0;
 
-            foreach (var id in ids)
+            for (var i = 0; i < ids.Length; ++i)
             {
+                var id = ids[i];
                 var item = GetProgressById(id);
                 Assert.IsNotNull(item);
-                item.Dirty();
-                items[i++] = item;
+                item.Dirty(progressUpdates[i]);
+                items[i] = item;
             }
             s_ProgressDirty = true;
             s_RemainingTimeDirty = true;
 
             updated?.Invoke(items);
+            foreach (var item in items)
+            {
+                item.ClearUpdates();
+            }
         }
 
         [RequiredByNativeCode]
@@ -438,5 +466,17 @@ namespace UnityEditor
             s_ProgressDirty = true;
             s_RemainingTimeDirty = true;
         }
+    }
+
+    static class ProgressEnumExtensions
+    {
+        public static bool HasAny(this Progress.Updates flags, Progress.Updates f)
+        {
+            if (f == Progress.Updates.NothingChanged && flags == Progress.Updates.NothingChanged)
+                return true;
+            return (f & flags) != 0;
+        }
+
+        public static bool HasAll(this Progress.Updates flags, Progress.Updates all) => (flags & all) == all;
     }
 }

@@ -86,13 +86,6 @@ namespace UnityEditor
             if (group == null)
                 return;
 
-            var controller = group.controller;
-            var allGroups = controller.GetAllAudioGroupsSlow();
-            var effectMap = new Dictionary<AudioMixerEffectController, AudioMixerGroupController>();
-            foreach (var g in allGroups)
-                foreach (var e in g.effects)
-                    effectMap[e] = g;
-
             Rect totalRect = EditorGUILayout.BeginVertical();
 
             if (EditorApplication.isPlaying)
@@ -109,6 +102,8 @@ namespace UnityEditor
 
             using (new EditorGUI.DisabledScope(!AudioMixerController.EditingTargetSnapshot()))
             {
+                var controller = group.controller;
+
                 if (group != m_PrevGroup)
                 {
                     m_PrevGroup = group;
@@ -117,6 +112,9 @@ namespace UnityEditor
                 }
 
                 // Do Effect modules
+                var allGroups = controller.GetAllAudioGroupsSlow();
+                var effectMap = AudioMixerGroupController.GetEffectMapSlow(allGroups);
+
                 DoInitialModule(group, controller, allGroups);
                 for (int effectIndex = 0; effectIndex < group.effects.Length; effectIndex++)
                 {
@@ -283,8 +281,10 @@ namespace UnityEditor
 
                     if (effect.sendTarget != null)
                     {
-                        float wetLevel = effect.GetValueForMixLevel(controller, controller.TargetSnapshot);
-                        if (AudioMixerEffectGUI.Slider(Texts.sendLevel, ref wetLevel, 1.0f, 1.0f, Texts.dB, AudioMixerController.kMinVolume, AudioMixerController.kMaxEffect, controller, new AudioGroupParameterPath(group, group.GetGUIDForSend())))
+                        var wetLevel = effect.GetValueForMixLevel(controller, controller.TargetSnapshot);
+                        var sendGuid = effect.GetGUIDForMixLevel();
+
+                        if (AudioMixerEffectGUI.Slider(Texts.sendLevel, ref wetLevel, 1.0f, 1.0f, Texts.dB, AudioMixerController.kMinVolume, AudioMixerController.kMaxEffect, controller, new AudioEffectParameterPath(group, effect, sendGuid)))
                         {
                             Undo.RecordObject(controller.TargetSnapshot, "Change Send Level");
                             effect.SetValueForMixLevel(controller, controller.TargetSnapshot, wetLevel);
@@ -413,7 +413,6 @@ namespace UnityEditor
                 menu.AddSeparator("");
                 menu.AddItem(EditorGUIUtility.TrTextContent("Remove this effect"), false, delegate()
                 {
-                    controller.ClearSendConnectionsTo(effect);
                     controller.RemoveEffect(effect, group);
                     AudioMixerUtility.RepaintAudioMixerAndInspectors();
                 });
@@ -425,7 +424,8 @@ namespace UnityEditor
         private static void ShowBusPopupMenu(int effectIndex, AudioMixerGroupController group, List<AudioMixerGroupController> allGroups, Dictionary<AudioMixerEffectController, AudioMixerGroupController> effectMap, AudioMixerEffectController effect, Rect buttonRect)
         {
             GenericMenu pm = new GenericMenu();
-            pm.AddItem(EditorGUIUtility.TrTextContent("None"), false, AudioMixerChannelStripView.ConnectSendPopupCallback, new AudioMixerChannelStripView.ConnectSendContext(effect, null));
+            var sendContext = new AudioMixerChannelStripView.ConnectSendContext(group.controller, effect, null);
+            pm.AddItem(EditorGUIUtility.TrTextContent("None"), false, AudioMixerChannelStripView.ConnectSendPopupCallback, sendContext);
             pm.AddSeparator("");
             AudioMixerChannelStripView.AddMenuItemsForReturns(pm, string.Empty, effectIndex, group, allGroups, effectMap, effect, true);
 

@@ -42,6 +42,11 @@ namespace UnityEditor.UIElements.Bindings
             return p.intValue;
         }
 
+        public static object GetManagedReferenceValue(SerializedProperty p)
+        {
+            return p.managedReferenceValue;
+        }
+
         public static long GetLongPropertyValue(SerializedProperty p)
         {
             return p.longValue;

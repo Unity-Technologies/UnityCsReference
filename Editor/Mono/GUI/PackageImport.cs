@@ -2,14 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using UnityEngine.Scripting;
-using UnityEditor;
-using UnityEditorInternal;
-using System;
-using UnityEditor.IMGUI.Controls;
 
 namespace UnityEditor
 {
@@ -35,6 +33,8 @@ namespace UnityEditor
             public GUIStyle ConsoleEntryBackEven  = "CN EntryBackEven";
             public GUIStyle ConsoleEntryBackOdd   = "CN EntryBackOdd";
             public GUIStyle title                 = "LargeBoldLabel";
+            public GUIStyle subtitle              = "BoldLabel";
+            public GUIStyle stepInfo              = "Label";
             public GUIStyle bottomBarBg           = "ProjectBrowserBottomBarBg";
             public GUIStyle topBarBg              = "OT TopBar";
             public GUIStyle textureIconDropShadow = "ProjectBrowserTextureIconDropShadow";
@@ -47,7 +47,6 @@ namespace UnityEditor
         }
         static Constants ms_Constants;
 
-
         // Invoked from menu
         [UsedByNativeCode]
         public static void ShowImportPackage(string packagePath, ImportPackageItem[] items, string packageIconPath)
@@ -55,8 +54,7 @@ namespace UnityEditor
             if (!ValidateInput(items))
                 return;
 
-            var window = GetWindow<PackageImport>(true, "Import Unity Package");
-            window.Init(packagePath, items, packageIconPath);
+            PackageImportWizard.instance.StartImport(packagePath, items, packageIconPath);
         }
 
         public PackageImport()
@@ -85,7 +83,7 @@ namespace UnityEditor
             }
         }
 
-        void Init(string packagePath, ImportPackageItem[] items, string packageIconPath)
+        internal void Init(string packagePath, ImportPackageItem[] items, string packageIconPath)
         {
             DestroyCreatedIcons();
 
@@ -133,6 +131,7 @@ namespace UnityEditor
             if (m_ImportPackageItems != null && ShowTreeGUI(m_ImportPackageItems))
             {
                 TopArea();
+                TopButtonsArea();
                 m_Tree.OnGUI(GUILayoutUtility.GetRect(1, 9999, 1, 99999));
                 BottomArea();
             }
@@ -179,7 +178,25 @@ namespace UnityEditor
             {
                 Rect iconRect = new Rect(r.x + margin, r.y + margin, imageSize, imageSize);
                 DrawTexture(iconRect, s_PackageIcon, true);
-                titleRect = new Rect(iconRect.xMax + 10f, iconRect.yMin, r.width, iconRect.height);
+
+                var textContentWidth = r.width - iconRect.width;
+                var textContentX = iconRect.xMax + margin;
+                if (!PackageImportWizard.instance.IsMultiStepWizard)
+                    titleRect = new Rect(textContentX, iconRect.yMin, textContentWidth, iconRect.height);
+                else
+                {
+                    titleRect = new Rect(textContentX, iconRect.yMin, textContentWidth, iconRect.height / 3);
+
+                    // Subtitle
+                    var subtitleRect = new Rect(textContentX + 1f, iconRect.yMin + iconRect.height * 0.50f, textContentWidth, iconRect.height / 4);
+                    var subtitleText = PackageImportWizard.instance.IsProjectSettingStep ? "Import Settings Overrides" : "Import Content";
+                    GUI.Label(subtitleRect, EditorGUIUtility.TrTextContent(subtitleText), ms_Constants.subtitle);
+
+                    // "Step x of y" label
+                    var stepInfoRect = new Rect(textContentX, iconRect.yMin + iconRect.height * 0.75f, textContentWidth, iconRect.height / 4);
+                    var stepInfoText = PackageImportWizard.instance.IsProjectSettingStep ? "Step 2 of 2" : "Step 1 of 2";
+                    GUI.Label(stepInfoRect, EditorGUIUtility.TrTextContent(stepInfoText), ms_Constants.stepInfo);
+                }
             }
             else
             {
@@ -190,14 +207,13 @@ namespace UnityEditor
             GUI.Label(titleRect, m_PackageName, ms_Constants.title);
         }
 
-        void BottomArea()
+        void TopButtonsArea()
         {
-            // Background
-            GUILayout.BeginVertical(ms_Constants.bottomBarBg);
-
+            GUILayout.BeginVertical();
             GUILayout.Space(8);
             GUILayout.BeginHorizontal();
             GUILayout.Space(10);
+
             if (GUILayout.Button(EditorGUIUtility.TrTextContent("All"), GUILayout.Width(50)))
             {
                 m_Tree.SetAllEnabled(PackageImportTreeView.EnabledState.All);
@@ -208,21 +224,37 @@ namespace UnityEditor
                 m_Tree.SetAllEnabled(PackageImportTreeView.EnabledState.None);
             }
 
+            GUILayout.Space(10);
+            GUILayout.EndHorizontal();
+            GUILayout.Space(5);
+            GUILayout.EndVertical();
+        }
+
+        void BottomArea()
+        {
+            // Background
+            GUILayout.BeginVertical(ms_Constants.bottomBarBg);
+            GUILayout.Space(8);
+            GUILayout.BeginHorizontal();
+            GUILayout.Space(10);
+
             GUILayout.FlexibleSpace();
             if (GUILayout.Button(EditorGUIUtility.TrTextContent("Cancel")))
             {
-                PackageUtility.ImportPackageAssetsCancelledFromGUI(m_PackageName, m_ImportPackageItems);
-
-                Close();
-                GUIUtility.ExitGUI();
+                PackageImportWizard.instance.CancelImport();
             }
-            if (GUILayout.Button(EditorGUIUtility.TrTextContent("Import")))
+            if (PackageImportWizard.instance.IsProjectSettingStep && GUILayout.Button(EditorGUIUtility.TrTextContent("Back")))
+            {
+                PackageImportWizard.instance.DoPreviousStep(m_ImportPackageItems);
+            }
+            var buttonText = PackageImportWizard.instance.IsMultiStepWizard
+                && !PackageImportWizard.instance.IsProjectSettingStep ? "Next" : "Import";
+            if (GUILayout.Button(EditorGUIUtility.TrTextContent(buttonText)))
             {
                 if (m_ImportPackageItems != null)
-                    PackageUtility.ImportPackageAssets(m_PackageName, m_ImportPackageItems);
-
-                Close();
-                GUIUtility.ExitGUI();
+                    PackageImportWizard.instance.DoNextStep(m_ImportPackageItems);
+                else
+                    PackageImportWizard.instance.CloseImportWindow();
             }
 
             GUILayout.Space(10);
@@ -357,6 +389,125 @@ namespace UnityEditor
             char invalidChar;
             int invalidCharIndex;
             return HasInvalidCharInFilePath(filePath, out invalidChar, out invalidCharIndex);
+        }
+    }
+
+    [Serializable]
+    internal sealed class PackageImportWizard : ScriptableSingleton<PackageImportWizard>
+    {
+        [SerializeField]
+        private PackageImport m_ImportWindow;
+
+        [SerializeField]
+        private string m_PackagePath;
+        [SerializeField]
+        private string m_PackageIconPath;
+        [SerializeField]
+        private string m_PackageName;
+
+        [SerializeField]
+        private ImportPackageItem[] m_InitialImportItems;
+        [SerializeField]
+        private List<ImportPackageItem> m_AssetContentItems;
+        [SerializeField]
+        private List<ImportPackageItem> m_ProjectSettingItems;
+
+        [SerializeField]
+        private bool m_IsMultiStepWizard;
+        public bool IsMultiStepWizard => m_IsMultiStepWizard;
+        [SerializeField]
+        private bool m_IsProjectSettingStep;
+        public bool IsProjectSettingStep => m_IsProjectSettingStep;
+
+        public void StartImport(string packagePath, ImportPackageItem[] items, string packageIconPath)
+        {
+            ClearImportData();
+
+            m_PackagePath = packagePath;
+            m_PackageIconPath = packageIconPath;
+            m_PackageName = System.IO.Path.GetFileNameWithoutExtension(packagePath);
+
+            m_InitialImportItems = items;
+            foreach (var item in items)
+            {
+                if (item.destinationAssetPath.StartsWith("ProjectSettings/"))
+                    m_ProjectSettingItems.Add(item);
+                else
+                    m_AssetContentItems.Add(item);
+            }
+
+            m_IsMultiStepWizard = m_ProjectSettingItems.Any();
+            ShowImportWindow(m_AssetContentItems.ToArray());
+        }
+
+        public void DoNextStep(ImportPackageItem[] importPackageItems)
+        {
+            if (IsProjectSettingStep)
+                m_ProjectSettingItems = new List<ImportPackageItem>(importPackageItems);
+            else
+                m_AssetContentItems = new List<ImportPackageItem>(importPackageItems);
+
+
+            if (!IsMultiStepWizard || IsProjectSettingStep)
+                FinishImport();
+            else
+            {
+                m_IsProjectSettingStep = true;
+                ShowImportWindow(m_ProjectSettingItems.ToArray());
+            }
+        }
+
+        public void DoPreviousStep(ImportPackageItem[] importPackageItems)
+        {
+            if (IsProjectSettingStep)
+            {
+                m_ProjectSettingItems = new List<ImportPackageItem>(importPackageItems);
+                m_IsProjectSettingStep = false;
+                ShowImportWindow(m_AssetContentItems.ToArray());
+            }
+        }
+
+        public void CancelImport()
+        {
+            PackageUtility.ImportPackageAssetsCancelledFromGUI(m_PackageName, m_InitialImportItems);
+            CloseImportWindow();
+        }
+
+        public void CloseImportWindow()
+        {
+            if (m_ImportWindow != null)
+            {
+                ClearImportData();
+                m_ImportWindow.Close();
+                GUIUtility.ExitGUI();
+            }
+        }
+
+        private void ShowImportWindow(ImportPackageItem[] items)
+        {
+            m_ImportWindow = PackageImport.GetWindow<PackageImport>(true, "Import Unity Package");
+            m_ImportWindow.Init(m_PackagePath, items, m_PackageIconPath);
+        }
+
+        private void FinishImport()
+        {
+            var completeItemList = IsMultiStepWizard ? m_AssetContentItems.Concat(m_ProjectSettingItems) : m_AssetContentItems;
+            PackageUtility.ImportPackageAssets(m_PackageName, completeItemList.ToArray());
+            CloseImportWindow();
+        }
+
+        private void ClearImportData()
+        {
+            m_PackagePath = string.Empty;
+            m_PackageIconPath = string.Empty;
+            m_PackageName = string.Empty;
+
+            m_InitialImportItems = null;
+            m_AssetContentItems = new List<ImportPackageItem>();
+            m_ProjectSettingItems = new List<ImportPackageItem>();
+
+            m_IsMultiStepWizard = false;
+            m_IsProjectSettingStep = false;
         }
     }
 }

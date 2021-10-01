@@ -14,6 +14,7 @@ namespace UnityEditor
         SerializedProperty m_SubEmitters;
 
         private int m_CheckObjectIndex = -1;
+        private Object m_PreviousSubEmitter;
 
         // Keep in sync with enum in ParticleSystemCommmon.h
         public enum SubEmitterType
@@ -173,7 +174,7 @@ namespace UnityEditor
 
                         if (!validSubemitter)
                         {
-                            subEmitter.objectReferenceValue = null; // remove invalid reference
+                            subEmitter.objectReferenceValue = m_PreviousSubEmitter; // revert invalid reference
                             m_ParticleSystemUI.ApplyProperties();
                             m_ParticleSystemUI.m_ParticleEffectUI.m_Owner.Repaint();
                         }
@@ -181,6 +182,7 @@ namespace UnityEditor
 
                     // Cleanup
                     m_CheckObjectIndex = -1;
+                    m_PreviousSubEmitter = null;
                     EditorApplication.update -= Update;
                 }
             }
@@ -226,6 +228,13 @@ namespace UnityEditor
             if (IsChild(ps, root))
             {
                 return true;
+            }
+
+            if (PrefabUtility.IsPartOfAnyPrefab(ps.gameObject) && !PrefabUtility.IsAnyPrefabInstanceRoot(ps.gameObject))
+            {
+                string kPrefabReparentWarn = $"The assigned sub emitter is not part of the current effect because it is not a child of the current root Particle System GameObject: '{root.gameObject.name}'. The Particle System cannot be moved because it is a child of a Prefab instance.";
+                EditorUtility.WarnPrefab(ps.gameObject, "Reparent GameObjects", kPrefabReparentWarn, "OK");
+                return false;
             }
 
             string kReparentText = string.Format("The assigned sub emitter is not a child of the current root particle system GameObject: '{0}' and is therefore NOT considered a part of the current effect. Do you want to reparent it?", root.gameObject.name);
@@ -342,6 +351,7 @@ namespace UnityEditor
 
                     // We need to let the ObjectSelector finish its SendEvent and therefore delay showing dialog
                     m_CheckObjectIndex = i;
+                    m_PreviousSubEmitter = props[i];
 
                     // Clear sub-emitters that have been deselected, to avoid having their particles left paused in the Scene View (case 946999)
                     ParticleSystem ps = props[i] as ParticleSystem;

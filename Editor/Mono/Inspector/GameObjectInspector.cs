@@ -226,17 +226,30 @@ namespace UnityEditor
             foreach (var o in targets)
             {
                 var go = (GameObject)o;
-                PrefabAssetType type = PrefabUtility.GetPrefabAssetType(go);
-                PrefabInstanceStatus status = PrefabUtility.GetPrefabInstanceStatus(go);
-                if (type != firstType || status != firstStatus)
-                    m_AllOfSamePrefabType = false;
+                if (m_AllOfSamePrefabType)
+                {
+                    PrefabAssetType type = PrefabUtility.GetPrefabAssetType(go);
+                    PrefabInstanceStatus status = PrefabUtility.GetPrefabInstanceStatus(go);
+                    if (type != firstType || status != firstStatus)
+                        m_AllOfSamePrefabType = false;
+                }
 
                 if (Application.IsPlaying(go))
                     m_PlayModeObjects = true;
-                if (!PrefabUtility.IsAnyPrefabInstanceRoot(go))
-                    m_IsPrefabInstanceAnyRoot = false; // Conservative is false if any is false
-                if (!m_IsPrefabInstanceAnyRoot || !PrefabUtility.IsOutermostPrefabInstanceRoot(go))
-                    m_IsPrefabInstanceOutermostRoot = false; // Conservative is false if any is false
+                if (m_IsPrefabInstanceAnyRoot)
+                {
+                    if (!PrefabUtility.IsAnyPrefabInstanceRoot(go))
+                    {
+                        m_IsPrefabInstanceAnyRoot = false; // Conservative is false if any is false
+                    }
+                }
+                if (m_IsPrefabInstanceOutermostRoot)
+                {
+                    if (!m_IsPrefabInstanceAnyRoot || !PrefabUtility.IsOutermostPrefabInstanceRoot(go))
+                    {
+                        m_IsPrefabInstanceOutermostRoot = false; // Conservative is false if any is false
+                    }
+                }
 
                 if (PrefabUtility.IsPartOfPrefabAsset(go))
                 {
@@ -245,8 +258,13 @@ namespace UnityEditor
                         m_IsAssetRoot = true;
                 }
 
-                if (m_IsAsset && PrefabUtility.IsPartOfImmutablePrefab(go))
-                    m_ImmutableSelf = true; // Conservative is true if any is true
+                if (m_IsAsset)
+                {
+                    if (PrefabUtility.IsPartOfImmutablePrefab(go))
+                    {
+                        m_ImmutableSelf = true; // Conservative is true if any is true
+                    }
+                }
                 if (PrefabUtility.IsDisconnectedFromPrefabAsset(go))
                     m_IsDisconnected = true;
                 if (PrefabUtility.IsPrefabAssetMissing(go))

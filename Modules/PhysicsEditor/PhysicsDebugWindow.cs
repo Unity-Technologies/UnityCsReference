@@ -5,27 +5,47 @@
 using UnityEditorInternal;
 using UnityEngine;
 
-using System;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
-using UnityEditor.AnimatedValues;
 using UnityEditor.Overlays;
+using UnityEditor.SceneManagement;
 
 namespace UnityEditor
 {
-    public class PhysicsDebugWindow : EditorWindow
+    public partial class PhysicsDebugWindow : EditorWindow
     {
-        [SerializeField] Vector2 m_MainScrollPos = Vector2.zero;
+        private enum VisualisationState
+        {
+            None = 0,
+            CenterOfMass = 1,
+            InertiaTensor = 2
+        }
 
-        private SavedBool m_ShowInfoFoldout;
+        [SerializeField] Vector2 m_MainScrollPos = Vector2.zero;
+        [SerializeField] Vector2 m_InfoTabScrollPos = Vector2.zero;
+
         private SavedBool m_ShowColliderTypeFoldout;
-        private SavedBool m_ColorFoldout;
-        private SavedBool m_RenderingFoldout;
+        private SavedInt m_CurrentTab;
+        private SavedInt m_Collumns;
 
         bool m_MouseLeaveListenerAdded = false;
         bool m_SceneViewListenerAdded = false;
 
         static PhysicsDebugWindow s_Window;
+
+        private float m_LastValidWidth = 0f;
+
+        private Dictionary<Transform, VisualisationState> m_LockedObjects     = new Dictionary<Transform, VisualisationState>();
+        [SerializeField] private List<RenderedTransform> m_TransformsToRender = new List<RenderedTransform>();
+        private List<RenderedTransform> m_ObjectsToAdd                        = new List<RenderedTransform>();
+        private List<Transform> m_ObjectsToRemove                             = new List<Transform>();
+
+        // For dictionary saving
+        [SerializeField] private List<Transform> m_DictionaryKeys             = new List<Transform>();
+        [SerializeField] private List<VisualisationState> m_DictionaryValues  = new List<VisualisationState>();
+
+        // To avoid reallocations when hashing the selection
+        [SerializeField] private HashSet<Transform> m_TemporarySelection = new HashSet<Transform>();
 
         private static class Style
         {
@@ -35,7 +55,9 @@ namespace UnityEditor
             public static readonly GUIContent kinematicColor        = EditorGUIUtility.TrTextContent("Kinematic Bodies");
             public static readonly GUIContent articulationBodyColor = EditorGUIUtility.TrTextContent("Articulation Bodies");
             public static readonly GUIContent sleepingBodyColor     = EditorGUIUtility.TrTextContent("Sleeping Bodies");
-            public static readonly GUIContent colorVariaition       = EditorGUIUtility.TrTextContent("Variation");
+            public static readonly GUIContent colorVariaition       = EditorGUIUtility.TrTextContent("Variation", "Random color variation that is added on top of the base color");
+            public static readonly GUIContent centerOfMassUseScreenSize = EditorGUIUtility.TrTextContent("Constant screen size", "Use constant screen size for the center of mass gizmos");
+            public static readonly GUIContent inertiaTensorScale    = EditorGUIUtility.TrTextContent("Inertia Tensor scale", "Scale by which the original inertia tensor is multiplied before drawing");
             public static readonly GUIContent forceOverdraw         = EditorGUIUtility.TrTextContent("Force Overdraw", "Draws Collider geometry on top of render geometry");
             public static readonly GUIContent transparency          = EditorGUIUtility.TrTextContent("Transparency");
             public static readonly GUIContent viewDistance          = EditorGUIUtility.TrTextContent("View Distance", "Lower bound on distance from camera to physics geometry.");
@@ -86,19 +108,30 @@ namespace UnityEditor
 
         public void OnEnable()
         {
-            m_ShowInfoFoldout = new SavedBool("PhysicsDebugWindow.ShowFoldout", false);
-            m_ShowColliderTypeFoldout = new SavedBool("PhysicsDebugWindow.ShowColliderType", false);
-            m_ColorFoldout = new SavedBool("PhysicsDebugWindow.ShowColorFoldout", false);
-            m_RenderingFoldout = new SavedBool("PhysicsDebugWindow.ShowRenderingFoldout", false);
+            m_ShowColliderTypeFoldout   = new SavedBool("PhysicsDebugWindow.ShowColliderType", false);
+            m_CurrentTab                = new SavedInt("PhysicsDebugWindow.CurrentTab", 0);
+            m_Collumns                  = new SavedInt("PhysicsDebugWindow.Collumns", 1);
+
             SceneView.duringSceneGui += OnSceneGUI;
+            Selection.selectionChanged += UpdateSelection;
+            EditorSceneManager.sceneClosed += OnSceneClose;
             SetPickingEnabled(PhysicsVisualizationSettings.showCollisionGeometry
                 && PhysicsVisualizationSettings.enableMouseSelect);
+
+            LoadDictionary();
+            ClearInvalidLockedObjects();
+            UpdateSelection();
         }
 
         public void OnDisable()
         {
             SceneView.duringSceneGui -= OnSceneGUI;
+            Selection.selectionChanged -= UpdateSelection;
+            EditorSceneManager.sceneClosed -= OnSceneClose;
             SetPickingEnabled(false);
+
+            SaveDictionary();
+            ClearInvalidLockedObjects();
         }
 
         static void SetPickingEnabled(bool enabled)
@@ -196,39 +229,49 @@ namespace UnityEditor
 
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
 
-            GUILayout.FlexibleSpace();
+            var currentStyle = GUI.skin.button;
+            currentStyle.margin = new RectOffset(0, 0, 1, 0);
 
-            if (GUILayout.Button("Reset", EditorStyles.toolbarButton))
+            m_CurrentTab.value = GUILayout.Toolbar(m_CurrentTab.value
+                , (Unsupported.IsDeveloperMode() || PhysicsVisualizationSettings.devOptions)
+                ? new string[] { "Filtering", "Rendering", "Info", "Other" }
+                : new string[] { "Filtering", "Rendering", "Info" }
+                , currentStyle);
+
+            if (GUILayout.Button("Reset", EditorStyles.toolbarButton, GUILayout.MaxWidth(75f)))
+            {
                 PhysicsVisualizationSettings.Reset();
+                ClearAllLockedObjects();
+            }
 
             EditorGUILayout.EndHorizontal();
 
             m_MainScrollPos = GUILayout.BeginScrollView(m_MainScrollPos);
 
+            switch (m_CurrentTab)
             {
-                EditorGUILayout.Space();
-                m_ShowInfoFoldout.value = EditorGUILayout.Foldout(m_ShowInfoFoldout.value, Style.selectedObjectInfo, true);
-                if (m_ShowInfoFoldout.value)
-                {
-                    EditorGUI.indentLevel++;
-                    EditorGUILayout.Space();
-                    EditorGUI.BeginDisabledGroup(true);
-                    var transforms = Selection.transforms;
-                    if (transforms.Length > 0)
-                    {
-                        foreach (var tr in transforms)
-                        {
-                            EditorGUILayout.TextField(Style.gameObject, tr.name);
-                            EditorGUILayout.TextField(Style.scene, tr.gameObject.scene.name);
-                        }
-                    }
-                    EditorGUI.EndDisabledGroup();
-                    Repaint();
-                    EditorGUI.indentLevel--;
-                }
+                case 0:
+                    DrawFilteringTab();
+                    break;
+                case 1:
+                    DrawRenderingTab();
+                    break;
+                case 2:
+                    DrawInfoTab();
+                    break;
+                case 3:
+                    DrawMiscTab();
+                    break;
             }
-            GUILayout.Space(4);
 
+            GUILayout.EndScrollView();
+
+            if (dirtyCount != PhysicsVisualizationSettings.dirtyCount)
+                RepaintSceneAndGameViews();
+        }
+
+        private void DrawFilteringTab()
+        {
             int sceneCount = SceneManager.sceneCount;
             List<string> options = new List<string>();
             for (int i = 0; i < sceneCount; ++i)
@@ -284,7 +327,7 @@ namespace UnityEditor
 
                 // BoxCollider
                 PhysicsVisualizationSettings.SetShowBoxColliders(EditorGUILayout.Toggle(
-                    Style.showBoxCollider , PhysicsVisualizationSettings.GetShowBoxColliders()));
+                    Style.showBoxCollider, PhysicsVisualizationSettings.GetShowBoxColliders()));
 
                 // SphereCollider
                 PhysicsVisualizationSettings.SetShowSphereColliders(EditorGUILayout.Toggle(
@@ -321,56 +364,134 @@ namespace UnityEditor
                 PhysicsVisualizationSettings.SetShowForAllFilters(selectAll);
 
             GUILayout.EndHorizontal();
+        }
 
-            m_ColorFoldout.value = EditorGUILayout.Foldout(m_ColorFoldout.value, Style.colors, true);
-            if (m_ColorFoldout.value)
+        private void DrawRenderingTab()
+        {
+            PhysicsVisualizationSettings.staticColor =
+                EditorGUILayout.ColorField(Style.staticColor, PhysicsVisualizationSettings.staticColor);
+
+            PhysicsVisualizationSettings.triggerColor =
+                EditorGUILayout.ColorField(Style.triggerColor, PhysicsVisualizationSettings.triggerColor);
+
+            PhysicsVisualizationSettings.rigidbodyColor =
+                EditorGUILayout.ColorField(Style.rigidbodyColor, PhysicsVisualizationSettings.rigidbodyColor);
+
+            PhysicsVisualizationSettings.kinematicColor =
+                EditorGUILayout.ColorField(Style.kinematicColor, PhysicsVisualizationSettings.kinematicColor);
+
+            PhysicsVisualizationSettings.articulationBodyColor =
+                EditorGUILayout.ColorField(Style.articulationBodyColor, PhysicsVisualizationSettings.articulationBodyColor);
+
+            PhysicsVisualizationSettings.sleepingBodyColor =
+                EditorGUILayout.ColorField(Style.sleepingBodyColor, PhysicsVisualizationSettings.sleepingBodyColor);
+
+            PhysicsVisualizationSettings.colorVariance =
+                EditorGUILayout.Slider(Style.colorVariaition, PhysicsVisualizationSettings.colorVariance, 0f, 1f);
+
+            PhysicsVisualizationSettings.baseAlpha = 1f - EditorGUILayout.Slider(Style.transparency
+                , 1f - PhysicsVisualizationSettings.baseAlpha, 0f, 1f);
+
+            PhysicsVisualizationSettings.forceOverdraw = EditorGUILayout.Toggle(Style.forceOverdraw
+                , PhysicsVisualizationSettings.forceOverdraw);
+
+            PhysicsVisualizationSettings.viewDistance = EditorGUILayout.FloatField(Style.viewDistance
+                , PhysicsVisualizationSettings.viewDistance);
+
+            PhysicsVisualizationSettings.terrainTilesMax = EditorGUILayout.IntField(Style.terrainTilesMax
+                , PhysicsVisualizationSettings.terrainTilesMax);
+
+            EditorGUILayout.LabelField("Gizmos settings:");
+            EditorGUI.indentLevel++;
+
+            PhysicsVisualizationSettings.centerOfMassUseScreenSize = EditorGUILayout.Toggle(Style.centerOfMassUseScreenSize
+                , PhysicsVisualizationSettings.centerOfMassUseScreenSize);
+
+            PhysicsVisualizationSettings.inertiaTensorScale = EditorGUILayout.Slider(Style.inertiaTensorScale
+                , PhysicsVisualizationSettings.inertiaTensorScale, 0f, 1f);
+
+            EditorGUI.indentLevel--;
+        }
+
+        private void DrawInfoTab()
+        {
+            var anyItems = DrawInfoTabHeader();
+
+            var totalItems = m_TransformsToRender.Count;
+            var index = 0;
+            var rows = Mathf.CeilToInt((float)totalItems / (float)m_Collumns);
+
+            int[] numberOfItemPerRow = new int[rows];
+            int itemsLeft = totalItems;
+
+            for (int i = 0; i < rows; i++)
             {
-                EditorGUI.indentLevel++;
-
-                PhysicsVisualizationSettings.staticColor =
-                    EditorGUILayout.ColorField(Style.staticColor, PhysicsVisualizationSettings.staticColor);
-
-                PhysicsVisualizationSettings.triggerColor =
-                    EditorGUILayout.ColorField(Style.triggerColor, PhysicsVisualizationSettings.triggerColor);
-
-                PhysicsVisualizationSettings.rigidbodyColor =
-                    EditorGUILayout.ColorField(Style.rigidbodyColor, PhysicsVisualizationSettings.rigidbodyColor);
-
-                PhysicsVisualizationSettings.kinematicColor =
-                    EditorGUILayout.ColorField(Style.kinematicColor, PhysicsVisualizationSettings.kinematicColor);
-
-                PhysicsVisualizationSettings.articulationBodyColor =
-                    EditorGUILayout.ColorField(Style.articulationBodyColor, PhysicsVisualizationSettings.articulationBodyColor);
-
-                PhysicsVisualizationSettings.sleepingBodyColor =
-                    EditorGUILayout.ColorField(Style.sleepingBodyColor, PhysicsVisualizationSettings.sleepingBodyColor);
-
-                PhysicsVisualizationSettings.colorVariance =
-                    EditorGUILayout.Slider(Style.colorVariaition, PhysicsVisualizationSettings.colorVariance, 0f, 1f);
-
-                EditorGUI.indentLevel--;
+                if (itemsLeft > m_Collumns)
+                {
+                    numberOfItemPerRow[i] = m_Collumns;
+                    itemsLeft -= m_Collumns;
+                }
+                else
+                {
+                    numberOfItemPerRow[i] = itemsLeft;
+                    itemsLeft = 0;
+                }
             }
 
-            m_RenderingFoldout.value = EditorGUILayout.Foldout(m_RenderingFoldout.value, Style.rendering, true);
-            if (m_RenderingFoldout.value)
+            EditorGUILayout.Space(10f);
+
+            m_InfoTabScrollPos = EditorGUILayout.BeginScrollView(m_InfoTabScrollPos);
+
+            for (int row = 0; row < rows; row++)
             {
-                EditorGUI.indentLevel++;
+                bool isRowFull = numberOfItemPerRow[row] == m_Collumns;
 
-                PhysicsVisualizationSettings.baseAlpha = 1f - EditorGUILayout.Slider(Style.transparency
-                    , 1f - PhysicsVisualizationSettings.baseAlpha, 0f, 1f);
+                if (!isRowFull && row > 0)
+                {
+                    float maxWidth = m_LastValidWidth == 0f ? 0f : numberOfItemPerRow[row] * m_LastValidWidth + (numberOfItemPerRow[row] - 1) * 10f;
+                    EditorGUILayout.BeginHorizontal(GUILayout.Width(maxWidth));
+                }
+                else
+                    EditorGUILayout.BeginHorizontal();
 
-                PhysicsVisualizationSettings.forceOverdraw = EditorGUILayout.Toggle(Style.forceOverdraw
-                    , PhysicsVisualizationSettings.forceOverdraw);
+                for (int column = 0; column < numberOfItemPerRow[row]; column++)
+                {
+                    bool isLastItem = column == numberOfItemPerRow[row] - 1;
 
-                PhysicsVisualizationSettings.viewDistance = EditorGUILayout.FloatField(Style.viewDistance
-                    , PhysicsVisualizationSettings.viewDistance);
+                    if (row == 0 && column == 0)
+                    {
+                        var width = EditorGUILayout.BeginVertical().width;
+                        if (width != 0f)
+                            m_LastValidWidth = width;
+                    }
+                    else if (!isRowFull && row > 0)
+                        EditorGUILayout.BeginVertical(GUILayout.MaxWidth(m_LastValidWidth));
+                    else
+                        EditorGUILayout.BeginVertical();
 
-                PhysicsVisualizationSettings.terrainTilesMax = EditorGUILayout.IntField(Style.terrainTilesMax
-                    , PhysicsVisualizationSettings.terrainTilesMax);
+                    DrawSingleInfoItem(GetNextTransform(index));
+                    index++;
+                    EditorGUILayout.Space(10f);
+                    EditorGUILayout.EndVertical();
 
-                EditorGUI.indentLevel--;
+                    if (!isLastItem)
+                        EditorGUILayout.Space(10f);
+                }
+                EditorGUILayout.EndHorizontal();
             }
 
+            EditorGUILayout.EndScrollView();
+
+            AddLockedObjects();
+            RemoveLockedObjects();
+
+            // FIXME This can still be better
+            if (anyItems)
+                Repaint();
+        }
+
+        private void DrawMiscTab()
+        {
             if (Unsupported.IsDeveloperMode() || PhysicsVisualizationSettings.devOptions)
             {
                 PhysicsVisualizationSettings.devOptions = EditorGUILayout.Toggle(Style.devOptions
@@ -388,11 +509,6 @@ namespace UnityEditor
                 Tools.hidden = EditorGUILayout.Toggle(Style.toolsHidden
                     , Tools.hidden);
             }
-
-            GUILayout.EndScrollView();
-
-            if (dirtyCount != PhysicsVisualizationSettings.dirtyCount)
-                RepaintSceneAndGameViews();
         }
 
         [Overlay(typeof(SceneView), k_OverlayId, k_DisplayName)]

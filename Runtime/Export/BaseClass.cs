@@ -125,6 +125,7 @@ namespace UnityEngine
         // BJM
         Stadia = 34,
         // Cloud Rendering
+        [System.Obsolete("Use LinuxPlayer instead")]
         CloudRendering = 35,
         // Game Core
         GameCoreXboxSeries = 36, // GameCoreXboxSeries intentionally set to the same as GameCoreScarlett

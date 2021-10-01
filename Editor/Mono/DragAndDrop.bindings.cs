@@ -53,7 +53,6 @@ namespace UnityEditor
         private static Dictionary<int, List<Delegate>> m_DropHandlers;
 
         internal static ProjectBrowserDropHandler DefaultProjectBrowserDropHandler = DefaultProjectBrowserDropHandlerImpl;
-        internal static SceneDropHandler DefaultSceneDropHandler = InternalEditorUtility.SceneViewDrag;
         internal static InspectorDropHandler DefaultInspectorDropHandler = InternalEditorUtility.InspectorWindowDrag;
         internal static HierarchyDropHandler DefaultHierarchyDropHandler = InternalEditorUtility.HierarchyWindowDragByID;
 
@@ -63,7 +62,6 @@ namespace UnityEditor
                 return;
             m_DropHandlers = new Dictionary<int, List<Delegate>>();
             AddDropHandler(DefaultProjectBrowserDropHandler);
-            AddDropHandler(DefaultSceneDropHandler);
             AddDropHandler(DefaultInspectorDropHandler);
             AddDropHandler(DefaultHierarchyDropHandler);
         }
@@ -252,6 +250,11 @@ namespace UnityEditor
         public delegate DragAndDropVisualMode SceneDropHandler(UnityEngine.Object dropUpon, Vector3 worldPosition, Vector2 viewportPosition, Transform parentForDraggedObjects, bool perform);
         public delegate DragAndDropVisualMode InspectorDropHandler(UnityEngine.Object[] targets, bool perform);
         public delegate DragAndDropVisualMode HierarchyDropHandler(int dropTargetInstanceID, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform);
+
+        internal static bool HasHandler(int dropDstId)
+        {
+            return m_DropHandlers.ContainsKey(dropDstId);
+        }
 
         public static bool HasHandler(int dropDstId, Delegate handler)
         {

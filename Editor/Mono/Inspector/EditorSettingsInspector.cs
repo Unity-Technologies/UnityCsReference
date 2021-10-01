@@ -75,7 +75,6 @@ namespace UnityEditor
 
             public static GUIContent shaderCompilation = EditorGUIUtility.TrTextContent("Shader Compilation");
             public static GUIContent asyncShaderCompilation = EditorGUIUtility.TrTextContent("Asynchronous Shader Compilation", "Enables async shader compilation in Game and Scene view. Async compilation for custom editor tools can be achieved via script API and is not affected by this option.");
-            public static GUIContent cachingShaderPreprocessor = EditorGUIUtility.TrTextContent("Caching Preprocessor", "Enables caching shader preprocessor with advanced functionality.");
 
             public static GUIContent prefabMode = EditorGUIUtility.TrTextContent("Prefab Mode");
             public static GUIContent prefabModeAllowAutoSave = EditorGUIUtility.TrTextContent("Allow Auto Save", "When enabled, an Auto Save toggle is displayed in Prefab Mode which you can turn on or off. This is the default. When disabled, there is no Auto Save in Prefab Mode in this project and the toggle is not displayed.");
@@ -236,7 +235,6 @@ namespace UnityEditor
         SerializedProperty m_AssetNamingUsesSpace;
 
         SerializedProperty m_AsyncShaderCompilation;
-        SerializedProperty m_CachingShaderPreprocessor;
         SerializedProperty m_DefaultBehaviorMode;
         SerializedProperty m_SerializationMode;
         SerializedProperty m_SerializeInlineMappingsOnOneLine;
@@ -283,7 +281,6 @@ namespace UnityEditor
             m_AssetNamingUsesSpace = serializedObject.FindProperty("m_AssetNamingUsesSpace");
 
             m_AsyncShaderCompilation = serializedObject.FindProperty("m_AsyncShaderCompilation");
-            m_CachingShaderPreprocessor = serializedObject.FindProperty("m_CachingShaderPreprocessor");
 
             m_DefaultBehaviorMode = serializedObject.FindProperty("m_DefaultBehaviorMode");
             Assert.IsNotNull(m_DefaultBehaviorMode);
@@ -909,7 +906,6 @@ namespace UnityEditor
             GUILayout.Label(Content.shaderCompilation, EditorStyles.boldLabel);
 
             EditorGUILayout.PropertyField(m_AsyncShaderCompilation, Content.asyncShaderCompilation);
-            EditorGUILayout.PropertyField(m_CachingShaderPreprocessor, Content.cachingShaderPreprocessor);
         }
 
         private void DoEnterPlayModeSettings()

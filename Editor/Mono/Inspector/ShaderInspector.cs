@@ -369,15 +369,9 @@ namespace UnityEditor
             EditorGUILayout.BeginVertical();
             ShaderImporter importer = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(s.GetInstanceID())) as ShaderImporter;
 
-            bool enablePreprocessOnly = EditorSettings.cachingShaderPreprocessor;
-            if (importer && importer.preprocessorOverride == PreprocessorOverride.ForceCachingPreprocessor)
-                enablePreprocessOnly = true;
-            using (new EditorGUI.DisabledScope(!enablePreprocessOnly))
-            {
-                s_PreprocessOnly = EditorGUILayout.Toggle(Styles.togglePreprocess, s_PreprocessOnly);
-                if (s_PreprocessOnly)
-                    s_StripLineDirectives = EditorGUILayout.Toggle(Styles.toggleStripLineDirective, s_StripLineDirectives);
-            }
+            s_PreprocessOnly = EditorGUILayout.Toggle(Styles.togglePreprocess, s_PreprocessOnly);
+            if (s_PreprocessOnly)
+                s_StripLineDirectives = EditorGUILayout.Toggle(Styles.toggleStripLineDirective, s_StripLineDirectives);
 
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.PrefixLabel("Compiled code", EditorStyles.miniButton);
@@ -397,7 +391,7 @@ namespace UnityEditor
                 }
                 if (GUI.Button(modeRect, modeContent, EditorStyles.miniButton))
                 {
-                    ShaderUtil.OpenCompiledShader(s, ShaderInspectorPlatformsPopup.currentMode, ShaderInspectorPlatformsPopup.currentPlatformMask, ShaderInspectorPlatformsPopup.currentVariantStripping == 0, enablePreprocessOnly && s_PreprocessOnly, s_StripLineDirectives);
+                    ShaderUtil.OpenCompiledShader(s, ShaderInspectorPlatformsPopup.currentMode, ShaderInspectorPlatformsPopup.currentPlatformMask, ShaderInspectorPlatformsPopup.currentVariantStripping == 0, s_PreprocessOnly, s_StripLineDirectives);
                     GUIUtility.ExitGUI();
                 }
             }

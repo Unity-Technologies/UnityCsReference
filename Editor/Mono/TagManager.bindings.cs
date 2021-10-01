@@ -19,6 +19,32 @@ namespace UnityEditor
         [StaticAccessor("GetTagManager()", StaticAccessorType.Dot)]
         internal static extern int GetDefinedLayerCount();
 
+        public extern string[] tags { [NativeMethod("GetTagNames")] get; }
+
+        [NativeMethod]
+        internal extern void AddSortingLayer();
+
+        [NativeMethod]
+        internal extern int GetSortingLayerCount();
+
+        [NativeMethod]
+        internal extern void UpdateSortingLayersOrder();
+
+        [NativeMethod]
+        internal extern bool IsSortingLayerDefault(int index);
+
+        [NativeMethod]
+        internal extern string GetSortingLayerName(int index);
+
+        [NativeMethod]
+        internal extern void SetSortingLayerName(int index, string name);
+
+        [NativeMethod("StringToTagAddIfUnavailable")]
+        internal extern int AddTag(string tag);
+
+        [NativeMethod]
+        internal extern void RemoveTag(string tag);
+
         internal static void GetDefinedLayers(ref string[] layerNames, ref int[] layerValues)
         {
             var definedLayerCount = GetDefinedLayerCount();

@@ -48,6 +48,8 @@ namespace UnityEditor
         public extern static Color sleepingBodyColor { get; set; }
         public extern static float baseAlpha { get; set; }
         public extern static float colorVariance { get; set; }
+        public extern static bool centerOfMassUseScreenSize { get; set; }
+        public extern static float inertiaTensorScale { get; set; }
         public extern static float dotAlpha { get; set; }
         public extern static bool forceDot { get; set; }
 

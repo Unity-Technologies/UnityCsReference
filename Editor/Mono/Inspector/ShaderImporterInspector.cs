@@ -43,8 +43,6 @@ namespace UnityEditor
 
         SerializedProperty m_Properties;
 
-        SerializedProperty preprocessorOverride;
-
         internal override void OnHeaderControlsGUI()
         {
             GUILayout.FlexibleSpace();
@@ -117,8 +115,6 @@ namespace UnityEditor
             base.OnEnable();
 
             m_Properties = extraDataSerializedObject.FindProperty("m_Properties");
-
-            preprocessorOverride = serializedObject.FindProperty("m_PreprocessorOverride");
         }
 
         private void ShowTextures()
@@ -221,8 +217,6 @@ namespace UnityEditor
 
             serializedObject.Update();
             extraDataSerializedObject.Update();
-
-            EditorGUILayout.PropertyField(preprocessorOverride, Styles.overridePreprocessor);
 
             ShowTextures();
 

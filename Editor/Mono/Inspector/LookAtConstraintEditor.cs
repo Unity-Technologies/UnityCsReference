@@ -60,7 +60,7 @@ namespace UnityEditor
             m_Roll = serializedObject.FindProperty("m_Roll");
 
             m_Weight = serializedObject.FindProperty("m_Weight");
-            m_IsContraintActive = serializedObject.FindProperty("m_IsContraintActive");
+            m_IsContraintActive = serializedObject.FindProperty("m_Active");
             m_IsLocked = serializedObject.FindProperty("m_IsLocked");
             m_Sources = serializedObject.FindProperty("m_Sources");
 

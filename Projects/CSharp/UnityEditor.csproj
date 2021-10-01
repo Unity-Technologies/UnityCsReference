@@ -1645,6 +1645,9 @@
     <Compile Include="..\..\Editor\Mono\Graphics\ShaderCompilerData.cs">
       <Link>Editor\Mono\Graphics\ShaderCompilerData.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Graphics\StaticBatchingEditorHelper.cs">
+      <Link>Editor\Mono\Graphics\StaticBatchingEditorHelper.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Grid\GridSnapping.cs">
       <Link>Editor\Mono\Grid\GridSnapping.cs</Link>
     </Compile>
@@ -2818,8 +2821,8 @@
     <Compile Include="..\..\Editor\Mono\Progress\Progress.cs">
       <Link>Editor\Mono\Progress\Progress.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Progress\TaskReorderingHelper.cs">
-      <Link>Editor\Mono\Progress\TaskReorderingHelper.cs</Link>
+    <Compile Include="..\..\Editor\Mono\Progress\ProgressOrderComparer.cs">
+      <Link>Editor\Mono\Progress\ProgressOrderComparer.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\ProjectBrowser.cs">
       <Link>Editor\Mono\ProjectBrowser.cs</Link>
@@ -6079,6 +6082,9 @@
     <Compile Include="..\..\Modules\PhysicsEditor\PhysicsDebugWindow.cs">
       <Link>Modules\PhysicsEditor\PhysicsDebugWindow.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PhysicsEditor\PhysicsDebugWindowInfoTab.cs">
+      <Link>Modules\PhysicsEditor\PhysicsDebugWindowInfoTab.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PhysicsEditor\PhysicsManagerInspector.cs">
       <Link>Modules\PhysicsEditor\PhysicsManagerInspector.cs</Link>
     </Compile>
@@ -7597,11 +7603,11 @@
     <Compile Include="..\..\Modules\UIServiceEditor\GridAndSnap\SnapSettingsWindow.cs">
       <Link>Modules\UIServiceEditor\GridAndSnap\SnapSettingsWindow.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIServiceEditor\Progress\ProgressElement.cs">
-      <Link>Modules\UIServiceEditor\Progress\ProgressElement.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UIServiceEditor\Progress\ProgressWindow.cs">
       <Link>Modules\UIServiceEditor\Progress\ProgressWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIServiceEditor\Progress\VisualProgressItem.cs">
+      <Link>Modules\UIServiceEditor\Progress\VisualProgressItem.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIServiceEditor\SafeMode\SafeModeToolbarWindow.cs">
       <Link>Modules\UIServiceEditor\SafeMode\SafeModeToolbarWindow.cs</Link>

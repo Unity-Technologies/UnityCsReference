@@ -47,7 +47,7 @@ namespace UnityEditor
             m_ScaleAtRest = serializedObject.FindProperty("m_ScaleAtRest");
             m_ScaleOffset = serializedObject.FindProperty("m_ScaleOffset");
             m_Weight = serializedObject.FindProperty("m_Weight");
-            m_IsContraintActive = serializedObject.FindProperty("m_IsContraintActive");
+            m_IsContraintActive = serializedObject.FindProperty("m_Active");
             m_IsLocked = serializedObject.FindProperty("m_IsLocked");
             m_Sources = serializedObject.FindProperty("m_Sources");
 

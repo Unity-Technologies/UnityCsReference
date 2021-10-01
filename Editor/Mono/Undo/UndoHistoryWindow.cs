@@ -157,10 +157,8 @@ namespace UnityEditor
                     bool isCurrent = item.index == m_UndoCursor;
 
                     //set style class for the whole Container
-                    if (m_ShowLatestFirst)
-                        container.EnableInClassList("current", isCurrent);
-                    else
-                        container.EnableInClassList("current-reverse", isCurrent);
+                    container.EnableInClassList("current", isCurrent && m_ShowLatestFirst);
+                    container.EnableInClassList("current-reverse", isCurrent && !m_ShowLatestFirst);
                     container.EnableInClassList("redo", !isCurrent && item.type == HistoryType.Redo);
                     container.EnableInClassList("undo", !isCurrent && (item.type == HistoryType.Undo || item.type == HistoryType.None));
 
@@ -205,6 +203,9 @@ namespace UnityEditor
 
         void OnUndoSelectionChange(IEnumerable<object> selectedItems)
         {
+            if (m_HistoryListView.selectedItem == null)
+                return;
+
             HistoryItem item = (HistoryItem)m_HistoryListView.selectedItem;
 
             int actionsRequired = Math.Abs(item.index - m_UndoCursor);

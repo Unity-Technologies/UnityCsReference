@@ -8,6 +8,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.Build.Reporting;
+using UnityEditor.Profiling;
 using UnityEditor.Rendering;
 using UnityEngine.Scripting;
 
@@ -439,8 +440,16 @@ namespace UnityEditor.Build
         {
 #pragma warning disable 618
             InvokeCallbackInterfacesPair(
-                processors.sceneProcessors, spp => spp.OnProcessScene(scene),
-                processors.sceneProcessorsWithReport, spp => spp.OnProcessScene(scene, report),
+                processors.sceneProcessors, spp =>
+                {
+                    using (new EditorPerformanceMarker($"{spp.GetType().Name}.{nameof(spp.OnProcessScene)}", spp.GetType()).Auto())
+                        spp.OnProcessScene(scene);
+                },
+                processors.sceneProcessorsWithReport, spp =>
+                {
+                    using (new EditorPerformanceMarker($"{spp.GetType().Name}.{nameof(spp.OnProcessScene)}", spp.GetType()).Auto())
+                        spp.OnProcessScene(scene, report);
+                },
                 report && ((report.summary.options & BuildOptions.StrictMode) != 0 || (report.summary.assetBundleOptions & BuildAssetBundleOptions.StrictMode) != 0));
 #pragma warning restore 618
         }

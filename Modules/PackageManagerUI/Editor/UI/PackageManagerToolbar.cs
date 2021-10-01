@@ -88,16 +88,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Application.onInternetReachabilityChange -= OnInternetReachabilityChange;
         }
 
-        public void SetEnabledExceptForSearchBar(bool value)
-        {
-            addMenu.SetEnabled(value);
-            filterTabsMenu.SetEnabled(value);
-            orderingMenu.SetEnabled(value);
-            filtersMenu.SetEnabled(value);
-            clearFiltersButton.SetEnabled(value);
-            toolbarSettingsMenu.SetEnabled(value);
-        }
-
         public void FocusOnSearch()
         {
             searchToolbar.Focus();

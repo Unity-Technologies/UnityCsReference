@@ -488,6 +488,7 @@ namespace UnityEditor
             [NativeMethod("SetSelectedWebGLBuildSubtarget")]
             set;
         }
+
         //Compression set/get methods for the map containing type for BuildTargetGroup
         internal static Compression GetCompressionType(BuildTargetGroup targetGroup)
         {
