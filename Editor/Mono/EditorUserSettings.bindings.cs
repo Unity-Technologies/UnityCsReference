@@ -77,6 +77,10 @@ namespace UnityEditor
 
         public static extern int desiredImportWorkerCount { get; set; }
 
+        public static extern int standbyImportWorkerCount { get; set; }
+
+        public static extern int idleImportWorkerShutdownDelayMilliseconds { get; set; }
+
         internal static extern void SoftReset();
     }
 }

@@ -16,6 +16,8 @@ namespace UnityEditor
     [Icon("Icons/Overlays/CameraPreview.png")]
     class SceneViewCameraOverlay : TransientSceneViewOverlay
     {
+        internal static bool forceDisable = false;
+
         // should match color in GizmosDrawers.cpp
         const float kPreviewNormalizedSize = 0.2f;
         const string k_OverlayID = "Scene View/Camera";
@@ -35,7 +37,7 @@ namespace UnityEditor
             OnSelectionChanged();
         }
 
-        public override bool visible => selectedCamera != null;
+        public override bool visible => !forceDisable && selectedCamera != null;
 
         void OnSelectionChanged()
         {

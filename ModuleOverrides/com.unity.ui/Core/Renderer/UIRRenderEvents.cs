@@ -639,7 +639,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
             UpdateWorldFlipsWinding(ve);
 
-            Debug.Assert(ve.renderChainData.clipMethod != ClipMethod.Undetermined);
             Debug.Assert(RenderChainVEData.AllocatesID(ve.renderChainData.transformID) || ve.hierarchy.parent == null || ve.renderChainData.transformID.Equals(ve.hierarchy.parent.renderChainData.transformID) || (ve.renderHints & RenderHints.GroupTransform) != 0);
 
             if (ve is ITextElement)

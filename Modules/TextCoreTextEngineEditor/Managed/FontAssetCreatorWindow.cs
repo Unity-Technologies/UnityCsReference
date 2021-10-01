@@ -133,7 +133,6 @@ namespace UnityEditor.TextCore.Text
 
         float m_AtlasGenerationProgress;
         string m_AtlasGenerationProgressLabel = string.Empty;
-        // float m_RenderingProgress;
         bool m_IsGlyphPackingDone;
         bool m_IsGlyphRenderingDone;
         bool m_IsRenderingDone;
@@ -1428,7 +1427,7 @@ namespace UnityEditor.TextCore.Text
                 AssetDatabase.AddObjectToAsset(m_FontAtlasTexture, fontAsset);
 
                 // Create new Material and Add it as Sub-Asset
-                Shader default_Shader = Shader.Find("Text/Bitmap");
+                Shader default_Shader = TextShaderUtilities.ShaderRef_MobileBitmap;
                 Material tmp_material = new Material(default_Shader);
                 tmp_material.name = tex_FileName + " Material";
                 tmp_material.SetTexture(TextShaderUtilities.ID_MainTex, m_FontAtlasTexture);
@@ -1603,7 +1602,7 @@ namespace UnityEditor.TextCore.Text
                 AssetDatabase.AddObjectToAsset(m_FontAtlasTexture, fontAsset);
 
                 // Create new Material and Add it as Sub-Asset
-                Shader default_Shader = Shader.Find("Text/Mobile/Distance Field");
+                Shader default_Shader = TextShaderUtilities.ShaderRef_MobileSDF;
                 Material tmp_material = new Material(default_Shader);
 
                 tmp_material.name = tex_FileName + " Material";

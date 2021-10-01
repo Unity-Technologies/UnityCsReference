@@ -293,17 +293,23 @@ namespace UnityEngine.TextCore.Text
             //Debug.Log("Creating new Dynamic Runtime Font Asset for [" + font.name + "].");
 
             FontAsset fontAsset = null;
+
+            // Special handling for legacy System Normal font used in the Editor.
             if (font.name == "System Normal")
                 fontAsset = FontAsset.CreateFontAsset("Lucida Grande", "Regular");
             else
                 fontAsset = FontAsset.CreateFontAsset(font, 90, 9, GlyphRenderMode.SDFAA, 1024, 1024, AtlasPopulationMode.Dynamic);
-            fontAsset.hideFlags = HideFlags.DontSave;
-            fontAsset.atlasTextures[0].hideFlags = HideFlags.DontSave;
-            fontAsset.material.hideFlags = HideFlags.DontSave;
-            fontAsset.isMultiAtlasTexturesEnabled = true;
 
-            m_FontReferences.Add(new FontReferenceMap(font, fontAsset));
-            m_FontLookup.Add(id, fontAsset);
+            if (fontAsset != null)
+            {
+                fontAsset.hideFlags = HideFlags.DontSave;
+                fontAsset.atlasTextures[0].hideFlags = HideFlags.DontSave;
+                fontAsset.material.hideFlags = HideFlags.DontSave;
+                fontAsset.isMultiAtlasTexturesEnabled = true;
+
+                m_FontReferences.Add(new FontReferenceMap(font, fontAsset));
+                m_FontLookup.Add(id, fontAsset);
+            }
 
             return fontAsset;
         }

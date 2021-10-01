@@ -41,6 +41,7 @@ namespace UnityEditor.UIElements
         internal static readonly string animationAnimatedUssClassName = "unity-binding--animation-animated";
         internal static readonly string animationRecordedUssClassName = "unity-binding--animation-recorded";
         internal static readonly string animationCandidateUssClassName = "unity-binding--animation-candidate";
+        internal static readonly PropertyName s_DataSourceProperty = new PropertyName("unity-data-source");
 
         internal static ISerializedObjectBindingImplementation bindingImpl =
             new DefaultSerializedObjectBindingImplementation();

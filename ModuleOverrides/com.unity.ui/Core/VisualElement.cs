@@ -638,8 +638,7 @@ namespace UnityEngine.UIElements
             get
             {
                 var bb = boundingBox;
-                TransformAlignedRect(ref bb);
-                bb.position += layout.position;
+                TransformAlignedRectToParentSpace(ref bb);
                 return bb;
             }
         }
@@ -697,9 +696,9 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                var l = layout;
-                TransformAlignedRect(ref l);
-                return l;
+                var r = rect;
+                TransformAlignedRectToParentSpace(ref r);
+                return r;
             }
         }
 
@@ -779,12 +778,19 @@ namespace UnityEngine.UIElements
 
             if (hierarchy.parent != null)
             {
-                var mat = pivottedMatrixWithLayout;
-                MultiplyMatrix34(ref hierarchy.parent.worldTransformRef,  ref mat, out m_WorldTransformCache);
+                if (hasDefaultRotationAndScale)
+                {
+                    TranslateMatrix34(ref hierarchy.parent.worldTransformRef, positionWithLayout, out m_WorldTransformCache);
+                }
+                else
+                {
+                    var mat = pivotedMatrixWithLayout;
+                    MultiplyMatrix34(ref hierarchy.parent.worldTransformRef,  ref mat, out m_WorldTransformCache);
+                }
             }
             else
             {
-                m_WorldTransformCache = pivottedMatrixWithLayout;
+                m_WorldTransformCache = pivotedMatrixWithLayout;
             }
 
             isWorldTransformInverseDirty = true;

@@ -20,14 +20,16 @@ namespace UnityEditor.TextCore.Text
 
             for (int i = 0; i < fontAssetGUIDs.Length; i++)
             {
-                string fontAssetPath = AssetDatabase.GUIDToAssetPath(fontAssetGUIDs[i]);
-                FontAsset fontAsset = AssetDatabase.LoadAssetAtPath<FontAsset>(fontAssetPath);
+                string assetPath = AssetDatabase.GUIDToAssetPath(fontAssetGUIDs[i]);
+
+                // Exclude assets not located in the project.
+                if (!assetPath.StartsWith("Assets/", System.StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                FontAsset fontAsset = AssetDatabase.LoadAssetAtPath<FontAsset>(assetPath);
 
                 if (fontAsset != null && (fontAsset.atlasPopulationMode == AtlasPopulationMode.Dynamic || fontAsset.atlasPopulationMode == AtlasPopulationMode.DynamicOS) && fontAsset.clearDynamicDataOnBuild && fontAsset.atlasTexture.width != 0)
-                {
-                    //Debug.Log("Clearing [" + fontAsset.name + "] dynamic font asset data.");
                     fontAsset.ClearFontAssetDataInternal();
-                }
             }
         }
     }

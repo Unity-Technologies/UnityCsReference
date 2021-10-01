@@ -138,6 +138,22 @@ namespace UnityEngine.TextCore.Text
         static Shader k_ShaderRef_MobileBitmap;
 
 
+        internal static Shader ShaderRef_Sprite
+        {
+            get
+            {
+                if (k_ShaderRef_Sprite == null)
+                {
+                    k_ShaderRef_Sprite = Shader.Find("Text/Sprite");
+                    if (k_ShaderRef_Sprite == null)
+                        k_ShaderRef_Sprite = Shader.Find("Hidden/TextCore/Sprite");
+                }
+                return k_ShaderRef_Sprite;
+            }
+        }
+        static Shader k_ShaderRef_Sprite;
+
+
         /// <summary>
         ///
         /// </summary>

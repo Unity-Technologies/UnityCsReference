@@ -171,15 +171,18 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void OnProductFetched(long productId)
         {
             var uniqueId = productId.ToString();
-            if (Contains(uniqueId))
-                return;
+            var isNewItem = !Contains(uniqueId);
 
-            m_VisualStateList.AddExtraItem(productId.ToString());
+            if (isNewItem)
+                m_VisualStateList.AddExtraItem(productId.ToString());
 
             if (m_PackageFiltering.currentFilterTab == PackageFilterTab.AssetStore)
             {
                 var package = m_PackageDatabase.GetPackage(uniqueId);
-                TriggerOnListUpdate(new[] { package });
+                if (isNewItem)
+                    TriggerOnListUpdate(new[] { package });
+                else
+                    TriggerOnListUpdate(null, new[] { package });
                 SetSelected(package?.uniqueId, package?.versions.primary?.uniqueId);
             }
         }

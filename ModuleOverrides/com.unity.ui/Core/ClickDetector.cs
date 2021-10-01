@@ -151,11 +151,15 @@ namespace UnityEngine.UIElements
                 }
             }
             else if (evt.eventTypeId == PointerCancelEvent.TypeId()
-                     || evt.eventTypeId == PointerStationaryEvent.TypeId()
                      || evt.eventTypeId == DragUpdatedEvent.TypeId()
             )
             {
                 CancelClickTracking(evt);
+
+                // Note that we don't cancel the click when we have a PointerStationaryEvent anymore. Touch stationary
+                // events are sent on each frame where the touch doesn't move, starting immediately after the frame
+                // where the touch begin event occured. If we want to cancel the ClickEvent after the touch has been
+                // idle for some time, then we need to manually track the duration of the stationary phase.
             }
             else if (evt.eventTypeId == PointerUpEvent.TypeId() && pe.button == 0)
             {

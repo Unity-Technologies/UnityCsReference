@@ -71,6 +71,14 @@ namespace UnityEditor
             GetTimelineRecordsInternal(undoRecords, redoRecords);
         }
 
+        [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]
+        private static extern void GetUndoListInternal(object undoList, out int undoCursorPos);
+
+        internal static void GetUndoList(List<string> undoList, out int undoCursor)
+        {
+            GetUndoListInternal(undoList, out undoCursor);
+        }
+
         public static void RegisterCompleteObjectUndo(Object objectToUndo, string name)
         {
             Object[] objects = { objectToUndo };
@@ -181,6 +189,12 @@ namespace UnityEditor
         [NativeMethod("Redo")]
         public static extern void PerformRedo();
 
+        [StaticAccessor("GetUndoManager()", StaticAccessorType.Dot)]
+        internal static extern bool HasUndo();
+
+        [StaticAccessor("GetUndoManager()", StaticAccessorType.Dot)]
+        internal static extern bool HasRedo();
+
         // *undocumented*
         [StaticAccessor("GetUndoManager()", StaticAccessorType.Dot)]
         public static extern void IncrementCurrentGroup();
@@ -190,6 +204,9 @@ namespace UnityEditor
 
         [StaticAccessor("GetUndoManager()", StaticAccessorType.Dot)]
         internal static extern void EndAtomicUndoGroup();
+
+        [StaticAccessor("GetUndoManager()", StaticAccessorType.Dot)]
+        internal static extern int GetGroupFromStack(int undo);
 
         [StaticAccessor("GetUndoManager()", StaticAccessorType.Dot)]
         public static extern int GetCurrentGroup();

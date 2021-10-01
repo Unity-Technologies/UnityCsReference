@@ -633,7 +633,7 @@ namespace UnityEditor
                 float newValue = EditorGUI.DoFloatField(EditorGUI.s_RecycledEditor, positionField, positionLabel, id, value, EditorGUI.kFloatFieldFormatString, EditorStyles.textField, true);
                 if (EditorGUI.EndChangeCheck())
                 {
-                    Undo.RecordObjects(targets, "Inspector");
+                    Undo.RecordObjects(targets, "Modified RectTransform Values");
                     foreach (RectTransform tr in targets)
                         setter(tr, newValue);
                 }
@@ -684,7 +684,7 @@ namespace UnityEditor
                 float newValue = EditorGUI.FloatField(position, label, value);
                 if (EditorGUI.EndChangeCheck())
                 {
-                    Undo.RecordObjects(targets, "Inspector");
+                    Undo.RecordObjects(targets, "Modified RectTransform Values");
                     foreach (RectTransform tr in targets)
                         setter(tr, newValue);
                 }

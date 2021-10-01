@@ -252,11 +252,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void SelectPackageAndFilter()
         {
-            if (!m_PageManager.IsInitialFetchingDone())
-            {
-                return;
-            }
-
             IPackageVersion version = null;
             IPackage package = null;
             if (!string.IsNullOrEmpty(m_PackageToSelectOnLoaded))
@@ -279,6 +274,12 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_SubPageToSelectAfterLoad = null;
                 return;
             }
+
+            // The !IsInitialFetchingDone check was added to the start of this function in the past for the Entitlement Error checker,
+            // But it caused `Open In Unity` to not work sometimes for the `My Assets` tab. Hence we moved the check from the beginning
+            // of this function to after the `My Assets` logic is done so that we don't break `My Assets` and the Entitlement Error checker.
+            if (!m_PageManager.IsInitialFetchingDone())
+                return;
 
             if (package != null || m_FilterToSelectAfterLoad != null)
             {

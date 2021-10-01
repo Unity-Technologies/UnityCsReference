@@ -120,37 +120,30 @@ namespace UnityEngine.UIElements
         private Vector3 ResolveTranslate()
         {
             var translationOperation = computedStyle.translate;
-            float x = float.NaN;
+            float x;
             var x_cache = translationOperation.x;
-            if (x_cache.IsNone())
-            {
-                x = 0;
-            }
-            else if (x_cache.unit == LengthUnit.Percent)
+            if (x_cache.unit == LengthUnit.Percent)
             {
                 var width = resolvedStyle.width;
                 x = float.IsNaN(width) ? 0 : width * x_cache.value / 100;
             }
-            else // we asume unitless or pixel values
+            else // we assume unitless or pixel values
             {
                 x = x_cache.value;
             }
 
-            float y = float.NaN;
+            float y;
             var y_cache = translationOperation.y;
-            if (y_cache.IsNone())
-            {
-                y = 0;
-            }
-            else if (y_cache.unit == LengthUnit.Percent)
+            if (y_cache.unit == LengthUnit.Percent)
             {
                 var height = resolvedStyle.height;
                 y = float.IsNaN(height) ? 0 : height * y_cache.value / 100;
             }
-            else // we asume unitless or pixel values
+            else // we assume unitless or pixel values
             {
                 y = y_cache.value;
             }
+
             float z = translationOperation.z;
             return new Vector3(x, y, z);
         }
@@ -198,6 +191,9 @@ namespace UnityEngine.UIElements
 
             return new Vector3(x, y, z);
         }
+
+        private Quaternion ResolveRotation() => computedStyle.rotate.ToQuaternion();
+        private Vector3 ResolveScale() => computedStyle.scale.value;
 
         internal class CustomStyleAccess : ICustomStyle
         {

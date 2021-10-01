@@ -134,7 +134,7 @@ namespace UnityEngine.UIElements
             if (scrollUp || scrollDown)
             {
                 var offset = targetScrollView.scrollOffset + (scrollUp ? Vector2.down : Vector2.up) * k_PanSpeed;
-                offset.y = Mathf.Clamp(offset.y, 0f, targetScrollView.contentContainer.worldBound.height - targetScrollView.contentViewport.worldBound.height);
+                offset.y = Mathf.Clamp(offset.y, 0f, Mathf.Max(0, targetScrollView.contentContainer.worldBound.height - targetScrollView.contentViewport.worldBound.height));
                 targetScrollView.scrollOffset = offset;
             }
         }

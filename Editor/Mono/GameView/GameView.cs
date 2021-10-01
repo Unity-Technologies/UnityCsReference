@@ -85,6 +85,8 @@ namespace UnityEditor
 
         List<XRDisplaySubsystem> m_DisplaySubsystems = new List<XRDisplaySubsystem>();
 
+        internal override bool liveReloadPreferenceDefault => true;
+
         internal static class Styles
         {
             public static GUIContent gizmosContent = EditorGUIUtility.TrTextContent("Gizmos");

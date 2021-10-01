@@ -291,7 +291,7 @@ namespace UnityEditorInternal
 
             if (runInformation.rcr != null)
             {
-                linkXmlFiles.Add(WriteMethodsToPreserveBlackList(runInformation.rcr));
+                linkXmlFiles.Add(WriteMethodsToPreserveBlackList(runInformation));
                 linkXmlFiles.Add(WriteTypesInScenesBlacklist(managedAssemblyFolderPath, runInformation.rcr));
                 linkXmlFiles.Add(WriteSerializedTypesBlacklist(managedAssemblyFolderPath, runInformation.rcr));
             }
@@ -508,14 +508,14 @@ namespace UnityEditorInternal
             }
         }
 
-        private static string WriteMethodsToPreserveBlackList(RuntimeClassRegistry rcr)
+        private static string WriteMethodsToPreserveBlackList(UnityLinkerRunInformation runInformation)
         {
-            var contents = GetMethodPreserveBlacklistContents(rcr);
+            var contents = GetMethodPreserveBlacklistContents(runInformation.rcr);
             if (contents == null)
                 return null;
-            var methodPerserveBlackList = Path.GetTempFileName();
-            File.WriteAllText(methodPerserveBlackList, contents);
-            return methodPerserveBlackList;
+            var methodPreserveBlackList = Path.Combine(runInformation.managedAssemblyFolderPath, "MethodsToPreserve.xml");
+            File.WriteAllText(methodPreserveBlackList, contents);
+            return methodPreserveBlackList;
         }
 
         private static string GetMethodPreserveBlacklistContents(RuntimeClassRegistry rcr)

@@ -505,7 +505,7 @@ namespace UnityEditor.TextCore.Text
                                 // Update face info if  sampling point size was changed.
                                 if (m_GenerationSettings.pointSize != m_SamplingPointSize_prop.intValue || m_FaceInfoDirty)
                                 {
-                                    FontEngine.LoadFontFace(m_fontAsset.sourceFontFile, m_SamplingPointSize_prop.intValue, m_FontFaceIndex_prop.intValue);
+                                    LoadFontFace(m_SamplingPointSize_prop.intValue, m_FontFaceIndex_prop.intValue);
                                     m_fontAsset.faceInfo = FontEngine.GetFaceInfo();
                                     m_FaceInfoDirty = false;
                                 }
@@ -1393,16 +1393,21 @@ namespace UnityEditor.TextCore.Text
 
         string[] GetFontFaces(int faceIndex)
         {
-            if (m_fontAsset.SourceFont_EditorRef != null)
-            {
-                if (FontEngine.LoadFontFace(m_fontAsset.SourceFont_EditorRef, m_SamplingPointSize_prop.intValue, faceIndex) == FontEngineError.Success)
-                    return FontEngine.GetFontFaces();
-            }
-
-            if (FontEngine.LoadFontFace(m_fontAsset.faceInfo.familyName, m_fontAsset.faceInfo.styleName, m_SamplingPointSize_prop.intValue) == FontEngineError.Success)
+            if (LoadFontFace(m_SamplingPointSize_prop.intValue, faceIndex) == FontEngineError.Success)
                 return FontEngine.GetFontFaces();
 
             return k_InvalidFontFaces;
+        }
+
+        FontEngineError LoadFontFace(int pointSize, int faceIndex)
+        {
+            if (m_fontAsset.SourceFont_EditorRef != null)
+            {
+                if (FontEngine.LoadFontFace(m_fontAsset.SourceFont_EditorRef, pointSize, faceIndex) == FontEngineError.Success)
+                    return FontEngineError.Success;
+            }
+
+            return FontEngine.LoadFontFace(m_fontAsset.faceInfo.familyName, m_fontAsset.faceInfo.styleName, pointSize);
         }
 
         void CleanFallbackFontAssetTable()
