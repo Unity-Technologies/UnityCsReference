@@ -67,9 +67,9 @@ namespace UnityEditor
         static AnnotationWindow s_AnnotationWindow = null;
         static long s_LastClosedTime;
         static Styles m_Styles;
-        List<AInfo> m_RecentAnnotations;
-        List<AInfo> m_BuiltinAnnotations;
-        List<AInfo> m_ScriptAnnotations;
+        List<GizmoInfo> m_RecentAnnotations;
+        List<GizmoInfo> m_BuiltinAnnotations;
+        List<GizmoInfo> m_ScriptAnnotations;
         Vector2 m_ScrollPosition;
         bool m_SyncWithState;
         string m_LastScriptThatHasShownTheIconSelector;
@@ -201,13 +201,13 @@ namespace UnityEditor
             if (string.IsNullOrEmpty(m_LastScriptThatHasShownTheIconSelector))
                 return;
 
-            foreach (AInfo t in m_ScriptAnnotations)
+            foreach (GizmoInfo t in m_ScriptAnnotations)
             {
-                if (t.m_ScriptClass == m_LastScriptThatHasShownTheIconSelector)
+                if (t.scriptClass == m_LastScriptThatHasShownTheIconSelector)
                 {
-                    if (t.m_IconEnabled == false)
+                    if (t.iconEnabled == false)
                     {
-                        t.m_IconEnabled = true;
+                        t.iconEnabled = true;
                         SetIconState(t);
                         break;
                     }
@@ -229,12 +229,12 @@ namespace UnityEditor
             GUIUtility.ExitGUI();
         }
 
-        AInfo GetAInfo(int classID, string scriptClass)
+        GizmoInfo GetAInfo(int classID, string scriptClass)
         {
             if (scriptClass != "")
-                return m_ScriptAnnotations.Find(delegate(AInfo o) { return o.m_ScriptClass == scriptClass; });
+                return m_ScriptAnnotations.Find(delegate(GizmoInfo o) { return o.scriptClass == scriptClass; });
 
-            return m_BuiltinAnnotations.Find(delegate(AInfo o) { return o.m_ClassID == classID; });
+            return m_BuiltinAnnotations.Find(delegate(GizmoInfo o) { return o.classID == classID; });
         }
 
         private void SyncToState()
@@ -242,34 +242,28 @@ namespace UnityEditor
             // Sync annotations
             Annotation[] a = AnnotationUtility.GetAnnotations();
 
-            m_BuiltinAnnotations = new List<AInfo>();
-            m_ScriptAnnotations = new List<AInfo>();
+            m_BuiltinAnnotations = new List<GizmoInfo>();
+            m_ScriptAnnotations = new List<GizmoInfo>();
             for (int i = 0; i < a.Length; ++i)
             {
-                bool ge = (a[i].gizmoEnabled == 1);
-                bool ie = (a[i].iconEnabled == 1);
-                AInfo anno = new AInfo(ge, ie, a[i].flags, a[i].classID, a[i].scriptClass);
+                GizmoInfo anno = new GizmoInfo(a[i]);
 
-                if (anno.m_ScriptClass == "")
-                {
+                if(string.IsNullOrEmpty(anno.scriptClass))
                     m_BuiltinAnnotations.Add(anno);
-                }
                 else
-                {
                     m_ScriptAnnotations.Add(anno);
-                }
             }
 
             m_BuiltinAnnotations.Sort();
             m_ScriptAnnotations.Sort();
 
             // Sync recently changed annotations
-            m_RecentAnnotations = new List<AInfo>();
+            m_RecentAnnotations = new List<GizmoInfo>();
             Annotation[] recent = AnnotationUtility.GetRecentlyChangedAnnotations();
             for (int i = 0; i < recent.Length && i < maxShowRecent; ++i)
             {
                 // Note: ainfo can be null if script has been renamed.
-                AInfo ainfo = GetAInfo(recent[i].classID, recent[i].scriptClass);
+                GizmoInfo ainfo = GetAInfo(recent[i].classID, recent[i].scriptClass);
                 if (ainfo != null)
                     m_RecentAnnotations.Add(ainfo);
             }
@@ -413,16 +407,16 @@ namespace UnityEditor
             return curY;
         }
 
-        bool DoesMatchFilter(AInfo el)
+        bool DoesMatchFilter(GizmoInfo el)
         {
             if (string.IsNullOrEmpty(m_SearchFilter))
                 return true;
-            if (el.m_DisplayText.IndexOf(m_SearchFilter, System.StringComparison.OrdinalIgnoreCase) < 0)
+            if (el.name.IndexOf(m_SearchFilter, System.StringComparison.OrdinalIgnoreCase) < 0)
                 return false;
             return true;
         }
 
-        float DrawListSection(float y, string sectionHeader, List<AInfo> listElements, bool doDraw, float listElementWidth, float startY, float endY, ref bool even, bool useSeperator, ref bool headerDrawn, ref bool searchDrawn)
+        float DrawListSection(float y, string sectionHeader, List<GizmoInfo> listElements, bool doDraw, float listElementWidth, float startY, float endY, ref bool even, bool useSeperator, ref bool headerDrawn, ref bool searchDrawn)
         {
             float curY = y;
             const float kSearchPaddingV = 3;
@@ -492,7 +486,7 @@ namespace UnityEditor
             return curY;
         }
 
-        void DrawListHeader(string header, List<AInfo> elements, Rect rect, ref bool headerDrawn)
+        void DrawListHeader(string header, List<GizmoInfo> elements, Rect rect, ref bool headerDrawn)
         {
             GUI.Label(rect, GUIContent.Temp(header), m_Styles.listHeaderStyle);
 
@@ -505,13 +499,13 @@ namespace UnityEditor
                 if (!DoesMatchFilter(element))
                     continue;
 
-                if (element.HasGizmo())
+                if (element.hasGizmo)
                 {
                     if (enabledState == EnabledState.NotSet)
                     {
-                        enabledState = element.m_GizmoEnabled ? EnabledState.All : EnabledState.None;
+                        enabledState = element.gizmoEnabled ? EnabledState.All : EnabledState.None;
                     }
-                    else if ((enabledState == EnabledState.All) != element.m_GizmoEnabled)
+                    else if ((enabledState == EnabledState.All) != element.gizmoEnabled)
                     {
                         enabledState = EnabledState.Mixed;
                         break;
@@ -550,9 +544,9 @@ namespace UnityEditor
                     if (!DoesMatchFilter(element))
                         continue;
 
-                    if (element.m_GizmoEnabled != newEnabled)
+                    if (element.gizmoEnabled != newEnabled)
                     {
-                        element.m_GizmoEnabled = newEnabled;
+                        element.gizmoEnabled = newEnabled;
                         SetGizmoState(element, false);
                     }
                 }
@@ -576,7 +570,7 @@ namespace UnityEditor
             }
         }
 
-        void DrawListElement(Rect rect, bool even, AInfo ainfo)
+        void DrawListElement(Rect rect, bool even, GizmoInfo ainfo)
         {
             if (ainfo == null)
             {
@@ -604,12 +598,12 @@ namespace UnityEditor
             Rect textRect = rect;
             //textRect.x += 22;
             textRect.width = rect.width - iconRightAlign - 22; // ensure text doesnt flow behind toggles
-            GUI.Label(textRect, ainfo.m_DisplayText, m_Styles.listTextStyle);
+            GUI.Label(textRect, ainfo.name, m_Styles.listTextStyle);
 
 
             // Icon toggle
             Rect iconRect = new Rect(rect.width - iconRightAlign + 2, rect.y + (rect.height - iconSize) * 0.5f, iconSize, iconSize); // +2 because the given rect is shortened by 2px before this method call
-            if (ainfo.m_ScriptClass != "")
+            if (ainfo.scriptClass != "")
             {
                 Rect div = iconRect;
                 div.x += 18;
@@ -625,7 +619,7 @@ namespace UnityEditor
                 GUI.DrawTexture(div, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill);
                 GUI.color = Color.white;
 
-                if (!ainfo.IsDisabled())
+                if (!ainfo.disabled)
                 {
                     Rect arrowRect = iconRect;
                     arrowRect.x += 18;
@@ -634,10 +628,10 @@ namespace UnityEditor
 
                     if (GUI.Button(arrowRect, iconSelectContent, m_Styles.iconDropDown))
                     {
-                        Object script = EditorGUIUtility.GetScript(ainfo.m_ScriptClass);
+                        Object script = EditorGUIUtility.GetScript(ainfo.scriptClass);
                         if (script != null)
                         {
-                            m_LastScriptThatHasShownTheIconSelector = ainfo.m_ScriptClass;
+                            m_LastScriptThatHasShownTheIconSelector = ainfo.scriptClass;
                             if (IconSelector.ShowAtPosition(script, arrowRect, true))
                             {
                                 IconSelector.SetMonoScriptIconChangedCallback(MonoScriptIconChanged);
@@ -648,18 +642,18 @@ namespace UnityEditor
                 }
             }
 
-            if (ainfo.Thumb != null)
+            if (ainfo.thumb != null)
             {
-                if (!ainfo.m_IconEnabled)
+                if (!ainfo.iconEnabled)
                 {
                     GUI.color = new Color(GUI.color.r, GUI.color.g, GUI.color.b, disabledAlpha);
                     tooltip = "";
                 }
 
-                iconToggleContent.image = ainfo.Thumb;
+                iconToggleContent.image = ainfo.thumb;
                 if (GUI.Button(iconRect, iconToggleContent, GUIStyle.none))
                 {
-                    ainfo.m_IconEnabled = !ainfo.m_IconEnabled;
+                    ainfo.iconEnabled = !ainfo.iconEnabled;
                     SetIconState(ainfo);
                 }
 
@@ -676,12 +670,12 @@ namespace UnityEditor
             GUI.color = orgColor;
 
             // Gizmo toggle
-            if (ainfo.HasGizmo())
+            if (ainfo.hasGizmo)
             {
                 tooltip = textGizmoVisible;
 
                 Rect togglerRect = new Rect(rect.width - gizmoRightAlign + 2, rect.y + (rect.height - togglerSize) * 0.5f, togglerSize, togglerSize); // +2 because the given rect is shortened by 2px before this method call
-                ainfo.m_GizmoEnabled = GUI.Toggle(togglerRect, ainfo.m_GizmoEnabled, new GUIContent("", tooltip), m_Styles.toggle);
+                ainfo.gizmoEnabled = GUI.Toggle(togglerRect, ainfo.gizmoEnabled, new GUIContent("", tooltip), m_Styles.toggle);
                 if (GUI.changed)
                 {
                     SetGizmoState(ainfo);
@@ -693,15 +687,15 @@ namespace UnityEditor
             GUI.color = orgColor;
         }
 
-        void SetIconState(AInfo ainfo)
+        void SetIconState(GizmoInfo ainfo)
         {
-            AnnotationUtility.SetIconEnabled(ainfo.m_ClassID, ainfo.m_ScriptClass, ainfo.m_IconEnabled ? 1 : 0);
+            AnnotationUtility.SetIconEnabled(ainfo.classID, ainfo.scriptClass, ainfo.iconEnabled ? 1 : 0);
             SceneView.RepaintAll();
         }
 
-        void SetGizmoState(AInfo ainfo, bool addToMostRecentChanged = true)
+        void SetGizmoState(GizmoInfo ainfo, bool addToMostRecentChanged = true)
         {
-            AnnotationUtility.SetGizmoEnabled(ainfo.m_ClassID, ainfo.m_ScriptClass, ainfo.m_GizmoEnabled ? 1 : 0, addToMostRecentChanged);
+            AnnotationUtility.SetGizmoEnabled(ainfo.classID, ainfo.scriptClass, ainfo.gizmoEnabled ? 1 : 0, addToMostRecentChanged);
             SceneView.RepaintAll();
         }
 
@@ -715,88 +709,6 @@ namespace UnityEditor
         static void ToggleSelectionWireframe()
         {
             AnnotationUtility.showSelectionWire = !AnnotationUtility.showSelectionWire;
-        }
-    }
-
-    internal class AInfo : System.IComparable, System.IEquatable<AInfo>
-    {
-        // Similar values as in Annotation (in AnnotationManager.h)
-        public enum Flags { kHasIcon = 1, kHasGizmo = 2, kIsDisabled = 4 }
-
-        public AInfo(bool gizmoEnabled, bool iconEnabled, int flags, int classID, string scriptClass)
-        {
-            m_GizmoEnabled = gizmoEnabled;
-            m_IconEnabled = iconEnabled;
-            m_ClassID = classID;
-            m_ScriptClass = scriptClass;
-            m_Flags = flags;
-            if (m_ScriptClass == "")
-                m_DisplayText = UnityType.FindTypeByPersistentTypeID(m_ClassID).name;
-            else
-                m_DisplayText = m_ScriptClass;
-        }
-
-        public bool m_IconEnabled;
-        public bool m_GizmoEnabled;
-        public int m_ClassID;
-        public string m_ScriptClass;
-        public string m_DisplayText;
-        public int m_Flags;
-        private Object m_Script;
-        public Object Script
-        {
-            get
-            {
-                if (m_Script == null && m_ScriptClass != "")
-                    m_Script = EditorGUIUtility.GetScript(m_ScriptClass);
-                return m_Script;
-            }
-        }
-        private Texture2D m_Thumb;
-        public Texture2D Thumb
-        {
-            get
-            {
-                if (m_Thumb == null)
-                {
-                    // Icon for scripts
-                    if (Script != null)
-                        m_Thumb = EditorGUIUtility.GetIconForObject(m_Script);
-                    // Icon for builtin components
-                    else if (HasIcon())
-                        m_Thumb = AssetPreview.GetMiniTypeThumbnailFromClassID(m_ClassID);
-                }
-                return m_Thumb;
-            }
-        }
-
-        public bool HasGizmo()
-        {
-            return (m_Flags & (int)Flags.kHasGizmo) > 0;
-        }
-
-        public bool HasIcon()
-        {
-            return (m_Flags & (int)Flags.kHasIcon) > 0;
-        }
-
-        public bool IsDisabled()
-        {
-            return (m_Flags & (int)Flags.kIsDisabled) > 0;
-        }
-
-        public int CompareTo(object obj)
-        {
-            AInfo other = obj as AInfo;
-            if (other != null)
-                return this.m_DisplayText.CompareTo(other.m_DisplayText);
-            else
-                throw new System.ArgumentException("Object is not an AInfo");
-        }
-
-        public bool Equals(AInfo other)
-        {
-            return (m_ClassID == other.m_ClassID && m_ScriptClass == other.m_ScriptClass);
         }
     }
 }

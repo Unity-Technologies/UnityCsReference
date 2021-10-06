@@ -67,9 +67,9 @@ namespace UnityEngine.TextCore.Text
         static readonly int k_RegularStyleHashCode = TextUtilities.GetHashCodeCaseInSensitive("Regular");
 
         /// <summary>
-        ///
+        /// Add font asset to resource manager.
         /// </summary>
-        /// <param name="fontAsset"></param>
+        /// <param name="fontAsset">The font asset to be added.</param>
         internal static void AddFontAsset(FontAsset fontAsset)
         {
             int instanceID = fontAsset.instanceID;
@@ -146,6 +146,8 @@ namespace UnityEngine.TextCore.Text
         /// <returns></returns>
         internal static bool TryGetFontAssetByName(int nameHashcode, out FontAsset fontAsset)
         {
+            fontAsset = null;
+
             return s_FontAssetNameReferenceLookup.TryGetValue(nameHashcode, out fontAsset);
         }
 
@@ -168,6 +170,9 @@ namespace UnityEngine.TextCore.Text
             return s_FontAssetFamilyNameAndStyleReferenceLookup.TryGetValue(familyAndStyleNameHashCode, out fontAsset);
         }
 
+        /// <summary>
+        ///
+        /// </summary>
         internal static void RebuildFontAssetCache()
         {
             // Iterate over loaded font assets to update affected font assets

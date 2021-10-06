@@ -3,13 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
     [NativeType(CodegenOptions.Custom, "AnnotationBindings")]
-    internal partial struct Annotation
+    struct Annotation
     {
         public int iconEnabled;
         public int gizmoEnabled;
@@ -20,11 +19,21 @@ namespace UnityEditor
 
     [NativeHeader("Editor/Mono/Annotation/AnnotationUtility.bindings.h")]
     [NativeHeader("Editor/Src/AnnotationManager.h")]
-    internal sealed partial class AnnotationUtility
+    static class AnnotationUtility
     {
+        // Similar values as in Annotation (in AnnotationManager.h)
+        public enum Flags
+        {
+            kHasIcon = 1 << 0,
+            kHasGizmo = 1 << 1,
+            kIsDisabled = 1 << 2
+        };
+
         extern internal static  Annotation[] GetAnnotations();
 
         extern internal static  Annotation[] GetRecentlyChangedAnnotations();
+
+        extern internal static Annotation GetAnnotation(int classID, string scriptClass);
 
         [StaticAccessor("GetAnnotationManager()", StaticAccessorType.Dot)]
         extern internal static  string GetNameOfCurrentSetup();

@@ -132,7 +132,7 @@ namespace UnityEditor.Search
             }
         }
 
-        public static IEnumerable<T> EvaluateMainThread<T>(IEnumerable<T> set, Func<T, T> callback, int minBatchSize = 10) where T : class
+        public static IEnumerable<T> EvaluateMainThread<T>(IEnumerable<T> set, Func<T, T> callback, int minBatchSize = 50) where T : class
         {
             if (InternalEditorUtility.CurrentThreadIsMainThread())
             {
@@ -153,27 +153,26 @@ namespace UnityEditor.Search
             var results = new ConcurrentBag<T>();
             var resultSignal = new EventWaitHandle(false, EventResetMode.AutoReset);
 
-            var batchFinishedSignal = new EventWaitHandle(true, EventResetMode.AutoReset);
-
-            void ProcessBatch()
+            void ProcessBatch(int batchCount, EventWaitHandle finishedSignal)
             {
-                while (!items.IsEmpty)
+                var processedItemCount = 0;
+                while (items.TryTake(out var item))
                 {
-                    if (!items.TryTake(out var item))
-                        break;
-
                     var result = callback(item);
                     if (result != null)
                     {
                         results.Add(result);
                         resultSignal.Set();
                     }
+
+                    if (batchCount != -1 && processedItemCount++ >= batchCount)
+                        break;
                 }
 
-                batchFinishedSignal.Set();
+                finishedSignal.Set();
             }
 
-            int initialBatchSize = minBatchSize;
+            EventWaitHandle batchFinishedSignal = null;
             foreach (var r in set)
             {
                 if (r == null)
@@ -183,10 +182,11 @@ namespace UnityEditor.Search
                 }
 
                 items.Add(r);
-                if (--initialBatchSize < 0 && batchFinishedSignal.WaitOne(0))
+                if (batchFinishedSignal == null || batchFinishedSignal.WaitOne(0))
                 {
-                    Dispatcher.Enqueue(ProcessBatch);
-                    initialBatchSize = minBatchSize;
+                    if (batchFinishedSignal == null)
+                        batchFinishedSignal = new EventWaitHandle(false, EventResetMode.AutoReset);
+                    Dispatcher.Enqueue(() => ProcessBatch(minBatchSize, batchFinishedSignal));
                 }
 
                 if (resultSignal.WaitOne(0))
@@ -194,17 +194,13 @@ namespace UnityEditor.Search
                         yield return item;
             }
 
-            batchFinishedSignal.Reset();
-            Dispatcher.Enqueue(ProcessBatch);
-            while (!batchFinishedSignal.WaitOne(0))
+            var finalBatch = new EventWaitHandle(false, EventResetMode.ManualReset);
+            Dispatcher.Enqueue(() => ProcessBatch(-1, finalBatch));
+            while (!finalBatch.WaitOne(1) || results.Count > 0)
             {
-                if (resultSignal.WaitOne(0))
-                    while (results.TryTake(out var item))
-                        yield return item;
+                while (results.TryTake(out var item))
+                    yield return item;
             }
-
-            while (results.TryTake(out var item))
-                yield return item;
         }
 
         public static IEnumerable<T> EvaluateMainThreadUnroll<T>(Func<IEnumerable<T>> callback)

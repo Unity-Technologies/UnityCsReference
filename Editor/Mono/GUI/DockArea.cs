@@ -782,7 +782,7 @@ namespace UnityEditor
 
             // Detect if hotcontrol was cleared while dragging (happens when pressing Esc).
             // We do not listen for the Escape keydown event because it is sent to the dragged window (not this dockarea)
-            if (!s_IsDragging && GUIUtility.hotControl == 0)
+            if (s_IsDragging && GUIUtility.hotControl == 0)
             {
                 PaneDragTab.get.Close();
                 ResetDragVars();

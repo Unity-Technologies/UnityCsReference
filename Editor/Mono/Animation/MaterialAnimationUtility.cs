@@ -63,16 +63,17 @@ namespace UnityEditorInternal
             return modifications;
         }
 
-        static bool ApplyMaterialModificationToAnimationRecording(PropertyModification[] modifications)
+        static bool ApplyMaterialModificationToAnimationRecording(PropertyModification[] previousModifications, PropertyModification[] currentModifications)
         {
-            UndoPropertyModification[] undoModifications = new UndoPropertyModification[modifications.Length];
+            UndoPropertyModification[] undoModifications = new UndoPropertyModification[previousModifications.Length];
             for (int i = 0; i < undoModifications.Length; ++i)
             {
-                undoModifications[i].previousValue = modifications[i];
+                undoModifications[i].previousValue = previousModifications[i];
+                undoModifications[i].currentValue = currentModifications[i];
             }
 
             UndoPropertyModification[] ret = Undo.InvokePostprocessModifications(undoModifications);
-            return ret.Length != modifications.Length;
+            return ret.Length != undoModifications.Length;
         }
 
         static public bool OverridePropertyColor(MaterialProperty materialProp, Renderer target, out Color color)
@@ -141,14 +142,14 @@ namespace UnityEditorInternal
             {
                 case MaterialProperty.PropType.Color:
                     SetupMaterialPropertyBlock(materialProp, changedMask, target);
-                    applied = ApplyMaterialModificationToAnimationRecording(MaterialPropertyToPropertyModifications(materialProp, target, (Color)oldValue));
+                    applied = ApplyMaterialModificationToAnimationRecording(MaterialPropertyToPropertyModifications(materialProp, target, (Color)oldValue), MaterialPropertyToPropertyModifications(materialProp, target, materialProp.colorValue));
                     if (!applied)
                         TearDownMaterialPropertyBlock(target);
                     return applied;
 
                 case MaterialProperty.PropType.Vector:
                     SetupMaterialPropertyBlock(materialProp, changedMask, target);
-                    applied = ApplyMaterialModificationToAnimationRecording(MaterialPropertyToPropertyModifications(materialProp, target, (Vector4)oldValue));
+                    applied = ApplyMaterialModificationToAnimationRecording(MaterialPropertyToPropertyModifications(materialProp, target, (Vector4)oldValue), MaterialPropertyToPropertyModifications(materialProp, target, materialProp.vectorValue));
                     if (!applied)
                         TearDownMaterialPropertyBlock(target);
                     return applied;
@@ -156,7 +157,7 @@ namespace UnityEditorInternal
                 case MaterialProperty.PropType.Float:
                 case MaterialProperty.PropType.Range:
                     SetupMaterialPropertyBlock(materialProp, changedMask, target);
-                    applied = ApplyMaterialModificationToAnimationRecording(MaterialPropertyToPropertyModifications(materialProp, target, (float)oldValue));
+                    applied = ApplyMaterialModificationToAnimationRecording(MaterialPropertyToPropertyModifications(materialProp, target, (float)oldValue), MaterialPropertyToPropertyModifications(materialProp, target, materialProp.floatValue));
                     if (!applied)
                         TearDownMaterialPropertyBlock(target);
                     return applied;
@@ -167,7 +168,7 @@ namespace UnityEditorInternal
                     {
                         string name = materialProp.name + "_ST";
                         SetupMaterialPropertyBlock(materialProp, changedMask, target);
-                        applied = ApplyMaterialModificationToAnimationRecording(MaterialPropertyToPropertyModifications(name, target, (Vector4)oldValue));
+                        applied = ApplyMaterialModificationToAnimationRecording(MaterialPropertyToPropertyModifications(name, target, (Vector4)oldValue), MaterialPropertyToPropertyModifications(name, target, materialProp.textureScaleAndOffset));
                         if (!applied)
                             TearDownMaterialPropertyBlock(target);
                         return applied;

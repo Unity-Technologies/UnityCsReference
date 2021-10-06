@@ -28,9 +28,7 @@ namespace UnityEditor.Search.Providers
 
         CustomStart = 1 << 17,
         CustomFinish = 1 << 23,
-        CustomRange = CustomStart | 1 << 18 | 1 << 19 | 1 << 20 | 1 << 21 | 1 << 22 | CustomFinish,
-
-        AllFiles = 1 << 31
+        CustomRange = CustomStart | 1 << 18 | 1 << 19 | 1 << 20 | 1 << 21 | 1 << 22 | CustomFinish
     }
 
     static class FindOptionsExtensions
@@ -65,12 +63,22 @@ namespace UnityEditor.Search.Providers
 
         static IEnumerable<SearchItem> FetchItems(SearchContext context, SearchProvider provider)
         {
-            var options = FindOptions.Words | FindOptions.Regex | FindOptions.Glob;
-            if (context.wantsMore)
-                options |= FindOptions.Packages | FindOptions.Fuzzy;
+            if (string.IsNullOrEmpty(context.searchQuery))
+                yield break;
 
-            foreach (var e in Search(context, provider, options))
-                yield return AssetProvider.CreateItem("Files", context, provider, null, e.source, e.score, e.flags);
+            {
+                var options = FindOptions.Words | FindOptions.Regex | FindOptions.Glob;
+                if (context.wantsMore)
+                    options |= FindOptions.Packages | FindOptions.Fuzzy;
+
+                foreach (var e in Search(context, provider, options))
+                {
+                    if (!e.valid)
+                        yield return null;
+                    else
+                        yield return AssetProvider.CreateItem("Files", context, provider, null, e.source, e.score, e.flags);
+                }
+            }
         }
 
         public static IEnumerable<SearchDocument> Search(SearchContext context, SearchProvider provider, FindOptions options)
@@ -81,12 +89,6 @@ namespace UnityEditor.Search.Providers
 
             var tokens = searchQuery.ToLowerInvariant().Split(' ').ToArray();
             var args = tokens.Where(t => t.Length > 1 && t[0] == '+').ToArray();
-            if (args.Contains("+all"))
-            {
-                options |= FindOptions.AllFiles;
-                searchQuery = searchQuery.Replace("+all", "");
-            }
-
             if (args.Contains("+packages"))
             {
                 options |= FindOptions.Packages;
@@ -100,50 +102,94 @@ namespace UnityEditor.Search.Providers
         {
             var query = s_QueryEngine.Parse(searchQuery, new FindFilesQueryFactory(args =>
             {
-                if (args.op == SearchIndexOperator.None)
-                    return FindFilesQuery.EvalResult.None;
-                else if (args.op == SearchIndexOperator.Equal)
                 {
-                    options &= ~(FindOptions.Fuzzy | FindOptions.Glob | FindOptions.Regex);
-                    options |= FindOptions.Exact;
+                    if (args.op == SearchIndexOperator.None)
+                        return FindFilesQuery.EvalResult.None;
+                    else if (args.op == SearchIndexOperator.Equal)
+                    {
+                        options &= ~(FindOptions.Fuzzy | FindOptions.Glob | FindOptions.Regex);
+                        options |= FindOptions.Exact;
+                    }
+
+                    IEnumerable<SearchDocument> subset = args.andSet ??
+                        roots.SelectMany(root => GetRootPaths(root, options));
+
+                    IEnumerable<SearchDocument> results = Enumerable.Empty<SearchDocument>();
+                    if (args.name == null && args.value is string word && word.Length > 0)
+                        results = SearchWord(args.exclude, word, options, subset/*.ToList()*/);
+
+                    if (args.orSet != null)
+                        results = results.Concat(args.orSet);
+
+                    return FindFilesQuery.EvalResult.Combined(results);
                 }
-
-                IEnumerable<SearchDocument> subset = args.andSet ??
-                    roots.SelectMany(root => GetRootPaths(root, options));
-
-                IEnumerable<SearchDocument> results = Enumerable.Empty<SearchDocument>();
-                if (args.name == null && args.value is string word && word.Length > 0)
-                    results = SearchWord(args.exclude, word, options, subset.ToList());
-
-                if (args.orSet != null)
-                    results = results.Concat(args.orSet);
-
-                return FindFilesQuery.EvalResult.Combined(results);
             }));
 
             if (!query.valid)
             {
                 context.AddSearchQueryErrors(query.errors.Select(e => new SearchQueryError(e, context, provider)));
-                return Enumerable.Empty<SearchDocument>();
+                yield break;
             }
-            return query.Apply(null);
+
+            var results = new ConcurrentBag<SearchDocument>();
+            var searchTask = Task.Run(() =>
+            {
+                foreach (var r in query.Apply(null))
+                    results.Add(r);
+            });
+
+            while (results.Count > 0 || !searchTask.Wait(1) || results.Count > 0)
+            {
+                while (results.TryTake(out var e))
+                    yield return e;
+
+                if (searchTask.IsFaulted || searchTask.IsCanceled)
+                    yield break;
+                yield return SearchDocument.invalid;
+            }
         }
 
         private static IEnumerable<SearchDocument> GetRootPaths(string root, FindOptions options)
         {
-            var isPackage = options.HasAny(FindOptions.Packages) && root.StartsWith("Packages/", StringComparison.Ordinal);
-            if (!options.HasAny(FindOptions.Packages) && isPackage)
-                return Enumerable.Empty<SearchDocument>();
-
-            if (!s_RootFilePaths.TryGetValue(root, out var files))
             {
-                files = new ConcurrentDictionary<SearchDocument, byte>(Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories)
-                    .Where(p => !p.EndsWith(".meta", StringComparison.Ordinal))
-                    .Select(p => p.Replace("\\", "/")).ToDictionary(p => new SearchDocument(p, null, null, 0, SearchDocumentFlags.Asset), p => (byte)0));
-                s_RootFilePaths.TryAdd(root, files);
-            }
+                var isPackage = options.HasAny(FindOptions.Packages) && root.StartsWith("Packages/", StringComparison.Ordinal);
+                if (!options.HasAny(FindOptions.Packages) && isPackage)
+                    yield break;
 
-            return files.Keys;
+                if (s_RootFilePaths.TryGetValue(root, out var docs))
+                {
+                    foreach (var d in docs.Keys)
+                        yield return d;
+                }
+                else
+                {
+                    var docsBag = new ConcurrentBag<SearchDocument>();
+                    var foundFiles = new ConcurrentDictionary<SearchDocument, byte>();
+                    var baseScore = isPackage ? 1 : 0;
+                    var scanFileTask = Task.Run(() =>
+                    {
+                        var files = Directory.EnumerateFiles(root, "*.meta", SearchOption.AllDirectories);
+                        foreach (var f in files)
+                        {
+                            var p = f.Substring(0, f.Length - 5).Replace("\\", "/");
+                            var doc = new SearchDocument(p, null, null, baseScore, SearchDocumentFlags.Asset);
+                            if (foundFiles.TryAdd(doc, 0))
+                                docsBag.Add(doc);
+                        }
+                    });
+
+                    while (docsBag.Count > 0 || !scanFileTask.Wait(1) || docsBag.Count > 0)
+                    {
+                        while (docsBag.TryTake(out var e))
+                            yield return e;
+
+                        if (scanFileTask.IsFaulted || scanFileTask.IsCanceled)
+                            yield break;
+
+                    }
+                    s_RootFilePaths.TryAdd(root, foundFiles);
+                }
+            }
         }
 
         private static void SearchWord(bool exclude, string word, FindOptions options, IEnumerable<SearchDocument> documents, ConcurrentBag<SearchDocument> results)
@@ -241,13 +287,18 @@ namespace UnityEditor.Search.Providers
 
         public static IEnumerable<SearchDocument> SearchWord(bool exclude, string word, FindOptions options, IEnumerable<SearchDocument> documents)
         {
-            var results = new ConcurrentBag<SearchDocument>();
-            var searchTask = Task.Run(() => SearchWord(exclude, word, options, documents, results));
-
-            while (results.Count > 0 || !searchTask.Wait(1) || results.Count > 0)
             {
-                while (results.TryTake(out var e))
-                    yield return e;
+                var results = new ConcurrentBag<SearchDocument>();
+                var searchTask = Task.Run(() => SearchWord(exclude, word, options, documents, results));
+
+                while (results.Count > 0 || !searchTask.Wait(1) || results.Count > 0)
+                {
+                    while (results.TryTake(out var e))
+                        yield return e;
+
+                    if (searchTask.IsFaulted || searchTask.IsCanceled)
+                        break;
+                }
             }
         }
 
@@ -327,14 +378,6 @@ namespace UnityEditor.Search.Providers
                 return roots;
 
             var projectRoots = new List<string>(Utils.GetAssetRootFolders().Where(r => FilterRoot(r, options)));
-            if (options.HasAny(FindOptions.AllFiles))
-            {
-                var baseProjectRoot = new DirectoryInfo(Path.Combine(Application.dataPath, "..")).FullName.Replace("\\", "/");
-                projectRoots.AddRange(Directory.EnumerateDirectories(baseProjectRoot, "*", SearchOption.TopDirectoryOnly)
-                    .Select(d => d.Replace(baseProjectRoot, "").Substring(1))
-                    .Where(d => d.Length > 0 && char.IsLetterOrDigit(d[0])));
-            }
-
             return (s_Roots[options] = projectRoots);
         }
 
@@ -366,6 +409,7 @@ namespace UnityEditor.Search.Providers
         }
 
         [ShortcutManagement.Shortcut("Help/Search/Find Files")]
+        [MenuItem("Window/Search/Find Files", priority = 1269)]
         internal static void OpenShortcut()
         {
             QuickSearch.OpenWithContextualProvider(providerId);

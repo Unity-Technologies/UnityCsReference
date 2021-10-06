@@ -410,6 +410,19 @@ namespace UnityEditor.Connect
                 }
             }
 
+             protected void LoadScrollContainer()
+            {
+                var rootElement = provider.rootVisualElement;
+                if (rootElement != null)
+                {
+                    var scrollContainer = provider.rootVisualElement.Q(className: k_ScrollContainerClass);
+                    scrollContainer.Clear();
+                    ServicesUtils.TranslateStringsInTree(provider.rootVisualElement);
+
+                    provider.UpdateServiceToggleAndDashboardLink(provider.serviceInstance.IsServiceEnabled());
+                }
+            }
+
             protected void SetupSupportedPlatformsBlock()
             {
                 var scrollContainer = provider.rootVisualElement.Q(className: k_ScrollContainerClass);
@@ -466,8 +479,6 @@ namespace UnityEditor.Connect
 
         class IntegrationState : BaseAnalyticsState
         {
-            const string k_TemplatePath = "UXML/ServicesWindow/AnalyticsProjectSettingsStateIntegrate.uxml";
-
             VisualElement m_TroubleshootingBlock;
 
             //uxml element names
@@ -490,7 +501,7 @@ namespace UnityEditor.Connect
             {
                 base.EnterState();
 
-                LoadTemplateIntoScrollContainer(k_TemplatePath);
+                LoadScrollContainer();
                 SetupTroubleShootingBlock();
                 SetupSupportedPlatformsBlock();
 

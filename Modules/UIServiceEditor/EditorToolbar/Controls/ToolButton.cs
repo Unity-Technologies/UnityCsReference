@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEditor.EditorTools;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -21,6 +22,8 @@ namespace UnityEditor.Toolbars
         readonly Texture2D m_ZoomViewIcon;
         readonly Texture2D m_ZoomViewOnIcon;
 
+        public Action displayChanged;
+
         public ToolButton(Tool targetTool)
         {
             m_TargetTool = targetTool;
@@ -30,7 +33,7 @@ namespace UnityEditor.Toolbars
             this.RegisterValueChangedCallback((evt) =>
             {
                 if (evt.newValue)
-                    SetToolActive();
+                    Tools.current = m_TargetTool;
 
                 // Keep the toggle checked if target is still the current tool
                 if (m_TargetTool == Tools.current)
@@ -74,11 +77,11 @@ namespace UnityEditor.Toolbars
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
         }
 
-        protected virtual void OnAttachedToPanel(AttachToPanelEvent evt)
+        void OnAttachedToPanel(AttachToPanelEvent evt)
         {
-            ToolManager.activeToolChanged += ToolManagerStateUpdated;
-            ToolManager.activeContextChanged += ToolManagerStateUpdated;
-            SceneViewMotion.viewToolActiveChanged += OnViewToolActiveChanged;
+            ToolManager.activeToolChanged += UpdateState;
+            ToolManager.activeContextChanged += UpdateState;
+            SceneViewMotion.viewToolActiveChanged += UpdateState;
 
             if (m_TargetTool == Tool.View)
             {
@@ -87,19 +90,14 @@ namespace UnityEditor.Toolbars
             }
         }
 
-        protected virtual void OnDetachFromPanel(DetachFromPanelEvent evt)
+        void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
-            ToolManager.activeContextChanged -= ToolManagerStateUpdated;
-            ToolManager.activeToolChanged -= ToolManagerStateUpdated;
-            SceneViewMotion.viewToolActiveChanged -= OnViewToolActiveChanged;
+            ToolManager.activeContextChanged -= UpdateState;
+            ToolManager.activeToolChanged -= UpdateState;
+            SceneViewMotion.viewToolActiveChanged -= UpdateState;
 
             if (m_TargetTool == Tool.View)
                 Tools.viewToolChanged -= UpdateViewToolContent;
-        }
-
-        void OnViewToolActiveChanged()
-        {
-            UpdateState();
         }
 
         void UpdateViewToolContent()
@@ -125,27 +123,25 @@ namespace UnityEditor.Toolbars
             }
         }
 
-        protected virtual void ToolManagerStateUpdated()
+        void UpdateState()
         {
-            UpdateState();
-        }
-
-        protected void UpdateState()
-        {
-            SetEnabled(!(EditorToolUtility.GetEditorToolWithEnum(m_TargetTool) is NoneTool));
             SetValueWithoutNotify(IsActiveTool());
+
+            var missing = EditorToolUtility.GetEditorToolWithEnum(m_TargetTool) is NoneTool;
+            var display = missing ? DisplayStyle.None : DisplayStyle.Flex;
+
+            if (style.display != display)
+            {
+                style.display = display;
+                displayChanged?.Invoke();
+            }
         }
 
-        protected virtual bool IsActiveTool()
+        bool IsActiveTool()
         {
             if (Tools.viewToolActive)
                 return m_TargetTool == Tool.View;
             return Tools.current == m_TargetTool;
-        }
-
-        protected virtual void SetToolActive()
-        {
-            Tools.current = m_TargetTool;
         }
     }
 }

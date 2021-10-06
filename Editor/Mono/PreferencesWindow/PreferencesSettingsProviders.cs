@@ -77,6 +77,9 @@ namespace UnityEditor
                 + "\n* Debug: high-level debugging messages."
                 + "\n* Silly: detailed debugging messages.");
             public static readonly GUIContent packageManagerLogLevelOverridden = EditorGUIUtility.TrTextContent("Package Manager Log Level currently overridden by -enablePackageManagerTraces command-line argument.");
+
+            public static readonly GUIContent performBumpMapCheck = EditorGUIUtility.TrTextContent("Perform Bump Map Check", "Enables Bump Map Checks upon import of Materials. This checks that textures used in a normal map material slot are actually defined as normal maps.");
+
         }
 
         class ExternalProperties
@@ -568,6 +571,7 @@ namespace UnityEditor
 
             DrawPackageManagerOptions();
             DrawDynamicHintsOptions();
+            DrawPerformBumpMapCheck();
         }
 
         enum InteractionMode
@@ -655,6 +659,19 @@ namespace UnityEditor
                 {
                     EditorGUILayout.HelpBox(GeneralProperties.packageManagerLogLevelOverridden.text, MessageType.Info, true);
                 }
+            }
+        }
+
+        void DrawPerformBumpMapCheck()
+        {
+            const string bumpMapChecksKeyName = "PerformBumpMapChecks";
+            var bumpMapChecks = EditorPrefs.GetBool(bumpMapChecksKeyName, true);
+
+            EditorGUI.BeginChangeCheck();
+            bumpMapChecks = EditorGUILayout.Toggle(GeneralProperties.performBumpMapCheck, bumpMapChecks);
+            if (EditorGUI.EndChangeCheck())
+            {
+                EditorPrefs.SetBool(bumpMapChecksKeyName, bumpMapChecks);
             }
         }
 

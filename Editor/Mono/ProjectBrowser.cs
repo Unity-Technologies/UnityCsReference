@@ -1147,6 +1147,8 @@ namespace UnityEditor
                 if (selectedInstanceIDs == null || selectedInstanceIDs.Length == 0)
                     return;
 
+                projectBrowser.EndPing();
+
                 if (projectBrowser.m_ViewMode == ViewMode.TwoColumns)
                 {
                     projectBrowser.SetFolderSelection(selectedInstanceIDs, false);

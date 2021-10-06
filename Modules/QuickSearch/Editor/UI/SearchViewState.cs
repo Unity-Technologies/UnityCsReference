@@ -177,14 +177,13 @@ namespace UnityEditor.Search
             return sf;
         }
 
-        static bool IsObjectMatchingType(SearchItem item, Type filterType)
+        static bool IsObjectMatchingType(in SearchItem item, in Type filterType)
         {
             if (item == SearchItem.none)
                 return true;
-            var obj = item.ToObject(filterType);
-            if (!obj)
+            var objType = item.ToType(filterType);
+            if (objType == null)
                 return false;
-            var objType = obj.GetType();
             return filterType.IsAssignableFrom(objType);
         }
 
@@ -196,15 +195,16 @@ namespace UnityEditor.Search
 
         internal SearchViewState LoadDefaults(SearchFlags additionalFlags = SearchFlags.None)
         {
+            var runningTests = Utils.IsRunningTests();
             if (string.IsNullOrEmpty(title))
                 title = "Unity";
-            if (!forceViewMode)
+            if (!forceViewMode && !runningTests)
                 itemSize = SearchSettings.itemIconSize;
 
             if (context != null)
             {
                 context.options |= additionalFlags;
-                if (Utils.IsRunningTests())
+                if (runningTests)
                     context.options |= SearchFlags.Dockable;
             }
             return this;

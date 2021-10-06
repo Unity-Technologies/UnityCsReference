@@ -430,6 +430,7 @@ namespace UnityEditor
                 editorsElement.Clear();
                 tracker.inspectorMode = mode;
                 m_ResetKeyboardControl = true;
+                SceneView.SetActiveEditorsDirty(true);
             }
         }
 

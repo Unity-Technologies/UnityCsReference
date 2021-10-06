@@ -124,6 +124,9 @@ namespace UnityEditor
         [FreeFunction("GetRenderSettings().SetSceneViewDebugModeExposureNoDirty")]
         public static extern void SetSceneViewDebugModeExposureNoDirty(float exposure);
 
+        [FreeFunction("GetRenderSettings().GetSceneViewDebugModeExposure")]
+        public static extern float GetSceneViewDebugModeExposure();
+
         [FreeFunction("GetQualitySettings().SetShadowDistanceTemporarily")]
         public static extern void SetQualitySettingsShadowDistanceTemporarily(float distance);
 

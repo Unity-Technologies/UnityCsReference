@@ -10,6 +10,7 @@ using UnityEditorInternal;
 using UnityEngine;
 using System.Linq;
 using Object = UnityEngine.Object;
+using UnityEngine.Rendering;
 
 namespace UnityEditor
 {
@@ -286,7 +287,7 @@ namespace UnityEditor
 
         public bool OnSceneGUI(Transform transform)
         {
-            if (!m_Group.enabled)
+            if (!m_Group.enabled || SupportedRenderingFeatures.active.overridesLightProbeSystem)
                 return m_Editing;
 
             if (Event.current.type == EventType.Layout)
@@ -615,87 +616,96 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
-            EditorGUI.BeginChangeCheck();
-
-            m_Editor.PullProbePositions();
-
-            EditorGUILayout.BeginHorizontal();
+            bool srpHasAlternativeToLegacyProbes = UnityEngine.Rendering.SupportedRenderingFeatures.active.overridesLightProbeSystem;
+            if (srpHasAlternativeToLegacyProbes)
             {
-                GUILayout.FlexibleSpace();
-                EditMode.DoInspectorToolbar(Styles.toolbarModes, Styles.toolbarButtons, this);
-                GUILayout.FlexibleSpace();
+                EditorGUILayout.HelpBox(UnityEngine.Rendering.SupportedRenderingFeatures.active.overridesLightProbeSystemWarningMessage, MessageType.Warning, wide: true);
             }
-            EditorGUILayout.EndHorizontal();
 
-            GUILayout.Space(3);
-            m_Editor.drawTetrahedra.value = EditorGUILayout.Toggle(Styles.showWireframe, m_Editor.drawTetrahedra.value);
-            m_Editor.deringProbes = EditorGUILayout.Toggle(Styles.performDeringing, m_Editor.deringProbes);
-
-            EditorGUI.BeginDisabledGroup(EditMode.editMode != EditMode.SceneViewEditMode.LightProbeGroup);
-            EditorGUI.BeginDisabledGroup(m_Editor.SelectedCount == 0);
-
-            EditorGUI.BeginChangeCheck();
-            Vector3 pos = m_Editor.SelectedCount > 0 ? m_Editor.GetSelectedPositions()[0] : Vector3.zero;
-            Vector3 newPosition = EditorGUILayout.Vector3Field(Styles.selectedProbePosition, pos);
-
-            if (EditorGUI.EndChangeCheck())
+            using (new EditorGUI.DisabledScope(srpHasAlternativeToLegacyProbes))
             {
-                Vector3[] selectedPositions = m_Editor.GetSelectedPositions();
-                Vector3 delta = CalculateDeltaAndClamp(newPosition, pos);
-                for (int i = 0; i < selectedPositions.Length; i++)
-                    m_Editor.UpdateSelectedPosition(i, selectedPositions[i] + delta);
-            }
-            EditorGUI.EndDisabledGroup();
+                EditorGUI.BeginChangeCheck();
 
-            GUILayout.Space(3);
+                m_Editor.PullProbePositions();
 
-            GUILayout.BeginHorizontal();
-            GUILayout.BeginVertical();
-
-            if (GUILayout.Button(Styles.addProbe))
-            {
-                var position = Vector3.zero;
-                if (SceneView.lastActiveSceneView)
+                EditorGUILayout.BeginHorizontal();
                 {
-                    var probeGroup = target as LightProbeGroup;
-                    if (probeGroup) position = probeGroup.transform.InverseTransformPoint(position);
+                    GUILayout.FlexibleSpace();
+                    EditMode.DoInspectorToolbar(Styles.toolbarModes, Styles.toolbarButtons, this);
+                    GUILayout.FlexibleSpace();
                 }
-                StartEditProbes();
-                m_Editor.DeselectProbes();
-                m_Editor.AddProbe(position);
-            }
+                EditorGUILayout.EndHorizontal();
 
-            if (GUILayout.Button(Styles.deleteSelected))
-            {
-                StartEditProbes();
-                m_Editor.RemoveSelectedProbes();
-            }
-            GUILayout.EndVertical();
-            GUILayout.BeginVertical();
+                GUILayout.Space(3);
+                m_Editor.drawTetrahedra.value = EditorGUILayout.Toggle(Styles.showWireframe, m_Editor.drawTetrahedra.value);
+                m_Editor.deringProbes = EditorGUILayout.Toggle(Styles.performDeringing, m_Editor.deringProbes);
 
-            if (GUILayout.Button(Styles.selectAll))
-            {
-                StartEditProbes();
-                m_Editor.SelectAllProbes();
-            }
+                EditorGUI.BeginDisabledGroup(EditMode.editMode != EditMode.SceneViewEditMode.LightProbeGroup);
+                EditorGUI.BeginDisabledGroup(m_Editor.SelectedCount == 0);
 
-            if (GUILayout.Button(Styles.duplicateSelected))
-            {
-                StartEditProbes();
-                m_Editor.DuplicateSelectedProbes();
-            }
+                EditorGUI.BeginChangeCheck();
+                Vector3 pos = m_Editor.SelectedCount > 0 ? m_Editor.GetSelectedPositions()[0] : Vector3.zero;
+                Vector3 newPosition = EditorGUILayout.Vector3Field(Styles.selectedProbePosition, pos);
 
-            GUILayout.EndVertical();
-            GUILayout.EndHorizontal();
-            EditorGUI.EndDisabledGroup();
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Vector3[] selectedPositions = m_Editor.GetSelectedPositions();
+                    Vector3 delta = CalculateDeltaAndClamp(newPosition, pos);
+                    for (int i = 0; i < selectedPositions.Length; i++)
+                        m_Editor.UpdateSelectedPosition(i, selectedPositions[i] + delta);
+                }
+                EditorGUI.EndDisabledGroup();
 
-            m_Editor.HandleEditMenuHotKeyCommands();
-            m_Editor.PushProbePositions();
+                GUILayout.Space(3);
 
-            if (EditorGUI.EndChangeCheck())
-            {
-                m_Editor.MarkSourcePositionsDirty();
-                SceneView.RepaintAll();
+                GUILayout.BeginHorizontal();
+                GUILayout.BeginVertical();
+
+                if (GUILayout.Button(Styles.addProbe))
+                {
+                    var position = Vector3.zero;
+                    if (SceneView.lastActiveSceneView)
+                    {
+                        var probeGroup = target as LightProbeGroup;
+                        if (probeGroup) position = probeGroup.transform.InverseTransformPoint(position);
+                    }
+                    StartEditProbes();
+                    m_Editor.DeselectProbes();
+                    m_Editor.AddProbe(position);
+                }
+
+                if (GUILayout.Button(Styles.deleteSelected))
+                {
+                    StartEditProbes();
+                    m_Editor.RemoveSelectedProbes();
+                }
+                GUILayout.EndVertical();
+                GUILayout.BeginVertical();
+
+                if (GUILayout.Button(Styles.selectAll))
+                {
+                    StartEditProbes();
+                    m_Editor.SelectAllProbes();
+                }
+
+                if (GUILayout.Button(Styles.duplicateSelected))
+                {
+                    StartEditProbes();
+                    m_Editor.DuplicateSelectedProbes();
+                }
+
+                GUILayout.EndVertical();
+                GUILayout.EndHorizontal();
+                EditorGUI.EndDisabledGroup();
+
+                m_Editor.HandleEditMenuHotKeyCommands();
+                m_Editor.PushProbePositions();
+
+                if (EditorGUI.EndChangeCheck())
+                {
+                    m_Editor.MarkSourcePositionsDirty();
+                    SceneView.RepaintAll();
+                }
             }
         }
 

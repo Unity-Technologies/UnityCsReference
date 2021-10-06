@@ -75,6 +75,9 @@ namespace UnityEngine.Rendering
         public bool overridesShadowmask { get; set; } = false;
         public string overrideShadowmaskMessage { get; set; } = "";
 
+        public bool overridesLightProbeSystem { get; set; } = false;
+        public string overridesLightProbeSystemWarningMessage { get; set; } = "The rendering pipeline used has an alternative method to handle light probes. Please consult the documentation for the used SRP to setup the alternative.";
+
         public string shadowmaskMessage
         {
             get

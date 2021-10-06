@@ -9,7 +9,7 @@ using UnityEngine.TextCore.Text;
 namespace UnityEditor.TextCore.Text
 {
     [CustomEditor(typeof(TextColorGradient))]
-    public class TextColorGradientEditor : Editor
+    internal class TextColorGradientEditor : Editor
     {
         SerializedProperty m_ColorMode;
         SerializedProperty m_TopLeftColor;

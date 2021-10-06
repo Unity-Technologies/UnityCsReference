@@ -10,7 +10,7 @@ using System.Threading;
 
 namespace UnityEditor.Utils
 {
-    internal class ProcessOutputStreamReader
+    internal class ProcessOutputStreamReader : IDisposable
     {
         private readonly Func<bool> hostProcessExited;
         private readonly StreamReader stream;
@@ -31,14 +31,28 @@ namespace UnityEditor.Utils
             thread.Start();
         }
 
+        public void Dispose()
+        {
+            lock (stream)
+            {
+                stream.Dispose();
+            }
+        }
+
         private void ThreadFunc()
         {
             try
             {
                 while (true)
                 {
-                    if (stream.BaseStream == null) return;
-                    string line = stream.ReadLine();
+                    string line;
+                    lock (stream)
+                    {
+                        if (stream == null || stream.BaseStream == null)
+                            return;
+                        line = stream.ReadLine();
+                    }
+
                     if (line == null)
                         return;
                     lock (lines)

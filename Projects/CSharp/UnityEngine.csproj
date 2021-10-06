@@ -1708,11 +1708,17 @@
     <Compile Include="..\..\Modules\TextCoreFontEngine\Managed\FontEngine.bindings.cs">
       <Link>Modules\TextCoreFontEngine\Managed\FontEngine.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\TextCoreFontEngine\Managed\FontEngineMarshallingCommon.cs">
+      <Link>Modules\TextCoreFontEngine\Managed\FontEngineMarshallingCommon.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreFontEngine\Managed\FontFeatureCommonGPOS.cs">
+      <Link>Modules\TextCoreFontEngine\Managed\FontFeatureCommonGPOS.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreFontEngine\Managed\FontFeatureCommonGSUB.cs">
+      <Link>Modules\TextCoreFontEngine\Managed\FontFeatureCommonGSUB.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\TextCoreFontEngine\Managed\Glyph.cs">
       <Link>Modules\TextCoreFontEngine\Managed\Glyph.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TextCoreFontEngine\Managed\GlyphMarshallingStruct.cs">
-      <Link>Modules\TextCoreFontEngine\Managed\GlyphMarshallingStruct.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TextCoreFontEngine\Managed\OpenTypeCommon.cs">
       <Link>Modules\TextCoreFontEngine\Managed\OpenTypeCommon.cs</Link>

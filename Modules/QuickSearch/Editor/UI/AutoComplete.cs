@@ -374,7 +374,7 @@ namespace UnityEditor.Search
             if (s_ItemLabelWidths[index] > position.width)
             {
                 var width = position.width - s_ItemTooltipWidths[index] - 20f;
-                var numCharacters = Styles.autoCompleteItemLabel.GetNumCharactersThatFitWithinWidth(item.label, width);
+                var numCharacters = Utils.GetNumCharactersThatFitWithinWidth(Styles.autoCompleteItemLabel, item.label, width);
                 trimmedLabel = Utils.TrimText(HightlightLabel(item.label), numCharacters);
             }
             else

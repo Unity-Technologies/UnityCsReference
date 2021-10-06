@@ -275,6 +275,7 @@ namespace UnityEngine.TextCore.Text
 
             itemStack[0] = item;
             index = 1;
+            m_Count = 1;
         }
 
         /// <summary>
@@ -297,9 +298,11 @@ namespace UnityEngine.TextCore.Text
         public T Remove()
         {
             index -= 1;
+            m_Count -= 1;
 
             if (index <= 0)
             {
+                m_Count = 0;
                 index = 1;
                 return itemStack[0];
             }

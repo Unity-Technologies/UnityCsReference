@@ -14,7 +14,10 @@ namespace UnityEditor.TextCore.Text
     [CustomPropertyDrawer(typeof(Glyph))]
     internal class GlyphPropertyDrawer : PropertyDrawer
     {
-        private string k_ColorProperty = "_Color";
+        private static string k_ColorProperty = "_Color";
+        private static readonly GUIContent k_ScaleLabel = new GUIContent("Scale:", "The scale of this glyph.");
+        private static readonly GUIContent k_AtlasIndexLabel = new GUIContent("Atlas Index:", "The index of the atlas texture that contains this glyph.");
+        private static readonly GUIContent k_ClassTypeLabel = new GUIContent("Class Type:", "The class definition type of this glyph.");
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
@@ -23,6 +26,7 @@ namespace UnityEditor.TextCore.Text
             SerializedProperty prop_GlyphRect = property.FindPropertyRelative("m_GlyphRect");
             SerializedProperty prop_Scale = property.FindPropertyRelative("m_Scale");
             SerializedProperty prop_AtlasIndex = property.FindPropertyRelative("m_AtlasIndex");
+            SerializedProperty prop_ClassDefinitionType = property.FindPropertyRelative("m_ClassDefinitionType");
 
             GUIStyle style = new GUIStyle(EditorStyles.label);
             style.richText = true;
@@ -31,8 +35,6 @@ namespace UnityEditor.TextCore.Text
 
             float labelWidth = GUI.skin.label.CalcSize(new GUIContent("ID: " + prop_GlyphIndex.intValue)).x;
             EditorGUI.LabelField(new Rect(position.x + (64 - labelWidth) / 2, position.y + 85, 64f, 18f), new GUIContent("ID: <color=#FFFF80>" + prop_GlyphIndex.intValue + "</color>"), style);
-            //EditorGUIUtility.labelWidth = 22f;
-            //EditorGUI.DelayedIntField(new Rect(position.x + (64 - labelWidth) / 2, position.y + 89, 58f, 18f), prop_GlyphIndex, new GUIContent("ID:"));
 
             // We get Rect since a valid position may not be provided by the caller.
             EditorGUI.PropertyField(new Rect(rect.x, rect.y, position.width, 49), prop_GlyphRect);
@@ -41,10 +43,17 @@ namespace UnityEditor.TextCore.Text
             EditorGUI.PropertyField(rect, prop_GlyphMetrics);
 
             EditorGUIUtility.labelWidth = 40f;
-            EditorGUI.PropertyField(new Rect(rect.x, rect.y + 65, 75, 18), prop_Scale, new GUIContent("Scale:")); // new GUIContent("Scale: <color=#FFFF80>" + prop_Scale.floatValue + "</color>"), style);
+            EditorGUI.PropertyField(new Rect(rect.x, rect.y + 65, 75, 18), prop_Scale, k_ScaleLabel);
 
-            EditorGUIUtility.labelWidth = 74f;
-            EditorGUI.PropertyField(new Rect(rect.x + 85, rect.y + 65, 95, 18), prop_AtlasIndex, new GUIContent("Atlas Index:")); //  new GUIContent("Atlas Index: <color=#FFFF80>" + prop_AtlasIndex.intValue + "</color>"), style);
+            EditorGUIUtility.labelWidth = 70f;
+            EditorGUI.PropertyField(new Rect(rect.x + 85, rect.y + 65, 95, 18), prop_AtlasIndex, k_AtlasIndexLabel);
+
+            if (prop_ClassDefinitionType != null)
+            {
+                EditorGUIUtility.labelWidth = 70f;
+                float minWidth = Mathf.Max(90, rect.width - 270);
+                EditorGUI.PropertyField(new Rect(rect.x + 190, rect.y + 65, minWidth, 18), prop_ClassDefinitionType, k_ClassTypeLabel);
+            }
 
             DrawGlyph(position, property);
         }

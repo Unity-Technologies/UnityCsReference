@@ -346,9 +346,16 @@ namespace UnityEditor.IMGUI.Controls
             DoItemGUI(rowRect, row, item, selected, focused, false);
         }
 
+        // Override this method for custom rendering of background behind selection and drop effect rendering
         protected virtual void DrawItemBackground(Rect rect, int row, TreeViewItem item, bool selected, bool focused)
         {
-            // override for custom rendering of background behind selection and drop effect rendering
+            if (item == m_TreeView.hoveredItem)
+            {
+                using (new GUI.BackgroundColorScope(GameObjectTreeViewGUI.GameObjectStyles.hoveredBackgroundColor))
+                {
+                    GUI.Label(rect, GUIContent.none, GameObjectTreeViewGUI.GameObjectStyles.hoveredItemBackgroundStyle);
+                }
+            }
         }
 
         public virtual Rect GetRenameRect(Rect rowRect, int row, TreeViewItem item)
@@ -509,7 +516,10 @@ namespace UnityEditor.IMGUI.Controls
 
             Texture icon = GetEffectiveIcon(item, selected, focused);
             if (icon != null)
-                GUI.DrawTexture(iconRect, icon, ScaleMode.ScaleToFit);
+            {
+                var iconColor = GUI.color.AlphaMultiplied(GUI.enabled ? 1f : 0.5f);
+                GUI.DrawTexture(iconRect, icon, ScaleMode.ScaleToFit, true, 0, iconColor, 0, 0);
+            }
 
             if (iconOverlayGUI != null)
             {

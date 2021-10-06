@@ -761,11 +761,11 @@ namespace UnityEngine.UIElements
             switch (id)
             {
                 case StylePropertyId.AlignContent:
-                    return (StyleEnum<Align>)(Align) value;
+                    return (StyleEnum<Align>)(Align)value;
                 case StylePropertyId.AlignItems:
-                    return (StyleEnum<Align>)(Align) value;
+                    return (StyleEnum<Align>)(Align)value;
                 case StylePropertyId.AlignSelf:
-                    return (StyleEnum<Align>)(Align) value;
+                    return (StyleEnum<Align>)(Align)value;
                 case StylePropertyId.BackgroundColor:
                     return (StyleColor)(Color)value;
                 case StylePropertyId.BackgroundImage:
@@ -801,23 +801,23 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.Cursor:
                     return (StyleCursor)(Cursor)value;
                 case StylePropertyId.Display:
-                    return (StyleEnum<DisplayStyle>)(DisplayStyle) value;
+                    return (StyleEnum<DisplayStyle>)(DisplayStyle)value;
                 case StylePropertyId.FlexBasis:
                     return (StyleLength)(Length)value;
                 case StylePropertyId.FlexDirection:
-                    return (StyleEnum<FlexDirection>)(FlexDirection) value;
+                    return (StyleEnum<FlexDirection>)(FlexDirection)value;
                 case StylePropertyId.FlexGrow:
                     return (StyleFloat)(float)value;
                 case StylePropertyId.FlexShrink:
                     return (StyleFloat)(float)value;
                 case StylePropertyId.FlexWrap:
-                    return (StyleEnum<Wrap>)(Wrap) value;
+                    return (StyleEnum<Wrap>)(Wrap)value;
                 case StylePropertyId.FontSize:
                     return (StyleLength)(Length)value;
                 case StylePropertyId.Height:
                     return (StyleLength)(Length)value;
                 case StylePropertyId.JustifyContent:
-                    return (StyleEnum<Justify>)(Justify) value;
+                    return (StyleEnum<Justify>)(Justify)value;
                 case StylePropertyId.Left:
                     return (StyleLength)(Length)value;
                 case StylePropertyId.LetterSpacing:
@@ -841,7 +841,7 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.Opacity:
                     return (StyleFloat)(float)value;
                 case StylePropertyId.Overflow:
-                    return (StyleEnum<Overflow>)(Overflow)(OverflowInternal) value;
+                    return (StyleEnum<Overflow>)(Overflow)(OverflowInternal)value;
                 case StylePropertyId.PaddingBottom:
                     return (StyleLength)(Length)value;
                 case StylePropertyId.PaddingLeft:
@@ -851,7 +851,7 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.PaddingTop:
                     return (StyleLength)(Length)value;
                 case StylePropertyId.Position:
-                    return (StyleEnum<Position>)(Position) value;
+                    return (StyleEnum<Position>)(Position)value;
                 case StylePropertyId.Right:
                     return (StyleLength)(Length)value;
                 case StylePropertyId.Rotate:
@@ -859,7 +859,7 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.Scale:
                     return (StyleScale)(Scale)value;
                 case StylePropertyId.TextOverflow:
-                    return (StyleEnum<TextOverflow>)(TextOverflow) value;
+                    return (StyleEnum<TextOverflow>)(TextOverflow)value;
                 case StylePropertyId.TextShadow:
                     return (StyleTextShadow)(TextShadow)value;
                 case StylePropertyId.Top:
@@ -867,27 +867,27 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.TransformOrigin:
                     return (StyleTransformOrigin)(TransformOrigin)value;
                 case StylePropertyId.TransitionDelay:
-                    return (StyleList<TimeValue>)(List<TimeValue>) value;
+                    return (StyleList<TimeValue>)(List<TimeValue>)value;
                 case StylePropertyId.TransitionDuration:
-                    return (StyleList<TimeValue>)(List<TimeValue>) value;
+                    return (StyleList<TimeValue>)(List<TimeValue>)value;
                 case StylePropertyId.TransitionProperty:
-                    return (StyleList<StylePropertyName>)(List<StylePropertyName>) value;
+                    return (StyleList<StylePropertyName>)(List<StylePropertyName>)value;
                 case StylePropertyId.TransitionTimingFunction:
-                    return (StyleList<EasingFunction>)(List<EasingFunction>) value;
+                    return (StyleList<EasingFunction>)(List<EasingFunction>)value;
                 case StylePropertyId.Translate:
                     return (StyleTranslate)(Translate)value;
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     return (StyleColor)(Color)value;
                 case StylePropertyId.UnityBackgroundScaleMode:
-                    return (StyleEnum<ScaleMode>)(ScaleMode) value;
+                    return (StyleEnum<ScaleMode>)(ScaleMode)value;
                 case StylePropertyId.UnityFont:
                     return (StyleFont)(Font)value;
                 case StylePropertyId.UnityFontDefinition:
                     return (StyleFontDefinition)(FontDefinition)value;
                 case StylePropertyId.UnityFontStyleAndWeight:
-                    return (StyleEnum<FontStyle>)(FontStyle) value;
+                    return (StyleEnum<FontStyle>)(FontStyle)value;
                 case StylePropertyId.UnityOverflowClipBox:
-                    return (StyleEnum<OverflowClipBox>)(OverflowClipBox) value;
+                    return (StyleEnum<OverflowClipBox>)(OverflowClipBox)value;
                 case StylePropertyId.UnityParagraphSpacing:
                     return (StyleLength)(Length)value;
                 case StylePropertyId.UnitySliceBottom:
@@ -899,17 +899,17 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.UnitySliceTop:
                     return (StyleInt)(int)value;
                 case StylePropertyId.UnityTextAlign:
-                    return (StyleEnum<TextAnchor>)(TextAnchor) value;
+                    return (StyleEnum<TextAnchor>)(TextAnchor)value;
                 case StylePropertyId.UnityTextOutlineColor:
                     return (StyleColor)(Color)value;
                 case StylePropertyId.UnityTextOutlineWidth:
                     return (StyleFloat)(float)value;
                 case StylePropertyId.UnityTextOverflowPosition:
-                    return (StyleEnum<TextOverflowPosition>)(TextOverflowPosition) value;
+                    return (StyleEnum<TextOverflowPosition>)(TextOverflowPosition)value;
                 case StylePropertyId.Visibility:
-                    return (StyleEnum<Visibility>)(Visibility) value;
+                    return (StyleEnum<Visibility>)(Visibility)value;
                 case StylePropertyId.WhiteSpace:
-                    return (StyleEnum<WhiteSpace>)(WhiteSpace) value;
+                    return (StyleEnum<WhiteSpace>)(WhiteSpace)value;
                 case StylePropertyId.Width:
                     return (StyleLength)(Length)value;
                 case StylePropertyId.WordSpacing:
@@ -1093,23 +1093,23 @@ namespace UnityEngine.UIElements
             switch (id)
             {
                 case StylePropertyId.All:
-                    return new string[] {};
+                    return new string[]{};
                 case StylePropertyId.BorderColor:
-                    return new string[] {"border-top-color", "border-right-color", "border-bottom-color", "border-left-color"};
+                    return new string[]{"border-top-color", "border-right-color", "border-bottom-color", "border-left-color"};
                 case StylePropertyId.BorderRadius:
-                    return new string[] {"border-top-left-radius", "border-top-right-radius", "border-bottom-right-radius", "border-bottom-left-radius"};
+                    return new string[]{"border-top-left-radius", "border-top-right-radius", "border-bottom-right-radius", "border-bottom-left-radius"};
                 case StylePropertyId.BorderWidth:
-                    return new string[] {"border-top-width", "border-right-width", "border-bottom-width", "border-left-width"};
+                    return new string[]{"border-top-width", "border-right-width", "border-bottom-width", "border-left-width"};
                 case StylePropertyId.Flex:
-                    return new string[] {"flex-grow", "flex-shrink", "flex-basis"};
+                    return new string[]{"flex-grow", "flex-shrink", "flex-basis"};
                 case StylePropertyId.Margin:
-                    return new string[] {"margin-top", "margin-right", "margin-bottom", "margin-left"};
+                    return new string[]{"margin-top", "margin-right", "margin-bottom", "margin-left"};
                 case StylePropertyId.Padding:
-                    return new string[] {"padding-top", "padding-right", "padding-bottom", "padding-left"};
+                    return new string[]{"padding-top", "padding-right", "padding-bottom", "padding-left"};
                 case StylePropertyId.Transition:
-                    return new string[] {"transition-delay", "transition-duration", "transition-property", "transition-timing-function"};
+                    return new string[]{"transition-delay", "transition-duration", "transition-property", "transition-timing-function"};
                 case StylePropertyId.UnityTextOutline:
-                    return new string[] {"-unity-text-outline-color", "-unity-text-outline-width"};
+                    return new string[]{"-unity-text-outline-color", "-unity-text-outline-width"};
                 default:
                 {
                     Debug.LogAssertion($"Cannot get longhand property names for property id {id}");
@@ -1184,7 +1184,7 @@ namespace UnityEngine.UIElements
 
         public static StylePropertyId[] GetInheritedProperties()
         {
-            return new[] {StylePropertyId.Color, StylePropertyId.FontSize, StylePropertyId.LetterSpacing, StylePropertyId.TextShadow, StylePropertyId.UnityFont, StylePropertyId.UnityFontDefinition, StylePropertyId.UnityFontStyleAndWeight, StylePropertyId.UnityParagraphSpacing, StylePropertyId.UnityTextAlign, StylePropertyId.UnityTextOutlineColor, StylePropertyId.UnityTextOutlineWidth, StylePropertyId.Visibility, StylePropertyId.WhiteSpace, StylePropertyId.WordSpacing};
+            return new[]{StylePropertyId.Color, StylePropertyId.FontSize, StylePropertyId.LetterSpacing, StylePropertyId.TextShadow, StylePropertyId.UnityFont, StylePropertyId.UnityFontDefinition, StylePropertyId.UnityFontStyleAndWeight, StylePropertyId.UnityParagraphSpacing, StylePropertyId.UnityTextAlign, StylePropertyId.UnityTextOutlineColor, StylePropertyId.UnityTextOutlineWidth, StylePropertyId.Visibility, StylePropertyId.WhiteSpace, StylePropertyId.WordSpacing};
         }
 
         public static bool IsDiscreteTypeProperty(StylePropertyId id)

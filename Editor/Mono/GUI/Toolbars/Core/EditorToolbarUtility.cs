@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Toolbars
@@ -18,32 +19,42 @@ namespace UnityEditor.Toolbars
         internal const string rightStripElementClassName = stripElementClassName + "--right";
         internal const string aloneStripElementClassName = stripElementClassName + "--alone";
 
+        static bool IsRendered(VisualElement element) => element.style.display != DisplayStyle.None && element.visible;
+
         public static void SetupChildrenAsButtonStrip(VisualElement root)
         {
             root.AddToClassList(buttonStripClassName);
+            foreach(var child in root.Children())
+                child.AddToClassList(stripElementClassName);
+            ApplyButtonStripStylesToChildren(root);
+        }
 
+        internal static void ApplyButtonStripStylesToChildren(VisualElement root)
+        {
             int count = root.hierarchy.childCount;
 
-            if (count == 1)
+            int begin = -1, end = -1;
+
+            for (int i = count - 1; end < 0 && i > -1; i--)
             {
-                var element = root.hierarchy.ElementAt(0);
-                bool visible = element.style.display != DisplayStyle.None && element.visible;
-                element.EnableInClassList(aloneStripElementClassName, visible);
+                if (IsRendered(root.ElementAt(i)))
+                    end = i;
             }
-            else
+
+            for (var i = 0; i < count; ++i)
             {
-                for (var i = 0; i < count; ++i)
-                {
-                    var element = root.hierarchy.ElementAt(i);
+                var element = root.hierarchy.ElementAt(i);
 
-                    //Skip if element not visible
-                    bool visible = element.style.display != DisplayStyle.None && element.visible;
+                if (!IsRendered(element))
+                    continue;
 
-                    element.AddToClassList(stripElementClassName);
-                    element.EnableInClassList(leftStripElementClassName, visible && i == 0);
-                    element.EnableInClassList(rightStripElementClassName, visible && i == count - 1);
-                    element.EnableInClassList(middleStripElementClassName, visible && i > 0 && i < count - 1);
-                }
+                if (begin < 0)
+                    begin = i;
+
+                element.EnableInClassList(aloneStripElementClassName, i == begin && i == end);
+                element.EnableInClassList(leftStripElementClassName, i == begin && i != end);
+                element.EnableInClassList(rightStripElementClassName, i == end && i != begin);
+                element.EnableInClassList(middleStripElementClassName, i != begin && i != end);
             }
         }
 

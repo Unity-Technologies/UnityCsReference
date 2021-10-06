@@ -112,7 +112,7 @@ namespace UnityEngine.UIElements
         public static ComputedStyle Create(ref ComputedStyle parentStyle)
         {
             ref var initialStyle = ref InitialStyle.Get();
-            var cs = new ComputedStyle {dpiScaling = 1f};
+            var cs = new ComputedStyle{dpiScaling = 1f};
             cs.inheritedData = parentStyle.inheritedData.Acquire();
             cs.layoutData = initialStyle.layoutData.Acquire();
             cs.rareData = initialStyle.rareData.Acquire();
@@ -124,7 +124,7 @@ namespace UnityEngine.UIElements
 
         public static ComputedStyle CreateInitial()
         {
-            var cs = new ComputedStyle {dpiScaling = 1f};
+            var cs = new ComputedStyle{dpiScaling = 1f};
             cs.inheritedData = StyleDataRef<InheritedData>.Create();
             cs.layoutData = StyleDataRef<LayoutData>.Create();
             cs.rareData = StyleDataRef<RareData>.Create();
@@ -1156,65 +1156,117 @@ namespace UnityEngine.UIElements
             switch (id)
             {
                 case StylePropertyId.AlignContent:
-                    layoutData.Write().alignContent = (Align)newValue;
-                    ve.yogaNode.AlignContent = (YogaAlign)newValue;
-                    ve.IncrementVersion(VersionChangeType.Layout);
+                    if (layoutData.Read().alignContent != (Align)newValue)
+                    {
+                        layoutData.Write().alignContent = (Align)newValue;
+                        ve.yogaNode.AlignContent = (YogaAlign)newValue;
+                        ve.IncrementVersion(VersionChangeType.Layout);
+                    }
+
                     break;
                 case StylePropertyId.AlignItems:
-                    layoutData.Write().alignItems = (Align)newValue;
-                    ve.yogaNode.AlignItems = (YogaAlign)newValue;
-                    ve.IncrementVersion(VersionChangeType.Layout);
+                    if (layoutData.Read().alignItems != (Align)newValue)
+                    {
+                        layoutData.Write().alignItems = (Align)newValue;
+                        ve.yogaNode.AlignItems = (YogaAlign)newValue;
+                        ve.IncrementVersion(VersionChangeType.Layout);
+                    }
+
                     break;
                 case StylePropertyId.AlignSelf:
-                    layoutData.Write().alignSelf = (Align)newValue;
-                    ve.yogaNode.AlignSelf = (YogaAlign)newValue;
-                    ve.IncrementVersion(VersionChangeType.Layout);
+                    if (layoutData.Read().alignSelf != (Align)newValue)
+                    {
+                        layoutData.Write().alignSelf = (Align)newValue;
+                        ve.yogaNode.AlignSelf = (YogaAlign)newValue;
+                        ve.IncrementVersion(VersionChangeType.Layout);
+                    }
+
                     break;
                 case StylePropertyId.Display:
-                    layoutData.Write().display = (DisplayStyle)newValue;
-                    ve.yogaNode.Display = (YogaDisplay)newValue;
-                    ve.IncrementVersion(VersionChangeType.Layout);
+                    if (layoutData.Read().display != (DisplayStyle)newValue)
+                    {
+                        layoutData.Write().display = (DisplayStyle)newValue;
+                        ve.yogaNode.Display = (YogaDisplay)newValue;
+                        ve.IncrementVersion(VersionChangeType.Layout);
+                    }
+
                     break;
                 case StylePropertyId.FlexDirection:
-                    layoutData.Write().flexDirection = (FlexDirection)newValue;
-                    ve.yogaNode.FlexDirection = (YogaFlexDirection)newValue;
-                    ve.IncrementVersion(VersionChangeType.Layout);
+                    if (layoutData.Read().flexDirection != (FlexDirection)newValue)
+                    {
+                        layoutData.Write().flexDirection = (FlexDirection)newValue;
+                        ve.yogaNode.FlexDirection = (YogaFlexDirection)newValue;
+                        ve.IncrementVersion(VersionChangeType.Layout);
+                    }
+
                     break;
                 case StylePropertyId.FlexWrap:
-                    layoutData.Write().flexWrap = (Wrap)newValue;
-                    ve.yogaNode.Wrap = (YogaWrap)newValue;
-                    ve.IncrementVersion(VersionChangeType.Layout);
+                    if (layoutData.Read().flexWrap != (Wrap)newValue)
+                    {
+                        layoutData.Write().flexWrap = (Wrap)newValue;
+                        ve.yogaNode.Wrap = (YogaWrap)newValue;
+                        ve.IncrementVersion(VersionChangeType.Layout);
+                    }
+
                     break;
                 case StylePropertyId.JustifyContent:
-                    layoutData.Write().justifyContent = (Justify)newValue;
-                    ve.yogaNode.JustifyContent = (YogaJustify)newValue;
-                    ve.IncrementVersion(VersionChangeType.Layout);
+                    if (layoutData.Read().justifyContent != (Justify)newValue)
+                    {
+                        layoutData.Write().justifyContent = (Justify)newValue;
+                        ve.yogaNode.JustifyContent = (YogaJustify)newValue;
+                        ve.IncrementVersion(VersionChangeType.Layout);
+                    }
+
                     break;
                 case StylePropertyId.Overflow:
-                    visualData.Write().overflow = (OverflowInternal)newValue;
-                    ve.yogaNode.Overflow = (YogaOverflow)newValue;
-                    ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Overflow);
+                    if (visualData.Read().overflow != (OverflowInternal)newValue)
+                    {
+                        visualData.Write().overflow = (OverflowInternal)newValue;
+                        ve.yogaNode.Overflow = (YogaOverflow)newValue;
+                        ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Overflow);
+                    }
+
                     break;
                 case StylePropertyId.Position:
-                    layoutData.Write().position = (Position)newValue;
-                    ve.yogaNode.PositionType = (YogaPositionType)newValue;
-                    ve.IncrementVersion(VersionChangeType.Layout);
+                    if (layoutData.Read().position != (Position)newValue)
+                    {
+                        layoutData.Write().position = (Position)newValue;
+                        ve.yogaNode.PositionType = (YogaPositionType)newValue;
+                        ve.IncrementVersion(VersionChangeType.Layout);
+                    }
+
                     break;
                 case StylePropertyId.TextOverflow:
-                    rareData.Write().textOverflow = (TextOverflow)newValue;
-                    ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
+                    if (rareData.Read().textOverflow != (TextOverflow)newValue)
+                    {
+                        rareData.Write().textOverflow = (TextOverflow)newValue;
+                        ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
+                    }
+
                     break;
                 case StylePropertyId.UnityBackgroundScaleMode:
-                    rareData.Write().unityBackgroundScaleMode = (ScaleMode)newValue;
-                    ve.IncrementVersion(VersionChangeType.Repaint);
+                    if (rareData.Read().unityBackgroundScaleMode != (ScaleMode)newValue)
+                    {
+                        rareData.Write().unityBackgroundScaleMode = (ScaleMode)newValue;
+                        ve.IncrementVersion(VersionChangeType.Repaint);
+                    }
+
                     break;
                 case StylePropertyId.UnityFontStyleAndWeight:
-                    inheritedData.Write().unityFontStyleAndWeight = (FontStyle)newValue;
-                    ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint | VersionChangeType.StyleSheet);
+                    if (inheritedData.Read().unityFontStyleAndWeight != (FontStyle)newValue)
+                    {
+                        inheritedData.Write().unityFontStyleAndWeight = (FontStyle)newValue;
+                        ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint | VersionChangeType.StyleSheet);
+                    }
+
                     break;
                 case StylePropertyId.UnityOverflowClipBox:
-                    rareData.Write().unityOverflowClipBox = (OverflowClipBox)newValue;
-                    ve.IncrementVersion(VersionChangeType.Repaint);
+                    if (rareData.Read().unityOverflowClipBox != (OverflowClipBox)newValue)
+                    {
+                        rareData.Write().unityOverflowClipBox = (OverflowClipBox)newValue;
+                        ve.IncrementVersion(VersionChangeType.Repaint);
+                    }
+
                     break;
                 case StylePropertyId.UnitySliceBottom:
                     rareData.Write().unitySliceBottom = newValue;
@@ -1233,20 +1285,36 @@ namespace UnityEngine.UIElements
                     ve.IncrementVersion(VersionChangeType.Repaint);
                     break;
                 case StylePropertyId.UnityTextAlign:
-                    inheritedData.Write().unityTextAlign = (TextAnchor)newValue;
-                    ve.IncrementVersion(VersionChangeType.Repaint | VersionChangeType.StyleSheet);
+                    if (inheritedData.Read().unityTextAlign != (TextAnchor)newValue)
+                    {
+                        inheritedData.Write().unityTextAlign = (TextAnchor)newValue;
+                        ve.IncrementVersion(VersionChangeType.Repaint | VersionChangeType.StyleSheet);
+                    }
+
                     break;
                 case StylePropertyId.UnityTextOverflowPosition:
-                    rareData.Write().unityTextOverflowPosition = (TextOverflowPosition)newValue;
-                    ve.IncrementVersion(VersionChangeType.Repaint);
+                    if (rareData.Read().unityTextOverflowPosition != (TextOverflowPosition)newValue)
+                    {
+                        rareData.Write().unityTextOverflowPosition = (TextOverflowPosition)newValue;
+                        ve.IncrementVersion(VersionChangeType.Repaint);
+                    }
+
                     break;
                 case StylePropertyId.Visibility:
-                    inheritedData.Write().visibility = (Visibility)newValue;
-                    ve.IncrementVersion(VersionChangeType.Repaint | VersionChangeType.StyleSheet);
+                    if (inheritedData.Read().visibility != (Visibility)newValue)
+                    {
+                        inheritedData.Write().visibility = (Visibility)newValue;
+                        ve.IncrementVersion(VersionChangeType.Repaint | VersionChangeType.StyleSheet);
+                    }
+
                     break;
                 case StylePropertyId.WhiteSpace:
-                    inheritedData.Write().whiteSpace = (WhiteSpace)newValue;
-                    ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.StyleSheet);
+                    if (inheritedData.Read().whiteSpace != (WhiteSpace)newValue)
+                    {
+                        inheritedData.Write().whiteSpace = (WhiteSpace)newValue;
+                        ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.StyleSheet);
+                    }
+
                     break;
                 default:
                     throw new ArgumentException("Invalid animation property id. Can't apply value of type 'int' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
@@ -1299,8 +1367,12 @@ namespace UnityEngine.UIElements
             switch (id)
             {
                 case StylePropertyId.BackgroundImage:
-                    visualData.Write().backgroundImage = newValue;
-                    ve.IncrementVersion(VersionChangeType.Repaint);
+                    if (visualData.Read().backgroundImage != newValue)
+                    {
+                        visualData.Write().backgroundImage = newValue;
+                        ve.IncrementVersion(VersionChangeType.Repaint);
+                    }
+
                     break;
                 default:
                     throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Background' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
@@ -1312,8 +1384,12 @@ namespace UnityEngine.UIElements
             switch (id)
             {
                 case StylePropertyId.UnityFont:
-                    inheritedData.Write().unityFont = newValue;
-                    ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint | VersionChangeType.StyleSheet);
+                    if (inheritedData.Read().unityFont != newValue)
+                    {
+                        inheritedData.Write().unityFont = newValue;
+                        ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint | VersionChangeType.StyleSheet);
+                    }
+
                     break;
                 default:
                     throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Font' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
@@ -1325,8 +1401,12 @@ namespace UnityEngine.UIElements
             switch (id)
             {
                 case StylePropertyId.UnityFontDefinition:
-                    inheritedData.Write().unityFontDefinition = newValue;
-                    ve.IncrementVersion(VersionChangeType.Repaint | VersionChangeType.Layout | VersionChangeType.StyleSheet);
+                    if (inheritedData.Read().unityFontDefinition != newValue)
+                    {
+                        inheritedData.Write().unityFontDefinition = newValue;
+                        ve.IncrementVersion(VersionChangeType.Repaint | VersionChangeType.Layout | VersionChangeType.StyleSheet);
+                    }
+
                     break;
                 default:
                     throw new ArgumentException("Invalid animation property id. Can't apply value of type 'FontDefinition' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
@@ -1338,7 +1418,11 @@ namespace UnityEngine.UIElements
             switch (id)
             {
                 case StylePropertyId.Cursor:
-                    rareData.Write().cursor = newValue;
+                    if (rareData.Read().cursor != newValue)
+                    {
+                        rareData.Write().cursor = newValue;
+                    }
+
                     break;
                 default:
                     throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Cursor' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));

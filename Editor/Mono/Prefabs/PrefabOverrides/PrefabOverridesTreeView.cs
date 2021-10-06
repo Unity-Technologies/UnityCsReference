@@ -110,6 +110,7 @@ namespace UnityEditor
             m_SelectedGameObject = selectedGameObject;
             m_Window = window;
             rowHeight = 18f;
+            enableItemHovering = true;
         }
 
         public void SetApplyTarget(GameObject prefabInstanceRoot, GameObject prefabAssetRoot, string prefabAssetPath)
@@ -408,11 +409,15 @@ namespace UnityEditor
         {
             baseIndent = 4f;
 
-            base.RowGUI(args);
-
             var item = args.item as PrefabOverridesTreeViewItem;
             if (item == null)
                 return;
+
+            // Grey out items that does not have overrides
+            using (new EditorGUI.DisabledScope(item.singleModification == null))
+            {
+                base.RowGUI(args);
+            }
 
             // Draw overlay icon.
             if (Event.current.type == EventType.Repaint)

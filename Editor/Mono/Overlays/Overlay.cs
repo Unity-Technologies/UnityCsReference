@@ -4,6 +4,7 @@
 
 using System;
 using System.ComponentModel;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -92,6 +93,9 @@ namespace UnityEditor.Overlays
                 return m_RootVisualElement;
             }
         }
+
+        // used by tests
+        internal VisualElement contentRoot => m_ContentRoot.Children().FirstOrDefault();
 
         void UpdateDropZones()
         {

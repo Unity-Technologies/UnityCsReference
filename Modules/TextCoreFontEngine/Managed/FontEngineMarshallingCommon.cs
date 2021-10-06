@@ -42,6 +42,11 @@ namespace UnityEngine.TextCore.LowLevel
         public int atlasIndex;
 
         /// <summary>
+        /// Glyph class definition type.
+        /// </summary>
+        public GlyphClassDefinitionType classDefinitionType;
+
+        /// <summary>
         /// Constructor for a new glyph
         /// </summary>
         /// <param name="glyph">Glyph whose values are copied to the new glyph.</param>
@@ -52,6 +57,7 @@ namespace UnityEngine.TextCore.LowLevel
             this.glyphRect = glyph.glyphRect;
             this.scale = glyph.scale;
             this.atlasIndex = glyph.atlasIndex;
+            this.classDefinitionType = glyph.classDefinitionType;
         }
 
         /// <summary>
@@ -69,6 +75,26 @@ namespace UnityEngine.TextCore.LowLevel
             this.glyphRect = glyphRect;
             this.scale = scale;
             this.atlasIndex = atlasIndex;
+            this.classDefinitionType = GlyphClassDefinitionType.Undefined;
+        }
+
+        /// <summary>
+        /// Constructor for new glyph
+        /// </summary>
+        /// <param name="index">The index of the glyph in the font file.</param>
+        /// <param name="metrics">The metrics of the glyph.</param>
+        /// <param name="glyphRect">A rectangle defining the position of the glyph in the atlas texture.</param>
+        /// <param name="scale">The relative scale of the glyph.</param>
+        /// <param name="atlasIndex">The index of the atlas texture that contains the glyph.</param>
+        /// <param name="classDefinitionType">Class definition type for the glyph.</param>
+        public GlyphMarshallingStruct(uint index, GlyphMetrics metrics, GlyphRect glyphRect, float scale, int atlasIndex, GlyphClassDefinitionType classDefinitionType)
+        {
+            this.index = index;
+            this.metrics = metrics;
+            this.glyphRect = glyphRect;
+            this.scale = scale;
+            this.atlasIndex = atlasIndex;
+            this.classDefinitionType = classDefinitionType;
         }
     }
 }

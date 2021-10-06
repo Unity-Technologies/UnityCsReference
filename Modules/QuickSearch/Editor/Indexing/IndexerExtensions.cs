@@ -11,6 +11,46 @@ namespace UnityEditor.Search
 {
     static class IndexerExtensions
     {
+        [CustomObjectIndexer(typeof(GameObject), version = 1)]
+        internal static void IndexPrefabTypes(CustomObjectIndexerTarget context, ObjectIndexer indexer)
+        {
+            if (!(context.target is GameObject prefab))
+                return;
+
+            if (PrefabUtility.IsAnyPrefabInstanceRoot(prefab))
+                indexer.IndexProperty(context.documentIndex, "prefab", "root", saveKeyword: true, exact:true);
+
+            if (PrefabUtility.IsPartOfPrefabInstance(prefab))
+                indexer.IndexProperty(context.documentIndex, "prefab", "instance", saveKeyword: true, exact: true);
+
+            if (PrefabUtility.IsOutermostPrefabInstanceRoot(prefab))
+                indexer.IndexProperty(context.documentIndex, "prefab", "top", saveKeyword: true, exact: true);
+
+            if (PrefabUtility.IsPartOfNonAssetPrefabInstance(prefab))
+                indexer.IndexProperty(context.documentIndex, "prefab", "nonasset", saveKeyword: true, exact: true);
+
+            if (PrefabUtility.IsPartOfPrefabAsset(prefab))
+                indexer.IndexProperty(context.documentIndex, "prefab", "asset", saveKeyword: true, exact: true);
+
+            if (PrefabUtility.IsPartOfAnyPrefab(prefab))
+                indexer.IndexProperty(context.documentIndex, "prefab", "any", saveKeyword: true, exact: true);
+
+            if (PrefabUtility.IsPartOfModelPrefab(prefab))
+                indexer.IndexProperty(context.documentIndex, "prefab", "model", saveKeyword: true, exact: true);
+
+            if (PrefabUtility.IsPartOfRegularPrefab(prefab))
+                indexer.IndexProperty(context.documentIndex, "prefab", "regular", saveKeyword: true, exact: true);
+
+            if (PrefabUtility.IsPartOfVariantPrefab(prefab))
+                indexer.IndexProperty(context.documentIndex, "prefab", "variant", saveKeyword: true, exact: true);
+
+            if (PrefabUtility.HasPrefabInstanceAnyOverrides(prefab, false))
+                indexer.IndexProperty(context.documentIndex, "prefab", "modified", saveKeyword: true, exact: true);
+
+            if (PrefabUtility.HasPrefabInstanceAnyOverrides(prefab, true))
+                indexer.IndexProperty(context.documentIndex, "prefab", "altered", saveKeyword: true, exact: true);
+        }
+
         [CustomObjectIndexer(typeof(AnimationClip), version = 1)]
         internal static void AnimationClipEventsIndexing(CustomObjectIndexerTarget context, ObjectIndexer indexer)
         {
@@ -170,26 +210,30 @@ namespace UnityEditor.Search
             }
         }
 
-        internal static void IndexColor(string propertyName, Color c, ObjectIndexer indexer, int documentIndex)
+        internal static void IndexColor(string propertyName, in Color c, ObjectIndexer indexer, int documentIndex)
         {
             var colorHex = c.a < 1f ? ColorUtility.ToHtmlStringRGBA(c) : ColorUtility.ToHtmlStringRGB(c);
             indexer.AddProperty(propertyName, "#" + colorHex.ToLowerInvariant(), documentIndex, exact: true, saveKeyword: false);
+            indexer.AddNumber(propertyName + ".r", c.r, indexer.settings.baseScore, documentIndex);
+            indexer.AddNumber(propertyName + ".g", c.g, indexer.settings.baseScore, documentIndex);
+            indexer.AddNumber(propertyName + ".b", c.b, indexer.settings.baseScore, documentIndex);
+            indexer.AddNumber(propertyName + ".a", c.a, indexer.settings.baseScore, documentIndex);
         }
 
-        internal static void IndexVector(string propertyName, Vector2 v, ObjectIndexer indexer, int documentIndex)
+        internal static void IndexVector(string propertyName, in Vector2 v, ObjectIndexer indexer, int documentIndex)
         {
             indexer.AddNumber(propertyName + ".x", v.x, indexer.settings.baseScore, documentIndex);
             indexer.AddNumber(propertyName + ".y", v.y, indexer.settings.baseScore, documentIndex);
         }
 
-        internal static void IndexVector(string propertyName, Vector3 v, ObjectIndexer indexer, int documentIndex)
+        internal static void IndexVector(string propertyName, in Vector3 v, ObjectIndexer indexer, int documentIndex)
         {
             indexer.AddNumber(propertyName + ".x", v.x, indexer.settings.baseScore, documentIndex);
             indexer.AddNumber(propertyName + ".y", v.y, indexer.settings.baseScore, documentIndex);
             indexer.AddNumber(propertyName + ".z", v.z, indexer.settings.baseScore, documentIndex);
         }
 
-        internal static void IndexVector(string propertyName, Vector4 v, ObjectIndexer indexer, int documentIndex)
+        internal static void IndexVector(string propertyName, in Vector4 v, ObjectIndexer indexer, int documentIndex)
         {
             indexer.AddNumber(propertyName + ".x", v.x, indexer.settings.baseScore, documentIndex);
             indexer.AddNumber(propertyName + ".y", v.y, indexer.settings.baseScore, documentIndex);

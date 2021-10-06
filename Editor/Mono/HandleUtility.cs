@@ -11,6 +11,7 @@ using UnityEngine.Internal;
 using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 using UnityEditor.SceneManagement;
+using System.Linq;
 
 namespace UnityEditor
 {
@@ -1538,6 +1539,85 @@ namespace UnityEditor
                     return true;
             }
 
+            return false;
+        }
+
+        internal static void FilterRendererIDs(Renderer[] renderers, out int[] parentRendererIDs, out int[] childRendererIDs)
+        {
+            if(renderers == null)
+            {
+                Debug.LogWarning("The Renderer array is null. Handles.DrawOutline will not be rendered.");
+                parentRendererIDs = new int[0];
+                childRendererIDs = new int[0];
+                return;
+            }
+
+            var childCount = 0;
+            var parentIndex = 0;
+            var childIndex = 0;
+            parentRendererIDs = new int[renderers.Length];
+
+            foreach (var renderer in renderers)
+            {
+                childCount += renderer.transform.hierarchyCount;
+                parentRendererIDs[parentIndex++] = renderer.GetInstanceID();
+            }
+
+            childRendererIDs = new int[childCount];
+            foreach (var renderer in renderers)
+            {
+                var children = renderer.GetComponentsInChildren<Renderer>();
+                for (int i = 1; i < children.Length; i++)
+                {
+                    var id = children[i].GetInstanceID();
+                    if (!HasMatchingInstanceID(parentRendererIDs, id))
+                        childRendererIDs[childIndex++] = id;
+                }
+            }
+        }
+
+        internal static void FilterRendererIDs(GameObject[] gameObjects, out int[] parentRendererIDs, out int[] childRendererIDs)
+        {
+            if (gameObjects == null)
+            {
+                Debug.LogWarning("The GameObject array is null. Handles.DrawOutline will not be rendered.");
+                parentRendererIDs = new int[0];
+                childRendererIDs = new int[0];
+                return;
+            }
+
+            var childCount = 0;
+            var parentIndex = 0;
+            var childIndex = 0;
+            parentRendererIDs = new int[gameObjects.Length];
+
+            foreach (var go in gameObjects)
+            {
+                childCount += go.transform.hierarchyCount;
+                if (go.TryGetComponent(out Renderer renderer))
+                    parentRendererIDs[parentIndex++] = renderer.GetInstanceID();
+            }
+
+            childRendererIDs = new int[childCount];
+            foreach (var go in gameObjects)
+            {
+                var children = go.GetComponentsInChildren<Renderer>();
+                for (int i = 1; i < children.Length; i++)
+                {
+                    var id = children[i].GetInstanceID();
+                    if (!HasMatchingInstanceID(parentRendererIDs, id))
+                        childRendererIDs[childIndex++] = id;
+                }
+            }
+        }
+
+        static bool HasMatchingInstanceID(int[] ids, int id)
+        {
+            for (int i = 0; i < ids.Length; i++)
+            {
+                if (ids[i] == id)
+                    return true;
+            }
             return false;
         }
 

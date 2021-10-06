@@ -105,19 +105,21 @@ namespace UnityEngine.TextCore.Text
         {
             m_HashCode = TextUtilities.GetHashCodeCaseInSensitive(m_Name);
 
-            m_OpeningTagArray = new int[m_OpeningDefinition.Length];
-            m_OpeningTagUnicodeArray = new uint[m_OpeningDefinition.Length];
+            int s1 = m_OpeningDefinition.Length;
+            m_OpeningTagArray = new int[s1];
+            m_OpeningTagUnicodeArray = new uint[s1];
 
-            for (int i = 0; i < m_OpeningDefinition.Length; i++)
+            for (int i = 0; i < s1; i++)
             {
                 m_OpeningTagArray[i] = m_OpeningDefinition[i];
                 m_OpeningTagUnicodeArray[i] = m_OpeningDefinition[i];
             }
 
-            m_ClosingTagArray = new int[m_ClosingDefinition.Length];
-            m_ClosingTagUnicodeArray = new uint[m_ClosingDefinition.Length];
+            int s2 = m_ClosingDefinition.Length;
+            m_ClosingTagArray = new int[s2];
+            m_ClosingTagUnicodeArray = new uint[s2];
 
-            for (int i = 0; i < m_ClosingDefinition.Length; i++)
+            for (int i = 0; i < s2; i++)
             {
                 m_ClosingTagArray[i] = m_ClosingDefinition[i];
                 m_ClosingTagUnicodeArray[i] = m_ClosingDefinition[i];

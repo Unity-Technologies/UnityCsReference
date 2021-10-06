@@ -191,6 +191,16 @@ namespace UnityEditor
             s_ActiveEditorsDirty = true;
         }
 
+        internal static void SetActiveEditorsDirty(bool forceRepaint = false)
+        {
+            s_ActiveEditorsDirty = true;
+            //Needs to force repaint the scene in case the inspector :
+            //- switched from Normal to Debug mode (or inverse)
+            //- visible inspector changed and inspector modes changed
+            if(forceRepaint)
+                RepaintAll();
+        }
+
         static List<Editor> s_ActiveEditors = new List<Editor>();
 
         static bool s_ActiveEditorsDirty;
@@ -210,23 +220,36 @@ namespace UnityEditor
                 return;
 
             s_ActiveEditorsDirty = false;
-
             s_ActiveEditors.Clear();
 
-            if (s_SharedTracker == null)
-                s_SharedTracker = ActiveEditorTracker.sharedTracker;
-
-            foreach (var editor in s_SharedTracker.activeEditors)
-                s_ActiveEditors.Add(editor);
-
+            bool activeSharedTracker = false;
             foreach (var inspector in InspectorWindow.GetInspectors())
             {
-                if (inspector.isLocked)
+                if(inspector.isLocked)
                 {
                     foreach (var editor in inspector.tracker.activeEditors)
                         s_ActiveEditors.Add(editor);
                 }
+                else if(!activeSharedTracker
+                    &&  inspector.isVisible
+                    &&  inspector.inspectorMode == InspectorMode.Normal)
+                {
+                    activeSharedTracker = true;
+                    foreach (var editor in inspector.tracker.activeEditors)
+                        s_ActiveEditors.Add(editor);
+                }
             }
+
+            //Just a fallback in case no editor is visible or locked
+            if(!activeSharedTracker)
+            {
+                if (s_SharedTracker == null)
+                    s_SharedTracker = ActiveEditorTracker.sharedTracker;
+
+                foreach (var editor in s_SharedTracker.activeEditors)
+                    s_ActiveEditors.Add(editor);
+            }
+
         }
 
         [SerializeField]
@@ -249,6 +272,8 @@ namespace UnityEditor
         const float kSubmeshPingDuration = 1.0f;
 
         internal bool isPingingObject { get; set; } = false;
+        internal float alphaMultiplier { get; set; } = 0;
+        internal int submeshOutlineMaterialId { get; set; } = 0;
 
         Scene m_CustomScene;
         protected internal Scene customScene
@@ -343,6 +368,8 @@ namespace UnityEditor
         internal event Action<bool> modeChanged2D;
 
         private bool m_WasFocused = false;
+
+        private int[] m_CachedParentRenderersFromSelection, m_CachedChildRenderersFromSelection;
 
         [Serializable]
         public class SceneViewState
@@ -1220,6 +1247,8 @@ namespace UnityEditor
 
             baseRootVisualElement.styleSheets.Add(EditorGUIUtility.Load(k_StyleCommon) as StyleSheet);
             baseRootVisualElement.styleSheets.Add(EditorGUIUtility.Load(EditorGUIUtility.isProSkin ? k_StyleDark : k_StyleLight) as StyleSheet);
+
+            HandleUtility.FilterRendererIDs(Selection.gameObjects, out m_CachedParentRenderersFromSelection, out m_CachedChildRenderersFromSelection);
         }
 
         IMGUIContainer m_PrefabToolbar;
@@ -1550,6 +1579,8 @@ namespace UnityEditor
                 viewIsLockedToObject = false;
 
             m_WasFocused = false;
+
+            HandleUtility.FilterRendererIDs(Selection.gameObjects, out m_CachedParentRenderersFromSelection, out m_CachedChildRenderersFromSelection);
 
             Repaint();
         }
@@ -1930,7 +1961,7 @@ namespace UnityEditor
                 return;
 
             // Set scene view colors
-            Handles.SetSceneViewColors(kSceneViewWire, kSceneViewWireOverlay, kSceneViewSelectedOutline, kSceneViewSelectedChildrenOutline, kSceneViewSelectedWire, kSceneViewSelectedSubmeshOutline);
+            Handles.SetSceneViewColors(kSceneViewWire, kSceneViewWireOverlay, kSceneViewSelectedOutline, kSceneViewSelectedChildrenOutline, kSceneViewSelectedWire);
 
             // Setup shader replacement if needed by overlay mode
             if (m_CameraMode.drawMode == DrawCameraMode.Overdraw)
@@ -1995,24 +2026,6 @@ namespace UnityEditor
 
             DrawGridParameters gridParam = sceneViewGrids.PrepareGridRender(camera, pivot, m_Rotation.target, size, m_Ortho.target);
 
-            if (isPingingObject)
-            {
-                var currentTime = Time.realtimeSinceStartup;
-                if (currentTime - pingStartTime > kSubmeshPingDuration)
-                {
-                    isPingingObject = false;
-                    Handles.SetPingedMaterialInstanceID(m_Camera, 0);
-                }
-                else
-                {
-                    var elapsed = currentTime - pingStartTime;
-                    float t = (float)elapsed / (float)kSubmeshPingDuration;
-                    var alphaMultiplier = Mathf.SmoothStep(1, 0, t);
-                    Handles.SetOutlineAlpha(m_Camera, alphaMultiplier);
-                    Repaint();
-                }
-            }
-
             Event evt = Event.current;
 
             if (UseSceneFiltering())
@@ -2022,6 +2035,7 @@ namespace UnityEditor
 
                 if (evt.type == EventType.Repaint)
                     RenderTexture.active = null;
+
                 GUI.EndGroup();
 
                 GUI.BeginGroup(windowSpaceCameraRect);
@@ -2040,7 +2054,34 @@ namespace UnityEditor
                 }
                 Handles.DrawCameraStep1(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode, gridParam, drawGizmos, true);
 
+                if (AnnotationUtility.showSelectionOutline && evt.type == EventType.Repaint)
+                {
+                    Handles.DrawOutlineInternal(kSceneViewSelectedOutline, kSceneViewSelectedChildrenOutline, 1 - alphaMultiplier, m_CachedParentRenderersFromSelection, m_CachedChildRenderersFromSelection);
+                }
+
                 DrawRenderModeOverlay(groupSpaceCameraRect);
+            }
+
+            if (isPingingObject)
+            {
+                var currentTime = Time.realtimeSinceStartup;
+                if (currentTime - pingStartTime > kSubmeshPingDuration)
+                {
+                    isPingingObject = false;
+                    alphaMultiplier = 0;
+                    submeshOutlineMaterialId = 0;
+                }
+                else
+                {
+                    var elapsed = currentTime - pingStartTime;
+                    float t = (float)elapsed / (float)kSubmeshPingDuration;
+                    alphaMultiplier = Mathf.SmoothStep(1, 0, t);
+                    if (Event.current.type == EventType.Repaint)
+                    {
+                        Handles.DrawSubmeshOutline(kSceneViewSelectedSubmeshOutline, kSceneViewSelectedSubmeshOutline, alphaMultiplier, submeshOutlineMaterialId);
+                        Repaint();
+                    }
+                }
             }
 
             ShaderUtil.allowAsyncCompilation = oldAsync;
@@ -2329,7 +2370,7 @@ namespace UnityEditor
                 RenderTexture.ReleaseTemporary(ldrSceneTargetTexture);
             }
 
-            if (!UseSceneFiltering())
+            if (!UseSceneFiltering() && !isPingingObject)
             {
                 // Blit to final target RT in deferred mode
                 if (m_Camera.gameObject.activeInHierarchy)

@@ -279,7 +279,6 @@ namespace UnityEngine.TextCore.Text
 
         protected FontAsset GetCachedFontAssetInternal(Font font)
         {
-
             if (m_FontLookup == null)
             {
                 m_FontLookup = new Dictionary<int, FontAsset>();

@@ -28,6 +28,7 @@ namespace UnityEditor
         static ParticleEffectUI s_EffectUi;
         public ParticleSystemUI[] m_Emitters;               // Contains UI for all ParticleSystem children of the root ParticleSystem for this effect
         bool m_EmittersActiveInHierarchy;
+        public bool m_SubEmitterSelected;
         ParticleSystemCurveEditor m_ParticleSystemCurveEditor; // The curve editor used by ParticleSystem modules
         List<ParticleSystem> m_SelectedParticleSystems;     // This is the array of selected particle systems and used to find the root ParticleSystem and for the inspector
         TimeHelper m_TimeHelper = new TimeHelper();

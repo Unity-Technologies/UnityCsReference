@@ -14,15 +14,29 @@ namespace UnityEditor.Toolbars
         {
             name = "BuiltinTools";
 
-            Add(new ToolButton(Tool.View));
-            Add(new ToolButton(Tool.Move));
-            Add(new ToolButton(Tool.Rotate));
-            Add(new ToolButton(Tool.Scale));
-            Add(new ToolButton(Tool.Rect));
-            Add(new ToolButton(Tool.Transform));
-
             EditorToolbarUtility.SetupChildrenAsButtonStrip(this);
 
+            // Only show the contexts dropdown if there are non-builtin contexts available
+            if (EditorToolUtility.toolContextsInProject > 1)
+            {
+                var contexts = new ToolContextButton();
+                contexts.AddToClassList(EditorToolbarUtility.aloneStripElementClassName);
+                Add(contexts);
+            }
+
+            // View and Builtin Transform Tools
+            var builtin = new VisualElement() { name = "Builtin View and Transform Tools" };
+            builtin.AddToClassList("toolbar-contents");
+            Add(builtin);
+            for (int i = 0; i < (int)Tool.Custom; i++)
+            {
+                var button = new ToolButton((Tool) i);
+                button.displayChanged += () => EditorToolbarUtility.SetupChildrenAsButtonStrip(builtin);
+                builtin.Add(button);
+            }
+            EditorToolbarUtility.SetupChildrenAsButtonStrip(builtin);
+
+            // Custom global tools button (only shown if custom global tools exist in project)
             if (EditorToolUtility.GetNonBuiltinToolCount() > 0)
             {
                 var customToolButton = new LastCustomToolButton();
@@ -30,14 +44,7 @@ namespace UnityEditor.Toolbars
                 Add(customToolButton);
             }
 
-            // Only show the contexts dropdown if there are non-builtin contexts available
-            if (EditorToolUtility.toolContextsInProject > 1)
-            {
-                var contexts = new ToolContextButton();
-                contexts.AddToClassList(EditorToolbarUtility.aloneStripElementClassName);
-                Insert(0, contexts);
-            }
-
+            // Component tools are last
             Add(new ComponentToolsStrip());
         }
     }

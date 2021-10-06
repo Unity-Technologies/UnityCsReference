@@ -94,6 +94,7 @@ namespace UnityEditor.Search
         public static bool showSavedSearchPanel { get; set; }
         public static Dictionary<string, string> scopes { get; private set; }
         public static Dictionary<string, SearchProviderSettings> providers { get; private set; }
+        public static string ignoredProperties { get; set; }
 
         public static int[] expandedQueries { get; set; }
 
@@ -150,6 +151,7 @@ namespace UnityEditor.Search
             showStatusBar = ReadSetting(settings, nameof(showStatusBar), false);
             savedSearchesSortOrder = (SearchQuerySortOrder)ReadSetting(settings, nameof(savedSearchesSortOrder), 0);
             showSavedSearchPanel = ReadSetting(settings, nameof(showSavedSearchPanel), false);
+            ignoredProperties = ReadSetting(settings, nameof(ignoredProperties), "id;name;classname");
 
             itemIconSize = EditorPrefs.GetFloat(k_ItemIconSizePrefKey, itemIconSize);
 
@@ -191,6 +193,7 @@ namespace UnityEditor.Search
                 [nameof(savedSearchesSortOrder)] = (int)savedSearchesSortOrder,
                 [nameof(showSavedSearchPanel)] = showSavedSearchPanel,
                 [nameof(expandedQueries)] = expandedQueries,
+                [nameof(ignoredProperties)] = ignoredProperties,
 
             };
 

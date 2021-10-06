@@ -4400,16 +4400,14 @@ namespace UnityEditor
 
             if (proportionalScaleProperty != null)
             {
-                // If localScale property does not have override, make sure proportionalScale is in front layer
-                if (!property.prefabOverride || proportionalScale)
-                {
-                    // If proportional scaling is enabled, make sure to use full scale rect, to be able revert all axis and state at the same time,
-                    // otherwise rect size should match label size
-                    if (!proportionalScale)
-                        fullLabelRect.xMax = toggleRect.xMin;
+                // If proportional scaling is enabled, make sure to use full scale rect, to be able revert all axis and state at the same time,
+                // otherwise rect size should match label size
+                if (!property.prefabOverride && !proportionalScale)
+                    fullLabelRect.xMax = toggleRect.xMin;
 
-                    label = BeginPropertyInternal(fullLabelRect, label, proportionalScaleProperty);
-                }
+                // Make sure proportional scale property is used only if enabled, otherwise use localScale's one.
+                if (!property.prefabOverride || proportionalScale)
+                    label = BeginPropertyInternal(fullLabelRect, label, proportionalScale? proportionalScaleProperty : property);
 
                 BeginChangeCheck();
                 bool previousProportionalScale = proportionalScale;

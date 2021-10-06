@@ -134,6 +134,17 @@ namespace UnityEditor.IMGUI.Controls
             get { return m_TreeView.data.root; }
         }
 
+        protected TreeViewItem hoveredItem
+        {
+            get { return m_TreeView.hoveredItem; }
+        }
+
+        protected bool enableItemHovering
+        {
+            get { return m_TreeView.enableItemHovering; }
+            set { m_TreeView.enableItemHovering = value; }
+        }
+
         protected bool isInitialized
         {
             get { return m_DataSource.isInitialized; }

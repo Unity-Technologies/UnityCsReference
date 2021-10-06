@@ -164,5 +164,45 @@ namespace UnityEditor.Search
                 return null;
             return Mathf.RoundToInt(go.transform.position.z);
         }
+
+        [SearchSelector("vertices", provider: "scene")]
+        static object SelectVertices(SearchSelectorArgs args)
+        {
+            var go = args.current.ToObject<GameObject>();
+            if (!go)
+                return null;
+
+            return SceneFilterVertices(go);
+        }
+
+        [SceneQueryEngineFilter("vertices")]
+        public static int SceneFilterVertices(GameObject go)
+        {
+            var meshFilter = go.GetComponent<MeshFilter>();
+            if (!meshFilter || !meshFilter.sharedMesh)
+                return 0;
+
+            return meshFilter.sharedMesh.vertexCount;
+        }
+
+        [SearchSelector("faces", provider: "scene")]
+        static object SelectFaces(SearchSelectorArgs args)
+        {
+            var go = args.current.ToObject<GameObject>();
+            if (!go)
+                return null;
+
+            return SceneFilterFaces(go) ?? null;
+        }
+
+        [SceneQueryEngineFilter("faces")]
+        public static int? SceneFilterFaces(GameObject go)
+        {
+            var meshFilter = go.GetComponent<MeshFilter>();
+            if (!meshFilter || !meshFilter.sharedMesh)
+                return null;
+
+            return meshFilter.sharedMesh.triangles.Length;
+        }
     }
 }

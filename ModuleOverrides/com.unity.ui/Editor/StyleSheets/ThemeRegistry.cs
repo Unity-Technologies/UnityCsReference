@@ -11,7 +11,13 @@ namespace UnityEditor.UIElements.StyleSheets
 {
     static class ThemeRegistry
     {
-        internal static readonly string k_DefaultStyleSheetPath = Path.Combine(UIElementsPackageUtility.EditorResourcesBasePath, "StyleSheets/Generated/Default.tss.asset");
+        internal static string k_DefaultStyleSheetPath
+        {
+            get {
+                return "StyleSheets/Generated/Default.tss.asset";
+            }
+        }
+
         public const string kThemeScheme = "unity-theme";
         public const string kUnityThemesPath = "Assets/UI Toolkit/UnityThemes";
         public const string kUnityRuntimeThemeFileName = "UnityDefaultRuntimeTheme.tss";
@@ -41,5 +47,6 @@ namespace UnityEditor.UIElements.StyleSheets
         {
             themes.Remove(themeName);
         }
+
     }
 }

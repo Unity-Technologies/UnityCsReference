@@ -16,7 +16,7 @@ namespace Unity.Profiling.Editor
         ProfilerCounterDescriptor[] m_Counters;
 
         // UI
-        Label m_Label;
+        SelectableLabel m_Label;
 
         public StandardDetailsViewController(ProfilerWindow profilerWindow, ProfilerCounterDescriptor[] counters) : base(profilerWindow)
         {
@@ -27,7 +27,7 @@ namespace Unity.Profiling.Editor
         {
             var template = EditorGUIUtility.Load(k_UxmlResourceName) as VisualTreeAsset;
             var view = template.Instantiate();
-            m_Label = view.Q<Label>(name: k_UssSelector_StandardDetailsView__Label);
+            m_Label = view.Q<SelectableLabel>(name: k_UssSelector_StandardDetailsView__Label);
 
             ReloadData(ProfilerWindow.selectedFrameIndex);
             SubscribeToExternalEvents();
@@ -61,7 +61,7 @@ namespace Unity.Profiling.Editor
 
         void ReloadData(long selectedFrameIndex)
         {
-            m_Label.text = ConstructTextSummaryOfCounters(selectedFrameIndex);
+            m_Label.value = ConstructTextSummaryOfCounters(selectedFrameIndex);
         }
 
         string ConstructTextSummaryOfCounters(long selectedFrameIndex)

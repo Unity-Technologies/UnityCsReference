@@ -132,6 +132,9 @@ namespace UnityEditor
             {
                 GUILayout.FlexibleSpace();
 
+                if (m_ParticleEffectUI != null)
+                    m_ParticleEffectUI.m_SubEmitterSelected = false;
+
                 if (m_ParticleEffectUI == null || !m_ParticleEffectUI.multiEdit)
                 {
                     bool alreadySelected = selectedInParticleSystemWindow;
@@ -164,6 +167,9 @@ namespace UnityEditor
                     }
                     if (owners.Count > 0)
                     {
+                        if (m_ParticleEffectUI != null)
+                            m_ParticleEffectUI.m_SubEmitterSelected = true;
+
                         if (owners.Count == 1)
                         {
                             if (GUILayout.Button(GUIContent.Temp(selectSubEmitterOwner.text, owners[0].name), EditorStyles.miniButton, GUILayout.Width(160)))

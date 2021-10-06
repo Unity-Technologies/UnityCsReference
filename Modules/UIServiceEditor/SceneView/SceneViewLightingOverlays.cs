@@ -78,11 +78,21 @@ namespace UnityEditor
             m_ShouldDisplay = false;
             m_SceneView = view;
             m_SceneView.onCameraModeChanged += OnCameraModeChanged;
+            EditorApplication.playModeStateChanged += UpdateExposureValue;
         }
 
         public override void OnWillBeDestroyed()
         {
             m_SceneView.onCameraModeChanged -= OnCameraModeChanged;
+            EditorApplication.playModeStateChanged -= UpdateExposureValue;
+        }
+
+        private void UpdateExposureValue(PlayModeStateChange state)
+        {
+            if (state == PlayModeStateChange.EnteredEditMode)
+            {
+                Unsupported.SetSceneViewDebugModeExposureNoDirty(m_SceneView.bakedLightmapExposure);
+            }
         }
 
         void OnCollapsedChanged(bool collapsed)

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+//#define DEBUG_INDEXING
 using System;
 using System.IO;
 using UnityEditor.AssetImporters;
@@ -33,7 +34,7 @@ namespace UnityEditor.Search
 
     abstract class SearchIndexEntryImporter : ScriptedImporter
     {
-        public const int version = SearchIndexEntry.version;
+        public const int version = SearchIndexEntry.version | (0x0004 << 4);
 
         protected abstract IndexingOptions options { get; }
 
@@ -51,29 +52,23 @@ namespace UnityEditor.Search
         public override void OnImportAsset(AssetImportContext ctx)
         {
             var settings = new SearchDatabase.Settings { type = "asset", options = GetOptions() };
-
+            var indexer = SearchDatabase.CreateIndexer(settings);
             try
             {
-                var indexer = SearchDatabase.CreateIndexer(settings);
-                try
-                {
-                    ctx.DependsOnCustomDependency(GetType().GUID.ToString("N"));
-                    ctx.DependsOnCustomDependency(nameof(CustomObjectIndexerAttribute));
-                    indexer.IndexDocument(ctx.assetPath, false);
-                    indexer.ApplyUnsorted();
-                }
-                catch (Exception ex)
-                {
-                    ctx.LogImportError($"Failed to build search index for {ctx.assetPath}\n{ex}");
-                }
+                indexer.IndexDocument(ctx.assetPath, false);
+                indexer.Finish(removedDocuments: null);
 
                 var indexArtifactPath = ctx.GetOutputArtifactFilePath($"{(int)options:X}.index".ToLowerInvariant());
-                using (var fileStream = new FileStream(indexArtifactPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read))
+                using (var fileStream = new FileStream(indexArtifactPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
                     indexer.Write(fileStream);
+
+                ctx.DependsOnCustomDependency(GetType().GUID.ToString("N"));
+                ctx.DependsOnCustomDependency(nameof(CustomObjectIndexerAttribute));
+
             }
             catch (Exception ex)
             {
-                ctx.LogImportError(ex.Message);
+                ctx.LogImportError($"Failed to build search index for {ctx.assetPath}\n{ex}");
             }
         }
 

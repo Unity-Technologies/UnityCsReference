@@ -877,10 +877,10 @@ namespace UnityEditor.Search
             {
                 menu.AddItem(new GUIContent(template.name), false, () => { CreateNewIndexSettingFromTemplateWithConfirmation(template); });
             }
-            if (EnumerateIndexes(SearchDatabase.IndexLocation.assets).Count() == 0 && !File.Exists(SearchDatabase.defaultSearchDatabaseIndexPath))
+            if (!File.Exists(SearchDatabase.defaultSearchDatabaseIndexPath))
             {
                 menu.AddSeparator("");
-                menu.AddItem(new GUIContent("Create Default"), false, () =>
+                menu.AddItem(new GUIContent("User"), false, () =>
                 {
                     var defaultDB = SearchDatabase.CreateDefaultIndex();
                     var newItem = new IndexManagerViewModel(defaultDB.settings, false);

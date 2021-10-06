@@ -23,6 +23,11 @@ namespace UnityEngine.TextCore.Text
         private List<TextStyle> m_StyleList = new List<TextStyle>(1);
         private Dictionary<int, TextStyle> m_StyleLookupDictionary;
 
+        private void Reset()
+        {
+            LoadStyleDictionaryInternal();
+        }
+
         /// <summary>
         /// Get the Style for the given hash code value.
         /// </summary>
@@ -85,6 +90,15 @@ namespace UnityEngine.TextCore.Text
 
                 if (!m_StyleLookupDictionary.ContainsKey(m_StyleList[i].hashCode))
                     m_StyleLookupDictionary.Add(m_StyleList[i].hashCode, m_StyleList[i]);
+            }
+
+            // Add Normal Style if it does not already exists
+            int normalStyleHashCode = TextUtilities.GetHashCodeCaseInSensitive("Normal");
+            if (!m_StyleLookupDictionary.ContainsKey(normalStyleHashCode))
+            {
+                TextStyle style = new TextStyle("Normal", string.Empty, string.Empty);
+                m_StyleList.Add(style);
+                m_StyleLookupDictionary.Add(normalStyleHashCode, style);
             }
 
             //// Event to update objects when styles are changed in the editor.

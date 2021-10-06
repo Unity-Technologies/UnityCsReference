@@ -1101,7 +1101,8 @@ namespace UnityEditor
             string dispatchSizeText = string.Format("{0} x {1} x {2}", m_CurEventData.rtsWidth, m_CurEventData.rtsHeight, m_CurEventData.rtsDepth);
             EditorGUILayout.LabelField("Dispatch Size", dispatchSizeText);
 
-            EditorGUILayout.LabelField("Acceleration Structure", m_CurEventData.rtsAccelerationStructureName);
+            if (m_CurEventData.rtsAccelerationStructureName.Length > 0)
+                EditorGUILayout.LabelField("Acceleration Structure", m_CurEventData.rtsAccelerationStructureName);
 
             EditorGUILayout.LabelField("Miss Shader Count", string.Format("{0}", m_CurEventData.rtsMissShaderCount));
             EditorGUILayout.LabelField("Callable Shader Count", string.Format("{0}", m_CurEventData.rtsCallableShaderCount));

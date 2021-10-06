@@ -124,13 +124,6 @@ namespace UnityEditor.Search
 
             if (AutoComplete.IsHovered(evt.mousePosition))
                 return;
-
-            if (evt.button == 1)
-            {
-                var item = items.ElementAt(clickedItemIndex);
-                if (!searchView.selection.Contains(item))
-                    searchView.SetSelection(clickedItemIndex);
-            }
         }
 
         protected void HandleMouseUp(int clickedItemIndex, int itemTotalCount)
@@ -213,8 +206,11 @@ namespace UnityEditor.Search
                     var item = items.ElementAt(clickedItemIndex);
                     var contextRect = new Rect(evt.mousePosition, new Vector2(1, 1));
                     var selection = searchView.selection;
-                    if (selection.Count <= 1)
+                    if (selection.Count > 0 || item != null)
+                    {
                         searchView.ShowItemContextualMenu(item, contextRect);
+                        evt.Use();
+                    }
                 }
             }
 
@@ -307,9 +303,12 @@ namespace UnityEditor.Search
                 if (selectedIndex == -1 && results.Count > 0)
                     selectedIndex = 0;
 
-                if (selectedIndex != -1)
+                else if (selectedIndex != -1)
                 {
-                    searchView.ExecuteSelection();
+                    if (evt.alt && searchView is QuickSearch qs)
+                        qs.ExecuteSelection(1);
+                    else
+                        searchView.ExecuteSelection();
                     GUIUtility.ExitGUI();
                 }
             }

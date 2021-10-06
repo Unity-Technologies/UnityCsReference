@@ -9,7 +9,6 @@ namespace UnityEngine.TextCore.Text
     /// </summary>
     internal enum MarkupTag : int
     {
-        // Rich Text Tags
         BOLD = 66,                          // <b>
         SLASH_BOLD = 1613,                  // </b>
         ITALIC = 73,                        // <i>
@@ -104,6 +103,7 @@ namespace UnityEngine.TextCore.Text
         MATERIAL = 825491659,           // <font="Name of font asset" material="Name of material">
         HREF = 2535353,                 // <a href="url">text to be displayed.</a>
         ANGLE = 75347905,               // <i angle="40">Italic Slant Angle</i>
+        PADDING = -2144568463,
 
         // Named Colors
         RED = 91635,
@@ -192,12 +192,11 @@ namespace UnityEngine.TextCore.Text
         public const uint ZERO_WIDTH_SPACE = 0x200B;
         public const uint RIGHT_SINGLE_QUOTATION = 0x2019;
         public const uint APOSTROPHE = 0x27;
-        public const uint WORD_JOINER = 0x2060;           // Prohibits line break.
-
+        public const uint WORD_JOINER = 0x2060;
         public const uint HIGH_SURROGATE_START = 0xD800;
         public const uint HIGH_SURROGATE_END = 0xDBFF;
         public const uint LOW_SURROGATE_START = 0xDC00;
         public const uint LOW_SURROGATE_END = 0xDFFF;
-        public const int UNICODE_PLANE01_START = 0x10000;
+        public const uint UNICODE_PLANE01_START = 0x10000;
     }
 }

@@ -75,7 +75,7 @@ namespace UnityEditor
         BakedUVOverlap = 32,
         TextureStreaming = 33,
         BakedLightmapCulling = 34,
-        GIContributorsReceivers = 35
+        GIContributorsReceivers = 35,
     }
 
     internal class SceneRenderModeWindow : PopupWindowContent

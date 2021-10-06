@@ -48,7 +48,7 @@ namespace UnityEditor.Search
             {
                 paths.AddRange(Directory.GetFiles(root, "*.meta", SearchOption.AllDirectories)
                     .Select(path => path.Replace("\\", "/").Substring(0, path.Length - 5))
-                    .Where(path => File.Exists(path) && !SkipEntry(path)));
+                    .Where(path => !SkipEntry(path) && File.Exists(path)));
             }
 
             return paths;
@@ -98,7 +98,8 @@ namespace UnityEditor.Search
             if (hasCustomIndexers)
                 IndexCustomProperties(id, subObjDocumentIndex, subObj);
 
-            IndexWordComponents(subObjDocumentIndex, subObj.name);
+            if (!string.IsNullOrEmpty(subObj.name))
+                IndexWordComponents(subObjDocumentIndex, subObj.name);
             if (settings.options.properties)
                 IndexObject(subObjDocumentIndex, subObj, settings.options.dependencies);
         }
@@ -112,11 +113,9 @@ namespace UnityEditor.Search
                 return;
 
             AddSourceDocument(path, GetDocumentHash(path));
-            IndexWordComponents(documentIndex, GetPartialPath(path));
 
-            var fileName = Path.GetFileNameWithoutExtension(path).ToLowerInvariant();
-            IndexWord(documentIndex, fileName, fileName.Length, exact: true);
-            IndexWord(documentIndex, path, path.Length, exact: true);
+            var fileName = Path.GetFileName(path);
+            IndexWordComponents(documentIndex, fileName);
 
             if (path.StartsWith("Packages/", StringComparison.Ordinal))
                 IndexProperty(documentIndex, "a", "packages", saveKeyword: true, exact: true);
@@ -127,11 +126,11 @@ namespace UnityEditor.Search
             if (fi.Exists)
             {
                 IndexNumber(documentIndex, "size", (double)fi.Length);
-                IndexProperty(documentIndex, "ext", fi.Extension.Replace(".", "").ToLowerInvariant(), saveKeyword: false, exact: true);
+                IndexProperty(documentIndex, "ext", fi.Extension.Replace(".", ""), saveKeyword: false, exact: true);
                 IndexNumber(documentIndex, "age", (DateTime.Now - fi.LastWriteTime).TotalDays);
 
                 foreach (var dir in Path.GetDirectoryName(path).Split(new[] { '/', '\\' }).Skip(1).Reverse().Take(3))
-                    IndexProperty(documentIndex, "dir", dir.ToLowerInvariant(), saveKeyword: false, exact: true);
+                    IndexProperty(documentIndex, "dir", dir, saveKeyword: false, exact: true);
 
                 IndexProperty(documentIndex, "t", "file", saveKeyword: true, exact: true);
             }
@@ -146,7 +145,7 @@ namespace UnityEditor.Search
             bool isPrefab = path.EndsWith(".prefab");
             if (at != null)
             {
-                IndexWord(documentIndex, at.Name);
+                IndexWordComponents(documentIndex, at.Name);
                 IndexTypes(at, documentIndex);
 
                 if (settings.options.types)
@@ -178,17 +177,13 @@ namespace UnityEditor.Search
                     }
                 }
             }
-            else if (at != null)
-            {
-                IndexProperty(documentIndex, "t", at.Name, saveKeyword: true);
-            }
 
             var guid = AssetDatabase.GUIDFromAssetPath(path);
             var labels = AssetDatabase.GetLabels(guid);
             foreach (var label in labels)
-                IndexProperty(documentIndex, "l", label, saveKeyword: true);
+                IndexPropertyComponents(documentIndex, "l", label);
 
-            if (settings.options.properties)
+            if (settings.options.properties || hasCustomIndexers)
             {
                 bool wasLoaded = AssetDatabase.IsMainAssetAtPathLoaded(path);
 
@@ -199,28 +194,27 @@ namespace UnityEditor.Search
                 if (hasCustomIndexers)
                     IndexCustomProperties(path, documentIndex, mainAsset);
 
-                if (!string.IsNullOrEmpty(mainAsset.name))
-                    IndexWord(documentIndex, mainAsset.name, true);
-
                 if (settings.options.properties)
+                {
                     IndexObject(documentIndex, mainAsset, settings.options.dependencies);
 
-                if (mainAsset is GameObject go)
-                {
-                    foreach (var v in go.GetComponents(typeof(Component)))
+                    if (mainAsset is GameObject go)
                     {
-                        if (!v || v.GetType() == typeof(Transform) || (v.hideFlags & (HideFlags.DontSave | HideFlags.HideInInspector)) != 0)
-                            continue;
-                        IndexPropertyComponents(documentIndex, "t", v.GetType().Name);
+                        foreach (var v in go.GetComponents(typeof(Component)))
+                        {
+                            if (!v || v.GetType() == typeof(Transform) || (v.hideFlags & (HideFlags.DontSave | HideFlags.HideInInspector)) != 0)
+                                continue;
+                            IndexPropertyComponents(documentIndex, "t", v.GetType().Name);
 
-                        if (settings.options.properties)
-                            IndexObject(documentIndex, v, dependencies: settings.options.dependencies);
+                            if (settings.options.properties)
+                                IndexObject(documentIndex, v, dependencies: settings.options.dependencies);
+                        }
                     }
-                }
 
-                var importSettings = AssetImporter.GetAtPath(path);
-                if (importSettings)
-                    IndexObject(documentIndex, importSettings, dependencies: settings.options.dependencies, recursive: true);
+                    var importSettings = AssetImporter.GetAtPath(path);
+                    if (importSettings)
+                        IndexObject(documentIndex, importSettings, dependencies: settings.options.dependencies, recursive: true);
+                }
 
                 if (!wasLoaded || isPrefab)
                 {

@@ -33,6 +33,9 @@ namespace UnityEditor.TextCore.Text
 
         SpriteAsset m_SpriteAsset;
 
+        static readonly GUIContent k_ConvertSpriteNameToUnicodeLabel = new GUIContent("Use sprite filename as Unicode", "Should sprite filenames be converted and assigned as Unicode code points for each sprite? This conversion assumes the sprite filenames represent valid Unicode code points.");
+        static bool k_SpriteNameIsUnicodeValue;
+
         /// <summary>
         ///
         /// </summary>
@@ -74,6 +77,8 @@ namespace UnityEditor.TextCore.Text
             m_JsonFile = EditorGUILayout.ObjectField("Sprite Data Source", m_JsonFile, typeof(TextAsset), false) as TextAsset;
 
             m_SpriteDataFormat = (SpriteAssetImportFormats)EditorGUILayout.EnumPopup("Import Format", m_SpriteDataFormat);
+
+            k_SpriteNameIsUnicodeValue = EditorGUILayout.Toggle(k_ConvertSpriteNameToUnicodeLabel, k_SpriteNameIsUnicodeValue);
 
             // Sprite Texture Selection
             m_SpriteAtlas = EditorGUILayout.ObjectField("Sprite Texture Atlas", m_SpriteAtlas, typeof(Texture2D), false) as Texture2D;
@@ -188,9 +193,24 @@ namespace UnityEditor.TextCore.Text
 
                 spriteGlyphTable.Add(spriteGlyph);
 
-                SpriteCharacter spriteCharacter = new SpriteCharacter(0, spriteGlyph);
-                spriteCharacter.name = spriteData.filename.Split('.')[0];
-                spriteCharacter.unicode = 0xFFFE;
+                SpriteCharacter spriteCharacter = new SpriteCharacter(0xFFFE, spriteGlyph);
+
+                // Special handling for .notdef sprite name
+                string fileNameToLowerInvariant = spriteData.filename.ToLowerInvariant();
+                if (fileNameToLowerInvariant == ".notdef" || fileNameToLowerInvariant == "notdef")
+                {
+                    spriteCharacter.name = fileNameToLowerInvariant;
+                    spriteCharacter.unicode = 0;
+                }
+                else
+                {
+                    string spriteName = spriteData.filename.Split('.')[0];
+                    spriteCharacter.name = spriteName;
+
+                    if (k_SpriteNameIsUnicodeValue)
+                        spriteCharacter.unicode = TextUtilities.StringHexToInt(spriteName);
+                }
+
                 spriteCharacter.scale = 1.0f;
 
                 spriteCharacterTable.Add(spriteCharacter);

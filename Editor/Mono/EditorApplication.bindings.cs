@@ -18,6 +18,7 @@ namespace UnityEditor
     [NativeHeader("Runtime/BaseClasses/TagManager.h")]
     [NativeHeader("Runtime/Camera/RenderSettings.h")]
     [NativeHeader("Runtime/Input/TimeManager.h")]
+    [NativeHeader("Editor/Src/ProjectVersion.h")]
     [StaticAccessor("EditorApplicationBindings", StaticAccessorType.DoubleColon)]
     public sealed partial class EditorApplication
     {
@@ -262,5 +263,8 @@ namespace UnityEditor
 
         [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
         internal static extern void UpdateInteractionModeSettings();
+
+        [FreeFunction("GetProjectVersion().Write")]
+        internal static extern void WriteVersion();
     }
 }

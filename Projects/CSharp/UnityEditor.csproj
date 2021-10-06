@@ -289,6 +289,12 @@
     <Compile Include="..\..\Editor\Mono\Annotation\AnnotationWindow.cs">
       <Link>Editor\Mono\Annotation\AnnotationWindow.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Annotation\GizmoInfo.cs">
+      <Link>Editor\Mono\Annotation\GizmoInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Annotation\GizmoUtility.cs">
+      <Link>Editor\Mono\Annotation\GizmoUtility.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Annotation\LayerVisibilityWindow.cs">
       <Link>Editor\Mono\Annotation\LayerVisibilityWindow.cs</Link>
     </Compile>
@@ -6400,6 +6406,9 @@
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\UIElements\MemoryUsageBreakdownElement.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\UIElements\MemoryUsageBreakdownElement.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\UIElements\SelectableLabel.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\UIElements\SelectableLabel.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\Public\FrameDataView.bindings.cs">
       <Link>Modules\ProfilerEditor\Public\FrameDataView.bindings.cs</Link>
     </Compile>
@@ -7231,6 +7240,12 @@
     <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\GlyphRectPropertyDrawer.cs">
       <Link>Modules\TextCoreTextEngineEditor\Managed\GlyphRectPropertyDrawer.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\MarkToBaseAdjustmentRecordPropertyDrawer.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\MarkToBaseAdjustmentRecordPropertyDrawer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\MarkToMarkAdjustmentRecordPropertyDrawer.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\MarkToMarkAdjustmentRecordPropertyDrawer.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\SerializedPropertyHolder.cs">
       <Link>Modules\TextCoreTextEngineEditor\Managed\SerializedPropertyHolder.cs</Link>
     </Compile>
@@ -7533,9 +7548,6 @@
     </Compile>
     <Compile Include="..\..\Modules\UIServiceEditor\EditorToolbar\Controls\EditorToolbarToggle.cs">
       <Link>Modules\UIServiceEditor\EditorToolbar\Controls\EditorToolbarToggle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIServiceEditor\EditorToolbar\Controls\GlobalToolButton.cs">
-      <Link>Modules\UIServiceEditor\EditorToolbar\Controls\GlobalToolButton.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIServiceEditor\EditorToolbar\Controls\LastCustomToolButton.cs">
       <Link>Modules\UIServiceEditor\EditorToolbar\Controls\LastCustomToolButton.cs</Link>

@@ -6,6 +6,7 @@ using System.IO;
 using UnityEngine;
 using UnityEngine.TextCore.Text;
 
+
 namespace UnityEditor.TextCore.Text
 {
     internal class TextCoreContextMenuItems : Editor
@@ -122,16 +123,20 @@ namespace UnityEditor.TextCore.Text
         {
             Material mat = command.context as Material;
 
+            if (mat == null)
+                return;
+
             if (m_copiedAtlasProperties != null)
             {
                 Undo.RecordObject(mat, "Paste Texture");
 
-                TextShaderUtilities.GetShaderPropertyIDs(); // Make sure we have valid Property IDs
+                // Make sure we have valid Property IDs
+                TextShaderUtilities.GetShaderPropertyIDs();
 
-                if (mat.HasProperty(TextShaderUtilities.ID_MainTex))
+                if (m_copiedAtlasProperties.HasProperty(TextShaderUtilities.ID_MainTex))
                     mat.SetTexture(TextShaderUtilities.ID_MainTex, m_copiedAtlasProperties.GetTexture(TextShaderUtilities.ID_MainTex));
 
-                if (mat.HasProperty(TextShaderUtilities.ID_GradientScale))
+                if (m_copiedAtlasProperties.HasProperty(TextShaderUtilities.ID_GradientScale))
                 {
                     mat.SetFloat(TextShaderUtilities.ID_GradientScale, m_copiedAtlasProperties.GetFloat(TextShaderUtilities.ID_GradientScale));
                     mat.SetFloat(TextShaderUtilities.ID_TextureWidth, m_copiedAtlasProperties.GetFloat(TextShaderUtilities.ID_TextureWidth));

@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.Profiling;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -17,6 +18,9 @@ namespace UnityEditor
 
         static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromPath)
         {
+            if (!EditorPrefs.GetBool("PerformBumpMapChecks",true))
+                return;
+
             if (UnityEditor.Experimental.AssetDatabaseExperimental.ActiveOnDemandMode != UnityEditor.Experimental.AssetDatabaseExperimental.OnDemandMode.Off || UnityEditor.Experimental.AssetDatabaseExperimental.VirtualizationEnabled)
             {
                 // This PostProcessAllAssets will forcefully import everything in on-demand mode

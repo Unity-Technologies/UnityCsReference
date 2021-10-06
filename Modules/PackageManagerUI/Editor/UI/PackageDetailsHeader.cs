@@ -88,6 +88,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             detailTitle.SetValueWithoutNotify(m_Version.displayName);
             detailsLinks.Refresh(m_Package, m_Version);
 
+            RefreshName();
             RefreshFeatureSetElements();
             RefreshAuthor();
             RefreshTags();
@@ -97,6 +98,19 @@ namespace UnityEditor.PackageManager.UI.Internal
             RefreshEntitlement();
             RefreshEmbeddedFeatureSetWarningBox();
             RefreshHiddenAssetInfo();
+        }
+
+        private void RefreshName()
+        {
+            if (!string.IsNullOrEmpty(m_Version.name))
+            {
+                UIUtils.SetElementDisplay(detailName, true);
+                detailName.SetValueWithoutNotify(m_Version.name);
+            }
+            else
+            {
+                UIUtils.SetElementDisplay(detailName, false);
+            }
         }
 
         private void RefreshHiddenAssetInfo()
@@ -396,6 +410,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private Label detailEntitlement => cache.Get<Label>("detailEntitlement");
         private SelectableLabel detailVersion => cache.Get<SelectableLabel>("detailVersion");
         private VisualElement versionInfoIcon => cache.Get<VisualElement>("versionInfoIcon");
+
+        private SelectableLabel detailName => cache.Get<SelectableLabel>("detailName");
 
         private VisualElement detailAuthorContainer => cache.Get<VisualElement>("detailAuthorContainer");
         private SelectableLabel detailAuthorText => cache.Get<SelectableLabel>("detailAuthorText");

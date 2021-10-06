@@ -30,6 +30,21 @@ namespace UnityEditor.Search
     {
         internal SearchDatabase.Settings settings { get; private set; }
 
+        private HashSet<string> m_IgnoredProperties;
+
+        internal HashSet<string> ignoredProperties
+        {
+            get
+            {
+                if (m_IgnoredProperties == null)
+                {
+                    m_IgnoredProperties = new HashSet<string>(SearchSettings.ignoredProperties.Split(new char[] { ';', '\n' },
+                                            StringSplitOptions.RemoveEmptyEntries).Select(t => t.ToLowerInvariant()));
+                }
+                return m_IgnoredProperties;
+            }
+        }
+
         internal ObjectIndexer(string name, SearchDatabase.Settings settings)
             : base(name)
         {
@@ -54,14 +69,22 @@ namespace UnityEditor.Search
 
         internal override IEnumerable<SearchResult> SearchWord(string word, SearchIndexOperator op, SearchResultCollection subset)
         {
-            var baseScore = settings.baseScore;
-            var options = FindOptions.Words | FindOptions.Regex | FindOptions.Glob /* | FindOptions.Fuzzy*/;
-            if (op == SearchIndexOperator.Equal)
-                options = FindOptions.Exact;
-            var documents = subset != null ? subset.Select(r => GetDocument(r.index)) : GetDocuments(ignoreNulls: true);
-            return base.SearchWord(word, op, subset)
-                .Concat(FindProvider.SearchWord(false, word, options, documents)
-                    .Select(r => new SearchResult(r.id, m_IndexByDocuments[r.id], baseScore + r.score + 5)));
+            //using (new DebugTimer($"Search word {word}, {op}, {subset?.Count}"))
+            {
+                foreach (var r in base.SearchWord(word, op, subset))
+                    yield return r;
+
+                var baseScore = settings.baseScore;
+                var options = FindOptions.Words | FindOptions.Regex | FindOptions.Glob;
+                if (op == SearchIndexOperator.Equal)
+                    options = FindOptions.Exact;
+
+                var documents = subset != null ? subset.Select(r => GetDocument(r.index)) : GetDocuments(ignoreNulls: true);
+                foreach (var r in FindProvider.SearchWord(false, word, options, documents))
+                {
+                    yield return new SearchResult(r.id, m_IndexByDocuments[r.id], baseScore + r.score + 5);
+                }
+            }
         }
 
         /// <summary>
@@ -137,7 +160,7 @@ namespace UnityEditor.Search
         /// </summary>
         /// <param name="documentIndex">Document where the indexed word was found.</param>
         /// <param name="word">Word to add to the index.</param>
-        public void IndexWordComponents(int documentIndex, string word)
+        public void IndexWordComponents(int documentIndex, in string word)
         {
             int scoreModifier = 0;
             foreach (var c in GetEntryComponents(word, documentIndex))
@@ -165,7 +188,7 @@ namespace UnityEditor.Search
         /// <param name="entry">The string to be split.</param>
         /// <param name="documentIndex">The document index that will index that entry.</param>
         /// <returns>The entry components.</returns>
-        public virtual IEnumerable<string> GetEntryComponents(string entry, int documentIndex)
+        public virtual IEnumerable<string> GetEntryComponents(in string entry, int documentIndex)
         {
             return SearchUtils.SplitFileEntryComponents(entry, SearchUtils.entrySeparators);
         }
@@ -178,12 +201,13 @@ namespace UnityEditor.Search
         /// <param name="maxVariations">Maximum number of variations to compute. Cannot be higher than the length of the word.</param>
         /// <param name="exact">If true, we will store also an exact match entry for this word.</param>
         /// <param name="scoreModifier">Modified to apply to the base score for a specific word.</param>
-        public void IndexWord(int documentIndex, string word, int maxVariations, bool exact, int scoreModifier = 0)
+        public void IndexWord(int documentIndex, in string word, int maxVariations, bool exact, int scoreModifier = 0)
         {
+            var lword = word.ToLowerInvariant();
             var modifiedScore = settings.baseScore + scoreModifier;
-            AddWord(word.ToLowerInvariant(), minWordIndexationLength, maxVariations, modifiedScore, documentIndex);
+            AddWord(lword, minWordIndexationLength, maxVariations, modifiedScore, documentIndex);
             if (exact)
-                AddExactWord(word.ToLowerInvariant(), modifiedScore, documentIndex);
+                AddExactWord(lword, modifiedScore, documentIndex);
         }
 
         /// <summary>
@@ -193,7 +217,7 @@ namespace UnityEditor.Search
         /// <param name="documentIndex">Document where the indexed word was found.</param>
         /// <param name="exact">If true, we will store also an exact match entry for this word.</param>
         /// <param name="scoreModifier">Modified to apply to the base score for a specific word.</param>
-        public void IndexWord(int documentIndex, string word, bool exact = false, int scoreModifier = 0)
+        public void IndexWord(int documentIndex, in string word, bool exact = false, int scoreModifier = 0)
         {
             IndexWord(documentIndex, word, word.Length, exact, scoreModifier: scoreModifier);
         }
@@ -217,6 +241,8 @@ namespace UnityEditor.Search
             }
             else
                 AddProperty(name, valueLower, settings.baseScore, documentIndex, saveKeyword: saveKeyword);
+
+            //Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, $"{name}={valueLower}, {value}, {exact}");
         }
 
         /// <summary>
@@ -323,73 +349,163 @@ namespace UnityEditor.Search
             return p.hasVisibleChildren;
         }
 
-        private void IndexProperty(int documentIndex, string fieldName, SerializedProperty p)
+        private void IndexProperty(in int documentIndex, in string fieldName, in SerializedProperty p)
         {
+            if (ignoredProperties.Contains(fieldName))
+                return;
+
+            if (ignoredProperties.Contains(p.type))
+                return;
+
             if (p.depth <= 1 && p.isArray && p.propertyType != SerializedPropertyType.String)
+            {
                 IndexNumber(documentIndex, fieldName, p.arraySize);
+                LogProperty(fieldName, p);
+            }
+
+            if (p.depth > 1)
+                return;
 
             switch (p.propertyType)
             {
+                case SerializedPropertyType.ArraySize:
+                case SerializedPropertyType.Character:
                 case SerializedPropertyType.Integer:
                     IndexNumber(documentIndex, fieldName, (double)p.intValue);
+                    var managedType = p.GetManagedType();
+                    if (managedType?.IsEnum == true)
+                    {
+                        var values = Enum.GetValues(managedType);
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            var v = (int)values.GetValue(i);
+                            if (v == p.intValue)
+                            {
+                                IndexPropertyStringComponents(documentIndex, fieldName, Enum.GetNames(managedType)[i]);
+                                break;
+                            }
+                        }
+                    }
+                    else if (managedType == typeof(bool))
+                        IndexProperty(documentIndex, fieldName, p.intValue == 0 ? "false" : "true", saveKeyword: false, exact: true);
+                    LogProperty(fieldName, p);
                     break;
                 case SerializedPropertyType.Boolean:
                     IndexProperty(documentIndex, fieldName, p.boolValue.ToString().ToLowerInvariant(), saveKeyword: false, exact: true);
+                    LogProperty(fieldName, p);
                     break;
                 case SerializedPropertyType.Float:
                     IndexNumber(documentIndex, fieldName, (double)p.floatValue);
+                    LogProperty(fieldName, p);
                     break;
                 case SerializedPropertyType.String:
-                    if (p.depth > 1)
-                        return;
-                    if (string.IsNullOrEmpty(p.stringValue) && p.stringValue.Length > 16 && p.stringValue.LastIndexOf(' ') != -1)
-                        return;
-                    IndexProperty(documentIndex, fieldName, p.stringValue.ToLowerInvariant(), saveKeyword: false, exact: false);
+                    IndexPropertyStringComponents(documentIndex, fieldName, p.stringValue);
+                    LogProperty(fieldName, p);
                     break;
                 case SerializedPropertyType.Enum:
                     if (p.enumValueIndex < 0 || p.type != "Enum")
                         return;
-                    IndexProperty(documentIndex, fieldName, p.enumNames[p.enumValueIndex].Replace(" ", "").ToLowerInvariant(), saveKeyword: true, exact: false);
+                    var enumValue = p.enumNames[p.enumValueIndex].Replace(" ", "");
+                    IndexPropertyStringComponents(documentIndex, fieldName, enumValue);
+                    LogProperty(fieldName, p);
                     break;
                 case SerializedPropertyType.Color:
-                    if (p.depth > 1)
-                        return;
                     IndexerExtensions.IndexColor(fieldName, p.colorValue, this, documentIndex);
+                    LogProperty(fieldName, p);
                     break;
                 case SerializedPropertyType.Vector2:
-                    if (p.depth > 1)
-                        return;
                     IndexerExtensions.IndexVector(fieldName, p.vector2Value, this, documentIndex);
+                    LogProperty(fieldName, p);
                     break;
                 case SerializedPropertyType.Vector3:
-                    if (p.depth > 1)
-                        return;
+                    LogProperty(fieldName, p);
                     IndexerExtensions.IndexVector(fieldName, p.vector3Value, this, documentIndex);
                     break;
                 case SerializedPropertyType.Vector4:
-                    if (p.depth > 1)
-                        return;
                     IndexerExtensions.IndexVector(fieldName, p.vector4Value, this, documentIndex);
+                    LogProperty(fieldName, p);
                     break;
                 case SerializedPropertyType.Quaternion:
-                    if (p.depth > 1)
-                        return;
-                    IndexerExtensions.IndexVector(fieldName,  p.quaternionValue.eulerAngles, this, documentIndex);
+                    IndexerExtensions.IndexVector(fieldName, p.quaternionValue.eulerAngles, this, documentIndex);
+                    LogProperty(fieldName, p);
                     break;
                 case SerializedPropertyType.ObjectReference:
                     if (!p.objectReferenceValue || string.IsNullOrEmpty(p.objectReferenceValue.name))
                         return;
-                    IndexProperty(documentIndex, fieldName, p.objectReferenceValue.name.ToLowerInvariant(), saveKeyword: false, exact: true);
+                    var objectName = p.objectReferenceValue.name.ToLowerInvariant();
+                    IndexProperty(documentIndex, fieldName, objectName, saveKeyword: false, exact: true);
+                    LogProperty(fieldName, p);
+
+                    var assetPath = AssetDatabase.GetAssetPath(p.objectReferenceValue);
+                    if (!string.IsNullOrEmpty(assetPath))
+                        IndexProperty(documentIndex, fieldName, assetPath.ToLowerInvariant(), saveKeyword: false, exact: true);
                     break;
+                case SerializedPropertyType.Hash128:
+                    IndexProperty(documentIndex, fieldName, p.hash128Value.ToString().ToLowerInvariant(), saveKeyword: true, exact: true);
+                    LogProperty(fieldName, p);
+                    break;
+            }
+        }
+
+        void IndexPropertyStringComponents(in int documentIndex, in string fieldName, in string sv)
+        {
+            if (string.IsNullOrEmpty(sv) || sv.Length > 64)
+                return;
+            if (sv.Length > 4 && sv.Length < 32 && char.IsLetter(sv[0]) && sv.IndexOf(' ') == -1)
+                IndexPropertyComponents(documentIndex, fieldName, sv);
+            else
+                IndexProperty(documentIndex, fieldName, sv, saveKeyword: false, exact: true);
+        }
+
+        void LogProperty(in string fieldName, in SerializedProperty p)
+        {
+            var propertyType = GetPropertyManagedTypeString(p);
+            MapKeyword(fieldName + ":", $"{p.displayName}|{p.tooltip}|{propertyType}|{p.serializedObject?.targetObject?.GetType().AssemblyQualifiedName}");
+        }
+
+        private string GetPropertyManagedTypeString(in SerializedProperty p)
+        {
+            Type managedType;
+            switch (p.propertyType)
+            {
+                case SerializedPropertyType.Vector2:
+                case SerializedPropertyType.Vector3:
+                case SerializedPropertyType.Vector4:
+                case SerializedPropertyType.Boolean:
+                case SerializedPropertyType.String:
+                    return p.propertyType.ToString();
+
+                case SerializedPropertyType.Integer:
+                    managedType = p.GetManagedType();
+                    if (managedType != null && !managedType.IsPrimitive)
+                        return managedType.AssemblyQualifiedName;
+                    return "Number";
+
+                case SerializedPropertyType.Character:
+                case SerializedPropertyType.ArraySize:
+                case SerializedPropertyType.LayerMask:
+                case SerializedPropertyType.Float:
+                    return "Number";
+
                 case SerializedPropertyType.Generic:
-                    IndexProperty(documentIndex, "has", p.type.ToLowerInvariant(), saveKeyword: true, exact: true);
-                    break;
-                default:
-                    return;
+                    if (p.isArray)
+                        return "Count";
+                    return p.type;
+
+                case SerializedPropertyType.ObjectReference:
+                    if (p.objectReferenceValue)
+                        return p.objectReferenceValue.GetType().AssemblyQualifiedName;
+                    return "Object";
             }
 
+            if (p.isArray)
+                return "Count";
 
-            MapKeyword(fieldName + ":", $"{p.displayName} ({p.propertyType})");
+            managedType = p.GetManagedType();
+            if (managedType != null && !managedType.IsPrimitive)
+                return managedType.AssemblyQualifiedName;
+
+            return p.propertyType.ToString();
         }
 
         private void AddReference(int documentIndex, SerializedProperty p)

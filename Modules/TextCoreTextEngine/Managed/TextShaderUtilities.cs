@@ -7,6 +7,10 @@ using System.Linq;
 
 namespace UnityEngine.TextCore.Text
 {
+    /// <summary>
+    /// Property IDs for the various shader properties used by TextCore.
+    /// </summary>
+    [UnityEngine.Internal.ExcludeFromDocs]
     public static class TextShaderUtilities
     {
         // Shader Property IDs
@@ -17,11 +21,51 @@ namespace UnityEngine.TextCore.Text
         public static int ID_FaceDilate;
         public static int ID_Shininess;
 
+        /// <summary>
+        /// Property ID for the _OutlineOffset1 shader property used by URP and HDRP shaders
+        /// </summary>
+        public static int ID_OutlineOffset1;
+
+        /// <summary>
+        /// Property ID for the _OutlineOffset2 shader property used by URP and HDRP shaders
+        /// </summary>
+        public static int ID_OutlineOffset2;
+
+        /// <summary>
+        /// Property ID for the _OutlineOffset3 shader property used by URP and HDRP shaders
+        /// </summary>
+        public static int ID_OutlineOffset3;
+
+        /// <summary>
+        /// Property ID for the ID_AdditiveOutlineMode shader property used by URP and HDRP shaders
+        /// </summary>
+        public static int ID_OutlineMode;
+
+        /// <summary>
+        /// Property ID for the _IsoPerimeter shader property used by URP and HDRP shaders
+        /// </summary>
+        public static int ID_IsoPerimeter;
+
+        /// <summary>
+        /// Property ID for the _Softness shader property used by URP and HDRP shaders
+        /// </summary>
+        public static int ID_Softness;
+
         public static int ID_UnderlayColor;
         public static int ID_UnderlayOffsetX;
         public static int ID_UnderlayOffsetY;
         public static int ID_UnderlayDilate;
         public static int ID_UnderlaySoftness;
+
+        /// <summary>
+        /// Property ID for the _UnderlayOffset shader property used by URP and HDRP shaders
+        /// </summary>
+        public static int ID_UnderlayOffset;
+
+        /// <summary>
+        /// Property ID for the _UnderlayIsoPerimeter shader property used by URP and HDRP shaders
+        /// </summary>
+        public static int ID_UnderlayIsoPerimeter;
 
         public static int ID_WeightNormal;
         public static int ID_WeightBold;
@@ -102,10 +146,13 @@ namespace UnityEngine.TextCore.Text
         {
             get
             {
-                // TODO: Should reference internal SSD shader
+                // Try to use TMP shaders first
                 if (k_ShaderRef_MobileSDF == null)
                 {
-                    k_ShaderRef_MobileSDF = Shader.Find("Text/Mobile/Distance Field SSD");
+                    k_ShaderRef_MobileSDF = Shader.Find("TextMeshPro/Mobile/Distance Field SSD");
+
+                    if (k_ShaderRef_MobileSDF == null)
+                        k_ShaderRef_MobileSDF = Shader.Find("Text/Mobile/Distance Field SSD");
 
                     if (k_ShaderRef_MobileSDF == null)
                         k_ShaderRef_MobileSDF = Shader.Find("Hidden/TextCore/Distance Field SSD");
@@ -123,10 +170,13 @@ namespace UnityEngine.TextCore.Text
         {
             get
             {
-                // TODO: Should reference internal bitmap shader
+                // Try to use TMP shaders first
                 if (k_ShaderRef_MobileBitmap == null)
                 {
-                    k_ShaderRef_MobileBitmap = Shader.Find("Text/Bitmap");
+                    k_ShaderRef_MobileBitmap = Shader.Find("TextMeshPro/Mobile/Bitmap");
+
+                    if (k_ShaderRef_MobileBitmap == null)
+                        k_ShaderRef_MobileBitmap = Shader.Find("Text/Bitmap");
 
                     if (k_ShaderRef_MobileBitmap == null)
                         k_ShaderRef_MobileBitmap = Shader.Find("Hidden/Internal-GUITextureClipText");
@@ -144,7 +194,11 @@ namespace UnityEngine.TextCore.Text
             {
                 if (k_ShaderRef_Sprite == null)
                 {
-                    k_ShaderRef_Sprite = Shader.Find("Text/Sprite");
+                    k_ShaderRef_Sprite = Shader.Find("TextMeshPro/Sprite");
+
+                    if (k_ShaderRef_Sprite == null)
+                        k_ShaderRef_Sprite = Shader.Find("Text/Sprite");
+
                     if (k_ShaderRef_Sprite == null)
                         k_ShaderRef_Sprite = Shader.Find("Hidden/TextCore/Sprite");
                 }
@@ -179,11 +233,22 @@ namespace UnityEngine.TextCore.Text
                 ID_FaceDilate = Shader.PropertyToID("_FaceDilate");
                 ID_Shininess = Shader.PropertyToID("_FaceShininess");
 
+                ID_OutlineOffset1 = Shader.PropertyToID("_OutlineOffset1");
+                ID_OutlineOffset2 = Shader.PropertyToID("_OutlineOffset2");
+                ID_OutlineOffset3 = Shader.PropertyToID("_OutlineOffset3");
+                ID_OutlineMode = Shader.PropertyToID("_OutlineMode");
+
+                ID_IsoPerimeter = Shader.PropertyToID("_IsoPerimeter");
+                ID_Softness = Shader.PropertyToID("_Softness");
+
                 ID_UnderlayColor = Shader.PropertyToID("_UnderlayColor");
                 ID_UnderlayOffsetX = Shader.PropertyToID("_UnderlayOffsetX");
                 ID_UnderlayOffsetY = Shader.PropertyToID("_UnderlayOffsetY");
                 ID_UnderlayDilate = Shader.PropertyToID("_UnderlayDilate");
                 ID_UnderlaySoftness = Shader.PropertyToID("_UnderlaySoftness");
+
+                ID_UnderlayOffset = Shader.PropertyToID("_UnderlayOffset");
+                ID_UnderlayIsoPerimeter = Shader.PropertyToID("_UnderlayIsoPerimeter");
 
                 ID_WeightNormal = Shader.PropertyToID("_WeightNormal");
                 ID_WeightBold = Shader.PropertyToID("_WeightBold");
@@ -345,10 +410,10 @@ namespace UnityEngine.TextCore.Text
         // Function to check if Masking is enabled
         internal static bool IsMaskingEnabled(Material material)
         {
-            if (material == null || !material.HasProperty(TextShaderUtilities.ID_ClipRect))
+            if (material == null || !material.HasProperty(ID_ClipRect))
                 return false;
 
-            if (material.shaderKeywords.Contains(TextShaderUtilities.Keyword_MASK_SOFT) || material.shaderKeywords.Contains(TextShaderUtilities.Keyword_MASK_HARD) || material.shaderKeywords.Contains(TextShaderUtilities.Keyword_MASK_TEX))
+            if (material.shaderKeywords.Contains(Keyword_MASK_SOFT) || material.shaderKeywords.Contains(Keyword_MASK_HARD) || material.shaderKeywords.Contains(Keyword_MASK_TEX))
                 return true;
 
             return false;
@@ -376,6 +441,12 @@ namespace UnityEngine.TextCore.Text
                 return extraPadding + 1.0f;
             }
 
+            // Special handling for new SRP Shaders
+            if (material.HasProperty(ID_IsoPerimeter))
+            {
+                return ComputePaddingForProperties(material) + 0.25f + extraPadding;
+            }
+
             Vector4 padding = Vector4.zero;
             Vector4 maxPadding = Vector4.zero;
 
@@ -390,6 +461,7 @@ namespace UnityEngine.TextCore.Text
             float glowOffset = 0;
             float glowOuter = 0;
 
+            float gradientScale = 0;
             float uniformPadding = 0;
             // Iterate through each of the assigned materials to find the max values to set the padding.
 
@@ -432,10 +504,27 @@ namespace UnityEngine.TextCore.Text
                 if (material.HasProperty(ID_ScaleRatio_C))
                     scaleRatio_C = material.GetFloat(ID_ScaleRatio_C);
 
-                float offsetX = material.GetFloat(ID_UnderlayOffsetX) * scaleRatio_C;
-                float offsetY = material.GetFloat(ID_UnderlayOffsetY) * scaleRatio_C;
-                float dilate = material.GetFloat(ID_UnderlayDilate) * scaleRatio_C;
-                float softness = material.GetFloat(ID_UnderlaySoftness) * scaleRatio_C;
+                float offsetX = 0;
+                float offsetY = 0;
+                float dilate = 0;
+                float softness = 0;
+
+                if (material.HasProperty(ID_UnderlayOffset))
+                {
+                    Vector2 underlayOffset = material.GetVector(ID_UnderlayOffset);
+                    offsetX = underlayOffset.x;
+                    offsetY = underlayOffset.y;
+
+                    dilate = material.GetFloat(ID_UnderlayDilate);
+                    softness = material.GetFloat(ID_UnderlaySoftness);
+                }
+                else if (material.HasProperty(ID_UnderlayOffsetX))
+                {
+                    offsetX = material.GetFloat(ID_UnderlayOffsetX) * scaleRatio_C;
+                    offsetY = material.GetFloat(ID_UnderlayOffsetY) * scaleRatio_C;
+                    dilate = material.GetFloat(ID_UnderlayDilate) * scaleRatio_C;
+                    softness = material.GetFloat(ID_UnderlaySoftness) * scaleRatio_C;
+                }
 
                 padding.x = Mathf.Max(padding.x, faceDilate + dilate + softness - offsetX);
                 padding.y = Mathf.Max(padding.y, faceDilate + dilate + softness - offsetY);
@@ -463,7 +552,7 @@ namespace UnityEngine.TextCore.Text
             maxPadding.z = maxPadding.z < padding.z ? padding.z : maxPadding.z;
             maxPadding.w = maxPadding.w < padding.w ? padding.w : maxPadding.w;
 
-            float gradientScale = material.GetFloat(ID_GradientScale);
+            gradientScale = material.GetFloat(ID_GradientScale);
             padding *= gradientScale;
 
             // Set UniformPadding to the maximum value of any of its components.
@@ -471,7 +560,49 @@ namespace UnityEngine.TextCore.Text
             uniformPadding = Mathf.Max(padding.z, uniformPadding);
             uniformPadding = Mathf.Max(padding.w, uniformPadding);
 
-            return uniformPadding + 4; //+ 1.25f;
+            return uniformPadding + 1.25f;
+        }
+
+        static float ComputePaddingForProperties(Material mat)
+        {
+            Vector4 dilation = mat.GetVector(ID_IsoPerimeter);
+            Vector2 outlineOffset1 = mat.GetVector(ID_OutlineOffset1);
+            Vector2 outlineOffset2 = mat.GetVector(ID_OutlineOffset2);
+            Vector2 outlineOffset3 = mat.GetVector(ID_OutlineOffset3);
+            bool isOutlineModeEnabled = mat.GetFloat(ID_OutlineMode) != 0;
+
+            Vector4 softness = mat.GetVector(ID_Softness);
+            float gradientScale = mat.GetFloat(ID_GradientScale);
+
+            // Face
+            float padding = Mathf.Max(0, dilation.x + softness.x * 0.5f);
+
+            // Outlines
+            if (!isOutlineModeEnabled)
+            {
+                padding = Mathf.Max(padding, dilation.y + softness.y * 0.5f + Mathf.Max(Mathf.Abs(outlineOffset1.x), Mathf.Abs(outlineOffset1.y)));
+                padding = Mathf.Max(padding, dilation.z + softness.z * 0.5f + Mathf.Max(Mathf.Abs(outlineOffset2.x), Mathf.Abs(outlineOffset2.y)));
+                padding = Mathf.Max(padding, dilation.w + softness.w * 0.5f + Mathf.Max(Mathf.Abs(outlineOffset3.x), Mathf.Abs(outlineOffset3.y)));
+            }
+            else
+            {
+                float offsetOutline1 = Mathf.Max(Mathf.Abs(outlineOffset1.x), Mathf.Abs(outlineOffset1.y));
+                float offsetOutline2 = Mathf.Max(Mathf.Abs(outlineOffset2.x), Mathf.Abs(outlineOffset2.y));
+
+                padding = Mathf.Max(padding, dilation.y + softness.y * 0.5f + offsetOutline1);
+                padding = Mathf.Max(padding, dilation.z + softness.z * 0.5f + offsetOutline2);
+
+                float maxOffset = Mathf.Max(offsetOutline1, offsetOutline2);
+                padding += Mathf.Max(0 ,(dilation.w + softness.w * 0.5f) - Mathf.Max(0, padding - maxOffset));
+            }
+
+            // Underlay
+            Vector2 underlayOffset = mat.GetVector(ID_UnderlayOffset);
+            float underlayDilation = mat.GetFloat(ID_UnderlayDilate);
+            float underlaySoftness = mat.GetFloat(ID_UnderlaySoftness);
+            padding = Mathf.Max(padding, underlayDilation + underlaySoftness * 0.5f + Mathf.Max(Mathf.Abs(underlayOffset.x), Mathf.Abs(underlayOffset.y)));
+
+            return padding * gradientScale;
         }
 
         // Function to determine how much extra padding is required as a result of material properties like dilate, outline thickness, softness, glow, etc...
@@ -509,46 +640,46 @@ namespace UnityEngine.TextCore.Text
             for (int i = 0; i < materials.Length; i++)
             {
                 // Update Shader Ratios prior to computing padding
-                TextShaderUtilities.UpdateShaderRatios(materials[i]);
+                UpdateShaderRatios(materials[i]);
 
                 string[] shaderKeywords = materials[i].shaderKeywords;
 
-                if (materials[i].HasProperty(TextShaderUtilities.ID_ScaleRatio_A))
-                    scaleRatio_A = materials[i].GetFloat(TextShaderUtilities.ID_ScaleRatio_A);
+                if (materials[i].HasProperty(ID_ScaleRatio_A))
+                    scaleRatio_A = materials[i].GetFloat(ID_ScaleRatio_A);
 
-                if (materials[i].HasProperty(TextShaderUtilities.ID_FaceDilate))
-                    faceDilate = materials[i].GetFloat(TextShaderUtilities.ID_FaceDilate) * scaleRatio_A;
+                if (materials[i].HasProperty(ID_FaceDilate))
+                    faceDilate = materials[i].GetFloat(ID_FaceDilate) * scaleRatio_A;
 
-                if (materials[i].HasProperty(TextShaderUtilities.ID_OutlineSoftness))
-                    faceSoftness = materials[i].GetFloat(TextShaderUtilities.ID_OutlineSoftness) * scaleRatio_A;
+                if (materials[i].HasProperty(ID_OutlineSoftness))
+                    faceSoftness = materials[i].GetFloat(ID_OutlineSoftness) * scaleRatio_A;
 
-                if (materials[i].HasProperty(TextShaderUtilities.ID_OutlineWidth))
-                    outlineThickness = materials[i].GetFloat(TextShaderUtilities.ID_OutlineWidth) * scaleRatio_A;
+                if (materials[i].HasProperty(ID_OutlineWidth))
+                    outlineThickness = materials[i].GetFloat(ID_OutlineWidth) * scaleRatio_A;
 
                 uniformPadding = outlineThickness + faceSoftness + faceDilate;
 
                 // Glow padding contribution
-                if (materials[i].HasProperty(TextShaderUtilities.ID_GlowOffset) && shaderKeywords.Contains(TextShaderUtilities.Keyword_Glow))
+                if (materials[i].HasProperty(ID_GlowOffset) && shaderKeywords.Contains(Keyword_Glow))
                 {
-                    if (materials[i].HasProperty(TextShaderUtilities.ID_ScaleRatio_B))
-                        scaleRatio_B = materials[i].GetFloat(TextShaderUtilities.ID_ScaleRatio_B);
+                    if (materials[i].HasProperty(ID_ScaleRatio_B))
+                        scaleRatio_B = materials[i].GetFloat(ID_ScaleRatio_B);
 
-                    glowOffset = materials[i].GetFloat(TextShaderUtilities.ID_GlowOffset) * scaleRatio_B;
-                    glowOuter = materials[i].GetFloat(TextShaderUtilities.ID_GlowOuter) * scaleRatio_B;
+                    glowOffset = materials[i].GetFloat(ID_GlowOffset) * scaleRatio_B;
+                    glowOuter = materials[i].GetFloat(ID_GlowOuter) * scaleRatio_B;
                 }
 
                 uniformPadding = Mathf.Max(uniformPadding, faceDilate + glowOffset + glowOuter);
 
                 // Underlay padding contribution
-                if (materials[i].HasProperty(TextShaderUtilities.ID_UnderlaySoftness) && shaderKeywords.Contains(TextShaderUtilities.Keyword_Underlay))
+                if (materials[i].HasProperty(ID_UnderlaySoftness) && shaderKeywords.Contains(Keyword_Underlay))
                 {
-                    if (materials[i].HasProperty(TextShaderUtilities.ID_ScaleRatio_C))
-                        scaleRatio_C = materials[i].GetFloat(TextShaderUtilities.ID_ScaleRatio_C);
+                    if (materials[i].HasProperty(ID_ScaleRatio_C))
+                        scaleRatio_C = materials[i].GetFloat(ID_ScaleRatio_C);
 
-                    float offsetX = materials[i].GetFloat(TextShaderUtilities.ID_UnderlayOffsetX) * scaleRatio_C;
-                    float offsetY = materials[i].GetFloat(TextShaderUtilities.ID_UnderlayOffsetY) * scaleRatio_C;
-                    float dilate = materials[i].GetFloat(TextShaderUtilities.ID_UnderlayDilate) * scaleRatio_C;
-                    float softness = materials[i].GetFloat(TextShaderUtilities.ID_UnderlaySoftness) * scaleRatio_C;
+                    float offsetX = materials[i].GetFloat(ID_UnderlayOffsetX) * scaleRatio_C;
+                    float offsetY = materials[i].GetFloat(ID_UnderlayOffsetY) * scaleRatio_C;
+                    float dilate = materials[i].GetFloat(ID_UnderlayDilate) * scaleRatio_C;
+                    float softness = materials[i].GetFloat(ID_UnderlaySoftness) * scaleRatio_C;
 
                     padding.x = Mathf.Max(padding.x, faceDilate + dilate + softness - offsetX);
                     padding.y = Mathf.Max(padding.y, faceDilate + dilate + softness - offsetY);
@@ -577,7 +708,7 @@ namespace UnityEngine.TextCore.Text
                 maxPadding.w = maxPadding.w < padding.w ? padding.w : maxPadding.w;
             }
 
-            float gradientScale = materials[0].GetFloat(TextShaderUtilities.ID_GradientScale);
+            float gradientScale = materials[0].GetFloat(ID_GradientScale);
             padding *= gradientScale;
 
             // Set UniformPadding to the maximum value of any of its components.

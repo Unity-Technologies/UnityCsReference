@@ -84,6 +84,7 @@ namespace UnityEditor.UIElements.StyleSheets
             {
                 var themeName = path.Substring(kThemePrefix.Length);
 
+
                 if (!ThemeRegistry.themes.TryGetValue(themeName, out var themePath))
                     return null;
 

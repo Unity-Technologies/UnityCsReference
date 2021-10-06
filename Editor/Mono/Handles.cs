@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Internal;
@@ -1382,6 +1383,114 @@ namespace UnityEditor
         public static Vector2 GetMainGameViewSize()
         {
             return PlayModeView.GetMainPlayModeViewTargetSize();
+        }
+
+        public static void DrawOutline(int[] parentRenderers, int[] childRenderers, Color parentNodeColor, Color childNodeColor, float fillOpacity = 0)
+        {
+            Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers, childRenderers, fillOpacity, fillOpacity);
+
+            Internal_FinishDrawingCamera(Camera.current, true);
+        }
+
+        public static void DrawOutline(int[] renderers, Color color, float fillOpacity = 0)
+        {
+            Internal_DrawOutline(color, color, 0, renderers, null, fillOpacity);
+
+            Internal_FinishDrawingCamera(Camera.current, true);
+        }
+
+        public static void DrawOutline(Renderer[] renderers, Color parentNodeColor, Color childNodeColor, float fillOpacity = 0)
+        {
+            int[] parentRenderers, childRenderers;
+            HandleUtility.FilterRendererIDs(renderers, out parentRenderers, out childRenderers);
+            Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers, childRenderers, fillOpacity, fillOpacity);
+
+            Internal_FinishDrawingCamera(Camera.current, true);
+        }
+
+        public static void DrawOutline(Renderer[] renderers, Color color, float fillOpacity = 0)
+        {
+            var index = 0;
+            var ids = new int[renderers.Length];
+            foreach (var renderer in renderers)
+                    ids[index++] = renderer.GetInstanceID();
+
+            Internal_DrawOutline(color, color, 0, ids, null, fillOpacity, fillOpacity);
+
+            Internal_FinishDrawingCamera(Camera.current, true);
+        }
+
+        public static void DrawOutline(GameObject[] objects, Color parentNodeColor, Color childNodeColor, float fillOpacity = 0)
+        {
+            int[] parentRenderers, childRenderers;
+            HandleUtility.FilterRendererIDs(objects, out parentRenderers, out childRenderers);
+            Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers, childRenderers, fillOpacity, fillOpacity);
+
+            Internal_FinishDrawingCamera(Camera.current, true);
+        }
+
+        public static void DrawOutline(GameObject[] objects, Color color, float fillOpacity = 0)
+        {
+            var index = 0;
+            var ids = new int[objects.Length];
+            foreach (var go in objects)
+            {
+                if (go.TryGetComponent(out Renderer renderer))
+                    ids[index++] = renderer.GetInstanceID();
+            }
+
+            Internal_DrawOutline(color, color, 0, ids, null, fillOpacity, fillOpacity);
+
+            Internal_FinishDrawingCamera(Camera.current, true);
+        }
+
+        public static void DrawOutline(List<GameObject> objects, Color parentNodeColor, Color childNodeColor, float fillOpacity = 0)
+        {
+            int[] parentRenderers, childRenderers;
+            HandleUtility.FilterRendererIDs((GameObject[])NoAllocHelpers.ExtractArrayFromList(objects), out parentRenderers, out childRenderers);
+            Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers, childRenderers, fillOpacity, fillOpacity);
+
+            Internal_FinishDrawingCamera(Camera.current, true);
+        }
+
+        public static void DrawOutline(List<GameObject> objects, Color color, float fillOpacity = 0)
+        {
+            var index = 0;
+            var ids = new int[objects.Count];
+            foreach (var go in objects)
+            {
+                if (go.TryGetComponent(out Renderer renderer))
+                    ids[index++] = renderer.GetInstanceID();
+            }
+
+            Internal_DrawOutline(color, color, 0, ids, null, fillOpacity, fillOpacity);
+
+            Internal_FinishDrawingCamera(Camera.current, true);
+        }
+
+        internal static void DrawOutlineInternal(Color parentNodeColor, Color childNodeColor, float outlineAlpha, int[] parentRenderers, int[] childRenderers)
+        {
+            // RenderOutline will swap color.a and outlineAlpha so we reverse it here to preserve correct behavior wrt Color settings in Preferences
+            var parentOutlineAlpha = parentNodeColor.a;
+            var childOutlineAlpha = childNodeColor.a;
+            parentNodeColor.a = outlineAlpha;
+            childNodeColor.a = outlineAlpha;
+            Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers, childRenderers, parentOutlineAlpha, childOutlineAlpha, true);
+        }
+
+        internal static void DrawSubmeshOutline(Color parentNodeColor, Color childNodeColor, float outlineAlpha, int submeshOutlineMaterialId)
+        {
+            int[] parentRenderers, childRenderers;
+            HandleUtility.FilterRendererIDs(Selection.gameObjects, out parentRenderers, out childRenderers);
+
+            // RenderOutline will swap color.a and outlineAlpha so we reverse it here to preserve correct behavior wrt Color settings in Preferences
+            var parentOutlineAlpha = parentNodeColor.a;
+            var childOutlineAlpha = childNodeColor.a;
+            parentNodeColor.a = outlineAlpha;
+            childNodeColor.a = outlineAlpha;
+
+            Internal_DrawOutline(parentNodeColor, childNodeColor, submeshOutlineMaterialId, parentRenderers, childRenderers, parentOutlineAlpha, childOutlineAlpha);
+            Internal_FinishDrawingCamera(Camera.current, true);
         }
 
         // Clears the camera.

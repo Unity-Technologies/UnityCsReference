@@ -318,7 +318,7 @@ namespace UnityEngine.TextCore.Text
             textGenerator.Prepare(settings, textInfo);
 
             // Update font asset atlas textures and font features.
-            FontAsset.UpdateFontAssetInUpdateQueue();
+            FontAsset.UpdateFontAssetsInUpdateQueue();
 
             textGenerator.GenerateTextMesh(settings, textInfo);
             Profiler.EndSample();
@@ -815,7 +815,7 @@ namespace UnityEngine.TextCore.Text
 
                     // The sprite scale calculations are based on the font asset assigned to the text object.
                     float spriteScale = (m_CurrentFontSize / m_CurrentFontAsset.faceInfo.pointSize * m_CurrentFontAsset.faceInfo.scale);
-                    currentElementScale = m_CurrentFontAsset.faceInfo.ascentLine / sprite.glyph.metrics.height * sprite.scale * spriteScale * generationSettings.scale;
+                    currentElementScale = m_CurrentFontAsset.faceInfo.ascentLine / sprite.glyph.metrics.height * sprite.scale * sprite.glyph.scale * spriteScale * generationSettings.scale;
 
                     m_CachedTextElement = sprite;
 
@@ -5447,7 +5447,7 @@ namespace UnityEngine.TextCore.Text
                     // Sprite scale is used to determine line height
                     // Current element scale represents a modified scale to normalize the sprite based on the font baseline to ascender.
                     float spriteScale = (m_CurrentFontSize / generationSettings.fontAsset.faceInfo.pointSize * generationSettings.fontAsset.faceInfo.scale);
-                    currentElementScale = generationSettings.fontAsset.faceInfo.ascentLine / sprite.glyph.metrics.height * sprite.scale * spriteScale;
+                    currentElementScale = generationSettings.fontAsset.faceInfo.ascentLine / sprite.glyph.metrics.height * sprite.scale * sprite.glyph.scale * spriteScale * generationSettings.scale;
 
                     m_CachedTextElement = sprite;
 
@@ -5467,7 +5467,7 @@ namespace UnityEngine.TextCore.Text
                     // Re-calculate font scale as the font asset may have changed.
                     m_FontScale = m_CurrentFontSize * smallCapsMultiplier / m_CurrentFontAsset.faceInfo.pointSize * m_CurrentFontAsset.faceInfo.scale;
 
-                    currentElementScale = m_FontScale * m_FontScaleMultiplier * m_CachedTextElement.scale;
+                    currentElementScale = m_FontScale * m_FontScaleMultiplier * m_CachedTextElement.scale * generationSettings.scale;
 
                     m_InternalTextElementInfo[m_CharacterCount].elementType = TextElementType.Character;
                 }

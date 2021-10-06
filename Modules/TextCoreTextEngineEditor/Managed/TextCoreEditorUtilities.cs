@@ -19,26 +19,12 @@ namespace UnityEditor.TextCore.Text
         public static GUIStyle centeredLabel;
         public static GUIStyle rightLabel;
 
+        public static Texture2D sectionHeaderStyleTexture;
+
         static TM_EditorStyles()
         {
-            if (EditorGUIUtility.isProSkin)
-            {
-                // Section Header GUI Style
-                sectionHeader = new GUIStyle(EditorStyles.textArea) { fixedHeight = 22, richText = true, overflow = new RectOffset(9, 0, 0, 0), padding = new RectOffset(0, 0, 4, 0) };
-                Texture2D sectionHeaderTexture = new Texture2D(1, 1);
-                sectionHeaderTexture.SetPixel(1, 1, new Color(0.4f, 0.4f, 0.4f, 0.5f));
-                sectionHeaderTexture.Apply();
-                sectionHeader.normal.background = sectionHeaderTexture;
-            }
-            else
-            {
-                // Section Header GUI Style
-                sectionHeader = new GUIStyle(EditorStyles.textArea) { fixedHeight = 22, richText = true, overflow = new RectOffset(9, 0, 0, 0), padding = new RectOffset(0, 0, 4, 0) };
-                Texture2D sectionHeaderTexture = new Texture2D(1, 1);
-                sectionHeaderTexture.SetPixel(1, 1, new Color(0.6f, 0.6f, 0.6f, 0.5f));
-                sectionHeaderTexture.Apply();
-                sectionHeader.normal.background = sectionHeaderTexture;
-            }
+            // Section Header
+            CreateSectionHeaderStyle();
 
             // Labels
             panelTitle = new GUIStyle(EditorStyles.label) { fontStyle = FontStyle.Bold };
@@ -47,6 +33,36 @@ namespace UnityEditor.TextCore.Text
             rightLabel = new GUIStyle(EditorStyles.label) { alignment = TextAnchor.MiddleRight, richText = true, wordWrap = true, stretchWidth = true };
 
             textAreaBoxWindow = new GUIStyle(EditorStyles.textArea) { richText = true };
+        }
+
+        internal static void CreateSectionHeaderStyle()
+        {
+            sectionHeader = new GUIStyle(EditorStyles.textArea) { fixedHeight = 22, richText = true, overflow = new RectOffset(9, 0, 0, 0), padding = new RectOffset(0, 0, 4, 0) };
+            sectionHeaderStyleTexture = new Texture2D(1, 1);
+
+            if (EditorGUIUtility.isProSkin)
+                sectionHeaderStyleTexture.SetPixel(1, 1, new Color(0.4f, 0.4f, 0.4f, 0.5f));
+            else
+                sectionHeaderStyleTexture.SetPixel(1, 1, new Color(0.6f, 0.6f, 0.6f, 0.5f));
+
+            sectionHeaderStyleTexture.Apply();
+            sectionHeader.normal.background = sectionHeaderStyleTexture;
+        }
+
+        internal static void RefreshEditorStyles()
+        {
+            if (sectionHeader.normal.background == null)
+            {
+                Texture2D sectionHeaderStyleTexture = new Texture2D(1, 1);
+
+                if (EditorGUIUtility.isProSkin)
+                    sectionHeaderStyleTexture.SetPixel(1, 1, new Color(0.4f, 0.4f, 0.4f, 0.5f));
+                else
+                    sectionHeaderStyleTexture.SetPixel(1, 1, new Color(0.6f, 0.6f, 0.6f, 0.5f));
+
+                sectionHeaderStyleTexture.Apply();
+                sectionHeader.normal.background = sectionHeaderStyleTexture;
+            }
         }
     }
 

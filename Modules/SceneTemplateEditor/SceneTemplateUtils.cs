@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using UnityEditor.PackageManager;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -295,6 +296,14 @@ namespace UnityEditor.SceneTemplate
             }
 
             return false;
+        }
+
+        // Based on UpmPackageInfo::IsPackageReadOnly() in PackageManagerCommon.cpp
+        internal static bool IsPackageReadOnly(PackageManager.PackageInfo pi)
+        {
+            if (pi.source == PackageSource.Embedded || pi.source == PackageSource.Local)
+                return false;
+            return true;
         }
     }
 }

@@ -43,6 +43,8 @@ namespace UnityEditor
             }
         }
 
+        public bool isVisible => m_Parent.actualView == this;
+
         internal void Awake()
         {
             AddInspectorWindow(this);
@@ -101,6 +103,16 @@ namespace UnityEditor
             // but its instance is no longer valid, so it rebuilds the inspector.
             if (EditorsForMultiEditingChanged())
                 tracker.ForceRebuild();
+        }
+
+        void OnBecameVisible()
+        {
+            SceneView.SetActiveEditorsDirty(true);
+        }
+
+        void OnBecameInvisible()
+        {
+            SceneView.SetActiveEditorsDirty();
         }
 
         private void OnProjectWasLoaded()
@@ -223,9 +235,9 @@ namespace UnityEditor
             m_LockTracker.ShowButton(r, Styles.lockButton);
         }
 
-        private void LockStateChanged(bool lockeState)
+        private void LockStateChanged(bool lockState)
         {
-            if (lockeState)
+            if (lockState)
             {
                 PrepareLockedObjectsForSerialization();
             }

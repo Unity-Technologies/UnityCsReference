@@ -78,7 +78,7 @@ namespace UnityEditor.SceneTemplate
 
             var templatePipeline = sceneTemplate.CreatePipeline();
 
-            if (hasAnyCloneableDependencies)
+            if (hasAnyCloneableDependencies || loadAdditively)
             {
                 if (!InstantiateScene(sceneTemplate, sourceScenePath, ref newSceneOutputPath))
                 {
@@ -91,43 +91,56 @@ namespace UnityEditor.SceneTemplate
                 newSceneTemplateInstantiating?.Invoke(sceneTemplate, newSceneOutputPath, loadAdditively);
 
                 var refPathMap = new Dictionary<string, string>();
-                var refMap = CopyCloneableDependencies(sceneTemplate, newSceneOutputPath, ref refPathMap);
+                var refMap = new Dictionary<Object, Object>();
+                if (hasAnyCloneableDependencies)
+                    refMap = CopyCloneableDependencies(sceneTemplate, newSceneOutputPath, ref refPathMap);
 
                 newScene = EditorSceneManager.OpenScene(newSceneOutputPath, loadAdditively ? OpenSceneMode.Additive : OpenSceneMode.Single);
                 newSceneAsset = AssetDatabase.LoadAssetAtPath<SceneAsset>(newSceneOutputPath);
 
-                var idMap = new Dictionary<int, int>();
-                idMap.Add(sceneTemplate.templateScene.GetInstanceID(), newSceneAsset.GetInstanceID());
-
-                EditorSceneManager.RemapAssetReferencesInScene(newScene, refPathMap, idMap);
+                if (hasAnyCloneableDependencies)
+                {
+                    var idMap = new Dictionary<int, int>();
+                    idMap.Add(sceneTemplate.templateScene.GetInstanceID(), newSceneAsset.GetInstanceID());
+                    EditorSceneManager.RemapAssetReferencesInScene(newScene, refPathMap, idMap);
+                }
 
                 EditorSceneManager.SaveScene(newScene, newSceneOutputPath);
 
-                foreach (var clone in refMap.Values)
+                if (hasAnyCloneableDependencies)
                 {
-                    if (clone)
-                        EditorUtility.SetDirty(clone);
+                    foreach (var clone in refMap.Values)
+                    {
+                        if (clone)
+                            EditorUtility.SetDirty(clone);
+                    }
+                    AssetDatabase.SaveAssets();
                 }
-                AssetDatabase.SaveAssets();
             }
             else
             {
+                var needTempSceneCleanup = false;
+                var pi = PackageManager.PackageInfo.FindForAssetPath(sourceScenePath);
+                if (pi != null && SceneTemplateUtils.IsPackageReadOnly(pi))
+                {
+                    sourceScenePath = CopyToTemporaryScene(sourceScenePath);
+                    needTempSceneCleanup = true;
+                }
+
                 templatePipeline?.BeforeTemplateInstantiation(sceneTemplate, loadAdditively, newSceneOutputPath);
                 newSceneTemplateInstantiating?.Invoke(sceneTemplate, newSceneOutputPath, loadAdditively);
-                if (loadAdditively)
-                {
-                    newScene = EditorSceneManager.OpenScene(sourceScenePath, OpenSceneMode.Additive);
-                }
-                else
-                {
-                    newScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-                    var sourceScene = EditorSceneManager.OpenScene(sourceScenePath, OpenSceneMode.Additive);
-                    SceneManager.MergeScenes(sourceScene, newScene);
-                }
+                newScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+                var sourceScene = EditorSceneManager.OpenScene(sourceScenePath, OpenSceneMode.Additive);
+                SceneManager.MergeScenes(sourceScene, newScene);
 
                 if (!string.IsNullOrEmpty(newSceneOutputPath))
                 {
                     EditorSceneManager.SaveScene(newScene, newSceneOutputPath);
+                }
+
+                if (needTempSceneCleanup)
+                {
+                    AssetDatabase.DeleteAsset(sourceScenePath);
                 }
             }
 
@@ -285,6 +298,15 @@ namespace UnityEditor.SceneTemplate
             }
 
             return refMap;
+        }
+
+        private static string CopyToTemporaryScene(string sourceScenePath)
+        {
+            var tempScenePath = $"Assets/{Guid.NewGuid():N}.unity";
+            tempScenePath = AssetDatabase.GenerateUniqueAssetPath(tempScenePath);
+            if (!AssetDatabase.CopyAsset(sourceScenePath, tempScenePath))
+                throw new Exception($"Cannot copy read-only sceneTemplate \"{sourceScenePath}\"");
+            return tempScenePath;
         }
 
         #region MenuActions

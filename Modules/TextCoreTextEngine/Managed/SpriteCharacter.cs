@@ -25,16 +25,8 @@ namespace UnityEngine.TextCore.Text
                     return;
 
                 m_Name = value;
-                m_HashCode = TextUtilities.GetHashCodeCaseSensitive(m_Name);
             }
         }
-
-        /// <summary>
-        /// The hashcode value which is computed from the name of the sprite element.
-        /// This value is read-only and updated when the name of the text sprite is changed.
-        /// </summary>
-        public int hashCode { get { return m_HashCode; } }
-
 
         // =============================================
         // Private backing fields for public properties.
@@ -42,10 +34,6 @@ namespace UnityEngine.TextCore.Text
 
         [SerializeField]
         private string m_Name;
-
-        [SerializeField]
-        private int m_HashCode;
-
 
         // ********************
         // CONSTRUCTORS

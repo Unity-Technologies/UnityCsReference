@@ -33,7 +33,6 @@ namespace UnityEditor.TextCore.Text
                 }
             }
 
-
             string filePathWithName = AssetDatabase.GenerateUniqueAssetPath(filePath + "/Text StyleSheet.asset");
 
             // Create new Style Sheet Asset.

@@ -43,6 +43,14 @@ namespace UnityEditor
                 [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
                 set;
             }
+
+            [NativeProperty("macOSTargetOSVersion")]
+            public extern static string targetOSVersion { get; set; }
+
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+            [NativeMethod("GetMacOSMinimumVersionString")]
+            internal static extern string GetMinimumVersionString();
+            internal static readonly Version minimumOsVersion = new Version(GetMinimumVersionString());
         }
     }
 }

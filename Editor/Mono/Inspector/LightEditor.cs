@@ -490,11 +490,16 @@ namespace UnityEditor
             Object TextureValidator(Object[] references, System.Type objType, SerializedProperty property, EditorGUI.ObjectFieldValidatorOptions options)
             {
                 LightType lightTypeInfo = (LightType)lightType.intValue;
-
+                Object assetTexture = null;
                 foreach (Object assetObject in references)
                 {
                     if (assetObject is Texture texture)
                     {
+                        if (assetTexture == null)
+                        {
+                            assetTexture = texture;
+                        }
+
                         switch (lightTypeInfo)
                         {
                             case LightType.Spot:
@@ -515,17 +520,21 @@ namespace UnityEditor
                         }
                     }
                 }
+
+                if (assetTexture != null && typeof(RenderTexture).IsAssignableFrom(assetTexture.GetType()))
+                {
+                    return assetTexture;
+                }
                 return null;
             }
 
-            void TexturePropertyBody(Rect position, SerializedProperty prop)
+            void TexturePropertyBody(Rect position, SerializedProperty prop, LightType cookieLightType)
             {
                 EditorGUI.BeginChangeCheck();
                 int controlID = GUIUtility.GetControlID(12354, FocusType.Keyboard, position);
 
                 Type type = null;
-                LightType lightTypeInfo = (LightType)lightType.intValue;
-                switch (lightTypeInfo)
+                switch (cookieLightType)
                 {
                     case LightType.Spot:
                     case LightType.Directional:
@@ -541,10 +550,19 @@ namespace UnityEditor
                         break;
                 }
 
-                var newValue = EditorGUI.DoObjectField(position, position, controlID, prop.objectReferenceValue, prop.objectReferenceValue, type, TextureValidator, false) as Texture;
+                var newValue = EditorGUI.DoObjectField(position, position, controlID, prop.objectReferenceValue, prop.objectReferenceValue, type, TextureValidator, false, typeof(RenderTexture)) as Texture;
 
                 if (EditorGUI.EndChangeCheck())
                     prop.objectReferenceValue = newValue;
+            }
+
+            public void DrawCookieProperty(SerializedProperty cookieProperty, GUIContent content, LightType cookieLightType)
+            {
+                Rect controlRect = EditorGUILayout.GetControlRect();
+                Rect thumbRect, labelRect;
+                EditorGUI.GetRectsForMiniThumbnailField(controlRect, out thumbRect, out labelRect);
+                EditorGUI.HandlePrefixLabel(controlRect, labelRect, content, 0, EditorStyles.label);
+                TexturePropertyBody(thumbRect, cookieProperty, cookieLightType);
             }
 
             public void DrawCookie()
@@ -553,11 +571,7 @@ namespace UnityEditor
                 if (isAreaLightType)
                     return;
 
-                Rect controlRect = EditorGUILayout.GetControlRect();
-                Rect thumbRect, labelRect;
-                EditorGUI.GetRectsForMiniThumbnailField(controlRect, out thumbRect, out labelRect);
-                EditorGUI.HandlePrefixLabel(controlRect, labelRect, Styles.CookieTexture, 0, EditorStyles.label);
-                TexturePropertyBody(thumbRect, cookieProp);
+                DrawCookieProperty(cookieProp, Styles.CookieTexture, (LightType)lightType.intValue);
 
                 if (showCookieSpotRepeatWarning)
                 {

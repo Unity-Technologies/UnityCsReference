@@ -383,7 +383,7 @@ namespace UnityEditor.Search
         public bool OpenContextualMenu(Event evt, SearchItem item)
         {
             var selection = searchView.selection;
-            if (selection.Count > 1)
+            if (selection.Count <= 0 && item == null)
                 return false;
 
             var contextRect = new Rect(evt.mousePosition, new Vector2(1, 1));
@@ -394,8 +394,8 @@ namespace UnityEditor.Search
         public override void AddSaveQueryMenuItems(SearchContext context, GenericMenu menu)
         {
             menu.AddSeparator("");
-            menu.AddItem(new GUIContent("Export Report..."), false, () => ExportJson(context));
-            menu.AddItem(new GUIContent("Export CSV..."), false, () => ExportCsv(context));
+            menu.AddItem(EditorGUIUtility.TrTextContent("Export Report..."), false, () => ExportJson(context));
+            menu.AddItem(EditorGUIUtility.TrTextContent("Export CSV..."), false, () => ExportCsv(context));
         }
 
         private void ExportJson(SearchContext context)

@@ -11,6 +11,13 @@ namespace UnityEditor.TextCore.Text
     [CustomPropertyDrawer(typeof(GlyphMetrics))]
     internal class GlyphMetricsPropertyDrawer : PropertyDrawer
     {
+        private static readonly GUIContent k_GlyphMetricLabel = new GUIContent("Glyph Metrics", "The layout metrics of the glyph.");
+        private static readonly GUIContent k_WidthPropertyLabel = new GUIContent("W:", "The width of the glyph.");
+        private static readonly GUIContent k_HeightPropertyLabel = new GUIContent("H:", "The height of the glyph.");
+        private static readonly GUIContent k_BearingXPropertyLabel = new GUIContent("BX:", "The horizontal bearing X of the glyph.");
+        private static readonly GUIContent k_BearingYPropertyLabel = new GUIContent("BY:", "The horizontal bearing Y of the glyph.");
+        private static readonly GUIContent k_HorizontalAdvancePropertyLabel = new GUIContent("AD:", "The horizontal advance of the glyph.");
+
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             SerializedProperty prop_Width = property.FindPropertyRelative("m_Width");
@@ -22,25 +29,26 @@ namespace UnityEditor.TextCore.Text
             // We get Rect since a valid position may not be provided by the caller.
             Rect rect = new Rect(position.x, position.y, position.width, 49);
 
-            EditorGUI.LabelField(new Rect(rect.x, rect.y - 2.5f, rect.width, 18), new GUIContent("Glyph Metrics"));
+            EditorGUI.LabelField(new Rect(rect.x, rect.y - 2.5f, rect.width, 18), k_GlyphMetricLabel);
 
-            EditorGUIUtility.labelWidth = 50f;
+            EditorGUIUtility.labelWidth = 20f;
             EditorGUIUtility.fieldWidth = 15f;
 
             //GUI.enabled = false;
             float width = (rect.width - 75f) / 2;
-            EditorGUI.PropertyField(new Rect(rect.x + width * 0, rect.y + 20, width - 5f, 18), prop_Width, new GUIContent("W:"));
-            EditorGUI.PropertyField(new Rect(rect.x + width * 1, rect.y + 20, width - 5f, 18), prop_Height, new GUIContent("H:"));
+            EditorGUI.PropertyField(new Rect(rect.x + width * 0, rect.y + 20, width - 5f, 18), prop_Width, k_WidthPropertyLabel);
+            EditorGUI.PropertyField(new Rect(rect.x + width * 1, rect.y + 20, width - 5f, 18), prop_Height, k_HeightPropertyLabel);
 
             //GUI.enabled = true;
 
             width = (rect.width - 75f) / 3;
             EditorGUI.BeginChangeCheck();
-            EditorGUI.PropertyField(new Rect(rect.x + width * 0, rect.y + 40, width - 5f, 18), prop_HoriBearingX, new GUIContent("BX:"));
-            EditorGUI.PropertyField(new Rect(rect.x + width * 1, rect.y + 40, width - 5f, 18), prop_HoriBearingY, new GUIContent("BY:"));
-            EditorGUI.PropertyField(new Rect(rect.x + width * 2, rect.y + 40, width - 5f, 18), prop_HoriAdvance, new GUIContent("AD:"));
+            EditorGUI.PropertyField(new Rect(rect.x + width * 0, rect.y + 40, width - 5f, 18), prop_HoriBearingX, k_BearingXPropertyLabel);
+            EditorGUI.PropertyField(new Rect(rect.x + width * 1, rect.y + 40, width - 5f, 18), prop_HoriBearingY, k_BearingYPropertyLabel);
+            EditorGUI.PropertyField(new Rect(rect.x + width * 2, rect.y + 40, width - 5f, 18), prop_HoriAdvance, k_HorizontalAdvancePropertyLabel);
             if (EditorGUI.EndChangeCheck())
             {
+                //
             }
         }
 

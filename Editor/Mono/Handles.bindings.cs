@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Internal;
@@ -50,6 +51,9 @@ namespace UnityEditor
         static extern void Internal_DrawCameraWithGrid([NotNull("NullExceptionObject")] Camera cam, DrawCameraMode renderMode, ref DrawGridParameters gridParam, bool drawGizmos, bool drawSelection);
 
         [FreeFunction]
+        internal static extern void Internal_DrawOutline(Color parentNodeColor, Color childNodeColor, int submeshOutlineMaterialId, int[] parentRenderers, int[] childRenderers, float parentOutlineAlpha = 0, float childOutlineAlpha = 0, bool drawSelectionWire = false);
+
+        [FreeFunction]
         static extern void Internal_DrawCamera([NotNull("NullExceptionObject")] Camera cam, DrawCameraMode renderMode, bool drawGizmos, bool drawSelection);
 
         [FreeFunction]
@@ -66,7 +70,7 @@ namespace UnityEditor
         internal static extern void Internal_SetCurrentCamera(Camera cam);
 
         [FreeFunction("Internal_SetSceneViewColors")]
-        internal static extern void SetSceneViewColors(Color wire, Color wireOverlay, Color selectedOutline, Color selectedChildrenOutline, Color selectedWire, Color pingedMaterialOutline);
+        internal static extern void SetSceneViewColors(Color wire, Color wireOverlay, Color selectedOutline, Color selectedChildrenOutline, Color selectedWire);
 
         [FreeFunction("Internal_SetSceneViewModeGIContributorsReceiversColors")]
         internal static extern void SetSceneViewModeGIContributorsReceiversColors(Color noContributeGI, Color receiveGILightmaps, Color receiveGILightProbesColor);
@@ -107,12 +111,6 @@ namespace UnityEditor
 
         [FreeFunction("Internal_DrawCameraFade")]
         internal static extern void DrawCameraFade([NotNull("NullExceptionObject")] Camera camera, float fade);
-
-        [FreeFunction("Internal_SetOutlineAlpha")]
-        internal static extern void SetOutlineAlpha([NotNull("NullExceptionObject")] Camera camera, float alpha);
-
-        [FreeFunction("Internal_SetPingedMaterialInstanceID")]
-        internal static extern void SetPingedMaterialInstanceID([NotNull("NullExceptionObject")] Camera camera, int instanceID);
 
         [FreeFunction]
         static extern Vector3[] Internal_MakeBezierPoints(Vector3 startPosition, Vector3 endPosition, Vector3 startTangent, Vector3 endTangent, int division);

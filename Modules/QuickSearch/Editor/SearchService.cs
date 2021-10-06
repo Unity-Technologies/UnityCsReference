@@ -140,6 +140,9 @@ namespace UnityEditor.Search
         /// </summary>
         public static void RefreshWindows()
         {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+                return;
+
             var windows = Resources.FindObjectsOfTypeAll<QuickSearch>();
             if (windows == null)
                 return;

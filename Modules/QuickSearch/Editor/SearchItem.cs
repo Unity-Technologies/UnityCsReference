@@ -332,6 +332,15 @@ namespace UnityEditor.Search
             return ToObject(typeof(T)) as T;
         }
 
+        internal Type ToType(Type constraintedType = null)
+        {
+            var itemType = provider?.toType?.Invoke(this);
+            if (itemType != null)
+                return itemType;
+            var itemObj = ToObject(constraintedType ?? typeof(UnityEngine.Object));
+            return itemObj?.GetType();
+        }
+
         [Obsolete("This API will be removed", error: true)]
         public string ToGlobalId()
         {

@@ -307,6 +307,8 @@ namespace UnityEditor.IMGUI.Controls
 
             protected override void DrawItemBackground(Rect rect, int row, TreeViewItem item, bool selected, bool focused)
             {
+                base.DrawItemBackground(rect, row, item, selected, focused);
+
                 // To ensure backgrounds are also animated when animating expansion we render the rows backgrounds individually here. When not animating expansion the backgrounds
                 // are rendered in one go in DrawAlternatingRowBackgrounds() which also handles background outside rows
                 if (m_Owner.showAlternatingRowBackgrounds && m_TreeView.animatingExpansion)

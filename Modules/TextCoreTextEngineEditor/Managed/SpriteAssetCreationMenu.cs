@@ -145,7 +145,23 @@ namespace UnityEditor.TextCore.Text
                     spriteGlyphTable.Add(spriteGlyph);
 
                     spriteCharacter = new SpriteCharacter(0xFFFE, spriteGlyph);
-                    spriteCharacter.name = sprite.name;
+
+                    // Special handling for .notdef sprite name.
+                    string fileNameToLowerInvariant = sprite.name.ToLowerInvariant();
+                    if (fileNameToLowerInvariant == ".notdef" || fileNameToLowerInvariant == "notdef")
+                    {
+                        spriteCharacter.unicode = 0;
+                        spriteCharacter.name = fileNameToLowerInvariant;
+                    }
+                    else
+                    {
+                        if (!string.IsNullOrEmpty(sprite.name) && sprite.name.Length > 2 && sprite.name[0] == '0' && (sprite.name[1] == 'x' || sprite.name[1] == 'X'))
+                        {
+                            spriteCharacter.unicode = TextUtilities.StringHexToInt(sprite.name.Remove(0, 2));
+                        }
+                        spriteCharacter.name = sprite.name;
+                    }
+
                     spriteCharacter.scale = 1.0f;
 
                     spriteAsset.spriteCharacterTable.Add(spriteCharacter);
@@ -165,6 +181,7 @@ namespace UnityEditor.TextCore.Text
             spriteAsset.UpdateLookupTables();
             TextEventManager.ON_SPRITE_ASSET_PROPERTY_CHANGED(true, spriteAsset);
         }
+
 
         [MenuItem("Assets/Create/Text/Sprite Asset", false, 150)]
         internal static void CreateSpriteAsset()
@@ -267,7 +284,23 @@ namespace UnityEditor.TextCore.Text
                 spriteGlyphTable.Add(spriteGlyph);
 
                 SpriteCharacter spriteCharacter = new SpriteCharacter(0xFFFE, spriteGlyph);
-                spriteCharacter.name = sprite.name;
+
+                // Special handling for .notdef sprite name.
+                string fileNameToLowerInvariant = sprite.name.ToLowerInvariant();
+                if (fileNameToLowerInvariant == ".notdef" || fileNameToLowerInvariant == "notdef")
+                {
+                    spriteCharacter.unicode = 0;
+                    spriteCharacter.name = fileNameToLowerInvariant;
+                }
+                else
+                {
+                    if (!string.IsNullOrEmpty(sprite.name) && sprite.name.Length > 2 && sprite.name[0] == '0' && (sprite.name[1] == 'x' || sprite.name[1] == 'X'))
+                    {
+                        spriteCharacter.unicode = TextUtilities.StringHexToInt(sprite.name.Remove(0, 2));
+                    }
+                    spriteCharacter.name = sprite.name;
+                }
+
                 spriteCharacter.scale = 1.0f;
 
                 spriteCharacterTable.Add(spriteCharacter);

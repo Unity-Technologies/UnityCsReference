@@ -150,10 +150,11 @@ namespace UnityEditor.Search
             if (context == null)
                 return;
             context.searchText = searchText ?? string.Empty;
-            if (!string.IsNullOrWhiteSpace(context.searchText))
+            if (!string.IsNullOrWhiteSpace(context.searchText) && moveCursor != TextCursorPlacement.None)
                 m_SearchField?.UpdateLastSearchText(context.searchText);
             RefreshSearch();
-            SetTextEditorState(searchText, te => m_SearchField.MoveCursor(moveCursor, cursorInsertPosition));
+            if (moveCursor != TextCursorPlacement.None)
+                SetTextEditorState(searchText, te => m_SearchField.MoveCursor(moveCursor, cursorInsertPosition));
         }
 
         private void SetTextEditorState(string searchText, Action<TextEditor> handler, bool selectAll = false)
@@ -242,6 +243,8 @@ namespace UnityEditor.Search
                 qsWindow = GetWindow<T>(false, null, false);
                 if (context != null)
                 {
+                    if (context.empty)
+                        context.searchText = qsWindow.context?.searchText ?? string.Empty;
                     qsWindow.SetContext(context);
                     qsWindow.RefreshSearch();
                 }
@@ -318,14 +321,13 @@ namespace UnityEditor.Search
             if (flags.HasAny(SearchFlags.Dockable))
             {
                 bool firstOpen = !EditorPrefs.HasKey(k_CheckWindowKeyName);
+                Show(true);
                 if (firstOpen)
                 {
                     var centeredPosition = Utils.GetMainWindowCenteredPosition(windowSize);
                     position = centeredPosition;
-                    Utils.CallDelayed(() => position = centeredPosition);
                 }
-                Show(true);
-                if (!firstOpen && !docked)
+                else if (!firstOpen && !docked)
                 {
                     var newWindow = this;
                     var existingWindow = Resources.FindObjectsOfTypeAll<QuickSearch>().FirstOrDefault(w => w != newWindow);
@@ -464,12 +466,17 @@ namespace UnityEditor.Search
 
         public virtual void ExecuteSelection()
         {
+            ExecuteSelection(0);
+        }
+
+        internal void ExecuteSelection(int actionIndex)
+        {
             if (selection.Count == 0)
                 return;
             // Execute default action
             var item = selection.First();
-            if (item.provider.actions.Count > 0)
-                ExecuteAction(item.provider.actions[0], selection.ToArray(), !SearchSettings.keepOpen);
+            if (item.provider.actions.Count > actionIndex)
+                ExecuteAction(item.provider.actions.Skip(actionIndex).First(), selection.ToArray(), !SearchSettings.keepOpen);
         }
 
         public void ExecuteAction(SearchAction action, SearchItem[] items, bool endSearch = true)
@@ -499,25 +506,26 @@ namespace UnityEditor.Search
             SendEvent(SearchAnalytics.GenericEventType.QuickSearchShowActionMenu, item.provider.id);
             var menu = new GenericMenu();
             var shortcutIndex = 0;
-            var currentSelection = new[] { item };
-            foreach (var action in item.provider.actions.Where(a => a.enabled(currentSelection)))
+
+            var useSelection = context?.selection?.Any(e => string.Equals(e.id, item.id, StringComparison.OrdinalIgnoreCase)) ?? false;
+            var currentSelection = useSelection ? context.selection : new SearchSelection(new[] { item });
+            foreach (var action in item.provider.actions.Where(a => a.enabled?.Invoke(currentSelection) ?? true))
             {
                 var itemName = !string.IsNullOrWhiteSpace(action.content.text) ? action.content.text : action.content.tooltip;
                 if (shortcutIndex == 0)
                     itemName += " _enter";
-                menu.AddItem(new GUIContent(itemName, action.content.image), false, () => ExecuteAction(action, currentSelection, false));
+                else if (shortcutIndex == 1)
+                    itemName += " _&enter";
+
+                menu.AddItem(new GUIContent(itemName, action.content.image), false, () => ExecuteAction(action, currentSelection.ToArray(), false));
                 ++shortcutIndex;
             }
 
             menu.AddSeparator("");
             if (SearchSettings.searchItemFavorites.Contains(item.id))
-            {
                 menu.AddItem(new GUIContent("Remove from Favorites"), false, () => SearchSettings.RemoveItemFavorite(item));
-            }
             else
-            {
                 menu.AddItem(new GUIContent("Add to Favorites"), false, () => SearchSettings.AddItemFavorite(item));
-            }
 
             if (position == default)
                 menu.ShowAsContext();
@@ -713,10 +721,7 @@ namespace UnityEditor.Search
             GUILayout.BeginHorizontal(GUIStyle.none, GUILayout.Height(24f));
             {
                 GUILayout.Label(Styles.saveSearchesIconContent, Styles.panelHeaderIcon);
-                if (m_SideBarSplitter.width > 135f)
-                {
-                    GUILayout.Label(Styles.saveSearchesContent, Styles.panelHeader);
-                }
+                GUILayout.Label(Styles.saveSearchesContent, Styles.panelHeader);
                 GUILayout.FlexibleSpace();
 
                 EditorGUI.BeginChangeCheck();
@@ -783,7 +788,6 @@ namespace UnityEditor.Search
         internal void OnLostFocus()
         {
             AutoComplete.Clear();
-            nextFrame += () => GUIUtility.keyboardControl = 0;
         }
 
         internal void Update()

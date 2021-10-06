@@ -9,7 +9,7 @@ using UnityEngine.TextCore.Text;
 namespace UnityEditor.TextCore.Text
 {
     [CustomPropertyDrawer(typeof(TextStyle))]
-    public class TextStylePropertyDrawer : PropertyDrawer
+    internal class TextStylePropertyDrawer : PropertyDrawer
     {
         public static readonly float height = 95f;
 
@@ -107,7 +107,7 @@ namespace UnityEditor.TextCore.Text
 
 
     [CustomEditor(typeof(TextStyleSheet)), CanEditMultipleObjects]
-    public class TextStyleSheetEditor : Editor
+    internal class TextStyleSheetEditor : Editor
     {
         TextStyleSheet m_StyleSheet;
         SerializedProperty m_StyleListProp;

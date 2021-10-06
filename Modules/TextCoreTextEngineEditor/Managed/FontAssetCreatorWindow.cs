@@ -150,9 +150,13 @@ namespace UnityEditor.TextCore.Text
 
         TextAsset m_CharactersFromFile;
         int m_PointSize;
-        int m_Padding = 5;
-        //FaceStyles m_FontStyle = FaceStyles.Normal;
-        //float m_FontStyleValue = 2;
+        float m_PaddingFieldValue = 10;
+        int m_Padding;
+
+        enum PaddingMode { Undefined = 0, Percentage = 1, Pixel = 2 };
+
+        string[] k_PaddingOptionLabels = { "%", "px" };
+        private PaddingMode m_PaddingMode = PaddingMode.Percentage;
 
         GlyphRenderMode m_GlyphRenderMode = GlyphRenderMode.SDFAA;
         int m_AtlasWidth = 512;
@@ -438,6 +442,7 @@ namespace UnityEditor.TextCore.Text
                     m_SelectedFontAsset = null;
                     m_IsFontAtlasInvalid = true;
                     m_SourceFontFaces = GetFontFaces();
+                    m_SourceFontFaceIndex = 0;
                 }
 
                 // FONT FACE AND STYLE SELECTION
@@ -470,13 +475,23 @@ namespace UnityEditor.TextCore.Text
                 }
 
                 // FONT PADDING
+                GUILayout.BeginHorizontal();
                 EditorGUI.BeginChangeCheck();
-                m_Padding = EditorGUILayout.IntField("Padding", m_Padding);
-                m_Padding = (int)Mathf.Clamp(m_Padding, 0f, 64f);
+
+                m_PaddingFieldValue = EditorGUILayout.FloatField("Padding", m_PaddingFieldValue);
+
+                int selection = m_PaddingMode == PaddingMode.Undefined || m_PaddingMode == PaddingMode.Pixel ? 1 : 0;
+                selection = GUILayout.SelectionGrid(selection, k_PaddingOptionLabels, 2);
+
+                if (m_PaddingMode == PaddingMode.Percentage)
+                    m_PaddingFieldValue = (int)(m_PaddingFieldValue + 0.5f);
+
                 if (EditorGUI.EndChangeCheck())
                 {
+                    m_PaddingMode = (PaddingMode)selection + 1;
                     m_IsFontAtlasInvalid = true;
                 }
+                GUILayout.EndHorizontal();
 
                 // FONT PACKING METHOD SELECTION
                 EditorGUI.BeginChangeCheck();
@@ -839,6 +854,8 @@ namespace UnityEditor.TextCore.Text
 
                                         FontEngine.SetFaceSize(m_PointSize);
 
+                                        m_Padding = (int)(m_PaddingMode == PaddingMode.Percentage ? m_PointSize * m_PaddingFieldValue / 100f : m_PaddingFieldValue);
+
                                         m_GlyphsToPack.Clear();
                                         m_GlyphsPacked.Clear();
 
@@ -909,6 +926,8 @@ namespace UnityEditor.TextCore.Text
                                     // Set point size
                                     FontEngine.SetFaceSize(m_PointSize);
 
+                                    m_Padding = (int)(m_PaddingMode == PaddingMode.Percentage ? m_PointSize * m_PaddingFieldValue / 100 : m_PaddingFieldValue);
+
                                     m_GlyphsToPack.Clear();
                                     m_GlyphsPacked.Clear();
 
@@ -950,6 +969,8 @@ namespace UnityEditor.TextCore.Text
                                 int packingModifier = ((GlyphRasterModes)m_GlyphRenderMode & GlyphRasterModes.RASTER_MODE_BITMAP) == GlyphRasterModes.RASTER_MODE_BITMAP ? 0 : 1;
 
                                 FontEngine.SetFaceSize(m_PointSize);
+
+                                m_Padding = (int)(m_PaddingMode == PaddingMode.Percentage ? m_PointSize * m_PaddingFieldValue / 100 : m_PaddingFieldValue);
 
                                 m_GlyphsToPack.Clear();
                                 m_GlyphsPacked.Clear();
@@ -1203,7 +1224,7 @@ namespace UnityEditor.TextCore.Text
 
             missingGlyphReport = "Font: <b>" + colorTag2 + m_FaceInfo.familyName + "</color></b>  Style: <b>" + colorTag2 + m_FaceInfo.styleName + "</color></b>";
 
-            missingGlyphReport += "\nPoint Size: <b>" + colorTag2 + m_FaceInfo.pointSize + "</color></b>   SP/PD Ratio: <b>" + colorTag2 +  ((float)m_Padding / m_FaceInfo.pointSize).ToString("0.0%" + "</color></b>");
+            missingGlyphReport += "\nPoint Size: <b>" + colorTag2 + m_FaceInfo.pointSize + "</color></b>   Padding: <b>" + colorTag2 + m_Padding + "</color></b>   SP/PD Ratio: <b>" + colorTag2 + ((float)m_Padding / m_FaceInfo.pointSize).ToString("0.0%" + "</color></b>");
 
             missingGlyphReport += "\n\nCharacters included: <color=#ffff00><b>" + m_FontCharacterTable.Count + "/" + m_CharacterCount + "</b></color>";
             missingGlyphReport += "\nMissing characters: <color=#ffff00><b>" + m_MissingCharacters.Count + "</b></color>";
@@ -1743,6 +1764,7 @@ namespace UnityEditor.TextCore.Text
             settings.pointSizeSamplingMode = m_PointSizeSamplingMode;
             settings.pointSize = m_PointSize;
             settings.padding = m_Padding;
+            settings.paddingMode = (int)m_PaddingMode;
             settings.packingMode = (int)m_PackingMode;
             settings.atlasWidth = m_AtlasWidth;
             settings.atlasHeight = m_AtlasHeight;
@@ -1750,8 +1772,6 @@ namespace UnityEditor.TextCore.Text
             settings.characterSequence = m_CharacterSequence;
             settings.referencedFontAssetGUID = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(m_ReferencedFontAsset));
             settings.referencedTextAssetGUID = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(m_CharactersFromFile));
-            //settings.fontStyle = (int)m_FontStyle;
-            //settings.fontStyleModifier = m_FontStyleValue;
             settings.renderMode = (int)m_GlyphRenderMode;
             settings.includeFontFeatures = m_IncludeFontFeatures;
 
@@ -1769,6 +1789,8 @@ namespace UnityEditor.TextCore.Text
             m_PointSizeSamplingMode  = settings.pointSizeSamplingMode;
             m_PointSize = settings.pointSize;
             m_Padding = settings.padding;
+            m_PaddingMode = settings.paddingMode == 0 ? PaddingMode.Pixel : (PaddingMode)settings.paddingMode;
+            m_PaddingFieldValue = m_PaddingMode == PaddingMode.Percentage ? (float)m_Padding / m_PointSize * 100 : m_Padding;
             m_PackingMode = (FontPackingModes)settings.packingMode;
             m_AtlasWidth = settings.atlasWidth;
             m_AtlasHeight = settings.atlasHeight;
@@ -1776,8 +1798,6 @@ namespace UnityEditor.TextCore.Text
             m_CharacterSequence = settings.characterSequence;
             m_ReferencedFontAsset = AssetDatabase.LoadAssetAtPath<FontAsset>(AssetDatabase.GUIDToAssetPath(settings.referencedFontAssetGUID));
             m_CharactersFromFile = AssetDatabase.LoadAssetAtPath<TextAsset>(AssetDatabase.GUIDToAssetPath(settings.referencedTextAssetGUID));
-            //m_FontStyle = (FaceStyles)settings.fontStyle;
-            //m_FontStyleValue = settings.fontStyleModifier;
             m_GlyphRenderMode = (GlyphRenderMode)settings.renderMode;
             m_IncludeFontFeatures = settings.includeFontFeatures;
         }

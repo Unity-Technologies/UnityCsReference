@@ -79,7 +79,7 @@ namespace UnityEditor
 
             sceneView.isPingingObject = true;
             sceneView.pingStartTime = Time.realtimeSinceStartup;
-            Handles.SetPingedMaterialInstanceID(sceneView.camera, targetMaterial.GetInstanceID());
+            sceneView.submeshOutlineMaterialId = targetMaterial.GetInstanceID();
         }
 
         static Object AssignSelectedObject(SerializedProperty property, ObjectFieldValidator validator, System.Type objectType, Event evt)

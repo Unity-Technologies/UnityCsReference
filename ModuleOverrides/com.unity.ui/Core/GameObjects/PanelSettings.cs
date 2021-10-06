@@ -182,9 +182,14 @@ namespace UnityEngine.UIElements
         /// Specifies a Render Texture to render the panel's UI on.
         /// </summary>
         /// <remarks>
-        /// This is useful when you want to display UI on 3D geometry in the Scene.
-        /// For an example of UI displayed on 3D objects via renderTextures, see the UI Toolkit samples
-        /// (menu: <b>Window > UI Toolkit > Examples > Rendering > RenderTexture (Runtime)</b>).
+        /// This can be used to display UI on a 3D geometry in the Scene, to perform manual UI post-processing, or
+        /// render the UI on a MSAA-enabled Render Texture.
+        ///
+        /// When the project color space is linear, you should use a Render Texture whose format is
+        /// GraphicsFormat.R8G8B8A8_SRGB.
+        ///
+        /// When the project color space is gamma, you should use a Render Texture whose format is
+        /// GraphicsFormat.R8G8B8A8_UNorm.
         /// </remarks>
         public RenderTexture targetTexture
         {

@@ -196,6 +196,8 @@ namespace UnityEditor.Search
             }
         }
 
+        internal bool empty => string.IsNullOrEmpty(m_SearchText);
+
         /// <summary>
         /// Raw search text (i.e. what is in the search text box)
         /// </summary>

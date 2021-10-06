@@ -136,13 +136,16 @@ namespace UnityEditor
 
         void UpdateAfterAssetChange()
         {
+            if (m_MixersTree == null)
+                Init();
+
+            m_AllControllers = FindAllAudioMixerControllers();
+
             if (m_Controller != null)
             {
                 m_Controller.SanitizeGroupViews();
                 m_Controller.OnUnitySelectionChanged();
             }
-
-            m_AllControllers = FindAllAudioMixerControllers();
 
             if (m_GroupTree != null)
                 m_GroupTree.ReloadTreeData();
@@ -267,7 +270,6 @@ namespace UnityEditor
             Undo.undoRedoPerformed += UndoRedoPerformed;
             EditorApplication.pauseStateChanged += OnPauseStateChanged;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
-            EditorApplication.projectChanged += OnProjectChanged;
         }
 
         public void OnDisable()
@@ -275,7 +277,6 @@ namespace UnityEditor
             EditorApplication.pauseStateChanged -= OnPauseStateChanged;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             Undo.undoRedoPerformed -= UndoRedoPerformed;
-            EditorApplication.projectChanged -= OnProjectChanged;
         }
 
         void OnPauseStateChanged(PauseState state)
@@ -351,15 +352,6 @@ namespace UnityEditor
 
             if (m_Controller)
                 m_Controller.ForceSetView(m_Controller.currentViewIndex);
-        }
-
-        void OnProjectChanged()
-        {
-            if (m_MixersTree == null)
-                Init();
-
-            m_AllControllers = FindAllAudioMixerControllers();
-            m_MixersTree.ReloadTree();
         }
 
         // Called from C++
