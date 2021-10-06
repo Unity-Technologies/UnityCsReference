@@ -6337,6 +6337,9 @@
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\UIElements\MemoryUsageBreakdownElement.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\UIElements\MemoryUsageBreakdownElement.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\UIElements\SelectableLabel.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\UIElements\SelectableLabel.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\Public\FrameDataView.bindings.cs">
       <Link>Modules\ProfilerEditor\Public\FrameDataView.bindings.cs</Link>
     </Compile>

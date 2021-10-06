@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -104,18 +105,26 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!string.IsNullOrEmpty(onlineUrl) && m_Application.isInternetReachable)
             {
                 var request = UnityWebRequest.Head(onlineUrl);
-                var operation = request.SendWebRequest();
-                operation.completed += (op) =>
+                try
                 {
-                    if (request.responseCode >= 200 && request.responseCode < 300)
+                    var operation = request.SendWebRequest();
+                    operation.completed += (op) =>
                     {
-                        m_Application.OpenURL(onlineUrl);
+                        if (request.responseCode >= 200 && request.responseCode < 300)
+                        {
+                            m_Application.OpenURL(onlineUrl);
 
-                        PackageManagerWindowAnalytics.SendEvent($"{analyticsEvent}ValidUrl", m_Version?.uniqueId);
-                    }
-                    else
-                        HandleInvalidOrUnreachableOnlineUrl(onlineUrl, offlineDocPath, docType, analyticsEvent);
-                };
+                            PackageManagerWindowAnalytics.SendEvent($"{analyticsEvent}ValidUrl", m_Version?.uniqueId);
+                        }
+                        else
+                            HandleInvalidOrUnreachableOnlineUrl(onlineUrl, offlineDocPath, docType, analyticsEvent);
+                    };
+                }
+                catch (InvalidOperationException e)
+                {
+                    if (e.Message != "Insecure connection not allowed")
+                        throw e;
+                }
                 return;
             }
             HandleInvalidOrUnreachableOnlineUrl(onlineUrl, offlineDocPath, docType, analyticsEvent);
