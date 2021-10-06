@@ -19,7 +19,7 @@ namespace UnityEditor
         private const string k_MonoScriptReference = "file:///unity/ScriptReference/MonoBehaviour.html";
         private static Dictionary<string, string> m_UrlCache = new Dictionary<string, string>();
         private const string k_AbsoluteURI = "file:///unity/";
-        private const string k_AbsoluteFileRef = "file://";
+        private const string k_AbsoluteFileRef = "file:///";
         private const string k_ManualSection = "manual";
         private const string k_ApiSection = "api";
         private static string m_BaseDocumentationUrl;
@@ -282,6 +282,8 @@ namespace UnityEditor
 
             if (IsLocalPath(documentPath))
             {
+                documentPath = Uri.UnescapeDataString(documentPath);
+
                 if (!File.Exists(documentPath))
                 {
                     documentPath = "";

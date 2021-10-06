@@ -176,14 +176,9 @@ namespace UnityEditor
                 // Draw with custom drawer - retrieve it BEFORE increasing nesting.
                 PropertyDrawer drawer = propertyDrawer;
 
-                try
+                using (var nestingContext = IncrementNestingContext())
                 {
-                    m_NestingLevel++;
                     drawer.OnGUISafe(position, property.Copy(), label ?? EditorGUIUtility.TempContent(property.localizedDisplayName, tooltip));
-                }
-                finally
-                {
-                    m_NestingLevel--;
                 }
 
                 // Restore widths
@@ -303,14 +298,9 @@ namespace UnityEditor
             {
                 // Retrieve drawer BEFORE increasing nesting.
                 PropertyDrawer drawer = propertyDrawer;
-                try
+                using (var nestingContext = IncrementNestingContext())
                 {
-                    m_NestingLevel++;
                     height += drawer.GetPropertyHeightSafe(property.Copy(), label ?? EditorGUIUtility.TempContent(property.localizedDisplayName, tooltip));
-                }
-                finally
-                {
-                    m_NestingLevel--;
                 }
             }
             else if (!includeChildren)
@@ -353,15 +343,9 @@ namespace UnityEditor
             {
                 // Retrieve drawer BEFORE increasing nesting.
                 PropertyDrawer drawer = propertyDrawer;
-                try
+                using (var nestingContext = IncrementNestingContext())
                 {
-                    m_NestingLevel++;
-                    bool canCache = drawer.CanCacheInspectorGUISafe(property.Copy());
-                    return canCache;
-                }
-                finally
-                {
-                    m_NestingLevel--;
+                    return drawer.CanCacheInspectorGUISafe(property.Copy());
                 }
             }
 
@@ -496,5 +480,45 @@ namespace UnityEditor
         }
 
         internal static bool UseReorderabelListControl(SerializedProperty property) => IsNonStringArray(property) && IsArrayReorderable(property);
+
+        public NestingContext ApplyNestingContext(int nestingLevel)
+        {
+            return NestingContext.Get(this, nestingLevel);
+        }
+
+        public NestingContext IncrementNestingContext()
+        {
+            return NestingContext.Get(this, m_NestingLevel + 1);
+        }
+
+        public struct NestingContext : IDisposable
+        {
+            private PropertyHandler m_Handler;
+            private int m_NestingLevel;
+            private int m_OldNestingLevel;
+
+            public static NestingContext Get(PropertyHandler handler, int nestingLevel)
+            {
+                var result = new NestingContext {m_Handler = handler, m_NestingLevel = nestingLevel};
+                result.Open();
+                return result;
+            }
+
+            public void Dispose()
+            {
+                Close();
+            }
+
+            private void Open()
+            {
+                m_OldNestingLevel = m_Handler.m_NestingLevel;
+                m_Handler.m_NestingLevel = m_NestingLevel;
+            }
+
+            private void Close()
+            {
+                m_Handler.m_NestingLevel = m_OldNestingLevel;
+            }
+        }
     }
 }

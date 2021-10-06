@@ -760,14 +760,14 @@ namespace UnityEditor
 
         public static void GetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup, out string[] defines)
         {
-            defines = GetScriptingDefineSymbolsForGroup(targetGroup).Split(';');
+            defines = ConvertScriptingDefineStringToArray(GetScriptingDefineSymbolsForGroup(targetGroup));
         }
 
         internal static readonly char[] defineSplits = new[] { ';', ',', ' ' };
 
         internal static string[] ConvertScriptingDefineStringToArray(string defines)
         {
-            return defines.Split(defineSplits);
+            return defines.Split(defineSplits, StringSplitOptions.RemoveEmptyEntries);
         }
 
         internal static string ConvertScriptingDefineArrayToString(string[] defines)
@@ -807,7 +807,7 @@ namespace UnityEditor
         public static void SetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup, string defines)
         {
             if (!string.IsNullOrEmpty(defines))
-                defines = string.Join(";", defines.Split(defineSplits, StringSplitOptions.RemoveEmptyEntries));
+                defines = string.Join(";", ConvertScriptingDefineStringToArray(defines));
             SetScriptingDefineSymbolsForGroupInternal(targetGroup, defines);
         }
 
