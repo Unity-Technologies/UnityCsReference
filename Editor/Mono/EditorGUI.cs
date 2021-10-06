@@ -2562,7 +2562,15 @@ namespace UnityEditor
 
                     if (!s_DelayedTextEditor.IsEditingControl(id) && s_DragCandidateState == DragCandidateState.NotDragging)
                     {
-                        bool equalValues = value.isDouble ? str.Equals(value.doubleVal) : str.Equals(value.longVal);
+                        bool equalValues = false;
+                        if (value.isDouble)
+                        {
+                            equalValues = double.TryParse(str, out var strToDouble) && Math.Abs(value.doubleVal - strToDouble) < Double.Epsilon;
+                        }
+                        else
+                        {
+                            equalValues = str.Equals(value.longVal);
+                        }
                         if (!equalValues && (!showMixedValue || (showMixedValue && k_MultiEditValueString != str)))
                         {
                             GUI.changed = true;
@@ -5402,7 +5410,7 @@ namespace UnityEditor
             position.width = Mathf.Max(position.width, 2);
             position.height = Mathf.Max(position.height, 2);
 
-            if (GUIUtility.keyboardControl == id && Event.current.type != EventType.Layout)
+            if (GUIUtility.keyboardControl == id && evt.type != EventType.Layout && GUIView.current == CurveEditorWindow.instance.delegateView)
             {
                 if (s_CurveID != id)
                 {
@@ -5451,7 +5459,7 @@ namespace UnityEditor
                     EditorStyles.colorPickerBox.Draw(position2, GUIContent.none, id, false);
                     break;
                 case EventType.ExecuteCommand:
-                    if (s_CurveID == id)
+                    if (s_CurveID == id && GUIView.current == CurveEditorWindow.instance.delegateView)
                     {
                         switch (evt.commandName)
                         {

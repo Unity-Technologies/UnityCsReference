@@ -711,9 +711,9 @@ namespace UnityEngine.UIElements
                 SyncGUIStyle(this, editorEngine.style);
             }
 
-            private void OnAttachToPanel(AttachToPanelEvent e)
+            private void OnAttachToPanel(AttachToPanelEvent attachEvent)
             {
-                m_TextHandle = e.destinationPanel.contextType == ContextType.Editor
+                m_TextHandle = attachEvent.destinationPanel.contextType == ContextType.Editor
                     ? TextNativeHandle.New()
                     : TextCoreHandle.New();
             }

@@ -63,7 +63,17 @@ namespace UnityEditor
             if (Mathf.Abs(pos.x) > 100000 || Mathf.Abs(pos.y) > 100000 || Mathf.Abs(pos.z) > 100000)
                 EditorGUILayout.HelpBox(s_Contents.floatingPointWarning, MessageType.Warning);
 
+            bool saveUndoName = serializedObject.hasModifiedProperties;
             serializedObject.ApplyModifiedProperties();
+
+            if (saveUndoName)
+            {
+                int selection = Selection.count;
+                if (t.position != pos)
+                    Undo.SetCurrentGroupName(string.Format("Set Position to {0} in {1}", t.localPosition, selection == 1 ? target.name : "Selected Objects"));
+                else
+                    Undo.SetCurrentGroupName(string.Format("Set Scale to {0} in {1}", t.localScale, selection == 1 ? target.name : "Selected Objects"));
+            }
 
             if (m_IsScaleDirty)
             {

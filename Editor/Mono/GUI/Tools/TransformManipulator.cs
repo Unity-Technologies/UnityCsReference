@@ -302,13 +302,15 @@ namespace UnityEditor
             SetLocalHandleOffsetScaleDelta(scaleDelta, pivotRotation);
 
             Object[] undoObjects = new Object[s_MouseDownState.Length];
+            string undoName = "";
 
             for (int i = 0; i < s_MouseDownState.Length; i++)
             {
                 var cur = s_MouseDownState[i];
                 undoObjects[i] = cur.transform;
+                undoName = cur.transform.name;
             }
-            Undo.RecordObjects(undoObjects, "Scale");
+            Undo.RecordObjects(undoObjects, "Scale Selected Objects");
 
             Vector3 point = Tools.handlePosition;
             for (int i = 0; i < s_MouseDownState.Length; i++)
@@ -320,6 +322,8 @@ namespace UnityEditor
                     pivotRotation = s_MouseDownState[i].rotation;
                 s_MouseDownState[i].SetScaleDelta(scaleDelta, point, pivotRotation, false);
             }
+            if (undoObjects.Length == 1)
+                Undo.SetCurrentGroupName("Scale " + undoName);
         }
 
         public static void SetResizeDelta(Vector3 scaleDelta, Vector3 pivotPosition, Quaternion pivotRotation)
@@ -333,14 +337,14 @@ namespace UnityEditor
             {
                 var cur = s_MouseDownState[i];
                 if (cur.rectTransform != null)
-                    Undo.RecordObject((Object)cur.rectTransform, "Resize");
+                    Undo.RecordObject((Object)cur.rectTransform, "Resize " + cur.rectTransform.name);
                 else
                 {
                     SpriteRenderer sr = cur.transform.GetComponent<SpriteRenderer>();
                     if (sr != null && sr.drawMode != SpriteDrawMode.Simple)
-                        Undo.RecordObjects(new Object[] {(Object)sr, (Object)cur.transform}, "Resize");
+                        Undo.RecordObjects(new Object[] {(Object)sr, (Object)cur.transform}, "Resize Selected Objects");
                     else
-                        Undo.RecordObject((Object)cur.transform, "Resize");
+                        Undo.RecordObject((Object)cur.transform, "Resize " + cur.transform.name);
                 }
             }
 
@@ -359,13 +363,15 @@ namespace UnityEditor
             Vector3 positionDelta = newPosition - oldPosition;
 
             Object[] undoObjects = new Object[s_MouseDownState.Length];
+            string undoName = "";
 
             for (int i = 0; i < s_MouseDownState.Length; i++)
             {
                 var cur = s_MouseDownState[i];
                 undoObjects[i] = (cur.rectTransform != null ? (Object)cur.rectTransform : (Object)cur.transform);
+                undoName = (cur.rectTransform != null ? cur.rectTransform.name : cur.transform.name);
             }
-            Undo.RecordObjects(undoObjects, "Move");
+            Undo.RecordObjects(undoObjects, "Move"); // The name here is less important, it has to be updated at the end of the move
 
             if (s_MouseDownState.Length > 0)
             {
@@ -376,6 +382,11 @@ namespace UnityEditor
                 {
                     s_MouseDownState[i].SetPositionDelta(firstDelta, false);
                 }
+
+                if (undoObjects.Length == 1)
+                    Undo.SetCurrentGroupName("Move " + undoName + newPosition);
+                else
+                    Undo.SetCurrentGroupName("Move Selected Objects " + newPosition);
             }
         }
 

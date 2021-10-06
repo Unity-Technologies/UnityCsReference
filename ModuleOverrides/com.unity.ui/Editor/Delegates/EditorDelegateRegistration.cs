@@ -19,6 +19,7 @@ namespace UnityEditor.UIElements
             AssetOperationsAccess.GetAssetDirtyCount = GetAssetDirtyCount;
             PanelTextSettings.EditorGUIUtilityLoad = EditorGUIUtilityLoad;
             PanelTextSettings.GetCurrentLanguage = GetCurrentLanguage;
+            DropdownUtility.MakeDropdownFunc = CreateGenericOSMenu;
         }
 
         internal static SystemLanguage GetCurrentLanguage()
@@ -49,6 +50,11 @@ namespace UnityEditor.UIElements
         internal static Object EditorGUIUtilityLoad(string path)
         {
             return EditorGUIUtility.Load(path);
+        }
+
+        private static GenericOSMenu CreateGenericOSMenu()
+        {
+            return new GenericOSMenu();
         }
     }
 }

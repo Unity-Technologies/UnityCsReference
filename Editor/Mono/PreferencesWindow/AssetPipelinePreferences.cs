@@ -16,6 +16,8 @@ namespace UnityEditor
         {
             public static readonly GUIContent autoRefresh = EditorGUIUtility.TrTextContent("Auto Refresh", "Automatically import changed assets.");
             public static readonly GUIContent autoRefreshHelpBox = EditorGUIUtility.TrTextContent("Auto Refresh must be set when using Collaboration feature.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
+            public static readonly GUIContent desiredImportWorkerCountPctOfLogicalCPUs = EditorGUIUtility.TrTextContent("Import Worker Count %", "Desired asset import worker count for new projects in percentage of available logical CPU cores.");
+            public static readonly GUIContent desiredImportWorkerCountPctOfLogicalCPUsLearnMore = new GUIContent("Learn more...", "Go to import worker documentation.");
             public static readonly GUIContent directoryMonitoring = EditorGUIUtility.TrTextContent("Directory Monitoring", "Monitor directories instead of scanning all project files to detect asset changes.");
             public static readonly GUIContent compressAssetsOnImport = EditorGUIUtility.TrTextContent("Compress Textures on Import", "Disable to skip texture compression during import process (textures will be imported into uncompressed formats, and compressed when making a build).");
             public static readonly GUIContent verifySavingAssets = EditorGUIUtility.TrTextContent("Verify Saving Assets", "Show confirmation dialog whenever Unity saves any assets.");
@@ -32,7 +34,10 @@ namespace UnityEditor
         bool m_CompressAssetsOnImport;
         bool m_VerifySavingAssets;
         bool m_EnterSafeModeDialog;
+        float m_DesiredImportWorkerCountPctOfLogicalCPUs;
 
+        const string kDesiredImportWorkerCountPctOfLogicalCPUsKey = "DesiredImportWorkerCountPctOfLogicalCPUs";
+        const float kDefaultDesiredImportWorkerCountPctOfLogicalCPUs = 0.25f;
 
         const string kCacheServerIPAddressKey = "CacheServer2IPAddress";
         const string kCacheServerModeKey = "CacheServer2Mode";
@@ -74,6 +79,11 @@ namespace UnityEditor
             }
         }
 
+        private static float GetDesiredImportWorkerCountPctOfLogicalCPUs()
+        {
+            return EditorPrefs.GetFloat(kDesiredImportWorkerCountPctOfLogicalCPUsKey, kDefaultDesiredImportWorkerCountPctOfLogicalCPUs);
+        }
+
         void ReadAssetImportPreferences()
         {
             m_AutoRefresh = EditorPrefs.GetBool("kAutoRefresh");
@@ -81,19 +91,33 @@ namespace UnityEditor
             m_VerifySavingAssets = EditorPrefs.GetBool("VerifySavingAssets", false);
             m_CompressAssetsOnImport = Unsupported.GetApplicationSettingCompressAssetsOnImport();
             m_EnterSafeModeDialog = EditorPrefs.GetBool("EnterSafeModeDialog", true);
+            m_DesiredImportWorkerCountPctOfLogicalCPUs = GetDesiredImportWorkerCountPctOfLogicalCPUs();
         }
 
         void WriteAssetImportPreferences()
         {
             EditorPrefs.SetBool("kAutoRefresh", m_AutoRefresh);
+            bool doRefreshSettings = false;
+
             bool oldDirectoryMonitoring = EditorPrefs.GetBool("DirectoryMonitoring", true);
             if (oldDirectoryMonitoring != m_DirectoryMonitoring)
             {
                 EditorPrefs.SetBool("DirectoryMonitoring", m_DirectoryMonitoring);
-                AssetDatabase.RefreshSettings();
+                doRefreshSettings = true;
             }
+
+            float oldDesiredImportWorkerCountPctOfLogicalCPUs = EditorPrefs.GetFloat(kDesiredImportWorkerCountPctOfLogicalCPUsKey, kDefaultDesiredImportWorkerCountPctOfLogicalCPUs);
+            if (oldDesiredImportWorkerCountPctOfLogicalCPUs != m_DesiredImportWorkerCountPctOfLogicalCPUs)
+            {
+                EditorPrefs.SetFloat(kDesiredImportWorkerCountPctOfLogicalCPUsKey, m_DesiredImportWorkerCountPctOfLogicalCPUs);
+                doRefreshSettings = true;
+            }
+
             EditorPrefs.SetBool("VerifySavingAssets", m_VerifySavingAssets);
             EditorPrefs.SetBool("EnterSafeModeDialog", m_EnterSafeModeDialog);
+
+            if (doRefreshSettings)
+                AssetDatabase.RefreshSettings();
         }
 
         static void ReadCacheServerPreferences()
@@ -243,6 +267,7 @@ namespace UnityEditor
                 else
                     m_AutoRefresh = EditorGUILayout.Toggle(Properties.autoRefresh, m_AutoRefresh);
             }
+            DoImportWorkerCount();
             DoDirectoryMonitoring();
 
             bool oldCompressOnImport = m_CompressAssetsOnImport;
@@ -257,6 +282,21 @@ namespace UnityEditor
                 WriteAssetImportPreferences();
                 ReadAssetImportPreferences();
             }
+        }
+
+        void DoImportWorkerCount()
+        {
+            GUILayout.BeginHorizontal();
+
+            var val = EditorGUILayout.FloatField(Properties.desiredImportWorkerCountPctOfLogicalCPUs, m_DesiredImportWorkerCountPctOfLogicalCPUs * 100.0f);
+            m_DesiredImportWorkerCountPctOfLogicalCPUs = Mathf.Clamp(val / 100f, 0f, 1f);
+
+            if (GUILayout.Button(Properties.desiredImportWorkerCountPctOfLogicalCPUsLearnMore, EditorStyles.linkLabel))
+            {
+                Application.OpenURL("https://docs.unity3d.com/Manual/ParallelImport.html");
+            }
+
+            GUILayout.EndHorizontal();
         }
 
         void DoDirectoryMonitoring()

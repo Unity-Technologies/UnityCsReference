@@ -137,7 +137,8 @@ namespace UnityEditor
                     MathUtils.ClampToFloat(m_EulerFloats[0].doubleVal),
                     MathUtils.ClampToFloat(m_EulerFloats[1].doubleVal),
                     MathUtils.ClampToFloat(m_EulerFloats[2].doubleVal));
-                Undo.RecordObjects(targets, "Inspector");  // Generic undo title to be consistent with Position and Scale changes.
+                Undo.RecordObjects(targets, "Inspector");  // Generic undo title as remove duplicates will discard the name.
+                Undo.SetCurrentGroupName(string.Format("Set Rotation"));
                 for (var idx = 0; idx < targets.Length; ++idx)
                 {
                     var tr = targets[idx] as Transform;

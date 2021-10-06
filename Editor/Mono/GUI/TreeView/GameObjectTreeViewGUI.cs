@@ -43,7 +43,7 @@ namespace UnityEditor
             public static Color hoveredBackgroundColor =
                 EditorResources.GetStyle("game-object-tree-view").GetColor("-unity-object-tree-hovered-color");
 
-            public static Texture2D sceneAssetIcon = EditorGUIUtility.FindTexture(typeof(SceneAsset));
+            public static Texture2D sceneIcon = EditorGUIUtility.FindTexture("Scene");
             public static Texture2D prefabIcon = EditorGUIUtility.FindTexture("Prefab Icon");
 
             static GameObjectStyles()
@@ -538,12 +538,12 @@ namespace UnityEditor
             var go = item.objectPPTR as GameObject;
             if (go == null)
             {
-                item.icon = GameObjectStyles.sceneAssetIcon;
+                item.icon = GameObjectStyles.sceneIcon;
             }
             else
             {
                 if (SubSceneGUI.IsSubSceneHeader(go))
-                    item.icon = GameObjectStyles.sceneAssetIcon;
+                    item.icon = GameObjectStyles.sceneIcon;
                 else
                     item.icon = PrefabUtility.GetIconForGameObject(go);
             }

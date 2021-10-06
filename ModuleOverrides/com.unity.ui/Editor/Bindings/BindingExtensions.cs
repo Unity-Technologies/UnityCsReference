@@ -843,6 +843,7 @@ namespace UnityEditor.UIElements.Bindings
     {
         public void Bind(VisualElement element, SerializedObject obj)
         {
+            element.SetProperty(BindingExtensions.s_DataSourceProperty, obj);
             if (element.panel != null || element is EditorElement || element is InspectorElement)
             {
                 var context = FindOrCreateBindingContext(element, obj);
@@ -855,6 +856,12 @@ namespace UnityEditor.UIElements.Bindings
         }
 
         public void Unbind(VisualElement element)
+        {
+            element?.SetProperty(BindingExtensions.s_DataSourceProperty, null);
+            UnbindTree(element);
+        }
+
+        private void UnbindTree(VisualElement element)
         {
             if (element == null)
             {
@@ -875,7 +882,7 @@ namespace UnityEditor.UIElements.Bindings
 
                 for (int i = 0; i < childCount; ++i)
                 {
-                    Unbind(element.hierarchy[i]);
+                    UnbindTree(element.hierarchy[i]);
                 }
             }
         }

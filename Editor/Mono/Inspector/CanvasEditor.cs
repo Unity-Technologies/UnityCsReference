@@ -143,7 +143,7 @@ namespace UnityEditor
             if (EditorGUI.EndChangeCheck())
             {
                 var rectTransforms = targets.Select(c => (c as Canvas).transform).ToArray();
-                Undo.RegisterCompleteObjectUndo(rectTransforms, "Inspector");
+                Undo.RegisterCompleteObjectUndo(rectTransforms, "Modified RectTransform Values");
                 serializedObject.ApplyModifiedProperties();
                 foreach (Canvas canvas in targets)
                 {

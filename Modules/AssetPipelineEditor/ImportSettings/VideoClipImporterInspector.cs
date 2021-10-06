@@ -207,14 +207,26 @@ namespace UnityEditor
 
         protected override Type extraDataType => typeof(TargetSettings);
 
+        class BuildPlatformGroupComparer : IEqualityComparer<BuildPlatform>
+        {
+            public bool Equals(BuildPlatform a, BuildPlatform z) => a.targetGroup == z.targetGroup;
+            public int GetHashCode(BuildPlatform platform) => (int)platform.targetGroup;
+        }
+        static readonly BuildPlatformGroupComparer s_BuildPlatformGroupComparer = new BuildPlatformGroupComparer();
+
+        // Don't add duplicate platform groups even if there are multiple platforms in the group
+        // Case 1360821
+        static IEnumerable<BuildPlatform> ValidPlatforms =>
+            BuildPlatforms.instance.GetValidPlatforms().Distinct(s_BuildPlatformGroupComparer);
+
         protected override void InitializeExtraDataInstance(Object extraData, int targetIndex)
         {
             var targetSettings = extraData as TargetSettings;
             var currentTarget = targets[targetIndex] as VideoClipImporter;
             if (targetSettings != null && currentTarget != null && targetSettings.allSettings == null)
             {
-                var validPlatforms = BuildPlatforms.instance.GetValidPlatforms();
-                targetSettings.allSettings = new List<InspectorTargetSettings>(validPlatforms.Count + 1);
+                var validPlatforms = ValidPlatforms;
+                targetSettings.allSettings = new List<InspectorTargetSettings>(validPlatforms.Count() + 1);
 
                 var defaultSetting = new InspectorTargetSettings();
                 defaultSetting.target = BuildTargetGroup.Unknown;
@@ -224,9 +236,10 @@ namespace UnityEditor
 
                 foreach (var validPlatform in validPlatforms)
                 {
+                    var buildTargetGroup = validPlatform.targetGroup;
                     var setting = new InspectorTargetSettings();
-                    setting.target = validPlatform.namedBuildTarget.ToBuildTargetGroup();
-                    setting.settings = currentTarget.Internal_GetTargetSettings(validPlatform.namedBuildTarget.ToBuildTargetGroup());
+                    setting.target = buildTargetGroup;
+                    setting.settings = currentTarget.Internal_GetTargetSettings(buildTargetGroup);
                     setting.overridePlatform = setting.settings != null;
                     if (!setting.overridePlatform)
                     {
@@ -537,7 +550,7 @@ namespace UnityEditor
 
         private void OnTargetsInspectorGUI()
         {
-            BuildPlatform[] validPlatforms = BuildPlatforms.instance.GetValidPlatforms().ToArray();
+            BuildPlatform[] validPlatforms = ValidPlatforms.ToArray();
             int shownSettingsPage = EditorGUILayout.BeginPlatformGrouping(validPlatforms, GUIContent.Temp("Default"));
 
             string platformName = (shownSettingsPage == -1) ? "Default" : validPlatforms[shownSettingsPage].name;

@@ -175,11 +175,20 @@ namespace UnityEditor.UIElements.Samples
         private static T Add<T>(VisualElement parent, PseudoStates pseudo = 0) where T : VisualElement, new()
         {
             var element = new T();
-            element.pseudoStates |= pseudo;
+
+            // Pseudo states get cleared on attaching to panel, so this must be done each time that happens.
+            // Doing it just when we create the window doesn't work because when docked, all views docked in the same
+            // place share the panel and get attached/detached as we switch tabs.
+            element.RegisterCallback<AttachToPanelEvent>(evt =>
+            {
+                element.pseudoStates |= pseudo;
+
+                // The children will still attach to panel, so we need to delay the uQuery call until that's done.
+                element.schedule.Execute(() => ApplyModificationsToInputs(element, BaseField<int>.inputUssClassName, pseudo));
+            });
+
             if ((pseudo & PseudoStates.Disabled) == PseudoStates.Disabled)
                 element.SetEnabled(false);
-
-            ApplyModificationsToInputs(element, BaseField<int>.inputUssClassName, pseudo);
 
             IgnoreAllInputsRecursive(element);
 

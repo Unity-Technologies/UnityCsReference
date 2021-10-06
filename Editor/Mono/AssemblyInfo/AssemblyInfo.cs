@@ -124,6 +124,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.UIElements.Tests")]
 [assembly: InternalsVisibleTo("Unity.UIElements.PlayModeTests")]
 [assembly: InternalsVisibleTo("Unity.UIElements.EditorTests")]
+[assembly: InternalsVisibleTo("Unity.TextCore.Editor.Tests")]
 [assembly: InternalsVisibleTo("UnityEditor.UIElementsGameObjectsModule")]
 [assembly: InternalsVisibleTo("UnityEditor.TextCoreTextEngineModule")]
 [assembly: InternalsVisibleTo("Unity.TextMeshPro.Editor")]

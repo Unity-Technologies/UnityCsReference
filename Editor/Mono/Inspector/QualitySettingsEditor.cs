@@ -37,7 +37,7 @@ namespace UnityEditor
             public static readonly GUIContent kAsyncUploadBufferSize = EditorGUIUtility.TrTextContent("Buffer Size", "The size (in megabytes) of the upload buffer Unity uses to stream Texture and Mesh data to GPU.");
             public static readonly GUIContent kAsyncUploadPersistentBuffer = EditorGUIUtility.TrTextContent("Persistent Buffer", "When enabled, the upload buffer persists even when there is nothing left to upload.");
 
-            public static readonly GUIContent kRenderPipelineObject = EditorGUIUtility.TrTextContent("Render Pipeline Asset", "Specifies the Render Pipeline Asset to use for this quality level.");
+            public static readonly GUIContent kRenderPipelineObject = EditorGUIUtility.TrTextContent("Render Pipeline Asset", "Specifies the Render Pipeline Asset to use for this quality level. It overrides the value set in the Graphics Settings Window.");
         }
 
         private class Styles
@@ -93,7 +93,6 @@ namespace UnityEditor
         private int DoQualityLevelSelection(int currentQualitylevel, IList<QualitySetting> qualitySettings, Dictionary<string, int> platformDefaultQualitySettings)
         {
             GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
             GUILayout.BeginVertical();
             var selectedLevel = currentQualitylevel;
 
@@ -536,6 +535,8 @@ namespace UnityEditor
             if (string.IsNullOrEmpty(nameProperty.stringValue))
                 nameProperty.stringValue = "Level " + selectedLevel;
 
+            GUILayout.Label(EditorGUIUtility.TempContent("Current Active Quality Level"), EditorStyles.boldLabel);
+
             EditorGUILayout.PropertyField(nameProperty);
 
             if (usingSRP)
@@ -545,9 +546,6 @@ namespace UnityEditor
             GUILayout.Label(EditorGUIUtility.TempContent("Rendering"), EditorStyles.boldLabel);
 
             RenderPipelineAssetSelector.Draw(Content.kRenderPipelineObject, m_QualitySettings, customRenderPipeline);
-            if (!usingSRP && customRenderPipeline.objectReferenceValue != null)
-                EditorGUILayout.HelpBox("Missing a Scriptable Render Pipeline in Graphics: \"Scriptable Render Pipeline Settings\" to use Scriptable Render Pipeline from Quality: \"Custom Render Pipeline\".", MessageType.Warning);
-
             if (!usingSRP)
                 EditorGUILayout.PropertyField(pixelLightCountProperty);
 

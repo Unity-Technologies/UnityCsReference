@@ -128,8 +128,11 @@ namespace UnityEngine.UIElements
                 return;
 
             if (element.animator != null)
-                if ((element.animator.isRunning && element.animator.to.paddingTop == paddingTop) || element.rootElement.style.paddingTop == paddingTop)
+            {
+                if ((element.animator.isRunning && element.animator.to.paddingTop == paddingTop) ||
+                    (!element.animator.isRunning && element.rootElement.style.paddingTop == paddingTop))
                     return;
+            }
 
             element.animator?.Stop();
             element.animator?.Recycle();

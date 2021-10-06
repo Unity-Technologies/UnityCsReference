@@ -97,8 +97,6 @@ namespace UnityEditor.DeviceSimulation
                 targetSize = m_Main.targetSize;
                 m_Main.displayTexture = RenderView(m_Main.mousePositionInUICoordinates, false);
             }
-            else if (type != EventType.Layout && type != EventType.Used)
-                m_Main.HandleInputEvent();
         }
 
         public void OnBeforeSerialize()

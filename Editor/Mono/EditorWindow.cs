@@ -71,6 +71,8 @@ namespace UnityEditor
             }
         }
 
+        internal virtual bool liveReloadPreferenceDefault => false;
+
         [HideInInspector]
         [SerializeField]
         private SerializableJsonDictionary m_ViewDataDictionary;

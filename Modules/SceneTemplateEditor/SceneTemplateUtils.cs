@@ -7,8 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using JetBrains.Annotations;
+using UnityEditor.PackageManager;
 using UnityEngine;
 
 namespace UnityEditor.SceneTemplate
@@ -32,26 +31,10 @@ namespace UnityEditor.SceneTemplate
             return AssetDatabase.FindAssets("t:SceneTemplateAsset").Select(AssetDatabase.GUIDToAssetPath);
         }
 
-        internal static Rect GetCenteredWindowPosition(Rect parentWindowPosition, Vector2 size)
-        {
-            var pos = new Rect
-            {
-                x = 0,
-                y = 0,
-                width = Mathf.Min(size.x, parentWindowPosition.width * 0.90f),
-                height = Mathf.Min(size.y, parentWindowPosition.height * 0.90f)
-            };
-            var w = (parentWindowPosition.width - pos.width) * 0.5f;
-            var h = (parentWindowPosition.height - pos.height) * 0.5f;
-            pos.x = parentWindowPosition.x + w;
-            pos.y = parentWindowPosition.y + h;
-            return pos;
-        }
-
         internal static Rect GetMainWindowCenteredPosition(Vector2 size)
         {
             var mainWindowRect = EditorGUIUtility.GetMainWindowPosition();
-            return GetCenteredWindowPosition(mainWindowRect, size);
+            return EditorGUIUtility.GetCenteredWindowPosition(mainWindowRect, size);
         }
 
         internal static void SetLastFolder(string path)
@@ -118,6 +101,14 @@ namespace UnityEditor.SceneTemplate
             const string documentationUrl = "https://docs.unity3d.com/Packages/com.unity.scene-template@latest/";
             var uri = new Uri(documentationUrl);
             Process.Start(uri.AbsoluteUri);
+        }
+
+        // Based on UpmPackageInfo::IsPackageReadOnly() in PackageManagerCommon.cpp
+        internal static bool IsPackageReadOnly(PackageManager.PackageInfo pi)
+        {
+            if (pi.source == PackageSource.Embedded || pi.source == PackageSource.Local)
+                return false;
+            return true;
         }
     }
 }

@@ -21,6 +21,23 @@ namespace UnityEditor.TextCore.Text
             FontAsset.SetAtlasTextureIsReadable += FontEngineEditorUtilities.SetAtlasTextureIsReadable;
             FontAsset.GetSourceFontRef += TextEditorResourceManager.GetSourceFontRef;
             FontAsset.SetSourceFontGUID += TextEditorResourceManager.SetSourceFontGUID;
+
+            // Callback to handle clearing dynamic font asset data when closing the Editor
+            EditorApplication.quitting += () =>
+            {
+                // Find all font assets in the project
+                string searchPattern = "t:FontAsset";
+                string[] fontAssetGUIDs = AssetDatabase.FindAssets(searchPattern);
+
+                for (int i = 0; i < fontAssetGUIDs.Length; i++)
+                {
+                    string fontAssetPath = AssetDatabase.GUIDToAssetPath(fontAssetGUIDs[i]);
+                    FontAsset fontAsset = AssetDatabase.LoadAssetAtPath<FontAsset>(fontAssetPath);
+
+                    if (fontAsset != null && (fontAsset.atlasPopulationMode == AtlasPopulationMode.Dynamic || fontAsset.atlasPopulationMode == AtlasPopulationMode.DynamicOS) && fontAsset.clearDynamicDataOnBuild && fontAsset.atlasTexture.width != 0)
+                        fontAsset.ClearFontAssetDataInternal();
+                }
+            };
         }
     }
 
@@ -101,7 +118,7 @@ namespace UnityEditor.TextCore.Text
         /// <summary>
         /// Register resource to be updated.
         /// </summary>
-        /// <param name="textObject"></param>
+        /// <param name="obj"></param>
         internal static void RegisterResourceForUpdate(Object obj)
         {
             // Return if referenced object is not a persistent asset
@@ -123,7 +140,7 @@ namespace UnityEditor.TextCore.Text
         }
 
         /// <summary>
-        ///
+        /// Register font asset that require re-reading their definitions.
         /// </summary>
         /// <param name="fontAsset"></param>
         internal static void RegisterFontAssetForDefinitionRefresh(FontAsset fontAsset)
@@ -201,7 +218,11 @@ namespace UnityEditor.TextCore.Text
                 Object obj = m_ObjectReImportQueue[i];
                 if (obj != null)
                 {
-                    AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(obj));
+                    string assetPath = AssetDatabase.GetAssetPath(obj);
+
+                    // Exclude Assets not located in the project
+                    if (assetPath.StartsWith("Assets/", System.StringComparison.OrdinalIgnoreCase))
+                        AssetDatabase.ImportAsset(assetPath);
                 }
             }
 

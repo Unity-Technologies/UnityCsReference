@@ -81,10 +81,10 @@ namespace UnityEditor
 
             // We don't want stack traces from editor code in player log messages.
             Application.SetStackTraceLogType(logType, StackTraceLogType.None);
+            string name = ConnectionUIHelper.GetPlayerNameFromId(messageEventArgs.playerId);
+            string t = ConnectionUIHelper.GetPlayerType(ProfilerDriver.GetConnectionIdentifier(messageEventArgs.playerId));
 
-            string name = ProfilerDriver.GetConnectionIdentifier(messageEventArgs.playerId);
-
-            text = "<i>" + name + "</i> " + text;
+            text = $"<i>{t} \"{name}\"</i> {text}";
             Debug.unityLogger.Log(logType, text);
             Application.SetStackTraceLogType(logType, oldStackTraceType);
         }

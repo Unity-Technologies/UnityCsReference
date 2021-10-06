@@ -209,6 +209,8 @@ namespace UnityEngine.UIElements
                     // Detach the old one
                     item.DetachElement();
                     m_ActiveItems.Remove(item);
+                    m_ListView.viewController.InvokeUnbindItem(item, index);
+                    m_ListView.viewController.InvokeDestroyItem(item);
 
                     // Attach and setup new one.
                     m_ActiveItems.Insert(i, recycledItem);

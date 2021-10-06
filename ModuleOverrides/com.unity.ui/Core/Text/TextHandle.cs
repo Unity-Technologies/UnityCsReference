@@ -23,6 +23,7 @@ namespace UnityEngine.UIElements
         int VerticesCount(MeshGenerationContextUtils.TextParams parms, float pixelPerPoint);
         ITextHandle New();
         bool IsLegacy();
+        public void SetDirty();
     }
 
     /// <summary>
@@ -70,6 +71,11 @@ namespace UnityEngine.UIElements
         {
             return textHandle.IsLegacy();
         }
+
+        public void SetDirty()
+        {
+            textHandle.SetDirty();
+        }
     }
 
     internal struct TextCoreHandle : ITextHandle
@@ -80,11 +86,6 @@ namespace UnityEngine.UIElements
             h.m_CurrentGenerationSettings = new UnityEngine.TextCore.Text.TextGenerationSettings();
             h.m_CurrentLayoutSettings = new UnityEngine.TextCore.Text.TextGenerationSettings();
             return h;
-        }
-
-        public bool IsLegacy()
-        {
-            return false;
         }
 
         Vector2 m_PreferredSize;
@@ -114,10 +115,46 @@ namespace UnityEngine.UIElements
             }
         }
 
+        private bool isDirty;
+        private bool isLayoutDirty;
+
         // For testing purposes
         internal bool IsTextInfoAllocated()
         {
             return m_TextInfo != null;
+        }
+
+        public bool IsLegacy()
+        {
+            return false;
+        }
+
+        public void SetDirty()
+        {
+            isDirty = true;
+            isLayoutDirty = true;
+        }
+
+        public bool IsDirty(MeshGenerationContextUtils.TextParams parms)
+        {
+            int paramsHash = parms.GetHashCode();
+            if (m_PreviousGenerationSettingsHash == paramsHash && !isDirty)
+                return false;
+
+            m_PreviousGenerationSettingsHash = paramsHash;
+            isDirty = false;
+            return true;
+        }
+
+        public bool IsLayoutDirty(MeshGenerationContextUtils.TextParams parms)
+        {
+            int paramsHash = parms.GetHashCode();
+            if (m_PreviousLayoutSettingsHash == paramsHash && !isLayoutDirty)
+                return false;
+
+            m_PreviousLayoutSettingsHash = paramsHash;
+            isLayoutDirty = false;
+            return true;
         }
 
         public Vector2 GetCursorPosition(CursorPositionStylePainterParameters parms, float scaling)
@@ -139,9 +176,8 @@ namespace UnityEngine.UIElements
 
         public float GetLineHeight(int characterIndex, MeshGenerationContextUtils.TextParams textParams, float textScaling, float pixelPerPoint)
         {
-            Update(textParams, pixelPerPoint);
-            var character = m_TextInfo.textElementInfo[m_TextInfo.characterCount - 1];
-            var line = m_TextInfo.lineInfo[character.lineNumber];
+            var character = textInfo.textElementInfo[textInfo.characterCount - 1];
+            var line = textInfo.lineInfo[character.lineNumber];
             return line.lineHeight;
         }
 
@@ -163,19 +199,16 @@ namespace UnityEngine.UIElements
         {
             // The screenRect in TextCore is not properly implemented with regards to the offset part, so zero it out for now and we will add it ourselves later
             parms.rect = new Rect(Vector2.zero, parms.rect.size);
-            int paramsHash = parms.GetHashCode();
-            if (m_PreviousGenerationSettingsHash == paramsHash)
+            if (!IsDirty(parms))
                 return textInfo;
 
             UpdateGenerationSettingsCommon(parms, m_CurrentGenerationSettings);
 
             m_CurrentGenerationSettings.color = parms.fontColor;
             m_CurrentGenerationSettings.inverseYAxis = true;
-            m_CurrentGenerationSettings.scale = pixelsPerPoint;
 
             textInfo.isDirty = true;
             UnityEngine.TextCore.Text.TextGenerator.GenerateText(m_CurrentGenerationSettings, textInfo);
-            m_PreviousGenerationSettingsHash = paramsHash;
             return textInfo;
         }
 
@@ -183,13 +216,11 @@ namespace UnityEngine.UIElements
         {
             // The screenRect in TextCore is not properly implemented with regards to the offset part, so zero it out for now and we will add it ourselves later
             parms.rect = new Rect(Vector2.zero, parms.rect.size);
-            int paramsHash = parms.GetHashCode();
-            if (m_PreviousLayoutSettingsHash == paramsHash)
+            if (!IsLayoutDirty(parms))
                 return;
 
             UpdateGenerationSettingsCommon(parms, m_CurrentLayoutSettings);
             m_PreferredSize = UnityEngine.TextCore.Text.TextGenerator.GetPreferredValues(m_CurrentLayoutSettings, textInfo);
-            m_PreviousLayoutSettingsHash = paramsHash;
         }
 
         private static TextOverflowMode GetTextOverflowMode(MeshGenerationContextUtils.TextParams textParams)
@@ -217,11 +248,13 @@ namespace UnityEngine.UIElements
             }
 
             settings.fontAsset = TextUtilities.GetFontAsset(painterParams);
+            if (settings.fontAsset == null)
+                return;
+
             settings.material = settings.fontAsset.material;
-
-
             settings.screenRect = painterParams.rect;
-            settings.text = string.IsNullOrEmpty(painterParams.text) ? " " : painterParams.text;
+            //The NoWidthSpace unicode is added at the end of the string to make sure LineFeeds update the layout of the text.
+            settings.text = string.IsNullOrEmpty(painterParams.text) ? "\u200B" : painterParams.text + "\u200B";
             settings.fontSize = painterParams.fontSize > 0
                 ? painterParams.fontSize
                 : settings.fontAsset.faceInfo.pointSize;
@@ -253,6 +286,10 @@ namespace UnityEngine.UIElements
         public bool IsLegacy()
         {
             return true;
+        }
+
+        public void SetDirty()
+        {
         }
 
         ITextHandle ITextHandle.New()

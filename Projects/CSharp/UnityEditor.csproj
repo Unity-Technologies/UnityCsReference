@@ -3490,6 +3490,9 @@
     <Compile Include="..\..\Editor\Mono\Undo\Undo.bindings.cs">
       <Link>Editor\Mono\Undo\Undo.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Undo\UndoHistoryWindow.cs">
+      <Link>Editor\Mono\Undo\UndoHistoryWindow.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Undo\UndoWindow.cs">
       <Link>Editor\Mono\Undo\UndoWindow.cs</Link>
     </Compile>
@@ -6334,6 +6337,9 @@
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\UIElements\MemoryUsageBreakdownElement.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\UIElements\MemoryUsageBreakdownElement.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\UIElements\SelectableLabel.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\UIElements\SelectableLabel.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\Public\FrameDataView.bindings.cs">
       <Link>Modules\ProfilerEditor\Public\FrameDataView.bindings.cs</Link>
     </Compile>
@@ -7518,6 +7524,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIServiceEditor\EditorToolbar\ToolbarElements\SnapSettings.cs">
       <Link>Modules\UIServiceEditor\EditorToolbar\ToolbarElements\SnapSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIServiceEditor\EditorToolbar\ToolbarElements\UndoButton.cs">
+      <Link>Modules\UIServiceEditor\EditorToolbar\ToolbarElements\UndoButton.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIServiceEditor\EditorUIService.cs">
       <Link>Modules\UIServiceEditor\EditorUIService.cs</Link>
