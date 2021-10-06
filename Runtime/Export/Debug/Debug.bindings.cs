@@ -126,7 +126,7 @@ namespace UnityEngine
             var l = unityLogger.logHandler as DebugLogHandler;
             if (l == null)
                 unityLogger.LogFormat(logType, context, format, args);
-            else
+            else if (unityLogger.IsLogTypeAllowed(logType))
                 l.LogFormat(logType, logOptions, context, format, args);
         }
 

@@ -479,6 +479,11 @@ namespace UnityEditor
             return handler;
         }
 
+        internal static bool CanUseSameHandler(SerializedProperty p1, SerializedProperty p2)
+        {
+            return PropertyHandlerCache.CanUseSameHandler(p1, p2);
+        }
+
         internal static List<FieldInfo> GetAutoLoadProperties(Type type)
         {
             if (s_AutoLoadProperties == null)

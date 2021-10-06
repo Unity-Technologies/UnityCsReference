@@ -26,6 +26,11 @@ namespace UnityEditor
             m_PropertyHandlers[key] = handler;
         }
 
+        internal static bool CanUseSameHandler(SerializedProperty p1, SerializedProperty p2)
+        {
+            return GetPropertyHash(p1) == GetPropertyHash(p2);
+        }
+
         private static int GetPropertyHash(SerializedProperty property)
         {
             if (property.serializedObject.targetObject == null)

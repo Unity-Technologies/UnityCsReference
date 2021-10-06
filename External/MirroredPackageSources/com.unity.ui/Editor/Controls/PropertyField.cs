@@ -66,6 +66,9 @@ namespace UnityEditor.UIElements
         private PropertyField m_ParentPropertyField;
         private int m_FoldoutDepth;
 
+        private int m_DrawNestingLevel;
+        private PropertyField m_DrawParentProperty;
+
         private float m_LabelWidthRatio;
         private float m_LabelExtraPadding;
 
@@ -152,67 +155,116 @@ namespace UnityEditor.UIElements
             if (bindProperty == null)
                 return;
 
+            ComputeNestingLevel();
+
+            VisualElement customPropertyGUI = null;
+
+            // Case 1292133: set proper nesting level before calling CreatePropertyGUI
             var handler = ScriptAttributeUtility.GetHandler(m_SerializedProperty);
-            if (handler.hasPropertyDrawer)
+            using (var nestingContext = handler.ApplyNestingContext(m_DrawNestingLevel))
             {
-                var customPropertyGUI = handler.propertyDrawer.CreatePropertyGUI(m_SerializedProperty);
-
-                if (customPropertyGUI == null)
+                if (handler.hasPropertyDrawer)
                 {
-                    customPropertyGUI = new IMGUIContainer(() =>
+                    customPropertyGUI = handler.propertyDrawer.CreatePropertyGUI(m_SerializedProperty);
+
+                    if (customPropertyGUI == null)
                     {
-                        var originalWideMode = InspectorElement.SetWideModeForWidth(this);
-
-                        try
-                        {
-                    if (!m_SerializedProperty.isValid)
-                        return;
-                    
-                            EditorGUI.BeginChangeCheck();
-                            m_SerializedProperty.serializedObject.Update();
-
-                            if (m_FoldoutDepth > 0)
-                                EditorGUI.indentLevel += m_FoldoutDepth;
-
-                            if (label == null)
-                            {
-                                EditorGUILayout.PropertyField(m_SerializedProperty, true);
-                            }
-                            else if (label == string.Empty)
-                            {
-                                EditorGUILayout.PropertyField(m_SerializedProperty, GUIContent.none, true);
-                            }
-                            else
-                            {
-                                EditorGUILayout.PropertyField(m_SerializedProperty, new GUIContent(label), true);
-                            }
-
-                            if (m_FoldoutDepth > 0)
-                                EditorGUI.indentLevel -= m_FoldoutDepth;
-
-                            m_SerializedProperty.serializedObject.ApplyModifiedProperties();
-                            if (EditorGUI.EndChangeCheck())
-                            {
-                                DispatchPropertyChangedEvent();
-                            }
-                        }
-                        finally
-                        {
-                            EditorGUIUtility.wideMode = originalWideMode;
-                        }
-                    });
+                        customPropertyGUI = CreatePropertyIMGUIContainer();
+                    }
+                    else
+                    {
+                        RegisterPropertyChangesOnCustomDrawerElement(customPropertyGUI);
+                    }
                 }
                 else
                 {
-                    RegisterPropertyChangesOnCustomDrawerElement(customPropertyGUI);
+                    customPropertyGUI = CreateFieldFromProperty(bindProperty);
                 }
+            }
+
+            if (customPropertyGUI != null)
+            {
+                PropagateNestingLevel(customPropertyGUI);
                 hierarchy.Add(customPropertyGUI);
             }
-            else
+        }
+
+        private VisualElement CreatePropertyIMGUIContainer()
+        {
+            return new IMGUIContainer(() =>
             {
-                var field = CreateFieldFromProperty(bindProperty);
-                if (field != null)
-                    hierarchy.Add(field);
+                var originalWideMode = InspectorElement.SetWideModeForWidth(this);
+                try
+                {
+                    if (!m_SerializedProperty.isValid)
+                        return;
+                    
+                    EditorGUI.BeginChangeCheck();
+                    m_SerializedProperty.serializedObject.Update();
+
+                    if (m_FoldoutDepth > 0)
+                        EditorGUI.indentLevel += m_FoldoutDepth;
+
+                    // Wait at last minute to call GetHandler, sometimes the handler cache is cleared between calls.
+                    var handler = ScriptAttributeUtility.GetHandler(m_SerializedProperty);
+                    using (var nestingContext = handler.ApplyNestingContext(m_DrawNestingLevel))
+                    {
+                        if (label == null)
+                        {
+                            EditorGUILayout.PropertyField(m_SerializedProperty, true);
+                        }
+                        else if (label == string.Empty)
+                        {
+                            EditorGUILayout.PropertyField(m_SerializedProperty, GUIContent.none, true);
+                        }
+                        else
+                        {
+                            EditorGUILayout.PropertyField(m_SerializedProperty, new GUIContent(label), true);
+                        }
+                    }
+
+                    if (m_FoldoutDepth > 0)
+                        EditorGUI.indentLevel -= m_FoldoutDepth;
+
+                    m_SerializedProperty.serializedObject.ApplyModifiedProperties();
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        DispatchPropertyChangedEvent();
+                    }
+                }
+                finally
+                {
+                    EditorGUIUtility.wideMode = originalWideMode;
+                }
+            });
+        }
+
+        private void ComputeNestingLevel()
+        {
+            m_DrawNestingLevel = 0;
+            for (var ve = m_DrawParentProperty; ve != null; ve = ve.m_DrawParentProperty)
+            {
+                if (ve.m_SerializedProperty == m_SerializedProperty ||
+                    ScriptAttributeUtility.CanUseSameHandler(ve.m_SerializedProperty, m_SerializedProperty))
+                {
+                    m_DrawNestingLevel = ve.m_DrawNestingLevel + 1;
+                    break;
+                }
+            }
+        }
+
+        private void PropagateNestingLevel(VisualElement customPropertyGUI)
+        {
+            var p = customPropertyGUI as PropertyField;
+            if (p != null)
+            {
+                p.m_DrawParentProperty = this;
+            }
+
+            int childCount = customPropertyGUI.hierarchy.childCount;
+            for (var i = 0; i < childCount; i++)
+            {
+                PropagateNestingLevel(customPropertyGUI.hierarchy[i]);
             }
         }
 
