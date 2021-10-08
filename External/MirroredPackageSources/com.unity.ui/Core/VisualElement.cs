@@ -1122,6 +1122,9 @@ namespace UnityEngine.UIElements
                 yogaNode.Config = elementPanel.yogaConfig;
                 RegisterRunningAnimations();
 
+                //We need to reset any visual pseudo state
+                pseudoStates &= ~(PseudoStates.Focus | PseudoStates.Active | PseudoStates.Hover);
+
                 // Only send this event if the element hasn't received it yet
                 if ((m_Flags & VisualElementFlags.NeedsAttachToPanelEvent) == VisualElementFlags.NeedsAttachToPanelEvent)
                 {

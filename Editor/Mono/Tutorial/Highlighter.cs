@@ -5,7 +5,6 @@
 using UnityEngine;
 using UnityEditorInternal;
 
-
 namespace UnityEditor
 {
     public enum HighlightSearchMode
@@ -20,6 +19,7 @@ namespace UnityEditor
     public partial class Highlighter
     {
         private static GUIView s_View;
+        private static EditorWindow s_ViewWindow;
         private static HighlightSearchMode s_SearchMode;
         private static float s_HighlightElapsedTime = 0;
         private static float s_LastTime = 0;
@@ -94,6 +94,12 @@ namespace UnityEditor
                         // Removing is ignored if not already assigned, so causes no harm.
                         EditorApplication.update -= Update;
                         EditorApplication.update += Update;
+
+                        if (s_View.windowBackend is IEditorWindowBackend ewb)
+                        {
+                            ewb.overlayGUIHandler -= ControlHighlightGUI;
+                            ewb.overlayGUIHandler += ControlHighlightGUI;
+                        }
                     }
                     else
                     {
@@ -107,6 +113,7 @@ namespace UnityEditor
                 }
                 s_RecursionLock = false;
             }
+
             return success;
         }
 
@@ -131,9 +138,15 @@ namespace UnityEditor
         {
             Rect prevRect = activeRect;
 
-            if (activeRect.width == 0 || s_View == null)
+            // If view's actualView has changed, we might still find a property with the right name in the other view,
+            // but it's not the one we're looking for.
+            if (activeRect.width == 0 || !ViewWindowIsActive())
             {
                 EditorApplication.update -= Update;
+                if (s_View != null && s_View.windowBackend is IEditorWindowBackend ewb)
+                {
+                    ewb.overlayGUIHandler -= ControlHighlightGUI;
+                }
                 Stop();
                 InternalEditorUtility.RepaintAllViews();
                 return;
@@ -182,13 +195,15 @@ namespace UnityEditor
             // Get window of type
             Object[] views = Resources.FindObjectsOfTypeAll(typeof(GUIView));
             GUIView view = null;
+            EditorWindow window = null;
             foreach (GUIView currentView in views)
             {
-                if (currentView is HostView)
+                if (currentView is HostView hostView)
                 {
-                    if ((currentView as HostView).actualView.titleContent.text == windowTitle)
+                    if (hostView.actualView.titleContent.text == windowTitle)
                     {
                         view = currentView;
+                        window = hostView.actualView;
                         break;
                     }
                 }
@@ -199,8 +214,20 @@ namespace UnityEditor
                 }
             }
 
+            if (s_View != null && s_View.windowBackend is IEditorWindowBackend ewb)
+            {
+                ewb.overlayGUIHandler -= ControlHighlightGUI;
+            }
+
             s_View = view;
+            s_ViewWindow = window;
+
             return (view != null);
+        }
+
+        private static bool ViewWindowIsActive()
+        {
+            return s_View != null && !(s_View is HostView hostView && hostView.actualView != s_ViewWindow);
         }
 
         private static bool Search()
@@ -215,19 +242,15 @@ namespace UnityEditor
             return false;
         }
 
-        internal static void ControlHighlightGUI(GUIView self)
+        private static void ControlHighlightGUI()
         {
-            // Only handle highlight in views in the same window as the view with the highlight is in.
-            if (s_View == null || self.window != s_View.window)
-                return;
-
             if (!activeVisible || searching)
                 return;
 
             if (Event.current.type == EventType.ExecuteCommand && Event.current.commandName == "HandleControlHighlight")
             {
-                if (self.screenPosition.Overlaps(s_RepaintRegion))
-                    self.Repaint();
+                if (s_View.screenPosition.Overlaps(s_RepaintRegion))
+                    s_View.Repaint();
                 return;
             }
 

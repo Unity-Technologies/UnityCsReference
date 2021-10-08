@@ -16,6 +16,14 @@ namespace UnityEditor
             AudioMixerWindow.RepaintAudioMixerWindow();
         }
 
+        static public void ToggleEffectWetMix(AudioMixerEffectController effect)
+        {
+            var undoEntryPrefix = effect.enableWetMix ? "Disable" : "Enable";
+            Undo.RecordObject(effect, $"{undoEntryPrefix} Wet Mixing");
+            effect.enableWetMix = !effect.enableWetMix;
+            RepaintAudioMixerAndInspectors();
+        }
+
         public class VisitorFetchInstanceIDs
         {
             public List<int> instanceIDs = new List<int>();

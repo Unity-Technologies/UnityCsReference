@@ -655,7 +655,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
         internal static UIRStylePainter.ClosingInfo PaintElement(RenderChain renderChain, VisualElement ve, ref ChainBuilderStats stats)
         {
             var isClippingWithStencil = ve.renderChainData.clipMethod == ClipMethod.Stencil;
-            if ((IsElementSelfHidden(ve) && !isClippingWithStencil) || ve.renderChainData.isHierarchyHidden)
+            var isClippingWithScissors = ve.renderChainData.clipMethod == ClipMethod.Scissor;
+            if ((IsElementSelfHidden(ve) && !isClippingWithStencil && !isClippingWithScissors) || ve.renderChainData.isHierarchyHidden)
             {
                 if (ve.renderChainData.data != null)
                 {
@@ -702,8 +703,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
             }
             else
             {
-                // Even though the element hidden, we still have to push the stencil shape in case any children are visible.
-                if (ve.renderChainData.clipMethod == ClipMethod.Stencil)
+                // Even though the element hidden, we still have to push the stencil shape or setup the scissors in case any children are visible.
+                if (isClippingWithScissors || isClippingWithStencil)
                     painter.ApplyVisualElementClipping();
             }
 

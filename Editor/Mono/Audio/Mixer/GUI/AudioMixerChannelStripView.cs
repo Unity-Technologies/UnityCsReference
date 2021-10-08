@@ -9,6 +9,7 @@ using System;
 using UnityEditorInternal;
 using UnityEditor.Audio;
 using System.Globalization;
+using UnityEngine.Audio;
 
 namespace UnityEditor
 {
@@ -999,7 +1000,7 @@ namespace UnityEditor
                 var effect = group.effects[effectSlotIndex];
                 if (!effect.IsAttenuation() && !effect.IsSend() && !effect.IsReceive() && !effect.IsDuckVolume())
                 {
-                    pm.AddItem(EditorGUIUtility.TrTextContent("Allow Wet Mixing (causes higher memory usage)"), effect.enableWetMix, delegate { effect.enableWetMix = !effect.enableWetMix; });
+                    pm.AddItem(EditorGUIUtility.TrTextContent("Allow Wet Mixing (causes higher memory usage)"), effect.enableWetMix, delegate { AudioMixerUtility.ToggleEffectWetMix(effect); });
                     pm.AddItem(EditorGUIUtility.TrTextContent("Bypass"), effect.bypass, delegate { effect.bypass = !effect.bypass; m_Controller.UpdateBypass(); InspectorWindow.RepaintAllInspectors(); });
                     pm.AddSeparator("");
                 }

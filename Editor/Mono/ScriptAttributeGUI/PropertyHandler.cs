@@ -188,7 +188,7 @@ namespace UnityEditor
                     }
 
                     reorderableList.Property = property;
-                    reorderableList.Draw(label, position, visibleArea, includeChildren);
+                    reorderableList.Draw(label, position, visibleArea, tooltip, includeChildren);
                     return !includeChildren && property.isExpanded;
                 }
 
