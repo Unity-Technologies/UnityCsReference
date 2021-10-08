@@ -851,12 +851,12 @@ namespace UnityEditor
 
                 // The first item after the GameObject creation menu items
                 if (path.ToLower() == GameObjectUtility.GetFirstItemPathAfterGameObjectCreationMenuItems().ToLower())
-                    return;
+                    continue;
 
                 string menupath = path;
                 if (!includeGameObjectInPath)
                     menupath = path.Substring(11); // cut away "GameObject/"
-                MenuUtils.ExtractMenuItemWithPath(path, menu, menupath, tempContext, targetSceneHandle, BeforeCreateGameObjectMenuItemWasExecuted, AfterCreateGameObjectMenuItemWasExecuted, origin);
+                MenuUtils.ExtractOnlyEnabledMenuItem(path, menu, menupath, tempContext, targetSceneHandle, BeforeCreateGameObjectMenuItemWasExecuted, AfterCreateGameObjectMenuItemWasExecuted, origin);
             }
         }
 

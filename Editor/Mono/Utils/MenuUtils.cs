@@ -62,6 +62,26 @@ namespace UnityEditor
                 menu.AddDisabledItem(new GUIContent(L10n.TrPath(replacementMenuString)), false);
         }
 
+        public static void ExtractOnlyEnabledMenuItem(string menuString,
+            GenericMenu menu,
+            string replacementMenuString,
+            Object[] temporaryContext,
+            int userData,
+            Action<string, Object[], ContextMenuOrigin, int> onBeforeExecuteCallback,
+            Action<string, Object[], ContextMenuOrigin, int> onAfterExecuteCallback,
+            ContextMenuOrigin origin)
+        {
+            MenuCallbackObject callbackObject = new MenuCallbackObject();
+            callbackObject.menuItemPath = menuString;
+            callbackObject.temporaryContext = temporaryContext;
+            callbackObject.onBeforeExecuteCallback = onBeforeExecuteCallback;
+            callbackObject.onAfterExecuteCallback = onAfterExecuteCallback;
+            callbackObject.userData = userData;
+            callbackObject.origin = origin;
+            if (EditorApplication.ValidateMenuItem(menuString))
+                menu.AddItem(new GUIContent(L10n.TrPath(replacementMenuString)), false, MenuCallback, callbackObject);
+        }
+
         private class MenuCallbackObject
         {
             public string menuItemPath;

@@ -369,11 +369,7 @@ namespace UnityEditor
             {
                 if (!effect.IsAttenuation() && !effect.IsSend() && !effect.IsDuckVolume())
                 {
-                    menu.AddItem(EditorGUIUtility.TrTextContent("Allow Wet Mixing (causes higher memory usage)"), effect.enableWetMix, delegate()
-                    {
-                        Undo.RecordObject(effect, "Enable Wet Mixing");
-                        effect.enableWetMix = !effect.enableWetMix;
-                    });
+                    menu.AddItem(EditorGUIUtility.TrTextContent("Allow Wet Mixing (causes higher memory usage)"), effect.enableWetMix, delegate { AudioMixerUtility.ToggleEffectWetMix(effect); });
                     menu.AddItem(EditorGUIUtility.TrTextContent("Bypass"), effect.bypass, delegate()
                     {
                         Undo.RecordObject(effect, "Bypass Effect");

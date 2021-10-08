@@ -1050,7 +1050,13 @@ namespace UnityEditorInternal
                         m_ActiveElement -= 1;
                         evt.Use();
                     }
-                    if (evt.keyCode == KeyCode.Delete)
+                    if (Application.platform != RuntimePlatform.OSXEditor && evt.keyCode == KeyCode.Delete
+                        || Application.platform == RuntimePlatform.OSXEditor && evt.keyCode == KeyCode.Backspace && (evt.modifiers & EventModifiers.Command) > 0)
+                    {
+                        scheduleRemove = true;
+                        evt.Use();
+                    }
+                    if (evt.keyCode == KeyCode.Delete || evt.keyCode == KeyCode.Backspace)
                     {
                         scheduleRemove = true;
                         InvalidateParentCaches(m_PropertyPath);

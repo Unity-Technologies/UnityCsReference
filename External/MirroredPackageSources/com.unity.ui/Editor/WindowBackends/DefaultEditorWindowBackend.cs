@@ -11,6 +11,7 @@ namespace UnityEditor.UIElements
     class DefaultEditorWindowBackend : DefaultWindowBackend, IEditorWindowBackend
     {
         private IMGUIContainer m_NotificationContainer;
+        private IMGUIContainer m_OverlayContainer;
 
         // Cached version of the static color for the actual object instance...
         Color m_PlayModeDarkenColor;
@@ -33,6 +34,10 @@ namespace UnityEditor.UIElements
                 m_NotificationContainer = new IMGUIContainer();
                 m_NotificationContainer.StretchToParentSize();
                 m_NotificationContainer.pickingMode = PickingMode.Ignore;
+
+                m_OverlayContainer = new IMGUIContainer();
+                m_OverlayContainer.StretchToParentSize();
+                m_OverlayContainer.pickingMode = PickingMode.Ignore;
 
                 RegisterImguiContainerGUICallbacks();
 
@@ -94,6 +99,7 @@ namespace UnityEditor.UIElements
             m_Panel.saveViewData = window.SaveViewData;
             m_Panel.name = window.GetType().Name;
             m_NotificationContainer.onGUIHandler = window.DrawNotification;
+            m_OverlayContainer.onGUIHandler = () => m_OverlayGUIHandler?.Invoke();
 
             UpdateStyleMargins();
             m_WindowRegistered = true;
@@ -115,6 +121,7 @@ namespace UnityEditor.UIElements
             }
 
             m_NotificationContainer.onGUIHandler = null;
+            m_OverlayContainer.onGUIHandler = null;
             m_WindowRegistered = false;
         }
 
@@ -183,6 +190,9 @@ namespace UnityEditor.UIElements
             m_NotificationContainer.onGUIHandler = null;
             m_NotificationContainer.RemoveFromHierarchy();
 
+            m_OverlayContainer.onGUIHandler = null;
+            m_OverlayContainer.RemoveFromHierarchy();
+
             UnregisterImguiContainerGUICallbacks();
             UnregisterWindow();
 
@@ -202,6 +212,37 @@ namespace UnityEditor.UIElements
             else
             {
                 m_NotificationContainer.RemoveFromHierarchy();
+            }
+        }
+
+        private event Action m_OverlayGUIHandler;
+        public event Action overlayGUIHandler
+        {
+            add
+            {
+                m_OverlayGUIHandler += value;
+                OverlayChanged();
+            }
+            remove
+            {
+                m_OverlayGUIHandler -= value;
+                OverlayChanged();
+            }
+        }
+
+        private void OverlayChanged()
+        {
+            if (m_OverlayGUIHandler != null)
+            {
+                if (m_OverlayContainer.parent == null)
+                {
+                    m_Panel.visualTree.Add(m_OverlayContainer);
+                    m_OverlayContainer.StretchToParentSize();
+                }
+            }
+            else
+            {
+                m_OverlayContainer.RemoveFromHierarchy();
             }
         }
 
