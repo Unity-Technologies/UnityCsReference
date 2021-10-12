@@ -925,4 +925,21 @@ namespace UnityEditor.Search
             return Fetch().GetEnumerator();
         }
     }
+
+    static class SearchListExtension
+    {
+        public static IEnumerable<IEnumerable<SearchItem>> Batch(this IEnumerable<SearchItem> source, int batchSize)
+        {
+            using (var enumerator = source.GetEnumerator())
+                while (enumerator.MoveNext())
+                    yield return YieldBatchElements(enumerator, batchSize - 1);
+        }
+
+        private static IEnumerable<SearchItem> YieldBatchElements(IEnumerator<SearchItem> source, int batchSize)
+        {
+            yield return source.Current;
+            for (int i = 0; i < batchSize && source.MoveNext(); i++)
+                yield return source.Current;
+        }
+    }
 }

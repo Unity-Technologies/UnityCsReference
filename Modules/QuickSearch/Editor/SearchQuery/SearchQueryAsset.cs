@@ -19,6 +19,119 @@ namespace UnityEditor.Search
     class SearchQueryAsset : ScriptableObject, ISearchQuery
     {
         static List<SearchQueryAsset> s_SavedQueries;
+
+        private long m_CreationTime;
+        public long creationTime
+        {
+            get
+            {
+                if (m_CreationTime == 0)
+                {
+                    var path = AssetDatabase.GetAssetPath(this);
+                    var fileInfo = new FileInfo(path);
+                    m_CreationTime = fileInfo.CreationTime.Ticks;
+                }
+                return m_CreationTime;
+            }
+        }
+
+        private long m_LastUsedTime;
+        public long lastUsedTime
+        {
+            get
+            {
+                using (var view = SearchMonitor.GetView())
+                {
+                    var recordKey = PropertyDatabase.CreateRecordKey(guid, QuickSearch.k_LastUsedTimePropertyName);
+                    if (view.TryLoadProperty(recordKey, out object data))
+                        m_LastUsedTime = (long)data;
+                }
+                return m_LastUsedTime;
+            }
+        }
+
+        private int m_ItemCount = -1;
+        public int itemCount
+        {
+            get
+            {
+                using (var view = SearchMonitor.GetView())
+                {
+                    var recordKey = PropertyDatabase.CreateRecordKey(guid, QuickSearch.k_QueryItemsNumberPropertyName);
+                    if (view.TryLoadProperty(recordKey, out object data))
+                        m_ItemCount = (int)data;
+                }
+
+                return m_ItemCount;
+            }
+        }
+
+        public string searchText => text;
+
+        public string displayName
+        {
+            get => string.IsNullOrEmpty(name) ? Path.GetFileNameWithoutExtension(AssetDatabase.GetAssetPath(this)) : name;
+            set => name = value;
+        }
+
+        public string details
+        {
+            get => description;
+            set => description = value;
+        }
+
+        public Texture2D thumbnail => icon;
+        public string filePath => AssetDatabase.GetAssetPath(this);
+
+        private string m_GUID;
+        public string guid
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(m_GUID))
+                {
+                    m_GUID = AssetDatabase.GUIDFromAssetPath(filePath).ToString();
+                }
+                return m_GUID;
+            }
+        }
+
+        [FormerlySerializedAs("searchQuery")]
+        public string text;
+
+        [Multiline]
+        public string description;
+
+        public List<string> providerIds;
+
+        public SearchViewState viewState;
+
+        public Texture2D icon;
+
+        [SerializeField] private bool m_IsSearchTemplate;
+
+        public bool isSearchTemplate
+        {
+            get
+            {
+                return m_IsSearchTemplate;
+            }
+            set
+            {
+                m_IsSearchTemplate = value;
+            }
+        }
+
+        public string tooltip
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(description))
+                    return text;
+                return $"{description}\n> {text}";
+            }
+        }
+
         internal static IEnumerable<SearchQueryAsset> savedQueries
         {
             get
@@ -142,7 +255,7 @@ namespace UnityEditor.Search
             if (query == null)
                 return null;
 
-            return SearchQuery.Open(query, SearchFlags.ReuseExistingWindow);
+            return SearchQuery.Open(query, SearchFlags.Default);
         }
 
         public static void AddToRecentSearch(ISearchQuery query)
@@ -150,58 +263,17 @@ namespace UnityEditor.Search
             SearchSettings.AddRecentSearch(query.searchText);
         }
 
+        public SearchQuery ToSearchQuery()
+        {
+            var viewState = GetResultViewState();
+            return SearchQuery.Create(viewState, viewState.tableConfig);
+        }
+
         [OnOpenAsset]
         private static bool OpenQuery(int instanceID, int line)
         {
             return Open(instanceID) != null;
         }
-
-        private long m_CreationTime;
-        public long creationTime
-        {
-            get
-            {
-                if (m_CreationTime == 0)
-                {
-                    var path = AssetDatabase.GetAssetPath(this);
-                    var fileInfo = new FileInfo(path);
-                    m_CreationTime = fileInfo.CreationTime.Ticks;
-                }
-                return m_CreationTime;
-            }
-        }
-
-        public string searchText => text;
-
-        public string displayName
-        {
-            get => string.IsNullOrEmpty(name) ? Path.GetFileNameWithoutExtension(AssetDatabase.GetAssetPath(this)) : name;
-            set => name = value;
-        }
-
-        public Texture2D thumbnail => icon;
-        public string filePath => AssetDatabase.GetAssetPath(this);
-
-        private string m_GUID;
-        public string guid
-        {
-            get
-            {
-                if (string.IsNullOrEmpty(m_GUID))
-                {
-                    m_GUID = AssetDatabase.GUIDFromAssetPath(filePath).ToString();
-                }
-                return m_GUID;
-            }
-        }
-
-        [FormerlySerializedAs("searchQuery")]
-        public string text;
-
-        [Multiline]
-        public string description;
-
-        public List<string> providerIds;
 
         public IEnumerable<SearchProvider> GetProviders()
         {
@@ -216,23 +288,14 @@ namespace UnityEditor.Search
             return providerIds ?? Enumerable.Empty<string>();
         }
 
-        public ResultViewState GetResultViewState()
+        public IEnumerable<string> GetProviderTypes()
         {
-            return viewState;
+            return GetProviders().Select(p => p.type).Distinct();
         }
 
-        public ResultViewState viewState;
-
-        public Texture2D icon;
-
-        public string tooltip
+        public SearchViewState GetResultViewState()
         {
-            get
-            {
-                if (string.IsNullOrEmpty(description))
-                    return text;
-                return $"{description}\n> {text}";
-            }
+            return viewState;
         }
     }
 }

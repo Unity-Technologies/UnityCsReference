@@ -118,6 +118,7 @@ namespace UnityEditor.Search
                 m_Query.thumbnail = newIcon;
                 SearchQuery.SaveSearchQuery(m_Query);
             }));
+            menu.AddItem(new GUIContent("Search Template"), m_Query.isSearchTemplate, () => m_Query.isSearchTemplate = !m_Query.isSearchTemplate);
             menu.AddItem(new GUIContent(Utils.GetRevealInFinderLabel()), false, () => EditorUtility.RevealInFinder(m_Query.filePath));
             menu.AddSeparator("");
             menu.AddItem(new GUIContent("Delete"), false, () =>
@@ -130,7 +131,9 @@ namespace UnityEditor.Search
 
         public override bool AcceptRename(string oldName, string newName)
         {
-            m_Query.name = newName;
+            var trimmedName = Utils.Simplify(newName);
+            m_Query.name = trimmedName;
+            displayName = trimmedName;
             SearchQuery.SaveSearchQuery(m_Query);
             return true;
         }
@@ -184,6 +187,7 @@ namespace UnityEditor.Search
                 m_Query.icon = newIcon;
                 EditorUtility.SetDirty(m_Query);
             }));
+            menu.AddItem(new GUIContent("Search Template"), m_Query.isSearchTemplate, () => m_Query.isSearchTemplate = !m_Query.isSearchTemplate);
             menu.AddItem(new GUIContent("Edit in Inspector"), false, () => Selection.activeObject = m_Query);
             menu.AddItem(new GUIContent(Utils.GetRevealInFinderLabel()), false, () => EditorUtility.RevealInFinder(AssetDatabase.GetAssetPath(m_Query)));
             menu.AddSeparator("");
@@ -200,7 +204,9 @@ namespace UnityEditor.Search
 
         public override bool AcceptRename(string oldName, string newName)
         {
-            m_Query.name = newName;
+            var trimmedName = Utils.Simplify(newName);
+            m_Query.name = trimmedName;
+            displayName = trimmedName;
             return true;
         }
 

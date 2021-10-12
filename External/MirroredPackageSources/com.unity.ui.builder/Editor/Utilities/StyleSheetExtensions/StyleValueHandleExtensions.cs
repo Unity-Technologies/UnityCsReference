@@ -257,7 +257,8 @@ namespace Unity.UI.Builder
                 {
                     valueType = styleProperty.values[i].valueType;
                     var valueType2 = styleProperty.values[i + 1].valueType;
-                    if (valueType == StyleValueType.Dimension && valueType2 == StyleValueType.Dimension)
+                    if ((valueType == StyleValueType.Dimension || valueType == StyleValueType.Float) &&
+                        (valueType2 == StyleValueType.Dimension || valueType2 == StyleValueType.Float))
                     {
                         var valueX = styleProperty.values[i++];
                         var valueY = styleProperty.values[i++];
@@ -270,7 +271,7 @@ namespace Unity.UI.Builder
                 if (i < valueCount)
                 {
                     valueType = styleProperty.values[i].valueType;
-                    if (valueType == StyleValueType.Dimension)
+                    if (valueType == StyleValueType.Dimension || valueType == StyleValueType.Float)
                     {
                         var valueBlur = styleProperty.values[i++];
                         blurRadius = styleSheet.GetDimension(valueBlur);

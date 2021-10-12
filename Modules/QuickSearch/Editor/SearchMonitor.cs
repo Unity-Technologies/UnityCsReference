@@ -10,6 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using UnityEditor.Profiling;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 

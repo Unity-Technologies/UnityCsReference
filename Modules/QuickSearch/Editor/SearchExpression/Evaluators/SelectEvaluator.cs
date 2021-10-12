@@ -20,7 +20,7 @@ namespace UnityEditor.Search
             yield return EvaluatorUtils.CreateItem(c.ResolveAlias("Selector"), c.expression.innerText, c.expression.innerText.ToString());
         }
 
-        [SearchExpressionEvaluator]
+        [SearchExpressionEvaluator(SearchExpressionEvaluationHints.DoNotValidateSignature)]
         [Description("Create new results by selecting which value and property to take."), Category("Transformers")]
         public static IEnumerable<SearchItem> Select(SearchExpressionContext c)
         {
@@ -29,29 +29,34 @@ namespace UnityEditor.Search
 
             // Select dataset
             var dataset = c.args[0].Execute(c);
-            var results = dataset;
             var sIt = c.args.Skip(1).GetEnumerator();
-            while (sIt.MoveNext())
+            const int batchSize = 100;
+            foreach (var batch in dataset.Batch(batchSize))
             {
-                var selector = sIt.Current;
-                if (IsSelectorLiteral(selector))
+                var results = batch;
+                while (sIt.MoveNext())
                 {
-                    var selectorName = selector.innerText.ToString();
-                    var selectorAlias = c.ResolveAlias(selector);
-                    results = TaskEvaluatorManager.EvaluateMainThread(results, item =>
+                    var selector = sIt.Current;
+                    if (IsSelectorLiteral(selector))
                     {
-                        var selectedValue = SelectorManager.SelectValue(item, c.search, selectorName, out string suggestedSelectorName);
-                        AddSelectedValue(item, selector.innerText.ToString(), selectorAlias ?? suggestedSelectorName, selectedValue);
-                        return item;
-                    });
+                        var selectorName = selector.innerText.ToString();
+                        var selectorAlias = c.ResolveAlias(selector);
+                        results = TaskEvaluatorManager.EvaluateMainThread(results, item =>
+                        {
+                            var selectedValue = SelectorManager.SelectValue(item, c.search, selectorName, out string suggestedSelectorName);
+                            AddSelectedValue(item, selector.innerText.ToString(), selectorAlias ?? suggestedSelectorName, selectedValue);
+                            return item;
+                        }, batchSize);
+                    }
+                    else
+                    {
+                        results = ProcessIterableSelector(c, results, selector);
+                    }
                 }
-                else
-                {
-                    results = ProcessIterableSelector(c, results, selector);
-                }
-            }
 
-            return results;
+                foreach (var r in results)
+                    yield return r;
+            }
         }
 
         static IEnumerable<SearchItem> ProcessIterableSelector(SearchExpressionContext c, IEnumerable<SearchItem> results, SearchExpression selector)

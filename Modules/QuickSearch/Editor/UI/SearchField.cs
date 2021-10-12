@@ -33,13 +33,6 @@ namespace UnityEditor.Search
         private bool m_PostPoneMove = false;
         private double m_NextBlinkTime = 0;
         private bool m_CursorBlinking;
-        private int m_RecentSearchIndex = -1;
-        private string m_CycledSearch;
-        private string m_LastSearch;
-
-        private int m_UndoIndex = -1;
-        private TextUndoInfo[] m_UndoStack;
-        private double m_UndoLastTime = 0f;
 
         public const float cancelButtonWidth = 20f;
         public int controlID { get; private set; } = -1;
@@ -49,105 +42,10 @@ namespace UnityEditor.Search
             return height > 30f;
         }
 
-        readonly struct TextUndoInfo
+        public string Draw(in Rect position, string text, GUIStyle style)
         {
-            readonly public string text;
-            readonly public int cursorPos;
-            readonly public int selectPos;
-
-            public TextUndoInfo(in TextEditor te)
-            {
-                this.text = te.text;
-                this.cursorPos = te.cursorIndex;
-                this.selectPos = te.selectIndex;
-            }
-
-            public TextUndoInfo(string text, int cursorPos, int selectPos)
-            {
-                this.text = text;
-                this.cursorPos = cursorPos;
-                this.selectPos = selectPos;
-            }
-
-            public override string ToString()
-            {
-                return $"{text} ({cursorPos}/{selectPos})";
-            }
-        }
-
-        public string Draw(Rect position, string text, GUIStyle style)
-        {
-            if (m_UndoStack == null)
-            {
-                m_UndoStack = new TextUndoInfo[10];
-                if (!string.IsNullOrEmpty(text))
-                {
-                    m_UndoStack[0] = new TextUndoInfo(text, text.Length, text.Length);
-                    m_UndoIndex = 0;
-                }
-                SaveUndo(text);
-            }
-
-            var evt = Event.current;
             using (new BlinkCursorScope(m_CursorBlinking && HasKeyboardFocus(controlID), new Color(0, 0, 0, 0.01f)))
-            {
-                bool selectAll = false;
-                if (!String.IsNullOrEmpty(m_CycledSearch) && (evt.type == EventType.Repaint || evt.type == EventType.Layout))
-                {
-                    text = m_CycledSearch;
-                    m_CycledSearch = null;
-                    selectAll = GUI.changed = true;
-                }
-
-                text = Draw(position, text, IsMultiline(position.height), false, null, style ?? Styles.searchField);
-                TrackUndoRedo(text);
-
-                if (selectAll)
-                    GetTextEditor().SelectAll();
-
-                return text;
-            }
-        }
-
-        private void TrackUndoRedo(string text)
-        {
-            var now = EditorApplication.timeSinceStartup;
-            if (GUI.changed)
-                m_UndoLastTime = now;
-            else if (m_UndoLastTime != 0f && now - m_UndoLastTime >= 0.5f)
-                SaveUndo(text);
-        }
-
-        private void SaveUndo(string text)
-        {
-            if (string.IsNullOrEmpty(text) || m_UndoIndex != -1 && m_UndoStack[m_UndoIndex].text == text)
-                return;
-            m_UndoIndex = Utils.Wrap(m_UndoIndex + 1, m_UndoStack.Length);
-            m_UndoStack[m_UndoIndex] = new TextUndoInfo(GetTextEditor());
-        }
-
-        private bool UndoEdit(TextEditor editor, int direction = 1)
-        {
-            if (m_UndoStack == null)
-                return false;
-
-            // Save current state in case it has changed
-            SaveUndo(editor.text);
-
-            var nextIndex = Utils.Wrap(m_UndoIndex - direction, m_UndoStack.Length);
-            if (string.IsNullOrEmpty(m_UndoStack[nextIndex].text))
-                return false;
-
-            m_UndoIndex = nextIndex;
-            editor.text = m_UndoStack[m_UndoIndex].text;
-            editor.cursorIndex = m_UndoStack[m_UndoIndex].selectPos;
-            editor.selectIndex = m_UndoStack[m_UndoIndex].cursorPos;
-            return true;
-        }
-
-        private bool RedoEdit(TextEditor editor)
-        {
-            return UndoEdit(editor, -1);
+                return Draw(position, text, IsMultiline(position.height), false, null, style ?? Styles.searchField);
         }
 
         public string Draw(Rect position, string text, bool multiline, bool passwordField, string allowedletters, GUIStyle style)
@@ -386,23 +284,7 @@ namespace UnityEditor.Search
                             break;
                         }
 
-                        if (m_UndoIndex != -1 && evt.keyCode == KeyCode.Z && (evt.command || evt.control))
-                        {
-                            if (IsEditingControl(editor, id) && UndoEdit(editor))
-                            {
-                                evt.Use();
-                                mayHaveChanged = true;
-                            }
-                        }
-                        else if (m_UndoIndex != -1 && evt.keyCode == KeyCode.Y && (evt.command || evt.control))
-                        {
-                            if (IsEditingControl(editor, id) && RedoEdit(editor))
-                            {
-                                evt.Use();
-                                mayHaveChanged = true;
-                            }
-                        }
-                        else if (evt.keyCode == KeyCode.Escape)
+                        if (evt.keyCode == KeyCode.Escape)
                         {
                             if (IsEditingControl(editor, id))
                             {
@@ -597,22 +479,6 @@ namespace UnityEditor.Search
             if (IsLineBreak(evt))
                 return true;
 
-            if (evt.modifiers.HasAny(EventModifiers.Alt))
-            {
-                if (evt.keyCode == KeyCode.DownArrow)
-                {
-                    m_CycledSearch = CyclePreviousSearch(-1);
-                    evt.Use();
-                    return true;
-                }
-                else if (evt.keyCode == KeyCode.UpArrow)
-                {
-                    m_CycledSearch = CyclePreviousSearch(+1);
-                    evt.Use();
-                    return true;
-                }
-            }
-
             return false;
         }
 
@@ -788,27 +654,6 @@ namespace UnityEditor.Search
             return true;
         }
 
-        private string CyclePreviousSearch(int shift)
-        {
-            if (SearchSettings.recentSearches.Count == 0)
-                return m_LastSearch;
-
-            m_RecentSearchIndex = Utils.Wrap(m_RecentSearchIndex + shift, SearchSettings.recentSearches.Count);
-
-            return SearchSettings.recentSearches[m_RecentSearchIndex];
-        }
-
-        public void UpdateLastSearchText(string value)
-        {
-            if (value.Equals(m_LastSearch))
-                return;
-            m_LastSearch = value;
-            if (string.IsNullOrEmpty(value))
-                return;
-            m_RecentSearchIndex = 0;
-            SearchSettings.AddRecentSearch(value);
-        }
-
         public void DrawError(int errorIndex, int errorLength, string errorTooltip)
         {
             DrawLineWithTooltip(errorIndex, errorIndex + errorLength, errorTooltip, Styles.Wiggle.wiggle, Styles.Wiggle.wiggleTooltip);
@@ -819,9 +664,9 @@ namespace UnityEditor.Search
             DrawLineWithTooltip(errorIndex, errorIndex + errorLength, errorTooltip, Styles.Wiggle.wiggleWarning, Styles.Wiggle.wiggleTooltip);
         }
 
-        const float textTopBottomPadding = 4f;
-        const float minSinglelineTextHeight = 20f;
-        public const float searchFieldSingleLineHeight = minSinglelineTextHeight + textTopBottomPadding;
+        public const float textTopBottomPadding = 5f;
+        public const float minSinglelineTextHeight = 20f;
+        public const float searchFieldSingleLineHeight = minSinglelineTextHeight + textTopBottomPadding * 2f;
 
         private void DrawLineWithTooltip(int lineStartIndex, int lineEndIndex, string tooltip, GUIStyle lineStyle, GUIStyle tooltipStyle)
         {
@@ -858,14 +703,14 @@ namespace UnityEditor.Search
         {
             var fieldWidth = width - padding;
             var fieldHeight = Mathf.Max(minSinglelineTextHeight, Styles.searchField.CalcHeight(Utils.GUIContentTemp(text), fieldWidth));
-            return GUILayoutUtility.GetRect(fieldWidth, fieldHeight + textTopBottomPadding, Styles.searchField);
+            return GUILayoutUtility.GetRect(fieldWidth, fieldHeight + textTopBottomPadding * 2f, Styles.searchField);
         }
 
         internal Rect AdjustRect(string text, Rect rect)
         {
             var fieldWidth = rect.width;
             var fieldHeight = Mathf.Max(minSinglelineTextHeight, Styles.searchField.CalcHeight(Utils.GUIContentTemp(text), fieldWidth));
-            return new Rect(rect.x, rect.y, fieldWidth, fieldHeight + textTopBottomPadding);
+            return new Rect(rect.x, rect.y, fieldWidth, fieldHeight + textTopBottomPadding * 2f);
         }
     }
 }

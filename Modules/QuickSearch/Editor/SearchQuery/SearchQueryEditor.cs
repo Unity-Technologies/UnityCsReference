@@ -19,6 +19,7 @@ namespace UnityEditor.Search
         private SerializedProperty m_DescriptionProperty;
         private SerializedProperty m_TextProperty;
         private SerializedProperty m_ProvidersProperty;
+        private SerializedProperty m_IsSearchTemplateProperty;
         private ReorderableList m_ProvidersList;
         private List<string> m_EnabledProviderIds;
         private bool m_ProviderFoldout;
@@ -29,6 +30,7 @@ namespace UnityEditor.Search
             m_DescriptionProperty = serializedObject.FindProperty(nameof(SearchQueryAsset.description));
             m_TextProperty = serializedObject.FindProperty(nameof(SearchQueryAsset.text));
             m_ProvidersProperty = serializedObject.FindProperty(nameof(SearchQueryAsset.providerIds));
+            m_IsSearchTemplateProperty = serializedObject.FindProperty("m_IsSearchTemplate");
 
             PopulateValidEnabledProviderIds();
             m_ProviderFoldout = EditorPrefs.GetBool("SearchQuery.ShowProviderList", false);
@@ -143,7 +145,7 @@ namespace UnityEditor.Search
                 EditorGUILayout.BeginVertical();
                 {
                     var originalText = m_TextProperty.stringValue;
-                    EditorGUILayout.DelayedTextField(m_TextProperty, new GUIContent("Search Text"));
+                    EditorGUILayout.DelayedTextField(m_TextProperty, EditorGUIUtility.TrTextContent("Search Text"));
                     if (originalText != m_TextProperty.stringValue)
                     {
                         m_SearchContext.searchText = m_TextProperty.stringValue;
@@ -151,6 +153,7 @@ namespace UnityEditor.Search
                     }
 
                     EditorGUILayout.PropertyField(m_DescriptionProperty);
+                    EditorGUILayout.PropertyField(m_IsSearchTemplateProperty);
                 }
                 EditorGUILayout.EndVertical();
             }
@@ -159,7 +162,7 @@ namespace UnityEditor.Search
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(20);
             EditorGUI.BeginChangeCheck();
-            m_ProviderFoldout = EditorGUILayout.Foldout(m_ProviderFoldout, "Providers", true);
+            m_ProviderFoldout = EditorGUILayout.Foldout(m_ProviderFoldout, L10n.Tr("Providers"), true);
             if (EditorGUI.EndChangeCheck())
             {
                 EditorPrefs.SetBool("SearchQuery.ShowProviderList", m_ProviderFoldout);

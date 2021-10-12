@@ -10,7 +10,7 @@
     <AssemblyName>UnityEngine</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <LangVersion>latest</LangVersion>
+    <LangVersion>8.0</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\External\Yoga\csharp\Facebook.Yoga\BaselineFunction.cs">
@@ -3216,6 +3216,12 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Windows\WindowsFile.bindings.cs">
       <Link>Runtime\Export\Windows\WindowsFile.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Windows\WindowsInput.bindings.cs">
+      <Link>Runtime\Export\Windows\WindowsInput.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Windows\WindowsInput.cs">
+      <Link>Runtime\Export\Windows\WindowsInput.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\XR\Pose.cs">
       <Link>Runtime\Export\XR\Pose.cs</Link>

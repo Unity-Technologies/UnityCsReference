@@ -169,8 +169,6 @@ namespace UnityEditor
         Generic = 0,
         // S3 texture compression, nonspecific to DXT variant, supported by desktop browsers
         DXT = 1,
-        // ETC1 texture compression (or RGBA16 for textures with alpha), supported by mobile devices
-        ETC = 2,
         // ETC2/EAC texture compression, supported by mobile devices
         ETC2 = 3,
         // Adaptive Scalable Texture Compression, supported by mobile devices

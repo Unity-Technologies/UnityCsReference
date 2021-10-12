@@ -280,6 +280,14 @@ namespace UnityEditor.Search
             fixedHeight = 0f
         };
 
+        public static readonly GUIStyle queryBuilderToolbar = new GUIStyle("Toolbar")
+        {
+            margin = new RectOffset(4, 4, 0, 4),
+            padding = new RectOffset(4, 8, 4, 4),
+            border = new RectOffset(0, 0, 0, 0),
+            fixedHeight = 0f
+        };
+
 
         const int k_SearchFieldFontSize = 15;
 
@@ -293,6 +301,26 @@ namespace UnityEditor.Search
             alignment = TextAnchor.MiddleLeft,
             margin = new RectOffset(4, 4, 4, 4),
             padding = new RectOffset(8, 20, 0, 0),
+            border = new RectOffset(0, 0, 0, 0),
+            normal = clear,
+            focused = clear,
+            hover = clear,
+            active = clear,
+            onNormal = clear,
+            onHover = clear,
+            onFocused = clear,
+            onActive = clear,
+        };
+
+        public static readonly GUIStyle queryBuilderSearchField = new GUIStyle()
+        {
+            wordWrap = false,
+            fontSize = k_SearchFieldFontSize,
+            fixedHeight = 0f,
+            fixedWidth = 0f,
+            alignment = TextAnchor.MiddleLeft,
+            margin = new RectOffset(0, 0, 0, 0),
+            padding = new RectOffset(2, 2, 0, 0),
             border = new RectOffset(0, 0, 0, 0),
             normal = clear,
             focused = clear,
@@ -381,6 +409,7 @@ namespace UnityEditor.Search
         public static readonly GUIContent searchTipsSync = EditorGUIUtility.TrTextContentWithIcon("Enable sync to keep other Editor search fields populated ", EditorGUIUtility.LoadIcon("QuickSearch/SyncSearch On"));
         public static readonly GUIContent saveSearchesIconContent = EditorGUIUtility.TrTextContentWithIcon(string.Empty, Utils.LoadIcon("UnityEditor/Search/SearchQueryAsset Icon"));
         public static readonly GUIContent openSaveSearchesIconContent = EditorGUIUtility.TrTextContentWithIcon(string.Empty, "Open Saved Searches Panel (F3)", Utils.LoadIcon("UnityEditor/Search/SearchQueryAsset Icon"));
+        public static readonly GUIContent queryBuilderIconContent = EditorGUIUtility.TrTextContentWithIcon(string.Empty, "Toggle Query Builder Mode (F2)", Utils.LoadIcon("Assembly Icon"));
 
         public static readonly GUIContent[] searchTipIcons =
         {
@@ -421,7 +450,7 @@ namespace UnityEditor.Search
 
         public static readonly GUIStyle toolbarButton = new GUIStyle("IconButton")
         {
-            margin = new RectOffset(4, 4, 4, 4),
+            margin = new RectOffset(4, 4, (int)SearchField.textTopBottomPadding, (int)SearchField.textTopBottomPadding),
             padding = new RectOffset(0, 0, 0, 0),
             fixedWidth = 24f,
             fixedHeight = 24f,
@@ -674,13 +703,13 @@ namespace UnityEditor.Search
             public static readonly Color splitterColor;
             public static readonly GUIStyle label;
 
-            public static GUIContent createContent = EditorGUIUtility.IconContent("CreateAddNew");
+            public static GUIContent createContent = EditorGUIUtility.IconContent("Toolbar Plus More");
             public static GUIStyle addNewDropDown = new GUIStyle("ToolbarCreateAddNewDropDown")
             {
                 fixedWidth = 32f,
                 fixedHeight = 0,
                 padding = new RectOffset(0, 0, 0, 0),
-                margin = new RectOffset(2, 2, 4, 4)
+                margin = new RectOffset(2, 2, 0, 0)
             };
 
             static QueryBuilder()

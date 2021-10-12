@@ -129,6 +129,12 @@ namespace UnityEditor.Search
                 case SearchQuerySortOrder.CreationTime:
                     parent.children.Sort(SortCreationTime);
                     break;
+                case SearchQuerySortOrder.MostRecentlyUsed:
+                    parent.children.Sort(SortLastUsedTime);
+                    break;
+                case SearchQuerySortOrder.ItemCount:
+                    parent.children.Sort(SortItemCount);
+                    break;
             }
         }
 
@@ -146,6 +152,32 @@ namespace UnityEditor.Search
         {
             // Most recent is on top.
             return -((SearchQueryTreeViewItem)a).query.creationTime.CompareTo(((SearchQueryTreeViewItem)b).query.creationTime);
+        }
+
+        private static int SortLastUsedTime(TreeViewItem a, TreeViewItem b)
+        {
+            var tviA = (SearchQueryTreeViewItem)a;
+            var tviB = (SearchQueryTreeViewItem)b;
+
+            // Queries with no last used time are sorted by name.
+            if (tviA.query.lastUsedTime == 0 && tviB.query.lastUsedTime == 0)
+                return (tviA.query.displayName.CompareTo(tviB.query.displayName));
+
+            // Most recently used is on top.
+            return -(tviA.query.lastUsedTime.CompareTo(tviB.query.lastUsedTime));
+        }
+
+        private static int SortItemCount(TreeViewItem a, TreeViewItem b)
+        {
+            var tviA = (SearchQueryTreeViewItem)a;
+            var tviB = (SearchQueryTreeViewItem)b;
+
+            // Queries with no item count are sorted by name.
+            if (tviA.query.itemCount == -1 && tviB.query.itemCount == -1)
+                return (tviA.query.displayName.CompareTo(tviB.query.displayName));
+
+            // Query with the most items is on top.
+            return -(tviA.query.itemCount.CompareTo(tviB.query.itemCount));
         }
 
         private static TreeViewItem FindItemFromQuery(ISearchQuery q, TreeViewItem i)
@@ -250,14 +282,55 @@ namespace UnityEditor.Search
 
                 if (!args.isRenaming && evt.type == EventType.Repaint)
                 {
-                    var itemContent = Utils.GUIContentTemp(tvi.query.displayName, SearchQuery.GetIcon(tvi.query));
-                    var oldLeftPadding = Styles.itemLabel.padding.left;
-                    Styles.itemLabel.padding.left += Mathf.RoundToInt(GetContentIndent(args.item) + extraSpaceBeforeIconAndLabel);
-                    Styles.itemLabel.Draw(rowRect, itemContent,
-                        isHover: rowRect.Contains(evt.mousePosition), isActive: args.selected, on: false, hasKeyboardFocus: false);
-                    Styles.itemLabel.padding.left = oldLeftPadding;
+                    var hovered = rowRect.Contains(evt.mousePosition);
+
+                    using (var view = SearchMonitor.GetView())
+                    {
+                        if (tvi.query != null)
+                        {
+                            DrawQueryLabelAndIcon(rowRect, args, tvi, hovered, true);
+                            DrawItemCount(tvi.query.itemCount, rowRect, hovered, args.selected);
+                        }
+                    }
                 }
             }
+        }
+
+        private void DrawItemCount(int itemCount, Rect rowRect, bool hovered, bool selected)
+        {
+            GUIContent itemCountContent = new GUIContent();
+
+            if (itemCount != -1)
+            {
+                string formattedCount = Utils.FormatCount(Convert.ToUInt64(itemCount));
+                itemCountContent = Utils.GUIContentTemp(string.Format(Search.Styles.tabCountTextColorFormat, formattedCount));
+            }
+
+            var itemCountRect = new Rect(Mathf.Floor(rowRect.xMax - 27f), rowRect.y, 28f, 22f);
+            var oldAlignment = Styles.itemLabel.alignment;
+            Styles.itemLabel.alignment = TextAnchor.MiddleCenter;
+            Styles.itemLabel.Draw(itemCountRect, itemCountContent, hovered, selected, false, false);
+            Styles.itemLabel.alignment = oldAlignment;
+        }
+
+        private void DrawQueryLabelAndIcon(Rect rowRect, RowGUIArgs args, SearchQueryTreeViewItem tvi, bool hovered, bool usePropertyDatabase)
+        {
+            var itemContent = Utils.GUIContentTemp(Utils.Simplify(tvi.query.displayName), SearchQuery.GetIcon(tvi.query));
+            var oldLeftPadding = Styles.itemLabel.padding.left;
+            Styles.itemLabel.padding.left += Mathf.RoundToInt(GetContentIndent(args.item) + extraSpaceBeforeIconAndLabel);
+
+            if (usePropertyDatabase)
+            {
+                var itemRect = new Rect(rowRect.x, rowRect.y, Mathf.Floor(rowRect.xMax - 27f), 22f);
+                var oldClipping = Styles.itemLabel.clipping;
+                Styles.itemLabel.clipping = TextClipping.Clip;
+                Styles.itemLabel.Draw(itemRect, itemContent, hovered, args.selected, false, false);
+                Styles.itemLabel.clipping = oldClipping;
+            }
+            else
+                Styles.itemLabel.Draw(rowRect, itemContent, hovered, args.selected, false, false);
+
+            Styles.itemLabel.padding.left = oldLeftPadding;
         }
 
         protected override void SingleClickedItem(int id)

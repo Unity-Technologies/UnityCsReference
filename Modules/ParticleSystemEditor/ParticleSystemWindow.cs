@@ -111,6 +111,13 @@ namespace UnityEditor
             Repaint();
         }
 
+        internal bool HandleShortcutEvent(Event evt)
+        {
+            if (m_ParticleEffectUI != null)
+                return m_ParticleEffectUI.HandleShortcutEvent(evt);
+            return false;
+        }
+
         private void OnHierarchyOrProjectWindowWasChanged()
         {
             InitEffectUI();

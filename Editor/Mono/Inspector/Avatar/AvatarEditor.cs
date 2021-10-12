@@ -303,16 +303,38 @@ namespace UnityEditor
             }
         }
 
+        bool IsPartOfLockedInspector()
+        {
+            foreach (InspectorWindow i in InspectorWindow.GetAllInspectorWindows())
+            {
+                ActiveEditorTracker activeEditor = i.tracker;
+                foreach (Editor e in activeEditor.activeEditors)
+                {
+                    if (e == this && i.isLocked)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         void OnDestroy()
         {
-            // If editor is destroyed for some other reason than exiting
-            // avatar configuration explicitly - this can for example happen
-            // when entering or exiting Play Mode, since this rebuilds all
-            // editors in the Inspector - ensure we exit the
-            // Avatar Configuration Stage if it's still open.
-            // This will also trigger cleanup of the editor.
-            if (StageNavigationManager.instance.currentStage is AvatarConfigurationStage)
-                StageUtility.GoToMainStage();
+            // If multiple Inspectors are open we want to prevent an unlocked Inspector from
+            // closing the Avatar stage on selection change therefore we only return to
+            // the main stage if a locked Inspector is destroyed (case 1330120).
+            if (IsPartOfLockedInspector())
+            {
+                // If AvatarEditor is destroyed for some other reason than exiting
+                // avatar configuration explicitly - this can for example happen
+                // when entering or exiting Play Mode, since this rebuilds all
+                // editors in the Inspector - ensure we exit the
+                // Avatar Configuration Stage if it's still open.
+                // This will also trigger cleanup of the editor.
+                if (StageNavigationManager.instance.currentStage is AvatarConfigurationStage)
+                    StageUtility.GoToMainStage();
+            }
         }
 
         void SelectAsset()

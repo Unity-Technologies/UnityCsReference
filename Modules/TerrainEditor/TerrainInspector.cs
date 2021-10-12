@@ -65,7 +65,7 @@ namespace UnityEditor
 
                 bool isShaderValid;
                 bool.TryParse(material.GetTag("TerrainCompatible", false), out isShaderValid);
-                RenderPipelineAsset renderPipeline = GraphicsSettings.defaultRenderPipeline;
+                RenderPipelineAsset renderPipeline = GraphicsSettings.currentRenderPipeline;
                 string shaderPath = renderPipeline?.defaultTerrainMaterial?.shader.name;
                 string pipelineShaderTag = material.GetTag("RenderPipeline", false);
                 switch (renderPipeline?.GetType().Name)

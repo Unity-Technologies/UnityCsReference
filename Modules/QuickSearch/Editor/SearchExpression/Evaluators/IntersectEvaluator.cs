@@ -12,7 +12,7 @@ namespace UnityEditor.Search
     {
         // intersect{...sets[, @intersectBy]}
         [Description("Produces the set intersection of two sequences."), Category("Set Manipulation")]
-        [SearchExpressionEvaluator(/*SearchExpressionType.Iterable | SearchExpressionType.Variadic, SearchExpressionType.Selector | SearchExpressionType.Optional*/)]
+        [SearchExpressionEvaluator(SearchExpressionEvaluationHints.DoNotValidateSignature /*SearchExpressionType.Iterable | SearchExpressionType.Variadic, SearchExpressionType.Selector | SearchExpressionType.Optional*/)]
         public static IEnumerable<SearchItem> Intersect(SearchExpressionContext c)
         {
             if (c.args.Length < 2)

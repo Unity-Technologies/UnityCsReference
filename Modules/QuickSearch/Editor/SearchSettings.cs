@@ -94,6 +94,9 @@ namespace UnityEditor.Search
         public static bool showSavedSearchPanel { get; set; }
         public static Dictionary<string, string> scopes { get; private set; }
         public static Dictionary<string, SearchProviderSettings> providers { get; private set; }
+        public static bool queryBuilder { get; set; }
+        public static string ignoredProperties { get; set; }
+        public static string helperWidgetCurrentArea { get; set; }
 
         public static int[] expandedQueries { get; set; }
 
@@ -150,6 +153,9 @@ namespace UnityEditor.Search
             showStatusBar = ReadSetting(settings, nameof(showStatusBar), false);
             savedSearchesSortOrder = (SearchQuerySortOrder)ReadSetting(settings, nameof(savedSearchesSortOrder), 0);
             showSavedSearchPanel = ReadSetting(settings, nameof(showSavedSearchPanel), false);
+            queryBuilder = ReadSetting(settings, nameof(queryBuilder), false);
+            ignoredProperties = ReadSetting(settings, nameof(ignoredProperties), "id;name;classname;imagecontentshash");
+            helperWidgetCurrentArea = ReadSetting(settings, nameof(helperWidgetCurrentArea), "all");
 
             itemIconSize = EditorPrefs.GetFloat(k_ItemIconSizePrefKey, itemIconSize);
 
@@ -191,6 +197,9 @@ namespace UnityEditor.Search
                 [nameof(savedSearchesSortOrder)] = (int)savedSearchesSortOrder,
                 [nameof(showSavedSearchPanel)] = showSavedSearchPanel,
                 [nameof(expandedQueries)] = expandedQueries,
+                [nameof(queryBuilder)] = queryBuilder,
+                [nameof(ignoredProperties)] = ignoredProperties,
+                [nameof(helperWidgetCurrentArea)] = helperWidgetCurrentArea,
 
             };
 
@@ -198,6 +207,8 @@ namespace UnityEditor.Search
             SaveFavorites();
 
             EditorPrefs.SetFloat(k_ItemIconSizePrefKey, itemIconSize);
+
+            AssetDatabaseAPI.RegisterCustomDependency("SearchIndexIgnoredProperties", Hash128.Compute(ignoredProperties));
         }
 
         public static void SetScopeValue(string prefix, int hash, string value)
@@ -278,6 +289,16 @@ namespace UnityEditor.Search
                 keywords = new[] { "quick", "omni", "search" },
             };
             return settings;
+        }
+
+        [SettingsProvider]
+        internal static SettingsProvider CreateSearchIndexSettings()
+        {
+            return new SettingsProvider("Preferences/Search/Indexing", SettingsScope.User)
+            {
+                guiHandler = DrawSearchIndexingSettings,
+                keywords = new[] { "search", "index" },
+            };
         }
 
         static void DrawSearchServiceSettings()
@@ -362,6 +383,30 @@ namespace UnityEditor.Search
 
                     GUILayout.Space(10);
                     DrawSearchServiceSettings();
+                }
+                GUILayout.EndVertical();
+            }
+            GUILayout.EndHorizontal();
+        }
+
+        private static void DrawSearchIndexingSettings(string searchContext)
+        {
+            EditorGUIUtility.labelWidth = 350;
+            GUILayout.BeginHorizontal();
+            {
+                GUILayout.Space(10);
+                GUILayout.BeginVertical();
+                {
+                    EditorGUILayout.LabelField(L10n.Tr("Ignored properties (Use line break or ; to separate tokens)"), EditorStyles.largeLabel);
+                    GUILayout.Space(10);
+                    EditorGUI.BeginChangeCheck();
+                    {
+                        ignoredProperties = EditorGUILayout.TextArea(ignoredProperties, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+                    }
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        Save();
+                    }
                 }
                 GUILayout.EndVertical();
             }

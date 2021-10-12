@@ -967,22 +967,24 @@ namespace UnityEngine.UIElements
                 PseudoStates diff = m_PseudoStates ^ value;
                 if ((int)diff > 0)
                 {
-                    m_PseudoStates = value;
-
-                    if ((m_PseudoStates & PseudoStates.Root) == PseudoStates.Root)
+                    if ((value & PseudoStates.Root) == PseudoStates.Root)
                         isRootVisualContainer = true;
-
 
                     // If only the root changed do not trigger a new style update since the root
                     // pseudo state change base on the current style sheet when selectors are matched.
-                    if (diff == PseudoStates.Root)
-                        return;
-
-                    if ((triggerPseudoMask & m_PseudoStates) != 0
-                        || (dependencyPseudoMask & ~m_PseudoStates) != 0)
+                    if (diff != PseudoStates.Root)
                     {
-                        IncrementVersion(VersionChangeType.StyleSheet);
+                        var added = diff & value;
+                        var removed = diff & m_PseudoStates;
+
+                        if ((triggerPseudoMask & added) != 0
+                            || (dependencyPseudoMask & removed) != 0)
+                        {
+                            IncrementVersion(VersionChangeType.StyleSheet);
+                        }
                     }
+
+                    m_PseudoStates = value;
                 }
             }
         }

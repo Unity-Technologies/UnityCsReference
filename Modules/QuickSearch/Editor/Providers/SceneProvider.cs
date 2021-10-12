@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.ShortcutManagement;
+using UnityEditorInternal;
 using UnityEngine;
 
 namespace UnityEditor.Search.Providers
@@ -127,12 +128,24 @@ namespace UnityEditor.Search.Providers
 
             fetchPropositions = (context, options) =>
             {
-                return m_SceneQueryEngine?.FindPropositions(context, options);
+                if (options.HasAny(SearchPropositionFlags.QueryBuilder))
+                    return FetchQueryBuilderPropositions(context);
+                return m_SceneQueryEngine == null ? new SearchProposition[0] : m_SceneQueryEngine.FindPropositions(context, options);
             };
 
             trackSelection = (item, context) => PingItem(item);
 
             fetchColumns = (context, items) => SceneSelectors.Enumerate(items);
+        }
+
+        internal SceneQueryEngine queryEngine
+        {
+            get
+            {
+                if (m_SceneQueryEngine == null)
+                    m_SceneQueryEngine = new SceneQueryEngine(SearchUtils.FetchGameObjects());
+                return m_SceneQueryEngine;
+            }
         }
 
         private void Refresh()
@@ -157,9 +170,9 @@ namespace UnityEditor.Search.Providers
         private void InvalidateObject(int instanceId, RefreshFlags flags = RefreshFlags.Default)
         {
             if (UnityEngine.Object.FindObjectFromInstanceID(instanceId) is Component c)
-                m_SceneQueryEngine.InvalidateObject(c.gameObject.GetInstanceID());
+                queryEngine.InvalidateObject(c.gameObject.GetInstanceID());
             else
-                m_SceneQueryEngine.InvalidateObject(instanceId);
+                queryEngine.InvalidateObject(instanceId);
         }
 
         private void OnObjectChanged(ref ObjectChangeEventStream stream)
@@ -292,7 +305,7 @@ namespace UnityEditor.Search.Providers
 
                 using (SearchMonitor.GetView())
                 {
-                    yield return m_SceneQueryEngine.Search(context, provider, subset)
+                    yield return queryEngine.Search(context, provider, subset)
                         .Where(go => go)
                         .Select(go => AddResult(context, provider, go));
                 }
@@ -367,6 +380,54 @@ namespace UnityEditor.Search.Providers
 
             return ObjectFromItem(item);
         }
+
+        private IEnumerable<SearchProposition> FetchQueryBuilderPropositions(SearchContext context)
+        {
+
+            var goIcon = Utils.LoadIcon("GameObject Icon");
+            yield return new SearchProposition(category: "GameObject", label: "InstanceID", replacement: "id=0", help: "Search object with InstanceID", icon: goIcon);
+            yield return new SearchProposition(category: "GameObject", label: "Path", replacement: "path=/root/children1", help: "Search object with Transform path", icon: goIcon);
+            yield return new SearchProposition(category: "GameObject", label: "Volume Size", replacement: "size>1", help: "Search object by volume size", icon: goIcon);
+            yield return new SearchProposition(category: "GameObject", label: "Components count", replacement: "components>1", help: "Search object with more than # components", icon: goIcon);
+
+            var filterIcon = Utils.LoadIcon("Filter Icon");
+            yield return new SearchProposition(category: "Filters", label: "Active", "active=true", "Search active objects", icon: filterIcon);
+
+            var sceneIcon = Utils.LoadIcon("SceneAsset Icon");
+            var queryEngineFunctions = TypeCache.GetMethodsWithAttribute<SceneQueryEngineFilterAttribute>();
+            foreach (var mi in queryEngineFunctions)
+            {
+                var attr = mi.GetAttribute<SceneQueryEngineFilterAttribute>();
+                var op = attr.supportedOperators == null ? ">" : attr.supportedOperators[0];
+                var value = op == ":" ? "" : "1";
+                var label = attr.token;
+                string help = null;
+
+                if (mi.ReturnType == typeof(Vector4))
+                    value = "(,,,)";
+
+                var replacement = $"{attr.token}{op}{value}";
+
+                var descriptionAttr = mi.GetAttribute<System.ComponentModel.DescriptionAttribute>();
+                if (descriptionAttr != null)
+                {
+                    help = label;
+                    label = descriptionAttr.Description;
+                }
+
+                yield return new SearchProposition(category: "Scene Filters", label: label, help: help, replacement: replacement, icon: sceneIcon);
+            }
+
+            var sceneObjects = context.searchView?.results.Count > 0 ?
+                context.searchView.results.Select(r => r.ToObject()).Where(o => o) : SearchUtils.FetchGameObjects();
+            foreach (var p in SearchUtils.EnumeratePropertyPropositions(sceneObjects).Take(100))
+                yield return p;
+
+
+            yield return new SearchProposition(category: "Reference", "Reference By Path (Object)", "ref=<$object:none,UnityEngine.Object$>", "Find all objects referencing a specific asset.", icon: sceneIcon);
+            yield return new SearchProposition(category: "Reference", "Reference By Instance ID (Number)", "ref=1000", "Find all objects referencing a specific instance ID (Number).", icon: sceneIcon);
+            yield return new SearchProposition(category: "Reference", "Reference By Asset Expression", "ref={p: }", "Find all objects referencing for a given asset search.", icon: sceneIcon);
+        }
     }
 
     static class BuiltInSceneObjectsProvider
@@ -389,6 +450,15 @@ namespace UnityEditor.Search.Providers
         internal static void OpenQuickSearch()
         {
             QuickSearch.OpenWithContextualProvider(type, Query.type);
+        }
+
+        [SearchTemplate(description = "Find mesh object", providerId = type)] internal static string ST1() => @"t=MeshFilter vertices>=1024";
+        [SearchTemplate(description = "Find objects that refers to asset", providerId = type)]
+        internal static string ST2()
+        {
+            if (Selection.activeObject && AssetDatabase.GetAssetPath(Selection.activeObject) is string assetPath && !string.IsNullOrEmpty(assetPath))
+                return $"ref=\"{assetPath}\"";
+            return "ref=<$object:none$>";
         }
     }
 }

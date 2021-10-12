@@ -1349,7 +1349,6 @@ namespace UnityEditorInternal
 
         public override void Clear()
         {
-            InitializeNativeTimeline();
             m_LastSelectedFrameIndex = -1;
             for (int i = 0; i < m_Groups.Count; i++)
                 m_Groups[i].Clear();

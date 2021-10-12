@@ -24,6 +24,8 @@ namespace UnityEditor.Search
         // Keep a static table for when we open a new table view
         static private SearchTable s_ActiveSearchTable { get; set; }
 
+        public override bool showNoResultMessage => context.empty;
+
         public TableView(ISearchView hostView)
             : base(hostView)
         {
@@ -76,7 +78,7 @@ namespace UnityEditor.Search
             Update();
         }
 
-        public override ResultViewState SaveViewState(string name)
+        public override SearchViewState SaveViewState(string name)
         {
             var viewState = base.SaveViewState(name);
             viewState.tableConfig = m_TableConfig.Clone();
@@ -84,7 +86,7 @@ namespace UnityEditor.Search
             return viewState;
         }
 
-        public override void SetViewState(ResultViewState viewState)
+        public override void SetViewState(SearchViewState viewState)
         {
             if (viewState.tableConfig == null)
                 return;
@@ -346,6 +348,10 @@ namespace UnityEditor.Search
                 var fp = fields.IndexOf(new SearchItem.Field(c.selector));
                 if (fp != -1)
                 {
+                    if (!string.IsNullOrEmpty(fields[fp].alias))
+                        c.content.text = fields[fp].alias;
+                    else if (fields[fp].value is string alias && !string.IsNullOrEmpty(alias))
+                        c.content.text = alias;
                     fields.RemoveAt(fp);
                     return true;
                 }
@@ -383,7 +389,7 @@ namespace UnityEditor.Search
         public bool OpenContextualMenu(Event evt, SearchItem item)
         {
             var selection = searchView.selection;
-            if (selection.Count > 1)
+            if (selection.Count <= 0 && item == null)
                 return false;
 
             var contextRect = new Rect(evt.mousePosition, new Vector2(1, 1));

@@ -71,8 +71,8 @@ namespace UnityEditor.Search.Providers
                 showDetailsOptions = ShowDetailsOptions.ListView,
                 fetchItems = (context, items, provider) => FetchItems(context, provider),
                 fetchLabel = (item, context) => item.label ?? (item.label = Utils.GetNameFromPath(item.id)),
-
-                fetchThumbnail = (item, context) => Icons.settings
+                fetchThumbnail = (item, context) => Icons.settings,
+                fetchPropositions = (context, options) => FetchPropositions(context, options)
             };
         }
 
@@ -91,6 +91,13 @@ namespace UnityEditor.Search.Providers
             yield return query.Apply(SettingsProviderCache.value).Select(spi => provider.CreateItem(context, spi.path, spi.label, spi.path, null, null));
         }
 
+        static IEnumerable<SearchProposition> FetchPropositions(SearchContext context, SearchPropositionOptions options)
+        {
+            if (!options.flags.HasAny(SearchPropositionFlags.QueryBuilder))
+                yield break;
+
+        }
+
         [SearchActionsProvider]
         internal static IEnumerable<SearchAction> ActionHandlers()
         {
@@ -107,4 +114,5 @@ namespace UnityEditor.Search.Providers
             };
         }
     }
+
 }

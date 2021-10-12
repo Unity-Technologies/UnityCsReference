@@ -37,7 +37,11 @@ namespace UnityEditor.Search
         // 18- Add search document flags.
         // 19- Merge SearchIndexEntry.version and SearchIndexEntryImporter.version from now on.
         // 20- Optimize search index entry document indexes serialization.
-        internal const int version = 0x4242E000 | 0x020;
+        // 21- Expand keyword serialization.
+        // 22- Discard long string properties and add support for hash128 while indexing
+        // 23- Improve keyword type encoding
+        // 24- Optimize asset path indexing in size
+        internal const int version = 0x024;
 
         public enum Type : byte
         {
@@ -130,7 +134,7 @@ namespace UnityEditor.Search
         /// <summary>
         /// Checks if a search result is valid.
         /// </summary>
-        public bool valid => index != -1;
+        public bool valid => index != -1 || id != null;
 
         /// <summary>
         /// Create a new SearchResult
@@ -237,17 +241,19 @@ namespace UnityEditor.Search
     /// </summary>
     public readonly struct SearchDocument : IEquatable<SearchDocument>, IComparable<SearchDocument>
     {
+        internal static readonly SearchDocument invalid = new SearchDocument();
+
         public readonly string id;
         public readonly int score;
         internal readonly string m_Name;
         internal readonly string m_Source;
         internal readonly SearchDocumentFlags flags;
 
-        [Obsolete("Search document index is no longer used and will be removed.")]
-        public readonly int index;
+        [Obsolete("Search document index is no longer used and will be removed.", error: true)]
+        public int index { get => throw new NotSupportedException("Obsolete"); }
 
-        [Obsolete("Use name to get the document name and source to get the document source path.")]
-        public string path => name;
+        [Obsolete("Use name to get the document name and source to get the document source path.", error: true)]
+        public string path => throw new NotSupportedException("Obsolete");
         public string name => m_Name ?? m_Source ?? id;
         public string source => m_Source ?? id;
         public bool valid => !string.IsNullOrEmpty(id);
@@ -259,10 +265,6 @@ namespace UnityEditor.Search
             this.flags = flags;
             m_Name = name;
             m_Source = source;
-
-            #pragma warning disable CS0618 // Type or member is obsolete
-            index = -1;
-            #pragma warning restore CS0618 // Type or member is obsolete
         }
 
         /// <summary>
@@ -285,11 +287,11 @@ namespace UnityEditor.Search
         {
         }
 
-        [Obsolete("Search document index is no longer used and will be removed.")]
+        [Obsolete("Search document index is no longer used and will be removed.", error: true)]
         public SearchDocument(int index, string id, string path = null, int score = int.MaxValue)
             : this(id, path, path, score)
         {
-            this.index = index;
+            throw new NotSupportedException("Obsolete");
         }
 
         /// <summary>
@@ -473,7 +475,26 @@ namespace UnityEditor.Search
             SearchResultCollection subset = null;
             if (args.andSet != null)
                 subset = new SearchResultCollection(args.andSet);
-            var results = SearchTerm(args.name, args.value, args.op, args.exclude, subset) ?? Enumerable.Empty<SearchResult>();
+
+            IEnumerable<SearchResult> results;
+            if (Utils.TryParseVectorValue(args.value, out var v, out _))
+            {
+                // Spread vector terms
+                SearchResultCollection vresults = subset;
+                if (!float.IsNaN(v.x))
+                    vresults = new SearchResultCollection(SearchTerm(args.name + ".x", (double)v.x, args.op, args.exclude, vresults));
+                if (!float.IsNaN(v.y))
+                    vresults = new SearchResultCollection(SearchTerm(args.name + ".y", (double)v.y, args.op, args.exclude, vresults));
+                if (!float.IsNaN(v.z))
+                    vresults = new SearchResultCollection(SearchTerm(args.name + ".z", (double)v.z, args.op, args.exclude, vresults));
+                if (!float.IsNaN(v.w))
+                    vresults = new SearchResultCollection(SearchTerm(args.name + ".w", (double)v.w, args.op, args.exclude, vresults));
+                results = vresults;
+            }
+            else
+            {
+                results = SearchTerm(args.name, args.value, args.op, args.exclude, subset) ?? Enumerable.Empty<SearchResult>();
+            }
 
             if (args.orSet != null)
                 results = results.Concat(args.orSet);
@@ -936,6 +957,22 @@ namespace UnityEditor.Search
             }
         }
 
+        internal void MapProperty(in string name, in string label, in string help, in string propertyType, in string ownerTypeName, bool removeNestedKeys = false)
+        {
+            MapKeyword(name + ":", $"{label}|{help}|{propertyType}|{ownerTypeName}");
+            if (removeNestedKeys)
+            {
+                m_Keywords.Remove(name + ".x:");
+                m_Keywords.Remove(name + ".y:");
+                m_Keywords.Remove(name + ".z:");
+                m_Keywords.Remove(name + ".w:");
+                m_Keywords.Remove(name + ".r:");
+                m_Keywords.Remove(name + ".g:");
+                m_Keywords.Remove(name + ".b:");
+                m_Keywords.Remove(name + ".a:");
+            }
+        }
+
         internal void MapKeyword(string keyword, string help)
         {
             m_Keywords.Remove(keyword);
@@ -1021,7 +1058,7 @@ namespace UnityEditor.Search
             }
         }
 
-        internal void CombineIndexes(IEnumerable<SearchIndexer> artifacts, int baseScore, string indexName, Action<int, string> progress)
+        internal void CombineIndexes(IEnumerable<SearchIndexer> artifacts, int baseScore, string indexName, Action<int> progress)
         {
             //using (new DebugTimer("Combining artifacts"))
             {
@@ -1036,7 +1073,7 @@ namespace UnityEditor.Search
                     if (other.documentCount == 0)
                         continue;
 
-                    progress(i++, other.name);
+                    progress(i++);
 
                     int[] updatedDocIndexes = other.m_Documents.Select(d => FindDocumentIndex(d)).ToArray();
                     for (int sourceIndex = 0; sourceIndex < updatedDocIndexes.Length; ++sourceIndex)
@@ -1186,7 +1223,7 @@ namespace UnityEditor.Search
             foreach (var kw in m_Keywords)
             {
                 var filter = kw;
-                var ft = filter.LastIndexOfAny(SearchUtils.KeywordsValueDelimiters);
+                var ft = filter.IndexOfAny(SearchUtils.KeywordsValueDelimiters);
                 if (ft >= 0)
                     filter = filter.Substring(0, ft);
                 if (!m_QueryEngine.HasFilter(filter))
@@ -1216,7 +1253,7 @@ namespace UnityEditor.Search
 
         internal void ApplyUnsorted()
         {
-            UpdateIndexes(m_BatchIndexes, null);
+            UpdateIndexes(m_BatchIndexes, null, sort: false);
         }
 
         internal IEnumerable<string> GetKeywords() { lock (this) return m_Keywords; }
@@ -1386,17 +1423,13 @@ namespace UnityEditor.Search
             }
 
             if (value.Length > maxVariations)
-            {
                 indexes.Add(new SearchIndexEntry(valueHash, nameHash, SearchIndexEntry.Type.Property, documentIndex, score - 1));
-                //UnityEngine.Debug.Log($"Add Property [{documentIndex}]: {name}, {nameHash}, {value}, {valueHash}, {score - 1}");
-            }
 
             if (exact)
             {
                 nameHash ^= name.Length.GetHashCode();
                 valueHash ^= value.Length.GetHashCode();
                 indexes.Add(new SearchIndexEntry(valueHash, nameHash, SearchIndexEntry.Type.Property, documentIndex, score - 3));
-                //UnityEngine.Debug.Log($"Add Property [{documentIndex}]: {name}, {nameHash}, {value}, {valueHash}, {score - 3}");
             }
 
             if (saveKeyword)
@@ -1610,7 +1643,7 @@ namespace UnityEditor.Search
         }
 
         private IEnumerable<SearchResult> SearchTerm(
-            string name, object value, SearchIndexOperator op, bool exclude, SearchResultCollection subset = null)
+            string name, in object value, SearchIndexOperator op, bool exclude, SearchResultCollection subset = null)
         {
             if (op == SearchIndexOperator.NotEqual)
             {
@@ -1771,7 +1804,7 @@ namespace UnityEditor.Search
             return CompressEntries(entries);
         }
 
-        private bool UpdateIndexes(List<SearchIndexEntry> entries, Action onIndexesCreated)
+        private bool UpdateIndexes(List<SearchIndexEntry> entries, Action onIndexesCreated, bool sort = true)
         {
             if (entries == null)
                 return false;
@@ -1779,11 +1812,12 @@ namespace UnityEditor.Search
             lock (this)
             {
                 m_IndexReady = false;
-                var comparer = new SearchIndexComparer();
-
                 try
                 {
-                    m_Indexes = SortIndexes(entries).ToArray();
+                    if (sort)
+                        m_Indexes = SortIndexes(entries).ToArray();
+                    else
+                        m_Indexes = entries.ToArray();
                     BuildDocumentIndexTable();
                     onIndexesCreated?.Invoke();
                     m_IndexReady = true;
@@ -1998,6 +2032,11 @@ namespace UnityEditor.Search
             {
                 // Potential range insertion, only used for not exact matches
                 foundIndex = (-foundIndex) - 1;
+
+                if (comparer.op == SearchIndexOperator.Less || comparer.op == SearchIndexOperator.LessOrEqual && foundIndex > 0)
+                {
+                    foundIndex--;
+                }
             }
 
             if (!IsIndexValid(foundIndex, term.crc, term.type))

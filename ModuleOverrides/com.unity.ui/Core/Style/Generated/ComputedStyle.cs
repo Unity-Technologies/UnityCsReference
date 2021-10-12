@@ -1173,7 +1173,7 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.Display:
                     layoutData.Write().display = (DisplayStyle)newValue;
                     ve.yogaNode.Display = (YogaDisplay)newValue;
-                    ve.IncrementVersion(VersionChangeType.Layout);
+                    ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
                     break;
                 case StylePropertyId.FlexDirection:
                     layoutData.Write().flexDirection = (FlexDirection)newValue;

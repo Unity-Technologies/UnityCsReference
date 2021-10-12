@@ -140,7 +140,6 @@ namespace Unity.UI.Builder
         protected void UpdateHierarchy(bool hasUnsavedChanges)
         {
             m_ElementHierarchyView.hierarchyHasChanged = true;
-            m_ElementHierarchyView.hasUnsavedChanges = hasUnsavedChanges;
             m_ElementHierarchyView.RebuildTree(m_DocumentElementRoot, m_IncludeDocumentElementRoot);
         }
 

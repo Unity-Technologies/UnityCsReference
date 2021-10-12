@@ -27,7 +27,7 @@ namespace UnityEditor.Search
         Default = ThreadSupported
     }
 
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+    [AttributeUsage(AttributeTargets.Method)]
     class SearchExpressionEvaluatorAttribute : Attribute
     {
         public SearchExpressionEvaluatorAttribute(params SearchExpressionType[] signatureArgumentTypes) : this(null, SearchExpressionEvaluationHints.Default, new SearchExpressionValidator.Signature(signatureArgumentTypes)) {}
@@ -46,6 +46,19 @@ namespace UnityEditor.Search
         public string name { get; private set; }
         public SearchExpressionValidator.Signature signature { get; private set; }
         public SearchExpressionEvaluationHints hints { get; private set; }
+    }
+
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+    class SearchExpressionEvaluatorSignatureOverloadAttribute : Attribute
+    {
+        public SearchExpressionEvaluatorSignatureOverloadAttribute(params SearchExpressionType[] signatureArgumentTypes) : this(new SearchExpressionValidator.Signature(signatureArgumentTypes)) {}
+
+        private SearchExpressionEvaluatorSignatureOverloadAttribute(SearchExpressionValidator.Signature signature)
+        {
+            this.signature = signature;
+        }
+
+        public SearchExpressionValidator.Signature signature { get; private set; }
     }
 
     static class EvaluatorManager
@@ -150,10 +163,15 @@ namespace UnityEditor.Search
                 var catAttr = mi.GetCustomAttribute<System.ComponentModel.CategoryAttribute>();
                 var category = catAttr != null ? catAttr.Category : "General";
                 var name = attribute.name ?? mi.Name;
+                var additionalSignatures = mi.GetCustomAttributes<SearchExpressionEvaluatorSignatureOverloadAttribute>();
                 if (handler is SearchExpressionEvaluatorHandler _handler)
                 {
-                    if (attribute.signature != null && attribute.signature.argumentCount > 0)
+                    if (attribute.signature != null)
                         AddSignature(name, attribute.signature);
+                    foreach (var additionalSignature in additionalSignatures)
+                    {
+                        AddSignature(name, additionalSignature.signature);
+                    }
                     return new SearchExpressionEvaluator(name, description, category, _handler, attribute.hints);
                 }
 
@@ -271,7 +289,7 @@ namespace UnityEditor.Search
 
         public static SearchItem CreateItem(string label, object value, string description)
         {
-            return SearchExpressionProvider.CreateItem(CreateId(), label, description, value);
+            return SearchServiceProvider.CreateItem(CreateId(), label, description, value);
         }
 
         public static SearchItem CreateItem(string value, string label = null)

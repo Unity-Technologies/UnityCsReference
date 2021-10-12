@@ -4,6 +4,7 @@
 
 //#define DEBUG_INDEXING
 //#define DEBUG_LOG_CHANGES
+//#define DEBUG_RESOLVING
 
 using System;
 using System.Collections.Concurrent;
@@ -11,7 +12,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using UnityEditor.Experimental;
 using UnityEngine;
 
@@ -57,13 +57,6 @@ namespace UnityEditor.Search
             all,
             assets,
             packages
-        }
-
-        enum ImportMode
-        {
-            Synchronous,
-            Asynchronous,
-            Query
         }
 
         [Flags]
@@ -113,30 +106,48 @@ namespace UnityEditor.Search
             public int baseScore = 100;
         }
 
-        [System.Diagnostics.DebuggerDisplay("{guid} > {path}")]
-        class IndexArtifact
+        class IndexArtifact : IEquatable<IndexArtifact>
         {
-            public IndexArtifact(string source, GUID guid)
-            {
-                this.source = source;
-                this.guid = guid;
-                key = default;
-                path = null;
-                timestamp = long.MaxValue;
-            }
-
-            public bool valid => key.isValid;
-
             public readonly string source;
-            public readonly GUID guid;
-            public Hash128 key;
+            public readonly ArtifactKey key;
+            public ArtifactID value;
             public string path;
             public long timestamp;
-            public bool timeout => TimeSpan.FromTicks(DateTime.Now.Ticks - timestamp).TotalSeconds > 10d;
+            public OnDemandState state;
+
+            public GUID guid => key.guid;
+            public Type indexerType => key.importerType;
+            public bool valid => key.isValid && value.isValid;
+            public bool timeout => TimeSpan.FromTicks(DateTime.UtcNow.Ticks - timestamp).TotalSeconds > 10d;
+
+            public IndexArtifact(in string source, in GUID guid, in Type indexerType)
+            {
+                this.source = source;
+                key = new ArtifactKey(guid, indexerType);
+                value = default;
+                path = null;
+                timestamp = long.MaxValue;
+                state = OnDemandState.Unavailable;
+            }
 
             public override string ToString()
             {
-                return $"{key} / {guid} / {path}";
+                return $"{guid} / {path} / {value}";
+            }
+
+            public override int GetHashCode()
+            {
+                return guid.GetHashCode() ^ value.value.GetHashCode();
+            }
+
+            public override bool Equals(object other)
+            {
+                return other is IndexArtifact l && Equals(l);
+            }
+
+            public bool Equals(IndexArtifact other)
+            {
+                return guid == other.guid && value.value == other.value.value;
             }
         }
 
@@ -157,6 +168,7 @@ namespace UnityEditor.Search
         [SerializeField] public Settings settings;
         [SerializeField, HideInInspector] public byte[] bytes;
 
+        [NonSerialized] private int m_ProductionLimit = 99;
         [NonSerialized] private int m_InstanceID = 0;
         [NonSerialized] private Task m_CurrentResolveTask;
         [NonSerialized] private Task m_CurrentUpdateTask;
@@ -255,7 +267,9 @@ namespace UnityEditor.Search
                 SearchMonitor.contentRefreshed += TrackAssetIndexChanges;
             }
 
-            return s_DBs.Where(db => db);
+            foreach (var g in s_DBs.Where(db => db).GroupBy(db => db.ready).OrderBy(g => !g.Key))
+                foreach (var db in g.OrderBy(db => db.settings.baseScore))
+                    yield return db;
         }
 
         private static IEnumerable<string> FilterIndexes(IEnumerable<string> paths)
@@ -376,9 +390,9 @@ namespace UnityEditor.Search
 
             Log("OnEnable");
             if (bytes?.Length > 0)
-                Utils.tick += Load;
+                Dispatcher.Enqueue(Load);
             else
-                Utils.tick += LoadAsync;
+                Dispatcher.Enqueue(LoadAsync);
         }
 
         internal void OnDisable()
@@ -393,7 +407,6 @@ namespace UnityEditor.Search
 
         private void LoadAsync()
         {
-            Utils.tick -= LoadAsync;
             if (!this)
                 return;
 
@@ -431,7 +444,6 @@ namespace UnityEditor.Search
 
         private void Load()
         {
-            Utils.tick -= Load;
             if (!this)
                 return;
 
@@ -454,13 +466,11 @@ namespace UnityEditor.Search
             var loadTask = new Task("Read", $"Loading {name.ToLowerInvariant()} search index", (task, data) => Setup(), this);
             loadTask.RunThread(() =>
             {
-                var step = 0;
-                loadTask.Report($"Loading {indexPath}...");
+                loadTask.Report($"Loading {indexPath}...", -1);
                 var fileBytes = File.ReadAllBytes(indexPath);
 
-                loadTask.Report(++step, step + 1);
                 if (!index.LoadBytes(fileBytes))
-                    Debug.LogError($"Failed to load {indexPath}.");
+                    throw new Exception($"Failed to load {indexPath}.");
 
                 var deletedAssets = new HashSet<string>();
                 foreach (var d in index.GetDocuments())
@@ -469,9 +479,6 @@ namespace UnityEditor.Search
                         deletedAssets.Add(d.source);
                 }
 
-                bytes = fileBytes;
-                loadTask.Report($"Checking for changes...");
-                loadTask.Report(++step, step + 1);
                 Dispatcher.Enqueue(() =>
                 {
                     if (!this)
@@ -480,6 +487,9 @@ namespace UnityEditor.Search
                         return;
                     }
 
+                    bytes = fileBytes;
+
+                    loadTask.Report($"Checking for changes...", -1);
                     var diff = SearchMonitor.GetDiff(index.timestamp, deletedAssets, path =>
                     {
                         if (index.SkipEntry(path, true))
@@ -503,72 +513,71 @@ namespace UnityEditor.Search
             return $"{settings.options.GetHashCode():X}.index".ToLowerInvariant();
         }
 
-        private bool ResolveArtifactPaths(IList<IndexArtifact> artifacts, out List<IndexArtifact> unresolvedArtifacts, Task task, ref int completed)
+        private bool ResolveArtifactPaths(in IList<IndexArtifact> artifacts, out List<IndexArtifact> unresolvedArtifacts, Task task, ref int completed)
         {
-            task.Report($"Resolving {artifacts.Count} artifacts...");
-
+            var inProductionCount = 0;
             var artifactIndexSuffix = "." + GetIndexTypeSuffix();
-            var indexImporterType = SearchIndexEntryImporter.GetIndexImporterType(settings.options.GetHashCode());
 
-            var sw = new System.Diagnostics.Stopwatch();
-            sw.Start();
+            task.Report($"Resolving {artifacts.Count} artifacts...");
+            unresolvedArtifacts = new List<IndexArtifact>((int)(artifacts.Count / 1.5f));
 
-            unresolvedArtifacts = new List<IndexArtifact>(artifacts.Count / 4);
-            foreach (var a in artifacts)
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            for (int i = 0; i < artifacts.Count; ++i)
             {
-                if (a == null || !string.IsNullOrEmpty(a.path) || a.guid == default)
+                var a = artifacts[i];
+                if (a == null || a.guid.Empty())
                 {
                     ++completed;
+                    continue;
                 }
-                else if (!a.valid)
+
+                // Simply mark artifact as unresolved and we will resume later.
+                if (inProductionCount > m_ProductionLimit || sw.ElapsedMilliseconds > 250)
                 {
-                    // After 500 ms of resolving artifacts,
-                    // simply mark artifact as unresolved and we will resume later.
-                    if (sw.ElapsedMilliseconds > 500)
-                    {
+                    unresolvedArtifacts.AddRange(artifacts.Skip(i));
+                    break;
+                }
+
+                if (!ProduceArtifact(a))
+                {
+                    ++completed;
+                    continue;
+                }
+
+                if (!a.valid)
+                {
+                    inProductionCount++;
+                    if (!a.timeout)
                         unresolvedArtifacts.Add(a);
-                        continue;
-                    }
-
-                    if (a.timestamp == long.MaxValue)
-                        a.timestamp = DateTime.Now.Ticks;
-
-                    a.key = ProduceArtifact(a.guid, indexImporterType, ImportMode.Asynchronous, out var availableState);
-                    if (!a.valid)
+                    else
                     {
-                        if (availableState != OnDemandState.Failed)
+                        // Check if the asset is still available (maybe it was deleted since last request)
+                        var resolvedPath = AssetDatabase.GUIDToAssetPath(a.guid);
+                        if (!string.IsNullOrEmpty(resolvedPath) && File.Exists(resolvedPath))
                         {
-                            if (!a.timeout)
+                            a.timestamp = long.MaxValue;
+                            if (ProduceArtifact(a))
                                 unresolvedArtifacts.Add(a);
-                            else
-                            {
-                                // Check if the asset is still available (maybe it was deleted since last request)
-                                var resolvedPath = AssetDatabase.GUIDToAssetPath(a.guid);
-                                if (!string.IsNullOrEmpty(resolvedPath) && File.Exists(resolvedPath))
-                                {
-                                    a.timestamp = DateTime.Now.Ticks;
-                                    unresolvedArtifacts.Add(a);
-                                }
-                            }
                         }
-                        else
-                            ReportWarning(a, artifactIndexSuffix, availableState.ToString());
                     }
-                    else if (GetArtifactPaths(a.key, out var paths))
-                    {
-                        a.path = paths.LastOrDefault(p => p.EndsWith(artifactIndexSuffix, StringComparison.Ordinal));
-                        if (a.path == null)
-                            ReportWarning(a, artifactIndexSuffix, paths);
-                        task.Report(++completed);
-                    }
+                }
+                else if (GetArtifactPaths(a.value, out var paths))
+                {
+                    a.path = paths.LastOrDefault(p => p.EndsWith(artifactIndexSuffix, StringComparison.Ordinal));
+                    if (a.path == null)
+                        ReportWarning(a, artifactIndexSuffix, paths);
                 }
             }
+
+            var producedCount = artifacts.Count - unresolvedArtifacts.Count;
+            if (producedCount >= m_ProductionLimit)
+                m_ProductionLimit = (int)(m_ProductionLimit * 1.5f);
 
             task.Report(completed);
             return unresolvedArtifacts.Count == 0;
         }
 
-        private void ReportWarning(IndexArtifact a, string artifactIndexSuffix, params string[] paths)
+        private void ReportWarning(in IndexArtifact a, in string artifactIndexSuffix, params string[] paths)
         {
             var assetPath = AssetDatabase.GUIDToAssetPath(a.guid);
             Console.WriteLine($"Cannot find search index artifact for {assetPath} ({a.guid}{artifactIndexSuffix})\n\t- {string.Join("\n\t- ", paths)}");
@@ -587,7 +596,7 @@ namespace UnityEditor.Search
             return resolveTask;
         }
 
-        private void ProduceArtifacts(Task resolveTask, IList<string> paths)
+        private void ProduceArtifacts(Task resolveTask, in IList<string> paths)
         {
             if (resolveTask?.Canceled() ?? false)
                 return;
@@ -618,7 +627,7 @@ namespace UnityEditor.Search
                 }
 
                 // Resume later with remaining artifacts
-                Utils.CallDelayed(() => ResolveArtifacts(artifacts, remainingArtifacts, task, combineAutoResolve),
+                Dispatcher.Enqueue(() => ResolveArtifacts(artifacts, remainingArtifacts, task, combineAutoResolve),
                     GetArtifactResolutionCheckDelay(remainingArtifacts.Count));
             }
             catch (Exception err)
@@ -636,57 +645,65 @@ namespace UnityEditor.Search
             return 1;
         }
 
-        private void CombineIndexes(Settings settings, IndexArtifact[] artifacts, Task task, bool autoResolve)
+        private void CombineIndexes(in Settings settings, in IndexArtifact[] artifacts, Task task, bool autoResolve)
         {
-            task.Report("Combining indexes...", -1f);
-
-            var completed = 0;
-            var searchArtifacts = new ConcurrentBag<SearchIndexer>();
-            var tloop = Parallel.ForEach(artifacts, (a, state) =>
-            {
-                if (task.Canceled())
-                {
-                    state.Stop();
-                    return;
-                }
-
-                if (a == null || a.path == null)
-                    return;
-
-                var si = new SearchIndexer(Path.GetFileName(a.source));
-                task.Report($"Reading {si.name}...");
-                if (!si.ReadIndexFromDisk(a.path))
-                    return;
-
-                if (task.Canceled())
-                    return;
-
-                searchArtifacts.Add(si);
-                task.Report(completed++, artifacts.Length);
-            });
-
-            if (!tloop.IsCompleted)
-                task.Cancel();
-
             if (task.Canceled())
                 return;
 
             // Combine all search index artifacts into one large binary stream.
             var combineIndexer = new SearchIndexer();
-            var artifactCount = searchArtifacts.Count;
             var indexName = settings.name.ToLowerInvariant();
+            var artifactDbs = EnumerateSearchArtifacts(artifacts, task);
 
-            task.Report($"Combining...");
+            task.Report("Combining indexes...", -1f);
+            task.total = artifacts.Length;
+
             combineIndexer.Start();
-            combineIndexer.CombineIndexes(searchArtifacts, settings.baseScore, indexName, (progress, name) =>
-            {
-                task.Report($"Combining {name}...");
-                task.Report(progress, artifactCount);
-            });
+            combineIndexer.CombineIndexes(artifactDbs, settings.baseScore, indexName, progress => task.Report(progress));
+
+            if (task.Canceled())
+                return;
 
             task.Report($"Sorting {combineIndexer.indexCount} indexes...", -1f);
             byte[] bytes = autoResolve ? combineIndexer.SaveBytes() : null;
             Dispatcher.Enqueue(() => task.Resolve(new TaskData(bytes, combineIndexer), completed: autoResolve));
+        }
+
+        IEnumerable<SearchIndexer> EnumerateSearchArtifacts(IndexArtifact[] artifacts, Task task)
+        {
+            long totalMs = 2, totalItr = 1;
+            var results = new ConcurrentBag<SearchIndexer>();
+            var readTask = System.Threading.Tasks.Task.Run(() =>
+            {
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+                foreach (var a in artifacts)
+                {
+                    if (a == null || a.path == null)
+                        continue;
+
+                    sw.Restart();
+                    var si = new SearchIndexer(Path.GetFileName(a.source));
+                    if (!si.ReadIndexFromDisk(a.path))
+                        continue;
+                    totalMs += sw.ElapsedMilliseconds;
+                    totalItr++;
+
+                    results.Add(si);
+                }
+            });
+
+            while (results.Count > 0 || !readTask.Wait((int)(totalMs / totalItr)) || results.Count > 0)
+            {
+                while (results.TryTake(out var e))
+                {
+                    task.Report($"Combining {e.name}...");
+                    yield return e;
+                }
+
+                if (task.Canceled())
+                    yield break;
+            }
+
         }
 
         private static void AddIndexNameArea(int documentIndex, SearchIndexer indexer, string indexName)
@@ -731,7 +748,7 @@ namespace UnityEditor.Search
         {
             if (createDirectory && !Directory.Exists(k_QuickSearchLibraryPath))
                 Directory.CreateDirectory(k_QuickSearchLibraryPath);
-            return $"{k_QuickSearchLibraryPath}/{settings.guid}.{GetIndexTypeSuffix()}";
+            return $"{k_QuickSearchLibraryPath}/{settings.guid}.{SearchIndexEntryImporter.version}.{GetIndexTypeSuffix()}";
         }
 
         private static void SaveIndex(string backupIndexPath, byte[] saveBytes, Task saveTask = null)
@@ -813,7 +830,7 @@ namespace UnityEditor.Search
             }
             else
             {
-                Utils.CallDelayed(ProcessIncrementalUpdates, 0.5);
+                Dispatcher.Enqueue(ProcessIncrementalUpdates, 0.5d);
             }
         }
 
@@ -867,40 +884,47 @@ namespace UnityEditor.Search
             ProcessIncrementalUpdates();
         }
 
-        private IndexArtifact[] CreateArtifacts(IList<string> assetPaths)
+        private IndexArtifact[] CreateArtifacts(in IList<string> assetPaths)
         {
-            var artifacts = new IndexArtifact[assetPaths.Count];
-            for (int i = 0; i < assetPaths.Count; ++i)
-                artifacts[i] = new IndexArtifact(assetPaths[i], AssetDatabase.GUIDFromAssetPath(assetPaths[i]));
-            return artifacts;
+            {
+                var artifacts = new IndexArtifact[assetPaths.Count];
+                var indexImporterType = SearchIndexEntryImporter.GetIndexImporterType(settings.options.GetHashCode());
+                for (int i = 0; i < assetPaths.Count; ++i)
+                    artifacts[i] = new IndexArtifact(assetPaths[i], AssetDatabase.GUIDFromAssetPath(assetPaths[i]), indexImporterType);
+
+                return artifacts;
+            }
         }
 
-        private static Hash128 ProduceArtifact(GUID guid, Type importerType, ImportMode mode, out OnDemandState state)
+        private static bool ProduceArtifact(IndexArtifact artifact)
         {
-            var akey = new ArtifactKey(guid, importerType);
-            state = AssetDatabaseExperimental.GetOnDemandArtifactProgress(akey).state;
+            artifact.state = AssetDatabaseExperimental.GetOnDemandArtifactProgress(artifact.key).state;
 
-            if (state == OnDemandState.Failed)
-                return default;
+            if (artifact.state == OnDemandState.Failed)
+                return false;
 
-            if (state == OnDemandState.Available)
-                return AssetDatabaseExperimental.LookupArtifact(akey).value;
-
-            if (state == OnDemandState.Unavailable)
+            if (artifact.state == OnDemandState.Available)
             {
-                switch (mode)
-                {
-                    case ImportMode.Synchronous: return AssetDatabaseExperimental.ProduceArtifact(akey).value;
-                    case ImportMode.Asynchronous: return AssetDatabaseExperimental.ProduceArtifactAsync(akey).value;
-                }
+                artifact.value = AssetDatabaseExperimental.LookupArtifact(artifact.key);
+                return true;
             }
 
-            return default;
+            if (artifact.timestamp == long.MaxValue)
+            {
+                artifact.timestamp = DateTime.UtcNow.Ticks;
+                artifact.value = AssetDatabaseExperimental.ProduceArtifactAsync(artifact.key);
+            }
+            else
+            {
+                artifact.value = AssetDatabaseExperimental.LookupArtifact(artifact.key);
+            }
+
+            return true;
         }
 
-        private static bool GetArtifactPaths(Hash128 artifactHash, out string[] paths)
+        private static bool GetArtifactPaths(in ArtifactID id, out string[] paths)
         {
-            return AssetDatabaseExperimental.GetArtifactPaths(new ArtifactID { value = artifactHash }, out paths);
+            return AssetDatabaseExperimental.GetArtifactPaths(id, out paths);
         }
 
         internal static SearchDatabase CreateDefaultIndex()

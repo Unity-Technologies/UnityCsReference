@@ -816,7 +816,8 @@ namespace UnityEditor
                 {
                     if (GUIUtility.hotControl == id)
                     {
-                        s_CurrentMousePos += evt.delta;
+                        Vector2 mouseDelta = evt.mousePosition - s_CurrentMousePos;
+                        s_CurrentMousePos += mouseDelta;
                         if (!s_Moving && (s_CurrentMousePos - s_StartMousePos).magnitude > 3f)
                         {
                             s_Moving = true;

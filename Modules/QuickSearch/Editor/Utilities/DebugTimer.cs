@@ -38,7 +38,7 @@ namespace UnityEditor.Search
 
             m_Timer.Stop();
             if (!String.IsNullOrEmpty(m_Name) && timeMs >= m_MinTime)
-                Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, $"{m_Name} took {timeMs:F2} ms");
+                Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, $"{m_Name} took {timeMs:F2} ms", 0, 0, 0);
         }
     }
 }

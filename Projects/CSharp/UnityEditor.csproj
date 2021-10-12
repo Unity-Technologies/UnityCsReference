@@ -10,7 +10,7 @@
     <AssemblyName>UnityEditor</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <LangVersion>latest</LangVersion>
+    <LangVersion>8.0</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\Editor\Mono\2D\Common\ScriptBindings\SpriteEditorExtension.bindings.cs">
@@ -6337,6 +6337,9 @@
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\UIElements\MemoryUsageBreakdownElement.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\UIElements\MemoryUsageBreakdownElement.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\UIElements\SelectableLabel.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\UIElements\SelectableLabel.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\Public\FrameDataView.bindings.cs">
       <Link>Modules\ProfilerEditor\Public\FrameDataView.bindings.cs</Link>
     </Compile>
@@ -6475,6 +6478,9 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\SearchQueryProvider.cs">
       <Link>Modules\QuickSearch\Editor\Providers\SearchQueryProvider.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\SearchServiceProvider.cs">
+      <Link>Modules\QuickSearch\Editor\Providers\SearchServiceProvider.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\SettingsProvider.cs">
       <Link>Modules\QuickSearch\Editor\Providers\SettingsProvider.cs</Link>
     </Compile>
@@ -6534,6 +6540,9 @@
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\QueryEngine\QueryNodes.cs">
       <Link>Modules\QuickSearch\Editor\QueryEngine\QueryNodes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\QueryEngine\QueryToggle.cs">
+      <Link>Modules\QuickSearch\Editor\QueryEngine\QueryToggle.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\QueryEngine\QueryToken.cs">
       <Link>Modules\QuickSearch\Editor\QueryEngine\QueryToken.cs</Link>
@@ -6649,9 +6658,6 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\SearchExpressionParser.cs">
       <Link>Modules\QuickSearch\Editor\SearchExpression\SearchExpressionParser.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\SearchExpressionProvider.cs">
-      <Link>Modules\QuickSearch\Editor\SearchExpression\SearchExpressionProvider.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\SearchExpressionRuntime.cs">
       <Link>Modules\QuickSearch\Editor\SearchExpression\SearchExpressionRuntime.cs</Link>
     </Compile>
@@ -6699,6 +6705,9 @@
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchQuery\SearchQueryTreeViewItem.cs">
       <Link>Modules\QuickSearch\Editor\SearchQuery\SearchQueryTreeViewItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchQuery\SearchTemplateAttribute.cs">
+      <Link>Modules\QuickSearch\Editor\SearchQuery\SearchTemplateAttribute.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchSelection.cs">
       <Link>Modules\QuickSearch\Editor\SearchSelection.cs</Link>
@@ -6829,6 +6838,9 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\UI\Styles.cs">
       <Link>Modules\QuickSearch\Editor\UI\Styles.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\UI\UndoManager.cs">
+      <Link>Modules\QuickSearch\Editor\UI\UndoManager.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\UI\VisualSplitter.cs">
       <Link>Modules\QuickSearch\Editor\UI\VisualSplitter.cs</Link>
     </Compile>
@@ -6838,11 +6850,17 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\DebugTimer.cs">
       <Link>Modules\QuickSearch\Editor\Utilities\DebugTimer.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\IStringView.cs">
+      <Link>Modules\QuickSearch\Editor\Utilities\IStringView.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\RaceConditionDetector.cs">
       <Link>Modules\QuickSearch\Editor\Utilities\RaceConditionDetector.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\StringView.cs">
       <Link>Modules\QuickSearch\Editor\Utilities\StringView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\SubsetStringView.cs">
+      <Link>Modules\QuickSearch\Editor\Utilities\SubsetStringView.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\TryConvert.cs">
       <Link>Modules\QuickSearch\Editor\Utilities\TryConvert.cs</Link>
@@ -7772,7 +7790,7 @@
       <HintPath>..\..\External\ExCSS\builds\builds\lib\net35\ExCSS.Unity.dll</HintPath>
     </Reference>
     <Reference Include="Bee.BeeDriver">
-      <HintPath>..\..\artifacts\Stevedore\bee_c9e6\BeeAsALibrary\Bee.BeeDriver.dll</HintPath>
+      <HintPath>..\..\artifacts\Stevedore\bee_530d\BeeAsALibrary\Bee.BeeDriver.dll</HintPath>
     </Reference>
     <ProjectReference Include="UnityEngine.csproj">
       <Project>{F0499708-3EB6-4026-8362-97E6FFC4E7C8}</Project>

@@ -74,7 +74,7 @@ namespace Unity.UI.Builder
             m_StyleSheet.FixRuleReferences();
         }
 
-        public void SaveToDisk(VisualTreeAsset visualTreeAsset)
+        public bool SaveToDisk(VisualTreeAsset visualTreeAsset)
         {
             var newUSSPath = assetPath;
 
@@ -83,13 +83,30 @@ namespace Unity.UI.Builder
             m_NewPath = newUSSPath;
             visualTreeAsset.ReplaceStyleSheetPaths(m_OldPath, newUSSPath);
 
+            var ussText = m_StyleSheet.GenerateUSS();
+
+            if (ussText == null)
+                return false;
+
+            bool shouldSave = m_OldPath != newUSSPath;
+            if (!shouldSave && m_BackupStyleSheet)
+            {
+                var backUss = m_BackupStyleSheet.GenerateUSS();
+                shouldSave = backUss != ussText;
+            }
+
+            if (!shouldSave)
+            {
+                return false;
+            }
+
             // Need to save a backup before the AssetDatabase.Refresh().
             if (m_BackupStyleSheet == null)
                 m_BackupStyleSheet = m_StyleSheet.DeepCopy();
             else
                 m_StyleSheet.DeepOverwrite(m_BackupStyleSheet);
 
-            WriteUSSToFile(newUSSPath);
+            return WriteUSSToFile(newUSSPath, ussText);
         }
 
         public bool PostSaveToDiskChecksAndFixes()
@@ -136,20 +153,25 @@ namespace Unity.UI.Builder
             m_StyleSheet.ClearUndo();
         }
 
-        void WriteUSSToFile(string ussPath)
+        bool WriteUSSToFile(string ussPath)
         {
             var ussText = m_StyleSheet.GenerateUSS();
 
             // This will only be null (not empty) if the UXML is invalid in some way.
             if (ussText == null)
-                return;
+                return false;
+                
+            return WriteUSSToFile(ussPath, ussText);
+        }
 
+        bool WriteUSSToFile(string ussPath, string ussText)
+        {
             // Make sure the folders exist.
             var ussFolder = Path.GetDirectoryName(ussPath);
             if (!Directory.Exists(ussFolder))
                 Directory.CreateDirectory(ussFolder);
 
-            BuilderAssetUtilities.WriteTextFileToDisk(ussPath, ussText);
+            return BuilderAssetUtilities.WriteTextFileToDisk(ussPath, ussText);
         }
     }
 }

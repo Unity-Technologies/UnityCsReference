@@ -101,9 +101,30 @@ namespace UnityEditor
         {
             var sceneView = SceneView.lastActiveSceneView;
             if (sceneView != null)
-                sceneView.SendEvent(evt);
-            else
-                Object.FindObjectOfType<ParticleSystemWindow>()?.SendEvent(evt);
+            {
+                if (sceneView.SendEvent(evt))
+                    return;
+            }
+
+            var inspectors = Resources.FindObjectsOfTypeAll<ParticleSystemInspector>();
+            foreach (var inspector in inspectors)
+            {
+                if (inspector != null)
+                {
+                    if (inspector.HandleShortcutEvent(evt))
+                        return;
+                }
+            }
+
+            var windows = Resources.FindObjectsOfTypeAll<ParticleSystemWindow>();
+            foreach (var window in windows)
+            {
+                if (window != null)
+                {
+                    if (window.HandleShortcutEvent(evt))
+                        return;
+                }
+            }
         }
 
         [FormerlyPrefKeyAs("ParticleSystem/Play", ",")]
@@ -677,81 +698,89 @@ namespace UnityEditor
             m_ScrubNextUpdate = Time.realtimeSinceStartup + 1f / 15f;
         }
 
+        internal bool HandleShortcutEvent(Event evt)
+        {
+            if (evt.commandName == s_PlayEvent.commandName)
+            {
+                if (EditorApplication.isPlaying)
+                {
+                    // If world is playing Pause is not handled, just restart instead
+                    Stop();
+                    Play();
+                }
+                else
+                {
+                    // In Edit mode we have full play/pause functionality
+                    if (!ParticleSystemEditorUtils.playbackIsPlaying)
+                        Play();
+                    else
+                        Pause();
+                }
+
+                return true;
+            }
+            else if (evt.commandName == s_StopEvent.commandName)
+            {
+                Stop();
+                return true;
+            }
+            else if (evt.commandName == s_RestartEvent.commandName)
+            {
+                Stop();
+                Play();
+                return true;
+            }
+            else if (evt.commandName == s_ResimulationEvent.commandName)
+            {
+                ParticleSystemEditorUtils.resimulation = !ParticleSystemEditorUtils.resimulation;
+                return true;
+            }
+            else if (evt.commandName == s_ShowBoundsEvent.commandName)
+            {
+                m_ShowBounds = !m_ShowBounds;
+                return true;
+            }
+            else if (evt.commandName == s_ShowOnlySelectedEvent.commandName)
+            {
+                m_ShowOnlySelected = !m_ShowOnlySelected;
+                return true;
+            }
+            else if (evt.commandName == s_ForwardBeginEvent.commandName)
+            {
+                m_ScrubForward = true;
+                return true;
+            }
+            else if (evt.commandName == s_ForwardEndEvent.commandName)
+            {
+                m_ScrubForward = false;
+                if (!m_ScrubReverse)
+                    ParticleSystemEditorUtils.playbackIsScrubbing = false;
+                return true;
+            }
+            else if (evt.commandName == s_ReverseBeginEvent.commandName)
+            {
+                m_ScrubReverse = true;
+                return true;
+            }
+            else if (evt.commandName == s_ReverseEndEvent.commandName)
+            {
+                m_ScrubReverse = false;
+                if (!m_ScrubForward)
+                    ParticleSystemEditorUtils.playbackIsScrubbing = false;
+                return true;
+            }
+
+            return false;
+        }
+
         private void HandleKeyboardShortcuts()
         {
             var evt = Event.current;
 
             if (evt.type == EventType.ExecuteCommand)
             {
-                if (evt.commandName == s_PlayEvent.commandName)
-                {
-                    if (EditorApplication.isPlaying)
-                    {
-                        // If world is playing Pause is not handled, just restart instead
-                        Stop();
-                        Play();
-                    }
-                    else
-                    {
-                        // In Edit mode we have full play/pause functionality
-                        if (!ParticleSystemEditorUtils.playbackIsPlaying)
-                            Play();
-                        else
-                            Pause();
-                    }
-
+                if (HandleShortcutEvent(evt))
                     evt.Use();
-                }
-                else if (evt.commandName == s_StopEvent.commandName)
-                {
-                    Stop();
-                    evt.Use();
-                }
-                else if (evt.commandName == s_RestartEvent.commandName)
-                {
-                    Stop();
-                    Play();
-                    evt.Use();
-                }
-                else if (evt.commandName == s_ResimulationEvent.commandName)
-                {
-                    ParticleSystemEditorUtils.resimulation = !ParticleSystemEditorUtils.resimulation;
-                    evt.Use();
-                }
-                else if (evt.commandName == s_ShowBoundsEvent.commandName)
-                {
-                    m_ShowBounds = !m_ShowBounds;
-                    evt.Use();
-                }
-                else if (evt.commandName == s_ShowOnlySelectedEvent.commandName)
-                {
-                    m_ShowOnlySelected = !m_ShowOnlySelected;
-                    evt.Use();
-                }
-                else if (evt.commandName == s_ForwardBeginEvent.commandName)
-                {
-                    m_ScrubForward = true;
-                    evt.Use();
-                }
-                else if (evt.commandName == s_ForwardEndEvent.commandName)
-                {
-                    m_ScrubForward = false;
-                    if (!m_ScrubReverse)
-                        ParticleSystemEditorUtils.playbackIsScrubbing = false;
-                    evt.Use();
-                }
-                else if (evt.commandName == s_ReverseBeginEvent.commandName)
-                {
-                    m_ScrubReverse = true;
-                    evt.Use();
-                }
-                else if (evt.commandName == s_ReverseEndEvent.commandName)
-                {
-                    m_ScrubReverse = false;
-                    if (!m_ScrubForward)
-                        ParticleSystemEditorUtils.playbackIsScrubbing = false;
-                    evt.Use();
-                }
             }
 
             HandleScrubbing();

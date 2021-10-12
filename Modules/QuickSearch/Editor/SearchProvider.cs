@@ -354,18 +354,21 @@ namespace UnityEditor.Search
         /// <summary> Returns any valid Unity object held by the search item.</summary>
         public Func<SearchItem, Type, UnityEngine.Object> toObject;
 
+        /// <summary> Returns any valid item type.</summary>
+        internal Func<SearchItem, Type> toType;
+
         /// <summary> Returns a document key in which the item is contained.</summary>
         internal Func<SearchItem, ulong> toKey;
 
         /// <summary>
         /// Provider can return a list of words that will help the user complete his search query.
         /// </summary>
-        internal Func<SearchContext, SearchPropositionOptions, IEnumerable<SearchProposition>> fetchPropositions;
+        public Func<SearchContext, SearchPropositionOptions, IEnumerable<SearchProposition>> fetchPropositions;
 
         /// <summary>
         /// Fetch search tables that are used to display search result using a table view.
         /// </summary>
-        internal Func<SearchContext, IEnumerable<SearchItem>, IEnumerable<SearchColumn>> fetchColumns;
+        public Func<SearchContext, IEnumerable<SearchItem>, IEnumerable<SearchColumn>> fetchColumns;
 
         /// <summary>
         /// Called when the QuickSearchWindow is opened. Allow the Provider to perform some caching.
@@ -387,8 +390,12 @@ namespace UnityEditor.Search
         /// </summary>
         public Func<bool> isEnabledForContextualSearch;
 
+        /// <summary>
+        /// List of actions the search provider supports.
+        /// </summary>
+        public List<SearchAction> actions { get; internal set; }
+
         // INTERNAL
-        internal List<SearchAction> actions;
         internal double fetchTime;
         internal double loadTime;
         internal double enableTime;

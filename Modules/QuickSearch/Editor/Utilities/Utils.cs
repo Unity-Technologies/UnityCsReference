@@ -20,6 +20,10 @@ using UnityEditor.Connect;
 using UnityEditor.StyleSheets;
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("com.unity.quicksearch.tests")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.Environment.Core.Editor")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.ProceduralGraph.Editor")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.Rendering.Hybrid")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.VisualEffectGraph.Editor")]
 
 namespace UnityEditor.Search
 {
@@ -29,6 +33,8 @@ namespace UnityEditor.Search
     /// </summary>
     static class Utils
     {
+        const int k_MaxRegexTimeout = 25;
+
 
         internal static readonly bool isDeveloperBuild = false;
 
@@ -162,8 +168,6 @@ namespace UnityEditor.Search
             var assetType = AssetDatabase.GetMainAssetTypeAtPath(path);
             if (assetType == typeof(SceneAsset))
                 return AssetDatabase.GetCachedIcon(path) as Texture2D;
-
-            //UnityEngine.Debug.Log($"Generate preview for {path}, {previewSize}, {previewOptions}");
 
             if (previewOptions.HasAny(FetchPreviewOptions.Normal))
             {
@@ -510,6 +514,8 @@ namespace UnityEditor.Search
 
         internal static Texture2D FindTextureForType(Type type)
         {
+            if (type == null)
+                return null;
             return EditorGUIUtility.FindTexture(type);
         }
 
@@ -832,6 +838,65 @@ namespace UnityEditor.Search
             return AssetDatabase.GetAssetRootFolders();
         }
 
+        internal static string ToString(in Vector3 v)
+        {
+            return $"({FormatFloatString(v.x)},{FormatFloatString(v.y)},{FormatFloatString(v.z)})";
+        }
+
+        internal static string ToString(in Vector4 v, int dim)
+        {
+            switch (dim)
+            {
+                case 2: return $"({FormatFloatString(v.x)},{FormatFloatString(v.y)})";
+                case 3: return $"({FormatFloatString(v.x)},{FormatFloatString(v.y)},{FormatFloatString(v.z)})";
+                case 4: return $"({FormatFloatString(v.x)},{FormatFloatString(v.y)},{FormatFloatString(v.z)},{FormatFloatString(v.w)})";
+            }
+            return null;
+        }
+
+        internal static string ToString(in Vector2Int v)
+        {
+            return $"({(int.MaxValue == v.x ? string.Empty : v.x.ToString())},{(int.MaxValue == v.y ? string.Empty : v.y.ToString())})";
+        }
+
+        internal static string ToString(in Vector3Int v)
+        {
+            return $"({(int.MaxValue == v.x ? string.Empty : v.x.ToString())},{(int.MaxValue == v.y ? string.Empty : v.y.ToString())},{(int.MaxValue == v.z ? string.Empty : v.z.ToString())})";
+        }
+
+        internal static string FormatFloatString(in float f)
+        {
+            if (float.IsNaN(f))
+                return string.Empty;
+            return f.ToString(CultureInfo.InvariantCulture);
+        }
+
+        internal static bool TryParseVectorValue(in object value, out Vector4 vc, out int dim)
+        {
+            dim = 0;
+            vc = new Vector4(float.NaN, float.NaN, float.NaN, float.NaN);
+            if (!(value is string arg))
+                return false;
+            if (arg.Length < 3 || arg[0] != '(' || arg[arg.Length - 1] != ')' || arg.IndexOf(',') == -1)
+                return false;
+            var ves = arg.Substring(1, arg.Length - 2);
+            var values = ves.Split(',');
+            if (values.Length < 2 || values.Length > 4)
+                return false;
+
+            dim = values.Length;
+            if (values.Length >= 1 && values[0].Length > 0 && (values[0].Length > 1 || values[0][0] != '-') && TryParse<float>(values[0], out var f))
+                vc.x = f;
+            if (values.Length >= 2 && values[1].Length > 0 && (values[1].Length > 1 || values[1][0] != '-') && TryParse(values[1], out f))
+                vc.y = f;
+            if (values.Length >= 3 && values[2].Length > 0 && (values[2].Length > 1 || values[2][0] != '-') && TryParse(values[2], out f))
+                vc.z = f;
+            if (values.Length >= 4 && values[3].Length > 0 && (values[3].Length > 1 || values[3][0] != '-') && TryParse(values[3], out f))
+                vc.w = f;
+
+            return true;
+        }
+
         public static bool TryParse<T>(string expression, out T result)
         {
             expression = expression.Replace(',', '.');
@@ -1059,6 +1124,208 @@ namespace UnityEditor.Search
         internal static void WriteTextFileToDisk(in string path, in string content)
         {
             FileUtil.WriteTextFileToDisk(path, content);
+        }
+
+        internal static bool ParseRx(string pattern, bool exact, out Regex rx)
+        {
+            try
+            {
+                rx = new Regex(!exact ? pattern : $"^{pattern}$", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(k_MaxRegexTimeout));
+            }
+            catch (ArgumentException)
+            {
+                rx = null;
+                return false;
+            }
+
+            return true;
+        }
+
+        internal static bool ParseGlob(string pattern, bool exact, out Regex rx)
+        {
+            try
+            {
+                pattern = Regex.Escape(RemoveDuplicateAdjacentCharacters(pattern, '*')).Replace(@"\*", ".*").Replace(@"\?", ".");
+                rx = new Regex(!exact ? pattern : $"^{pattern}$", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(k_MaxRegexTimeout));
+            }
+            catch (ArgumentException)
+            {
+                rx = null;
+                return false;
+            }
+
+            return true;
+        }
+
+        static string RemoveDuplicateAdjacentCharacters(string pattern, char c)
+        {
+            for (int i = pattern.Length - 1; i >= 0; --i)
+            {
+                if (pattern[i] != c || i == 0)
+                    continue;
+
+                if (pattern[i - 1] == c)
+                    pattern = pattern.Remove(i, 1);
+            }
+
+            return pattern;
+        }
+
+        internal static T GetAttribute<T>(this MethodInfo mi) where T : System.Attribute
+        {
+            var attrs = mi.GetCustomAttributes(typeof(T), false);
+            if (attrs == null || attrs.Length == 0)
+                return null;
+            return attrs[0] as T;
+        }
+
+        internal static T GetAttribute<T>(this Type mi) where T : System.Attribute
+        {
+            var attrs = mi.GetCustomAttributes(typeof(T), false);
+            if (attrs == null || attrs.Length == 0)
+                return null;
+            return attrs[0] as T;
+        }
+
+        internal static bool IsBuiltInResource(UnityEngine.Object obj)
+        {
+            var resPath = AssetDatabase.GetAssetPath(obj);
+            return IsBuiltInResource(resPath);
+        }
+
+        internal static bool IsBuiltInResource(in string resPath)
+        {
+            return string.Equals(resPath, "Library/unity editor resources", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(resPath, "resources/unity_builtin_extra", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(resPath, "library/unity default resources", StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    static class SerializedPropertyExtension
+    {
+        readonly struct Cache : IEquatable<Cache>
+        {
+            readonly Type host;
+            readonly string path;
+
+            public Cache(Type host, string path)
+            {
+                this.host = host;
+                this.path = path;
+            }
+
+            public bool Equals(Cache other)
+            {
+                return Equals(host, other.host) && string.Equals(path, other.path, StringComparison.Ordinal);
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (ReferenceEquals(null, obj))
+                    return false;
+                return obj is Cache && Equals((Cache)obj);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    return ((host != null ? host.GetHashCode() : 0) * 397) ^ (path != null ? path.GetHashCode() : 0);
+                }
+            }
+        }
+
+        class MemberInfoCache
+        {
+            public MemberInfo fieldInfo;
+            public Type type;
+        }
+
+        static Type s_NativePropertyAttributeType;
+        static Dictionary<Cache, MemberInfoCache> s_MemberInfoFromPropertyPathCache = new Dictionary<Cache, MemberInfoCache>();
+
+        public static Type GetManagedType(this SerializedProperty property)
+        {
+            var host = property.serializedObject?.targetObject?.GetType();
+            if (host == null)
+                return null;
+
+            var path = property.propertyPath;
+            var cache = new Cache(host, path);
+
+            if (s_MemberInfoFromPropertyPathCache.TryGetValue(cache, out var infoCache))
+                return infoCache?.type;
+
+            const string arrayData = @"\.Array\.data\[[0-9]+\]";
+            // we are looking for array element only when the path ends with Array.data[x]
+            var lookingForArrayElement = Regex.IsMatch(path, arrayData + "$");
+            // remove any Array.data[x] from the path because it is prevents cache searching.
+            path = Regex.Replace(path, arrayData, ".___ArrayElement___");
+
+            MemberInfo memberInfo = null;
+            var type = host;
+            string[] parts = path.Split('.');
+            for (int i = 0; i < parts.Length; i++)
+            {
+                string member = parts[i];
+                string alternateName = null;
+                if (member.StartsWith("m_", StringComparison.Ordinal))
+                    alternateName = member.Substring(2);
+
+                foreach (MemberInfo f in type.GetMembers(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+                {
+                    if ((f.MemberType & (MemberTypes.Property | MemberTypes.Field)) == 0)
+                        continue;
+                    var memberName = f.Name;
+                    if (f is PropertyInfo pi)
+                    {
+                        if (!pi.CanRead)
+                            continue;
+
+                        s_NativePropertyAttributeType = typeof(UnityEngine.Bindings.NativePropertyAttribute);
+                        var nattr = pi.GetCustomAttribute(s_NativePropertyAttributeType);
+                        if (nattr != null)
+                            memberName = s_NativePropertyAttributeType.GetProperty("Name").GetValue(nattr) as string ?? string.Empty;
+                    }
+                    if (string.Equals(member, memberName, StringComparison.Ordinal) ||
+                        (alternateName != null && string.Equals(alternateName, memberName, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        memberInfo = f;
+                        break;
+                    }
+                }
+
+                if (memberInfo is FieldInfo fi)
+                    type = fi.FieldType;
+                else if (memberInfo is PropertyInfo pi)
+                    type = pi.PropertyType;
+                else
+                    continue;
+
+                // we want to get the element type if we are looking for Array.data[x]
+                if (i < parts.Length - 1 && parts[i + 1] == "___ArrayElement___" && type.IsArrayOrList())
+                {
+                    i++; // skip the "___ArrayElement___" part
+                    type = type.GetArrayOrListElementType();
+                }
+            }
+
+            if (memberInfo == null)
+            {
+                s_MemberInfoFromPropertyPathCache.Add(cache, null);
+                return null;
+            }
+
+            // we want to get the element type if we are looking for Array.data[x]
+            if (lookingForArrayElement && type != null && type.IsArrayOrList())
+                type = type.GetArrayOrListElementType();
+
+            s_MemberInfoFromPropertyPathCache.Add(cache, new MemberInfoCache
+            {
+                type = type,
+                fieldInfo = memberInfo
+            });
+            return type;
         }
     }
 

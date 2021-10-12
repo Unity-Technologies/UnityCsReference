@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using UnityEditor.Profiling;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Search;
@@ -16,27 +17,75 @@ namespace UnityEditor.Search
     {
         string searchText { get; }
         string displayName { get; set; }
+        string details { get; set; }
         Texture2D thumbnail { get; }
         string filePath { get; }
         string guid { get; }
         long creationTime { get; }
+        long lastUsedTime { get; }
+        int itemCount { get; }
+        bool isSearchTemplate { get; }
 
-        ResultViewState GetResultViewState();
+        SearchViewState GetResultViewState();
         IEnumerable<string> GetProviderIds();
+        IEnumerable<string> GetProviderTypes();
     }
 
     enum SearchQuerySortOrder
     {
         AToZ,
         ZToA,
-        CreationTime
+        CreationTime,
+        MostRecentlyUsed,
+        ItemCount
     }
 
     [Serializable]
     class SearchQuery : ISearchQuery
     {
         public static string userSearchSettingsFolder => Utils.CleanPath(Path.Combine(InternalEditorUtility.unityPreferencesFolder, "Search"));
-        public string searchText => viewState.context.searchText;
+        public string searchText
+        {
+            get
+            {
+                return viewState.context == null ? viewState.searchText : viewState.context.searchText;
+            }
+            set
+            {
+                viewState.searchText = value;
+                if (viewState.context != null)
+                    viewState.context.searchText = value;
+            }
+        }
+
+        private static List<SearchQuery> s_SearchQueries;
+        [SerializeField] private string m_GUID;
+        [SerializeField] Texture2D m_Thumbnail;
+        [SerializeField] bool m_IsSearchTemplate;
+        private long m_CreationTime;
+        private long m_LastUsedTime;
+        private int m_ItemCount = -1;
+
+        public string description;
+        public string name;
+        public SearchViewState viewState;
+        public SearchTable tableConfig;
+
+        public string filePath { get; set; }
+
+        public string guid => m_GUID;
+
+        public bool isSearchTemplate
+        {
+            get
+            {
+                return m_IsSearchTemplate;
+            }
+            set
+            {
+                m_IsSearchTemplate = value;
+            }
+        }
 
         public string displayName
         {
@@ -44,22 +93,23 @@ namespace UnityEditor.Search
             set => name = value;
         }
 
-        [SerializeField] Texture2D m_Thumbnail;
+        public string details
+        {
+            get => description;
+            set => description = value;
+        }
+
         public Texture2D thumbnail
         {
             get => m_Thumbnail;
             set => m_Thumbnail = value;
         }
-        [SerializeField] private string m_GUID;
-        public string guid => m_GUID;
-        public string filePath { get; set; }
 
-        private long m_CreationTime;
         public long creationTime
         {
             get
             {
-                if (m_CreationTime == 0)
+                if (m_CreationTime == 0 && !string.IsNullOrEmpty(filePath))
                 {
                     var fileInfo = new FileInfo(filePath);
                     m_CreationTime = fileInfo.CreationTime.Ticks;
@@ -68,34 +118,35 @@ namespace UnityEditor.Search
             }
         }
 
-        public string description;
-        public string name;
-        public SearchViewState viewState;
-        public SearchTable tableConfig;
-
-        public static SearchQuery Create(SearchViewState state, SearchTable table)
+        public long lastUsedTime
         {
-            var uq = new SearchQuery();
-            uq.m_GUID = GUID.Generate().ToString();
-            uq.name = uq.description = state.context.searchText;
-            uq.Set(state, table);
-            return uq;
+            get
+            {
+                using (var view = SearchMonitor.GetView())
+                {
+                    var recordKey = PropertyDatabase.CreateRecordKey(guid, QuickSearch.k_LastUsedTimePropertyName);
+                    if (view.TryLoadProperty(recordKey, out object data))
+                        m_LastUsedTime = (long)data;
+                }
+                return m_LastUsedTime;
+            }
         }
 
-        public void Set(SearchViewState state, SearchTable table)
+        public int itemCount
         {
-            if (viewState == null)
-                viewState = new SearchViewState();
-            viewState.Assign(state);
-            tableConfig = table?.Clone();
+            get
+            {
+                using (var view = SearchMonitor.GetView())
+                {
+                    var recordKey = PropertyDatabase.CreateRecordKey(guid, QuickSearch.k_QueryItemsNumberPropertyName);
+                    if (view.TryLoadProperty(recordKey, out object data))
+                        m_ItemCount = (int)data;
+                }
+
+                return m_ItemCount;
+            }
         }
 
-        public override int GetHashCode()
-        {
-            return filePath.GetHashCode();
-        }
-
-        private static List<SearchQuery> s_SearchQueries;
         public static IEnumerable<SearchQuery> searchQueries
         {
             get
@@ -113,9 +164,63 @@ namespace UnityEditor.Search
 
         public static IEnumerable<SearchQuery> userQueries => searchQueries.Where(IsUserQuery);
 
+        public SearchQuery()
+        {
+            m_GUID = Guid.NewGuid().ToString("N");
+            viewState = new SearchViewState();
+        }
+
+        public SearchQuery(SearchContext context, SearchTable table = null)
+            : this()
+        {
+            viewState = new SearchViewState(context);
+            tableConfig = table;
+        }
+
+        public static SearchQuery Create(SearchViewState state, SearchTable table)
+        {
+            var uq = new SearchQuery();
+            uq.name = uq.description = Utils.Simplify(state.context.searchText);
+            uq.Set(state, table ?? state.tableConfig);
+            return uq;
+        }
+
+        public void Set(SearchViewState state, SearchTable table)
+        {
+            if (viewState == null)
+                viewState = new SearchViewState();
+            viewState.Assign(state);
+            tableConfig = table?.Clone();
+        }
+
+        public IEnumerable<string> GetProviderIds()
+        {
+            return viewState.GetProviderIds();
+        }
+
+        public IEnumerable<string> GetProviderTypes()
+        {
+            return viewState.GetProviderTypes();
+        }
+
+        public SearchViewState GetResultViewState()
+        {
+            return new SearchViewState(tableConfig)
+            {
+                group = null,
+                itemSize = viewState.itemSize
+            };
+        }
+
+        public override int GetHashCode()
+        {
+            return string.IsNullOrEmpty(filePath) ? filePath.GetHashCode() : m_GUID.GetHashCode();
+        }
+
+        #region UserQueryManagement
         public static bool IsUserQuery(SearchQuery query)
         {
-            return query.filePath.StartsWith(userSearchSettingsFolder);
+            return !string.IsNullOrEmpty(query.filePath) && query.filePath.StartsWith(userSearchSettingsFolder);
         }
 
         public static SearchQuery AddUserQuery(SearchViewState state, SearchTable table = null)
@@ -130,6 +235,15 @@ namespace UnityEditor.Search
             s_SearchQueries.Add(query);
             SaveSearchQuery(query);
             return query;
+        }
+
+        public static void SaveSearchQuery(SearchQuery query)
+        {
+            var folder = Path.GetDirectoryName(query.filePath);
+            if (!Directory.Exists(folder))
+                Directory.CreateDirectory(folder);
+            var queryJson = EditorJsonUtility.ToJson(query, true);
+            Utils.WriteTextFileToDisk(query.filePath, queryJson);
         }
 
         public static void RemoveSearchQuery(SearchQuery query)
@@ -180,28 +294,7 @@ namespace UnityEditor.Search
             }
         }
 
-        public static void SaveSearchQuery(SearchQuery query)
-        {
-            var folder = Path.GetDirectoryName(query.filePath);
-            if (!Directory.Exists(folder))
-                Directory.CreateDirectory(folder);
-            var queryJson = EditorJsonUtility.ToJson(query, true);
-            File.WriteAllText(query.filePath, queryJson);
-        }
-
-        public IEnumerable<string> GetProviderIds()
-        {
-            return viewState.GetProviderIds();
-        }
-
-        public ResultViewState GetResultViewState()
-        {
-            return new ResultViewState(tableConfig)
-            {
-                group = null,
-                itemSize = viewState.itemSize
-            };
-        }
+        #endregion
 
         public static ISearchView Open(ISearchQuery query, SearchFlags additionalFlags)
         {
@@ -218,7 +311,7 @@ namespace UnityEditor.Search
                 (newIcon, canceled) => selectIcon(newIcon as Texture2D, canceled),
                 null,
                 "Texture",
-                typeof(Texture));
+                typeof(Texture2D));
             viewState.title = "Query Icon";
             viewState.SetSearchViewFlags(SearchViewFlags.GridView);
             SearchService.ShowPicker(viewState);

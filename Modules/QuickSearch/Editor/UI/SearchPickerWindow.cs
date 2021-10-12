@@ -39,7 +39,8 @@ namespace UnityEditor.Search
 
         protected override IEnumerable<SearchItem> FetchItems()
         {
-            yield return SearchItem.none;
+            if (!viewState.excludeNoneItem)
+                yield return SearchItem.none;
             foreach (var item in SearchService.GetItems(context))
             {
                 if (filterCallback != null && !filterCallback(item))
@@ -68,7 +69,7 @@ namespace UnityEditor.Search
                 base.Refresh(flags);
         }
 
-        protected override void UpdateFocusSate(Event evt, TextEditor te)
+        protected override void UpdateFocusState(TextEditor te)
         {
             te.MoveLineEnd();
         }
@@ -82,6 +83,12 @@ namespace UnityEditor.Search
         {
             // Do nothing
         }
+
+        protected override bool IsSavedSearchQueryEnabled()
+        {
+            return m_ViewState.HasFlag(SearchViewFlags.EnableSearchQuery);
+        }
+
 
         public static QuickSearch ShowPicker(SearchViewState args)
         {
@@ -97,7 +104,7 @@ namespace UnityEditor.Search
             // The window position can only be set one frame later.
             Utils.CallDelayed(() =>
             {
-                if (args.centered)
+                if (args.HasFlag(SearchViewFlags.Centered))
                     qs.position = args.position = Utils.GetMainWindowCenteredPosition(args.hasWindowSize ? args.windowSize : qs.position.size);
                 qs.Focus();
             });

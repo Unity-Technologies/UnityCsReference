@@ -10,8 +10,8 @@ namespace UnityEditor.Search
     internal interface IFilterOperation
     {
         string filterName { get; }
-        string filterValueString { get; }
-        string filterParams { get; }
+        StringView filterValueString { get; }
+        StringView filterParams { get; }
         IFilter filter { get; }
         QueryFilterOperator queryFilterOperator { get; }
         string ToString();
@@ -21,8 +21,8 @@ namespace UnityEditor.Search
     {
         public QueryFilterOperator op;
         public string filterName;
-        public string filterValue;
-        public string paramValue;
+        public StringView filterValue;
+        public StringView paramValue;
         public IParseResult filterValueParseResult;
         public StringComparison globalStringComparison;
         public IFilterOperationGenerator generator;
@@ -206,12 +206,12 @@ namespace UnityEditor.Search
     internal abstract class BaseFilterOperation<TData> : IFilterOperation
     {
         public string filterName => filter.token;
-        public string filterValueString { get; }
-        public virtual string filterParams => null;
+        public StringView filterValueString { get; }
+        public virtual StringView filterParams => StringView.Empty;
         public IFilter filter { get; }
         public QueryFilterOperator queryFilterOperator { get; }
 
-        protected BaseFilterOperation(IFilter filter, in QueryFilterOperator queryFilterOperator, string filterValue)
+        protected BaseFilterOperation(IFilter filter, in QueryFilterOperator queryFilterOperator, in StringView filterValue)
         {
             this.filter = filter;
             this.queryFilterOperator = queryFilterOperator;
@@ -236,13 +236,13 @@ namespace UnityEditor.Search
         TFilterRhs m_FilterValue;
         Func<TData, TFilterRhs, bool> m_Operation;
 
-        public FilterOperation(Filter<TData, TFilterLhs> filter, in QueryFilterOperator queryFilterOperator, string filterValue, Func<TData, TFilterRhs, bool> operation)
+        public FilterOperation(Filter<TData, TFilterLhs> filter, in QueryFilterOperator queryFilterOperator, in StringView filterValue, Func<TData, TFilterRhs, bool> operation)
             : base(filter, in queryFilterOperator, filterValue)
         {
             this.m_Operation = operation;
         }
 
-        public FilterOperation(RegexFilter<TData, TFilterLhs> filter, in QueryFilterOperator queryFilterOperator, string filterValue, Func<TData, TFilterRhs, bool> operation)
+        public FilterOperation(RegexFilter<TData, TFilterLhs> filter, in QueryFilterOperator queryFilterOperator, in StringView filterValue, Func<TData, TFilterRhs, bool> operation)
             : base(filter, in queryFilterOperator, filterValue)
         {
             this.m_Operation = operation;
@@ -268,43 +268,43 @@ namespace UnityEditor.Search
 
     internal class FilterOperation<TData, TParam, TFilterLhs, TFilterRhs> : BaseFilterOperation<TData>, IDynamicFilterOperation<TFilterRhs>
     {
-        string m_ParamValue;
+        StringView m_ParamValue;
         TFilterRhs m_FilterValue;
         Func<TData, TParam, TFilterRhs, bool> m_Operation;
         TParam m_Param;
 
-        public override string filterParams => m_ParamValue;
+        public override StringView filterParams => m_ParamValue;
 
-        public FilterOperation(Filter<TData, TParam, TFilterLhs> filter, in QueryFilterOperator queryFilterOperator, string filterValue, Func<TData, TParam, TFilterRhs, bool> operation)
+        public FilterOperation(Filter<TData, TParam, TFilterLhs> filter, in QueryFilterOperator queryFilterOperator, in StringView filterValue, Func<TData, TParam, TFilterRhs, bool> operation)
             : base(filter, in queryFilterOperator, filterValue)
         {
             this.m_Operation = operation;
-            m_ParamValue = null;
+            m_ParamValue = StringView.Empty;
             m_Param = default;
         }
 
-        public FilterOperation(RegexFilter<TData, TParam, TFilterLhs> filter, in QueryFilterOperator queryFilterOperator, string filterValue, Func<TData, TParam, TFilterRhs, bool> operation)
+        public FilterOperation(RegexFilter<TData, TParam, TFilterLhs> filter, in QueryFilterOperator queryFilterOperator, in StringView filterValue, Func<TData, TParam, TFilterRhs, bool> operation)
             : base(filter, in queryFilterOperator, filterValue)
         {
             this.m_Operation = operation;
-            m_ParamValue = null;
+            m_ParamValue = StringView.Empty;
             m_Param = default;
         }
 
-        public FilterOperation(Filter<TData, TParam, TFilterLhs> filter, in QueryFilterOperator queryFilterOperator, string filterValue, string paramValue, Func<TData, TParam, TFilterRhs, bool> operation)
+        public FilterOperation(Filter<TData, TParam, TFilterLhs> filter, in QueryFilterOperator queryFilterOperator, in StringView filterValue, in StringView paramValue, Func<TData, TParam, TFilterRhs, bool> operation)
             : base(filter, in queryFilterOperator, filterValue)
         {
             this.m_Operation = operation;
             m_ParamValue = paramValue;
-            m_Param = string.IsNullOrEmpty(paramValue) ? default : filter.TransformParameter(paramValue);
+            m_Param = paramValue.IsNullOrEmpty() ? default : filter.TransformParameter(paramValue.ToString());
         }
 
-        public FilterOperation(RegexFilter<TData, TParam, TFilterLhs> filter, in QueryFilterOperator queryFilterOperator, string filterValue, string paramValue, Func<TData, TParam, TFilterRhs, bool> operation)
+        public FilterOperation(RegexFilter<TData, TParam, TFilterLhs> filter, in QueryFilterOperator queryFilterOperator, in StringView filterValue, in StringView paramValue, Func<TData, TParam, TFilterRhs, bool> operation)
             : base(filter, in queryFilterOperator, filterValue)
         {
             this.m_Operation = operation;
             m_ParamValue = paramValue;
-            m_Param = string.IsNullOrEmpty(paramValue) ? default : filter.TransformParameter(paramValue);
+            m_Param = paramValue.IsNullOrEmpty() ? default : filter.TransformParameter(paramValue.ToString());
         }
 
         public override bool Match(TData obj)
@@ -321,7 +321,7 @@ namespace UnityEditor.Search
 
         public override string ToString()
         {
-            var paramString = string.IsNullOrEmpty(m_ParamValue) ? "" : $"({m_ParamValue})";
+            var paramString = m_ParamValue.IsNullOrEmpty() ? "" : $"({m_ParamValue})";
             return $"{filterName}{paramString}{queryFilterOperator.token}{filterValueString}";
         }
 

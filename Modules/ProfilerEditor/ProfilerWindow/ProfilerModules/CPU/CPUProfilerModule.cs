@@ -155,13 +155,13 @@ namespace UnityEditorInternal.Profiling
         internal override void SetOption(ProfilerViewFilteringOptions option, bool on)
         {
             base.SetOption(option, on);
-            m_TimelineGUI?.Clear();
+            m_TimelineGUI?.ReInitialize();
         }
 
         protected override void ToggleOption(ProfilerViewFilteringOptions option)
         {
             base.ToggleOption(option);
-            m_TimelineGUI?.Clear();
+            m_TimelineGUI?.ReInitialize();
         }
 
         // Used for testing

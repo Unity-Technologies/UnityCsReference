@@ -69,6 +69,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_PackageFiltering.onFilterTabChanged += OnFilterTabChanged;
 
+            listView.OnEnable();
+
             if (!Unsupported.IsDeveloperBuild() && m_SettingsProxy.seeAllPackageVersions)
             {
                 m_SettingsProxy.seeAllPackageVersions = false;
@@ -96,6 +98,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_SettingsProxy.onSeeAllVersionsChanged -= OnSeeAllPackageVersionsChanged;
             m_PackageFiltering.onFilterTabChanged -= OnFilterTabChanged;
+
+            listView.OnDisable();
         }
 
         private void OnEnterPanel(AttachToPanelEvent e)
