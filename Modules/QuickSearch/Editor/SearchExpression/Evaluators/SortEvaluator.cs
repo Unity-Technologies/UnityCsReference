@@ -27,12 +27,18 @@ namespace UnityEditor.Search
                 else
                     sortAscend = sortAscendExpr.GetBooleanValue(sortAscend);
             }
-            var sortedSet = new SortedSet<SearchItem>(new SortItemComparer(c.args[1].innerText.ToString(), sortAscend));
+            var sortComparer = new SortItemComparer(c.args[1].innerText.ToString(), sortAscend);
+            var sortedSet = new List<SearchItem>();
             var selectExpression = dataSet.Apply(nameof(Select), c.args[1]);
             foreach (var r in selectExpression.Execute(c))
             {
                 if (r != null)
-                    sortedSet.Add(r);
+                {
+                    var insertAt = sortedSet.BinarySearch(r, sortComparer);
+                    if (insertAt < 0)
+                        insertAt = ~insertAt;
+                    sortedSet.Insert(insertAt, r);
+                }
                 else
                     yield return null;
             }

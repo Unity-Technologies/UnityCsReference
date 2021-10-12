@@ -273,7 +273,7 @@ namespace UnityEditor.Search
 
                 if (item.GetFieldCount() > 0)
                 {
-                    targets.Add(new ExpressionItem()
+                    targets.Add(new SearchServiceItem()
                     {
                         name = item.label ?? item.value.ToString(),
                         item = item
@@ -371,10 +371,7 @@ namespace UnityEditor.Search
 
         private static bool IsBuiltInIcon(Texture icon)
         {
-            var resPath = AssetDatabase.GetAssetPath(icon);
-            return string.Equals(resPath, "Library/unity editor resources", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(resPath, "resources/unity_builtin_extra", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(resPath, "library/unity default resources", StringComparison.OrdinalIgnoreCase);
+            return Utils.IsBuiltInResource(icon);
         }
 
         private bool SkipGeneratedPreview()

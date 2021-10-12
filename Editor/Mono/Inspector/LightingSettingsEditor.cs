@@ -187,6 +187,7 @@ namespace UnityEditor
             };
 
             public static readonly GUIContent lightmapperNotSupportedWarning = EditorGUIUtility.TrTextContent("This lightmapper is not supported by the current Render Pipeline. The Editor will use ");
+            public static readonly GUIContent appleSiliconLightmapperWarning = EditorGUIUtility.TrTextContent("Progressive CPU Lightmapper is not avaliable on Apple silicon. Use Progressive GPU Lightmapper instead.");
             public static readonly GUIContent enlightenLightmapperWarning = EditorGUIUtility.TrTextContent("Use the Progressive Lightmapper for Baked GI in new projects. Use Enlighten Baked GI for backwards compatibility only.");
             public static readonly GUIContent mixedModeNotSupportedWarning = EditorGUIUtility.TrTextContent("The Mixed mode is not supported by the current Render Pipeline. Fallback mode is ");
             public static readonly GUIContent directionalNotSupportedWarning = EditorGUIUtility.TrTextContent("Directional Mode is not supported. Fallback will be Non-Directional.");
@@ -910,6 +911,7 @@ namespace UnityEditor
 
         void BakeBackendGUI()
         {
+            bool isAppleSiliconEditor = SystemInfo.processorType.Contains("Apple") && !EditorUtility.IsRunningUnderCPUEmulation();
             var rect = EditorGUILayout.GetControlRect();
             EditorGUI.BeginProperty(rect, Styles.bakeBackend, m_BakeBackend);
             EditorGUI.BeginChangeCheck();
@@ -926,19 +928,24 @@ namespace UnityEditor
                     int value = Styles.bakeBackendValues[i];
                     bool selected = (value == m_BakeBackend.intValue);
 
-                    if (!SupportedRenderingFeatures.IsLightmapperSupported(value))
+                    if (!SupportedRenderingFeatures.IsLightmapperSupported(value) || (isAppleSiliconEditor && value == (int)LightingSettings.Lightmapper.ProgressiveCPU))
                         menu.AddDisabledItem(Styles.bakeBackendStrings[i], selected);
                     else
                         menu.AddItem(Styles.bakeBackendStrings[i], selected, OnBakeBackedSelected, value);
                 }
                 menu.DropDown(rect);
             }
+
             if (EditorGUI.EndChangeCheck())
                 InspectorWindow.RepaintAllInspectors(); // We need to repaint other inspectors that might need to update based on the selected backend.
 
             EditorGUI.EndProperty();
 
-            if (!SupportedRenderingFeatures.IsLightmapperSupported(m_BakeBackend.intValue))
+            if (isAppleSiliconEditor && m_BakeBackend.intValue == (int)LightingSettings.Lightmapper.ProgressiveCPU)
+            {
+                EditorGUILayout.HelpBox(Styles.appleSiliconLightmapperWarning.text, MessageType.Warning);
+            }
+            else if (!SupportedRenderingFeatures.IsLightmapperSupported(m_BakeBackend.intValue))
             {
                 string fallbackLightmapper = Styles.bakeBackendStrings[SupportedRenderingFeatures.FallbackLightmapper()].text;
                 EditorGUILayout.HelpBox(Styles.lightmapperNotSupportedWarning.text + fallbackLightmapper + " Lightmapper instead.", MessageType.Warning);

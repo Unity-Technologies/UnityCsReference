@@ -23,7 +23,7 @@ namespace UnityEditor.Search
 
         [Description("Convert arguments to a string allowing you to format the result."), Category("Converters")]
         [SearchExpressionEvaluator(SearchExpressionType.Selector | SearchExpressionType.Text, SearchExpressionType.Iterable | SearchExpressionType.Literal | SearchExpressionType.Variadic)]
-        [SearchExpressionEvaluator(SearchExpressionType.Iterable | SearchExpressionType.Literal | SearchExpressionType.Variadic)]
+        [SearchExpressionEvaluatorSignatureOverload(SearchExpressionType.Iterable | SearchExpressionType.Literal | SearchExpressionType.Variadic)]
         public static IEnumerable<SearchItem> Format(SearchExpressionContext c)
         {
             var skipCount = 0;

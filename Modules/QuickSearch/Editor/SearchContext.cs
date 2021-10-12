@@ -83,7 +83,7 @@ namespace UnityEditor.Search
             Dispose(false);
         }
 
-        [Obsolete("ResetFilter has been deprecated and there is no replacement.", error: false)]
+        [Obsolete("ResetFilter has been deprecated and there is no replacement.", error: true)]
         public void ResetFilter(bool enableAll)
         {
             throw new NotSupportedException();
@@ -138,6 +138,12 @@ namespace UnityEditor.Search
         /// Processed search query (no filterId, no textFilters)
         /// </summary>
         public string searchQuery { get; private set; } = string.Empty;
+
+        /// <summary>
+        /// Original search query with all markers
+        /// </summary>
+        internal string rawSearchQuery { get; private set; } = string.Empty;
+
 
         /// <summary>
         /// Character offset of the processed search query in the raw search text.
@@ -196,6 +202,8 @@ namespace UnityEditor.Search
             }
         }
 
+        internal bool empty => string.IsNullOrEmpty(m_SearchText);
+
         /// <summary>
         /// Raw search text (i.e. what is in the search text box)
         /// </summary>
@@ -218,23 +226,17 @@ namespace UnityEditor.Search
             // Reset a few values
             filterId = null;
             textFilters = searchWords = k_Empty;
-            searchQuery = searchText.TrimStart();
+
             searchQueryOffset = 0;
+            rawSearchQuery = SearchUtils.ParseSearchText(searchText, m_Providers, out var filteredProvider);
+            searchQuery = rawSearchQuery;
+            if (filteredProvider != null)
+                filterId = filteredProvider.filterId;
 
             if (string.IsNullOrEmpty(searchQuery))
                 return;
 
-            foreach (var providerFilterId in m_Providers.Select(p => p.filterId))
-            {
-                if (searchQuery.StartsWith(providerFilterId, StringComparison.OrdinalIgnoreCase))
-                {
-                    filterId = providerFilterId;
-                    searchQuery = searchQuery.Remove(0, providerFilterId.Length).TrimStart();
-                    break;
-                }
-            }
-
-            searchQueryOffset = searchText.Length - searchQuery.Length;
+            searchQueryOffset = searchText.Length - rawSearchQuery.Length;
             searchQuery = searchQuery.TrimEnd();
             var tokens = Utils.Simplify(searchQuery).ToLowerInvariant().Split(' ').ToArray();
             searchWords = tokens.Where(t => t.IndexOf(':') == -1).ToArray();

@@ -60,32 +60,32 @@ namespace UnityEditor.Search
 
         [Description("Keep search results that have a greater value."), Category("Comparers")]
         [SearchExpressionEvaluator(SearchExpressionType.Iterable, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
-        [SearchExpressionEvaluator(SearchExpressionType.Iterable, SearchExpressionType.Selector, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
+        [SearchExpressionEvaluatorSignatureOverload(SearchExpressionType.Iterable, SearchExpressionType.Selector, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
         static IEnumerable<SearchItem> gt(SearchExpressionContext c) => Compare(c, (a, b) => DefaultComparer(a, b) > 0);
 
         [Description("Keep search results that have a greater or equal value."), Category("Comparers")]
         [SearchExpressionEvaluator(SearchExpressionType.Iterable, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
-        [SearchExpressionEvaluator(SearchExpressionType.Iterable, SearchExpressionType.Selector, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
+        [SearchExpressionEvaluatorSignatureOverload(SearchExpressionType.Iterable, SearchExpressionType.Selector, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
         static IEnumerable<SearchItem> gte(SearchExpressionContext c) => Compare(c, (a, b) => DefaultComparer(a, b) >= 0);
 
         [Description("Keep search results that have a lower value."), Category("Comparers")]
         [SearchExpressionEvaluator(SearchExpressionType.Iterable, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
-        [SearchExpressionEvaluator(SearchExpressionType.Iterable, SearchExpressionType.Selector, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
+        [SearchExpressionEvaluatorSignatureOverload(SearchExpressionType.Iterable, SearchExpressionType.Selector, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
         static IEnumerable<SearchItem> lw(SearchExpressionContext c) => Compare(c, (a, b) => DefaultComparer(a, b) < 0);
 
         [Description("Keep search results that have a lower or equal value."), Category("Comparers")]
         [SearchExpressionEvaluator(SearchExpressionType.Iterable, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
-        [SearchExpressionEvaluator(SearchExpressionType.Iterable, SearchExpressionType.Selector, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
+        [SearchExpressionEvaluatorSignatureOverload(SearchExpressionType.Iterable, SearchExpressionType.Selector, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
         static IEnumerable<SearchItem> lwe(SearchExpressionContext c) => Compare(c, (a, b) => DefaultComparer(a, b) <= 0);
 
         [Description("Keep search results that have an equal value."), Category("Comparers")]
         [SearchExpressionEvaluator(SearchExpressionType.Iterable, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
-        [SearchExpressionEvaluator(SearchExpressionType.Iterable, SearchExpressionType.Selector, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
+        [SearchExpressionEvaluatorSignatureOverload(SearchExpressionType.Iterable, SearchExpressionType.Selector, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
         static IEnumerable<SearchItem> eq(SearchExpressionContext c) => Compare(c, (a, b) => DefaultComparer(a, b) == 0);
 
         [Description("Keep search results that have a different value."), Category("Comparers")]
         [SearchExpressionEvaluator(SearchExpressionType.Iterable, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
-        [SearchExpressionEvaluator(SearchExpressionType.Iterable, SearchExpressionType.Selector, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
+        [SearchExpressionEvaluatorSignatureOverload(SearchExpressionType.Iterable, SearchExpressionType.Selector, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
         static IEnumerable<SearchItem> neq(SearchExpressionContext c) => Compare(c, (a, b) => DefaultComparer(a, b) != 0);
 
         [Description("Exclude search results for which the expression is not valid."), Category("Comparers")]

@@ -302,7 +302,7 @@ namespace UnityEditor
 
         void SetSearchFilterDebounced()
         {
-            SetSearchFilter(m_SearchStringDebounced, (SearchMode)searchMode, true, true);
+            SetSearchFilter(m_SearchStringDebounced, searchMode, true, true);
             m_SearchStringDebounced = "";
         }
 
@@ -342,6 +342,7 @@ namespace UnityEditor
                     string.IsNullOrEmpty(m_SearchFilter) ? EditorStyles.toolbarSearchFieldCancelButtonWithJumpEmpty : EditorStyles.toolbarSearchFieldCancelButtonWithJump);
             if (EditorGUI.EndChangeCheck())
             {
+                m_SearchMode = (SearchMode)searchMode;
                 m_SearchStringDebounced = searchFilter;
                 m_DeregisterDebounceCall?.Invoke();
                 m_DeregisterDebounceCall = EditorApplication.CallDelayed(SetSearchFilterDebounced, SearchUtils.debounceThresholdMs / 1000f);

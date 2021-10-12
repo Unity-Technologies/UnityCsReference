@@ -67,6 +67,9 @@ namespace UnityEditor.Search.Providers
 
         static IEnumerable<SearchItem> FetchItems(SearchContext context, SearchProvider provider)
         {
+            if (context.empty)
+                yield break;
+
             if (m_ResourcesQueryEngine == null)
                 m_ResourcesQueryEngine = new ObjectQueryEngine();
 
@@ -99,6 +102,13 @@ namespace UnityEditor.Search.Providers
             }
         }
 
+        static IEnumerable<SearchProposition> FetchPropositions(SearchContext context, SearchPropositionOptions options)
+        {
+            if (!options.flags.HasAny(SearchPropositionFlags.QueryBuilder))
+                yield break;
+
+        }
+
         [SearchItemProvider]
         internal static SearchProvider CreateProvider()
         {
@@ -107,11 +117,13 @@ namespace UnityEditor.Search.Providers
                 type = "asset",
                 active = false,
                 priority = 2500,
-                fetchItems = (context, items, provider) => FetchItems(context, SearchService.GetProvider("asset") ?? provider)
+                fetchItems = (context, items, provider) => FetchItems(context, SearchService.GetProvider("asset") ?? provider),
+                fetchPropositions = (context, options) => FetchPropositions(context, options)
             };
         }
 
         [MenuItem("Window/Search/Asset Database", priority = 1271)] static void OpenProvider() => SearchService.ShowContextual(type);
         [ShortcutManagement.Shortcut("Help/Search/Asset Database")] static void OpenShortcut() => QuickSearch.OpenWithContextualProvider(type);
     }
+
 }

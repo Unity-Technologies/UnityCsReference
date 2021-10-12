@@ -176,7 +176,7 @@ namespace UnityEditor.Search
 
         public static SearchExpression Parse(SearchContext context, SearchExpressionParserFlags options = SearchExpressionParserFlags.Default)
         {
-            return ParserManager.Parse(new SearchExpressionParserArgs(context.searchQuery.GetStringView(), context, options));
+            return ParserManager.Parse(new SearchExpressionParserArgs(context.searchText.GetStringView(), context, options));
         }
 
         public IEnumerable<SearchItem> Execute(SearchContext searchContext, SearchExpressionExecutionFlags executionFlags = SearchExpressionExecutionFlags.Root)

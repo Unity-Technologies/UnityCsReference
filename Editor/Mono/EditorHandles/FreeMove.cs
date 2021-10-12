@@ -11,7 +11,7 @@ namespace UnityEditorInternal
 {
     internal class FreeMove
     {
-        private static Vector2 s_StartMousePosition, s_CurrentMousePosition;
+        private static Vector2 s_StartMousePosition, s_CurrentMousePosition, s_CurrentMousePositionScreen;
         private static Vector3 s_StartPosition;
 
         public static Vector3 Do(int id, Vector3 position, Quaternion rotation, float size, Vector3 snap, Handles.CapFunction handleFunction)
@@ -37,7 +37,7 @@ namespace UnityEditorInternal
                     if (HandleUtility.nearestControl == id && evt.button == 0)
                     {
                         GUIUtility.hotControl = id;     // Grab mouse focus
-                        s_CurrentMousePosition = s_StartMousePosition = evt.mousePosition;
+                        s_CurrentMousePosition = s_CurrentMousePositionScreen = s_StartMousePosition = evt.mousePosition;
                         s_StartPosition = position;
                         HandleUtility.ignoreRaySnapObjects = null;
                         evt.Use();
@@ -77,7 +77,9 @@ namespace UnityEditorInternal
                         if (!rayDrag)
                         {
                             // normal drag
-                            s_CurrentMousePosition += new Vector2(evt.delta.x, -evt.delta.y) * EditorGUIUtility.pixelsPerPoint;
+                            Vector2 mouseDelta = evt.mousePosition - s_CurrentMousePositionScreen;
+                            s_CurrentMousePositionScreen += mouseDelta;
+                            s_CurrentMousePosition += new Vector2(mouseDelta.x, -mouseDelta.y) * EditorGUIUtility.pixelsPerPoint;
                             Vector3 screenPos = Camera.current.WorldToScreenPoint(Handles.matrix.MultiplyPoint(s_StartPosition));
                             screenPos += (Vector3)(s_CurrentMousePosition - s_StartMousePosition);
                             position = Handles.inverseMatrix.MultiplyPoint(Camera.current.ScreenToWorldPoint(screenPos));

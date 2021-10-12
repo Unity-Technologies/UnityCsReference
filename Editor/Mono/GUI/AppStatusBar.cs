@@ -71,11 +71,12 @@ namespace UnityEditor
             }
         }
 
+        private bool m_ShowProgress = false;
         private bool showProgress
         {
             get
             {
-                return Progress.running && Progress.GetMaxElapsedTime() > k_ShowProgressThreshold;
+                return m_ShowProgress;
             }
         }
 
@@ -158,7 +159,9 @@ namespace UnityEditor
 
             GUI.color = EditorApplication.isPlayingOrWillChangePlaymode ? HostView.kPlayModeDarken : Color.white;
 
-            if (Event.current.type == EventType.Repaint)
+            if (Event.current.type == EventType.Layout)
+                m_ShowProgress = Progress.running && Progress.GetMaxElapsedTime() > k_ShowProgressThreshold;
+            else if (Event.current.type == EventType.Repaint)
                 Styles.background.Draw(new Rect(0, 0, position.width, position.height), false, false, false, false);
 
             GUILayout.BeginHorizontal(GUILayout.MaxWidth(position.width));

@@ -490,11 +490,16 @@ namespace UnityEditor
             Object TextureValidator(Object[] references, System.Type objType, SerializedProperty property, EditorGUI.ObjectFieldValidatorOptions options)
             {
                 LightType lightTypeInfo = (LightType)lightType.intValue;
-
+                Object assetTexture = null;
                 foreach (Object assetObject in references)
                 {
                     if (assetObject is Texture texture)
                     {
+                        if (assetTexture == null)
+                        {
+                            assetTexture = texture;
+                        }
+
                         switch (lightTypeInfo)
                         {
                             case LightType.Spot:
@@ -514,6 +519,11 @@ namespace UnityEditor
                                 break;
                         }
                     }
+                }
+
+                if (assetTexture != null && typeof(RenderTexture).IsAssignableFrom(assetTexture.GetType()))
+                {
+                    return assetTexture;
                 }
                 return null;
             }
@@ -541,7 +551,7 @@ namespace UnityEditor
                         break;
                 }
 
-                var newValue = EditorGUI.DoObjectField(position, position, controlID, prop.objectReferenceValue, prop.objectReferenceValue, type, TextureValidator, false) as Texture;
+                var newValue = EditorGUI.DoObjectField(position, position, controlID, prop.objectReferenceValue, prop.objectReferenceValue, type, TextureValidator, false, typeof(RenderTexture)) as Texture;
 
                 if (EditorGUI.EndChangeCheck())
                     prop.objectReferenceValue = newValue;

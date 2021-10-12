@@ -69,8 +69,8 @@ namespace UnityEditor.Search
 
             m_Report = SearchReport.LoadFromFile(path);
             m_ReportName = Path.GetFileNameWithoutExtension(path);
-            var searchExpressionProvider = SearchService.GetProvider("expression");
-            m_Items = m_Report.CreateSearchItems(searchExpressionProvider).ToList();
+            var searchServiceProvider = SearchService.GetDefaultProvider();
+            m_Items = m_Report.CreateSearchItems(searchServiceProvider).ToList();
             titleContent = new GUIContent($"{m_ReportName} ({m_Items.Count})", m_ReportPath);
 
             m_FocusSearchField = true;
@@ -121,7 +121,7 @@ namespace UnityEditor.Search
         internal void OnEnable()
         {
             m_SearchField = new SearchField();
-            if (m_ReportPath != null)
+            if (!string.IsNullOrEmpty(m_ReportPath))
                 InitializeReport(m_ReportPath);
         }
 
@@ -249,7 +249,7 @@ namespace UnityEditor.Search
         private PropertyTable m_PropertyTable;
         private SearchTable m_TableConfig;
 
-        public SearchContext context { get; } = new SearchContext(new SearchExpressionProvider());
+        public SearchContext context { get; } = new SearchContext(new SearchServiceProvider());
 
         public IEnumerable<SearchItem> GetElements()
         {

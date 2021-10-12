@@ -139,7 +139,8 @@ namespace UnityEditorInternal
 
                     if (GUIUtility.hotControl == id)
                     {
-                        s_CurrentMousePosition += evt.delta;
+                        Vector2 mouseDelta = evt.mousePosition - s_CurrentMousePosition;
+                        s_CurrentMousePosition += mouseDelta;
                         bool success = true;
                         Vector3 localMousePoint = Handles.inverseMatrix.MultiplyPoint(GetMousePosition(handleDir, handlePos, ref success));
                         if (success)

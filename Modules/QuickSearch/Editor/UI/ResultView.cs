@@ -9,29 +9,6 @@ using UnityEngine;
 
 namespace UnityEditor.Search
 {
-    [Serializable]
-    class ResultViewState
-    {
-        public float itemSize;
-        public string group;
-        public SearchTable tableConfig;
-
-        public ResultViewState(SearchTable tableConfig)
-        {
-            itemSize = (float)DisplayMode.Table;
-            group = null;
-            this.tableConfig = tableConfig;
-        }
-
-
-        public ResultViewState(float itemSize)
-        {
-            this.itemSize = itemSize;
-            group = null;
-            tableConfig = null;
-        }
-    }
-
     /// <summary>
     /// A view able to display a <see cref="ISearchList"/> of <see cref="SearchItem"/>s.
     /// </summary>
@@ -45,6 +22,7 @@ namespace UnityEditor.Search
 
         bool focusSelectedItem { get; set; }
         bool scrollbarVisible { get; }
+        bool showNoResultMessage { get; }
 
         void Draw(Rect rect, ICollection<int> selection);
         void Draw(ICollection<int> selection, float viewWidth);
@@ -53,9 +31,8 @@ namespace UnityEditor.Search
         void DrawControlLayout(float viewWidth);
         void DrawTabsButtons();
         void Refresh(RefreshFlags flags = RefreshFlags.Default);
-        ResultViewState SaveViewState(string name);
-        void SetViewState(ResultViewState viewState);
-
+        SearchViewState SaveViewState(string name);
+        void SetViewState(SearchViewState viewState);
         void OnGroupChanged(string prevGroupId, string newGroupId);
         void AddSaveQueryMenuItems(SearchContext context, GenericMenu menu);
     }
@@ -85,6 +62,7 @@ namespace UnityEditor.Search
         public bool focusSelectedItem { get; set; }
         protected bool compactView => itemSize == 0;
         public bool scrollbarVisible { get; protected set; }
+        public virtual bool showNoResultMessage => true;
 
         public abstract void Draw(Rect rect, ICollection<int> selection);
 
@@ -116,12 +94,12 @@ namespace UnityEditor.Search
             // Do nothing
         }
 
-        public virtual ResultViewState SaveViewState(string name)
+        public virtual SearchViewState SaveViewState(string name)
         {
-            return new ResultViewState(itemSize);
+            return new SearchViewState(context) { sessionName = name, itemSize = itemSize };
         }
 
-        public virtual void SetViewState(ResultViewState viewState)
+        public virtual void SetViewState(SearchViewState viewState)
         {
             // Do nothing
         }
@@ -148,13 +126,6 @@ namespace UnityEditor.Search
 
             if (AutoComplete.IsHovered(evt.mousePosition))
                 return;
-
-            if (evt.button == 1)
-            {
-                var item = items.ElementAt(clickedItemIndex);
-                if (!searchView.selection.Contains(item))
-                    searchView.SetSelection(clickedItemIndex);
-            }
         }
 
         protected void HandleMouseUp(int clickedItemIndex, int itemTotalCount)
@@ -237,8 +208,11 @@ namespace UnityEditor.Search
                     var item = items.ElementAt(clickedItemIndex);
                     var contextRect = new Rect(evt.mousePosition, new Vector2(1, 1));
                     var selection = searchView.selection;
-                    if (selection.Count <= 1)
+                    if (selection.Count > 0 || item != null)
+                    {
                         searchView.ShowItemContextualMenu(item, contextRect);
+                        evt.Use();
+                    }
                 }
             }
 
@@ -331,9 +305,12 @@ namespace UnityEditor.Search
                 if (selectedIndex == -1 && results.Count > 0)
                     selectedIndex = 0;
 
-                if (selectedIndex != -1)
+                else if (selectedIndex != -1)
                 {
-                    searchView.ExecuteSelection();
+                    if (evt.alt && searchView is QuickSearch qs)
+                        qs.ExecuteSelection(1);
+                    else
+                        searchView.ExecuteSelection();
                     GUIUtility.ExitGUI();
                 }
             }

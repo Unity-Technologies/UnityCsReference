@@ -77,7 +77,7 @@ namespace UnityEditor.Search
             this.provider = provider;
         }
 
-        internal SearchQueryError(QueryError error, SearchContext context, SearchProvider provider, bool fromSearchQuery = true)
+        public SearchQueryError(QueryError error, SearchContext context, SearchProvider provider, bool fromSearchQuery = true)
             : this(error.index, error.length, error.reason, context, provider, fromSearchQuery, error.type)
         {}
 

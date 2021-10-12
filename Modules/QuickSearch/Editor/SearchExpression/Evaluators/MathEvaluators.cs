@@ -21,7 +21,7 @@ namespace UnityEditor.Search
 
         [Description("Find the minimal value for each expression."), Category("Math")]
         [SearchExpressionEvaluator(SearchExpressionType.Selector, SearchExpressionType.Iterable | SearchExpressionType.Variadic)]
-        [SearchExpressionEvaluator(SearchExpressionType.Iterable | SearchExpressionType.Variadic)]
+        [SearchExpressionEvaluatorSignatureOverload(SearchExpressionType.Iterable | SearchExpressionType.Variadic)]
         public static IEnumerable<SearchItem> Min(SearchExpressionContext c)
         {
             var skipCount = 0;
@@ -32,14 +32,18 @@ namespace UnityEditor.Search
                 selector = c.args[0].innerText.ToString();
             }
 
-            return c.ForEachArgument(skipCount).AggregateResults(double.MaxValue,
-                (context, item, min) => Aggregate(item, selector, min, (d, _min) => d < _min),
-                (context, min) => EvaluatorUtils.CreateItem(min, context.ResolveAlias("Min")));
+            foreach (var arg in c.args.Skip(skipCount))
+            {
+                double min = double.MaxValue;
+                foreach (var r in arg.Execute(c))
+                    min = Aggregate(r, selector, min, (d, _min) => d < _min);
+                yield return EvaluatorUtils.CreateItem(min, c.ResolveAlias(arg, "Min"));
+            }
         }
 
         [Description("Find the maximum value for each expression."), Category("Math")]
         [SearchExpressionEvaluator(SearchExpressionType.Selector, SearchExpressionType.Iterable | SearchExpressionType.Variadic)]
-        [SearchExpressionEvaluator(SearchExpressionType.Iterable | SearchExpressionType.Variadic)]
+        [SearchExpressionEvaluatorSignatureOverload(SearchExpressionType.Iterable | SearchExpressionType.Variadic)]
         public static IEnumerable<SearchItem> Max(SearchExpressionContext c)
         {
             var skipCount = 0;
@@ -49,14 +53,19 @@ namespace UnityEditor.Search
                 skipCount++;
                 selector = c.args[0].innerText.ToString();
             }
-            return c.ForEachArgument(skipCount).AggregateResults(double.MinValue,
-                (context, item, max) => Aggregate(item, selector, max, (d, _max) => d > _max),
-                (context, max) => EvaluatorUtils.CreateItem(max, context.ResolveAlias("Max")));
+
+            foreach (var arg in c.args.Skip(skipCount))
+            {
+                double max = double.MinValue;
+                foreach (var r in arg.Execute(c))
+                    max = Aggregate(r, selector, max, (d, _max) => d > _max);
+                yield return EvaluatorUtils.CreateItem(max, c.ResolveAlias(arg, "Max"));
+            }
         }
 
         [Description("Find the average value for each expression."), Category("Math")]
         [SearchExpressionEvaluator(SearchExpressionType.Selector, SearchExpressionType.Iterable | SearchExpressionType.Variadic)]
-        [SearchExpressionEvaluator(SearchExpressionType.Iterable | SearchExpressionType.Variadic)]
+        [SearchExpressionEvaluatorSignatureOverload(SearchExpressionType.Iterable | SearchExpressionType.Variadic)]
         public static IEnumerable<SearchItem> Avg(SearchExpressionContext c)
         {
             var skipCount = 0;
@@ -66,14 +75,19 @@ namespace UnityEditor.Search
                 skipCount++;
                 selector = c.args[0].innerText.ToString();
             }
-            return c.ForEachArgument(skipCount).AggregateResults(Average.Zero,
-                (context, item, avg) => Aggregate(item, selector, avg, (d, _avg) => _avg.Add(d)),
-                (context, avg) => EvaluatorUtils.CreateItem(avg.result, context.ResolveAlias("Average")));
+
+            foreach (var arg in c.args.Skip(skipCount))
+            {
+                var avg = Average.Zero;
+                foreach (var r in arg.Execute(c))
+                    avg = Aggregate(r, selector, avg, (d, _avg) => _avg.Add(d));
+                yield return EvaluatorUtils.CreateItem(avg.result, c.ResolveAlias(arg, "Average"));
+            }
         }
 
         [Description("Compute the sum value for each expression."), Category("Math")]
         [SearchExpressionEvaluator(SearchExpressionType.Selector, SearchExpressionType.Iterable | SearchExpressionType.Variadic)]
-        [SearchExpressionEvaluator(SearchExpressionType.Iterable | SearchExpressionType.Variadic)]
+        [SearchExpressionEvaluatorSignatureOverload(SearchExpressionType.Iterable | SearchExpressionType.Variadic)]
         public static IEnumerable<SearchItem> Sum(SearchExpressionContext c)
         {
             var skipCount = 0;
@@ -84,16 +98,20 @@ namespace UnityEditor.Search
                 selector = c.args[0].innerText.ToString();
             }
 
-            return c.ForEachArgument(skipCount).AggregateResults(0d,
-                (context, item, sum) => Aggregate(item, selector, sum, (d, _sum) => _sum + d),
-                (context, sum) => EvaluatorUtils.CreateItem(sum, context.ResolveAlias("Sum")));
+            foreach (var arg in c.args.Skip(skipCount))
+            {
+                var sum = 0d;
+                foreach (var r in arg.Execute(c))
+                    sum = Aggregate(r, selector, sum, (d, _sum) => _sum + d);
+                yield return EvaluatorUtils.CreateItem(sum, c.ResolveAlias(arg, "Sum"));
+            }
         }
 
         static double Aggregate(SearchItem item, string selector, double agg, Func<double, double, bool> comparer) => Aggregate(item, selector, agg, comparer, (d, _) => d);
         static T Aggregate<T>(SearchItem item, string selector, T agg, Func<double, T, T> aggregator) where T : struct => Aggregate(item, selector, agg, (d, v) => true, aggregator);
         static T Aggregate<T>(SearchItem item, string selector, T agg, Func<double, T, bool> comparer, Func<double, T, T> aggregator) where T : struct
         {
-            if (EvaluatorUtils.TryConvertToDouble(item, out var d, selector) && comparer(d, agg))
+            if (item != null && EvaluatorUtils.TryConvertToDouble(item, out var d, selector) && comparer(d, agg))
                 return aggregator(d, agg);
             return agg;
         }

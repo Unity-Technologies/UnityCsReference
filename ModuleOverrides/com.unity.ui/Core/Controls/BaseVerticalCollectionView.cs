@@ -529,7 +529,7 @@ namespace UnityEngine.UIElements
         {
             if (m_Dragger != null)
             {
-                m_Dragger.UnregisterCallbacksFromTarget();
+                m_Dragger.UnregisterCallbacksFromTarget(true);
                 m_Dragger.dragAndDropController = null;
                 m_Dragger = null;
             }

@@ -1026,6 +1026,7 @@ namespace UnityEditorInternal
 
             if (asset)
             {
+                newClip.name = asset.name;
                 EditorUtility.CopySerialized(newClip, asset);
                 AssetDatabase.SaveAssets();
                 Object.DestroyImmediate(newClip);

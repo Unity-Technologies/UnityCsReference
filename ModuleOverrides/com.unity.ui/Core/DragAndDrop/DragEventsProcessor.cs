@@ -15,9 +15,13 @@ namespace UnityEngine.UIElements
             Dragging
         }
 
+        bool m_IsRegistered;
         DragState m_DragState;
         private Vector3 m_Start;
         internal readonly VisualElement m_Target;
+
+        // Used in tests
+        internal bool isRegistered => m_IsRegistered;
 
         private const int k_DistanceToActivation = 5;
 
@@ -40,6 +44,23 @@ namespace UnityEngine.UIElements
         internal DragEventsProcessor(VisualElement target)
         {
             m_Target = target;
+            m_Target.RegisterCallback<AttachToPanelEvent>(RegisterCallbacksFromTarget);
+            m_Target.RegisterCallback<DetachFromPanelEvent>(UnregisterCallbacksFromTarget);
+
+            RegisterCallbacksFromTarget();
+        }
+
+        private void RegisterCallbacksFromTarget(AttachToPanelEvent evt)
+        {
+            RegisterCallbacksFromTarget();
+        }
+
+        private void RegisterCallbacksFromTarget()
+        {
+            if (m_IsRegistered)
+                return;
+
+            m_IsRegistered = true;
 
             m_Target.RegisterCallback<PointerDownEvent>(OnPointerDownEvent, TrickleDown.TrickleDown);
             m_Target.RegisterCallback<PointerUpEvent>(OnPointerUpEvent, TrickleDown.TrickleDown);
@@ -50,7 +71,6 @@ namespace UnityEngine.UIElements
             m_Target.RegisterCallback<DragUpdatedEvent>(OnDragUpdate);
             m_Target.RegisterCallback<DragPerformEvent>(OnDragPerformEvent);
             m_Target.RegisterCallback<DragExitedEvent>(OnDragExitedEvent);
-            m_Target.RegisterCallback<DetachFromPanelEvent>(UnregisterCallbacksFromTarget);
         }
 
         private void UnregisterCallbacksFromTarget(DetachFromPanelEvent evt)
@@ -58,8 +78,14 @@ namespace UnityEngine.UIElements
             UnregisterCallbacksFromTarget();
         }
 
-        internal void UnregisterCallbacksFromTarget()
+        /// <summary>
+        /// Unregisters all pointer and drag callbacks.
+        /// </summary>
+        /// <param name="unregisterPanelEvents">Whether or not we should also unregister panel attach/detach events. Use this when you are about to replace the dragger instance.</param>
+        internal void UnregisterCallbacksFromTarget(bool unregisterPanelEvents = false)
         {
+            m_IsRegistered = false;
+
             m_Target.UnregisterCallback<PointerDownEvent>(OnPointerDownEvent, TrickleDown.TrickleDown);
             m_Target.UnregisterCallback<PointerUpEvent>(OnPointerUpEvent, TrickleDown.TrickleDown);
             m_Target.UnregisterCallback<PointerLeaveEvent>(OnPointerLeaveEvent);
@@ -69,7 +95,11 @@ namespace UnityEngine.UIElements
             m_Target.UnregisterCallback<DragPerformEvent>(OnDragPerformEvent);
             m_Target.UnregisterCallback<DragExitedEvent>(OnDragExitedEvent);
 
-            m_Target.UnregisterCallback<DetachFromPanelEvent>(UnregisterCallbacksFromTarget);
+            if (unregisterPanelEvents)
+            {
+                m_Target.UnregisterCallback<AttachToPanelEvent>(RegisterCallbacksFromTarget);
+                m_Target.UnregisterCallback<DetachFromPanelEvent>(UnregisterCallbacksFromTarget);
+            }
         }
 
         protected abstract bool CanStartDrag(Vector3 pointerPosition);

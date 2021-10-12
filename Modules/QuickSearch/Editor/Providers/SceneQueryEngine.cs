@@ -231,13 +231,8 @@ namespace UnityEditor.Search.Providers
                 if (view.TryLoadProperty(recordKey, out object data))
                     return (SearchValue)data;
 
-                var gocs = go.GetComponents<Component>();
-                for (int componentIndex = 0; componentIndex < gocs.Length; ++componentIndex)
+                foreach (var c in EnumerateSubObjects(go))
                 {
-                    var c = gocs[componentIndex];
-                    if (!c || (c.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
-                        continue;
-
                     var property = FindPropertyValue(c, propertyName);
                     if (property.valid)
                     {
@@ -250,6 +245,21 @@ namespace UnityEditor.Search.Providers
             }
 
             return SearchValue.invalid;
+        }
+
+        IEnumerable<UnityEngine.Object> EnumerateSubObjects(GameObject go)
+        {
+            yield return go;
+
+            var gocs = go.GetComponents<Component>();
+            for (int componentIndex = 0; componentIndex < gocs.Length; ++componentIndex)
+            {
+                var c = gocs[componentIndex];
+                if (!c || (c.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
+                    continue;
+
+                yield return c;
+            }
         }
 
         bool OnAttributeFilter(GameObject go, string op, string value)
@@ -377,7 +387,7 @@ namespace UnityEditor.Search.Providers
                             var replacement = ToReplacementValue(p, label);
                             if (replacement != null)
                             {
-                                var proposition = new SearchProposition(label, replacement, $"{cTypeName} ({p.propertyType})");
+                                var proposition = new SearchProposition(label: label, replacement, $"{cTypeName} ({p.propertyType})");
                                 propositions.Add(proposition);
                             }
                             next = p.NextVisible(false);

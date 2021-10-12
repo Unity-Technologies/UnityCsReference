@@ -13,7 +13,7 @@ namespace UnityEditor.Search
     {
         [Description("Print expression results in the console."), Category("Utilities")]
         [SearchExpressionEvaluator(SearchExpressionType.Selector | SearchExpressionType.Text, SearchExpressionType.Iterable | SearchExpressionType.Variadic)]
-        [SearchExpressionEvaluator(SearchExpressionType.Iterable | SearchExpressionType.Variadic)]
+        [SearchExpressionEvaluatorSignatureOverload(SearchExpressionType.Iterable | SearchExpressionType.Variadic)]
         public static IEnumerable<SearchItem> Print(SearchExpressionContext c)
         {
             var skipCount = 0;

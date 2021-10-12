@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace UnityEditor.Search
@@ -17,17 +16,68 @@ namespace UnityEditor.Search
         public int symbolSlots;
         public int allocatedStringBytes;
         public int usedStringBytes;
+
+        public const int size = sizeof(int) * 5;
+
+        public PropertyStringTableHeader(int version, int count, int symbolSlots, int allocatedStringBytes, int usedStringBytes)
+        {
+            this.version = version;
+            this.count = count;
+            this.symbolSlots = symbolSlots;
+            this.allocatedStringBytes = allocatedStringBytes;
+            this.usedStringBytes = usedStringBytes;
+        }
+
+        public void ToBinary(BinaryWriter bw)
+        {
+            bw.Write(version);
+            bw.Write(count);
+            bw.Write(symbolSlots);
+            bw.Write(allocatedStringBytes);
+            bw.Write(usedStringBytes);
+        }
+
+        public static PropertyStringTableHeader FromBinary(BinaryReader br)
+        {
+            var version = br.ReadInt32();
+            var count = br.ReadInt32();
+            var symbolSlots = br.ReadInt32();
+            var allocatedStringBytes = br.ReadInt32();
+            var usedStringBytes = br.ReadInt32();
+
+            return new PropertyStringTableHeader(version, count, symbolSlots, allocatedStringBytes, usedStringBytes);
+        }
     }
 
     struct PropertyStringHashAndLength
     {
         public uint hash;
         public int length;
+
+        public PropertyStringHashAndLength(string str)
+        {
+            hash = (uint)str.GetHashCode();
+            var strByteCount = PropertyStringTable.encoding.GetByteCount(str);
+            length = GetSevenBitEncodedIntByteSize(strByteCount) + strByteCount;
+        }
+
+        public static int GetSevenBitEncodedIntByteSize(int number)
+        {
+            var byteSize = 1;
+            while (number > 0)
+            {
+                number >>= 7;
+                if (number > 0)
+                    ++byteSize;
+            }
+
+            return byteSize;
+        }
     }
 
     class PropertyStringTable : IPropertyLockable
     {
-        public const int Version = 0x50535400 | 0x01;
+        public const int Version = 0x50535400 | 0x02;
         public const int StringTableFullSymbol = -1;
         public const int EmptyStringSymbol = 0;
         public const int HashFactor = 2;
@@ -68,10 +118,12 @@ namespace UnityEditor.Search
             header.allocatedStringBytes = stringCount * bytesPerString;
             header.usedStringBytes = StringLengthByteSize;
 
-            var buffer = new byte[Marshal.SizeOf<PropertyStringTableHeader>() + GetSymbolsByteSize(header.symbolSlots) + header.allocatedStringBytes];
-            TransactionUtils.SerializeInto(header, buffer, 0);
-            using (var fs = File.Open(filePath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete))
-                fs.Write(buffer, 0, buffer.Length);
+            var buffer = new byte[GetSymbolsByteSize(header.symbolSlots) + header.allocatedStringBytes];
+            using (var bw = new BinaryWriter(File.Open(filePath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete)))
+            {
+                header.ToBinary(bw);
+                bw.Write(buffer);
+            }
         }
 
         public PropertyStringTableView GetView(bool delayedSync = false)
@@ -99,7 +151,8 @@ namespace UnityEditor.Search
 
         public static int GetStringByteSize(int stringLength)
         {
-            return encoding.GetMaxByteCount(stringLength) + StringLengthByteSize;
+            var maxByteCount = encoding.GetMaxByteCount(stringLength);
+            return maxByteCount + PropertyStringHashAndLength.GetSevenBitEncodedIntByteSize(maxByteCount) + StringLengthByteSize;
         }
 
         public static int GetSymbolsByteSize(int symbolCount)
@@ -128,11 +181,10 @@ namespace UnityEditor.Search
         bool m_Disposed;
         bool m_DelayedSync;
         FileStream m_Fs;
+        BinaryReader m_Br;
+        BinaryWriter m_Bw;
         PropertyStringTableHeader m_Header;
         PropertyStringTable m_StringTable;
-        byte[] m_SymbolBuffer;
-        byte[] m_StringBuffer;
-        byte[] m_HeaderBuffer;
 
         public int version
         {
@@ -193,13 +245,12 @@ namespace UnityEditor.Search
             m_StringTable = stringTable;
             m_Disposed = false;
             m_DelayedSync = delayedSync;
-            m_SymbolBuffer = new byte[PropertyStringTable.SymbolByteSize];
-            m_StringBuffer = new byte[PropertyStringTable.DefaultAverageStringSize * sizeof(char)];
-            m_HeaderBuffer = new byte[Marshal.SizeOf<PropertyStringTableHeader>()];
 
             using (LockRead())
             {
                 m_Fs = File.Open(stringTable.filePath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete);
+                m_Br = new BinaryReader(m_Fs, PropertyStringTable.encoding, true);
+                m_Bw = new BinaryWriter(m_Fs, PropertyStringTable.encoding, true);
             }
             stringTable.RegisterStringTableChangedHandler(HandleStringTableChanged);
 
@@ -352,10 +403,7 @@ namespace UnityEditor.Search
                 if (byteOffset + PropertyStringTable.StringLengthByteSize + strLength > m_Fs.Length)
                     return null;
 
-                if (m_StringBuffer.Length < strLength)
-                    m_StringBuffer = new byte[strLength];
-                TransactionUtils.ReadIntoArray(m_Fs, m_StringBuffer, strLength);
-                return PropertyStringTable.encoding.GetString(m_StringBuffer, 0, strLength);
+                return m_Br.ReadString();
             }
         }
 
@@ -383,7 +431,7 @@ namespace UnityEditor.Search
                 var newStringsOffset = GetStringsOffset();
 
                 // Get new total size
-                var totalSize = Marshal.SizeOf<PropertyStringTableHeader>() + newSymbolsByteSize + newAllocatedStringBytes;
+                var totalSize = PropertyStringTableHeader.size + newSymbolsByteSize + newAllocatedStringBytes;
 
                 // Resize file
                 if (totalSize > m_Fs.Length)
@@ -446,7 +494,7 @@ namespace UnityEditor.Search
                 m_Header.allocatedStringBytes = PropertyStringTable.DefaultStringCount * bytesPerString;
                 m_Header.usedStringBytes = PropertyStringTable.StringLengthByteSize;
 
-                var newFileSize = Marshal.SizeOf<PropertyStringTableHeader>() + PropertyStringTable.GetSymbolsByteSize(m_Header.symbolSlots) + m_Header.allocatedStringBytes;
+                var newFileSize = PropertyStringTableHeader.size + PropertyStringTable.GetSymbolsByteSize(m_Header.symbolSlots) + m_Header.allocatedStringBytes;
                 m_Fs.Seek(0, SeekOrigin.Begin);
                 for (var i = 0; i < newFileSize; ++i)
                     m_Fs.WriteByte(0);
@@ -486,10 +534,7 @@ namespace UnityEditor.Search
                     if (m_Fs.Position + PropertyStringTable.StringLengthByteSize + strLength > m_Fs.Length)
                         break;
 
-                    if (m_StringBuffer.Length < strLength)
-                        m_StringBuffer = new byte[strLength];
-                    TransactionUtils.ReadIntoArray(m_Fs, m_StringBuffer, strLength);
-                    var str = PropertyStringTable.encoding.GetString(m_StringBuffer, 0, strLength);
+                    var str = m_Br.ReadString();
                     strings.Add(str);
                 }
 
@@ -513,8 +558,7 @@ namespace UnityEditor.Search
             using (LockRead())
             {
                 m_Fs.Seek(0, SeekOrigin.Begin);
-                TransactionUtils.ReadWholeArray(m_Fs, m_HeaderBuffer);
-                return TransactionUtils.Deserialize<PropertyStringTableHeader>(m_HeaderBuffer);
+                return PropertyStringTableHeader.FromBinary(m_Br);
             }
         }
 
@@ -523,17 +567,16 @@ namespace UnityEditor.Search
             using (LockWrite())
             {
                 m_Fs.Seek(0, SeekOrigin.Begin);
-                TransactionUtils.SerializeInto(m_Header, m_HeaderBuffer, 0);
-                m_Fs.Write(m_HeaderBuffer, 0, m_HeaderBuffer.Length);
+                m_Header.ToBinary(m_Bw);
 
                 if (notify && !m_DelayedSync)
                     Sync();
             }
         }
 
-        PropertyStringHashAndLength Hash(string str)
+        static PropertyStringHashAndLength Hash(string str)
         {
-            return new PropertyStringHashAndLength() {hash = (uint)str.GetHashCode(), length = PropertyStringTable.encoding.GetByteCount(str)};
+            return new PropertyStringHashAndLength(str);
         }
 
         int GetSymbol(int symbolIndex)
@@ -559,13 +602,9 @@ namespace UnityEditor.Search
             using (LockWrite())
             {
                 WriteSymbol(symbolIndex, symbol);
-
                 m_Fs.Seek(GetStringsOffset() + symbol, SeekOrigin.Begin);
                 WriteInt32(hashAndLength.length);
-                if (m_StringBuffer.Length < hashAndLength.length)
-                    m_StringBuffer = new byte[hashAndLength.length];
-                PropertyStringTable.encoding.GetBytes(str, 0, str.Length, m_StringBuffer, 0);
-                m_Fs.Write(m_StringBuffer, 0, hashAndLength.length);
+                m_Bw.Write(str);
 
                 m_Header.count++;
                 m_Header.usedStringBytes += PropertyStringTable.StringLengthByteSize + hashAndLength.length;
@@ -577,9 +616,9 @@ namespace UnityEditor.Search
             }
         }
 
-        int GetSymbolsOffset()
+        static int GetSymbolsOffset()
         {
-            return Marshal.SizeOf<PropertyStringTableHeader>();
+            return PropertyStringTableHeader.size;
         }
 
         int GetStringsOffset()
@@ -589,14 +628,12 @@ namespace UnityEditor.Search
 
         int ReadInt32()
         {
-            TransactionUtils.ReadWholeArray(m_Fs, m_SymbolBuffer);
-            return TransactionUtils.Deserialize<int>(m_SymbolBuffer);
+            return m_Br.ReadInt32();
         }
 
         void WriteInt32(int value)
         {
-            TransactionUtils.SerializeInto(value, m_SymbolBuffer, 0);
-            m_Fs.Write(m_SymbolBuffer, 0, m_SymbolBuffer.Length);
+            m_Bw.Write(value);
         }
 
         void FlushFile()

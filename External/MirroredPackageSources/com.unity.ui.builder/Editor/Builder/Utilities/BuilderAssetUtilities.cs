@@ -406,14 +406,14 @@ namespace Unity.UI.Builder
             if (asset == null)
             {
                 if (extension == BuilderConstants.UxmlExtension)
-                    return BuilderConstants.ToolbarUnsavedFileDisplayMessage + extension;
+                    return BuilderConstants.ToolbarUnsavedFileDisplayText + extension;
                 else
                     return string.Empty;
             }
 
             var assetPath = AssetDatabase.GetAssetPath(asset);
             if (string.IsNullOrEmpty(assetPath))
-                return BuilderConstants.ToolbarUnsavedFileDisplayMessage + extension;
+                return BuilderConstants.ToolbarUnsavedFileDisplayText + extension;
 
             return Path.GetFileName(assetPath) + (hasUnsavedChanges ? BuilderConstants.ToolbarUnsavedFileSuffix : "");
         }

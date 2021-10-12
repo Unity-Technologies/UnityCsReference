@@ -3,21 +3,24 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor.Search
 {
-    class SearchExpressionProvider : SearchProvider
+    /// <summary>
+    /// Basic Search Provider for items that are not part of any providers.
+    /// This provider is not registered.
+    /// </summary>
+    class SearchServiceProvider : SearchProvider
     {
-        static SearchProvider s_ExpressionProvider;
+        static SearchProvider s_Provider;
 
-        public SearchExpressionProvider()
-            : base("expression", "Expression")
+        public SearchServiceProvider()
+            : base("default", "Default")
         {
             priority = 2;
-            fetchItems = (context, items, provider) => EvaluateExpression(context, provider);
             fetchLabel = (item, context) => item.label ?? item.id;
             fetchDescription = (item, context) => FetchEvaluatedDescription(item, context);
             fetchThumbnail = (item, context) => Icons.logInfo;
@@ -27,20 +30,20 @@ namespace UnityEditor.Search
             fetchPropositions = FetchPropositions;
         }
 
-        [SearchItemProvider]
         internal static SearchProvider CreateProvider()
         {
-            if (s_ExpressionProvider == null)
-                s_ExpressionProvider = new SearchExpressionProvider();
-            return s_ExpressionProvider;
+            if (s_Provider == null)
+                s_Provider = new SearchServiceProvider();
+            return s_Provider;
         }
 
         private IEnumerable<SearchProposition> FetchPropositions(SearchContext context, SearchPropositionOptions options)
         {
+            var category = options.HasAny(SearchPropositionFlags.QueryBuilder) ? "Expressions" : null;
             foreach (var e in EvaluatorManager.evaluators)
             {
                 var help = e.description ?? "Expression evaluator";
-                yield return new SearchProposition($"{e.name}{{}}", $"{e.name.ToLowerInvariant()}{{\t}}", help, 1);
+                yield return new SearchProposition(category: category, $"{e.name}{{}}", $"{e.name.ToLowerInvariant()}{{\t}}", help, 1);
             }
 
             if (options.tokens.Length > 0 && options.tokens[0].Length > 0)
@@ -49,83 +52,32 @@ namespace UnityEditor.Search
                 if (token == '#')
                 {
                     foreach (var c in PropertySelectors.Enumerate(context.searchView.results.Take(10)))
-                        yield return new SearchProposition($"{token}{c.content.text ?? c.path}", $"{c.selector}\t", $"Property ({c.selector})");
+                        yield return new SearchProposition(category: category, label: $"{token}{c.content.text ?? c.path}", $"{c.selector}\t", $"Property ({c.selector})");
                 }
 
                 if (token == '@')
                 {
                     foreach (var s in SelectorManager.selectors.Where(s => s.printable))
-                        yield return new SearchProposition($"{token}{s.label}", $"@{s.label}\t", $"Selector");
+                        yield return new SearchProposition(category: category, label: $"{token}{s.label}", help: s.description ?? "Selector", replacement: $"@{s.label}\t");
                 }
             }
         }
 
         public static new SearchItem CreateItem(SearchContext context, string id, int score, string label, string description, Texture2D thumbnail, object @ref)
         {
-            return s_ExpressionProvider.CreateItem(context, id, score, label, description, thumbnail, @ref);
+            return s_Provider.CreateItem(context, id, score, label, description, thumbnail, @ref);
         }
 
         internal static SearchItem CreateItem(string id, string label, string description, object value)
         {
-            var newItem = s_ExpressionProvider.CreateItem(id, 0, label, description, null, null);
+            var newItem = s_Provider.CreateItem(id, 0, label, description, null, null);
             newItem.value = value;
             return newItem;
         }
 
-        private IEnumerable<SearchItem> EvaluateExpression(SearchContext context, SearchProvider expressionProvider)
-        {
-            if (string.IsNullOrEmpty(context.searchText) || context.options.HasAny(SearchFlags.QueryString))
-                yield break;
-
-            var rootExpression = ParseExpression(context, expressionProvider);
-            if (rootExpression == null || (rootExpression.types.HasAny(SearchExpressionType.QueryString) &&
-                                           rootExpression.parameters.Length == 0 && rootExpression.innerText == rootExpression.outerText))
-                yield break;
-
-            using (SearchMonitor.GetView())
-            {
-                var evaluationFlags = SearchExpressionExecutionFlags.ThreadedEvaluation;
-                var it = rootExpression.Execute(context, evaluationFlags).GetEnumerator();
-                while (EvaluateExpression(context, expressionProvider, it))
-                    yield return it.Current;
-
-                TableView.SetupColumns(context, rootExpression);
-            }
-        }
-
-        private SearchExpression ParseExpression(SearchContext context, SearchProvider expressionProvider)
-        {
-            try
-            {
-                return SearchExpression.Parse(context);
-            }
-            catch (SearchExpressionParseException ex)
-            {
-                var queryError = new SearchQueryError(ex.index, ex.length, ex.Message,
-                    context, expressionProvider, fromSearchQuery: true, SearchQueryErrorType.Error);
-                context.AddSearchQueryError(queryError);
-                return null;
-            }
-        }
-
-        private bool EvaluateExpression(SearchContext context, SearchProvider expressionProvider, IEnumerator<SearchItem> it)
-        {
-            try
-            {
-                return it.MoveNext();
-            }
-            catch (SearchExpressionEvaluatorException ex)
-            {
-                var queryError = new SearchQueryError(ex.errorView.startIndex, ex.errorView.Length, ex.Message,
-                    context, expressionProvider, fromSearchQuery: true, SearchQueryErrorType.Error);
-                context.AddSearchQueryError(queryError);
-                return false;
-            }
-        }
-
         internal static UnityEngine.Object ToObject(SearchItem item, Type type)
         {
-            var selectItemObject = (item.data as ExpressionItem) ?? ScriptableObject.CreateInstance<ExpressionItem>();
+            var selectItemObject = (item.data as SearchServiceItem) ?? ScriptableObject.CreateInstance<SearchServiceItem>();
             selectItemObject.name = item.label ?? item.value.ToString();
             selectItemObject.item = item;
             if (item.data == null)
@@ -139,26 +91,10 @@ namespace UnityEditor.Search
                 return item.description;
             return $"{item.GetLabel(context, true)} > {item.value}";
         }
-
-        public static ISearchView ShowWindow(string searchQuery, IEnumerable<SearchProvider> providers)
-        {
-            var context = SearchService.CreateContext(providers, searchQuery);
-            return SearchService.ShowWindow(context, topic: "Expression", saveFilters: false);
-        }
-
-        public static ISearchView ShowWindow(string searchQuery)
-        {
-            return ShowWindow(searchQuery, SearchService.GetActiveProviders());
-        }
-
-        public static ISearchView ShowWindow(IEnumerable<SearchProvider> providers)
-        {
-            return ShowWindow(string.Empty, providers);
-        }
     }
 
     [ExcludeFromPreset]
-    class ExpressionItem : ScriptableObject, IDisposable
+    class SearchServiceItem : ScriptableObject, IDisposable
     {
         public SearchItem item;
         private volatile bool m_Disposed;
@@ -178,7 +114,7 @@ namespace UnityEditor.Search
             m_Disposed = true;
         }
 
-        ~ExpressionItem()
+        ~SearchServiceItem()
         {
             Dispose(disposing: false);
         }
@@ -195,14 +131,14 @@ namespace UnityEditor.Search
         }
     }
 
-    [CustomEditor(typeof(ExpressionItem))]
-    class ExpressionItemEditor : Editor
+    [CustomEditor(typeof(SearchServiceItem))]
+    class SearchServiceItemEditor : Editor
     {
         public SearchItem item;
 
         internal void OnEnable()
         {
-            item = ((ExpressionItem)serializedObject.targetObject).item;
+            item = ((SearchServiceItem)serializedObject.targetObject).item;
         }
 
         public override void OnInspectorGUI()
