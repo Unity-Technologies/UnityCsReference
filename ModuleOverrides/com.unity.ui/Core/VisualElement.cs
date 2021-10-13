@@ -6,7 +6,9 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
+using UnityEngine.Assertions;
 using UnityEngine.Yoga;
 using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.UIElements.UIR;
@@ -41,25 +43,27 @@ namespace UnityEngine.UIElements
         BoundingBoxDirty = 1 << 3,
         // Need to compute world bounding box
         WorldBoundingBoxDirty = 1 << 4,
+        // Need to compute world bounding box
+        EventCallbackParentCategoriesDirty = 1 << 5,
         // Element layout is manually set
-        LayoutManual = 1 << 5,
+        LayoutManual = 1 << 6,
         // Element is a root for composite controls
-        CompositeRoot = 1 << 6,
+        CompositeRoot = 1 << 7,
         // Element has a custom measure function
-        RequireMeasureFunction = 1 << 7,
+        RequireMeasureFunction = 1 << 8,
         // Element has view data persistence
-        EnableViewDataPersistence = 1 << 8,
+        EnableViewDataPersistence = 1 << 9,
         // Element never clip regardless of overflow style (useful for ScrollView)
-        DisableClipping = 1 << 9,
+        DisableClipping = 1 << 10,
         // Element needs to receive an AttachToPanel event
-        NeedsAttachToPanelEvent = 1 << 10,
+        NeedsAttachToPanelEvent = 1 << 11,
         // Element is shown in the hierarchy (element or one of its ancestors is not DisplayStyle.None)
         // Note that this flag is up-to-date only after UIRLayoutUpdater is done with its updates
-        HierarchyDisplayed = 1 << 11,
+        HierarchyDisplayed = 1 << 12,
         // Element style are computed
-        StyleInitialized = 1 << 12,
+        StyleInitialized = 1 << 13,
         // Element initial flags
-        Init = WorldTransformDirty | WorldTransformInverseDirty | WorldClipDirty | BoundingBoxDirty | WorldBoundingBoxDirty | HierarchyDisplayed
+        Init = WorldTransformDirty | WorldTransformInverseDirty | WorldClipDirty | BoundingBoxDirty | WorldBoundingBoxDirty | EventCallbackParentCategoriesDirty | HierarchyDisplayed
     }
 
     /// <summary>
@@ -79,7 +83,7 @@ namespace UnityEngine.UIElements
 
     internal static class VisualElementListPool
     {
-        static ObjectPool<List<VisualElement>> pool = new ObjectPool<List<VisualElement>>(20);
+        static ObjectPool<List<VisualElement>> pool = new ObjectPool<List<VisualElement>>(() => new List<VisualElement>(), 20);
 
         public static List<VisualElement> Copy(List<VisualElement> elements)
         {
@@ -110,7 +114,7 @@ namespace UnityEngine.UIElements
 
     internal class ObjectListPool<T>
     {
-        static ObjectPool<List<T>> pool = new ObjectPool<List<T>>(20);
+        static ObjectPool<List<T>> pool = new ObjectPool<List<T>>(() => new List<T>(),20);
 
         public static List<T> Get()
         {
@@ -123,11 +127,6 @@ namespace UnityEngine.UIElements
             pool.Release(elements);
         }
     }
-
-    internal class StringListPool : ObjectListPool<string>
-    {
-    }
-
 
     internal class StringObjectListPool : ObjectListPool<string>
     {
@@ -225,7 +224,11 @@ namespace UnityEngine.UIElements
                     ve.focusable = focus;
                 }
 
-                ve.tooltip = m_Tooltip.GetValueFromBag(bag, cc);
+                string tooltip = null;
+                if (m_Tooltip.TryGetValueFromBag(bag, cc, ref tooltip))
+                {
+                    ve.tooltip = tooltip;
+                }
 
                 // We ignore m_Class, it was processed in UIElementsViewImporter.
                 // We ignore m_ContentContainer, it was processed in UIElementsViewImporter.
@@ -233,10 +236,21 @@ namespace UnityEngine.UIElements
             }
         }
 
+        // Elements with isCompositeRoot will treat their children's events during the AtTarget phase instead of
+        // the BubbleUp or TrickleDown phases. However, if the event doesn't bubble up or trickle down, then only
+        // the event's actual target will receive it.
         internal bool isCompositeRoot
         {
             get => (m_Flags & VisualElementFlags.CompositeRoot) == VisualElementFlags.CompositeRoot;
-            set => m_Flags = value ? m_Flags | VisualElementFlags.CompositeRoot : m_Flags & ~VisualElementFlags.CompositeRoot;
+            set
+            {
+                m_Flags = value ? m_Flags | VisualElementFlags.CompositeRoot : m_Flags & ~VisualElementFlags.CompositeRoot;
+
+                // For purposes of nextParentWithEventCallback calculation, compositeRoot elements need to be included
+                // because they too can receive events without being a leaf target.
+                if (value)
+                    SetAsNextParentWithEventCallback();
+            }
         }
 
         internal bool isHierarchyDisplayed
@@ -258,7 +272,7 @@ namespace UnityEngine.UIElements
         string m_Name;
         List<string> m_ClassList;
         private List<PropertyBagValue> m_PropertyBag;
-        private VisualElementFlags m_Flags;
+        internal VisualElementFlags m_Flags;
 
         // Used for view data persistence (ie. scroll position or tree view expanded states)
         private string m_ViewDataKey;
@@ -1098,8 +1112,13 @@ namespace UnityEngine.UIElements
             yogaNode = new YogaNode();
 
             renderHints = RenderHints.None;
+
+            EventInterestReflectionUtils.GetDefaultEventInterests(GetType(), out m_DefaultActionEventCategories,
+                out m_DefaultActionAtTargetEventCategories);
         }
 
+        [EventInterest(typeof(MouseOverEvent), typeof(MouseOutEvent), typeof(PointerEnterEvent),
+            typeof(PointerLeaveEvent), typeof(BlurEvent), typeof(FocusEvent))]
         protected override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
@@ -1110,17 +1129,21 @@ namespace UnityEngine.UIElements
 
             if (evt.eventTypeId == MouseOverEvent.TypeId() || evt.eventTypeId == MouseOutEvent.TypeId())
             {
-                // Updating cursor has to happen on MouseOver/Out because exiting a children do not send a mouse enter to the parent.
+                // Updating cursor has to happen on MouseOver/Out because exiting a child does not send a mouse enter to the parent.
+                // We can use MouseEvents instead of PointerEvents since only the mouse has a displayed cursor.
                 UpdateCursorStyle(evt.eventTypeId);
             }
-            else if (evt.eventTypeId == MouseEnterEvent.TypeId())
+            else if (evt.eventTypeId == PointerEnterEvent.TypeId())
             {
-                var capturingElement = panel?.GetCapturingElement(PointerId.mousePointerId);
+                var capturingElement = panel?.GetCapturingElement(((IPointerEvent)evt).pointerId);
                 if (capturingElement == null || capturingElement == this)
                     pseudoStates |= PseudoStates.Hover;
             }
-            else if (evt.eventTypeId == MouseLeaveEvent.TypeId())
+            else if (evt.eventTypeId == PointerLeaveEvent.TypeId())
             {
+                // With multi-finger touch events, there can be multiple unrelated elements hovered at once, or a single
+                // element hovered by multiple fingers. In that case, the hover pseudoState will match the last finger
+                // to have entered or left the element.
                 pseudoStates &= ~PseudoStates.Hover;
             }
             else if (evt.eventTypeId == BlurEvent.TypeId())
@@ -1192,10 +1215,14 @@ namespace UnityEngine.UIElements
 
                     VisualElementFlags flagToAdd = p != null ? VisualElementFlags.NeedsAttachToPanelEvent : 0;
 
+                    // Just making sure nothing strange happened during the DetachFromPanel event dispatching
+                    DirtyNextParentWithEventCallback();
+
                     foreach (var e in elements)
                     {
                         e.elementPanel = p;
                         e.m_Flags |= flagToAdd;
+                        e.m_CachedNextParentWithEventCallback = null;
                     }
 
                     foreach (var e in elements)
@@ -1218,10 +1245,13 @@ namespace UnityEngine.UIElements
                 // Only send this event if the element isn't waiting for an attach event already
                 if ((m_Flags & VisualElementFlags.NeedsAttachToPanelEvent) == 0)
                 {
-                    using (var e = DetachFromPanelEvent.GetPooled(panel, destinationPanel))
+                    if (HasEventCallbacksOrDefaultActions(DetachFromPanelEvent.EventCategory))
                     {
-                        e.target = this;
-                        elementPanel.SendEvent(e, DispatchMode.Immediate);
+                        using (var e = DetachFromPanelEvent.GetPooled(panel, destinationPanel))
+                        {
+                            e.target = this;
+                            HandleEventAtTargetAndDefaultPhase(e);
+                        }
                     }
                 }
 
@@ -1242,10 +1272,13 @@ namespace UnityEngine.UIElements
                 // Only send this event if the element hasn't received it yet
                 if ((m_Flags & VisualElementFlags.NeedsAttachToPanelEvent) == VisualElementFlags.NeedsAttachToPanelEvent)
                 {
-                    using (var e = AttachToPanelEvent.GetPooled(prevPanel, panel))
+                    if (HasEventCallbacksOrDefaultActions(AttachToPanelEvent.EventCategory))
                     {
-                        e.target = this;
-                        elementPanel.SendEvent(e, DispatchMode.Immediate);
+                        using (var e = AttachToPanelEvent.GetPooled(prevPanel, panel))
+                        {
+                            e.target = this;
+                            HandleEventAtTargetAndDefaultPhase(e);
+                        }
                     }
                     m_Flags &= ~VisualElementFlags.NeedsAttachToPanelEvent;
                 }

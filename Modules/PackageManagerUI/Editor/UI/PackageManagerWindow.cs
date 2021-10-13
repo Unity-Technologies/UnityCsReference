@@ -2,7 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Linq;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEditor.UIElements;
@@ -64,7 +66,7 @@ namespace UnityEditor.PackageManager.UI
 
         internal const string k_UpmUrl = "com.unity3d.kharma:upmpackage/";
 
-        void CreateGUI()
+        void OnEnable()
         {
             this.SetAntiAliasing(4);
             if (instance == null) instance = this;
@@ -73,13 +75,20 @@ namespace UnityEditor.PackageManager.UI
 
             titleContent = GetLocalizedTitleContent();
 
+            BuildGUI();
+
+            Events.registeredPackages += OnRegisteredPackages;
+        }
+
+        private void BuildGUI()
+        {
             var container = ServicesContainer.instance;
             var resourceLoader = container.Resolve<ResourceLoader>();
             var extensionManager = container.Resolve<ExtensionManager>();
             var selection = container.Resolve<SelectionProxy>();
             var packageFiltering = container.Resolve<PackageFiltering>();
             var packageManagerPrefs = container.Resolve<PackageManagerPrefs>();
-            var packageDatabase = container.Resolve<Internal.PackageDatabase>();
+            var packageDatabase = container.Resolve<PackageDatabase>();
             var pageManager = container.Resolve<PageManager>();
             var settingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
             var unityConnectProxy = container.Resolve<UnityConnectProxy>();
@@ -87,11 +96,47 @@ namespace UnityEditor.PackageManager.UI
             var upmClient = container.Resolve<UpmClient>();
 
             m_Root = new PackageManagerWindowRoot(resourceLoader, extensionManager, selection, packageFiltering, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy, applicationProxy, upmClient);
-            rootVisualElement.Add(m_Root);
+            try
+            {
+                m_Root.OnEnable();
+                rootVisualElement.Add(m_Root);
+            }
+            catch (ResourceLoaderException)
+            {
+                // Do nothing, defer it to CreateGUI
+            }
+            catch (TargetInvocationException e)
+            {
+                CheckInnerException<ResourceLoaderException>(e);
+            }
+        }
 
-            m_Root.CreateGUI();
+        void CreateGUI()
+        {
+            if (m_Root == null)
+                return;
 
-            Events.registeredPackages += OnRegisteredPackages;
+            if (!rootVisualElement.Contains(m_Root))
+            {
+                try
+                {
+                    m_Root.OnEnable();
+                    rootVisualElement.Add(m_Root);
+                }
+                catch (ResourceLoaderException)
+                {
+                    Debug.LogError(L10n.Tr("[Package Manager] Unable to load resource, window can't be displayed.)"));
+                    return;
+                }
+                catch (TargetInvocationException e)
+                {
+                    CheckInnerException<ResourceLoaderException>(e);
+                    Debug.LogError(L10n.Tr("[Package Manager] Unable to load resource, window can't be displayed.)"));
+                    return;
+                }
+            }
+
+            m_Root.OnCreateGUI();
         }
 
         void OnDisable()
@@ -243,6 +288,17 @@ namespace UnityEditor.PackageManager.UI
 
             foreach (var window in windows)
                 window.Close();
+
+            instance = null;
+        }
+
+        private static void CheckInnerException<T>(TargetInvocationException e) where T : Exception
+        {
+            var originalException = e;
+            while (e.InnerException is TargetInvocationException)
+                e = e.InnerException as TargetInvocationException;
+            if (!(e.InnerException is T))
+                throw originalException;
         }
     }
 }

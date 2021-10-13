@@ -125,6 +125,7 @@ namespace UnityEditor.UIElements
                 return Hash128.Parse(str);
             }
 
+            [EventInterest(typeof(KeyDownEvent), typeof(ExecuteCommandEvent))]
             protected override void ExecuteDefaultActionAtTarget(EventBase evt)
             {
                 base.ExecuteDefaultActionAtTarget(evt);
@@ -173,6 +174,7 @@ namespace UnityEditor.UIElements
                 }
             }
 
+            [EventInterest(typeof(BlurEvent))]
             protected override void ExecuteDefaultAction(EventBase evt)
             {
                 base.ExecuteDefaultAction(evt);

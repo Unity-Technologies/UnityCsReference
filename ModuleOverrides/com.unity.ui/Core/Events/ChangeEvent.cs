@@ -14,8 +14,14 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Sends an event when a value in a field changes.
     /// </summary>
+    [EventCategory(EventCategory.ChangeValue)]
     public class ChangeEvent<T> : EventBase<ChangeEvent<T>>, IChangeEvent
     {
+        static ChangeEvent()
+        {
+            SetCreateFunction(() => new ChangeEvent<T>());
+        }
+
         /// <summary>
         /// The value before the change occured.
         /// </summary>

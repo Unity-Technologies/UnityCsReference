@@ -74,7 +74,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 packageNameField.visualInput.Focus();
             else
                 packageVersionField.visualInput.Focus();
-            submitButton.SetEnabled(!string.IsNullOrEmpty(packageNameField.value));
+            submitButton.SetEnabled(!string.IsNullOrWhiteSpace(packageNameField.value));
         }
 
         internal override void OnDropdownClosed()
@@ -136,12 +136,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             OnDropdownShown();
         }
 
-        private void SubmitClicked()
+        internal void SubmitClicked()
         {
-            var packageName = packageNameField.value;
+            var packageName = packageNameField.value.Trim();
             if (string.IsNullOrEmpty(packageName))
                 return;
-            var version = packageVersionField.value;
+            var version = packageVersionField.value.Trim();
 
             var package = m_PackageDatabase.GetPackage(packageName);
             if (package != null)
@@ -193,7 +193,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnExtraFetchResult(SearchRequest request)
         {
             var packageInfo = request.Result.FirstOrDefault();
-            if (packageInfo.name == packageNameField.value)
+            if (packageInfo.name == packageNameField.value.Trim())
             {
                 var version = packageVersionField.value;
                 if (string.IsNullOrEmpty(version))
@@ -211,7 +211,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnExtraFetchError(IOperation operation, UIError error)
         {
             var searchOperation = operation as UpmSearchOperation;
-            if (searchOperation.packageName == packageNameField.value)
+            if (searchOperation.packageName == packageNameField.value.Trim())
             {
                 SetError(L10n.Tr("Unable to find the package with the specified name.\nPlease check the name and try again."), true, false);
                 ShowWithNewWindowSize();
@@ -220,7 +220,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnTextFieldChange(ChangeEvent<string> evt)
         {
-            submitButton.SetEnabled(!string.IsNullOrEmpty(packageNameField.value));
+            submitButton.SetEnabled(!string.IsNullOrWhiteSpace(packageNameField.value));
         }
 
         private void OnKeyDownShortcut(KeyDownEvent evt)

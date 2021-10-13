@@ -260,11 +260,11 @@ namespace UnityEngine.UIElements
                 {
                     foreach (var kvp in elementPropertyQueuedEvents)
                     {
-                        elementPropertyStateDelta[kvp.Key] = TransitionState.None;
                         kvp.Value.Clear();
                         k_EventQueuePool.Release(kvp.Value);
                     }
                     elementPropertyQueuedEvents.Clear();
+                    elementPropertyStateDelta.Clear();
                     panel = null;
                     m_ChangesCount = 0;
                 }
@@ -343,6 +343,7 @@ namespace UnityEngine.UIElements
             {
                 Queue<EventBase> queue;
                 if (m_NextFrameEventsState.elementPropertyQueuedEvents.TryGetValue(epp, out queue))
+
                 {
                     while (queue.Count > 0)
                     {
@@ -354,57 +355,112 @@ namespace UnityEngine.UIElements
 
             private void QueueTransitionRunEvent(VisualElement ve, int runningIndex)
             {
-                ref var timingData = ref running.timing[runningIndex];
-                var stylePropertyId = running.properties[runningIndex];
-                var elapsedTimeMs = timingData.delayMs < 0 ? Mathf.Min(Mathf.Max(-timingData.delayMs, 0), timingData.durationMs) : 0;
-                var epp = new ElementPropertyPair(ve, stylePropertyId);
-                var evt = TransitionRunEvent.GetPooled(new StylePropertyName(stylePropertyId), elapsedTimeMs / 1000.0f);
+                // Filter on EventCategory.StyleTransition directly. For internal state maintenance, we need to send
+                // all the transition events, or none of them.
+                if (!ve.HasParentEventCallbacksOrDefaultActions(EventCategory.StyleTransition))
+                    return;
 
-                if (m_NextFrameEventsState.elementPropertyStateDelta.ContainsKey(epp))
-                    m_NextFrameEventsState.elementPropertyStateDelta[epp] |= TransitionState.Running;
+                var stylePropertyId = running.properties[runningIndex];
+                var epp = new ElementPropertyPair(ve, stylePropertyId);
+
+                if (m_NextFrameEventsState.elementPropertyStateDelta.TryGetValue(epp, out TransitionState state))
+                    m_NextFrameEventsState.elementPropertyStateDelta[epp] = state | TransitionState.Running;
                 else
                     m_NextFrameEventsState.elementPropertyStateDelta.Add(epp, TransitionState.Running);
+
+                ref var timingData = ref running.timing[runningIndex];
+                var elapsedTimeMs = timingData.delayMs < 0 ? Mathf.Min(Mathf.Max(-timingData.delayMs, 0), timingData.durationMs) : 0;
+                var evt = TransitionRunEvent.GetPooled(new StylePropertyName(stylePropertyId), elapsedTimeMs / 1000.0f);
 
                 QueueEvent(evt, epp);
             }
 
             private void QueueTransitionStartEvent(VisualElement ve, int runningIndex)
             {
-                ref var timingData = ref running.timing[runningIndex];
-                var stylePropertyId = running.properties[runningIndex];
-                var elapsedTimeMs = timingData.delayMs < 0 ? Mathf.Min(Mathf.Max(-timingData.delayMs, 0), timingData.durationMs) : 0;
-                var epp = new ElementPropertyPair(ve, stylePropertyId);
-                var evt = TransitionStartEvent.GetPooled(new StylePropertyName(stylePropertyId), elapsedTimeMs / 1000.0f);
+                // Filter on EventCategory.StyleTransition directly. For internal state maintenance, we need to send
+                // all the transition events, or none of them.
+                if (!ve.HasParentEventCallbacksOrDefaultActions(EventCategory.StyleTransition))
+                    return;
 
-                if (m_NextFrameEventsState.elementPropertyStateDelta.ContainsKey(epp))
-                    m_NextFrameEventsState.elementPropertyStateDelta[epp] |= TransitionState.Started;
+                var stylePropertyId = running.properties[runningIndex];
+                var epp = new ElementPropertyPair(ve, stylePropertyId);
+
+                if (m_NextFrameEventsState.elementPropertyStateDelta.TryGetValue(epp, out TransitionState state))
+                    m_NextFrameEventsState.elementPropertyStateDelta[epp] = state | TransitionState.Started;
                 else
                     m_NextFrameEventsState.elementPropertyStateDelta.Add(epp, TransitionState.Started);
+
+                ref var timingData = ref running.timing[runningIndex];
+                var elapsedTimeMs = timingData.delayMs < 0 ? Mathf.Min(Mathf.Max(-timingData.delayMs, 0), timingData.durationMs) : 0;
+                var evt = TransitionStartEvent.GetPooled(new StylePropertyName(stylePropertyId), elapsedTimeMs / 1000.0f);
 
                 QueueEvent(evt, epp);
             }
 
             private void QueueTransitionEndEvent(VisualElement ve, int runningIndex)
             {
-                ref var timingData = ref running.timing[runningIndex];
+                // Filter on EventCategory.StyleTransition directly. For internal state maintenance, we need to send
+                // all the transition events, or none of them.
+                if (!ve.HasParentEventCallbacksOrDefaultActions(EventCategory.StyleTransition))
+                    return;
+
                 var stylePropertyId = running.properties[runningIndex];
                 var epp = new ElementPropertyPair(ve, stylePropertyId);
-                var evt = TransitionEndEvent.GetPooled(new StylePropertyName(stylePropertyId), timingData.durationMs / 1000.0f);
 
-                if (m_NextFrameEventsState.elementPropertyStateDelta.ContainsKey(epp))
-                    m_NextFrameEventsState.elementPropertyStateDelta[epp] |= TransitionState.Ended;
+                if (m_NextFrameEventsState.elementPropertyStateDelta.TryGetValue(epp, out TransitionState state))
+                    m_NextFrameEventsState.elementPropertyStateDelta[epp] = state | TransitionState.Ended;
                 else
                     m_NextFrameEventsState.elementPropertyStateDelta.Add(epp, TransitionState.Ended);
+
+                ref var timingData = ref running.timing[runningIndex];
+                var evt = TransitionEndEvent.GetPooled(new StylePropertyName(stylePropertyId), timingData.durationMs / 1000.0f);
 
                 QueueEvent(evt, epp);
             }
 
             private void QueueTransitionCancelEvent(VisualElement ve, int runningIndex, long panelElapsedMs)
             {
-                ref var timingData = ref running.timing[runningIndex];
+                // Filter on EventCategory.StyleTransition directly. For internal state maintenance, we need to send
+                // all the transition events, or none of them.
+                if (!ve.HasParentEventCallbacksOrDefaultActions(EventCategory.StyleTransition))
+                    return;
+
                 var stylePropertyId = running.properties[runningIndex];
-                var elapsedTimeMs = timingData.isStarted ? panelElapsedMs - timingData.startTimeMs : 0;
                 var epp = new ElementPropertyPair(ve, stylePropertyId);
+
+                bool sendCancelEvent;
+
+                if (m_NextFrameEventsState.elementPropertyStateDelta.TryGetValue(epp, out TransitionState state))
+                {
+                    // Delta is empty, set delta to Cancel, OR
+                    // Delta already contains Cancel, set delta to Cancel (removing run and start from the delta).
+                    // e.g. (cancel, run, start) + (cancel) = (cancel)
+                    if (state == TransitionState.None ||
+                        (state & TransitionState.Canceled) == TransitionState.Canceled)
+                    {
+                        m_NextFrameEventsState.elementPropertyStateDelta[epp] = TransitionState.Canceled;
+                        ClearEventQueue(epp);
+                        sendCancelEvent = true;
+                    }
+                    // Delta contains something but not Cancel, clearing delta.
+                    else
+                    {
+                        m_NextFrameEventsState.elementPropertyStateDelta[epp] = TransitionState.None;
+                        ClearEventQueue(epp);
+                        sendCancelEvent = false;
+                    }
+                }
+                else
+                {
+                    m_NextFrameEventsState.elementPropertyStateDelta.Add(epp, TransitionState.Canceled);
+                    sendCancelEvent = true;
+                }
+
+                if (!sendCancelEvent)
+                    return;
+
+                ref var timingData = ref running.timing[runningIndex];
+                var elapsedTimeMs = timingData.isStarted ? panelElapsedMs - timingData.startTimeMs : 0;
 
                 if (timingData.delayMs < 0)
                 {
@@ -412,35 +468,16 @@ namespace UnityEngine.UIElements
                 }
 
                 var evt = TransitionCancelEvent.GetPooled(new StylePropertyName(stylePropertyId), elapsedTimeMs / 1000.0f);
-
-                if (m_NextFrameEventsState.elementPropertyStateDelta.ContainsKey(epp))
-                {
-                    // Delta is empty, set delta to Cancel, OR
-                    // Delta already contains Cancel, set delta to Cancel (removing run and start from the delta).
-                    // e.g. (cancel, run, start) + (cancel) = (cancel)
-                    if (m_NextFrameEventsState.elementPropertyStateDelta[epp] == TransitionState.None ||
-                        (m_NextFrameEventsState.elementPropertyStateDelta[epp] & TransitionState.Canceled) == TransitionState.Canceled)
-                    {
-                        m_NextFrameEventsState.elementPropertyStateDelta[epp] = TransitionState.Canceled;
-                        ClearEventQueue(epp);
-                        QueueEvent(evt, epp);
-                    }
-                    // Delta contains something but not Cancel, clearing delta.
-                    else
-                    {
-                        m_NextFrameEventsState.elementPropertyStateDelta[epp] = TransitionState.None;
-                        ClearEventQueue(epp);
-                    }
-                }
-                else
-                {
-                    m_NextFrameEventsState.elementPropertyStateDelta.Add(epp, TransitionState.Canceled);
-                    QueueEvent(evt, epp);
-                }
+                QueueEvent(evt, epp);
             }
 
             private void SendTransitionCancelEvent(VisualElement ve, int runningIndex, long panelElapsedMs)
             {
+                // Don't send event if there are no callbacks. Note that this method doesn't do any manipulations on
+                // the event queue state, so it's safe to just skip the entire method.
+                if (!ve.HasParentEventCallbacksOrDefaultActions(TransitionCancelEvent.EventCategory))
+                    return;
+
                 ref var timingData = ref running.timing[runningIndex];
                 var stylePropertyId = running.properties[runningIndex];
                 var elapsedTimeMs = timingData.isStarted ? panelElapsedMs - timingData.startTimeMs : 0;

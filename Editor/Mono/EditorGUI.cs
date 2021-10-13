@@ -5716,6 +5716,7 @@ namespace UnityEditor
             {
                 Rect toggleRect = iconRect;
                 toggleRect.x = iconRect.xMax + kInspTitlebarSpacing;
+                Rect combinedIconAndToggleRect = new Rect(iconRect.x, iconRect.y, toggleRect.xMax - iconRect.xMin, iconRect.height);
 
                 if (enabledProperty != null)
                 {
@@ -5771,7 +5772,7 @@ namespace UnityEditor
                 }
 
 
-                if (iconRect.Contains(Event.current.mousePosition))
+                if (combinedIconAndToggleRect.Contains(Event.current.mousePosition))
                 {
                     // It's necessary to handle property context menu here in right mouse down because
                     // component contextual menu will override this otherwise.
@@ -6518,10 +6519,7 @@ namespace UnityEditor
                 Highlighter.HighlightIdentifier(totalPosition, property.propertyPath);
 
             s_PropertyFieldTempContent.text = (label == null) ? property.localizedDisplayName : label.text; // no necessary to be translated.
-            s_PropertyFieldTempContent.tooltip = isCollectingTooltips ? ((label == null) ? property.tooltip : label.tooltip) : null;
-            string attributeTooltip = ScriptAttributeUtility.GetHandler(property).tooltip;
-            if (attributeTooltip != null)
-                s_PropertyFieldTempContent.tooltip = attributeTooltip;
+            s_PropertyFieldTempContent.tooltip = (label == null) ? property.tooltip : label.tooltip;
             s_PropertyFieldTempContent.image = label?.image;
 
             // In inspector debug mode & when holding down alt. Show the property path of the property.
@@ -7165,7 +7163,7 @@ namespace UnityEditor
                         NumberFieldValue val = new NumberFieldValue(property.doubleValue);
 
                         // Necessary to check for float type to get correct string formatting for float and double.
-                        bool isFloat = property.isTypeFloat;
+                        bool isFloat = property.numericType == SerializedPropertyNumericType.Float;
                         if (isFloat)
                             FloatField(position, label, ref val);
                         else

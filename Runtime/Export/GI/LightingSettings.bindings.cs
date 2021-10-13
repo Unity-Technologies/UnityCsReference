@@ -272,9 +272,9 @@ namespace UnityEngine
         [NativeName("PVRFilteringAtrousPositionSigmaAO")]
         public extern float filteringAtrousPositionSigmaAO { get; set; }
 
-        // Whether to enable or disable environment multiple importance sampling
-        [NativeName("PVREnvironmentMIS")]
-        internal extern int environmentMIS { get; set; }
+        // Whether to enable or disable environment importance sampling.
+        [NativeName("PVREnvironmentImportanceSampling")]
+        public extern bool environmentImportanceSampling { get; set; }
 
         // How many samples to use for environment sampling
         [NativeName("PVREnvironmentSampleCount")]

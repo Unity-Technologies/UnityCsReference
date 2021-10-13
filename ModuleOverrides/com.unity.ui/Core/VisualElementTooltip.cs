@@ -33,6 +33,11 @@ namespace UnityEngine.UIElements
             {
                 if (!HasProperty(tooltipPropertyKey))
                 {
+                    if (string.IsNullOrEmpty(value))
+                    {
+                        return;
+                    }
+
                     RegisterCallback<TooltipEvent>(evt => OnTooltip(evt));
                 }
 

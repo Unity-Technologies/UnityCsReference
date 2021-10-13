@@ -6,13 +6,8 @@ using System;
 using System.Text.RegularExpressions;
 using System.IO;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using System.Threading;
-using UnityEditor;
-using Debug = UnityEngine.Debug;
 
 namespace UnityEditor.PlatformSupport
 {

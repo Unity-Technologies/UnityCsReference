@@ -121,7 +121,7 @@ namespace UnityEditor.Search
         internal void OnEnable()
         {
             m_SearchField = new SearchField();
-            if (m_ReportPath != null)
+            if (!string.IsNullOrEmpty(m_ReportPath))
                 InitializeReport(m_ReportPath);
         }
 

@@ -18,6 +18,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Base class for command events.
     /// </summary>
+    [EventCategory(EventCategory.Command)]
     public abstract class CommandEventBase<T> : EventBase<T>, ICommandEvent where T : CommandEventBase<T>, new()
     {
         string m_CommandName;
@@ -89,6 +90,10 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class ValidateCommandEvent : CommandEventBase<ValidateCommandEvent>
     {
+        static ValidateCommandEvent()
+        {
+            SetCreateFunction(() => new ValidateCommandEvent());
+        }
     }
 
     /// <summary>
@@ -96,5 +101,9 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class ExecuteCommandEvent : CommandEventBase<ExecuteCommandEvent>
     {
+        static ExecuteCommandEvent()
+        {
+            SetCreateFunction(() => new ExecuteCommandEvent());
+        }
     }
 }

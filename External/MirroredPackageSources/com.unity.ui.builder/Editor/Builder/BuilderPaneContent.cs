@@ -59,6 +59,7 @@ namespace Unity.UI.Builder
             focusable.UnregisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
         }
 
+        [EventInterest(typeof(AttachToPanelEvent))]
         protected override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);

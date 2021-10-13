@@ -74,6 +74,7 @@ namespace UnityEngine.UIElements
 
         public void Dispose()
         {
+            visualTreeEditorUpdater.Dispose();
             for (int i = 0; i < (int)VisualTreeUpdatePhase.Count; i++)
             {
                 var updater = m_UpdaterArray[i];
@@ -151,7 +152,7 @@ namespace UnityEngine.UIElements
             SetUpdater<VisualElementAnimationSystem>(VisualTreeUpdatePhase.Animation);
             SetUpdater<VisualTreeStyleUpdater>(VisualTreeUpdatePhase.Styles);
             SetUpdater<UIRLayoutUpdater>(VisualTreeUpdatePhase.Layout);
-            SetUpdater<VisualTreeTransformClipUpdater>(VisualTreeUpdatePhase.TransformClip);
+            SetUpdater<VisualTreeHierarchyFlagsUpdater>(VisualTreeUpdatePhase.TransformClip);
             SetUpdater<UIRRepaintUpdater>(VisualTreeUpdatePhase.Repaint);
         }
     }

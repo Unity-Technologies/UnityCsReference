@@ -39,8 +39,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             makeItem = MakeItem;
             unbindItem = UnbindItem;
             bindItem = BindItem;
-            onSelectionChange += OnSelectionChange;
-            m_PageManager.onSelectionChanged += version => SyncSelectionIndex(version?.packageUniqueId);
 
             selectionType = SelectionType.Single;
             virtualizationMethod = CollectionVirtualizationMethod.FixedHeight;
@@ -52,7 +50,24 @@ namespace UnityEditor.PackageManager.UI.Internal
                 scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
         }
 
-        private void OnSelectionChange(IEnumerable<object> items)
+        public void OnEnable()
+        {
+            onSelectionChange += SyncListViewSelectionToPageManager;
+            m_PageManager.onSelectionChanged += SyncPageManagerSelectionToListView;
+        }
+
+        public void OnDisable()
+        {
+            onSelectionChange -= SyncListViewSelectionToPageManager;
+            m_PageManager.onSelectionChanged -= SyncPageManagerSelectionToListView;
+        }
+
+        private void SyncPageManagerSelectionToListView(IPackageVersion version)
+        {
+            SyncSelectionIndex(version?.packageUniqueId);
+        }
+
+        private void SyncListViewSelectionToPageManager(IEnumerable<object> items)
         {
             var selectedPackageUniqueId = (selectedItem as VisualState)?.packageUniqueId;
 
@@ -130,13 +145,18 @@ namespace UnityEditor.PackageManager.UI.Internal
         // Because there might be some sort of reordering
         private void SyncSelectionIndex(string selectedPackageUniqueIdInPageManager = null)
         {
-            selectedPackageUniqueIdInPageManager ??= m_PageManager.GetCurrentPage().GetSelectedVisualState()?.packageUniqueId;
-            var selectedPackageUniqueIdInListView = (selectedItem as VisualState)?.packageUniqueId;
-            if (selectedPackageUniqueIdInListView == selectedPackageUniqueIdInPageManager)
-                return;
 
             var visualStates = itemsSource as List<VisualState>;
             if (visualStates == null)
+                return;
+
+            var page = m_PageManager.GetCurrentPage();
+            if (page.tab != PackageFilterTab.AssetStore)
+                return;
+
+            selectedPackageUniqueIdInPageManager ??= page.GetSelectedVisualState()?.packageUniqueId;
+            var selectedPackageUniqueIdInListView = (selectedItem as VisualState)?.packageUniqueId;
+            if (selectedPackageUniqueIdInListView == selectedPackageUniqueIdInPageManager)
                 return;
 
             for (var i = 0; i < visualStates.Count; i++)

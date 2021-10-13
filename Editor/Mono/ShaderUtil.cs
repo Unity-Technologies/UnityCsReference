@@ -30,6 +30,12 @@ namespace UnityEditor
 
             public int LevelOfDetail { get { return ShaderUtil.GetSubshaderLOD(m_Data.SourceShader, m_SubshaderIndex); } }
 
+            public UnityEngine.Rendering.ShaderTagId FindTagValue(UnityEngine.Rendering.ShaderTagId tagName)
+            {
+                int id = ShaderUtil.FindSubShaderTagValue(SourceShader, m_SubshaderIndex, tagName.id);
+                return new UnityEngine.Rendering.ShaderTagId { id = id };
+            }
+
             public Pass GetPass(int passIndex)
             {
                 if (passIndex < 0 || passIndex >= PassCount)
@@ -58,6 +64,12 @@ namespace UnityEditor
 
             public string SourceCode { get { return ShaderUtil.GetShaderPassSourceCode(SourceShader, SubshaderIndex, m_PassIndex); } }
             public string Name { get { return ShaderUtil.GetShaderPassName(SourceShader, SubshaderIndex, m_PassIndex); } }
+
+            public UnityEngine.Rendering.ShaderTagId FindTagValue(UnityEngine.Rendering.ShaderTagId tagName)
+            {
+                int id = ShaderUtil.FindPassTagValue(SourceShader, m_Subshader.m_SubshaderIndex, m_PassIndex, tagName.id);
+                return new UnityEngine.Rendering.ShaderTagId { id = id };
+            }
 
             public bool HasShaderStage(ShaderType shaderType)
             {

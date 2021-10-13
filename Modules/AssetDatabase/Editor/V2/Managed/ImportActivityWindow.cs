@@ -38,7 +38,7 @@ namespace UnityEditor
             OpenWindow(guid, true);
         }
 
-        [MenuItem("Window/Analysis/Import Activity Window")]
+        [MenuItem("Window/Analysis/Import Activity")]
         public static void ShowWindow()
         {
             OpenWindow();
@@ -508,6 +508,7 @@ namespace UnityEditor
         private void CreateAllAssetsList()
         {
             //Get all assets
+            m_StartupData.Initialize();
             var allCurrentRevisions = GetAllCurrentRevisions();
 
             var artifactInfoTreeViewItems = new List<ArtifactInfoTreeViewItem>(allCurrentRevisions.Length);
@@ -1036,7 +1037,7 @@ namespace UnityEditor
             var selectedIndex = m_AllAssetsList.FindIndex(asset => asset.artifactInfo.importStats.assetPath.Equals(selectedPath, StringComparison.Ordinal));
             if (selectedIndex == -1)
             {
-                Debug.LogWarning("Asset is selected in artifact browser, but index of the entry was not found. Please report a bug.");
+                Debug.LogWarning($"Asset '{selectedPath}' is selected in artifact browser, but index of the entry was not found. Please report a bug.");
                 return;
             }
 
@@ -2019,18 +2020,31 @@ namespace UnityEditor
             return finalString;
         }
 
-        internal struct ImportActivityWindowStartupData
+        struct ImportActivityWindowStartupDataWrapper
         {
-            public ArtifactInfo[] allCurrentRevisions;
-            public ArtifactInfo[] mostDependencyAssets;
-            public ArtifactInfo[] longestDurationAssets;
+            private ArtifactInfo[] m_AllCurrentRevisions;
+            private ArtifactInfo[] m_LongestDurationAssets;
+            private ArtifactInfo[] m_MostDependenciesAssets;
+
+            public void Initialize()
+            {
+                m_AllCurrentRevisions = AssetDatabase.GetImportActivityWindowStartupData(ImportActivityWindowStartupData.AllCurrentRevisions);
+                m_LongestDurationAssets = AssetDatabase.GetImportActivityWindowStartupData(ImportActivityWindowStartupData.LongestImportDuration);
+                m_MostDependenciesAssets = AssetDatabase.GetImportActivityWindowStartupData(ImportActivityWindowStartupData.MostDependencies);
+                AssetDatabase.GetImportActivityWindowStartupData(ImportActivityWindowStartupData.ClearCache);
+            }
+
+            public ArtifactInfo[] allCurrentRevisions { get { return m_AllCurrentRevisions; }}
+
+            public ArtifactInfo[] longestDurationAssets { get { return m_LongestDurationAssets; }}
+
+            public ArtifactInfo[] mostDependencyAssets { get { return m_MostDependenciesAssets; }}
         }
 
-        private ImportActivityWindowStartupData m_StartupData;
+        private ImportActivityWindowStartupDataWrapper m_StartupData;
 
         private ArtifactInfo[] GetAllCurrentRevisions()
         {
-            AssetDatabase.GetImportActivityWindowStartupData(out m_StartupData.allCurrentRevisions, out m_StartupData.longestDurationAssets, out m_StartupData.mostDependencyAssets);
             return m_StartupData.allCurrentRevisions;
         }
 

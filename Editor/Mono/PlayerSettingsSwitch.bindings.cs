@@ -222,6 +222,24 @@ namespace UnityEditor
             }
 
             [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
+            extern public static int GpuScratchPoolGranularity
+            {
+                [NativeMethod("GetSwitchGpuScratchPoolGranularity")]
+                get;
+                [NativeMethod("SetSwitchGpuScratchPoolGranularity")]
+                set;
+            }
+
+            [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
+            extern public static bool AllowGpuScratchShrinking
+            {
+                [NativeMethod("GetSwitchAllowGpuScratchShrinking")]
+                get;
+                [NativeMethod("SetSwitchAllowGpuScratchShrinking")]
+                set;
+            }
+
+            [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
             extern public static int NVNMaxPublicTextureIDCount
             {
                 [NativeMethod("GetSwitchNVNMaxPublicTextureIDCount")]

@@ -11,6 +11,7 @@ namespace UnityEngine.UIElements
     {
         private readonly Stack<T> m_Stack = new Stack<T>();
         private int m_MaxSize;
+        internal Func<T> CreateFunc;
 
         public int maxSize
         {
@@ -25,9 +26,18 @@ namespace UnityEngine.UIElements
             }
         }
 
-        public ObjectPool(int maxSize = 100)
+        public ObjectPool(Func<T> CreateFunc, int maxSize = 100)
         {
             this.maxSize = maxSize;
+
+            if (CreateFunc == null)
+            {
+                this.CreateFunc = () => new T();
+            }
+            else
+            {
+                this.CreateFunc = CreateFunc;
+            }
         }
 
         public int Size()
@@ -42,7 +52,7 @@ namespace UnityEngine.UIElements
 
         public T Get()
         {
-            T evt = m_Stack.Count == 0 ? new T() : m_Stack.Pop();
+            T evt = m_Stack.Count == 0 ? CreateFunc() : m_Stack.Pop();
             return evt;
         }
 

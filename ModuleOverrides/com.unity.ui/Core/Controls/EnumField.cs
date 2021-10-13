@@ -255,6 +255,7 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [EventInterest(typeof(KeyDownEvent))]
         protected override void ExecuteDefaultActionAtTarget(EventBase evt)
         {
             base.ExecuteDefaultActionAtTarget(evt);

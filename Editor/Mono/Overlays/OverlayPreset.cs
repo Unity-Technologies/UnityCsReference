@@ -44,19 +44,7 @@ namespace UnityEditor.Overlays
             targetWindowType = Type.GetType(m_RawWindowType);
         }
 
-        public void ApplyTo(EditorWindow window)
-        {
-            if (!IsPresetUseableInWindow(window.GetType()))
-            {
-                Debug.LogError("Failed to apply overlay preset to a window. This preset doesn't support this type of window.");
-                return;
-            }
-
-            window.overlayCanvas.ApplySaveData(m_SaveData);
-            window.lastOverlayPresetName = name;
-        }
-
-        internal bool IsPresetUseableInWindow(Type windowType)
+        public bool CanApplyToWindow(Type windowType)
         {
             return targetWindowType != null && targetWindowType.IsAssignableFrom(windowType);
         }

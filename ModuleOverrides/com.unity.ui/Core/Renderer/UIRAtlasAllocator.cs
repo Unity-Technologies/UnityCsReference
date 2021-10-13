@@ -12,7 +12,7 @@ namespace UnityEngine.UIElements
     {
         private class Row
         {
-            private static ObjectPool<Row> s_Pool = new ObjectPool<Row>();
+            private static ObjectPool<Row> s_Pool = new ObjectPool<Row>(() => new Row());
 
             /// <summary>
             /// Distance from the left of the texture to left side of the row.
@@ -57,7 +57,7 @@ namespace UnityEngine.UIElements
 
         private class AreaNode
         {
-            private static ObjectPool<AreaNode> s_Pool = new ObjectPool<AreaNode>();
+            private static ObjectPool<AreaNode> s_Pool = new ObjectPool<AreaNode>(() => new AreaNode());
 
             public RectInt rect;
             public AreaNode previous;

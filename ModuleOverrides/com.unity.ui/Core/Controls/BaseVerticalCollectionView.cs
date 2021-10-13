@@ -1366,6 +1366,7 @@ namespace UnityEngine.UIElements
             OverwriteFromViewData(this, key);
         }
 
+        [EventInterest(typeof(PointerUpEvent), typeof(FocusEvent), typeof(NavigationSubmitEvent))]
         protected override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);

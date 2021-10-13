@@ -27,6 +27,7 @@ namespace UnityEditor.DeviceSimulation
         public int rotationDegree;
         public bool highlightSafeAreaEnabled;
         public string friendlyName = string.Empty;
+        public int screenIndex = 0;
 
         public NetworkReachability networkReachability = NetworkReachability.ReachableViaCarrierDataNetwork;
         public SystemLanguage systemLanguage = SystemLanguage.English;

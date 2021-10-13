@@ -56,6 +56,12 @@ namespace UnityEditor.SceneTemplate
                 throw new Exception("templateScene is empty");
             }
 
+            if (EditorApplication.isUpdating)
+            {
+                Debug.LogFormat(LogType.Warning, LogOption.None, null, "Cannot instantiate a new scene while updating the editor is disallowed.");
+                return null;
+            }
+
             var sourceScenePath = AssetDatabase.GetAssetPath(sceneTemplate.templateScene);
             if (String.IsNullOrEmpty(sourceScenePath))
             {

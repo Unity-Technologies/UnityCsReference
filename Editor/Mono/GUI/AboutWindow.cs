@@ -11,37 +11,65 @@ namespace UnityEditor
 {
     internal class AboutWindow : EditorWindow
     {
-        static void ShowAboutWindow()
+        static readonly Vector2 WindowSize = new Vector2(640, 410);
+        internal static void ShowAboutWindow()
         {
-            AboutWindow w = EditorWindow.GetWindowWithRect<AboutWindow>(new Rect(100, 100, 600, 360), true, "About Unity");
-            w.position = new Rect(100, 100, 600, 360);
+            var mainWindowRect = EditorGUIUtility.GetMainWindowPosition();
+            var aboutRect = EditorGUIUtility.GetCenteredWindowPosition(mainWindowRect, WindowSize);
+
+            AboutWindow w = GetWindowWithRect<AboutWindow>(aboutRect, true, "About Unity");
+            w.position = aboutRect;
+            w.minSize = w.maxSize = WindowSize;
             w.m_Parent.window.m_DontSaveToLayout = true;
         }
 
-        private static GUIContent s_MonoLogo, s_AgeiaLogo, s_Header;
+        float m_TextYPos = 120;
+        float m_TextInitialYPos = 120;
+        float m_TotalCreditsHeight = Mathf.Infinity;
+        double m_LastScrollUpdate = 0.0f;
+        bool m_ShowDetailedVersion = false;
+        private int m_InternalCodeProgress;
 
         private const string kSpecialThanksNames = "Thanks to Forest 'Yoggy' Johnson, Graham McAllister, David Janik-Jones, Raimund Schumacher, Alan J. Dickins and Emil 'Humus' Persson";
 
         static class Styles
         {
             public static GUIContent thanksContent = new GUIContent("Special thanks to our beta users");
-            public static GUIStyle thanksStyle = EditorStyles.FromUSS("About-Thanks-Label");
             public static Uri thanksUri = new Uri($"https://unity.com/releases/{GetVersion()}/thanks");
+
+            public static readonly GUIStyle mainLayout = new GUIStyle() { margin = new RectOffset(40, 40, 30, 20) };
+            public static readonly GUIStyle versionLayout = new GUIStyle() { margin = new RectOffset(0, 0, 10, 15) };
+            public static readonly GUIStyle creditsLayout = new GUIStyle() { margin = new RectOffset(0, 0, 0, 15) };
+            public static readonly GUIStyle poweredLayout = new GUIStyle() { margin = new RectOffset(5, 5, 0, 15) };
+            public static readonly GUIStyle poweredSectionLayout = new GUIStyle() { margin = new RectOffset(2, 2, 2, 2) };
+
+            public static readonly GUIStyle aboutWindowLicenseLabel = new GUIStyle("AboutWindowLicenseLabel");
+
+            public static GUIStyle versionStyle = EditorStyles.FromUSS(aboutWindowLicenseLabel, "About-Version-Label");
+            public static GUIStyle thanksStyle = EditorStyles.FromUSS(aboutWindowLicenseLabel, "About-Thanks-Label");
+
+            public static readonly GUIStyle creditText = new GUIStyle(EditorStyles.wordWrappedLabel)
+            {
+                normal = aboutWindowLicenseLabel.normal,
+                fontSize = aboutWindowLicenseLabel.fontSize
+            };
+
+            public static readonly GUIContent HeaderLogo = EditorGUIUtility.IconContent("AboutWindow.MainHeader");
+            public static readonly GUIContent MonoLogo = EditorGUIUtility.IconContent("MonoLogo");
+            public static readonly GUIContent AgeiaLogo = EditorGUIUtility.IconContent("AgeiaLogo");
+
+            static readonly RectOffset NoRect = new RectOffset(0, 0, 0, 0);
+            static readonly RectOffset LogoMargin = new RectOffset(2, 0, 15, 15);
+            public static readonly GUIStyle LogoLayout = new GUIStyle() { fixedWidth = 0f, fixedHeight = 0, margin = LogoMargin, padding = NoRect, stretchHeight = false, stretchWidth = false };
+            public static readonly GUIStyle HeaderLayout = new GUIStyle(LogoLayout) { margin = NoRect };
+            public static readonly GUIStyle MonoLogoLayout = new GUIStyle(LogoLayout) { fixedHeight = 36.901f };
+            public static readonly GUIStyle AgeiaLogoLayout = new GUIStyle(LogoLayout) { fixedHeight = 22.807f };
 
             private static string GetVersion()
             {
                 var version = InternalEditorUtility.GetUnityVersion();
                 return $"{version.Major}-{version.Minor}";
             }
-        }
-
-        private static void LoadLogos()
-        {
-            if (s_MonoLogo != null)
-                return;
-            s_MonoLogo = EditorGUIUtility.IconContent("MonoLogo");
-            s_AgeiaLogo = EditorGUIUtility.IconContent("AgeiaLogo");
-            s_Header = EditorGUIUtility.IconContent("AboutWindow.MainHeader");
         }
 
         public void OnEnable()
@@ -57,12 +85,6 @@ namespace UnityEditor
             EditorApplication.update -= UpdateScroll;
         }
 
-        float m_TextYPos = 120;
-        float m_TextInitialYPos = 120;
-        float m_TotalCreditsHeight = Mathf.Infinity;
-
-        double m_LastScrollUpdate = 0.0f;
-
         public void UpdateScroll()
         {
             double deltaTime = EditorApplication.timeSinceStartup - m_LastScrollUpdate;
@@ -77,149 +99,138 @@ namespace UnityEditor
             Repaint();
         }
 
-        bool m_ShowDetailedVersion = false;
         public void OnGUI()
         {
-            LoadLogos();
-            GUILayout.Space(10);
-            GUILayout.BeginHorizontal();
-            GUILayout.Space(5);
-            GUILayout.BeginVertical();
-            GUILayout.FlexibleSpace();
-            GUILayout.Label(s_Header, GUIStyle.none);
-
-            ListenForSecretCodes();
-
-            var licenseTypeString = "";
-            if (InternalEditorUtility.HasFreeLicense())
-                licenseTypeString = " Personal";
-            if (InternalEditorUtility.HasEduLicense())
-                licenseTypeString = " Edu";
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Space(52f); // Ident version information
-
-            string extensionVersion = FormatExtensionVersionString();
-
-            m_ShowDetailedVersion |= Event.current.alt;
-            if (m_ShowDetailedVersion)
+            var evt = Event.current;
+            var mainLayoutWidth = position.width - Styles.mainLayout.margin.horizontal;
+            using (new GUILayout.VerticalScope(Styles.mainLayout))
             {
-                int t = InternalEditorUtility.GetUnityVersionDate();
-                DateTime dt = new DateTime(1970, 1, 1, 0, 0, 0, 0);
-                string branch = InternalEditorUtility.GetUnityBuildBranch();
-                EditorGUILayout.SelectableLabel(
-                    string.Format("Version: {0}{1}{2}\nRevision: {3} {4}\nBuilt: {5:r}",
-                        InternalEditorUtility.GetUnityDisplayVersionVerbose(), licenseTypeString, extensionVersion,
-                        branch, InternalEditorUtility.GetUnityBuildHash(), dt.AddSeconds(t)),
-                    GUILayout.Width(550), GUILayout.Height(50));
+                GUILayout.Label(Styles.HeaderLogo, Styles.HeaderLayout);
 
-                m_TextInitialYPos = 120 - 12;
+                using (new GUILayout.HorizontalScope(Styles.versionLayout))
+                {
+                    ListenForSecretCodes();
+
+                    var licenseTypeString = "";
+                    if (InternalEditorUtility.HasFreeLicense())
+                        licenseTypeString = " Personal";
+                    if (InternalEditorUtility.HasEduLicense())
+                        licenseTypeString = " Edu";
+                    string extensionVersion = FormatExtensionVersionString();
+
+                     m_ShowDetailedVersion |= evt.alt;
+                    if (m_ShowDetailedVersion)
+                    {
+                        int t = InternalEditorUtility.GetUnityVersionDate();
+                        DateTime dt = new DateTime(1970, 1, 1, 0, 0, 0, 0);
+                        string branch = InternalEditorUtility.GetUnityBuildBranch();
+                        EditorGUILayout.SelectableLabel(
+                            string.Format("{0}{1}{2}\nRevision: {3} {4}\nBuilt: {5:r}",
+                                InternalEditorUtility.GetUnityDisplayVersionVerbose(), licenseTypeString, extensionVersion,
+                                branch, InternalEditorUtility.GetUnityBuildHash(), dt.AddSeconds(t)),
+                            Styles.versionStyle, GUILayout.MaxWidth(mainLayoutWidth), GUILayout.Height(38f));
+                    }
+                    else
+                    {
+                        GUILayout.Label(string.Format("{0}{1}{2}", InternalEditorUtility.GetUnityDisplayVersion(), licenseTypeString, extensionVersion), Styles.versionStyle);
+                    }
+
+                    if (evt.type == EventType.ValidateCommand)
+                        return;
+
+                }
+
+                using (new GUILayout.HorizontalScope(Styles.creditsLayout))
+                {
+                    float chunkOffset = m_TextYPos;
+                    Rect scrollAreaRect = GUILayoutUtility.GetRect(0, mainLayoutWidth, 75f, position.height, GUILayout.ExpandHeight(true));
+                    GUI.BeginGroup(scrollAreaRect);
+                    foreach (string nameChunk in AboutWindowNames.Names(null, true))
+                        chunkOffset = DoCreditsNameChunk(nameChunk, mainLayoutWidth, chunkOffset);
+                    chunkOffset = DoCreditsNameChunk(kSpecialThanksNames, mainLayoutWidth, chunkOffset);
+                    m_TotalCreditsHeight = chunkOffset - m_TextYPos;
+                    GUI.EndGroup();
+
+                    HandleScrollEvents(evt, scrollAreaRect);
+                }
+
+                using (new GUILayout.HorizontalScope(Styles.poweredLayout))
+                {
+                    var poweredBySectionMaxWidth = (mainLayoutWidth - Styles.poweredSectionLayout.margin.horizontal * 2) / 2f;
+                    using (new GUILayout.VerticalScope(Styles.poweredSectionLayout, GUILayout.MaxWidth(poweredBySectionMaxWidth)))
+                    {
+                        GUILayout.Label("Scripting powered by The Mono Project.\n\u00A9 2011 Novell, Inc.", Styles.aboutWindowLicenseLabel);
+                        GUILayout.FlexibleSpace();
+                        GUILayout.Label(Styles.MonoLogo, Styles.MonoLogoLayout);
+                        GUILayout.FlexibleSpace();
+                        var specialThanksRect = GUILayoutUtility.GetRect(Styles.thanksContent, Styles.thanksStyle);
+                        if (GUI.Button(specialThanksRect, Styles.thanksContent, Styles.thanksStyle))
+                            Process.Start(Styles.thanksUri.AbsoluteUri);
+                        EditorGUIUtility.AddCursorRect(specialThanksRect, MouseCursor.Link);
+                        GUILayout.Label(InternalEditorUtility.GetUnityCopyright().Replace("(c)", "\u00A9"), Styles.aboutWindowLicenseLabel);
+                    }
+
+                    GUILayout.FlexibleSpace();
+
+                    using (new GUILayout.VerticalScope(Styles.poweredSectionLayout, GUILayout.MaxWidth(poweredBySectionMaxWidth)))
+                    {
+                        GUILayout.Label("Physics powered by PhysX.\n\u00A9 2019 NVIDIA Corporation.", Styles.aboutWindowLicenseLabel);
+                        GUILayout.FlexibleSpace();
+                        GUILayout.Label(Styles.AgeiaLogo, Styles.AgeiaLogoLayout);
+                        GUILayout.FlexibleSpace();
+                        GUILayout.Label(InternalEditorUtility.GetLicenseInfo().Replace("(c)", "\u00A9"), Styles.aboutWindowLicenseLabel);
+                    }
+                }
             }
-            else
-            {
-                GUILayout.Label(string.Format("Version {0}{1}{2}", InternalEditorUtility.GetUnityDisplayVersion(), licenseTypeString, extensionVersion));
-            }
-
-            if (Event.current.type == EventType.ValidateCommand)
-                return;
-
-            GUILayout.EndHorizontal();
-            GUILayout.Space(4);
-            GUILayout.EndVertical();
-            GUILayout.EndHorizontal();
-
-            GUILayout.FlexibleSpace();
-
-            float creditsWidth = position.width - 10;
-            float chunkOffset = m_TextYPos;
-
-            Rect scrollAreaRect = GUILayoutUtility.GetRect(10, m_TextInitialYPos);
-            GUI.BeginGroup(scrollAreaRect);
-            foreach (string nameChunk in AboutWindowNames.Names(null, true))
-                chunkOffset = DoCreditsNameChunk(nameChunk, creditsWidth, chunkOffset);
-            chunkOffset = DoCreditsNameChunk(kSpecialThanksNames, creditsWidth, chunkOffset);
-            m_TotalCreditsHeight = chunkOffset - m_TextYPos;
-            GUI.EndGroup();
-
-            HandleScrollEvents(scrollAreaRect);
-
-            GUILayout.FlexibleSpace();
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Label(s_MonoLogo);
-            GUILayout.Label("Scripting powered by The Mono Project.\n\n(c) 2011 Novell, Inc.", "MiniLabel", GUILayout.Width(220));
-            GUILayout.Label(s_AgeiaLogo);
-            GUILayout.Label("Physics powered by PhysX.\n\n(c) 2019 NVIDIA Corporation.", "MiniLabel", GUILayout.Width(205));
-            GUILayout.EndHorizontal();
-            GUILayout.FlexibleSpace();
-            GUILayout.BeginHorizontal();
-            GUILayout.Space(5);
-            GUILayout.BeginVertical();
-            GUILayout.FlexibleSpace();
-
-            var specialThanksRect = GUILayoutUtility.GetRect(Styles.thanksContent, Styles.thanksStyle);
-            if (GUI.Button(specialThanksRect, Styles.thanksContent, Styles.thanksStyle))
-            {
-                Process.Start(Styles.thanksUri.AbsoluteUri);
-            }
-
-            EditorGUIUtility.AddCursorRect(specialThanksRect, MouseCursor.Link);
-
-            GUILayout.Label(InternalEditorUtility.GetUnityCopyright(), "MiniLabel");
-            GUILayout.EndVertical();
-            GUILayout.Space(10);
-            GUILayout.FlexibleSpace();
-            GUILayout.BeginVertical();
-            GUILayout.FlexibleSpace();
-            GUILayout.Label(InternalEditorUtility.GetLicenseInfo(), "AboutWindowLicenseLabel");
-            GUILayout.EndVertical();
-            GUILayout.Space(5);
-            GUILayout.EndHorizontal();
-
-            GUILayout.Space(5);
         }
 
-        private void HandleScrollEvents(Rect scrollAreaRect)
+        private void HandleScrollEvents(Event evt, Rect scrollAreaRect)
         {
             int id = GUIUtility.GetControlID(FocusType.Passive);
 
-            switch (Event.current.GetTypeForControl(id))
+            switch (evt.GetTypeForControl(id))
             {
                 case EventType.MouseDown:
-                    if (scrollAreaRect.Contains(Event.current.mousePosition))
+                    if (scrollAreaRect.Contains(evt.mousePosition))
                     {
                         GUIUtility.hotControl = id;
-                        Event.current.Use();
+                        evt.Use();
                     }
                     break;
                 case EventType.MouseDrag:
                     if (GUIUtility.hotControl == id)
                     {
-                        m_TextYPos += Event.current.delta.y;
-                        m_TextYPos = Mathf.Min(m_TextYPos, m_TextInitialYPos);
-                        m_TextYPos = Mathf.Max(m_TextYPos, -m_TotalCreditsHeight);
-                        Event.current.Use();
+                        m_TextYPos += evt.delta.y;
+                        evt.Use();
                     }
                     break;
                 case EventType.MouseUp:
                     if (GUIUtility.hotControl == id)
                     {
                         GUIUtility.hotControl = 0;
-                        Event.current.Use();
+                        evt.Use();
                     }
                     break;
+                case EventType.ScrollWheel:
+                    if (!scrollAreaRect.Contains(evt.mousePosition))
+                        break;
+                    m_TextYPos += HandleUtility.niceMouseDelta * (evt.shift ? 8f : 4f);
+                    Event.current.Use();
+                    break;
             }
+
+            m_TextYPos = Mathf.Min(m_TextYPos, m_TextInitialYPos);
+            m_TextYPos = Mathf.Max(m_TextYPos, -m_TotalCreditsHeight);
         }
 
         private static float DoCreditsNameChunk(string nameChunk, float creditsWidth, float creditsChunkYOffset)
         {
-            float creditsNamesHeight = EditorStyles.wordWrappedLabel.CalcHeight(GUIContent.Temp(nameChunk), creditsWidth);
+            float creditsNamesHeight = Styles.creditText.CalcHeight(GUIContent.Temp(nameChunk), creditsWidth);
             Rect creditsNamesRect = new Rect(5, creditsChunkYOffset, creditsWidth, creditsNamesHeight);
-            GUI.Label(creditsNamesRect, nameChunk, EditorStyles.wordWrappedLabel);
+            GUI.Label(creditsNamesRect, nameChunk, Styles.creditText);
             return creditsNamesRect.yMax;
         }
 
-        private int m_InternalCodeProgress;
         private void ListenForSecretCodes()
         {
             if (Event.current.type != EventType.KeyDown || (int)Event.current.character == 0)
@@ -267,4 +278,4 @@ namespace UnityEditor
             return "";
         }
     }
-} // namespace
+}

@@ -675,7 +675,28 @@ namespace UnityEngine
 
         public RenderTextureFormat format
         {
-            get { return GraphicsFormatUtility.GetRenderTextureFormat(graphicsFormat); }
+            get
+            {
+                RenderTextureFormat format;
+
+                if(graphicsFormat != GraphicsFormat.None)
+                {
+                    format = GraphicsFormatUtility.GetRenderTextureFormat(graphicsFormat);
+                }
+                else //if graphicsFormat is None then it is a depth only RT
+                {
+                    if(GetDescriptor().shadowSamplingMode != Rendering.ShadowSamplingMode.None)
+                    {
+                        format = RenderTextureFormat.Shadowmap;
+                    }
+                    else
+                    {
+                        format = RenderTextureFormat.Depth;
+                    }
+                }
+
+                return format;
+            }
             set { graphicsFormat = GraphicsFormatUtility.GetGraphicsFormat(value, sRGB); }
         }
 

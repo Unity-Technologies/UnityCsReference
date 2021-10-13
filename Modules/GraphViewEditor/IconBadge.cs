@@ -326,6 +326,8 @@ namespace UnityEditor.Experimental.GraphView
             }
         }
 
+        [EventInterest(typeof(GeometryChangedEvent), typeof(DetachFromPanelEvent), typeof(MouseEnterEvent),
+            typeof(MouseLeaveEvent))]
         protected override void ExecuteDefaultAction(EventBase evt)
         {
             if (evt.eventTypeId == GeometryChangedEvent.TypeId())

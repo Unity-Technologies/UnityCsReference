@@ -449,6 +449,7 @@ namespace UnityEditor.Experimental.GraphView
             m_ConnectorBox.SetEnabled(highlight);
         }
 
+        [EventInterest(typeof(MouseEnterEvent), typeof(MouseLeaveEvent), typeof(MouseUpEvent))]
         protected override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);

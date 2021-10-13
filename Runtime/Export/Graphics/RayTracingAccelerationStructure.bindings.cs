@@ -5,6 +5,7 @@
 using System;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using UnityEngine.Rendering;
 
 namespace UnityEngine.Experimental.Rendering
 {
@@ -19,6 +20,101 @@ namespace UnityEngine.Experimental.Rendering
         Enabled             = (1 << 0),
         ClosestHitOnly      = (1 << 1),
         UniqueAnyHitCalls   = (1 << 2),
+    }
+
+    [Flags]
+    public enum RayTracingInstanceCullingFlags
+    {
+        None                    = 0,
+        EnableSphereCulling     = (1 << 0),
+        EnablePlaneCulling      = (1 << 1),
+        EnableLODCulling        = (1 << 2),
+        ComputeMaterialsCRC     = (1 << 3),
+        IgnoreReflectionProbes  = (1 << 4),
+    }
+
+    public struct RayTracingInstanceCullingTest
+    {
+        public uint instanceMask;
+        public int layerMask;
+        public int shadowCastingModeMask;
+        public bool allowOpaqueMaterials;
+        public bool allowTransparentMaterials;
+        public bool allowAlphaTestedMaterials;
+    }
+
+    public struct RayTracingInstanceCullingShaderTagConfig
+    {
+        public ShaderTagId tagId;
+        public ShaderTagId tagValueId;
+    }
+    public struct RayTracingInstanceMaterialConfig
+    {
+        public int renderQueueLowerBound;
+        public int renderQueueUpperBound;
+
+        public RayTracingInstanceCullingShaderTagConfig[] optionalShaderTags;
+
+        public string[] optionalShaderKeywords;
+    }
+
+    public struct RayTracingInstanceCullingMaterialTest
+    {
+        public string[] deniedShaderPasses;
+
+        public RayTracingInstanceCullingShaderTagConfig[] requiredShaderTags;
+    }
+
+    public struct RayTracingInstanceTriangleCullingConfig
+    {
+        public string[] optionalDoubleSidedShaderKeywords;
+
+        public bool frontTriangleCounterClockwise;
+
+        public bool checkDoubleSidedGIMaterial;
+
+        public bool forceDoubleSided;
+    };
+
+    public struct RayTracingSubMeshFlagsConfig
+    {
+        public RayTracingSubMeshFlags opaqueMaterials;
+        public RayTracingSubMeshFlags transparentMaterials;
+        public RayTracingSubMeshFlags alphaTestedMaterials;
+    };
+
+    public struct RayTracingInstanceCullingConfig
+    {
+        public RayTracingInstanceCullingFlags flags;
+
+        public Vector3 sphereCenter;
+        public float sphereRadius;
+
+        public Plane[] planes;
+
+        public RayTracingInstanceCullingTest[] instanceTests;
+
+        public RayTracingInstanceCullingMaterialTest materialTest;
+
+        public RayTracingInstanceMaterialConfig transparentMaterialConfig;
+        public RayTracingInstanceMaterialConfig alphaTestedMaterialConfig;
+
+        public RayTracingSubMeshFlagsConfig subMeshFlagsConfig;
+
+        public RayTracingInstanceTriangleCullingConfig triangleCullingConfig;
+
+        public LODParameters lodParameters;
+    }
+    public struct RayTracingInstanceMaterialCRC
+    {
+        public int instanceID;
+        public int crc;
+    }
+
+    public struct RayTracingInstanceCullingResults
+    {
+        public RayTracingInstanceMaterialCRC[] materialsCRC;
+        public bool transformsChanged;
     }
 
     public sealed class RayTracingAccelerationStructure : IDisposable
@@ -167,6 +263,9 @@ namespace UnityEngine.Experimental.Rendering
 
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::ClearInstances", HasExplicitThis = true)]
         extern public void ClearInstances();
+
+        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::CullInstances", HasExplicitThis = true)]
+        extern public RayTracingInstanceCullingResults CullInstances(ref RayTracingInstanceCullingConfig cullingConfig);
 
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::AddInstanceSubMeshFlagsArray", HasExplicitThis = true)]
         extern private void AddInstanceSubMeshFlagsArray([NotNull] Renderer targetRenderer, RayTracingSubMeshFlags[] subMeshFlags, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, uint id = 0xFFFFFFFF);

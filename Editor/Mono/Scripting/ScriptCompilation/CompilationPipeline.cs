@@ -307,45 +307,27 @@ namespace UnityEditor.Compilation
             return GetAssemblies(EditorCompilationInterface.Instance, assembliesType);
         }
 
-        internal static Assembly[] GetAssemblies(EditorCompilation editorCompilation, AssembliesType assembliesType)
+        internal static Assembly[] GetAssemblies(EditorCompilation editorCompilation, AssembliesType assembliesType, string[] extraScriptingDefines = null)
         {
-            return ToAssemblies(GetScriptAssemblies(editorCompilation, assembliesType));
+            return ToAssemblies(GetScriptAssemblies(editorCompilation, assembliesType, extraScriptingDefines));
         }
 
-        internal static ScriptAssembly[] GetScriptAssemblies(IEditorCompilation editorCompilation, AssembliesType assembliesType)
+        internal static ScriptAssembly[] GetScriptAssemblies(IEditorCompilation editorCompilation, AssembliesType assembliesType, string[] extraScriptingDefines = null)
         {
             var options = EditorCompilationInterface.GetAdditionalEditorScriptCompilationOptions(assembliesType);
 
-            switch (assembliesType)
-            {
-                case AssembliesType.Editor:
-                    options |= EditorScriptCompilationOptions.BuildingIncludingTestAssemblies;
-                    options |= EditorScriptCompilationOptions.BuildingForEditor;
-                    break;
-                case AssembliesType.Player:
-                    options |= EditorScriptCompilationOptions.BuildingIncludingTestAssemblies;
-                    options &= ~EditorScriptCompilationOptions.BuildingForEditor;
-                    break;
-                case AssembliesType.PlayerWithoutTestAssemblies:
-                    options &= ~EditorScriptCompilationOptions.BuildingIncludingTestAssemblies;
-                    options &= ~EditorScriptCompilationOptions.BuildingForEditor;
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(assembliesType));
-            }
-            options |= EditorScriptCompilationOptions.BuildingWithRoslynAnalysis;
-            return GetScriptAssemblies(editorCompilation, options);
+            return GetScriptAssemblies(editorCompilation, options, extraScriptingDefines);
         }
 
         //Danger danger: this method is used by BurstAotCompiler.cs
-        internal static ScriptAssembly[] GetScriptAssemblies(IEditorCompilation editorCompilation, EditorScriptCompilationOptions options)
+        internal static ScriptAssembly[] GetScriptAssemblies(IEditorCompilation editorCompilation, EditorScriptCompilationOptions options, string[] extraScriptingDefines = null)
         {
             var group = EditorUserBuildSettings.activeBuildTargetGroup;
             var target = EditorUserBuildSettings.activeBuildTarget;
             var buildingForEditor = (options & EditorScriptCompilationOptions.BuildingForEditor) != 0;
 
             var unityAssemblies = InternalEditorUtility.GetUnityAssemblies(buildingForEditor, @group, target);
-            var precompiledAssemblies = editorCompilation.PrecompiledAssemblyProvider.GetPrecompiledAssembliesDictionary(buildingForEditor, @group, target);
+            var precompiledAssemblies = editorCompilation.PrecompiledAssemblyProvider.GetPrecompiledAssembliesDictionary(buildingForEditor, @group, target, extraScriptingDefines);
             return editorCompilation.GetAllScriptAssemblies(options, unityAssemblies, precompiledAssemblies, null);
         }
 
@@ -525,9 +507,9 @@ namespace UnityEditor.Compilation
             return GetPrecompiledAssemblyPathFromAssemblyName(assemblyName, precompiledAssemblyProvider);
         }
 
-        internal static string GetPrecompiledAssemblyPathFromAssemblyName(string assemblyName, PrecompiledAssemblyProviderBase precompiledAssemblyProvider)
+        internal static string GetPrecompiledAssemblyPathFromAssemblyName(string assemblyName, PrecompiledAssemblyProviderBase precompiledAssemblyProvider, string[] extraScriptingDefines = null)
         {
-            var precompiledAssemblies = precompiledAssemblyProvider.GetPrecompiledAssemblies(true, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget);
+            var precompiledAssemblies = precompiledAssemblyProvider.GetPrecompiledAssemblies(true, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget, extraScriptingDefines);
 
             foreach (var assembly in precompiledAssemblies)
             {

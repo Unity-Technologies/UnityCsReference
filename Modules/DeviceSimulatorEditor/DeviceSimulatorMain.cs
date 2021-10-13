@@ -27,7 +27,7 @@ namespace UnityEditor.DeviceSimulation
         {
             set
             {
-                m_UserInterface.PreviewTexture = value.IsCreated() ? value : null;
+                m_UserInterface.DeviceView.PreviewTexture = value.IsCreated() ? value : null;
             }
         }
 
@@ -45,9 +45,11 @@ namespace UnityEditor.DeviceSimulation
             {
                 m_DeviceIndex = value;
                 InitSimulation();
-                PlayModeAnalytics.SimulatorSelectDeviceEvent(currentDevice.deviceInfo.friendlyName);
             }
         }
+
+        private int m_ScreenIndex;
+        public ScreenData currentScreen => currentDevice.deviceInfo.screens[m_ScreenIndex];
 
         public DeviceSimulatorMain(SimulatorState serializedState, VisualElement rootVisualElement, PlayModeView view)
         {
@@ -61,9 +63,8 @@ namespace UnityEditor.DeviceSimulation
             m_PluginController = new PluginController(serializedState, m_DeviceSimulator);
             m_TouchInput = new TouchEventManipulator(m_DeviceSimulator);
             m_UserInterface = new UserInterfaceController(this, rootVisualElement, serializedState, m_PluginController, m_TouchInput);
+            m_UserInterface.OnScreenToggled += HandleScreenChange;
             InitSimulation();
-
-            PlayModeAnalytics.SimulatorEnableEvent(m_PluginController.GetPluginNames());
         }
 
         public void Dispose()
@@ -96,13 +97,25 @@ namespace UnityEditor.DeviceSimulation
             m_ScreenSimulation?.Dispose();
             m_SystemInfoSimulation?.Dispose();
 
+            if (currentDevice.deviceInfo.screens.Length > 1)
+            {
+                m_UserInterface.SetScreenToggleVisibility(true);
+                m_UserInterface.SetScreenToggleName(string.IsNullOrEmpty(currentScreen.presentation.name) ? $"Screen {m_ScreenIndex + 1}" : currentScreen.presentation.name);
+            }
+            else
+            {
+                m_UserInterface.SetScreenToggleVisibility(false);
+                m_ScreenIndex = 0;
+            }
+
             var playerSettings = new SimulationPlayerSettings();
-            var overlayTexture = DeviceLoader.LoadOverlay(currentDevice, 0);
-            m_UserInterface.OverlayTexture = overlayTexture;
-            m_ScreenSimulation = new ScreenSimulation(currentDevice.deviceInfo, playerSettings);
+            m_ScreenSimulation = new ScreenSimulation(currentDevice.deviceInfo, playerSettings, m_ScreenIndex);
             m_SystemInfoSimulation = new SystemInfoSimulation(currentDevice, playerSettings);
-            m_TouchInput.InitTouchInput(overlayTexture, currentDevice.deviceInfo, m_ScreenSimulation);
+            m_TouchInput.SetDevice(m_ScreenSimulation, currentDevice.deviceInfo.IsAndroidDevice());
+
             m_UserInterface.OnSimulationStart(m_ScreenSimulation);
+            InitScreenUI();
+
             m_ApplicationSimulation.OnSimulationStart(currentDevice.deviceInfo);
         }
 
@@ -120,14 +133,30 @@ namespace UnityEditor.DeviceSimulation
                     break;
                 }
             }
+
+            if (currentDevice.deviceInfo.screens.Length > serializedState.screenIndex)
+                m_ScreenIndex = serializedState.screenIndex;
+
             PlayModeAnalytics.SimulatorSelectDeviceEvent(currentDevice.deviceInfo.friendlyName);
+        }
+
+        private void InitScreenUI()
+        {
+            var overlayTexture = DeviceLoader.LoadOverlay(currentDevice, m_ScreenIndex);
+            m_TouchInput.SetScreen(overlayTexture, currentScreen);
+            m_UserInterface.DeviceView.OverlayTexture = overlayTexture;
+            m_UserInterface.DeviceView.SetDevice(currentScreen.width, currentScreen.height, currentScreen.presentation.borderSize);
+            m_UserInterface.DeviceView.ScreenOrientation = m_ScreenSimulation.orientation;
+            m_UserInterface.DeviceView.ScreenInsets = m_ScreenSimulation.Insets;
+            m_UserInterface.DeviceView.SafeArea = m_ScreenSimulation.ScreenSpaceSafeArea;
         }
 
         public SimulatorState SerializeSimulatorState()
         {
             var serializedState = new SimulatorState()
             {
-                friendlyName = currentDevice.deviceInfo.friendlyName
+                friendlyName = currentDevice.deviceInfo.friendlyName,
+                screenIndex = m_ScreenIndex
             };
             m_UserInterface.StoreSerializedStates(ref serializedState);
             m_PluginController.StoreSerializationStates(ref serializedState);
@@ -152,6 +181,16 @@ namespace UnityEditor.DeviceSimulation
             }
 
             InitSimulation();
+        }
+
+        public void HandleScreenChange()
+        {
+            m_ScreenIndex++;
+            m_ScreenIndex %= currentDevice.deviceInfo.screens.Length;
+            m_ScreenSimulation.ChangeScreen(m_ScreenIndex);
+            InitScreenUI();
+
+            m_UserInterface.SetScreenToggleName(string.IsNullOrEmpty(currentScreen.presentation.name) ? $"Screen {m_ScreenIndex + 1}" : currentScreen.presentation.name);
         }
 
         public void HandleInputEvent()

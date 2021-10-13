@@ -21,6 +21,7 @@ namespace UnityEngine.UIElements
     /// receive these events.
     /// </summary>
     /// <typeparam name="T"></typeparam>
+    [EventCategory(EventCategory.Navigation)]
     public abstract class NavigationEventBase<T> : EventBase<T>, INavigationEvent where T : NavigationEventBase<T>, new()
     {
         /// <summary>
@@ -50,6 +51,11 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class NavigationMoveEvent : NavigationEventBase<NavigationMoveEvent>
     {
+        static NavigationMoveEvent()
+        {
+            SetCreateFunction(() => new NavigationMoveEvent());
+        }
+
         /// <summary>
         /// Move event direction.
         /// </summary>
@@ -149,6 +155,11 @@ namespace UnityEngine.UIElements
     /// </summary>
     internal class NavigationTabEvent : NavigationEventBase<NavigationTabEvent>
     {
+        static NavigationTabEvent()
+        {
+            SetCreateFunction(() => new NavigationTabEvent());
+        }
+
         /// <summary>
         /// Tab event direction.
         /// </summary>
@@ -208,6 +219,10 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class NavigationCancelEvent : NavigationEventBase<NavigationCancelEvent>
     {
+        static NavigationCancelEvent()
+        {
+            SetCreateFunction(() => new NavigationCancelEvent());
+        }
     }
 
     /// <summary>
@@ -215,5 +230,9 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class NavigationSubmitEvent : NavigationEventBase<NavigationSubmitEvent>
     {
+        static NavigationSubmitEvent()
+        {
+            SetCreateFunction(() => new NavigationSubmitEvent());
+        }
     }
 }

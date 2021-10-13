@@ -10,6 +10,11 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
+    internal class ResourceLoaderException : Exception
+    {
+        public ResourceLoaderException(string message) : base(message) {}
+    }
+
     [Serializable]
     internal class ResourceLoader
     {
@@ -28,8 +33,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             "StyleSheets/Extensions/base/light.uss";
 
             internal static readonly string packageManagerCommon = "StyleSheets/PackageManager/Common.uss";
-            internal static readonly string[] packageManagerComponents = new string[]
-            {
+            internal static readonly string[] packageManagerComponents = {
                 "StyleSheets/PackageManager/PackageDependencies.uss",
                 "StyleSheets/PackageManager/PackageDetails.uss",
                 "StyleSheets/PackageManager/PackageItem.uss",
@@ -94,7 +98,13 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var styleSheet = resolvedStyleSheets[(int)StyleSheetId.PackageManagerWindow];
                 if (styleSheet == null)
                 {
-                    var styleSheetsToResolve = StyleSheetPath.packageManagerComponents.Select(p => EditorGUIUtility.Load(p) as StyleSheet)
+                    var styleSheetsToResolve = StyleSheetPath.packageManagerComponents.Select(p =>
+                        {
+                            var styleSheet = m_ApplicationProxy.Load<StyleSheet>(p);
+                            if (styleSheet == null)
+                                throw new ResourceLoaderException($"Unable to load styleSheet {p}");
+                            return styleSheet;
+                        })
                         .Concat(new[] { packageManagerCommonStyleSheet }).ToArray();
                     styleSheet = ResolveStyleSheets(styleSheetsToResolve);
                     styleSheet.name = "PackageManagerWindow" + lightOrDarkTheme;
@@ -134,9 +144,15 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        private static StyleSheet ResolveStyleSheets(params string[] styleSheetPaths)
+        private StyleSheet ResolveStyleSheets(params string[] styleSheetPaths)
         {
-            return ResolveStyleSheets(styleSheetPaths.Select(p => EditorGUIUtility.Load(p) as StyleSheet).ToArray());
+            return ResolveStyleSheets(styleSheetPaths.Select(p =>
+            {
+                var styleSheet = m_ApplicationProxy.Load<StyleSheet>(p);
+                if (styleSheet == null)
+                    throw new ResourceLoaderException($"Unable to load styleSheet {p}");
+                return styleSheet;
+            }).ToArray());
         }
 
         private static StyleSheet ResolveStyleSheets(params StyleSheet[] styleSheets)
@@ -152,11 +168,20 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         private int m_NestedGetTemplateDepth;
-        public virtual VisualElement GetTemplate(string templateFilename)
+
+        [NonSerialized]
+        private ApplicationProxy m_ApplicationProxy;
+
+        public void ResolveDependencies(ApplicationProxy applicationProxy)
+        {
+            m_ApplicationProxy = applicationProxy;
+        }
+
+        public virtual VisualElement GetTemplate(string templateFilename, bool shouldThrowException = true)
         {
             m_NestedGetTemplateDepth++;
             var fullTemplatePath = k_TemplateRoot + templateFilename;
-            var visualTreeAsset = EditorGUIUtility.Load(fullTemplatePath) as VisualTreeAsset;
+            var visualTreeAsset = m_ApplicationProxy.Load<VisualTreeAsset>(fullTemplatePath);
             var result = visualTreeAsset?.Instantiate();
             m_NestedGetTemplateDepth--;
 
@@ -164,6 +189,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             // We only want to call localization in the top level `GetTemplate` call to avoid multiple localization attempts on the same element.
             if (m_NestedGetTemplateDepth == 0)
                 LocalizeVisualElement(result, L10n.Tr);
+
+            if (result == null && shouldThrowException)
+                throw new ResourceLoaderException($"Unable to load resource {templateFilename}");
             return result;
         }
 

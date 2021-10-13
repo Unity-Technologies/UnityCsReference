@@ -22,6 +22,8 @@ namespace UnityEditor.UIElements.Debugger
             this.hashCode = lineHashCode;
         }
 
+        [EventInterest(typeof(ContextualMenuPopulateEvent),
+            typeof(MouseDownEvent), typeof(MouseUpEvent), typeof(KeyUpEvent))]
         protected override void ExecuteDefaultActionAtTarget(EventBase evt)
         {
             base.ExecuteDefaultActionAtTarget(evt);

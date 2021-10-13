@@ -52,6 +52,9 @@ namespace UnityEngine.UIElements
             ProcessedByFocusController = 2048,
         }
 
+        internal EventCategory eventCategory { get; }
+
+
         static ulong s_NextEventId = 0;
 
         // Read-only state
@@ -71,27 +74,7 @@ namespace UnityEngine.UIElements
 
         internal EventPropagation propagation { get; set; }
 
-        PropagationPaths m_Path;
-        internal PropagationPaths path
-        {
-            get
-            {
-                if (m_Path == null)
-                {
-                    PropagationPaths.Type pathTypesRequested = (tricklesDown ? PropagationPaths.Type.TrickleDown : PropagationPaths.Type.None);
-                    pathTypesRequested |= (bubbles ? PropagationPaths.Type.BubbleUp : PropagationPaths.Type.None);
-                    m_Path = PropagationPaths.Build(leafTarget as VisualElement, pathTypesRequested);
-                    EventDebugger.LogPropagationPaths(this, m_Path);
-                }
-
-                return m_Path;
-            }
-            set
-            {
-                if (value != null)
-                    m_Path = PropagationPaths.Copy(value);
-            }
-        }
+        internal PropagationPaths path { get; set; }
 
         LifeCycleStatus lifeCycleStatus { get; set; }
 
@@ -506,8 +489,8 @@ namespace UnityEngine.UIElements
 
             propagation = EventPropagation.None;
 
-            m_Path?.Release();
-            m_Path = null;
+            path?.Release();
+            path = null;
             leafTarget = null;
             target = null;
 
@@ -538,8 +521,13 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Constructor. Avoid creating new event instances. Instead, use GetPooled() to get an instance from a pool of reusable event instances.
         /// </summary>
-        protected EventBase()
+        protected EventBase() : this(EventCategory.Default)
         {
+        }
+
+        internal EventBase(EventCategory category)
+        {
+            eventCategory = category;
             m_ImguiEvent = null;
             LocalInit();
         }
@@ -573,14 +561,20 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Generic base class for events, implementing event pooling and automatic registration to the event type system.
     /// </summary>
+    [EventCategory(EventCategory.Default)]
     public abstract class EventBase<T> : EventBase where T : EventBase<T>, new()
     {
         static readonly long s_TypeId = RegisterEventType();
-        static readonly ObjectPool<T> s_Pool = new ObjectPool<T>();
+        static readonly ObjectPool<T> s_Pool = new ObjectPool<T>(() => new T());
+
+        internal static void SetCreateFunction(Func<T> createMethod)
+        {
+            s_Pool.CreateFunc = createMethod;
+        }
 
         int m_RefCount;
 
-        protected EventBase()
+        protected EventBase() : base(EventCategory)
         {
             m_RefCount = 0;
         }
@@ -593,6 +587,8 @@ namespace UnityEngine.UIElements
         {
             return s_TypeId;
         }
+
+        internal static readonly EventCategory EventCategory = EventInterestReflectionUtils.GetEventCategory(typeof(T));
 
         /// <summary>
         /// Resets all event members to their initial values.

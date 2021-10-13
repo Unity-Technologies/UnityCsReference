@@ -308,6 +308,7 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [EventInterest(typeof(TooltipEvent))]
         protected override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);

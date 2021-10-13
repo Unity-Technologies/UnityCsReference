@@ -132,6 +132,8 @@ namespace UnityEditor.UIElements
                 m_ObjectLabel.text = content.text;
             }
 
+            [EventInterest(typeof(MouseDownEvent), typeof(KeyDownEvent),
+                typeof(DragUpdatedEvent), typeof(DragPerformEvent), typeof(DragLeaveEvent))]
             protected override void ExecuteDefaultActionAtTarget(EventBase evt)
             {
                 base.ExecuteDefaultActionAtTarget(evt);
@@ -167,6 +169,7 @@ namespace UnityEditor.UIElements
                     OnDragLeave();
             }
 
+            [EventInterest(typeof(MouseDownEvent))]
             internal override void ExecuteDefaultActionDisabledAtTarget(EventBase evt)
             {
                 base.ExecuteDefaultActionDisabledAtTarget(evt);
@@ -275,6 +278,7 @@ namespace UnityEditor.UIElements
                 m_ObjectField = objectField;
             }
 
+            [EventInterest(typeof(MouseDownEvent))]
             protected override void ExecuteDefaultAction(EventBase evt)
             {
                 base.ExecuteDefaultAction(evt);

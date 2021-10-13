@@ -39,9 +39,24 @@ namespace UnityEngineInternal.Input
 
         public static extern void Update(NativeInputUpdateType updateType);
 
+        internal static extern ulong GetBackgroundEventBufferSize();
+
         [Obsolete("This is not needed any longer.")]
         public static void SetUpdateMask(NativeInputUpdateType mask)
         {
+        }
+
+        [StaticAccessor("InputModuleBindings::Android", StaticAccessorType.DoubleColon)]
+        internal class Android
+        {
+            /// <summary>
+            /// Allows processing of input events from null devices.
+            /// Events coming from Android's instrumentation will sometimes have MotionEvent.GetDevice return null. For ex., happens on NVIDIA Shield
+            /// Primary usage are tests, where we want our events to be handled.
+            /// By default, this behavior is disabled, since Gear VR expects Unity to ignore such events.
+            /// </summary>
+            [NativeProperty("AllowNullInputDevices")]
+            internal static extern bool allowNullDevices { get; set; }
         }
     }
 }

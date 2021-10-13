@@ -73,6 +73,7 @@ namespace Unity.UI.Builder
             }
         }
 
+        [EventInterest(typeof(KeyDownEvent), typeof(MouseDownEvent))]
         protected override void ExecuteDefaultActionAtTarget(EventBase evt)
         {
             base.ExecuteDefaultActionAtTarget(evt);

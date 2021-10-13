@@ -28,7 +28,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             ScriptAssembly[] assemblies,
             bool debug,
             string outputDirectory,
-            BuildTarget buildTarget, bool buildingForEditor)
+            BuildTarget buildTarget,
+            bool buildingForEditor,
+            string[] extraScriptingDefines = null)
         {
             // Need to call AssemblyDataFrom before calling CompilationPipeline.GetScriptAssemblies,
             // as that acts on the same ScriptAssemblies, and modifies them with different build settings.
@@ -39,7 +41,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 codeGenAssemblies = buildingForEditor
                     ? null
-                    : AssemblyDataFrom(CodeGenAssemblies(CompilationPipeline.GetScriptAssemblies(editorCompilation, AssembliesType.Editor)));
+                    : AssemblyDataFrom(CodeGenAssemblies(CompilationPipeline.GetScriptAssemblies(editorCompilation, AssembliesType.Editor, extraScriptingDefines)));
             }
 
             var movedFromExtractorPath = EditorApplication.applicationContentsPath + $"/Tools/ScriptUpdater/ApiUpdater.MovedFromExtractor.exe";
@@ -55,7 +57,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var options = EditorScriptCompilationOptions.BuildingIncludingTestAssemblies;
             if (buildingForEditor)
                 options |= EditorScriptCompilationOptions.BuildingForEditor;
-            foreach (var a in editorCompilation.GetAllScriptAssemblies(options, null))
+            foreach (var a in editorCompilation.GetAllScriptAssemblies(options, extraScriptingDefines))
             {
                 if (!a.Flags.HasFlag(AssemblyFlags.EditorOnly))
                 {
@@ -67,7 +69,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var precompileAssemblies = editorCompilation.PrecompiledAssemblyProvider.GetPrecompiledAssembliesDictionary(
                 buildingForEditor,
-                BuildPipeline.GetBuildTargetGroup(buildTarget), buildTarget);
+                BuildPipeline.GetBuildTargetGroup(buildTarget),
+                buildTarget,
+                extraScriptingDefines);
             if (precompileAssemblies != null)
             {
                 foreach (var a in precompileAssemblies)

@@ -9,6 +9,8 @@ namespace PlayerBuildProgramLibrary.Data
         public string AssetPath;
         public string DestinationPath;
         public string Architecture;
+        public string CompileFlags;
+        public bool AddToEmbeddedBinaries;
         public override string ToString()
         {
             return $"'{AssetPath} -> '{DestinationPath}' ({Architecture})";
@@ -34,6 +36,7 @@ namespace PlayerBuildProgramLibrary.Data
         public bool InstallIntoBuildsFolder;
         public bool GenerateIdeProject;
         public bool Development;
+        public bool UseNewInputSystem;
         public Services Services;
         public string[] ManagedAssemblies;
         public StreamingAssetsFile[] StreamingAssetsFiles;

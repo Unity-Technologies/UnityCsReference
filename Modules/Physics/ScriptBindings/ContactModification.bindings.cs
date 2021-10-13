@@ -57,6 +57,11 @@ namespace UnityEngine
         public int bodyInstanceID => ResolveBodyInstanceID(actor);
         public int otherBodyInstanceID => ResolveBodyInstanceID(otherActor);
 
+        public Vector3 bodyVelocity => GetActorLinearVelocity(actor);
+        public Vector3 bodyAngularVelocity => GetActorAngularVelocity(actor);
+        public Vector3 otherBodyVelocity => GetActorLinearVelocity(otherActor);
+        public Vector3 otherBodyAngularVelocity => GetActorAngularVelocity(otherActor);
+
         public int contactCount => numContacts;
 
         public unsafe ModifiableMassProperties massProperties
@@ -202,6 +207,14 @@ namespace UnityEngine
         [ThreadSafe]
         [StaticAccessor("GetPhysicsManager()")]
         private static extern uint TranslateTriangleIndex(IntPtr shapePtr, uint rawIndex);
+
+        [ThreadSafe]
+        [StaticAccessor("GetPhysicsManager()")]
+        private static extern Vector3 GetActorLinearVelocity(IntPtr actorPtr);
+
+        [ThreadSafe]
+        [StaticAccessor("GetPhysicsManager()")]
+        private static extern Vector3 GetActorAngularVelocity(IntPtr actorPtr);
     }
 
     [StructLayout(LayoutKind.Sequential)]

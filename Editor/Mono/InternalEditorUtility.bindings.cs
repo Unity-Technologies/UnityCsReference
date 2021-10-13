@@ -864,7 +864,7 @@ namespace UnityEditorInternal
         extern private static PrecompiledAssembly[] GetUnityAssembliesInternal(bool buildingForEditor, BuildTarget target);
 
         [FreeFunction("GetPrecompiledAssembliesManaged")]
-        extern internal static PrecompiledAssembly[] GetPrecompiledAssemblies(bool buildingForEditor, BuildTargetGroup buildTargetGroup, BuildTarget target);
+        extern internal static PrecompiledAssembly[] GetPrecompiledAssemblies(bool buildingForEditor, BuildTargetGroup buildTargetGroup, BuildTarget target, string[] extraScriptingDefines = null);
 
         [Obsolete("The Module Manager is deprecated", error: true)]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -885,7 +885,7 @@ namespace UnityEditorInternal
         extern internal static bool SaveCursorToInMemoryResource(Texture2D image, Vector2 hotSpot, ushort cursorDataResourceId, IntPtr cursorDirectoryBuffer, uint cursorDirectoryBufferSize, IntPtr cursorDataBuffer, uint cursorDataBufferSize);
 
         [FreeFunction("GetScriptCompilationDefines")]
-        extern internal static string[] GetCompilationDefines(EditorScriptCompilationOptions options, BuildTargetGroup targetGroup, BuildTarget target, ApiCompatibilityLevel apiCompatibilityLevel);
+        extern internal static string[] GetCompilationDefines(EditorScriptCompilationOptions options, BuildTargetGroup targetGroup, BuildTarget target, ApiCompatibilityLevel apiCompatibilityLevel, string[] extraDefines = null);
 
         //Launches an application that is kept alive, even during a domain reload
         [FreeFunction("LaunchApplication")]

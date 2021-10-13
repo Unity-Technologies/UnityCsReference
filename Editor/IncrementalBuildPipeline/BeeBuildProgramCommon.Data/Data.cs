@@ -10,6 +10,18 @@ namespace BeeBuildProgramCommon.Data
         public string ResolvedPath;
     }
 
+    public struct Version
+    {
+        public int Release, Major, Minor;
+
+        public Version(int release, int major, int minor)
+        {
+            Release = release;
+            Major = major;
+            Minor = minor;
+        }
+    }
+
     public class ConfigurationData
     {
         public string Il2CppDir;
@@ -19,7 +31,9 @@ namespace BeeBuildProgramCommon.Data
         public string EditorContentsPath;
         public PackageInfo[] Packages;
         public string UnityVersion;
+        public Version UnityVersionNumeric;
         public string UnitySourceCodePath;
         public bool AdvancedLicense;
+        public bool Batchmode;
     }
 }

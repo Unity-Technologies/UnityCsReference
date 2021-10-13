@@ -9,7 +9,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageManagerProjectSettingsProvider : SettingsProvider
     {
-        protected VisualElement rootVisualElement { get; private set; }
+        internal VisualElement rootVisualElement { get; private set; }
 
         internal const string k_PackageManagerSettingsPath = "Project/Package Manager";
         const string k_GeneralServicesTemplatePath = "UXML/PackageManager/PackageManagerProjectSettings.uxml";

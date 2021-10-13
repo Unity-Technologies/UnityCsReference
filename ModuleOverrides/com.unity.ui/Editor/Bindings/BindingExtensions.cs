@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
@@ -84,7 +85,7 @@ namespace UnityEditor.UIElements.Bindings
             where TEventType : EventBase<TEventType>, new()
         {
             evt.target = target;
-            target.HandleEventAtTargetPhase(evt);
+            target.HandleEventAtTargetAndDefaultPhase(evt);
             return evt.isPropagationStopped;
         }
 
@@ -100,11 +101,14 @@ namespace UnityEditor.UIElements.Bindings
 
             IBindable field = element as IBindable;
 
-            using (var evt = SerializedObjectBindEvent.GetPooled(serializedObject))
+            if (element.HasEventCallbacksOrDefaultActions(SerializedObjectBindEvent.EventCategory))
             {
-                if (SendBindingEvent(evt, element))
+                using (var evt = SerializedObjectBindEvent.GetPooled(serializedObject))
                 {
-                    return;
+                    if (SendBindingEvent(evt, element))
+                    {
+                        return;
+                    }
                 }
             }
 
@@ -183,11 +187,14 @@ namespace UnityEditor.UIElements.Bindings
             // Set enabled state before sending the event because element like PropertyField may stop the event
             SyncEditableState(fieldElement, property.editable);
 
-            using (var evt = SerializedPropertyBindEvent.GetPooled(property))
+            if (fieldElement.HasEventCallbacksOrDefaultActions(SerializedPropertyBindEvent.EventCategory))
             {
-                if (SendBindingEvent(evt, fieldElement))
+                using (var evt = SerializedPropertyBindEvent.GetPooled(property))
                 {
-                    return property;
+                    if (SendBindingEvent(evt, fieldElement))
+                    {
+                        return property;
+                    }
                 }
             }
 
@@ -234,11 +241,16 @@ namespace UnityEditor.UIElements.Bindings
             switch (prop.propertyType)
             {
                 case SerializedPropertyType.Integer:
-                    if (prop.type == "long")
+                    if (prop.type == "long" | prop.type == "ulong")
                     {
-                        if (element is INotifyValueChanged<long>)
+                        if (element is INotifyValueChanged<long> )
                         {
                             DefaultBind(element,  prop, SerializedPropertyHelper.GetLongPropertyValue, SerializedPropertyHelper.SetLongPropertyValue, SerializedPropertyHelper.ValueEquals);
+                        }else if (element is INotifyValueChanged<ulong>)
+                        {
+                            //This is not sustainable, we must fix this
+                            DefaultBind(element,  prop, (x) => (ulong) SerializedPropertyHelper.GetLongPropertyValue(x), (x, v) => SerializedPropertyHelper.SetLongPropertyValue(x, (long)v),
+                                (a, b, c) => SerializedPropertyHelper.ValueEquals((long)a,b, (x) => (long)c(x)));
                         }
                         else if (element is INotifyValueChanged<int> || element is  INotifyValueChanged<string>)
                         {
@@ -254,6 +266,9 @@ namespace UnityEditor.UIElements.Bindings
                         if (element is INotifyValueChanged<int> || element is  INotifyValueChanged<string>)
                         {
                             DefaultBind(element, prop, SerializedPropertyHelper.GetIntPropertyValue, SerializedPropertyHelper.SetIntPropertyValue, SerializedPropertyHelper.ValueEquals);
+                        }else if (element is INotifyValueChanged<long>)
+                        {
+                            DefaultBind(element,  prop, SerializedPropertyHelper.GetLongPropertyValue, SerializedPropertyHelper.SetLongPropertyValue, SerializedPropertyHelper.ValueEquals);
                         }
                         else if (element is INotifyValueChanged<float>)
                         {
@@ -538,58 +553,43 @@ namespace UnityEditor.UIElements.Bindings
 
 
         #region Property Value Tracking
-        class TrackedValue<TValue>
+        class TrackedValue
         {
-            public TValue value;
+            public uint contentHash;
             public SerializedProperty prop;
             public Action<object, SerializedProperty> callback;
             public object cookie;
             public bool isValid;
-            public string propertyPath;
 
-            public TrackedValue(SerializedProperty property, TValue initialValue, Action<object, SerializedProperty> cb)
+            public TrackedValue(SerializedProperty property, Action<object, SerializedProperty> cb)
             {
-                value = initialValue;
-                propertyPath = property.propertyPath;
+                contentHash = property.contentHash;
                 prop = property.Copy();
                 callback = cb;
             }
 
-            public void Update(SerializedObjectBindingContext context, Func<SerializedProperty, TValue> getValue, Func<TValue, SerializedProperty, Func<SerializedProperty, TValue>, bool> comparer)
+            public void Update(SerializedObjectBindingContext context)
             {
-                if (!comparer(value, prop, getValue))
+                var newContentHash = prop.contentHash;
+
+                if (contentHash != newContentHash)
                 {
-                    value = getValue(prop);
                     callback(cookie, prop);
                 }
             }
         }
 
-        interface ITrackedValues
+        class TrackedValues
         {
-            void Update(SerializedObjectBindingContext context);
-            void Add(SerializedProperty prop, object cookie, Action<object, SerializedProperty> callback);
-            void Remove(SerializedProperty prop, object cookie);
-            void UpdateValidProperties(HashSet<string> validPropertyPaths);
-        }
+            private List<TrackedValue> m_List = new List<TrackedValue>();
 
-        class TrackedValues<TValue>: ITrackedValues
-        {
-            public Func<SerializedProperty, TValue> getValue;
-            public Func<TValue, SerializedProperty, Func<SerializedProperty, TValue>, bool> valueComparer;
-
-            private List<TrackedValue<TValue>> m_List = new List<TrackedValue<TValue>>();
-
-            public TrackedValues(Func<SerializedProperty, TValue> getter,
-                                 Func<TValue, SerializedProperty, Func<SerializedProperty, TValue>, bool> comparer)
+            public TrackedValues()
             {
-                getValue = getter;
-                valueComparer = comparer;
             }
 
             public void Add(SerializedProperty prop, object cookie, Action<object, SerializedProperty> callback)
             {
-                var t = new TrackedValue<TValue>(prop, getValue(prop), callback);
+                var t = new TrackedValue(prop, callback);
                 t.cookie = cookie;
                 m_List.Add(t);
             }
@@ -614,166 +614,55 @@ namespace UnityEditor.UIElements.Bindings
                     var t = m_List[i];
                     if (t.isValid)
                     {
-                        t.Update(context, getValue, valueComparer);
+                        t.Update(context);
                     }
                 }
             }
 
-            public void UpdateValidProperties(HashSet<string> validPropertyPaths)
+            public void UpdateValidProperties(HashSet<int> validPropertyPaths)
             {
                 for (int i = 0; i < m_List.Count; i++)
                 {
                     var t = m_List[i];
-                    t.isValid = SerializedPropertyHelper.IsPropertyValidFaster(validPropertyPaths, t.propertyPath, t.prop);
+                    t.isValid = SerializedPropertyHelper.IsPropertyValidFaster(validPropertyPaths,t.prop);
                 }
             }
         }
 
         /// <summary>
         /// Map of value trackers per serialized property type. WARNING: tracker may be null for some types.
-        /// Check <see cref="GetTrackedValueForPropertyType"/> for reference.
+        /// Check <see cref="GetOrCreateTrackedValues"/> for reference.
         /// </summary>
-        private Dictionary<SerializedPropertyType, ITrackedValues> m_ValueTracker;
+        private TrackedValues m_ValueTracker;
 
 
         void UpdateTrackedValues()
         {
-            if (m_ValueTracker != null)
-            {
-                foreach (var kvp in m_ValueTracker)
-                {
-                    kvp.Value?.Update(this);
-                }
-            }
+            m_ValueTracker?.Update(this);
         }
 
         public bool RegisterSerializedPropertyChangeCallback(object cookie, SerializedProperty property,
             Action<object, SerializedProperty> valueChangedCallback)
         {
-            var trackedValues = GetTrackedValueForPropertyType(property);
-            trackedValues?.Add(property, cookie, valueChangedCallback);
-            return trackedValues != null;
+            var trackedValues = GetOrCreateTrackedValues();
+            trackedValues.Add(property, cookie, valueChangedCallback);
+            return true;
         }
 
         public void UnregisterSerializedPropertyChangeCallback(object cookie, SerializedProperty property)
         {
-            var trackedValues = GetTrackedValueForPropertyType(property);
-            trackedValues?.Remove(property, cookie);
+            var trackedValues = GetOrCreateTrackedValues();
+            trackedValues.Remove(property, cookie);
         }
 
-        ITrackedValues GetTrackedValueForPropertyType(SerializedProperty prop)
+        TrackedValues GetOrCreateTrackedValues()
         {
             if (m_ValueTracker == null)
             {
-                m_ValueTracker = new Dictionary<SerializedPropertyType, ITrackedValues>();
+                m_ValueTracker = new TrackedValues();
             }
 
-            ITrackedValues values;
-            if (!m_ValueTracker.TryGetValue(prop.propertyType, out values))
-            {
-                switch (prop.propertyType)
-                {
-                    case SerializedPropertyType.Integer:
-                    case SerializedPropertyType.ArraySize:
-                    case SerializedPropertyType.FixedBufferSize:
-                    case SerializedPropertyType.Enum:
-                    case SerializedPropertyType.LayerMask:
-                        values = new TrackedValues<long>(SerializedPropertyHelper.GetLongPropertyValue,
-                            SerializedPropertyHelper.ValueEquals);
-                        break;
-                    case SerializedPropertyType.Boolean:
-                        values = new TrackedValues<bool>(SerializedPropertyHelper.GetBoolPropertyValue,
-                            SerializedPropertyHelper.ValueEquals);
-                        break;
-                    case SerializedPropertyType.Float:
-                        values = new TrackedValues<double>(SerializedPropertyHelper.GetDoublePropertyValue,
-                            SerializedPropertyHelper.ValueEquals);
-                        break;
-                    case SerializedPropertyType.String:
-                        values = new TrackedValues<string>(SerializedPropertyHelper.GetStringPropertyValue,
-                            SerializedPropertyHelper.ValueEquals);
-                        break;
-                    case SerializedPropertyType.Color:
-                        values = new TrackedValues<Color>(SerializedPropertyHelper.GetColorPropertyValue,
-                            SerializedPropertyHelper.ValueEquals);
-                        break;
-                    case SerializedPropertyType.ObjectReference:
-                        values = new TrackedValues<UnityEngine.Object>(
-                            SerializedPropertyHelper.GetObjectRefPropertyValue, SerializedPropertyHelper.ValueEquals);
-                        break;
-                    case SerializedPropertyType.Vector2:
-                        values = new TrackedValues<Vector2>(SerializedPropertyHelper.GetVector2PropertyValue,
-                            SerializedPropertyHelper.ValueEquals);
-                        break;
-                    case SerializedPropertyType.Vector3:
-                        values = new TrackedValues<Vector3>(SerializedPropertyHelper.GetVector3PropertyValue,
-                            SerializedPropertyHelper.ValueEquals);
-                        break;
-                    case SerializedPropertyType.Vector4:
-                        values = new TrackedValues<Vector4>(SerializedPropertyHelper.GetVector4PropertyValue,
-                            SerializedPropertyHelper.ValueEquals);
-                        break;
-                    case SerializedPropertyType.Rect:
-                        values = new TrackedValues<Rect>(SerializedPropertyHelper.GetRectPropertyValue,
-                            SerializedPropertyHelper.ValueEquals);
-                        break;
-                    case SerializedPropertyType.AnimationCurve:
-                        values = new TrackedValues<AnimationCurve>(
-                            SerializedPropertyHelper.GetAnimationCurvePropertyValue,
-                            SerializedPropertyHelper.ValueEquals);
-                        break;
-                    case SerializedPropertyType.Bounds:
-                        values = new TrackedValues<Bounds>(SerializedPropertyHelper.GetBoundsPropertyValue,
-                            SerializedPropertyHelper.ValueEquals);
-                        break;
-                    case SerializedPropertyType.Gradient:
-                        values = new TrackedValues<Gradient>(SerializedPropertyHelper.GetGradientPropertyValue,
-                            SerializedPropertyHelper.ValueEquals);
-                        break;
-                    case SerializedPropertyType.Quaternion:
-                        values = new TrackedValues<Quaternion>(SerializedPropertyHelper.GetQuaternionPropertyValue,
-                            SerializedPropertyHelper.ValueEquals);
-                        break;
-                    case SerializedPropertyType.Vector2Int:
-                        values = new TrackedValues<Vector2Int>(SerializedPropertyHelper.GetVector2IntPropertyValue,
-                            SerializedPropertyHelper.ValueEquals);
-                        break;
-                    case SerializedPropertyType.Vector3Int:
-                        values = new TrackedValues<Vector3Int>(SerializedPropertyHelper.GetVector3IntPropertyValue,
-                            SerializedPropertyHelper.ValueEquals);
-                        break;
-                    case SerializedPropertyType.RectInt:
-                        values = new TrackedValues<RectInt>(SerializedPropertyHelper.GetRectIntPropertyValue,
-                            SerializedPropertyHelper.ValueEquals);
-                        break;
-                    case SerializedPropertyType.BoundsInt:
-                        values = new TrackedValues<BoundsInt>(SerializedPropertyHelper.GetBoundsIntPropertyValue,
-                            SerializedPropertyHelper.ValueEquals);
-                        break;
-                    case SerializedPropertyType.Character:
-                        values = new TrackedValues<char>(SerializedPropertyHelper.GetCharacterPropertyValue,
-                            SerializedPropertyHelper.ValueEquals);
-                        break;
-                    case SerializedPropertyType.ExposedReference:
-                    case SerializedPropertyType.Generic:
-                        // nothing to bind here
-                        Debug.LogWarning("Serialized property type " + prop.propertyType + " does not support value tracking; callback is not set for " + prop.name);
-                        values = null;
-                        break;
-                    case SerializedPropertyType.ManagedReference:
-                        values = new TrackedValues<object>(SerializedPropertyHelper.GetManagedReferenceValue,
-                            SerializedPropertyHelper.ValueEquals);
-                        break;
-                    default:
-                        Debug.LogWarning(string.Format("Binding is not supported for {0} properties \"{1}\"", prop.type,
-                            prop.propertyPath));
-                        break;
-                }
-
-                m_ValueTracker.Add(prop.propertyType, values);
-            }
-
-            return values;
+            return m_ValueTracker;
         }
 
         public SerializedObjectBindingContextUpdater AddBindingUpdater(VisualElement element)
@@ -800,7 +689,7 @@ namespace UnityEditor.UIElements.Bindings
 
         #endregion
 
-        private static HashSet<string> m_ValidPropertyPaths;
+        private static HashSet<int> m_ValidPropertyPaths;
 
         private HashSet<SerializedObjectBindingBase> m_RegisteredBindings = new HashSet<SerializedObjectBindingBase>();
 
@@ -824,30 +713,26 @@ namespace UnityEditor.UIElements.Bindings
             // still valid. This is way faster than calling serializedProperty.isValid on all properties.
             if (m_ValidPropertyPaths == null)
             {
-                m_ValidPropertyPaths = new HashSet<string>();
+                m_ValidPropertyPaths = new HashSet<int>();
             }
 
             m_ValidPropertyPaths.Clear();
 
+            // Iterating over the entire object, gathering valid property names hashes is faster than querying
+            // each saved SerializedProperty.isValid
             var iterator = serializedObject.GetIterator();
-
+            iterator.unsafeMode = true;
             while (iterator.NextVisible(true))
             {
-                m_ValidPropertyPaths.Add(iterator.propertyPath);
+                m_ValidPropertyPaths.Add(iterator.hashCodeForPropertyPath);
             }
 
             foreach (var b in m_RegisteredBindings)
             {
-                b.SetPropertyValid(SerializedPropertyHelper.IsPropertyValidFaster(m_ValidPropertyPaths, b.boundPropertyPath, b.boundProperty));
+                b.SetPropertyValid(SerializedPropertyHelper.IsPropertyValidFaster(m_ValidPropertyPaths, b.boundProperty));
             }
 
-            if (m_ValueTracker != null)
-            {
-                foreach (var trackers in m_ValueTracker)
-                {
-                    trackers.Value?.UpdateValidProperties(m_ValidPropertyPaths);
-                }
-            }
+            m_ValueTracker?.UpdateValidProperties(m_ValidPropertyPaths);
         }
     }
 
@@ -1127,7 +1012,7 @@ namespace UnityEditor.UIElements.Bindings
         internal class BindingRequest : IBindingRequest
         {
             public static ObjectPool<BindingRequest> s_Pool =
-                new ObjectPool<BindingRequest>(32);
+                new ObjectPool<BindingRequest>(() => new BindingRequest(), 32);
 
             public enum RequestType
             {
@@ -1235,6 +1120,8 @@ namespace UnityEditor.UIElements.Bindings
         public string boundPropertyPath;
         public SerializedProperty boundProperty;
 
+        protected uint lastContentHash;
+
         protected bool isReleased { get; set; }
         protected bool isUpdating { get; set; }
         public abstract void Update();
@@ -1293,11 +1180,6 @@ namespace UnityEditor.UIElements.Bindings
                         if (string.IsNullOrEmpty(ve.tooltip))
                         {
                             ve.tooltip = boundProperty.tooltip;
-
-                            string attributeTooltip = ScriptAttributeUtility.GetHandler(boundProperty)?.tooltip;
-                            if (attributeTooltip != null)
-                                ve.tooltip = attributeTooltip;
-
                             m_TooltipWasSet = true;
                         }
                     }
@@ -1376,7 +1258,7 @@ namespace UnityEditor.UIElements.Bindings
     internal sealed class SerializedObjectBindingContextUpdater : SerializedObjectBindingBase
     {
         public static ObjectPool<SerializedObjectBindingContextUpdater> s_Pool =
-            new ObjectPool<SerializedObjectBindingContextUpdater>(32);
+            new ObjectPool<SerializedObjectBindingContextUpdater>(() => new SerializedObjectBindingContextUpdater(), 32);
 
         private VisualElement owner;
 
@@ -1444,6 +1326,7 @@ namespace UnityEditor.UIElements.Bindings
         protected override void ResetCachedValues()
         {
             lastUpdatedRevision = 0xFFFFFFFFFFFFFFFF;
+            lastContentHash = UInt32.MaxValue;
         }
     }
 
@@ -1489,6 +1372,7 @@ namespace UnityEditor.UIElements.Bindings
                     SerializedPropertyHelper.ForceSync(boundProperty);
                     if (SyncFieldValueToProperty())
                     {
+                        lastContentHash = boundProperty.contentHash;
                         bindingContext.UpdateRevision();     //we make sure to Poll the ChangeTracker here
                         bindingContext.ResetUpdate();
                     }
@@ -1506,6 +1390,7 @@ namespace UnityEditor.UIElements.Bindings
         protected override void ResetCachedValues()
         {
             lastUpdatedRevision = 0xFFFFFFFFFFFFFFFF;
+            lastContentHash = UInt32.MaxValue;
             UpdateLastFieldValue();
             UpdateFieldIsAttached();
         }
@@ -1521,12 +1406,13 @@ namespace UnityEditor.UIElements.Bindings
 
                 if (FieldBinding == this)
                 {
+                    var veField = field as VisualElement;
                     if (lastUpdatedRevision == bindingContext.lastRevision)
                     {
                         // Value might not have changed but prefab state could have been reverted, so we need to
                         // at least update the prefab override visual if necessary. Happens when user reverts a
                         // field where the value is the same as the prefab registered value. Case 1276154.
-                        BindingsStyleHelpers.UpdatePrefabStateStyle(field as VisualElement, boundProperty);
+                        BindingsStyleHelpers.UpdatePrefabStateStyle(veField, boundProperty);
                         return;
                     }
 
@@ -1536,8 +1422,19 @@ namespace UnityEditor.UIElements.Bindings
                         // Here we somehow need to make sure the property internal object version is synced with its serializedObject
                         SerializedPropertyHelper.ForceSync(boundProperty);
 
-                        SyncPropertyToField(field, boundProperty);
-                        BindingsStyleHelpers.UpdateElementStyle(field as VisualElement, boundProperty);
+                        uint newContentHash = boundProperty.contentHash;
+
+                        if (newContentHash != lastContentHash)
+                        {
+                            lastContentHash = newContentHash;
+                            SyncPropertyToField(field, boundProperty);
+                            BindingsStyleHelpers.UpdateElementStyle(veField, boundProperty);
+                        }
+                        else
+                        {
+                            BindingsStyleHelpers.UpdatePrefabStateStyle(veField, boundProperty);
+                        }
+
                         return;
                     }
                 }
@@ -1577,11 +1474,8 @@ namespace UnityEditor.UIElements.Bindings
                 throw new ArgumentNullException(nameof(c));
             }
 
-            if (!propCompareValues(lastFieldValue, p, propGetValue))
-            {
-                lastFieldValue = propGetValue(p);
-                AssignValueToField(lastFieldValue);
-            }
+            lastFieldValue = propGetValue(p);
+            AssignValueToField(lastFieldValue);
         }
 
         protected override bool SyncFieldValueToProperty()
@@ -1625,7 +1519,7 @@ namespace UnityEditor.UIElements.Bindings
     class SerializedObjectBinding<TValue> : SerializedObjectBindingPropertyToBaseField<TValue, TValue>
     {
         public static ObjectPool<SerializedObjectBinding<TValue>> s_Pool =
-            new ObjectPool<SerializedObjectBinding<TValue>>(32);
+            new ObjectPool<SerializedObjectBinding<TValue>>(() => new SerializedObjectBinding<TValue>(), 32);
 
         public static void CreateBind(INotifyValueChanged<TValue> field,
             SerializedObjectBindingContext context,
@@ -1711,7 +1605,7 @@ namespace UnityEditor.UIElements.Bindings
     class SerializedManagedEnumBinding : SerializedObjectBindingToBaseField<Enum, BaseField<Enum>>
     {
         public static ObjectPool<SerializedManagedEnumBinding> s_Pool =
-            new ObjectPool<SerializedManagedEnumBinding>(32);
+            new ObjectPool<SerializedManagedEnumBinding>(() => new SerializedManagedEnumBinding(), 32);
 
         //we need to keep a copy of the last value since some fields will allocate when getting the value
         private int lastEnumValue;
@@ -1817,11 +1711,8 @@ namespace UnityEditor.UIElements.Bindings
             }
 
             int enumValueAsInt = p.intValue;
-            if (enumValueAsInt != lastEnumValue)
-            {
-                field.value = GetEnumFromSerializedFromInt(managedType, enumValueAsInt);
-                lastEnumValue = enumValueAsInt;
-            }
+            field.value = GetEnumFromSerializedFromInt(managedType, enumValueAsInt);
+            lastEnumValue = enumValueAsInt;
         }
 
         protected override void UpdateLastFieldValue()
@@ -1895,7 +1786,7 @@ namespace UnityEditor.UIElements.Bindings
     class SerializedDefaultEnumBinding : SerializedObjectBindingToBaseField<string, PopupField<string>>
     {
         public static ObjectPool<SerializedDefaultEnumBinding> s_Pool =
-            new ObjectPool<SerializedDefaultEnumBinding>(32);
+            new ObjectPool<SerializedDefaultEnumBinding>(() => new SerializedDefaultEnumBinding(), 32);
 
         //we need to keep a copy of the last value since some fields will allocate when getting the value
         private int lastFieldValueIndex;
@@ -1994,10 +1885,7 @@ namespace UnityEditor.UIElements.Bindings
             }
 
             int propValueIndex = p.enumValueIndex;
-            if (lastFieldValueIndex != enumIndexToDisplayIndex[propValueIndex])
-            {
-                c.index = lastFieldValueIndex = enumIndexToDisplayIndex[propValueIndex];
-            }
+            c.index = lastFieldValueIndex = enumIndexToDisplayIndex[propValueIndex];
         }
 
         protected override void UpdateLastFieldValue()
@@ -2065,7 +1953,7 @@ namespace UnityEditor.UIElements.Bindings
     class SerializedObjectStringConversionBinding<TValue> : SerializedObjectBindingPropertyToBaseField<TValue, string>
     {
         public static ObjectPool<SerializedObjectStringConversionBinding<TValue>> s_Pool =
-            new ObjectPool<SerializedObjectStringConversionBinding<TValue>>(32);
+            new ObjectPool<SerializedObjectStringConversionBinding<TValue>>(() => new SerializedObjectStringConversionBinding<TValue>(), 32);
 
         public static void CreateBind(INotifyValueChanged<string> field,
             SerializedObjectBindingContext context,

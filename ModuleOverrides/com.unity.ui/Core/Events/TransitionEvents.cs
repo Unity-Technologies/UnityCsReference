@@ -109,6 +109,7 @@ namespace UnityEngine.UIElements
     /// Transition events abstract base class.
     /// </summary>
     /// <typeparam name="T"></typeparam>
+    [EventCategory(EventCategory.StyleTransition)]
     public abstract class TransitionEventBase<T> : EventBase<T>, ITransitionEvent
         where T : TransitionEventBase<T>, new()
     {
@@ -174,6 +175,10 @@ namespace UnityEngine.UIElements
     /// </summary>
     public sealed class TransitionRunEvent : TransitionEventBase<TransitionRunEvent>
     {
+        static TransitionRunEvent()
+        {
+            SetCreateFunction(() => new TransitionRunEvent());
+        }
     }
 
     /// <summary>
@@ -181,6 +186,10 @@ namespace UnityEngine.UIElements
     /// </summary>
     public sealed class TransitionStartEvent : TransitionEventBase<TransitionStartEvent>
     {
+        static TransitionStartEvent()
+        {
+            SetCreateFunction(() => new TransitionStartEvent());
+        }
     }
 
     /// <summary>
@@ -188,6 +197,10 @@ namespace UnityEngine.UIElements
     /// </summary>
     public sealed class TransitionEndEvent : TransitionEventBase<TransitionEndEvent>
     {
+        static TransitionEndEvent()
+        {
+            SetCreateFunction(() => new TransitionEndEvent());
+        }
     }
 
     /// <summary>
@@ -195,5 +208,9 @@ namespace UnityEngine.UIElements
     /// </summary>
     public sealed class TransitionCancelEvent : TransitionEventBase<TransitionCancelEvent>
     {
+        static TransitionCancelEvent()
+        {
+            SetCreateFunction(() => new TransitionCancelEvent());
+        }
     }
 }

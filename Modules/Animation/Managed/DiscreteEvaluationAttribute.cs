@@ -13,4 +13,27 @@ namespace UnityEngine.Animations
     public class DiscreteEvaluationAttribute : Attribute
     {
     }
+
+    internal static class DiscreteEvaluationAttributeUtilities
+    {
+        public static int ConvertFloatToDiscreteInt(float f)
+        {
+            unsafe
+            {
+                float* fp = &f;
+                int* i = (int*)fp;
+                return *i;
+            }
+        }
+
+        public static float ConvertDiscreteIntToFloat(int f)
+        {
+            unsafe
+            {
+                int* fp = &f;
+                float* i = (float*)fp;
+                return *i;
+            }
+        }
+    }
 }

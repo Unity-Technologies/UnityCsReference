@@ -52,6 +52,7 @@ namespace UnityEditor.DeviceSimulation
     [Serializable]
     internal class ScreenPresentation
     {
+        public string name;
         public string overlayPath;
         public Vector4 borderSize;
         public float cornerRadius;

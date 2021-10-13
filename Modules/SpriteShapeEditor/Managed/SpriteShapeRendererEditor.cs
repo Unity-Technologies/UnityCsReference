@@ -14,6 +14,7 @@ namespace UnityEditor.U2D
         private SerializedProperty m_Color;
         private SerializedProperty m_Material;
         private SerializedProperty m_MaskInteraction;
+        private SerializedProperty m_SpriteSortPoint;
 
         private static class Styles
         {
@@ -24,6 +25,7 @@ namespace UnityEditor.U2D
 
             public static readonly string mainTexErrorText = L10n.Tr("Material does not have a _MainTex texture property. It is required for SpriteShapeRenderer.");
             public static readonly string offsetScaleErrorText = L10n.Tr("Material texture property _MainTex has offset/scale set. It is incompatible with SpriteShapeRenderer.");
+            public static readonly GUIContent spriteSortPointLabel = EditorGUIUtility.TrTextContent("SpriteShape Sort Point", "Determines which position of the SpriteShape is used for sorting.");
         }
 
         public override void OnEnable()
@@ -33,6 +35,7 @@ namespace UnityEditor.U2D
             m_Color = serializedObject.FindProperty("m_Color");
             m_Material = serializedObject.FindProperty("m_Materials.Array"); // Only allow to edit one material
             m_MaskInteraction = serializedObject.FindProperty("m_MaskInteraction");
+            m_SpriteSortPoint = serializedObject.FindProperty("m_SpriteSortPoint");
         }
 
         public override void OnInspectorGUI()
@@ -43,7 +46,7 @@ namespace UnityEditor.U2D
 
             EditorGUILayout.PropertyField(m_Color, Styles.colorLabel, true);
             EditorGUILayout.PropertyField(m_MaskInteraction);
-
+            EditorGUILayout.PropertyField(m_SpriteSortPoint, Styles.spriteSortPointLabel);
             EditorGUILayout.PropertyField(m_Material.GetArrayElementAtIndex(0), Styles.fillMaterialLabel, true);
             EditorGUILayout.PropertyField(m_Material.GetArrayElementAtIndex(1), Styles.edgeMaterialLabel, true);
 

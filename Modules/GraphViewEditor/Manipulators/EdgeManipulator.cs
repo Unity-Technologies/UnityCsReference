@@ -60,6 +60,7 @@ namespace UnityEditor.Experimental.GraphView
         {
             if (m_Active)
             {
+                StopDragging();
                 evt.StopImmediatePropagation();
                 return;
             }
@@ -221,20 +222,25 @@ namespace UnityEditor.Experimental.GraphView
             {
                 if (evt.keyCode == KeyCode.Escape)
                 {
-                    RestoreDetachedPort();
-
-                    m_ConnectedEdgeDragHelper.Reset();
-
-                    foreach (var edgeDrag in m_AdditionalEdgeDragHelpers)
-                    {
-                        edgeDrag.Reset();
-                    }
-
-                    Reset();
-                    target.ReleaseMouse();
+                    StopDragging();
                     evt.StopPropagation();
                 }
             }
+        }
+
+        void StopDragging()
+        {
+            RestoreDetachedPort();
+
+            m_ConnectedEdgeDragHelper.Reset();
+
+            foreach (var edgeDrag in m_AdditionalEdgeDragHelpers)
+            {
+                edgeDrag.Reset();
+            }
+
+            Reset();
+            target.ReleaseMouse();
         }
 
         private void RestoreDetachedPort()

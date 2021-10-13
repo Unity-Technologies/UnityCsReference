@@ -433,11 +433,11 @@ namespace UnityEditor
             set { Lightmapping.GetOrCreateLightingsSettings().filteringAtrousPositionSigmaIndirect = value; }
         }
 
-        [Obsolete("LightmapEditorSettings.environmentMIS is obsolete, use Lightmapping.lightingSettings.environmentMIS instead. ", false)]
+        [Obsolete("LightmapEditorSettings.environmentMIS is obsolete, use Lightmapping.lightingSettings.environmentImportanceSampling instead. ", false)]
         internal static int environmentMIS
         {
-            get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().environmentMIS; }
-            set { Lightmapping.GetOrCreateLightingsSettings().environmentMIS = value; }
+            get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().environmentImportanceSampling ? 1 : 0; }
+            set { Lightmapping.GetOrCreateLightingsSettings().environmentImportanceSampling = value != 0; }
         }
 
         [Obsolete("LightmapEditorSettings.environmentSampleCount is obsolete, use Lightmapping.lightingSettings.environmentSampleCount instead. ", false)]

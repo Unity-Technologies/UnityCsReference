@@ -93,7 +93,7 @@ namespace UnityEditor
         SerializedProperty m_PVRFilteringAtrousPositionSigmaDirect;
         SerializedProperty m_PVRFilteringAtrousPositionSigmaIndirect;
         SerializedProperty m_PVRFilteringAtrousPositionSigmaAO;
-        SerializedProperty m_PVREnvironmentMIS;
+        SerializedProperty m_PVREnvironmentIS;
         SerializedProperty m_PVREnvironmentSampleCount;
         SerializedProperty m_LightProbeSampleCountMultiplier;
 
@@ -235,8 +235,7 @@ namespace UnityEditor
             public static readonly GUIContent directSampleCount = EditorGUIUtility.TrTextContent("Direct Samples", "Controls the number of samples the lightmapper will use for direct lighting calculations. Increasing this value may improve the quality of lightmaps but increases the time required for baking to complete.");
             //public static readonly GUIContent PVRSampleCountAdaptive = EditorGUIUtility.TrTextContent("Max Indirect Samples", "Maximum number of samples to use for indirect lighting.");
             public static readonly GUIContent indirectSampleCount = EditorGUIUtility.TrTextContent("Indirect Samples", "Controls the number of samples the lightmapper will use for indirect lighting calculations. Increasing this value may improve the quality of lightmaps but increases the time required for baking to complete.");
-            public static readonly GUIContent maxBounces = EditorGUIUtility.TrTextContent("Max Bounces", "The maximum number of bounces the Lightmapper computes for indirect lighting. The higher the value, the longer the bake time. Values of up to 10 are suitable for most Scenes. Values higher than 10 might lead to significantly longer bake times.");
-            public static readonly GUIContent minBounces = EditorGUIUtility.TrTextContent("Min Bounces", "The minimum number of bounces the Lightmapper computes for indirect lighting. Lower values reduce bake times, but might increase lightmap noise. To improve performance during bakes, the Lightmapper terminates light paths that contribute little to the appearance of the Scene using a technique called Russian Roulette.");
+            public static readonly GUIContent bounces = EditorGUIUtility.TrTextContent("Bounces", "The minimum and maximum number of bounces the Lightmapper computes for indirect lighting.\nMinimum bounces: Lower values reduce bake times, but might increase lightmap noise. To improve performance during bakes, the Lightmapper terminates light paths that contribute little to the appearance of the Scene using a technique called Russian Roulette.\nMaximum bounces: Values of up to 10 are suitable for most Scenes. Values higher than 10 might lead to significantly longer bake times.");
             public static readonly GUIContent denoisingWarningDirect = EditorGUIUtility.TrTextContent("Direct Denoiser", "Your hardware does not support denoising. For minimum requirements, please read the documentation.");
             public static readonly GUIContent denoisingWarningIndirect = EditorGUIUtility.TrTextContent("Indirect Denoiser", "Your hardware does not support denoising. For minimum requirements, please read the documentation.");
             public static readonly GUIContent denoisingWarningAO = EditorGUIUtility.TrTextContent("Ambient Occlusion Denoiser", "Your hardware Your hardware does not support denoising. For minimum requirements, please read the documentation.");
@@ -254,7 +253,7 @@ namespace UnityEditor
             public static readonly GUIContent filteringAtrousPositionSigmaIndirect = EditorGUIUtility.TrTextContent("Sigma", "Controls the threshold of the filter for indirect light stored in the lightmap. A higher value increases the threshold, which reduces noise in the direct layer of the lightmap. Too high of a value can cause a loss of detail in the lightmap.");
             public static readonly GUIContent filteringAtrousPositionSigmaAO = EditorGUIUtility.TrTextContent("Sigma", "Controls the threshold of the filter for ambient occlusion stored in the lightmap. A higher value increases the threshold, which reduces noise in the direct layer of the lightmap. Too high of a value can cause a loss of detail in the lightmap.");
             public static readonly GUIContent culling = EditorGUIUtility.TrTextContent("Progressive Updates", "Specifies whether the lightmapper should prioritize baking what is visible in the scene view. When disabled, lightmaps are only composited once fully converged which can improve baking performance.");
-            public static readonly GUIContent environmentMIS = EditorGUIUtility.TrTextContent("Multiple Importance Sampling", "Specifies whether to use multiple importance sampling for sampling the environment. This will generally lead to faster convergence when generating lightmaps but can lead to noisier results in certain low frequency environments.");
+            public static readonly GUIContent environmentImportanceSampling = EditorGUIUtility.TrTextContent("Importance Sampling", "Specifies whether to use importance sampling for sampling environment lighting. In most environments importance sampling facilitates faster convergence while generating lightmaps. In certain low frequency environments, importance sampling can produce noisy results.");
             public static readonly GUIContent environmentSampleCount = EditorGUIUtility.TrTextContent("Environment Samples", "Controls the number of samples the lightmapper will use for environment lighting calculations. Increasing this value may improve the quality of lightmaps but increases the time required for baking to complete.");
             public static readonly GUIContent probeSampleCountMultiplier = EditorGUIUtility.TrTextContent("Light Probe Sample Multiplier", "Controls how many samples are used for Light Probes as a multiplier of the general sample counts above. Higher values improve the quality of Light Probes, but also take longer to bake. Enable the Light Probe sample count multiplier by disabling Project Settings > Editor > Use legacy Light Probe sample counts");
 
@@ -347,7 +346,7 @@ namespace UnityEditor
                 m_PVRFilteringAtrousPositionSigmaDirect = lso.FindProperty("m_PVRFilteringAtrousPositionSigmaDirect");
                 m_PVRFilteringAtrousPositionSigmaIndirect = lso.FindProperty("m_PVRFilteringAtrousPositionSigmaIndirect");
                 m_PVRFilteringAtrousPositionSigmaAO = lso.FindProperty("m_PVRFilteringAtrousPositionSigmaAO");
-                m_PVREnvironmentMIS = lso.FindProperty("m_PVREnvironmentMIS");
+                m_PVREnvironmentIS = lso.FindProperty("m_PVREnvironmentImportanceSampling");
                 m_PVREnvironmentSampleCount = lso.FindProperty("m_PVREnvironmentSampleCount");
                 m_LightProbeSampleCountMultiplier = lso.FindProperty("m_LightProbeSampleCountMultiplier");
 
@@ -554,22 +553,7 @@ namespace UnityEditor
                                     EditorGUI.indentLevel++;
 
                                     EditorGUILayout.PropertyField(m_PVRCulling, Styles.culling);
-
-                                    var rect = EditorGUILayout.GetControlRect();
-                                    EditorGUI.BeginProperty(rect, Styles.environmentMIS, m_PVREnvironmentMIS);
-                                    EditorGUI.BeginChangeCheck();
-                                    bool enableMIS = (m_PVREnvironmentMIS.intValue & 1) != 0;
-
-                                    enableMIS = EditorGUI.Toggle(rect, Styles.environmentMIS, enableMIS);
-
-                                    if (EditorGUI.EndChangeCheck())
-                                    {
-                                        if (enableMIS)
-                                            m_PVREnvironmentMIS.intValue |= 1;
-                                        else
-                                            m_PVREnvironmentMIS.intValue &= ~1;
-                                    }
-                                    EditorGUI.EndProperty();
+                                    EditorGUILayout.PropertyField(m_PVREnvironmentIS, Styles.environmentImportanceSampling);
 
                                     // Sampling type
                                     //EditorGUILayout.PropertyField(m_PvrSampling, Styles.m_PVRSampling); // TODO(PVR): make non-fixed sampling modes work.
@@ -597,8 +581,15 @@ namespace UnityEditor
                                     }
 
                                     // Case 1320615: clamping of min bounces can be annoying because it resets when typing in a new max bounce value.
-                                    int minBouncesValue = EditorGUILayout.DelayedIntField(Styles.minBounces, m_PVRMinBounces.intValue);
-                                    int maxBouncesValue = EditorGUILayout.DelayedIntField(Styles.maxBounces, m_PVRBounces.intValue);
+                                    GUILayout.BeginHorizontal();
+                                    EditorGUILayout.PrefixLabel(Styles.bounces);
+                                    GUILayout.Space(-28);
+                                    int minBouncesValue = EditorGUILayout.DelayedIntField(m_PVRMinBounces.intValue, GUILayout.MaxWidth(80));
+                                    GUILayout.Label("minimum", EditorStyles.miniLabel);
+                                    int maxBouncesValue = EditorGUILayout.DelayedIntField(m_PVRBounces.intValue, GUILayout.MaxWidth(80));
+                                    GUILayout.Label("maximum", EditorStyles.miniLabel);
+                                    GUILayout.EndHorizontal();
+
                                     m_PVRBounces.intValue = maxBouncesValue;
                                     m_PVRMinBounces.intValue = minBouncesValue;
 

@@ -331,6 +331,7 @@ namespace UnityEditorInternal
                 // We do valuefields for dopelines that only have single curve
                 AnimationWindowCurve curve = curves[0];
                 object objectValue = CurveBindingUtility.GetCurrentValue(state, curve);
+                int intValue = 0;
 
                 if (objectValue is float)
                 {
@@ -363,18 +364,39 @@ namespace UnityEditorInternal
                             GUIUtility.keyboardControl = id;
                         }
 
-                        value = EditorGUI.DoFloatField(EditorGUI.s_RecycledEditor,
-                            valueFieldRect,
-                            valueFieldDragRect,
-                            id,
-                            value,
-                            "g5",
-                            m_AnimationSelectionTextField,
-                            true);
-                        if (enterInTextField)
+                        if (curve.isDiscreteCurve)
                         {
-                            GUI.changed = true;
-                            Event.current.Use();
+                            intValue =  UnityEngine.Animations.DiscreteEvaluationAttributeUtilities.ConvertFloatToDiscreteInt(value);
+                            intValue = EditorGUI.DoIntField(EditorGUI.s_RecycledEditor,
+                                valueFieldRect,
+                                valueFieldDragRect,
+                                id,
+                                intValue,
+                                EditorGUI.kIntFieldFormatString,
+                                m_AnimationSelectionTextField,
+                                true,
+                                0);
+                            if (enterInTextField)
+                            {
+                                GUI.changed = true;
+                                Event.current.Use();
+                            }
+                        }
+                        else
+                        {
+                            value = EditorGUI.DoFloatField(EditorGUI.s_RecycledEditor,
+                                valueFieldRect,
+                                valueFieldDragRect,
+                                id,
+                                value,
+                                "g5",
+                                m_AnimationSelectionTextField,
+                                true);
+                            if (enterInTextField)
+                            {
+                                GUI.changed = true;
+                                Event.current.Use();
+                            }
                         }
                     }
 
@@ -393,6 +415,9 @@ namespace UnityEditorInternal
                             if (Mathf.Approximately(keyframe.time, state.currentTime))
                                 existingKeyframe = keyframe;
                         }
+
+                        if (curve.isDiscreteCurve)
+                            value = UnityEngine.Animations.DiscreteEvaluationAttributeUtilities.ConvertDiscreteIntToFloat(intValue);
 
                         if (existingKeyframe == null)
                             AnimationWindowUtility.AddKeyframeToCurve(curve, value, curve.valueType, newAnimationKeyTime);

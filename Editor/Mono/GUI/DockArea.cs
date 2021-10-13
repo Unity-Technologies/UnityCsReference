@@ -609,6 +609,12 @@ namespace UnityEditor
             //But its important that they all return the same values.
             var adjustedDockAreaClientRect = borderSize.Remove(newPos);
             base.SetActualViewPosition(adjustedDockAreaClientRect);
+
+            foreach (EditorWindow pane in m_Panes)
+            {
+                if (pane != this)
+                    pane.OnBackgroundViewResized(adjustedDockAreaClientRect);
+            }
         }
 
         private void Maximize(object userData)

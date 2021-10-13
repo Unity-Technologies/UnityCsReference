@@ -67,16 +67,15 @@ namespace UnityEditor.PackageManager.UI.Internal
                                         UpmClient upmClient)
         {
             ResolveDependencies(resourceLoader, extensionManager, selection, packageFiltering, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy, applicationProxy, upmClient);
+        }
 
+        public void OnEnable()
+        {
             styleSheets.Add(m_ResourceLoader.packageManagerWindowStyleSheet);
 
             var root = m_ResourceLoader.GetTemplate("PackageManagerWindow.uxml");
             Add(root);
             cache = new VisualElementCache(root);
-        }
-
-        public void CreateGUI()
-        {
             var newTab = m_PackageManagerPrefs.lastUsedPackageFilter ?? PackageFiltering.k_DefaultFilterTab;
 
             // Reset the lock icons when users open a new Package Manager window
@@ -105,6 +104,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
 
             RefreshSelectedInInspectorClass();
+        }
+
+        public void OnCreateGUI()
+        {
+            var newTab = m_PackageManagerPrefs.lastUsedPackageFilter ?? PackageFiltering.k_DefaultFilterTab;
 
             // set the current filter tab value after all the callback system has been setup so that we don't miss any callbacks
             m_PackageFiltering.currentFilterTab = newTab;
@@ -379,7 +383,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public void OpenAddPackageByNameDropdown(string url)
+        public AddPackageByNameDropdown OpenAddPackageByNameDropdown(string url)
         {
             var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_PackageFiltering, m_UpmClient, m_PackageDatabase, m_PageManager, PackageManagerWindow.instance);
 
@@ -405,6 +409,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             // so that the OnTextFieldChange of placeholder gets called
             dropdown.packageNameField.value = packageName;
             dropdown.packageVersionField.value = packageVersion;
+            return dropdown;
         }
 
         public IDetailsExtension AddDetailsExtension()

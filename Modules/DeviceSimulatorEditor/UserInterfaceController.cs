@@ -12,18 +12,10 @@ namespace UnityEditor.DeviceSimulation
 {
     internal class UserInterfaceController
     {
+        public event Action OnScreenToggled;
+
         private DeviceSimulatorMain m_Main;
         private ScreenSimulation m_ScreenSimulation;
-
-        public RenderTexture PreviewTexture
-        {
-            set => m_DeviceView.PreviewTexture = value;
-        }
-
-        public Texture OverlayTexture
-        {
-            set => m_DeviceView.OverlayTexture = value;
-        }
 
         private int m_Rotation;
         private int Rotation
@@ -52,6 +44,11 @@ namespace UnityEditor.DeviceSimulation
             {
                 m_Scale = value;
                 m_DeviceView.Scale = m_Scale / 100f;
+
+                m_ScaleValueLabel.text = m_Scale.ToString();
+                m_ScaleSlider.SetValueWithoutNotify(m_Scale);
+
+                SetScrollViewTopPadding();
             }
         }
 
@@ -73,6 +70,7 @@ namespace UnityEditor.DeviceSimulation
         // Controls for the toolbar
         private string m_DeviceSearchContent;
         private VisualElement m_DeviceListMenu;
+        private ToolbarButton m_ScreenToggle;
         private TextElement m_SelectedDeviceName;
         private SliderInt m_ScaleSlider;
         private Label m_ScaleValueLabel;
@@ -89,7 +87,9 @@ namespace UnityEditor.DeviceSimulation
         private VisualElement m_PreviewPanel;
         private VisualElement m_ScrollView;
         private VisualElement m_DeviceViewContainer;
+
         private DeviceView m_DeviceView;
+        public DeviceView DeviceView => m_DeviceView;
 
         // Control Panel
         private float m_ControlPanelWidth;
@@ -109,6 +109,9 @@ namespace UnityEditor.DeviceSimulation
             m_DeviceListMenu = rootVisualElement.Q<VisualElement>("device-list-menu");
             m_DeviceListMenu.AddManipulator(new Clickable(ShowDeviceInfoList));
             m_SelectedDeviceName = m_DeviceListMenu.Q<TextElement>("selected-device-name");
+
+            m_ScreenToggle = rootVisualElement.Q<ToolbarButton>("screen-toggle");
+            m_ScreenToggle.clickable.clicked += () => { OnScreenToggled?.Invoke(); };
 
             // Scale slider set up
             m_ScaleSlider = rootVisualElement.Q<SliderInt>("scale-slider");
@@ -175,6 +178,12 @@ namespace UnityEditor.DeviceSimulation
             m_DeviceViewContainer.Add(m_DeviceView);
             m_DeviceView.SafeAreaColor = new Color(0.95f, 1f, 0f);
             m_DeviceView.SafeAreaLineWidth = 5;
+            m_DeviceView.OnBoundingBoxShapeChange += () =>
+            {
+                if (m_FitToScreenEnabled)
+                    FitToScreenScale();
+                SetScrollViewTopPadding();
+            };
 
             // Control Panel set up
             m_SplitView = rootVisualElement.Q<TwoPaneSplitView>("split-view");
@@ -224,12 +233,6 @@ namespace UnityEditor.DeviceSimulation
 
             m_SelectedDeviceName.text = m_Main.currentDevice.deviceInfo.friendlyName;
 
-            var screen = m_Main.currentDevice.deviceInfo.screens[0];
-            m_DeviceView.SetDevice(screen.width, screen.height, screen.presentation.borderSize);
-            m_DeviceView.ScreenOrientation = m_ScreenSimulation.orientation;
-            m_DeviceView.ScreenInsets = m_ScreenSimulation.Insets;
-            m_DeviceView.SafeArea = m_ScreenSimulation.ScreenSpaceSafeArea;
-
             m_ScreenSimulation.OnOrientationChanged += autoRotate => m_DeviceView.ScreenOrientation = m_ScreenSimulation.orientation;
             m_ScreenSimulation.OnInsetsChanged += insets => m_DeviceView.ScreenInsets = insets;
             m_ScreenSimulation.OnScreenSpaceSafeAreaChanged += safeArea => m_DeviceView.SafeArea = safeArea;
@@ -253,9 +256,19 @@ namespace UnityEditor.DeviceSimulation
                 states.controlPanelFoldouts.Add(foldout.Key, foldout.Value.value);
         }
 
+        public void SetScreenToggleName(string name)
+        {
+            m_ScreenToggle.text = name;
+        }
+
+        public void SetScreenToggleVisibility(bool visible)
+        {
+            m_ScreenToggle.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
         private void SetScale(ChangeEvent<int> e)
         {
-            UpdateScale(e.newValue);
+            Scale = e.newValue;
 
             m_FitToScreenEnabled = false;
             m_FitToScreenToggle.SetValueWithoutNotify(m_FitToScreenEnabled);
@@ -274,17 +287,7 @@ namespace UnityEditor.DeviceSimulation
             var x = screenSize.x / m_DeviceView.style.width.value.value;
             var y = screenSize.y / m_DeviceView.style.height.value.value;
 
-            UpdateScale(ClampScale(Mathf.FloorToInt(Scale * Math.Min(x, y))));
-        }
-
-        private void UpdateScale(int newScale)
-        {
-            Scale = newScale;
-
-            m_ScaleValueLabel.text = newScale.ToString();
-            m_ScaleSlider.SetValueWithoutNotify(newScale);
-
-            SetScrollViewTopPadding();
+            Scale = ClampScale(Mathf.FloorToInt(Scale * Math.Min(x, y)));
         }
 
         private void SetControlPanelVisibility(bool visible)

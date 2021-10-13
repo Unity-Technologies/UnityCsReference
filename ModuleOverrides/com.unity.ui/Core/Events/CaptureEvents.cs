@@ -16,6 +16,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Base class for pointer capture events and mouse capture events.
     /// </summary>
+    [EventCategory(EventCategory.Pointer)]
     public abstract class PointerCaptureEventBase<T> : EventBase<T>, IPointerCaptureEvent where T : PointerCaptureEventBase<T>, new()
     {
         /// <summary>
@@ -73,6 +74,10 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class PointerCaptureOutEvent : PointerCaptureEventBase<PointerCaptureOutEvent>
     {
+        static PointerCaptureOutEvent()
+        {
+            SetCreateFunction(() => new PointerCaptureOutEvent());
+        }
     }
 
     /// <summary>
@@ -83,6 +88,10 @@ namespace UnityEngine.UIElements
     /// </remarks>
     public class PointerCaptureEvent : PointerCaptureEventBase<PointerCaptureEvent>
     {
+        static PointerCaptureEvent()
+        {
+            SetCreateFunction(() => new PointerCaptureEvent());
+        }
     }
 
 
@@ -129,6 +138,10 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class MouseCaptureOutEvent : MouseCaptureEventBase<MouseCaptureOutEvent>
     {
+        static MouseCaptureOutEvent()
+        {
+            SetCreateFunction(() => new MouseCaptureOutEvent());
+        }
     }
 
     /// <summary>
@@ -136,5 +149,9 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class MouseCaptureEvent : MouseCaptureEventBase<MouseCaptureEvent>
     {
+        static MouseCaptureEvent()
+        {
+            SetCreateFunction(() => new MouseCaptureEvent());
+        }
     }
 }

@@ -26,9 +26,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal new class UxmlFactory : UxmlFactory<ScopedRegistriesSettings> {}
 
         private Dictionary<string, Label> m_RegistryLabels = new Dictionary<string, Label>();
+        internal IReadOnlyDictionary<string, Label> registryLabels => m_RegistryLabels;
+
         private Label m_NewScopedRegistryLabel;
 
-        private RegistryInfoDraft draft => m_SettingsProxy.registryInfoDraft;
+        internal RegistryInfoDraft draft => m_SettingsProxy.registryInfoDraft;
 
         private ResourceLoader m_ResourceLoader;
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
@@ -156,7 +158,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }
 
                 message = L10n.Tr("You are about to delete a scoped registry, are you sure you want to continue?");
-                var deleteRegistry = EditorUtility.DisplayDialog(L10n.Tr("Deleting a scoped registry"), message, L10n.Tr("Ok"), L10n.Tr("Cancel"));
+                var deleteRegistry = m_ApplicationProxy.isBatchMode || EditorUtility.DisplayDialog(L10n.Tr("Deleting a scoped registry"), message, L10n.Tr("Ok"), L10n.Tr("Cancel"));
 
                 if (deleteRegistry)
                 {
@@ -309,7 +311,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!draft.hasUnsavedChanges)
                 return true;
 
-            var discardChanges = EditorUtility.DisplayDialog(L10n.Tr("Discard unsaved changes"),
+            var discardChanges = m_ApplicationProxy.isBatchMode || EditorUtility.DisplayDialog(L10n.Tr("Discard unsaved changes"),
                 L10n.Tr("You have unsaved changes which would be lost if you continue this operation. Do you want to continue and discard unsaved changes?"),
                 L10n.Tr("Continue"), L10n.Tr("Cancel"));
 
@@ -352,7 +354,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 scopesList[i].EnableInClassList(k_SelectedScopeClass, i == selectedIndex);
         }
 
-        private void UpdateRegistryList()
+        internal void UpdateRegistryList()
         {
             registriesList.Clear();
             m_RegistryLabels.Clear();
@@ -441,15 +443,15 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private HelpBox scopedRegistriesInfoBox => cache.Get<HelpBox>("scopedRegistriesInfoBox");
         private HelpBox scopedRegistryErrorBox => cache.Get<HelpBox>("scopedRegistryErrorBox");
-        private VisualElement registriesList => cache.Get<VisualElement>("registriesList");
-        private TextField registryNameTextField => cache.Get<TextField>("registryNameTextField");
-        private TextField registryUrlTextField => cache.Get<TextField>("registryUrlTextField");
-        private VisualElement scopesList => cache.Get<VisualElement>("scopesList");
-        private Button addRegistryButton => cache.Get<Button>("addRegistryButton");
-        private Button removeRegistryButton => cache.Get<Button>("removeRegistryButton");
-        private Button addScopeButton => cache.Get<Button>("addScopeButton");
-        private Button removeScopeButton => cache.Get<Button>("removeScopeButton");
-        private Button revertRegistriesButton => cache.Get<Button>("revertRegistriesButton");
-        private Button applyRegistriesButton => cache.Get<Button>("applyRegistriesButton");
+        internal VisualElement registriesList => cache.Get<VisualElement>("registriesList");
+        internal TextField registryNameTextField => cache.Get<TextField>("registryNameTextField");
+        internal TextField registryUrlTextField => cache.Get<TextField>("registryUrlTextField");
+        internal VisualElement scopesList => cache.Get<VisualElement>("scopesList");
+        internal Button addRegistryButton => cache.Get<Button>("addRegistryButton");
+        internal Button removeRegistryButton => cache.Get<Button>("removeRegistryButton");
+        internal Button addScopeButton => cache.Get<Button>("addScopeButton");
+        internal Button removeScopeButton => cache.Get<Button>("removeScopeButton");
+        internal Button revertRegistriesButton => cache.Get<Button>("revertRegistriesButton");
+        internal Button applyRegistriesButton => cache.Get<Button>("applyRegistriesButton");
     }
 }

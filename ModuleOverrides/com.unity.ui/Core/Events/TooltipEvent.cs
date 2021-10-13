@@ -13,8 +13,14 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// This event can be used instead of <see cref="VisualElement.tooltip"/> to compute tooltips only when they are about to be displayed.
     /// </remarks>
+    [EventCategory(EventCategory.Tooltip)]
     public class TooltipEvent : EventBase<TooltipEvent>
     {
+        static TooltipEvent()
+        {
+            SetCreateFunction(() => new TooltipEvent());
+        }
+
         /// <summary>
         /// Text to display inside the tooltip box.
         /// </summary>

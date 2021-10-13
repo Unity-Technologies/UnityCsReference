@@ -325,6 +325,7 @@ namespace UnityEditor.Experimental.GraphView
             title = evt.newValue;
         }
 
+        [EventInterest(typeof(PointerDownEvent))]
         protected override void ExecuteDefaultActionAtTarget(EventBase evt)
         {
             base.ExecuteDefaultActionAtTarget(evt);

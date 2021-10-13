@@ -75,6 +75,19 @@ namespace UnityEditor.Modules
             yield return args.target;
         }
 
+        protected virtual Plugin GetPluginFor(PluginImporter imp, BuildTarget target, string destinationPath)
+        {
+            // Skip .cpp files. They get copied to il2cpp output folder just before code compilation
+            if (DesktopPluginImporterExtension.IsCppPluginFile(imp.assetPath))
+                return null;
+
+            return new Plugin
+            {
+                AssetPath = imp.assetPath,
+                DestinationPath = destinationPath,
+            };
+        }
+
         private IEnumerable<Plugin> GetPluginsFor(BuildTarget target)
         {
             var buildTargetName = BuildPipeline.GetBuildTargetName(target);
@@ -82,10 +95,6 @@ namespace UnityEditor.Modules
             foreach (PluginImporter imp in PluginImporter.GetImporters(target))
             {
                 if (!IsPluginCompatibleWithCurrentBuild(target, imp))
-                    continue;
-
-                // Skip .cpp files. They get copied to il2cpp output folder just before code compilation
-                if (DesktopPluginImporterExtension.IsCppPluginFile(imp.assetPath))
                     continue;
 
                 // Skip managed DLLs.
@@ -103,11 +112,9 @@ namespace UnityEditor.Modules
                 if (string.IsNullOrEmpty(destinationPath))
                     continue;
 
-                yield return new Plugin()
-                {
-                    AssetPath = imp.assetPath,
-                    DestinationPath = pluginImpExtension.CalculateFinalPluginPath(buildTargetName, imp)
-                };
+                var plugin = GetPluginFor(imp, target, destinationPath);
+                if (plugin != null)
+                    yield return plugin;
             }
         }
 
@@ -230,6 +237,16 @@ namespace UnityEditor.Modules
             };
         }
 
+        static bool IsNewInputSystemEnabled()
+        {
+            var propName = "activeInputHandler";
+            var ps = PlayerSettings.GetSerializedObject();
+            var newInputEnabledProp = ps.FindProperty(propName);
+            if (newInputEnabledProp == null)
+                throw new Exception($"Failed to find {propName}");
+            return newInputEnabledProp.intValue != 0;
+        }
+
         PlayerBuildConfig PlayerBuildConfigFor(BuildPostProcessArgs args) => new PlayerBuildConfig
         {
             DestinationPath = GetInstallPathFor(args),
@@ -254,6 +271,7 @@ namespace UnityEditor.Modules
             StreamingAssetsFiles = BuildPlayerContext.ActiveInstance.StreamingAssets
                 .Select(e => new StreamingAssetsFile { File = e.src.ToString(), RelativePath = e.dst.ToString() })
                 .ToArray(),
+            UseNewInputSystem = IsNewInputSystemEnabled(),
             ManagedAssemblies = args.report.files
                 .Where(file => file.role == "ManagedLibrary" || file.role == "DependentManagedLibrary" || file.role == "ManagedEngineAPI")
                 .Select(file => file.path.ToNPath())
@@ -436,7 +454,7 @@ namespace UnityEditor.Modules
         void ReportBuildOutputFiles(BuildPostProcessArgs args)
         {
             var filesOutput = Driver.DataFromBuildProgram?.Get<BuiltFilesOutput>() ?? new BuiltFilesOutput();
-            foreach (var outputfile in filesOutput.Files.ToNPaths().Where(f => f.FileExists()))
+            foreach (var outputfile in filesOutput.Files.ToNPaths().Where(f => f.FileExists() && !f.IsSymbolicLink))
                 args.report.RecordFileAdded(outputfile.ToString(), outputfile.Extension);
         }
 
@@ -526,9 +544,6 @@ namespace UnityEditor.Modules
             base.PostProcessCompletedBuild(args);
 
             if (PlayerSettings.GetManagedStrippingLevel(BuildPipeline.GetBuildTargetGroup(args.target)) == ManagedStrippingLevel.Disabled)
-                return;
-
-            if (Driver.DataFromBuildProgram == null)
                 return;
 
             var strippingInfo = GetStrippingInfoFromBuild(args);

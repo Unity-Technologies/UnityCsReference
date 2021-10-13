@@ -18,11 +18,11 @@ namespace UnityEditor.Overlays
         bool visible { get; }
     }
 
+    // Used by SRP https://github.com/Unity-Technologies/Graphics/commit/9e7999d30a1a5189ab9d30e5341a2e48962db453
+    // Remove once VFX overlays are using ITransientOverlay
     abstract class TransientSceneViewOverlay : IMGUIOverlay, ITransientOverlay
     {
         public abstract bool visible { get; }
-        // Used by SRP https://github.com/Unity-Technologies/Graphics/commit/9e7999d30a1a5189ab9d30e5341a2e48962db453
-        // Remove once VFX overlays are using ITransientOverlay
         internal virtual bool ShouldDisplay() => visible;
     }
 
@@ -33,9 +33,9 @@ namespace UnityEditor.Overlays
         public sealed override VisualElement CreatePanelContent()
         {
             rootVisualElement.pickingMode = PickingMode.Position;
-            var container = new IMGUIContainer();
-            container.onGUIHandler = () => OnPanelGUIHandler(container);
-            return container;
+            var imgui = new IMGUIContainer();
+            imgui.onGUIHandler = () => OnPanelGUIHandler(imgui);
+            return imgui;
         }
 
         void OnPanelGUIHandler(IMGUIContainer container)

@@ -130,6 +130,8 @@ namespace UnityEditor.UIElements
             rawValue = new Gradient();
         }
 
+        [EventInterest(typeof(KeyDownEvent), typeof(MouseDownEvent),
+            typeof(DetachFromPanelEvent), typeof(AttachToPanelEvent))]
         protected override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);

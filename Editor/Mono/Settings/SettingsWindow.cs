@@ -234,8 +234,6 @@ namespace UnityEditor
 
             WarnAgainstDuplicates();
 
-            m_SplitterFlex = EditorPrefs.GetFloat(GetPrefKeyName(nameof(m_Splitter)), m_SplitterFlex);
-
             foreach (var provider in m_Providers)
             {
                 provider.settingsWindow = this;
@@ -331,6 +329,7 @@ namespace UnityEditor
             m_Toolbar = new IMGUIContainer(DrawToolbar);
             root.Add(m_Toolbar);
 
+            m_SplitterFlex = EditorPrefs.GetFloat(GetPrefKeyName(nameof(m_Splitter)), m_SplitterFlex);
             m_Splitter = new VisualSplitter { splitSize = Styles.window.GetInt("-unity-splitter-size") };
             m_Splitter.AddToClassList("settings-splitter");
             root.Add(m_Splitter);

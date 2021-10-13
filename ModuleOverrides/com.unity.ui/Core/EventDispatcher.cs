@@ -124,7 +124,7 @@ namespace UnityEngine.UIElements
         private ClickDetector m_ClickDetector = new ClickDetector();
 
         List<IEventDispatchingStrategy> m_DispatchingStrategies;
-        static readonly ObjectPool<Queue<EventRecord>> k_EventQueuePool = new ObjectPool<Queue<EventRecord>>();
+        static readonly ObjectPool<Queue<EventRecord>> k_EventQueuePool = new ObjectPool<Queue<EventRecord>>(() => new Queue<EventRecord>());
         Queue<EventRecord> m_Queue;
         internal PointerDispatchState pointerState { get; } = new PointerDispatchState();
 
@@ -357,6 +357,11 @@ namespace UnityEngine.UIElements
                 }
                 else
                 {
+                    // If no propagation path, make sure EventDispatchUtilities.ExecuteDefaultAction has a target
+                    if (evt.target == null && panel != null)
+                    {
+                        evt.target = panel.visualTree;
+                    }
                     EventDispatchUtilities.ExecuteDefaultAction(evt, panel);
                 }
 

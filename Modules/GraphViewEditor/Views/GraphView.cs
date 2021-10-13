@@ -754,16 +754,14 @@ namespace UnityEditor.Experimental.GraphView
             nodeCreationRequest(new NodeCreationContext() { screenMousePosition = screenPoint, target = target, index = index});
         }
 
+        [EventInterest(typeof(MouseDownEvent), typeof(MouseUpEvent), typeof(KeyUpEvent))]
         protected override void ExecuteDefaultActionAtTarget(EventBase evt)
         {
             base.ExecuteDefaultActionAtTarget(evt);
-
-            if (elementPanel != null && elementPanel.contextualMenuManager != null)
-            {
-                elementPanel.contextualMenuManager.DisplayMenuIfEventMatches(evt, this);
-            }
+            elementPanel?.contextualMenuManager?.DisplayMenuIfEventMatches(evt, this);
         }
 
+        [EventInterest(typeof(DetachFromPanelEvent) , typeof(AttachToPanelEvent))]
         protected override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);

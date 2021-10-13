@@ -56,6 +56,12 @@ namespace UnityEngine
             set;
         }
 
+        extern public float totalTime
+        {
+            [NativeName("SyncJobs(false)->GetTotalSecPosition")]
+            get;
+        }
+
         extern public UInt32 randomSeed
         {
             [NativeName("GetRandomSeed")]

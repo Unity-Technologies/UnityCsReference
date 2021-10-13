@@ -93,7 +93,6 @@ namespace UnityEditor
         }
 
         static SceneView s_ActiveViewForOverlays;
-        IEnumerable<Overlay> m_TransientOverlays;
 
         static string GetLegacyOverlayId(OverlayWindow overlayData)
         {
@@ -102,9 +101,11 @@ namespace UnityEditor
 
         internal void ShowLegacyOverlay(OverlayWindow overlayData)
         {
-            var overlay = overlayCanvas.GetOrCreateLegacyOverlay(GetLegacyOverlayId(overlayData), overlayData.title.text);
+            var overlay = overlayCanvas.GetOrCreateOverlay<LegacyOverlay>(GetLegacyOverlayId(overlayData));
+
             if (overlay != null)
             {
+                overlay.displayName = overlayData.title.text;
                 overlay.data = overlayData;
                 overlay.showRequested = true;
             }
@@ -113,8 +114,9 @@ namespace UnityEditor
         void LegacyOverlayPreOnGUI()
         {
             if (Event.current.type == EventType.Layout)
-                foreach (var legacyOverlay in overlayCanvas.legacyOverlays)
-                    legacyOverlay.showRequested = false;
+                foreach (var overlay in overlayCanvas.overlays)
+                    if(overlay is LegacyOverlay legacyOverlay)
+                        legacyOverlay.showRequested = false;
         }
 
         static void UpdateTransientOverlayDisplay()
@@ -1243,8 +1245,6 @@ namespace UnityEditor
 
             s_ActiveEditorsDirty = true;
 
-            m_TransientOverlays = overlayCanvas.overlays.Where(overlay => !overlay.userControlledVisibility);
-
             baseRootVisualElement.styleSheets.Add(EditorGUIUtility.Load(k_StyleCommon) as StyleSheet);
             baseRootVisualElement.styleSheets.Add(EditorGUIUtility.Load(EditorGUIUtility.isProSkin ? k_StyleDark : k_StyleLight) as StyleSheet);
 
@@ -2264,16 +2264,13 @@ namespace UnityEditor
 
             bool shouldShow = s_ActiveViewForOverlays == this;
 
-            foreach (var overlay in m_TransientOverlays)
+            foreach (var overlay in overlayCanvas.overlays)
             {
                 if (overlay is TransientSceneViewOverlay svo)
                     overlay.displayed = shouldShow && svo.ShouldDisplay();
                 else if (overlay is ITransientOverlay transient)
                     overlay.displayed = shouldShow && transient.visible;
             }
-
-            foreach (var legacyOverlay in overlayCanvas.legacyOverlays)
-                legacyOverlay.displayed = shouldShow && legacyOverlay.visible;
 
             LegacyOverlayPreOnGUI();
 
@@ -3265,14 +3262,12 @@ namespace UnityEditor
                         break;
                     }
 
-                    // Allow user defined Custom Drop Handler
                     bool isPerform = evt.type == EventType.DragPerform;
-
                     var defaultParentObject = GetDefaultParentObjectIfSet();
                     var parent = defaultParentObject != null ? defaultParentObject : customParentForDraggedObjects;
-
                     var go = HandleUtility.PickGameObject(Event.current.mousePosition, true);
 
+                    // Allow user defined Custom Drop Handler
                     if (DragAndDrop.HasHandler(DragAndDropWindowTarget.sceneView))
                     {
                         DragAndDrop.visualMode = DragAndDrop.Drop(DragAndDropWindowTarget.sceneView, go, pivot, Event.current.mousePosition, parent, isPerform);
@@ -3285,27 +3280,30 @@ namespace UnityEditor
                         allObjectsHandled = CallEditorDragFunctions(dragAndDropObjects);
                     }
 
-                    if (evt.type != EventType.Used || !allObjectsHandled)
+                    // C++ legacy Drop Handler
+                    if (!IsDropAccepted(allObjectsHandled))
                     {
-                        // C++ legacy Drop Handler
                         DragAndDrop.visualMode = InternalEditorUtility.SceneViewDrag(go, pivot, Event.current.mousePosition, parent, isPerform);
                     }
 
-                    if (DragAndDrop.visualMode != DragAndDropVisualMode.None)
+                    evt.Use();
+                    if (IsDropAccepted(allObjectsHandled))
                     {
                         DragAndDrop.AcceptDrag();
                         // Bail out as state can be messed up by now.
                         GUIUtility.ExitGUI();
                     }
-
-                    evt.Use();
-
                     break;
                 case EventType.DragExited:
                     CallEditorDragFunctions(dragAndDropObjects);
                     CleanupEditorDragFunctions();
                     break;
             }
+        }
+
+        bool IsDropAccepted(bool allObjectsHandledInExternalHandlers)
+        {
+            return allObjectsHandledInExternalHandlers || DragAndDrop.visualMode != DragAndDropVisualMode.None || DragAndDrop.visualMode != DragAndDropVisualMode.Rejected;
         }
 
         void CommandsGUI()

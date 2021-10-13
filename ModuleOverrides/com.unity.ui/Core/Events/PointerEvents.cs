@@ -272,6 +272,7 @@ namespace UnityEngine.UIElements
     ///   - If the initial PointerDownEvent and the PointerUpEvent occur on the same VisualElement, a <see cref="ClickEvent"/> is sent.
     ///
     /// </remarks>
+    [EventCategory(EventCategory.Pointer)]
     public abstract class PointerEventBase<T> : EventBase<T>, IPointerEvent, IPointerEventInternal
         where T : PointerEventBase<T>, new()
     {
@@ -771,6 +772,11 @@ namespace UnityEngine.UIElements
     /// </remarks>
     public sealed class PointerDownEvent : PointerEventBase<PointerDownEvent>
     {
+        static PointerDownEvent()
+        {
+            SetCreateFunction(() => new PointerDownEvent());
+        }
+
         /// <summary>
         /// Resets the event members to their initial values.
         /// </summary>
@@ -831,8 +837,14 @@ namespace UnityEngine.UIElements
     ///
     /// See <see cref="UIElements.PointerEventBase{T}"/> to see how PointerMoveEvent relates to other pointer events.
     /// </remarks>
+    [EventCategory(EventCategory.PointerMove)]
     public sealed class PointerMoveEvent : PointerEventBase<PointerMoveEvent>
     {
+        static PointerMoveEvent()
+        {
+            SetCreateFunction(() => new PointerMoveEvent());
+        }
+
         /// <summary>
         /// Set this variable if the target should have priority when used in a touch enabled scroll view.
         /// </summary>
@@ -912,6 +924,11 @@ namespace UnityEngine.UIElements
     /// </remarks>
     public sealed class PointerStationaryEvent : PointerEventBase<PointerStationaryEvent>
     {
+        static PointerStationaryEvent()
+        {
+            SetCreateFunction(() => new PointerStationaryEvent());
+        }
+
         /// <summary>
         /// Resets the event members to their initial values.
         /// </summary>
@@ -951,6 +968,11 @@ namespace UnityEngine.UIElements
     /// </remarks>
     public sealed class PointerUpEvent : PointerEventBase<PointerUpEvent>
     {
+        static PointerUpEvent()
+        {
+            SetCreateFunction(() => new PointerUpEvent());
+        }
+
         /// <summary>
         /// Resets the event members to their initial values.
         /// </summary>
@@ -994,9 +1016,9 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            panel.ActivateCompatibilityMouseEvents(pointerId);
-
             base.PostDispatch(panel);
+
+            panel.ActivateCompatibilityMouseEvents(pointerId);
         }
     }
 
@@ -1011,6 +1033,11 @@ namespace UnityEngine.UIElements
     /// </remarks>
     public sealed class PointerCancelEvent : PointerEventBase<PointerCancelEvent>
     {
+        static PointerCancelEvent()
+        {
+            SetCreateFunction(() => new PointerCancelEvent());
+        }
+
         /// <summary>
         /// Resets the event members to their initial values.
         /// </summary>
@@ -1055,6 +1082,8 @@ namespace UnityEngine.UIElements
             }
 
             base.PostDispatch(panel);
+
+            panel.ActivateCompatibilityMouseEvents(pointerId);
         }
     }
 
@@ -1075,6 +1104,11 @@ namespace UnityEngine.UIElements
     /// </remarks>
     public sealed class ClickEvent : PointerEventBase<ClickEvent>
     {
+        static ClickEvent()
+        {
+            SetCreateFunction(() => new ClickEvent());
+        }
+
         /// <summary>
         /// Resets the event members to their initial values.
         /// </summary>
@@ -1109,8 +1143,14 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// This event is sent when a pointer enters a VisualElement or one of its descendants.
     /// </summary>
+    [EventCategory(EventCategory.EnterLeave)]
     public sealed class PointerEnterEvent : PointerEventBase<PointerEnterEvent>
     {
+        static PointerEnterEvent()
+        {
+            SetCreateFunction(() => new PointerEnterEvent());
+        }
+
         /// <summary>
         /// Resets the event members to their initial values.
         /// </summary>
@@ -1137,8 +1177,14 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// This event is sent when a pointer exits an element and all of its descendants.
     /// </summary>
+    [EventCategory(EventCategory.EnterLeave)]
     public sealed class PointerLeaveEvent : PointerEventBase<PointerLeaveEvent>
     {
+        static PointerLeaveEvent()
+        {
+            SetCreateFunction(() => new PointerLeaveEvent());
+        }
+
         /// <summary>
         /// Resets the event members to their initial values.
         /// </summary>
@@ -1165,14 +1211,26 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// This event is sent when a pointer enters an element.
     /// </summary>
+    [EventCategory(EventCategory.EnterLeave)]
     public sealed class PointerOverEvent : PointerEventBase<PointerOverEvent>
     {
+        static PointerOverEvent()
+        {
+            SetCreateFunction(() => new PointerOverEvent());
+        }
     }
 
     /// <summary>
     /// This event is sent when a pointer exits an element.
     /// </summary>
+    [EventCategory(EventCategory.EnterLeave)]
     public sealed class PointerOutEvent : PointerEventBase<PointerOutEvent>
     {
+        static PointerOutEvent()
+        {
+            SetCreateFunction(() => new PointerOutEvent());
+        }
+
+
     }
 }

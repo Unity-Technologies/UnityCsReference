@@ -110,7 +110,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         private bool PrepareForOverwritingUpdatedFiles(NPath[] destFiles)
         {
-            if (!APIUpdaterManager.WaitForVCSServerConnection(true))
+            if (!APIUpdaterManager.WaitForVCSServerConnection())
             {
                 //if we fail to connect to the vcs server, we shouldn't overwrite versioned files.
                 //in this case we will just not do that, continue the build as normal. We have protection for only trying to script update

@@ -13,7 +13,8 @@ namespace UnityEditor
     // - m_ContentRect: Size and position of content that is rendered in m_ContentDraw (is used for calculating the ping background and is passed to m_ContentDraw)
     class PingData
     {
-        public float m_TimeStart = -1f;
+        float m_TimeStart = -1f;
+        bool m_IsPinging = false;
 
         public float m_ZoomTime = 0.2f;
         public float m_WaitTime = 2.5f;
@@ -29,17 +30,20 @@ namespace UnityEditor
 
         public bool isPinging
         {
-            get { return m_TimeStart > -1f; }
+            get { return m_IsPinging; }
+            set { m_IsPinging = value; m_TimeStart = -1f; }
         }
 
         public void HandlePing()
         {
             if (isPinging)
             {
+                if (m_TimeStart < 0)
+                     m_TimeStart = Time.realtimeSinceStartup;
                 float totalTime = m_ZoomTime + m_WaitTime + m_FadeOutTime;
                 float t = (Time.realtimeSinceStartup - m_TimeStart);
 
-                if (t > 0.0f && t < totalTime)
+                if (t >= 0.0f && t < totalTime)
                 {
                     Color c = GUI.color;
                     Matrix4x4 m = GUI.matrix;
@@ -75,7 +79,7 @@ namespace UnityEditor
                 }
                 else
                 {
-                    m_TimeStart = -1f;
+                    isPinging = false;
                 }
             }
         }

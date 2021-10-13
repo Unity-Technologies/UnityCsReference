@@ -85,6 +85,26 @@ namespace UnityEditor
         Hash128 = 25,
     }
 
+    // This enum exposes extra detail, because SerializedPropertyType classifies all numeric types as Integer or Float
+    public enum SerializedPropertyNumericType
+    {
+        Unknown = 0,
+
+        // SerializedPropertyType.Integer covers all these types
+        Int8 = 1,   // sbyte
+        UInt8 = 2,  // byte
+        Int16 = 3,  // short
+        UInt16 = 4, // ushort
+        Int32 = 5,  // int
+        UInt32 = 6, // uint
+        Int64 = 7,  // long
+        UInt64 = 8, // ulong
+
+        // SerializedPropertyType.Float includes both Float and Double
+        Float = 100,
+        Double = 101,
+    }
+
     [NativeHeader("Editor/Src/Utility/SerializedProperty.h")]
     [NativeHeader("Editor/Src/Utility/SerializedProperty.bindings.h")]
     [StructLayout(LayoutKind.Sequential)]
@@ -95,6 +115,7 @@ namespace UnityEditor
         // This is so the garbage collector won't clean up SerializedObject behind the scenes.
         internal SerializedObject m_SerializedObject;
         internal string m_CachedLocalizedDisplayName = "";
+        string m_CachedTooltip;
 
         internal SerializedProperty() {}
         ~SerializedProperty() { Dispose(); }
@@ -197,6 +218,7 @@ namespace UnityEditor
             SerializedProperty property = CopyInternal();
             property.m_SerializedObject = m_SerializedObject;
             property.m_CachedLocalizedDisplayName = m_CachedLocalizedDisplayName;
+            property.m_CachedTooltip = m_CachedTooltip;
             return property;
         }
 
@@ -454,19 +476,6 @@ namespace UnityEditor
         [NativeName("GetSerializedPropertyTypeName")]
         private extern string GetSerializedPropertyTypeNameInternal();
 
-        // Type name of the property is "float" (RO)
-        internal bool isTypeFloat
-        {
-            get
-            {
-                Verify(VerifyFlags.IteratorNotAtEnd);
-                return IsSerializedPropertyTypeFloatInternal();
-            }
-        }
-
-        [NativeName("IsSerializedPropertyTypeFloat")]
-        private extern bool IsSerializedPropertyTypeFloatInternal();
-
         // Type name of the element of an Array property (RO)
         public string arrayElementType
         {
@@ -486,7 +495,15 @@ namespace UnityEditor
             get
             {
                 Verify(VerifyFlags.IteratorNotAtEnd);
-                return GetTooltipInternal();
+                if (!isValidTooltipCache)
+                {
+                    isValidTooltipCache = true;
+                    m_CachedTooltip = GetTooltipInternal();
+                    if (string.IsNullOrEmpty(m_CachedTooltip))
+                        m_CachedTooltip = ScriptAttributeUtility.GetHandler(this).tooltip ?? string.Empty;
+                }
+
+                return m_CachedTooltip;
             }
         }
 
@@ -536,6 +553,15 @@ namespace UnityEditor
             {
                 Verify();
                 return GetHashCodeForPropertyPathWithoutArrayIndexInternal();
+            }
+        }
+
+        internal int hashCodeForPropertyPath
+        {
+            get
+            {
+                Verify();
+                return GetHashCodeForPropertyPathInternal();
             }
         }
 
@@ -754,6 +780,18 @@ namespace UnityEditor
         [NativeName("GetSerializedPropertyType")]
         private extern int GetSerializedPropertyTypeInternal();
 
+        public SerializedPropertyNumericType numericType
+        {
+            get
+            {
+                Verify(VerifyFlags.IteratorNotAtEnd);
+                return (SerializedPropertyNumericType)GetNumericTypeInternal();
+            }
+        }
+
+        [NativeName("GetNumericType")]
+        private extern int GetNumericTypeInternal();
+
         // Value of an integer property.
         public int intValue
         {
@@ -782,6 +820,34 @@ namespace UnityEditor
             {
                 Verify(VerifyFlags.IteratorNotAtEnd);
                 return GetIntValueInternal();
+            }
+            set
+            {
+                Verify(VerifyFlags.IteratorNotAtEnd);
+                SetIntValueInternal(value);
+            }
+        }
+
+        public ulong ulongValue
+        {
+            get
+            {
+                Verify(VerifyFlags.IteratorNotAtEnd);
+                return (ulong)GetIntValueInternal();
+            }
+            set
+            {
+                Verify(VerifyFlags.IteratorNotAtEnd);
+                SetIntValueInternal((long)value);
+            }
+        }
+
+        public uint uintValue
+        {
+            get
+            {
+                Verify(VerifyFlags.IteratorNotAtEnd);
+                return (uint)GetIntValueInternal();
             }
             set
             {
@@ -942,7 +1008,7 @@ namespace UnityEditor
         private extern void SetAnimationCurveValueInternal(AnimationCurve value);
 
         // Value of a gradient property.
-        internal Gradient gradientValue
+        public Gradient gradientValue
         {
             get
             {
@@ -1665,20 +1731,22 @@ namespace UnityEditor
         // Is the cache for a display name string valid?
         internal bool isValidDisplayNameCache
         {
-            get
-            {
-                Verify(VerifyFlags.IteratorNotAtEnd);
-                return GetIsValidDisplayNameCache();
-            }
-            set
-            {
-                Verify(VerifyFlags.IteratorNotAtEnd);
-                SetIsValidDisplayNameCache(value);
-            }
+            get => GetIsValidDisplayNameCache();
+            set => SetIsValidDisplayNameCache(value);
         }
 
         extern private bool GetIsValidDisplayNameCache();
         extern private void SetIsValidDisplayNameCache(bool value);
+
+        // Is the cache for a tooltip string valid?
+        internal bool isValidTooltipCache
+        {
+            get => GetIsValidTooltipCache();
+            set => SetIsValidTooltipCache(value);
+        }
+
+        extern private bool GetIsValidTooltipCache();
+        extern private void SetIsValidTooltipCache(bool value);
 
         public SerializedProperty GetFixedBufferElementAtIndex(int index)
         {

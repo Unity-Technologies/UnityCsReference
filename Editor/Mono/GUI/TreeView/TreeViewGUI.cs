@@ -550,7 +550,7 @@ namespace UnityEditor.IMGUI.Controls
             // Setup ping
             if (topPixelOfRow >= 0f)
             {
-                m_Ping.m_TimeStart = Time.realtimeSinceStartup;
+                m_Ping.isPinging = true;
                 m_Ping.m_PingStyle = pingStyle;
 
                 GUIContent cont = GUIContent.Temp(item.displayName);
@@ -578,7 +578,7 @@ namespace UnityEditor.IMGUI.Controls
 
         virtual public void EndPingItem()
         {
-            m_Ping.m_TimeStart = -1f;
+            m_Ping.isPinging = false;
         }
 
         void HandlePing()

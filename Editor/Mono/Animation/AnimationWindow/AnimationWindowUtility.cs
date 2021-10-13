@@ -280,6 +280,9 @@ namespace UnityEditorInternal
                 {
                     // Create temporary curve to get proper tangents
                     AnimationCurve animationCurve = curve.ToAnimationCurve();
+
+
+
                     if (animationCurve.length <= 1)
                     {
                         TangentMode tangentMode = curve.isDiscreteCurve ? TangentMode.Constant : TangentMode.Linear;

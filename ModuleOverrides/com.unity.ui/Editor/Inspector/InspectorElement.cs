@@ -330,6 +330,7 @@ namespace UnityEditor.UIElements
             customInspector?.Bind(boundObject);
         }
 
+        [EventInterest(typeof(SerializedObjectBindEvent))]
         protected override void ExecuteDefaultActionAtTarget(EventBase evt)
         {
             base.ExecuteDefaultActionAtTarget(evt);

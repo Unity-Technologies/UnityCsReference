@@ -9,7 +9,7 @@ namespace UnityEngine.UIElements
 {
     class PropagationPaths
     {
-        static readonly ObjectPool<PropagationPaths> s_Pool = new ObjectPool<PropagationPaths>();
+        static readonly ObjectPool<PropagationPaths> s_Pool = new ObjectPool<PropagationPaths>(() => new PropagationPaths());
 
         [Flags]
         public enum Type
@@ -50,32 +50,35 @@ namespace UnityEngine.UIElements
             return copyPaths;
         }
 
-        public static PropagationPaths Build(VisualElement elem, Type pathTypesRequested)
+        public static PropagationPaths Build(VisualElement elem, EventBase evt)
         {
-            if (elem == null || pathTypesRequested == Type.None)
-                return null;
-
             PropagationPaths paths = s_Pool.Get();
+            var eventCategory = evt.eventCategory;
 
-            paths.targetElements.Add(elem);
+            // Skip element if it has no event callbacks, default action, or default action at target
+            if (elem.HasEventCallbacksOrDefaultActions(eventCategory))
+                paths.targetElements.Add(elem);
 
-            while (elem.hierarchy.parent != null)
+            // Go through the entire hierarchy. Don't bother checking elem.HasParentEventCallbacks because
+            // 1. It too goes through the entire parent hierarchy, and
+            // 2. It would require dirtying the parent categories when we set isCompositeRoot, so more overhead
+            for (var ve = elem.nextParentWithEventCallback; ve != null; ve = ve.nextParentWithEventCallback)
             {
-                elem = elem.hierarchy.parent;
-                if (elem.isCompositeRoot)
+                if (ve.isCompositeRoot)
                 {
-                    // Callback for elem must be called at the Target phase.
-                    paths.targetElements.Add(elem);
+                    // Callback for elem must be called at the Target phase. Skip if no callback.
+                    if (ve.HasEventCallbacksOrDefaultActions(eventCategory))
+                        paths.targetElements.Add(ve);
                 }
-                else
+                else if (ve.HasEventCallbacks(eventCategory))
                 {
-                    if ((pathTypesRequested & Type.TrickleDown) == Type.TrickleDown && elem.HasTrickleDownHandlers())
+                    if (evt.tricklesDown && ve.HasTrickleDownHandlers())
                     {
-                        paths.trickleDownPath.Add(elem);
+                        paths.trickleDownPath.Add(ve);
                     }
-                    if ((pathTypesRequested & Type.BubbleUp) == Type.BubbleUp && elem.HasBubbleUpHandlers())
+                    if (evt.bubbles && ve.HasBubbleUpHandlers())
                     {
-                        paths.bubbleUpPath.Add(elem);
+                        paths.bubbleUpPath.Add(ve);
                     }
                 }
             }

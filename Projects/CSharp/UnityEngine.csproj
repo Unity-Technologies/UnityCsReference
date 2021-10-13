@@ -1003,6 +1003,9 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualElementAnimation.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\VisualElementAnimation.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualElementEventInterests.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\VisualElementEventInterests.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualElementExperimentalFeatures.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\VisualElementExperimentalFeatures.cs</Link>
     </Compile>
@@ -1036,14 +1039,14 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualTreeAnimationUpdater.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\VisualTreeAnimationUpdater.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualTreeHierarchyFlagsUpdater.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\VisualTreeHierarchyFlagsUpdater.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualTreeHierarchyTracker.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\VisualTreeHierarchyTracker.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualTreeStyleUpdater.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\VisualTreeStyleUpdater.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualTreeTransformClipUpdater.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\VisualTreeTransformClipUpdater.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualTreeUpdater.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\VisualTreeUpdater.cs</Link>

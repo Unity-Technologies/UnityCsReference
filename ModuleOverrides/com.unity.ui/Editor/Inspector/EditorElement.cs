@@ -122,9 +122,21 @@ namespace UnityEditor.UIElements
             m_EditorTarget = editor.targets[0];
             string editorTitle = ObjectNames.GetInspectorTitle(m_EditorTarget);
 
-            var inspectorElementMode = InspectorElement.GetModeFromInspectorMode(inspectorWindow.inspectorMode);
-            if (inspectorWindow.useUIElementsDefaultInspector)
-                inspectorElementMode &= ~(InspectorElement.Mode.IMGUIDefault);
+            InspectorElement.Mode inspectorElementMode;
+
+            var propertyEditor = inspectorWindow as PropertyEditor;
+
+            if (null == propertyEditor || propertyEditor.inspectorElementModeOverride == 0)
+            {
+                inspectorElementMode = InspectorElement.GetModeFromInspectorMode(inspectorWindow.inspectorMode);
+
+                if (inspectorWindow.useUIElementsDefaultInspector)
+                    inspectorElementMode &= ~(InspectorElement.Mode.IMGUIDefault);
+            }
+            else
+            {
+                inspectorElementMode = (InspectorElement.Mode) propertyEditor.inspectorElementModeOverride;
+            }
 
             m_InspectorElement = new InspectorElement(editor, inspectorElementMode)
             {

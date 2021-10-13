@@ -15,11 +15,6 @@ namespace UnityEditor.EditorTools
     {
         Editor m_Editor;
         VisualElement m_Content;
-        // When this Overlay is requested to provide content in an unsupported layout, it can either collapse (toolbar)
-        // or force itself to Panel layout. When that happens, m_CollapsedByInvalidLayout preserves the user requested
-        // state so that if the tool contents change, we can attempt to restore the requested layout.
-        bool m_CollapsedByInvalidLayout;
-
         VisualElement content
         {
             get
@@ -29,17 +24,6 @@ namespace UnityEditor.EditorTools
                 return m_Content;
             }
         }
-
-        EditorToolSettingsOverlay()
-        {
-            ToolManager.activeToolChanged += OnToolChanged;
-        }
-
-        public override VisualElement CreatePanelContent() { CreateEditorContent(); return content; }
-
-        public VisualElement CreateHorizontalToolbarContent() { CreateEditorContent(); return content; }
-
-        public VisualElement CreateVerticalToolbarContent() { CreateEditorContent(); return content; }
 
         protected internal override Layout supportedLayouts
         {
@@ -56,31 +40,40 @@ namespace UnityEditor.EditorTools
             }
         }
 
+        public EditorToolSettingsOverlay()
+        {
+            ToolManager.activeToolChanged += OnToolChanged;
+            CreateEditor();
+        }
+
+        void CreateEditor()
+        {
+            UnityObject.DestroyImmediate(m_Editor);
+            m_Editor = Editor.CreateEditor(EditorToolManager.activeTool);
+        }
+
         void OnToolChanged()
         {
-            // When collapsed an Overlay won't rebuild it's contents. However we need to create a new editor to find
-            // eligible layouts, so if the Overlay is collapsed we'll force a rebuild of the editor content.
-            if (collapsed)
-            {
-                CreateEditorContent();
-                if(m_CollapsedByInvalidLayout)
-                    collapsed = false;
-                m_CollapsedByInvalidLayout = false;
-            }
-            else
-            {
-                // If m_DesiredLayout is not matching the requested layout, that means that this Overlay was forced
-                // to default to Panel layout. Try to restore the originally requested layout.
-                RebuildContent(layout);
+            CreateEditor();
+            RebuildContent();
+        }
 
-                // When in a toolbar, if the content does not support vertical/horizontal toolbar layout, collapse it.
-                m_CollapsedByInvalidLayout = isInToolbar && !collapsed && !container.IsOverlayLayoutSupported(supportedLayouts);
+        public override VisualElement CreatePanelContent()
+        {
+            CreateEditorContent();
+            return content;
+        }
 
-                // If not in a toolbar, but still requesting an unsupported layout, also need to collapse.
-                m_CollapsedByInvalidLayout |= !isInToolbar && (supportedLayouts & layout) != layout;
+        public VisualElement CreateHorizontalToolbarContent()
+        {
+            CreateEditorContent();
+            return content;
+        }
 
-                collapsed = m_CollapsedByInvalidLayout;
-            }
+        public VisualElement CreateVerticalToolbarContent()
+        {
+            CreateEditorContent();
+            return content;
         }
 
         void CreateEditorContent()
@@ -88,10 +81,8 @@ namespace UnityEditor.EditorTools
             m_Content?.RemoveFromHierarchy();
             m_Content = null;
 
-            if (m_Editor != null)
-                UnityObject.DestroyImmediate(m_Editor);
-
-            m_Editor = Editor.CreateEditor(EditorToolManager.activeTool);
+            if(m_Editor == null)
+                return;
 
             switch (layout)
             {

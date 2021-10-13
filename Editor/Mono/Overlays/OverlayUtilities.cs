@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using UnityEditor.EditorTools;
 using UnityEditor.Toolbars;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -91,35 +92,45 @@ namespace UnityEditor.Overlays
             return res;
         }
 
-        public static Overlay CreateOverlay(Type type, OverlayCanvas canvas)
+        public static OverlayAttribute GetAttribute(Type window, Type overlay)
         {
-            var ctor = type.GetConstructor(
-                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
-                null,
-                Type.EmptyTypes, null);
+            return overlay.GetCustomAttribute<OverlayAttribute>() ?? new OverlayAttribute(window, overlay.Name);
+        }
 
-            var obj = ctor?.Invoke(null);
+        public static Overlay CreateOverlay(Type type)
+        {
+            Overlay overlay = null;
 
-            if (obj is Overlay overlay)
+            // Reflection is super slow, avoid it if this this a known type.
+            if(type == typeof(EditorToolSettingsOverlay))
+                overlay = new EditorToolSettingsOverlay();
+            else if(type == typeof(SearchToolBar))
+                overlay = new SearchToolBar();
+            else if(type == typeof(TransformToolsOverlayToolBar))
+                overlay = new TransformToolsOverlayToolBar();
+            else if(type == typeof(SceneViewToolBar))
+                overlay = new SceneViewToolBar();
+            else if(type == typeof(GridAndSnapToolBar))
+                overlay = new GridAndSnapToolBar();
+            else
             {
-                overlay.canvas = canvas;
-                var attributes = type.GetCustomAttributes(typeof(OverlayAttribute), false);
+                var ctor = type.GetConstructor(
+                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
+                    null,
+                    Type.EmptyTypes, null);
 
-                foreach (var attrib in attributes)
+                overlay = ctor?.Invoke(null) as Overlay;
+
+                if (overlay == null)
                 {
-                    if (attrib is OverlayAttribute overlayAttribute)
-                    {
-                        overlay.InitializeFromAttribute(overlayAttribute);
-                        break;
-                    }
+                    Debug.LogWarning("Overlay of type {type} can not be instantiated. Make sure this type contains a " +
+                        "parameter-less constructor and inherits the Overlay type.");
+                    return null;
                 }
-
-                return overlay;
             }
 
-            Debug.LogWarning("Overlay of type {type} can not be instantiated. Make sure this type contains a " +
-                "parameter-less constructor and inherits the Overlay type.");
-            return null;
+            overlay.Initialize(GetAttribute(null, type));
+            return overlay;
         }
 
         internal static bool GetIsDefaultDisplayFromAttribute(Type type)

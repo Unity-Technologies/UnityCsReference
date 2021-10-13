@@ -14,6 +14,11 @@ namespace UnityEditor.UIElements
     /// </summary>
     public sealed class SerializedPropertyChangeEvent : EventBase<SerializedPropertyChangeEvent>
     {
+        static SerializedPropertyChangeEvent()
+        {
+            SetCreateFunction(() => new SerializedPropertyChangeEvent());
+        }
+
         /// <summary>
         /// The SerializedProperty whose value changed.
         /// </summary>
@@ -62,6 +67,11 @@ namespace UnityEditor.UIElements
     /// </summary>
     public sealed class SerializedObjectChangeEvent : EventBase<SerializedObjectChangeEvent>
     {
+        static SerializedObjectChangeEvent()
+        {
+            SetCreateFunction(() => new SerializedObjectChangeEvent());
+        }
+
         /// <summary>
         /// The SerializedObject whose value changed.
         /// </summary>
@@ -105,8 +115,14 @@ namespace UnityEditor.UIElements
         }
     };
 
+    [EventCategory(EventCategory.Bind)]
     internal class SerializedObjectBindEvent : EventBase<SerializedObjectBindEvent>
     {
+        static SerializedObjectBindEvent()
+        {
+            SetCreateFunction(() => new SerializedObjectBindEvent());
+        }
+
         private SerializedObject m_BindObject;
         public SerializedObject bindObject
         {
@@ -141,8 +157,14 @@ namespace UnityEditor.UIElements
         }
     }
 
+    [EventCategory(EventCategory.Bind)]
     internal class SerializedPropertyBindEvent : EventBase<SerializedPropertyBindEvent>
     {
+        static SerializedPropertyBindEvent()
+        {
+            SetCreateFunction(() => new SerializedPropertyBindEvent());
+        }
+
         private SerializedProperty m_BindProperty;
         public SerializedProperty bindProperty
         {

@@ -233,6 +233,7 @@ namespace Unity.UI.Builder
             CenterCanvas();
         }
 
+        [EventInterest(EventInterestOptions.Inherit)]
         protected override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);

@@ -41,7 +41,7 @@ namespace UnityEngine.UIElements
     /// </summary>
     internal class VisualElementFocusChangeTarget : FocusChangeDirection
     {
-        static readonly ObjectPool<VisualElementFocusChangeTarget> Pool = new ObjectPool<VisualElementFocusChangeTarget>();
+        static readonly ObjectPool<VisualElementFocusChangeTarget> Pool = new ObjectPool<VisualElementFocusChangeTarget>(() => new VisualElementFocusChangeTarget());
 
         /// <summary>
         /// Gets a VisualElementFocusChangeTarget from the pool and initializes it with the given target. Use this function instead of creating new VisualElementFocusChangeTarget. Results obtained using this method need to be released back to the pool. You can use `Dispose()` to release them.

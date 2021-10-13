@@ -355,6 +355,7 @@ namespace UnityEngine.UIElements
             return SliderLerpUnclamped(lowLimit, highLimit, interpolant);
         }
 
+        [EventInterest(typeof(GeometryChangedEvent))]
         protected override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);

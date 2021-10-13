@@ -694,14 +694,12 @@ namespace UnityEngine.UIElements
             {
                 m_Owner.m_PhysicalParent = value;
                 m_Owner.m_LogicalParent = value;
-                if (value != null)
+                var newPanel = value?.elementPanel;
+                if (newPanel != null)
                 {
-                    m_Owner.SetPanel(m_Owner.m_PhysicalParent.elementPanel);
+                    m_Owner.DirtyNextParentWithEventCallback();
                 }
-                else
-                {
-                    m_Owner.SetPanel(null);
-                }
+                m_Owner.SetPanel(newPanel);
             }
 
             /// <summary>
@@ -1072,5 +1070,6 @@ namespace UnityEngine.UIElements
             // THIS is not under retargetRoot
             return this;
         }
+
     }
 }

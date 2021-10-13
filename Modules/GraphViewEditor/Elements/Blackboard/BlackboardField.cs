@@ -88,6 +88,7 @@ namespace UnityEditor.Experimental.GraphView
             this.AddManipulator(new ContextualMenuManipulator(BuildFieldContextualMenu));
         }
 
+        [EventInterest(typeof(AttachToPanelEvent))]
         protected override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);

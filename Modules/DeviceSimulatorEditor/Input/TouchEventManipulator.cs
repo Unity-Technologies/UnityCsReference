@@ -14,7 +14,7 @@ namespace UnityEditor.DeviceSimulation
     {
         private bool m_TouchFromMouseActive;
         private Texture m_OverlayTexture;
-        private DeviceInfo m_DeviceInfo;
+        private ScreenData m_ScreenData;
         private ScreenSimulation m_ScreenSimulation;
         private readonly DeviceSimulator m_DeviceSimulator;
         private InputManagerBackend m_InputManagerBackend;
@@ -80,18 +80,20 @@ namespace UnityEditor.DeviceSimulation
             TouchFromMouse(position, phase);
         }
 
-        public void InitTouchInput(Texture overlayTexture, DeviceInfo deviceInfo, ScreenSimulation screenSimulation)
+        public void SetDevice(ScreenSimulation screenSimulation, bool resetDeltaTimeWhenStationary)
+        {
+            m_ScreenSimulation = screenSimulation;
+            if(m_InputManagerBackend != null)
+                m_InputManagerBackend.resetDeltaTimeWhenStationary = resetDeltaTimeWhenStationary;
+
+            CancelAllTouches();
+        }
+
+        public void SetScreen(Texture overlayTexture, ScreenData screenData)
         {
             m_OverlayTexture = overlayTexture;
-            m_DeviceInfo = deviceInfo;
-            m_ScreenSimulation = screenSimulation;
-            if (m_InputManagerBackend != null)
-            {
-                if (deviceInfo.IsAndroidDevice())
-                    m_InputManagerBackend.resetDeltaTimeWhenStationary = true;
-                else if (deviceInfo.IsiOSDevice())
-                    m_InputManagerBackend.resetDeltaTimeWhenStationary = false;
-            }
+            m_ScreenData = screenData;
+
             CancelAllTouches();
         }
 
@@ -107,9 +109,9 @@ namespace UnityEditor.DeviceSimulation
                 position.x = 0;
                 isPointerInsideDeviceScreen = false;
             }
-            else if (position.x > m_DeviceInfo.screens[0].width)
+            else if (position.x > m_ScreenData.width)
             {
-                position.x = m_DeviceInfo.screens[0].width;
+                position.x = m_ScreenData.width;
                 isPointerInsideDeviceScreen = false;
             }
             if (position.y < 0)
@@ -117,9 +119,9 @@ namespace UnityEditor.DeviceSimulation
                 position.y = 0;
                 isPointerInsideDeviceScreen = false;
             }
-            else if (position.y > m_DeviceInfo.screens[0].height)
+            else if (position.y > m_ScreenData.height)
             {
-                position.y = m_DeviceInfo.screens[0].height;
+                position.y = m_ScreenData.height;
                 isPointerInsideDeviceScreen = false;
             }
 
@@ -182,8 +184,8 @@ namespace UnityEditor.DeviceSimulation
         private Vector2 ScreenPixelToTouchCoordinate(Vector2 position)
         {
             // First calculating which pixel is being touched inside the pixel rect where game is rendered in portrait orientation, due to insets this might not be full screen
-            var renderedAreaPortraitWidth = m_DeviceInfo.screens[0].width - m_ScreenSimulation.Insets.x - m_ScreenSimulation.Insets.z;
-            var renderedAreaPortraitHeight = m_DeviceInfo.screens[0].height - m_ScreenSimulation.Insets.y - m_ScreenSimulation.Insets.w;
+            var renderedAreaPortraitWidth = m_ScreenData.width - m_ScreenSimulation.Insets.x - m_ScreenSimulation.Insets.z;
+            var renderedAreaPortraitHeight = m_ScreenData.height - m_ScreenSimulation.Insets.y - m_ScreenSimulation.Insets.w;
 
             var touchedPixelPortraitX = position.x - m_ScreenSimulation.Insets.x;
             var touchedPixelPortraitY = position.y - m_ScreenSimulation.Insets.y;
@@ -234,15 +236,15 @@ namespace UnityEditor.DeviceSimulation
             if (m_OverlayTexture is Texture2D {isReadable : true} overlayTexture)
             {
                 // We use the orientation agnostic touch position, but we need to adjust the 0,0 position from bottom/left to top/left
-                var adjustedTouchPositionY = m_DeviceInfo.screens[0].height - originalTouchPosition.y;
+                var adjustedTouchPositionY = m_ScreenData.height - originalTouchPosition.y;
 
                 // Calculate the device size:overlay texture ratio
-                var screenWidthScale = m_OverlayTexture.width / (m_DeviceInfo.screens[0].presentation.borderSize.x + m_DeviceInfo.screens[0].presentation.borderSize.z + m_DeviceInfo.screens[0].width);
-                var screenHeightScale = m_OverlayTexture.height / (m_DeviceInfo.screens[0].presentation.borderSize.y + m_DeviceInfo.screens[0].presentation.borderSize.w + m_DeviceInfo.screens[0].height);
+                var screenWidthScale = m_OverlayTexture.width / (m_ScreenData.presentation.borderSize.x + m_ScreenData.presentation.borderSize.z + m_ScreenData.width);
+                var screenHeightScale = m_OverlayTexture.height / (m_ScreenData.presentation.borderSize.y + m_ScreenData.presentation.borderSize.w + m_ScreenData.height);
 
                 // Since we're orientation agnostic and always checking using portrait mode we need to take into account the x and w borders.
-                var touchToTexturePositionX = (int)((originalTouchPosition.x + m_DeviceInfo.screens[0].presentation.borderSize.x) * screenWidthScale);
-                var touchToTexturePositionY = (int)((adjustedTouchPositionY + m_DeviceInfo.screens[0].presentation.borderSize.w) * screenHeightScale);
+                var touchToTexturePositionX = (int)((originalTouchPosition.x + m_ScreenData.presentation.borderSize.x) * screenWidthScale);
+                var touchToTexturePositionY = (int)((adjustedTouchPositionY + m_ScreenData.presentation.borderSize.w) * screenHeightScale);
 
                 // We can consider pixels of over 80% alpha as opaque enough for a cutout
                 return overlayTexture.GetPixel(touchToTexturePositionX, touchToTexturePositionY).a > 0.8;

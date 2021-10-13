@@ -51,6 +51,7 @@ namespace UnityEditor.Experimental.GraphView
             AddStyleSheetPath("StyleSheets/GraphView/StackNode.uss");
         }
 
+        [EventInterest(typeof(GeometryChangedEvent), typeof(DetachFromPanelEvent), typeof(AttachToPanelEvent))]
         protected override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);

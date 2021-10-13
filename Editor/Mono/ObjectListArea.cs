@@ -1379,7 +1379,7 @@ namespace UnityEditor
                 if (name == null)
                     return;
 
-                m_Ping.m_TimeStart = Time.realtimeSinceStartup;
+                m_Ping.isPinging = true;
                 m_Ping.m_AvailableWidth = m_VisibleRect.width;
                 m_pingIndex = index;
 
@@ -1431,7 +1431,7 @@ namespace UnityEditor
 
         public void EndPing()
         {
-            m_Ping.m_TimeStart = -1f;
+            m_Ping.isPinging = false;
         }
 
         void HandlePing()
@@ -1459,9 +1459,9 @@ namespace UnityEditor
             }
             else
             {
-                // TODO: Find out why Y offset 3 is needed
+                Vector2 adjustLabel = new Vector2(-3, 2); // adjust so ping label matches grid label exactly
                 float width = m_Ping.m_ContentRect.width;
-                return new Vector2(gridRect.center.x - width / 2f + m_Ping.m_PingStyle.padding.left, gridRect.yMax - Styles.resultsGridLabel.fixedHeight + 3);
+                return new Vector2(gridRect.center.x - width / 2f + m_Ping.m_PingStyle.padding.left + adjustLabel.x, gridRect.yMax - Styles.resultsGridLabel.fixedHeight + adjustLabel.y);
             }
         }
     }

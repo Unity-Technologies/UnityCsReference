@@ -383,11 +383,9 @@ namespace UnityEngine.UIElements
                             // If CheckForTabEvent returns -1 or -2, we have reach the end/beginning of its control list.
                             // We should switch the focus to the next VisualElement.
                             Focusable currentFocusedElement = focusController.GetLeafFocusedElement();
-                            Focusable nextFocusedElement = null;
-                            using (KeyDownEvent e = KeyDownEvent.GetPooled('\t', KeyCode.Tab, result == -1 ? EventModifiers.None : EventModifiers.Shift))
-                            {
-                                nextFocusedElement = focusController.SwitchFocusOnEvent(e);
-                            }
+                            Focusable nextFocusedElement = focusController.FocusNextInDirection(result == -1
+                                ? VisualElementFocusChangeDirection.right
+                                : VisualElementFocusChangeDirection.left);
 
                             if (currentFocusedElement == this)
                             {
@@ -504,31 +502,13 @@ namespace UnityEngine.UIElements
             IncrementVersion(VersionChangeType.Layout);
         }
 
-        public override void HandleEvent(EventBase evt)
+        [EventInterest(EventInterestOptionsInternal.TriggeredByOS)]
+        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
         {
-            base.HandleEvent(evt);
-
-            if (evt == null)
-            {
-                return;
-            }
-
-            if (evt.propagationPhase != PropagationPhase.TrickleDown &&
-                evt.propagationPhase != PropagationPhase.AtTarget &&
-                evt.propagationPhase != PropagationPhase.BubbleUp)
-            {
-                return;
-            }
+            base.ExecuteDefaultActionAtTarget(evt);
 
             if (evt.imguiEvent == null)
-            {
                 return;
-            }
-
-            if (evt.isPropagationStopped)
-            {
-                return;
-            }
 
             if (SendEventToIMGUI(evt))
             {
@@ -722,6 +702,7 @@ namespace UnityEngine.UIElements
             return false;
         }
 
+        [EventInterest(typeof(BlurEvent), typeof(FocusEvent), typeof(DetachFromPanelEvent), typeof(AttachToPanelEvent))]
         protected override void ExecuteDefaultAction(EventBase evt)
         {
             if (evt == null)

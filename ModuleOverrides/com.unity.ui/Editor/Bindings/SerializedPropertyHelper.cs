@@ -15,10 +15,14 @@ namespace UnityEditor.UIElements.Bindings
             return prop != null && prop.isValid;
         }
 
-        public static bool IsPropertyValidFaster(HashSet<string> knownPropertyPaths, string propertyPath,
-            SerializedProperty p)
+        public static bool IsPropertyValidFaster(HashSet<int> knownPropertyPaths, SerializedProperty p)
         {
-            if (knownPropertyPaths.Contains(propertyPath))
+            if (p == null)
+            {
+                return false;
+            }
+
+            if (knownPropertyPaths.Contains(p.hashCodeForPropertyPath))
             {
                 return true;
             }
@@ -28,7 +32,7 @@ namespace UnityEditor.UIElements.Bindings
                 if (IsPropertyValid(p))
                 {
                     //let's add it to the known valid properties
-                    knownPropertyPaths.Add(propertyPath);
+                    knownPropertyPaths.Add(p.hashCodeForPropertyPath);
                     return true;
                 }
 

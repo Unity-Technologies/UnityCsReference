@@ -80,6 +80,7 @@ namespace UnityEngine.UIElements
     /// receive these events.
     ///
     /// </remarks>
+    [EventCategory(EventCategory.Keyboard)]
     public abstract class KeyboardEventBase<T> : EventBase<T>, IKeyboardEvent where T : KeyboardEventBase<T>, new()
     {
         /// <summary>
@@ -236,6 +237,11 @@ namespace UnityEngine.UIElements
     /// </remarks>
     public class KeyDownEvent : KeyboardEventBase<KeyDownEvent>
     {
+        static KeyDownEvent()
+        {
+            SetCreateFunction(() => new KeyDownEvent());
+        }
+
         // This is needed for TextEditor features that require an imguiEvent but receive non-imgui events
         internal void GetEquivalentImguiEvent(Event outImguiEvent)
         {
@@ -261,5 +267,9 @@ namespace UnityEngine.UIElements
     /// </remarks>
     public class KeyUpEvent : KeyboardEventBase<KeyUpEvent>
     {
+        static KeyUpEvent()
+        {
+            SetCreateFunction(() => new KeyUpEvent());
+        }
     }
 }

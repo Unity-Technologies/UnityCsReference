@@ -37,6 +37,9 @@
     <Compile Include="..\..\Editor\Mono\2D\SpriteAtlas\EditorSpriteAtlas.bindings.cs">
       <Link>Editor\Mono\2D\SpriteAtlas\EditorSpriteAtlas.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\2D\SpriteAtlas\EditorSpritePacking.bindings.cs">
+      <Link>Editor\Mono\2D\SpriteAtlas\EditorSpritePacking.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\2D\SpriteAtlas\SpriteAtlasAsset.bindings.cs">
       <Link>Editor\Mono\2D\SpriteAtlas\SpriteAtlasAsset.bindings.cs</Link>
     </Compile>
@@ -417,6 +420,12 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\AssetStore.bindings.cs">
       <Link>Editor\Mono\AssetStore.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\AssetStoreCachePathManager.bindings.cs">
+      <Link>Editor\Mono\AssetStoreCachePathManager.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\AssetStoreCachePathManager.cs">
+      <Link>Editor\Mono\AssetStoreCachePathManager.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\AssetStoreContext.bindings.cs">
       <Link>Editor\Mono\AssetStoreContext.bindings.cs</Link>
@@ -7850,7 +7859,7 @@
       <HintPath>..\..\External\ExCSS\builds\builds\lib\net35\ExCSS.Unity.dll</HintPath>
     </Reference>
     <Reference Include="Bee.BeeDriver">
-      <HintPath>..\..\artifacts\Stevedore\bee_c9e6\BeeAsALibrary\Bee.BeeDriver.dll</HintPath>
+      <HintPath>..\..\artifacts\Stevedore\bee_530d\BeeAsALibrary\Bee.BeeDriver.dll</HintPath>
     </Reference>
     <ProjectReference Include="UnityEngine.csproj">
       <Project>{F0499708-3EB6-4026-8362-97E6FFC4E7C8}</Project>

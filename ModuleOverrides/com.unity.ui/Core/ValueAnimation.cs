@@ -87,7 +87,7 @@ namespace UnityEngine.UIElements.Experimental
         /// </summary>
         public bool autoRecycle {get; set;}
         private bool recycled { get; set; }
-        static ObjectPool<ValueAnimation<T>> sObjectPool = new ObjectPool<ValueAnimation<T>>(k_DefaultMaxPoolSize);
+        static ObjectPool<ValueAnimation<T>> sObjectPool = new ObjectPool<ValueAnimation<T>>(() => new ValueAnimation<T>(), k_DefaultMaxPoolSize);
 
         private VisualElement owner { get; set; }
 

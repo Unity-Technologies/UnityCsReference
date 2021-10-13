@@ -198,7 +198,8 @@ namespace UnityEditor
 
                     bool orgChanged = GUI.changed;
                     GUI.changed = false;
-                    foreach (string key in PlayerSettings.templateCustomKeys)
+                    var templateCustomKeys = Templates[GetTemplateIndex(templateProp.stringValue)].CustomKeys;
+                    foreach (string key in templateCustomKeys)
                     {
                         string value = PlayerSettings.GetTemplateCustomValue(key);
                         value = EditorGUILayout.TextField(PrettyTemplateKeyName(key), value);
@@ -214,7 +215,7 @@ namespace UnityEditor
                         GUIUtility.hotControl = 0;
                         GUIUtility.keyboardControl = 0;
                         templateProp.serializedObject.ApplyModifiedProperties();
-                        PlayerSettings.templateCustomKeys = Templates[GetTemplateIndex(templateProp.stringValue)].CustomKeys;
+                        PlayerSettings.templateCustomKeys = templateCustomKeys;
                         templateProp.serializedObject.Update();
                     }
                 }

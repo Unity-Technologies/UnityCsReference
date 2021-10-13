@@ -112,6 +112,7 @@ namespace UnityEditor
         public HashSet<int> editorsWithImportedObjectLabel { get; } = new HashSet<int>();
         public EditorDragging editorDragging { get; }
         public bool useUIElementsDefaultInspector { get; internal set; } = false;
+        internal int inspectorElementModeOverride { get; set; } = 0;
         public Editor lastInteractedEditor { get; set; }
         internal static PropertyEditor HoveredPropertyEditor { get; private set; }
         internal static PropertyEditor FocusedPropertyEditor { get; private set; }

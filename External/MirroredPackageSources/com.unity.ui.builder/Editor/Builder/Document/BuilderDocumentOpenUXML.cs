@@ -706,8 +706,11 @@ namespace Unity.UI.Builder
                     return;
             }
 
-            // LoadVisualTreeAsset needs to be delayed to ensure that this is called later, while in a correct state.
-            EditorApplication.delayCall += () => LoadVisualTreeAsset(newVisualTreeAsset);
+            if (EditorWindow.HasOpenInstances<Builder>())
+            {
+                // LoadVisualTreeAsset needs to be delayed to ensure that this is called later, while in a correct state.
+                EditorApplication.delayCall += () => LoadVisualTreeAsset(newVisualTreeAsset);
+            }
         }
 
         //

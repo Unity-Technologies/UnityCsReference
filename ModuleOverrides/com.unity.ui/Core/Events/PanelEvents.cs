@@ -14,6 +14,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Abstract base class for events notifying of a panel change.
     /// </summary>
+    [EventCategory(EventCategory.ChangePanel)]
     public abstract class PanelChangedEventBase<T> : EventBase<T>, IPanelChangedEvent where T : PanelChangedEventBase<T>, new()
     {
         /// <summary>
@@ -65,6 +66,10 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class AttachToPanelEvent : PanelChangedEventBase<AttachToPanelEvent>
     {
+        static AttachToPanelEvent()
+        {
+            SetCreateFunction(() => new AttachToPanelEvent());
+        }
     }
 
     /// <summary>
@@ -72,5 +77,9 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class DetachFromPanelEvent : PanelChangedEventBase<DetachFromPanelEvent>
     {
+        static DetachFromPanelEvent()
+        {
+            SetCreateFunction(() => new DetachFromPanelEvent());
+        }
     }
 }

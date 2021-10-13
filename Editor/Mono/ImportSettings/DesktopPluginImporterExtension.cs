@@ -173,8 +173,8 @@ namespace UnityEditor
             if (!imp.isNativePlugin)
                 return true;
 
-            string ext = Path.GetExtension(imp.assetPath).ToLower();
-            return ext == ".so" || ext == ".bundle" || ext == ".dylib" || IsCppPluginFile(imp.assetPath);
+            string ext = FileUtil.GetPathExtension(imp.assetPath).ToLower();
+            return ext == "so" || ext == "bundle" || ext == "dylib" || IsCppPluginFile(imp.assetPath);
         }
 
         private bool IsUsableOnLinux(PluginImporter imp)
@@ -182,8 +182,8 @@ namespace UnityEditor
             if (!imp.isNativePlugin)
                 return true;
 
-            string ext = Path.GetExtension(imp.assetPath).ToLower();
-            return ext == ".so" || IsCppPluginFile(imp.assetPath);
+            string ext = FileUtil.GetPathExtension(imp.assetPath).ToLower();
+            return ext == "so" || IsCppPluginFile(imp.assetPath);
         }
 
         public override void OnPlatformSettingsGUI(PluginImporterInspector inspector)

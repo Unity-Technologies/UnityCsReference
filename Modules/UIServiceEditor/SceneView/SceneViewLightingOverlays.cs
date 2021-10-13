@@ -122,6 +122,10 @@ namespace UnityEditor
 
         void OnCameraModeChanged(SceneView.CameraMode mode)
         {
+            // If the rootVisualElement hasn't yet been created, early out
+            if (m_AlbedoContent == null)
+                return;
+
             m_AlbedoContent.EnableInClassList(k_UnityHiddenClass, mode.drawMode != DrawCameraMode.ValidateAlbedo && mode.drawMode != DrawCameraMode.ValidateMetalSpecular);
             m_AlbedoContent.Q("Albedo").EnableInClassList(k_UnityHiddenClass, mode.drawMode != DrawCameraMode.ValidateAlbedo);
             m_LightExposureContent.EnableInClassList(k_UnityHiddenClass, !sceneView.showExposureSettings);

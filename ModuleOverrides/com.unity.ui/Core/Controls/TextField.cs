@@ -220,6 +220,8 @@ namespace UnityEngine.UIElements
                 base.SyncTextEngine();
             }
 
+            [EventInterest(typeof(KeyDownEvent), typeof(ExecuteCommandEvent),
+                typeof(NavigationSubmitEvent), typeof(NavigationCancelEvent), typeof(NavigationMoveEvent))]
             protected override void ExecuteDefaultActionAtTarget(EventBase evt)
             {
                 base.ExecuteDefaultActionAtTarget(evt);
@@ -280,6 +282,7 @@ namespace UnityEngine.UIElements
                 }
             }
 
+            [EventInterest(typeof(BlurEvent))]
             protected override void ExecuteDefaultAction(EventBase evt)
             {
                 base.ExecuteDefaultAction(evt);

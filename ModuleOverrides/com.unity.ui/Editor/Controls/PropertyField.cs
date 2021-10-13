@@ -145,6 +145,7 @@ namespace UnityEditor.UIElements
             m_FoldoutDepth = this.GetFoldoutDepth();
         }
 
+        [EventInterest(typeof(SerializedPropertyBindEvent))]
         protected override void ExecuteDefaultActionAtTarget(EventBase evt)
         {
             base.ExecuteDefaultActionAtTarget(evt);

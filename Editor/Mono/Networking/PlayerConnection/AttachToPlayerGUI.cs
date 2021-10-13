@@ -63,8 +63,11 @@ namespace UnityEditor.Networking.PlayerConnection
             if (!UnityEditor.EditorGUI.DropdownButton(rect, Styles.dropdownButton, FocusType.Keyboard, style))
                 return;
 
-            ConnectionTreeViewWindow ctvw = new ConnectionTreeViewWindow(internalState, rect);
-            PopupWindow.Show(rect, ctvw);
+            if (internalState != null)
+            {
+                ConnectionTreeViewWindow ctvw = new ConnectionTreeViewWindow(internalState, rect);
+                PopupWindow.Show(rect, ctvw);
+            }
         }
     }
 

@@ -10,8 +10,14 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Event sent after the custom style properties of a <see cref="VisualElement"/> have been resolved.
     /// </summary>
+    [EventCategory(EventCategory.Style)]
     public class CustomStyleResolvedEvent : EventBase<CustomStyleResolvedEvent>
     {
+        static CustomStyleResolvedEvent()
+        {
+            SetCreateFunction(() => new CustomStyleResolvedEvent());
+        }
+
         /// <summary>
         /// Returns the custom style properties accessor for the targeted <see cref="VisualElement"/>.
         /// </summary>

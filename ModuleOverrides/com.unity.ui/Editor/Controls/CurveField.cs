@@ -271,6 +271,8 @@ namespace UnityEditor.UIElements
             CurveEditorWindow.color = curveColor;
         }
 
+        [EventInterest(typeof(KeyDownEvent), typeof(PointerDownEvent), typeof(DetachFromPanelEvent),
+            typeof(GeometryChangedEvent))]
         protected override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
@@ -578,6 +580,7 @@ namespace UnityEditor.UIElements
                 pickingMode = PickingMode.Ignore;
             }
 
+            [EventInterest(typeof(DetachFromPanelEvent))]
             protected override void ExecuteDefaultAction(EventBase evt)
             {
                 base.ExecuteDefaultAction(evt);

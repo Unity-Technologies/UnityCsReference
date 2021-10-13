@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Bee.BeeDriver;
+using BeeBuildProgramCommon.Data;
 using NiceIO;
 using UnityEditor.PackageManager;
 using UnityEditorInternal;
@@ -50,17 +51,19 @@ namespace UnityEditor.Scripting.ScriptCompilation
             NPath profilerOutputFile = UnityBeeDriverProfilerSession.GetTraceEventsOutputForNewBeeDriver() ?? $"{dagDir}/fullprofile.json";
             var result = new BeeDriver(buildProgram, UnityBeeBackendProgram(), projectDirectory, dagName, dagDir.ToString(), sourceFileUpdaters, processSourceFileUpdatersResult, progressAPI ?? new UnityProgressAPI("Script Compilation"), profilerOutputFile: profilerOutputFile.ToString());
 
-            result.DataForBuildProgram.Add(new BeeBuildProgramCommon.Data.ConfigurationData
+            result.DataForBuildProgram.Add(new ConfigurationData
             {
                 Il2CppDir = IL2CPPUtils.GetIl2CppFolder(),
                 Il2CppPath = IL2CPPUtils.GetExePath("il2cpp"),
                 UnityLinkerPath = IL2CPPUtils.GetExePath("UnityLinker"),
                 NetCoreRunPath = NetCoreRunProgram.NetCoreRunPath,
                 EditorContentsPath = EditorApplication.applicationContentsPath,
-                Packages = UnityBeeDriver.GetPackageInfos(NPath.CurrentDirectory.ToString()),
+                Packages = GetPackageInfos(NPath.CurrentDirectory.ToString()),
                 UnityVersion = Application.unityVersion,
-                UnitySourceCodePath = Unsupported.IsSourceBuild() ? Unsupported.GetBaseUnityDeveloperFolder() : null,
-                AdvancedLicense = PlayerSettings.advancedLicense
+                UnityVersionNumeric = new BeeBuildProgramCommon.Data.Version(Application.unityVersionVer, Application.unityVersionMaj, Application.unityVersionMin),
+                UnitySourceCodePath = Unsupported.IsSourceBuild(false) ? Unsupported.GetBaseUnityDeveloperFolder() : null,
+                AdvancedLicense = PlayerSettings.advancedLicense,
+                Batchmode = InternalEditorUtility.inBatchMode
             });
             return result;
         }

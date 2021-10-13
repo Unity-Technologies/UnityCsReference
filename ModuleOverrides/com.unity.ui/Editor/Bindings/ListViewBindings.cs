@@ -178,6 +178,8 @@ namespace UnityEditor.UIElements.Bindings
         protected override void ResetCachedValues()
         {
             m_ListViewArraySize = -1;
+            m_LastUpdatedRevision = 0xFFFFFFFFFFFFFFFF;
+            lastContentHash = UInt32.MaxValue;
             UpdateFieldIsAttached();
         }
 
@@ -201,7 +203,8 @@ namespace UnityEditor.UIElements.Bindings
                     m_LastUpdatedRevision = bindingContext.lastRevision;
 
                     int currentArraySize = m_ArraySize.intValue;
-                    if (currentArraySize != m_ListViewArraySize || listView.sourceIncludesArraySize != m_LastSourceIncludesArraySize)
+                    if (currentArraySize != m_ListViewArraySize ||
+                        listView.sourceIncludesArraySize != m_LastSourceIncludesArraySize)
                     {
                         UpdateArraySize();
                     }

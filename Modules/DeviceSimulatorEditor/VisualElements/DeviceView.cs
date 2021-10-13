@@ -45,6 +45,7 @@ namespace UnityEditor.DeviceSimulation
             {
                 m_Rotation = Quaternion.Euler(0, 0, value);
                 ComputeBoundingBoxAndTransformations();
+                OnBoundingBoxShapeChange?.Invoke();
             }
         }
 
@@ -138,6 +139,7 @@ namespace UnityEditor.DeviceSimulation
 
         public Matrix4x4 ViewToScreen { get; private set; }
         public event Action OnViewToScreenChanged;
+        public event Action OnBoundingBoxShapeChange;
 
         public DeviceView(Quaternion rotation, float scale)
         {
@@ -155,6 +157,7 @@ namespace UnityEditor.DeviceSimulation
             m_BorderSize = borderSize;
             m_OverlayMeshDirty = m_ScreenMeshDirty = m_ProceduralOverlayMeshDirty = m_SafeAreaMeshDirty = true;
             ComputeBoundingBoxAndTransformations();
+            OnBoundingBoxShapeChange?.Invoke();
         }
 
         private void OnIMGUIRendered()

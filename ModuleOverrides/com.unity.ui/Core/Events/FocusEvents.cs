@@ -23,6 +23,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Base class for focus related events.
     /// </summary>
+    [EventCategory(EventCategory.Focus)]
     public abstract class FocusEventBase<T> : EventBase<T>, IFocusEvent where T : FocusEventBase<T>, new()
     {
         /// <summary>
@@ -88,6 +89,11 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class FocusOutEvent : FocusEventBase<FocusOutEvent>
     {
+        static FocusOutEvent()
+        {
+            SetCreateFunction(() => new FocusOutEvent());
+        }
+
         /// <summary>
         /// Resets the event members to their initial values.
         /// </summary>
@@ -116,6 +122,11 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class BlurEvent : FocusEventBase<BlurEvent>
     {
+        static BlurEvent()
+        {
+            SetCreateFunction(() => new BlurEvent());
+        }
+
         protected internal override void PreDispatch(IPanel panel)
         {
             base.PreDispatch(panel);
@@ -132,6 +143,11 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class FocusInEvent : FocusEventBase<FocusInEvent>
     {
+        static FocusInEvent()
+        {
+            SetCreateFunction(() => new FocusInEvent());
+        }
+
         /// <summary>
         /// Resets the event members to their initial values.
         /// </summary>
@@ -160,6 +176,11 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class FocusEvent : FocusEventBase<FocusEvent>
     {
+        static FocusEvent()
+        {
+            SetCreateFunction(() => new FocusEvent());
+        }
+
         protected internal override void PreDispatch(IPanel panel)
         {
             base.PreDispatch(panel);

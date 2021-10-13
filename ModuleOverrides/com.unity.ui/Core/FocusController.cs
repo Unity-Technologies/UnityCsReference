@@ -153,12 +153,15 @@ namespace UnityEngine.UIElements
             return null;
         }
 
+        // If we open IFocusRing to users, we need to offer a way to listen to other event types.
+        [EventInterest(typeof(PointerDownEvent), typeof(KeyDownEvent), typeof(NavigationMoveEvent), typeof(NavigationTabEvent))]
         protected override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
             ProcessEvent(evt);
         }
 
+        [EventInterest(typeof(PointerDownEvent), typeof(KeyDownEvent), typeof(NavigationMoveEvent), typeof(NavigationTabEvent))]
         internal override void ExecuteDefaultActionDisabled(EventBase evt)
         {
             base.ExecuteDefaultActionDisabled(evt);

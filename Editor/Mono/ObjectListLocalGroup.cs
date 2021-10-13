@@ -664,6 +664,7 @@ namespace UnityEditor
 
                 Event evt = Event.current;
                 Rect itemRect = position;
+                Rect orgPosition = position;
 
                 var assetReference = new AssetReference() { instanceID = 0 };
                 bool showFoldout = false;
@@ -928,9 +929,9 @@ namespace UnityEditor
                                 if (isDropTarget)
                                     Styles.resultsLabel.Draw(new Rect(labelRect.x - 10, labelRect.y, labelRect.width + 20, labelRect.height), GUIContent.none, true, true, false, false);
 
-                                labeltext = m_Owner.GetCroppedLabelText(assetReference, labeltext, position.width);
-                                var labelNewRect = Styles.resultsGridLabel.CalcSizeWithConstraints(GUIContent.Temp(labeltext), position.size);
-                                labelRect.x = position.x + (position.width - labelNewRect.x) / 2.0f;
+                                labeltext = m_Owner.GetCroppedLabelText(assetReference, labeltext, orgPosition.width);
+                                var labelNewRect = Styles.resultsGridLabel.CalcSizeWithConstraints(GUIContent.Temp(labeltext), orgPosition.size);
+                                labelRect.x = orgPosition.x + (orgPosition.width - labelNewRect.x) / 2.0f;
                                 labelRect.width = labelNewRect.x;
                                 Styles.resultsGridLabel.Draw(labelRect, labeltext, false, false, selected, m_Owner.HasFocus());
                             }

@@ -72,8 +72,11 @@ namespace UnityEngine.UIElements
         {
             requireMeasureFunction = true;
             AddToClassList(ussClassName);
+            textHandle = TextCoreHandle.New();
             generateVisualContent += OnGenerateVisualContent;
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
         }
 
         private ITextHandle m_TextHandle;
@@ -87,23 +90,19 @@ namespace UnityEngine.UIElements
 
         internal static int maxTextVertices = MeshBuilder.s_MaxTextMeshVertices;
 
-        public override void HandleEvent(EventBase evt)
-        {
-            if (evt.eventTypeId == AttachToPanelEvent.TypeId() && evt is AttachToPanelEvent attachEvent)
-            {
-                textHandle = TextCoreHandle.New();
-                (attachEvent.destinationPanel as BaseVisualElementPanel)?.liveReloadSystem.RegisterTextElement(this);
-            }
-            else if (evt.eventTypeId == DetachFromPanelEvent.TypeId() && evt is DetachFromPanelEvent detachEvent)
-            {
-                (detachEvent.originPanel as BaseVisualElementPanel)?.liveReloadSystem.UnregisterTextElement(this);
-            }
-            base.HandleEvent(evt);
-        }
-
         private void OnGeometryChanged(GeometryChangedEvent e)
         {
             UpdateVisibleText();
+        }
+
+        private void OnAttachToPanel(AttachToPanelEvent attachEvent)
+        {
+            (attachEvent.destinationPanel as BaseVisualElementPanel)?.liveReloadSystem.RegisterTextElement(this);
+        }
+
+        private void OnDetachFromPanel(DetachFromPanelEvent detachEvent)
+        {
+            (detachEvent.originPanel as BaseVisualElementPanel)?.liveReloadSystem.UnregisterTextElement(this);
         }
 
         [SerializeField]

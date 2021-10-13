@@ -204,6 +204,7 @@ namespace Unity.UI.Builder
             evt.PreventDefault();
         }
 
+        [EventInterest(typeof(AttachToPanelEvent))]
         protected override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);

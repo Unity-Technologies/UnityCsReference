@@ -130,13 +130,13 @@ namespace UnityEngine.UIElements
 
             // Only send GeometryChanged events when the layout changes
             // (padding changes don't affect the element's geometry).
-            if (layoutSizeChanged || layoutPositionChanged)
+            if ((layoutSizeChanged || layoutPositionChanged) && ve.HasEventCallbacksOrDefaultActions(GeometryChangedEvent.EventCategory))
             {
                 using (var evt = GeometryChangedEvent.GetPooled(lastLayoutRect, yogaLayoutRect))
                 {
                     evt.layoutPass = currentLayoutPass;
                     evt.target = ve;
-                    ve.SendEvent(evt);
+                    ve.HandleEventAtTargetAndDefaultPhase(evt);
                 }
             }
 

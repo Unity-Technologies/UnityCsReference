@@ -77,26 +77,10 @@ namespace UnityEditor.SceneTemplate
             return AssetDatabase.FindAssets("t:SceneTemplateAsset").Select(AssetDatabase.GUIDToAssetPath);
         }
 
-        internal static Rect GetCenteredWindowPosition(Rect parentWindowPosition, Vector2 size)
-        {
-            var pos = new Rect
-            {
-                x = 0,
-                y = 0,
-                width = Mathf.Min(size.x, parentWindowPosition.width * 0.90f),
-                height = Mathf.Min(size.y, parentWindowPosition.height * 0.90f)
-            };
-            var w = (parentWindowPosition.width - pos.width) * 0.5f;
-            var h = (parentWindowPosition.height - pos.height) * 0.5f;
-            pos.x = parentWindowPosition.x + w;
-            pos.y = parentWindowPosition.y + h;
-            return pos;
-        }
-
         internal static Rect GetMainWindowCenteredPosition(Vector2 size)
         {
             var mainWindowRect = EditorGUIUtility.GetMainWindowPosition();
-            return GetCenteredWindowPosition(mainWindowRect, size);
+            return EditorGUIUtility.GetCenteredWindowPosition(mainWindowRect, size);
         }
 
         internal static void SetLastFolder(string path)

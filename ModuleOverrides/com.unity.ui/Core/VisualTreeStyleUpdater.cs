@@ -149,6 +149,18 @@ namespace UnityEngine.UIElements
             m_TransitionPropertyUpdateList.Clear();
         }
 
+        protected bool disposed { get; private set; }
+        protected override void Dispose(bool disposing)
+        {
+            if (disposed)
+                return;
+
+            if (disposing)
+                m_StyleContextHierarchyTraversal.Clear();
+
+            disposed = true;
+        }
+
         private void ApplyStyles()
         {
             Debug.Assert(visualTree.panel != null);
@@ -353,12 +365,13 @@ namespace UnityEngine.UIElements
 
             // Need to send the custom styles event after the inheritance is resolved because an element
             // may want to read standard styles too (TextInputFieldBase callback depends on it).
-            if (updateElement && (originalCustomStyleCount > 0 || element.computedStyle.customPropertiesCount > 0))
+            if (updateElement && (originalCustomStyleCount > 0 || element.computedStyle.customPropertiesCount > 0) &&
+                element.HasEventCallbacksOrDefaultActions(CustomStyleResolvedEvent.EventCategory))
             {
                 using (var evt = CustomStyleResolvedEvent.GetPooled())
                 {
                     evt.target = element;
-                    element.SendEvent(evt);
+                    element.HandleEventAtTargetAndDefaultPhase(evt);
                 }
             }
 

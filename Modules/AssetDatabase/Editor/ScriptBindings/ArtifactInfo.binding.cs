@@ -15,6 +15,15 @@ using UnityEngine.Scripting;
 namespace UnityEditor
 {
     [NativeHeader("Modules/AssetDatabase/Editor/V2/ArtifactInfo.h")]
+    internal enum ImportActivityWindowStartupData
+    {
+        AllCurrentRevisions,
+        LongestImportDuration,
+        MostDependencies,
+        ClearCache
+    };
+
+    [NativeHeader("Modules/AssetDatabase/Editor/V2/ArtifactInfo.h")]
     [StructLayout(LayoutKind.Sequential)]
     internal struct ArtifactInfoImportStats
     {
@@ -70,6 +79,7 @@ namespace UnityEditor
     }
 
     [NativeHeader("Modules/AssetDatabase/Editor/V2/ArtifactInfo.h")]
+    [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
     internal class ArtifactInfo : IDisposable
     {
@@ -92,7 +102,6 @@ namespace UnityEditor
         public void Dispose()
         {
             Dispose(true);
-            GC.SuppressFinalize(this);
         }
 
         protected virtual void Dispose(bool disposing)
@@ -102,6 +111,8 @@ namespace UnityEditor
                 Internal_Destroy(m_Ptr);
                 m_Ptr = IntPtr.Zero;
             }
+
+            GC.SuppressFinalize(this);
         }
 
         private bool IsValid()
@@ -111,6 +122,7 @@ namespace UnityEditor
 
         private static extern IntPtr Internal_Create();
 
+        [FreeFunction("ArtifactInfoBindings::Internal_Destroy", IsThreadSafe = true)]
         private static extern void Internal_Destroy(IntPtr ptr);
 
         [FreeFunction("ArtifactInfoBindings::GetArtifactID_Internal")]

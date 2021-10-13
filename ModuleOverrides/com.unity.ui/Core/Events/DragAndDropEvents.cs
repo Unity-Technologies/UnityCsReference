@@ -23,6 +23,11 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class DragExitedEvent : DragAndDropEventBase<DragExitedEvent>
     {
+        static DragExitedEvent()
+        {
+            SetCreateFunction(() => new DragExitedEvent());
+        }
+
         /// <summary>
         /// Resets the event members to their initial values.
         /// </summary>
@@ -80,6 +85,11 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class DragEnterEvent : DragAndDropEventBase<DragEnterEvent>
     {
+        static DragEnterEvent()
+        {
+            SetCreateFunction(() => new DragEnterEvent());
+        }
+
         /// <summary>
         /// Resets the event members to their initial values.
         /// </summary>
@@ -108,6 +118,11 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class DragLeaveEvent : DragAndDropEventBase<DragLeaveEvent>
     {
+        static DragLeaveEvent()
+        {
+            SetCreateFunction(() => new DragLeaveEvent());
+        }
+
         /// <summary>
         /// Resets the event members to their initial values.
         /// </summary>
@@ -136,6 +151,11 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class DragUpdatedEvent : DragAndDropEventBase<DragUpdatedEvent>
     {
+        static DragUpdatedEvent()
+        {
+            SetCreateFunction(() => new DragUpdatedEvent());
+        }
+
         /// <summary>
         /// Gets an event from the event pool and initializes it with the given values. Use this function instead of creating new events. Events obtained using this method need to be released back to the pool. You can use `Dispose()` to release them.
         /// </summary>
@@ -180,5 +200,9 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class DragPerformEvent : DragAndDropEventBase<DragPerformEvent>
     {
+        static DragPerformEvent()
+        {
+            SetCreateFunction(() => new DragPerformEvent());
+        }
     }
 }

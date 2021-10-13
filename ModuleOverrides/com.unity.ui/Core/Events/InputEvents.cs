@@ -9,6 +9,11 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class InputEvent : EventBase<InputEvent>
     {
+        static InputEvent()
+        {
+            SetCreateFunction(() => new InputEvent());
+        }
+
         /// <summary>
         /// The text before the change occured.
         /// </summary>

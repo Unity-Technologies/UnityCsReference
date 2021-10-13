@@ -706,61 +706,26 @@ namespace UnityEditor
         }
 
         [NativeThrows]
-        internal extern static void GetArtifactInfos_Internal(GUID guid, [Out] ArtifactInfo[] artifactInfos);
+        private extern static ArtifactInfo[] GetArtifactInfos_Internal(GUID guid);
 
-        [NativeThrows]
-        internal extern static int GetArtifactInfoCount_Internal(GUID guid);
+        private extern static ArtifactInfo[] GetCurrentRevisions_Internal(GUID[] guids);
 
-        internal extern static void GetCurrentRevisions_Internal(GUID[] guids, [Out] ArtifactInfo[] artifactInfos);
-        internal extern static int GetCurrentRevisionsCount_Internal();
-
-        internal extern static void GetImportActivityWindowStartupData_Internal([Out] ArtifactInfo[] allCurrentRevisions, [Out] ArtifactInfo[] longestDurationAssets, [Out] ArtifactInfo[] mostDependencyAssets);
+        private extern static ArtifactInfo[] GetImportActivityWindowStartupData_Internal(ImportActivityWindowStartupData dataType);
 
         internal static ArtifactInfo[] GetCurrentRevisions(GUID[] guids)
         {
-            var currentRevisionsCount = GetCurrentRevisionsCount_Internal();
-            var artifactInfos = new ArtifactInfo[guids.Length];
-            for (int i = 0; i < guids.Length; ++i)
-            {
-                artifactInfos[i] = new ArtifactInfo();
-            }
-
-            GetCurrentRevisions_Internal(guids, artifactInfos);
+            var artifactInfos = GetCurrentRevisions_Internal(guids);
             return artifactInfos;
         }
 
-        internal static void GetImportActivityWindowStartupData(out ArtifactInfo[] artifactInfos, out ArtifactInfo[] longestDurationAssets, out ArtifactInfo[] mostDependencyAssets)
+        internal static ArtifactInfo[] GetImportActivityWindowStartupData(ImportActivityWindowStartupData dataType)
         {
-            var currentRevisionsCount = GetCurrentRevisionsCount_Internal();
-            artifactInfos = new ArtifactInfo[currentRevisionsCount];
-            for (int i = 0; i < currentRevisionsCount; ++i)
-            {
-                artifactInfos[i] = new ArtifactInfo();
-            }
-
-            longestDurationAssets = new ArtifactInfo[20];
-            mostDependencyAssets = new ArtifactInfo[20];
-
-            for (int i = 0; i < longestDurationAssets.Length; ++i)
-            {
-                longestDurationAssets[i] = new ArtifactInfo();
-                mostDependencyAssets[i] = new ArtifactInfo();
-            }
-
-            GetImportActivityWindowStartupData_Internal(artifactInfos, longestDurationAssets, mostDependencyAssets);
+            return GetImportActivityWindowStartupData_Internal(dataType);
         }
 
         internal static ArtifactInfo[] GetArtifactInfos(GUID guid)
         {
-            var count = GetArtifactInfoCount_Internal(guid);
-            var artifactInfos = new ArtifactInfo[count];
-            for (int i = 0; i < count; ++i)
-            {
-                artifactInfos[i] = new ArtifactInfo();
-            }
-
-            GetArtifactInfos_Internal(guid, artifactInfos);
-
+            var artifactInfos = GetArtifactInfos_Internal(guid);
             return artifactInfos;
         }
 

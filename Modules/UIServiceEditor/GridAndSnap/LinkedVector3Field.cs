@@ -50,7 +50,6 @@ namespace UnityEditor.Snap
                 : "StyleSheets/SceneViewToolbarElements/LinkedVector3FieldLight.uss"));
 
             var xField = this.Q<FloatField>("unity-x-input");
-
             m_YField = this.Q<FloatField>("unity-y-input");
             m_ZField = this.Q<FloatField>("unity-z-input");
 

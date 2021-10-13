@@ -10,8 +10,14 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// This event does not trickle down or bubble up. It cannot be cancelled.
     /// </remarks>
+    [EventCategory(EventCategory.Geometry)]
     public class GeometryChangedEvent : EventBase<GeometryChangedEvent>
     {
+        static GeometryChangedEvent()
+        {
+            SetCreateFunction(() => new GeometryChangedEvent());
+        }
+
         /// <summary>
         /// Gets an event from the event pool, and initializes it with the specified values. Use this method
         /// instead of instancing new events. Use Dispose() to release events back to the event pool.

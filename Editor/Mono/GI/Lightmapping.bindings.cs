@@ -220,6 +220,14 @@ namespace UnityEditor
         [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
         internal static extern bool isProgressiveLightmapperDone {[NativeName("IsDone")] get; }
 
+        // Returns true when the bake job is baking, false otherwise.
+        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
+        internal static extern bool isBaking { [NativeName("IsBaking")] get; }
+
+        // Returns true when the bake job is preparing, false otherwise.
+        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
+        internal static extern bool isPreparing { [NativeName("IsPreparing")] get; }
+
         [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
         internal static extern ulong occupiedTexelCount { get; }
 

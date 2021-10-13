@@ -67,11 +67,6 @@ namespace UnityEditorInternal.Profiling
             },
             new ProfilerCounterData()
             {
-                m_Name = "Active Constraints",
-                m_Category = k_PhysicsCountersCategoryName,
-            },
-            new ProfilerCounterData()
-            {
                 m_Name = "Overlaps",
                 m_Category = k_PhysicsCountersCategoryName,
             },
@@ -219,7 +214,6 @@ namespace UnityEditorInternal.Profiling
 
                         stringBuilder.Append("\n\nActive Dynamic Bodies: " + GetCounterValue(f, "Active Dynamic Bodies"));
                         stringBuilder.Append("\nActive Kinematic Bodies: " + GetCounterValue(f, "Active Kinematic Bodies"));
-                        stringBuilder.Append("\nActive Constraints: " + GetCounterValue(f, "Active Constraints"));
 
                         stringBuilder.Append("\n\nStatic Colliders: " + GetCounterValue(f, "Static Colliders"));
                         stringBuilder.Append($"\nColliders Synced: {GetCounterValue(f, "Colliders Synced")}");

@@ -73,6 +73,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// The base class for mouse events.
     /// </summary>
+    [EventCategory(EventCategory.Pointer)]
     public abstract class MouseEventBase<T> : EventBase<T>, IMouseEvent, IMouseEventInternal where T : MouseEventBase<T>, new()
     {
         /// <summary>
@@ -361,9 +362,6 @@ namespace UnityEngine.UIElements
             e.target = (pointerEvent as EventBase)?.target;
             e.imguiEvent = (pointerEvent as EventBase)?.imguiEvent;
 
-            if ((pointerEvent as EventBase)?.path != null)
-                e.path = (pointerEvent as EventBase).path;
-
             e.modifiers = pointerEvent.modifiers;
             e.mousePosition = pointerEvent.position;
             e.localMousePosition = pointerEvent.position;
@@ -403,6 +401,11 @@ namespace UnityEngine.UIElements
     /// </remarks>
     public class MouseDownEvent : MouseEventBase<MouseDownEvent>
     {
+        static MouseDownEvent()
+        {
+            SetCreateFunction(() => new MouseDownEvent());
+        }
+
         /// <summary>
         /// Resets the event members to their initial values.
         /// </summary>
@@ -471,6 +474,11 @@ namespace UnityEngine.UIElements
     /// </remarks>
     public class MouseUpEvent : MouseEventBase<MouseUpEvent>
     {
+        static MouseUpEvent()
+        {
+            SetCreateFunction(() => new MouseUpEvent());
+        }
+
         /// <summary>
         /// Resets the event members to their initial values.
         /// </summary>
@@ -547,8 +555,14 @@ namespace UnityEngine.UIElements
     /// <seealso cref="MouseLeaveEvent"/>
     /// <seealso cref="MouseOverEvent"/>
     /// <seealso cref="MouseOutEvent"/>
+    [EventCategory(EventCategory.PointerMove)]
     public class MouseMoveEvent : MouseEventBase<MouseMoveEvent>
     {
+        static MouseMoveEvent()
+        {
+            SetCreateFunction(() => new MouseMoveEvent());
+        }
+
         /// <summary>
         /// Resets the event members to their initial values.
         /// </summary>
@@ -603,6 +617,10 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class ContextClickEvent : MouseEventBase<ContextClickEvent>
     {
+        static ContextClickEvent()
+        {
+            SetCreateFunction(() => new ContextClickEvent());
+        }
     }
 
     /// <summary>
@@ -616,6 +634,11 @@ namespace UnityEngine.UIElements
     /// </remarks>
     public class WheelEvent : MouseEventBase<WheelEvent>
     {
+        static WheelEvent()
+        {
+            SetCreateFunction(() => new WheelEvent());
+        }
+
         /// <summary>
         /// The amount of scrolling applied with the mouse wheel.
         /// </summary>
@@ -680,8 +703,14 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Event sent when the mouse pointer enters an element or one of its descendent elements. The event is cancellable, it does not trickle down, and it does not bubble up.
     /// </summary>
+    [EventCategory(EventCategory.EnterLeave)]
     public class MouseEnterEvent : MouseEventBase<MouseEnterEvent>
     {
+        static MouseEnterEvent()
+        {
+            SetCreateFunction(() => new MouseEnterEvent());
+        }
+
         /// <summary>
         /// Resets the event members to their initial values.
         /// </summary>
@@ -708,8 +737,14 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Event sent when the mouse pointer exits an element and all its descendent elements. The event is cancellable, it does not trickle down, and it does not bubble up.
     /// </summary>
+    [EventCategory(EventCategory.EnterLeave)]
     public class MouseLeaveEvent : MouseEventBase<MouseLeaveEvent>
     {
+        static MouseLeaveEvent()
+        {
+            SetCreateFunction(() => new MouseLeaveEvent());
+        }
+
         /// <summary>
         /// Resets the event members to their initial values.
         /// </summary>
@@ -736,8 +771,14 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Event sent when the mouse pointer enters a window. The event is cancellable, it does not trickle down, and it does not bubble up.
     /// </summary>
+    [EventCategory(EventCategory.EnterLeaveWindow)]
     public class MouseEnterWindowEvent : MouseEventBase<MouseEnterWindowEvent>
     {
+        static MouseEnterWindowEvent()
+        {
+            SetCreateFunction(() => new MouseEnterWindowEvent());
+        }
+
         /// <summary>
         /// Resets the event members to their initial values.
         /// </summary>
@@ -776,8 +817,14 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Event sent when the mouse pointer exits a window. The event is cancellable, it does not trickle down, and it does not bubble up.
     /// </summary>
+    [EventCategory(EventCategory.EnterLeaveWindow)]
     public class MouseLeaveWindowEvent : MouseEventBase<MouseLeaveWindowEvent>
     {
+        static MouseLeaveWindowEvent()
+        {
+            SetCreateFunction(() => new MouseLeaveWindowEvent());
+        }
+
         /// <summary>
         /// Resets the event members to their initial values.
         /// </summary>
@@ -829,15 +876,25 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Event sent when the mouse pointer enters an element. The event trickles down, it bubbles up, and it is cancellable.
     /// </summary>
+    [EventCategory(EventCategory.EnterLeave)]
     public class MouseOverEvent : MouseEventBase<MouseOverEvent>
     {
+        static MouseOverEvent()
+        {
+            SetCreateFunction(() => new MouseOverEvent());
+        }
     }
 
     /// <summary>
     /// Event sent when the mouse pointer exits an element. The event trickles down, it bubbles up, and it is cancellable.
     /// </summary>
+    [EventCategory(EventCategory.EnterLeave)]
     public class MouseOutEvent : MouseEventBase<MouseOutEvent>
     {
+        static MouseOutEvent()
+        {
+            SetCreateFunction(() => new MouseOutEvent());
+        }
     }
 
     /// <summary>
@@ -845,6 +902,11 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class ContextualMenuPopulateEvent : MouseEventBase<ContextualMenuPopulateEvent>
     {
+        static ContextualMenuPopulateEvent()
+        {
+            SetCreateFunction(() => new ContextualMenuPopulateEvent());
+        }
+
         /// <summary>
         /// The menu to populate.
         /// </summary>

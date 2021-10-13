@@ -5,6 +5,7 @@
 using System;
 using UnityEditorInternal;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
@@ -134,6 +135,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual int DisplayDialogComplex(string title, string message, string ok, string cancel, string alt)
         {
             return EditorUtility.DisplayDialogComplex(title, message, ok, cancel, alt);
+        }
+
+        public virtual T Load<T>(string path) where T : Object
+        {
+            return EditorGUIUtility.Load(path) as T;
         }
     }
 }

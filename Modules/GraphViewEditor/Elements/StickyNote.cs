@@ -21,6 +21,11 @@ namespace UnityEditor.Experimental.GraphView
     }
     public class StickyNoteChangeEvent : EventBase<StickyNoteChangeEvent>
     {
+        static StickyNoteChangeEvent()
+        {
+            SetCreateFunction(() => new StickyNoteChangeEvent());
+        }
+
         public static StickyNoteChangeEvent GetPooled(StickyNote target, StickyNoteChange change)
         {
             var evt = GetPooled();

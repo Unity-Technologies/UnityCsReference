@@ -591,6 +591,7 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [EventInterest(typeof(GeometryChangedEvent))]
         protected override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);

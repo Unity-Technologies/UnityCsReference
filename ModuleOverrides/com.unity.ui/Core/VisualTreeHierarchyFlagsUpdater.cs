@@ -8,55 +8,57 @@ using Unity.Profiling;
 
 namespace UnityEngine.UIElements
 {
-    internal class VisualTreeTransformClipUpdater : BaseVisualTreeUpdater
+    internal class VisualTreeHierarchyFlagsUpdater : BaseVisualTreeUpdater
     {
         private uint m_Version = 0;
         private uint m_LastVersion = 0;
 
-        private static readonly string s_Description = "Update Transform";
+        private static readonly string s_Description = "Update Hierarchy Flags";
         private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
         public override ProfilerMarker profilerMarker => s_ProfilerMarker;
 
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {
-            if ((versionChangeType & (VersionChangeType.Transform | VersionChangeType.Size | VersionChangeType.Overflow | VersionChangeType.Hierarchy | VersionChangeType.BorderWidth)) == 0)
+            if ((versionChangeType & (VersionChangeType.Transform | VersionChangeType.Size | VersionChangeType.Overflow | VersionChangeType.Hierarchy | VersionChangeType.BorderWidth | VersionChangeType.EventCallbackCategories)) == 0)
                 return;
 
             // According to the flags, what operations must be done?
             bool mustDirtyWorldTransform = (versionChangeType & VersionChangeType.Transform) != 0;
             bool mustDirtyWorldClip = (versionChangeType & (VersionChangeType.Transform | VersionChangeType.Size | VersionChangeType.Overflow | VersionChangeType.BorderWidth)) != 0;
+            bool mustDirtyEventParentCategories = (versionChangeType & (VersionChangeType.Hierarchy | VersionChangeType.EventCallbackCategories)) != 0;
 
-            // Are these operations already done?
-            mustDirtyWorldTransform = mustDirtyWorldTransform && !ve.isWorldTransformDirty;
-            mustDirtyWorldClip = mustDirtyWorldClip && !ve.isWorldClipDirty;
+            VisualElementFlags mustDirtyFlags =
+                (mustDirtyWorldTransform ? VisualElementFlags.WorldTransformDirty | VisualElementFlags.WorldBoundingBoxDirty : 0) |
+                (mustDirtyWorldClip ? VisualElementFlags.WorldClipDirty : 0) |
+                (mustDirtyEventParentCategories ? VisualElementFlags.EventCallbackParentCategoriesDirty : 0);
 
-            if (mustDirtyWorldTransform || mustDirtyWorldClip)
-                DirtyHierarchy(ve, mustDirtyWorldTransform, mustDirtyWorldClip);
+            var needDirtyFlags = mustDirtyFlags & ~ve.m_Flags;
+            if (needDirtyFlags != 0)
+            {
+                DirtyHierarchy(ve, needDirtyFlags);
+            }
 
             DirtyBoundingBoxHierarchy(ve);
 
             ++m_Version;
         }
 
-        static void DirtyHierarchy(VisualElement ve, bool mustDirtyWorldTransform, bool mustDirtyWorldClip)
+        static void DirtyHierarchy(VisualElement ve, VisualElementFlags mustDirtyFlags)
         {
-            if (mustDirtyWorldTransform)
-            {
-                ve.isWorldTransformDirty = true;
-                ve.isWorldBoundingBoxDirty = true;
-            }
-
-            if (mustDirtyWorldClip)
-                ve.isWorldClipDirty = true;
+            // We use VisualElementFlags to track changes across the hierarchy since all those values come from m_Flags.
+            ve.m_Flags |= mustDirtyFlags;
 
             int count = ve.hierarchy.childCount;
             for (int i = 0; i < count; i++)
             {
                 var child = ve.hierarchy[i];
 
-                if (mustDirtyWorldTransform && !child.isWorldTransformDirty ||
-                    mustDirtyWorldClip && !child.isWorldClipDirty)
-                    DirtyHierarchy(child, mustDirtyWorldTransform, mustDirtyWorldClip);
+                // Are these operations already done?
+                var needDirtyFlags = mustDirtyFlags & ~child.m_Flags;
+                if (needDirtyFlags != 0)
+                {
+                    DirtyHierarchy(child, needDirtyFlags);
+                }
             }
         }
 

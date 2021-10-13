@@ -188,14 +188,24 @@ namespace UnityEditor
 
         GameViewSize currentGameViewSize => GameViewSizes.instance.currentGroup.GetGameViewSize(selectedSizeIndex);
 
+        Rect GetViewInWindow(Rect pos)
+        {
+            if (showToolbar)
+                return new Rect(0, EditorGUI.kWindowToolbarHeight, pos.width, pos.height - EditorGUI.kWindowToolbarHeight);
+            return new Rect(0, 0, pos.width, pos.height);
+        }
+
+        Rect GetViewPixelRect(Rect viewRectInWindow)
+        {
+            return lowResolutionForAspectRatios? viewRectInWindow : EditorGUIUtility.PointsToPixels(viewRectInWindow);
+        }
+
         // The area of the window that the rendered game view is limited to
         Rect viewInWindow
         {
             get
             {
-                if (showToolbar)
-                    return new Rect(0, EditorGUI.kWindowToolbarHeight, position.width, position.height - EditorGUI.kWindowToolbarHeight);
-                return new Rect(0, 0, position.width, position.height);
+                return GetViewInWindow(position);
             }
         }
 
@@ -203,7 +213,7 @@ namespace UnityEditor
         {
             get
             {
-                var viewPixelRect = lowResolutionForAspectRatios ? viewInWindow : EditorGUIUtility.PointsToPixels(viewInWindow);
+                var viewPixelRect = GetViewPixelRect(viewInWindow);
                 return GameViewSizes.GetRenderTargetSize(viewPixelRect, currentSizeGroupType, selectedSizeIndex, out m_TargetClamped);
             }
         }
@@ -380,6 +390,14 @@ namespace UnityEditor
         internal override void OnResized()
         {
             targetSize = targetRenderSize;
+        }
+
+        internal override void OnBackgroundViewResized(Rect pos)
+        {
+            Rect viewInWindow = GetViewInWindow(pos);
+            Rect viewPixelRect = GetViewPixelRect(viewInWindow);
+            SetDisplayViewSize(targetDisplay, new Vector2(viewPixelRect.width, viewPixelRect.height));
+            UpdateZoomAreaAndParent();
         }
 
         // Call when number of available aspects can have changed (after deserialization or gui change)

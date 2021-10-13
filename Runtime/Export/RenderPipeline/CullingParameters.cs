@@ -298,6 +298,7 @@ namespace UnityEngine.Rendering
         Vector3 m_Origin;
 
         float m_ShadowDistance;
+        float m_ShadowNearPlaneOffset;
 
         CullingOptions m_CullingOptions;
 
@@ -383,6 +384,12 @@ namespace UnityEngine.Rendering
         {
             get { return m_ShadowDistance; }
             set { m_ShadowDistance = value; }
+        }
+
+        public float shadowNearPlaneOffset
+        {
+            get { return m_ShadowNearPlaneOffset; }
+            set { m_ShadowNearPlaneOffset = value; }
         }
 
         public CullingOptions cullingOptions
@@ -513,6 +520,7 @@ namespace UnityEngine.Rendering
                 && m_CullingMatrix.Equals(other.m_CullingMatrix)
                 && m_Origin.Equals(other.m_Origin)
                 && m_ShadowDistance.Equals(other.m_ShadowDistance)
+                && m_ShadowNearPlaneOffset.Equals(other.m_ShadowNearPlaneOffset)
                 && m_CullingOptions == other.m_CullingOptions
                 && m_ReflectionProbeSortingCriteria == other.m_ReflectionProbeSortingCriteria
                 && m_CameraProperties.Equals(other.m_CameraProperties)
@@ -544,6 +552,7 @@ namespace UnityEngine.Rendering
                 hashCode = (hashCode * 397) ^ m_CullingMatrix.GetHashCode();
                 hashCode = (hashCode * 397) ^ m_Origin.GetHashCode();
                 hashCode = (hashCode * 397) ^ m_ShadowDistance.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_ShadowNearPlaneOffset.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)m_CullingOptions;
                 hashCode = (hashCode * 397) ^ (int)m_ReflectionProbeSortingCriteria;
                 hashCode = (hashCode * 397) ^ m_CameraProperties.GetHashCode();

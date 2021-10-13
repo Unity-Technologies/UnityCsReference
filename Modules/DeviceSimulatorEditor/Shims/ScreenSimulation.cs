@@ -78,16 +78,12 @@ namespace UnityEditor.DeviceSimulation
         public event Action<Vector4> OnInsetsChanged;
         public event Action<Rect> OnScreenSpaceSafeAreaChanged;
 
-        public ScreenSimulation(DeviceInfo device, SimulationPlayerSettings playerSettings)
+        public ScreenSimulation(DeviceInfo device, SimulationPlayerSettings playerSettings, int screenIndex)
         {
             m_DeviceInfo = device;
-            m_Screen = device.screens[0];
+            m_Screen = device.screens[screenIndex];
 
-            m_SupportedOrientations = new Dictionary<ScreenOrientation, OrientationData>();
-            foreach (var o in m_Screen.orientations)
-            {
-                m_SupportedOrientations.Add(o.orientation, o);
-            }
+            FindSupportedOrientations();
 
             m_AllowedAutoRotation = new Dictionary<ScreenOrientation, bool>();
             m_AllowedAutoRotation.Add(ScreenOrientation.Portrait, playerSettings.allowedPortrait);
@@ -135,6 +131,28 @@ namespace UnityEditor.DeviceSimulation
             CalculateSafeAreaAndCutouts();
 
             ShimManager.UseShim(this);
+        }
+
+        public void ChangeScreen(int screenIndex)
+        {
+            m_Screen = m_DeviceInfo.screens[screenIndex];
+
+            FindSupportedOrientations();
+
+            if (!m_WasResolutionSet)
+            {
+                CalculateResolutionWithInsets(out int tempWidth, out int tempHeight);
+                SetResolution(tempWidth, tempHeight);
+            }
+        }
+
+        private void FindSupportedOrientations()
+        {
+            m_SupportedOrientations = new Dictionary<ScreenOrientation, OrientationData>();
+            foreach (var o in m_Screen.orientations)
+            {
+                m_SupportedOrientations.Add(o.orientation, o);
+            }
         }
 
         private void ApplyAutoRotation()

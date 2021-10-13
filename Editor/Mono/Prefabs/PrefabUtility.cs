@@ -591,13 +591,17 @@ namespace UnityEditor
             {
                 Action<SerializedObject> saveIfChanged = (SerializedObject serializedObject) =>
                 {
-                    if (changedObjects.Contains(serializedObject) && serializedObject.ApplyModifiedProperties())
+                    if (changedObjects.Contains(serializedObject))
                     {
-                        SaveChangesToPrefabFileIfPersistent(serializedObject);
-
-                        if (action == InteractionMode.UserAction)
+                        bool applySuccess = action == InteractionMode.UserAction ? serializedObject.ApplyModifiedProperties() : serializedObject.ApplyModifiedPropertiesWithoutUndo();
+                        if (applySuccess)
                         {
-                            Undo.FlushUndoRecordObjects(); // flush'es ensure that SavePrefab() on undo/redo on the source happens in the right order
+                            SaveChangesToPrefabFileIfPersistent(serializedObject);
+
+                            if (action == InteractionMode.UserAction)
+                            {
+                                Undo.FlushUndoRecordObjects(); // flush'es ensure that SavePrefab() on undo/redo on the source happens in the right order
+                            }
                         }
                     }
                 };
