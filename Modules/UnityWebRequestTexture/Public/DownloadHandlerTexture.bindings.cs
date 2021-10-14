@@ -6,6 +6,7 @@ using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngineInternal;
+using Unity.Collections;
 
 namespace UnityEngine.Networking
 {
@@ -13,6 +14,7 @@ namespace UnityEngine.Networking
     [NativeHeader("Modules/UnityWebRequestTexture/Public/DownloadHandlerTexture.h")]
     public sealed class DownloadHandlerTexture : DownloadHandler
     {
+        private NativeArray<byte> m_NativeData;
         private Texture2D mTexture;
         private bool mHasTexture;
         private bool mNonReadable;
@@ -35,9 +37,15 @@ namespace UnityEngine.Networking
             mNonReadable = !readable;
         }
 
-        protected override byte[] GetData()
+        protected override NativeArray<byte> GetNativeData()
         {
-            return InternalGetByteArray(this);
+            return InternalGetNativeArray(this, ref m_NativeData);
+        }
+
+        public override void Dispose()
+        {
+            DisposeNativeArray(ref m_NativeData);
+            base.Dispose();
         }
 
         public Texture2D texture
