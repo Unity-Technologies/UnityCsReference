@@ -257,6 +257,10 @@ namespace UnityEditor
 
                     return path;
                 }
+                set
+                {
+                    NMETAOverrideInternal = value;
+                }
             }
 
             public static string NMETAOverrideFullPath
