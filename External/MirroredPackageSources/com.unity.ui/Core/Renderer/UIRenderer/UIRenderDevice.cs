@@ -1037,6 +1037,23 @@ namespace UnityEngine.UIElements.UIR
             Utility.DrawRanges(ib.BufferPointer, vStream, 1, new IntPtr(ranges.GetUnsafePtr()), ranges.Length, m_VertexDecl);
         }
 
+        // Used for testing purposes only (e.g. performance test warmup)
+        internal void WaitOnAllCpuFences()
+        {
+            for (int i = 0; i < m_Fences.Length; ++i)
+                WaitOnCpuFence(m_Fences[i]);
+        }
+
+        void WaitOnCpuFence(uint fence)
+        {
+            if (fence != 0 && !Utility.CPUFencePassed(fence))
+            {
+                s_MarkerFence.Begin();
+                Utility.WaitForCPUFencePassed(fence);
+                s_MarkerFence.End();
+            }
+        }
+
         public void AdvanceFrame()
         {
             s_MarkerAdvanceFrame.Begin();
@@ -1049,12 +1066,7 @@ namespace UnityEngine.UIElements.UIR
             {
                 int fenceIndex = (int)(m_FrameIndex % m_Fences.Length);
                 uint fence = m_Fences[fenceIndex];
-                if (fence != 0 && !Utility.CPUFencePassed(fence))
-                {
-                    s_MarkerFence.Begin();
-                    Utility.WaitForCPUFencePassed(fence);
-                    s_MarkerFence.End();
-                }
+                WaitOnCpuFence(fence);
                 m_Fences[fenceIndex] = 0;
             }
 

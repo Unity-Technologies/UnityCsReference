@@ -41,12 +41,6 @@ namespace UnityEditor.Audio
 
         public extern void SetValueForPitch(AudioMixerController controller, AudioMixerSnapshotController snapshot, float value);
 
-        public extern GUID GetGUIDForSend();
-
-        public extern float GetValueForSend(AudioMixerController controller, AudioMixerSnapshotController snapshot);
-
-        public extern void SetValueForSend(AudioMixerController controller, AudioMixerSnapshotController snapshot, float value);
-
         public extern bool HasDependentMixers();
 
         public AudioMixerGroupController[] children

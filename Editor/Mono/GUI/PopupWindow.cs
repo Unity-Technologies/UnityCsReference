@@ -57,7 +57,7 @@ namespace UnityEditor
             if (existingWindows != null && existingWindows.Length > 0)
             {
                 var existingPopup = existingWindows[0] as PopupWindow;
-                if (existingPopup != null)
+                if (existingPopup != null && existingPopup.m_WindowContent != null && windowContent != null)
                 {
                     if (existingPopup.m_WindowContent.GetType() == windowContent.GetType())
                     {

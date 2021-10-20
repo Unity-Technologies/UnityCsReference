@@ -50,7 +50,7 @@ namespace UnityEditor.Audio
             if (group.GetInstanceID() != m_LastCachedGroupDisplayNameID || m_DisplayName == null)
             {
                 // Cache display name to prevent string allocs every event
-                m_DisplayName = group.GetDisplayString() + AudioMixerController.s_GroupEffectDisplaySeperator + AudioMixerController.FixNameForPopupMenu(effectName);
+                m_DisplayName = group.GetDisplayString() + AudioMixerController.s_GroupEffectDisplaySeperator + effectName;
                 m_LastCachedGroupDisplayNameID = group.GetInstanceID();
             }
             return m_DisplayName;

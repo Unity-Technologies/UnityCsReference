@@ -94,6 +94,9 @@ namespace UnityEngine.UIElements.UIR
         public void Bind(TextureId id, int slot, MaterialPropertyBlock mat)
         {
             Texture tex = textureRegistry.GetTexture(id);
+            if (tex == null) // Case 1364578: Texture may have been destroyed
+                tex = Texture2D.whiteTexture;
+
             m_Textures[slot] = id;
             MarkUsed(slot);
             m_GpuTextures[slot] = new Vector4(id.ConvertToGpu(), 1f / tex.width, 1f / tex.height, 0);
