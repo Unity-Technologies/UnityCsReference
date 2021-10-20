@@ -389,7 +389,7 @@ namespace UnityEditorInternal
                     return;
                 }
 
-                EditorGUI.LabelField(rect, EditorGUIUtility.TempContent((element != null) ? element.displayName : listItem.ToString()));
+                EditorGUI.LabelField(rect, EditorGUIUtility.TempContent(element?.displayName ?? listItem?.ToString() ?? "null"));
             }
 
             // draw the default element
@@ -832,8 +832,11 @@ namespace UnityEditorInternal
                     var targetSeen = false;
                     for (var i = 0; i < m_NonDragTargetIndices.Count; i++)
                     {
-                        if (visibleRect.y > GetElementYOffset(i) + GetElementHeight(i)) continue;
-                        if (visibleRect.y + visibleRect.height < GetElementYOffset(i > 0 ? i - 1 : i)) break;
+                        var next = Mathf.Min(i + 1, m_Count - 1);
+                        var previous = Mathf.Max(i - 1, 0);
+
+                        if (visibleRect.y > GetElementYOffset(next) + GetElementHeight(next)) continue;
+                        if (visibleRect.y + visibleRect.height < GetElementYOffset(previous)) break;
 
                         var nonDragTargetIndex = m_NonDragTargetIndices[i];
                         if (nonDragTargetIndex != -1)

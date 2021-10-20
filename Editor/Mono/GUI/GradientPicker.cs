@@ -82,12 +82,9 @@ namespace UnityEditor
                 s_GradientPicker.minSize = minSize;
                 s_GradientPicker.maxSize = maxSize;
                 s_GradientPicker.wantsMouseMove = true;
-                s_GradientPicker.ShowAuxWindow(); // Use this if auto close on lost focus is wanted.
             }
-            else
-            {
-                s_GradientPicker.Repaint(); // Ensure we get a OnGUI so we refresh if new gradient
-            }
+
+            s_GradientPicker.ShowAuxWindow(); // Use this if auto close on lost focus is wanted.
         }
 
         public static GradientPicker instance

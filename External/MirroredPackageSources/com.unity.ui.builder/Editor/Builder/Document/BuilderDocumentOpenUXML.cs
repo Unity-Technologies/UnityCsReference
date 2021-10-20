@@ -94,15 +94,7 @@ namespace Unity.UI.Builder
         {
             get
             {
-                // If this uxmnl is being edited in place then use the parent document's settings
-                if (isChildSubDocument && openSubDocumentParentSourceTemplateAssetIndex != -1)
-                {
-                    m_Settings = openSubDocumentParent.settings;
-                }
-                else
-                {
-                    m_Settings = BuilderDocumentSettings.CreateOrLoadSettingsObject(m_Settings, uxmlPath);
-                }
+                m_Settings = BuilderDocumentSettings.CreateOrLoadSettingsObject(m_Settings, uxmlPath);
                 return m_Settings;
             }
         }

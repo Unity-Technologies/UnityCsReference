@@ -152,11 +152,7 @@ namespace Unity.UI.Builder
             foreach (var Doc in allHierarchyDocuments)
             {
                 string docName = BreadcrumbFileName(Doc);
-                Action onBreadCrumbClick = () =>
-                {
-                    document.GoToSubdocument(m_Viewport.documentRootElement, m_PaneWindow, Doc);
-                    m_Viewport.SetViewFromDocumentSetting();
-                };
+                Action onBreadCrumbClick = () => document.GoToSubdocument(m_Viewport.documentRootElement, m_PaneWindow, Doc);
                 bool clickedOnSameDocument = document.activeOpenUXMLFile == Doc;
                 m_Breadcrumbs.PushItem(docName, clickedOnSameDocument ? null : onBreadCrumbClick);
             }
