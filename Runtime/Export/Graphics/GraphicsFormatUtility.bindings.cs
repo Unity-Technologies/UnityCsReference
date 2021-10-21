@@ -85,6 +85,15 @@ namespace UnityEngine
                 extern internal static bool IsCompressedTextureFormat(TextureFormat format);
 
                 [FreeFunction(IsThreadSafe = true)]
+                extern private static bool CanDecompressFormat(GraphicsFormat format, bool wholeImage);
+
+                internal static bool CanDecompressFormat(GraphicsFormat format)
+                {
+                    // Always returns false for uncompressed formats.
+                    return CanDecompressFormat(format, true);
+                }
+
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsPackedFormat(GraphicsFormat format);
 
                 [FreeFunction(IsThreadSafe = true)]

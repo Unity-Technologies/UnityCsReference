@@ -15,6 +15,18 @@ using UnityEngine.XR;
 
 namespace UnityEditor
 {
+    internal struct GUIContentKey
+    {
+        public bool hasUnsavedChanges;
+        public string text;
+
+        public GUIContentKey(string text, bool hasUnsavedChanges)
+        {
+            this.hasUnsavedChanges = hasUnsavedChanges;
+            this.text = text;
+        }
+    }
+
     internal class DockArea : HostView, IDropArea
     {
         private static class Styles
@@ -37,18 +49,6 @@ namespace UnityEditor
             public static readonly GUIStyle dragTab = new GUIStyle("dragtab");
             public static readonly GUIStyle dragTabFirst = new GUIStyle("dragtab first");
             public static readonly GUIStyle dockTitleBarStyle = new GUIStyle("dockHeader");
-        }
-
-        private struct GUIContentKey
-        {
-            public bool hasUnsavedChanges;
-            public string text;
-
-            public GUIContentKey(string text, bool hasUnsavedChanges)
-            {
-                this.hasUnsavedChanges = hasUnsavedChanges;
-                this.text = text;
-            }
         }
 
         internal const int kFloatingWindowTopBorderWidth = 2;
@@ -1126,7 +1126,10 @@ namespace UnityEditor
             {
                 Styles.background.Draw(maximizedViewRect, GUIContent.none, false, false, false, false);
                 Styles.titleBackground.Draw(backRect, false, false, true, hasFocus);
-                GUI.Label(backRect, actualView.titleContent, Styles.titleLabel);
+
+                var title = GetTitleContent(actualView.titleContent, actualView.hasUnsavedChanges);
+
+                GUI.Label(backRect, title, Styles.titleLabel);
             }
 
             if (Event.current.type == EventType.ContextClick && backRect.Contains(Event.current.mousePosition) && !ContainerWindow.s_Modal)
@@ -1188,6 +1191,29 @@ namespace UnityEditor
 
             menu.AddSeparator("");
             editorWindowBackend?.OnDisplayWindowMenu(menu);
+        }
+
+        private static Dictionary<GUIContentKey, GUIContent> s_GUIContents = new Dictionary<GUIContentKey, GUIContent>();
+
+        private GUIContent GetTitleContent(GUIContent content, bool hasUnsavedChanges)
+        {
+            string text = content.text;
+            var key = new GUIContentKey(text, hasUnsavedChanges);
+
+            if (s_GUIContents.ContainsKey(key))
+                return s_GUIContents[key];
+
+            if (hasUnsavedChanges)
+                text += "*";
+
+            GUIContent gc = content;
+
+            // Only update the entry if modified
+            if (text != content.text)
+                gc = new GUIContent(text, content.image, String.IsNullOrEmpty(content.tooltip) ? content.text : content.tooltip);
+
+            s_GUIContents[key] = gc;
+            return gc;
         }
     }
 }

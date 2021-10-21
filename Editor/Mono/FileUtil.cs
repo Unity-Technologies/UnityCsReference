@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using UnityEngine;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
@@ -333,6 +334,7 @@ namespace UnityEditor
             return false;
         }
 
+        [RequiredByNativeCode]
         internal static bool MakeWritable(string path)
         {
             string absolutePath = FileUtil.PathToAbsolutePath(path);

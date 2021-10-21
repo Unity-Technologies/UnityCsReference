@@ -451,12 +451,17 @@ namespace UnityEngine
 
         internal bool ValidateFormat(TextureFormat format)
         {
+            // If GPU support is detected, pass validation. Caveat support can also be used for uncompressed/non-IEEE754 formats.
+            // In contrast to GraphicsFormat, TextureFormat can use fallbacks by design.
             if (SystemInfo.SupportsTextureFormat(format))
             {
                 return true;
             }
-            else if (GraphicsFormatUtility.IsCompressedTextureFormat(format))
+            // If a compressed format is not supported natively, we check for decompressor support here.
+            // If we are able to decompress, the data is decoded into a raw format. Otherwise, validation fails.
+            else if (GraphicsFormatUtility.IsCompressedTextureFormat(format) && GraphicsFormatUtility.CanDecompressFormat(GraphicsFormatUtility.GetGraphicsFormat(format, false)))
             {
+                // Don't warn in Editor, it is normal that texture compression formats that are typically used on mobile platforms are not natively supported on Editor platforms.
                 Debug.LogWarning(String.Format("'{0}' is not supported on this platform. Decompressing texture. Use 'SystemInfo.SupportsTextureFormat' C# API to check format support.", format.ToString()), this);
                 return true;
             }
@@ -469,6 +474,8 @@ namespace UnityEngine
 
         internal bool ValidateFormat(GraphicsFormat format, FormatUsage usage)
         {
+            // *ONLY* GPU support is checked here. If it is not available, fail validation.
+            // GraphicsFormat does not use fallbacks by design.
             if (SystemInfo.IsFormatSupported(format, usage))
             {
                 return true;
@@ -1269,7 +1276,7 @@ namespace UnityEngine
 
         public SparseTexture(int width, int height, GraphicsFormat format, int mipCount)
         {
-            if (!ValidateFormat(format, FormatUsage.Sample))
+            if (!ValidateFormat(format, FormatUsage.Sparse))
                 return;
 
             if (!ValidateSize(width, height, format))
