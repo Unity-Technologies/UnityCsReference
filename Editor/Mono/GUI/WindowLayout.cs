@@ -940,6 +940,9 @@ namespace UnityEditor
             if (oldDockIndex == -1)
                 return false;
 
+            if (!parentWindow.InternalRequestCloseAllExcept(win))
+                return false;
+
             dockArea.selected = oldDockIndex;
 
             // Save current state to disk
@@ -1022,17 +1025,11 @@ namespace UnityEditor
         {
             Console.WriteLine($"[LAYOUT] About to load {path}, keepMainWindow={keepMainWindow}");
 
-            bool mainWindowMaximized = false;
-            Rect mainWindowPosition = new Rect();
-            UnityObject[] containers = Resources.FindObjectsOfTypeAll(typeof(ContainerWindow));
-            foreach (ContainerWindow window in containers)
-            {
-                if (window.showMode == ShowMode.MainWindow)
-                {
-                    mainWindowPosition = window.position;
-                    mainWindowMaximized = window.maximized;
-                }
-            }
+            if (!Application.isTestRun && Application.isHumanControllingUs && !ContainerWindow.InternalRequestCloseAll(keepMainWindow))
+                return false;
+
+            bool mainWindowMaximized = ContainerWindow.mainWindow?.maximized ?? false;
+            Rect mainWindowPosition = ContainerWindow.mainWindow?.position ?? new Rect();
 
             bool layoutLoadingIssue = false;
 

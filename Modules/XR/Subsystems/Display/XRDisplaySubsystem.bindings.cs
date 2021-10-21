@@ -172,6 +172,10 @@ namespace UnityEngine.XR
             public RenderTargetIdentifier renderTarget;
             public RenderTextureDescriptor renderTargetDesc;
 
+            public bool hasMotionVectorPass;
+            public RenderTargetIdentifier motionVectorRenderTarget;
+            public RenderTextureDescriptor motionVectorRenderTargetDesc;
+
             public bool shouldFillOutDepth;
 
             public int cullingPassIndex;

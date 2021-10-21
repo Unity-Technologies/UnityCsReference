@@ -263,6 +263,9 @@ namespace UnityEditor.Modules
                 return;
             }
 
+            if (ivyFiles.Count == 0)
+                return;
+
             var packages = new Dictionary<string, List<IvyPackageFileData>>();
 
             var artifactRegex = new Regex(@"<artifact(\s+(name=""(?<name>[^""]*)""|type=""(?<type>[^""]*)""|ext=""(?<ext>[^""]*)""|e:guid=""(?<guid>[^""]*)""))+\s*/>",
@@ -275,9 +278,11 @@ namespace UnityEditor.Modules
                     var ivyFileContent = File.ReadAllText(ivyFile);
                     var artifacts = artifactRegex.Matches(ivyFileContent).Cast<Match>()
                         .Select(IvyPackageFileData.CreateFromRegexMatch).ToList();
-
-                    var packageDir = Path.GetDirectoryName(ivyFile);
-                    packages.Add(packageDir, artifacts);
+                    if (artifacts.Count > 0)
+                    {
+                        var packageDir = Path.GetDirectoryName(ivyFile);
+                        packages.Add(packageDir, artifacts);
+                    }
                 }
                 catch (Exception ex)
                 {

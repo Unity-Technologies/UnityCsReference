@@ -55,7 +55,7 @@ namespace UnityEditorInternal.APIUpdating
 
         private static HashSet<AssemblyUpdateCandidate> s_AssembliesToUpdate;
 
-        public static extern bool WaitForVCSServerConnection(bool reportTimeout);
+        public static extern bool WaitForVCSServerConnection(bool reportFailuresAsUpdaterError);
         public static extern void ReportExpectedUpdateFailure();
         public static extern void ReportGroupedAPIUpdaterFailure(string msg);
         public static extern int numberOfTimesAsked
@@ -89,25 +89,6 @@ namespace UnityEditorInternal.APIUpdating
             if (assembliesToUpdate.Count == 0)
                 return;
 
-            var assemblyPaths = assembliesToUpdate.Select(c => c.Path);
-            var anyAssemblyInAssetsFolder = assemblyPaths.Any(path => path.IndexOf("Assets/", StringComparison.OrdinalIgnoreCase) != -1);
-
-            // Only try to connect to VCS if there are files under VCS that need to be updated
-            if (anyAssemblyInAssetsFolder)
-            {
-                var failedToConnectToVcs = false;
-                if (WaitForVCSServerConnection(true))
-                {
-                    failedToConnectToVcs = Provider.enabled && !APIUpdaterHelper.CheckoutAndValidateVCSFiles(assemblyPaths);
-                }
-
-                if (failedToConnectToVcs)
-                {
-                    assembliesToUpdate.Clear();
-                    return;
-                }
-            }
-
             var sw = Stopwatch.StartNew();
             var updatedCount = 0;
 
@@ -127,7 +108,7 @@ namespace UnityEditorInternal.APIUpdating
                 if (!HandleAssemblyUpdaterErrors(tasks))
                 {
                     updatedCount = ProcessSuccessfulUpdates(tasks);
-                    finishOk = true;
+                    finishOk = updatedCount >= 0;
                 }
             }
             else
@@ -136,7 +117,7 @@ namespace UnityEditorInternal.APIUpdating
             }
 
             sw.Stop();
-            APIUpdaterLogger.WriteToFile(L10n.Tr("Update finished with {0} in {1} ms ({2}/{3} assembly(ies) updated)."), finishOk ? L10n.Tr("success") : L10n.Tr("error"), sw.ElapsedMilliseconds, updatedCount, assembliesToCheckCount);
+            APIUpdaterLogger.WriteToFile(L10n.Tr("Update finished with {0} in {1} ms ({2}/{3} assembly(ies) updated)."), finishOk ? L10n.Tr("success") : L10n.Tr("error"), sw.ElapsedMilliseconds, updatedCount >= 0 ? updatedCount : 0, assembliesToCheckCount);
 
             if (updatedCount > 0 && !EditorCompilationInterface.Instance.DoesProjectFolderHaveAnyScripts())
             {
@@ -293,9 +274,12 @@ namespace UnityEditorInternal.APIUpdating
                 return 0;
             }
 
-            var assemblyPaths2 = succeededUpdates.Select(u => u.Candidate.Path).ToArray();
-            APIUpdaterHelper.HandleFilesInPackagesVirtualFolder(assemblyPaths2);
-            if (!APIUpdaterHelper.CheckReadOnlyFiles(assemblyPaths2))
+            var updatedAssemblyPaths = succeededUpdates.Select(u => u.Candidate.Path).ToArray();
+            if (!CheckoutFromVCSIfNeeded(updatedAssemblyPaths))
+                return -1;
+
+            APIUpdaterHelper.HandleFilesInPackagesVirtualFolder(updatedAssemblyPaths);
+            if (!APIUpdaterHelper.CheckReadOnlyFiles(updatedAssemblyPaths))
                 return 0;
 
             foreach (var succeed in succeededUpdates)
@@ -306,6 +290,30 @@ namespace UnityEditorInternal.APIUpdating
 
             assembliesToUpdate.Clear();
             return succeededUpdates.Count();
+
+            bool CheckoutFromVCSIfNeeded(string[] assemblyPathsToCheck)
+            {
+                // Only try to connect to VCS if there are files under VCS that need to be updated
+                var assembliesInAssetsFolder = assemblyPathsToCheck.Where(path => path.IndexOf("Assets/", StringComparison.OrdinalIgnoreCase) != -1).ToArray();
+                if (!assembliesInAssetsFolder.Any())
+                    return true;
+
+                // do not report VCS errors as updater errors; VCS errors may cause recursion errors in ScriptUpdater (but not in AssemblyUpdater)
+                // whence we need to report them only in ScriptUpdater.
+                if (!WaitForVCSServerConnection(false))
+                {
+                    return false;
+                }
+
+                var failedToCheckoutFiles = Provider.enabled && !APIUpdaterHelper.CheckoutAndValidateVCSFiles(assemblyPathsToCheck);
+                if (failedToCheckoutFiles)
+                {
+                    assembliesToUpdate.Clear();
+                    return false;
+                }
+
+                return true;
+            }
         }
 
         private static void RunAssemblyUpdaterTask(object o)

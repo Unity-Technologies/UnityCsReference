@@ -279,13 +279,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
-        public static EditorCompilation.TargetAssemblyInfo[] GetTargetAssembliesWithScripts()
-        {
-            var options = GetAdditionalEditorScriptCompilationOptions();
-            return EmitExceptionAsError(() => Instance.GetTargetAssembliesWithScripts(options), new EditorCompilation.TargetAssemblyInfo[0]);
-        }
-
-        [RequiredByNativeCode]
         public static void DirtyChangedAssemblyDefinition(string assemblyName)
         {
             EmitExceptionAsError(() => Instance.DirtyChangedAssemblyDefinition(assemblyName));
@@ -298,14 +291,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
-        public static EditorCompilation.CompileStatus CompileScripts(EditorScriptCompilationOptions definesOptions, BuildTargetGroup platformGroup, BuildTarget platform, string[] extraScriptingDefines)
+        public static EditorCompilation.CompileStatus CompileScripts(EditorScriptCompilationOptions definesOptions, BuildTargetGroup platformGroup, BuildTarget platform, string[] extraScriptingDefines = null)
         {
             return EmitExceptionAsError(() => Instance.CompileScripts(definesOptions, platformGroup, platform, extraScriptingDefines),
                 EditorCompilation.CompileStatus.CompilationFailed);
         }
 
         [RequiredByNativeCode]
-        public static EditorCompilation.CompileStatus CompileScriptsNoStop(EditorScriptCompilationOptions definesOptions, BuildTargetGroup platformGroup, BuildTarget platform, string[] extraScriptingDefines)
+        public static EditorCompilation.CompileStatus CompileScriptsNoStop(EditorScriptCompilationOptions definesOptions, BuildTargetGroup platformGroup, BuildTarget platform, string[] extraScriptingDefines = null)
         {
             return EmitExceptionAsError(() => Instance.CompileScripts(definesOptions, platformGroup, platform, extraScriptingDefines, CompilationTaskOptions.None),
                 EditorCompilation.CompileStatus.CompilationFailed);
@@ -360,7 +353,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
-        public static EditorCompilation.CompileStatus TickCompilationPipeline(EditorScriptCompilationOptions options, BuildTargetGroup platformGroup, BuildTarget platform, string[] extraScriptingDefines)
+        public static EditorCompilation.CompileStatus TickCompilationPipeline(EditorScriptCompilationOptions options, BuildTargetGroup platformGroup, BuildTarget platform, string[] extraScriptingDefines = null)
         {
             try
             {
@@ -387,7 +380,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
-        public static EditorCompilation.TargetAssemblyInfo[] GetCompatibleTargetAssemblyInfos(EditorScriptCompilationOptions definesOptions, BuildTargetGroup platformGroup, BuildTarget platform, string[] extraScriptingDefines)
+        public static EditorCompilation.TargetAssemblyInfo[] GetCompatibleTargetAssemblyInfos(EditorScriptCompilationOptions definesOptions, BuildTargetGroup platformGroup, BuildTarget platform, string[] extraScriptingDefines = null)
         {
             var scriptAssemblySettings = Instance.CreateScriptAssemblySettings(platformGroup, platform, definesOptions, extraScriptingDefines);
             return Instance.GetTargetAssemblyInfos(scriptAssemblySettings);
@@ -410,8 +403,27 @@ namespace UnityEditor.Scripting.ScriptCompilation
             AssembliesType assembliesType)
         {
             var options = GetAdditionalEditorScriptCompilationOptions();
+
             if (EditorUserBuildSettings.development && (assembliesType == AssembliesType.Player || assembliesType == AssembliesType.PlayerWithoutTestAssemblies))
                 options |= EditorScriptCompilationOptions.BuildingDevelopmentBuild;
+
+            switch (assembliesType)
+            {
+                case AssembliesType.Editor:
+                    options |= EditorScriptCompilationOptions.BuildingIncludingTestAssemblies;
+                    options |= EditorScriptCompilationOptions.BuildingForEditor;
+                    break;
+                case AssembliesType.Player:
+                    options |= EditorScriptCompilationOptions.BuildingIncludingTestAssemblies;
+                    options &= ~EditorScriptCompilationOptions.BuildingForEditor;
+                    break;
+                case AssembliesType.PlayerWithoutTestAssemblies:
+                    options &= ~EditorScriptCompilationOptions.BuildingIncludingTestAssemblies;
+                    options &= ~EditorScriptCompilationOptions.BuildingForEditor;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(assembliesType));
+            }
             return options;
         }
 
@@ -428,6 +440,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (PlayerSettings.UseDeterministicCompilation)
                 options |= EditorScriptCompilationOptions.BuildingUseDeterministicCompilation;
 
+            options |= EditorScriptCompilationOptions.BuildingWithRoslynAnalysis;
+
             return options;
         }
 
@@ -440,7 +454,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public static ScriptAssembly GetScriptAssemblyForLanguage<T>(string assemblyNameOrPath) where T : SupportedLanguage
         {
             var additionalOptions = GetAdditionalEditorScriptCompilationOptions();
-
             return Instance.GetScriptAssemblyForLanguage<T>(assemblyNameOrPath, additionalOptions);
         }
     }

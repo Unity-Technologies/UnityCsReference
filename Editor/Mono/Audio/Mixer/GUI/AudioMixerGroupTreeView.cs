@@ -66,10 +66,12 @@ namespace UnityEditor
                     m_owner.Controller.ReparentSelection(parentGroup, insertionIndex, draggedGroups);
                     m_owner.ReloadTree();
                     m_owner.Controller.OnSubAssetChanged();
-                    m_TreeView.SetSelection(draggedIDs.ToArray(), true);   // Ensure dropped item(s) are selected and revealed (fixes selection if click dragging a single item that is not selected when drag was started)
+                    m_TreeView.SetSelection(draggedIDs.ToArray(), true); // Ensure dropped item(s) are selected and revealed (fixes selection if click dragging a single item that is not selected when drag was started)
                 }
+
                 return validDrag ? DragAndDropVisualMode.Move : DragAndDropVisualMode.Rejected;
             }
+
             return DragAndDropVisualMode.None;
         }
 
@@ -82,6 +84,7 @@ namespace UnityEditor
                     return false;
                 currentParent = currentParent.parent;
             }
+
             return true;
         }
     }
@@ -107,6 +110,7 @@ namespace UnityEditor
                 children.Add(node);
                 AddNodesRecursively(group.children[i], node, depth + 1);
             }
+
             parent.children = children;
         }
 
@@ -174,6 +178,7 @@ namespace UnityEditor
             {
                 menu.AddItem(new GUIContent(visible ? "Hide group" : "Show Group"), false, () => NodeWasToggled(audioNode, !visible));
             }
+
             menu.AddSeparator(string.Empty);
 
             AudioMixerGroupController[] groups;
@@ -235,9 +240,7 @@ namespace UnityEditor
             return null;
         }
 
-        protected override void SyncFakeItem()
-        {
-        }
+        protected override void SyncFakeItem() {}
 
         protected override void RenameEnded()
         {
@@ -259,7 +262,6 @@ namespace UnityEditor
             }
         }
     }
-
 
     // TreeView
 
@@ -296,6 +298,7 @@ namespace UnityEditor
             public GUIContent addButton = EditorGUIUtility.TrIconContent("CreateAddNew", "Add child group");
             public Texture2D audioMixerGroupIcon = EditorGUIUtility.FindTexture(typeof(UnityEngine.Audio.AudioMixerGroup));
         }
+
         static Styles s_Styles;
 
         public AudioMixerGroupTreeView(AudioMixerWindow mixerWindow, TreeViewState treeState)
@@ -319,9 +322,15 @@ namespace UnityEditor
             m_AudioGroupTree.ReloadData();
         }
 
-        public AudioMixerController Controller { get { return m_Controller; } }
+        public AudioMixerController Controller
+        {
+            get { return m_Controller; }
+        }
 
-        public AudioMixerGroupController ScrollToItem { get { return m_ScrollToItem; } }
+        public AudioMixerGroupController ScrollToItem
+        {
+            get { return m_ScrollToItem; }
+        }
 
         public void UseScrollView(bool useScrollView)
         {
@@ -371,7 +380,7 @@ namespace UnityEditor
             m_Controller.AddChildToParent(newGroup, parent);
             m_Controller.AddGroupToCurrentView(newGroup);
 
-            Selection.objects = new[] {newGroup};
+            Selection.objects = new[] { newGroup };
             m_Controller.OnUnitySelectionChanged();
             m_AudioGroupTree.SetSelection(new int[] { newGroup.GetInstanceID() }, true);
             ReloadTree();
@@ -384,7 +393,7 @@ namespace UnityEditor
             return count > 1 ? "s" : "";
         }
 
-        public void DeleteGroups(List<AudioMixerGroupController> groups, bool recordUndo)
+        public void DeleteGroups(List<AudioMixerGroupController> groups)
         {
             foreach (AudioMixerGroupController group in groups)
             {
@@ -395,9 +404,6 @@ namespace UnityEditor
                     break;
                 }
             }
-
-            if (recordUndo)
-                Undo.RegisterCompleteObjectUndo(m_Controller, "Delete Group" + PluralIfNeeded(groups.Count));
 
             m_Controller.DeleteGroups(groups.ToArray());
             ReloadTree();
@@ -426,7 +432,7 @@ namespace UnityEditor
         void DeleteGroupsPopupCallback(object obj)
         {
             var audioMixerGroupTreeView = (AudioMixerGroupTreeView)obj;
-            audioMixerGroupTreeView.DeleteGroups(GetGroupSelectionWithoutMasterGroup(), true);
+            audioMixerGroupTreeView.DeleteGroups(GetGroupSelectionWithoutMasterGroup());
         }
 
         void DuplicateGroupPopupCallback(object obj)
@@ -438,7 +444,7 @@ namespace UnityEditor
         void RenameGroupCallback(object obj)
         {
             var item = (TreeViewItem)obj;
-            m_AudioGroupTree.SetSelection(new int[] {item.id}, false);
+            m_AudioGroupTree.SetSelection(new int[] { item.id }, false);
             m_AudioGroupTree.BeginNameEditing(0f);
         }
 
@@ -489,7 +495,7 @@ namespace UnityEditor
             Undo.RecordObject(m_Controller, "Changed Group Visibility");
             var treeSelection = GetAudioMixerGroupsFromNodeIDs(m_AudioGroupTree.GetSelection());
             if (!treeSelection.Contains(node.group))
-                treeSelection = new List<AudioMixerGroupController> {node.group};
+                treeSelection = new List<AudioMixerGroupController> { node.group };
             var newSelection = new List<GUID>();
             var allGroups = m_Controller.GetAllAudioGroupsSlow();
             foreach (var g in allGroups)
@@ -502,6 +508,7 @@ namespace UnityEditor
                 if (add)
                     newSelection.Add(g.groupID);
             }
+
             m_Controller.SetCurrentViewVisibility(newSelection.ToArray());
         }
 
@@ -518,6 +525,7 @@ namespace UnityEditor
                         newSelectedGroups.Add(mixerNode.group);
                 }
             }
+
             return newSelectedGroups;
         }
 
@@ -597,8 +605,8 @@ namespace UnityEditor
                     Event.current.Use();
                     if (execute)
                     {
-                        DeleteGroups(GetGroupSelectionWithoutMasterGroup(), true);
-                        GUIUtility.ExitGUI();  // Cached groups might have been deleted to so early out of event
+                        DeleteGroups(GetGroupSelectionWithoutMasterGroup());
+                        GUIUtility.ExitGUI(); // Cached groups might have been deleted to so early out of event
                     }
                 }
                 else if (Event.current.commandName == EventCommandNames.Duplicate)
