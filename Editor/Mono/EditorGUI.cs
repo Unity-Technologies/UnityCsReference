@@ -2548,7 +2548,8 @@ namespace UnityEditor
                     TargetChoiceHandler.AddSetToValueOfTargetMenuItems(pm, propertyWithPath, TargetChoiceHandler.SetToValueOfTarget);
                 }
 
-                if (property.serializedObject.targetObjectsCount == 1 && property.isInstantiatedPrefab && property.prefabOverride)
+                if (property.serializedObject.targetObjectsCount == 1 && property.isInstantiatedPrefab
+                    && (property.prefabOverride || (linkedProperty?.prefabOverride ?? false)))
                 {
                     Object targetObject = property.serializedObject.targetObject;
 

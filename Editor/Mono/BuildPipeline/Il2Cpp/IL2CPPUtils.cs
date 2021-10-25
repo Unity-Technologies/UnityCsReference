@@ -651,6 +651,7 @@ namespace UnityEditorInternal
 
                 arguments.Add($"--map-file-parser={CommandLineFormatter.PrepareFileName(GetMapFileParserPath())}");
                 arguments.Add($"--generatedcppdir={CommandLineFormatter.PrepareFileName(GetCppOutputDirectory(il2cppBuildCacheSource))}");
+                arguments.Add($"--stats-output-dir={CommandLineFormatter.PrepareFileName(GetStatsOutputDirectory(il2cppBuildCacheSource))}");
                 arguments.Add($"--dotnetprofile=\"{IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup))}\"");
                 arguments.AddRange(IL2CPPUtils.GetDebuggerIL2CPPArguments(m_PlatformProvider, buildTargetGroup));
                 Action<ProcessStartInfo> setupStartInfo = il2CppNativeCodeBuilder.SetupStartInfo;
@@ -680,6 +681,11 @@ namespace UnityEditorInternal
                 Path.Combine(
                     GetShortPathName(Path.GetFullPath(EditorApplication.applicationContentsPath)),
                     Application.platform == RuntimePlatform.WindowsEditor ? @"Tools\MapFileParser\MapFileParser.exe" : @"Tools/MapFileParser/MapFileParser"));
+        }
+
+        public static string GetStatsOutputDirectory(string directory)
+        {
+            return Path.Combine(GetShortPathName(Path.GetFullPath(directory)), "il2cppStats");
         }
 
         static void ProcessBuildPipelineOnBeforeConvertRun(BuildReport report, Il2CppBuildPipelineData data)
@@ -751,6 +757,7 @@ namespace UnityEditorInternal
             arguments.Add($"--directory={CommandLineFormatter.PrepareFileName(GetShortPathName(Path.GetFullPath(data.inputDirectory)))}");
 
             arguments.Add($"--generatedcppdir={CommandLineFormatter.PrepareFileName(GetCppOutputDirectory(m_PlatformProvider.il2cppBuildCacheDirectory))}");
+            arguments.Add($"--stats-output-dir={CommandLineFormatter.PrepareFileName(GetStatsOutputDirectory(m_PlatformProvider.il2cppBuildCacheDirectory))}");
 
             // NOTE: any arguments added here that affect how generated code is built need
             // to also be added to PlatformDependent\Win\Extensions\Managed\VisualStudioProjectHelpers.cs
