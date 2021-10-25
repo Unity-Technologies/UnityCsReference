@@ -541,9 +541,6 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\ImmediateModeElement.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\ImmediateModeElement.cs</Link>
     </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\InjectedEditor\PackageEditorAtlasMonitor.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\InjectedEditor\PackageEditorAtlasMonitor.cs</Link>
-    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\InteractionEnums.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\InteractionEnums.cs</Link>
     </Compile>
