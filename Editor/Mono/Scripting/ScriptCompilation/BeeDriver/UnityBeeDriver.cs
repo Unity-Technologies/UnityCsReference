@@ -69,7 +69,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
         private static RunnableProgram UnityBeeBackendProgram()
         {
             var executable = new NPath($"{EditorApplication.applicationContentsPath}/bee_backend{BeeScriptCompilation.ExecutableExtension}").ToString();
-            return new SystemProcessRunnableProgram(executable, alwaysEnvironmentVariables: new Dictionary<string, string>() {{ "BEE_CACHE_BEHAVIOUR", "_"}}, stdOutMode: StdOutMode.LogStdOutOnFinish | StdOutMode.LogStartArgumentsAndExitcode);
+            return new SystemProcessRunnableProgram(executable, alwaysEnvironmentVariables: new Dictionary<string, string>()
+            {
+                { "BEE_CACHE_BEHAVIOUR", "_"},
+                { "CHROMETRACE_TIMEOFFSET","unixepoch"}
+            }, stdOutMode: StdOutMode.LogStdOutOnFinish | StdOutMode.LogStartArgumentsAndExitcode);
         }
     }
 }
