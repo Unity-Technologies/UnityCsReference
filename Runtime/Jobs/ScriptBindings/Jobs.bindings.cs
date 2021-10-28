@@ -7,6 +7,7 @@ using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using System.Diagnostics;
+using UnityEngine.Scripting;
 
 namespace Unity.Jobs.LowLevel.Unsafe
 {
@@ -56,10 +57,10 @@ namespace Unity.Jobs.LowLevel.Unsafe
         [StructLayout(LayoutKind.Sequential)]
         public struct JobScheduleParameters
         {
-            public JobHandle    Dependency;
-            public int          ScheduleMode;
-            public IntPtr       ReflectionData;
-            public IntPtr       JobDataPtr;
+            public JobHandle Dependency;
+            public int ScheduleMode;
+            public IntPtr ReflectionData;
+            public IntPtr JobDataPtr;
 
             unsafe public JobScheduleParameters(void* i_jobData, IntPtr i_reflectionData, JobHandle i_dependency, ScheduleMode i_scheduleMode)
             {
@@ -124,10 +125,10 @@ namespace Unity.Jobs.LowLevel.Unsafe
             return CreateJobReflectionData(wrapperJobType, userJobType, managedJobFunction0, null, null);
         }
 
-        public static extern bool IsExecutingJob {[NativeMethod(IsFreeFunction = true, IsThreadSafe = true)] get; }
+        public static extern bool IsExecutingJob { [NativeMethod(IsFreeFunction = true, IsThreadSafe = true)] get; }
 
-        public static extern bool JobDebuggerEnabled {[FreeFunction] get; [FreeFunction] set; }
-        public static extern bool JobCompilerEnabled {[FreeFunction] get; [FreeFunction] set; }
+        public static extern bool JobDebuggerEnabled { [FreeFunction] get; [FreeFunction] set; }
+        public static extern bool JobCompilerEnabled { [FreeFunction] get; [FreeFunction] set; }
 
         [FreeFunction("JobSystem::GetJobQueueWorkerThreadCount")]
         static extern int GetJobQueueWorkerThreadCount();
@@ -160,5 +161,27 @@ namespace Unity.Jobs.LowLevel.Unsafe
         //@TODO: @timj Should we decrease this???
         public const int MaxJobThreadCount = 128;
         public const int CacheLineSize = 64;
+
+        [FreeFunction("JobDebuggerGetSystemIdCellPtr")]
+        internal static extern IntPtr GetSystemIdCellPtr();
+
+        [FreeFunction("JobDebuggerClearSystemIds")]
+        internal static extern void ClearSystemIds();
+
+        [FreeFunction("JobDebuggerGetSystemIdMappings")]
+        internal static unsafe extern int GetSystemIdMappings(JobHandle* handles, int* systemIds, int maxCount);
+
+        internal delegate void PanicFunction_();
+
+        internal static PanicFunction_ PanicFunction;
+
+        [RequiredByNativeCode]
+        private static void InvokePanicFunction()
+        {
+            var func = PanicFunction;
+            if (func == null)
+                return;
+            func();
+        }
     }
 }

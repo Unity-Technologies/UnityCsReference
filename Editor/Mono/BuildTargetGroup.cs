@@ -109,5 +109,7 @@ namespace UnityEditor
         PS5 = 33,
 
         EmbeddedLinux = 34,
+
+        QNX = 35,
     }
 }

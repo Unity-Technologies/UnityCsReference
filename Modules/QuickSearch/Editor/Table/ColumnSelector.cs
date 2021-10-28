@@ -172,5 +172,6 @@ namespace UnityEditor.Search
                 properties.Add(ac);
             }
         }
+
     }
 }

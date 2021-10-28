@@ -20,7 +20,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageManager = container.Resolve<PageManager>();
         }
 
-        public PackageVersionItem(IPackage package, IPackageVersion version, bool alwaysShowRecommendedLabel, bool isLatestVersion)
+        public PackageVersionItem(IPackage package, IPackageVersion version, bool multipleVersionsVisible, bool isLatestVersion)
         {
             ResolveDependencies();
 
@@ -30,14 +30,15 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             this.package = package;
             this.version = version;
-            RefreshLabel(alwaysShowRecommendedLabel, isLatestVersion);
+
+            RefreshLabel(multipleVersionsVisible, isLatestVersion, version.isUnityPackage == true);
             this.OnLeftClick(() => m_PageManager.SetSelected(package, version, true));
         }
 
         public IPackageVersion targetVersion { get { return version; } }
         public VisualElement element { get { return this; } }
 
-        private void RefreshLabel(bool alwaysShowRecommendedLabel, bool isLatestVersion)
+        private void RefreshLabel(bool multipleVersionsVisible, bool isLatestVersion, bool isUnityPackage)
         {
             versionLabel.text = version.version?.ToString() ?? version.versionString;
             versionLabel.ShowTextTooltipOnSizeChange();
@@ -56,14 +57,16 @@ namespace UnityEditor.PackageManager.UI.Internal
                 // with keyVersions being potentially larger now, we want to
                 //  show 'Recommended' text whether package is installed or not
                 //  if more than one version is in keyVersions
-                else if (version == recommended && alwaysShowRecommendedLabel)
+                else if (version == recommended && multipleVersionsVisible && isUnityPackage)
                     stateText = L10n.Tr("Recommended");
+                else if (!isUnityPackage && multipleVersionsVisible && isLatestVersion)
+                    stateText = L10n.Tr("Latest update");
             }
             else if (versionInManifest == version.versionString)
                 stateText = L10n.Tr("Requested but overridden");
-            else if (version == recommended)
+            else if (version == recommended && isUnityPackage)
                 stateText = L10n.Tr("Recommended");
-            else if (primary.isInstalled && isLatestVersion)
+            else if ((primary.isInstalled || !isUnityPackage) && isLatestVersion)
                 stateText = L10n.Tr("Latest update");
 
             stateLabel.text = stateText;

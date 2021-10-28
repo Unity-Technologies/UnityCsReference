@@ -81,7 +81,8 @@ namespace UnityEditor
         [SerializeField]
         OverlayCanvas m_OverlayCanvas = new OverlayCanvas();
 
-        internal OverlayCanvas overlayCanvas => m_OverlayCanvas;
+        public OverlayCanvas overlayCanvas => m_OverlayCanvas;
+
         [NonSerialized]
         bool m_OverlaysInitialized;
 

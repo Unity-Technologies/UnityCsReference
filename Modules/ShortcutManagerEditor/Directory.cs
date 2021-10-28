@@ -47,7 +47,7 @@ namespace UnityEditor.ShortcutManagement
         }
 
         // These two overloads have some duplication to avoid creating predicates etc.
-        public void FindShortcutEntries(List<KeyCombination> combinationSequence, Type[] context, List<ShortcutEntry> outputShortcuts)
+        public void FindShortcutEntries(List<KeyCombination> combinationSequence, Type[] context, string[] tags, List<ShortcutEntry> outputShortcuts)
         {
             outputShortcuts.Clear();
             List<ShortcutEntry> entries = GetShortcutEntriesForPrimaryKey(combinationSequence);
@@ -59,12 +59,37 @@ namespace UnityEditor.ShortcutManagement
                     && entry.context != typeof(ContextManager.GlobalContext))
                     outputShortcuts.Add(entry);
 
-            if (outputShortcuts.Count > 0) return;
+            if (outputShortcuts.Count == 0)
+            {
+                foreach (var entry in entries)
+                    if (entry.StartsWith(combinationSequence) && ShortcutEntryMatchesAnyContext(entry.context, context)
+                        && entry.context == typeof(ContextManager.GlobalContext))
+                        outputShortcuts.Add(entry);
+            }
 
-            foreach (var entry in entries)
-                if (entry.StartsWith(combinationSequence) && ShortcutEntryMatchesAnyContext(entry.context, context)
-                    && entry.context == typeof(ContextManager.GlobalContext))
-                    outputShortcuts.Add(entry);
+            if (tags == null) return;
+
+            bool tagMatch = false;
+
+            foreach (var entry in outputShortcuts)
+                tagMatch |= tags.Contains(entry.tag);
+
+            if (tagMatch)
+            {
+                for (int i = outputShortcuts.Count - 1; i >= 0; i--)
+                {
+                    if (tags.Contains(outputShortcuts[i].tag)) continue;
+                    outputShortcuts.RemoveAt(i);
+                }
+            }
+            else
+            {
+                for (int i = outputShortcuts.Count - 1; i >= 0; i--)
+                {
+                    if (outputShortcuts[i].tag == null) continue;
+                    outputShortcuts.RemoveAt(i);
+                }
+            }
         }
 
         public void FindShortcutEntries(List<KeyCombination> combinationSequence, IContextManager contextManager, List<ShortcutEntry> outputShortcuts)
@@ -79,17 +104,40 @@ namespace UnityEditor.ShortcutManagement
                     && entry.context != typeof(ContextManager.GlobalContext))
                     outputShortcuts.Add(entry);
 
-            if (outputShortcuts.Count > 0) return;
+            if (outputShortcuts.Count == 0)
+            {
+                foreach (var entry in entries)
+                    if (entry.StartsWith(combinationSequence) && ShortcutEntrySatisfiesContextManager(contextManager, entry)
+                        && entry.context == typeof(ContextManager.GlobalContext))
+                        outputShortcuts.Add(entry);
+            }
 
-            foreach (var entry in entries)
-                if (entry.StartsWith(combinationSequence) && ShortcutEntrySatisfiesContextManager(contextManager, entry)
-                    && entry.context == typeof(ContextManager.GlobalContext))
-                    outputShortcuts.Add(entry);
+            bool tagMatch = false;
+
+            foreach (var entry in outputShortcuts)
+                tagMatch |= contextManager.HasTag(entry.tag);
+
+            if (tagMatch)
+            {
+                for (int i = outputShortcuts.Count - 1; i >= 0; i--)
+                {
+                    if (contextManager.HasTag(outputShortcuts[i].tag)) continue;
+                    outputShortcuts.RemoveAt(i);
+                }
+            }
+            else
+            {
+                for (int i = outputShortcuts.Count - 1; i >= 0; i--)
+                {
+                    if (outputShortcuts[i].tag == null) continue;
+                    outputShortcuts.RemoveAt(i);
+                }
+            }
         }
 
         public void FindShortcutEntries(List<KeyCombination> combinationSequence, List<ShortcutEntry> outputShortcuts)
         {
-            FindShortcutEntries(combinationSequence, (Type[])null, outputShortcuts);
+            FindShortcutEntries(combinationSequence, (Type[])null, null, outputShortcuts);
         }
 
         public ShortcutEntry FindShortcutEntry(Identifier identifier)
@@ -104,7 +152,7 @@ namespace UnityEditor.ShortcutManagement
             return FindShortcutEntry(id);
         }
 
-        public void FindPotentialConflicts(Type context, IList<KeyCombination> binding, IList<ShortcutEntry> output, IContextManager contextManager)
+        public void FindPotentialConflicts(Type context, string tag, IList<KeyCombination> binding, IList<ShortcutEntry> output, IContextManager contextManager)
         {
             if (!binding.Any())
                 return;
@@ -117,7 +165,7 @@ namespace UnityEditor.ShortcutManagement
 
             foreach (var shortcutEntry in entries)
             {
-                if (!contextManager.DoContextsConflict(shortcutEntry.context, context))
+                if (!contextManager.DoContextsConflict(shortcutEntry.context, context) || !string.Equals(tag, shortcutEntry.tag))
                     continue;
 
                 bool entryConflicts = false;
@@ -132,6 +180,7 @@ namespace UnityEditor.ShortcutManagement
                         break;
                     }
                 }
+
                 if (entryConflicts || shortcutEntry.StartsWith(tempCombinations))
                     output.Add(shortcutEntry);
             }
@@ -169,6 +218,7 @@ namespace UnityEditor.ShortcutManagement
         bool DoShortcutEntriesConflict(ShortcutEntry shortcutEntry1, ShortcutEntry shortcutEntry2, IContextManager contextManager)
         {
             return contextManager.DoContextsConflict(shortcutEntry1.context, shortcutEntry2.context) &&
+                string.Equals(shortcutEntry1.tag, shortcutEntry2.tag) &&
                 (shortcutEntry1.StartsWith(shortcutEntry2.combinations) ||
                     shortcutEntry2.StartsWith(shortcutEntry1.combinations));
         }

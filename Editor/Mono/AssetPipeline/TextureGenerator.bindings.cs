@@ -144,6 +144,8 @@ namespace UnityEditor.AssetImporters
             m_Settings.mipmapFadeDistanceEnd = 3;
             m_Settings.heightmapScale = 0.25f;
             m_Settings.normalMapFilter = TextureImporterNormalFilter.Standard;
+            m_Settings.flipGreenChannel = false;
+            m_Settings.swizzleRaw = 0x03020100; // R,G,B,A
             m_Settings.cubemapConvolution = 0;
             m_Settings.generateCubemap = TextureImporterGenerateCubemap.AutoCubemap;
             m_Settings.seamlessCubemap = false;

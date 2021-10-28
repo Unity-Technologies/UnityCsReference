@@ -194,7 +194,7 @@ namespace UnityEditor.Search.Providers
             if (info.gid.identifierType == (int)IdentifierType.kBuiltInAsset)
                 return AssetPreview.GetMiniThumbnail(info.obj);
 
-            return AssetPreview.GetMiniTypeThumbnail(info.type ?? typeof(GameObject));
+            return SearchUtils.GetTypeIcon(info.type ?? typeof(GameObject));
         }
 
         private static string TrimLabel(in string label, in bool trim)
@@ -330,11 +330,11 @@ namespace UnityEditor.Search.Providers
 
         private static IEnumerable<SearchProposition> FetchPropositions(SearchContext context, SearchPropositionOptions options)
         {
-            if (options.flags.HasAny(SearchPropositionFlags.FilterOnly) && options.StartsWith("type"))
-                return FetchAssetTypePropositions();
-
             if (context.options.HasAny(SearchFlags.NoIndexing))
                 return null;
+
+            if (options.flags.HasAny(SearchPropositionFlags.QueryBuilder))
+                return FetchQueryBuilderPropositions();
 
             var token = options.tokens[0];
             var ft = token.LastIndexOfAny(SearchUtils.KeywordsValueDelimiters);
@@ -343,27 +343,60 @@ namespace UnityEditor.Search.Providers
             var dbs = SearchDatabase.EnumerateAll();
             return dbs.SelectMany(db => db.index.GetKeywords()
                 .Where(kw => kw.StartsWith(token, StringComparison.OrdinalIgnoreCase)))
-                .Select(kw => new SearchProposition(kw));
+                .Select(kw => new SearchProposition(category: null, label: kw));
         }
 
-        private static IEnumerable<SearchProposition> FetchAssetTypePropositions()
+        private static IEnumerable<SearchProposition> FetchQueryBuilderPropositions()
         {
-            var ignoredAssemblies = new[]
+            foreach (var p in SearchUtils.FetchTypePropositions<Object>())
+                yield return p;
+            foreach (var p in FetchIndexPropositions())
+                yield return p;
+
+            foreach (var l in QueryListBlockAttribute.GetPropositions(typeof(QueryLabelBlock)))
+                yield return l;
+
+            foreach (var l in QueryListBlockAttribute.GetPropositions(typeof(QueryPrefabFilterBlock)))
+                yield return l;
+
+            foreach (var f in QueryListBlockAttribute.GetPropositions(typeof(QueryBundleFilterBlock)))
+                yield return f;
+
+            if (SearchDatabase.EnumerateAll().Any(db => db.index?.settings?.options.extended ?? false))
             {
-                typeof(EditorApplication).Assembly,
-                typeof(UnityEditorInternal.InternalEditorUtility).Assembly
-            };
-            var types = TypeCache.GetTypesDerivedFrom<UnityEngine.Object>()
-                .Where(t => t.IsVisible)
-                .Where(t => !ignoredAssemblies.Contains(t.Assembly))
-                .Where(t => !t.FullName.StartsWith("UnityEditor", StringComparison.Ordinal));
-            foreach (var t in types)
-                yield return new SearchProposition(t.Name, t.Name, GetTypeHelpText(t), 0, TextCursorPlacement.Default, AssetPreview.GetMiniTypeThumbnail(t));
+                foreach (var f in QueryListBlockAttribute.GetPropositions(typeof(QueryIsFilterBlock)))
+                    yield return f;
+                foreach (var t in QueryListBlockAttribute.GetPropositions(typeof(QueryTagBlock)))
+                    yield return t;
+            }
+
+            yield return new SearchProposition(category: "Filters", label: "Directory (Name)", replacement: "dir=\"folder name\"", icon: Icons.quicksearch);
+            yield return new SearchProposition(category: "Filters", label: "File Size", replacement: "size>=8096", help: "File size in bytes", icon: Icons.quicksearch);
+            yield return new SearchProposition(category: "Filters", label: "File Extension", replacement: "ext:png", icon: Icons.quicksearch);
+            yield return new SearchProposition(category: "Filters", label: "Age", replacement: "age>=1.5", help: "In days, when was the file last modified?", icon: Icons.quicksearch);
+            yield return new SearchProposition(category: "Filters", label: "Sub Asset", replacement: "is:subasset", help: "Yield nested assets (i.e. media from FBX files)", icon: Icons.quicksearch);
+
+            var sceneIcon = Utils.LoadIcon("SceneAsset Icon");
+            yield return new SearchProposition(category: null, "Reference", "ref=<$object:none,UnityEngine.Object$>", "Find all assets referencing a specific asset.", icon: sceneIcon);
         }
 
-        private static string GetTypeHelpText(in Type t)
+        private static IEnumerable<SearchProposition> FetchIndexPropositions()
         {
-            return $"{t.FullName}\n{t.Assembly.Location}";
+            var dbs = SearchDatabase.EnumerateAll();
+            foreach (var db in dbs.Where(db => !db.settings.options.disabled))
+            {
+                while (!db.loaded)
+                    Dispatcher.ProcessOne();
+
+                yield return new SearchProposition(
+                    category: "Area",
+                    label: db.name,
+                    replacement: $"a:{db.name}",
+                    icon: Icons.quicksearch);
+
+                foreach (var kw in db.index.GetKeywords())
+                    yield return SearchUtils.CreateKeywordProposition(kw);
+            }
         }
 
         private static void StartDrag(SearchItem item, SearchContext context)
@@ -392,6 +425,18 @@ namespace UnityEditor.Search.Providers
                 yield return provider.CreateItem(context, info.gid.ToString(), -1, $"{Path.GetFileName(guidPath)} ({searchQuery})", null, null, info);
             }
 
+            if (searchQuery.StartsWith("GlobalObjectId", StringComparison.Ordinal))
+            {
+                if (GlobalObjectId.TryParse(searchQuery, out var gid))
+                {
+                    var obj = GlobalObjectId.GlobalObjectIdentifierToObjectSlow(gid);
+                    var objPath = SearchUtils.GetObjectPath(obj);
+                    var info = new AssetMetaInfo(objPath, gid,
+                        gid.identifierType == (int)IdentifierType.kImportedAsset ? SearchDocumentFlags.Asset : SearchDocumentFlags.Nested | SearchDocumentFlags.Object);
+                    yield return provider.CreateItem(context, gid.ToString(), -1, objPath, null, null, info);
+                }
+            }
+
             // Search indexes that are ready
             var useIndexing = !context.options.HasAny(SearchFlags.NoIndexing);
             if (!useIndexing || context.wantsMore)
@@ -405,7 +450,7 @@ namespace UnityEditor.Search.Providers
                     else
                     {
                         yield return CreateItem("Files", context, SearchUtils.CreateGroupProvider(provider, "Files", 0, true),
-                                                    null, e.source, 998 + e.score, SearchDocumentFlags.Asset);
+                            null, e.source, 998 + e.score, SearchDocumentFlags.Asset);
                     }
                 }
             }
@@ -414,8 +459,6 @@ namespace UnityEditor.Search.Providers
             if (useIndexing)
             {
                 var dbs = SearchDatabase.EnumerateAll();
-                if (context.options.HasAny(SearchFlags.QueryString))
-                    dbs = dbs.Where(db => db.ready);
                 foreach (var db in dbs)
                     yield return SearchIndexes(context.searchQuery, context, provider, db);
             }
@@ -741,5 +784,8 @@ namespace UnityEditor.Search.Providers
         {
             QuickSearch.OpenWithContextualProvider(type, Query.type, FindProvider.providerId);
         }
+
+        [SearchTemplate(description = "Find all textures", providerId = type)] internal static string ST1() => @"t:texture";
+        [SearchTemplate(description = "Search current folder", providerId = type)] internal static string ST2() => $"dir=\"{Path.GetFileName(ProjectWindowUtil.GetActiveFolderPath())}\" ";
     }
 }

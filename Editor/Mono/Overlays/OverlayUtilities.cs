@@ -171,5 +171,34 @@ namespace UnityEditor.Overlays
                 toolbar.AddElement(id);
             return toolbar;
         }
+
+        internal static bool EnsureValidId(IEnumerable<Overlay> existing, Overlay overlay)
+        {
+            var id = string.IsNullOrEmpty(overlay.id) ? $"{overlay.GetType()}" : overlay.id;
+            var ret = EnsureUniqueId(existing.Select(x => x.id), id);
+            if (string.IsNullOrEmpty(ret))
+                return false;
+            overlay.id = ret;
+            return true;
+        }
+
+        static string EnsureUniqueId(IEnumerable<string> existing, string name)
+        {
+            if (!existing.Contains(name))
+                return name;
+
+            // 256 has no special meaning, it's just a failsafe to prevent this method from locking up the editor
+            // in the event that someone is incorrectly using AddOverlay. We'll throw an exception in EnsureValidId
+            // to let the user know that they're doing it wrong (there aren't many legitimate cases for more than a
+            // couple overlays of the same type, let alone 100+).
+            for (int n = 0; n < 256; ++n)
+            {
+                var inc = $"{name} ({n})";
+                if (!existing.Contains(inc))
+                    return inc;
+            }
+
+            return null;
+        }
     }
 }

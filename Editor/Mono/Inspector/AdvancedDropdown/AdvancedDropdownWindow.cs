@@ -96,6 +96,7 @@ namespace UnityEditor.IMGUI.Controls
 
         public event Action<AdvancedDropdownWindow> windowClosed;
         public event Action<AdvancedDropdownItem> selectionChanged;
+        public event Action selectionCanceled;
         internal Func<Event, bool> specialKeyboardHandling;
 
         protected virtual void OnEnable()
@@ -105,12 +106,13 @@ namespace UnityEditor.IMGUI.Controls
 
         protected virtual void OnDisable()
         {
+            selectionCanceled?.Invoke();
         }
 
         protected virtual void OnDestroy()
         {
             // This window sets 'editingTextField = true' continuously, through EditorGUI.FocusTextInControl(),
-            // for the searchfield in its AdvancedDropdownGUI so here we ensure to clean up. This fixes the issue that
+            // for the search field in its AdvancedDropdownGUI so here we ensure to clean up. This fixes the issue that
             // EditorGUI.IsEditingTextField() was returning true after e.g the Add Component Menu closes
             EditorGUIUtility.editingTextField = false;
         }
@@ -361,6 +363,8 @@ namespace UnityEditor.IMGUI.Controls
 
         private void CloseWindow()
         {
+            if (GetSelectedItem() != null)
+                selectionCanceled = null;
             if (windowClosed != null)
                 windowClosed(this);
             Close();

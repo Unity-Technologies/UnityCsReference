@@ -218,13 +218,13 @@ namespace UnityEditor.DeviceSimulation
             float scaleY;
             if (m_ScreenSimulation.IsRenderingLandscape)
             {
-                scaleX = m_ScreenSimulation.Width / renderedAreaPortraitHeight;
-                scaleY = m_ScreenSimulation.Height / renderedAreaPortraitWidth;
+                scaleX = m_ScreenSimulation.width / renderedAreaPortraitHeight;
+                scaleY = m_ScreenSimulation.height / renderedAreaPortraitWidth;
             }
             else
             {
-                scaleX = m_ScreenSimulation.Width / renderedAreaPortraitWidth;
-                scaleY = m_ScreenSimulation.Height / renderedAreaPortraitHeight;
+                scaleX = m_ScreenSimulation.width / renderedAreaPortraitWidth;
+                scaleY = m_ScreenSimulation.height / renderedAreaPortraitHeight;
             }
 
             return new Vector2(touchedPixelX * scaleX, touchedPixelY * scaleY);

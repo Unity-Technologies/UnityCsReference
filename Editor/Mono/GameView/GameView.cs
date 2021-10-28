@@ -566,6 +566,7 @@ namespace UnityEditor
                     if (display != targetDisplay)
                     {
                         targetDisplay = display;
+                        Display.activeEditorGameViewTarget  = targetDisplay;
                         UpdateZoomAreaAndParent();
                     }
                 }

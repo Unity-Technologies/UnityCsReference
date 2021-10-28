@@ -219,6 +219,8 @@ namespace UnityEditorInternal
             public string localizedStringTotalInThread = L10n.Tr("\n{0} for {1} instances on thread '{2}'");
             public string localizedStringTotalInFrame = L10n.Tr("\n{0} for {1} instances over {2} threads");
 
+            public string localizedStringUnnamedObject = L10n.Tr("<No Name>");
+
             public Color frameDelimiterColor = Color.white.RGBMultiplied(0.4f);
             Color m_RangeSelectionColorLight = new Color32(255, 255, 255, 90);
             Color m_RangeSelectionColorDark = new Color32(200, 200, 200, 40);
@@ -1914,7 +1916,6 @@ namespace UnityEditorInternal
                 return;
 
             bool hasCallStack = m_SelectedEntry.hasCallstack;
-
             if (callStackNeedsRegeneration || m_SelectedEntry.cachedSelectionTooltipContent == null)
             {
                 string durationString = UnityString.Format(m_SelectedEntry.duration >= 1.0 ? "{0:f2}ms" : "{0:f3}ms", m_SelectedEntry.duration);
@@ -1972,13 +1973,27 @@ namespace UnityEditorInternal
                     text.Append(string.Format("\n{0}", m_SelectedEntry.metaData));
                 }
 
-                if (hasCallStack)
+                bool hasObject = m_SelectedEntry.instanceId != 0;
+                if (hasObject || hasCallStack)
                 {
                     using (var frameData = ProfilerDriver.GetRawFrameDataView(frameIndex, m_SelectedEntry.threadIndex))
                     {
-                        var callStack = new List<ulong>();
-                        frameData.GetSampleCallstack(m_SelectedEntry.nativeIndex + 1, callStack);
-                        CompileCallStack(text, callStack, frameData);
+                        if (hasObject)
+                        {
+                            if (frameData.GetUnityObjectInfo(m_SelectedEntry.instanceId, out var info))
+                            {
+                                var name = string.IsNullOrEmpty(info.name) ? styles.localizedStringUnnamedObject : info.name;
+                                var typeName = frameData.GetUnityObjectNativeTypeInfo(info.nativeTypeIndex, out var typeInfo) ? typeInfo.name : "Object";
+                                text.Append(string.Format("\n{0}: {1}", typeName, name));
+                            }
+                        }
+
+                        if (hasCallStack)
+                        {
+                            var callStack = new List<ulong>();
+                            frameData.GetSampleCallstack(m_SelectedEntry.nativeIndex + 1, callStack);
+                            CompileCallStack(text, callStack, frameData);
+                        }
                     }
                 }
                 m_SelectedEntry.cachedSelectionTooltipContent = new GUIContent(text.ToString());

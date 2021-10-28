@@ -20,7 +20,8 @@ namespace UnityEditor.Search
     [Serializable]
     public class SearchViewState : ISerializationCallbackReceiver
     {
-        static Vector2 defaultSize = new Vector2(850f, 539f);
+        static readonly Vector2 defaultSize = new Vector2(850f, 539f);
+        static readonly string[] emptyProviders = new string[0];
 
         internal SearchContext context
         {
@@ -39,21 +40,23 @@ namespace UnityEditor.Search
 
         [NonSerialized] private SearchContext m_Context;
         [NonSerialized] private bool m_WasDeserialized;
-        [SerializeField] private string[] providerIds;
+        [SerializeField] internal string[] providerIds;
         [SerializeField] private SearchFlags searchFlags;
         [SerializeField] internal string searchText; // Also used as the initial query when the view was created
         [SerializeField] internal bool forceViewMode;
         [SerializeField] internal string sessionId;
         [SerializeField] internal string sessionName;
         [SerializeField] internal bool excludeNoneItem;
+        [SerializeField] internal SearchTable tableConfig;
+        [SerializeField] internal bool ignoreSaveSearches;
+
+        [SerializeField] internal bool queryBuilderEnabled;
 
         public string title;
         public float itemSize;
         public Rect position;
         public SearchViewFlags flags;
         public string group;
-
-        [SerializeField] internal SearchTable tableConfig;
 
         [NonSerialized] internal Action<SearchItem, bool> selectHandler;
         [NonSerialized] internal Action<SearchItem> trackingHandler;
@@ -83,6 +86,7 @@ namespace UnityEditor.Search
             position = Rect.zero;
             searchText = context?.searchText ?? string.Empty;
             tableConfig = null;
+            providerIds = emptyProviders;
         }
 
         internal SearchViewState(SearchContext context,
@@ -105,18 +109,19 @@ namespace UnityEditor.Search
             title = filterType?.Name ?? typeName;
         }
 
-        internal SearchViewState(SearchTable tableConfig)
-            : this(null, null)
+        internal SearchViewState(SearchContext context, SearchTable tableConfig, SearchViewFlags flags = SearchViewFlags.None)
+            : this(context, flags | SearchViewFlags.TableView)
         {
-            itemSize = (float)DisplayMode.Table;
             group = null;
             this.tableConfig = tableConfig;
         }
 
         internal SearchViewState SetSearchViewFlags(SearchViewFlags flags)
         {
-            context.options |= ToSearchFlags(flags);
-
+            if (m_Context != null)
+            {
+                context.options |= ToSearchFlags(flags);
+            }
             this.flags = flags;
 
             if (flags.HasAny(SearchViewFlags.CompactView))
@@ -139,6 +144,8 @@ namespace UnityEditor.Search
                 itemSize = (float)DisplayMode.Table;
                 forceViewMode = true;
             }
+            if (flags.HasAny(SearchViewFlags.OpenInBuilderMode)) queryBuilderEnabled = true;
+            if (flags.HasAny(SearchViewFlags.OpenInTextMode)) queryBuilderEnabled = false;
             return this;
         }
 
@@ -149,12 +156,17 @@ namespace UnityEditor.Search
             searchText = state.context.searchText;
             sessionId = state.sessionId;
             sessionName = state.sessionName;
+            excludeNoneItem = state.excludeNoneItem;
+            ignoreSaveSearches = state.ignoreSaveSearches;
 
             title = state.title;
             itemSize = state.itemSize;
             position = state.position;
             flags = state.flags;
             forceViewMode = state.forceViewMode;
+            group = state.group;
+
+            queryBuilderEnabled = state.queryBuilderEnabled;
 
             BuildContext();
         }
@@ -201,6 +213,9 @@ namespace UnityEditor.Search
             if (!forceViewMode && !runningTests)
                 itemSize = SearchSettings.itemIconSize;
 
+            if (!runningTests && flags.HasNone(SearchViewFlags.OpenInBuilderMode) && flags.HasNone(SearchViewFlags.OpenInTextMode))
+                queryBuilderEnabled = SearchSettings.queryBuilder;
+
             if (context != null)
             {
                 context.options |= additionalFlags;
@@ -222,16 +237,21 @@ namespace UnityEditor.Search
         public void OnAfterDeserialize()
         {
             m_WasDeserialized = true;
+            if (tableConfig != null && tableConfig.columns?.Length == 0)
+                tableConfig = null;
         }
 
         internal IEnumerable<string> GetProviderIds()
         {
-            return context.GetProviders().Select(p => p.id);
+            if (context != null)
+                return context.GetProviders().Select(p => p.id);
+            return providerIds;
         }
 
         internal IEnumerable<string> GetProviderTypes()
         {
-            return context.GetProviders().Select(p => p.type).Distinct();
+            var providers = context != null ? context.GetProviders() : SearchService.GetProviders(providerIds);
+            return providers.Select(p => p.type).Distinct();
         }
 
         internal bool HasFlag(SearchViewFlags f) => (flags & f) != 0;

@@ -26,10 +26,25 @@ namespace UnityEditor.Networking.PlayerConnection
             public static string Logging = L10n.Tr("Logging");
         }
 
-        public static string GetToolbarContent(string connectionName)
+        public static string GetToolbarContent(string connectionName, GUIStyle style, int maxWidth)
         {
             var projectNameFromConnectionIdentifier = GetProjectNameFromConnectionIdentifier(ProfilerDriver.connectedProfiler);
-            return $"{GetPlayerNameFromIDString(GetIdString(connectionName))}{(string.IsNullOrEmpty(projectNameFromConnectionIdentifier) ? "" : $" - {projectNameFromConnectionIdentifier}")}";
+            var s =  $"{GetPlayerNameFromIDString(GetIdString(connectionName))}{(string.IsNullOrEmpty(projectNameFromConnectionIdentifier) ? "" : $" - {projectNameFromConnectionIdentifier}")}";
+            return TruncateString(s, style, maxWidth);
+        }
+
+        public static string TruncateString(string s, GUIStyle style, float maxwidth)
+        {
+            if (style.CalcSize(GUIContent.Temp(s)).x < maxwidth)
+                return s;
+
+            maxwidth -= style.CalcSize(GUIContent.Temp("...")).x;
+            while (style.CalcSize(GUIContent.Temp(s)).x > maxwidth)
+            {
+                s = s.Remove(s.Length - 1, 1);
+            }
+
+            return s + "...";
         }
 
         public static string GetPlayerNameFromId(int id)
@@ -450,7 +465,7 @@ namespace UnityEditor.Networking.PlayerConnection
                         textRect.x = rect.x;
                         textRect.width = cellRect.width - (textRect.x - cellRect.x);
 
-                        GUI.Label(textRect, TruncateString(cddi.DisplayName, textRect.width));
+                        GUI.Label(textRect, ConnectionUIHelper.TruncateString(cddi.DisplayName, ConnectionDropDownStyles.sTVLine, textRect.width));
                         if (EditorGUI.EndChangeCheck())
                         {
                             cddi.m_OnSelected.Invoke();
@@ -480,7 +495,7 @@ namespace UnityEditor.Networking.PlayerConnection
                     if(item.depth > 1)
                     {
                         DrawVerticalSeparatorLine(cellRect);
-                        GUI.Label(cellRect, TruncateString(cddi.ProjectName, cellRect.width));
+                        GUI.Label(cellRect, ConnectionUIHelper.TruncateString(cddi.ProjectName, ConnectionDropDownStyles.sTVLine, cellRect.width));
 
                     }
                     break;
@@ -488,14 +503,14 @@ namespace UnityEditor.Networking.PlayerConnection
                     if(item.depth > 1)
                     {
                         DrawVerticalSeparatorLine(cellRect);
-                        GUI.Label(cellRect, TruncateString(cddi.IP,cellRect.width));
+                        GUI.Label(cellRect, ConnectionUIHelper.TruncateString(cddi.IP, ConnectionDropDownStyles.sTVLine, cellRect.width));
                     }
                     break;
                 case ConnectionDropDownColumns.Port:
                     if(item.depth > 1)
                     {
                         DrawVerticalSeparatorLine(cellRect);
-                        GUI.Label(cellRect, TruncateString(cddi.Port, cellRect.width));
+                        GUI.Label(cellRect, ConnectionUIHelper.TruncateString(cddi.Port, ConnectionDropDownStyles.sTVLine, cellRect.width));
                     }
                     break;
                 default:
@@ -503,19 +518,6 @@ namespace UnityEditor.Networking.PlayerConnection
             }
         }
 
-        string TruncateString(string s, float maxwidth)
-        {
-            if (ConnectionDropDownStyles.sTVLine.CalcSize(GUIContent.Temp(s)).x < maxwidth)
-                return s;
-
-            maxwidth -= ConnectionDropDownStyles.sTVLine.CalcSize(GUIContent.Temp("...")).x;
-            while (ConnectionDropDownStyles.sTVLine.CalcSize(GUIContent.Temp(s)).x > maxwidth)
-            {
-                s = s.Remove(s.Length - 1, 1);
-            }
-
-            return s + "...";
-        }
 
         private void DrawVerticalSeparatorLine(Rect cellRect)
         {

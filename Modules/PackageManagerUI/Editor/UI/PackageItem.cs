@@ -282,11 +282,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             for (var i = versions.Count - 1; i >= 0; i--)
             {
-                // even if package is not installed, we want to show the recommended label
-                //  if there's more than one version shown
-                var alwaysShowRecommendedLabel = versions.Count > 1;
+                var multipleVersionsVisible = versions.Count > 1;
                 var isLatestVersion = i == versions.Count - 1;
-                m_VersionList.Add(new PackageVersionItem(package, versions[i], alwaysShowRecommendedLabel, isLatestVersion));
+                m_VersionList.Add(new PackageVersionItem(package, versions[i], multipleVersionsVisible, isLatestVersion));
             }
 
             var seeAllVersionsLabelVisible = !seeAllVersions && allVersions.Count > keyVersions.Count

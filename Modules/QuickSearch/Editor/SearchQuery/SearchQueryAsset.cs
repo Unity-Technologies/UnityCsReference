@@ -46,7 +46,6 @@ namespace UnityEditor.Search
                     if (view.TryLoadProperty(recordKey, out object data))
                         m_LastUsedTime = (long)data;
                 }
-
                 return m_LastUsedTime;
             }
         }
@@ -73,6 +72,12 @@ namespace UnityEditor.Search
         {
             get => string.IsNullOrEmpty(name) ? Path.GetFileNameWithoutExtension(AssetDatabase.GetAssetPath(this)) : name;
             set => name = value;
+        }
+
+        public string details
+        {
+            get => description;
+            set => description = value;
         }
 
         public Texture2D thumbnail => icon;
@@ -102,6 +107,20 @@ namespace UnityEditor.Search
         public SearchViewState viewState;
 
         public Texture2D icon;
+
+        [SerializeField] private bool m_IsSearchTemplate;
+
+        public bool isSearchTemplate
+        {
+            get
+            {
+                return m_IsSearchTemplate;
+            }
+            set
+            {
+                m_IsSearchTemplate = value;
+            }
+        }
 
         public string tooltip
         {
@@ -205,7 +224,7 @@ namespace UnityEditor.Search
 
         public static IEnumerable<SearchQueryAsset> GetFilteredSearchQueries(SearchContext context)
         {
-            return savedQueries.Where(query => query && query.providerIds.Any(id => context.IsEnabled(id)));
+            return savedQueries.Where(query => query && (query.providerIds.Count == 0 || query.providerIds.Any(id => context.IsEnabled(id))));
         }
 
         public static IEnumerable<SearchItem> GetAllSearchQueryItems(SearchContext context)

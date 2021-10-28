@@ -330,6 +330,14 @@ namespace UnityEditor
         [RequiredByNativeCode]
         internal static string BuildMainWindowTitle()
         {
+            var desc = GetApplicationTitleDescriptor();
+            updateMainWindowTitle?.Invoke(desc);
+
+            return desc.title;
+        }
+
+        internal static ApplicationTitleDescriptor GetApplicationTitleDescriptor()
+        {
             var activeSceneName = L10n.Tr("Untitled");
             if (!string.IsNullOrEmpty(SceneManager.GetActiveScene().path))
             {
@@ -347,9 +355,7 @@ namespace UnityEditor
 
             desc.title = GetDefaultMainWindowTitle(desc);
 
-            updateMainWindowTitle?.Invoke(desc);
-
-            return desc.title;
+            return desc;
         }
 
         [RequiredByNativeCode]

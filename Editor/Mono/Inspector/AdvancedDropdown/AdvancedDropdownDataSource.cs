@@ -22,6 +22,11 @@ namespace UnityEditor.IMGUI.Controls
         protected AdvancedDropdownItem root { get { return m_MainTree; }}
         protected List<AdvancedDropdownItem> m_SearchableElements;
 
+        internal delegate bool SearchMatchItemHandler(in AdvancedDropdownItem item, in string[] words, out bool didMatchStart);
+
+        internal SearchMatchItemHandler searchMatchItem;
+        internal IComparer<AdvancedDropdownItem> searchMatchItemComparer;
+
         public void ReloadData()
         {
             m_MainTree = FetchData();
@@ -39,23 +44,31 @@ namespace UnityEditor.IMGUI.Controls
             var didMatchAll = true;
             var didMatchStart = false;
 
-            // See if we match ALL the seaarch words.
-            for (var w = 0; w < searchWords.Length; w++)
+            if (searchMatchItem != null)
             {
-                var search = searchWords[w];
-                if (name.Contains(search))
+                didMatchAll = searchMatchItem(e, searchWords, out didMatchStart);
+            }
+            else
+            {
+                // See if we match ALL the search words.
+                for (var w = 0; w < searchWords.Length; w++)
                 {
-                    // If the start of the item matches the first search word, make a note of that.
-                    if (w == 0 && name.StartsWith(search))
-                        didMatchStart = true;
-                }
-                else
-                {
-                    // As soon as any word is not matched, we disregard this item.
-                    didMatchAll = false;
-                    break;
+                    var search = searchWords[w];
+                    if (name.Contains(search))
+                    {
+                        // If the start of the item matches the first search word, make a note of that.
+                        if (w == 0 && name.StartsWith(search))
+                            didMatchStart = true;
+                    }
+                    else
+                    {
+                        // As soon as any word is not matched, we disregard this item.
+                        didMatchAll = false;
+                        break;
+                    }
                 }
             }
+
             // We always need to match all search words.
             // If we ALSO matched the start, this item gets priority.
             if (didMatchAll)
@@ -91,12 +104,18 @@ namespace UnityEditor.IMGUI.Controls
             }
 
             var searchTree = new AdvancedDropdownItem(kSearchHeader);
-            matchesStart.Sort();
+            if (searchMatchItemComparer == null)
+                matchesStart.Sort();
+            else
+                matchesStart.Sort(searchMatchItemComparer);
             foreach (var element in matchesStart)
             {
                 searchTree.AddChild(element);
             }
-            matchesWithin.Sort();
+            if (searchMatchItemComparer == null)
+                matchesWithin.Sort();
+            else
+                matchesWithin.Sort(searchMatchItemComparer);
             foreach (var element in matchesWithin)
             {
                 searchTree.AddChild(element);

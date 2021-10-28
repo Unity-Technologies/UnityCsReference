@@ -186,6 +186,10 @@ namespace UnityEngine.UIElements
 
             mgc.Text(m_TextParams, m_TextHandle, this.scaledPixelsPerPoint);
 
+            if (ShouldElide() && TextLibraryCanElide())
+                isElided = textHandle.IsElided();
+
+            UpdateTooltip();
             m_UpdateTextParams = true;
         }
 
@@ -228,8 +232,8 @@ namespace UnityEngine.UIElements
                 else if (textOverflowPosition == TextOverflowPosition.End)
                     truncatedText = drawText.Substring(0, mid) + ellipsisText;
                 else if (textOverflowPosition == TextOverflowPosition.Middle)
-                    truncatedText = drawText.Substring(0, mid - 1) + ellipsisText +
-                        drawText.Substring(drawTextMax - (mid - 1));
+                    truncatedText = (mid - 1 <= 0 ? "" : drawText.Substring(0, mid - 1)) + ellipsisText +
+                        (drawTextMax - (mid - 1) <= 0 ? "" : drawText.Substring(drawTextMax - (mid - 1)));
 
                 size = MeasureTextSize(truncatedText, 0, MeasureMode.Undefined,
                     0, MeasureMode.Undefined);
@@ -259,7 +263,7 @@ namespace UnityEngine.UIElements
                             if (textOverflowPosition == TextOverflowPosition.End)
                                 return drawText.Substring(0, prevFitMid) + ellipsisText;
                             else
-                                return drawText.Substring(0, prevFitMid - 1) + ellipsisText + drawText.Substring(drawTextMax - (prevFitMid - 1));
+                                return drawText.Substring(0, Mathf.Max(prevFitMid - 1, 0)) + ellipsisText + drawText.Substring(drawTextMax - Mathf.Max(prevFitMid - 1, 0));
                         max = mid - 1;
                     }
                     else
@@ -302,13 +306,24 @@ namespace UnityEngine.UIElements
             {
                 m_TextParams = textParams;
                 var shouldElide = ShouldElide();
-                if (shouldElide)
+                if (shouldElide && TextLibraryCanElide())
+                {
+                    //nothing to do, the text generation will elide the text and we will update the isElided after in OnGenerateVisualContent
+                }
+                else if (shouldElide)
+                {
                     m_TextParams.text = ElideText(m_TextParams.text, k_EllipsisText, m_TextParams.rect.width, m_TextParams.textOverflowPosition);
+                    isElided = shouldElide && m_TextParams.text != text;
+                    m_TextParams.textOverflow = TextOverflow.Clip; //Disable the ellipsis in text core so that it does not affect the render later.
+                }
+                else
+                {
+                    m_TextParams.textOverflow = TextOverflow.Clip; //Disable the ellipsis in text core so that it does not affect the render later.
+                    isElided = false;
+                }
 
-                isElided = shouldElide && m_TextParams.text != text;
                 m_PreviousTextParamsHashCode = textParamsHashCode;
                 m_UpdateTextParams = false;
-                UpdateTooltip();
             }
         }
 
@@ -316,6 +331,19 @@ namespace UnityEngine.UIElements
         {
             return computedStyle.textOverflow == TextOverflow.Ellipsis && computedStyle.overflow == OverflowInternal.Hidden &&
                 computedStyle.whiteSpace == WhiteSpace.NoWrap;
+        }
+
+        private bool TextLibraryCanElide()
+        {
+            // Text Native cannot elide
+            if (textHandle.IsLegacy())
+                return false;
+
+            // TextCore can only elide at the end
+            if (m_TextParams.textOverflowPosition == TextOverflowPosition.End)
+                return true;
+
+            return false;
         }
 
         /// <summary>

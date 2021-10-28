@@ -13,7 +13,7 @@ namespace UnityEditor.Search
     {
         static Regex QueryVariableRx = new Regex(@"([\$\@])([\#\w][\w\d\.\\/]*)");
         [Description("Returns a Search Query from a string"), Category("Primitives")]
-        [SearchExpressionEvaluator(SearchExpressionEvaluationHints.ExpandSupported)]
+        [SearchExpressionEvaluator(SearchExpressionEvaluationHints.ExpandSupported | SearchExpressionEvaluationHints.DoNotValidateSignature)]
         public static IEnumerable<SearchItem> Query(SearchExpressionContext c)
         {
             if (c.expression.types.HasFlag(SearchExpressionType.Function))

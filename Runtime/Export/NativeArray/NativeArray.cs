@@ -181,17 +181,6 @@ namespace Unity.Collections
             m_Length = 0;
         }
 
-        /// <summary>
-        /// Safely disposes of this container and deallocates its memory when the jobs that use it have completed.
-        /// </summary>
-        /// <remarks>You can call this function dispose of the container immediately after scheduling the job. Pass
-        /// the [JobHandle](https://docs.unity3d.com/ScriptReference/Unity.Jobs.JobHandle.html) returned by
-        /// the [Job.Schedule](https://docs.unity3d.com/ScriptReference/Unity.Jobs.IJobExtensions.Schedule.html)
-        /// method using the `jobHandle` parameter so the job scheduler can dispose the container after all jobs
-        /// using it have run.</remarks>
-        /// <param name="jobHandle">The job handle or handles for any scheduled jobs that use this container.</param>
-        /// <returns>A new job handle containing the prior handles as well as the handle for the job that deletes
-        /// the container.</returns>
         public JobHandle Dispose(JobHandle inputDeps)
         {
             if (m_AllocatorLabel == Allocator.Invalid)
@@ -349,77 +338,181 @@ namespace Unity.Collections
             return !left.Equals(right);
         }
 
+        public static void Copy(NativeArray<T> src, NativeArray<T> dst)
+        {
+            CheckCopyLengths(src.Length, dst.Length);
+
+            CopySafe(src, 0, dst, 0, src.Length);
+        }
+
+        public static void Copy(ReadOnly src, NativeArray<T> dst)
+        {
+            CheckCopyLengths(src.Length, dst.Length);
+
+            CopySafe(src, 0, dst, 0, src.Length);
+        }
+
+        public static void Copy(T[] src, NativeArray<T> dst)
+        {
+            CheckCopyLengths(src.Length, dst.Length);
+
+            CopySafe(src, 0, dst, 0, src.Length);
+        }
+
+        public static void Copy(NativeArray<T> src, T[] dst)
+        {
+            CheckCopyLengths(src.Length, dst.Length);
+
+            CopySafe(src, 0, dst, 0, src.Length);
+        }
+
+        public static void Copy(ReadOnly src, T[] dst)
+        {
+            CheckCopyLengths(src.Length, dst.Length);
+
+            CopySafe(src, 0, dst, 0, src.Length);
+        }
+
+        public static void Copy(NativeArray<T> src, NativeArray<T> dst, int length)
+        {
+            CopySafe(src, 0, dst, 0, length);
+        }
+
+        public static void Copy(ReadOnly src, NativeArray<T> dst, int length)
+        {
+            CopySafe(src, 0, dst, 0, length);
+        }
+
+        public static void Copy(T[] src, NativeArray<T> dst, int length)
+        {
+            CopySafe(src, 0, dst, 0, length);
+        }
+
+        public static void Copy(NativeArray<T> src, T[] dst, int length)
+        {
+            CopySafe(src, 0, dst, 0, length);
+        }
+
+        public static void Copy(ReadOnly src, T[] dst, int length)
+        {
+            CopySafe(src, 0, dst, 0, length);
+        }
+
+        public static void Copy(NativeArray<T> src, int srcIndex, NativeArray<T> dst, int dstIndex, int length)
+        {
+            CopySafe(src, srcIndex, dst, dstIndex, length);
+        }
+
+        public static void Copy(ReadOnly src, int srcIndex, NativeArray<T> dst, int dstIndex, int length)
+        {
+            CopySafe(src, srcIndex, dst, dstIndex, length);
+        }
+
+        public static void Copy(T[] src, int srcIndex, NativeArray<T> dst, int dstIndex, int length)
+        {
+            CopySafe(src, srcIndex, dst, dstIndex, length);
+        }
+
+        public static void Copy(NativeArray<T> src, int srcIndex, T[] dst, int dstIndex, int length)
+        {
+            CopySafe(src, srcIndex, dst, dstIndex, length);
+        }
+
+        public static void Copy(ReadOnly src, int srcIndex, T[] dst, int dstIndex, int length)
+        {
+            CopySafe(src, srcIndex, dst, dstIndex, length);
+        }
+
+        static void CopySafe(NativeArray<T> src, int srcIndex, NativeArray<T> dst, int dstIndex, int length)
+        {
+            AtomicSafetyHandle.CheckReadAndThrow(src.m_Safety);
+            AtomicSafetyHandle.CheckWriteAndThrow(dst.m_Safety);
+            CheckCopyArguments(src.Length, srcIndex, dst.Length, dstIndex, length);
+
+            UnsafeUtility.MemCpy(
+                (byte*)dst.m_Buffer + dstIndex * UnsafeUtility.SizeOf<T>(),
+                (byte*)src.m_Buffer + srcIndex * UnsafeUtility.SizeOf<T>(),
+                length * UnsafeUtility.SizeOf<T>());
+        }
+
+        static void CopySafe(ReadOnly src, int srcIndex, NativeArray<T> dst, int dstIndex, int length)
+        {
+            AtomicSafetyHandle.CheckReadAndThrow(src.m_Safety);
+            AtomicSafetyHandle.CheckWriteAndThrow(dst.m_Safety);
+            CheckCopyArguments(src.Length, srcIndex, dst.Length, dstIndex, length);
+
+            UnsafeUtility.MemCpy(
+                (byte*)dst.m_Buffer + dstIndex * UnsafeUtility.SizeOf<T>(),
+                (byte*)src.m_Buffer + srcIndex * UnsafeUtility.SizeOf<T>(),
+                length * UnsafeUtility.SizeOf<T>());
+        }
+
+        static void CopySafe(T[] src, int srcIndex, NativeArray<T> dst, int dstIndex, int length)
+        {
+            AtomicSafetyHandle.CheckWriteAndThrow(dst.m_Safety);
+            CheckCopyPtr(src);
+            CheckCopyArguments(src.Length, srcIndex, dst.Length, dstIndex, length);
+
+            var handle = GCHandle.Alloc(src, GCHandleType.Pinned);
+            var addr = handle.AddrOfPinnedObject();
+
+            UnsafeUtility.MemCpy(
+                (byte*)dst.m_Buffer + dstIndex * UnsafeUtility.SizeOf<T>(),
+                (byte*)addr + srcIndex * UnsafeUtility.SizeOf<T>(),
+                length * UnsafeUtility.SizeOf<T>());
+
+            handle.Free();
+        }
+
+        static void CopySafe(NativeArray<T> src, int srcIndex, T[] dst, int dstIndex, int length)
+        {
+            AtomicSafetyHandle.CheckReadAndThrow(src.m_Safety);
+            CheckCopyPtr(dst);
+            CheckCopyArguments(src.Length, srcIndex, dst.Length, dstIndex, length);
+
+            var handle = GCHandle.Alloc(dst, GCHandleType.Pinned);
+            var addr = handle.AddrOfPinnedObject();
+
+            UnsafeUtility.MemCpy(
+                (byte*)addr + dstIndex * UnsafeUtility.SizeOf<T>(),
+                (byte*)src.m_Buffer + srcIndex * UnsafeUtility.SizeOf<T>(),
+                length * UnsafeUtility.SizeOf<T>());
+
+            handle.Free();
+        }
+
+        static void CopySafe(ReadOnly src, int srcIndex, T[] dst, int dstIndex, int length)
+        {
+            AtomicSafetyHandle.CheckReadAndThrow(src.m_Safety);
+            CheckCopyPtr(dst);
+            CheckCopyArguments(src.Length, srcIndex, dst.Length, dstIndex, length);
+
+            var handle = GCHandle.Alloc(dst, GCHandleType.Pinned);
+            var addr = handle.AddrOfPinnedObject();
+            UnsafeUtility.MemCpy(
+                (byte*)addr + dstIndex * UnsafeUtility.SizeOf<T>(),
+                (byte*)src.m_Buffer + srcIndex * UnsafeUtility.SizeOf<T>(),
+                length * UnsafeUtility.SizeOf<T>());
+
+            handle.Free();
+        }
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private static void CheckCopyLengths(int srcLength, int dstLength)
+        static void CheckCopyPtr(T[] ptr)
+        {
+            if (ptr == null)
+                throw new ArgumentNullException(nameof(ptr));
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        static void CheckCopyLengths(int srcLength, int dstLength)
         {
             if (srcLength != dstLength)
                 throw new ArgumentException("source and destination length must be the same");
         }
 
-        public static void Copy(NativeArray<T> src, NativeArray<T> dst)
-        {
-            AtomicSafetyHandle.CheckReadAndThrow(src.m_Safety);
-            AtomicSafetyHandle.CheckWriteAndThrow(dst.m_Safety);
-            CheckCopyLengths(src.Length, dst.Length);
-            Copy(src, 0, dst, 0, src.Length);
-        }
-
-        public static void Copy(ReadOnly src, NativeArray<T> dst)
-        {
-            AtomicSafetyHandle.CheckReadAndThrow(src.m_Safety);
-            AtomicSafetyHandle.CheckWriteAndThrow(dst.m_Safety);
-            CheckCopyLengths(src.Length, dst.Length);
-            Copy(src, 0, dst, 0, src.Length);
-        }
-
-        public static void Copy(T[] src, NativeArray<T> dst)
-        {
-            AtomicSafetyHandle.CheckWriteAndThrow(dst.m_Safety);
-            CheckCopyLengths(src.Length, dst.Length);
-            Copy(src, 0, dst, 0, src.Length);
-        }
-
-        public static void Copy(NativeArray<T> src, T[] dst)
-        {
-            AtomicSafetyHandle.CheckReadAndThrow(src.m_Safety);
-            CheckCopyLengths(src.Length, dst.Length);
-            Copy(src, 0, dst, 0, src.Length);
-        }
-
-        public static void Copy(ReadOnly src, T[] dst)
-        {
-            AtomicSafetyHandle.CheckReadAndThrow(src.m_Safety);
-            CheckCopyLengths(src.Length, dst.Length);
-            Copy(src, 0, dst, 0, src.Length);
-        }
-
-        public static void Copy(NativeArray<T> src, NativeArray<T> dst, int length)
-        {
-            Copy(src, 0, dst, 0, length);
-        }
-
-        public static void Copy(ReadOnly src, NativeArray<T> dst, int length)
-        {
-            Copy(src, 0, dst, 0, length);
-        }
-
-        public static void Copy(T[] src, NativeArray<T> dst, int length)
-        {
-            Copy(src, 0, dst, 0, length);
-        }
-
-        public static void Copy(NativeArray<T> src, T[] dst, int length)
-        {
-            Copy(src, 0, dst, 0, length);
-        }
-
-        public static void Copy(ReadOnly src, T[] dst, int length)
-        {
-            Copy(src, 0, dst, 0, length);
-        }
-
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private static void CheckCopyArguments(int srcLength, int srcIndex, int dstLength, int dstIndex, int length)
+        static void CheckCopyArguments(int srcLength, int srcIndex, int dstLength, int dstIndex, int length)
         {
             if (length < 0)
                 throw new ArgumentOutOfRangeException(nameof(length), "length must be equal or greater than zero.");
@@ -443,84 +536,8 @@ namespace Unity.Collections
                 throw new ArgumentException("dstIndex + length causes an integer overflow");
         }
 
-        public static void Copy(NativeArray<T> src, int srcIndex, NativeArray<T> dst, int dstIndex, int length)
-        {
-            AtomicSafetyHandle.CheckReadAndThrow(src.m_Safety);
-            AtomicSafetyHandle.CheckWriteAndThrow(dst.m_Safety);
-            CheckCopyArguments(src.Length, srcIndex, dst.Length, dstIndex, length);
-            UnsafeUtility.MemCpy(
-                (byte*)dst.m_Buffer + dstIndex * UnsafeUtility.SizeOf<T>(),
-                (byte*)src.m_Buffer + srcIndex * UnsafeUtility.SizeOf<T>(),
-                length * UnsafeUtility.SizeOf<T>());
-        }
-
-        public static void Copy(ReadOnly src, int srcIndex, NativeArray<T> dst, int dstIndex, int length)
-        {
-            AtomicSafetyHandle.CheckReadAndThrow(src.m_Safety);
-            AtomicSafetyHandle.CheckWriteAndThrow(dst.m_Safety);
-            CheckCopyArguments(src.Length, srcIndex, dst.Length, dstIndex, length);
-            UnsafeUtility.MemCpy(
-                (byte*)dst.m_Buffer + dstIndex * UnsafeUtility.SizeOf<T>(),
-                (byte*)src.m_Buffer + srcIndex * UnsafeUtility.SizeOf<T>(),
-                length * UnsafeUtility.SizeOf<T>());
-        }
-
-        public static void Copy(T[] src, int srcIndex, NativeArray<T> dst, int dstIndex, int length)
-        {
-            AtomicSafetyHandle.CheckWriteAndThrow(dst.m_Safety);
-
-            if (src == null)
-                throw new ArgumentNullException(nameof(src));
-            CheckCopyArguments(src.Length, srcIndex, dst.Length, dstIndex, length);
-
-            var handle = GCHandle.Alloc(src, GCHandleType.Pinned);
-            var addr = handle.AddrOfPinnedObject();
-
-            UnsafeUtility.MemCpy(
-                (byte*)dst.m_Buffer + dstIndex * UnsafeUtility.SizeOf<T>(),
-                (byte*)addr + srcIndex * UnsafeUtility.SizeOf<T>(),
-                length * UnsafeUtility.SizeOf<T>());
-
-            handle.Free();
-        }
-
-        public static void Copy(NativeArray<T> src, int srcIndex, T[] dst, int dstIndex, int length)
-        {
-            AtomicSafetyHandle.CheckReadAndThrow(src.m_Safety);
-
-            if (dst == null)
-                throw new ArgumentNullException(nameof(dst));
-            CheckCopyArguments(src.Length, srcIndex, dst.Length, dstIndex, length);
-            var handle = GCHandle.Alloc(dst, GCHandleType.Pinned);
-            var addr = handle.AddrOfPinnedObject();
-
-            UnsafeUtility.MemCpy(
-                (byte*)addr + dstIndex * UnsafeUtility.SizeOf<T>(),
-                (byte*)src.m_Buffer + srcIndex * UnsafeUtility.SizeOf<T>(),
-                length * UnsafeUtility.SizeOf<T>());
-
-            handle.Free();
-        }
-
-        public static void Copy(ReadOnly src, int srcIndex, T[] dst, int dstIndex, int length)
-        {
-            AtomicSafetyHandle.CheckReadAndThrow(src.m_Safety);
-
-            if (dst == null)
-                throw new ArgumentNullException(nameof(dst));
-            CheckCopyArguments(src.Length, srcIndex, dst.Length, dstIndex, length);
-            var handle = GCHandle.Alloc(dst, GCHandleType.Pinned);
-            var addr = handle.AddrOfPinnedObject();
-            UnsafeUtility.MemCpy(
-                (byte*)addr + dstIndex * UnsafeUtility.SizeOf<T>(),
-                (byte*)src.m_Buffer + srcIndex * UnsafeUtility.SizeOf<T>(),
-                length * UnsafeUtility.SizeOf<T>());
-
-            handle.Free();
-        }
-
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void CheckReinterpretLoadRange<U>(int sourceIndex) where U : struct
+        void CheckReinterpretLoadRange<U>(int sourceIndex) where U : struct
         {
             long tsize = UnsafeUtility.SizeOf<T>();
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
@@ -536,7 +553,7 @@ namespace Unity.Collections
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void CheckReinterpretStoreRange<U>(int destIndex) where U : struct
+        void CheckReinterpretStoreRange<U>(int destIndex) where U : struct
         {
             long tsize = UnsafeUtility.SizeOf<T>();
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
@@ -584,7 +601,7 @@ namespace Unity.Collections
 
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private static void CheckReinterpretSize<U>() where U : struct
+        static void CheckReinterpretSize<U>() where U : struct
         {
             if (UnsafeUtility.SizeOf<T>() != UnsafeUtility.SizeOf<U>())
             {
@@ -599,7 +616,7 @@ namespace Unity.Collections
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void CheckReinterpretSize<U>(long tSize, long uSize, int expectedTypeSize, long byteLen, long uLen)
+        void CheckReinterpretSize<U>(long tSize, long uSize, int expectedTypeSize, long byteLen, long uLen)
         {
             if (tSize != expectedTypeSize)
             {
@@ -625,7 +642,7 @@ namespace Unity.Collections
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void CheckGetSubArrayArguments(int start, int length)
+        void CheckGetSubArrayArguments(int start, int length)
         {
             if (start < 0)
             {

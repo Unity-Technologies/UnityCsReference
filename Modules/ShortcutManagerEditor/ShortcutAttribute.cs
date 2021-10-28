@@ -23,30 +23,37 @@ namespace UnityEditor.ShortcutManagement
     {
         internal string identifier { get; }
         internal Type context { get; }
+        internal string tag { get; }
         internal ShortcutBinding defaultBinding { get; }
         public string displayName { get; set; }
         Action m_NoArgumentsAction;
 
-        ShortcutAttribute(string id, Type context, ShortcutBinding defaultBinding)
+        ShortcutAttribute(string id, Type context, string tag, ShortcutBinding defaultBinding)
         {
             this.identifier = id;
             this.context = context;
+            this.tag = tag;
             this.defaultBinding = defaultBinding;
             displayName = identifier;
         }
 
         public ShortcutAttribute(string id, [DefaultValue("null")] Type context = null)
-            : this(id, context, ShortcutBinding.empty)
+            : this(id, context, null, ShortcutBinding.empty)
         {
         }
 
         public ShortcutAttribute(string id, Type context, KeyCode defaultKeyCode, [DefaultValue(nameof(ShortcutModifiers.None))] ShortcutModifiers defaultShortcutModifiers = ShortcutModifiers.None)
-            : this(id, context, new ShortcutBinding(new KeyCombination(defaultKeyCode, defaultShortcutModifiers)))
+            : this(id, context, null, new ShortcutBinding(new KeyCombination(defaultKeyCode, defaultShortcutModifiers)))
+        {
+        }
+
+        public ShortcutAttribute(string id, Type context, string tag, KeyCode defaultKeyCode, [DefaultValue(nameof(ShortcutModifiers.None))] ShortcutModifiers defaultShortcutModifiers = ShortcutModifiers.None)
+            : this(id, context, tag, new ShortcutBinding(new KeyCombination(defaultKeyCode, defaultShortcutModifiers)))
         {
         }
 
         public ShortcutAttribute(string id, KeyCode defaultKeyCode, [DefaultValue(nameof(ShortcutModifiers.None))] ShortcutModifiers defaultShortcutModifiers = ShortcutModifiers.None)
-            : this(id, null, new ShortcutBinding(new KeyCombination(defaultKeyCode, defaultShortcutModifiers)))
+            : this(id, null, null, new ShortcutBinding(new KeyCombination(defaultKeyCode, defaultShortcutModifiers)))
         {
         }
 
@@ -78,7 +85,7 @@ namespace UnityEditor.ShortcutManagement
                 action = NoArgumentShortcutMethodProxy;
             }
 
-            return new ShortcutEntry(identifier, defaultCombination, action, context, type, displayName);
+            return new ShortcutEntry(identifier, defaultCombination, action, context, tag, type, displayName);
         }
     }
 
@@ -93,6 +100,11 @@ namespace UnityEditor.ShortcutManagement
 
         public ClutchShortcutAttribute(string id, Type context, KeyCode defaultKeyCode, [DefaultValue(nameof(ShortcutModifiers.None))] ShortcutModifiers defaultShortcutModifiers = ShortcutModifiers.None)
             : base(id, context, defaultKeyCode, defaultShortcutModifiers)
+        {
+        }
+
+        public ClutchShortcutAttribute(string id, Type context, string tag, KeyCode defaultKeyCode, [DefaultValue(nameof(ShortcutModifiers.None))] ShortcutModifiers defaultShortcutModifiers = ShortcutModifiers.None)
+            : base(id, context, tag, defaultKeyCode, defaultShortcutModifiers)
         {
         }
 

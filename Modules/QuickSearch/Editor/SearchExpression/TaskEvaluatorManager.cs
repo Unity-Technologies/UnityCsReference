@@ -13,9 +13,10 @@ namespace UnityEditor.Search
 {
     static class TaskEvaluatorManager
     {
-        class MainThreadIEnumerableHandler<T> : BaseAsyncIEnumerableHandler<T>
+        class MainThreadIEnumerableHandler<T> : BaseAsyncIEnumerableHandler<T>, IDisposable
         {
             List<T> m_Results = new List<T>();
+            private bool disposedValue;
 
             public IEnumerable<T> results => m_Results;
             public EventWaitHandle startEvent { get; private set; } = new EventWaitHandle(false, EventResetMode.AutoReset);
@@ -37,6 +38,24 @@ namespace UnityEditor.Search
             {
                 base.Stop();
                 stopEvent.Set();
+            }
+
+            protected virtual void Dispose(bool disposing)
+            {
+                if (disposedValue)
+                    return;
+                if (disposing)
+                {
+                    startEvent.Dispose();
+                    stopEvent.Dispose();
+                }
+                disposedValue = true;
+            }
+
+            public void Dispose()
+            {
+                Dispose(disposing: true);
+                GC.SuppressFinalize(this);
             }
         }
 
@@ -69,6 +88,9 @@ namespace UnityEditor.Search
                     yield return item;
             }
 
+            yieldSignal.Dispose();
+            yieldSignal = null;
+
             if (task.IsFaulted && task.Exception?.InnerException != null)
             {
                 if (task.Exception.InnerException is SearchExpressionEvaluatorException sex)
@@ -82,17 +104,18 @@ namespace UnityEditor.Search
             if (InternalEditorUtility.CurrentThreadIsMainThread())
                 return callback();
 
-            var waitHandle = new EventWaitHandle(false, EventResetMode.AutoReset);
-            T result = default;
-            Dispatcher.Enqueue(() =>
+            using (var waitHandle = new EventWaitHandle(false, EventResetMode.AutoReset))
             {
-                result = callback();
-                waitHandle.Set();
-            });
+                T result = default;
+                Dispatcher.Enqueue(() =>
+                {
+                    result = callback();
+                    waitHandle.Set();
+                });
 
-            waitHandle.WaitOne();
-
-            return result;
+                waitHandle.WaitOne();
+                return result;
+            }
         }
 
         public static IEnumerable<T> EvaluateMainThread<T>(Action<Action<T>> callback)
@@ -121,9 +144,15 @@ namespace UnityEditor.Search
                         while (concurrentList.TryTake(out var item))
                             yield return item;
                 }
+
+                finishedHandle.Dispose();
+                finishedHandle = null;
             }
             else
                 callback(ItemReceived);
+
+            yielderHandle.Dispose();
+            yielderHandle = null;
 
             while (concurrentList.Count > 0)
             {
@@ -201,6 +230,15 @@ namespace UnityEditor.Search
                 while (results.TryTake(out var item))
                     yield return item;
             }
+
+            batchFinishedSignal?.Dispose();
+            batchFinishedSignal = null;
+
+            finalBatch.Dispose();
+            finalBatch = null;
+
+            resultSignal.Dispose();
+            resultSignal = null;
         }
 
         public static IEnumerable<T> EvaluateMainThreadUnroll<T>(Func<IEnumerable<T>> callback)
@@ -208,18 +246,20 @@ namespace UnityEditor.Search
             if (InternalEditorUtility.CurrentThreadIsMainThread())
                 return callback();
 
-            MainThreadIEnumerableHandler<T> enumerableHandler = new MainThreadIEnumerableHandler<T>();
-            Dispatcher.Enqueue(() =>
+            using (MainThreadIEnumerableHandler<T> enumerableHandler = new MainThreadIEnumerableHandler<T>())
             {
-                var enumerable = callback();
-                enumerableHandler.Reset(enumerable);
-                enumerableHandler.Start();
-            });
+                Dispatcher.Enqueue(() =>
+                {
+                    var enumerable = callback();
+                    enumerableHandler.Reset(enumerable);
+                    enumerableHandler.Start();
+                });
 
-            enumerableHandler.startEvent.WaitOne();
-            enumerableHandler.stopEvent.WaitOne();
+                enumerableHandler.startEvent.WaitOne();
+                enumerableHandler.stopEvent.WaitOne();
 
-            return enumerableHandler.results;
+                return enumerableHandler.results;
+            }
         }
     }
 }

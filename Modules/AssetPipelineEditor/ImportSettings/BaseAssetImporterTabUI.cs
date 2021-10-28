@@ -60,6 +60,7 @@ namespace UnityEditor
         internal virtual void OnDisable() {}
 
         internal virtual void PreApply() {}
+        internal virtual void PostApply() {}
 
 
         internal virtual void ResetValues() {}

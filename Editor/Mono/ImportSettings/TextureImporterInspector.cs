@@ -53,11 +53,11 @@ namespace UnityEditor
             Cookie = 1 << 7,
             CubeMapConvolution = 1 << 8,
             CubeMapping = 1 << 9,
-            StreamingMipmaps = 1 << 10,
             SingleChannelComponent = 1 << 11,
             PngGamma = 1 << 12,
             VTOnly = 1 << 13,
             ElementsAtlas = 1 << 14,
+            Swizzle = 1 << 15,
         }
 
         private struct TextureInspectorTypeGUIProperties
@@ -234,6 +234,12 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Sharp"),
                 EditorGUIUtility.TrTextContent("Smooth"),
             };
+
+            public readonly GUIContent flipGreenChannel = EditorGUIUtility.TrTextContent("Flip Green Channel",
+                "Invert values in the normal map green (Y) channel. Use on normal maps that were produced for non-Unity normal orientation convention.");
+            public readonly GUIContent swizzle = EditorGUIUtility.TrTextContent("Swizzle",
+                "Reorder and invert texture color channels. For each of R,G,B,A channels pick where the channel data comes from.");
+
             public readonly GUIContent cubemap = EditorGUIUtility.TrTextContent("Mapping");
             public readonly GUIContent[] cubemapOptions =
             {
@@ -267,11 +273,11 @@ namespace UnityEditor
             public readonly GUIContent seamlessCubemap = EditorGUIUtility.TrTextContent("Fixup Edge Seams", "Enable if this texture is used for glossy reflections.");
             public readonly GUIContent textureFormat = EditorGUIUtility.TrTextContent("Format");
 
-            public readonly GUIContent mipmapFadeOutToggle = EditorGUIUtility.TrTextContent("Fadeout Mip Maps");
+            public readonly GUIContent mipmapFadeOutToggle = EditorGUIUtility.TrTextContent("Fadeout to Gray");
             public readonly GUIContent mipmapFadeOut = EditorGUIUtility.TrTextContent("Fade Range");
             public readonly GUIContent readWrite = EditorGUIUtility.TrTextContent("Read/Write", "Enable to be able to access the raw pixel data from code.");
-            public readonly GUIContent streamingMipmaps = EditorGUIUtility.TrTextContent("Streaming Mipmaps", "Only load larger mipmaps as needed to render the current game cameras. Requires texture streaming to be enabled in quality settings.");
-            public readonly GUIContent streamingMipmapsPriority = EditorGUIUtility.TrTextContent("Mip Map Priority", "Mip map streaming priority when there's contention for resources. Positive numbers represent higher priority. Valid range is -128 to 127.");
+            public readonly GUIContent streamingMipmaps = EditorGUIUtility.TrTextContent("Mip Streaming", "Only load larger mipmaps as needed to render the current game cameras. Requires texture streaming to be enabled in quality settings.");
+            public readonly GUIContent streamingMipmapsPriority = EditorGUIUtility.TrTextContent("Priority", "Mipmap streaming priority when there's contention for resources. Positive numbers represent higher priority. Valid range is -128 to 127.");
             public readonly GUIContent vtOnly = EditorGUIUtility.TrTextContent("Virtual Texture Only", "Texture is optimized for use as a virtual texture and can only be used as a virtual texture.");
 
             public readonly GUIContent alphaSource = EditorGUIUtility.TrTextContent("Alpha Source", "How is the alpha generated for the imported texture.");
@@ -300,12 +306,12 @@ namespace UnityEditor
                 (int)TextureImporterSingleChannelComponent.Red,
             };
 
-            public readonly GUIContent generateMipMaps = EditorGUIUtility.TrTextContent("Generate Mip Maps");
+            public readonly GUIContent generateMipMaps = EditorGUIUtility.TrTextContent("Generate Mipmaps", "Create progressively smaller versions of the texture, for reduced texture shimmering and better GPU performance when the texture is viewed at a distance.");
             public readonly GUIContent sRGBTexture = EditorGUIUtility.TrTextContent("sRGB (Color Texture)", "Texture content is stored in gamma space. Non-HDR color textures should enable this flag (except if used for IMGUI).");
-            public readonly GUIContent borderMipMaps = EditorGUIUtility.TrTextContent("Border Mip Maps");
-            public readonly GUIContent mipMapsPreserveCoverage = EditorGUIUtility.TrTextContent("Mip Maps Preserve Coverage", "The alpha channel of generated Mip Maps will preserve coverage during the alpha test.");
-            public readonly GUIContent alphaTestReferenceValue = EditorGUIUtility.TrTextContent("Alpha Cutoff Value", "The reference value used during the alpha test. Controls Mip Map coverage.");
-            public readonly GUIContent mipMapFilter = EditorGUIUtility.TrTextContent("Mip Map Filtering");
+            public readonly GUIContent borderMipMaps = EditorGUIUtility.TrTextContent("Replicate Border", "Replicate pixel values from texture borders into smaller mipmap levels. Mostly used for Cookie texture types.");
+            public readonly GUIContent mipMapsPreserveCoverage = EditorGUIUtility.TrTextContent("Preserve Coverage", "The alpha channel of generated mipmaps will preserve coverage for the alpha test. Useful for foliage textures.");
+            public readonly GUIContent alphaTestReferenceValue = EditorGUIUtility.TrTextContent("Alpha Cutoff", "The reference value used during the alpha test. Controls mipmap coverage.");
+            public readonly GUIContent mipMapFilter = EditorGUIUtility.TrTextContent("Mipmap Filtering");
             public readonly GUIContent[] mipMapFilterOptions =
             {
                 EditorGUIUtility.TrTextContent("Box"),
@@ -351,12 +357,9 @@ namespace UnityEditor
 
             public readonly GUIContent showAdvanced = EditorGUIUtility.TrTextContent("Advanced", "Show advanced settings.");
 
-            public readonly GUIContent psdRemoveMatte = EditorGUIUtility.TrTextContent("Remove Matte (PSD)", "Enable special processing for PSD that has transparency, as color pixels will be tweaked (blended with white color).");
-            public readonly GUIContent psdRemoveMatteInfo = EditorGUIUtility.TrTextContent("If you have PSD with transparency, colors will be tweaked by blending them with white color. Matte removal refers to our attempts to undo that.");
-            public readonly GUIContent psdRemoveMatteURLButton = EditorGUIUtility.TrTextContent("How to handle PSD with alpha");
-            public readonly string psdRemoveMatteURL = "https://docs.unity3d.com/Manual/HOWTO-alphamaps.html";
+            public readonly GUIContent psdRemoveMatte = EditorGUIUtility.TrTextContent("Remove PSD Matte", "Enable special processing for PSD that has transparency, as color pixels will be tweaked (blended with white color).");
 
-            public readonly GUIContent ignorePngGamma = EditorGUIUtility.TrTextContent("Ignore PNG file gamma", "Ignore the Gamma value attribute in PNG files, this setting has no effect on other file formats.");
+            public readonly GUIContent ignorePngGamma = EditorGUIUtility.TrTextContent("Ignore PNG Gamma", "Ignore the Gamma attribute value in PNG files.");
             public readonly GUIContent readWriteWarning = EditorGUIUtility.TrTextContent("Textures larger than 8192 can not be Read/Write enabled. Value will be ignored.");
 
             public readonly GUIContent flipbookColumns = EditorGUIUtility.TrTextContent("Columns", "Source image is divided into this amount of columns.");
@@ -417,6 +420,8 @@ namespace UnityEditor
         SerializedProperty m_ConvertToNormalMap;
         SerializedProperty m_HeightScale;
         SerializedProperty m_NormalMapFilter;
+        SerializedProperty m_FlipGreenChannel;
+        SerializedProperty m_Swizzle;
         SerializedProperty m_GenerateCubemap;
         SerializedProperty m_CubemapConvolution;
         SerializedProperty m_SeamlessCubemap;
@@ -476,6 +481,7 @@ namespace UnityEditor
         int     m_TextureWidth = 0;
         int     m_TextureHeight = 0;
         bool    m_IsPOT = false;
+        bool    m_IsPNG, m_IsPSD;
 
         void CacheSerializedProperties()
         {
@@ -483,6 +489,8 @@ namespace UnityEditor
             m_ConvertToNormalMap = serializedObject.FindProperty("m_ConvertToNormalMap");
             m_HeightScale = serializedObject.FindProperty("m_HeightScale");
             m_NormalMapFilter = serializedObject.FindProperty("m_NormalMapFilter");
+            m_FlipGreenChannel = serializedObject.FindProperty("m_FlipGreenChannel");
+            m_Swizzle = serializedObject.FindProperty("m_Swizzle");
             m_GenerateCubemap = serializedObject.FindProperty("m_GenerateCubemap");
             m_SeamlessCubemap = serializedObject.FindProperty("m_SeamlessCubemap");
             m_BorderMipMap = serializedObject.FindProperty("m_BorderMipMap");
@@ -547,49 +555,54 @@ namespace UnityEditor
                 TextureImporterShape.Texture2DArray |
                 TextureImporterShape.Texture3D;
 
-            m_TextureTypeGUIElements[(int)TextureImporterType.Default]      = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.ColorSpace | TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.PngGamma | TextureInspectorGUIElement.CubeMapConvolution | TextureInspectorGUIElement.CubeMapping | TextureInspectorGUIElement.ElementsAtlas,
-                TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps
-                | TextureInspectorGUIElement.StreamingMipmaps
+            var sharedAdvanced = TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps | TextureInspectorGUIElement.PngGamma | TextureInspectorGUIElement.Swizzle;
+
+            m_TextureTypeGUIElements[(int)TextureImporterType.Default]      = new TextureInspectorTypeGUIProperties(
+                TextureInspectorGUIElement.ColorSpace | TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.CubeMapConvolution | TextureInspectorGUIElement.CubeMapping | TextureInspectorGUIElement.ElementsAtlas,
+                sharedAdvanced
                 | TextureInspectorGUIElement.VTOnly
                 , shapeCapsAll);
-            m_TextureTypeGUIElements[(int)TextureImporterType.NormalMap]    = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.NormalMap | TextureInspectorGUIElement.PngGamma | TextureInspectorGUIElement.CubeMapping | TextureInspectorGUIElement.ElementsAtlas,
-                TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps
-                | TextureInspectorGUIElement.StreamingMipmaps
+            m_TextureTypeGUIElements[(int)TextureImporterType.NormalMap]    = new TextureInspectorTypeGUIProperties(
+                TextureInspectorGUIElement.NormalMap | TextureInspectorGUIElement.CubeMapping | TextureInspectorGUIElement.ElementsAtlas,
+                sharedAdvanced
                 | TextureInspectorGUIElement.VTOnly
                 , shapeCapsAll);
-            m_TextureTypeGUIElements[(int)TextureImporterType.Sprite]       = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.Sprite,
-                TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.PngGamma | TextureInspectorGUIElement.MipMaps | TextureInspectorGUIElement.ColorSpace,
+            m_TextureTypeGUIElements[(int)TextureImporterType.Sprite]       = new TextureInspectorTypeGUIProperties(
+                TextureInspectorGUIElement.Sprite,
+                TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.MipMaps | TextureInspectorGUIElement.ColorSpace,
                 TextureImporterShape.Texture2D);
-            m_TextureTypeGUIElements[(int)TextureImporterType.Cookie]       = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.Cookie | TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.PngGamma | TextureInspectorGUIElement.CubeMapping,
-                TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps,
+            m_TextureTypeGUIElements[(int)TextureImporterType.Cookie]       = new TextureInspectorTypeGUIProperties(
+                TextureInspectorGUIElement.Cookie | TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.CubeMapping,
+                sharedAdvanced,
                 TextureImporterShape.Texture2D | TextureImporterShape.TextureCube);
-            m_TextureTypeGUIElements[(int)TextureImporterType.SingleChannel] = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.PngGamma | TextureInspectorGUIElement.SingleChannelComponent | TextureInspectorGUIElement.CubeMapping | TextureInspectorGUIElement.ElementsAtlas,
-                TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps
-                | TextureInspectorGUIElement.StreamingMipmaps
+            m_TextureTypeGUIElements[(int)TextureImporterType.SingleChannel] = new TextureInspectorTypeGUIProperties(
+                TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.SingleChannelComponent | TextureInspectorGUIElement.CubeMapping | TextureInspectorGUIElement.ElementsAtlas,
+                sharedAdvanced
                 , shapeCapsAll);
-            m_TextureTypeGUIElements[(int)TextureImporterType.GUI]          = new TextureInspectorTypeGUIProperties(0,
-                TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.PngGamma | TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps,
+            m_TextureTypeGUIElements[(int)TextureImporterType.GUI]          = new TextureInspectorTypeGUIProperties(
+                0,
+                TextureInspectorGUIElement.AlphaHandling | sharedAdvanced,
                 TextureImporterShape.Texture2D);
-            m_TextureTypeGUIElements[(int)TextureImporterType.Cursor]       = new TextureInspectorTypeGUIProperties(0,
-                TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.PngGamma | TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps,
+            m_TextureTypeGUIElements[(int)TextureImporterType.Cursor]       = new TextureInspectorTypeGUIProperties(
+                0,
+                TextureInspectorGUIElement.AlphaHandling | sharedAdvanced,
                 TextureImporterShape.Texture2D);
-            m_TextureTypeGUIElements[(int)TextureImporterType.Lightmap]     = new TextureInspectorTypeGUIProperties(0,
-                TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.PngGamma | TextureInspectorGUIElement.MipMaps
-                | TextureInspectorGUIElement.StreamingMipmaps
+            m_TextureTypeGUIElements[(int)TextureImporterType.Lightmap]     = new TextureInspectorTypeGUIProperties(
+                0,
+                sharedAdvanced
                 , TextureImporterShape.Texture2D);
-            m_TextureTypeGUIElements[(int)TextureImporterType.DirectionalLightmap] = new TextureInspectorTypeGUIProperties(0,
-                TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps
-                | TextureInspectorGUIElement.StreamingMipmaps
+            m_TextureTypeGUIElements[(int)TextureImporterType.DirectionalLightmap] = new TextureInspectorTypeGUIProperties(
+                0,
+                sharedAdvanced
                 , TextureImporterShape.Texture2D);
-            m_TextureTypeGUIElements[(int)TextureImporterType.Shadowmask]   = new TextureInspectorTypeGUIProperties(0,
-                TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.PngGamma | TextureInspectorGUIElement.MipMaps
-                | TextureInspectorGUIElement.StreamingMipmaps
+            m_TextureTypeGUIElements[(int)TextureImporterType.Shadowmask]   = new TextureInspectorTypeGUIProperties(
+                0,
+                sharedAdvanced
                 , TextureImporterShape.Texture2D);
 
             m_GUIElementMethods.Clear();
             m_GUIElementMethods.Add(TextureInspectorGUIElement.PowerOfTwo, this.POTScaleGUI);
             m_GUIElementMethods.Add(TextureInspectorGUIElement.Readable, this.ReadableGUI);
-            m_GUIElementMethods.Add(TextureInspectorGUIElement.StreamingMipmaps, this.StreamingMipmapsGUI);
             m_GUIElementMethods.Add(TextureInspectorGUIElement.VTOnly, this.VTOnlyGUI);
             m_GUIElementMethods.Add(TextureInspectorGUIElement.ColorSpace, this.ColorSpaceGUI);
             m_GUIElementMethods.Add(TextureInspectorGUIElement.AlphaHandling, this.AlphaHandlingGUI);
@@ -600,6 +613,7 @@ namespace UnityEditor
             m_GUIElementMethods.Add(TextureInspectorGUIElement.Cookie, this.CookieGUI);
             m_GUIElementMethods.Add(TextureInspectorGUIElement.CubeMapping, this.CubemapMappingGUI);
             m_GUIElementMethods.Add(TextureInspectorGUIElement.ElementsAtlas, this.ElementsAtlasGui);
+            m_GUIElementMethods.Add(TextureInspectorGUIElement.Swizzle, this.SwizzleGui);
 
             // This list dictates the order in which the GUI Elements are displayed.
             // It could be different for each TextureImporterType but let's keep it simple for now.
@@ -610,15 +624,15 @@ namespace UnityEditor
             m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.Cookie);
             m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.ColorSpace);
             m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.AlphaHandling);
-            m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.PngGamma);
             m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.SingleChannelComponent);
             m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.NormalMap);
             m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.Sprite);
             m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.PowerOfTwo);
             m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.Readable);
-            m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.StreamingMipmaps);
             m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.VTOnly);
             m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.MipMaps);
+            m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.PngGamma);
+            m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.Swizzle);
 
             UnityEngine.Debug.Assert(m_GUIElementsDisplayOrder.Count == (Enum.GetValues(typeof(TextureInspectorGUIElement)).Length - 1), "Some GUIElement are not present in the list."); // -1 because TextureInspectorGUIElement.None
         }
@@ -657,6 +671,9 @@ namespace UnityEditor
 
             importer.GetWidthAndHeight(ref m_TextureWidth, ref m_TextureHeight);
             m_IsPOT = IsPowerOfTwo(m_TextureWidth) && IsPowerOfTwo(m_TextureHeight);
+            var ext = FileUtil.GetPathExtension(importer.assetPath).ToLowerInvariant();
+            m_IsPSD = ext == "psd";
+            m_IsPNG = ext == "png";
         }
 
         void SetSerializedPropertySettings(TextureImporterSettings settings)
@@ -665,6 +682,8 @@ namespace UnityEditor
             m_ConvertToNormalMap.intValue = settings.convertToNormalMap ? 1 : 0;
             m_HeightScale.floatValue = settings.heightmapScale;
             m_NormalMapFilter.intValue = (int)settings.normalMapFilter;
+            m_FlipGreenChannel.intValue = settings.flipGreenChannel ? 1 : 0;
+            m_Swizzle.uintValue = settings.swizzleRaw;
             m_GenerateCubemap.intValue = (int)settings.generateCubemap;
             m_CubemapConvolution.intValue = (int)settings.cubemapConvolution;
             m_SeamlessCubemap.intValue = settings.seamlessCubemap ? 1 : 0;
@@ -725,6 +744,10 @@ namespace UnityEditor
 
             if (!m_NormalMapFilter.hasMultipleDifferentValues)
                 settings.normalMapFilter = (TextureImporterNormalFilter)m_NormalMapFilter.intValue;
+            if (!m_FlipGreenChannel.hasMultipleDifferentValues)
+                settings.flipGreenChannel = m_FlipGreenChannel.intValue > 0;
+            if (!m_Swizzle.hasMultipleDifferentValues)
+                settings.swizzleRaw = m_Swizzle.uintValue;
 
             if (!m_GenerateCubemap.hasMultipleDifferentValues)
                 settings.generateCubemap = (TextureImporterGenerateCubemap)m_GenerateCubemap.intValue;
@@ -958,12 +981,17 @@ namespace UnityEditor
             }
         }
 
-        void StreamingMipmapsGUI(TextureInspectorGUIElement guiElements)
+        void StreamingMipmapsGUI()
         {
-            // only 2D/Cubemap shapes support streaming mipmaps right now
+            // only 2D & Cubemap shapes support streaming mipmaps right now
             var shape = (TextureImporterShape)m_TextureShape.intValue;
             var shapeHasStreaming = shape == TextureImporterShape.Texture2D || shape == TextureImporterShape.TextureCube;
             if (!shapeHasStreaming)
+                return;
+
+            // some texture types are not relevant for mip streaming
+            var type = textureType;
+            if (type == TextureImporterType.Sprite || type == TextureImporterType.Cookie || type == TextureImporterType.GUI || type == TextureImporterType.Cursor)
                 return;
 
             ToggleFromInt(m_StreamingMipmaps, s_Styles.streamingMipmaps);
@@ -974,7 +1002,6 @@ namespace UnityEditor
                 EditorGUI.indentLevel--;
             }
         }
-
 
         void VTOnlyGUI(TextureInspectorGUIElement guiElements)
         {
@@ -1031,18 +1058,9 @@ namespace UnityEditor
             }
 
             // This is pure backward compatibility codepath. It can be removed when we decide that the time has come
-            TextureImporter importer = target as TextureImporter;
-            if (importer.ShouldShowRemoveMatteOption())
+            if (m_IsPSD)
             {
                 EditorGUILayout.PropertyField(m_PSDRemoveMatte, s_Styles.psdRemoveMatte);
-                if (m_PSDRemoveMatte.boolValue)
-                {
-                    GUILayout.BeginVertical();
-                    EditorGUILayout.HelpBox(s_Styles.psdRemoveMatteInfo.text, MessageType.Info, true);
-                    if (EditorGUILayout.LinkButton(s_Styles.psdRemoveMatteURLButton))
-                        Application.OpenURL(s_Styles.psdRemoveMatteURL);
-                    GUILayout.EndVertical();
-                }
             }
         }
 
@@ -1147,7 +1165,9 @@ namespace UnityEditor
             if (EditorGUILayout.BeginFadeGroup(m_ShowMipMapSettings.faded))
             {
                 EditorGUI.indentLevel++;
-                ToggleFromInt(m_BorderMipMap, s_Styles.borderMipMaps);
+
+                StreamingMipmapsGUI();
+
                 EditorGUILayout.Popup(m_MipMapMode, s_Styles.mipMapFilterOptions, s_Styles.mipMapFilter);
 
                 ToggleFromInt(m_MipMapsPreserveCoverage, s_Styles.mipMapsPreserveCoverage);
@@ -1157,6 +1177,8 @@ namespace UnityEditor
                     EditorGUILayout.PropertyField(m_AlphaTestReferenceValue, s_Styles.alphaTestReferenceValue);
                     EditorGUI.indentLevel--;
                 }
+
+                ToggleFromInt(m_BorderMipMap, s_Styles.borderMipMaps);
 
                 // Mipmap fadeout
                 ToggleFromInt(m_FadeOut, s_Styles.mipmapFadeOutToggle);
@@ -1181,7 +1203,8 @@ namespace UnityEditor
 
         void PngGammaGUI(TextureInspectorGUIElement guiElements)
         {
-            ToggleFromInt(m_IgnorePngGamma, s_Styles.ignorePngGamma);
+            if (m_IsPNG)
+                ToggleFromInt(m_IgnorePngGamma, s_Styles.ignorePngGamma);
         }
 
         void BumpGUI(TextureInspectorGUIElement guiElements)
@@ -1198,9 +1221,56 @@ namespace UnityEditor
                 EditorGUI.indentLevel--;
             }
             EditorGUILayout.EndFadeGroup();
+            ToggleFromInt(m_FlipGreenChannel, s_Styles.flipGreenChannel);
 
             if (EditorGUI.EndChangeCheck())
                 BaseTextureImportPlatformSettings.SyncPlatformSettings(m_PlatformSettings.ConvertAll<BaseTextureImportPlatformSettings>(x => x as BaseTextureImportPlatformSettings));
+        }
+
+        // A label, and then four dropdown popups to pick RGBA swizzle sources.
+        // Code flow modeled similar to a Vector4Field.
+        static readonly int s_SwizzleFieldHash = "SwizzleField".GetHashCode();
+        static readonly string[] s_SwizzleOptions = new[] {"R","G","B","A", "1-R","1-G","1-B","1-A", "0","1" };
+        static uint SwizzleField(GUIContent label, uint swizzle)
+        {
+            var rect = EditorGUILayout.s_LastRect = EditorGUILayout.GetControlRect(true, EditorGUI.GetPropertyHeight(SerializedPropertyType.Vector4, label), EditorStyles.numberField);
+            var id = GUIUtility.GetControlID(s_SwizzleFieldHash, FocusType.Keyboard, rect);
+            rect = EditorGUI.MultiFieldPrefixLabel(rect, id, label, 4);
+            rect.height = EditorGUI.kSingleLineHeight;
+
+            float w = (rect.width - 3 * EditorGUI.kSpacingSubLabel) / 4;
+            var subRect = new Rect(rect) {width = w};
+            var oldIndent = EditorGUI.indentLevel;
+            EditorGUI.indentLevel = 0;
+            for (int i = 0; i < 4; i++)
+            {
+                int shift = 8 * i;
+                uint swz = (swizzle >> shift) & 0xFF;
+                swz = (uint)EditorGUI.Popup(subRect, (int)swz, s_SwizzleOptions);
+                swizzle &= ~(0xFFu << shift);
+                swizzle |= swz << shift;
+                subRect.x += w + EditorGUI.kSpacingSubLabel;
+            }
+            EditorGUI.indentLevel = oldIndent;
+            return swizzle;
+        }
+
+        static void SwizzleField(SerializedProperty property, GUIContent label)
+        {
+            EditorGUI.BeginProperty(EditorGUILayout.BeginHorizontal(), label, property);
+            EditorGUI.BeginChangeCheck();
+            EditorGUI.showMixedValue = property.hasMultipleDifferentValues;
+            var value = SwizzleField(label, property.uintValue);
+            EditorGUI.showMixedValue = false;
+            if (EditorGUI.EndChangeCheck())
+                property.uintValue = value;
+            EditorGUILayout.EndHorizontal();
+            EditorGUI.EndProperty();
+        }
+
+        void SwizzleGui(TextureInspectorGUIElement guiElements)
+        {
+            SwizzleField(m_Swizzle, s_Styles.swizzle);
         }
 
         bool m_ShowPerAxisWrapModes = false;

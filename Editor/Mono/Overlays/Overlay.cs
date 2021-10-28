@@ -4,7 +4,6 @@
 
 using System;
 using System.ComponentModel;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -75,7 +74,12 @@ namespace UnityEditor.Overlays
         public event Action<Vector3> floatingPositionChanged;
 #pragma warning restore 67
 
-        public string id => m_Id;
+        public string id
+        {
+            get => m_Id;
+            internal set { m_Id = value; }
+        }
+
         static VisualTreeAsset s_TreeAsset;
         event Action displayNameChanged;
         VisualElement m_ContentRoot;
@@ -415,6 +419,8 @@ namespace UnityEditor.Overlays
         public virtual void OnCreated() {}
 
         public virtual void OnWillBeDestroyed() {}
+
+        public void Close() => canvas?.Remove(this);
 
         void ToggleCollapsedPopup()
         {

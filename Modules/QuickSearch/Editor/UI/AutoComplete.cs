@@ -58,7 +58,7 @@ namespace UnityEditor.Search
                 return false;
 
             parent = parentRect;
-            options = new SearchPropositionOptions(context, te.cursorIndex);
+            options = new SearchPropositionOptions(context, te.cursorIndex, te.text);
             propositions = SearchProposition.Fetch(context, options);
 
             enabled = propositions.Count > 0;
@@ -70,38 +70,46 @@ namespace UnityEditor.Search
             return true;
         }
 
-        public static void Draw(SearchContext context, ISearchView view, SearchField searchField)
+        public static string Draw(SearchField searchField)
         {
             if (!enabled)
-                return;
+                return null;
 
             var evt = Event.current;
             if (evt.type == EventType.MouseDown && !position.Contains(evt.mousePosition))
             {
                 evt.Use();
                 Clear();
-                return;
+                return null;
             }
 
+            var te = searchField.GetTextEditor();
+            var searchText = te.text;
+
             // Check if the cache filtered list should be updated
-            if (evt.type == EventType.Repaint && !context.searchText.Equals(s_LastInput, StringComparison.Ordinal))
+            if (evt.type == EventType.Repaint && !searchText.Equals(s_LastInput, StringComparison.Ordinal))
                 UpdateCompleteList(searchField.GetTextEditor());
 
             if (s_FilteredList == null)
-                return;
+                return null;
 
             var selected = DrawItems(evt, out var proposition);
             if (proposition.valid)
             {
                 if (proposition.moveCursor == TextCursorPlacement.MoveLineEnd)
                 {
-                    view.SetSearchText(proposition.replacement, proposition.moveCursor);
+                    te.text = proposition.replacement;
+                    te.MoveLineEnd();
+                    GUI.changed = true;
                 }
                 else if (!options.tokens.All(t => t.StartsWith(proposition.replacement, StringComparison.OrdinalIgnoreCase)))
                 {
-                    var insertion = ReplaceText(context.searchText, proposition.replacement, options.cursor, out var insertTokenPos);
+                    var insertion = ReplaceText(searchText, proposition.replacement, options.cursor, out var insertTokenPos);
                     SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchAutoCompleteInsertSuggestion, insertion);
-                    view.SetSearchText(insertion, proposition.moveCursor, insertTokenPos);
+
+                    te.text = insertion;
+                    searchField.MoveCursor(proposition.moveCursor, insertTokenPos);
+                    GUI.changed = true;
                 }
             }
 
@@ -110,6 +118,8 @@ namespace UnityEditor.Search
                 // No more results
                 Clear();
             }
+
+            return te.text;
         }
 
         private static int IndexOfDelimiter(string self, int startIndex)

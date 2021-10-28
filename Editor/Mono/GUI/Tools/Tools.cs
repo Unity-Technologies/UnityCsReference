@@ -75,7 +75,11 @@ namespace UnityEditor
         public static Tool current
         {
             get { return EditorToolUtility.GetEnumWithEditorTool(EditorToolManager.GetActiveTool()); }
-            set { EditorToolManager.activeTool = EditorToolUtility.GetEditorToolWithEnum(value); }
+            set
+            {
+                EditorToolManager.activeTool = EditorToolUtility.GetEditorToolWithEnum(value);
+                ShortcutManager.RegisterTag(value);
+            }
         }
 
         internal static void SyncToolEnum()
@@ -92,6 +96,8 @@ namespace UnityEditor
                     return;
 
                 get.m_ViewTool = value;
+                ShortcutManager.RegisterTag(get.m_ViewTool);
+
                 viewToolChanged?.Invoke();
             }
         }

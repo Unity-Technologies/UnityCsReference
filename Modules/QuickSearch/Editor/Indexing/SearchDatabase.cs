@@ -748,7 +748,7 @@ namespace UnityEditor.Search
         {
             if (createDirectory && !Directory.Exists(k_QuickSearchLibraryPath))
                 Directory.CreateDirectory(k_QuickSearchLibraryPath);
-            return $"{k_QuickSearchLibraryPath}/{settings.guid}.{SearchIndexEntry.version}.{GetIndexTypeSuffix()}";
+            return $"{k_QuickSearchLibraryPath}/{settings.guid}.{SearchIndexEntryImporter.version}.{GetIndexTypeSuffix()}";
         }
 
         private static void SaveIndex(string backupIndexPath, byte[] saveBytes, Task saveTask = null)
@@ -882,6 +882,7 @@ namespace UnityEditor.Search
             m_CurrentUpdateTask = null;
             Interlocked.Decrement(ref m_UpdateTasks);
             ProcessIncrementalUpdates();
+            SearchService.RefreshWindows();
         }
 
         private IndexArtifact[] CreateArtifacts(in IList<string> assetPaths)

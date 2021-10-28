@@ -76,23 +76,7 @@ namespace UnityEditor
             }
         }
 
-        static SceneView s_LastActiveSceneViewValue;
-        static SceneView s_LastActiveSceneView
-        {
-            get => s_LastActiveSceneViewValue;
-            set
-            {
-                if (value != s_LastActiveSceneViewValue)
-                {
-                    var oldValue = s_LastActiveSceneViewValue;
-                    s_LastActiveSceneViewValue = value;
-                    lastActiveSceneViewChanged?.Invoke(oldValue, value);
-                    UpdateTransientOverlayDisplay();
-                }
-            }
-        }
-
-        static SceneView s_ActiveViewForOverlays;
+        static SceneView s_LastActiveSceneView;
 
         static string GetLegacyOverlayId(OverlayWindow overlayData)
         {
@@ -119,14 +103,6 @@ namespace UnityEditor
                         legacyOverlay.showRequested = false;
         }
 
-        static void UpdateTransientOverlayDisplay()
-        {
-            if (s_ActiveViewForOverlays != lastActiveSceneView && lastActiveSceneView != null)
-            {
-                s_ActiveViewForOverlays = lastActiveSceneView;
-            }
-        }
-
         public static Action<SceneView, SceneView> lastActiveSceneViewChanged;
 
         static SceneView s_CurrentDrawingSceneView;
@@ -138,6 +114,16 @@ namespace UnityEditor
                 if (s_LastActiveSceneView == null && s_SceneViews.Count > 0)
                     s_LastActiveSceneView = s_SceneViews[0] as SceneView;
                 return s_LastActiveSceneView;
+            }
+
+            private set
+            {
+                if (value == s_LastActiveSceneView)
+                    return;
+                var oldValue = s_LastActiveSceneView;
+                s_LastActiveSceneView = value;
+                lastActiveSceneViewChanged?.Invoke(oldValue, value);
+                MoveOverlaysToActiveView(oldValue, value);
             }
         }
 
@@ -163,7 +149,6 @@ namespace UnityEditor
 
         public static Color selectedOutlineColor => kSceneViewSelectedOutline.Color;
         public bool isUsingSceneFiltering => UseSceneFiltering();
-
 
         internal static SavedBool s_PreferenceEnableFilteringWhileSearching = new SavedBool("SceneView.enableFilteringWhileSearching", true);
         internal static SavedBool s_PreferenceEnableFilteringWhileLodGroupEditing = new SavedBool("SceneView.enableFilteringWhileLodGroupEditing", true);
@@ -675,6 +660,8 @@ namespace UnityEditor
             }
         }
 
+        static List<Overlay> s_ActiveViewOverlays = new List<Overlay>();
+
         [Serializable]
         public class CameraSettings
         {
@@ -919,6 +906,7 @@ namespace UnityEditor
             }
             set { m_LastSceneViewRotation = value; }
         }
+
         [SerializeField]
         private bool m_LastSceneViewOrtho;
 
@@ -1173,7 +1161,7 @@ namespace UnityEditor
 
         internal void OnLostFocus()
         {
-            if (s_LastActiveSceneView == this)
+            if (lastActiveSceneView == this)
                 SceneViewMotion.ResetMotion();
         }
 
@@ -1410,7 +1398,7 @@ namespace UnityEditor
 
         internal static Camera GetLastActiveSceneViewCamera()
         {
-            SceneView view = s_LastActiveSceneView;
+            SceneView view = lastActiveSceneView;
             return view ? view.camera : null;
         }
 
@@ -1442,13 +1430,9 @@ namespace UnityEditor
                 DestroyImmediate(s_MipColorsTexture, true);
 
             s_SceneViews.Remove(this);
+
             if (s_LastActiveSceneView == this)
-            {
-                if (s_SceneViews.Count > 0)
-                    s_LastActiveSceneView = s_SceneViews[0] as SceneView;
-                else
-                    s_LastActiveSceneView = null;
-            }
+                lastActiveSceneView = s_SceneViews.Count > 0 ? s_SceneViews[0] as SceneView : null;
 
             CleanupEditorDragFunctions();
             if (m_StageHandling != null)
@@ -1601,6 +1585,36 @@ namespace UnityEditor
             }
         }
 
+        public static void AddOverlayToActiveView<T>(T overlay) where T : Overlay, ITransientOverlay
+        {
+            s_ActiveViewOverlays.Add(overlay);
+            if(lastActiveSceneView != null)
+                lastActiveSceneView.overlayCanvas.Add(overlay);
+        }
+
+        public static void RemoveOverlayFromActiveView<T>(T overlay) where T : Overlay, ITransientOverlay
+        {
+            if (!s_ActiveViewOverlays.Remove(overlay))
+                return;
+            if (lastActiveSceneView != null)
+                lastActiveSceneView.overlayCanvas.Remove(overlay);
+        }
+
+        static void MoveOverlaysToActiveView(SceneView previous, SceneView active)
+        {
+            if (previous != null)
+            {
+                foreach (var overlay in s_ActiveViewOverlays)
+                    previous.overlayCanvas.Remove(overlay);
+            }
+
+            if (active != null)
+            {
+                foreach (var overlay in s_ActiveViewOverlays)
+                    active.overlayCanvas.Add(overlay);
+            }
+        }
+
         private static bool ValidateMenuMoveToFrontOrBack(Transform[] transforms, bool isFront)
         {
             if (transforms.Length == 0)
@@ -1679,39 +1693,39 @@ namespace UnityEditor
         internal static void MenuMoveToView()
         {
             if (ValidateMoveToView())
-                s_LastActiveSceneView.MoveToView();
+                lastActiveSceneView.MoveToView();
         }
 
         [MenuItem("GameObject/Move To View %&f", true)]
         static bool ValidateMoveToView()
         {
-            return s_LastActiveSceneView != null && (Selection.transforms.Length != 0);
+            return lastActiveSceneView != null && (Selection.transforms.Length != 0);
         }
 
         [MenuItem("GameObject/Align With View %#f")]
         internal static void MenuAlignWithView()
         {
             if (ValidateAlignWithView())
-                s_LastActiveSceneView.AlignWithView();
+                lastActiveSceneView.AlignWithView();
         }
 
         [MenuItem("GameObject/Align With View %#f", true)]
         internal static bool ValidateAlignWithView()
         {
-            return s_LastActiveSceneView != null && (Selection.activeTransform != null);
+            return lastActiveSceneView != null && (Selection.activeTransform != null);
         }
 
         [MenuItem("GameObject/Align View to Selected")]
         internal static void MenuAlignViewToSelected()
         {
             if (ValidateAlignViewToSelected())
-                s_LastActiveSceneView.AlignViewToObject(Selection.activeTransform);
+                lastActiveSceneView.AlignViewToObject(Selection.activeTransform);
         }
 
         [MenuItem("GameObject/Align View to Selected", true)]
         internal static bool ValidateAlignViewToSelected()
         {
-            return s_LastActiveSceneView != null && (Selection.activeTransform != null);
+            return lastActiveSceneView != null && (Selection.activeTransform != null);
         }
 
         [MenuItem("GameObject/Toggle Active State &#a")]
@@ -1794,7 +1808,7 @@ namespace UnityEditor
 
         void OnFocus()
         {
-            s_LastActiveSceneView = this;
+            lastActiveSceneView = this;
         }
 
         void HandleClickAndDragToFocus()
@@ -2262,13 +2276,11 @@ namespace UnityEditor
         {
             onGUIStarted?.Invoke(this);
 
-            bool shouldShow = s_ActiveViewForOverlays == this;
+            bool shouldShow = lastActiveSceneView == this;
 
             foreach (var overlay in overlayCanvas.overlays)
             {
-                if (overlay is TransientSceneViewOverlay svo)
-                    overlay.displayed = shouldShow && svo.ShouldDisplay();
-                else if (overlay is ITransientOverlay transient)
+                if (overlay is ITransientOverlay transient)
                     overlay.displayed = shouldShow && transient.visible;
             }
 
@@ -2955,11 +2967,15 @@ namespace UnityEditor
             m_Camera.useOcclusionCulling = m_CameraSettings.occlusionCulling;
             m_Camera.transform.position = m_Position.value + m_Camera.transform.rotation * new Vector3(0, 0, -cameraDistance);
 
-            // In 2D mode, camera position z should not go to positive value.
+            // In 2D mode, camera position z should not go to positive value
             if (m_2DMode && m_Camera.transform.position.z >= 0)
             {
                 var p = m_Camera.transform.position;
-                p.z = -(m_Camera.nearClipPlane + 0.01f);
+                // when clamping the camera distance, choose a point far from origin to avoid obscuring objects with the
+                // near clip plane. see https://fogbugz.unity3d.com/f/cases/1353387/
+                var z = -(100f + m_Camera.nearClipPlane + 0.01f);
+                m_Camera.farClipPlane += p.z - z;
+                p.z = z;
                 m_Camera.transform.position = p;
             }
 
@@ -3666,10 +3682,13 @@ namespace UnityEditor
                                     // Ironically, only allow multi object access inside OnSceneGUI if editor does NOT support multi-object editing.
                                     // since there's no harm in going through the serializedObject there if there's always only one target.
                                     Editor.m_AllowMultiObjectAccess = !canEditMultipleObjects;
+                                    BeginWindows();
                                     onSceneGui(editor);
+                                    EndWindows();
                                     Editor.m_AllowMultiObjectAccess = true;
                                     if (EditorGUI.EndChangeCheck())
                                         editor.serializedObject.SetIsDifferentCacheDirty();
+
                                 }
 
                                 ResetOnSceneGUIState();
@@ -3681,8 +3700,8 @@ namespace UnityEditor
                             GUIUtility.ExitGUI();
                     }
                 }
-            }
 
+            }
             EditorToolManager.InvokeOnSceneGUICustomEditorTools();
 
             if (duringSceneGui != null)

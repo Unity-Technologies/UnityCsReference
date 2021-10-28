@@ -3,7 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.ComponentModel;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEditor.ShortcutManagement;
+using UnityEngine;
 using UObject = UnityEngine.Object;
 
 namespace UnityEditor.EditorTools
@@ -131,6 +134,69 @@ namespace UnityEditor.EditorTools
         public static bool IsActiveContext(EditorToolContext context)
         {
             return EditorToolManager.activeToolContext == context;
+        }
+
+        static IEnumerable<Type> allContextsExceptGameObject
+        {
+            get
+            {
+                foreach(var ctx in EditorToolUtility.availableGlobalToolContexts)
+                    if (ctx.editor != typeof(GameObjectToolContext))
+                        yield return ctx.editor;
+
+                foreach(var ctx in EditorToolManager.componentContexts)
+                    yield return ctx.editorType;
+            }
+        }
+
+        [Shortcut("Tools/Enter GameObject Mode", typeof(ToolShortcutContext))]
+        static void ExitToolContext()
+        {
+            SetActiveContext<GameObjectToolContext>();
+        }
+
+        [Shortcut("Tools/Cycle Tool Modes", typeof(ToolShortcutContext))]
+        static void CycleToolContexts()
+        {
+            if (EditorToolUtility.toolContextsInProject < 2)
+                return;
+
+            var active = EditorToolManager.activeToolContext;
+
+            if (active is GameObjectToolContext && EditorToolManager.lastCustomContext != null)
+            {
+                var instance = allContextsExceptGameObject.FirstOrDefault(x => x == EditorToolManager.lastCustomContext);
+
+                if (instance != null)
+                {
+                    SetActiveContext(instance);
+                    return;
+                }
+            }
+
+            using var all = allContextsExceptGameObject.GetEnumerator();
+
+            if (!all.MoveNext())
+                return;
+
+            // Select the next available context after the active
+            while (all.Current != active.GetType())
+            {
+                // The active context is not registered with an attribute. We'll just return the last available context
+                // in that case.
+                if (!all.MoveNext())
+                {
+                    SetActiveContext(all.Current);
+                    return;
+                }
+            }
+
+            // If we can advance from the active context, that is the next context. If not, we're at the end of the list
+            // and need to circle back around to the first available context.
+            if (all.MoveNext())
+                SetActiveContext(all.Current);
+            else
+                SetActiveContext(allContextsExceptGameObject.First());
         }
     }
 }

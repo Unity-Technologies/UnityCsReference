@@ -123,8 +123,8 @@ namespace UnityEditor
         void OnCameraModeChanged(SceneView.CameraMode mode)
         {
             // If the rootVisualElement hasn't yet been created, early out
-            if (m_AlbedoContent == null)
-                return;
+            if (m_ContentRoot == null)
+                CreatePanelContent();
 
             m_AlbedoContent.EnableInClassList(k_UnityHiddenClass, mode.drawMode != DrawCameraMode.ValidateAlbedo && mode.drawMode != DrawCameraMode.ValidateMetalSpecular);
             m_AlbedoContent.Q("Albedo").EnableInClassList(k_UnityHiddenClass, mode.drawMode != DrawCameraMode.ValidateAlbedo);
@@ -215,7 +215,8 @@ namespace UnityEditor
             var slider = m_AlbedoHueTolerance.Q<Slider>();
             var field = m_AlbedoHueTolerance.Q<FloatField>();
             slider.SetValueWithoutNotify(m_AlbedoSwatchHueTolerance);
-            field.SetValueWithoutNotify(m_AlbedoSwatchHueTolerance);
+            if (evt.target != field || evt.newValue != 0)
+                field.SetValueWithoutNotify(m_AlbedoSwatchHueTolerance);
             UpdateAlbedoSwatch();
         }
 
@@ -225,7 +226,8 @@ namespace UnityEditor
             var slider = m_AlbedoSaturationTolerance.Q<Slider>();
             var field = m_AlbedoSaturationTolerance.Q<FloatField>();
             slider.SetValueWithoutNotify(m_AlbedoSwatchSaturationTolerance);
-            field.SetValueWithoutNotify(m_AlbedoSwatchSaturationTolerance);
+            if (evt.target != field || evt.newValue != 0)
+                field.SetValueWithoutNotify(m_AlbedoSwatchSaturationTolerance);
             UpdateAlbedoSwatch();
         }
 
@@ -285,7 +287,8 @@ namespace UnityEditor
             }
 
             m_ExposureSlider.SetValueWithoutNotify(value);
-            m_ExposureField.SetValueWithoutNotify(value);
+            if (evt.target != m_ExposureField || evt.newValue != 0)
+                m_ExposureField.SetValueWithoutNotify(value);
 
             m_SceneView.bakedLightmapExposure = value;
             Unsupported.SetSceneViewDebugModeExposureNoDirty(m_SceneView.bakedLightmapExposure);

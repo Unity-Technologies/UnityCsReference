@@ -71,6 +71,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         bool isDirectDependency { get; }
 
+        bool isUnityPackage { get; }
+
         string localPath { get; }
 
         SemVersion? supportedVersion { get; }

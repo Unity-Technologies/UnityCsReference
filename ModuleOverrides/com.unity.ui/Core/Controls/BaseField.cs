@@ -128,6 +128,8 @@ namespace UnityEngine.UIElements
             set { m_Value = value; }
         }
 
+        internal event Func<TValueType, TValueType> onValidateValue;
+
         /// <summary>
         /// The value associated with the field.
         /// </summary>
@@ -143,10 +145,12 @@ namespace UnityEngine.UIElements
                 {
                     if (panel != null)
                     {
-                        using (ChangeEvent<TValueType> evt = ChangeEvent<TValueType>.GetPooled(m_Value, value))
+                        var previousValue = m_Value;
+                        SetValueWithoutNotify(value);
+
+                        using (ChangeEvent<TValueType> evt = ChangeEvent<TValueType>.GetPooled(previousValue, m_Value))
                         {
                             evt.target = this;
-                            SetValueWithoutNotify(value);
                             SendEvent(evt);
                         }
                     }
@@ -232,6 +236,8 @@ namespace UnityEngine.UIElements
             }
         }
 
+        bool m_SkipValidation;
+
         internal BaseField(string label)
         {
             isCompositeRoot = true;
@@ -262,6 +268,16 @@ namespace UnityEngine.UIElements
             this.visualInput = visualInput;
         }
 
+        internal TValueType ValidatedValue(TValueType value)
+        {
+            if (onValidateValue != null)
+            {
+                return onValidateValue.Invoke(value);
+            }
+
+            return value;
+        }
+
         /// <summary>
         /// Update the field's visual content depending on showMixedValue.
         /// </summary>
@@ -276,7 +292,15 @@ namespace UnityEngine.UIElements
         /// <param name="newValue">New value to be set.</param>
         public virtual void SetValueWithoutNotify(TValueType newValue)
         {
-            m_Value = newValue;
+            if (m_SkipValidation)
+            {
+                m_Value = newValue;
+            }
+            else
+            {
+                m_Value = ValidatedValue(newValue);
+            }
+
 
             if (!string.IsNullOrEmpty(viewDataKey))
                 SaveViewData();
@@ -284,6 +308,15 @@ namespace UnityEngine.UIElements
 
             if (showMixedValue)
                 UpdateMixedValueContent();
+        }
+
+        internal void SetValueWithoutValidation(TValueType newValue)
+        {
+            m_SkipValidation = true;
+
+            value = newValue;
+
+            m_SkipValidation = false;
         }
 
         internal override void OnViewDataReady()

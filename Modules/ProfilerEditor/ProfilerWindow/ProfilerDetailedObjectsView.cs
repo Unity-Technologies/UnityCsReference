@@ -16,14 +16,20 @@ namespace UnityEditorInternal.Profiling
     [Serializable]
     internal class ProfilerDetailedObjectsView : ProfilerDetailedView
     {
+        static readonly string kInstancesCountFormatText = L10n.Tr("{0} instances of {1} sample:");
+        static readonly string kInstancesCountTooltipText = L10n.Tr("Total count of samples which represent the selected item in the Hierarchy View.");
         static readonly string kMetadataText = LocalizationDatabase.GetLocalizedString("Metadata:");
         static readonly string kCallstackText = LocalizationDatabase.GetLocalizedString("Call Stack:");
         static readonly string kNoMetadataOrCallstackText = LocalizationDatabase.GetLocalizedString("No metadata or call stack is available for the selected sample.");
 
         [NonSerialized]
         bool m_Initialized;
+
         [NonSerialized]
         List<ulong> m_CachedCallstack = new List<ulong>();
+
+        [NonSerialized]
+        GUIContent m_InstancesLabel;
 
         [SerializeField]
         TreeViewState m_TreeViewState;
@@ -232,6 +238,9 @@ namespace UnityEditorInternal.Profiling
             if (m_CachedCallstack == null)
                 m_CachedCallstack = new List<ulong>();
 
+            if (m_InstancesLabel == null)
+                m_InstancesLabel = new GUIContent();
+
             var cpuDetailColumns = new[]
             {
                 HierarchyFrameDataView.columnObjectName,
@@ -315,6 +324,8 @@ namespace UnityEditorInternal.Profiling
                 frameDataView.GetItemMergedSampleCallstack(selectedSampleId, selectedMergedSampleIndex, m_CachedCallstack);
                 selectedSampleMetadataCount = frameDataView.GetItemMergedSamplesMetadataCount(selectedSampleId, selectedMergedSampleIndex);
             }
+
+            GUILayout.Label(m_InstancesLabel, EditorStyles.label);
 
             var showCallstack = m_CachedCallstack.Count > 0;
             var showMetadata = selectedSampleMetadataCount != 0;
@@ -432,6 +443,11 @@ namespace UnityEditorInternal.Profiling
             }
 
             m_TreeView.SetData(objectsData);
+
+            // Update instances label
+            var sampleName = m_FrameDataView.GetItemName(selectedId);
+            m_InstancesLabel.text = UnityString.Format(kInstancesCountFormatText, samplesCount, sampleName);
+            m_InstancesLabel.tooltip = kInstancesCountTooltipText;
         }
 
         public void Clear()

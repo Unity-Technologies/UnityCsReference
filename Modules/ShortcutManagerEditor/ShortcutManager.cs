@@ -59,6 +59,14 @@ namespace UnityEditor.ShortcutManagement
         public const string defaultProfileId = "Default";
 
         public static IShortcutManager instance { get; } = new ShortcutManagerImplementation(ShortcutIntegration.instance.profileManager);
+
+        public static void RegisterTag(string tag) => ShortcutIntegration.instance.contextManager.RegisterTag(tag);
+
+        public static void RegisterTag(Enum e) => ShortcutIntegration.instance.contextManager.RegisterTag(e);
+
+        public static void UnregisterTag(string tag) => ShortcutIntegration.instance.contextManager.UnregisterTag(tag);
+
+        public static void UnregisterTag(Enum e) => ShortcutIntegration.instance.contextManager.UnregisterTag(e);
     }
 
     class ShortcutManagerImplementation : IShortcutManager

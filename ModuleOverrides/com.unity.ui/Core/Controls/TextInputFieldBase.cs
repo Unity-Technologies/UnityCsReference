@@ -974,6 +974,9 @@ namespace UnityEngine.UIElements
                 {
                     SaveValueAndText();
 
+                    // WebGL requires invoking of the soft keyboard to happen from a user event,
+                    // such as PointerDown. This has been added to the above PointerDownEvent.
+                    // Checking for the keyboard event handler here breaks this requirement.
                     // When this input field receives focus, make sure the correct text editor is initialized
                     // (i.e. hardware keyboard or touchscreen keyboard).
                     if (touchScreenTextFieldChanged)

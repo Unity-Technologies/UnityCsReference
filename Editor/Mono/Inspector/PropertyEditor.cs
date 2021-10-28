@@ -33,7 +33,6 @@ namespace UnityEditor
         EditorDragging editorDragging { get; }
 
         IMGUIContainer CreateIMGUIContainer(Action headerOnGUI, string v);
-        bool IsMultiEditingSupported(Editor editor, Object target);
         bool WasEditorVisible(Editor[] editors, int editorIndex, Object target);
         bool ShouldCullEditor(Editor[] editors, int editorIndex);
         void Repaint();
@@ -1881,7 +1880,7 @@ namespace UnityEditor
             return wasVisible;
         }
 
-        public bool IsMultiEditingSupported(Editor editor, Object target)
+        public static bool IsMultiEditingSupported(Editor editor, Object target, InspectorMode mode)
         {
             // Culling of editors that can't be properly shown.
             // If the current editor is a GenericInspector even though a custom editor for it exists,
@@ -1890,11 +1889,11 @@ namespace UnityEditor
             bool multiEditingSupported = true;
             if (editor is GenericInspector && CustomEditorAttributes.FindCustomEditorType(target, false) != null)
             {
-                if (m_InspectorMode == InspectorMode.DebugInternal)
+                if (mode == InspectorMode.DebugInternal)
                 {
                     // Do nothing
                 }
-                else if (m_InspectorMode == InspectorMode.Normal)
+                else if (mode == InspectorMode.Normal)
                 {
                     // If we're not in debug mode and it thus must be a fallback,
                     // hide the editor and show a notification.

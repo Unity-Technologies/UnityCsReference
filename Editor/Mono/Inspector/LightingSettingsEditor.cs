@@ -74,7 +74,6 @@ namespace UnityEditor
         SerializedProperty m_LightmapMaxSize;
         SerializedProperty m_BakeBackend;
         // pvr
-        SerializedProperty m_PVRSampling;
         SerializedProperty m_PVRSampleCount;
         SerializedProperty m_PVRDirectSampleCount;
         SerializedProperty m_PVRBounces;
@@ -230,10 +229,7 @@ namespace UnityEditor
             public static readonly GUIContent useRealtimeGI = EditorGUIUtility.TrTextContent("Realtime Global Illumination", "Precomputed Realtime Global Illumination using Enlighten. Provides diffuse Realtime Global Illumination for static geometry via low resolution lightmaps and via Light Probes for dynamic geometry.");
             public static readonly GUIContent bakedGIDisabledInfo = EditorGUIUtility.TrTextContent("All Baked and Mixed lights in the Scene are currently being overridden to Realtime light modes. Enable Baked Global Illumination to allow the use of Baked and Mixed light modes.");
             public static readonly GUIContent bakeBackend = EditorGUIUtility.TrTextContent("Lightmapper", "Specifies which baking system will be used to generate baked lightmaps.");
-            //public static readonly GUIContent PVRSampling = EditorGUIUtility.TrTextContent("Sampling", "How to sample the lightmaps. Auto and adaptive automatically test for convergence. Auto uses a maximum of 16K samples. Adaptive uses a configurable maximum number of samples. Fixed always uses the set number of samples and does not test for convergence.");
-            //public static readonly GUIContent PVRDirectSampleCountAdaptive = EditorGUIUtility.TrTextContent("Max Direct Samples", "Maximum number of samples to use for direct lighting.");
             public static readonly GUIContent directSampleCount = EditorGUIUtility.TrTextContent("Direct Samples", "Controls the number of samples the lightmapper will use for direct lighting calculations. Increasing this value may improve the quality of lightmaps but increases the time required for baking to complete.");
-            //public static readonly GUIContent PVRSampleCountAdaptive = EditorGUIUtility.TrTextContent("Max Indirect Samples", "Maximum number of samples to use for indirect lighting.");
             public static readonly GUIContent indirectSampleCount = EditorGUIUtility.TrTextContent("Indirect Samples", "Controls the number of samples the lightmapper will use for indirect lighting calculations. Increasing this value may improve the quality of lightmaps but increases the time required for baking to complete.");
             public static readonly GUIContent bounces = EditorGUIUtility.TrTextContent("Bounces", "The minimum and maximum number of bounces the Lightmapper computes for indirect lighting.\nMinimum bounces: Lower values reduce bake times, but might increase lightmap noise. To improve performance during bakes, the Lightmapper terminates light paths that contribute little to the appearance of the Scene using a technique called Russian Roulette.\nMaximum bounces: Values of up to 10 are suitable for most Scenes. Values higher than 10 might lead to significantly longer bake times.");
             public static readonly GUIContent denoisingWarningDirect = EditorGUIUtility.TrTextContent("Direct Denoiser", "Your hardware does not support denoising. For minimum requirements, please read the documentation.");
@@ -327,7 +323,6 @@ namespace UnityEditor
                 m_FinalGatherFiltering = lso.FindProperty("m_FinalGatherFiltering");
 
                 // pvr
-                m_PVRSampling = lso.FindProperty("m_PVRSampling");
                 m_PVRSampleCount = lso.FindProperty("m_PVRSampleCount");
                 m_PVRDirectSampleCount = lso.FindProperty("m_PVRDirectSampleCount");
                 m_PVRBounces = lso.FindProperty("m_PVRBounces");
@@ -414,6 +409,11 @@ namespace UnityEditor
                     {
                         EditorGUILayout.PropertyField(m_EnableRealtimeGI, Styles.realtimeEnvironmentLighting);
                     }
+                }
+
+                using (new EditorGUI.DisabledScope((m_BakeBackend.intValue != (int)LightingSettings.Lightmapper.Enlighten) && !enableRealtimeGI))
+                {
+                    DrawResolutionField(m_RealtimeResolution, Styles.indirectResolution);
                 }
 
                 EditorGUI.indentLevel -= 2;
@@ -555,29 +555,16 @@ namespace UnityEditor
                                     EditorGUILayout.PropertyField(m_PVRCulling, Styles.culling);
                                     EditorGUILayout.PropertyField(m_PVREnvironmentIS, Styles.environmentImportanceSampling);
 
-                                    // Sampling type
-                                    //EditorGUILayout.PropertyField(m_PvrSampling, Styles.m_PVRSampling); // TODO(PVR): make non-fixed sampling modes work.
+                                    int sampleCount = EditorGUILayout.DelayedIntField(Styles.directSampleCount, m_PVRDirectSampleCount.intValue);
+                                    m_PVRDirectSampleCount.intValue = sampleCount;
+                                    sampleCount = EditorGUILayout.DelayedIntField(Styles.indirectSampleCount, m_PVRSampleCount.intValue);
+                                    m_PVRSampleCount.intValue = sampleCount;
+                                    sampleCount = EditorGUILayout.DelayedIntField(Styles.environmentSampleCount, m_PVREnvironmentSampleCount.intValue);
+                                    m_PVREnvironmentSampleCount.intValue = sampleCount;
 
-                                    if (m_PVRSampling.intValue != (int)LightingSettings.Sampling.Auto)
+                                    using (new EditorGUI.DisabledScope(EditorSettings.useLegacyProbeSampleCount))
                                     {
-                                        // Sample count
-                                        // TODO(PVR): make non-fixed sampling modes work.
-                                        //EditorGUI.indentLevel++;
-                                        //if (LightingSettings.giPathTracerSampling == LightingSettings.PathTracerSampling.PathTracerSamplingAdaptive)
-                                        //  EditorGUILayout.PropertyField(m_PVRSampleCount, Styles.PVRSampleCountAdaptive);
-                                        //else
-
-                                        EditorGUILayout.PropertyField(m_PVRDirectSampleCount, Styles.directSampleCount);
-                                        EditorGUILayout.PropertyField(m_PVRSampleCount, Styles.indirectSampleCount);
-                                        EditorGUILayout.PropertyField(m_PVREnvironmentSampleCount, Styles.environmentSampleCount);
-
-                                        using (new EditorGUI.DisabledScope(EditorSettings.useLegacyProbeSampleCount))
-                                        {
-                                            EditorGUILayout.PropertyField(m_LightProbeSampleCountMultiplier, Styles.probeSampleCountMultiplier);
-                                        }
-
-                                        // TODO(PVR): make non-fixed sampling modes work.
-                                        //EditorGUI.indentLevel--;
+                                        EditorGUILayout.PropertyField(m_LightProbeSampleCountMultiplier, Styles.probeSampleCountMultiplier);
                                     }
 
                                     // Case 1320615: clamping of min bounces can be annoying because it resets when typing in a new max bounce value.
@@ -684,13 +671,10 @@ namespace UnityEditor
                         }
                     }
 
-                    // We only want to show the Indirect Resolution in a disabled state if the user is using PLM and has the ability to turn on Realtime GI.
-                    if (realtimeGISupported || (bakedGISupported && (m_BakeBackend.intValue == (int)LightingSettings.Lightmapper.Enlighten) && lightmapperSupported))
+                    // Show the Indirect Resolution field if the user is using Enlighten baked and the backend is supported.
+                    if (bakedGISupported && (m_BakeBackend.intValue == (int)LightingSettings.Lightmapper.Enlighten) && lightmapperSupported)
                     {
-                        using (new EditorGUI.DisabledScope((m_BakeBackend.intValue != (int)LightingSettings.Lightmapper.Enlighten) && !enableRealtimeGI))
-                        {
-                            DrawResolutionField(m_RealtimeResolution, Styles.indirectResolution);
-                        }
+                        DrawResolutionField(m_RealtimeResolution, Styles.indirectResolution);
                     }
 
                     if (bakedGISupported)

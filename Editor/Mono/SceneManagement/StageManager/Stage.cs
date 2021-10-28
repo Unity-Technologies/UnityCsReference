@@ -37,6 +37,8 @@ namespace UnityEditor.SceneManagement
 
         public virtual string assetPath { get { return string.Empty; } }
 
+        internal virtual bool showOptionsButton { get { return false; } }
+
         internal abstract int sceneCount { get; }
         internal abstract Scene GetSceneAt(int index);
 
@@ -47,6 +49,61 @@ namespace UnityEditor.SceneManagement
             if (!SupportsSaving() || !hasUnsavedChanges)
                 return true;
             throw new System.NotImplementedException("This Stage returns true for SupportsSaving() but has not implemented an override for the Save() method.");
+        }
+
+        internal virtual void DiscardChanges()
+        {
+            if (!SupportsSaving() || !hasUnsavedChanges)
+                return;
+            throw new System.NotImplementedException("This Stage returns true for SupportsSaving() but has not implemented an override for the DiscardChanges() method.");
+        }
+
+        static internal void ShowDiscardChangesDialog(Stage stage)
+        {
+            string title = LocalizationDatabase.GetLocalizedString("Discard Changes");
+            string message = LocalizationDatabase.GetLocalizedString("Are you sure you want to discard the changes to:\n\n  {0}\n\nYour changes will be lost.");
+
+            message = string.Format(message, System.IO.Path.GetFileName(stage.assetPath));
+
+            if (EditorUtility.DisplayDialog(title, message, LocalizationDatabase.GetLocalizedString("OK"), LocalizationDatabase.GetLocalizedString("Cancel")))
+                stage.DiscardChanges();
+        }
+
+        internal virtual void BuildContextMenuForStageHeader(GenericMenu menu)
+        {
+            if (SupportsSaving())
+            {
+                var saveText = EditorGUIUtility.TrTextContent("Save");
+                var discardText = EditorGUIUtility.TrTextContent("Discard changes");
+
+                // Save
+                if (hasUnsavedChanges)
+                {
+                    menu.AddItem(saveText, false, () =>
+                    {
+                        Save();
+                    });
+                }
+                else
+                {
+                    menu.AddDisabledItem(saveText);
+                }
+
+                menu.AddSeparator("");
+
+                // Discard changes
+                if (hasUnsavedChanges && !isAssetMissing)
+                {
+                    menu.AddItem(discardText, false, () =>
+                    {
+                        ShowDiscardChangesDialog(this);
+                    });
+                }
+                else
+                {
+                    menu.AddDisabledItem(discardText);
+                }
+            }
         }
 
         internal virtual bool SaveAsNew()

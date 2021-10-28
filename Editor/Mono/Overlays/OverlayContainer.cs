@@ -388,5 +388,13 @@ namespace UnityEditor.Overlays
                     OnOverlayBecomeInvisibleInContainer(overlay);
             }
         }
+
+        internal int FindIndex(Overlay overlay)
+        {
+            var top = topOverlays.IndexOf(overlay);
+            if (top >= 0)
+                return top;
+            return bottomOverlays.IndexOf(overlay);
+        }
     }
 }

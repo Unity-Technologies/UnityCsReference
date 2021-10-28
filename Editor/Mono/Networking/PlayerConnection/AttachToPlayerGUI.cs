@@ -73,15 +73,16 @@ namespace UnityEditor.Networking.PlayerConnection
 
     public static class PlayerConnectionGUILayout
     {
-        public static void ConnectionTargetSelectionDropdown(IConnectionState state, GUIStyle style = null)
+        public static void ConnectionTargetSelectionDropdown(IConnectionState state, GUIStyle style = null, int maxWidth = 100)
         {
             if (style == null)
                 style = Styles.defaultDropdown;
-            Styles.dropdownButton.text = state.connectedToTarget == ConnectionTarget.Editor ? "Edit Mode" : state.connectionName;
-
-            Styles.dropdownButton.text = ConnectionUIHelper.GetToolbarContent(state.connectionName);
+            Styles.dropdownButton.text = ConnectionUIHelper.GetToolbarContent(state.connectionName, style, maxWidth );
             var size = style.CalcSize(Styles.dropdownButton);
             Rect connectRect = GUILayoutUtility.GetRect(size.x, size.y);
+
+            if(connectRect.width > size.x)
+                Styles.dropdownButton.text = ConnectionUIHelper.GetToolbarContent(state.connectionName, style, (int)connectRect.width);
 
             PlayerConnectionGUI.ConnectionTargetSelectionDropdown(connectRect, state, style);
         }

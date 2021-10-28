@@ -9,12 +9,8 @@ namespace UnityEditor.IMGUI.Controls
 {
     public abstract class AdvancedDropdown
     {
-        private Vector2 m_MinimumSize;
-        protected Vector2 minimumSize
-        {
-            get { return m_MinimumSize; }
-            set { m_MinimumSize = value; }
-        }
+        protected Vector2 minimumSize { get; set; }
+        internal Vector2 maximumSize { get; set; }
 
         internal AdvancedDropdownWindow m_WindowInstance;
         internal AdvancedDropdownState m_State;
@@ -45,8 +41,10 @@ namespace UnityEditor.IMGUI.Controls
             }
 
             m_WindowInstance = ScriptableObject.CreateInstance<AdvancedDropdownWindow>();
-            if (m_MinimumSize != Vector2.zero)
-                m_WindowInstance.minSize = m_MinimumSize;
+            if (minimumSize != Vector2.zero)
+                m_WindowInstance.minSize = minimumSize;
+            if (maximumSize!= Vector2.zero)
+                m_WindowInstance.maxSize = maximumSize;
             m_WindowInstance.state = m_State;
             m_WindowInstance.dataSource = m_DataSource;
             m_WindowInstance.gui = m_Gui;

@@ -17,6 +17,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public event Action<ListUpdateArgs> onListUpdate = delegate {};
         public event Action<IPage> onListRebuild = delegate {};
         public event Action<IPage> onSubPageAdded = delegate {};
+        public event Action<PageFilters> onFiltersChange = delegate {};
 
         // keep track of a list of selected items by remembering the uniqueIds
         [SerializeField]
@@ -31,11 +32,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         protected PageFilters m_Filters;
-        public PageFilters filters
-        {
-            get { return m_Filters; }
-            set { if (value == null) m_Filters = new PageFilters(); else m_Filters = value; }
-        }
+        public PageFilters filters => m_Filters;
 
         [SerializeField]
         protected PageCapability m_Capability;
@@ -77,17 +74,25 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public void ClearFilters()
+        public bool ClearFilters()
         {
             var filters = m_Filters?.Clone() ?? new PageFilters();
-            filters.statuses = new List<string>();
+            filters.status = string.Empty;
             filters.categories = new List<string>();
             filters.labels = new List<string>();
 
-            UpdateFilters(filters);
+            return UpdateFilters(filters);
         }
 
-        public abstract void UpdateFilters(PageFilters filters);
+        public virtual bool UpdateFilters(PageFilters filters)
+        {
+            if ((m_Filters == null && filters == null) || (m_Filters?.Equals(filters) ?? false))
+                return false;
+
+            m_Filters = filters?.Clone();
+            onFiltersChange?.Invoke(m_Filters);
+            return true;
+        }
 
         public abstract void OnPackagesChanged(IEnumerable<IPackage> added, IEnumerable<IPackage> removed, IEnumerable<IPackage> preUpdate, IEnumerable<IPackage> postUpdate);
 

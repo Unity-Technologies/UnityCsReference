@@ -104,6 +104,14 @@ namespace UnityEditor
                 m_StageHeaderContent.text += "*";
         }
 
+        static void ShowStageContextMenu(Stage stage)
+        {
+            GenericMenu menu = new GenericMenu();
+            stage.BuildContextMenuForStageHeader(menu);
+            if (menu.menuItems.Count > 0)
+                menu.ShowAsContext();
+        }
+
         public void StageHeaderGUI(Rect rect)
         {
             var stage = currentStage;
@@ -139,15 +147,36 @@ namespace UnityEditor
                 StageNavigationManager.instance.NavigateBack(StageNavigationManager.Analytics.ChangeType.NavigateBackViaHierarchyHeaderLeftArrow);
             }
 
-            // Icon and name
+            // Options button
+            Rect optionsButtonRect = new Rect();
+            if (stage.showOptionsButton)
+            {
+                if (GameObjectTreeViewGUI.DoOptionsButton(rect, out optionsButtonRect))
+                {
+                    ShowStageContextMenu(stage);
+                }
+            }
+
+            // Icon and name (and context click on background)
             EditorGUIUtility.SetIconSize(new Vector2(16, 16));
-            float width = TreeViewGUI.Styles.lineBoldStyle.CalcSize(m_StageHeaderContent).x;
+            float contentWidth = TreeViewGUI.Styles.lineBoldStyle.CalcSize(m_StageHeaderContent).x;
             float xStart = Styles.leftArrow.margin.left + Styles.leftArrow.fixedWidth;
-            float space = rect.width;
-            float offsetFromStart = Mathf.Max(xStart, (space - width) / 2);
-            Rect labelRect = new Rect(offsetFromStart, rect.y + 2, rect.width - xStart, 20);
+            float space = (optionsButtonRect.width > 0 ? optionsButtonRect.xMin : rect.width) - xStart;
+            float offsetFromStart = xStart + Mathf.Max(0, (space - contentWidth) / 2);
+            Rect labelRect = new Rect(offsetFromStart, rect.y + 2, space, 20);
+
             if (GUI.Button(labelRect, m_StageHeaderContent, stage.isAssetMissing ? BreadcrumbBar.DefaultStyles.labelBoldMissing : BreadcrumbBar.DefaultStyles.labelBold))
-                EditorGUIUtility.PingObject(AssetDatabase.LoadMainAssetAtPath(stage.assetPath));
+            {
+                Event evt = Event.current;
+                if (evt.button == 0)
+                {
+                    EditorGUIUtility.PingObject(AssetDatabase.LoadMainAssetAtPath(stage.assetPath));
+                }
+                else if (evt.button == 1)
+                {
+                    ShowStageContextMenu(stage);
+                }
+            }
             EditorGUIUtility.SetIconSize(Vector2.zero);
 
             // Version control overlay icons

@@ -154,11 +154,17 @@ namespace UnityEngine.UIElements
 
         private void OnDragExitedEvent(DragExitedEvent evt)
         {
+            if (!useDragEvents)
+                return;
+
             ClearDragAndDropUI();
         }
 
         private void OnDragPerformEvent(DragPerformEvent evt)
         {
+            if (!useDragEvents)
+                return;
+
             m_DragState = DragState.None;
             OnDrop(evt.mousePosition);
 
@@ -168,6 +174,9 @@ namespace UnityEngine.UIElements
 
         private void OnDragUpdate(DragUpdatedEvent evt)
         {
+            if (!useDragEvents)
+                return;
+
             var visualMode = UpdateDrag(evt.mousePosition);
             DragAndDropUtility.dragAndDrop.SetVisualMode(visualMode);
         }

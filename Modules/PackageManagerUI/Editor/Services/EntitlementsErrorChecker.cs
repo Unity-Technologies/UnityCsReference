@@ -8,33 +8,13 @@ using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    [Serializable]
-    internal sealed class EntitlementsErrorChecker : ScriptableSingleton<EntitlementsErrorChecker>
+
+    internal static class EntitlementsErrorChecker
     {
-        public EntitlementsErrorChecker()
+        public static void ManagePackageManagerEntitlementError(UpmClient upmClient)
         {
-            m_IsEditorStartUp = true;
-        }
-
-        [SerializeField]
-        private bool m_IsEditorStartUp;
-
-        [InitializeOnLoadMethod]
-        private static void OpenFirstEntitlementError()
-        {
-            if (!instance.m_IsEditorStartUp)
-                return;
-
-            var servicesContainer = ServicesContainer.instance;
-            var applicationProxy = servicesContainer.Resolve<ApplicationProxy>();
-
-            if (!applicationProxy.isBatchMode && applicationProxy.isUpmRunning)
-            {
-                var upmClient = servicesContainer.Resolve<UpmClient>();
-
-                upmClient.onListOperation += OnListOperation;
-                upmClient.List(true);
-            }
+            upmClient.onListOperation += OnListOperation;
+            upmClient.List(true);
         }
 
         private static void OnListOperation(IOperation operation)
@@ -59,8 +39,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                     {
                         PackageManagerWindow.OpenPackageManager(entitlementErrorPackage.name);
                     }
-
-                    instance.m_IsEditorStartUp = false;
                 };
             }
         }

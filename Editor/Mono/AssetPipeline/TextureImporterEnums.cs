@@ -368,4 +368,18 @@ namespace UnityEditor
         // 32-bit uncompressed, downscaled 2x
         Quality32BitDownscaled = 3
     }
+
+    public enum TextureImporterSwizzle
+    {
+        R = 0,
+        G = 1,
+        B = 2,
+        A = 3,
+        OneMinusR = 4,
+        OneMinusG = 5,
+        OneMinusB = 6,
+        OneMinusA = 7,
+        Zero = 8,
+        One = 9
+    }
 }

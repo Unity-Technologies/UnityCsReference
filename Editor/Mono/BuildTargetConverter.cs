@@ -50,6 +50,8 @@ namespace UnityEditor
                     return RuntimePlatform.Stadia;
                 case BuildTarget.EmbeddedLinux:
                     return RuntimePlatform.EmbeddedLinuxArm64;
+                case BuildTarget.QNX:
+                    return RuntimePlatform.QNXArm64;
                 default:
                     return null;
             }

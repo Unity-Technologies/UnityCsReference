@@ -261,7 +261,10 @@ namespace UnityEngine.VFX
         // updates
         CameraSort                  = Update | 1,
         PerCameraUpdate             = Update | 2,
-        PerCameraSort               = Update | 3,
+        PerCameraSort               = Update | 3, //deprecated (since sortingKeys), here for compatibility
+        PerOutputSort               = Update | 4,
+        GlobalSort                  = Update | 5,
+
 
         // outputs
         ParticlePointOutput         = Output | 0,

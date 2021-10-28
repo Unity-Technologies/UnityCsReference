@@ -148,6 +148,14 @@ namespace UnityEditor.UIElements
 
                     field.RegisterCallback<SerializedPropertyBindEvent>(OnSerializedPropertyBind);
 
+                    field.onValidateValue += newValue =>
+                    {
+                        TValueType cur = value;
+                        desc.write(ref cur, newValue);
+                        var validatedValue = ValidatedValue(cur);
+                        return desc.read(validatedValue);
+                    };
+
                     field.RegisterValueChangedCallback(e =>
                     {
                         TValueType cur = value;

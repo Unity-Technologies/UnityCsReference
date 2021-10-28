@@ -141,5 +141,10 @@ namespace UnityEditor.Presets
         {
             return !new PresetType(target).IsValid();
         }
+
+        public static bool IsEditorTargetAPreset(Object target)
+        {
+            return target is Component comp ? ((int)comp.gameObject.hideFlags == 93) : !AssetDatabase.Contains(target);
+        }
     }
 }

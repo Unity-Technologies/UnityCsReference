@@ -142,7 +142,7 @@ namespace UnityEditor.ShortcutManagement
             m_MenuItemPath = menuItemPath;
 
             Action<ShortcutArguments> menuAction = (args) => { EditorApplication.ExecuteMenuItem(m_MenuItemPath); };
-            m_ShortcutEntry = new ShortcutEntry(new Identifier(Discovery.k_MainMenuShortcutPrefix + m_MenuItemPath), m_KeyCombinations, menuAction, null, ShortcutType.Menu);
+            m_ShortcutEntry = new ShortcutEntry(new Identifier(Discovery.k_MainMenuShortcutPrefix + m_MenuItemPath), m_KeyCombinations, menuAction, null, null, ShortcutType.Menu);
         }
 
         public ShortcutEntry GetShortcutEntry()

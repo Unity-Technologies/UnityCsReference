@@ -36,6 +36,7 @@ namespace UnityEditor.SceneManagement
             public static GUIContent[] contextRenderModeTexts = new[] { EditorGUIUtility.TrTextContent("Normal"), EditorGUIUtility.TrTextContent("Gray"), EditorGUIUtility.TrTextContent("Hidden") };
             public static StageUtility.ContextRenderMode[] contextRenderModeOptions = new[] { StageUtility.ContextRenderMode.Normal, StageUtility.ContextRenderMode.GreyedOut, StageUtility.ContextRenderMode.Hidden };
             public static GUIContent showOverridesLabel = EditorGUIUtility.TrTextContent("Show Overrides", "Visualize overrides from the Prefab instance on the Prefab Asset. Overrides on the root Transform are always visualized.");
+            public static GUIContent showOverridesLabelWithTooManyOverridesTooltip = EditorGUIUtility.TrTextContent("Show Overrides", "Show Overrides are disabled because there are too many overrides to visualize. Overrides on the root Transform are always visualized though.");
 
             static Styles()
             {
@@ -88,6 +89,10 @@ namespace UnityEditor.SceneManagement
         Hash128 m_LastPrefabSourceFileHash;
         bool m_NeedsReloadingWhenReturningToStage;
         bool m_IsAssetMissing;
+        bool m_TemporarilyDisablePatchAllOverridenProperties;
+        const int k_MaxNumberOfOverridesToVisualize = 2000;
+
+        internal static SavedBool s_PatchAllOverriddenProperties = new SavedBool("InContextEditingPatchOverriddenProperties", false);
 
         [System.Serializable]
         struct PatchedProperty
@@ -360,6 +365,8 @@ namespace UnityEditor.SceneManagement
             }
             return false;
         }
+
+        internal override bool showOptionsButton { get { return true; } }
 
         public override string assetPath { get { return m_PrefabAssetPath; } }
 
@@ -684,22 +691,30 @@ namespace UnityEditor.SceneManagement
             }, null);
 
             // Note: openedFromInstance is not necessarily a Prefab root, as it might be a nested Prefab.
-            List<GameObject> instanceAndCorrespondingObjectChain = new List<GameObject>();
+            var instanceAndCorrespondingObjectChain = new List<(GameObject prefabObject, PropertyModification[] mods)>();
             GameObject prefabObject = openedFromInstanceRoot;
+            int numOverrides = 0;
             while (AssetDatabase.GetAssetPath(prefabObject) != assetPath)
             {
                 Assert.IsTrue(PrefabUtility.IsPartOfPrefabInstance(prefabObject));
-                instanceAndCorrespondingObjectChain.Add(prefabObject);
+                PropertyModification[] mods = PrefabUtility.GetPropertyModifications(prefabObject);
+                instanceAndCorrespondingObjectChain.Add((prefabObject, mods));
                 prefabObject = PrefabUtility.GetCorrespondingObjectFromSource(prefabObject);
+                numOverrides += mods.Length;
             }
+
+            // Patching properties is expensive therefore we disable patching when there is an excessive
+            // amount of overrides (case 1370904)
+            m_TemporarilyDisablePatchAllOverridenProperties = numOverrides >= k_MaxNumberOfOverridesToVisualize;
 
             bool onlyPatchRootTransform = !showOverrides;
 
             // Run through same objects, but from innermost out so outer overrides are applied last.
             for (int i = instanceAndCorrespondingObjectChain.Count - 1; i >= 0; i--)
             {
-                prefabObject = instanceAndCorrespondingObjectChain[i];
-                PropertyModification[] mods = PrefabUtility.GetPropertyModifications(prefabObject);
+                prefabObject = instanceAndCorrespondingObjectChain[i].prefabObject;
+                var mods = instanceAndCorrespondingObjectChain[i].mods;
+
                 UnityEngine.Object lastTarget = null;
                 UnityEngine.Object lastTargetInContent = null;
                 SerializedObject lastInstanceTransformSO = null;
@@ -828,12 +843,13 @@ namespace UnityEditor.SceneManagement
             if (m_PatchedProperties.Count == 0)
                 return;
 
+            var modificationsPerTargetInContent = new Dictionary<UnityEngine.Object, List<PropertyModification>>();
             UnityEngine.Object lastTargetInContent = null;
             int lastTargetID = 0;
             for (int i = m_PatchedProperties.Count - 1; i >= 0; i--)
             {
                 PatchedProperty patchedProperty = m_PatchedProperties[i];
-                PropertyModification mod = patchedProperty.modification;
+                PropertyModification modification = patchedProperty.modification;
                 UnityEngine.Object targetInContent = patchedProperty.targetInContent;
 
                 // If an object was destroyed, but later recreated with undo or redo, we have to recreate the reference to it.
@@ -857,16 +873,34 @@ namespace UnityEditor.SceneManagement
                     lastTargetID = targetID;
                 }
 
+                // Group modifications per target for batch apply
                 if (targetInContent != null)
-                    mod.ApplyToObject(targetInContent);
+                {
+                    List<PropertyModification> list;
+                    if (!modificationsPerTargetInContent.TryGetValue(targetInContent, out list))
+                    {
+                        list = new List<PropertyModification>();
+                        modificationsPerTargetInContent[targetInContent] = list;
+                    }
+                    list.Add(modification);
+                }
+
 
                 // If GameObject.active is an override, applying the value via PropertyModification
                 // is not sufficient to actually change active state of the object,
                 // nor is calling AwakeFromLoad(kAnimationAwakeFromLoad) afterwards,
                 // so explicitly set it here.
                 GameObject targetGameObject = targetInContent as GameObject;
-                if (targetGameObject != null && mod.propertyPath == "m_IsActive")
-                    targetGameObject.SetActive(mod.value != "0");
+                if (targetGameObject != null && modification.propertyPath == "m_IsActive")
+                    targetGameObject.SetActive(modification.value != "0");
+            }
+
+            // Batch apply modifications per object (to optimize for large objects, case 1370904)
+            foreach (var kvp in modificationsPerTargetInContent)
+            {
+                var targetInContent = kvp.Key;
+                var mods = kvp.Value;
+                PropertyModification.ApplyPropertyModificationsToObject(targetInContent, mods.ToArray());
             }
 
             StageUtility.CallAwakeFromLoadOnSubHierarchy(m_PrefabContentsRoot);
@@ -1468,6 +1502,12 @@ namespace UnityEditor.SceneManagement
             return SavePrefab();
         }
 
+        internal override void DiscardChanges()
+        {
+            if (hasUnsavedChanges)
+                ReloadStage();
+        }
+
         // Returns true if we should continue saving
         bool CheckRenamedPrefabRootWhenSaving(bool showCancelButton)
         {
@@ -1821,18 +1861,20 @@ namespace UnityEditor.SceneManagement
             }
         }
 
-        internal static SavedBool s_PatchAllOverriddenProperties = new SavedBool("InContextEditingPatchOverriddenProperties", false);
-
-        internal static bool showOverrides
+        internal bool showOverrides
         {
             get
             {
-                return s_PatchAllOverriddenProperties.value;
+                return s_PatchAllOverriddenProperties.value && !m_TemporarilyDisablePatchAllOverridenProperties;
             }
             set
             {
+                if (m_TemporarilyDisablePatchAllOverridenProperties)
+                    return;
+
                 if (value == s_PatchAllOverriddenProperties.value)
                     return;
+
                 s_PatchAllOverriddenProperties.value = value;
 
                 var stageHistory = StageNavigationManager.instance.stageHistory;
@@ -1855,10 +1897,11 @@ namespace UnityEditor.SceneManagement
 
         void VisualizeOverridesToggle()
         {
-            using (new EditorGUI.DisabledScope(!IsOpenedFromInstanceObjectValid()))
+            using (new EditorGUI.DisabledScope(!IsOpenedFromInstanceObjectValid() || m_TemporarilyDisablePatchAllOverridenProperties))
             {
                 EditorGUI.BeginChangeCheck();
-                bool patchAll = GUILayout.Toggle(showOverrides, Styles.showOverridesLabel);
+                var content = m_TemporarilyDisablePatchAllOverridenProperties ? Styles.showOverridesLabelWithTooManyOverridesTooltip : Styles.showOverridesLabel;
+                bool patchAll = GUILayout.Toggle(showOverrides, content);
                 if (EditorGUI.EndChangeCheck())
                     showOverrides = patchAll;
             }

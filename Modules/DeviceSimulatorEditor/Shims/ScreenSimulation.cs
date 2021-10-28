@@ -11,6 +11,10 @@ namespace UnityEditor.DeviceSimulation
 {
     internal class ScreenSimulation : ScreenShimBase
     {
+        // Reasonable maximum resolution, tested on an Android device and game crashes when set beyond
+        private const int k_MaxResolution = 8192;
+
+        private SimulationPlayerSettings m_PlayerSettings;
         private DeviceInfo m_DeviceInfo;
         private ScreenData m_Screen;
 
@@ -21,17 +25,12 @@ namespace UnityEditor.DeviceSimulation
         private Dictionary<ScreenOrientation, bool> m_AllowedAutoRotation;
         private Dictionary<ScreenOrientation, OrientationData> m_SupportedOrientations;
 
-        private float m_DpiRatio = 1;
-
         private Rect m_CurrentSafeArea;
         private Rect[] m_CurrentCutouts;
 
-        private bool m_WasResolutionSet = false;
+        private bool m_WasResolutionSet;
         private int m_CurrentWidth;
         private int m_CurrentHeight;
-
-        public int Width => m_CurrentWidth;
-        public int Height => m_CurrentHeight;
 
         private bool m_IsFullScreen;
         public Vector4 Insets { get; private set; }
@@ -80,23 +79,24 @@ namespace UnityEditor.DeviceSimulation
 
         public ScreenSimulation(DeviceInfo device, SimulationPlayerSettings playerSettings, int screenIndex)
         {
+            m_PlayerSettings = playerSettings;
             m_DeviceInfo = device;
             m_Screen = device.screens[screenIndex];
 
             FindSupportedOrientations();
 
             m_AllowedAutoRotation = new Dictionary<ScreenOrientation, bool>();
-            m_AllowedAutoRotation.Add(ScreenOrientation.Portrait, playerSettings.allowedPortrait);
-            m_AllowedAutoRotation.Add(ScreenOrientation.PortraitUpsideDown, playerSettings.allowedPortraitUpsideDown);
-            m_AllowedAutoRotation.Add(ScreenOrientation.LandscapeLeft, playerSettings.allowedLandscapeLeft);
-            m_AllowedAutoRotation.Add(ScreenOrientation.LandscapeRight, playerSettings.allowedLandscapeRight);
+            m_AllowedAutoRotation.Add(ScreenOrientation.Portrait, m_PlayerSettings.allowedPortrait);
+            m_AllowedAutoRotation.Add(ScreenOrientation.PortraitUpsideDown, m_PlayerSettings.allowedPortraitUpsideDown);
+            m_AllowedAutoRotation.Add(ScreenOrientation.LandscapeLeft, m_PlayerSettings.allowedLandscapeLeft);
+            m_AllowedAutoRotation.Add(ScreenOrientation.LandscapeRight, m_PlayerSettings.allowedLandscapeRight);
 
             // Set the full screen mode.
-            m_IsFullScreen = !m_DeviceInfo.IsAndroidDevice() || playerSettings.androidStartInFullscreen;
-            m_IsRenderingOutsideSafeArea = !m_DeviceInfo.IsAndroidDevice() || playerSettings.androidRenderOutsideSafeArea;
+            m_IsFullScreen = !m_DeviceInfo.IsAndroidDevice() || m_PlayerSettings.androidStartInFullscreen;
+            m_IsRenderingOutsideSafeArea = !m_DeviceInfo.IsAndroidDevice() || m_PlayerSettings.androidRenderOutsideSafeArea;
 
             // Calculate the right orientation.
-            var settingOrientation = SimulatorUtilities.ToScreenOrientation(playerSettings.defaultOrientation);
+            var settingOrientation = SimulatorUtilities.ToScreenOrientation(m_PlayerSettings.defaultOrientation);
             if (settingOrientation == ScreenOrientation.AutoRotation)
             {
                 m_AutoRotation = true;
@@ -114,23 +114,16 @@ namespace UnityEditor.DeviceSimulation
                 ForceNewOrientation(m_SupportedOrientations.Keys.ToArray()[0]);
             }
 
-            // Calculate the right resolution.
-            var initWidth = m_Screen.width;
-            var initHeight = m_Screen.height;
-            if (playerSettings.resolutionScalingMode == ResolutionScalingMode.FixedDpi && playerSettings.targetDpi < m_Screen.dpi)
-            {
-                m_DpiRatio = playerSettings.targetDpi / m_Screen.dpi;
-                initWidth = (int)(initWidth * m_DpiRatio);
-                initHeight = (int)(initHeight * m_DpiRatio);
-            }
-            m_CurrentWidth = IsRenderingLandscape ? initHeight : initWidth;
-            m_CurrentHeight = IsRenderingLandscape ? initWidth : initHeight;
+            InitResolution();
+            ShimManager.UseShim(this);
+        }
 
+        private void InitResolution()
+        {
+            m_WasResolutionSet = false;
             CalculateInsets();
             CalculateResolutionWithInsets(out m_CurrentWidth, out m_CurrentHeight);
             CalculateSafeAreaAndCutouts();
-
-            ShimManager.UseShim(this);
         }
 
         public void ChangeScreen(int screenIndex)
@@ -385,12 +378,22 @@ namespace UnityEditor.DeviceSimulation
 
         private void SetResolution(int width, int height)
         {
-            // For now limit width & height from 1 to 9999.
-            if (width < 1 || width > 9999 || height < 1 || height > 9999)
+            if (width > k_MaxResolution || height > k_MaxResolution || width < 0 || height < 0)
             {
-                Debug.LogError("Failed to change resolution. Make sure that both width and height are between 1 and 9999.");
+                Debug.LogError($"Failed to change resolution. Make sure that both width and height are at least 0 and less than {k_MaxResolution}.");
                 return;
             }
+
+            if (width == 0 && height == 0)
+            {
+                InitResolution();
+                return;
+            }
+
+            if (width == 0)
+                width = 1;
+            else if (height == 0)
+                height = 1;
 
             m_CurrentWidth = width;
             m_CurrentHeight = height;
@@ -409,8 +412,12 @@ namespace UnityEditor.DeviceSimulation
             var widthInOrientation = screenWidthInOrientation - insetsInOrientation.x - insetsInOrientation.z;
             var heightInOrientation = screenHeightInOrientation - insetsInOrientation.y - insetsInOrientation.w;
 
-            width = Mathf.RoundToInt(widthInOrientation * m_DpiRatio);
-            height = Mathf.RoundToInt(heightInOrientation * m_DpiRatio);
+            var dpiRatio = 1f;
+            if (m_PlayerSettings.resolutionScalingMode == ResolutionScalingMode.FixedDpi && m_PlayerSettings.targetDpi < m_Screen.dpi)
+                dpiRatio = m_PlayerSettings.targetDpi / m_Screen.dpi;
+
+            width = Mathf.RoundToInt(widthInOrientation * dpiRatio);
+            height = Mathf.RoundToInt(heightInOrientation * dpiRatio);
         }
 
         public void Enable()
@@ -429,6 +436,11 @@ namespace UnityEditor.DeviceSimulation
         }
 
         #region ShimBase Overrides
+
+        public override int width => m_CurrentWidth;
+
+        public override int height => m_CurrentHeight;
+
         public override Rect safeArea => m_CurrentSafeArea;
 
         public override Rect[] cutouts => m_CurrentCutouts;

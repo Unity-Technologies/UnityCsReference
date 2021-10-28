@@ -821,7 +821,7 @@ namespace UnityEditor
                 || material == AssetDatabase.GetBuiltinExtraResource<Material>("Default-Terrain-Standard.mat")
                 || material == AssetDatabase.GetBuiltinExtraResource<Material>("Default-Terrain-Diffuse.mat")
                 || material == AssetDatabase.GetBuiltinExtraResource<Material>("Default-Terrain-Specular.mat"))
-                && !Presets.PresetEditor.IsPreset(target);
+                && !Presets.Preset.IsEditorTargetAPreset(target);
         }
 
         public void OnEnable()

@@ -20,8 +20,8 @@ namespace UnityEditor.EditorTools
         internal UnityObject m_Target;
 
         public IEnumerable<UnityObject> targets => m_Targets != null && m_Targets.Length > 0
-        ? m_Targets
-        : Selection.objects;
+            ? m_Targets
+            : Selection.objects;
 
         public UnityObject target => m_Target == null ? Selection.activeObject : m_Target;
 

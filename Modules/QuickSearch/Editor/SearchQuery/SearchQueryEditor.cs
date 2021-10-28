@@ -19,6 +19,7 @@ namespace UnityEditor.Search
         private SerializedProperty m_DescriptionProperty;
         private SerializedProperty m_TextProperty;
         private SerializedProperty m_ProvidersProperty;
+        private SerializedProperty m_IsSearchTemplateProperty;
         private ReorderableList m_ProvidersList;
         private List<string> m_EnabledProviderIds;
         private bool m_ProviderFoldout;
@@ -29,6 +30,7 @@ namespace UnityEditor.Search
             m_DescriptionProperty = serializedObject.FindProperty(nameof(SearchQueryAsset.description));
             m_TextProperty = serializedObject.FindProperty(nameof(SearchQueryAsset.text));
             m_ProvidersProperty = serializedObject.FindProperty(nameof(SearchQueryAsset.providerIds));
+            m_IsSearchTemplateProperty = serializedObject.FindProperty("m_IsSearchTemplate");
 
             PopulateValidEnabledProviderIds();
             m_ProviderFoldout = EditorPrefs.GetBool("SearchQuery.ShowProviderList", false);
@@ -151,6 +153,7 @@ namespace UnityEditor.Search
                     }
 
                     EditorGUILayout.PropertyField(m_DescriptionProperty);
+                    EditorGUILayout.PropertyField(m_IsSearchTemplateProperty);
                 }
                 EditorGUILayout.EndVertical();
             }

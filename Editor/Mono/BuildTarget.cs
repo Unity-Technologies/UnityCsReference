@@ -133,6 +133,8 @@ namespace UnityEditor
 
         EmbeddedLinux = 45,
 
+        QNX = 46,
+
         // obsolete identifiers. We're using different values so that ToString() works.
         [System.Obsolete("Use iOS instead (UnityUpgradable) -> iOS", true)]
         iPhone = -1,

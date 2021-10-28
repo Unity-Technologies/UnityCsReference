@@ -27,7 +27,10 @@ namespace UnityEngine.Search
         TableView = 1 << 18,
         EnableSearchQuery = 1 << 19,
         DisableInspectorPreview = 1 << 20,
-        DisableSavedSearchQuery = 1 << 21
+        DisableSavedSearchQuery = 1 << 21,
+        OpenInBuilderMode = 1 << 22,
+        OpenInTextMode = 1 << 23,
+        DisableBuilderModeToggle = 1 << 24
     }
 
     [AttributeUsage(AttributeTargets.Field)]

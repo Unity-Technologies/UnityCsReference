@@ -478,7 +478,26 @@ namespace UnityEditor.UIElements.StyleSheets
                 }
                 else
                 {
-                    m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidURIProjectAssetType, string.Format(glossary.invalidAssetType, asset == null ? "null" : asset.GetType().Name, projectRelativePath), m_CurrentLine);
+                    // In case of error, we still want to call AddValue, with parameters to indicate the problem, in order
+                    // to keep the full layout from being discarded. We also add appropriate warnings to explain to the
+                    // user what is wrong.
+                    if (asset == null)
+                    {
+                        // Asset is actually missing OR we couldn't load it for some reason; this should result in
+                        // response.result != URIValidationResult.OK (above) but if assets are deleted while Unity is
+                        // already open, we fall in here instead.
+                        var(_, message) = ConvertErrorCode(URIValidationResult.InvalidURIProjectAssetPath);
+
+                        m_Builder.AddValue(path, StyleValueType.MissingAssetReference);
+                        m_Errors.AddValidationWarning(string.Format(message, path), m_CurrentLine);
+                    }
+                    else
+                    {
+                         // Asset is of an unsupported type. We still add a value, of type invalid, in order to keep the
+                         // layout from breaking entirely.
+                        m_Builder.AddValue(path, StyleValueType.Invalid);
+                        m_Errors.AddSemanticWarning(StyleSheetImportErrorCode.InvalidURIProjectAssetType, string.Format(glossary.invalidAssetType, asset.GetType().Name, projectRelativePath), m_CurrentLine);
+                    }
                 }
             }
         }

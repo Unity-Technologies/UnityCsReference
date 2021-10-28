@@ -1413,22 +1413,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        public void ApplyPropertyAnimation(VisualElement ve, StylePropertyId id, Cursor newValue)
-        {
-            switch (id)
-            {
-                case StylePropertyId.Cursor:
-                    if (rareData.Read().cursor != newValue)
-                    {
-                        rareData.Write().cursor = newValue;
-                    }
-
-                    break;
-                default:
-                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Cursor' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
-            }
-        }
-
         public void ApplyPropertyAnimation(VisualElement ve, StylePropertyId id, TextShadow newValue)
         {
             switch (id)
@@ -1568,8 +1552,6 @@ namespace UnityEngine.UIElements
                     return element.styleAnimation.Start(StylePropertyId.Bottom, oldStyle.layoutData.Read().bottom, newStyle.layoutData.Read().bottom, durationMs, delayMs, easingCurve);
                 case StylePropertyId.Color:
                     return element.styleAnimation.Start(StylePropertyId.Color, oldStyle.inheritedData.Read().color, newStyle.inheritedData.Read().color, durationMs, delayMs, easingCurve);
-                case StylePropertyId.Cursor:
-                    return element.styleAnimation.Start(StylePropertyId.Cursor, oldStyle.rareData.Read().cursor, newStyle.rareData.Read().cursor, durationMs, delayMs, easingCurve);
                 case StylePropertyId.Display:
                     return element.styleAnimation.StartEnum(StylePropertyId.Display, (int)oldStyle.layoutData.Read().display, (int)newStyle.layoutData.Read().display, durationMs, delayMs, easingCurve);
                 case StylePropertyId.Flex:
@@ -1970,11 +1952,6 @@ namespace UnityEngine.UIElements
             {
                 ref readonly var oldData = ref oldStyle.rareData.Read();
                 ref readonly var newData = ref newStyle.rareData.Read();
-                if (oldData.cursor != newData.cursor)
-                {
-                    result |= element.styleAnimation.Start(StylePropertyId.Cursor, oldData.cursor, newData.cursor, durationMs, delayMs, easingCurve);
-                }
-
                 if (oldData.textOverflow != newData.textOverflow)
                 {
                     result |= element.styleAnimation.StartEnum(StylePropertyId.TextOverflow, (int)oldData.textOverflow, (int)newData.textOverflow, durationMs, delayMs, easingCurve);

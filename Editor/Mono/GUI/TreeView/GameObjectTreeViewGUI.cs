@@ -485,26 +485,15 @@ namespace UnityEditor
 
         protected float DoAdditionalSceneHeaderGUI(GameObjectTreeViewItem goItem, Rect rect)
         {
-            // Options button
-            const float optionsButtonWidth = 16f;
-            const float optionsButtonHeight = 16f;
             const float margin = 4f;
-
-            Rect buttonRect = new Rect(rect.xMax - optionsButtonWidth - margin, rect.y + (rect.height - optionsButtonHeight) * 0.5f, optionsButtonWidth, rect.height);
-
-            if (Event.current.type == EventType.Repaint)
-                GameObjectStyles.optionsButtonStyle.Draw(buttonRect, false, false, false, false);
-
-            // We want larger click area than the button icon
-            buttonRect.y = rect.y;
-            buttonRect.height = rect.height;
-            buttonRect.width = 24f;
-            if (EditorGUI.DropdownButton(buttonRect, GUIContent.none, FocusType.Passive,  GUIStyle.none))
+            Rect buttonRect;
+            if (DoOptionsButton(rect, out buttonRect))
             {
                 // Ensure item is selected before using context menu (menu logic is based on selection)
                 m_TreeView.SelectionClick(goItem, true);
                 m_TreeView.contextClickItemCallback(goItem.id);
             }
+
             float availableRectLeft = buttonRect.xMin;
             if (null != OnPostHeaderGUI)
             {
@@ -518,6 +507,24 @@ namespace UnityEditor
             }
 
             return availableRectLeft;
+        }
+
+        internal static bool DoOptionsButton(Rect rect, out Rect buttonRect)
+        {
+            const float optionsButtonWidth = 16f;
+            const float optionsButtonHeight = 16f;
+            const float margin = 4f;
+
+            buttonRect = new Rect(rect.xMax - optionsButtonWidth - margin, rect.y + (rect.height - optionsButtonHeight) * 0.5f, optionsButtonWidth, rect.height);
+
+            if (Event.current.type == EventType.Repaint)
+                GameObjectStyles.optionsButtonStyle.Draw(buttonRect, false, false, false, false);
+
+            // We want larger click area than the button icon
+            buttonRect.y = rect.y;
+            buttonRect.height = rect.height;
+            buttonRect.width = 24f;
+            return EditorGUI.DropdownButton(buttonRect, GUIContent.none, FocusType.Passive, GUIStyle.none);
         }
 
         void EnsureLazyInitialization(GameObjectTreeViewItem item)

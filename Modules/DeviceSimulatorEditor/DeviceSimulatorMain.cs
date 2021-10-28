@@ -35,7 +35,7 @@ namespace UnityEditor.DeviceSimulation
         public DeviceInfoAsset[] devices => m_Devices;
         public DeviceInfoAsset currentDevice => m_Devices[m_DeviceIndex];
         public Vector2 mousePositionInUICoordinates =>
-            m_TouchInput.isPointerInsideDeviceScreen ? new Vector2(m_TouchInput.pointerPosition.x, m_ScreenSimulation.Height - m_TouchInput.pointerPosition.y) : Vector2.negativeInfinity;
+            m_TouchInput.isPointerInsideDeviceScreen ? new Vector2(m_TouchInput.pointerPosition.x, m_ScreenSimulation.height - m_TouchInput.pointerPosition.y) : Vector2.negativeInfinity;
 
         private int m_DeviceIndex;
         public int deviceIndex
@@ -64,6 +64,7 @@ namespace UnityEditor.DeviceSimulation
             m_TouchInput = new TouchEventManipulator(m_DeviceSimulator);
             m_UserInterface = new UserInterfaceController(this, rootVisualElement, serializedState, m_PluginController, m_TouchInput);
             m_UserInterface.OnScreenToggled += HandleScreenChange;
+            m_UserInterface.DeviceView.onGUIHandler += HandleInputEvent;
             InitSimulation();
         }
 
@@ -193,22 +194,23 @@ namespace UnityEditor.DeviceSimulation
             m_UserInterface.SetScreenToggleName(string.IsNullOrEmpty(currentScreen.presentation.name) ? $"Screen {m_ScreenIndex + 1}" : currentScreen.presentation.name);
         }
 
-        public void HandleInputEvent()
+        private void HandleInputEvent()
         {
-            if (!EditorApplication.isPlaying || EditorApplication.isPaused)
+            if (!EditorApplication.isPlaying ||
+                EditorApplication.isPaused ||
+                Event.current.type == EventType.Repaint ||
+                Event.current.type == EventType.Layout ||
+                Event.current.type == EventType.Used ||
+                Event.current.rawType == EventType.MouseDown && !m_TouchInput.isPointerInsideDeviceScreen)
                 return;
 
             // The following code makes IMGUI work in-game, it's mostly copied from the GameView class.
-
-            // MouseDown events outside game view rect are not send to scripts but MouseUp events are (see below)
-            if (Event.current.rawType == EventType.MouseDown && !m_TouchInput.isPointerInsideDeviceScreen)
-                return;
 
             var editorMousePosition = Event.current.mousePosition;
 
             // If this is not set IMGUI doesn't know when you drag cursor from one element to another.
             // For example you could press the mouse on a button then drag the cursor onto a TextField, release the mouse and the button would still get pressed.
-            Event.current.mousePosition = new Vector2(m_TouchInput.pointerPosition.x, m_ScreenSimulation.Height - m_TouchInput.pointerPosition.y);
+            Event.current.mousePosition = new Vector2(m_TouchInput.pointerPosition.x, m_ScreenSimulation.height - m_TouchInput.pointerPosition.y);
 
             // This sends keyboard events to input systems and UI
             EditorGUIUtility.QueueGameViewInputEvent(Event.current);

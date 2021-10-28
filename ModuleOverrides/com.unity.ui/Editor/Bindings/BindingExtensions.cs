@@ -1598,7 +1598,14 @@ namespace UnityEditor.UIElements.Bindings
                 return;
             }
 
-            field.value = lastValue;
+            if (field is BaseField<TValue> baseField)
+            {
+                baseField.SetValueWithoutValidation(lastValue);
+            }
+            else
+            {
+                field.value = lastValue;
+            }
         }
     }
     // specific enum version that binds on the index property of the BaseField<Enum>

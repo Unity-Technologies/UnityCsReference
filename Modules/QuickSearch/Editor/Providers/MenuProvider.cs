@@ -42,9 +42,6 @@ namespace UnityEditor.Search.Providers
             queryEngine.AddFilter("id", m => m.path);
             queryEngine.SetSearchDataCallback(m => m.words, s => Utils.FastToLower(s), StringComparison.Ordinal);
 
-            queryEngine.SetNestedQueryHandler((q, f) => q.Split(',').Select(w => w.Trim()));
-            queryEngine.SetFilterNestedQueryTransformer<string, string>("id", s => s);
-
             debounce = Delayer.Debounce(_ => TriggerBackgroundUpdate(itemNames, shortcuts));
 
             Menu.menuChanged -= OnMenuChanged;
@@ -80,7 +77,8 @@ namespace UnityEditor.Search.Providers
                     return item.description;
                 },
 
-                fetchThumbnail = (item, context) => Icons.shortcut
+                fetchThumbnail = (item, context) => Icons.shortcut,
+                fetchPropositions = (context, options) => FetchPropositions(context, options)
             };
         }
 
@@ -158,6 +156,14 @@ namespace UnityEditor.Search.Providers
             return $"{menuName} ({shortcutBinding})";
         }
 
+        static IEnumerable<SearchProposition> FetchPropositions(SearchContext context, SearchPropositionOptions options)
+        {
+            if (!options.flags.HasAny(SearchPropositionFlags.QueryBuilder))
+                yield break;
+
+            yield return new SearchProposition(category: null, "Menu Path", "id:create/", "Filter by menu path.");
+        }
+
         [SearchActionsProvider]
         internal static IEnumerable<SearchAction> ActionHandlers()
         {
@@ -182,7 +188,7 @@ namespace UnityEditor.Search.Providers
         [Shortcut("Help/Search/Menu")]
         internal static void OpenQuickSearch()
         {
-            var qs = QuickSearch.OpenWithContextualProvider(type, Settings.type, HelpProvider.type);
+            var qs = QuickSearch.OpenWithContextualProvider(type, Settings.type);
             qs.itemIconSize = 1; // Open in list view by default.
         }
 

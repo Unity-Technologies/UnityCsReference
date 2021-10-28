@@ -113,7 +113,7 @@ namespace UnityEditor
 
         internal Texture m_SelectedObjectIcon = null;
 
-        LocalGroup m_LocalAssets;
+        protected LocalGroup m_LocalAssets;
 
         // List of all available groups
         List<Group> m_Groups;
@@ -341,7 +341,7 @@ namespace UnityEditor
         public float m_RightMargin = 10f;
         public float m_LeftMargin = 10f;
 
-        public void OnGUI(Rect position, int keyboardControlID)
+        public virtual void OnGUI(Rect position, int keyboardControlID)
         {
             s_VCEnabled = VersionControlUtils.isVersionControlConnected;
 
@@ -643,7 +643,7 @@ namespace UnityEditor
             SetSelection(instanceIDs.ToArray(), false);
         }
 
-        void SetSelection(int[] selectedInstanceIDs, bool doubleClicked)
+        protected void SetSelection(int[] selectedInstanceIDs, bool doubleClicked)
         {
             InitSelection(selectedInstanceIDs);
 

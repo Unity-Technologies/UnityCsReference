@@ -5,9 +5,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.UIElements;
+using UnityEditor.UIElements.Bindings;
 using UnityEditorInternal;
 using UnityEngine;
-using Object = UnityEngine.Object;
+using UnityEngine.UIElements;
+using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor.Presets
 {
@@ -26,6 +29,11 @@ namespace UnityEditor.Presets
             public static GUIContent enableProperty = EditorGUIUtility.TrTextContent("Include Property");
             public static GUIContent disableProperty = EditorGUIUtility.TrTextContent("Exclude Property");
 
+            public static readonly string excludedUssClassName = "unity-binding--preset-ignore";
+            public static readonly string excludedBarName = "unity-binding-preset-ignore-bar";
+            public static readonly string excludedBarContainerName = "unity-preset-override-bars-container";
+            public static readonly string excludedBarUssClassName = "unity-binding__preset-ignore-bar";
+
             static Style()
             {
                 inspectorBig.padding.bottom -= 1;
@@ -35,162 +43,211 @@ namespace UnityEditor.Presets
         class ReferenceCount
         {
             public int count;
-            public Object reference;
+            public UnityObject reference;
         }
-
         static Dictionary<int, ReferenceCount> s_References = new Dictionary<int, ReferenceCount>();
-
         List<int> m_PresetsInstanceIds = new List<int>();
-        bool m_DisplayErrorPreset;
-        string m_SelectedPresetTypeName;
-        Dictionary<string, List<Object>> m_InspectedTypes = new Dictionary<string, List<Object>>();
 
         Editor m_InternalEditor = null;
-        string m_NotSupportedEditorName = null;
-        Texture2D m_UnsupportedIcon;
 
-        internal static bool IsPreset(Object obj)
+        string m_PresetTypeName;
+        string m_HeaderTitle;
+
+        string[] m_ExcludedProperties;
+
+        string m_NotSupportedEditorName = null;
+        Texture2D m_UnsupportedIcon = null;
+
+        public override VisualElement CreateInspectorGUI()
         {
-            return obj is Component ? ((int)(obj as Component).gameObject.hideFlags == 93) : !AssetDatabase.Contains(obj);
+            var root = new VisualElement();
+
+            if (target is Preset p && !p.IsValid())
+            {
+                root.Add(new HelpBox("Unable to load this Preset, the type is not supported.", HelpBoxMessageType.Error));
+            }
+            else
+            {
+                var label = new TextField();
+                label.label = Style.presetType.text;
+                label.tooltip = Style.presetType.tooltip;
+                label.value = m_PresetTypeName;
+                label.isReadOnly = true;
+                root.Add(label);
+            }
+
+            // This is the current workaround to track this property change.
+            var hiddenField = new PropertyField(serializedObject.FindProperty("m_ExcludedProperties"));
+            hiddenField.style.display = DisplayStyle.None;
+            hiddenField.RegisterCallback<ChangeEvent<string>>(evt => UpdateVisualBindings());
+            hiddenField.RegisterCallback<ChangeEvent<int>>(evt => UpdateVisualBindings());
+            //TODO: Better step one: use RegisterValueChangeCallback when it's being reported for parent properties and not only children
+            //hiddenField.RegisterValueChangeCallback(prop => UpdateVisualBindings()); // Looks like a bug, need to be reported
+            root.Add(hiddenField);
+            //TODO: Better step two: not using a hidden field, just track the PropertyValue from the root element.
+            //BindingExtensions.TrackPropertyValue(root, serializedObject.FindProperty("m_ExcludedProperties"), so => UpdateVisualBindings()); // throwing error because it only works on leaf properties.
+
+            var innerRoot = new VisualElement();
+            // TODO: we should ideally be able to get those values from the InspectorElement,
+            // but I'm not sure if that's possible at this point.
+            innerRoot.style.marginLeft = -15;
+            innerRoot.style.marginRight = -6;
+            innerRoot.style.marginTop = 4;
+            root.Add(innerRoot);
+
+            if (m_InternalEditor != null)
+            {
+                VisualElement internalInspector = null;
+                if (PropertyEditor.IsMultiEditingSupported(m_InternalEditor, m_InternalEditor.target,
+                    InspectorMode.Normal))
+                {
+                    internalInspector = new InspectorElement(m_InternalEditor);
+                }
+                else
+                {
+                    internalInspector = new IMGUIContainer(() => GUILayout.Label("Multi-object editing not supported.", EditorStyles.helpBox));
+                }
+
+                if (m_InternalEditor.target is Component)
+                {
+                    innerRoot.Add(new IMGUIContainer(() =>
+                    {
+                        bool wasVisible = InternalEditorUtility.GetIsInspectorExpanded(m_InternalEditor.target);
+                        bool isVisible = EditorGUILayout.InspectorTitlebar(wasVisible, m_InternalEditor);
+                        if (isVisible != wasVisible)
+                        {
+                            internalInspector.style.display = isVisible ? DisplayStyle.Flex : DisplayStyle.None;
+                            InternalEditorUtility.SetIsInspectorExpanded(m_InternalEditor.target, isVisible);
+                        }
+                    }));
+                }
+                else
+                {
+                    innerRoot.Add(new IMGUIContainer(() =>
+                    {
+                        EditorGUILayout.BeginVertical();
+                        m_InternalEditor.DrawHeader();
+                        EditorGUILayout.EndVertical();
+                    }));
+                }
+
+                innerRoot.Add(internalInspector);
+                internalInspector.TrackSerializedObjectValue(m_InternalEditor.serializedObject, SaveTargetChangesToPreset);
+            }
+            else if (!string.IsNullOrEmpty(m_NotSupportedEditorName))
+            {
+                var container = new IMGUIContainer(DrawUnsupportedInspector);
+                innerRoot.Add(container);
+            }
+
+            return root;
+        }
+
+        void UpdateVisualBindings()
+        {
+            var newExclusion = ((Preset)target).excludedProperties;
+            var changes = new HashSet<string>(newExclusion.Except(m_ExcludedProperties).Concat(m_ExcludedProperties.Except(newExclusion)));
+            var oldBind = new Dictionary<string, VisualElement>(m_BoundElements);
+            foreach (var boundElement in oldBind)
+            {
+                if (boundElement.Value is IBindable bindable)
+                {
+                    if (!(bindable.binding is SerializedObjectBindingBase binding) || binding.boundProperty == null)
+                        continue;
+
+                    var key = boundElement.Key;
+                    while (!string.IsNullOrEmpty(key))
+                    {
+                        if (changes.Contains(key))
+                        {
+                            BindingsStyleHelpers.UpdateElementStyle(boundElement.Value, binding.boundProperty);
+                            break;
+                        }
+
+                        var index = key.LastIndexOf('.');
+                        key = index > 0 ? key.Substring(0, index) : null;
+                    }
+                }
+            }
+
+            m_ExcludedProperties = newExclusion;
+        }
+
+        void SaveTargetChangesToPreset(SerializedObject o)
+        {
+            serializedObject.ApplyModifiedProperties();
+            for (int i = 0; i < m_InternalEditor.targets.Length; i++)
+            {
+                ((Preset)targets[i]).UpdateProperties(m_InternalEditor.targets[i]);
+            }
+            serializedObject.Update();
         }
 
         void OnEnable()
         {
-            m_InspectedTypes.Clear();
-            foreach (var o in targets)
+            var first = (Preset)target;
+            bool isValidAndAllSame = true;
+            m_PresetTypeName = first.GetTargetFullTypeName();
+            m_HeaderTitle = $"{m_PresetTypeName} Presets ({targets.Length})";
+
+            foreach (var preset in targets.Cast<Preset>().Skip(1))
             {
-                var preset = (Preset)o;
-                string type = preset.GetTargetFullTypeName();
-                if (!m_InspectedTypes.ContainsKey(type))
+                var type = preset.GetTargetFullTypeName();
+                if (type != m_PresetTypeName)
                 {
-                    m_InspectedTypes.Add(type, new List<Object>());
-                }
-                m_InspectedTypes[type].Add(o);
-            }
-            if (m_InspectedTypes.Count == 1)
-            {
-                var preset = (Preset)target;
-                if (preset.IsValid())
-                {
-                    m_SelectedPresetTypeName = preset.GetTargetFullTypeName();
-                    GenerateInternalEditor();
-                }
-                else
-                {
-                    m_SelectedPresetTypeName = "Invalid";
-                    m_DisplayErrorPreset = true;
+                    isValidAndAllSame = false;
+                    m_PresetTypeName = EditorGUI.mixedValueContent.text;
+                    m_HeaderTitle = $"Multiple Types Presets ({targets.Length})";
+                    break;
                 }
             }
 
+            if (isValidAndAllSame)
+            {
+                GenerateInternalEditor();
+            }
+
+            m_ExcludedProperties = first.excludedProperties;
+
+            //TODO: Bind VisualElement root of the second editor to a callback, see last TODO inside CreateInspectorGUI
+            BindingsStyleHelpers.updateBindingStateStyle += UpdatePropertyStyle;
             EditorGUIUtility.contextualPropertyMenu += DisableEnableProperty;
             EditorGUIUtility.beginProperty += BeginProperty;
         }
 
         void OnDisable()
         {
+            DestroyInternalEditor();
+
             EditorGUIUtility.beginProperty -= BeginProperty;
             EditorGUIUtility.contextualPropertyMenu -= DisableEnableProperty;
-
-            DestroyInternalEditor();
-        }
-
-        internal override void OnForceReloadInspector()
-        {
-            base.OnForceReloadInspector();
-            m_InternalEditor?.OnForceReloadInspector();
-        }
-
-        public override void OnInspectorGUI()
-        {
-            if (m_DisplayErrorPreset)
-            {
-                EditorGUILayout.HelpBox("Unable to load this Preset, the type is not supported.", MessageType.Error);
-            }
-            else
-            {
-                DrawPresetData();
-            }
-        }
-
-        void DrawPresetData()
-        {
-            string presetType = m_InspectedTypes.Count > 1 ? EditorGUI.mixedValueContent.text : m_SelectedPresetTypeName;
-            var rect = EditorGUI.PrefixLabel(EditorGUILayout.GetControlRect(true), Style.presetType);
-            EditorGUI.SelectableLabel(rect, presetType);
-
-            if (m_InternalEditor != null)
-            {
-                DrawInternalInspector();
-            }
-            else if (!string.IsNullOrEmpty(m_NotSupportedEditorName))
-            {
-                DrawUnsupportedInspector();
-            }
-        }
-
-        internal override void OnHeaderControlsGUI()
-        {
-            var preset = target as Preset;
-            if (preset != null)
-            {
-                using (new EditorGUI.DisabledScope(targets.Length != 1 || !preset.GetPresetType().IsValidDefault()))
-                {
-                    var defaultList = Preset.GetDefaultPresetsForType(preset.GetPresetType()).Where(d => d.preset == preset);
-                    if (defaultList.Any())
-                    {
-                        if (GUILayout.Button(GUIContent.Temp(string.Format(Style.removeFromDefault.text, preset.GetTargetTypeName()), Style.removeFromDefault.tooltip), EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
-                        {
-                            Undo.RecordObject(Resources.FindObjectsOfTypeAll<PresetManager>().First(), "Preset Manager");
-                            Preset.RemoveFromDefault(preset);
-                            Undo.FlushUndoRecordObjects();
-                        }
-                    }
-                    else
-                    {
-                        if (GUILayout.Button(GUIContent.Temp(string.Format(Style.addToDefault.text, preset.GetTargetTypeName()), Style.addToDefault.tooltip), EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
-                        {
-                            Undo.RecordObject(Resources.FindObjectsOfTypeAll<PresetManager>().First(), "Preset Manager");
-                            var list = Preset.GetDefaultPresetsForType(preset.GetPresetType()).ToList();
-                            list.Insert(0, new DefaultPreset(string.Empty, preset));
-                            Preset.SetDefaultPresetsForType(preset.GetPresetType(), list.ToArray());
-                            Undo.FlushUndoRecordObjects();
-                        }
-                    }
-                }
-            }
-        }
-
-        internal override void OnHeaderTitleGUI(Rect titleRect, string header)
-        {
-            if (m_InspectedTypes.Count > 1)
-                header = $"Multiple Types Presets ({targets.Length})";
-            else if (targets.Length > 1)
-                header = $"{m_SelectedPresetTypeName} Presets ({targets.Length})";
-
-            base.OnHeaderTitleGUI(titleRect, header);
-        }
-
-        public override bool UseDefaultMargins()
-        {
-            return false;
+            BindingsStyleHelpers.updateBindingStateStyle -= UpdatePropertyStyle;
         }
 
         void GenerateInternalEditor()
         {
             if (m_InternalEditor == null)
             {
-                Object[] objs = new Object[targets.Length];
+                UnityObject[] objs = new UnityObject[targets.Length];
                 for (var index = 0; index < targets.Length; index++)
                 {
                     var p = (Preset)targets[index];
                     ReferenceCount reference = null;
-                    if (!s_References.TryGetValue(p.GetInstanceID(), out reference))
+                    var referenceRegistered = s_References.TryGetValue(p.GetInstanceID(), out reference);
+                    if (!referenceRegistered || reference.reference == null)
                     {
-                        reference = new ReferenceCount()
+                        if (reference == null)
                         {
-                            count = 0,
-                            reference = p.GetReferenceObject()
-                        };
+                            reference = new ReferenceCount()
+                            {
+                                count = 0,
+                                reference = p.GetReferenceObject()
+                            };
+                        }
+                        else
+                        {
+                            reference.reference = p.GetReferenceObject();
+                        }
                         if (reference.reference == null)
                         {
                             // fast exit on NULL targets as we do not support their inspector in Preset.
@@ -204,7 +261,7 @@ namespace UnityEditor.Presets
                                     m_UnsupportedIcon = AssetPreview.GetMiniTypeThumbnailFromClassID(serializedObject.FindProperty("m_TargetType.m_NativeTypeID").intValue);
                                     if (m_UnsupportedIcon == null)
                                     {
-                                        m_UnsupportedIcon = AssetPreview.GetMiniTypeThumbnail(typeof(Object));
+                                        m_UnsupportedIcon = AssetPreview.GetMiniTypeThumbnail(typeof(UnityObject));
                                     }
                                 }
                             }
@@ -212,7 +269,14 @@ namespace UnityEditor.Presets
                         }
 
                         reference.reference.name = p.name;
-                        s_References.Add(p.GetInstanceID(), reference);
+                        if (referenceRegistered)
+                        {
+                            s_References[p.GetInstanceID()] = reference;
+                        }
+                        else
+                        {
+                            s_References.Add(p.GetInstanceID(), reference);
+                        }
                         m_PresetsInstanceIds.Add(p.GetInstanceID());
                     }
                     reference.count++;
@@ -277,45 +341,40 @@ namespace UnityEditor.Presets
             }
         }
 
-        void DrawInternalInspector()
+        internal override void OnHeaderControlsGUI()
         {
-            using (var change = new EditorGUI.ChangeCheckScope())
+            if (target is Preset preset)
             {
-                if (m_InternalEditor.target is Component)
+                using (new EditorGUI.DisabledScope(targets.Length != 1 || !preset.GetPresetType().IsValidDefault()))
                 {
-                    bool wasVisible = InternalEditorUtility.GetIsInspectorExpanded(m_InternalEditor.target);
-                    bool isVisible = EditorGUILayout.InspectorTitlebar(wasVisible, m_InternalEditor);
-                    if (isVisible != wasVisible)
+                    var defaultList = Preset.GetDefaultPresetsForType(preset.GetPresetType()).Where(d => d.preset == preset);
+                    if (defaultList.Any())
                     {
-                        InternalEditorUtility.SetIsInspectorExpanded(m_InternalEditor.target, isVisible);
-                    }
-                }
-                else
-                {
-                    m_InternalEditor.DrawHeader();
-                }
-                if (InternalEditorUtility.GetIsInspectorExpanded(m_InternalEditor.target) || m_InternalEditor.HasLargeHeader())
-                {
-                    GUIStyle editorWrapper = (m_InternalEditor.UseDefaultMargins() && m_InternalEditor.CanBeExpandedViaAFoldoutWithoutUpdate()
-                        ? EditorStyles.inspectorDefaultMargins
-                        : GUIStyle.none);
-
-                    using (new InspectorWindowUtils.LayoutGroupChecker())
-                    {
-                        using (new EditorGUILayout.VerticalScope(editorWrapper))
+                        if (GUILayout.Button(GUIContent.Temp(string.Format(Style.removeFromDefault.text, preset.GetTargetTypeName()), Style.removeFromDefault.tooltip), EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
                         {
-                            m_InternalEditor.OnInspectorGUI();
+                            Undo.RecordObject(Resources.FindObjectsOfTypeAll<PresetManager>().First(), "Preset Manager");
+                            Preset.RemoveFromDefault(preset);
+                            Undo.FlushUndoRecordObjects();
+                        }
+                    }
+                    else
+                    {
+                        if (GUILayout.Button(GUIContent.Temp(string.Format(Style.addToDefault.text, preset.GetTargetTypeName()), Style.addToDefault.tooltip), EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
+                        {
+                            Undo.RecordObject(Resources.FindObjectsOfTypeAll<PresetManager>().First(), "Preset Manager");
+                            var list = Preset.GetDefaultPresetsForType(preset.GetPresetType()).ToList();
+                            list.Insert(0, new DefaultPreset(string.Empty, preset));
+                            Preset.SetDefaultPresetsForType(preset.GetPresetType(), list.ToArray());
+                            Undo.FlushUndoRecordObjects();
                         }
                     }
                 }
-                if (change.changed || m_InternalEditor.isInspectorDirty)
-                {
-                    for (int i = 0; i < m_InternalEditor.targets.Length; i++)
-                    {
-                        ((Preset)targets[i]).UpdateProperties(m_InternalEditor.targets[i]);
-                    }
-                }
             }
+        }
+
+        internal override void OnHeaderTitleGUI(Rect titleRect, string header)
+        {
+            base.OnHeaderTitleGUI(titleRect, m_HeaderTitle);
         }
 
         [Flags]
@@ -347,6 +406,116 @@ namespace UnityEditor.Presets
             }
 
             return state;
+        }
+
+        Dictionary<string, VisualElement> m_BoundElements = new Dictionary<string, VisualElement>();
+
+        static void UpdatePrefabOverrideBarStyle(VisualElement blueBar, VisualElement container)
+        {
+            var element = (VisualElement)((object[])blueBar.userData)[0];
+
+            if (container == null)
+                return;
+
+            // Move the bar to where the control is in the container.
+            var top = element.worldBound.y - container.worldBound.y;
+            if (float.IsNaN(top))     // If this is run before the container has been layed out.
+                return;
+
+            var elementHeight = element.resolvedStyle.height;
+
+            // This is needed so if you have 2 overridden fields their blue
+            // bars touch (and it looks like one long bar). They normally wouldn't
+            // because most fields have a small margin.
+            var bottomOffset = element.resolvedStyle.marginBottom;
+
+            blueBar.style.top = top;
+            blueBar.style.height = elementHeight + bottomOffset;
+            blueBar.style.left = 0.0f;
+        }
+
+        void UpdatePropertyStyle(VisualElement element, SerializedProperty property)
+        {
+            if (m_InternalEditor == null || property.serializedObject != m_InternalEditor.serializedObject)
+                return;
+
+            var propertyPath = property.propertyPath;
+            m_BoundElements[propertyPath] = element;
+
+            var state = GetPropertyState(propertyPath);
+            if ((state & PropertyState.Excluded) == PropertyState.Excluded)
+            {
+                if (!element.ClassListContains(Style.excludedUssClassName))
+                {
+                    var container = element.GetFirstAncestorOfType<InspectorElement>();
+
+
+                    element.AddToClassList(Style.excludedUssClassName);
+
+                    if (container != null)
+                    {
+                        var barContainer = container.Q(Style.excludedBarContainerName);
+                        if (barContainer == null)
+                        {
+                            barContainer = new VisualElement() { name = Style.excludedBarContainerName };
+                            barContainer.style.position = Position.Absolute;
+                            container.Add(barContainer);
+                        }
+                        // Ideally, this blue bar would be a child of the field and just move
+                        // outside the field in absolute offsets to hug the side of the field's
+                        // container. However, right now we need to have overflow:hidden on
+                        // fields because of case 1105567 (the inputs can grow beyond the field).
+                        // Therefore, we have to add the blue bars as children of the container
+                        // and move them down beside their respective field.
+
+                        var prefabOverrideBar = new VisualElement();
+                        prefabOverrideBar.name = Style.excludedBarName;
+                        prefabOverrideBar.userData = new object[] {element, element.enabledSelf};
+                        prefabOverrideBar.AddToClassList(Style.excludedBarUssClassName);
+                        barContainer.Add(prefabOverrideBar);
+
+                        element.SetProperty(Style.excludedBarName, prefabOverrideBar);
+                        element.SetEnabled(false);
+
+                        // We need to try and set the bar style right away, even if the container
+                        // didn't compute its layout yet. This is for when the override is done after
+                        // everything has been layed out.
+                        UpdatePrefabOverrideBarStyle(prefabOverrideBar, container);
+
+                        // We intentionally re-register this event on the container per element and
+                        // never unregister.
+                        container.RegisterCallback<GeometryChangedEvent>(UpdatePrefabOverrideBarStyleEvent);
+                    }
+                }
+            }
+            else if (element.ClassListContains(Style.excludedUssClassName))
+            {
+                element.RemoveFromClassList(Style.excludedUssClassName);
+
+                var container = element.GetFirstAncestorOfType<InspectorElement>();
+                if (container != null)
+                {
+                    if (element.GetProperty(Style.excludedBarName) is VisualElement prefabOverrideBar)
+                    {
+                        element.SetEnabled((bool)((object[])prefabOverrideBar.userData)[1]);
+                        prefabOverrideBar.RemoveFromHierarchy();
+                    }
+                }
+            }
+        }
+
+        private static void UpdatePrefabOverrideBarStyleEvent(GeometryChangedEvent evt)
+        {
+            var container = evt.target as InspectorElement;
+            if (container == null)
+                return;
+
+            var barContainer = container.Q(Style.excludedBarContainerName);
+            if (barContainer == null)
+                return;
+
+            foreach (var bar in barContainer.Children())
+                UpdatePrefabOverrideBarStyle(bar, container);
         }
 
         void BeginProperty(Rect totalPosition, SerializedProperty property)

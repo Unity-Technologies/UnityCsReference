@@ -104,7 +104,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         [SerializeField]
-        private bool m_SamplesExpanded = false;
+        private bool m_SamplesExpanded = true;
         public virtual bool samplesExpanded
         {
             get => m_SamplesExpanded;

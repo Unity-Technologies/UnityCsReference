@@ -11,7 +11,7 @@ namespace UnityEditor
     {
         /* Abstract base class for each group of assets (e.g. Local, AssetStore) used in the ObjectListArea
          */
-        abstract class Group
+        protected abstract class Group
         {
             readonly protected float kGroupSeparatorHeight = EditorStyles.toolbar.fixedHeight;
             protected string m_GroupSeparatorTitle;

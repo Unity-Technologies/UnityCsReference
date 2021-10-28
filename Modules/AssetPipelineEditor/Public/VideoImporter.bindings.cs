@@ -180,20 +180,17 @@ namespace UnityEditor
 
         private BuildTargetGroup GetBuildTargetGroup(string methodName, string platform, bool acceptDefault = true)
         {
+            var defaultName = VideoClipImporter.defaultTargetName;
             if (!acceptDefault &&
-                platform.Equals(VideoClipImporter.defaultTargetName, StringComparison.OrdinalIgnoreCase))
+                platform.Equals(defaultName, StringComparison.OrdinalIgnoreCase))
                 throw new ArgumentException("Cannot call VideoClipImporter." + methodName + " for the default VideoImporterTargetSettings.");
 
             BuildTargetGroup platformGroup = BuildPipeline.GetBuildTargetGroupByName(platform);
-            if (!platform.Equals(VideoClipImporter.defaultTargetName, StringComparison.OrdinalIgnoreCase) && platformGroup == BuildTargetGroup.Unknown)
+            if (!platform.Equals(defaultName, StringComparison.OrdinalIgnoreCase) && platformGroup == BuildTargetGroup.Unknown)
             {
-                var platformList = "'Standalone', 'Android', 'iOS', 'Lumin', 'PS4', 'Switch', 'tvOS', 'WebGL', 'WSA', 'WebGL' or 'XboxOne'";
-                if (acceptDefault)
-                    platformList = "'Default', " + platformList;
-
                 throw new ArgumentException(
-                    "Unknown platform passed to VideoClipImporter." + methodName + " (" + platform + "), please use one of " +
-                    platformList + ".");
+                    "Unknown platform passed to VideoClipImporter." + methodName + " (" + platform +
+                    "), please use '" + defaultName + "' or one of the supported platform names.");
             }
 
             return platformGroup;

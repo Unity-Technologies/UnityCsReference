@@ -94,7 +94,9 @@ namespace UnityEditor.Search
         public static bool showSavedSearchPanel { get; set; }
         public static Dictionary<string, string> scopes { get; private set; }
         public static Dictionary<string, SearchProviderSettings> providers { get; private set; }
+        public static bool queryBuilder { get; set; }
         public static string ignoredProperties { get; set; }
+        public static string helperWidgetCurrentArea { get; set; }
 
         public static int[] expandedQueries { get; set; }
 
@@ -103,6 +105,21 @@ namespace UnityEditor.Search
 
         public const int k_RecentSearchMaxCount = 20;
         public static List<string> recentSearches = new List<string>(k_RecentSearchMaxCount);
+
+        static string s_DisabledIndexersString;
+        static HashSet<string> s_DisabledIndexers;
+        public static HashSet<string> disabledIndexers
+        {
+            get
+            {
+                if (s_DisabledIndexers == null)
+                {
+                    var entries = s_DisabledIndexersString ?? string.Empty;
+                    s_DisabledIndexers = new HashSet<string>(entries.Split(new string[] { ";;;" }, StringSplitOptions.RemoveEmptyEntries));
+                }
+                return s_DisabledIndexers;
+            }
+        }
 
         public static HashSet<string> searchItemFavorites = new HashSet<string>();
         public static HashSet<string> searchQueryFavorites = new HashSet<string>();
@@ -151,7 +168,10 @@ namespace UnityEditor.Search
             showStatusBar = ReadSetting(settings, nameof(showStatusBar), false);
             savedSearchesSortOrder = (SearchQuerySortOrder)ReadSetting(settings, nameof(savedSearchesSortOrder), 0);
             showSavedSearchPanel = ReadSetting(settings, nameof(showSavedSearchPanel), false);
-            ignoredProperties = ReadSetting(settings, nameof(ignoredProperties), "id;name;classname");
+            queryBuilder = ReadSetting(settings, nameof(queryBuilder), false);
+            ignoredProperties = ReadSetting(settings, nameof(ignoredProperties), "id;name;classname;imagecontentshash");
+            helperWidgetCurrentArea = ReadSetting(settings, nameof(helperWidgetCurrentArea), "all");
+            s_DisabledIndexersString = ReadSetting(settings, nameof(disabledIndexers), "");
 
             itemIconSize = EditorPrefs.GetFloat(k_ItemIconSizePrefKey, itemIconSize);
 
@@ -193,7 +213,10 @@ namespace UnityEditor.Search
                 [nameof(savedSearchesSortOrder)] = (int)savedSearchesSortOrder,
                 [nameof(showSavedSearchPanel)] = showSavedSearchPanel,
                 [nameof(expandedQueries)] = expandedQueries,
+                [nameof(queryBuilder)] = queryBuilder,
                 [nameof(ignoredProperties)] = ignoredProperties,
+                [nameof(helperWidgetCurrentArea)] = helperWidgetCurrentArea,
+                [nameof(disabledIndexers)] = string.Join(";;;", disabledIndexers),
 
             };
 
@@ -201,6 +224,8 @@ namespace UnityEditor.Search
             SaveFavorites();
 
             EditorPrefs.SetFloat(k_ItemIconSizePrefKey, itemIconSize);
+
+            AssetDatabaseAPI.RegisterCustomDependency("SearchIndexIgnoredProperties", Hash128.Compute(ignoredProperties));
         }
 
         public static void SetScopeValue(string prefix, int hash, string value)
@@ -281,6 +306,16 @@ namespace UnityEditor.Search
                 keywords = new[] { "quick", "omni", "search" },
             };
             return settings;
+        }
+
+        [SettingsProvider]
+        internal static SettingsProvider CreateSearchIndexSettings()
+        {
+            return new SettingsProvider("Preferences/Search/Indexing", SettingsScope.User)
+            {
+                guiHandler = DrawSearchIndexingSettings,
+                keywords = new[] { "search", "index" },
+            };
         }
 
         static void DrawSearchServiceSettings()
@@ -371,11 +406,48 @@ namespace UnityEditor.Search
             GUILayout.EndHorizontal();
         }
 
-        private static SearchAnalytics.GenericEvent SendDebounceValueChanged()
+        private static void DrawSearchIndexingSettings(string searchContext)
         {
-            var e = SearchAnalytics.GenericEvent.Create(null, SearchAnalytics.GenericEventType.PreferenceChanged, nameof(debounceMs));
-            e.intPayload1 = debounceMs;
-            return e;
+            EditorGUIUtility.labelWidth = 350;
+            GUILayout.BeginHorizontal();
+            {
+                GUILayout.Space(10);
+                GUILayout.BeginVertical();
+                {
+                    EditorGUILayout.HelpBox("Any changes here requires to restart the editor to take effect.", MessageType.Warning);
+                    if (EditorGUILayout.DropdownButton(Utils.GUIContentTemp("Custom Indexers"), FocusType.Passive))
+                        OpenCustomIndexerMenu();
+
+                    EditorGUILayout.LabelField(L10n.Tr("Ignored properties (Use line break or ; to separate tokens)"), EditorStyles.largeLabel);
+                    EditorGUI.BeginChangeCheck();
+                        ignoredProperties = EditorGUILayout.TextArea(ignoredProperties, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+                    if (EditorGUI.EndChangeCheck())
+                        Save();
+                }
+                GUILayout.EndVertical();
+            }
+            GUILayout.EndHorizontal();
+        }
+
+        private static void OpenCustomIndexerMenu()
+        {
+            var menu = new GenericMenu();
+            foreach (var customIndexerMethodInfo in TypeCache.GetMethodsWithAttribute<CustomObjectIndexerAttribute>())
+            {
+                var name = $"{customIndexerMethodInfo.DeclaringType.FullName}.{customIndexerMethodInfo.Name}";
+                var enabled = !disabledIndexers.Contains(name);
+                menu.AddItem(new GUIContent(name), enabled, () => ToggleCustomIndexer(name, !enabled));
+            }
+            menu.ShowAsContext();
+        }
+
+        private static void ToggleCustomIndexer(string name, bool enable)
+        {
+            if (enable)
+                disabledIndexers.Remove(name);
+            else
+                disabledIndexers.Add(name);
+            Save();
         }
 
         private static bool Toggle(GUIContent content, string propertyName, bool value)

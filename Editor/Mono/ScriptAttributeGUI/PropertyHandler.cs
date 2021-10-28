@@ -134,11 +134,7 @@ namespace UnityEditor
         // returns true if children needs to be drawn separately
         public bool OnGUI(Rect position, SerializedProperty property, GUIContent label, bool includeChildren)
         {
-            var screenPos = GUIUtility.GUIToScreenPoint(position.position);
-            screenPos.y = Mathf.Clamp(screenPos.y, 0, Screen.height);
-
-            Rect visibleArea = new Rect(screenPos.x, screenPos.y, Screen.width, Screen.height);
-            visibleArea = GUIUtility.ScreenToGUIRect(visibleArea);
+            Rect visibleArea = new Rect(0, 0, float.MaxValue, float.MaxValue);
             return OnGUI(position, property, label, includeChildren, visibleArea);
         }
 
@@ -201,8 +197,15 @@ namespace UnityEditor
                         s_reorderableLists[key] = reorderableList;
                     }
 
+                    // Calculate visibility rect specifically for reorderable list as when applied for the whole serialized object,
+                    // it causes collapsed out of sight array elements appear thus messing up scroll-bar experience
+                    var screenPos = GUIUtility.GUIToScreenPoint(position.position);
+                    screenPos.y = Mathf.Clamp(screenPos.y, 0, Screen.height);
+                    Rect listVisibility = new Rect(screenPos.x, screenPos.y, Screen.width, Screen.height);
+                    listVisibility = GUIUtility.ScreenToGUIRect(listVisibility);
+
                     reorderableList.Property = property;
-                    reorderableList.Draw(label, position, visibleArea, tooltip, includeChildren);
+                    reorderableList.Draw(label, position, listVisibility, tooltip, includeChildren);
                     return !includeChildren && property.isExpanded;
                 }
 

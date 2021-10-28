@@ -681,7 +681,7 @@ namespace UnityEditor.ShortcutManagement
         IList<ShortcutEntry> FindConflictsIfRebound(ShortcutEntry entry, List<KeyCombination> newCombination)
         {
             var conflictingShortcuts = new List<ShortcutEntry>();
-            m_Directory.FindPotentialConflicts(entry.context, newCombination, conflictingShortcuts, m_ContextManager);
+            m_Directory.FindPotentialConflicts(entry.context, entry.tag, newCombination, conflictingShortcuts, m_ContextManager);
             conflictingShortcuts.Remove(entry);
             return conflictingShortcuts;
         }

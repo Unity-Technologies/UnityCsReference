@@ -144,6 +144,12 @@ namespace UnityEngine
         LinuxServer = 43,
         WindowsServer = 44,
         OSXServer = 45,
+
+        // QNX
+        QNXArm32 = 46,
+        QNXArm64 = 47,
+        QNXX64 = 48,
+        QNXX86 = 49,
     }
 
     // The language the user's operating system is running in. Returned by Application.systemLanguage.

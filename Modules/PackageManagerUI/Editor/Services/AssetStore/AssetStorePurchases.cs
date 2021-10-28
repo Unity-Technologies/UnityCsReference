@@ -11,14 +11,9 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal class PurchasesQueryArgs : PageFilters
     {
-        private static readonly string k_DownloadedStatus = "downloaded";
-
         public int startIndex;
-        public int limit;
+        public long limit;
         public List<string> productIds;
-
-        public string status => statuses?.FirstOrDefault() ?? string.Empty;
-        public bool downloadedOnly => k_DownloadedStatus.Equals(status, StringComparison.OrdinalIgnoreCase);
 
         public new PurchasesQueryArgs Clone()
         {

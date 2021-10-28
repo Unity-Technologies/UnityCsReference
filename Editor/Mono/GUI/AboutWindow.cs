@@ -163,10 +163,13 @@ namespace UnityEditor
                         GUILayout.FlexibleSpace();
                         GUILayout.Label(Styles.MonoLogo, Styles.MonoLogoLayout);
                         GUILayout.FlexibleSpace();
-                        var specialThanksRect = GUILayoutUtility.GetRect(Styles.thanksContent, Styles.thanksStyle);
-                        if (GUI.Button(specialThanksRect, Styles.thanksContent, Styles.thanksStyle))
-                            Process.Start(Styles.thanksUri.AbsoluteUri);
-                        EditorGUIUtility.AddCursorRect(specialThanksRect, MouseCursor.Link);
+                        if (!InternalEditorUtility.IsUnityBeta())
+                        {
+                            var specialThanksRect = GUILayoutUtility.GetRect(Styles.thanksContent, Styles.thanksStyle);
+                            if (GUI.Button(specialThanksRect, Styles.thanksContent, Styles.thanksStyle))
+                                Process.Start(Styles.thanksUri.AbsoluteUri);
+                            EditorGUIUtility.AddCursorRect(specialThanksRect, MouseCursor.Link);
+                        }
                         GUILayout.Label(InternalEditorUtility.GetUnityCopyright().Replace("(c)", "\u00A9"), Styles.aboutWindowLicenseLabel);
                     }
 

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -19,6 +20,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private PackageManagerPrefs m_PackageManagerPrefs;
         private PackageDatabase m_PackageDatabase;
         private PageManager m_PageManager;
+        private AssetStoreCallQueue m_AssetStoreCallQueue;
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
         private void ResolveDependencies()
         {
@@ -29,8 +31,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
             m_PackageDatabase = container.Resolve<PackageDatabase>();
             m_PageManager = container.Resolve<PageManager>();
+            m_AssetStoreCallQueue = container.Resolve<AssetStoreCallQueue>();
             m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
         }
+
+        private Action m_ButtonAction;
 
         public PackageList()
         {
@@ -41,7 +46,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             root.StretchToParentSize();
             cache = new VisualElementCache(root);
 
-            loginButton.clickable.clicked += OnLoginClicked;
+            emptyAreaButton.clickable.clicked += OnButtonClicked;
 
             RegisterCallback<GeometryChangedEvent>(OnGeometryChange);
             RegisterCallback<AttachToPanelEvent>(OnEnterPanel);
@@ -63,6 +68,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_PageManager.onSelectionChanged += OnSelectionChanged;
 
+            m_AssetStoreCallQueue.onCheckUpdateProgress += OnCheckUpdateProgress;
+
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
 
             m_SettingsProxy.onSeeAllVersionsChanged += OnSeeAllPackageVersionsChanged;
@@ -70,6 +77,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageFiltering.onFilterTabChanged += OnFilterTabChanged;
 
             listView.OnEnable();
+            packageLoadBar.OnEnable();
 
             if (!Unsupported.IsDeveloperBuild() && m_SettingsProxy.seeAllPackageVersions)
             {
@@ -94,12 +102,15 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_PageManager.onSelectionChanged -= OnSelectionChanged;
 
+            m_AssetStoreCallQueue.onCheckUpdateProgress -= OnCheckUpdateProgress;
+
             m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
 
             m_SettingsProxy.onSeeAllVersionsChanged -= OnSeeAllPackageVersionsChanged;
             m_PackageFiltering.onFilterTabChanged -= OnFilterTabChanged;
 
             listView.OnDisable();
+            packageLoadBar.OnDisable();
         }
 
         private void OnEnterPanel(AttachToPanelEvent e)
@@ -139,46 +150,41 @@ namespace UnityEditor.PackageManager.UI.Internal
             currentView.GetPackageItem(version?.packageUniqueId)?.RefreshState();
         }
 
+        private void OnCheckUpdateProgress()
+        {
+            UpdateListVisibility(true);
+        }
+
         private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
         {
             if (m_PackageFiltering.currentFilterTab == PackageFilterTab.AssetStore && UpdateListVisibility())
                 m_PageManager.UpdateSelectionIfCurrentSelectionIsInvalid();
         }
 
-        private void HideListShowLogin()
+        private void HideListShowMessage(bool isRefreshInProgress, bool isInitialFetchingDone, bool isCheckUpdateInProgress)
         {
-            UIUtils.SetElementDisplay(listContainer, false);
-            UIUtils.SetElementDisplay(emptyArea, true);
-            UIUtils.SetElementDisplay(noPackagesLabel, false);
-            // when the editor first starts, we detect the user as not logged in (even though they are) because userInfo is not ready yet
-            // in this case, we want to delay showing the login window until the userInfo is ready
-            UIUtils.SetElementDisplay(loginContainer, m_UnityConnect.isUserInfoReady);
-
-            m_PageManager.ClearSelection();
-        }
-
-        public void HideListShowMessage(bool isRefreshInProgress, bool isInitialFetchingDone, string messageWhenInitialFetchNotDone = "")
-        {
-            UIUtils.SetElementDisplay(listContainer, false);
-            UIUtils.SetElementDisplay(emptyArea, true);
-            UIUtils.SetElementDisplay(noPackagesLabel, true);
-            UIUtils.SetElementDisplay(loginContainer, false);
-
+            string message;
             var contentType = m_PageManager.GetCurrentPage().contentType ?? L10n.Tr("packages");
-
             if (isRefreshInProgress)
             {
                 if (!isInitialFetchingDone)
-                    noPackagesLabel.text = string.Format(L10n.Tr("Fetching {0}..."), contentType);
+                    message = string.Format(L10n.Tr("Fetching {0}..."), contentType);
                 else
-                    noPackagesLabel.text = string.Format(L10n.Tr("Refreshing {0}..."), contentType);
+                    message = string.Format(L10n.Tr("Refreshing {0}..."), contentType);
+            }
+            else if (isCheckUpdateInProgress)
+            {
+                message = string.Format(L10n.Tr("Checking for updates {0}%..."), m_AssetStoreCallQueue.checkUpdatePercentage);
+                HideListShowEmptyArea(message, L10n.Tr("Cancel"), () =>
+                {
+                    m_PageManager.GetCurrentPage().ClearFilters();
+                    m_AssetStoreCallQueue.CancelCheckUpdates();
+                });
+                return;
             }
             else if (string.IsNullOrEmpty(m_PackageFiltering.currentSearchText))
             {
-                if (!isInitialFetchingDone)
-                    noPackagesLabel.text = messageWhenInitialFetchNotDone;
-                else
-                    noPackagesLabel.text = string.Format(L10n.Tr("There are no {0}."), contentType);
+                message = string.Format(L10n.Tr("There are no {0}."), contentType);
             }
             else
             {
@@ -186,8 +192,31 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var searchText = m_PackageFiltering.currentSearchText;
                 if (searchText?.Length > maxSearchTextToDisplay)
                     searchText = searchText.Substring(0, maxSearchTextToDisplay) + "...";
-                noPackagesLabel.text = string.Format(L10n.Tr("No results for \"{0}\""), searchText);
+                message = string.Format(L10n.Tr("No results for \"{0}\""), searchText);
             }
+
+            HideListShowEmptyArea(message);
+        }
+
+        private void HideListShowLogin()
+        {
+            if (!m_UnityConnect.isUserInfoReady)
+                HideListShowEmptyArea(string.Empty);
+            else
+                HideListShowEmptyArea(L10n.Tr("Sign in to access your assets"), L10n.Tr("Sign in"), m_UnityConnect.ShowLogin);
+        }
+
+        public void HideListShowEmptyArea(string message, string buttonText = null, Action buttonAction = null)
+        {
+            UIUtils.SetElementDisplay(listContainer, false);
+            UIUtils.SetElementDisplay(packageLoadBar, false);
+            UIUtils.SetElementDisplay(emptyArea, true);
+
+            emptyAreaMessage.text = message ?? string.Empty;
+
+            emptyAreaButton.text = buttonText ?? string.Empty;
+            m_ButtonAction = buttonAction;
+            UIUtils.SetElementDisplay(emptyAreaButton, buttonAction != null);
 
             m_PageManager.ClearSelection();
         }
@@ -202,6 +231,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(listView, listView == currentView);
             UIUtils.SetElementDisplay(scrollView, scrollView == currentView);
 
+            packageLoadBar.UpdateVisibility();
             if (rebuild)
                 currentView.OnListRebuild(m_PageManager.GetCurrentPage());
         }
@@ -218,9 +248,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             var page = m_PageManager.GetCurrentPage();
             var isListEmpty = !page.visualStates.Any(v => v.visible);
             var isInitialFetchingDone = m_PageManager.IsInitialFetchingDone();
-            if (isListEmpty || !isInitialFetchingDone)
+            var isCheckUpdateInProgress = m_PackageFiltering.currentFilterTab == PackageFilterTab.AssetStore &&
+                m_AssetStoreCallQueue.isCheckUpdateInProgress && page.filters.updateAvailableOnly;
+            if (isListEmpty || !isInitialFetchingDone || isCheckUpdateInProgress)
             {
-                HideListShowMessage(m_PageManager.IsRefreshInProgress(), isInitialFetchingDone);
+                HideListShowMessage(m_PageManager.IsRefreshInProgress(), isInitialFetchingDone, isCheckUpdateInProgress);
                 return false;
             }
 
@@ -228,16 +260,20 @@ namespace UnityEditor.PackageManager.UI.Internal
             return true;
         }
 
-        private void OnLoginClicked()
+        private void OnButtonClicked()
         {
-            m_UnityConnect.ShowLogin();
+            m_ButtonAction?.Invoke();
         }
 
         private void OnGeometryChange(GeometryChangedEvent evt)
         {
+            const int heightCalculationBuffer = 4;
             float containerHeight = resolvedStyle.height;
             if (!float.IsNaN(containerHeight))
-                m_PackageManagerPrefs.numItemsPerPage = (int)(containerHeight / PackageItem.k_MainItemHeight);
+            {
+                var numItems = ((int)containerHeight - heightCalculationBuffer - PackageLoadBar.k_FixedHeight) / PackageItem.k_MainItemHeight;
+                m_PackageManagerPrefs.numItemsPerPage = numItems <= 0 ? null : (int?)numItems;
+            }
         }
 
         private void OnPackageProgressUpdate(IPackage package)
@@ -294,9 +330,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private PackageListView listView => cache.Get<PackageListView>("listView");
         private PackageListScrollView scrollView => cache.Get<PackageListScrollView>("scrollView");
         private VisualElement listContainer => cache.Get<VisualElement>("listContainer");
+        private PackageLoadBar packageLoadBar => cache.Get<PackageLoadBar>("packageLoadBar");
         private VisualElement emptyArea => cache.Get<VisualElement>("emptyArea");
-        private Label noPackagesLabel => cache.Get<Label>("noPackagesLabel");
-        private VisualElement loginContainer => cache.Get<VisualElement>("loginContainer");
-        private Button loginButton => cache.Get<Button>("loginButton");
+        private Label emptyAreaMessage => cache.Get<Label>("emptyAreaMessage");
+        private Button emptyAreaButton => cache.Get<Button>("emptyAreaButton");
     }
 }

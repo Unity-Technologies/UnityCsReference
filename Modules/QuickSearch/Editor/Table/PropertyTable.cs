@@ -102,6 +102,9 @@ namespace UnityEditor.Search
                     });
                 }
 
+                if (headerColumns.Count == 0)
+                    headerColumns.Add(new PropertyColumn(new SearchColumn("Invalid")));
+
                 return headerColumns.ToArray();
             }
 
@@ -150,13 +153,13 @@ namespace UnityEditor.Search
                     return;
 
                 menu.AddSeparator("");
-                menu.AddItem(new GUIContent("Add Column..."), false, () => m_TableView.AddColumn(windowMousePosition, activeColumn));
+                menu.AddItem(EditorGUIUtility.TrTextContent("Add Column..."), false, () => m_TableView.AddColumn(windowMousePosition, activeColumn));
 
                 if (activeColumn != -1)
                 {
                     var colName = state.columns[activeColumn].headerContent.text;
-                    menu.AddItem(new GUIContent($"Edit {colName}..."), false, EditColumn, activeColumn);
-                    menu.AddItem(new GUIContent($"Remove {colName}"), false, () =>
+                    menu.AddItem(EditorGUIUtility.TrTextContent($"Edit {colName}..."), false, EditColumn, activeColumn);
+                    menu.AddItem(EditorGUIUtility.TrTextContent($"Remove {colName}"), false, () =>
                     {
                         if (state.columns.Length == 1)
                             ResetColumnLayout();
@@ -166,7 +169,7 @@ namespace UnityEditor.Search
                 }
 
                 menu.AddSeparator("");
-                menu.AddItem(new GUIContent("Reset Columns"), false, ResetColumnLayout);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Reset Columns"), false, ResetColumnLayout);
             }
 
             private void EditColumn(object userData)

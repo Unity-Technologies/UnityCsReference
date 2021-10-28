@@ -214,6 +214,7 @@ namespace UnityEditor.SearchService
             defines.Add("USE_SEARCH_TABLE");
             defines.Add("USE_SEARCH_MODULE");
             defines.Add("USE_PROPERTY_DATABASE");
+            defines.Add("USE_QUERY_BUILDER");
         }
 
         public static void NotifySyncSearchChanged(SyncSearchEvent evt, string syncViewId, string searchQuery)
@@ -308,6 +309,9 @@ namespace UnityEditor.SearchService
 
         public void SetActiveSearchEngine(string searchEngineName, bool notify = true)
         {
+            if (string.Equals(activeSearchEngineName, searchEngineName, StringComparison.Ordinal))
+                return;
+
             if (notify)
                 activeEngineChanged?.Invoke(searchEngineName);
             activeSearchEngineName = searchEngineName;
@@ -379,6 +383,7 @@ namespace UnityEditor.SearchService
         void LoadActiveSearchEngine()
         {
             activeSearchEngineName = EditorPrefs.GetString(SearchService.activeSearchEnginesPrefKey + engineScope, GetDefaultEngine().name);
+            m_ActiveSearchEngine = GetActiveSearchEngine();
         }
 
         public void RegisterEngine(TEngine engine)

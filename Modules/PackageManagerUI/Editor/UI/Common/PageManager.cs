@@ -31,6 +31,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual event Action<ListUpdateArgs> onListUpdate = delegate {};
         public virtual event Action<IPage> onListRebuild = delegate {};
         public virtual event Action<IPage> onSubPageAdded = delegate {};
+        public virtual event Action<PageFilters> onFiltersChange = delegate {};
 
         public virtual event Action onRefreshOperationStart = delegate {};
         public virtual event Action onRefreshOperationFinish = delegate {};
@@ -134,8 +135,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             foreach (var page in m_SerializedSimplePages.Cast<IPage>().Concat(m_SerializedPaginatedPage))
             {
-                if (page.capability != null)
-                    page.capability.conditionalOrderingValues = GetConditionalOrderingForTab(page.tab);
                 m_Pages[page.tab] = page;
                 RegisterPageEvents(page);
             }
@@ -180,20 +179,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             return GetPageFromTab(tab) as T;
         }
 
-        private PageCapability.ConditionalOrdering[] GetConditionalOrderingForTab(PackageFilterTab tab)
-        {
-            if (tab == PackageFilterTab.InProject || tab == PackageFilterTab.UnityRegistry)
-            {
-                return new[]
-                {
-                    new PageCapability.ConditionalOrdering(() => IsAnyPackagesWithUpdateAvailable(tab), "Update available", "hasUpdate"),
-                    new PageCapability.ConditionalOrdering(() => IsAnyPackagesWithEntitlements(tab), "Subscription based", "entitlements"),
-                };
-            }
-
-            return null;
-        }
-
         private IPage CreatePageFromTab(PackageFilterTab? tab = null)
         {
             var filterTab = tab ?? m_PackageFiltering.currentFilterTab;
@@ -207,12 +192,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                     supportFilters = true,
                     orderingValues = new[]
                     {
-                        new PageCapability.Ordering("Name", "name", PageCapability.Order.Ascending),
-                        new PageCapability.Ordering("Name", "name", PageCapability.Order.Descending),
-                        new PageCapability.Ordering("Purchased date", "purchased_date", PageCapability.Order.Ascending),
+                        new PageCapability.Ordering("Name (asc)", "name", PageCapability.Order.Ascending),
+                        new PageCapability.Ordering("Name (desc)", "name", PageCapability.Order.Descending),
                         new PageCapability.Ordering("Purchased date", "purchased_date", PageCapability.Order.Descending),
-                        new PageCapability.Ordering("Update date", "update_date", PageCapability.Order.Ascending),
-                        new PageCapability.Ordering("Update date", "update_date", PageCapability.Order.Descending)
+                        new PageCapability.Ordering("Recently updated", "update_date", PageCapability.Order.Descending)
                     }
                 });
             }
@@ -223,14 +206,13 @@ namespace UnityEditor.PackageManager.UI.Internal
                     requireUserLoggedIn = false,
                     requireNetwork = false,
                     supportLocalReordering = true,
+                    supportFilters = true,
                     orderingValues = new[]
                     {
-                        new PageCapability.Ordering("Name", "displayName", PageCapability.Order.Ascending),
-                        new PageCapability.Ordering("Name", "displayName", PageCapability.Order.Descending),
-                        new PageCapability.Ordering("Published date", "publishedDate", PageCapability.Order.Ascending),
+                        new PageCapability.Ordering("Name (asc)", "displayName", PageCapability.Order.Ascending),
+                        new PageCapability.Ordering("Name (desc)", "displayName", PageCapability.Order.Descending),
                         new PageCapability.Ordering("Published date", "publishedDate", PageCapability.Order.Descending),
-                    },
-                    conditionalOrderingValues = GetConditionalOrderingForTab(filterTab)
+                    }
                 });
             }
             else if (filterTab == PackageFilterTab.MyRegistries)
@@ -242,9 +224,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                     requireNetwork = false,
                     orderingValues = new[]
                     {
-                        new PageCapability.Ordering("Name", "displayName", PageCapability.Order.Ascending),
-                        new PageCapability.Ordering("Name", "displayName", PageCapability.Order.Descending),
-                        new PageCapability.Ordering("Published date", "publishedDate", PageCapability.Order.Ascending),
+                        new PageCapability.Ordering("Name (asc)", "displayName", PageCapability.Order.Ascending),
+                        new PageCapability.Ordering("Name (desc)", "displayName", PageCapability.Order.Descending),
                         new PageCapability.Ordering("Published date", "publishedDate", PageCapability.Order.Descending)
                     }
                 });
@@ -256,16 +237,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                     requireUserLoggedIn = false,
                     requireNetwork = false,
                     supportLocalReordering = true,
+                    supportFilters = true,
                     orderingValues = new[]
                     {
-                        new PageCapability.Ordering("Name", "displayName", PageCapability.Order.Ascending),
-                        new PageCapability.Ordering("Name", "displayName", PageCapability.Order.Descending),
-                        new PageCapability.Ordering("Published date", "publishedDate", PageCapability.Order.Ascending),
+                        new PageCapability.Ordering("Name (asc)", "displayName", PageCapability.Order.Ascending),
+                        new PageCapability.Ordering("Name (desc)", "displayName", PageCapability.Order.Descending),
                         new PageCapability.Ordering("Published date", "publishedDate", PageCapability.Order.Descending),
-                        new PageCapability.Ordering("Update date", "updateDate", PageCapability.Order.Ascending),
-                        new PageCapability.Ordering("Update date", "updateDate", PageCapability.Order.Descending)
-                    },
-                    conditionalOrderingValues = GetConditionalOrderingForTab(filterTab)
+                        new PageCapability.Ordering("Recently updated", "updateDate", PageCapability.Order.Descending)
+                    }
                 });
             }
             else // filterTab == PackageFilterTab.BuiltIn
@@ -277,26 +256,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                     supportLocalReordering = true,
                     orderingValues = new[]
                     {
-                        new PageCapability.Ordering("Name", "displayName", PageCapability.Order.Ascending),
-                        new PageCapability.Ordering("Name", "displayName", PageCapability.Order.Descending)
+                        new PageCapability.Ordering("Name (asc)", "displayName", PageCapability.Order.Ascending),
+                        new PageCapability.Ordering("Name (desc)", "displayName", PageCapability.Order.Descending)
                     }
                 });
             }
             m_Pages[filterTab] = page;
             RegisterPageEvents(page);
             return page;
-        }
-
-        private bool IsAnyPackagesWithUpdateAvailable(PackageFilterTab tab)
-        {
-            var packages = m_PackageDatabase.allPackages?.Where(package => PackageFiltering.FilterByTab(package, tab, m_SettingsProxy.enablePackageDependencies, m_UnityConnect.isUserLoggedIn)) ?? Enumerable.Empty<IPackage>();
-            return packages.Any(package => package.state == PackageState.UpdateAvailable);
-        }
-
-        private bool IsAnyPackagesWithEntitlements(PackageFilterTab tab)
-        {
-            var packages = m_PackageDatabase.allPackages?.Where(package => PackageFiltering.FilterByTab(package, tab, m_SettingsProxy.enablePackageDependencies, m_UnityConnect.isUserLoggedIn)) ?? Enumerable.Empty<IPackage>();
-            return packages.Any(package => package.hasEntitlements);
         }
 
         private void RegisterPageEvents(IPage page)
@@ -306,6 +273,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             page.onListUpdate += TriggerOnPageUpdate;
             page.onListRebuild += TriggerOnPageRebuild;
             page.onSubPageAdded += TriggerOnSubPageAdded;
+            page.onFiltersChange += TriggerOnFiltersChange;
         }
 
         private void UnregisterPageEvents(IPage page)
@@ -315,6 +283,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             page.onListUpdate -= TriggerOnPageUpdate;
             page.onListRebuild -= TriggerOnPageRebuild;
             page.onSubPageAdded -= TriggerOnSubPageAdded;
+            page.onFiltersChange -= TriggerOnFiltersChange;
         }
 
         private void OnPageSelectionChanged(IPackageVersion version)
@@ -342,6 +311,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void TriggerOnSubPageAdded(IPage page)
         {
             onSubPageAdded?.Invoke(page);
+        }
+
+        private void TriggerOnFiltersChange(PageFilters filters)
+        {
+            onFiltersChange?.Invoke(filters);
         }
 
         public virtual IPage GetCurrentPage()
@@ -574,16 +548,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             return index >= k_RefreshOptionsByTab.Length ? RefreshOptions.None : k_RefreshOptionsByTab[index];
         }
 
-        public virtual void Refresh(PackageFilterTab? tab = null, int pageSize = k_DefaultPageSize)
+        public virtual void Refresh(PackageFilterTab? tab = null)
         {
-            Refresh(GetRefreshOptionsByTab(tab ?? m_PackageFiltering.currentFilterTab), pageSize);
+            Refresh(GetRefreshOptionsByTab(tab ?? m_PackageFiltering.currentFilterTab));
         }
 
-        public virtual void Refresh(RefreshOptions options, int pageSize = k_DefaultPageSize)
+        public virtual void Refresh(RefreshOptions options)
         {
-            if (pageSize == 0)
-                return;
-
             if ((options & RefreshOptions.UpmAny) != 0)
             {
                 var entitlements = m_PackageDatabase.allPackages.Where(package => package.hasEntitlementsError);
@@ -619,14 +590,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var queryArgs = new PurchasesQueryArgs
                 {
                     startIndex = 0,
-                    limit = pageSize,
+                    limit = Math.Max(GetCurrentPage().numCurrentItems, m_PackageManagerPrefs.numItemsPerPage ?? k_DefaultPageSize),
                     searchText = m_PackageFiltering.currentSearchText
                 };
 
                 IPage page;
                 if (m_Pages.TryGetValue(PackageFilterTab.AssetStore, out page))
                 {
-                    queryArgs.statuses = page.filters.statuses;
+                    queryArgs.status = page.filters.status;
                     queryArgs.categories = page.filters.categories;
                     queryArgs.labels = page.filters.labels;
                     queryArgs.orderBy = page.filters.orderBy;
@@ -679,7 +650,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 !EditorApplication.isCompiling &&
                 !IsRefreshInProgress(RefreshOptions.Purchased);
             if (canRefresh && loggedIn)
-                Refresh(RefreshOptions.Purchased, m_PackageManagerPrefs.numItemsPerPage ?? k_DefaultPageSize);
+                Refresh(RefreshOptions.Purchased);
         }
 
         private void OnEditorSelectionChanged()

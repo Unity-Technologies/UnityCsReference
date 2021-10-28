@@ -25,33 +25,32 @@ namespace UnityEditor.Search.Providers
         private static readonly char[] s_EntrySeparators = { '/', ' ', '_', '-', '.' };
         private static readonly SearchProposition[] s_FixedPropositions = new SearchProposition[]
         {
-            new SearchProposition("id:", null, "Search object by ID"),
-            new SearchProposition("path:", null, "Search object by transform path"),
-            new SearchProposition("tag:", null, "Search object with tag"),
-            new SearchProposition("layer:", "layer>0", "Search object by layer (number)"),
-            new SearchProposition("size:", null, "Search object by volume size"),
-            new SearchProposition("components:", "components>=2", "Search object with more than # components"),
-            new SearchProposition("is:", null, "Search object by state"),
-            new SearchProposition("is:child", null, "Search object with a parent"),
-            new SearchProposition("is:leaf", null, "Search object without children"),
-            new SearchProposition("is:root", null, "Search root objects"),
-            new SearchProposition("is:visible", null, "Search view visible objects"),
-            new SearchProposition("is:hidden", null, "Search hierarchically hidden objects"),
-            new SearchProposition("is:static", null, "Search static objects"),
-            new SearchProposition("is:prefab", null, "Search prefab objects"),
-            new SearchProposition("prefab:root", null, "Search prefab roots"),
-            new SearchProposition("prefab:top", null, "Search top-level prefab root instances"),
-            new SearchProposition("prefab:instance", null, "Search objects that are part of a prefab instance"),
-            new SearchProposition("prefab:nonasset", null, "Search prefab objects that are not part of an asset"),
-            new SearchProposition("prefab:asset", null, "Search prefab objects that are part of an asset"),
-            new SearchProposition("prefab:model", null, "Search prefab objects that are part of a model"),
-            new SearchProposition("prefab:regular", null, "Search regular prefab objects"),
-            new SearchProposition("prefab:variant", null, "Search variant prefab objects"),
-            new SearchProposition("prefab:modified", null, "Search modified prefab assets"),
-            new SearchProposition("prefab:altered", null, "Search modified prefab instances"),
-            new SearchProposition("t:", null, "Search object by type", priority: -1),
-            new SearchProposition("ref:", null, "Search object references"),
-            new SearchProposition("p", "p(", "Search object's properties"),
+            new SearchProposition(label: "id:", null, "Search object by ID"),
+            new SearchProposition(label: "path:", null, "Search object by transform path"),
+            new SearchProposition(label: "tag:", null, "Search object with tag"),
+            new SearchProposition(label: "layer:", "layer>0", "Search object by layer (number)"),
+            new SearchProposition(label: "size:", null, "Search object by volume size"),
+            new SearchProposition(label: "components:", "components>=2", "Search object with more than # components"),
+            new SearchProposition(label: "is:", null, "Search object by state"),
+            new SearchProposition(label: "is:child", null, "Search object with a parent"),
+            new SearchProposition(label: "is:leaf", null, "Search object without children"),
+            new SearchProposition(label: "is:root", null, "Search root objects"),
+            new SearchProposition(label: "is:visible", null, "Search view visible objects"),
+            new SearchProposition(label: "is:hidden", null, "Search hierarchically hidden objects"),
+            new SearchProposition(label: "is:static", null, "Search static objects"),
+            new SearchProposition(label: "is:prefab", null, "Search prefab objects"),
+            new SearchProposition(label: "prefab:root", null, "Search prefab roots"),
+            new SearchProposition(label: "prefab:top", null, "Search top-level prefab root instances"),
+            new SearchProposition(label: "prefab:instance", null, "Search objects that are part of a prefab instance"),
+            new SearchProposition(label: "prefab:nonasset", null, "Search prefab objects that are not part of an asset"),
+            new SearchProposition(label: "prefab:asset", null, "Search prefab objects that are part of an asset"),
+            new SearchProposition(label: "prefab:model", null, "Search prefab objects that are part of a model"),
+            new SearchProposition(label: "prefab:regular", null, "Search regular prefab objects"),
+            new SearchProposition(label: "prefab:variant", null, "Search variant prefab objects"),
+            new SearchProposition(label: "prefab:modified", null, "Search modified prefab assets"),
+            new SearchProposition(label: "prefab:altered", null, "Search modified prefab instances"),
+            new SearchProposition(label: "t:", null, "Search object by type", priority: -1),
+            new SearchProposition(label: "ref:", null, "Search object references"),
         };
 
         protected class GOD
@@ -150,7 +149,7 @@ namespace UnityEditor.Search.Providers
             var label = typeName;
             if (prefixFilterId != null)
                 label = prefixFilterId + label;
-            return new SearchProposition(label, null, $"Search {typeName} components", icon: Utils.FindTextureForType(t));
+            return new SearchProposition(label: label, null, $"Search {typeName} components", icon: Utils.FindTextureForType(t));
         }
 
         #region search_query_error_example
@@ -160,7 +159,7 @@ namespace UnityEditor.Search.Providers
             if (!query.valid)
             {
                 context.AddSearchQueryErrors(query.errors.Select(e => new SearchQueryError(e, context, provider)));
-                return new T[] {};
+                return Enumerable.Empty<T>();
             }
 
             IEnumerable<T> gameObjects = subset ?? m_Objects;
@@ -169,7 +168,7 @@ namespace UnityEditor.Search.Providers
 
         #endregion
 
-        public virtual bool GetId(T obj, string op, int instanceId)
+        public virtual bool GetId(T obj, QueryFilterOperator op, int instanceId)
         {
             return instanceId == obj.GetInstanceID();
         }
@@ -195,7 +194,7 @@ namespace UnityEditor.Search.Providers
             return god;
         }
 
-        protected virtual bool OnIsFilter(T obj, string op, string value)
+        protected virtual bool OnIsFilter(T obj, QueryFilterOperator op, string value)
         {
             if (string.Equals(value, "object", StringComparison.Ordinal))
                 return true;
@@ -253,7 +252,7 @@ namespace UnityEditor.Search.Providers
             return null;
         }
 
-        bool OnTypeFilter(T obj, string op, string value)
+        bool OnTypeFilter(T obj, QueryFilterOperator op, string value)
         {
             if (!obj)
                 return false;
@@ -339,7 +338,7 @@ namespace UnityEditor.Search.Providers
             return true;
         }
 
-        private bool GetReferences(T obj, string op, string value)
+        private bool GetReferences(T obj, QueryFilterOperator op, string value)
         {
             var god = GetGOD(obj);
 
@@ -370,12 +369,21 @@ namespace UnityEditor.Search.Providers
 
             if (Utils.TryParse(value, out int instanceId))
                 return god.refs.Contains(instanceId);
+
+            if (value.StartsWith("GlobalObjectId", StringComparison.Ordinal) && GlobalObjectId.TryParse(value, out var gid))
+            {
+                var assetPath = AssetDatabase.GUIDToAssetPath(gid.assetGUID).ToLowerInvariant();
+                if (god.refs.Contains(assetPath.GetHashCode()))
+                    return true;
+                return god.refs.Contains(GlobalObjectId.GlobalObjectIdentifierToInstanceIDSlow(gid));
+            }
+
             return god.refs.Contains(value.ToLowerInvariant().GetHashCode());
         }
 
-        protected bool CompareWords(string op, string value, IEnumerable<string> words, StringComparison stringComparison = StringComparison.Ordinal)
+        protected bool CompareWords(in QueryFilterOperator op, string value, in IEnumerable<string> words, StringComparison stringComparison = StringComparison.Ordinal)
         {
-            if (op == "=")
+            if (op.type == FilterOperatorType.Equal)
                 return words.Any(t => t.Equals(value, stringComparison));
             return words.Any(t => t.IndexOf(value, stringComparison) != -1);
         }
@@ -386,7 +394,7 @@ namespace UnityEditor.Search.Providers
 
             if (god.words == null)
             {
-                god.words = SplitWords(go.name, s_EntrySeparators)
+                god.words = SplitName(go.name, s_EntrySeparators)
                     .Select(w => w.ToLowerInvariant())
                     .ToArray();
             }
@@ -394,14 +402,14 @@ namespace UnityEditor.Search.Providers
             return god.words;
         }
 
-        private static IEnumerable<string> SplitWords(string entry, char[] entrySeparators)
+        private static IEnumerable<string> SplitName(string entry, char[] entrySeparators)
         {
-            var nameTokens = CleanName(entry).Split(entrySeparators);
+            yield return entry;
+            var cleanName = CleanName(entry);
+            var nameTokens = cleanName.Split(entrySeparators);
             var scc = nameTokens.SelectMany(s => SearchUtils.SplitCamelCase(s)).Where(s => s.Length > 0);
             var fcc = scc.Aggregate("", (current, s) => current + s[0]);
-            return new[] { fcc, entry }.Concat(scc.Where(s => s.Length > 1))
-                .Where(s => s.Length > 0)
-                .Distinct();
+            yield return fcc;
         }
 
         private static string CleanName(string s)

@@ -29,6 +29,7 @@ namespace UnityEditor.Build
             "GameCoreXboxOne",
             "PS5",
             "EmbeddedLinux",
+            "QNX",
         };
 
         public static readonly NamedBuildTarget Unknown = new NamedBuildTarget("");
@@ -45,6 +46,7 @@ namespace UnityEditor.Build
         public static readonly NamedBuildTarget Stadia = new NamedBuildTarget("Stadia");
         public static readonly NamedBuildTarget CloudRendering  = new NamedBuildTarget("CloudRendering");
         public static readonly NamedBuildTarget EmbeddedLinux  = new NamedBuildTarget("EmbeddedLinux");
+        public static readonly NamedBuildTarget QNX  = new NamedBuildTarget("QNX");
 
         public string TargetName { get; }
 
@@ -99,6 +101,8 @@ namespace UnityEditor.Build
                     return NamedBuildTarget.CloudRendering;
                 case BuildTargetGroup.EmbeddedLinux:
                     return NamedBuildTarget.EmbeddedLinux;
+                case BuildTargetGroup.QNX:
+                    return NamedBuildTarget.QNX;
 
                 // Build targets that are not explicitly listed
                 case BuildTargetGroup.Lumin:

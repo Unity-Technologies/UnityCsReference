@@ -3905,17 +3905,17 @@ namespace UnityEngine.TextCore.Text
                             {
                                 m_CurrentSpriteAsset = generationSettings.spriteAsset;
                             }
+                            else if (textSettings.defaultSpriteAsset != null)
+                            {
+                                m_CurrentSpriteAsset = textSettings.defaultSpriteAsset;
+                            }
                             else if (m_DefaultSpriteAsset != null)
                             {
                                 m_CurrentSpriteAsset = m_DefaultSpriteAsset;
                             }
                             else if (m_DefaultSpriteAsset == null)
                             {
-                                if (textSettings.defaultSpriteAsset != null)
-                                    m_DefaultSpriteAsset = textSettings.defaultSpriteAsset;
-                                else
-                                    m_DefaultSpriteAsset = Resources.Load<SpriteAsset>("Sprite Assets/Default Sprite Asset");
-
+                                m_DefaultSpriteAsset = Resources.Load<SpriteAsset>("Sprite Assets/Default Sprite Asset");
                                 m_CurrentSpriteAsset = m_DefaultSpriteAsset;
                             }
 

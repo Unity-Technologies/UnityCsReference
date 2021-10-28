@@ -194,7 +194,7 @@ namespace UnityEditor
             SerializedProperty tag = m_Tags.GetArrayElementAtIndex(list.index);
             if (tag.stringValue == "") return;
 
-            bool isPreset = PresetEditor.IsPreset(target);
+            bool isPreset = Preset.IsEditorTargetAPreset(target);
             if (!isPreset)
             {
                 GameObject go = GameObject.FindWithTag(tag.stringValue);

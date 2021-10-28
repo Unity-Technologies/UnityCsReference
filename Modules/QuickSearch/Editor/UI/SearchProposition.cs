@@ -9,13 +9,64 @@ using UnityEngine;
 
 namespace UnityEditor.Search
 {
+    delegate IEnumerable<SearchProposition> SearchPropositionsProviderHandler(SearchContext context, SearchPropositionOptions options);
+
+    readonly struct SearchPropositionProvider
+    {
+        public readonly SearchPropositionsProviderHandler handler;
+
+        public bool valid => handler != null;
+
+        public SearchPropositionProvider(SearchPropositionsProviderHandler handler)
+        {
+            this.handler = handler;
+        }
+    }
+
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+    class SearchPropositionsProviderAttribute : Attribute
+    {
+        static List<SearchPropositionProvider> s_Providers;
+        public static List<SearchPropositionProvider> providers
+        {
+            get
+            {
+                if (s_Providers == null)
+                {
+                    var supportedSignature = MethodSignature.FromDelegate<SearchPropositionsProviderHandler>();
+                    s_Providers = ReflectionUtils.LoadAllMethodsWithAttribute<SearchPropositionsProviderAttribute, SearchPropositionProvider>((mi, attribute, handler) =>
+                    {
+                        if (handler is SearchPropositionsProviderHandler _handler)
+                            return new SearchPropositionProvider(_handler);
+
+                        Debug.LogWarning($"Invalid search proposition provider handler using {mi.DeclaringType.FullName}.{mi.Name}");
+                        return default;
+                    }, supportedSignature, ReflectionUtils.AttributeLoaderBehavior.DoNotThrowOnValidation).Distinct().Where(e => e.valid).ToList();
+                }
+
+                return s_Providers;
+            }
+        }
+
+        internal static void FetchPropositions(in SearchContext context, in SearchPropositionOptions options, SortedSet<SearchProposition> propositions)
+        {
+            foreach (var provider in providers)
+            {
+                foreach (var p in provider.handler(context, options))
+                    propositions.Add(p);
+            }
+        }
+    }
+
     [Flags]
     enum SearchPropositionFlags
     {
         None = 0,
 
-        FilterOnly = 1 << 0,
-        IgnoreRecents = 1 << 1
+        FilterOnly    = 1 << 0,
+        IgnoreRecents = 1 << 1,
+        QueryBuilder  = 1 << 2,
+        NoCategory    = 1 << 3
     }
 
     static class SearchPropositionFlagsExtensions
@@ -32,12 +83,32 @@ namespace UnityEditor.Search
         internal readonly int priority;
         internal readonly TextCursorPlacement moveCursor;
         internal readonly Texture2D icon;
+        internal readonly string category;
+        internal readonly Type type;
+        internal readonly object data;
+
+        internal string path => string.IsNullOrEmpty(category) ? label : $"{category}/{label}";
+
+        internal static SearchProposition invalid = default;
 
         internal bool valid => label != null && replacement != null;
 
         public SearchProposition(string label, string replacement = null, string help = null,
                                  int priority = int.MaxValue, TextCursorPlacement moveCursor = TextCursorPlacement.MoveAutoComplete,
                                  Texture2D icon = null)
+            : this(null, label, replacement, help, priority, moveCursor, icon, null, null)
+        {
+        }
+
+        internal SearchProposition(string label, string replacement, string help,
+                                   int priority, Texture2D icon, object data)
+            : this(null, label, replacement, help, priority, TextCursorPlacement.MoveAutoComplete, icon, null, data)
+        {
+        }
+
+        internal SearchProposition(string category = null, string label = null, string replacement = null, string help = null,
+                                   int priority = 0, TextCursorPlacement moveCursor = TextCursorPlacement.MoveAutoComplete,
+                                   Texture2D icon = null, Type type = null, object data = null)
         {
             var kparts = label.Split(new char[] { '|' });
             this.label = kparts[0];
@@ -46,6 +117,9 @@ namespace UnityEditor.Search
             this.priority = priority;
             this.moveCursor = moveCursor;
             this.icon = icon;
+            this.category = category;
+            this.type = type;
+            this.data = data;
         }
 
         public int CompareTo(SearchProposition other)
@@ -53,15 +127,15 @@ namespace UnityEditor.Search
             var c = priority.CompareTo(other.priority);
             if (c != 0)
                 return c;
-            c = label.CompareTo(other.label);
+            c = string.CompareOrdinal(path, other.path);
             if (c != 0)
                 return c;
-            return string.Compare(help, other.help);
+            return string.CompareOrdinal(help, other.help);
         }
 
         public bool Equals(SearchProposition other)
         {
-            return label.Equals(other.label) && string.Equals(help, other.help);
+            return path.Equals(other.path) && string.Equals(help, other.help);
         }
 
         public override int GetHashCode()
@@ -69,15 +143,15 @@ namespace UnityEditor.Search
             unchecked
             {
                 if (help != null)
-                    return label.GetHashCode() ^ help.GetHashCode() ^ priority.GetHashCode();
-                return label.GetHashCode() ^ priority.GetHashCode();
+                    return path.GetHashCode() ^ help.GetHashCode() ^ priority.GetHashCode();
+                return path.GetHashCode() ^ priority.GetHashCode();
             }
         }
 
         public override bool Equals(object other)
         {
             if (other is string s)
-                return label.Equals(s);
+                return path.Equals(s);
             return other is SearchProposition l && Equals(l);
         }
 
@@ -90,9 +164,10 @@ namespace UnityEditor.Search
         {
             var propositions = new SortedSet<SearchProposition>();
 
-            if (!options.HasAny(SearchPropositionFlags.IgnoreRecents) && !context.options.HasFlag(SearchFlags.Debug) && !Utils.IsRunningTests())
+            if (!options.HasAny(SearchPropositionFlags.QueryBuilder) && !context.options.HasFlag(SearchFlags.Debug) && !Utils.IsRunningTests())
                 FillBuiltInPropositions(context, propositions);
             FillProviderPropositions(context, options, propositions);
+            SearchPropositionsProviderAttribute.FetchPropositions(context, options, propositions);
             return propositions;
         }
 
@@ -110,10 +185,23 @@ namespace UnityEditor.Search
                 {
                     if (p.fetchPropositions == null)
                         continue;
-                    var currentPropositions = p.fetchPropositions(context, options);
+                    var currentPropositions = p.fetchPropositions(context, options).Where(p => p.valid);
                     if (currentPropositions != null)
                         propositions.UnionWith(currentPropositions);
                 }
+            }
+
+            if (!options.HasAny(SearchPropositionFlags.QueryBuilder))
+            {
+                // Add Expression proposition from Default Provider
+                if (queryEmpty)
+                    return;
+                var defaultProvider = SearchService.GetDefaultProvider();
+                if (defaultProvider?.fetchPropositions == null)
+                    return;
+                var props = defaultProvider.fetchPropositions(context, options).Where(p => p.valid);
+                if (props != null)
+                    propositions.UnionWith(props);
             }
         }
 
@@ -124,7 +212,7 @@ namespace UnityEditor.Search
             {
                 if (!rs.StartsWith(context.searchText, StringComparison.OrdinalIgnoreCase))
                     continue;
-                propositions.Add(new SearchProposition(rs, rs, "Recent search", priority: builtPriority, moveCursor: TextCursorPlacement.MoveLineEnd));
+                propositions.Add(new SearchProposition(label: rs, rs, "Recent search", priority: builtPriority, moveCursor: TextCursorPlacement.MoveLineEnd));
                 builtPriority += 10;
             }
         }
@@ -202,9 +290,9 @@ namespace UnityEditor.Search
             m_Tokens = null;
         }
 
-        internal SearchPropositionOptions(in SearchContext context, int cursor)
+        internal SearchPropositionOptions(in SearchContext context, int cursor, in string searchText = null)
         {
-            this.query = context.searchText;
+            this.query = searchText ?? context.searchText;
             this.cursor = cursor;
             this.flags = SearchPropositionFlags.None;
             var subQuery = GetTokenAtCursorPosition(query, cursor, IsDelimiter);

@@ -54,13 +54,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             ResolveDependencies(packageDatabase, packageFiltering);
         }
 
-        public override void UpdateFilters(PageFilters filters)
+        public override bool UpdateFilters(PageFilters filters)
         {
-            if ((m_Filters == null && filters == null) || (m_Filters?.Equals(filters) ?? false))
-                return;
+            if (!base.UpdateFilters(filters))
+                return false;
 
-            m_Filters = filters?.Clone();
             Rebuild();
+            return true;
         }
 
         public override void OnPackagesChanged(IEnumerable<IPackage> added, IEnumerable<IPackage> removed, IEnumerable<IPackage> preUpdate, IEnumerable<IPackage> postUpdate)
@@ -138,10 +138,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RebuildOrderedVisualStates()
         {
+            var isUpdateAvailableOnly = m_Filters?.updateAvailableOnly ?? false;
+            var isSubscriptionBasedOnly = m_Filters?.subscriptionBasedOnly ?? false;
             var subPage = currentSubPage;
-            var packages = m_PackageDatabase.allPackages
-                .Where(p => m_PackageFiltering.FilterByCurrentTab(p) && (subPage?.filter?.Invoke(p) ?? true));
-
+            var packages = m_PackageDatabase.allPackages.Where(
+                p => m_PackageFiltering.FilterByCurrentTab(p)
+                && (subPage?.filter?.Invoke(p) ?? true)
+                && (!isUpdateAvailableOnly || p.state == PackageState.UpdateAvailable)
+                && (!isSubscriptionBasedOnly || p.hasEntitlements));
             var orderBy = m_Filters?.orderBy ?? string.Empty;
             var isReversOrder = m_Filters?.isReverseOrder ?? false;
             IOrderedEnumerable<IPackage> orderedPackages;

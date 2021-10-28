@@ -140,6 +140,16 @@ namespace UnityEditor.Search
         public string searchQuery { get; private set; } = string.Empty;
 
         /// <summary>
+        /// Original search query with all markers
+        /// </summary>
+        internal string rawSearchQuery { get; private set; } = string.Empty;
+
+        /// <summary>
+        /// Keep a trace of all parsed query markers in the searchText
+        /// </summary>
+        internal QueryMarker[] markers;
+
+        /// <summary>
         /// Character offset of the processed search query in the raw search text.
         /// </summary>
         public int searchQueryOffset { get; private set; } = 0;
@@ -220,23 +230,17 @@ namespace UnityEditor.Search
             // Reset a few values
             filterId = null;
             textFilters = searchWords = k_Empty;
-            searchQuery = searchText.TrimStart();
+
             searchQueryOffset = 0;
+            rawSearchQuery = SearchUtils.ParseSearchText(searchText, m_Providers, out var filteredProvider);
+            searchQuery = QueryMarker.ReplaceMarkersWithRawValues(rawSearchQuery, out markers);
+            if (filteredProvider != null)
+                filterId = filteredProvider.filterId;
 
             if (string.IsNullOrEmpty(searchQuery))
                 return;
 
-            foreach (var providerFilterId in m_Providers.Select(p => p.filterId))
-            {
-                if (searchQuery.StartsWith(providerFilterId, StringComparison.OrdinalIgnoreCase))
-                {
-                    filterId = providerFilterId;
-                    searchQuery = searchQuery.Remove(0, providerFilterId.Length).TrimStart();
-                    break;
-                }
-            }
-
-            searchQueryOffset = searchText.Length - searchQuery.Length;
+            searchQueryOffset = searchText.Length - rawSearchQuery.Length;
             searchQuery = searchQuery.TrimEnd();
             var tokens = Utils.Simplify(searchQuery).ToLowerInvariant().Split(' ').ToArray();
             searchWords = tokens.Where(t => t.IndexOf(':') == -1).ToArray();

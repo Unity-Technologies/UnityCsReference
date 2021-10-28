@@ -485,7 +485,7 @@ namespace UnityEditor
 
         public void DrawMesh(Mesh mesh, Vector3 pos, Vector3 scale, Quaternion rot, Material mat, int subMeshIndex, MaterialPropertyBlock customProperties, Transform probeAnchor, bool useLightProbe)
         {
-            Graphics.DrawMesh(mesh, Matrix4x4.TRS(pos, rot, scale), mat, 1, camera, subMeshIndex, customProperties, ShadowCastingMode.Off, false, probeAnchor, useLightProbe);
+            Graphics.DrawMesh(mesh, Matrix4x4.TRS(pos, rot, scale), mat, 0, camera, subMeshIndex, customProperties, ShadowCastingMode.Off, false, probeAnchor, useLightProbe);
         }
 
         internal static Mesh GetPreviewSphere()

@@ -20,19 +20,17 @@ namespace UnityEditor.Mono.BuildPipeline
             public string path;
             public string contentHash;
 
-            public BuildDataInputFile(NPath npath)
+            public BuildDataInputFile(NPath npath, bool developmentBuild)
             {
                 path = npath.ToString();
                 if (npath.HasExtension("cs"))
                 {
                     var monoScript = AssetDatabase.LoadAssetAtPath<MonoScript>(path);
                     if (monoScript != null)
-                        contentHash = monoScript.GetPropertiesHashString();
+                        contentHash = monoScript.GetPropertiesHashString(developmentBuild);
                 }
                 else
-                {
                     contentHash = AssetDatabase.GetAssetDependencyHash(npath.ToString()).ToString();
-                }
             }
         }
 
@@ -68,19 +66,17 @@ namespace UnityEditor.Mono.BuildPipeline
                 return true;
             }
 
-            string hash = "";
+            string contentHash = "";
             if (path.Extension == "cs")
             {
                 var monoScript = AssetDatabase.LoadAssetAtPath<MonoScript>(path.ToString());
                 if (monoScript != null)
-                    hash = monoScript.GetPropertiesHashString();
+                    contentHash = monoScript.GetPropertiesHashString(buildOptions.HasFlag(BuildOptions.Development));
             }
             else
-            {
-                hash = AssetDatabase.GetAssetDependencyHash(path.ToString()).ToString();
-            }
+                contentHash = AssetDatabase.GetAssetDependencyHash(file.path).ToString();
 
-            if (hash != file.contentHash)
+            if (contentHash != file.contentHash)
             {
                 Console.WriteLine($"Rebuilding Data files because {path} is dirty (hash)");
                 return true;
@@ -103,7 +99,7 @@ namespace UnityEditor.Mono.BuildPipeline
                 return true;
             }
 
-            if (buildOptions != buildData.buildOptions)
+            if ((buildOptions & BuildData.BuildOptionsMask) != buildData.buildOptions)
             {
                 Console.WriteLine("Rebuilding Data files because the build options have changed");
                 return true;
@@ -147,22 +143,23 @@ namespace UnityEditor.Mono.BuildPipeline
         [RequiredByNativeCode]
         static public void WriteBuildData(string buildDataPath, BuildReport report, string[] scenes, string[] prefabs)
         {
+            var developmentBuild = report.summary.options.HasFlag(BuildOptions.Development);
             var inputScenes = new List<BuildDataInputFile>();
             foreach (var scene in scenes)
-                inputScenes.Add(new BuildDataInputFile(scene));
+                inputScenes.Add(new BuildDataInputFile(scene, developmentBuild));
 
             var inputFiles = new List<BuildDataInputFile>();
             foreach (var scene in scenes)
-                inputFiles.Add(new BuildDataInputFile(scene));
+                inputFiles.Add(new BuildDataInputFile(scene, developmentBuild));
             foreach (var prefab in prefabs)
-                inputFiles.Add(new BuildDataInputFile(prefab));
+                inputFiles.Add(new BuildDataInputFile(prefab, developmentBuild));
             foreach (var assetInfo in report.packedAssets.SelectMany(a => a.contents))
             {
                 if (assetInfo.sourceAssetPath.ToNPath().FileExists() && !assetInfo.sourceAssetPath.StartsWith("."))
-                    inputFiles.Add(new BuildDataInputFile(assetInfo.sourceAssetPath));
+                    inputFiles.Add(new BuildDataInputFile(assetInfo.sourceAssetPath, developmentBuild));
             }
             foreach (var projectSetting in new NPath("ProjectSettings").Files("*.asset"))
-                inputFiles.Add(new BuildDataInputFile(projectSetting));
+                inputFiles.Add(new BuildDataInputFile(projectSetting, developmentBuild));
 
             var buildData = new BuildData()
             {
@@ -189,7 +186,7 @@ namespace UnityEditor.Mono.BuildPipeline
             {
                 buildData = JsonUtility.FromJson<BuildData>(buildReportPath.ReadAllText()),
                 scenes = scenes,
-                buildOptions = buildOptions & BuildData.BuildOptionsMask
+                buildOptions = buildOptions
             };
             return tracker.DoCheckDirty();
         }

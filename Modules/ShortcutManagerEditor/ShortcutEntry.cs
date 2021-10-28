@@ -60,6 +60,7 @@ namespace UnityEditor.ShortcutManagement
 
         readonly Action<ShortcutArguments> m_Action;
         readonly Type m_Context;
+        readonly string m_Tag;
         readonly ShortcutType m_Type;
 
         public Identifier identifier => m_Identifier;
@@ -71,15 +72,20 @@ namespace UnityEditor.ShortcutManagement
 
         public Action<ShortcutArguments> action => m_Action;
         public Type context => m_Context;
+        public string tag => m_Tag;
         public ShortcutType type => m_Type;
 
         ShortcutModifiers m_ReservedModifier;
 
         internal ShortcutEntry(Identifier id, IEnumerable<KeyCombination> defaultCombination, Action<ShortcutArguments> action, Type context, ShortcutType type, string displayName = null)
+            : this(id, defaultCombination, action, context, null, type, displayName) {}
+
+        internal ShortcutEntry(Identifier id, IEnumerable<KeyCombination> defaultCombination, Action<ShortcutArguments> action, Type context, string tag, ShortcutType type, string displayName = null)
         {
             m_Identifier = id;
             m_DefaultCombinations = defaultCombination.ToList();
             m_Context = context ?? ContextManager.globalContextType;
+            m_Tag = tag;
             m_Action = action;
             m_Type = type;
             m_DisplayName = displayName ?? id.path;
@@ -91,7 +97,7 @@ namespace UnityEditor.ShortcutManagement
 
         public override string ToString()
         {
-            return $"{string.Join(",", combinations.Select(c => c.ToString()).ToArray())} [{context?.Name}]";
+            return $"{string.Join(",", combinations.Select(c => c.ToString()).ToArray())} [{context?.Name}] {(!string.IsNullOrWhiteSpace(tag) ? $"[{tag}]" : "")}";
         }
 
         List<KeyCombination> activeCombination

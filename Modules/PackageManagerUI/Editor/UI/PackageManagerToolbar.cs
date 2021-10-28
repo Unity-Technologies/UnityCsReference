@@ -22,9 +22,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private const long k_SearchEventDelayTicks = TimeSpan.TicksPerSecond / 3;
 
-        private static readonly string k_Ascending = "↓";
-        private static readonly string k_Descending = "↑";
-
         private ResourceLoader m_ResourceLoader;
         internal ApplicationProxy m_Application;
         private UnityConnectProxy m_UnityConnect;
@@ -75,6 +72,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_PackageDatabase.onPackagesChanged += OnPackagesChanged;
             m_PackageFiltering.onFilterTabChanged += SetFilter;
+            m_PageManager.onFiltersChange += UpdateFiltersMenuText;
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
             m_Application.onInternetReachabilityChange += OnInternetReachabilityChange;
         }
@@ -84,6 +82,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             searchToolbar.UnregisterValueChangedCallback(OnSearchTextChanged);
             m_PackageDatabase.onPackagesChanged -= OnPackagesChanged;
             m_PackageFiltering.onFilterTabChanged -= SetFilter;
+            m_PageManager.onFiltersChange -= UpdateFiltersMenuText;
             m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
             m_Application.onInternetReachabilityChange -= OnInternetReachabilityChange;
         }
@@ -199,7 +198,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var filtersSet = new List<string>();
             if (filters?.isFilterSet ?? false)
             {
-                if (filters.statuses?.Any() ?? false)
+                if (!string.IsNullOrEmpty(filters.status))
                     filtersSet.Add(L10n.Tr("Status"));
                 if (filters.categories?.Any() ?? false)
                     filtersSet.Add(L10n.Tr("Category"));
@@ -238,6 +237,17 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             dropdownItem = toolbarSettingsMenu.AddBuiltInDropdownItem();
             dropdownItem.insertSeparatorBefore = true;
+            dropdownItem.text = L10n.Tr("Manual resolve");
+            dropdownItem.action = () =>
+            {
+                if (!EditorApplication.isPlaying)
+                {
+                    m_UpmClient.Resolve();
+                }
+            };
+
+            dropdownItem = toolbarSettingsMenu.AddBuiltInDropdownItem();
+            dropdownItem.insertSeparatorBefore = true;
             dropdownItem.text = L10n.Tr("Reset Packages to defaults");
             dropdownItem.action = () =>
             {
@@ -255,7 +265,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     PackageManagerWindow.instance?.Close();
                     m_PageManager.Reload();
-                    ServicesContainer.instance.Resolve<AssetStoreCallQueue>().Clear();
+                    ServicesContainer.instance.Resolve<AssetStoreCallQueue>().ClearFetchDetails();
                 };
 
                 dropdownItem = toolbarSettingsMenu.AddBuiltInDropdownItem();
@@ -395,14 +405,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             orderingMenu.menu.MenuItems().Clear();
 
             var shouldDisplayOrdering = page?.capability.orderingValues?.Any() ?? false;
-            var shouldDisplayConditionalOrdering = false;
-            if (page?.capability.conditionalOrderingValues?.Any() ?? false)
-            {
-                shouldDisplayConditionalOrdering = page.capability.conditionalOrderingValues.
-                    Aggregate(shouldDisplayConditionalOrdering, (current, ordering) => current || (ordering.condition?.Invoke() ?? false));
-            }
-
-            if (!shouldDisplayOrdering && !shouldDisplayConditionalOrdering)
+            if (!shouldDisplayOrdering)
             {
                 UIUtils.SetElementDisplay(orderingMenu, false);
                 return;
@@ -417,29 +420,13 @@ namespace UnityEditor.PackageManager.UI.Internal
                     matchCurrentFilter |= AddOrdering(page, ordering);
             }
 
-            if (shouldDisplayConditionalOrdering)
-            {
-                foreach (var conditionalOrdering in page.capability.conditionalOrderingValues)
-                {
-                    if (conditionalOrdering.condition?.Invoke() ?? false)
-                        matchCurrentFilter |= AddOrdering(page, conditionalOrdering);
-                }
-            }
-
             if (!matchCurrentFilter)
             {
                 var filters = page.filters?.Clone();
                 var firstOrdering = page.capability?.orderingValues?.FirstOrDefault();
                 if (filters != null && firstOrdering != null)
                 {
-                    var order = string.Empty;
-                    if (firstOrdering.order == PageCapability.Order.Ascending)
-                        order = $" {k_Ascending}";
-                    else if (firstOrdering.order == PageCapability.Order.Descending)
-                        order = $" {k_Descending}";
-
-                    orderingMenu.text = $"Sort: {L10n.Tr(firstOrdering.displayName)}{order}";
-
+                    orderingMenu.text = $"Sort: {L10n.Tr(firstOrdering.displayName)}";
                     filters.orderBy = firstOrdering.orderBy;
                     filters.isReverseOrder = firstOrdering.order == PageCapability.Order.Descending;
                     page.UpdateFilters(filters);
@@ -450,13 +437,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private bool AddOrdering(IPage page, PageCapability.Ordering ordering)
         {
             var matchCurrentFilter = false;
-            var order = string.Empty;
-            if (ordering.order == PageCapability.Order.Ascending)
-                order = $" {k_Ascending}";
-            else if (ordering.order == PageCapability.Order.Descending)
-                order = $" {k_Descending}";
-
-            orderingMenu.menu.AppendAction($"{L10n.Tr(ordering.displayName)}{order}", a =>
+            orderingMenu.menu.AppendAction($"{L10n.Tr(ordering.displayName)}", a =>
             {
                 orderingMenu.text = $"{L10n.Tr("Sort: ")} {a.name}";
 
@@ -477,7 +458,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             )
             {
                 matchCurrentFilter = true;
-                orderingMenu.text = $"Sort: {L10n.Tr(ordering.displayName)}{order}";
+                orderingMenu.text = $"Sort: {L10n.Tr(ordering.displayName)}";
             }
 
             return matchCurrentFilter;
@@ -498,7 +479,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                     filtersMenu.pseudoStates |= PseudoStates.Active;
                     PackageManagerFiltersWindow.instance.OnFiltersChanged += filters =>
                     {
-                        UpdateFiltersMenuText(filters);
                         page.UpdateFilters(filters);
                     };
                     PackageManagerFiltersWindow.instance.OnClose += () =>
@@ -512,7 +492,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 var page = m_PageManager.GetCurrentPage();
                 page.ClearFilters();
-                UpdateFiltersMenuText(page.filters);
             };
         }
 

@@ -37,9 +37,35 @@ namespace UnityEditor
             }
         }
 
+        public static void DrawObjectFieldForBody(Editor editor)
+        {
+            var joint = editor.target as Joint;
+            bool shouldDrawConnectedBody = true;
+            bool shouldDrawConnectedArticulationBody = true;
+
+            if (joint.connectedBody != null)
+                shouldDrawConnectedArticulationBody = false;
+
+            else if (joint.connectedArticulationBody != null)
+                shouldDrawConnectedBody = false;
+
+            if (editor.targets.Length > 1)
+            {
+                shouldDrawConnectedBody = true;
+                shouldDrawConnectedArticulationBody = true;
+            }
+
+            if (shouldDrawConnectedBody)
+                EditorGUILayout.PropertyField(editor.serializedObject.FindProperty("m_ConnectedBody"), true);
+
+            if (shouldDrawConnectedArticulationBody)
+                EditorGUILayout.PropertyField(editor.serializedObject.FindProperty("m_ConnectedArticulationBody"), true);
+        }
+
         public override void OnInspectorGUI()
         {
             CheckConnectedBody(this);
+            DrawObjectFieldForBody(this);
             base.OnInspectorGUI();
         }
     }
@@ -62,6 +88,7 @@ namespace UnityEditor
         {
             JointCommonEditor.CheckConnectedBody(this);
             DoInspectorEditButtons();
+            JointCommonEditor.DrawObjectFieldForBody(this);
             base.OnInspectorGUI();
         }
 

@@ -666,7 +666,10 @@ namespace UnityEngine
 
         override extern public TextureDimension dimension { get; set; }
 
-        [NativeProperty("ColorFormat")]             extern public new GraphicsFormat graphicsFormat { get; set; }
+        [NativeName("GetColorFormat")] extern private GraphicsFormat GetColorFormat(bool suppressWarnings);
+        [NativeName("SetColorFormat")] extern private void SetColorFormat(GraphicsFormat format);
+        public new GraphicsFormat graphicsFormat { get{ return GetColorFormat(true); } set { SetColorFormat(value); } } // Getter should not log warnings
+
         [NativeProperty("MipMap")]                  extern public bool useMipMap { get; set; }
         [NativeProperty("SRGBReadWrite")]           extern public bool sRGB { get; }
         [NativeProperty("VRUsage")]                 extern public VRTextureUsage vrUsage { get; set; }

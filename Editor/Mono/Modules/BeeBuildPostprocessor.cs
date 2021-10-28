@@ -210,6 +210,9 @@ namespace UnityEditor.Modules
             if (!string.IsNullOrEmpty(playerSettingsArgs))
                 additionalArgs.Add(playerSettingsArgs);
 
+            if (CrashReportingSettings.enabled)
+                additionalArgs.Add("--emit-source-mapping");
+
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(args.target);
             var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup);
             var platformHasIncrementalGC = BuildPipeline.IsFeatureSupported("ENABLE_SCRIPTING_GC_WBARRIERS", args.target);

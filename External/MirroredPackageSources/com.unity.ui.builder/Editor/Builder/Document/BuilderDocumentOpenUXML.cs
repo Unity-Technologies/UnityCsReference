@@ -882,10 +882,24 @@ namespace Unity.UI.Builder
                 return;
 
             documentRootElement.Clear();
+            ResetCanvasDocumentRootElementStyleSheets(documentRootElement);
             BuilderSharedStyles.ClearContainer(documentRootElement);
 
             documentRootElement.SetProperty(
                 BuilderConstants.ElementLinkedVisualTreeAssetVEPropertyName, visualTreeAsset);
+        }
+
+        internal void ResetCanvasDocumentRootElementStyleSheets(VisualElement documentRootElement)
+        {
+            documentRootElement.styleSheets.Clear();
+            // Load stylesheets specific to the document element.
+            var documentSheet = BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(BuilderConstants.UIBuilderPackagePath + "/Viewport/BuilderDocument.uss");
+            var documentThemeSheet = EditorGUIUtility.isProSkin
+                ? BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(BuilderConstants.UIBuilderPackagePath + "/Viewport/BuilderDocumentDark.uss")
+                : BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(BuilderConstants.UIBuilderPackagePath + "/Viewport/BuilderDocumentLight.uss");
+
+            documentRootElement.styleSheets.Add(documentSheet);
+            documentRootElement.styleSheets.Add(documentThemeSheet);
         }
 
         void ReloadDocumentToCanvas(VisualElement documentRootElement)

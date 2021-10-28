@@ -121,7 +121,7 @@ namespace UnityEditor
             }
 
             var target = serializedProperty.serializedObject.targetObject;
-            bool isPreset = PresetEditor.IsPreset(target);
+            bool isPreset = Preset.IsEditorTargetAPreset(target);
 
             // the preset object is destroyed with the inspector, and nothing new can be created that needs this link. Fix for case 1208437
             if (!isPreset)

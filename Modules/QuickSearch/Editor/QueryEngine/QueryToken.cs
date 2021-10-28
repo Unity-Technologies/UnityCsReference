@@ -24,17 +24,16 @@ namespace UnityEditor.Search
         /// </summary>
         public int length { get; }
 
+        internal readonly StringView stringView;
+
         /// <summary>
         /// Creates a token from a string and a position.
         /// </summary>
         /// <param name="text">The value of the token.</param>
         /// <param name="position">The position of the token in the entire query string.</param>
         public QueryToken(string text, int position)
-        {
-            this.text = text;
-            this.position = position;
-            this.length = text.Length;
-        }
+            : this(text, position, text?.Length ?? 0)
+        {}
 
         /// <summary>
         /// Creates a token from a string, a position and a length.
@@ -43,15 +42,27 @@ namespace UnityEditor.Search
         /// <param name="position">The position of the token in the entire query string.</param>
         /// <param name="length">The length of the token.</param>
         public QueryToken(string text, int position, int length)
-            : this(text, position)
         {
+            this.position = position;
+            this.length = text.Length;
+            this.stringView = new StringView(text);
+            this.text = text;
+        }
+
+        internal QueryToken(in StringView stringView, int position)
+            : this(stringView, position, stringView.Length)
+        {}
+
+        internal QueryToken(in StringView stringView, int position, int length)
+        {
+            this.stringView = stringView;
+            this.text = stringView.ToString();
+            this.position = position;
             this.length = length;
         }
 
         internal QueryToken(int position, int length)
-            : this("", position)
-        {
-            this.length = length;
-        }
+            : this(StringView.Empty, position, length)
+        {}
     }
 }

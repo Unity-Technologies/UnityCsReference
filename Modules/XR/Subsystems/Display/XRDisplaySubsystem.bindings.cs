@@ -159,6 +159,8 @@ namespace UnityEngine.XR
             public Rect viewport;
             public Mesh occlusionMesh;
             public int textureArraySlice;
+            public Matrix4x4 previousView;
+            public bool isPreviousViewValid;
         }
 
         [NativeHeader("Runtime/Graphics/RenderTextureDesc.h")]
@@ -172,6 +174,10 @@ namespace UnityEngine.XR
 
             public RenderTargetIdentifier renderTarget;
             public RenderTextureDescriptor renderTargetDesc;
+
+            public bool hasMotionVectorPass;
+            public RenderTargetIdentifier motionVectorRenderTarget;
+            public RenderTextureDescriptor motionVectorRenderTargetDesc;
 
             public bool shouldFillOutDepth;
 

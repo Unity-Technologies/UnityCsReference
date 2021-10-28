@@ -43,7 +43,7 @@ namespace UnityEngine.UIElements
 
                     if (textInputField.editorEngine.keyboardOnScreen.status != TouchScreenKeyboard.Status.Visible)
                     {
-                        textInputField.editorEngine.keyboardOnScreen = null;
+                        CloseTouchScreenKeyboard();
                         m_TouchKeyboardPoller.Pause();
 
                         if (textInputField.isDelayed)
@@ -56,11 +56,29 @@ namespace UnityEngine.UIElements
             else
             {
                 // TouchScreenKeyboard should no longer be used, presumably because a hardware keyboard is now available.
-                textInputField.editorEngine.keyboardOnScreen.active = false;
-                textInputField.editorEngine.keyboardOnScreen = null;
+                CloseTouchScreenKeyboard();
 
                 m_TouchKeyboardPoller.Pause();
             }
+        }
+
+        private void CloseTouchScreenKeyboard()
+        {
+            if (textInputField.editorEngine.keyboardOnScreen != null)
+            {
+                textInputField.editorEngine.keyboardOnScreen.active = false;
+                textInputField.editorEngine.keyboardOnScreen = null;
+            }
+        }
+
+        private void OpenTouchScreenKeyboard()
+        {
+            editorEngine.keyboardOnScreen = TouchScreenKeyboard.Open(textInputField.text,
+                TouchScreenKeyboardType.Default,
+                true, // autocorrection
+                editorEngine.multiline,
+                textInputField.isPasswordField);
+
         }
 
         public override void ExecuteDefaultActionAtTarget(EventBase evt)
@@ -72,6 +90,9 @@ namespace UnityEngine.UIElements
 
             if (!textInputField.isReadOnly && evt.eventTypeId == PointerDownEvent.TypeId())
             {
+                // CaptureMouse is preventing WebGL from processing pointerDown event in
+                // TextInputFieldBase during the Javascript event handler, preventing the
+                // keybaord from being displayed. Disable the capture behavior for WebGL.
                 textInputField.CaptureMouse();
                 m_LastPointerDownTarget = evt.target as VisualElement;
             }
@@ -86,12 +107,7 @@ namespace UnityEngine.UIElements
                 textInputField.SyncTextEngine();
                 textInputField.UpdateText(editorEngine.text);
 
-                editorEngine.keyboardOnScreen = TouchScreenKeyboard.Open(textInputField.text,
-                    TouchScreenKeyboardType.Default,
-                    true, // autocorrection
-                    editorEngine.multiline,
-                    textInputField.isPasswordField);
-
+                OpenTouchScreenKeyboard();
 
                 if (editorEngine.keyboardOnScreen != null)
                 {

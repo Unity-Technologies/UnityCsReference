@@ -4,8 +4,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.Serialization.Formatters.Binary;
 using UnityEngine;
 
 namespace UnityEditor.Search
@@ -65,6 +68,55 @@ namespace UnityEditor.Search
     }
 
     [Serializable]
+    class SearchColumnFunctor<T> : ISerializationCallbackReceiver where T : Delegate
+    {
+        public string stream;
+        public T handler { get; set; }
+
+        public void OnAfterDeserialize()
+        {
+            if (string.IsNullOrEmpty(stream))
+                return;
+
+            using (var ms = new MemoryStream(Convert.FromBase64String(stream)))
+            {
+                var formatter = new BinaryFormatter();
+                try
+                {
+                    var methodInfo = (MethodInfo)formatter.Deserialize(ms);
+                    handler = (T)Delegate.CreateDelegate(typeof(T), methodInfo);
+                }
+                catch
+                {
+                    stream = null;
+                    handler = null;
+                }
+            }
+        }
+
+        public void OnBeforeSerialize()
+        {
+            stream = null;
+            if (handler == null)
+                return;
+
+            var methodInfo = handler.GetMethodInfo();
+            if (!methodInfo.IsStatic)
+            {
+                //Debug.LogWarning($"Cannot serialize search column non static handler {methodInfo}");
+                return;
+            }
+
+            using (var ms = new MemoryStream())
+            {
+                var formatter = new BinaryFormatter();
+                formatter.Serialize(ms, methodInfo);
+                stream = Convert.ToBase64String(ms.ToArray());
+            }
+        }
+    }
+
+    [Serializable]
     public class SearchColumn : IEquatable<SearchColumn>
     {
         public delegate object GetterEntry(SearchColumnEventArgs args);
@@ -80,10 +132,15 @@ namespace UnityEditor.Search
         public SearchColumnFlags options = SearchColumnFlags.Default;
         public GUIContent content;
 
-        public GetterEntry getter { get; set; }
-        public SetterEntry setter { get; set; }
-        public DrawEntry drawer { get; set; }
-        public CompareEntry comparer { get; set; }
+        [SerializeField] private SearchColumnFunctor<GetterEntry> m_Getter;
+        [SerializeField] private SearchColumnFunctor<SetterEntry> m_Setter;
+        [SerializeField] private SearchColumnFunctor<DrawEntry> m_Drawer;
+        [SerializeField] private SearchColumnFunctor<CompareEntry> m_Comparer;
+
+        public GetterEntry getter { get => m_Getter?.handler; set => m_Getter.handler = value; }
+        public SetterEntry setter { get => m_Setter?.handler; set => m_Setter.handler = value; }
+        public DrawEntry drawer { get => m_Drawer?.handler; set => m_Drawer.handler = value; }
+        public CompareEntry comparer { get => m_Comparer?.handler; set => m_Comparer.handler = value; }
 
         public string name => ParseName(path ?? string.Empty);
 
@@ -106,7 +163,12 @@ namespace UnityEditor.Search
             this.content = content ?? new GUIContent(name);
             width = 145f;
 
-            if ((options & SearchColumnFlags.IgnoreSettings) == 0)
+            m_Getter = new SearchColumnFunctor<GetterEntry>();
+            m_Setter = new SearchColumnFunctor<SetterEntry>();
+            m_Drawer = new SearchColumnFunctor<DrawEntry>();
+            m_Comparer = new SearchColumnFunctor<CompareEntry>();
+
+            if ((options & SearchColumnFlags.IgnoreSettings) == 0 && !Utils.IsRunningTests())
                 SearchColumnSettings.Load(this);
             InitFunctors();
         }
@@ -155,15 +217,15 @@ namespace UnityEditor.Search
 
         internal void InitFunctors()
         {
-            getter = DefaultSelect;
-            setter = null;
-            drawer = null;
-            comparer = null;
+            getter = getter ?? DefaultSelect;
+            //             setter = null;
+            //             drawer = null;
+            //             comparer = null;
             if (!string.IsNullOrEmpty(provider))
                 SearchColumnProvider.Initialize(this);
         }
 
-        private object DefaultSelect(SearchColumnEventArgs args)
+        private static object DefaultSelect(SearchColumnEventArgs args)
         {
             return args.column.SelectValue(args.item, args.context);
         }
@@ -193,7 +255,7 @@ namespace UnityEditor.Search
                 if (!string.IsNullOrEmpty(s.provider) && !providerTypes.Contains(s.provider))
                     continue;
 
-                columns.Add(new SearchColumn($"Selectors/{s.label}", s.label));
+                columns.Add(new SearchColumn($"Selectors/{s.label}", s.label, new GUIContent(s.description ?? s.label)));
             }
 
             foreach (var p in context.providers)

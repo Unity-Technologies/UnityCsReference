@@ -496,6 +496,8 @@ namespace UnityEditor.TextCore.Text
                         // Changes to these properties require updating Material Presets for this font asset.
                         EditorGUI.BeginChangeCheck();
                         EditorGUILayout.PropertyField(m_AtlasPadding_prop, new GUIContent("Padding"));
+                        m_AtlasPadding_prop.intValue = Mathf.Max(m_AtlasPadding_prop.intValue, 0);
+
                         EditorGUILayout.IntPopup(m_AtlasWidth_prop, m_AtlasResolutionLabels, m_AtlasResolutions, new GUIContent("Atlas Width"));
                         EditorGUILayout.IntPopup(m_AtlasHeight_prop, m_AtlasResolutionLabels, m_AtlasResolutions, new GUIContent("Atlas Height"));
                         EditorGUILayout.PropertyField(m_IsMultiAtlasTexturesEnabled_prop, new GUIContent("Multi Atlas Textures", "Determines if the font asset will store glyphs in multiple atlas textures."));

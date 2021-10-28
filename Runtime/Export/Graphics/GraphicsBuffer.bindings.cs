@@ -13,6 +13,49 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine
 {
+    [NativeHeader("Runtime/GfxDevice/GfxDeviceTypes.h")]
+    [NativeClass("GfxBufferID")]
+    [StructLayout(LayoutKind.Sequential)]
+    public readonly struct GraphicsBufferHandle : IEquatable<GraphicsBufferHandle>
+    {
+        public readonly UInt32 value;
+
+        public override int GetHashCode()
+        {
+            return value.GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is GraphicsBufferHandle)
+            {
+                return Equals((GraphicsBufferHandle)obj);
+            }
+
+            return false;
+        }
+
+        public bool Equals(GraphicsBufferHandle other)
+        {
+            return value == other.value;
+        }
+
+        public int CompareTo(GraphicsBufferHandle other)
+        {
+            return value.CompareTo(other.value);
+        }
+
+        public static bool operator ==(GraphicsBufferHandle a, GraphicsBufferHandle b)
+        {
+            return a.Equals(b);
+        }
+
+        public static bool operator !=(GraphicsBufferHandle a, GraphicsBufferHandle b)
+        {
+            return !a.Equals(b);
+        }
+    }
+
     // Note: both C# ComputeBuffer and GraphicsBuffer
     // use C++ GraphicsBuffer as an implementation object.
     [UsedByNativeCode]
@@ -23,6 +66,8 @@ namespace UnityEngine
 #pragma warning disable 414
         internal IntPtr m_Ptr;
 #pragma warning restore 414
+
+        AtomicSafetyHandle m_Safety;
 
         [Flags]
         public enum Target
@@ -37,6 +82,13 @@ namespace UnityEngine
             Counter           = 1 << 7,
             IndirectArguments = 1 << 8,
             Constant          = 1 << 9,
+        }
+
+        [Flags]
+        public enum UsageFlags
+        {
+            None               = 0,
+            LockBufferForWrite = 1 << 0,
         }
 
         public struct IndirectDrawArgs
@@ -97,13 +149,38 @@ namespace UnityEngine
         }
 
         [FreeFunction("GraphicsBuffer_Bindings::InitBuffer")]
-        static extern IntPtr InitBuffer(Target target, int count, int stride);
+        static extern IntPtr InitBuffer(Target target, UsageFlags usageFlags, int count, int stride);
 
         [FreeFunction("GraphicsBuffer_Bindings::DestroyBuffer")]
         static extern void DestroyBuffer(GraphicsBuffer buf);
 
         // Create a Graphics Buffer.
         public GraphicsBuffer(Target target, int count, int stride)
+        {
+            // If usage is not explicitly specified, then it defaults to:
+            // - Pure vertex or index buffer: "sub-updates",
+            // - All other targets: "immutable".
+            // It does not make sense, except that at some point C# classes behavior was
+            // like that (C# GraphicsBuffer, when it only supported Vertex/Index buffers always used
+            // sub-updates; and C# ComputeBuffer, which only suppported non-Vertex/Index always used
+            // immutable). And now we can't change this default, ever :/
+            bool onlyVBIB = (target & (Target.Index | Target.Vertex)) == target;
+            var usageFlags = onlyVBIB ? UsageFlags.LockBufferForWrite : UsageFlags.None;
+
+            InternalInitialization(target, usageFlags, count, stride);
+
+            SaveCallstack(2);
+        }
+
+        // Create a Graphics Buffer.
+        public GraphicsBuffer(Target target, UsageFlags usageFlags, int count, int stride)
+        {
+            InternalInitialization(target, usageFlags, count, stride);
+
+            SaveCallstack(2);
+        }
+
+        private void InternalInitialization(Target target, UsageFlags usageFlags, int count, int stride)
         {
             if (RequiresCompute(target) && !SystemInfo.supportsComputeShaders)
             {
@@ -136,9 +213,8 @@ namespace UnityEngine
                 throw new ArgumentException($"The total size of the graphics buffer ({bufferSize} bytes) exceeds the maximum buffer size. Maximum supported buffer size: {maxBufferSize} bytes.");
             }
 
-            m_Ptr = InitBuffer(target, count, stride);
+            m_Ptr = InitBuffer(target, usageFlags, count, stride);
 
-            SaveCallstack(2);
         }
 
         // Release a Graphics Buffer.
@@ -162,6 +238,13 @@ namespace UnityEngine
         public extern int stride { get; }
 
         public extern Target target { get; }
+
+        [FreeFunction(Name = "GraphicsBuffer_Bindings::GetUsageFlags", HasExplicitThis = true)]
+        extern UsageFlags GetUsageFlags();
+
+        public UsageFlags usageFlags { get { return GetUsageFlags(); } }
+
+        public extern GraphicsBufferHandle bufferHandle { get; }
 
         // Set buffer data.
         [System.Security.SecuritySafeCritical] // due to Marshal.SizeOf
@@ -304,6 +387,52 @@ namespace UnityEngine
 
         [FreeFunction(Name = "GraphicsBuffer_Bindings::InternalGetNativeBufferPtr", HasExplicitThis = true)]
         extern public IntPtr GetNativeBufferPtr();
+
+        extern unsafe private void* BeginBufferWrite(int offset = 0, int size = 0);
+
+        public NativeArray<T> LockBufferForWrite<T>(int bufferStartIndex, int count) where T : struct
+        {
+            if (!IsValid())
+                throw new InvalidOperationException("LockBufferForWrite requires a valid GraphicsBuffer");
+
+            if ((usageFlags & UsageFlags.LockBufferForWrite) == 0)
+                throw new InvalidOperationException("GraphicsBuffer must be created with usage mode UsageFlage.LockBufferForWrite to use LockBufferForWrite");
+
+            var elementSize = UnsafeUtility.SizeOf<T>();
+            if (bufferStartIndex < 0 || count < 0 || (bufferStartIndex + count) * elementSize > this.count * this.stride)
+                throw new ArgumentOutOfRangeException(String.Format("Bad indices/count arguments (bufferStartIndex:{0} count:{1} elementSize:{2}, this.count:{3}, this.stride{4})", bufferStartIndex, count, elementSize, this.count, this.stride));
+
+            NativeArray<T> array;
+            unsafe
+            {
+                var ptr = BeginBufferWrite(bufferStartIndex * elementSize, count * elementSize);
+                array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>((void*)ptr, count, Allocator.Invalid);
+            }
+            m_Safety = AtomicSafetyHandle.Create();
+            AtomicSafetyHandle.SetAllowSecondaryVersionWriting(m_Safety, true);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, m_Safety);
+            return array;
+        }
+
+        extern private void EndBufferWrite(int bytesWritten = 0);
+
+        public void UnlockBufferAfterWrite<T>(int countWritten) where T : struct
+        {
+            try
+            {
+                AtomicSafetyHandle.CheckExistsAndThrow(m_Safety);
+                AtomicSafetyHandle.Release(m_Safety);
+            }
+            catch (Exception e)
+            {
+                throw new InvalidOperationException("GraphicsBuffer.UnlockBufferAfterWrite was called without matching GraphicsBuffer.LockBufferForWrite", e);
+            }
+            if (countWritten < 0)
+                throw new ArgumentOutOfRangeException(String.Format("Bad indices/count arguments (countWritten:{0})", countWritten));
+
+            var elementSize = UnsafeUtility.SizeOf<T>();
+            EndBufferWrite(countWritten * elementSize);
+        }
 
         public string name { set => SetName(value); }
 

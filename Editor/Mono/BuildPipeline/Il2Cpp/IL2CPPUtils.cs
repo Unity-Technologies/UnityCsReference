@@ -13,6 +13,7 @@ using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Player;
 using UnityEditor.Build.Reporting;
+using UnityEditor.CrashReporting;
 using UnityEditor.Il2Cpp;
 using UnityEditor.Scripting;
 using UnityEditor.Scripting.Compilers;
@@ -759,6 +760,9 @@ namespace UnityEditorInternal
                 if (!arguments.Contains(buildingArgument))
                     arguments.Add(buildingArgument);
             }
+
+            if (CrashReportingSettings.enabled)
+                arguments.Add($"--emit-source-mapping");
 
             var additionalArgs = IL2CPPUtils.GetAdditionalArguments();
             if (!string.IsNullOrEmpty(additionalArgs))

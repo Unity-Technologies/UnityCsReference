@@ -60,47 +60,125 @@ namespace UnityEditor.Search
 
         [Description("Keep search results that have a greater value."), Category("Comparers")]
         [SearchExpressionEvaluator(SearchExpressionType.Iterable, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
-        [SearchExpressionEvaluator(SearchExpressionType.Iterable, SearchExpressionType.Selector, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
+        [SearchExpressionEvaluatorSignatureOverload(SearchExpressionType.Iterable, SearchExpressionType.Selector, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
         static IEnumerable<SearchItem> gt(SearchExpressionContext c) => Compare(c, (a, b) => DefaultComparer(a, b) > 0);
 
         [Description("Keep search results that have a greater or equal value."), Category("Comparers")]
         [SearchExpressionEvaluator(SearchExpressionType.Iterable, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
-        [SearchExpressionEvaluator(SearchExpressionType.Iterable, SearchExpressionType.Selector, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
+        [SearchExpressionEvaluatorSignatureOverload(SearchExpressionType.Iterable, SearchExpressionType.Selector, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
         static IEnumerable<SearchItem> gte(SearchExpressionContext c) => Compare(c, (a, b) => DefaultComparer(a, b) >= 0);
 
         [Description("Keep search results that have a lower value."), Category("Comparers")]
         [SearchExpressionEvaluator(SearchExpressionType.Iterable, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
-        [SearchExpressionEvaluator(SearchExpressionType.Iterable, SearchExpressionType.Selector, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
+        [SearchExpressionEvaluatorSignatureOverload(SearchExpressionType.Iterable, SearchExpressionType.Selector, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
         static IEnumerable<SearchItem> lw(SearchExpressionContext c) => Compare(c, (a, b) => DefaultComparer(a, b) < 0);
 
         [Description("Keep search results that have a lower or equal value."), Category("Comparers")]
         [SearchExpressionEvaluator(SearchExpressionType.Iterable, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
-        [SearchExpressionEvaluator(SearchExpressionType.Iterable, SearchExpressionType.Selector, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
+        [SearchExpressionEvaluatorSignatureOverload(SearchExpressionType.Iterable, SearchExpressionType.Selector, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
         static IEnumerable<SearchItem> lwe(SearchExpressionContext c) => Compare(c, (a, b) => DefaultComparer(a, b) <= 0);
 
         [Description("Keep search results that have an equal value."), Category("Comparers")]
         [SearchExpressionEvaluator(SearchExpressionType.Iterable, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
-        [SearchExpressionEvaluator(SearchExpressionType.Iterable, SearchExpressionType.Selector, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
+        [SearchExpressionEvaluatorSignatureOverload(SearchExpressionType.Iterable, SearchExpressionType.Selector, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
         static IEnumerable<SearchItem> eq(SearchExpressionContext c) => Compare(c, (a, b) => DefaultComparer(a, b) == 0);
 
         [Description("Keep search results that have a different value."), Category("Comparers")]
         [SearchExpressionEvaluator(SearchExpressionType.Iterable, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
-        [SearchExpressionEvaluator(SearchExpressionType.Iterable, SearchExpressionType.Selector, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
+        [SearchExpressionEvaluatorSignatureOverload(SearchExpressionType.Iterable, SearchExpressionType.Selector, SearchExpressionType.Literal | SearchExpressionType.QueryString)]
         static IEnumerable<SearchItem> neq(SearchExpressionContext c) => Compare(c, (a, b) => DefaultComparer(a, b) != 0);
 
         [Description("Exclude search results for which the expression is not valid."), Category("Comparers")]
+        [SearchExpressionEvaluatorSignatureOverload(SearchExpressionType.Keyword, SearchExpressionType.Iterable, SearchExpressionType.QueryString)]
         [SearchExpressionEvaluator(SearchExpressionType.Iterable, SearchExpressionType.Text | SearchExpressionType.QueryString | SearchExpressionType.Selector)]
         public static IEnumerable<SearchItem> Where(SearchExpressionContext c)
         {
-            var setExpr = c.args[0];
-            var whereConditionExpr = c.args[1];
-            var queryStr = whereConditionExpr.innerText;
-            if (whereConditionExpr.types.HasFlag(SearchExpressionType.Selector))
+            if (c.args.Length == 3)
             {
-                queryStr = whereConditionExpr.outerText;
+                var keyword = c.args[0].innerText;
+                var setExpr = c.args[1].Execute(c);
+                var whereQuery = c.args[2];
+                if (keyword == "none")
+                {
+                    return WhereNone(c, setExpr, whereQuery);
+                }
+                else if (keyword == "any")
+                {
+                    return WhereAny(c, setExpr, whereQuery);
+                }
+                else
+                {
+                    c.ThrowError($"Unknown keyword for where evaluator: {keyword}");
+                    return null;
+                }
             }
-            var setResults = setExpr.Execute(c);
-            return EvaluatorManager.itemQueryEngine.WhereMainThread(c, setResults, queryStr.ToString());
+            else
+            {
+                var setExpr = c.args[0];
+                var whereConditionExpr = c.args[1];
+                var queryStr = whereConditionExpr.innerText;
+                if (whereConditionExpr.types.HasFlag(SearchExpressionType.Selector))
+                {
+                    queryStr = whereConditionExpr.outerText;
+                }
+                var setResults = setExpr.Execute(c);
+                return EvaluatorManager.itemQueryEngine.WhereMainThread(c, setResults, queryStr.ToString());
+            }
+        }
+
+        public static IEnumerable<SearchItem> WhereAny(SearchExpressionContext c, IEnumerable<SearchItem> mapSet, SearchExpression mapQuery)
+        {
+            foreach (var m in mapSet)
+            {
+                if (m == null)
+                    yield return null;
+                else
+                {
+                    using (c.runtime.Push(m))
+                    {
+                        foreach (var e in mapQuery.Execute(c))
+                        {
+                            if (e != null)
+                            {
+                                yield return m;
+                                break;
+                            }
+                            else
+                            {
+                                yield return null;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        public static IEnumerable<SearchItem> WhereNone(SearchExpressionContext c, IEnumerable<SearchItem> mapSet, SearchExpression mapQuery)
+        {
+            foreach (var m in mapSet)
+            {
+                if (m == null)
+                    yield return null;
+                else
+                {
+                    using (c.runtime.Push(m))
+                    {
+                        var yieldResults = false;
+                        foreach (var e in mapQuery.Execute(c))
+                        {
+                            if (e != null)
+                            {
+                                yieldResults = true;
+                                break;
+                            }
+                        }
+                        if (!yieldResults)
+                        {
+                            yield return m;
+                        }
+                    }
+                }
+            }
         }
     }
 }

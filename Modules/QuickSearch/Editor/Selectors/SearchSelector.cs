@@ -100,23 +100,25 @@ namespace UnityEditor.Search
         public readonly string provider;
         public readonly bool printable;
         public readonly SearchSelectorHandler select;
+        internal readonly string description;
 
         public bool valid => pattern != null && select != null;
 
         public string label => Regex.Replace(pattern.ToString(), @"[\^\$\?\<\>\+\.\(\)\[\]\p{C}]+", string.Empty);
 
-        internal SearchSelector(SearchSelectorAttribute attr, SearchSelectorHandler select)
-            : this(attr.pattern, attr.priority, attr.provider, attr.printable, select)
+        internal SearchSelector(SearchSelectorAttribute attr, SearchSelectorHandler select, string description = null)
+            : this(attr.pattern, attr.priority, attr.provider, attr.printable, select, description)
         {
         }
 
-        public SearchSelector(Regex pattern, int priority, string provider, bool printable, SearchSelectorHandler select)
+        public SearchSelector(Regex pattern, int priority, string provider, bool printable, SearchSelectorHandler select, string description)
         {
             this.pattern = pattern;
             this.priority = priority;
             this.provider = provider;
             this.printable = printable;
             this.select = select;
+            this.description = description;
         }
 
         public override string ToString()
@@ -152,12 +154,13 @@ namespace UnityEditor.Search
         {
             Func<MethodInfo, SearchSelectorAttribute, Delegate, SearchSelector> generator = (mi, attribute, handler) =>
             {
+                var descAttr = mi.GetAttribute<System.ComponentModel.DescriptionAttribute>();
                 if (handler is SearchSelectorHandler handlerWithStruct)
-                    return new SearchSelector(attribute, handlerWithStruct);
+                    return new SearchSelector(attribute, handlerWithStruct, descAttr?.Description);
                 if (handler is SearchSelectorHandler1 handler1)
-                    return new SearchSelector(attribute, args => handler1(args.current));
+                    return new SearchSelector(attribute, args => handler1(args.current), descAttr?.Description);
                 if (handler is SearchSelectorHandler2 handler2)
-                    return new SearchSelector(attribute, args => handler2(args.current));
+                    return new SearchSelector(attribute, args => handler2(args.current), descAttr?.Description);
                 throw new CustomAttributeFormatException($"Invalid selector handler {mi.DeclaringType.FullName}.{mi.Name}");
             };
 

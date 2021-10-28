@@ -87,6 +87,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public abstract string localPath { get; }
         public abstract string versionString { get; }
         public abstract string versionId { get; }
+        public virtual bool isUnityPackage => false;
 
         public virtual void OnBeforeSerialize()
         {

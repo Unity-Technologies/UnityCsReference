@@ -15,7 +15,7 @@ namespace UnityEngine.PlayerLoop
     {
         [RequiredByNativeCode]
         public struct WaitForLastPresentationAndUpdateTime {}
-        [RequiredByNativeCode]
+        [Obsolete("ProfilerStartFrame player loop component has been moved to the Initialization category. (UnityUpgradable) -> UnityEngine.PlayerLoop.Initialization/ProfilerStartFrame", true)]
         public struct ProfilerStartFrame {}
     }
 
@@ -23,6 +23,8 @@ namespace UnityEngine.PlayerLoop
     [MovedFrom("UnityEngine.Experimental.PlayerLoop")]
     public struct Initialization
     {
+        [RequiredByNativeCode]
+        public struct ProfilerStartFrame {}
         [Obsolete("PlayerUpdateTime player loop component has been moved to its own category called TimeUpdate. (UnityUpgradable) -> UnityEngine.PlayerLoop.TimeUpdate/WaitForLastPresentationAndUpdateTime", true)]
         public struct PlayerUpdateTime {}
         [RequiredByNativeCode]
@@ -45,7 +47,7 @@ namespace UnityEngine.PlayerLoop
     {
         [RequiredByNativeCode]
         public struct PollPlayerConnection {}
-        [Obsolete("ProfilerStartFrame player loop component has been moved to the TimeUpdate category. (UnityUpgradable) -> UnityEngine.PlayerLoop.TimeUpdate/ProfilerStartFrame", true)]
+        [Obsolete("ProfilerStartFrame player loop component has been moved to the Initialization category. (UnityUpgradable) -> UnityEngine.PlayerLoop.Initialization/ProfilerStartFrame", true)]
         public struct ProfilerStartFrame {}
         [RequiredByNativeCode]
         public struct PollHtcsPlayerConnection {}

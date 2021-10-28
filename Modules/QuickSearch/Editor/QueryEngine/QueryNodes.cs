@@ -54,7 +54,19 @@ namespace UnityEditor.Search
         /// <summary>
         /// Aggregator node.
         /// </summary>
-        Aggregator
+        Aggregator,
+        /// <summary>
+        /// Comment node.
+        /// </summary>
+        Comment,
+        /// <summary>
+        /// Toggle node
+        /// </summary>
+        Toggle,
+        /// <summary>
+        /// Group node
+        /// </summary>
+        Group
     }
 
     /// <summary>
@@ -175,25 +187,44 @@ namespace UnityEditor.Search
         public virtual List<IQueryNode> children => null;
         public virtual bool leaf => true;
         public virtual bool skipped { get; set; }
-        public string identifier { get; }
+
+        string m_Identifier;
+        public string identifier => m_Identifier ??= filterStringView.ToString();
+
         public QueryToken token { get; set; }
 
-        public string filterId { get; }
-        public string paramValue { get; }
-        public string operatorId { get; }
-        public string filterValue { get; }
+        string m_FilterId;
+        public string filterId => m_FilterId ??= filterIdStringView.ToString();
+        string m_ParamValue;
+        public string paramValue => m_ParamValue ??= paramValueStringView.ToString();
+        string m_OperatorId;
+        public string operatorId => m_OperatorId ??= operatorIdStringView.ToString();
+        string m_FilterValue;
+        public string filterValue => m_FilterValue ??= filterValueStringView.ToString();
 
-        public FilterNode(string filterId, string operatorId, string filterValue, string paramValue, string filterString)
+        internal StringView filterIdStringView;
+        internal StringView paramValueStringView;
+        internal StringView operatorIdStringView;
+        internal StringView filterValueStringView;
+        internal StringView filterStringView;
+        internal StringView rawFilterValueStringView;
+
+        public FilterNode(in StringView filterId, in StringView operatorId, in StringView filterValue, in StringView rawFilterValue, in StringView paramValue, in StringView filterString)
         {
-            this.filterId = filterId;
-            this.paramValue = paramValue;
-            this.operatorId = operatorId;
-            this.filterValue = filterValue;
-            identifier = filterString;
+            this.filterIdStringView = filterId;
+            this.paramValueStringView = paramValue;
+            this.operatorIdStringView = operatorId;
+            this.filterValueStringView = filterValue;
+            this.rawFilterValueStringView = rawFilterValue;
+            filterStringView = filterString;
         }
 
-        public FilterNode(IFilter filter, string filterId, in QueryFilterOperator op, string filterValue, string paramValue, string filterString)
-            : this(filterId, op.token, filterValue, paramValue, filterString)
+        public FilterNode(in StringView filterId, in StringView operatorId, in StringView filterValue, in StringView paramValue, in StringView filterString)
+            : this(filterId, operatorId, filterValue, filterValue, paramValue, filterString)
+        {}
+
+        public FilterNode(IFilter filter, in StringView filterId, in QueryFilterOperator op, in StringView operatorId, in StringView filterValue, in StringView rawFilterValue, in StringView paramValue, in StringView filterString)
+            : this(filterId, operatorId, filterValue, rawFilterValue, paramValue, filterString)
         {
             this.filter = filter;
             this.op = op;
@@ -206,10 +237,8 @@ namespace UnityEditor.Search
 
         public virtual IQueryNode Copy()
         {
-            return new FilterNode(filterId, operatorId, filterValue, paramValue, identifier)
+            return new FilterNode(filter, in filterIdStringView, in op, in operatorIdStringView, in filterValueStringView, in rawFilterValueStringView, in paramValueStringView, in filterStringView)
             {
-                filter = filter,
-                op = op,
                 skipped = skipped,
                 token = token,
                 parent = parent
@@ -220,7 +249,8 @@ namespace UnityEditor.Search
     class SearchNode : ISearchNode, ICopyableNode
     {
         public bool exact { get; }
-        public string searchValue { get; }
+        string m_SearchValue;
+        public string searchValue => m_SearchValue ??= searchValueStringView.ToString();
 
         public IQueryNode parent { get; set; }
         public QueryNodeType type => QueryNodeType.Search;
@@ -230,11 +260,15 @@ namespace UnityEditor.Search
         public string identifier { get; }
         public QueryToken token { get; set; }
 
-        public SearchNode(string searchValue, bool isExact)
+        internal StringView searchValueStringView;
+        internal StringView rawSearchValueStringView;
+
+        public SearchNode(in StringView searchValue, in StringView rawSearchValue, bool isExact)
         {
-            this.searchValue = searchValue;
+            searchValueStringView = searchValue;
+            rawSearchValueStringView = rawSearchValue;
             exact = isExact;
-            identifier = exact ? ("!" + searchValue) : searchValue;
+            identifier = exact ? ("!" + searchValue.ToString()) : searchValue.ToString();
         }
 
         public int QueryHashCode()
@@ -244,7 +278,7 @@ namespace UnityEditor.Search
 
         public IQueryNode Copy()
         {
-            return new SearchNode(searchValue, exact)
+            return new SearchNode(in searchValueStringView, in rawSearchValueStringView, exact)
             {
                 parent = parent,
                 skipped = skipped,
@@ -268,20 +302,22 @@ namespace UnityEditor.Search
             children = new List<IQueryNode>();
         }
 
-        public void AddNode(IQueryNode node)
+        public CombinedNode AddNode(IQueryNode node)
         {
             children.Add(node);
             node.parent = this;
+            return this;
         }
 
-        public void RemoveNode(IQueryNode node)
+        public CombinedNode RemoveNode(IQueryNode node)
         {
             if (!children.Contains(node))
-                return;
+                return this;
 
             children.Remove(node);
             if (node.parent == this)
                 node.parent = null;
+            return this;
         }
 
         public void Clear()
@@ -326,7 +362,55 @@ namespace UnityEditor.Search
             return selfNode;
         }
 
+        public void RemoveFromTreeIfPossible(ref IQueryNode currentNode, ICollection<QueryError> errors)
+        {
+            // If we have become a leaf, remove ourselves from our parent
+            if (leaf)
+            {
+                if (parent == null)
+                    currentNode = null;
+                else if (parent is CombinedNode cn)
+                {
+                    cn.RemoveNode(this);
+                }
+                return;
+            }
+
+            // If we cannot remove ourselves from the tree, nothing to do.
+            if (!CanRemoveFromTree())
+                return;
+
+            // At this point, there should be only 1 child left
+            if (children.Count != 1)
+            {
+                errors.Add(new QueryError(token.position, $"There should be only one child in the node. Cannot remove node: [{type}] \"{identifier}\"."));
+                return;
+            }
+
+            // If we have no parent, we are the root so the remaining child must take our place
+            if (parent == null)
+            {
+                currentNode = children[0];
+                currentNode.parent = null;
+                return;
+            }
+
+            // Otherwise, replace ourselves with the remaining child in our parent child list
+            var index = parent.children.IndexOf(this);
+            if (index == -1)
+            {
+                errors.Add(new QueryError(token.position, $"Node {type} not found in its parent's children list."));
+                return;
+            }
+
+            parent.children[index] = children[0];
+            children[0].parent = parent;
+            parent = null;
+        }
+
         protected abstract IQueryNode CopySelf();
+
+        protected abstract bool CanRemoveFromTree();
     }
 
     class AndNode : CombinedNode
@@ -353,12 +437,17 @@ namespace UnityEditor.Search
                 skipped = skipped
             };
         }
+
+        protected override bool CanRemoveFromTree()
+        {
+            return children.Count < 2;
+        }
     }
 
     class OrNode : CombinedNode
     {
         public override QueryNodeType type => QueryNodeType.Or;
-        public override string identifier => "(" + children[0].identifier + " or " + children[1].identifier + ")";
+        public override string identifier => BuildIdentifier();
 
         public override void SwapChildNodes()
         {
@@ -379,6 +468,18 @@ namespace UnityEditor.Search
                 skipped = skipped
             };
         }
+
+        protected override bool CanRemoveFromTree()
+        {
+            return children.Count < 2;
+        }
+
+        private string BuildIdentifier()
+        {
+            if (children.Count != 2)
+                return string.Empty;
+            return "(" + children[0].identifier + " or " + children[1].identifier + ")";
+        }
     }
 
     class NotNode : CombinedNode
@@ -398,6 +499,11 @@ namespace UnityEditor.Search
                 skipped = skipped
             };
         }
+
+        protected override bool CanRemoveFromTree()
+        {
+            return children.Count == 0;
+        }
     }
 
     class NestedQueryNode : INestedQueryNode, ICopyableNode
@@ -407,22 +513,29 @@ namespace UnityEditor.Search
         public List<IQueryNode> children { get; } = null;
         public bool leaf => true;
         public bool skipped { get; set; }
-        public string identifier { get; }
-        public string associatedFilter { get; }
+        string m_Identifier;
+        public string identifier => m_Identifier ??= nestedQueryStringView.ToString();
+        string m_AssociatedFilter;
+        public string associatedFilter => m_AssociatedFilter ??= associatedFilterStringView.ToString();
         public QueryToken token { get; set; }
 
         public INestedQueryHandler nestedQueryHandler { get; }
 
-        public NestedQueryNode(string nestedQuery, INestedQueryHandler nestedQueryHandler)
+        internal StringView nestedQueryStringView;
+        internal StringView associatedFilterStringView;
+        internal StringView rawNestedQueryStringView;
+
+        public NestedQueryNode(in StringView nestedQuery, in StringView rawNestedQuery, INestedQueryHandler nestedQueryHandler)
         {
-            identifier = nestedQuery;
+            nestedQueryStringView = nestedQuery;
+            rawNestedQueryStringView = rawNestedQuery;
             this.nestedQueryHandler = nestedQueryHandler;
         }
 
-        public NestedQueryNode(string nestedQuery, string filterToken, INestedQueryHandler nestedQueryHandler)
-            : this(nestedQuery, nestedQueryHandler)
+        public NestedQueryNode(in StringView nestedQuery, in StringView rawNestedQuery, in StringView filterToken, INestedQueryHandler nestedQueryHandler)
+            : this(nestedQuery, rawNestedQuery, nestedQueryHandler)
         {
-            associatedFilter = filterToken;
+            associatedFilterStringView = filterToken;
         }
 
         public int QueryHashCode()
@@ -432,7 +545,7 @@ namespace UnityEditor.Search
 
         public IQueryNode Copy()
         {
-            return new NestedQueryNode(identifier, associatedFilter, nestedQueryHandler)
+            return new NestedQueryNode(in nestedQueryStringView, in rawNestedQueryStringView, in associatedFilterStringView, nestedQueryHandler)
             {
                 parent = parent,
                 token = token,
@@ -458,6 +571,11 @@ namespace UnityEditor.Search
                 skipped = skipped
             };
         }
+
+        protected override bool CanRemoveFromTree()
+        {
+            return children.Count == 0;
+        }
     }
 
     class InFilterNode : FilterNode
@@ -466,12 +584,12 @@ namespace UnityEditor.Search
         public override List<IQueryNode> children { get; } = new List<IQueryNode>();
         public override bool leaf => children.Count == 0;
 
-        public InFilterNode(IFilter filter, string filterId, in QueryFilterOperator op, string filterValue, string paramValue, string filterString)
-            : base(filter, filterId, in op, filterValue, paramValue, filterString) {}
+        public InFilterNode(IFilter filter, in StringView filterId, in QueryFilterOperator op, in StringView operatorId, in StringView filterValue, in StringView rawFilterValue, in StringView paramValue, in StringView filterString)
+            : base(filter, in filterId, in op, in operatorId, in filterValue, in rawFilterValue, in paramValue, in filterString) {}
 
         public override IQueryNode Copy()
         {
-            var selfNode = new InFilterNode(filter, filterId, in op, filterValue, paramValue, identifier);
+            var selfNode = new InFilterNode(filter, in filterIdStringView, in op, in operatorIdStringView, in filterValueStringView, in rawFilterValueStringView, in paramValueStringView, in filterStringView);
 
             selfNode.children.Clear();
 
@@ -524,12 +642,15 @@ namespace UnityEditor.Search
     class AggregatorNode : CombinedNode
     {
         public override QueryNodeType type => QueryNodeType.Aggregator;
-        public override string identifier { get; }
+        string m_Identifier;
+        public override string identifier => m_Identifier ??= tokenStringView.ToString();
         public INestedQueryAggregator aggregator { get; }
 
-        public AggregatorNode(string token, INestedQueryAggregator aggregator)
+        internal StringView tokenStringView;
+
+        public AggregatorNode(in StringView token, INestedQueryAggregator aggregator)
         {
-            identifier = token;
+            tokenStringView = token;
             this.aggregator = aggregator;
         }
 
@@ -538,12 +659,133 @@ namespace UnityEditor.Search
 
         protected override IQueryNode CopySelf()
         {
-            return new AggregatorNode(identifier, aggregator)
+            return new AggregatorNode(in tokenStringView, aggregator)
             {
                 parent = parent,
                 token = token,
                 skipped = skipped
             };
+        }
+
+        protected override bool CanRemoveFromTree()
+        {
+            return children.Count == 0;
+        }
+    }
+
+    class CommentNode : IQueryNode, ICopyableNode
+    {
+        public IQueryNode parent { get; set; }
+        public QueryNodeType type => QueryNodeType.Comment;
+        public List<IQueryNode> children => null;
+        public bool leaf => true;
+
+        public bool skipped
+        {
+            get => true;
+            set {}
+        }
+
+        string m_Identifier;
+        public string identifier => m_Identifier ??= tokenStringView.ToString();
+
+        public QueryToken token { get; set; }
+
+        internal StringView tokenStringView;
+
+        public CommentNode(in StringView token)
+        {
+            tokenStringView = token;
+        }
+
+        public int QueryHashCode()
+        {
+            return identifier.GetHashCode();
+        }
+
+        public IQueryNode Copy()
+        {
+            return new CommentNode(in tokenStringView)
+            {
+                parent = parent,
+                token = token
+            };
+        }
+    }
+
+    class ToggleNode : IQueryNode, ICopyableNode
+    {
+        string m_Value;
+        public string value => m_Value ??= valueStringView.ToString();
+
+        public IQueryNode parent { get; set; }
+        public QueryNodeType type => QueryNodeType.Toggle;
+        public List<IQueryNode> children => null;
+        public bool leaf => true;
+
+        public bool skipped
+        {
+            get => true;
+            set {}
+        }
+
+        string m_Identifier;
+        public string identifier => m_Identifier ??= tokenStringView.ToString();
+
+        public QueryToken token { get; set; }
+
+        internal StringView tokenStringView;
+        internal StringView valueStringView;
+
+        public ToggleNode(in StringView token, in StringView value)
+        {
+            tokenStringView = token;
+            valueStringView = value;
+        }
+
+        public int QueryHashCode()
+        {
+            return identifier.GetHashCode();
+        }
+
+        public IQueryNode Copy()
+        {
+            return new ToggleNode(in tokenStringView, in valueStringView)
+            {
+                parent = parent,
+                token = token
+            };
+        }
+    }
+
+    class GroupNode : CombinedNode
+    {
+        public override QueryNodeType type => QueryNodeType.Group;
+        string m_Identifier;
+        public override string identifier => m_Identifier ??= tokenStringView.ToString();
+
+        internal StringView tokenStringView;
+        public GroupNode(in StringView token)
+        {
+            tokenStringView = token;
+        }
+
+        public override void SwapChildNodes()
+        {}
+
+        protected override IQueryNode CopySelf()
+        {
+            return new GroupNode(in tokenStringView)
+            {
+                parent = parent,
+                skipped = skipped,
+                token = token
+            };
+        }
+
+        protected override bool CanRemoveFromTree()
+        {
+            return true;
         }
     }
 }

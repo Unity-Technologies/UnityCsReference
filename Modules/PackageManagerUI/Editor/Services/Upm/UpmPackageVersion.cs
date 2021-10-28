@@ -38,7 +38,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         private bool m_IsUnityPackage;
-        public bool isUnityPackage
+        public override bool isUnityPackage
         {
             get
             {

@@ -153,7 +153,13 @@ namespace UnityEngine.VFX
             SendEvent(VisualEffectAsset.StopEventID);
         }
 
-        extern public void Reinit();
+        public void Reinit()
+        {
+            Reinit(true);
+        }
+
+        extern internal void Reinit(bool sendInitialEventAndPrewarm = true);
+
         extern public void AdvanceOneFrame();
 
         [FreeFunction(Name = "VisualEffectBindings::ResetOverrideFromScript", HasExplicitThis = true)] extern public void ResetOverride(int nameID);
@@ -506,6 +512,8 @@ namespace UnityEngine.VFX
         }
 
         extern public int aliveParticleCount { get; }
+
+        extern internal float time { get; }
 
         extern public void Simulate(float stepDeltaTime, uint stepCount = 1);
 

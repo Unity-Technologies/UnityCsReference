@@ -31,9 +31,14 @@ namespace UnityEditor
         internal static event OnAssetLabelDrawDelegate postAssetLabelDrawCallback = null;
 
         // Asset on local disk in project
-        class LocalGroup : Group
+        protected class LocalGroup : Group
         {
-            BuiltinResource[] m_NoneList;
+            public class ExtraItem : BuiltinResource
+            {
+                public Texture2D m_Icon = null;
+            }
+            ExtraItem[] m_NoneList;
+            public ExtraItem[] NoneList => m_NoneList;
 
             GUIContent m_Content = new GUIContent();
 
@@ -657,6 +662,12 @@ namespace UnityEditor
                 }
             }
 
+            internal void DrawItem(Rect itemRect, ExtraItem extraItem)
+            {
+                GUI.Label(itemRect, GUIContent.none, Styles.iconAreaBg);
+                DrawItem(itemRect, null, extraItem, false);
+            }
+
             void DrawItem(Rect position, FilteredHierarchy.FilterResult filterItem, BuiltinResource builtinResource, bool isFolderBrowsing)
             {
                 System.Diagnostics.Debug.Assert((filterItem != null && builtinResource == null) ||
@@ -799,6 +810,10 @@ namespace UnityEditor
                             // If we are creating a new asset we might have an icon to use
                             icon = m_Owner.GetCreateAssetUtility().icon;
                         }
+                        else if (builtinResource is ExtraItem extraItem)
+                        {
+                            icon = extraItem.m_Icon;
+                        }
                         else
                         {
                             icon = filterItem != null ? filterItem.icon : null;
@@ -832,6 +847,10 @@ namespace UnityEditor
                         {
                             // If we are creating a new asset we might have an icon to use
                             m_Content.image = m_Owner.GetCreateAssetUtility().icon;
+                        }
+                        else if (builtinResource is ExtraItem extraItem)
+                        {
+                            m_Content.image = extraItem.m_Icon;
                         }
                         else
                         {
@@ -1227,14 +1246,14 @@ namespace UnityEditor
 
                 if (m_ShowNoneItem)
                 {
-                    m_NoneList = new BuiltinResource[1];
-                    m_NoneList[0] = new BuiltinResource();
+                    m_NoneList = new ExtraItem[1];
+                    m_NoneList[0] = new ExtraItem();
                     m_NoneList[0].m_InstanceID = 0;
                     m_NoneList[0].m_Name = "None";
                 }
                 else
                 {
-                    m_NoneList = new BuiltinResource[0];
+                    m_NoneList = new ExtraItem[0];
                 }
 
                 // We don't show all built-in resources; just the ones where their type

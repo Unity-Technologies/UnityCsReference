@@ -62,6 +62,10 @@ namespace UnityEditor.UIElements
         /// The color space currently used by the field.
         /// </summary>
         public ColorSpace colorSpace { get; set; }
+        /// <summary>
+        /// If true, treats the color as an HDR value. If false, treats the color as a standard LDR value.
+        /// </summary>
+        public bool hdr { get; set; }
 
         internal static Gradient GradientCopy(Gradient other)
         {
@@ -188,7 +192,7 @@ namespace UnityEditor.UIElements
 
         void ShowGradientPicker()
         {
-            GradientPicker.Show(rawValue, true, colorSpace, OnGradientChanged);
+            GradientPicker.Show(rawValue, hdr, colorSpace, OnGradientChanged);
         }
 
         internal override void OnViewDataReady()

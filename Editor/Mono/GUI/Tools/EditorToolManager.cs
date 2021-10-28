@@ -24,6 +24,8 @@ namespace UnityEditor.EditorTools
         [SerializeField]
         Tool m_LastBuiltinTool = Tool.Move;
 
+        Type m_LastCustomContext;
+
         [SerializeField]
         EditorTool m_LastCustomTool;
 
@@ -82,7 +84,12 @@ namespace UnityEditor.EditorTools
                 var prev = instance.m_ActiveToolContext;
 
                 if (prev != null)
+                {
                     prev.OnWillBeDeactivated();
+
+                    if (!(prev is GameObjectToolContext))
+                        instance.m_LastCustomContext = prev.GetType();
+                }
 
                 ToolManager.ActiveContextWillChange();
                 instance.m_ActiveToolContext = ctx;
@@ -438,6 +445,8 @@ namespace UnityEditor.EditorTools
         internal static Tool previousTool => instance.m_PreviousTool;
 
         internal static EditorTool lastCustomTool => instance.m_LastCustomTool;
+
+        internal static Type lastCustomContext => instance.m_LastCustomContext;
 
         public static void RestorePreviousPersistentTool()
         {

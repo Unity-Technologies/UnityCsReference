@@ -4,6 +4,8 @@
 
 using System;
 using UnityEditor.ShortcutManagement;
+using UnityEditor.UIElements;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor
@@ -34,6 +36,19 @@ namespace UnityEditor
 
         // UIToolkit
         void AddDefaultEditorStyleSheets(VisualElement ve);
+
+        BindableElement CreateFloatField(string name, Func<float, float> onValidateValue = null, bool isDelayed = false);
+        BindableElement CreateDoubleField(string name, Func<double, double> onValidateValue = null, bool isDelayed = false);
+        BindableElement CreateIntField(string name, Func<int, int> onValidateValue = null, bool isDelayed = false);
+        BindableElement CreateLongField(string name, Func<long, long> onValidateValue = null, bool isDelayed = false);
+        BindableElement CreateVector2Field(string name, Func<Vector2, Vector2> onValidateValue);
+        BindableElement CreateVector2IntField(string name, Func<Vector2Int, Vector2Int> onValidateValue);
+        BindableElement CreateVector3Field(string name, Func<Vector3, Vector3> onValidateValue);
+        BindableElement CreateVector3IntField(string name, Func<Vector3Int, Vector3Int> onValidateValue);
+        BindableElement CreateVector4Field(string name, Func<Vector4, Vector4> onValidateValue);
+        BindableElement CreateTextField(string name = null, bool isMultiLine = false, bool isDelayed = false);
+        BindableElement CreateColorField(string name, bool showAlpha, bool hdr);
+        BindableElement CreateGradientField(string name, bool hdr, ColorSpace colorSpace);
 
         string GetUIToolkitDefaultCommonDarkStyleSheetPath();
         string GetUIToolkitDefaultCommonLightStyleSheetPath();

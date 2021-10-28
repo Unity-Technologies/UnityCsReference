@@ -34,7 +34,7 @@ namespace UnityEditor.Search
 
     abstract class SearchIndexEntryImporter : ScriptedImporter
     {
-        public const int version = SearchIndexEntry.version | (0x0004 << 4);
+        public const int version = SearchIndexEntry.version | (0x0004 << 7);
 
         protected abstract IndexingOptions options { get; }
 

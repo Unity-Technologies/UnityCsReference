@@ -54,12 +54,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             return m_VisualStateList.GetVisualState(packageUniqueId);
         }
 
-        public override void UpdateFilters(PageFilters filters)
+        public override bool UpdateFilters(PageFilters filters)
         {
-            if ((m_Filters == null && filters == null) || (m_Filters?.Equals(filters) ?? false))
-                return;
+            if (!base.UpdateFilters(filters))
+                return false;
 
-            m_Filters = filters?.Clone();
             var queryArgs = BuildQueryFromFilter(0, m_PackageManagerPrefs.numItemsPerPage ?? PageManager.k_DefaultPageSize);
             m_AssetStoreClient.ListPurchases(queryArgs);
 
@@ -68,6 +67,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             RefreshVisualStates();
             TriggerOnListRebuild();
+            return true;
         }
 
         // in the case of paginated pages, we don't need to change the list itself (it's predefined and trumps other custom filtering)
@@ -132,7 +132,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 startIndex = startIndex,
                 limit = limit,
                 searchText = filters?.searchText,
-                statuses = filters?.statuses,
+                status = filters?.status,
                 categories = filters?.categories,
                 labels = filters?.labels,
                 orderBy = filters?.orderBy,

@@ -8,6 +8,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageLoadBar : VisualElement
     {
+        internal const int k_FixedHeight = 30;
+
         internal new class UxmlFactory : UxmlFactory<PackageLoadBar> {}
 
         public enum AssetsToLoad
@@ -63,27 +65,16 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
             m_Application.onInternetReachabilityChange += OnInternetReachabilityChange;
-            m_PackageFiltering.onFilterTabChanged += SetFilter;
             m_PageManager.onRefreshOperationFinish += Refresh;
 
-            SetFilter(m_PackageFiltering.currentFilterTab);
-            UpdateMenu();
-
-            loadMoreLabel.SetEnabled(m_Application.isInternetReachable);
+            Refresh();
         }
 
         public void OnDisable()
         {
             m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
             m_Application.onInternetReachabilityChange -= OnInternetReachabilityChange;
-            m_PackageFiltering.onFilterTabChanged -= SetFilter;
             m_PageManager.onRefreshOperationFinish -= Refresh;
-        }
-
-        private void SetFilter(PackageFilterTab filterTab)
-        {
-            UIUtils.SetElementDisplay(this, filterTab == PackageFilterTab.AssetStore);
-            Refresh();
         }
 
         public void UpdateMenu()
@@ -141,6 +132,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             loadMoreLabel.SetEnabled(value && !m_LoadMoreInProgress);
         }
 
+        public void UpdateVisibility(PackageFilterTab? filterTab = null)
+        {
+            UIUtils.SetElementDisplay(this, (filterTab ?? m_PackageFiltering.currentFilterTab) == PackageFilterTab.AssetStore);
+            Refresh();
+        }
+
         public void Refresh()
         {
             if (!UIUtils.IsElementVisible(this))
@@ -148,6 +145,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var page = m_PageManager.GetCurrentPage();
             Set(page?.numTotalItems ?? 0, page?.numCurrentItems ?? 0);
             UpdateMenu();
+            OnInternetReachabilityChange(m_Application.isInternetReachable);
         }
 
         internal void Set(long total, long current)

@@ -310,5 +310,40 @@ namespace UnityEditor.Profiling
 
         [NativeMethod(IsThreadSafe = true)]
         public extern double GetCounterValueAsDouble(int markerId);
+
+        [StructLayout(LayoutKind.Sequential)]
+        [RequiredByNativeCode]
+        public struct UnityObjectInfo
+        {
+            [NativeName("name")]
+            readonly string m_Name;
+            [NativeName("nativeTypeIndex")]
+            readonly int m_NativeTypeIndex;
+
+            public string name => m_Name;
+            public int nativeTypeIndex => m_NativeTypeIndex;
+        }
+
+        [NativeMethod(IsThreadSafe = true)]
+        public extern bool GetUnityObjectInfo(int instanceId, out UnityObjectInfo info);
+
+        [StructLayout(LayoutKind.Sequential)]
+        [RequiredByNativeCode]
+        public struct UnityObjectNativeTypeInfo
+        {
+            [NativeName("name")]
+            readonly string m_Name;
+            [NativeName("baseNativeTypeIndex")]
+            readonly int m_BaseNativeTypeIndex;
+
+            public string name => m_Name;
+            public int baseNativeTypeIndex => m_BaseNativeTypeIndex;
+        }
+
+        [NativeMethod(IsThreadSafe = true)]
+        public extern bool GetUnityObjectNativeTypeInfo(int nativeTypeIndex, out UnityObjectNativeTypeInfo info);
+
+        [NativeMethod(IsThreadSafe = true)]
+        public extern int GetUnityObjectNativeTypeInfoCount();
     }
 }

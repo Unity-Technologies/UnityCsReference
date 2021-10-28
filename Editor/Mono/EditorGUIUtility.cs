@@ -761,7 +761,7 @@ namespace UnityEditor
         static readonly List<string> k_UserSideSupportedImageExtensions = new List<string> {".png"};
 
         // Attempts to load a higher resolution icon if needed
-        static Texture2D LoadGeneratedIconOrNormalIcon(string name)
+        internal static Texture2D LoadGeneratedIconOrNormalIcon(string name)
         {
             Texture2D icon = null;
             if (GUIUtility.pixelsPerPoint > 1.0f)

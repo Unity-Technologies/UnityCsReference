@@ -109,6 +109,7 @@ namespace UnityEditor.Search
         }
 
         [SceneQueryEngineFilter("vdist")]
+        [System.ComponentModel.Description("Object distance from view")]
         public static float SceneFilterViewDistance(GameObject go)
         {
             if (!go || !SceneView.lastActiveSceneView)
@@ -119,18 +120,23 @@ namespace UnityEditor.Search
         }
 
         [SceneQueryEngineFilter("position")]
-        public static string SceneFilterPosition(GameObject go)
+        [System.ComponentModel.Description("Object world position")]
+        public static Vector4 SceneFilterPosition(GameObject go)
         {
-            var position = go.transform.position;
-            return $"{Mathf.RoundToInt(position.x)};{Mathf.RoundToInt(position.y)};{Mathf.RoundToInt(position.z)}";
+            return go.transform.position;
         }
 
-        [SceneQueryEngineFilter("x")] public static int SceneFilterPositionX(GameObject go) => Mathf.RoundToInt(go.transform.position.z);
-        [SceneQueryEngineFilter("y")] public static int SceneFilterPositionY(GameObject go) => Mathf.RoundToInt(go.transform.position.y);
-        [SceneQueryEngineFilter("z")] public static int SceneFilterPositionZ(GameObject go) => Mathf.RoundToInt(go.transform.position.z);
+        [SceneQueryEngineFilter("x"), System.ComponentModel.Description("Object world position X")]
+        public static int SceneFilterPositionX(GameObject go) => Mathf.RoundToInt(go.transform.position.z);
+
+        [SceneQueryEngineFilter("y"), System.ComponentModel.Description("Object world position Y")]
+        public static int SceneFilterPositionY(GameObject go) => Mathf.RoundToInt(go.transform.position.y);
+
+        [SceneQueryEngineFilter("z"), System.ComponentModel.Description("Object world position Z")]
+        public static int SceneFilterPositionZ(GameObject go) => Mathf.RoundToInt(go.transform.position.z);
 
         [SearchSelector("position", provider: providerId)]
-        public static string SceneSelectPosition(SearchItem item)
+        public static object SceneSelectPosition(SearchItem item)
         {
             var go = item.ToObject<GameObject>();
             if (!go)
@@ -166,7 +172,7 @@ namespace UnityEditor.Search
         }
 
         [SearchSelector("vertices", provider: "scene")]
-        static object SelectVertices(SearchSelectorArgs args)
+        public static object SelectVertices(SearchSelectorArgs args)
         {
             var go = args.current.ToObject<GameObject>();
             if (!go)
@@ -176,6 +182,7 @@ namespace UnityEditor.Search
         }
 
         [SceneQueryEngineFilter("vertices")]
+        [System.ComponentModel.Description("Mesh vertex count")]
         public static int SceneFilterVertices(GameObject go)
         {
             var meshFilter = go.GetComponent<MeshFilter>();
@@ -186,7 +193,7 @@ namespace UnityEditor.Search
         }
 
         [SearchSelector("faces", provider: "scene")]
-        static object SelectFaces(SearchSelectorArgs args)
+        public static object SelectFaces(SearchSelectorArgs args)
         {
             var go = args.current.ToObject<GameObject>();
             if (!go)
@@ -196,6 +203,7 @@ namespace UnityEditor.Search
         }
 
         [SceneQueryEngineFilter("faces")]
+        [System.ComponentModel.Description("Mesh triangle face count")]
         public static int? SceneFilterFaces(GameObject go)
         {
             var meshFilter = go.GetComponent<MeshFilter>();

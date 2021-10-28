@@ -114,7 +114,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             // In the case where a package not purchased, `purchaseInfo` will still be null,
             // but the generated `AssetStorePackage` in the end will contain an error.
             var fetchOperation = new AssetStoreListOperation(m_UnityConnect, m_AssetStoreRestAPI, m_AssetStoreCache);
-            var queryArgs = new PurchasesQueryArgs { productIds = new List<string> { productId.ToString() }, statuses = hidden? new List<string> { "hidden" } : null };
+            var queryArgs = new PurchasesQueryArgs { productIds = new List<string> { productId.ToString() }, status = hidden? "hidden" : string.Empty};
             fetchOperation.onOperationSuccess += op =>
             {
                 var purchaseInfo = fetchOperation.result.list.FirstOrDefault();

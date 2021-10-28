@@ -83,7 +83,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             packageDetails.OnEnable();
             packageList.OnEnable();
-            packageLoadBar.OnEnable();
             packageManagerToolbar.OnEnable();
             packageSubPageFilterBar.OnEnable();
             packageStatusbar.OnEnable();
@@ -129,7 +128,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (!m_ApplicationProxy.isBatchMode)
                     Debug.Log(L10n.Tr("[Package Manager Window] UPM server is not running. Please check that your Editor was not launched with '-noUpm' command line option."));
 
-                packageList.HideListShowMessage(false, false, L10n.Tr("UPM server is not running"));
+                packageList.HideListShowEmptyArea(L10n.Tr("UPM server is not running"));
                 packageStatusbar.DisableRefresh();
                 return;
             }
@@ -141,7 +140,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
 
-            m_PageManager.Refresh(tab, m_PackageManagerPrefs.numItemsPerPage ?? PageManager.k_DefaultPageSize);
+            m_PageManager.Refresh(tab);
         }
 
         private void OnAttachToPanel(AttachToPanelEvent evt)
@@ -176,7 +175,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var canRefresh = !EditorApplication.isPlaying && !EditorApplication.isCompiling;
             if (focus && canRefresh && m_PackageFiltering.currentFilterTab == PackageFilterTab.AssetStore)
-                m_PageManager.Refresh(RefreshOptions.PurchasedOffline, m_PackageManagerPrefs.numItemsPerPage ?? PageManager.k_DefaultPageSize);
+                m_PageManager.Refresh(RefreshOptions.PurchasedOffline);
         }
 
         public void OnDisable()
@@ -188,7 +187,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             packageDetails.OnDisable();
             packageList.OnDisable();
-            packageLoadBar.OnDisable();
             packageManagerToolbar.OnDisable();
             packageSubPageFilterBar.OnDisable();
             packageStatusbar.OnDisable();
@@ -446,7 +444,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private VisualElementCache cache { set; get; }
         internal PackageList packageList { get { return cache.Get<PackageList>("packageList"); } }
-        internal PackageLoadBar packageLoadBar { get { return cache.Get<PackageLoadBar>("packageLoadBar"); } }
         internal PackageDetails packageDetails { get { return cache.Get<PackageDetails>("packageDetails"); } }
         internal PackageManagerToolbar packageManagerToolbar { get { return cache.Get<PackageManagerToolbar>("topMenuToolbar"); } }
         private PackageSubPageFilterBar packageSubPageFilterBar { get { return cache.Get<PackageSubPageFilterBar>("packageSubPageFilterBar"); } }

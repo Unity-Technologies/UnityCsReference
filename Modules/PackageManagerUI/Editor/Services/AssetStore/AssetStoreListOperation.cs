@@ -51,7 +51,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         private PurchasesQueryArgs m_AdjustedQueryArgs;
 
         [SerializeField]
-        private bool m_DownloadAssetsOnly;
+        private bool m_DownloadedAssetsOnly;
+
+        [SerializeField]
+        private bool m_UpdateAvailableOnly;
 
         [SerializeField]
         private AssetStorePurchases m_Result;
@@ -115,7 +118,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             m_Result = new AssetStorePurchases(m_OriginalQueryArgs);
-            if (m_DownloadAssetsOnly && !m_AdjustedQueryArgs.productIds.Any())
+            if ((m_DownloadedAssetsOnly || m_UpdateAvailableOnly) && !m_AdjustedQueryArgs.productIds.Any())
             {
                 m_Result.total = 0;
                 onOperationSuccess?.Invoke(this);
@@ -139,17 +142,23 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_OriginalQueryArgs = queryArgs;
 
-            m_DownloadAssetsOnly = m_OriginalQueryArgs.downloadedOnly;
+            m_DownloadedAssetsOnly = m_OriginalQueryArgs.downloadedOnly;
+            m_UpdateAvailableOnly = m_OriginalQueryArgs.updateAvailableOnly;
             // The GetPurchases API has a limit of maximum 1000 items (to avoid performance issues)
             // therefore we do some adjustments to the original query args enforce that limit and split
             // the original query to multiple batches. We make a clone before when adjusting is needed
             m_AdjustedQueryArgs = m_OriginalQueryArgs.Clone();
             m_AdjustedQueryArgs.limit = Math.Min(m_OriginalQueryArgs.limit, k_QueryLimit);
 
-            if (m_DownloadAssetsOnly)
+            if (m_DownloadedAssetsOnly)
             {
-                m_AdjustedQueryArgs.statuses = new List<string>();
+                m_AdjustedQueryArgs.status = string.Empty;
                 m_AdjustedQueryArgs.productIds = m_AssetStoreCache.localInfos.Select(info => info.id).ToList();
+            }
+            else if (m_UpdateAvailableOnly)
+            {
+                m_AdjustedQueryArgs.status = string.Empty;
+                m_AdjustedQueryArgs.productIds = m_AssetStoreCache.localInfos.Where(info => info.canUpdate).Select(info => info.id).ToList();
             }
         }
 

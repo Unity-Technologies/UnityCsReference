@@ -187,7 +187,7 @@ namespace UnityEditor.Search
                 case MaterialProperty.PropType.Vector:
                     return MaterialEditor.VectorPropertyInternal(r, matProp, string.Empty);
                 case MaterialProperty.PropType.Texture:
-                    return EditorGUI.DoObjectField(r, r, GUIUtility.GetControlID(FocusType.Passive), matProp.textureValue, matProp.targets[0], typeof(Texture), null, true, null);
+                    return EditorGUI.DoObjectField(r, r, GUIUtility.GetControlID(FocusType.Passive), matProp.textureValue, matProp.targets[0], typeof(Texture), null, true);
             }
 
             return null;
@@ -214,12 +214,9 @@ namespace UnityEditor.Search
                     Color.RGBToHSV(rm.colorValue, out float rh, out _, out _);
                     return lh.CompareTo(rh);
 
+                case MaterialProperty.PropType.Range:
                 case MaterialProperty.PropType.Float:
                     return lm.floatValue.CompareTo(rm.floatValue);
-
-                case MaterialProperty.PropType.Range:
-                    return Mathf.Clamp(lm.floatValue, lm.rangeLimits.x, lm.rangeLimits.y)
-                        .CompareTo(Mathf.Clamp(rm.floatValue, rm.rangeLimits.x, rm.rangeLimits.y));
 
                 case MaterialProperty.PropType.Texture:
                     return string.CompareOrdinal(lm.textureValue?.name, rm.textureValue?.name);

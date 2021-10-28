@@ -2,7 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
@@ -11,6 +13,8 @@ namespace UnityEditor
     [CustomPropertyDrawer(typeof(RangeAttribute))]
     internal sealed class RangeDrawer : PropertyDrawer
     {
+        private static string s_InvalidTypeMessage = L10n.Tr("Use Range with float or int.");
+
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             RangeAttribute range = (RangeAttribute)attribute;
@@ -19,20 +23,56 @@ namespace UnityEditor
             else if (property.propertyType == SerializedPropertyType.Integer)
                 EditorGUI.IntSlider(position, property, (int)range.min, (int)range.max, label);
             else
-                EditorGUI.LabelField(position, label.text, "Use Range with float or int.");
+                EditorGUI.LabelField(position, label.text, s_InvalidTypeMessage);
+        }
+
+        public override VisualElement CreatePropertyGUI(SerializedProperty property)
+        {
+            RangeAttribute range = (RangeAttribute)attribute;
+
+            if (property.propertyType == SerializedPropertyType.Float)
+            {
+                var slider = new Slider(property.displayName, range.min, range.max);
+                slider.bindingPath = property.propertyPath;
+                slider.showInputField = true;
+                return slider;
+            }
+            else if (property.propertyType == SerializedPropertyType.Integer)
+            {
+                var intSlider = new SliderInt(property.displayName, (int)range.min, (int)range.max);
+                intSlider.bindingPath = property.propertyPath;
+                intSlider.showInputField = true;
+                return intSlider;
+            }
+
+            return new Label(s_InvalidTypeMessage);
         }
     }
 
     [CustomPropertyDrawer(typeof(MinAttribute))]
     internal sealed class MinDrawer : PropertyDrawer
     {
+        private static string s_InvalidTypeMessage = L10n.Tr("Use Min with float, int or Vector.");
+
+        private MinAttribute minAttribute
+        {
+            get
+            {
+                return attribute as MinAttribute;
+            }
+        }
+
+        public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+        {
+            return EditorGUI.GetPropertyHeight(property, label);
+        }
+
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             EditorGUI.BeginChangeCheck();
             EditorGUI.DefaultPropertyField(position, property, label);
             if (EditorGUI.EndChangeCheck())
             {
-                MinAttribute minAttribute = (MinAttribute)attribute;
                 if (property.propertyType == SerializedPropertyType.Float)
                 {
                     property.floatValue = Mathf.Max(minAttribute.min, property.floatValue);
@@ -68,15 +108,117 @@ namespace UnityEditor
                 }
                 else
                 {
-                    EditorGUI.LabelField(position, label.text, "Use Min with float, int or Vector.");
+                    EditorGUI.LabelField(position, label.text, s_InvalidTypeMessage);
                 }
             }
+        }
+
+        public override VisualElement CreatePropertyGUI(SerializedProperty property)
+        {
+            BindableElement newField = null;
+
+            if (property.propertyType == SerializedPropertyType.Float)
+            {
+                if (property.type == "float")
+                {
+                    newField = EditorUIService.instance.CreateFloatField(property.displayName, OnValidateValue);
+                }
+                else if (property.type == "double")
+                {
+                    newField = EditorUIService.instance.CreateDoubleField(property.displayName, OnValidateValue);
+                }
+            }
+            else if (property.propertyType == SerializedPropertyType.Integer)
+            {
+                if (property.type == "int")
+                {
+                    newField = EditorUIService.instance.CreateIntField(property.displayName, OnValidateValue);
+                }
+                else if (property.type == "long")
+                {
+                    newField = EditorUIService.instance.CreateLongField(property.displayName, OnValidateValue);
+                }
+            }
+            else if (property.propertyType == SerializedPropertyType.Vector2)
+            {
+                newField = EditorUIService.instance.CreateVector2Field(property.displayName, OnValidateValue);
+            }
+            else if (property.propertyType == SerializedPropertyType.Vector2Int)
+            {
+                newField = EditorUIService.instance.CreateVector2IntField(property.displayName, OnValidateValue);
+            }
+            else if (property.propertyType == SerializedPropertyType.Vector3)
+            {
+                newField = EditorUIService.instance.CreateVector3Field(property.displayName, OnValidateValue);
+            }
+            else if (property.propertyType == SerializedPropertyType.Vector3Int)
+            {
+                newField = EditorUIService.instance.CreateVector3IntField(property.displayName, OnValidateValue);
+            }
+            else if (property.propertyType == SerializedPropertyType.Vector4)
+            {
+                newField = EditorUIService.instance.CreateVector4Field(property.displayName, OnValidateValue);
+            }
+
+            if (newField != null)
+            {
+                newField.bindingPath = property.propertyPath;
+                return newField;
+            }
+
+            return new Label(s_InvalidTypeMessage);
+        }
+
+        private float OnValidateValue(float value)
+        {
+            return Mathf.Max(minAttribute.min, value);
+        }
+
+        private double OnValidateValue(double value)
+        {
+            return Math.Max(minAttribute.min, value);
+        }
+
+        private int OnValidateValue(int value)
+        {
+            return Mathf.Max((int)minAttribute.min, value);
+        }
+
+        private long OnValidateValue(long value)
+        {
+            return Math.Max((long)minAttribute.min, value);
+        }
+
+        private Vector2 OnValidateValue(Vector2 value)
+        {
+            return new Vector2(Mathf.Max(minAttribute.min, value.x), Mathf.Max(minAttribute.min, value.y));
+        }
+
+        private Vector2Int OnValidateValue(Vector2Int value)
+        {
+            return new Vector2Int(Mathf.Max((int)minAttribute.min, value.x), Mathf.Max((int)minAttribute.min, value.y));
+        }
+
+        private Vector3 OnValidateValue(Vector3 value)
+        {
+            return new Vector3(Mathf.Max(minAttribute.min, value.x), Mathf.Max(minAttribute.min, value.y), Mathf.Max(minAttribute.min, value.z));
+        }
+
+        private Vector3Int OnValidateValue(Vector3Int value)
+        {
+            return new Vector3Int(Mathf.Max((int)minAttribute.min, value.x), Mathf.Max((int)minAttribute.min, value.y), Mathf.Max((int)minAttribute.min, value.z));
+        }
+
+        private Vector4 OnValidateValue(Vector4 value)
+        {
+            return new Vector4(Mathf.Max(minAttribute.min, value.x), Mathf.Max(minAttribute.min, value.y), Mathf.Max(minAttribute.min, value.z), Mathf.Max(minAttribute.min, value.w));
         }
     }
 
     [CustomPropertyDrawer(typeof(MultilineAttribute))]
     internal sealed class MultilineDrawer : PropertyDrawer
     {
+        private static string s_InvalidTypeMessage = L10n.Tr("Use Multiline with string.");
         private const int kLineHeight = 13;
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
@@ -98,7 +240,21 @@ namespace UnityEditor
                 EditorGUI.EndProperty();
             }
             else
-                EditorGUI.LabelField(position, label.text, "Use Multiline with string.");
+                EditorGUI.LabelField(position, label.text, s_InvalidTypeMessage);
+        }
+
+        public override VisualElement CreatePropertyGUI(SerializedProperty property)
+        {
+            if (property.propertyType == SerializedPropertyType.String)
+            {
+                var lines = ((MultilineAttribute)attribute).lines;
+                var field = EditorUIService.instance.CreateTextField(property.displayName, true);
+                field.bindingPath = property.propertyPath;
+                field.style.height = EditorGUI.kSingleLineHeight + (lines - 1) * kLineHeight;
+                return field;
+            }
+
+            return new Label(s_InvalidTypeMessage);
         }
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
@@ -113,7 +269,7 @@ namespace UnityEditor
     internal sealed class TextAreaDrawer : PropertyDrawer
     {
         private const int kLineHeight = 13;
-
+        private static string s_InvalidTypeMessage = L10n.Tr("Use TextAreaDrawer with string.");
         private Vector2 m_ScrollPosition = new Vector2();
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
@@ -134,7 +290,35 @@ namespace UnityEditor
                 EditorGUI.EndProperty();
             }
             else
-                EditorGUI.LabelField(position, label.text, "Use TextAreaDrawer with string.");
+                EditorGUI.LabelField(position, label.text, s_InvalidTypeMessage);
+        }
+
+        public override VisualElement CreatePropertyGUI(SerializedProperty property)
+        {
+            if (property.propertyType == SerializedPropertyType.String)
+            {
+                var textAreaAttribute = attribute as TextAreaAttribute;
+                var element = new VisualElement();
+                var label = new Label(property.displayName);
+                var scrollView = new ScrollView();
+                var textField = EditorUIService.instance.CreateTextField(null, true);
+                var minHeight = EditorGUI.kSingleLineHeight + (textAreaAttribute.minLines - 1) * kLineHeight;
+                var maxHeight = minHeight;
+
+                element.Add(label);
+                element.Add(scrollView);
+
+                scrollView.Add(textField);
+                scrollView.style.minHeight = minHeight;
+                scrollView.style.maxHeight = maxHeight;
+
+                textField.style.minHeight = minHeight;
+                textField.bindingPath = property.propertyPath;
+
+                return element;
+            }
+
+            return new Label(s_InvalidTypeMessage);
         }
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
@@ -156,6 +340,8 @@ namespace UnityEditor
     [CustomPropertyDrawer(typeof(ColorUsageAttribute))]
     internal sealed class ColorUsageDrawer : PropertyDrawer
     {
+        private static string s_InvalidTypeMessage = L10n.Tr("Use ColorUsageDrawer with color.");
+
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             var colorUsage = (ColorUsageAttribute)attribute;
@@ -175,11 +361,26 @@ namespace UnityEditor
                 EditorGUI.ColorField(position, label, property.colorValue, true, colorUsage.showAlpha, colorUsage.hdr);
             }
         }
+
+        public override VisualElement CreatePropertyGUI(SerializedProperty property)
+        {
+            if (property.propertyType == SerializedPropertyType.Color)
+            {
+                var colorUsage = (ColorUsageAttribute)attribute;
+                var field = EditorUIService.instance.CreateColorField(property.displayName, colorUsage.showAlpha, colorUsage.hdr);
+                field.bindingPath = property.propertyPath;
+                return field;
+            }
+
+            return new Label(s_InvalidTypeMessage);
+        }
     }
 
     [CustomPropertyDrawer(typeof(GradientUsageAttribute))]
     internal sealed class GradientUsageDrawer : PropertyDrawer
     {
+        private static string s_InvalidTypeMessage = L10n.Tr("Use GradientUsageDrawer with gradient.");
+
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             var colorUsage = (GradientUsageAttribute)attribute;
@@ -191,11 +392,25 @@ namespace UnityEditor
                 property.gradientValue = newGradient;
             }
         }
+
+        public override VisualElement CreatePropertyGUI(SerializedProperty property)
+        {
+            if (property.propertyType == SerializedPropertyType.Gradient)
+            {
+                var gradientUsage = (GradientUsageAttribute)attribute;
+                var field = EditorUIService.instance.CreateGradientField(property.displayName, gradientUsage.hdr, gradientUsage.colorSpace);
+                return field;
+            }
+
+            return new Label(s_InvalidTypeMessage);
+        }
     }
 
     [CustomPropertyDrawer(typeof(DelayedAttribute))]
     internal sealed class DelayedDrawer : PropertyDrawer
     {
+        private static string s_InvalidTypeMessage = L10n.Tr("Use Delayed with float, int, or string.");
+
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             if (property.propertyType == SerializedPropertyType.Float)
@@ -205,7 +420,46 @@ namespace UnityEditor
             else if (property.propertyType == SerializedPropertyType.String)
                 EditorGUI.DelayedTextField(position, property, label);
             else
-                EditorGUI.LabelField(position, label.text, "Use Delayed with float, int, or string.");
+                EditorGUI.LabelField(position, label.text, s_InvalidTypeMessage);
+        }
+
+        public override VisualElement CreatePropertyGUI(SerializedProperty property)
+        {
+            BindableElement newField = null;
+            if (property.propertyType == SerializedPropertyType.Float)
+            {
+                if (property.type == "float")
+                {
+                    newField = EditorUIService.instance.CreateFloatField(property.displayName, null, true);
+                }
+                else if (property.type == "double")
+                {
+                    newField = EditorUIService.instance.CreateDoubleField(property.displayName, null, true);
+                }
+            }
+            else if (property.propertyType == SerializedPropertyType.Integer)
+            {
+                if (property.type == "int")
+                {
+                    newField = EditorUIService.instance.CreateIntField(property.displayName, null, true);
+                }
+                else if (property.type == "long")
+                {
+                    newField = EditorUIService.instance.CreateLongField(property.displayName, null, true);
+                }
+            }
+            else if (property.propertyType == SerializedPropertyType.String)
+            {
+                newField = EditorUIService.instance.CreateTextField(property.displayName, false, true);
+            }
+
+            if (newField != null)
+            {
+                newField.bindingPath = property.propertyPath;
+                return newField;
+            }
+
+            return new Label(s_InvalidTypeMessage);
         }
     }
 }

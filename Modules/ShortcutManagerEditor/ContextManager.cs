@@ -19,10 +19,17 @@ namespace UnityEditor.ShortcutManagement
         bool DoContextsConflict(Type context1, Type context2);
         bool playModeContextIsActive { get; }
         object GetContextInstanceOfType(Type type);
+        void RegisterTag(string tag);
+        void RegisterTag(Enum e);
+        void UnregisterTag(string tag);
+        void UnregisterTag(Enum e);
+        bool HasTag(string tag);
     }
 
     class ContextManager : IContextManager
     {
+        const string k_PrefPrefix = "UnityEditor.ShortcutManagement.ContextManager.";
+
         internal class GlobalContext {}
 
         public static readonly GlobalContext globalContext = new GlobalContext();
@@ -34,6 +41,7 @@ namespace UnityEditor.ShortcutManagement
 
         List<IShortcutToolContext> m_ToolContexts = new List<IShortcutToolContext>();
         static Dictionary<Type, bool> s_IsPriorityContextCache = new Dictionary<Type, bool>();
+        internal Dictionary<string, bool> m_Tags = new Dictionary<string, bool>();
 
         public int activeContextCount => 1 + ((focusedWindow != null) ? 1 : 0) + m_PriorityContexts.Count(c => c.active) + m_ToolContexts.Count(c => c.active);
 
@@ -190,5 +198,24 @@ namespace UnityEditor.ShortcutManagement
 
             return null;
         }
+
+        internal static string EnumTagFormat(Enum tag) => $"{tag.GetType().Name}.{tag.ToString()}";
+
+        public void RegisterTag(string tag) => m_Tags[tag] = true;
+
+        public void RegisterTag(Enum e)
+        {
+            foreach (var value in Enum.GetValues(e.GetType()))
+            {
+                UnregisterTag(EnumTagFormat((Enum)value));
+            }
+            RegisterTag(EnumTagFormat(e));
+        }
+
+        public void UnregisterTag(string tag) => m_Tags[tag] = false;
+
+        public void UnregisterTag(Enum e) => UnregisterTag(EnumTagFormat(e));
+
+        public bool HasTag(string tag) => tag != null && m_Tags.TryGetValue(tag, out var result) && result;
     }
 }

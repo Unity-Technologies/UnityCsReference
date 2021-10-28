@@ -40,23 +40,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        [Serializable]
-        public class ConditionalOrdering : Ordering
-        {
-            public Func<bool> condition;
-
-            public ConditionalOrdering(Func<bool> condition, string displayName, string orderBy, Order order = Order.None) : base(displayName, orderBy, order)
-            {
-                this.condition = condition;
-            }
-        }
-
         public bool requireUserLoggedIn;
         public bool requireNetwork;
         public bool supportFilters;
         public bool supportLocalReordering;
         public Ordering[] orderingValues;
-        public ConditionalOrdering[] conditionalOrderingValues;
 
         public override string ToString()
         {
@@ -66,8 +54,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             stringBuilder.Append($"supportFilters={supportFilters},");
             if (orderingValues != null)
                 stringBuilder.Append($"orderingValues=[{string.Join(",", orderingValues.Select(o => $"{o.orderBy} ({o.order})").ToArray())}],");
-            if (conditionalOrderingValues != null)
-                stringBuilder.Append($"conditionalOrderingValues=[{string.Join(",", conditionalOrderingValues.Select(o => $"{o.condition} {o.orderBy} ({o.order})").ToArray())}],");
 
             var text = stringBuilder.ToString();
             if (!string.IsNullOrEmpty(text))

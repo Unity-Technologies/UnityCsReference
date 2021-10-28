@@ -25,6 +25,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         event Action<ListUpdateArgs> onListUpdate;
         event Action<IPage> onListRebuild;
         event Action<IPage> onSubPageAdded;
+        event Action<PageFilters> onFiltersChange;
         PageFilters filters { get; }
         PackageFilterTab tab { get; }
         PageCapability capability { get; }
@@ -45,8 +46,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         VisualState GetVisualState(string packageUniqueId);
         VisualState GetSelectedVisualState();
         void LoadMore(long numberOfPackages);
-        void ClearFilters();
-        void UpdateFilters(PageFilters filters);
+
+        // return true if filters are changed
+        bool ClearFilters();
+        // return true if filters are changed
+        bool UpdateFilters(PageFilters filters);
 
         IPackageVersion GetSelectedVersion();
 

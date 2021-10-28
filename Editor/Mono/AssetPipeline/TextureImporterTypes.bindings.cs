@@ -57,6 +57,10 @@ namespace UnityEditor
         [SerializeField]
         int     m_NormalMapFilter;
         [SerializeField]
+        int m_FlipGreenChannel;
+        [SerializeField]
+        uint m_Swizzle;
+        [SerializeField]
         int  m_IsReadable;
 
         [SerializeField]
@@ -263,6 +267,37 @@ namespace UnityEditor
         {
             get {return (TextureImporterNormalFilter)m_NormalMapFilter; }
             set { m_NormalMapFilter = (int)value; }
+        }
+        public bool flipGreenChannel
+        {
+            get => m_FlipGreenChannel != 0;
+            set => m_FlipGreenChannel = value ? 1 : 0;
+        }
+
+        public TextureImporterSwizzle swizzleR
+        {
+            get => (TextureImporterSwizzle)(m_Swizzle & 0xFF);
+            set => m_Swizzle = (m_Swizzle & 0xFFFFFF00) | (uint)value;
+        }
+        public TextureImporterSwizzle swizzleG
+        {
+            get => (TextureImporterSwizzle)((m_Swizzle >> 8) & 0xFF);
+            set => m_Swizzle = (m_Swizzle & 0xFFFF00FF) | ((uint)value<<8);
+        }
+        public TextureImporterSwizzle swizzleB
+        {
+            get => (TextureImporterSwizzle)((m_Swizzle >> 16) & 0xFF);
+            set => m_Swizzle = (m_Swizzle & 0xFF00FFFF) | ((uint)value<<16);
+        }
+        public TextureImporterSwizzle swizzleA
+        {
+            get => (TextureImporterSwizzle)((m_Swizzle >> 24) & 0xFF);
+            set => m_Swizzle = (m_Swizzle & 0x00FFFFFF) | ((uint)value<<24);
+        }
+        internal uint swizzleRaw
+        {
+            get => m_Swizzle;
+            set => m_Swizzle = value;
         }
         public TextureImporterAlphaSource alphaSource
         {

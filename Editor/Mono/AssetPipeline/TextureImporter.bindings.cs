@@ -308,11 +308,32 @@ namespace UnityEditor
             set { if (value) textureType = TextureImporterType.Lightmap; else textureType = TextureImporterType.Default; }
         }
 
-        // Convert heightmap to normal map?
         public extern bool convertToNormalmap { get; set; }
-        // Is this texture a normal map?
         public extern TextureImporterNormalFilter normalmapFilter { get; set; }
-        // Amount of bumpyness in the heightmap.
+        public extern bool flipGreenChannel { get; set; }
+
+        extern uint swizzle { get; set; }
+        public TextureImporterSwizzle swizzleR
+        {
+            get => (TextureImporterSwizzle)(swizzle & 0xFF);
+            set => swizzle = (swizzle & 0xFFFFFF00) | (uint)value;
+        }
+        public TextureImporterSwizzle swizzleG
+        {
+            get => (TextureImporterSwizzle)((swizzle >> 8) & 0xFF);
+            set => swizzle = (swizzle & 0xFFFF00FF) | ((uint)value<<8);
+        }
+        public TextureImporterSwizzle swizzleB
+        {
+            get => (TextureImporterSwizzle)((swizzle >> 16) & 0xFF);
+            set => swizzle = (swizzle & 0xFF00FFFF) | ((uint)value<<16);
+        }
+        public TextureImporterSwizzle swizzleA
+        {
+            get => (TextureImporterSwizzle)((swizzle >> 24) & 0xFF);
+            set => swizzle = (swizzle & 0x00FFFFFF) | ((uint)value<<24);
+        }
+
         [NativeProperty("NormalmapHeightScale")]
         public extern float heightmapScale { get; set; }
 
@@ -439,7 +460,6 @@ namespace UnityEditor
         internal extern bool textureStillNeedsToBeCompressed { [NativeName("DoesTextureStillNeedToBeCompressed")] get; }
 
         // This is pure backward compatibility codepath. It can be removed when we decide that the time has come
-        internal extern bool ShouldShowRemoveMatteOption();
         internal extern bool removeMatte { get; set; }
 
         public extern bool ignorePngGamma { get; set; }

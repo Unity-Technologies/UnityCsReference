@@ -773,7 +773,7 @@ namespace UnityEngine.UIElements
 
         public static void AdjustBackgroundSizeForBorders(VisualElement visualElement, ref Rect rect)
         {
-            var style = visualElement.computedStyle;
+            var style = visualElement.resolvedStyle;
 
             // If the border width allows it, slightly shrink the background size to avoid
             // having both the border and background blending together after antialiasing.

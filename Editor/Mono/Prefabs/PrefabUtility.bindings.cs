@@ -345,7 +345,7 @@ namespace UnityEditor
         extern internal static GameObject GetOriginalSourceOrVariantRoot([NotNull] Object instanceOrAsset);
 
         [FreeFunction]
-        extern internal static GameObject GetOriginalSourceRootWhereGameObjectIsAdded([NotNull] GameObject gameObject);
+        extern public static GameObject GetOriginalSourceRootWhereGameObjectIsAdded([NotNull] GameObject gameObject);
 
         [NativeMethod("PrefabUtilityBindings::ApplyPrefabAddedComponent", IsFreeFunction = true, ThrowsException = true)]
         extern private static void ApplyAddedComponent([NotNull] Component addedComponent, [NotNull] Object applyTargetPrefabObject);

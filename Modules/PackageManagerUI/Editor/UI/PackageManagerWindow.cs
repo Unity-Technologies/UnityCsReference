@@ -66,6 +66,9 @@ namespace UnityEditor.PackageManager.UI
 
         internal const string k_UpmUrl = "com.unity3d.kharma:upmpackage/";
 
+        // This event is currently only used by integration tests to know when the package manager window is ready
+        public static event Action onPackageManagerReady = delegate { };
+
         void OnEnable()
         {
             this.SetAntiAliasing(4);
@@ -109,6 +112,11 @@ namespace UnityEditor.PackageManager.UI
             {
                 CheckInnerException<ResourceLoaderException>(e);
             }
+
+            if (pageManager.IsInitialFetchingDone())
+                OnFirstRefreshOperationFinish();
+            else
+                pageManager.onRefreshOperationFinish += OnFirstRefreshOperationFinish;
         }
 
         void CreateGUI()
@@ -137,6 +145,14 @@ namespace UnityEditor.PackageManager.UI
             }
 
             m_Root.OnCreateGUI();
+        }
+
+        private void OnFirstRefreshOperationFinish()
+        {
+            var container = ServicesContainer.instance;
+            var pageManager = container.Resolve<PageManager>();
+            pageManager.onRefreshOperationFinish -= OnFirstRefreshOperationFinish;
+            onPackageManagerReady?.Invoke();
         }
 
         void OnDisable()
@@ -252,6 +268,19 @@ namespace UnityEditor.PackageManager.UI
 
             var upmClient = ServicesContainer.instance.Resolve<UpmClient>();
             upmClient.List(true);
+        }
+
+        [UsedByNativeCode]
+        internal static void OnEditorFinishLoadingProject()
+        {
+            var servicesContainer = ServicesContainer.instance;
+            var applicationProxy = servicesContainer.Resolve<ApplicationProxy>();
+            if (!applicationProxy.isBatchMode && applicationProxy.isUpmRunning)
+            {
+                var upmClient = servicesContainer.Resolve<UpmClient>();
+                EntitlementsErrorChecker.ManagePackageManagerEntitlementError(upmClient);
+                upmClient.List();
+            }
         }
 
         private static void OnRegisteredPackages(PackageRegistrationEventArgs args)

@@ -66,5 +66,95 @@ namespace UnityEditor
             }
             return styleSheet;
         }
+
+        public BindableElement CreateFloatField(string name, Func<float, float> onValidateValue = null, bool isDelayed = false)
+        {
+            return SetupField(name, onValidateValue, isDelayed, new FloatField());
+        }
+
+        public BindableElement CreateDoubleField(string name, Func<double, double> onValidateValue = null, bool isDelayed = false)
+        {
+            return SetupField(name, onValidateValue, isDelayed, new DoubleField());
+        }
+
+        public BindableElement CreateIntField(string name, Func<int, int> onValidateValue = null, bool isDelayed = false)
+        {
+            return SetupField(name, onValidateValue, isDelayed, new IntegerField());
+        }
+
+        public BindableElement CreateLongField(string name, Func<long, long> onValidateValue = null, bool isDelayed = false)
+        {
+            return SetupField(name, onValidateValue, isDelayed, new LongField());
+        }
+
+        public BindableElement CreateVector2Field(string name, Func<Vector2, Vector2> onValidateValue)
+        {
+            return SetupField(name, onValidateValue, new Vector2Field());
+        }
+
+        public BindableElement CreateVector2IntField(string name, Func<Vector2Int, Vector2Int> onValidateValue)
+        {
+            return SetupField(name, onValidateValue, new Vector2IntField());
+        }
+
+        public BindableElement CreateVector3Field(string name, Func<Vector3, Vector3> onValidateValue)
+        {
+            return SetupField(name, onValidateValue, new Vector3Field());
+        }
+
+        public BindableElement CreateVector3IntField(string name, Func<Vector3Int, Vector3Int> onValidateValue)
+        {
+            return SetupField(name, onValidateValue, new Vector3IntField());
+        }
+
+        public BindableElement CreateVector4Field(string name, Func<Vector4, Vector4> onValidateValue)
+        {
+            return SetupField(name, onValidateValue, new Vector4Field());
+        }
+
+        public BindableElement CreateTextField(string name = null, bool isMultiLine = false, bool isDelayed = false)
+        {
+            var field = new TextField(name);
+            field.multiline = isMultiLine;
+            field.isDelayed = isDelayed;
+            return field;
+        }
+
+        public BindableElement CreateColorField(string name, bool showAlpha, bool hdr)
+        {
+            var field = new ColorField(name);
+            field.showAlpha = showAlpha;
+            field.hdr = hdr;
+            return field;
+        }
+
+        public BindableElement CreateGradientField(string name, bool hdr, ColorSpace colorSpace)
+        {
+            var field = new GradientField(name);
+            field.colorSpace = colorSpace;
+            field.hdr = hdr;
+            return field;
+        }
+
+        private TFieldType SetupField<TFieldType, TValueType>(string name, Func<TValueType, TValueType> onValidate, bool isDelayed, TFieldType field) where TFieldType : TextInputBaseField<TValueType>
+        {
+            SetupField(name, onValidate, field);
+
+            field.isDelayed = isDelayed;
+
+            return field;
+        }
+
+        private TFieldType SetupField<TFieldType, TValueType>(string name, Func<TValueType, TValueType> onValidate, TFieldType field) where TFieldType : BaseField<TValueType>
+        {
+            field.label = name;
+
+            if (onValidate != null)
+            {
+                field.onValidateValue += onValidate;
+            }
+
+            return field;
+        }
     }
 }

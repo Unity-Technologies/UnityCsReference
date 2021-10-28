@@ -3175,21 +3175,6 @@
     <Compile Include="..\..\Runtime\Export\UnityEvent\UnityEventQueueSystem.bindings.cs">
       <Link>Runtime\Export\UnityEvent\UnityEventQueueSystem.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\UnityEvent\UnityEvent\UnityEvent_0.cs">
-      <Link>Runtime\Export\UnityEvent\UnityEvent\UnityEvent_0.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\UnityEvent\UnityEvent\UnityEvent_1.cs">
-      <Link>Runtime\Export\UnityEvent\UnityEvent\UnityEvent_1.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\UnityEvent\UnityEvent\UnityEvent_2.cs">
-      <Link>Runtime\Export\UnityEvent\UnityEvent\UnityEvent_2.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\UnityEvent\UnityEvent\UnityEvent_3.cs">
-      <Link>Runtime\Export\UnityEvent\UnityEvent\UnityEvent_3.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\UnityEvent\UnityEvent\UnityEvent_4.cs">
-      <Link>Runtime\Export\UnityEvent\UnityEvent\UnityEvent_4.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\Unsafe\UnsafeUtility.bindings.cs">
       <Link>Runtime\Export\Unsafe\UnsafeUtility.bindings.cs</Link>
     </Compile>
@@ -3345,6 +3330,21 @@
     </Compile>
     <Compile Include="..\..\Runtime\Video\ScriptBindings\UnityEngineWebCamTexture.bindings.cs">
       <Link>Runtime\Video\ScriptBindings\UnityEngineWebCamTexture.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\artifacts\generated\UnityEvent\UnityEvent_0.cs">
+      <Link>artifacts\generated\UnityEvent\UnityEvent_0.cs</Link>
+    </Compile>
+    <Compile Include="..\..\artifacts\generated\UnityEvent\UnityEvent_1.cs">
+      <Link>artifacts\generated\UnityEvent\UnityEvent_1.cs</Link>
+    </Compile>
+    <Compile Include="..\..\artifacts\generated\UnityEvent\UnityEvent_2.cs">
+      <Link>artifacts\generated\UnityEvent\UnityEvent_2.cs</Link>
+    </Compile>
+    <Compile Include="..\..\artifacts\generated\UnityEvent\UnityEvent_3.cs">
+      <Link>artifacts\generated\UnityEvent\UnityEvent_3.cs</Link>
+    </Compile>
+    <Compile Include="..\..\artifacts\generated\UnityEvent\UnityEvent_4.cs">
+      <Link>artifacts\generated\UnityEvent\UnityEvent_4.cs</Link>
     </Compile>
   </ItemGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

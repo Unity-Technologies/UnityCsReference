@@ -11,6 +11,7 @@ namespace UnityEditor.UIElements.Bindings
 {
     internal static class BindingsStyleHelpers
     {
+        internal static event Action<VisualElement, SerializedProperty> updateBindingStateStyle;
         internal static void UpdateElementStyle(VisualElement element, SerializedProperty prop)
         {
             if (element == null)
@@ -65,6 +66,9 @@ namespace UnityEditor.UIElements.Bindings
 
             // Handle prefab state.
             UpdatePrefabStateStyle(element, prop);
+
+            // Handle dynamic states
+            updateBindingStateStyle?.Invoke(element, prop);
 
             // Handle animated state.
 

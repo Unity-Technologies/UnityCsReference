@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 
@@ -421,14 +420,7 @@ namespace UnityEditor.Search
             using (LockUpgradeableRead())
             {
                 var foundRecord = Find(record.recordKey, out var index);
-                var insert = true;
-                if (foundRecord)
-                {
-                    var oldRecord = m_StoreData[(int)index];
-                    if (oldRecord.IsValid())
-                        return false;
-                    insert = false;
-                }
+                bool insert = !foundRecord;
 
                 using (LockWrite())
                 {
@@ -581,7 +573,7 @@ namespace UnityEditor.Search
         }
 
         public long length => m_StoreData.Count;
-        public long byteSize => length * Marshal.SizeOf<PropertyDatabaseRecord>();
+        public long byteSize => length * PropertyDatabaseRecord.size;
 
         public PropertyDatabaseRecordKey this[long index] => m_StoreData[(int)index].recordKey;
 
@@ -1354,14 +1346,7 @@ namespace UnityEditor.Search
             using (LockUpgradeableRead())
             {
                 var foundRecord = Find(recordKey, out var index);
-                var insert = true;
-                if (foundRecord)
-                {
-                    var oldRecord = m_StoreData[(int)index];
-                    if (oldRecord.value != null)
-                        return false;
-                    insert = false;
-                }
+                bool insert = !foundRecord;
 
                 var newRecord = new PropertyDatabaseVolatileRecord(recordKey, value);
                 using (LockWrite())

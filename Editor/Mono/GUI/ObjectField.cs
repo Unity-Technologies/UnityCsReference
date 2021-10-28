@@ -158,10 +158,15 @@ namespace UnityEditor
         // private and internal/public methods instead EITHER take SerializedObject OR direct reference.
         static Object DoObjectField(Rect position, Rect dropRect, int id, Object obj, Object objBeingEdited, System.Type objType, SerializedProperty property, ObjectFieldValidator validator, bool allowSceneObjects, GUIStyle style)
         {
-            return DoObjectField(position, dropRect, id, obj, objBeingEdited, objType, null, property, validator, allowSceneObjects, style);
+            return DoObjectField(position, dropRect, id, obj, objBeingEdited, objType, null, property, validator, allowSceneObjects, style, EditorStyles.objectFieldButton);
         }
 
         static Object DoObjectField(Rect position, Rect dropRect, int id, Object obj, Object objBeingEdited, System.Type objType, System.Type additionalType, SerializedProperty property, ObjectFieldValidator validator, bool allowSceneObjects, GUIStyle style)
+        {
+            return DoObjectField(position, dropRect, id, obj, objBeingEdited, objType, additionalType, property, validator, allowSceneObjects, style, EditorStyles.objectFieldButton);
+        }
+
+        static Object DoObjectField(Rect position, Rect dropRect, int id, Object obj, Object objBeingEdited, System.Type objType, System.Type additionalType, SerializedProperty property, ObjectFieldValidator validator, bool allowSceneObjects, GUIStyle style, GUIStyle buttonStyle)
         {
             if (validator == null)
                 validator = ValidateObjectFieldAssignment;
@@ -445,8 +450,8 @@ namespace UnityEditor
                             BeginHandleMixedValueContentColor();
                             style.Draw(position, temp, id, DragAndDrop.activeControlID == id, position.Contains(Event.current.mousePosition));
 
-                            Rect buttonRect = EditorStyles.objectFieldButton.margin.Remove(GetButtonRect(visualType, position));
-                            EditorStyles.objectFieldButton.Draw(buttonRect, GUIContent.none, id, DragAndDrop.activeControlID == id, buttonRect.Contains(Event.current.mousePosition));
+                            Rect buttonRect = buttonStyle.margin.Remove(GetButtonRect(visualType, position));
+                            buttonStyle.Draw(buttonRect, GUIContent.none, id, DragAndDrop.activeControlID == id, buttonRect.Contains(Event.current.mousePosition));
                             EndHandleMixedValueContentColor();
                             break;
                         case ObjectFieldVisualType.LargePreview:

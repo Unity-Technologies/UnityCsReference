@@ -183,12 +183,6 @@ namespace UnityEngine.UIElements
             return changes;
         }
 
-        public static bool StartAnimationInlineCursor(VisualElement element, ref ComputedStyle computedStyle, StyleCursor cursor, int durationMs, int delayMs, Func<float, float> easingCurve)
-        {
-            var to = cursor.keyword == StyleKeyword.Initial ? InitialStyle.cursor : cursor.value;
-            return element.styleAnimation.Start(StylePropertyId.Cursor, computedStyle.rareData.Read().cursor, to, durationMs, delayMs, easingCurve);
-        }
-
         public static bool StartAnimationInlineTextShadow(VisualElement element, ref ComputedStyle computedStyle, StyleTextShadow textShadow, int durationMs, int delayMs, Func<float, float> easingCurve)
         {
             var to = textShadow.keyword == StyleKeyword.Initial ? InitialStyle.textShadow : textShadow.value;

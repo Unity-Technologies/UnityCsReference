@@ -67,6 +67,9 @@ namespace UnityEditor.Search.Providers
 
         static IEnumerable<SearchItem> FetchItems(SearchContext context, SearchProvider provider)
         {
+            if (context.empty && context.filterType == null)
+                yield break;
+
             if (m_ResourcesQueryEngine == null)
                 m_ResourcesQueryEngine = new ObjectQueryEngine();
 
@@ -99,6 +102,24 @@ namespace UnityEditor.Search.Providers
             }
         }
 
+        static IEnumerable<SearchProposition> FetchPropositions(SearchContext context, SearchPropositionOptions options)
+        {
+            if (!options.flags.HasAny(SearchPropositionFlags.QueryBuilder))
+                yield break;
+
+            foreach (var f in QueryListBlockAttribute.GetPropositions(typeof(QueryTypeBlock)))
+                yield return f;
+            foreach (var f in QueryListBlockAttribute.GetPropositions(typeof(QueryLabelBlock)))
+                yield return f;
+            foreach (var f in QueryListBlockAttribute.GetPropositions(typeof(QueryAreaFilterBlock)))
+                yield return f;
+            foreach (var f in QueryListBlockAttribute.GetPropositions(typeof(QueryBundleFilterBlock)))
+                yield return f;
+
+            yield return new SearchProposition(category: null, "Reference", "ref:<$object:none,UnityEngine.Object$>", "Find all assets referencing a specific asset.");
+            yield return new SearchProposition(category: null, "Glob", "glob:\"Assets/**/*.png\"", "Search according to a glob query.");
+        }
+
         [SearchItemProvider]
         internal static SearchProvider CreateProvider()
         {
@@ -107,11 +128,48 @@ namespace UnityEditor.Search.Providers
                 type = "asset",
                 active = false,
                 priority = 2500,
-                fetchItems = (context, items, provider) => FetchItems(context, SearchService.GetProvider("asset") ?? provider)
+                fetchItems = (context, items, provider) => FetchItems(context, SearchService.GetProvider("asset") ?? provider),
+                fetchPropositions = (context, options) => FetchPropositions(context, options)
             };
         }
 
         [MenuItem("Window/Search/Asset Database", priority = 1271)] static void OpenProvider() => SearchService.ShowContextual(type);
         [ShortcutManagement.Shortcut("Help/Search/Asset Database")] static void OpenShortcut() => QuickSearch.OpenWithContextualProvider(type);
+    }
+
+    [QueryListBlock(null, "area", "a", ":")]
+    class QueryAreaFilterBlock : QueryListBlock
+    {
+        public QueryAreaFilterBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
+            : base(source, id, value, attr)
+        {
+            icon = Utils.LoadIcon("Filter Icon");
+        }
+
+        public override IEnumerable<SearchProposition> GetPropositions(SearchPropositionFlags flags)
+        {
+            yield return CreateProposition(flags, "All", "all", "Search all", score: -99);
+            yield return CreateProposition(flags, "Assets", "assets", "Search in Assets folder only", score: -98);
+            yield return CreateProposition(flags, "Packages", "packages", "Search in packages only", score: -97);
+        }
+    }
+
+    [QueryListBlock("Bundle", "bundle", "b", ":")]
+    class QueryBundleFilterBlock : QueryListBlock
+    {
+        public QueryBundleFilterBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
+            : base(source, id, value, attr)
+        {
+            icon = Utils.LoadIcon("Filter Icon");
+        }
+
+        public override IEnumerable<SearchProposition> GetPropositions(SearchPropositionFlags flags)
+        {
+            var bundleNames = AssetDatabase.GetAllAssetBundleNames();
+            foreach (var bundleName in bundleNames)
+            {
+                yield return CreateProposition(flags, bundleName, bundleName, $"Search inside bundle \"{bundleName}\"");
+            }
+        }
     }
 }

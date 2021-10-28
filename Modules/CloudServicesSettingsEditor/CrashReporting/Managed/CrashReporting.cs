@@ -142,14 +142,34 @@ namespace UnityEditor.CrashReporting
             return config;
         }
 
-        public static void UploadSymbolsInPath(string authToken, string symbolPath, string includeFilter, string excludeFilter, bool waitForExit)
+        public static void UploadSymbolsInPath(string authToken, string symbolPath, string il2cppOutputPath, string il2cppFileRoot, string includeFilter, string excludeFilter, bool waitForExit)
         {
             try
             {
                 UploadPlatformConfig platformConfig = GetUploadPlatformConfig();
 
-                string args = string.Format("-symbolPath \"{0}\" -log \"{1}\" -filter \"{2}\" -excludeFilter \"{3}\"",
-                    symbolPath, platformConfig.LogFilePath, includeFilter, excludeFilter);
+                string args = string.Format("-symbolPath \"{0}\" -log \"{1}\"",
+                    symbolPath, platformConfig.LogFilePath);
+
+                if (!String.IsNullOrEmpty(includeFilter))
+                {
+                    args = string.Format("{0} -filter \"{1}\"", args, includeFilter);
+                }
+
+                if (!String.IsNullOrEmpty(excludeFilter))
+                {
+                    args = string.Format("{0} -excludeFilter \"{1}\"", args, excludeFilter);
+                }
+
+                if (!String.IsNullOrEmpty(il2cppOutputPath))
+                {
+                    args = string.Format("{0} -il2cppOutputPath \"{1}\"", args, il2cppOutputPath);
+                }
+
+                if (!String.IsNullOrEmpty(il2cppFileRoot))
+                {
+                    args = string.Format("{0} -il2cppFileRoot \"{1}\"", args, il2cppFileRoot);
+                }
 
                 System.Diagnostics.ProcessStartInfo psi = new System.Diagnostics.ProcessStartInfo()
                 {
@@ -176,7 +196,7 @@ namespace UnityEditor.CrashReporting
             }
             catch (Exception ex)
             {
-                Debug.LogWarningFormat("Exception occurred attempting to upload symbols to Unity Performance Reporting service.  Native symbols will not be available for this build. Exception details:\n{0}\n{1}", ex.ToString(), ex.StackTrace);
+                Debug.LogWarningFormat("Exception occurred attempting to upload symbols to Unity Cloud Diagnostics service.  Native symbols will not be available for this build. Exception details:\n{0}\n{1}", ex.ToString(), ex.StackTrace);
             }
         }
     }

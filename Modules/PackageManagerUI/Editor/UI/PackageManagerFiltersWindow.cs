@@ -11,6 +11,20 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal abstract class PackageManagerFiltersWindow : EditorWindow
     {
+        internal const int k_MaxDisplayLabels = 5;
+        internal const int k_FoldOutHeight = 25;
+        internal const int k_ToggleHeight = 20;
+        internal const int k_Width = 196;
+        internal const int k_MaxHeight = 421;
+
+        internal static readonly string k_FoldoutClass = "foldout";
+        internal static readonly string k_ToggleClass = "toggle";
+
+        internal static readonly string k_StatusFoldOutName = "statusFoldOut";
+        internal static readonly string k_CategoriesFoldOutName = "categoriesFoldOut";
+        internal static readonly string k_LabelsFoldOutName = "labelsFoldOut";
+        internal static readonly string k_ShowAllButtonName = "showAll";
+
         private const long k_DelayTicks = TimeSpan.TicksPerSecond / 2;
 
         private static PackageManagerFiltersWindow s_Window;
@@ -114,9 +128,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 Event.current?.Use();
 
                 if (tab != PackageFilterTab.AssetStore)
-                    return false;
-
-                s_Window = CreateInstance<AssetStoreFiltersWindow>();
+                    s_Window = CreateInstance<UpmFiltersWindow>();
+                else
+                    s_Window = CreateInstance<AssetStoreFiltersWindow>();
                 s_Window.Init(rect, filters);
             }
 

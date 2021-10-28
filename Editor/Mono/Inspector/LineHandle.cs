@@ -100,10 +100,34 @@ namespace UnityEditor
                 && !(GUIUtility.hotControl == controlID || HandleUtility.nearestControl == controlID && GUIUtility.hotControl == 0))
                 return;
 
-            if (eventType == EventType.Layout)
+            // This is effectively the "Handles.DotHandleCap(controlID, position, rotation, size, eventType);" call however
+            // that is broken under larger scaling so use a simple distance to handle calculation here and simply draw the handle.
+            if (eventType == EventType.Layout || eventType == EventType.MouseMove)
+            {
                 HandleUtility.s_CustomPickDistance = k_PointPickDistance;
 
-            Handles.DotHandleCap(controlID, position, rotation, size, eventType);
+                var distance = (Event.current.mousePosition - HandleUtility.WorldToGUIPoint(position)).magnitude;
+                HandleUtility.AddControl(controlID, distance > k_PointPickDistance ? distance : 0f);
+            }
+            else if (eventType == EventType.Repaint)
+            {
+                // Only apply matrix to the position because DotCap is camera facing
+                position = Handles.matrix.MultiplyPoint(position);
+
+                var sideways = (Camera.current == null ? Vector3.right : Camera.current.transform.right) * size;
+                var up = (Camera.current == null ? Vector3.up : Camera.current.transform.up) * size;
+
+                // Draw the handle.
+                var col = Handles.color * new Color(1, 1, 1, 0.99f);
+                HandleUtility.ApplyWireMaterial(Handles.zTest);
+                GL.Begin(GL.QUADS);
+                GL.Color(col);
+                GL.Vertex(position + sideways + up);
+                GL.Vertex(position + sideways - up);
+                GL.Vertex(position - sideways - up);
+                GL.Vertex(position - sideways + up);
+                GL.End();
+            }
 
             HandleUtility.s_CustomPickDistance = HandleUtility.kPickDistance;
         }

@@ -142,8 +142,11 @@ namespace UnityEditor.Search
         {
             var actualArgsCount = args.Length;
             var expectedArgsCount = signature.argumentCount;
+            if (expectedArgsCount == actualArgsCount)
+                return true;
+
             var mandatoryArgumentNumber = signature.mandatoryArgumentNumber;
-            if (actualArgsCount > expectedArgsCount && !signature.arguments.Last().variadic)
+            if (actualArgsCount > expectedArgsCount && (expectedArgsCount == 0 || !signature.arguments.Last().variadic))
             {
                 errorHandler($"{name} takes a maximum of {expectedArgsCount} arguments and was passed: {actualArgsCount}.", StringView.Null);
                 return false;

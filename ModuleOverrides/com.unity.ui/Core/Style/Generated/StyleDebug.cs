@@ -1199,8 +1199,6 @@ namespace UnityEngine.UIElements
                     return true;
                 case StylePropertyId.BackgroundImage:
                     return true;
-                case StylePropertyId.Cursor:
-                    return true;
                 case StylePropertyId.Display:
                     return true;
                 case StylePropertyId.FlexDirection:

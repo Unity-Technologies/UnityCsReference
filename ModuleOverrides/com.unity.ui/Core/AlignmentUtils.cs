@@ -4,7 +4,7 @@
 
 namespace UnityEngine.UIElements
 {
-    class AlignmentUtils
+    static class AlignmentUtils
     {
         // round(-0.52 to 0.48) returns 0 => round(0.5 +/- eps) returns 1
         internal static float RoundToPixelGrid(float v, float pixelsPerPoint, float offset = 0.02f)

@@ -248,6 +248,8 @@ namespace UnityEditor
         static ConsoleWindow ms_ConsoleWindow = null;
         private string m_SearchText;
 
+        static readonly int k_HasSpaceForExtraButtonsCutoff = 420;
+
         public static void ShowConsoleWindow(bool immediate)
         {
             if (!ms_ConsoleWindow)
@@ -476,7 +478,7 @@ namespace UnityEditor
 
         bool HasSpaceForExtraButtons()
         {
-            return position.width > 420;
+            return position.width > k_HasSpaceForExtraButtonsCutoff;
         }
 
         internal void OnGUI()
@@ -543,7 +545,7 @@ namespace UnityEditor
             if (HasSpaceForExtraButtons())
             {
                 SetFlag(ConsoleFlags.ErrorPause, GUILayout.Toggle(HasFlag(ConsoleFlags.ErrorPause), Constants.ErrorPause, Constants.MiniButton));
-                PlayerConnectionGUILayout.ConnectionTargetSelectionDropdown(m_ConsoleAttachToPlayerState, EditorStyles.toolbarDropDown);
+                PlayerConnectionGUILayout.ConnectionTargetSelectionDropdown(m_ConsoleAttachToPlayerState, EditorStyles.toolbarDropDown, (int)(position.width - k_HasSpaceForExtraButtonsCutoff) + 80 );
             }
 
             GUILayout.FlexibleSpace();

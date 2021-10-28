@@ -164,7 +164,7 @@ namespace UnityEditor.UIElements
             Add(m_Header);
             // If the editor targets contain many target and the multi editing is not supported, we should not add this inspector.
             // However, the header and footer are kept since these are showing information regarding this state.
-            if (editor != null && ((editor.targets.Length <= 1) || (inspectorWindow.IsMultiEditingSupported(editor, editor.target))))
+            if (editor != null && ((editor.targets.Length <= 1) || (PropertyEditor.IsMultiEditingSupported(editor, editor.target, inspectorWindow.inspectorMode))))
             {
                 Add(m_InspectorElement);
             }
@@ -341,7 +341,7 @@ namespace UnityEditor.UIElements
 
             UpdateInspectorVisibility();
 
-            var multiEditingSupported = inspectorWindow.IsMultiEditingSupported(editor, target);
+            var multiEditingSupported = PropertyEditor.IsMultiEditingSupported(editor, target, inspectorWindow.inspectorMode);
 
             if (!multiEditingSupported && m_WasVisible)
             {

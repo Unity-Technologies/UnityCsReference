@@ -3,9 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -116,7 +114,6 @@ namespace UnityEditor.Search
     /// <summary>
     /// Encapsulate an element that was retrieved from a query in a g.
     /// </summary>
-    [DebuggerDisplay("{id}[{index}] ({score})")]
     public readonly struct SearchResult : IEquatable<SearchResult>, IComparable<SearchResult>
     {
         /// <summary>
@@ -215,6 +212,11 @@ namespace UnityEditor.Search
             if (c == 0)
                 return index.CompareTo(other.index);
             return c;
+        }
+
+        public override string ToString()
+        {
+            return id;
         }
     }
 
@@ -957,6 +959,22 @@ namespace UnityEditor.Search
             }
         }
 
+        internal void MapProperty(in string name, in string label, in string help, in string propertyType, in string ownerTypeName, bool removeNestedKeys = false)
+        {
+            MapKeyword(name + ":", $"{label}|{help}|{propertyType}|{ownerTypeName}");
+            if (removeNestedKeys)
+            {
+                m_Keywords.Remove(name + ".x:");
+                m_Keywords.Remove(name + ".y:");
+                m_Keywords.Remove(name + ".z:");
+                m_Keywords.Remove(name + ".w:");
+                m_Keywords.Remove(name + ".r:");
+                m_Keywords.Remove(name + ".g:");
+                m_Keywords.Remove(name + ".b:");
+                m_Keywords.Remove(name + ".a:");
+            }
+        }
+
         internal void MapKeyword(string keyword, string help)
         {
             m_Keywords.Remove(keyword);
@@ -1119,15 +1137,15 @@ namespace UnityEditor.Search
                 updatedDocIndexes = other.m_Documents.Select(d => FindDocumentIndex(d)).ToArray();
 
                 var removeDocIndexes = new HashSet<int>(removeDocuments.Concat(other.m_SourceDocuments.Keys).SelectMany(FindDocumentIndexesByPath));
-                removeDocIndexes.ExceptWith(updatedDocIndexes);
                 if (removeDocIndexes.Count > 0)
                 {
-                    foreach (var idi in removeDocIndexes)
+                    foreach (var idi in removeDocIndexes.Except(updatedDocIndexes))
                     {
                         m_UnusedDocumentIndexes.Push(idi);
                         m_IndexByDocuments.Remove(m_Documents[idi].id);
                         m_Documents[idi] = default;
                     }
+
                     indexes = new List<SearchIndexEntry>(m_Indexes.Where(i =>
                     {
                         i.docs.ExceptWith(removeDocIndexes);
@@ -1407,17 +1425,13 @@ namespace UnityEditor.Search
             }
 
             if (value.Length > maxVariations)
-            {
                 indexes.Add(new SearchIndexEntry(valueHash, nameHash, SearchIndexEntry.Type.Property, documentIndex, score - 1));
-                //UnityEngine.Debug.Log($"Add Property [{documentIndex}]: {name}, {nameHash}, {value}, {valueHash}, {score - 1}");
-            }
 
             if (exact)
             {
                 nameHash ^= name.Length.GetHashCode();
                 valueHash ^= value.Length.GetHashCode();
                 indexes.Add(new SearchIndexEntry(valueHash, nameHash, SearchIndexEntry.Type.Property, documentIndex, score - 3));
-                //UnityEngine.Debug.Log($"Add Property [{documentIndex}]: {name}, {nameHash}, {value}, {valueHash}, {score - 3}");
             }
 
             if (saveKeyword)
@@ -2020,6 +2034,11 @@ namespace UnityEditor.Search
             {
                 // Potential range insertion, only used for not exact matches
                 foundIndex = (-foundIndex) - 1;
+
+                if (comparer.op == SearchIndexOperator.Less || comparer.op == SearchIndexOperator.LessOrEqual && foundIndex > 0)
+                {
+                    foundIndex--;
+                }
             }
 
             if (!IsIndexValid(foundIndex, term.crc, term.type))

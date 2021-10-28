@@ -75,7 +75,7 @@ namespace UnityEditor.ShortcutManagement
                         // Replace invalid binding with empty binding
                         var emptyBinding = Enumerable.Empty<KeyCombination>();
                         shortcutEntry = new ShortcutEntry(shortcutEntry.identifier, emptyBinding, shortcutEntry.action,
-                            shortcutEntry.context, shortcutEntry.type);
+                            shortcutEntry.context, shortcutEntry.tag, shortcutEntry.type);
                     }
 
                     identifier2ShortcutEntry.Add(shortcutEntry.identifier);

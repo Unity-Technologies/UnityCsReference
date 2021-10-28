@@ -19,18 +19,16 @@ namespace UnityEditor.PackageManager.UI.Internal
         private ResourceLoader m_ResourceLoader;
         private ApplicationProxy m_Application;
         private PackageFiltering m_PackageFiltering;
-        private PackageManagerPrefs m_PackageManagerPrefs;
         private PageManager m_PageManager;
-        private UpmClient m_UpmClient;
+        private AssetStoreCallQueue m_AssetStoreCallQueue;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
             m_ResourceLoader = container.Resolve<ResourceLoader>();
             m_Application = container.Resolve<ApplicationProxy>();
             m_PackageFiltering = container.Resolve<PackageFiltering>();
-            m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
             m_PageManager = container.Resolve<PageManager>();
-            m_UpmClient = container.Resolve<UpmClient>();
+            m_AssetStoreCallQueue = container.Resolve<AssetStoreCallQueue>();
         }
 
         public PackageStatusBar()
@@ -53,11 +51,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             UpdateStatusMessage();
 
             m_PageManager.onRefreshOperationStart += UpdateStatusMessage;
-            m_PageManager.onRefreshOperationFinish += OnRefreshOperationFinish;
+            m_PageManager.onRefreshOperationFinish += UpdateStatusMessage;
             m_PageManager.onRefreshOperationError += OnRefreshOperationError;
 
             m_PackageFiltering.onFilterTabChanged += OnFilterTabChanged;
             m_Application.onInternetReachabilityChange += OnInternetReachabilityChange;
+
+            m_AssetStoreCallQueue.onCheckUpdateProgress += OnCheckUpdateProgress;
 
             refreshButton.SetIcon("refresh");
             refreshButton.iconTooltip = L10n.Tr("Refresh list");
@@ -65,32 +65,24 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 if (!EditorApplication.isPlaying)
                 {
-                    refreshButton.SetEnabled(false);
-                    m_PageManager.Refresh(m_PackageFiltering.currentFilterTab, m_PackageManagerPrefs.numItemsPerPage ?? PageManager.k_DefaultPageSize);
+                    m_PageManager.Refresh(m_PackageFiltering.currentFilterTab);
                 }
             };
-            var menu = new DropdownMenu();
-            menu.AppendAction(L10n.Tr("Manual resolve"), a =>
-            {
-                if (!EditorApplication.isPlaying)
-                {
-                    refreshButton.SetEnabled(false);
-                    m_UpmClient.Resolve();
-                    refreshButton.SetEnabled(true);
-                }
-            });
-            refreshButton.menu = menu;
             refreshButton.SetEnabled(true);
+
+            RefreshCheckUpdateMenuOption(m_PackageFiltering.currentFilterTab);
         }
 
         public void OnDisable()
         {
             m_PageManager.onRefreshOperationStart -= UpdateStatusMessage;
-            m_PageManager.onRefreshOperationFinish -= OnRefreshOperationFinish;
+            m_PageManager.onRefreshOperationFinish -= UpdateStatusMessage;
             m_PageManager.onRefreshOperationError -= OnRefreshOperationError;
 
             m_PackageFiltering.onFilterTabChanged -= OnFilterTabChanged;
             m_Application.onInternetReachabilityChange -= OnInternetReachabilityChange;
+
+            m_AssetStoreCallQueue.onCheckUpdateProgress -= OnCheckUpdateProgress;
         }
 
         public void DisableRefresh()
@@ -106,17 +98,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnFilterTabChanged(PackageFilterTab tab)
         {
+            RefreshCheckUpdateMenuOption(tab);
             UpdateStatusMessage();
         }
 
         private void OnRefreshOperationError(UIError error)
         {
-            UpdateStatusMessage();
-        }
-
-        private void OnRefreshOperationFinish()
-        {
-            refreshButton.SetEnabled(true);
             UpdateStatusMessage();
         }
 
@@ -129,6 +116,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (m_PageManager.IsRefreshInProgress(tab))
             {
                 SetStatusMessage(StatusType.Loading, string.Format(L10n.Tr("Refreshing {0}..."), contentType));
+                return;
+            }
+
+            if (tab == PackageFilterTab.AssetStore && m_AssetStoreCallQueue.isCheckUpdateInProgress)
+            {
+                SetStatusMessage(StatusType.Loading, L10n.Tr("Checking for updates..."));
                 return;
             }
 
@@ -151,6 +144,29 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
 
+            SetLastUpdateStatusMessage();
+        }
+
+        private void SetStatusMessage(StatusType status, string message)
+        {
+            if (status == StatusType.Loading)
+            {
+                loadingSpinner.Start();
+                UIUtils.SetElementDisplay(refreshButton,false);
+            }
+            else
+            {
+                loadingSpinner.Stop();
+                UIUtils.SetElementDisplay(refreshButton, true);
+            }
+
+            UIUtils.SetElementDisplay(errorIcon, status == StatusType.Error);
+            statusLabel.text = message;
+        }
+
+        private void SetLastUpdateStatusMessage()
+        {
+            var tab = m_PackageFiltering.currentFilterTab;
             var timestamp = m_PageManager.GetRefreshTimestamp(tab);
             var dt = new DateTime(timestamp);
             var dateAndTime = dt.ToString("MMM d, HH:mm", CultureInfo.CreateSpecificCulture("en-US"));
@@ -158,15 +174,27 @@ namespace UnityEditor.PackageManager.UI.Internal
             SetStatusMessage(StatusType.Normal, label);
         }
 
-        private void SetStatusMessage(StatusType status, string message)
+        internal void OnCheckUpdateProgress()
         {
-            if (status == StatusType.Loading)
-                loadingSpinner.Start();
-            else
-                loadingSpinner.Stop();
+            if (m_PackageFiltering.currentFilterTab != PackageFilterTab.AssetStore)
+                return;
 
-            UIUtils.SetElementDisplay(errorIcon, status == StatusType.Error);
-            statusLabel.text = message;
+            UpdateStatusMessage();
+        }
+
+        private void RefreshCheckUpdateMenuOption(PackageFilterTab tab)
+        {
+            if (tab == PackageFilterTab.AssetStore)
+            {
+                var menu = new DropdownMenu();
+                menu.AppendAction(L10n.Tr("Check for updates"), a =>
+                {
+                    m_AssetStoreCallQueue.ForceCheckUpdateForAllLocalInfos();
+                },action => m_AssetStoreCallQueue.isCheckUpdateInProgress ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
+                refreshButton.menu = menu;
+            }
+            else
+                refreshButton.menu = null;
         }
 
         private VisualElementCache cache { get; set; }

@@ -42,7 +42,7 @@ namespace UnityEditor
         // Called from from menu
         static internal void ShowExportPackage()
         {
-            GetWindow<PackageExport>(true, "Exporting package");
+            GetWindow<PackageExport>(true, "Exporting package").RefreshAssetList();
         }
 
         internal static IEnumerable<ExportPackageItem> GetAssetItemsForExport(ICollection<string> guids, bool includeDependencies)

@@ -81,9 +81,14 @@ namespace UnityEditor.IMGUI.Controls
             m_Content = new GUIContent(m_Name);
         }
 
+        public override int GetHashCode()
+        {
+            return name.GetHashCode();
+        }
+
         public virtual int CompareTo(object o)
         {
-            return name.CompareTo((o as AdvancedDropdownItem).name);
+            return string.CompareOrdinal(name, ((AdvancedDropdownItem)o).name);
         }
 
         public void AddSeparator()

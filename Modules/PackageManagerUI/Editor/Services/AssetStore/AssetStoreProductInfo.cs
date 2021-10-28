@@ -104,39 +104,50 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (string.IsNullOrEmpty(source))
                 return source;
 
-            source = source.Replace("<br>", "\n");
+            // first we remove all end of line, html tags will reformat properly
+            var result = source.Replace("\n", "");
+            result = result.Replace("\r", "");
 
-            var array = new char[source.Length];
-            var arrayIndex = 0;
-            var inside = false;
+            // then we add all \n from html tgs we want to support
+            result = Regex.Replace(result, "</?br */?>", "\n", RegexOptions.IgnoreCase);
 
-            var result = Regex.Replace(source, "<a .*href=[\"']([^\"']+)[\"'][^>]*>(.+)</a>", "$2 ($1)", RegexOptions.IgnoreCase);
+            // seems like browsers support p tags that never end.. so we need to add </p> to support it too
+            result = Regex.Replace(result, "(<p[^>/]*>[^<]*)<p[^>/]*>", "$1</p>", RegexOptions.IgnoreCase);
 
-            foreach (var c in result.ToCharArray())
-            {
-                if (c == '<')
-                    inside = true;
-                else if (c == '>')
-                    inside = false;
-                else
-                {
-                    if (!inside)
-                        array[arrayIndex++] = c;
-                }
-            }
+            // <p> </p> should decorate with a starting \n and ending \n
+            result = Regex.Replace(result, "<p[^>/]*>", "\n", RegexOptions.IgnoreCase);
+            result = Regex.Replace(result, "</p>", "\n", RegexOptions.IgnoreCase);
 
-            var text = new string(array, 0, arrayIndex);
-            text = Regex.Replace(text, @"&#x?\d+;", "");
-            text = text.Replace("&nbsp;", " ");
-            text = text.Replace("&lt;", "<");
-            text = text.Replace("&gt;", ">");
-            text = text.Replace("&amp;", "&");
-            text = text.Replace("&quot;", "\"");
-            text = text.Replace("&apos;", "'");
-            text = Regex.Replace(text, @"[\n\r]+", "\n");
-            text = text.Trim(' ', '\r', '\n', '\t');
+            // We add dots to <li>
+            result = Regex.Replace(result, "<li[^>/]*>", "• ", RegexOptions.IgnoreCase);
 
-            return text;
+            // We add \n for each <li>
+            result = Regex.Replace(result, "</li *>", "\n", RegexOptions.IgnoreCase);
+
+            // Then we strip all tags except the <a>
+            result = Regex.Replace(result, "<[^a>]*>", "", RegexOptions.IgnoreCase);
+
+            // Transform the <a> in a readable text
+            result = Regex.Replace(result, "<a[^>]*href *= *[\"']{1}([^\"'>]+)[\"'][^>]*>([^<]*)</a>", "$2 ($1)", RegexOptions.IgnoreCase);
+
+            // for href that doesn't have quotes at all
+            result = Regex.Replace(result, "<a[^>]*href *= *([^>]*)>([^<]*)</a>", "$2 ($1)", RegexOptions.IgnoreCase);
+
+            // we strip emojis
+            result = Regex.Replace(result, @"&#x?\d+;?", "");
+
+            // finally we transform special characters that we want to support
+            result = result.Replace("&nbsp;", " ");
+            result = result.Replace("&lt;", "<");
+            result = result.Replace("&gt;", ">");
+            result = result.Replace("&amp;", "&");
+            result = result.Replace("&quot;", "\"");
+            result = result.Replace("&apos;", "'");
+
+            // final trim
+            result = result.Trim(' ', '\r', '\n', '\t');
+
+            return result;
         }
 
         private List<PackageImage> GetImagesFromProductDetails(IDictionary<string, object> productDetail)

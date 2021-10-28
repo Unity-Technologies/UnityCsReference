@@ -760,7 +760,7 @@ namespace UnityEditor
             return true;
         }
 
-        static bool MightBePrintableKey(Event evt)
+        internal static bool MightBePrintableKey(Event evt)
         {
             if (evt.command || evt.control)
                 return false;
@@ -4101,6 +4101,12 @@ namespace UnityEditor
             return DoObjectField(IndentedRect(position), IndentedRect(position), id, obj, null, objType, null, allowSceneObjects);
         }
 
+        internal static Object ObjectField(Rect position, Object obj, Type objType, bool allowSceneObjects, GUIStyle style, GUIStyle buttonStyle)
+        {
+            int id = GUIUtility.GetControlID(s_ObjectFieldHash, FocusType.Keyboard, position);
+            return DoObjectField(IndentedRect(position), IndentedRect(position), id, obj, null, objType, null, null, null, allowSceneObjects, style, buttonStyle);
+        }
+
         [Obsolete("Check the docs for the usage of the new parameter 'allowSceneObjects'.")]
         public static Object ObjectField(Rect position, Object obj, Type objType)
         {
@@ -5431,7 +5437,7 @@ namespace UnityEditor
             switch (evt.GetTypeForControl(id))
             {
                 case EventType.MouseDown:
-                    if (position.Contains(evt.mousePosition))
+                    if (evt.button == 0 && position.Contains(evt.mousePosition))
                     {
                         s_CurveID = id;
                         GUIUtility.keyboardControl = id;

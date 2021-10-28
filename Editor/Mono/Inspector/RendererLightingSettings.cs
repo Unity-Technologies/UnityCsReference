@@ -182,7 +182,7 @@ namespace UnityEditor
             if (m_SerializedObject == null || m_SerializedObject.targetObject == null)
                 isPreset = false;
             else
-                isPreset = PresetEditor.IsPreset(m_SerializedObject.targetObject);
+                isPreset = Preset.IsEditorTargetAPreset(m_SerializedObject.targetObject);
         }
 
         public void RenderSettings(bool showLightmapSettings)

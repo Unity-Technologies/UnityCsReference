@@ -111,7 +111,9 @@ namespace UnityEditor
         const string k_SelectedModuleIndexPreferenceKey = "ProfilerWindow.SelectedModuleIndex";
         const string k_DynamicModulesPreferenceKey = "ProfilerWindow.DynamicModules";
 
-        static readonly Vector2 k_MinimumWindowSize = new Vector2(880f, 216f);
+        static readonly Vector2 k_MinimumWindowSize = new Vector2(900f, 216f);
+        // the minimum width required to draw all the buttons on the toolbar. This is used to truncate the active connection name.
+        static readonly int k_MinimumToolbarContentWidth = 820;
 
         [NonSerialized]
         float m_FrameCountLabelMinWidth = 0;
@@ -1083,7 +1085,7 @@ namespace UnityEditor
             DrawModuleSelectionDropdownMenu();
 
             // Engine attach
-            PlayerConnectionGUILayout.ConnectionTargetSelectionDropdown(m_AttachProfilerState, EditorStyles.toolbarDropDown);
+            PlayerConnectionGUILayout.ConnectionTargetSelectionDropdown(m_AttachProfilerState, EditorStyles.toolbarDropDown, Mathf.Max((int)(position.width - k_MinimumToolbarContentWidth), 60));
 
             // Record
             var profilerEnabled = GUILayout.Toggle(m_Recording, m_Recording ? Styles.profilerRecordOn : Styles.profilerRecordOff, EditorStyles.toolbarButton);

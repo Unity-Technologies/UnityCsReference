@@ -40,6 +40,9 @@ namespace Unity.UI.Builder
 
         protected override void PerformAction(VisualElement destination, DestinationPane pane, Vector2 localMousePosition, int index = -1)
         {
+            if (pane == DestinationPane.Viewport && !IsPickedElementValid(m_TargetElementToReparent))
+                return;
+
             base.PerformAction(destination, pane, localMousePosition, index);
 
             m_TargetElementToReparent.RemoveFromClassList(s_DragPreviewElementClassName);

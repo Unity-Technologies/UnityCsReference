@@ -90,7 +90,7 @@ namespace UnityEditor.Search.Providers
             return go != null && go.activeInHierarchy;
         }
 
-        bool OnPrefabFilter(GameObject go, string op, string value)
+        bool OnPrefabFilter(GameObject go, QueryFilterOperator op, string value)
         {
             if (!PrefabUtility.IsPartOfAnyPrefab(go))
                 return false;
@@ -141,22 +141,22 @@ namespace UnityEditor.Search.Providers
             return god.tag;
         }
 
-        public override bool GetId(GameObject go, string op, int instanceId)
+        public override bool GetId(GameObject go, QueryFilterOperator op, int instanceId)
         {
             int goId = go.GetInstanceID();
-            switch (op)
+            switch (op.type)
             {
-                case ":":
-                case "=":
+                case FilterOperatorType.Contains:
+                case FilterOperatorType.Equal:
                     if (instanceId == goId)
                         return true;
                     return EditorUtility.InstanceIDToObject(instanceId) is Component c && c.gameObject == go;
 
-                case "!=": return instanceId != goId;
-                case ">": return instanceId > goId;
-                case ">=": return instanceId >= goId;
-                case "<": return instanceId < goId;
-                case "<=": return instanceId <= goId;
+                case FilterOperatorType.NotEqual: return instanceId != goId;
+                case FilterOperatorType.Greater: return instanceId > goId;
+                case FilterOperatorType.GreaterOrEqual: return instanceId >= goId;
+                case FilterOperatorType.Lesser: return instanceId < goId;
+                case FilterOperatorType.LesserOrEqual: return instanceId <= goId;
             }
 
             return false;
@@ -231,13 +231,8 @@ namespace UnityEditor.Search.Providers
                 if (view.TryLoadProperty(recordKey, out object data))
                     return (SearchValue)data;
 
-                var gocs = go.GetComponents<Component>();
-                for (int componentIndex = 0; componentIndex < gocs.Length; ++componentIndex)
+                foreach (var c in EnumerateSubObjects(go))
                 {
-                    var c = gocs[componentIndex];
-                    if (!c || (c.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
-                        continue;
-
                     var property = FindPropertyValue(c, propertyName);
                     if (property.valid)
                     {
@@ -252,7 +247,22 @@ namespace UnityEditor.Search.Providers
             return SearchValue.invalid;
         }
 
-        bool OnAttributeFilter(GameObject go, string op, string value)
+        IEnumerable<UnityEngine.Object> EnumerateSubObjects(GameObject go)
+        {
+            yield return go;
+
+            var gocs = go.GetComponents<Component>();
+            for (int componentIndex = 0; componentIndex < gocs.Length; ++componentIndex)
+            {
+                var c = gocs[componentIndex];
+                if (!c || (c.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
+                    continue;
+
+                yield return c;
+            }
+        }
+
+        bool OnAttributeFilter(GameObject go, QueryFilterOperator op, string value)
         {
             var god = GetGOD(go);
 
@@ -301,7 +311,7 @@ namespace UnityEditor.Search.Providers
             return god.path;
         }
 
-        protected override bool OnIsFilter(GameObject go, string op, string value)
+        protected override bool OnIsFilter(GameObject go, QueryFilterOperator op, string value)
         {
             var god = GetGOD(go);
 
@@ -377,7 +387,7 @@ namespace UnityEditor.Search.Providers
                             var replacement = ToReplacementValue(p, label);
                             if (replacement != null)
                             {
-                                var proposition = new SearchProposition(label, replacement, $"{cTypeName} ({p.propertyType})");
+                                var proposition = new SearchProposition(label: label, replacement, $"{cTypeName} ({p.propertyType})");
                                 propositions.Add(proposition);
                             }
                             next = p.NextVisible(false);

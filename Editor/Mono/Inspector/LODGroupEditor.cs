@@ -95,7 +95,7 @@ namespace UnityEditor
             m_IsPrefab = PrefabUtility.IsPartOfPrefabAsset(m_LODGroup.gameObject);
 
             // this is used to disable the Renderers section if we are viewing a Preset inspector
-            m_IsPreset = PresetEditor.IsPreset(serializedObject.targetObject);
+            m_IsPreset = Preset.IsEditorTargetAPreset(serializedObject.targetObject);
 
             CalculatePrimitiveCountForRenderers();
             m_PrimitiveCountLabel = LODGroupGUI.GUIStyles.m_TriangleCountLabel;

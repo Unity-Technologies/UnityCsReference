@@ -254,6 +254,11 @@ namespace UnityEditor.PackageManager.UI.Internal
                     oldInfo.versionString != info.versionString || oldInfo.packagePath != info.packagePath;
                 if (localInfoUpdated)
                     addedOrUpdatedLocalInfos.Add(info);
+                else
+                {
+                    info.updateInfoFetched = oldInfo.updateInfoFetched;
+                    info.canUpdate = oldInfo.canUpdate;
+                }
             }
             if (addedOrUpdatedLocalInfos.Any() || oldLocalInfos.Any())
                 onLocalInfosChanged?.Invoke(addedOrUpdatedLocalInfos, oldLocalInfos.Values);

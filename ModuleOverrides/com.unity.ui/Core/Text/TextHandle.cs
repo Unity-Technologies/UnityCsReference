@@ -24,52 +24,76 @@ namespace UnityEngine.UIElements
         ITextHandle New();
         bool IsLegacy();
         public void SetDirty();
+        bool IsElided();
+
+        Vector2 MeasuredSizes { get; set; }
+        Vector2 RoundedSizes { get; set; }
     }
 
     internal struct TextCoreHandle : ITextHandle
     {
+        public Vector2 MeasuredSizes { get; set; }
+        public Vector2 RoundedSizes { get; set; }
         public static ITextHandle New()
         {
             TextCoreHandle h = new TextCoreHandle();
             h.m_CurrentGenerationSettings = new UnityEngine.TextCore.Text.TextGenerationSettings();
-            h.m_CurrentLayoutSettings = new UnityEngine.TextCore.Text.TextGenerationSettings();
             return h;
         }
 
         Vector2 m_PreferredSize;
         int m_PreviousGenerationSettingsHash;
         UnityEngine.TextCore.Text.TextGenerationSettings m_CurrentGenerationSettings;
-        int m_PreviousLayoutSettingsHash;
-        UnityEngine.TextCore.Text.TextGenerationSettings m_CurrentLayoutSettings;
+
+        //static instance cached to minimize allocation
+        static TextCore.Text.TextGenerationSettings s_LayoutSettings = new TextCore.Text.TextGenerationSettings();
 
         /// <summary>
         /// DO NOT USE m_TextInfo directly, use textInfo to guarantee lazy allocation.
         /// </summary>
-        private TextInfo m_TextInfo;
+        private TextInfo m_TextInfoMesh;
 
         /// <summary>
         /// The TextInfo instance, use from this instead of the m_TextInfo member to guarantee lazy allocation.
         /// </summary>
-        internal TextInfo textInfo
+        internal TextInfo textInfoMesh
         {
             get
             {
-                if (m_TextInfo == null)
+                if (m_TextInfoMesh == null)
                 {
-                    m_TextInfo = new TextInfo();
+                    m_TextInfoMesh = new TextInfo();
                 }
 
-                return m_TextInfo;
+                return m_TextInfoMesh;
             }
         }
 
-        private bool isDirty;
-        private bool isLayoutDirty;
+        /// <summary>
+        /// DO NOT USE m_TextInfo_Layout directly, use textInfo to guarantee lazy allocation.
+        /// </summary>
+        private static TextInfo s_TextInfoLayout;
+
+        /// <summary>
+        /// The TextInfo instance to be used for layout, use from this instead of the m_TextInfo_Layout member to guarantee lazy allocation.
+        /// </summary>
+        internal static TextInfo textInfoLayout
+        {
+            get
+            {
+                if (s_TextInfoLayout == null)
+                {
+                    s_TextInfoLayout = new TextInfo();
+                }
+
+                return s_TextInfoLayout;
+            }
+        }
 
         // For testing purposes
         internal bool IsTextInfoAllocated()
         {
-            return m_TextInfo != null;
+            return m_TextInfoMesh != null;
         }
 
         public bool IsLegacy()
@@ -77,10 +101,11 @@ namespace UnityEngine.UIElements
             return false;
         }
 
+        private bool isDirty;
+
         public void SetDirty()
         {
             isDirty = true;
-            isLayoutDirty = true;
         }
 
         public bool IsDirty(MeshGenerationContextUtils.TextParams parms)
@@ -94,20 +119,9 @@ namespace UnityEngine.UIElements
             return true;
         }
 
-        public bool IsLayoutDirty(MeshGenerationContextUtils.TextParams parms)
-        {
-            int paramsHash = parms.GetHashCode();
-            if (m_PreviousLayoutSettingsHash == paramsHash && !isLayoutDirty)
-                return false;
-
-            m_PreviousLayoutSettingsHash = paramsHash;
-            isLayoutDirty = false;
-            return true;
-        }
-
         public Vector2 GetCursorPosition(CursorPositionStylePainterParameters parms, float scaling)
         {
-            return UnityEngine.TextCore.Text.TextGenerator.GetCursorPosition(textInfo, parms.rect, parms.cursorIndex);
+            return UnityEngine.TextCore.Text.TextGenerator.GetCursorPosition(textInfoMesh, parms.rect, parms.cursorIndex);
         }
 
         public float ComputeTextWidth(MeshGenerationContextUtils.TextParams parms, float scaling)
@@ -124,8 +138,8 @@ namespace UnityEngine.UIElements
 
         public float GetLineHeight(int characterIndex, MeshGenerationContextUtils.TextParams textParams, float textScaling, float pixelPerPoint)
         {
-            var character = textInfo.textElementInfo[textInfo.characterCount - 1];
-            var line = textInfo.lineInfo[character.lineNumber];
+            var character = m_TextInfoMesh.textElementInfo[m_TextInfoMesh.characterCount - 1];
+            var line = m_TextInfoMesh.lineInfo[character.lineNumber];
             return line.lineHeight;
         }
 
@@ -133,7 +147,7 @@ namespace UnityEngine.UIElements
         {
             Update(parms, pixelPerPoint);
             var verticesCount = 0;
-            foreach (var meshInfo in textInfo.meshInfo)
+            foreach (var meshInfo in textInfoMesh.meshInfo)
                 verticesCount += meshInfo.vertexCount;
             return verticesCount;
         }
@@ -145,30 +159,46 @@ namespace UnityEngine.UIElements
 
         public TextInfo Update(MeshGenerationContextUtils.TextParams parms, float pixelsPerPoint)
         {
-            // The screenRect in TextCore is not properly implemented with regards to the offset part, so zero it out for now and we will add it ourselves later
-            parms.rect = new Rect(Vector2.zero, parms.rect.size);
+            // The screenRect in TextCore is not properly implemented with regards to the offset part, so we just keep the size
+            var size = parms.rect.size;
+
+            // If the size is the last rounded size, we use the cached size before the rounding that was calculated
+            if (Mathf.Abs(parms.rect.size.x - RoundedSizes.x) < 0.01f && Mathf.Abs(parms.rect.size.y - RoundedSizes.y) < 0.01f)
+            {
+                size = MeasuredSizes;
+                parms.wordWrapWidth = size.x;
+            }
+            else
+            {
+                //the size has change, we need to save that information
+                RoundedSizes = size;
+                MeasuredSizes = size;
+            }
+
+            parms.rect = new Rect(Vector2.zero, size);
             if (!IsDirty(parms))
-                return textInfo;
+            {
+                return textInfoMesh;
+            }
 
             UpdateGenerationSettingsCommon(parms, m_CurrentGenerationSettings);
 
             m_CurrentGenerationSettings.color = parms.fontColor;
             m_CurrentGenerationSettings.inverseYAxis = true;
 
-            textInfo.isDirty = true;
-            UnityEngine.TextCore.Text.TextGenerator.GenerateText(m_CurrentGenerationSettings, textInfo);
-            return textInfo;
+            textInfoMesh.isDirty = true;
+            UnityEngine.TextCore.Text.TextGenerator.GenerateText(m_CurrentGenerationSettings, textInfoMesh);
+            return textInfoMesh;
         }
 
         void UpdatePreferredValues(MeshGenerationContextUtils.TextParams parms)
         {
             // The screenRect in TextCore is not properly implemented with regards to the offset part, so zero it out for now and we will add it ourselves later
-            parms.rect = new Rect(Vector2.zero, parms.rect.size);
-            if (!IsLayoutDirty(parms))
-                return;
+            var size = parms.rect.size;
+            parms.rect = new Rect(Vector2.zero, size);
 
-            UpdateGenerationSettingsCommon(parms, m_CurrentLayoutSettings);
-            m_PreferredSize = UnityEngine.TextCore.Text.TextGenerator.GetPreferredValues(m_CurrentLayoutSettings, textInfo);
+            UpdateGenerationSettingsCommon(parms, s_LayoutSettings);
+            m_PreferredSize = UnityEngine.TextCore.Text.TextGenerator.GetPreferredValues(s_LayoutSettings, textInfoLayout);
         }
 
         private static TextOverflowMode GetTextOverflowMode(MeshGenerationContextUtils.TextParams textParams)
@@ -216,10 +246,24 @@ namespace UnityEngine.UIElements
             settings.wordSpacing = painterParams.wordSpacing.value;
             settings.paragraphSpacing = painterParams.paragraphSpacing.value;
         }
+
+        public bool IsElided()
+        {
+            if (m_TextInfoMesh == null)
+                return false;
+
+            if (m_TextInfoMesh.characterCount == 0) // impossible to differentiate between an empty string and a fully truncated string.
+                return true;
+
+            return m_TextInfoMesh.textElementInfo[m_TextInfoMesh.characterCount - 1].character == 0x2026; //the character is hardcoded in textcore
+        }
     }
 
     internal struct TextNativeHandle : ITextHandle
     {
+        public Vector2 MeasuredSizes { get; set; }
+        public Vector2 RoundedSizes { get; set; }
+
         // For automated testing purposes
         internal NativeArray<TextVertex> textVertices;
         private int m_PreviousTextParamsHash;
@@ -266,12 +310,34 @@ namespace UnityEngine.UIElements
 
         public NativeArray<TextVertex> GetVertices(MeshGenerationContextUtils.TextParams parms, float scaling)
         {
+            var size = parms.rect.size;
+
+            // If the size is the last rounded size, we use the cached size before the rounding that was calculated
+            if (Mathf.Abs(parms.rect.size.x - RoundedSizes.x) < 0.01f && Mathf.Abs(parms.rect.size.y - RoundedSizes.y) < 0.01f)
+            {
+                size = MeasuredSizes;
+                parms.wordWrapWidth = size.x;
+            }
+            else
+            {
+                //the size has change, we need to save that information
+                RoundedSizes = size;
+                MeasuredSizes = size;
+            }
+
+            parms.rect = new Rect(Vector2.zero, size);
+
+
             int paramsHash = parms.GetHashCode();
             if (m_PreviousTextParamsHash == paramsHash)
                 return textVertices;
 
             m_PreviousTextParamsHash = paramsHash;
             TextNativeSettings textSettings = MeshGenerationContextUtils.TextParams.GetTextNativeSettings(parms, scaling);
+
+
+            Assertions.Assert.IsNotNull(textSettings.font);
+
             textVertices = TextNative.GetVertices(textSettings);
             return textVertices;
         }
@@ -284,14 +350,27 @@ namespace UnityEngine.UIElements
 
         public float ComputeTextWidth(MeshGenerationContextUtils.TextParams parms, float scaling)
         {
-            return TextNative.ComputeTextWidth(
+            float value = TextNative.ComputeTextWidth(
                 MeshGenerationContextUtils.TextParams.GetTextNativeSettings(parms, scaling));
+
+            // in NativeTextGenerator::InsertCharacter: line 554 where the wordWrap is a limitation because of floating points values
+            // this offset has been introduced as workaround.
+            // This is needed only when the scaling factor is different than 1
+            // when the width is 0, no character are present and the width is exact=> no need to adjust.
+            if (scaling != 1f && value != 0)
+                return value + 0.0001f;
+            return value;
         }
 
         public float ComputeTextHeight(MeshGenerationContextUtils.TextParams parms, float scaling)
         {
             return TextNative.ComputeTextHeight(
                 MeshGenerationContextUtils.TextParams.GetTextNativeSettings(parms, scaling));
+        }
+
+        public bool IsElided()
+        {
+            return false;
         }
     }
 
@@ -318,9 +397,6 @@ namespace UnityEngine.UIElements
                 return Vector2.zero;
 
             float pixelsPerPoint = ve.scaledPixelsPerPoint;
-            float pixelOffset = 0.02f;
-            float pointOffset = pixelOffset / pixelsPerPoint;
-
             if (widthMode == VisualElement.MeasureMode.Exactly)
             {
                 measuredWidth = width;
@@ -332,9 +408,8 @@ namespace UnityEngine.UIElements
                 textParams.rect = new Rect(textParams.rect.x, textParams.rect.y, width, height);
 
 
-                // Case 1215962: round up as yoga could decide to round down and text would start wrapping
                 measuredWidth = textHandle.ComputeTextWidth(textParams, pixelsPerPoint);
-                measuredWidth = measuredWidth < pointOffset ? 0 : AlignmentUtils.CeilToPixelGrid(measuredWidth, pixelsPerPoint, pixelOffset);
+
 
                 if (widthMode == VisualElement.MeasureMode.AtMost)
                 {
@@ -353,7 +428,7 @@ namespace UnityEngine.UIElements
                 textParams.rect = new Rect(textParams.rect.x, textParams.rect.y, width, height);
 
                 measuredHeight = textHandle.ComputeTextHeight(textParams, pixelsPerPoint);
-                measuredHeight = measuredHeight < pointOffset ? 0 : AlignmentUtils.CeilToPixelGrid(measuredHeight, pixelsPerPoint, pixelOffset);
+
 
                 if (heightMode == VisualElement.MeasureMode.AtMost)
                 {
@@ -361,7 +436,17 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            return new Vector2(measuredWidth, measuredHeight);
+
+            // Case 1215962: round up as yoga could decide to round down and text would start wrapping
+            float roundedWidth = AlignmentUtils.CeilToPixelGrid(measuredWidth, pixelsPerPoint);
+            float roundedHeight = AlignmentUtils.CeilToPixelGrid(measuredHeight, pixelsPerPoint);
+            var roundedValues = new Vector2(roundedWidth, roundedHeight);
+
+            textHandle.MeasuredSizes = new Vector2(measuredWidth, measuredHeight);
+            textHandle.RoundedSizes = roundedValues;
+
+
+            return roundedValues;
         }
 
         internal static FontAsset GetFontAsset(MeshGenerationContextUtils.TextParams textParam)

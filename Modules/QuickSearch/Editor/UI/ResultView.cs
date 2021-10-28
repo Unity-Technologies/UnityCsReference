@@ -22,6 +22,7 @@ namespace UnityEditor.Search
 
         bool focusSelectedItem { get; set; }
         bool scrollbarVisible { get; }
+        bool showNoResultMessage { get; }
 
         void Draw(Rect rect, ICollection<int> selection);
         void Draw(ICollection<int> selection, float viewWidth);
@@ -61,6 +62,7 @@ namespace UnityEditor.Search
         public bool focusSelectedItem { get; set; }
         protected bool compactView => itemSize == 0;
         public bool scrollbarVisible { get; protected set; }
+        public virtual bool showNoResultMessage => true;
 
         public abstract void Draw(Rect rect, ICollection<int> selection);
 

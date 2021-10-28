@@ -3,52 +3,100 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEditor.Search.Providers;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace UnityEditor.Search
 {
     static class IndexerExtensions
     {
-        [CustomObjectIndexer(typeof(GameObject), version = 1)]
+        [CustomObjectIndexer(typeof(GameObject), version = 2)]
         internal static void IndexPrefabTypes(CustomObjectIndexerTarget context, ObjectIndexer indexer)
         {
             if (!(context.target is GameObject prefab))
                 return;
+            IndexPrefabProperties(context.documentIndex, prefab, indexer);
+        }
 
-            if (PrefabUtility.IsAnyPrefabInstanceRoot(prefab))
-                indexer.IndexProperty(context.documentIndex, "prefab", "root", saveKeyword: true, exact:true);
+        internal static void IndexPrefabProperties(int documentIndex, GameObject prefab, ObjectIndexer indexer)
+        {
+            var prefabType = PrefabUtility.GetPrefabAssetType(prefab);
+            indexer.IndexProperty(documentIndex, "prefab", prefabType.ToString(), saveKeyword: true, exact: true);
 
-            if (PrefabUtility.IsPartOfPrefabInstance(prefab))
-                indexer.IndexProperty(context.documentIndex, "prefab", "instance", saveKeyword: true, exact: true);
+            if (prefabType != PrefabAssetType.NotAPrefab)
+                indexer.IndexProperty(documentIndex, "prefab", "any", saveKeyword: true, exact: true);
 
-            if (PrefabUtility.IsOutermostPrefabInstanceRoot(prefab))
-                indexer.IndexProperty(context.documentIndex, "prefab", "top", saveKeyword: true, exact: true);
+            var rootPrefab = PrefabUtility.GetOriginalSourceOrVariantRoot(prefab);
+            if (rootPrefab != null && rootPrefab != prefab)
+                indexer.AddReference(documentIndex, "root", rootPrefab, "Root Prefab", typeof(GameObject));
 
-            if (PrefabUtility.IsPartOfNonAssetPrefabInstance(prefab))
-                indexer.IndexProperty(context.documentIndex, "prefab", "nonasset", saveKeyword: true, exact: true);
+            var source = PrefabUtility.GetCorrespondingObjectFromSource(prefab);
+            if (source != null && source != prefab)
+                indexer.AddReference(documentIndex, "base", source, "Base Prefab", typeof(GameObject));
 
-            if (PrefabUtility.IsPartOfPrefabAsset(prefab))
-                indexer.IndexProperty(context.documentIndex, "prefab", "asset", saveKeyword: true, exact: true);
-
-            if (PrefabUtility.IsPartOfAnyPrefab(prefab))
-                indexer.IndexProperty(context.documentIndex, "prefab", "any", saveKeyword: true, exact: true);
-
-            if (PrefabUtility.IsPartOfModelPrefab(prefab))
-                indexer.IndexProperty(context.documentIndex, "prefab", "model", saveKeyword: true, exact: true);
-
-            if (PrefabUtility.IsPartOfRegularPrefab(prefab))
-                indexer.IndexProperty(context.documentIndex, "prefab", "regular", saveKeyword: true, exact: true);
-
-            if (PrefabUtility.IsPartOfVariantPrefab(prefab))
-                indexer.IndexProperty(context.documentIndex, "prefab", "variant", saveKeyword: true, exact: true);
+            if (rootPrefab == null || source == null)
+            {
+                indexer.IndexProperty(documentIndex, "prefab", "base", saveKeyword: true, exact: true);
+            }
 
             if (PrefabUtility.HasPrefabInstanceAnyOverrides(prefab, false))
-                indexer.IndexProperty(context.documentIndex, "prefab", "modified", saveKeyword: true, exact: true);
+                indexer.IndexProperty(documentIndex, "prefab", "modified", saveKeyword: true, exact: true);
 
             if (PrefabUtility.HasPrefabInstanceAnyOverrides(prefab, true))
-                indexer.IndexProperty(context.documentIndex, "prefab", "altered", saveKeyword: true, exact: true);
+                indexer.IndexProperty(documentIndex, "prefab", "altered", saveKeyword: true, exact: true);
+        }
+
+        [SearchSelector("prefabtype", provider: "scene")]
+        [SearchSelector("prefabtype", provider: "asset")]
+        [System.ComponentModel.Description("Prefab Type")]
+        internal static object GetPrefabType(SearchItem item)
+        {
+            var prefab = item.ToObject();
+            if (!prefab)
+                return null;
+            return PrefabUtility.GetPrefabAssetType(prefab);
+        }
+
+        [SearchSelector("prefabstatus", provider: "scene")]
+        [SearchSelector("prefabstatus", provider: "asset")]
+        [System.ComponentModel.Description("Prefab Status")]
+        internal static object GetPrefabStatus(SearchItem item)
+        {
+            var prefab = item.ToObject();
+            if (!prefab)
+                return null;
+            return PrefabUtility.GetPrefabInstanceStatus(prefab);
+        }
+
+        [SearchSelector("prefabbase", provider: "scene")]
+        [SearchSelector("prefabbase", provider: "asset")]
+        [System.ComponentModel.Description("Prefab Base")]
+        internal static object GetPrefabBase(SearchItem item)
+        {
+            var prefab = item.ToObject();
+            if (!prefab)
+                return null;
+            var basePrefab = PrefabUtility.GetCorrespondingObjectFromSource(prefab);
+            if (basePrefab == null || prefab == basePrefab)
+                return null;
+            return basePrefab;
+        }
+
+        [SearchSelector("prefabroot", provider: "scene")]
+        [SearchSelector("prefabroot", provider: "asset")]
+        [System.ComponentModel.Description("Prefab Root")]
+        internal static object GetPrefabRoot(SearchItem item)
+        {
+            var prefab = item.ToObject();
+            if (!prefab)
+                return null;
+            var rootPrefab = PrefabUtility.GetOriginalSourceOrVariantRoot(prefab);
+            if (rootPrefab == null || prefab == rootPrefab)
+                return null;
+            return rootPrefab;
         }
 
         [CustomObjectIndexer(typeof(AnimationClip), version = 1)]
@@ -88,28 +136,35 @@ namespace UnityEditor.Search
         }
 
         #region ShaderIndexing
-        [CustomObjectIndexer(typeof(Shader), version = 1)]
+        [CustomObjectIndexer(typeof(Shader), version = 2)]
         internal static void ShaderIndexing(CustomObjectIndexerTarget context, ObjectIndexer indexer)
         {
             if (!(context.target is Shader shader) || !indexer.settings.options.properties)
                 return;
 
+            var ownerPropertyType = typeof(Shader);
             for (int i = 0, end = shader.GetPropertyCount(); i != end; ++i)
             {
-                var name = shader.GetPropertyName(i).ToLowerInvariant();
+                var label = shader.GetPropertyName(i);
+
+                // Keep some property name patterns
+                if (s_IgnorePropertyNameRx.IsMatch(label))
+                    continue;
+
+                var name = label.ToLowerInvariant();
                 if (name.Length > 0 && name[0] == '_')
                     name = name.Substring(1);
                 switch (shader.GetPropertyType(i))
                 {
-                    case UnityEngine.Rendering.ShaderPropertyType.Color:
+                    case ShaderPropertyType.Color:
                         var v = shader.GetPropertyDefaultVectorValue(i);
-                        IndexColor(name, new Color(v.x, v.y, v.z, v.w), indexer, context.documentIndex);
+                        IndexColor(name, new Color(v.x, v.y, v.z, v.w), indexer, context.documentIndex, label, ownerPropertyType);
                         break;
-                    case UnityEngine.Rendering.ShaderPropertyType.Vector:
+                    case ShaderPropertyType.Vector:
                         v = shader.GetPropertyDefaultVectorValue(i);
-                        IndexVector(name, v, indexer, context.documentIndex);
+                        IndexVector(name, v, indexer, context.documentIndex, label, ownerPropertyType);
                         break;
-                    case UnityEngine.Rendering.ShaderPropertyType.Float:
+                    case ShaderPropertyType.Float:
                         indexer.IndexNumber(context.documentIndex, name, shader.GetPropertyDefaultFloatValue(i));
                         break;
                 }
@@ -118,53 +173,71 @@ namespace UnityEditor.Search
 
         #endregion
 
-        [CustomObjectIndexer(typeof(Material), version = 2)]
+        static readonly Regex s_IgnorePropertyNameRx = new Regex(@"_([A-F0-9]{8}|[a-f0-9]{32})$");
+        [CustomObjectIndexer(typeof(Material), version = 15)]
         internal static void MaterialShaderReferences(CustomObjectIndexerTarget context, ObjectIndexer indexer)
         {
             var material = context.target as Material;
-            if (material == null)
+            if (material == null || !material.shader)
                 return;
 
-            if (material.shader)
-            {
-                var fullShaderName = material.shader.name.ToLowerInvariant();
-                indexer.AddReference(context.documentIndex, fullShaderName);
-            }
+            indexer.AddReference(context.documentIndex, "shader", material.shader);
 
             if (!indexer.settings.options.properties)
                 return;
 
+            var ownerPropertyType = typeof(Shader);
+            var shaderName = $"{material.shader.name}/" ?? string.Empty;
             var properties = MaterialEditor.GetMaterialProperties(new Material[] { material });
             foreach (var property in properties)
             {
-                var propertyName = property.name.ToLowerInvariant();
+                var flags = (ShaderPropertyFlags)property.flags;
+                if ((flags & (ShaderPropertyFlags.HideInInspector | ShaderPropertyFlags.NonModifiableTextureData)) != 0)
+                    continue;
+
+                var upn = property.name;
+                if (upn == null)
+                    continue;
+
+                // Keep some property name patterns
+                if (s_IgnorePropertyNameRx.IsMatch(upn))
+                    continue;
+
+                var propertyName = upn.ToLowerInvariant();
                 if (propertyName.Length > 0 && propertyName[0] == '_')
                     propertyName = propertyName.Substring(1);
+                if (propertyName.Length < 3)
+                    continue;
+
+                var shaderPropName = $"{shaderName}{property.displayName}";
                 switch (property.type)
                 {
                     case MaterialProperty.PropType.Color:
-                        IndexColor(propertyName, property.colorValue, indexer, context.documentIndex);
+                        IndexColor(propertyName, property.colorValue, indexer, context.documentIndex, shaderPropName, ownerPropertyType);
                         break;
 
                     case MaterialProperty.PropType.Vector:
-                        IndexVector(propertyName, property.vectorValue, indexer, context.documentIndex);
+                        IndexVector(propertyName, property.vectorValue, indexer, context.documentIndex, shaderPropName, ownerPropertyType);
+                        break;
+
+                    case MaterialProperty.PropType.Int:
+                        indexer.AddNumber(propertyName, property.intValue, indexer.settings.baseScore, context.documentIndex);
+                        indexer.MapProperty(propertyName, shaderPropName, null, "Number", ownerPropertyType.AssemblyQualifiedName, false);
                         break;
 
                     case MaterialProperty.PropType.Float:
                         indexer.AddNumber(propertyName, property.floatValue, indexer.settings.baseScore, context.documentIndex);
+                        indexer.MapProperty(propertyName, shaderPropName, null, "Number", ownerPropertyType.AssemblyQualifiedName, false);
                         break;
 
                     case MaterialProperty.PropType.Range:
-                        IndexVector(propertyName, property.rangeLimits, indexer, context.documentIndex);
+                        indexer.AddNumber(propertyName, property.floatValue, indexer.settings.baseScore, context.documentIndex);
+                        indexer.MapProperty(propertyName, shaderPropName, null, "Number", ownerPropertyType.AssemblyQualifiedName, false);
                         break;
 
                     case MaterialProperty.PropType.Texture:
                         if (property.textureValue)
-                        {
-                            indexer.AddReference(context.documentIndex, AssetDatabase.GetAssetPath(property.textureValue));
-                            if (!string.IsNullOrEmpty(property.textureValue.name))
-                                indexer.AddProperty(propertyName, property.textureValue.name.ToLowerInvariant(), context.documentIndex);
-                        }
+                            indexer.AddReference(context.documentIndex, propertyName, property.textureValue, shaderPropName, ownerPropertyType);
                         break;
                 }
             }
@@ -174,11 +247,10 @@ namespace UnityEditor.Search
         internal static void IndexMeshRendererMaterials(CustomObjectIndexerTarget context, ObjectIndexer indexer)
         {
             var c = context.target as MeshRenderer;
-            if (!c)
+            if (!c || !indexer.settings.options.properties)
                 return;
 
-            if (indexer.settings.options.properties)
-                indexer.AddNumber("materialcount", c.sharedMaterials.Length, indexer.settings.baseScore + 2, context.documentIndex);
+            indexer.AddNumber("materialcount", c.sharedMaterials.Length, indexer.settings.baseScore + 2, context.documentIndex);
             foreach (var m in c.sharedMaterials)
             {
                 if (!m)
@@ -195,22 +267,11 @@ namespace UnityEditor.Search
                 }
 
                 if (m.shader != null)
-                {
-                    // Index shader name reference
-                    if (indexer.settings.options.types)
-                        indexer.AddProperty("shader", m.shader.name.ToLowerInvariant(), context.documentIndex, exact: false);
-
-                    if (indexer.settings.options.dependencies)
-                    {
-                        var sp = AssetDatabase.GetAssetPath(m.shader);
-                        if (!string.IsNullOrEmpty(sp))
-                            indexer.AddReference(context.documentIndex, sp);
-                    }
-                }
+                    indexer.AddReference(context.documentIndex, "shader", m.shader);
             }
         }
 
-        internal static void IndexColor(string propertyName, in Color c, ObjectIndexer indexer, int documentIndex)
+        internal static void IndexColor(string propertyName, in Color c, ObjectIndexer indexer, int documentIndex, in string label = null, in System.Type ownerType = null)
         {
             var colorHex = c.a < 1f ? ColorUtility.ToHtmlStringRGBA(c) : ColorUtility.ToHtmlStringRGB(c);
             indexer.AddProperty(propertyName, "#" + colorHex.ToLowerInvariant(), documentIndex, exact: true, saveKeyword: false);
@@ -218,27 +279,35 @@ namespace UnityEditor.Search
             indexer.AddNumber(propertyName + ".g", c.g, indexer.settings.baseScore, documentIndex);
             indexer.AddNumber(propertyName + ".b", c.b, indexer.settings.baseScore, documentIndex);
             indexer.AddNumber(propertyName + ".a", c.a, indexer.settings.baseScore, documentIndex);
+            if (label != null && ownerType != null)
+                indexer.MapProperty(propertyName, label ?? propertyName, null, "Color", ownerType?.AssemblyQualifiedName, removeNestedKeys: true);
         }
 
-        internal static void IndexVector(string propertyName, in Vector2 v, ObjectIndexer indexer, int documentIndex)
+        internal static void IndexVector(string propertyName, in Vector2 v, ObjectIndexer indexer, int documentIndex, in string label = null, in System.Type ownerType = null)
         {
             indexer.AddNumber(propertyName + ".x", v.x, indexer.settings.baseScore, documentIndex);
             indexer.AddNumber(propertyName + ".y", v.y, indexer.settings.baseScore, documentIndex);
+            if (label != null && ownerType != null)
+                indexer.MapProperty(propertyName, label ?? propertyName, null, "Vector2", ownerType?.AssemblyQualifiedName, removeNestedKeys: true);
         }
 
-        internal static void IndexVector(string propertyName, in Vector3 v, ObjectIndexer indexer, int documentIndex)
+        internal static void IndexVector(string propertyName, in Vector3 v, ObjectIndexer indexer, int documentIndex, in string label = null, in System.Type ownerType = null)
         {
             indexer.AddNumber(propertyName + ".x", v.x, indexer.settings.baseScore, documentIndex);
             indexer.AddNumber(propertyName + ".y", v.y, indexer.settings.baseScore, documentIndex);
             indexer.AddNumber(propertyName + ".z", v.z, indexer.settings.baseScore, documentIndex);
+            if (label != null && ownerType != null)
+                indexer.MapProperty(propertyName, label ?? propertyName, null, "Vector3", ownerType?.AssemblyQualifiedName, removeNestedKeys: true);
         }
 
-        internal static void IndexVector(string propertyName, in Vector4 v, ObjectIndexer indexer, int documentIndex)
+        internal static void IndexVector(string propertyName, in Vector4 v, ObjectIndexer indexer, int documentIndex, in string label = null, in System.Type ownerType = null)
         {
             indexer.AddNumber(propertyName + ".x", v.x, indexer.settings.baseScore, documentIndex);
             indexer.AddNumber(propertyName + ".y", v.y, indexer.settings.baseScore, documentIndex);
             indexer.AddNumber(propertyName + ".z", v.z, indexer.settings.baseScore, documentIndex);
             indexer.AddNumber(propertyName + ".w", v.w, indexer.settings.baseScore, documentIndex);
+            if (label != null && ownerType != null)
+                indexer.MapProperty(propertyName, label ?? propertyName, null, "Vector4", ownerType?.AssemblyQualifiedName, removeNestedKeys: true);
         }
 
         [SceneQueryEngineFilter("material", supportedOperators = new[] { ":" })]
@@ -248,6 +317,8 @@ namespace UnityEditor.Search
                 return false;
             foreach (var m in c.sharedMaterials)
             {
+                if (m == null || m.name == null)
+                    continue;
                 var mname = m.name.Replace(" (Instance)", "");
                 if (mname.IndexOf(value, System.StringComparison.OrdinalIgnoreCase) != -1)
                     return true;
