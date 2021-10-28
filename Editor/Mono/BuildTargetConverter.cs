@@ -44,6 +44,8 @@ namespace UnityEditor
                     return RuntimePlatform.GameCoreXboxSeries;
                 case BuildTarget.GameCoreXboxOne:
                     return RuntimePlatform.GameCoreXboxOne;
+                case BuildTarget.Stadia:
+                    return RuntimePlatform.Stadia;
                 default:
                     return null;
             }

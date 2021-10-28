@@ -9,6 +9,7 @@ using System;
 using UnityEditorInternal;
 using UnityEditor.Audio;
 using System.Globalization;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -206,7 +207,6 @@ namespace UnityEditor
                 if (context.index >= group.effects.Length)
                     continue;
                 AudioMixerEffectController effect = group.effects[context.index];
-                context.controller.ClearSendConnectionsTo(effect);
                 context.controller.RemoveEffect(effect, group);
             }
 
@@ -215,20 +215,37 @@ namespace UnityEditor
 
         public class ConnectSendContext
         {
-            public ConnectSendContext(AudioMixerEffectController sendEffect, AudioMixerEffectController targetEffect)
+            public ConnectSendContext(AudioMixerController controller, AudioMixerEffectController sendEffect, AudioMixerEffectController targetEffect)
             {
+                this.controller = controller;
                 this.sendEffect = sendEffect;
                 this.targetEffect = targetEffect;
             }
 
+            public AudioMixerController controller;
             public AudioMixerEffectController sendEffect;
             public AudioMixerEffectController targetEffect;
         }
 
         public static void ConnectSendPopupCallback(object obj)
         {
-            ConnectSendContext context = (ConnectSendContext)obj;
-            Undo.RecordObject(context.sendEffect, "Change Send Target");
+            var context = (ConnectSendContext)obj;
+
+            if (context.targetEffect == null)
+            {
+                var guid = context.sendEffect.GetGUIDForMixLevel();
+
+                if (context.controller.ContainsExposedParameter(guid))
+                {
+                    Undo.RecordObjects(new Object[] {context.controller, context.sendEffect}, "Remove Send Target");
+                    context.controller.RemoveExposedParameter(guid);
+                }
+            }
+            else
+            {
+                Undo.RecordObject(context.sendEffect, "Change Send Target");
+            }
+
             context.sendEffect.sendTarget = context.targetEffect;
             AudioMixerUtility.RepaintAudioMixerAndInspectors();
         }
@@ -980,7 +997,7 @@ namespace UnityEditor
             for (int t = 0; t < effectNames.Length; t++)
             {
                 if (effectNames[t] != "Attenuation")
-                    pm.AddItem(new GUIContent(prefix + AudioMixerController.FixNameForPopupMenu(effectNames[t])),
+                    pm.AddItem(new GUIContent(prefix + effectNames[t]),
                         false,
                         InsertEffectPopupCallback,
                         new EffectContext(controller, groups, insertIndex, effectNames[t]));
@@ -999,7 +1016,7 @@ namespace UnityEditor
                 var effect = group.effects[effectSlotIndex];
                 if (!effect.IsAttenuation() && !effect.IsSend() && !effect.IsReceive() && !effect.IsDuckVolume())
                 {
-                    pm.AddItem(EditorGUIUtility.TrTextContent("Allow Wet Mixing (causes higher memory usage)"), effect.enableWetMix, delegate { effect.enableWetMix = !effect.enableWetMix; });
+                    pm.AddItem(EditorGUIUtility.TrTextContent("Allow Wet Mixing (causes higher memory usage)"), effect.enableWetMix, delegate { AudioMixerUtility.ToggleEffectWetMix(effect); });
                     pm.AddItem(EditorGUIUtility.TrTextContent("Bypass"), effect.bypass, delegate { effect.bypass = !effect.bypass; m_Controller.UpdateBypass(); InspectorWindow.RepaintAllInspectors(); });
                     pm.AddSeparator("");
                 }
@@ -1030,7 +1047,9 @@ namespace UnityEditor
                                 insertedSeparator = true;
                                 pm.AddSeparator("");
                             }
-                            pm.AddItem(EditorGUIUtility.TrTextContent("Disconnect from '" + effect.GetSendTargetDisplayString(effectMap) + "'") , false, ConnectSendPopupCallback, new ConnectSendContext(effect, null));
+
+                            var sendContext = new ConnectSendContext(group.controller, effect, null);
+                            pm.AddItem(EditorGUIUtility.TrTextContent("Disconnect from '" + effect.GetSendTargetDisplayString(effectMap) + "'") , false, ConnectSendPopupCallback, sendContext);
                         }
 
                         if (!insertedSeparator)
@@ -1074,11 +1093,14 @@ namespace UnityEditor
                         if (!AudioMixerController.WillChangeOfEffectTargetCauseFeedback(allGroups, group, effectIndex, ge, identifiedLoop))
                         {
                             if (showCurrent || effect.sendTarget != ge)
-                                pm.AddItem(new GUIContent(prefix + "'" + ge.GetDisplayString(effectMap) + "'"), effect.sendTarget == ge, ConnectSendPopupCallback, new ConnectSendContext(effect, ge));
+                            {
+                                var sendContext = new ConnectSendContext(group.controller, effect, ge);
+                                pm.AddItem(new GUIContent(prefix + "'" + ge.GetDisplayString(effectMap) + "'"), effect.sendTarget == ge, ConnectSendPopupCallback, sendContext);
+                            }
                         }
                         else
                         {
-                            string baseString = "A connection to '" + AudioMixerController.FixNameForPopupMenu(ge.GetDisplayString(effectMap)) + "' would result in a feedback loop/";
+                            string baseString = "A connection to '" + ge.GetDisplayString(effectMap) + "' would result in a feedback loop/";
                             pm.AddDisabledItem(new GUIContent(baseString + "Loop: "));
                             int loopIndex = 1;
                             foreach (var s in identifiedLoop)

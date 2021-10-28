@@ -43,6 +43,7 @@ namespace UnityEditor
         Color m_PlayModeDarkenColor;
 
         private IMGUIContainer m_NotificationContainer;
+        private IMGUIContainer m_OverlayContainer;
         private bool m_HasExtraDockAreaButton = false;
 
         internal EditorWindow actualView
@@ -128,6 +129,9 @@ namespace UnityEditor
             m_NotificationContainer = new IMGUIContainer();
             m_NotificationContainer.StretchToParentSize();
             m_NotificationContainer.pickingMode = PickingMode.Ignore;
+            m_OverlayContainer = new IMGUIContainer();
+            m_OverlayContainer.StretchToParentSize();
+            m_OverlayContainer.pickingMode = PickingMode.Ignore;
             RegisterSelectedPane(sendEvents: true);
         }
 
@@ -464,6 +468,9 @@ namespace UnityEditor
             m_NotificationContainer.onGUIHandler = null;
             m_NotificationContainer.RemoveFromHierarchy();
 
+            m_OverlayContainer.onGUIHandler = null;
+            m_OverlayContainer.RemoveFromHierarchy();
+
             if (clearActualView)
             {
                 EditorWindow oldActualView = m_ActualView;
@@ -492,6 +499,39 @@ namespace UnityEditor
             {
                 m_NotificationContainer.onGUIHandler = null;
                 m_NotificationContainer.RemoveFromHierarchy();
+            }
+        }
+
+        private event Action m_OverlayGUIHandler;
+        internal event Action overlayGUIHandler
+        {
+            add
+            {
+                m_OverlayGUIHandler += value;
+                OverlayChanged();
+            }
+            remove
+            {
+                m_OverlayGUIHandler -= value;
+                OverlayChanged();
+            }
+        }
+
+        private void OverlayChanged()
+        {
+            if (m_OverlayGUIHandler != null)
+            {
+                if (m_OverlayContainer.parent == null)
+                {
+                    m_OverlayContainer.onGUIHandler = () => m_OverlayGUIHandler?.Invoke();;
+                    visualTree.Add(m_OverlayContainer);
+                    m_OverlayContainer.StretchToParentSize();
+                }
+            }
+            else
+            {
+                m_OverlayContainer.onGUIHandler = null;
+                m_OverlayContainer.RemoveFromHierarchy();
             }
         }
 

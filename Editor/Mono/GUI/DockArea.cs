@@ -402,7 +402,6 @@ namespace UnityEditor
             DrawTabScrollers(m_TabAreaRect);
 
             EditorGUI.ShowRepaints();
-            Highlighter.ControlHighlightGUI(this);
             EditorGUIUtility.labelWidth = oldLabelWidth;
         }
 

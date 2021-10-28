@@ -20,6 +20,7 @@ namespace UnityEditor
     public partial class Highlighter
     {
         private static GUIView s_View;
+        private static EditorWindow s_ViewWindow;
         private static HighlightSearchMode s_SearchMode;
         private static float s_HighlightElapsedTime = 0;
         private static float s_LastTime = 0;
@@ -94,6 +95,12 @@ namespace UnityEditor
                         // Removing is ignored if not already assigned, so causes no harm.
                         EditorApplication.update -= Update;
                         EditorApplication.update += Update;
+
+                        if (s_View is HostView)
+                        {
+                            (s_View as HostView).overlayGUIHandler -= ControlHighlightGUI;
+                            (s_View as HostView).overlayGUIHandler += ControlHighlightGUI;
+                        }
                     }
                     else
                     {
@@ -127,9 +134,15 @@ namespace UnityEditor
         {
             Rect prevRect = activeRect;
 
-            if (activeRect.width == 0 || s_View == null)
+            // If view's actualView has changed, we might still find a property with the right name in the other view,
+            // but it's not the one we're looking for.
+            if (activeRect.width == 0 || !ViewWindowIsActive())
             {
                 EditorApplication.update -= Update;
+                if (s_View != null && s_View is HostView)
+                {
+                    (s_View as HostView).overlayGUIHandler -= ControlHighlightGUI;
+                }
                 Stop();
                 InternalEditorUtility.RepaintAllViews();
                 return;
@@ -178,6 +191,7 @@ namespace UnityEditor
             // Get window of type
             Object[] views = Resources.FindObjectsOfTypeAll(typeof(GUIView));
             GUIView view = null;
+            EditorWindow window = null;
             foreach (GUIView currentView in views)
             {
                 if (currentView is HostView)
@@ -185,6 +199,7 @@ namespace UnityEditor
                     if ((currentView as HostView).actualView.titleContent.text == windowTitle)
                     {
                         view = currentView;
+                        window = (currentView as HostView).actualView;
                         break;
                     }
                 }
@@ -195,8 +210,19 @@ namespace UnityEditor
                 }
             }
 
+            if (s_View != null && s_View is HostView)
+            {
+                (s_View as HostView).overlayGUIHandler -= ControlHighlightGUI;
+            }
+
             s_View = view;
+            s_ViewWindow = window;
             return (view != null);
+        }
+
+        private static bool ViewWindowIsActive()
+        {
+            return s_View != null && !(s_View is HostView && (s_View as HostView).actualView != s_ViewWindow);
         }
 
         private static bool Search()
@@ -209,6 +235,11 @@ namespace UnityEditor
             s_SearchMode = HighlightSearchMode.None;
             Stop();
             return false;
+        }
+
+        private static void ControlHighlightGUI()
+        {
+            ControlHighlightGUI(s_View);
         }
 
         internal static void ControlHighlightGUI(GUIView self)
