@@ -41,7 +41,7 @@ namespace UnityEngine
 
         // Determines if the reference is linked to an object, loaded or not, valid or not.
         // Calling this never triggers a load.
-        public bool isSet => m_InstanceID == kInstanceID_None;
+        public bool isSet => m_InstanceID != kInstanceID_None;
 
         // Convenience property that checks if the reference is broken: is set to something, but that something is not available/loadable at the moment for whatever reason.
         // Note that this will may trigger loading the referenced object into memory.

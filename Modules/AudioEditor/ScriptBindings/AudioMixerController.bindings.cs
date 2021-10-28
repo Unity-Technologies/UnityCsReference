@@ -37,25 +37,6 @@ namespace UnityEditor.Audio
         [FreeFunction("AudioMixerControllerBindings::Internal_CreateAudioMixerController")]
         private static extern void Internal_CreateAudioMixerController([Writable] AudioMixerController mono);
 
-        private static void GetGroupsRecurse(AudioMixerGroupController group, List<AudioMixerGroupController> groups)
-        {
-            groups.Add(group);
-
-            AudioMixerGroupController[] children = group.children;
-            for (int i = 0; i < children.Length; i++)
-                GetGroupsRecurse(children[i], groups);
-        }
-
-        public AudioMixerGroupController[] allGroups
-        {
-            get
-            {
-                List<AudioMixerGroupController> groups = new List<AudioMixerGroupController>();
-                GetGroupsRecurse(masterGroup, groups);
-                return groups.ToArray();
-            }
-        }
-
         public extern int numExposedParameters { [NativeMethod("AudioMixerControllerBindings::GetNumExposedParameters", HasExplicitThis = true, IsFreeFunction = true)] get; }
 
         public extern ExposedAudioParameter[] exposedParameters { get; set; }
