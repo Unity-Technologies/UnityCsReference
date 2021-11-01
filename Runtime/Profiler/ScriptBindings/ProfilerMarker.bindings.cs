@@ -68,18 +68,36 @@ namespace Unity.Profiling
         {
             [NativeDisableUnsafePtrRestriction]
             internal readonly IntPtr m_Ptr;
+            
+            internal readonly bool m_Suspend;
 
             [MethodImpl(256)]
-            internal AutoScope(IntPtr markerPtr)
+            internal AutoScope(IntPtr markerPtr, bool suspend = false)
             {
                 m_Ptr = markerPtr;
-                ProfilerUnsafeUtility.BeginSample(markerPtr);
+                m_Suspend = suspend;
+
+                if (m_Suspend)
+                {
+                    ProfilerUnsafeUtility.EndSample(m_Ptr);
+                }
+                else
+                {
+                    ProfilerUnsafeUtility.BeginSample(m_Ptr);
+                }
             }
 
             [MethodImpl(256)]
             public void Dispose()
             {
-                ProfilerUnsafeUtility.EndSample(m_Ptr);
+                if (m_Suspend)
+                {
+                    ProfilerUnsafeUtility.BeginSample(m_Ptr);
+                }
+                else
+                {
+                    ProfilerUnsafeUtility.EndSample(m_Ptr);
+                }
             }
         }
 
@@ -88,6 +106,13 @@ namespace Unity.Profiling
         public AutoScope Auto()
         {
             return new AutoScope(m_Ptr);
+        }
+
+        [MethodImpl(256)]
+        [Pure]
+        public AutoScope Suspend()
+        {
+            return new AutoScope(m_Ptr, true);
         }
     }
 
