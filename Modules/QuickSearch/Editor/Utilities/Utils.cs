@@ -24,6 +24,7 @@ using UnityEditor.StyleSheets;
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.ProceduralGraph.Editor")]
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.Rendering.Hybrid")]
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.VisualEffectGraph.Editor")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.Localization.Editor")]
 
 namespace UnityEditor.Search
 {
@@ -200,6 +201,11 @@ namespace UnityEditor.Search
             }
 
             return GetAssetPreview(obj, previewOptions) ?? AssetDatabase.GetCachedIcon(path) as Texture2D;
+        }
+
+        internal static bool HasInvalidComponent(UnityEngine.Object obj)
+        {
+            return PrefabUtility.HasInvalidComponent(obj);
         }
 
         internal static int GetMainAssetInstanceID(string assetPath)

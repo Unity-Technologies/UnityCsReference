@@ -331,6 +331,8 @@ namespace UnityEditor
 
         extern internal static ShaderData.VariantCompileInfo CompileShaderVariant([NotNull] Shader shader, int subShaderIndex, int passId,
             ShaderType shaderType, BuiltinShaderDefine[] platformKeywords, string[] keywords, ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, GraphicsTier tier);
+        extern internal static ShaderData.PreprocessedVariant PreprocessShaderVariant([NotNull] Shader shader, int subShaderIndex, int passId,
+            ShaderType shaderType, BuiltinShaderDefine[] platformKeywords, string[] keywords, ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, GraphicsTier tier, bool stripLineDirectives);
 
         [FreeFunction("ShaderUtil::GetPassKeywords")] extern private static LocalKeyword[] GetPassAllStageKeywords(Shader s, in PassIdentifier passIdentifier);
         [FreeFunction("ShaderUtil::GetPassKeywords")] extern private static LocalKeyword[] GetPassStageKeywords(Shader s, in PassIdentifier passIdentifier, ShaderType shaderType);

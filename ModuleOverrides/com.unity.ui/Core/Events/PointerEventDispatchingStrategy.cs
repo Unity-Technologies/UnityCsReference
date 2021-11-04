@@ -57,7 +57,7 @@ namespace UnityEngine.UIElements
             bool shouldRecomputeTopElementUnderPointer = (evt as IPointerEventInternal)?.recomputeTopElementUnderPointer ?? true;
 
             elementUnderPointer = shouldRecomputeTopElementUnderPointer
-                ? basePanel?.RecomputeTopElementUnderPointer(pointerEvent.position, evt)
+                ? basePanel?.RecomputeTopElementUnderPointer(pointerEvent.pointerId, pointerEvent.position, evt)
                 : basePanel?.GetTopElementUnderPointer(pointerEvent.pointerId);
         }
     }

@@ -82,7 +82,7 @@ namespace UnityEngine.UIElements
                     bool shouldRecomputeTopElementUnderMouse = (mouseEvent as IMouseEventInternal)?.recomputeTopElementUnderMouse ?? true;
 
                     if (shouldRecomputeTopElementUnderMouse)
-                        basePanel.RecomputeTopElementUnderPointer(mouseEvent.mousePosition, evt);
+                        basePanel.RecomputeTopElementUnderPointer(PointerId.mousePointerId, mouseEvent.mousePosition, evt);
                 }
 
                 evt.dispatch = true;

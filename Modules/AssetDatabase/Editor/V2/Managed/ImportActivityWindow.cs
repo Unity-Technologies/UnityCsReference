@@ -38,7 +38,7 @@ namespace UnityEditor
             OpenWindow(guid, true);
         }
 
-        [MenuItem("Window/Analysis/Import Activity Window")]
+        [MenuItem("Window/Analysis/Import Activity")]
         public static void ShowWindow()
         {
             OpenWindow();
@@ -146,6 +146,7 @@ namespace UnityEditor
             private string m_ShortenedName = null;
             private string m_ImporterName = null;
             private string m_ImportDuration = null;
+
             public ArtifactInfo artifactInfo;
 
             public string shortenedName
@@ -153,7 +154,7 @@ namespace UnityEditor
                 get
                 {
                     if (string.IsNullOrEmpty(m_ShortenedName))
-                        m_ShortenedName = GetShortenedAssetName(artifactInfo.importStats.assetPath);
+                        m_ShortenedName = GetShortenedAssetName(artifactInfo.assetPath);
                     return m_ShortenedName;
                 }
             }
@@ -255,6 +256,9 @@ namespace UnityEditor
         private IMGUIContainer m_AllAssetsListViewContainer;
         internal ToolBarContainer m_Toolbar;
 
+        private Dictionary<string, Texture> m_IconCache;
+
+
         [SerializeField]
         public bool IsInitialized { get; set; }
 
@@ -292,13 +296,13 @@ namespace UnityEditor
             UpdateSelectedItemView(windowPosition);
 
             CreateListViewContainers(windowPosition);
+            InitIconCache();
 
             IsInitialized = true;
 
             RefreshAllLists(m_ImportActivityState.rightContentState);
 
-            m_AllAssetsListView.SetSorting(m_ImportActivityState.allAssetsState.sortedColumnIndex, m_ImportActivityState.allAssetsState.sortAscending);
-            m_AllAssetsListView.multiColumnHeader.sortedColumnIndex = m_ImportActivityState.allAssetsState.sortedColumnIndex;
+            m_AllAssetsListView.multiColumnHeader.state.sortedColumnIndex = m_ImportActivityState.allAssetsState.sortedColumnIndex;
 
             RestoreListViewSelection();
             if (m_RightContentState == RightContentState.ShowSelectedItem || openViaRightClick)
@@ -357,6 +361,21 @@ namespace UnityEditor
             }
         }
 
+        private void InitIconCache()
+        {
+            m_IconCache = new Dictionary<string, Texture>();
+            m_IconCache.Add(".fbx", null);
+            m_IconCache.Add(".uss", null);
+            m_IconCache.Add(".uxml", null);
+            m_IconCache.Add(".cs", null);
+            m_IconCache.Add(".md", null);
+            m_IconCache.Add(".json", null);
+            m_IconCache.Add(".txt", null);
+            m_IconCache.Add(".shader", null);
+            m_IconCache.Add(".compute", null);
+            m_IconCache.Add(".ttf", null);
+        }
+
         private void CreateToolBar(Rect windowPosition)
         {
             //Toolbar
@@ -403,7 +422,8 @@ namespace UnityEditor
 
             GetMostDependencyAssets();
             m_Overview.mostDependencies.treeView = CreateTreeView(m_Overview.mostDependencies.treeView,
-                m_MostDependencyAssets, mostDependenciesColumns, MostDependenciesSelector, MostDependenciesSortSelector);
+                m_MostDependencyAssets, mostDependenciesColumns, MostDependenciesSelector);
+
             m_Overview.mostDependencies.treeView.OnDoubleClickedItem = OnMostDependenciesDoubleClickedItem;
             m_Overview.mostDependencies.treeView.CanSort = false;
             m_Overview.mostDependencies.treeView.CellGUICallback = CellGUIForMostDependencies;
@@ -417,7 +437,7 @@ namespace UnityEditor
             m_Overview.longestDurationHeader.style.borderBottomColor = ListHeaderColor;
 
             m_Overview.longestDuration.treeView = CreateTreeView(m_Overview.longestDuration.treeView,
-                m_LongestDurationAssets, longestDurationColumns, LongestDurationSelector, LongestDurationSortSelector);
+                m_LongestDurationAssets, longestDurationColumns, LongestDurationSelector);
 
             m_Overview.longestDuration.treeView.OnDoubleClickedItem = OnLongestDurationDoubleClickedItem;
             m_Overview.longestDuration.treeView.CanSort = false;
@@ -457,41 +477,46 @@ namespace UnityEditor
 
         private void GetLongestDurationAssets()
         {
-            var amountOfAssetsToShow = 20;
-
-            var assets = m_AllAssetsList
-                .OrderByDescending(info => info.artifactInfo.importStats.importTimeMicroseconds)
-                .Take(amountOfAssetsToShow);
+            var artifactInfoTreeViewItems = new List<ArtifactInfoTreeViewItem>(m_StartupData.longestDurationAssets.Length);
+            for (int i = 0; i < m_StartupData.longestDurationAssets.Length; ++i)
+            {
+                artifactInfoTreeViewItems.Add(new ArtifactInfoTreeViewItem()
+                {
+                    artifactInfo = m_StartupData.longestDurationAssets[i]
+                });
+            }
 
             m_LongestDurationAssets.Clear();
-            m_LongestDurationAssets.AddRange(assets);
+            m_LongestDurationAssets.AddRange(artifactInfoTreeViewItems);
         }
 
         private void GetMostDependencyAssets()
         {
-            var amountOfAssetsToShow = 20;
-
-            var assets = m_AllAssetsList
-                .OrderByDescending(info => info.artifactInfo.dependencyCount)
-                .Take(amountOfAssetsToShow);
+            var artifactInfoTreeViewItems = new List<ArtifactInfoTreeViewItem>(m_StartupData.mostDependencyAssets.Length);
+            for (int i = 0; i < m_StartupData.mostDependencyAssets.Length; ++i)
+            {
+                artifactInfoTreeViewItems.Add(new ArtifactInfoTreeViewItem()
+                {
+                    artifactInfo = m_StartupData.mostDependencyAssets[i]
+                });
+            }
 
             m_MostDependencyAssets.Clear();
-            m_MostDependencyAssets.AddRange(assets);
+            m_MostDependencyAssets.AddRange(artifactInfoTreeViewItems);
         }
 
         private void CreateAllAssetsList()
         {
             //Get all assets
-            var allAssetPaths = AssetDatabase.GetAllAssetPaths();
-            //Get all current revisions
-            var allCurrentRevisions = GetAllCurrentRevisions(allAssetPaths);
-            //
-            var artifactInfoTreeViewItems = new List<ArtifactInfoTreeViewItem>(allCurrentRevisions.Count());
-            for (int i = 0; i < allCurrentRevisions.Count(); ++i)
+            m_StartupData.Initialize();
+            var allCurrentRevisions = GetAllCurrentRevisions();
+
+            var artifactInfoTreeViewItems = new List<ArtifactInfoTreeViewItem>(allCurrentRevisions.Length);
+            for (int i = 0; i < allCurrentRevisions.Length; ++i)
             {
                 artifactInfoTreeViewItems.Add(new ArtifactInfoTreeViewItem()
                 {
-                    artifactInfo = allCurrentRevisions.ElementAt(i)
+                    artifactInfo = allCurrentRevisions[i]
                 });
             }
             m_AllAssetsList.AddRange(artifactInfoTreeViewItems);
@@ -555,7 +580,7 @@ namespace UnityEditor
             var previousRevisionsVisibleColumns = m_ImportActivityState.previousRevisionsState.GetVisibleColumns();
             m_ItemContainers.previousRevisions.treeView = CreateTreeView(m_ItemContainers.previousRevisions.treeView,
                 m_PreviousRevisionsList, previousRevisionsColumns,
-                PreviousRevisionSelector, PreviousRevisionSortSelector, false, false, false, previousRevisionsVisibleColumns);
+                PreviousRevisionSelector, GetPreviousRevisionSelectorSortCallbacks(), false, false, false, previousRevisionsVisibleColumns);
 
             m_ItemContainers.previousRevisions.treeView.SelectionChangedCallback += OnSelectRevision;
             m_ItemContainers.previousRevisions.treeView.CellGUICallback = CellGUIForPreviousRevisions;
@@ -610,7 +635,7 @@ namespace UnityEditor
 
 
             m_ItemContainers.reasonsForImport.treeView = CreateTreeViewNested(m_ItemContainers.reasonsForImport.treeView, m_ReasonsToReimportList,
-                reasonsForImportColumns, ReasonForImportSelector, ReasonForReimportSortSelector, true, true, false);
+                reasonsForImportColumns, ReasonForImportSelector, null, true, true, false);
 
             m_ItemContainers.reasonsForImport.treeView.CanSort = false;
             m_ItemContainers.reasonsForImport.treeView.Reload();
@@ -1012,7 +1037,7 @@ namespace UnityEditor
             var selectedIndex = m_AllAssetsList.FindIndex(asset => asset.artifactInfo.importStats.assetPath.Equals(selectedPath, StringComparison.Ordinal));
             if (selectedIndex == -1)
             {
-                Debug.LogWarning("Asset is selected in artifact browser, but index of the entry was not found. Please report a bug.");
+                Debug.LogWarning($"Asset '{selectedPath}' is selected in artifact browser, but index of the entry was not found. Please report a bug.");
                 return;
             }
 
@@ -1047,6 +1072,42 @@ namespace UnityEditor
             rootVisualElement.style.flexDirection = FlexDirection.Column;
         }
 
+        private Func<TreeViewItem, TreeViewItem, int, List<ArtifactInfoTreeViewItem>, int>[] GetArtifactInfoSortCallbacks()
+        {
+            var callbacks = new Func<TreeViewItem, TreeViewItem, int, List<ArtifactInfoTreeViewItem>, int>[4];
+            callbacks[0] = ArtifactInfoSortSelector_ShortenedName;
+            callbacks[1] = ArtifactInfoSortSelector_TimeStamp;
+            callbacks[2] = ArtifactInfoSortSelector_ImportDuration;
+            callbacks[3] = ArtifactInfoSortSelector_ImporterName;
+            return callbacks;
+        }
+
+        private Func<TreeViewItem, TreeViewItem, int, List<(string, ArtifactInfoDependency)>, int>[] GetPropertySelectorSortCallbacks()
+        {
+            var callbacks = new Func<TreeViewItem, TreeViewItem, int, List<(string, ArtifactInfoDependency)>, int>[2];
+            callbacks[0] = PropertySortSelector_DependencyName;
+            callbacks[1] = PropertySortSelector_DependencyValue;
+            return callbacks;
+        }
+
+        private Func<TreeViewItem, TreeViewItem, int, List<ArtifactInfoProducedFiles>, int>[] GetProducedFilesSelectorSortCallbacks()
+        {
+            var callbacks = new Func<TreeViewItem, TreeViewItem, int, List<ArtifactInfoProducedFiles>, int>[3];
+            callbacks[0] = ProducedFilesInfoSortSelector_LibraryPath;
+            callbacks[1] = ProducedFilesInfoSortSelector_Extension;
+            callbacks[2] = ProducedFilesInfoSortSelector_FileSize;
+            return callbacks;
+        }
+
+        private Func<TreeViewItem, TreeViewItem, int, List<ArtifactInfoTreeViewItem>, int>[] GetPreviousRevisionSelectorSortCallbacks()
+        {
+            var callbacks = new Func<TreeViewItem, TreeViewItem, int, List<ArtifactInfoTreeViewItem>, int>[3];
+            callbacks[0] = PreviousRevisionSortSelector_ImportedTimeStamp;
+            callbacks[1] = PreviousRevisionSortSelector_ArtifactID;
+            callbacks[2] = PreviousRevisionSortSelector_ImporterName;
+            return callbacks;
+        }
+
         private void CreateListViews()
         {
             var artifactColumns = CreateColumns(new Column("Asset", 200), new Column("Last Import", 120), new Column("Duration (ms)", 85), new Column("Importer", 160));
@@ -1057,20 +1118,20 @@ namespace UnityEditor
             var allAssetsVisibleColumns = m_ImportActivityState.allAssetsState.GetVisibleColumns();
 
             m_AllAssetsListView = CreateTreeView(m_AllAssetsListView, m_AllAssetsList,
-                artifactColumns, ArtifactInfoSelector, ArtifactInfoSortSelector, false, false, true, allAssetsVisibleColumns);
+                artifactColumns, ArtifactInfoSelector, GetArtifactInfoSortCallbacks(), false, false, true, allAssetsVisibleColumns);
 
             m_AllAssetsListView.CellGUICallback = CellGUIForAllAssets;
 
             var dependenciesVisibleColumns = m_ImportActivityState.dependenciesState.GetVisibleColumns();
             m_DependenciesListView = CreateTreeView(null, m_DependenciesList,
-                dependenciesColumn, PropertySelector, PropertySortSelector, true, true, true, dependenciesVisibleColumns);
+                dependenciesColumn, PropertySelector, GetPropertySelectorSortCallbacks(), true, true, true, dependenciesVisibleColumns);
 
             m_DependenciesListView.searchString = m_ImportActivityState.dependenciesState.searchString;
             m_DependenciesListView.CellGUICallback = CellGUIForDependencies;
 
             var producedFilesVisibleColumns = m_ImportActivityState.producedFilesState.GetVisibleColumns();
             m_ProducedFilesListView = CreateTreeView(m_ProducedFilesListView, m_ProducedFilesList,
-                producedFilesColumns, ProducedFilesInfoSelector, ProducedFilesInfoSortSelector, false, true, true, producedFilesVisibleColumns);
+                producedFilesColumns, ProducedFilesInfoSelector, GetProducedFilesSelectorSortCallbacks(), false, true, true, producedFilesVisibleColumns);
 
             m_ProducedFilesListView.CellGUICallback = CellGUIForProducedFiles;
 
@@ -1103,15 +1164,29 @@ namespace UnityEditor
             if (item == null || artifactInfo == null)
                 return null;
 
-            Texture icon = null;
-
-            if (icon == null)
-                icon = item.icon;
+            Texture icon = item.icon;
+            string selectedExtension = null;
+            foreach (var cachedIcon in m_IconCache)
+            {
+                if (artifactInfo.assetPath.EndsWith(cachedIcon.Key, StringComparison.OrdinalIgnoreCase))
+                {
+                    icon = cachedIcon.Value;
+                    selectedExtension = cachedIcon.Key;
+                    break;
+                }
+            }
 
             if (icon == null && item.id != 0)
             {
                 string path = artifactInfo.importStats.assetPath;
                 icon = AssetDatabase.GetCachedIcon(path);
+
+                if (!string.IsNullOrEmpty(selectedExtension) && m_IconCache.ContainsKey(selectedExtension))
+                {
+                    var value = m_IconCache[selectedExtension];
+                    if (value == null)
+                        m_IconCache[selectedExtension] = icon;
+                }
             }
 
             var folderItem = item as AssetsTreeViewDataSource.FolderTreeItemBase;
@@ -1272,17 +1347,18 @@ namespace UnityEditor
             // *end-nonstandard-formatting*
         }
 
-        private static IComparable PropertySortSelector(TreeViewItem item, int index, List<(string, ArtifactInfoDependency)> items)
+        private static int PropertySortSelector_DependencyName(TreeViewItem item1, TreeViewItem item2, int index, List<(string, ArtifactInfoDependency)> items)
         {
-            var element = items[item.id - 1];
-            // *begin-nonstandard-formatting*
-            return index switch
-            {
-                0 => element.Item1,
-                1 => element.Item2.value.ToString(),
-                _ => "",
-            };
-            // *end-nonstandard-formatting*
+            var element1 = items[item1.id - 1];
+            var element2 = items[item2.id - 1];
+            return string.CompareOrdinal(element1.Item1, element2.Item1);
+        }
+
+        private static int PropertySortSelector_DependencyValue(TreeViewItem item1, TreeViewItem item2, int index, List<(string, ArtifactInfoDependency)> items)
+        {
+            var element1 = items[item1.id - 1];
+            var element2 = items[item2.id - 1];
+            return string.CompareOrdinal(element1.Item2.value.ToString(), element2.Item2.value.ToString());
         }
 
         private static IComparable TupleSelector((string, string) element, int index)
@@ -1388,44 +1464,54 @@ namespace UnityEditor
             // *end-nonstandard-formatting*
         }
 
-        private static IComparable PreviousRevisionSortSelector(TreeViewItem item, int index, List<ArtifactInfoTreeViewItem> items)
+        private static int PreviousRevisionSortSelector_ImportedTimeStamp(TreeViewItem item1, TreeViewItem item2, int index, List<ArtifactInfoTreeViewItem> items)
         {
-            var element = items[item.id - 1];
-            // *begin-nonstandard-formatting*
-            return index switch
-            {
-                0 => element.artifactInfo.importStats.importedTimestamp,
-                1 => element.artifactInfo.artifactID,
-                2 => element.importerName,
-                _ => "",
-            };
-            // *end-nonstandard-formatting*
+            var element1 = items[item1.id - 1];
+            var element2 = items[item2.id - 1];
+            return element1.artifactInfo.importStats.importedTimestamp.CompareTo(element2.artifactInfo.importStats.importedTimestamp);
         }
 
-        private static IComparable ArtifactInfoSortSelector(TreeViewItem item, int index, List<ArtifactInfoTreeViewItem> itemList)
+        private static int PreviousRevisionSortSelector_ArtifactID(TreeViewItem item1, TreeViewItem item2, int index, List<ArtifactInfoTreeViewItem> items)
         {
-            ArtifactInfoTreeViewItem element = itemList[item.id - 1];
-            // *begin-nonstandard-formatting*
-            return index switch
-            {
-                0 => element.shortenedName,
-                1 => element.artifactInfo.importStats.importedTimestamp,
-                2 => element.artifactInfo.importStats.importTimeMicroseconds / 1000, //Keep this as an int for faster sorting
-                3 => element.importerName,
-                _ => "",
-            };
-            // *end-nonstandard-formatting*
+            var element1 = items[item1.id - 1];
+            var element2 = items[item2.id - 1];
+            return string.CompareOrdinal(element1.artifactInfo.artifactID, element2.artifactInfo.artifactID);
         }
 
-        private static IComparable ReasonForReimportSortSelector(TreeViewItem item, int index, List<ArtifactDifferenceReporter.ArtifactInfoDifference> itemList)
+        private static int PreviousRevisionSortSelector_ImporterName(TreeViewItem item1, TreeViewItem item2, int index, List<ArtifactInfoTreeViewItem> items)
         {
+            var element1 = items[item1.id - 1];
+            var element2 = items[item2.id - 1];
             // *begin-nonstandard-formatting*
-            return index switch
-            {
-                0 => item.displayName,
-                _ => "",
-            };
-            // *end-nonstandard-formatting*
+            return string.CompareOrdinal(element1.importerName, element2.importerName);
+        }
+
+        private static int ArtifactInfoSortSelector_ShortenedName(TreeViewItem item1, TreeViewItem item2, int index, List<ArtifactInfoTreeViewItem> itemList)
+        {
+            ArtifactInfoTreeViewItem element1 = itemList[item1.id - 1];
+            ArtifactInfoTreeViewItem element2 = itemList[item2.id - 1];
+            return string.CompareOrdinal(element1.shortenedName, element2.shortenedName);
+        }
+
+        private static int ArtifactInfoSortSelector_TimeStamp(TreeViewItem item1, TreeViewItem item2, int index, List<ArtifactInfoTreeViewItem> itemList)
+        {
+            ArtifactInfoTreeViewItem element1 = itemList[item1.id - 1];
+            ArtifactInfoTreeViewItem element2 = itemList[item2.id - 1];
+            return element1.artifactInfo.timeStamp.CompareTo(element2.artifactInfo.timeStamp);
+        }
+
+        private static int ArtifactInfoSortSelector_ImportDuration(TreeViewItem item1, TreeViewItem item2, int index, List<ArtifactInfoTreeViewItem> itemList)
+        {
+            ArtifactInfoTreeViewItem element1 = itemList[item1.id - 1];
+            ArtifactInfoTreeViewItem element2 = itemList[item2.id - 1];
+            return element1.artifactInfo.importDuration.CompareTo(element2.artifactInfo.importDuration);
+        }
+
+        private static int ArtifactInfoSortSelector_ImporterName(TreeViewItem item1, TreeViewItem item2, int index, List<ArtifactInfoTreeViewItem> itemList)
+        {
+            ArtifactInfoTreeViewItem element1 = itemList[item1.id - 1];
+            ArtifactInfoTreeViewItem element2 = itemList[item2.id - 1];
+            return string.CompareOrdinal(element1.importerName, element2.importerName);
         }
 
         private static IComparable ProducedFilesInfoSelector(ArtifactInfoProducedFiles element, int index)
@@ -1441,18 +1527,25 @@ namespace UnityEditor
             // *end-nonstandard-formatting*
         }
 
-        private static IComparable ProducedFilesInfoSortSelector(TreeViewItem item, int index, List<ArtifactInfoProducedFiles> items)
+        private static int ProducedFilesInfoSortSelector_LibraryPath(TreeViewItem item1, TreeViewItem item2, int index, List<ArtifactInfoProducedFiles> items)
         {
-            var element = items[item.id - 1];
-            // *begin-nonstandard-formatting*
-            return index switch
-            {
-                0 => element.libraryPath,
-                1 => element.extension,
-                2 => GetAssetFileSize(element),
-                _ => "",
-            };
-            // *end-nonstandard-formatting*
+            var element1 = items[item1.id - 1];
+            var element2 = items[item2.id - 1];
+            return string.CompareOrdinal(element1.libraryPath, element2.libraryPath);
+        }
+
+        private static int ProducedFilesInfoSortSelector_Extension(TreeViewItem item1, TreeViewItem item2, int index, List<ArtifactInfoProducedFiles> items)
+        {
+            var element1 = items[item1.id - 1];
+            var element2 = items[item2.id - 1];
+            return string.CompareOrdinal(element1.extension, element2.extension);
+        }
+
+        private static int ProducedFilesInfoSortSelector_FileSize(TreeViewItem item1, TreeViewItem item2, int index, List<ArtifactInfoProducedFiles> items)
+        {
+            var element1 = items[item1.id - 1];
+            var element2 = items[item2.id - 1];
+            return GetAssetFileSizeBytes(element1).CompareTo(GetAssetFileSizeBytes(element2));
         }
 
         private static IComparable MostDependenciesSelector(ArtifactInfoTreeViewItem element, int index)
@@ -1462,19 +1555,6 @@ namespace UnityEditor
             {
                 0 => element.shortenedName,
                 1 => element.artifactInfo.dependencyCount,
-                _ => "",
-            };
-            // *end-nonstandard-formatting*
-        }
-
-        private static IComparable MostDependenciesSortSelector(TreeViewItem item, int index, List<ArtifactInfoTreeViewItem> items)
-        {
-            var element = items[item.id - 1];
-            // *begin-nonstandard-formatting*
-            return index switch
-            {
-                0 => element.shortenedName,
-                1 => element.artifactInfo.dependencies.Count,
                 _ => "",
             };
             // *end-nonstandard-formatting*
@@ -1492,22 +1572,9 @@ namespace UnityEditor
             // *end-nonstandard-formatting*
         }
 
-        private static IComparable LongestDurationSortSelector(TreeViewItem item, int index, List<ArtifactInfoTreeViewItem> items)
-        {
-            var element = items[item.id - 1];
-            // *begin-nonstandard-formatting*
-            return index switch
-            {
-                0 => element.shortenedName,
-                1 => element.importDuration,
-                _ => "",
-            };
-            // *end-nonstandard-formatting*
-        }
-
         private ArtifactBrowserTreeViewNested<T> CreateTreeViewNested<T>(ArtifactBrowserTreeViewNested<T> copy,
             List<T> list, MultiColumnHeaderState.Column[] columns,
-            Func<T, int, IComparable> columnValueSelector, Func<TreeViewItem, int, List<T>, IComparable> columnValueSortSelector,
+            Func<T, int, IComparable> columnValueSelector, Func<TreeViewItem, TreeViewItem, int, List<T>, int>[] columnValueSortSelector,
             bool searchState = false, bool padBorders = true, bool iconShowState = true, int[] visibleColumns = null)
         {
             var headerState = new MultiColumnHeaderState(columns);
@@ -1537,7 +1604,7 @@ namespace UnityEditor
 
         private ArtifactBrowserTreeView<T> CreateTreeView<T>(ArtifactBrowserTreeView<T> copy,
             List<T> list, MultiColumnHeaderState.Column[] columns,
-            Func<T, int, IComparable> columnValueSelector, Func<TreeViewItem, int, List<T>, IComparable> columnValueSortSelector,
+            Func<T, int, IComparable> columnValueSelector, Func<TreeViewItem, TreeViewItem, int, List<T>, int>[] columnValueSortSelector = null,
             bool searchState = false, bool padBorders = true, bool iconShowState = true, int[] visibleColumns = null)
         {
             var headerState = new MultiColumnHeaderState(columns);
@@ -1883,17 +1950,33 @@ namespace UnityEditor
             return totalSizeString;
         }
 
+        private static long GetAssetFileSizeBytes(ArtifactInfoProducedFiles element)
+        {
+            if (element.storage == ArtifactInfoProducedFiles.kStorageLibrary)
+            {
+                GetAssetFileSize(element.libraryPath, out long sizeInBytes);
+                return sizeInBytes;
+            }
+
+            var inMemorySize = element.inlineStorage;
+            return inMemorySize;
+        }
+
         private static string GetAssetFileSize(ArtifactInfoProducedFiles element)
         {
             if (element.storage == ArtifactInfoProducedFiles.kStorageLibrary)
                 return GetAssetFileSize(element.libraryPath);
 
             var inMemorySize = element.inlineStorage;
-            var inMemorySizeString = FormatBytes(inMemorySize);
-            return inMemorySizeString;
+            return FormatBytes(inMemorySize);
         }
 
         private static string GetAssetFileSize(string importStatsAssetPath)
+        {
+            return GetAssetFileSize(importStatsAssetPath, out var ignoreValue);
+        }
+
+        private static string GetAssetFileSize(string importStatsAssetPath, out long sizeInBytes)
         {
             var fullPath = Path.GetFullPath(importStatsAssetPath);
             var fileInfo = new FileInfo(fullPath);
@@ -1901,11 +1984,14 @@ namespace UnityEditor
             //Directory "size" isn't allowed
             if ((fileInfo.Attributes & FileAttributes.Directory) == FileAttributes.Directory)
             {
+                sizeInBytes = 0;
                 //TODO: Handle in database files
                 if (!Directory.Exists(fullPath))
                     return "";
                 return "Directory";
             }
+
+            sizeInBytes = fileInfo.Length;
 
             var fileSizeString = FormatBytes(fileInfo.Length);
             return fileSizeString;
@@ -1949,6 +2035,34 @@ namespace UnityEditor
             var suffix = importStatsAssetPath.Substring(0, firstSlash);
             var finalString = $"{suffix}...{assetName}";
             return finalString;
+        }
+
+        struct ImportActivityWindowStartupDataWrapper
+        {
+            private ArtifactInfo[] m_AllCurrentRevisions;
+            private ArtifactInfo[] m_LongestDurationAssets;
+            private ArtifactInfo[] m_MostDependenciesAssets;
+
+            public void Initialize()
+            {
+                m_AllCurrentRevisions = AssetDatabase.GetImportActivityWindowStartupData(ImportActivityWindowStartupData.AllCurrentRevisions);
+                m_LongestDurationAssets = AssetDatabase.GetImportActivityWindowStartupData(ImportActivityWindowStartupData.LongestImportDuration);
+                m_MostDependenciesAssets = AssetDatabase.GetImportActivityWindowStartupData(ImportActivityWindowStartupData.MostDependencies);
+                AssetDatabase.GetImportActivityWindowStartupData(ImportActivityWindowStartupData.ClearCache);
+            }
+
+            public ArtifactInfo[] allCurrentRevisions { get { return m_AllCurrentRevisions; }}
+
+            public ArtifactInfo[] longestDurationAssets { get { return m_LongestDurationAssets; }}
+
+            public ArtifactInfo[] mostDependencyAssets { get { return m_MostDependenciesAssets; }}
+        }
+
+        private ImportActivityWindowStartupDataWrapper m_StartupData;
+
+        private ArtifactInfo[] GetAllCurrentRevisions()
+        {
+            return m_StartupData.allCurrentRevisions;
         }
 
         private List<ArtifactInfo> GetAllCurrentRevisions(IEnumerable<string> allAssetPaths)
@@ -2362,7 +2476,7 @@ namespace UnityEditor
         internal class ArtifactBrowserTreeView<T> : TreeView
         {
             public Func<T, int, IComparable> ColumnValueSelector { get; set; }
-            public Func<TreeViewItem, int, List<T>, IComparable> ColumnValueSortSelector { get; set; }
+            public Func<TreeViewItem, TreeViewItem, int, List<T>, int>[] ColumnValueSortSelector;
             public Func<Rect, TreeViewItem, int, T, bool> CellGUICallback { get; set; }
 
             public Action<int> OnDoubleClickedItem;
@@ -2536,32 +2650,29 @@ namespace UnityEditor
                 if (!CanSort)
                     return;
 
-                if (multiColumnHeader.sortedColumnIndex == -1)
+                var sortedColumnIndex = multiColumnHeader.sortedColumnIndex;
+                if (sortedColumnIndex == -1)
                     return;
 
                 if (m_ItemList == null || m_ItemList.Count == 0)
                     return;
 
+                var selectedMethod = ColumnValueSortSelector[sortedColumnIndex];
+
+
                 Comparison<TreeViewItem> sortAscend = (TreeViewItem lhs, TreeViewItem rhs) =>
                 {
-                    var lhsResult = ColumnValueSortSelector(lhs, multiColumnHeader.sortedColumnIndex, m_ItemList);
-                    var rhsResult = ColumnValueSortSelector(rhs, multiColumnHeader.sortedColumnIndex, m_ItemList);
-
-                    if (lhsResult is string lhsString && rhsResult is string rhsString)
-                        return string.CompareOrdinal(lhsString, rhsString);
-
-                    return lhsResult.CompareTo(rhsResult);
+                    return selectedMethod(lhs, rhs, sortedColumnIndex, m_ItemList);
                 };
 
                 Comparison<TreeViewItem> sortDescend = (TreeViewItem lhs, TreeViewItem rhs) => - sortAscend.Invoke(lhs, rhs);
 
                 var rowList = rows as List<TreeViewItem>;
                 if (rowList == null)
-                {
                     return;
-                }
 
                 var isSortedAscending = multiColumnHeader.IsSortedAscending(multiColumnHeader.state.sortedColumnIndex);
+
                 rowList.Sort(isSortedAscending ? sortAscend : sortDescend);
             }
 

@@ -26,11 +26,11 @@ namespace UnityEditor.Search
 
         public override bool showNoResultMessage => context.empty;
 
-        public TableView(ISearchView hostView)
+        public TableView(ISearchView hostView, SearchTable tableConfig)
             : base(hostView)
         {
-            m_TableConfig = s_ActiveSearchTable;
             m_TableId = Guid.NewGuid().ToString("N");
+            s_ActiveSearchTable = m_TableConfig = tableConfig ?? s_ActiveSearchTable;
         }
 
         ~TableView() => Dispose(false);
@@ -205,7 +205,7 @@ namespace UnityEditor.Search
 
         public void UpdateColumnSettings(int columnIndex, MultiColumnHeaderState.Column columnSettings)
         {
-            if (m_TableConfig == null)
+            if (m_TableConfig == null || columnIndex >= m_TableConfig.columns.Length)
                 return;
 
             var searchColumn = m_TableConfig.columns[columnIndex];
@@ -249,6 +249,7 @@ namespace UnityEditor.Search
 
         public void DoubleClick(SearchItem item)
         {
+            searchView.ExecuteSelection();
         }
 
         public void SetDirty()

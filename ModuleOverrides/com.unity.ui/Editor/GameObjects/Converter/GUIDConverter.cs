@@ -22,6 +22,11 @@ namespace UnityEditor.UIElements
         private const string kMenuPath = "Window/UI Toolkit/Package Asset Converter";
         private const string kAssetGUIDConverterName = "UI Toolkit Package Asset Converter";
 
+        // We need these keys as internal to use in tests.
+        internal const string kConvertAssetDistanceFieldShaderName = "Distance Field Shader";
+        internal const string kConvertAssetDistanceFieldSSDShaderName = "Distance Field SSD Shader";
+        internal const string kConvertAssetSpriteShaderName = "Sprite Shader";
+
         private const string kAssetsFolderName = "Assets";
 
         [MenuItem(kMenuPath, false, 4010)]
@@ -90,6 +95,24 @@ namespace UnityEditor.UIElements
                 assetType = nameof(TextStyleSheet),
                 target = "m_Script: {fileID: 11500000, guid: 59db50dea4e43b042ba63605012274c8, type: 3}",
                 replacement = "m_Script: {fileID: 19004, guid: 0000000000000000e000000000000000, type: 0}"
+            },
+            new AssetConversionRecord() // Text Shader
+            {
+                assetType = kConvertAssetDistanceFieldShaderName,
+                target = "m_Shader: {fileID: 4800000, guid: d76ca23847e5d2045849a2dc8a3d6fa1, type: 3}",
+                replacement = "m_Shader: {fileID: 19010, guid: 0000000000000000f000000000000000, type: 0}"
+            },
+            new AssetConversionRecord() // Text Shader
+            {
+                assetType = kConvertAssetDistanceFieldSSDShaderName,
+                target = "m_Shader: {fileID: 4800000, guid: 62b6d79d475fb5147ab93c75dede1914, type: 3}",
+                replacement = "m_Shader: {fileID: 19011, guid: 0000000000000000f000000000000000, type: 0}"
+            },
+            new AssetConversionRecord() // Text Shader
+            {
+                assetType = kConvertAssetSpriteShaderName,
+                target = "m_Shader: {fileID: 4800000, guid: 79cba8fa59e60f348930506622423d32, type: 3}",
+                replacement = "m_Shader: {fileID: 19012, guid: 0000000000000000f000000000000000, type: 0}"
             }
         };
 

@@ -35,8 +35,8 @@ namespace UnityEngine.TerrainTools
             out float maxBrushWorldSize,
             float terrainTileWorldSize,
             int terrainTileTextureResolutionPixels,
-            int minBrushResolutionPixels = 1,
-            int maxBrushResolutionPixels = 8192)
+            int minBrushResolutionPixels = PaintContext.k_MinimumResolution,
+            int maxBrushResolutionPixels = PaintContext.k_MaximumResolution)
         {
             if (terrainTileTextureResolutionPixels <= 0)
             {
@@ -410,7 +410,9 @@ namespace UnityEngine.TerrainTools
             int yMin = Mathf.FloorToInt(boundsInTerrainSpace.yMin * scaleY) - extraBorderPixels;
             int xMax = Mathf.CeilToInt(boundsInTerrainSpace.xMax * scaleX) + extraBorderPixels;
             int yMax = Mathf.CeilToInt(boundsInTerrainSpace.yMax * scaleY) + extraBorderPixels;
-            return new RectInt(xMin, yMin, xMax - xMin + 1, yMax - yMin + 1);
+            int width = PaintContext.ClampContextResolution(xMax - xMin + 1);
+            int height = PaintContext.ClampContextResolution(yMax - yMin + 1);
+            return new RectInt(xMin, yMin, width, height);
         }
 
         // Alphamap utilities

@@ -91,6 +91,32 @@ namespace UnityEditor
             {
                 return ShaderUtil.CompileShaderVariant(SourceShader, SubshaderIndex, m_PassIndex, shaderType, platformKeywords, keywords, shaderCompilerPlatform, buildTarget, tier);
             }
+
+            public PreprocessedVariant PreprocessVariant(ShaderType shaderType, string[] keywords,
+                ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, bool stripLineDirectives)
+            {
+                var platformKeywords = ShaderUtil.GetShaderPlatformKeywordsForBuildTarget(shaderCompilerPlatform, buildTarget, kNoGraphicsTier);
+                return ShaderUtil.PreprocessShaderVariant(SourceShader, SubshaderIndex, m_PassIndex, shaderType, platformKeywords, keywords, shaderCompilerPlatform, buildTarget, kNoGraphicsTier, stripLineDirectives);
+            }
+
+            public PreprocessedVariant PreprocessVariant(ShaderType shaderType, string[] keywords,
+                ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, GraphicsTier tier, bool stripLineDirectives)
+            {
+                var platformKeywords = ShaderUtil.GetShaderPlatformKeywordsForBuildTarget(shaderCompilerPlatform, buildTarget, tier);
+                return ShaderUtil.PreprocessShaderVariant(SourceShader, SubshaderIndex, m_PassIndex, shaderType, platformKeywords, keywords, shaderCompilerPlatform, buildTarget, tier, stripLineDirectives);
+            }
+
+            public PreprocessedVariant PreprocessVariant(ShaderType shaderType, string[] keywords,
+                ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, BuiltinShaderDefine[] platformKeywords, bool stripLineDirectives)
+            {
+                return ShaderUtil.PreprocessShaderVariant(SourceShader, SubshaderIndex, m_PassIndex, shaderType, platformKeywords, keywords, shaderCompilerPlatform, buildTarget, kNoGraphicsTier, stripLineDirectives);
+            }
+
+            public PreprocessedVariant PreprocessVariant(ShaderType shaderType, string[] keywords,
+                ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, BuiltinShaderDefine[] platformKeywords, GraphicsTier tier, bool stripLineDirectives)
+            {
+                return ShaderUtil.PreprocessShaderVariant(SourceShader, SubshaderIndex, m_PassIndex, shaderType, platformKeywords, keywords, shaderCompilerPlatform, buildTarget, tier, stripLineDirectives);
+            }
         }
 
         public int ActiveSubshaderIndex { get { return ShaderUtil.GetShaderActiveSubshaderIndex(SourceShader); } }
@@ -125,6 +151,13 @@ namespace UnityEditor
             }
 
             return new Subshader(this, index);
+        }
+
+        public struct PreprocessedVariant
+        {
+            public bool Success { get; }
+            public ShaderMessage[] Messages { get; }
+            public string PreprocessedCode { get; }
         }
 
         //

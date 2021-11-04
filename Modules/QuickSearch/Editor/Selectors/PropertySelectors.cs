@@ -284,10 +284,15 @@ namespace UnityEditor.Search
             return value?.ToString();
         }
 
+        static object DrawObjectReference(SearchColumnEventArgs args)
+        {
+            return DrawObjectReference(args.rect, args.value);
+        }
+
         [SearchColumnProvider("ObjectReference")]
         public static void InitializeObjectReferenceColumn(SearchColumn column)
         {
-            column.drawer = args => DrawObjectReference(args.rect, args.value);
+            column.drawer = DrawObjectReference;
         }
 
         [SearchColumnProvider("ObjectPath")]
