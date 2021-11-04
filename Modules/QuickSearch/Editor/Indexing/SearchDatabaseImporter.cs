@@ -136,11 +136,8 @@ namespace UnityEditor.Search
 
             SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.CreateIndexFromTemplate, template);
 
-            File.WriteAllText(indexPath, templateContent);
-            AssetDatabase.ImportAsset(indexPath);
-            Providers.AssetProvider.reloadAssetIndexes = true;
-
-            return indexPath;
+            Utils.WriteTextFileToDisk(indexPath, templateContent);
+            return SearchDatabase.ImportAsset(indexPath)?.path ?? indexPath;
         }
 
         private static bool ValidateTemplateIndexCreation<T>() where T : UnityEngine.Object

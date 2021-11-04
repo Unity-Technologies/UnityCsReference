@@ -211,7 +211,7 @@ namespace UnityEditor.SearchService
         private static void AddSearchServiceBuildDefines(BuildTarget target, HashSet<string> defines)
         {
             defines.Add("USE_SEARCH_ENGINE_API");
-            defines.Add("USE_QUICK_SEARCH_MODULE");
+            defines.Add("USE_SEARCH_MODULE");
         }
 
         public static void NotifySyncSearchChanged(SyncSearchEvent evt, string syncViewId, string searchQuery)
@@ -306,6 +306,9 @@ namespace UnityEditor.SearchService
 
         public void SetActiveSearchEngine(string searchEngineName, bool notify = true)
         {
+            if (string.Equals(activeSearchEngineName, searchEngineName, StringComparison.Ordinal))
+                return;
+
             if (notify)
                 activeEngineChanged?.Invoke(searchEngineName);
             activeSearchEngineName = searchEngineName;
@@ -377,6 +380,7 @@ namespace UnityEditor.SearchService
         void LoadActiveSearchEngine()
         {
             activeSearchEngineName = EditorPrefs.GetString(SearchService.activeSearchEnginesPrefKey + engineScope, GetDefaultEngine().name);
+            m_ActiveSearchEngine = GetActiveSearchEngine();
         }
 
         public void RegisterEngine(TEngine engine)

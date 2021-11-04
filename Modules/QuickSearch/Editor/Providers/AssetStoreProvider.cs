@@ -377,7 +377,7 @@ namespace UnityEditor.Search.Providers
                 label += " (Free)";
             }
 
-            var description = $"{doc.publisher} - {doc.category_slug}";
+            var description = $"{doc.name_en_US} - {doc.publisher} - {doc.category_slug}";
             var item = provider.CreateItem(context, doc.id, score, label, description, null, doc);
             item.options &= ~SearchItemOptions.FuzzyHighlight;
             item.options &= ~SearchItemOptions.Highlight;
@@ -522,26 +522,24 @@ namespace UnityEditor.Search.Providers
             return newPreview.preview;
         }
 
+        static bool IsItemOwned(IReadOnlyCollection<SearchItem> items)
+        {
+            if (items.Count > 1)
+                return false;
+            return IsItemOwned(items.First());
+        }
+
+        static bool IsItemOwned(SearchItem item)
+        {
+            var doc = (AssetDocument)item.data;
+            return purchasePackageIds != null && purchasePackageIds.Contains(doc.id);
+        }
+
         [SearchActionsProvider]
         internal static IEnumerable<SearchAction> ActionHandlers()
         {
             return new[]
             {
-                new SearchAction(k_ProviderId, "open", new GUIContent("Show in Package Manager"))
-                {
-                    handler = (item) =>
-                    {
-                        var doc = (AssetDocument)item.data;
-                        Utils.OpenPackageManager(doc.name_en_US);
-                    },
-                    enabled = items =>
-                    {
-                        if (items.Count > 1)
-                            return false;
-                        var doc = (AssetDocument)items.First().data;
-                        return purchasePackageIds != null && purchasePackageIds.Contains(doc.id);
-                    }
-                },
                 new SearchAction(k_ProviderId, "browse", new GUIContent("Open Unity Asset Store..."))
                 {
                     execute = (items) =>
@@ -549,6 +547,22 @@ namespace UnityEditor.Search.Providers
                         foreach (var item in items)
                             BrowseAssetStoreItem(item);
                     }
+                },
+                new SearchAction(k_ProviderId, "open", new GUIContent("Show in Package Manager"))
+                {
+                    handler = (item) =>
+                    {
+                        if (IsItemOwned(item))
+                        {
+                            var doc = (AssetDocument)item.data;
+                            Utils.OpenPackageManager(doc.id);
+                        }
+                        else
+                        {
+                            BrowseAssetStoreItem(item);
+                        }
+                    },
+                    enabled = IsItemOwned
                 }
             };
         }
@@ -843,7 +857,7 @@ namespace UnityEditor.Search.Providers
             SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchOpen, "SearchAssetStore");
             var storeContext = SearchService.CreateContext(SearchService.GetProvider(k_ProviderId));
             var qs = QuickSearch.Create(storeContext, topic: "asset store");
-            qs.itemIconSize = (int)DisplayMode.Limit;
+            qs.itemIconSize = (int)DisplayMode.Grid;
             qs.SetSearchText(string.Empty);
             qs.ShowWindow();
         }

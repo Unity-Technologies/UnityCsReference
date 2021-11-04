@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.Search.Providers;
 using UnityEditor.SearchService;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -107,7 +108,7 @@ namespace UnityEditor.Search
 
         public virtual void EndSearch(ISearchContext context) {}
 
-        public string name => "Default";
+        public string name => "Advanced";
 
         public abstract string providerId { get; }
 
@@ -292,13 +293,24 @@ namespace UnityEditor.Search
             Action<Object, bool> selectHandler, Action<Object> trackingHandler)
         {
             var selectContext = (ObjectSelectorSearchContext)context;
-
             var viewFlags = SearchFlags.OpenPicker;
             if (Utils.IsRunningTests())
                 viewFlags |= SearchFlags.Dockable;
-            qsWindow = QuickSearch.ShowObjectPicker(selectHandler, trackingHandler,
-                selectContext.currentObject?.name ?? "",
-                selectContext.requiredTypeNames.First(), selectContext.requiredTypes.First(), flags: viewFlags);
+            SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchPickerOpens, "", "object", "ObjectSelectorEngine");
+            var searchQuery = string.Join(" ", context.requiredTypeNames.Select(tn => tn == null ? "" : $"t:{tn.ToLowerInvariant()}"));
+            if (string.IsNullOrEmpty(searchQuery))
+            {
+                searchQuery = "";
+            }
+            else
+            {
+                searchQuery += " ";
+            }
+            var viewstate = new SearchViewState(
+                SearchService.CreateContext(searchQuery, viewFlags), selectHandler, trackingHandler,
+                selectContext.requiredTypeNames.First(), selectContext.requiredTypes.First());
+
+            qsWindow = SearchService.ShowPicker(viewstate) as QuickSearch;
 
             return qsWindow != null;
         }

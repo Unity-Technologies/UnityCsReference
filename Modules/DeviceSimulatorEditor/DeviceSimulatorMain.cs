@@ -56,6 +56,7 @@ namespace UnityEditor.DeviceSimulation
             m_PluginController = new PluginController(serializedState, m_DeviceSimulator);
             m_TouchInput = new TouchEventManipulator(m_DeviceSimulator);
             m_UserInterface = new UserInterfaceController(this, rootVisualElement, serializedState, m_PluginController, m_TouchInput);
+            m_UserInterface.DeviceView.onGUIHandler += HandleInputEvent;
             InitSimulation();
         }
 
@@ -145,16 +146,17 @@ namespace UnityEditor.DeviceSimulation
             InitSimulation();
         }
 
-        public void HandleInputEvent()
+        private void HandleInputEvent()
         {
-            if (!EditorApplication.isPlaying || EditorApplication.isPaused)
+            if (!EditorApplication.isPlaying ||
+                EditorApplication.isPaused ||
+                Event.current.type == EventType.Repaint ||
+                Event.current.type == EventType.Layout ||
+                Event.current.type == EventType.Used ||
+                Event.current.rawType == EventType.MouseDown && !m_TouchInput.isPointerInsideDeviceScreen)
                 return;
 
             // The following code makes IMGUI work in-game, it's mostly copied from the GameView class.
-
-            // MouseDown events outside game view rect are not send to scripts but MouseUp events are (see below)
-            if (Event.current.rawType == EventType.MouseDown && !m_TouchInput.isPointerInsideDeviceScreen)
-                return;
 
             var editorMousePosition = Event.current.mousePosition;
 

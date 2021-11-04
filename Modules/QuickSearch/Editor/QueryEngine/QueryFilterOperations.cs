@@ -10,18 +10,19 @@ namespace UnityEditor.Search
     internal interface IFilterOperation
     {
         string filterName { get; }
-        string filterValueString { get; }
-        string filterParams { get; }
+        StringView filterValueString { get; }
+        StringView filterParams { get; }
         IFilter filter { get; }
-        FilterOperator filterOperator { get; }
+        QueryFilterOperator queryFilterOperator { get; }
         string ToString();
     }
 
     internal struct FilterOperationGeneratorData
     {
-        public FilterOperator op;
-        public string filterValue;
-        public string paramValue;
+        public QueryFilterOperator op;
+        public string filterName;
+        public StringView filterValue;
+        public StringView paramValue;
         public IParseResult filterValueParseResult;
         public StringComparison globalStringComparison;
         public IFilterOperationGenerator generator;
@@ -30,21 +31,24 @@ namespace UnityEditor.Search
     internal interface IFilterOperationGenerator
     {
         IFilterOperation GenerateOperation<TData, TFilterLhs>(FilterOperationGeneratorData data, Filter<TData, TFilterLhs> filter, int operatorIndex, ICollection<QueryError> errors);
+        IFilterOperation GenerateOperation<TData, TFilterLhs>(FilterOperationGeneratorData data, RegexFilter<TData, TFilterLhs> filter, int operatorIndex, ICollection<QueryError> errors);
         IFilterOperation GenerateOperation<TData, TParam, TFilterLhs>(FilterOperationGeneratorData data, Filter<TData, TParam, TFilterLhs> filter, int operatorIndex, ICollection<QueryError> errors);
+        IFilterOperation GenerateOperation<TData, TParam, TFilterLhs>(FilterOperationGeneratorData data, RegexFilter<TData, TParam, TFilterLhs> filter, int operatorIndex, ICollection<QueryError> errors);
     }
 
     internal class FilterOperationGenerator<TFilterRhs> : IFilterOperationGenerator
     {
         public IFilterOperation GenerateOperation<TData, TFilterLhs>(FilterOperationGeneratorData data, Filter<TData, TFilterLhs> filter, int operatorIndex, ICollection<QueryError> errors)
         {
-            var stringComparisonOptions = filter.overrideStringComparison ? filter.stringComparison : data.globalStringComparison;
+            var stringComparisonOptions = filter.overridesStringComparison ? filter.stringComparison : data.globalStringComparison;
+            var filterOperatorContext = new FilterOperatorContext(filter);
             Func<TData, TFilterRhs, bool> operation = (o, filterValue) => false;
 
             var handlerFound = false;
             var typedHandler = data.op.GetHandler<TFilterLhs, TFilterRhs>();
             if (typedHandler != null)
             {
-                operation = (o, filterValue) => typedHandler(filter.GetData(o), filterValue, stringComparisonOptions);
+                operation = (o, filterValue) => typedHandler(filterOperatorContext, filter.GetData(o), filterValue, stringComparisonOptions);
                 handlerFound = true;
             }
 
@@ -53,7 +57,7 @@ namespace UnityEditor.Search
                 var genericHandler = data.op.GetHandler<object, object>();
                 if (genericHandler != null)
                 {
-                    operation = (o, filterValue) => genericHandler(filter.GetData(o), filterValue, stringComparisonOptions);
+                    operation = (o, filterValue) => genericHandler(filterOperatorContext, filter.GetData(o), filterValue, stringComparisonOptions);
                     handlerFound = true;
                 }
             }
@@ -65,7 +69,48 @@ namespace UnityEditor.Search
                 return null;
             }
 
-            var filterOperation = new FilterOperation<TData, TFilterLhs, TFilterRhs>(filter, data.op, data.filterValue, operation);
+            var filterOperation = new FilterOperation<TData, TFilterLhs, TFilterRhs>(filter, in data.op, data.filterValue, operation);
+            if (data.filterValueParseResult != null)
+            {
+                var filterValue = ((ParseResult<TFilterRhs>)data.filterValueParseResult).parsedValue;
+                filterOperation.SetFilterValue(filterValue);
+            }
+
+            return filterOperation;
+        }
+
+        public IFilterOperation GenerateOperation<TData, TFilterLhs>(FilterOperationGeneratorData data, RegexFilter<TData, TFilterLhs> filter, int operatorIndex, ICollection<QueryError> errors)
+        {
+            var stringComparisonOptions = filter.overridesStringComparison ? filter.stringComparison : data.globalStringComparison;
+            var filterOperatorContext = new FilterOperatorContext(filter);
+            Func<TData, TFilterRhs, bool> operation = (o, filterValue) => false;
+
+            var handlerFound = false;
+            var typedHandler = data.op.GetHandler<TFilterLhs, TFilterRhs>();
+            if (typedHandler != null)
+            {
+                operation = (o, filterValue) => typedHandler(filterOperatorContext, filter.GetData(o, data.filterName), filterValue, stringComparisonOptions);
+                handlerFound = true;
+            }
+
+            if (!handlerFound)
+            {
+                var genericHandler = data.op.GetHandler<object, object>();
+                if (genericHandler != null)
+                {
+                    operation = (o, filterValue) => genericHandler(filterOperatorContext, filter.GetData(o, data.filterName), filterValue, stringComparisonOptions);
+                    handlerFound = true;
+                }
+            }
+
+            if (!handlerFound)
+            {
+                var error = $"No handler of type ({typeof(TFilterLhs)}, {typeof(TFilterRhs)}) or (object, object) found for operator {data.op.token}";
+                errors.Add(new QueryError(operatorIndex, data.op.token.Length, error));
+                return null;
+            }
+
+            var filterOperation = new FilterOperation<TData, TFilterLhs, TFilterRhs>(filter, in data.op, data.filterValue, operation);
             if (data.filterValueParseResult != null)
             {
                 var filterValue = ((ParseResult<TFilterRhs>)data.filterValueParseResult).parsedValue;
@@ -78,13 +123,14 @@ namespace UnityEditor.Search
         public IFilterOperation GenerateOperation<TData, TParam, TFilterLhs>(FilterOperationGeneratorData data, Filter<TData, TParam, TFilterLhs> filter, int operatorIndex, ICollection<QueryError> errors)
         {
             Func<TData, TParam, TFilterRhs, bool> operation = (o, p, fv) => false;
-            var stringComparisonOptions = filter.overrideStringComparison ? filter.stringComparison : data.globalStringComparison;
+            var stringComparisonOptions = filter.overridesStringComparison ? filter.stringComparison : data.globalStringComparison;
+            var filterOperatorContext = new FilterOperatorContext(filter);
 
             var handlerFound = false;
             var typedHandler = data.op.GetHandler<TFilterLhs, TFilterRhs>();
             if (typedHandler != null)
             {
-                operation = (o, p, filterValue) => typedHandler(filter.GetData(o, p), filterValue, stringComparisonOptions);
+                operation = (o, p, filterValue) => typedHandler(filterOperatorContext, filter.GetData(o, p), filterValue, stringComparisonOptions);
                 handlerFound = true;
             }
 
@@ -93,7 +139,7 @@ namespace UnityEditor.Search
                 var genericHandler = data.op.GetHandler<object, object>();
                 if (genericHandler != null)
                 {
-                    operation = (o, p, filterValue) => genericHandler(filter.GetData(o, p), filterValue, stringComparisonOptions);
+                    operation = (o, p, filterValue) => genericHandler(filterOperatorContext, filter.GetData(o, p), filterValue, stringComparisonOptions);
                     handlerFound = true;
                 }
             }
@@ -105,7 +151,48 @@ namespace UnityEditor.Search
                 return null;
             }
 
-            var filterOperation = new FilterOperation<TData, TParam, TFilterLhs, TFilterRhs>(filter, data.op, data.filterValue, data.paramValue, operation);
+            var filterOperation = new FilterOperation<TData, TParam, TFilterLhs, TFilterRhs>(filter, in data.op, data.filterValue, data.paramValue, operation);
+            if (data.filterValueParseResult != null)
+            {
+                var filterValue = ((ParseResult<TFilterRhs>)data.filterValueParseResult).parsedValue;
+                filterOperation.SetFilterValue(filterValue);
+            }
+
+            return filterOperation;
+        }
+
+        public IFilterOperation GenerateOperation<TData, TParam, TFilterLhs>(FilterOperationGeneratorData data, RegexFilter<TData, TParam, TFilterLhs> filter, int operatorIndex, ICollection<QueryError> errors)
+        {
+            Func<TData, TParam, TFilterRhs, bool> operation = (o, p, fv) => false;
+            var stringComparisonOptions = filter.overridesStringComparison ? filter.stringComparison : data.globalStringComparison;
+            var filterOperatorContext = new FilterOperatorContext(filter);
+
+            var handlerFound = false;
+            var typedHandler = data.op.GetHandler<TFilterLhs, TFilterRhs>();
+            if (typedHandler != null)
+            {
+                operation = (o, p, filterValue) => typedHandler(filterOperatorContext, filter.GetData(o, data.filterName, p), filterValue, stringComparisonOptions);
+                handlerFound = true;
+            }
+
+            if (!handlerFound)
+            {
+                var genericHandler = data.op.GetHandler<object, object>();
+                if (genericHandler != null)
+                {
+                    operation = (o, p, filterValue) => genericHandler(filterOperatorContext, filter.GetData(o, data.filterName, p), filterValue, stringComparisonOptions);
+                    handlerFound = true;
+                }
+            }
+
+            if (!handlerFound)
+            {
+                var error = $"No handler of type ({typeof(TFilterLhs)}, {typeof(TFilterRhs)}) or (object, object) found for operator {data.op.token}";
+                errors.Add(new QueryError(operatorIndex, data.op.token.Length, error));
+                return null;
+            }
+
+            var filterOperation = new FilterOperation<TData, TParam, TFilterLhs, TFilterRhs>(filter, in data.op, data.filterValue, data.paramValue, operation);
             if (data.filterValueParseResult != null)
             {
                 var filterValue = ((ParseResult<TFilterRhs>)data.filterValueParseResult).parsedValue;
@@ -119,15 +206,15 @@ namespace UnityEditor.Search
     internal abstract class BaseFilterOperation<TData> : IFilterOperation
     {
         public string filterName => filter.token;
-        public string filterValueString { get; }
-        public virtual string filterParams => null;
+        public StringView filterValueString { get; }
+        public virtual StringView filterParams => StringView.Empty;
         public IFilter filter { get; }
-        public FilterOperator filterOperator { get; }
+        public QueryFilterOperator queryFilterOperator { get; }
 
-        protected BaseFilterOperation(IFilter filter, FilterOperator filterOperator, string filterValue)
+        protected BaseFilterOperation(IFilter filter, in QueryFilterOperator queryFilterOperator, in StringView filterValue)
         {
             this.filter = filter;
-            this.filterOperator = filterOperator;
+            this.queryFilterOperator = queryFilterOperator;
             this.filterValueString = filterValue;
         }
 
@@ -135,7 +222,7 @@ namespace UnityEditor.Search
 
         public new virtual string ToString()
         {
-            return $"{filterName}{filterOperator.token}{filterValueString}";
+            return $"{filterName}{queryFilterOperator.token}{filterValueString}";
         }
     }
 
@@ -149,8 +236,14 @@ namespace UnityEditor.Search
         TFilterRhs m_FilterValue;
         Func<TData, TFilterRhs, bool> m_Operation;
 
-        public FilterOperation(Filter<TData, TFilterLhs> filter, FilterOperator filterOperator, string filterValue, Func<TData, TFilterRhs, bool> operation)
-            : base(filter, filterOperator, filterValue)
+        public FilterOperation(Filter<TData, TFilterLhs> filter, in QueryFilterOperator queryFilterOperator, in StringView filterValue, Func<TData, TFilterRhs, bool> operation)
+            : base(filter, in queryFilterOperator, filterValue)
+        {
+            this.m_Operation = operation;
+        }
+
+        public FilterOperation(RegexFilter<TData, TFilterLhs> filter, in QueryFilterOperator queryFilterOperator, in StringView filterValue, Func<TData, TFilterRhs, bool> operation)
+            : base(filter, in queryFilterOperator, filterValue)
         {
             this.m_Operation = operation;
         }
@@ -163,7 +256,7 @@ namespace UnityEditor.Search
             }
             catch (Exception ex)
             {
-                throw new Exception($"{ex.Message}: Failed to execute {filterOperator} handler with {obj} and {filterValueString}\r\n{ex.StackTrace}");
+                throw new Exception($"{ex.Message}: Failed to execute {queryFilterOperator} handler with {obj} and {filterValueString}\r\n{ex.StackTrace}");
             }
         }
 
@@ -175,27 +268,43 @@ namespace UnityEditor.Search
 
     internal class FilterOperation<TData, TParam, TFilterLhs, TFilterRhs> : BaseFilterOperation<TData>, IDynamicFilterOperation<TFilterRhs>
     {
-        string m_ParamValue;
+        StringView m_ParamValue;
         TFilterRhs m_FilterValue;
         Func<TData, TParam, TFilterRhs, bool> m_Operation;
         TParam m_Param;
 
-        public override string filterParams => m_ParamValue;
+        public override StringView filterParams => m_ParamValue;
 
-        public FilterOperation(Filter<TData, TParam, TFilterLhs> filter, FilterOperator filterOperator, string filterValue, Func<TData, TParam, TFilterRhs, bool> operation)
-            : base(filter, filterOperator, filterValue)
+        public FilterOperation(Filter<TData, TParam, TFilterLhs> filter, in QueryFilterOperator queryFilterOperator, in StringView filterValue, Func<TData, TParam, TFilterRhs, bool> operation)
+            : base(filter, in queryFilterOperator, filterValue)
         {
             this.m_Operation = operation;
-            m_ParamValue = null;
+            m_ParamValue = StringView.Empty;
             m_Param = default;
         }
 
-        public FilterOperation(Filter<TData, TParam, TFilterLhs> filter, FilterOperator filterOperator, string filterValue, string paramValue, Func<TData, TParam, TFilterRhs, bool> operation)
-            : base(filter, filterOperator, filterValue)
+        public FilterOperation(RegexFilter<TData, TParam, TFilterLhs> filter, in QueryFilterOperator queryFilterOperator, in StringView filterValue, Func<TData, TParam, TFilterRhs, bool> operation)
+            : base(filter, in queryFilterOperator, filterValue)
+        {
+            this.m_Operation = operation;
+            m_ParamValue = StringView.Empty;
+            m_Param = default;
+        }
+
+        public FilterOperation(Filter<TData, TParam, TFilterLhs> filter, in QueryFilterOperator queryFilterOperator, in StringView filterValue, in StringView paramValue, Func<TData, TParam, TFilterRhs, bool> operation)
+            : base(filter, in queryFilterOperator, filterValue)
         {
             this.m_Operation = operation;
             m_ParamValue = paramValue;
-            m_Param = string.IsNullOrEmpty(paramValue) ? default : filter.TransformParameter(paramValue);
+            m_Param = paramValue.IsNullOrEmpty() ? default : filter.TransformParameter(paramValue.ToString());
+        }
+
+        public FilterOperation(RegexFilter<TData, TParam, TFilterLhs> filter, in QueryFilterOperator queryFilterOperator, in StringView filterValue, in StringView paramValue, Func<TData, TParam, TFilterRhs, bool> operation)
+            : base(filter, in queryFilterOperator, filterValue)
+        {
+            this.m_Operation = operation;
+            m_ParamValue = paramValue;
+            m_Param = paramValue.IsNullOrEmpty() ? default : filter.TransformParameter(paramValue.ToString());
         }
 
         public override bool Match(TData obj)
@@ -206,14 +315,14 @@ namespace UnityEditor.Search
             }
             catch (Exception ex)
             {
-                throw new Exception($"{ex.Message}: Failed to execute {filterOperator} handler with {obj} and {filterValueString}\r\n{ex.StackTrace}");
+                throw new Exception($"{ex.Message}: Failed to execute {queryFilterOperator} handler with {obj} and {filterValueString}\r\n{ex.StackTrace}");
             }
         }
 
         public override string ToString()
         {
-            var paramString = string.IsNullOrEmpty(m_ParamValue) ? "" : $"({m_ParamValue})";
-            return $"{filterName}{paramString}{filterOperator.token}{filterValueString}";
+            var paramString = m_ParamValue.IsNullOrEmpty() ? "" : $"({m_ParamValue})";
+            return $"{filterName}{paramString}{queryFilterOperator.token}{filterValueString}";
         }
 
         public void SetFilterValue(TFilterRhs value)

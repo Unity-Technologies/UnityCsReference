@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using UnityEngine;
@@ -89,6 +90,19 @@ namespace UnityEditor.Search
             enabled = enabledHandler;
         }
 
+        internal SearchAction(string name, string label, Action<SearchItem> execute)
+            : this(name, label, execute, null)
+        {
+        }
+
+        internal SearchAction(string name, string label, Action<SearchItem> execute, Func<SearchItem, bool> enabled)
+            : this(string.Empty, name, new GUIContent(label))
+        {
+            handler = execute;
+            if (enabled != null)
+                this.enabled = (items) => items.All(e => enabled(e));
+        }
+
         /// <summary>
         /// Extended constructor to build a search action.
         /// </summary>
@@ -139,7 +153,6 @@ namespace UnityEditor.Search
         /// <summary>
         /// This handler is used for action that do not support multi selection.
         /// </summary>
-        // [Obsolete]
         public Action<SearchItem> handler;
     }
 }

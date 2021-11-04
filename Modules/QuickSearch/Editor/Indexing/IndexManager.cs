@@ -16,7 +16,7 @@ namespace UnityEditor.Search
 {
     class IndexManager : EditorWindow
     {
-        [MenuItem("Window/Search/Index Manager")]
+        [MenuItem("Window/Search/Index Manager", priority = 200)]
         public static void OpenWindow()
         {
             OpenWindow(-1);
@@ -47,6 +47,7 @@ namespace UnityEditor.Search
         private const string k_IndexExtension = "index";
         private const string k_BuildText = "Build";
         private const string k_PackagesPrefix = "Packages/";
+        private const float k_ToggleMaxWidth = 151f;
         private List<IndexManagerViewModel> m_IndexSettings;
         private List<SearchDatabase> m_IndexSettingsAssets;
         private List<string> m_IndexSettingsFilePaths;
@@ -96,7 +97,7 @@ namespace UnityEditor.Search
             SearchService.SetupSearchFirstUse();
 
             titleContent.image = Icons.quicksearch;
-            titleContent.text = "Search Index Manager";
+            titleContent.text = L10n.Tr("Search Index Manager");
 
             Utils.AddStyleSheet(rootVisualElement, "IndexManager.uss");
             Utils.AddStyleSheet(rootVisualElement, EditorGUIUtility.isProSkin ? "IndexManager_Dark.uss" : "IndexManager_Light.uss");
@@ -119,7 +120,7 @@ namespace UnityEditor.Search
             if (m_IndexSettings.Any())
                 CreateIndexDetailsElement();
 
-            var showPackagesToggle = new Toggle("Show package indexes") { name = "show-package-indexes-toggle", value = SearchSettings.showPackageIndexes };
+            var showPackagesToggle = new Toggle(L10n.Tr("Show package indexes")) { name = "show-package-indexes-toggle", value = SearchSettings.showPackageIndexes };
             showPackagesToggle.Q<Label>().style.marginRight = 10;
             showPackagesToggle.style.marginBottom = 6;
             showPackagesToggle.style.marginLeft = 8;
@@ -302,55 +303,59 @@ namespace UnityEditor.Search
             buttonsContainer.Add(leftSpaceButtons);
             buttonsContainer.Add(m_SaveButton = new Button(UpdateIndexSettings) { name = "SaveButton" });
             UpdateSaveButtonDisplay();
-            buttonsContainer.Add(m_CreateButton = new Button(CreateIndexSettings) { text = "Create", name = "CreateButton" });
+            buttonsContainer.Add(m_CreateButton = new Button(CreateIndexSettings) { text = L10n.Tr("Create"), name = "CreateButton" });
 
-            m_IndexDetailsElementScrollView.Add(m_IndexFilePathTextField = new TextField("File Path") {
+            m_IndexDetailsElementScrollView.Add(m_IndexFilePathTextField = new TextField(L10n.Tr("File Path")) {
                 name = "FilePathTextField",
-                tooltip = "The path to this index in the Project", value = selectedItemPath
+                tooltip = L10n.Tr("The path to this index in the Project"),
+                value = selectedItemPath
             });
             m_IndexFilePathTextField.SetEnabled(false);
 
-            m_IndexDetailsElementScrollView.Add(m_IndexNameTextField = new TextField("Name") {
+            m_IndexDetailsElementScrollView.Add(m_IndexNameTextField = new TextField(L10n.Tr("Name")) {
                 name = "NameTextField",
-                tooltip = "The name of this index (can be different than the file)", value = selectedItem.name
+                tooltip = L10n.Tr("The name of this index (can be different than the file)"),
+                value = selectedItem.name
             });
             m_IndexNameTextField.RegisterValueChangedCallback(evt => { selectedItem.name = evt.newValue; UpdateUnsavedChanges(true); });
 
-            m_IndexScore = new IntegerField("Score")
+            m_IndexScore = new IntegerField(L10n.Tr("Score"))
             {
                 name = "IndexScore",
-                tooltip = "When the Project has multiple indexes, those with higher scores take priority over those with lower scores",
+                tooltip = L10n.Tr("When the Project has multiple indexes, those with higher scores take priority over those with lower scores"),
                 value = selectedItem.score
             };
             m_IndexScore.RegisterValueChangedCallback(evt => { selectedItem.score = evt.newValue; UpdateUnsavedChanges(true); });
             m_IndexDetailsElementScrollView.Add(m_IndexScore);
 
-            m_HasPackagesRoot = new Toggle("Packages")
+            m_HasPackagesRoot = new Toggle(L10n.Tr("Packages"))
             {
                 value = selectedItem.hasPackagesRoot,
-                tooltip = "If checked, all packages content will be indexed."
+                tooltip = L10n.Tr("If checked, all packages content will be indexed.")
             };
+            m_HasPackagesRoot.style.maxWidth = k_ToggleMaxWidth;
+
             m_HasPackagesRoot.RegisterValueChangedCallback(evt =>
             {
                 selectedItem.hasPackagesRoot = evt.newValue;
                 UpdateUnsavedChanges(true);
             });
 
-            m_RootsFoldout = CreateFoldout("Roots");
-            m_RootsFoldout.tooltip = "List of root folders to start indexing from.";
+            m_RootsFoldout = CreateFoldout(L10n.Tr("Roots"));
+            m_RootsFoldout.tooltip = L10n.Tr("List of root folders to start indexing from.");
             m_ListViewRoots = new ListViewIndexSettings(selectedItem.roots, MakeRootPathItem, BindRootPathItem, AddRootElement, RemoveRootElement, this, false);
             m_RootsFoldout.Add(m_HasPackagesRoot);
             m_RootsFoldout.Add(m_ListViewRoots);
             m_IndexDetailsElementScrollView.Add(m_RootsFoldout);
 
-            m_IncludesFoldout = CreateFoldout("Includes");
-            m_IncludesFoldout.tooltip = "A list of files, folders, and/or file types (by extension) that this index must include";
+            m_IncludesFoldout = CreateFoldout(L10n.Tr("Includes"));
+            m_IncludesFoldout.tooltip = L10n.Tr("A list of files, folders, and/or file types (by extension) that this index must include");
             m_ListViewIncludes = new ListViewIndexSettings(selectedItem.includes, MakeIncludeItem, BindIncludeItem, AddIncludeElement, RemoveIncludeElement, this);
             m_IncludesFoldout.Add(m_ListViewIncludes);
             m_IndexDetailsElementScrollView.Add(m_IncludesFoldout);
 
-            m_ExcludesFoldout = CreateFoldout("Excludes");
-            m_ExcludesFoldout.tooltip = "A list of files, folders, and/or file types (by extension) that this index must exclude";
+            m_ExcludesFoldout = CreateFoldout(L10n.Tr("Excludes"));
+            m_ExcludesFoldout.tooltip = L10n.Tr("A list of files, folders, and/or file types (by extension) that this index must exclude");
             m_ListViewExcludes = new ListViewIndexSettings(selectedItem.excludes, MakeExcludeItem, BindExcludeItem, AddExcludeElement, RemoveExcludeElement, this);
             m_ExcludesFoldout.Add(m_ListViewExcludes);
             m_IndexDetailsElementScrollView.Add(m_ExcludesFoldout);
@@ -360,7 +365,7 @@ namespace UnityEditor.Search
 
             CreateOptionsVisualElements();
 
-            m_SavedIndexDataNotLoadedYet = new Label("Loading the index...") { name = "SavedIndexDataNotLoadedYet" };
+            m_SavedIndexDataNotLoadedYet = new Label(L10n.Tr("Loading the index...")) { name = "SavedIndexDataNotLoadedYet" };
             m_IndexDetailsElementScrollView.Add(m_SavedIndexDataNotLoadedYet);
             m_SavedIndexDataNotLoadedYet.style.display = DisplayStyle.None;
             m_SavedIndexData = new VisualElement() { name = "SavedIndexData" };
@@ -421,25 +426,27 @@ namespace UnityEditor.Search
                     UpdateUnsavedChanges(true);
                 });
 
+                toggle.style.maxWidth = k_ToggleMaxWidth;
+
                 m_OptionsFoldout.Add(toggle);
                 switch (field.Name)
                 {
                     case "disabled":
-                        toggle.tooltip = "Toggles this index off so search does not use it";
+                        toggle.tooltip = L10n.Tr("Toggles this index off so search does not use it");
                         toggle.RegisterValueChangedCallback(evt => m_ListViewIndexSettings.ListView.Refresh());
                         break;
                     case "types":
-                        toggle.tooltip = "Include object type information in this index";
+                        toggle.tooltip = L10n.Tr("Include object type information in this index");
                         break;
                     case "properties":
-                        toggle.tooltip = "Include objects' serialized properties in this index";
+                        toggle.tooltip = L10n.Tr("Include objects' serialized properties in this index");
                         break;
                     case "extended":
-                        toggle.label = "Sub objects";
-                        toggle.tooltip = "Include all sub objects (all Scene objects for a Unity scene, and all sub-assets for an FBX)";
+                        toggle.label = L10n.Tr("Sub objects");
+                        toggle.tooltip = L10n.Tr("Include all sub objects (all Scene objects for a Unity scene, and all sub-assets for an FBX)");
                         break;
                     case "dependencies":
-                        toggle.tooltip = "Include information about objects' direct dependencies in this index";
+                        toggle.tooltip = L10n.Tr("Include information about objects' direct dependencies in this index");
                         break;
                 }
             }
@@ -603,12 +610,10 @@ namespace UnityEditor.Search
 
         private void CreateIndexSettings()
         {
-            var path = EditorUtility.SaveFilePanel("Save Index Settings", Application.dataPath, selectedItem.name, k_IndexExtension);
-            if (!string.IsNullOrEmpty(path) && Utils.IsPathUnderProject(path))
-            {
-                path = path.Substring(k_ProjectPath.Length + 1); // Only the project part
+            var message = L10n.Tr("Please enter a file name for the new Index Settings.");
+            var path = EditorUtility.SaveFilePanelInProject(L10n.Tr("Save Index Settings"), selectedItem.name, k_IndexExtension, message, Application.dataPath);
+            if (!string.IsNullOrEmpty(path))
                 CreateIndexSettings(path);
-            }
         }
 
         internal void CreateIndexSettings(string path)
@@ -649,7 +654,7 @@ namespace UnityEditor.Search
             try
             {
                 var json = JsonUtility.ToJson(m_IndexSettingsAssets[selectedIndex].settings, true);
-                File.WriteAllText(path, json);
+                Utils.WriteTextFileToDisk(path, json);
             }
             catch (Exception e)
             {
@@ -685,21 +690,67 @@ namespace UnityEditor.Search
                         SendSaveIndexEvent(m_IndexSettings[i]);
                         if (!m_IndexSettingsExists[i])
                         {
-                            var path = EditorUtility.SaveFilePanel("Save Index Settings", Application.dataPath, selectedItem.name, k_IndexExtension);
-                            if (!string.IsNullOrEmpty(path) && Utils.IsPathUnderProject(path))
+                            var message = L10n.Tr("Please enter a file name for the new Index Settings.");
+                            var path = EditorUtility.SaveFilePanelInProject(L10n.Tr("Save Index Settings"), selectedItem.name, k_IndexExtension, message, Application.dataPath);
+                            if (!string.IsNullOrEmpty(path))
                             {
-                                path = path.Substring(k_ProjectPath.Length + 1); // Only the project part
-                                SetupNewAsset(path);
-                                CreateOrUpdateAsset(path);
-                                SearchDatabase.ImportAsset(path);
+                                SaveNewIndexSettingsFile(path, i);
+                            }
+                            else
+                            {
+                                var selectedItem = new List<IndexManagerViewModel>() { m_IndexSettings[i] };
+                                OnSelectedIndexChanged(selectedItem);
                             }
                         }
                         else
                         {
-                            CreateOrUpdateAsset(m_IndexSettingsFilePaths[i]);
-                            SearchDatabase.ImportAsset(m_IndexSettingsFilePaths[i]);
+                            SaveExistingIndexSettingsFile(i);
                         }
                     }
+                }
+
+                if (m_IndexSettings.All(index => !index.hasUnsavedChanges))
+                    base.SaveChanges();
+            }
+        }
+
+        private void SaveNewIndexSettingsFile(string path, int currentIndex)
+        {
+            if (m_IndexSettingsExists.Where(index => !index).Count() > 1)
+            {
+                m_ListViewIndexSettings.selectedIndex = currentIndex;
+                var selectedItem = new List<IndexManagerViewModel>() { m_IndexSettings[currentIndex] };
+                OnSelectedIndexChanged(selectedItem);
+                CreateIndexSettings(path);
+            }
+            else
+            {
+                SetupNewAsset(path);
+                if (CreateOrUpdateAsset(path))
+                {
+                    m_IndexSettings[currentIndex].hasUnsavedChanges = false;
+                    m_IndexSettingsExists[currentIndex] = true;
+                    SearchDatabase.ImportAsset(path);
+                }
+            }
+        }
+
+        private void SaveExistingIndexSettingsFile(int currentIndex)
+        {
+            var subList = m_IndexSettingsExists.GetRange(0, currentIndex);
+            if (subList.Contains(false))
+            {
+                m_ListViewIndexSettings.selectedIndex = currentIndex;
+                var selectedItem = new List<IndexManagerViewModel>() { m_IndexSettings[currentIndex] };
+                OnSelectedIndexChanged(selectedItem);
+                UpdateIndexSettings();
+            }
+            else
+            {
+                if (CreateOrUpdateAsset(m_IndexSettingsFilePaths[currentIndex]))
+                {
+                    m_IndexSettings[currentIndex].hasUnsavedChanges = false;
+                    SearchDatabase.ImportAsset(m_IndexSettingsFilePaths[currentIndex]);
                 }
             }
         }
@@ -725,7 +776,7 @@ namespace UnityEditor.Search
         private void UpdateSaveButtonDisplay()
         {
             if (selectedItem.hasUnsavedChanges)
-                m_SaveButton.text = "Save";
+                m_SaveButton.text = L10n.Tr("Save");
             else
                 m_SaveButton.text = k_BuildText;
         }
@@ -782,10 +833,15 @@ namespace UnityEditor.Search
 
         private void DeleteIndexSetting()
         {
-            if (selectedIndex >= 0 && EditorUtility.DisplayDialog("Delete selected index?", "You are about to delete this index, are you sure?", "Yes", "No"))
-            {
+            string warningMessage = "";
+
+            if (selectedIndex >= 0 && m_IndexSettings.Count > 1)
+                warningMessage = "You are about to delete this index, are you sure?";
+            else if (m_IndexSettingsFilePaths.Count == 1)
+                warningMessage = "If you delete all indexes, search functionality is limited to file names only. Continue?";
+
+            if (EditorUtility.DisplayDialog(L10n.Tr("Delete selected index?"), L10n.Tr(warningMessage), L10n.Tr("Yes"), L10n.Tr("No")))
                 DeleteSelectedIndexSetting();
-            }
         }
 
         internal void DeleteSelectedIndexSetting()
@@ -821,10 +877,10 @@ namespace UnityEditor.Search
             {
                 menu.AddItem(new GUIContent(template.name), false, () => { CreateNewIndexSettingFromTemplateWithConfirmation(template); });
             }
-            if (EnumerateIndexes(SearchDatabase.IndexLocation.assets).Count() == 0 && !File.Exists(SearchDatabase.defaultSearchDatabaseIndexPath))
+            if (!File.Exists(SearchDatabase.defaultSearchDatabaseIndexPath))
             {
                 menu.AddSeparator("");
-                menu.AddItem(new GUIContent("Create Default"), false, () =>
+                menu.AddItem(new GUIContent("User"), false, () =>
                 {
                     var defaultDB = SearchDatabase.CreateDefaultIndex();
                     var newItem = new IndexManagerViewModel(defaultDB.settings, false);
@@ -946,7 +1002,7 @@ namespace UnityEditor.Search
             }
             else
             {
-                var text = "Index settings not saved yet";
+                var text = L10n.Tr("Index settings not saved yet");
                 icon.style.backgroundImage = new StyleBackground(EditorGUIUtility.IconContent("console.warnicon").image as Texture2D);
                 icon.tooltip = text;
                 element.Q<Label>("IndexName").text = text;
@@ -1179,11 +1235,11 @@ namespace UnityEditor.Search
                     case FilePattern.Folder:
                         m_SuffixTextField.style.display = DisplayStyle.Flex;
                         m_ExplorerButton.style.display = DisplayStyle.Flex;
-                        m_ExplorerButton.text = "Choose folder";
+                        m_ExplorerButton.text = L10n.Tr("Choose folder");
                         break;
                     case FilePattern.File:
                         m_ExplorerButton.style.display = DisplayStyle.Flex;
-                        m_ExplorerButton.text = "Choose file";
+                        m_ExplorerButton.text = L10n.Tr("Choose file");
                         break;
                 }
                 UpdateAndGetPath();
@@ -1365,7 +1421,7 @@ namespace UnityEditor.Search
         private int m_ItemHeight;
         private Label m_EmptyListViewLabel;
         internal UIToolkitListView ListView { get; private set; }
-        internal int selectedIndex { get { return ListView.selectedIndex; } }
+        internal int selectedIndex { get { return ListView.selectedIndex; } set { ListView.selectedIndex = value; } }
         internal IList itemsSource { get { return ListView.itemsSource; } set { ListView.itemsSource = value; } }
         private IndexManager m_Window;
 
@@ -1377,7 +1433,7 @@ namespace UnityEditor.Search
             var container = new VisualElement() { name = "ListViewIndexSettingsContent" };
             Add(container);
             container.Add(ListView);
-            container.Add(m_EmptyListViewLabel = new Label("List is empty"));
+            container.Add(m_EmptyListViewLabel = new Label(L10n.Tr("List is empty")));
             Add(AddRemoveButtons(addButtonAction, removeButtonAction));
 
             ListView.selectionType = SelectionType.Single;

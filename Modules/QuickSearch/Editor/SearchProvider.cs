@@ -158,7 +158,7 @@ namespace UnityEditor.Search
             this.id = id;
             type = id;
             active = true;
-            name = displayName;
+            name = displayName ?? SearchUtils.ToPascalWithSpaces(id);
             actions = new List<SearchAction>();
             fetchItems = fetchItemsHandler ?? ((context, items, provider) => null);
             fetchThumbnail = (item, context) => item.thumbnail ?? Icons.quicksearch;
@@ -186,7 +186,7 @@ namespace UnityEditor.Search
         /// <returns>The newly created search item attached to the current search provider.</returns>
         public SearchItem CreateItem(SearchContext context, string id, int score, string label, string description, Texture2D thumbnail, object data)
         {
-            if (context.options.HasAny(SearchFlags.Debug))
+            if (context?.options.HasAny(SearchFlags.Debug) ?? false)
             {
                 // Debug sorting
                 description = $"DEBUG: id={id} - label={label} - description={description} - thumbnail={thumbnail} - data={data}";
@@ -315,7 +315,6 @@ namespace UnityEditor.Search
         public bool showDetails;
 
         /// <summary> Explicitly define details options to be shown</summary>
-        /// TODO: Move these options to the item options
         public ShowDetailsOptions showDetailsOptions = ShowDetailsOptions.Default;
 
         /// <summary> Handler used to fetch and format the label of a search item.</summary>
@@ -355,6 +354,9 @@ namespace UnityEditor.Search
         /// <summary> Returns any valid Unity object held by the search item.</summary>
         public Func<SearchItem, Type, UnityEngine.Object> toObject;
 
+        /// <summary> Returns any valid item type.</summary>
+        internal Func<SearchItem, Type, Type> toType;
+
         /// <summary> Returns a document key in which the item is contained.</summary>
         internal Func<SearchItem, ulong> toKey;
 
@@ -383,8 +385,12 @@ namespace UnityEditor.Search
         /// </summary>
         public Func<bool> isEnabledForContextualSearch;
 
+        /// <summary>
+        /// List of actions the search provider supports.
+        /// </summary>
+        internal List<SearchAction> actions { get; set; }
+
         // INTERNAL
-        internal List<SearchAction> actions;
         internal double fetchTime;
         internal double loadTime;
         internal double enableTime;

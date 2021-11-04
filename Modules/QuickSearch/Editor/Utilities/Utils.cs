@@ -14,12 +14,17 @@ using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEngine.UIElements;
+using UnityEditor.IMGUI.Controls;
 
 using UnityEditor.Connect;
 using UnityEditor.StyleSheets;
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("com.unity.quicksearch.tests")]
-[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("com.unity.search.extensions.editor")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.Environment.Core.Editor")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.ProceduralGraph.Editor")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.Rendering.Hybrid")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.VisualEffectGraph.Editor")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.Localization.Editor")]
 
 namespace UnityEditor.Search
 {
@@ -29,6 +34,8 @@ namespace UnityEditor.Search
     /// </summary>
     static class Utils
     {
+        const int k_MaxRegexTimeout = 25;
+
 
         internal static readonly bool isDeveloperBuild = false;
 
@@ -49,6 +56,31 @@ namespace UnityEditor.Search
             }
         }
 
+        public struct ColorScope : IDisposable
+        {
+            private bool m_Disposed;
+            private Color m_PreviousColor;
+
+            public ColorScope(Color newColor)
+            {
+                m_Disposed = false;
+                m_PreviousColor = GUI.color;
+                GUI.color = newColor;
+            }
+
+            public ColorScope(float r, float g, float b, float a = 1.0f) : this(new Color(r, g, b, a))
+            {
+            }
+
+            public void Dispose()
+            {
+                if (m_Disposed)
+                    return;
+                m_Disposed = true;
+                GUI.color = m_PreviousColor;
+            }
+        }
+
         static RootDescriptor[] s_RootDescriptors;
 
         static RootDescriptor[] rootDescriptors
@@ -58,6 +90,14 @@ namespace UnityEditor.Search
 
         private static UnityEngine.Object[] s_LastDraggedObjects;
 
+
+        public static GUIStyle objectFieldButton
+        {
+            get
+            {
+                return EditorStyles.objectFieldButton;
+            }
+        }
 
         static Utils()
         {
@@ -130,18 +170,23 @@ namespace UnityEditor.Search
             if (assetType == typeof(SceneAsset))
                 return AssetDatabase.GetCachedIcon(path) as Texture2D;
 
-            //UnityEngine.Debug.Log($"Generate preview for {path}, {previewSize}, {previewOptions}");
-
             if (previewOptions.HasAny(FetchPreviewOptions.Normal))
             {
                 if (assetType == typeof(AudioClip))
                     return GetAssetThumbnailFromPath(path);
 
-                var fi = new FileInfo(path);
-                if (!fi.Exists)
+                try
+                {
+                    var fi = new FileInfo(path);
+                    if (!fi.Exists)
+                        return null;
+                    if (fi.Length > 16 * 1024 * 1024)
+                        return GetAssetThumbnailFromPath(path);
+                }
+                catch
+                {
                     return null;
-                if (fi.Length > 16 * 1024 * 1024)
-                    return GetAssetThumbnailFromPath(path);
+                }
             }
 
             if (!typeof(Texture).IsAssignableFrom(assetType))
@@ -165,6 +210,11 @@ namespace UnityEditor.Search
             return GetAssetPreview(obj, previewOptions) ?? AssetDatabase.GetCachedIcon(path) as Texture2D;
         }
 
+        internal static bool HasInvalidComponent(UnityEngine.Object obj)
+        {
+            return PrefabUtility.HasInvalidComponent(obj);
+        }
+
         internal static int GetMainAssetInstanceID(string assetPath)
         {
             return AssetDatabase.GetMainAssetInstanceID(assetPath);
@@ -175,7 +225,7 @@ namespace UnityEditor.Search
             return GUIContent.Temp(text, tooltip);
         }
 
-        internal static GUIContent GUIContentTemp(string text, Texture2D image)
+        internal static GUIContent GUIContentTemp(string text, Texture image)
         {
             return GUIContent.Temp(text, image);
         }
@@ -195,6 +245,11 @@ namespace UnityEditor.Search
                     preview = largePreview;
             }
             return preview;
+        }
+
+        internal static void SetChildParentReferences(IList<TreeViewItem> m_Items, TreeViewItem root)
+        {
+            TreeViewUtility.SetChildParentReferences(m_Items, root);
         }
 
         internal static bool IsEditorValid(Editor e)
@@ -232,6 +287,11 @@ namespace UnityEditor.Search
             var asset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path);
             SelectObject(asset, ping);
             return asset;
+        }
+
+        internal static void SetTextEditorHasFocus(TextEditor editor, bool hasFocus)
+        {
+            editor.m_HasFocus = hasFocus;
         }
 
         internal static void FrameAssetFromPath(string path)
@@ -467,6 +527,8 @@ namespace UnityEditor.Search
 
         internal static Texture2D FindTextureForType(Type type)
         {
+            if (type == null)
+                return null;
             return EditorGUIUtility.FindTexture(type);
         }
 
@@ -789,6 +851,65 @@ namespace UnityEditor.Search
             return AssetDatabase.GetAssetRootFolders();
         }
 
+        internal static string ToString(in Vector3 v)
+        {
+            return $"({FormatFloatString(v.x)},{FormatFloatString(v.y)},{FormatFloatString(v.z)})";
+        }
+
+        internal static string ToString(in Vector4 v, int dim)
+        {
+            switch (dim)
+            {
+                case 2: return $"({FormatFloatString(v.x)},{FormatFloatString(v.y)})";
+                case 3: return $"({FormatFloatString(v.x)},{FormatFloatString(v.y)},{FormatFloatString(v.z)})";
+                case 4: return $"({FormatFloatString(v.x)},{FormatFloatString(v.y)},{FormatFloatString(v.z)},{FormatFloatString(v.w)})";
+            }
+            return null;
+        }
+
+        internal static string ToString(in Vector2Int v)
+        {
+            return $"({(int.MaxValue == v.x ? string.Empty : v.x.ToString())},{(int.MaxValue == v.y ? string.Empty : v.y.ToString())})";
+        }
+
+        internal static string ToString(in Vector3Int v)
+        {
+            return $"({(int.MaxValue == v.x ? string.Empty : v.x.ToString())},{(int.MaxValue == v.y ? string.Empty : v.y.ToString())},{(int.MaxValue == v.z ? string.Empty : v.z.ToString())})";
+        }
+
+        internal static string FormatFloatString(in float f)
+        {
+            if (float.IsNaN(f))
+                return string.Empty;
+            return f.ToString(CultureInfo.InvariantCulture);
+        }
+
+        internal static bool TryParseVectorValue(in object value, out Vector4 vc, out int dim)
+        {
+            dim = 0;
+            vc = new Vector4(float.NaN, float.NaN, float.NaN, float.NaN);
+            if (!(value is string arg))
+                return false;
+            if (arg.Length < 3 || arg[0] != '(' || arg[arg.Length - 1] != ')' || arg.IndexOf(',') == -1)
+                return false;
+            var ves = arg.Substring(1, arg.Length - 2);
+            var values = ves.Split(',');
+            if (values.Length < 2 || values.Length > 4)
+                return false;
+
+            dim = values.Length;
+            if (values.Length >= 1 && values[0].Length > 0 && (values[0].Length > 1 || values[0][0] != '-') && TryParse<float>(values[0], out var f))
+                vc.x = f;
+            if (values.Length >= 2 && values[1].Length > 0 && (values[1].Length > 1 || values[1][0] != '-') && TryParse(values[1], out f))
+                vc.y = f;
+            if (values.Length >= 3 && values[2].Length > 0 && (values[2].Length > 1 || values[2][0] != '-') && TryParse(values[2], out f))
+                vc.z = f;
+            if (values.Length >= 4 && values[3].Length > 0 && (values[3].Length > 1 || values[3][0] != '-') && TryParse(values[3], out f))
+                vc.w = f;
+
+            return true;
+        }
+
         public static bool TryParse<T>(string expression, out T result)
         {
             expression = expression.Replace(',', '.');
@@ -815,6 +936,11 @@ namespace UnityEditor.Search
                 success = int.TryParse(expression, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out var temp);
                 result = (T)(object)temp;
             }
+            else if (typeof(T) == typeof(uint))
+            {
+                success = uint.TryParse(expression, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out var temp);
+                result = (T)(object)temp;
+            }
             else if (typeof(T) == typeof(double))
             {
                 if (expression == "pi")
@@ -831,6 +957,11 @@ namespace UnityEditor.Search
             else if (typeof(T) == typeof(long))
             {
                 success = long.TryParse(expression, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out var temp);
+                result = (T)(object)temp;
+            }
+            else if (typeof(T) == typeof(ulong))
+            {
+                success = ulong.TryParse(expression, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out var temp);
                 result = (T)(object)temp;
             }
             return success;
@@ -896,6 +1027,318 @@ namespace UnityEditor.Search
             foreach (var c in invalidChars)
                 path = path.Replace(c, repl);
             return path;
+        }
+
+        public static Rect BeginHorizontal(GUIContent content, GUIStyle style, params GUILayoutOption[] options)
+        {
+            return EditorGUILayout.BeginHorizontal(content, style, options);
+        }
+
+        public static bool IsGUIClipEnabled()
+        {
+            return GUIClip.enabled;
+        }
+
+        public static Rect Unclip(in Rect r)
+        {
+            return GUIClip.Unclip(r);
+        }
+
+        public static MonoScript MonoScriptFromScriptedObject(UnityEngine.Object obj)
+        {
+            return MonoScript.FromScriptedObject(obj);
+        }
+
+        public static bool SerializedPropertyIsScript(SerializedProperty property)
+        {
+            return property.isScript;
+        }
+
+        public static string SerializedPropertyObjectReferenceStringValue(SerializedProperty property)
+        {
+            return property.objectReferenceStringValue;
+        }
+
+        public static GUIContent ObjectContent(UnityEngine.Object obj, Type type, int instanceID)
+        {
+            return EditorGUIUtility.ObjectContent(obj, type, instanceID);
+        }
+
+        public static bool IsCommandDelete(string commandName)
+        {
+            return commandName == EventCommandNames.Delete || commandName == EventCommandNames.SoftDelete;
+        }
+
+        public static void PopupWindowWithoutFocus(Rect position, PopupWindowContent windowContent)
+        {
+            UnityEditor.PopupWindowWithoutFocus.Show(
+                position,
+                windowContent,
+                new[] { UnityEditor.PopupLocation.Left, UnityEditor.PopupLocation.Below, UnityEditor.PopupLocation.Right });
+        }
+
+        public static void OpenPropertyEditor(UnityEngine.Object target)
+        {
+            PropertyEditor.OpenPropertyEditor(target);
+        }
+
+        public static bool MainActionKeyForControl(Event evt, int id)
+        {
+            return evt.MainActionKeyForControl(id);
+        }
+
+
+        public static bool IsNavigationKey(in Event evt)
+        {
+            if (!evt.isKey)
+                return false;
+
+            switch (evt.keyCode)
+            {
+                case KeyCode.UpArrow:
+                case KeyCode.DownArrow:
+                case KeyCode.LeftArrow:
+                case KeyCode.RightArrow:
+                case KeyCode.Home:
+                case KeyCode.End:
+                case KeyCode.PageUp:
+                case KeyCode.PageDown:
+                    return true;
+            }
+
+            return false;
+        }
+
+        public static Texture2D LoadIcon(string name)
+        {
+            return EditorGUIUtility.LoadIcon(name);
+        }
+
+        public static ulong GetFileIDHint(in UnityEngine.Object obj)
+        {
+            return Unsupported.GetFileIDHint(obj);
+        }
+
+        public static bool IsEditingTextField()
+        {
+            return GUIUtility.textFieldInput || EditorGUI.IsEditingTextField();
+        }
+
+        static readonly Regex trimmer = new Regex(@"(\s\s+)|(\r\n|\r|\n)+");
+        public static string Simplify(string text)
+        {
+            return trimmer.Replace(text, " ").Replace("\r\n", " ").Replace('\n', ' ').Trim();
+        }
+
+        public static void OpenGraphViewer(in string searchQuery)
+        {
+        }
+
+        internal static void WriteTextFileToDisk(in string path, in string content)
+        {
+            FileUtil.WriteTextFileToDisk(path, content);
+        }
+
+        internal static bool ParseRx(string pattern, bool exact, out Regex rx)
+        {
+            try
+            {
+                rx = new Regex(!exact ? pattern : $"^{pattern}$", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(k_MaxRegexTimeout));
+            }
+            catch (ArgumentException)
+            {
+                rx = null;
+                return false;
+            }
+
+            return true;
+        }
+
+        internal static bool ParseGlob(string pattern, bool exact, out Regex rx)
+        {
+            try
+            {
+                pattern = Regex.Escape(RemoveDuplicateAdjacentCharacters(pattern, '*')).Replace(@"\*", ".*").Replace(@"\?", ".");
+                rx = new Regex(!exact ? pattern : $"^{pattern}$", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(k_MaxRegexTimeout));
+            }
+            catch (ArgumentException)
+            {
+                rx = null;
+                return false;
+            }
+
+            return true;
+        }
+
+        static string RemoveDuplicateAdjacentCharacters(string pattern, char c)
+        {
+            for (int i = pattern.Length - 1; i >= 0; --i)
+            {
+                if (pattern[i] != c || i == 0)
+                    continue;
+
+                if (pattern[i - 1] == c)
+                    pattern = pattern.Remove(i, 1);
+            }
+
+            return pattern;
+        }
+
+        internal static T GetAttribute<T>(this MethodInfo mi) where T : System.Attribute
+        {
+            var attrs = mi.GetCustomAttributes(typeof(T), false);
+            if (attrs == null || attrs.Length == 0)
+                return null;
+            return attrs[0] as T;
+        }
+
+        internal static T GetAttribute<T>(this Type mi) where T : System.Attribute
+        {
+            var attrs = mi.GetCustomAttributes(typeof(T), false);
+            if (attrs == null || attrs.Length == 0)
+                return null;
+            return attrs[0] as T;
+        }
+
+        internal static bool IsBuiltInResource(UnityEngine.Object obj)
+        {
+            var resPath = AssetDatabase.GetAssetPath(obj);
+            return IsBuiltInResource(resPath);
+        }
+
+        internal static bool IsBuiltInResource(in string resPath)
+        {
+            return string.Equals(resPath, "Library/unity editor resources", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(resPath, "resources/unity_builtin_extra", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(resPath, "library/unity default resources", StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    static class SerializedPropertyExtension
+    {
+        readonly struct Cache : IEquatable<Cache>
+        {
+            readonly Type host;
+            readonly string path;
+
+            public Cache(Type host, string path)
+            {
+                this.host = host;
+                this.path = path;
+            }
+
+            public bool Equals(Cache other)
+            {
+                return Equals(host, other.host) && string.Equals(path, other.path, StringComparison.Ordinal);
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (ReferenceEquals(null, obj))
+                    return false;
+                return obj is Cache && Equals((Cache)obj);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    return ((host != null ? host.GetHashCode() : 0) * 397) ^ (path != null ? path.GetHashCode() : 0);
+                }
+            }
+        }
+
+        class MemberInfoCache
+        {
+            public MemberInfo fieldInfo;
+            public Type type;
+        }
+
+        static Type s_NativePropertyAttributeType;
+        static Dictionary<Cache, MemberInfoCache> s_MemberInfoFromPropertyPathCache = new Dictionary<Cache, MemberInfoCache>();
+
+        public static Type GetManagedType(this SerializedProperty property)
+        {
+            var host = property.serializedObject?.targetObject?.GetType();
+            if (host == null)
+                return null;
+
+            var path = property.propertyPath;
+            var cache = new Cache(host, path);
+
+            if (s_MemberInfoFromPropertyPathCache.TryGetValue(cache, out var infoCache))
+                return infoCache?.type;
+
+            const string arrayData = @"\.Array\.data\[[0-9]+\]";
+            // we are looking for array element only when the path ends with Array.data[x]
+            var lookingForArrayElement = Regex.IsMatch(path, arrayData + "$");
+            // remove any Array.data[x] from the path because it is prevents cache searching.
+            path = Regex.Replace(path, arrayData, ".___ArrayElement___");
+
+            MemberInfo memberInfo = null;
+            var type = host;
+            string[] parts = path.Split('.');
+            for (int i = 0; i < parts.Length; i++)
+            {
+                string member = parts[i];
+                string alternateName = null;
+                if (member.StartsWith("m_", StringComparison.Ordinal))
+                    alternateName = member.Substring(2);
+
+                foreach (MemberInfo f in type.GetMembers(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+                {
+                    if ((f.MemberType & (MemberTypes.Property | MemberTypes.Field)) == 0)
+                        continue;
+                    var memberName = f.Name;
+                    if (f is PropertyInfo pi)
+                    {
+                        if (!pi.CanRead)
+                            continue;
+
+                        s_NativePropertyAttributeType = typeof(UnityEngine.Bindings.NativePropertyAttribute);
+                        var nattr = pi.GetCustomAttribute(s_NativePropertyAttributeType);
+                        if (nattr != null)
+                            memberName = s_NativePropertyAttributeType.GetProperty("Name").GetValue(nattr) as string ?? string.Empty;
+                    }
+                    if (string.Equals(member, memberName, StringComparison.Ordinal) ||
+                        (alternateName != null && string.Equals(alternateName, memberName, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        memberInfo = f;
+                        break;
+                    }
+                }
+
+                if (memberInfo is FieldInfo fi)
+                    type = fi.FieldType;
+                else if (memberInfo is PropertyInfo pi)
+                    type = pi.PropertyType;
+                else
+                    continue;
+
+                // we want to get the element type if we are looking for Array.data[x]
+                if (i < parts.Length - 1 && parts[i + 1] == "___ArrayElement___" && type.IsArrayOrList())
+                {
+                    i++; // skip the "___ArrayElement___" part
+                    type = type.GetArrayOrListElementType();
+                }
+            }
+
+            if (memberInfo == null)
+            {
+                s_MemberInfoFromPropertyPathCache.Add(cache, null);
+                return null;
+            }
+
+            // we want to get the element type if we are looking for Array.data[x]
+            if (lookingForArrayElement && type != null && type.IsArrayOrList())
+                type = type.GetArrayOrListElementType();
+
+            s_MemberInfoFromPropertyPathCache.Add(cache, new MemberInfoCache
+            {
+                type = type,
+                fieldInfo = memberInfo
+            });
+            return type;
         }
     }
 

@@ -168,7 +168,7 @@ namespace UnityEditor.Search
 
         static void SwapFilterFunctionsToRightHandSide(IQueryNode rootNode)
         {
-            if (rootNode.leaf || !(rootNode is CombinedNode cn) || !(rootNode.children[0] is FilterNode fn) || !fn.filter.paramFilter)
+            if (rootNode.leaf || !(rootNode is CombinedNode cn) || !(rootNode.children[0] is FilterNode fn) || !fn.filter.usesParameter)
                 return;
 
             cn.SwapChildNodes();

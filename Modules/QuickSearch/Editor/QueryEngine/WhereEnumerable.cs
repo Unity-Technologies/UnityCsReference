@@ -129,9 +129,9 @@ namespace UnityEditor.Search
                     else
                     {
                         if (searchNode.exact)
-                            matchWordFunc = s => s.Equals(searchNode.searchValue, stringComparison);
+                            matchWordFunc = s => s != null && s.Equals(searchNode.searchValue, stringComparison);
                         else
-                            matchWordFunc = s => s.IndexOf(searchNode.searchValue, stringComparison) >= 0;
+                            matchWordFunc = s => s != null && s.IndexOf(searchNode.searchValue, stringComparison) >= 0;
                     }
                     return o => engine.searchDataCallback(o).Any(data => matchWordFunc(data));
                 }
@@ -153,26 +153,26 @@ namespace UnityEditor.Search
 
         private static BaseFilterOperation<T> GenerateFilterOperation<T>(FilterNode node, QueryEngine<T> engine, ICollection<QueryError> errors)
         {
-            var operatorIndex = node.token.position + node.filter.token.Length + (string.IsNullOrEmpty(node.paramValue) ? 0 : node.paramValue.Length);
+            var operatorIndex = node.token.position + node.filter.token.Length + (node.paramValueStringView.IsNullOrEmpty() ? 0 : node.paramValueStringView.Length);
             var filterValueIndex = operatorIndex + node.op.token.Length;
 
             Type filterValueType;
             IParseResult parseResult = null;
-            if (QueryEngineUtils.IsNestedQueryToken(node.filterValue))
+            if (QueryEngineUtils.IsNestedQueryToken(node.filterValueStringView))
             {
-                if (node.filter?.queryHandlerTransformer == null)
+                if (node.filter?.nestedQueryHandlerTransformer == null)
                 {
-                    errors.Add(new QueryError(filterValueIndex, node.filterValue.Length, $"No nested query handler transformer set on filter \"{node.filter.token}\"."));
+                    errors.Add(new QueryError(filterValueIndex, node.filterValueStringView.Length, $"No nested query handler transformer set on filter \"{node.filter.token}\"."));
                     return null;
                 }
-                filterValueType = node.filter.queryHandlerTransformer.rightHandSideType;
+                filterValueType = node.filter.nestedQueryHandlerTransformer.rightHandSideType;
             }
             else
             {
-                parseResult = engine.ParseFilterValue(node.filterValue, node.filter, node.op, out filterValueType);
+                parseResult = engine.ParseFilterValue(node.filterValue, node.filter, in node.op, out filterValueType);
                 if (!parseResult.success)
                 {
-                    errors.Add(new QueryError(filterValueIndex, node.filterValue.Length, $"The value \"{node.filterValue}\" could not be converted to any of the supported handler types."));
+                    errors.Add(new QueryError(filterValueIndex, node.filterValueStringView.Length, $"The value \"{node.filterValue}\" could not be converted to any of the supported handler types."));
                     return null;
                 }
             }
@@ -180,17 +180,18 @@ namespace UnityEditor.Search
             IFilterOperationGenerator generator = engine.GetGeneratorForType(filterValueType);
             if (generator == null)
             {
-                errors.Add(new QueryError(filterValueIndex, node.filterValue.Length, $"Unknown type \"{filterValueType}\". Did you set an operator handler for this type?"));
+                errors.Add(new QueryError(filterValueIndex, node.filterValueStringView.Length, $"Unknown type \"{filterValueType}\". Did you set an operator handler for this type?"));
                 return null;
             }
 
             var generatorData = new FilterOperationGeneratorData
             {
-                filterValue = node.filterValue,
+                filterName = node.filterId,
+                filterValue = node.filterValueStringView,
                 filterValueParseResult = parseResult,
                 globalStringComparison = engine.globalStringComparison,
                 op = node.op,
-                paramValue = node.paramValue,
+                paramValue = node.paramValueStringView,
                 generator = generator
             };
             var operation = node.filter.GenerateOperation(generatorData, operatorIndex, errors);
@@ -212,7 +213,7 @@ namespace UnityEditor.Search
                 return null;
             }
 
-            var transformType = node.filter.queryHandlerTransformer.rightHandSideType;
+            var transformType = node.filter.nestedQueryHandlerTransformer.rightHandSideType;
 
             var inFilterFunc = typeof(WhereEnumerableFactory)
                 .GetMethod("GenerateInFilterFunctionWithTypes", BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance)
@@ -233,7 +234,7 @@ namespace UnityEditor.Search
             var nestedQueryEnumerable = EnumerableCreator.Create<TNested>(node.children[0], null, errors, fastYielding);
             if (nestedQueryEnumerable == null)
                 return null;
-            var nestedQueryTransformer = node.filter.queryHandlerTransformer as NestedQueryHandlerTransformer<TNested, TTransform>;
+            var nestedQueryTransformer = node.filter.nestedQueryHandlerTransformer as NestedQueryHandlerTransformer<TNested, TTransform>;
             if (nestedQueryTransformer == null)
                 return null;
             var transformerFunction = nestedQueryTransformer.handler;

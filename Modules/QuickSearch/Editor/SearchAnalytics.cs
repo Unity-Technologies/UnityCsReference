@@ -7,7 +7,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor.Profiling;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Analytics;
@@ -82,8 +81,6 @@ namespace UnityEditor.Search
             // UI Usage
             // Was the item activated using the Enter key (false: user clicked in the item)
             public bool endSearchWithKeyboard;
-            // Was the tool opened in general mode (where we record the search state)
-            [Obsolete] public bool saveSearchStateOnExit = true;
             // Was the history shortcut used.
             public bool useHistoryShortcut;
             // Was the FilterMenu shortcut used.
@@ -254,7 +251,9 @@ namespace UnityEditor.Search
 
             QuickSearchExportReport,
             QuickSearchImportReport,
-            ReportViewOpen
+            ReportViewOpen,
+
+            QuickSearchPickerOpens
         }
 
         public static readonly string Package = "com.unity.quicksearch";
@@ -417,7 +416,7 @@ namespace UnityEditor.Search
             report.showPackageIndexes = SearchSettings.showPackageIndexes;
             report.debounceMs = SearchSettings.debounceMs;
             report.savedSearchesSortOrder = SearchSettings.savedSearchesSortOrder.ToString();
-            report.savedSearchesCount = SearchQuery.savedQueries.Count();
+            report.savedSearchesCount = SearchQueryAsset.savedQueries.Count() + SearchQuery.userQueries.Count();
             report.sessionQueryCount = sessionQueryCount;
             report.sessionQuerySearchExecutionCount = sessionQuerySearchExecutionCount;
             report.sessionSearchOpenWindow = sessionSearchOpenWindow;

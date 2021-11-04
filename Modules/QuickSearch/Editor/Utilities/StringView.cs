@@ -11,17 +11,18 @@ namespace UnityEditor.Search
     /// <summary>
     /// Structure that holds a view on a string, with a specified range of [startIndex, endIndex[.
     /// </summary>
-    readonly struct StringView : IEnumerable<char>
+    readonly struct StringView : IStringView
     {
         readonly string m_BaseString;
         readonly int m_StartIndex;
         readonly int m_EndIndex;
 
-        public readonly static StringView Null = default;
-        public readonly static StringView Empty = new StringView(string.Empty);
+        public static readonly StringView Null = default;
+        public static readonly StringView Empty = new StringView(string.Empty);
 
         public bool valid => m_BaseString != null;
         public int startIndex => m_StartIndex;
+        public int endIndex => m_EndIndex;
         public string baseString => m_BaseString;
         public int Length => m_EndIndex - m_StartIndex;
 
@@ -31,17 +32,17 @@ namespace UnityEditor.Search
         {
             m_BaseString = baseString;
             m_StartIndex = 0;
-            m_EndIndex = baseString.Length;
+            m_EndIndex = baseString?.Length ?? 0;
         }
 
         public StringView(string baseString, int startIndex)
-            : this(baseString, startIndex, baseString.Length - startIndex)
+            : this(baseString, startIndex, string.IsNullOrEmpty(baseString) ? startIndex : baseString.Length - startIndex)
         {
         }
 
         public StringView(string baseString, int startIndex, int endIndex)
         {
-            if (startIndex < 0 || (!string.IsNullOrEmpty(baseString) && startIndex >= baseString.Length) || (string.IsNullOrEmpty(baseString) && startIndex != 0))
+            if (startIndex < 0 || (!string.IsNullOrEmpty(baseString) && startIndex > baseString.Length) || (string.IsNullOrEmpty(baseString) && startIndex != 0))
                 throw new ArgumentException("Index out of string range", nameof(startIndex));
             if (endIndex < 0 || (!string.IsNullOrEmpty(baseString) && endIndex > baseString.Length) || (string.IsNullOrEmpty(baseString) && endIndex != 0))
                 throw new ArgumentException("Index out of string range", nameof(endIndex));
@@ -56,7 +57,26 @@ namespace UnityEditor.Search
                 return Equals(o);
             if (other is StringView v)
                 return Equals(v);
+            if (other is IStringView sv)
+                return Equals(sv);
             return false;
+        }
+
+        public bool Equals(IStringView other, StringComparison comparisonOptions = StringComparison.OrdinalIgnoreCase)
+        {
+            if (other is StringView sv)
+                return Equals(sv, comparisonOptions);
+
+            if (other?.Length != Length)
+                return false;
+
+            for (var i = 0; i < Length; ++i)
+            {
+                if (!Compare(this[i], other[i], comparisonOptions))
+                    return false;
+            }
+
+            return true;
         }
 
         public bool Equals(string other, StringComparison comparisonOptions = StringComparison.OrdinalIgnoreCase)
@@ -83,6 +103,11 @@ namespace UnityEditor.Search
             return new StringView(m_BaseString, m_StartIndex + start, m_EndIndex);
         }
 
+        IStringView IStringView.Substring(int start)
+        {
+            return Substring(start);
+        }
+
         public StringView Substring(int start, int length)
         {
             if (start < 0 || start >= Length)
@@ -95,32 +120,51 @@ namespace UnityEditor.Search
             return new StringView(m_BaseString, innerStartIndex, innerStartIndex + length);
         }
 
+        IStringView IStringView.Substring(int start, int length)
+        {
+            return Substring(start, length);
+        }
+
         public StringView Trim(params char[] chrs)
         {
-            int start = m_StartIndex, end = m_EndIndex;
-            for (; 0 < m_EndIndex;)
-            {
-                var c = m_BaseString[start];
-                if ((chrs != null && chrs.Length > 0 && Array.IndexOf(chrs, c) != -1) || char.IsWhiteSpace(c))
-                    start++;
-                else
-                    break;
-            }
-
-            for (; end > start;)
-            {
-                var c = m_BaseString[end - 1];
-                if ((chrs != null && chrs.Length > 0 && Array.IndexOf(chrs, c) != -1) || char.IsWhiteSpace(c))
-                    end--;
-                else
-                    break;
-            }
-
+            FindTrimStartEnd(m_StartIndex, m_EndIndex, m_BaseString, chrs, out var start, out var end);
             return new StringView(m_BaseString, start, end);
         }
 
-        public int IndexOf(StringView other, StringComparison sc = StringComparison.Ordinal)
+        IStringView IStringView.Trim(params char[] chrs)
         {
+            return Trim(chrs);
+        }
+
+        static void FindTrimStartEnd(int localStart, int localEnd, string baseString, char[] chrs, out int trimStart, out int trimEnd)
+        {
+            trimStart = localStart;
+            trimEnd = localEnd;
+            for (; trimStart < localEnd;)
+            {
+                var globalIndex = trimStart;
+                var c = baseString[globalIndex];
+                if ((chrs != null && chrs.Length > 0 && Array.IndexOf(chrs, c) != -1) || char.IsWhiteSpace(c))
+                    trimStart++;
+                else
+                    break;
+            }
+
+            for (; trimEnd > trimStart;)
+            {
+                var globalIndex = trimEnd - 1;
+                var c = baseString[globalIndex];
+                if ((chrs != null && chrs.Length > 0 && Array.IndexOf(chrs, c) != -1) || char.IsWhiteSpace(c))
+                    trimEnd--;
+                else
+                    break;
+            }
+        }
+
+        public int IndexOf(IStringView other, StringComparison sc = StringComparison.Ordinal)
+        {
+            if (!valid || !other.valid)
+                return -1;
             if (Length < other.Length)
                 return -1;
 
@@ -144,12 +188,145 @@ namespace UnityEditor.Search
                 }
             }
 
+            if (otherIndex != other.Length)
+                return -1;
             return foundStartIndex;
+        }
+
+        public int IndexOf(StringView other, StringComparison sc = StringComparison.Ordinal)
+        {
+            return IndexOf(this, other, sc);
         }
 
         public int IndexOf(string other, StringComparison sc = StringComparison.Ordinal)
         {
             return IndexOf(new StringView(other), sc);
+        }
+
+        public int IndexOf(char other, StringComparison sc = StringComparison.Ordinal)
+        {
+            return IndexOf(this, other, sc);
+        }
+
+        static int IndexOf(StringView source, StringView other, StringComparison sc)
+        {
+            if (!source.valid || !other.valid)
+                return -1;
+            if (source.Length < other.Length)
+                return -1;
+
+            int foundStartIndex = -1;
+            int otherIndex = 0;
+            for (var i = 0; i < source.Length && otherIndex < other.Length; ++i)
+            {
+                if (!Compare(source[i], other[otherIndex], sc))
+                {
+                    if (foundStartIndex > -1)
+                    {
+                        foundStartIndex = -1;
+                        otherIndex = 0;
+                    }
+                }
+                else
+                {
+                    if (foundStartIndex == -1)
+                        foundStartIndex = i;
+                    otherIndex++;
+                }
+            }
+
+            if (otherIndex != other.Length)
+                return -1;
+            return foundStartIndex;
+        }
+
+        static int IndexOf(StringView source, char other, StringComparison sc)
+        {
+            if (!source.valid)
+                return -1;
+
+            for (var i = 0; i < source.Length; ++i)
+            {
+                if (Compare(source[i], other, sc))
+                    return i;
+            }
+
+            return -1;
+        }
+
+        public int LastIndexOf(IStringView other, StringComparison sc = StringComparison.Ordinal)
+        {
+            if (Length < other.Length)
+                return -1;
+
+            int otherIndex = other.Length - 1;
+            for (var i = Length - 1; i >= 0 && otherIndex >= 0; --i)
+            {
+                if (!Compare(this[i], other[otherIndex], sc))
+                {
+                    otherIndex = other.Length - 1;
+                }
+                else
+                {
+                    if (otherIndex == 0)
+                        return i;
+                    otherIndex--;
+                }
+            }
+
+            return -1;
+        }
+
+        public int LastIndexOf(StringView other, StringComparison sc = StringComparison.Ordinal)
+        {
+            return LastIndexOf(this, other, sc);
+        }
+
+        public int LastIndexOf(string other, StringComparison sc = StringComparison.Ordinal)
+        {
+            return LastIndexOf(this, new StringView(other), sc);
+        }
+
+        public int LastIndexOf(char other, StringComparison sc = StringComparison.Ordinal)
+        {
+            return LastIndexOf(this, other, sc);
+        }
+
+        static int LastIndexOf(StringView source, StringView other, StringComparison sc)
+        {
+            if (source.Length < other.Length)
+                return -1;
+
+            int otherIndex = other.Length - 1;
+            for (var i = source.Length - 1; i >= 0 && otherIndex >= 0; --i)
+            {
+                if (!Compare(source[i], other[otherIndex], sc))
+                {
+                    otherIndex = other.Length - 1;
+                }
+                else
+                {
+                    if (otherIndex == 0)
+                        return i;
+                    otherIndex--;
+                }
+            }
+
+            return -1;
+        }
+
+        static int LastIndexOf(StringView source, char other, StringComparison sc)
+        {
+            if (!source.valid)
+                return -1;
+
+            for (var i = source.Length - 1; i >= 0; --i)
+            {
+                if (Compare(source[i], other, sc))
+                    return i;
+            }
+
+            return -1;
         }
 
         public bool StartsWith(char c, StringComparison stringComparison = StringComparison.Ordinal)
@@ -161,11 +338,28 @@ namespace UnityEditor.Search
 
         public bool StartsWith(string v, StringComparison sc = StringComparison.Ordinal)
         {
+            return StartsWith(this, new StringView(v), sc);
+        }
+
+        public bool StartsWith(IStringView v, StringComparison sc = StringComparison.Ordinal)
+        {
             if (v.Length > Length)
                 return false;
 
             for (var i = 0; i < v.Length; ++i)
                 if (!Compare(this[i], v[i], sc))
+                    return false;
+
+            return true;
+        }
+
+        static bool StartsWith(StringView source, StringView other, StringComparison sc)
+        {
+            if (other.Length > source.Length)
+                return false;
+
+            for (var i = 0; i < other.Length; ++i)
+                if (!Compare(source[i], other[i], sc))
                     return false;
 
             return true;
@@ -178,13 +372,30 @@ namespace UnityEditor.Search
             return Compare(this[Length - 1], c, sc);
         }
 
-        internal bool EndsWith(string v, StringComparison sc = StringComparison.Ordinal)
+        public bool EndsWith(string v, StringComparison sc = StringComparison.Ordinal)
+        {
+            return EndsWith(this, new StringView(v), sc);
+        }
+
+        public bool EndsWith(IStringView v, StringComparison sc = StringComparison.Ordinal)
         {
             if (v.Length > Length)
                 return false;
 
             for (var i = 0; i < v.Length; ++i)
                 if (!Compare(this[Length - v.Length + i], v[i], sc))
+                    return false;
+
+            return true;
+        }
+
+        static bool EndsWith(StringView source, StringView other, StringComparison sc)
+        {
+            if (other.Length > source.Length)
+                return false;
+
+            for (var i = 0; i < other.Length; ++i)
+                if (!Compare(source[source.Length - other.Length + i], other[i], sc))
                     return false;
 
             return true;
@@ -199,6 +410,11 @@ namespace UnityEditor.Search
         }
 
         public bool Contains(StringView s, StringComparison ordinal = StringComparison.Ordinal)
+        {
+            return IndexOf(s) != -1;
+        }
+
+        public bool Contains(IStringView s, StringComparison ordinal = StringComparison.Ordinal)
         {
             return IndexOf(s) != -1;
         }
@@ -238,6 +454,26 @@ namespace UnityEditor.Search
             return !rhs.Equals(lhs);
         }
 
+        public static bool operator==(StringView lhs, IStringView rhs)
+        {
+            return lhs.Equals(rhs);
+        }
+
+        public static bool operator!=(StringView lhs, IStringView rhs)
+        {
+            return !lhs.Equals(rhs);
+        }
+
+        public static bool operator==(IStringView lhs, StringView rhs)
+        {
+            return rhs.Equals(lhs);
+        }
+
+        public static bool operator!=(IStringView lhs, StringView rhs)
+        {
+            return !rhs.Equals(lhs);
+        }
+
         public static implicit operator bool(StringView sv)
         {
             return !sv.IsNullOrEmpty();
@@ -271,7 +507,7 @@ namespace UnityEditor.Search
             return GetEnumerator();
         }
 
-        private static bool Compare(char c1, char c2, StringComparison sc)
+        internal static bool Compare(char c1, char c2, StringComparison sc)
         {
             switch (sc)
             {
@@ -284,9 +520,14 @@ namespace UnityEditor.Search
                     return c1 == c2;
             }
         }
+
+        static int GetGlobalIndex(int localIndex)
+        {
+            return localIndex;
+        }
     }
 
-    static class StringExtensions
+    static partial class StringExtensions
     {
         static readonly char[] k_OneLetterWords = new char[] { ':', '-', '!' };
         static readonly char[] k_WordSplitters = new char[] { '(', ')', '{', '}', '[', ']', ':', '-' };
@@ -308,7 +549,7 @@ namespace UnityEditor.Search
 
         public static bool IsNullOrEmpty(this StringView sv)
         {
-            if (sv == null || !sv.valid)
+            if (!sv.valid)
                 return true;
             return sv.Length == 0;
         }
@@ -346,6 +587,11 @@ namespace UnityEditor.Search
                     break;
             }
             return new StringView(baseString, startIndex, i);
+        }
+
+        public static bool HasQuotes(this StringView sv, in char quoteChar = '"')
+        {
+            return sv.Length >= 2 && sv.StartsWith(quoteChar) && sv.EndsWith(quoteChar);
         }
     }
 }

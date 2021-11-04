@@ -10,16 +10,7 @@ namespace UnityEditor.Search
     {
         static readonly HashSet<char> k_WhiteSpaceChars = new HashSet<char>(" \f\n\r\t\v");
 
-        public static bool IsPhraseToken(string token)
-        {
-            if (token.Length < 2)
-                return false;
-            var startIndex = token[0] == '!' ? 1 : 0;
-            var endIndex = token.Length - 1;
-            return token[startIndex] == '"' && token[endIndex] == '"';
-        }
-
-        public static bool IsNestedQueryToken(string token)
+        public static bool IsNestedQueryToken(in StringView token)
         {
             if (token.Length < 2)
                 return false;

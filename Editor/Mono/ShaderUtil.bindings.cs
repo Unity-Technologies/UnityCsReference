@@ -321,5 +321,8 @@ namespace UnityEditor
 
         extern internal static ShaderData.VariantCompileInfo CompileShaderVariant([NotNull] Shader shader, int subShaderIndex, int passId,
             ShaderType shaderType, BuiltinShaderDefine[] platformKeywords, string[] keywords, ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, GraphicsTier tier);
+
+        extern internal static ShaderData.PreprocessedVariant PreprocessShaderVariant([NotNull] Shader shader, int subShaderIndex, int passId,
+            ShaderType shaderType, BuiltinShaderDefine[] platformKeywords, string[] keywords, ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, GraphicsTier tier, bool stripLineDirectives);
     }
 }

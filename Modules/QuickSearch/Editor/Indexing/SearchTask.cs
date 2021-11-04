@@ -2,9 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+//#define DEBUG_PROGRESS
 using System;
 using System.Threading;
-using UnityEditor;
 using UnityEngine;
 
 namespace UnityEditor.Search
@@ -22,8 +22,8 @@ namespace UnityEditor.Search
         private const int k_NoProgress = -1;
         private const int k_BlockingProgress = -2;
 
-        private readonly string name;
-        private readonly string title;
+        public readonly string name;
+        public readonly string title;
         private int progressId = k_NoProgress;
         private volatile float lastProgress = -1f;
         private EventWaitHandle cancelEvent;
@@ -71,7 +71,10 @@ namespace UnityEditor.Search
             cancelEvent = new EventWaitHandle(false, EventResetMode.ManualReset);
 
             if (IsProgressRunning(progressId))
-                Progress.RegisterCancelCallback(progressId, () => cancelEvent.Set());
+            {
+                LogProgress("RegisterCallback");
+                Progress.RegisterCancelCallback(progressId, () => cancelEvent != null && cancelEvent.Set());
+            }
         }
 
         public SearchTask(string name, string title, ResolveHandler resolver, ITaskReporter reporter)
@@ -79,18 +82,31 @@ namespace UnityEditor.Search
         {
         }
 
+        [System.Diagnostics.Conditional("DEBUG_PROGRESS")]
+        private void LogProgress(in string name, params object[] args)
+        {
+            Debug.Log($"{name} {progressId}, {string.Join(", ", args)}, main ={UnityEditorInternal.InternalEditorUtility.CurrentThreadIsMainThread()}");
+        }
+
         protected virtual void Dispose(bool disposing)
         {
+            LogProgress("Dispose", disposed, disposing);
+
             if (disposed)
                 return;
+
+            cancelEvent?.Dispose();
+            cancelEvent = null;
 
             if (disposing)
                 Resolve();
 
-            cancelEvent?.Dispose();
-            cancelEvent = null;
+            LogProgress("Exists");
             if (Progress.Exists(progressId))
+            {
+                LogProgress("Remove");
                 Progress.Remove(progressId);
+            }
             progressId = k_NoProgress;
             disposed = true;
         }
@@ -147,6 +163,7 @@ namespace UnityEditor.Search
                 return;
             }
 
+            LogProgress("Report");
             Progress.Report(progressId, progress, status);
         }
 
@@ -175,6 +192,7 @@ namespace UnityEditor.Search
             else
             {
                 lastProgress = current / (float)total;
+                LogProgress("Report");
                 Progress.Report(progressId, current, total, status);
             }
         }
@@ -250,6 +268,7 @@ namespace UnityEditor.Search
         private int StartReport(string title)
         {
             var progressId = Progress.Start(title);
+            LogProgress("Start");
             Progress.SetPriority(progressId, (int)Progress.Priority.Low);
             status = title;
             return progressId;
@@ -267,7 +286,9 @@ namespace UnityEditor.Search
             }
             else if (IsProgressRunning(progressId))
             {
+                LogProgress("SetDescription", "ReportError");
                 Progress.SetDescription(progressId, err.Message);
+                LogProgress("Finish", "ReportError");
                 Progress.Finish(progressId, Progress.Status.Failed);
             }
 
@@ -295,12 +316,17 @@ namespace UnityEditor.Search
             if (!IsValid())
                 return;
 
+            LogProgress("FinishReport", reporter);
+
             reporter?.Report(name, $"took {elapsedTime} ms");
 
             if (progressId == k_BlockingProgress)
                 EditorUtility.ClearProgressBar();
             else if (IsProgressRunning(progressId))
+            {
+                LogProgress("Finish");
                 Progress.Finish(progressId, Progress.Status.Succeeded);
+            }
 
             progressId = k_NoProgress;
         }
@@ -315,18 +341,24 @@ namespace UnityEditor.Search
             if (progressId == k_BlockingProgress)
                 EditorUtility.ClearProgressBar();
             else if (IsProgressRunning(progressId))
+            {
                 Progress.Remove(progressId);
+                LogProgress("Remove");
+            }
 
             progressId = k_NoProgress;
         }
 
-        private static bool IsProgressRunning(int progressId)
+        private bool IsProgressRunning(int progressId)
         {
             if (progressId == k_NoProgress)
                 return false;
+            LogProgress("Exists");
             if (!Progress.Exists(progressId))
                 return false;
-            return Progress.GetStatus(progressId) == Progress.Status.Running;
+            var status = Progress.GetStatus(progressId);
+            LogProgress("GetStatus", status);
+            return status == Progress.Status.Running;
         }
     }
 }

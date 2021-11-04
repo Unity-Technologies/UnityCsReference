@@ -5968,6 +5968,9 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\MenuProvider.cs">
       <Link>Modules\QuickSearch\Editor\Providers\MenuProvider.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\ObjectQueryEngine.cs">
+      <Link>Modules\QuickSearch\Editor\Providers\ObjectQueryEngine.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\PackageManagerProvider.cs">
       <Link>Modules\QuickSearch\Editor\Providers\PackageManagerProvider.cs</Link>
     </Compile>
@@ -6040,6 +6043,9 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\QueryEngine\QueryNodes.cs">
       <Link>Modules\QuickSearch\Editor\QueryEngine\QueryNodes.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\QueryEngine\QueryToggle.cs">
+      <Link>Modules\QuickSearch\Editor\QueryEngine\QueryToggle.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\QueryEngine\QueryToken.cs">
       <Link>Modules\QuickSearch\Editor\QueryEngine\QueryToken.cs</Link>
     </Compile>
@@ -6091,11 +6097,29 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchProvider.cs">
       <Link>Modules\QuickSearch\Editor\SearchProvider.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchQuery.cs">
-      <Link>Modules\QuickSearch\Editor\SearchQuery.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchQueryError.cs">
       <Link>Modules\QuickSearch\Editor\SearchQueryError.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchQuery\SearchQuery.cs">
+      <Link>Modules\QuickSearch\Editor\SearchQuery\SearchQuery.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchQuery\SearchQueryAsset.cs">
+      <Link>Modules\QuickSearch\Editor\SearchQuery\SearchQueryAsset.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchQuery\SearchQueryColumnHeader.cs">
+      <Link>Modules\QuickSearch\Editor\SearchQuery\SearchQueryColumnHeader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchQuery\SearchQueryEditor.cs">
+      <Link>Modules\QuickSearch\Editor\SearchQuery\SearchQueryEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchQuery\SearchQueryTreeView.cs">
+      <Link>Modules\QuickSearch\Editor\SearchQuery\SearchQueryTreeView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchQuery\SearchQueryTreeViewItem.cs">
+      <Link>Modules\QuickSearch\Editor\SearchQuery\SearchQueryTreeViewItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchQuery\SearchTemplateAttribute.cs">
+      <Link>Modules\QuickSearch\Editor\SearchQuery\SearchTemplateAttribute.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchSelection.cs">
       <Link>Modules\QuickSearch\Editor\SearchSelection.cs</Link>
@@ -6163,17 +6187,26 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\UI\SearchField.cs">
       <Link>Modules\QuickSearch\Editor\UI\SearchField.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\UI\SearchQueryEditor.cs">
-      <Link>Modules\QuickSearch\Editor\UI\SearchQueryEditor.cs</Link>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\UI\SearchPickerWindow.cs">
+      <Link>Modules\QuickSearch\Editor\UI\SearchPickerWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\UI\SearchProposition.cs">
+      <Link>Modules\QuickSearch\Editor\UI\SearchProposition.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\UI\SearchResultView.cs">
       <Link>Modules\QuickSearch\Editor\UI\SearchResultView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\UI\SearchViewState.cs">
+      <Link>Modules\QuickSearch\Editor\UI\SearchViewState.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\UI\SplitterInfo.cs">
       <Link>Modules\QuickSearch\Editor\UI\SplitterInfo.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\UI\Styles.cs">
       <Link>Modules\QuickSearch\Editor\UI\Styles.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\UI\UndoManager.cs">
+      <Link>Modules\QuickSearch\Editor\UI\UndoManager.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\UI\VisualSplitter.cs">
       <Link>Modules\QuickSearch\Editor\UI\VisualSplitter.cs</Link>
@@ -6184,11 +6217,17 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\DebugTimer.cs">
       <Link>Modules\QuickSearch\Editor\Utilities\DebugTimer.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\IStringView.cs">
+      <Link>Modules\QuickSearch\Editor\Utilities\IStringView.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\RaceConditionDetector.cs">
       <Link>Modules\QuickSearch\Editor\Utilities\RaceConditionDetector.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\StringView.cs">
       <Link>Modules\QuickSearch\Editor\Utilities\StringView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\SubsetStringView.cs">
+      <Link>Modules\QuickSearch\Editor\Utilities\SubsetStringView.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\TryConvert.cs">
       <Link>Modules\QuickSearch\Editor\Utilities\TryConvert.cs</Link>
