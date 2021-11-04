@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace UnityEditor.Search
 {
-    [CustomEditor(typeof(SearchDatabase))]
+    //[CustomEditor(typeof(SearchDatabase))]
     class SearchDatabaseEditor : Editor
     {
         private SearchDatabase m_DB;

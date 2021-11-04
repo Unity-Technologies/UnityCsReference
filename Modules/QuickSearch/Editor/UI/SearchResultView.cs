@@ -43,6 +43,11 @@ namespace UnityEditor.Search
             m_Selection.AddRange(newSelection.Where(s => !m_Selection.Contains(s)));
         }
 
+        public void ExecuteSelection()
+        {
+            selectCallback?.Invoke(selection.FirstOrDefault(), false);
+        }
+
         public void ExecuteAction(SearchAction action, SearchItem[] items, bool endSearch = true)
         {
             selectCallback?.Invoke(items.FirstOrDefault(), false);
@@ -115,7 +120,7 @@ namespace UnityEditor.Search
             }
             else
             {
-                GUILayout.Label("No results");
+                GUILayout.Label(L10n.Tr("No results"));
             }
         }
 
@@ -125,12 +130,11 @@ namespace UnityEditor.Search
             if (results.Count > 0)
             {
                 m_View.HandleInputEvent(Event.current, m_Selection);
-                // GUI.Box(previewArea, string.Empty, Styles.resultview);
                 m_View.Draw(previewArea, m_Selection);
             }
             else
             {
-                GUI.Label(previewArea, "No results");
+                GUI.Label(previewArea, L10n.Tr("No results"));
             }
         }
 
@@ -160,6 +164,11 @@ namespace UnityEditor.Search
         public void Dispose()
         {
             // Not needed
+        }
+
+        public void FocusSearch()
+        {
+            // Do nothing
         }
     }
 

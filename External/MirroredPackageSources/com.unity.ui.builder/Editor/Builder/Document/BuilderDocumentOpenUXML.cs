@@ -404,16 +404,39 @@ namespace Unity.UI.Builder
                 }
             }
 
+            List<BuilderDocumentOpenUSS> savedUSSFiles = new List<BuilderDocumentOpenUSS>();
+
             // Save USS files.
             foreach (var openUSSFile in m_OpenUSSFiles)
-                openUSSFile.SaveToDisk(visualTreeAsset);
+            {
+                if (openUSSFile.SaveToDisk(visualTreeAsset))
+                {
+                    savedUSSFiles.Add(openUSSFile);
+                }
+            }
+
+            var oldUxmlTest = m_VisualTreeAssetBackup?.GenerateUXML(m_OpenendVisualTreeAssetOldPath, true);
 
             // Save UXML files
             // Saving all open UXML files to ensure references correct upon changes in child documents.
             foreach (var openUXMLFile in openUXMLFiles)
                 openUXMLFile.PreSaveSyncBackup();
 
-            WriteUXMLToFile(newUxmlPath);
+            bool shouldSave = m_OpenendVisualTreeAssetOldPath != newUxmlPath;
+            var uxmlText = visualTreeAsset.GenerateUXML(newUxmlPath, true);
+
+            if (uxmlText != null)
+            {
+                if (!shouldSave && m_VisualTreeAssetBackup)
+                {
+                    shouldSave = oldUxmlTest != uxmlText;
+                }
+
+                if (shouldSave)
+                {
+                    WriteUXMLToFile(newUxmlPath, uxmlText);
+                }
+            }
 
             // Once we wrote all the files to disk, we refresh the DB and reload
             // the files from the AssetDatabase.
@@ -428,7 +451,7 @@ namespace Unity.UI.Builder
             }
 
             // Check if any USS assets have changed reload them.
-            foreach (var openUSSFile in m_OpenUSSFiles)
+            foreach (var openUSSFile in savedUSSFiles)
                 needsFullRefresh |= openUSSFile.PostSaveToDiskChecksAndFixes();
 
             // Check if any UXML assets have changed and reload them.
@@ -706,20 +729,25 @@ namespace Unity.UI.Builder
                 openUSSFile.ClearUndo();
         }
 
-        void WriteUXMLToFile(string uxmlPath)
+        bool WriteUXMLToFile(string uxmlPath)
         {
             var uxmlText = visualTreeAsset.GenerateUXML(uxmlPath, true);
 
             // This will only be null (not empty) if the UXML is invalid in some way.
             if (uxmlText == null)
-                return;
+                return false;
 
+            return WriteUXMLToFile(uxmlPath, uxmlText);
+        }
+
+        bool WriteUXMLToFile(string uxmlPath, string uxmlText)
+        {
             // Make sure the folders exist.
             var uxmlFolder = Path.GetDirectoryName(uxmlPath);
             if (!Directory.Exists(uxmlFolder))
                 Directory.CreateDirectory(uxmlFolder);
 
-            BuilderAssetUtilities.WriteTextFileToDisk(uxmlPath, uxmlText);
+            return BuilderAssetUtilities.WriteTextFileToDisk(uxmlPath, uxmlText);
         }
 
         VisualElement ReloadChildToCanvas(BuilderDocumentOpenUXML childOpenUXML, VisualElement rootElement)

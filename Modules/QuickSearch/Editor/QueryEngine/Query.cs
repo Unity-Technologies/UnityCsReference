@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace UnityEditor.Search
 {
@@ -73,22 +74,25 @@ namespace UnityEditor.Search
         /// </summary>
         public ICollection<string> tokens { get; }
 
+        internal ICollection<QueryToggle> toggles { get; }
+
         internal IQueryHandler<TData, TPayload> graphHandler { get; set; }
 
         internal QueryGraph evaluationGraph { get; }
         internal QueryGraph queryGraph { get; }
 
-        internal Query(string text, QueryGraph evaluationGraph, QueryGraph queryGraph, ICollection<QueryError> errors, ICollection<string> tokens)
+        internal Query(string text, QueryGraph evaluationGraph, QueryGraph queryGraph, ICollection<QueryError> errors, ICollection<string> tokens, ICollection<QueryToggle> toggles)
         {
             this.text = text;
             this.evaluationGraph = evaluationGraph;
             this.queryGraph = queryGraph;
             this.errors = errors;
             this.tokens = tokens;
+            this.toggles = toggles;
         }
 
-        internal Query(string text, QueryGraph evaluationGraph, QueryGraph queryGraph, ICollection<QueryError> errors, ICollection<string> tokens, IQueryHandler<TData, TPayload> graphHandler)
-            : this(text, evaluationGraph, queryGraph, errors, tokens)
+        internal Query(string text, QueryGraph evaluationGraph, QueryGraph queryGraph, ICollection<QueryError> errors, ICollection<string> tokens, ICollection<QueryToggle> toggles, IQueryHandler<TData, TPayload> graphHandler)
+            : this(text, evaluationGraph, queryGraph, errors, tokens, toggles)
         {
             if (valid)
             {
@@ -144,9 +148,19 @@ namespace UnityEditor.Search
             return GetNodeAtPosition(queryGraph.root, position);
         }
 
+        internal bool HasToggle(string toggle)
+        {
+            return HasToggle(toggle, StringComparison.Ordinal);
+        }
+
+        internal bool HasToggle(string toggle, StringComparison stringComparison)
+        {
+            return toggles.Any(s => s.value.Equals(toggle, stringComparison));
+        }
+
         static IQueryNode GetNodeAtPosition(IQueryNode root, int position)
         {
-            if (root.type == QueryNodeType.Where)
+            if (root.type == QueryNodeType.Where || root.type == QueryNodeType.Group)
                 return GetNodeAtPosition(root.children[0], position);
 
             if (!string.IsNullOrEmpty(root.token.text) && position >= root.token.position && position <= root.token.position + root.token.length)
@@ -175,8 +189,8 @@ namespace UnityEditor.Search
         /// </summary>
         public bool returnPayloadIfEmpty { get; set; } = true;
 
-        internal Query(string text, QueryGraph evaluationGraph, QueryGraph queryGraph, ICollection<QueryError> errors, ICollection<string> tokens, IQueryHandler<T, IEnumerable<T>> graphHandler)
-            : base(text, evaluationGraph, queryGraph, errors, tokens, graphHandler)
+        internal Query(string text, QueryGraph evaluationGraph, QueryGraph queryGraph, ICollection<QueryError> errors, ICollection<string> tokens, ICollection<QueryToggle> toggles, IQueryHandler<T, IEnumerable<T>> graphHandler)
+            : base(text, evaluationGraph, queryGraph, errors, tokens, toggles, graphHandler)
         {}
 
         /// <summary>

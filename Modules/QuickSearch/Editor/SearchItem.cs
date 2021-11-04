@@ -175,8 +175,14 @@ namespace UnityEditor.Search
                     description = tempDescription;
             }
 
-            if (tempDescription == null && m_Value != null)
-                return value.ToString();
+            if (tempDescription == null)
+            {
+                if (m_Value != null)
+                    return value.ToString();
+
+                if (options.HasAny(SearchItemOptions.Compacted))
+                    return GetLabel(context, stripHTML);
+            }
 
             if (!stripHTML || string.IsNullOrEmpty(tempDescription))
                 return tempDescription;
@@ -326,14 +332,22 @@ namespace UnityEditor.Search
             return ToObject(typeof(T)) as T;
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <returns></returns>
+        internal Type ToType(Type constraintedType = null)
+        {
+            var itemType = provider?.toType?.Invoke(this, constraintedType);
+            if (itemType != null)
+            {
+                if (typeof(GameObject) != itemType || constraintedType == null || !typeof(Component).IsAssignableFrom(constraintedType))
+                    return itemType;
+            }
+            var itemObj = ToObject(constraintedType ?? typeof(UnityEngine.Object));
+            return itemObj?.GetType();
+        }
+
         [Obsolete("This API will be removed")]
         public string ToGlobalId()
         {
-            return $"{provider?.id ?? "unknown"}:{id}";
+            throw new NotSupportedException("Obsolete");
         }
 
         /// <summary>
@@ -506,8 +520,6 @@ namespace UnityEditor.Search
 
             var f = new Field(name, alias, value);
             m_Fields[name] = f;
-
-            //UnityEngine.Debug.Log($"SetField({id}, {name}, {alias}, {value}");
         }
 
         internal bool RemoveField(string name)
@@ -553,12 +565,16 @@ namespace UnityEditor.Search
             }
             if (string.Equals("label", name, StringComparison.OrdinalIgnoreCase))
             {
+                options |= SearchItemOptions.Compacted;
                 field = new Field(name, GetLabel(context ?? this.context, true));
+                options &= ~SearchItemOptions.Compacted;
                 return field.value != null;
             }
             if (string.Equals("description", name, StringComparison.OrdinalIgnoreCase))
             {
+                options |= SearchItemOptions.Compacted;
                 field = new Field(name, GetDescription(context ?? this.context, true));
+                options &= ~SearchItemOptions.Compacted;
                 return field.value != null;
             }
 

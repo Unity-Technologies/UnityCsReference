@@ -77,6 +77,7 @@ namespace UnityEditor.Search
     interface IQueryEngineImplementation
     {
         void AddFilterOperationGenerator<T>();
+        void AddDefaultEnumTypeParser<T>();
     }
 
     /// <summary>
@@ -103,6 +104,7 @@ namespace UnityEditor.Search
         public bool skipIncompleteFilters;
 
         internal bool skipNestedQueries;
+        internal bool validateSyntaxOnly;
     }
 
     class QueryEngineParserData
@@ -110,12 +112,14 @@ namespace UnityEditor.Search
         public List<IQueryNode> expressionNodes;
         public NodesToStringPosition nodesToStringPosition;
         public ICollection<string> tokens;
+        public ICollection<QueryToggle> toggles;
 
-        public QueryEngineParserData(NodesToStringPosition nodesToStringPosition, ICollection<string> tokens)
+        public QueryEngineParserData(NodesToStringPosition nodesToStringPosition, ICollection<string> tokens, ICollection<QueryToggle> toggles)
         {
             expressionNodes = new List<IQueryNode>();
             this.nodesToStringPosition = nodesToStringPosition;
             this.tokens = tokens;
+            this.toggles = toggles;
         }
     }
 
@@ -131,12 +135,47 @@ namespace UnityEditor.Search
         }
     }
 
+    static class DictionaryExtensions
+    {
+        public static bool TryGetValueByStringView(this Dictionary<string, QueryFilterOperator> source, in StringView key, out QueryFilterOperator op)
+        {
+            var keys = source.Keys;
+            foreach (var k in keys)
+            {
+                if (key.Equals(k))
+                {
+                    op = source[k];
+                    return true;
+                }
+            }
+
+            op = QueryFilterOperator.invalid;
+            return false;
+        }
+
+        public static bool TryGetValueByStringView(this IReadOnlyDictionary<string, QueryFilterOperator> source, in StringView key, out QueryFilterOperator op)
+        {
+            var keys = source.Keys;
+            foreach (var k in keys)
+            {
+                if (key.Equals(k))
+                {
+                    op = source[k];
+                    return true;
+                }
+            }
+
+            op = QueryFilterOperator.invalid;
+            return false;
+        }
+    }
+
     sealed class QueryEngineImpl<TData> : QueryTokenizer<QueryEngineParserData>, IQueryEngineImplementation
     {
         Dictionary<string, IFilter> m_Filters = new Dictionary<string, IFilter>();
         Func<TData, string, string, string, bool> m_DefaultFilterHandler;
         Func<TData, string, string, string, string, bool> m_DefaultParamFilterHandler;
-        Dictionary<string, FilterOperator> m_FilterOperators = new Dictionary<string, FilterOperator>();
+        Dictionary<string, QueryFilterOperator> m_FilterOperators = new Dictionary<string, QueryFilterOperator>();
         List<ITypeParser> m_TypeParsers = new List<ITypeParser>();
         Dictionary<Type, ITypeParser> m_DefaultTypeParsers = new Dictionary<Type, ITypeParser>();
         Dictionary<Type, IFilterOperationGenerator> m_FilterOperationGenerators = new Dictionary<Type, IFilterOperationGenerator>();
@@ -157,20 +196,18 @@ namespace UnityEditor.Search
             {"-", () => new NotNode()}
         };
 
-        enum DefaultOperator
+        enum ExtendedTokenHandlerPriority
         {
-            Contains,
-            Equal,
-            NotEqual,
-            Greater,
-            GreaterOrEqual,
-            Less,
-            LessOrEqual
+            Boolean = TokenHandlerPriority.Filter + 5,
+            Partial = Boolean + 10,
+            PartialWithQuotes = Partial - 5
         }
 
         readonly struct FilterCreationParams
         {
             public readonly string token;
+            public readonly Regex regexToken;
+            public readonly bool useRegexToken;
             public readonly string[] supportedOperators;
             public readonly bool overridesGlobalComparisonOptions;
             public readonly StringComparison comparisonOptions;
@@ -179,17 +216,54 @@ namespace UnityEditor.Search
             public readonly Type parameterTransformerAttributeType;
 
             public FilterCreationParams(
-                string token, string[] supportedOperators, bool overridesGlobalComparison,
+                string token, Regex regexToken, bool useRegexToken, string[] supportedOperators, bool overridesGlobalComparison,
                 StringComparison comparisonOptions, bool useParameterTransformer,
                 string parameterTransformerFunction, Type parameterTransformerAttributeType)
             {
                 this.token = token;
+                this.regexToken = regexToken;
+                this.useRegexToken = useRegexToken;
                 this.supportedOperators = supportedOperators;
                 this.overridesGlobalComparisonOptions = overridesGlobalComparison;
                 this.comparisonOptions = comparisonOptions;
                 this.useParameterTransformer = useParameterTransformer;
                 this.parameterTransformerFunction = parameterTransformerFunction;
                 this.parameterTransformerAttributeType = parameterTransformerAttributeType;
+            }
+        }
+
+        readonly struct CreateFilterTokenArgs
+        {
+            public readonly StringView token;
+            public readonly Match match;
+            public readonly int index;
+            public readonly ICollection<QueryError> errors;
+
+            public readonly StringView filterType;
+            public readonly StringView filterParam;
+            public readonly StringView filterOperator;
+            public readonly StringView filterValue;
+            public readonly StringView nestedQueryAggregator;
+
+            public readonly int filterTypeIndex;
+            public readonly int filterOperatorIndex;
+            public readonly int filterValueIndex;
+
+            public CreateFilterTokenArgs(in StringView token, Match match, int index, ICollection<QueryError> errors, in StringView filterType, in StringView filterParam, in StringView filterOperator, in StringView filterValue, in StringView nestedQueryAggregator, int filterTypeIndex,
+                                         int filterOperatorIndex, int filterValueIndex)
+            {
+                this.token = token;
+                this.match = match;
+                this.index = index;
+                this.errors = errors;
+                this.filterType = filterType;
+                this.filterParam = filterParam;
+                this.filterOperator = filterOperator;
+                this.filterValue = filterValue;
+                this.nestedQueryAggregator = nestedQueryAggregator;
+                this.filterTypeIndex = filterTypeIndex;
+                this.filterOperatorIndex = filterOperatorIndex;
+                this.filterValueIndex = filterValueIndex;
             }
         }
 
@@ -206,6 +280,13 @@ namespace UnityEditor.Search
         INestedQueryHandler m_NestedQueryHandler;
         Dictionary<string, INestedQueryAggregator> m_NestedQueryAggregators = new Dictionary<string, INestedQueryAggregator>();
 
+        HashSet<int> m_CustomFilterTokenHandlers = new HashSet<int>();
+
+        delegate int MatchFilterFunction(Regex filterRx, string text, int startIndex, int endIndex, ICollection<QueryError> errors, out StringView sv, out Match match, out bool matched);
+        delegate IQueryNode CreateFilterFunction(IFilter filter, string text, in StringView token, Match match, int index, ICollection<QueryError> errors);
+        delegate IQueryNode CreateFilterTokenFunction(string text, in StringView token, Match match, int index, ICollection<QueryError> errors);
+        delegate IQueryNode CreateTextNodeFunction(string text, in StringView token, Match match, ICollection<QueryError> errors, QueryEngineParserData data);
+
         public QueryEngineImpl()
             : this(new QueryValidationOptions())
         {}
@@ -215,46 +296,46 @@ namespace UnityEditor.Search
             this.validationOptions = validationOptions;
 
             // Default operators
-            AddOperator(":", false)
-                .AddHandler((object ev, object fv, StringComparison sc) => CompareObjects(ev, fv, sc, DefaultOperator.Contains, ":"))
+            AddOperator(":", FilterOperatorType.Contains, false)
+                .AddHandler((FilterOperatorContext ctx, object ev, object fv, StringComparison sc) => CompareObjects(ctx, ev, fv, sc, FilterOperatorType.Contains, ":"))
                 .AddHandler((string ev, string fv, StringComparison sc) => ev?.IndexOf(fv, sc) >= 0)
                 .AddHandler((int ev, int fv, StringComparison sc) => ev.ToString().IndexOf(fv.ToString(), sc) != -1)
                 .AddHandler((float ev, float fv, StringComparison sc) => ev.ToString().IndexOf(fv.ToString(), sc) != -1)
                 .AddHandler((double ev, double fv, StringComparison sc) => ev.ToString().IndexOf(fv.ToString(), sc) != -1);
-            AddOperator("=", false)
-                .AddHandler((object ev, object fv, StringComparison sc) => CompareObjects(ev, fv, sc, DefaultOperator.Equal, "="))
+            AddOperator("=", FilterOperatorType.Equal, false)
+                .AddHandler((FilterOperatorContext ctx, object ev, object fv, StringComparison sc) => CompareObjects(ctx, ev, fv, sc, FilterOperatorType.Equal, "="))
                 .AddHandler((int ev, int fv) => ev == fv)
                 .AddHandler((float ev, float fv) => Math.Abs(ev - fv) < Mathf.Epsilon)
                 .AddHandler((double ev, double fv) => Math.Abs(ev - fv) < double.Epsilon)
                 .AddHandler((bool ev, bool fv) => ev == fv)
                 .AddHandler((string ev, string fv, StringComparison sc) => string.Equals(ev, fv, sc));
-            AddOperator("!=", false)
-                .AddHandler((object ev, object fv, StringComparison sc) => CompareObjects(ev, fv, sc, DefaultOperator.NotEqual, "!="))
+            AddOperator("!=", FilterOperatorType.NotEqual, false)
+                .AddHandler((FilterOperatorContext ctx, object ev, object fv, StringComparison sc) => CompareObjects(ctx, ev, fv, sc, FilterOperatorType.NotEqual, "!="))
                 .AddHandler((int ev, int fv) => ev != fv)
                 .AddHandler((float ev, float fv) => Math.Abs(ev - fv) >= Mathf.Epsilon)
                 .AddHandler((double ev, double fv) => Math.Abs(ev - fv) >= double.Epsilon)
                 .AddHandler((bool ev, bool fv) => ev != fv)
                 .AddHandler((string ev, string fv, StringComparison sc) => !string.Equals(ev, fv, sc));
-            AddOperator("<", false)
-                .AddHandler((object ev, object fv, StringComparison sc) => CompareObjects(ev, fv, sc, DefaultOperator.Less, "<"))
+            AddOperator("<", FilterOperatorType.Lesser, false)
+                .AddHandler((FilterOperatorContext ctx, object ev, object fv, StringComparison sc) => CompareObjects(ctx, ev, fv, sc, FilterOperatorType.Lesser, "<"))
                 .AddHandler((int ev, int fv) => ev < fv)
                 .AddHandler((float ev, float fv) => ev < fv)
                 .AddHandler((double ev, double fv) => ev < fv)
                 .AddHandler((string ev, string fv, StringComparison sc) => string.Compare(ev, fv, sc) < 0);
-            AddOperator(">", false)
-                .AddHandler((object ev, object fv, StringComparison sc) => CompareObjects(ev, fv, sc, DefaultOperator.Greater, ">"))
+            AddOperator(">", FilterOperatorType.Greater, false)
+                .AddHandler((FilterOperatorContext ctx, object ev, object fv, StringComparison sc) => CompareObjects(ctx, ev, fv, sc, FilterOperatorType.Greater, ">"))
                 .AddHandler((int ev, int fv) => ev > fv)
                 .AddHandler((float ev, float fv) => ev > fv)
                 .AddHandler((double ev, double fv) => ev > fv)
                 .AddHandler((string ev, string fv, StringComparison sc) => string.Compare(ev, fv, sc) > 0);
-            AddOperator("<=", false)
-                .AddHandler((object ev, object fv, StringComparison sc) => CompareObjects(ev, fv, sc, DefaultOperator.LessOrEqual, "<="))
+            AddOperator("<=", FilterOperatorType.LesserOrEqual, false)
+                .AddHandler((FilterOperatorContext ctx, object ev, object fv, StringComparison sc) => CompareObjects(ctx, ev, fv, sc, FilterOperatorType.LesserOrEqual, "<="))
                 .AddHandler((int ev, int fv) => ev <= fv)
                 .AddHandler((float ev, float fv) => ev <= fv)
                 .AddHandler((double ev, double fv) => ev <= fv)
                 .AddHandler((string ev, string fv, StringComparison sc) => string.Compare(ev, fv, sc) <= 0);
-            AddOperator(">=", false)
-                .AddHandler((object ev, object fv, StringComparison sc) => CompareObjects(ev, fv, sc, DefaultOperator.GreaterOrEqual, ">="))
+            AddOperator(">=", FilterOperatorType.GreaterOrEqual, false)
+                .AddHandler((FilterOperatorContext ctx, object ev, object fv, StringComparison sc) => CompareObjects(ctx, ev, fv, sc, FilterOperatorType.GreaterOrEqual, ">="))
                 .AddHandler((int ev, int fv) => ev >= fv)
                 .AddHandler((float ev, float fv) => ev >= fv)
                 .AddHandler((double ev, double fv) => ev >= fv)
@@ -264,13 +345,13 @@ namespace UnityEditor.Search
             BuildDefaultTypeParsers();
 
             // Insert boolean filter matcher/consumer after normal filter
-            m_TokenConsumers.Insert(m_TokenConsumers.Count - 1, new QueryTokenHandler(MatchBooleanFilter, ConsumeBooleanFilter));
+            AddQueryTokenHandler(new QueryTokenHandler(MatchBooleanFilter, ConsumeBooleanFilter, (int)ExtendedTokenHandlerPriority.Boolean), false);
 
-            // Insert consumer before the word consumer
-            m_TokenConsumers.Insert(m_TokenConsumers.Count - 1, new QueryTokenHandler(MatchPartialFilter, ConsumePartialFilter));
+            // Insert partial filter matcher/consumer before the word consumer
+            AddQueryTokenHandler(new QueryTokenHandler(MatchPartialFilter, ConsumePartialFilter, (int)ExtendedTokenHandlerPriority.Partial));
         }
 
-        bool CompareObjects(object ev, object fv, StringComparison sc, DefaultOperator op, string opToken)
+        bool CompareObjects(FilterOperatorContext ctx, object ev, object fv, StringComparison sc, FilterOperatorType op, string opToken)
         {
             if (ev == null || fv == null)
                 return false;
@@ -278,11 +359,19 @@ namespace UnityEditor.Search
             var evt = ev.GetType();
             var fvt = fv.GetType();
 
+            // Check filter operators first
+            if (ctx.filter != null && ctx.filter.operators.TryGetValue(opToken, out var filterOperators))
+            {
+                var opHandler = filterOperators.GetHandler(evt, fvt);
+                if (opHandler != null)
+                    return opHandler.Invoke(ctx, ev, fv, sc);
+            }
+
             if (m_FilterOperators.TryGetValue(opToken, out var operators))
             {
                 var opHandler = operators.GetHandler(evt, fvt);
                 if (opHandler != null)
-                    return opHandler.Invoke(ev, fv, sc);
+                    return opHandler.Invoke(ctx, ev, fv, sc);
             }
 
             if (evt != fvt)
@@ -292,13 +381,13 @@ namespace UnityEditor.Search
             {
                 switch (op)
                 {
-                    case DefaultOperator.Contains: return evs.IndexOf(fvs, sc) != -1;
-                    case DefaultOperator.Equal: return evs.Equals(fvs, sc);
-                    case DefaultOperator.NotEqual: return !evs.Equals(fvs, sc);
-                    case DefaultOperator.Greater: return string.Compare(evs, fvs, sc) > 0;
-                    case DefaultOperator.GreaterOrEqual: return string.Compare(evs, fvs, sc) >= 0;
-                    case DefaultOperator.Less: return string.Compare(evs, fvs, sc) < 0;
-                    case DefaultOperator.LessOrEqual: return string.Compare(evs, fvs, sc) <= 0;
+                    case FilterOperatorType.Contains: return evs.IndexOf(fvs, sc) != -1;
+                    case FilterOperatorType.Equal: return evs.Equals(fvs, sc);
+                    case FilterOperatorType.NotEqual: return !evs.Equals(fvs, sc);
+                    case FilterOperatorType.Greater: return string.Compare(evs, fvs, sc) > 0;
+                    case FilterOperatorType.GreaterOrEqual: return string.Compare(evs, fvs, sc) >= 0;
+                    case FilterOperatorType.Lesser: return string.Compare(evs, fvs, sc) < 0;
+                    case FilterOperatorType.LesserOrEqual: return string.Compare(evs, fvs, sc) <= 0;
                 }
 
                 return false;
@@ -306,13 +395,13 @@ namespace UnityEditor.Search
 
             switch (op)
             {
-                case DefaultOperator.Contains: return ev.ToString().IndexOf(fv.ToString(), sc) >= 0;
-                case DefaultOperator.Equal: return ev.Equals(fv);
-                case DefaultOperator.NotEqual: return !ev.Equals(fv);
-                case DefaultOperator.Greater: return Comparer<object>.Default.Compare(ev, fv) > 0;
-                case DefaultOperator.GreaterOrEqual: return Comparer<object>.Default.Compare(ev, fv) >= 0;
-                case DefaultOperator.Less: return Comparer<object>.Default.Compare(ev, fv) < 0;
-                case DefaultOperator.LessOrEqual: return Comparer<object>.Default.Compare(ev, fv) <= 0;
+                case FilterOperatorType.Contains: return ev.ToString().IndexOf(fv.ToString(), sc) >= 0;
+                case FilterOperatorType.Equal: return ev.Equals(fv);
+                case FilterOperatorType.NotEqual: return !ev.Equals(fv);
+                case FilterOperatorType.Greater: return Comparer<object>.Default.Compare(ev, fv) > 0;
+                case FilterOperatorType.GreaterOrEqual: return Comparer<object>.Default.Compare(ev, fv) >= 0;
+                case FilterOperatorType.Lesser: return Comparer<object>.Default.Compare(ev, fv) < 0;
+                case FilterOperatorType.LesserOrEqual: return Comparer<object>.Default.Compare(ev, fv) <= 0;
             }
 
             return false;
@@ -328,6 +417,19 @@ namespace UnityEditor.Search
             m_Filters.Add(token, filter);
         }
 
+        public void AddFilter(Regex token, IFilter filter)
+        {
+            AddFilter(token.ToString(), filter);
+        }
+
+        public void AddFilter(IFilter filter)
+        {
+            if (filter.usesRegularExpressionToken)
+                AddFilter(filter.regexToken, filter);
+            else
+                AddFilter(filter.token, filter);
+        }
+
         public void RemoveFilter(string token)
         {
             if (!m_Filters.ContainsKey(token))
@@ -335,46 +437,139 @@ namespace UnityEditor.Search
                 Debug.LogWarning($"No filter found for \"{token}\".");
                 return;
             }
+
+            var filter = m_Filters[token];
+            var filterId = filter.GetHashCode();
+            if (m_CustomFilterTokenHandlers.Contains(filterId))
+                RemoveQueryTokenHandlers(filterId);
             m_Filters.Remove(token);
         }
 
-        public FilterOperator AddOperator(string op)
+        internal void RemoveFilter(Regex token)
+        {
+            RemoveFilter(token.ToString());
+        }
+
+        public void RemoveFilter(IFilter filter)
+        {
+            if (filter.usesRegularExpressionToken)
+                RemoveFilter(filter.regexToken);
+            else
+                RemoveFilter(filter.token);
+        }
+
+        public void ClearFilters()
+        {
+            foreach (var filterId in m_CustomFilterTokenHandlers)
+            {
+                RemoveQueryTokenHandlers(filterId);
+            }
+            m_Filters.Clear();
+            m_CustomFilterTokenHandlers.Clear();
+        }
+
+        public IFilter GetFilter(string token)
+        {
+            if (!m_Filters.ContainsKey(token))
+            {
+                Debug.LogWarning($"No filter found for \"{token}\".");
+                return null;
+            }
+            return m_Filters[token];
+        }
+
+        public IFilter GetFilter(Regex token)
+        {
+            return GetFilter(token.ToString());
+        }
+
+        public IEnumerable<IFilter> GetAllFilters()
+        {
+            return m_Filters.Values;
+        }
+
+        public bool HasFilter(string token)
+        {
+            return m_Filters.ContainsKey(token);
+        }
+
+        public bool HasFilter(Regex token)
+        {
+            return HasFilter(token.ToString());
+        }
+
+        public bool TryGetFilter(string token, out IFilter filter)
+        {
+            return m_Filters.TryGetValue(token, out filter);
+        }
+
+        public bool TryGetFilter(Regex token, out IFilter filter)
+        {
+            return TryGetFilter(token.ToString(), out filter);
+        }
+
+        public QueryFilterOperator AddOperator(string op)
         {
             return AddOperator(op, true);
         }
 
-        FilterOperator AddOperator(string op, bool rebuildFilterRegex)
+        QueryFilterOperator AddOperator(string op, bool rebuildFilterRegex)
+        {
+            // This is called only by users. If they try to add an existing default
+            // operator, the default operator is returned and the type doesn't matter.
+            return AddOperator(op, FilterOperatorType.Custom, rebuildFilterRegex);
+        }
+
+        QueryFilterOperator AddOperator(string op, FilterOperatorType type, bool rebuildFilterRegex)
         {
             if (m_FilterOperators.ContainsKey(op))
                 return m_FilterOperators[op];
-            var filterOperator = new FilterOperator(op, this);
+            var filterOperator = new QueryFilterOperator(op, type, this);
             m_FilterOperators.Add(op, filterOperator);
             if (rebuildFilterRegex)
                 BuildFilterRegex();
             return filterOperator;
         }
 
-        public FilterOperator GetOperator(string op)
+        public void RemoveOperator(string op)
         {
-            return m_FilterOperators.ContainsKey(op) ? m_FilterOperators[op] : null;
+            RemoveOperator(op, true);
+        }
+
+        void RemoveOperator(string op, bool rebuildFilterRegex)
+        {
+            if (!m_FilterOperators.ContainsKey(op))
+                return;
+            m_FilterOperators.Remove(op);
+            if (rebuildFilterRegex)
+                BuildFilterRegex();
+        }
+
+        public QueryFilterOperator GetOperator(string op)
+        {
+            return m_FilterOperators.ContainsKey(op) ? m_FilterOperators[op] : QueryFilterOperator.invalid;
         }
 
         public void AddOperatorHandler<TLhs, TRhs>(string op, Func<TLhs, TRhs, bool> handler)
         {
-            AddOperatorHandler<TLhs, TRhs>(op, (ev, fv, sc) => handler(ev, fv));
+            AddOperatorHandler<TLhs, TRhs>(op, (ctx, ev, fv, sc) => handler(ev, fv));
         }
 
         public void AddOperatorHandler<TLhs, TRhs>(string op, Func<TLhs, TRhs, StringComparison, bool> handler)
         {
+            AddOperatorHandler<TLhs, TRhs>(op, (ctx, ev, fv, sc) => handler(ev, fv, sc));
+        }
+
+        public void AddOperatorHandler<TLhs, TRhs>(string op, Func<FilterOperatorContext, TLhs, TRhs, bool> handler)
+        {
+            AddOperatorHandler<TLhs, TRhs>(op, (ctx, ev, fv, sc) => handler(ctx, ev, fv));
+        }
+
+        public void AddOperatorHandler<TLhs, TRhs>(string op, Func<FilterOperatorContext, TLhs, TRhs, StringComparison, bool> handler)
+        {
             if (!m_FilterOperators.ContainsKey(op))
                 return;
             m_FilterOperators[op].AddHandler(handler);
-
-            // Enums are user defined but still simple enough to generate a parse function for them.
-            if (typeof(TRhs).IsEnum && !m_DefaultTypeParsers.ContainsKey(typeof(TRhs)))
-            {
-                AddDefaultEnumTypeParser<TRhs>();
-            }
         }
 
         public void SetDefaultFilter(Func<TData, string, string, string, bool> handler)
@@ -407,7 +602,7 @@ namespace UnityEditor.Search
             this.searchWordTransformerCallback = searchWordTransformerCallback;
         }
 
-        public void SetsearchWordMatcher(Func<string, bool, StringComparison, string, bool> wordMatcher)
+        public void SetSearchWordMatcher(Func<string, bool, StringComparison, string, bool> wordMatcher)
         {
             searchWordMatcher = wordMatcher;
         }
@@ -472,9 +667,19 @@ namespace UnityEditor.Search
             return m_FilterOperationGenerators[type];
         }
 
-        IQueryNode BuildGraphRecursively(string text, int startIndex, int endIndex, ICollection<QueryError> errors, ICollection<string> tokens, NodesToStringPosition nodesToStringPosition)
+        public override void AddQuoteDelimiter(in QueryTextDelimiter textDelimiter)
         {
-            var userData = new QueryEngineParserData(nodesToStringPosition, tokens);
+            AddQuoteDelimiter(textDelimiter, m_FilterOperators.Keys);
+        }
+
+        public void RemoveQuoteDelimiter(in QueryTextDelimiter textDelimiter)
+        {
+            RemoveQuoteDelimiter(textDelimiter, true);
+        }
+
+        IQueryNode BuildGraphRecursively(string text, int startIndex, int endIndex, ICollection<QueryError> errors, ICollection<string> tokens, ICollection<QueryToggle> toggles, NodesToStringPosition nodesToStringPosition)
+        {
+            var userData = new QueryEngineParserData(nodesToStringPosition, tokens, toggles);
             var result = Parse(text, startIndex, endIndex, errors, userData);
             if (result != ParseState.Matched)
                 return null;
@@ -484,13 +689,13 @@ namespace UnityEditor.Search
             return rootNode;
         }
 
-        internal BuildGraphResult BuildGraph(string text, ICollection<QueryError> errors, ICollection<string> tokens)
+        internal BuildGraphResult BuildGraph(string text, ICollection<QueryError> errors, ICollection<string> tokens, ICollection<QueryToggle> toggles)
         {
             if (text == null)
                 return new BuildGraphResult(new QueryGraph(null), new QueryGraph(null));
 
             var nodesToStringPosition = new NodesToStringPosition();
-            var evaluationRootNode = BuildGraphRecursively(text, 0, text.Length, errors, tokens, nodesToStringPosition);
+            var evaluationRootNode = BuildGraphRecursively(text, 0, text.Length, errors, tokens, toggles, nodesToStringPosition);
 
             // Make a copy of the query graph for the stock query graph
             IQueryNode queryRootNode = null;
@@ -501,7 +706,12 @@ namespace UnityEditor.Search
                 queryRootNode = copyableRoot.Copy();
             }
 
+            // When validating syntax only, set the evaluation node to null to prevent further errors.
+            if (validationOptions.validateSyntaxOnly)
+                evaluationRootNode = null;
+
             // Final simplification
+            RemoveGroupNodes(ref evaluationRootNode, errors, nodesToStringPosition);
             RemoveSkippedNodes(ref evaluationRootNode, errors, nodesToStringPosition);
 
             evaluationRootNode = InsertWhereNode(evaluationRootNode, errors, nodesToStringPosition);
@@ -521,41 +731,52 @@ namespace UnityEditor.Search
             return new BuildGraphResult(new QueryGraph(evaluationRootNode), new QueryGraph(queryRootNode));
         }
 
-        protected override bool ConsumeEmpty(string text, int startIndex, int endIndex, StringView sv, Match match, ICollection<QueryError> errors, QueryEngineParserData userData)
+        protected override bool ConsumeEmpty(string text, int startIndex, int endIndex, in StringView sv, Match match, ICollection<QueryError> errors, QueryEngineParserData userData)
         {
             return true;
         }
 
-        protected override bool ConsumeCombiningToken(string text, int startIndex, int endIndex, StringView sv, Match match, ICollection<QueryError> errors, QueryEngineParserData userData)
+        protected override bool ConsumeCombiningToken(string text, int startIndex, int endIndex, in StringView sv, Match match, ICollection<QueryError> errors, QueryEngineParserData userData)
         {
             var token = sv.ToString();
-            if (!k_CombiningTokenGenerators.TryGetValue(token, out var generator))
+            IQueryNode newNode = null;
+
+            foreach (var tokenGenerator in k_CombiningTokenGenerators)
+            {
+                if (sv.Equals(tokenGenerator.Key, StringComparison.OrdinalIgnoreCase))
+                {
+                    newNode = tokenGenerator.Value();
+                    break;
+                }
+            }
+
+            if (newNode == null)
+            {
+                errors.Add(new QueryError(startIndex, endIndex - startIndex, $"No node generator found for combining token \"{token}\"."));
                 return false;
-            var newNode = generator();
-            newNode.token = new QueryToken(token, startIndex);
+            }
+
+            newNode.token = new QueryToken(in sv, startIndex);
             userData.nodesToStringPosition.Add(newNode, new QueryToken(startIndex, sv.Length));
             userData.expressionNodes.Add(newNode);
             userData.tokens.Add(token);
             return true;
         }
 
-        protected override bool ConsumeFilter(string text, int startIndex, int endIndex, StringView sv, Match match, ICollection<QueryError> errors, QueryEngineParserData userData)
+        protected override bool ConsumeFilter(string text, int startIndex, int endIndex, in StringView sv, Match match, ICollection<QueryError> errors, QueryEngineParserData userData)
         {
-            var node = CreateFilterToken(match.Value, match, startIndex, errors);
-            if (node == null)
-                return false;
-
-            node.token = new QueryToken(match.Value, startIndex);
-            userData.nodesToStringPosition.Add(node, new QueryToken(startIndex, match.Length));
-            userData.expressionNodes.Add(node);
-            userData.tokens.Add(match.Value);
-            return true;
+            return ConsumeFilter(text, startIndex, endIndex, in sv, match, errors, userData, CreateFilterToken);
         }
 
         int MatchBooleanFilter(string text, int startIndex, int endIndex, ICollection<QueryError> errors, out StringView sv, out Match match, out bool matched)
         {
+            return MatchBooleanFilter(m_BooleanFilterRx, text, startIndex, endIndex, errors, out sv, out match, out matched);
+        }
+
+        int MatchBooleanFilter(Regex booleanFilterRx, string text, int startIndex, int endIndex, ICollection<QueryError> errors, out StringView sv, out Match match, out bool matched)
+        {
             sv = text.GetStringView();
-            match = m_BooleanFilterRx.Match(text, startIndex, endIndex - startIndex);
+            match = booleanFilterRx.Match(text, startIndex, endIndex - startIndex);
             matched = false;
 
             if (!match.Success)
@@ -575,60 +796,80 @@ namespace UnityEditor.Search
             return match.Length;
         }
 
-        bool ConsumeBooleanFilter(string text, int startIndex, int endIndex, StringView sv, Match match, ICollection<QueryError> errors, QueryEngineParserData userData)
-        {
-            var node = CreateBooleanFilterToken(match.Value, match, startIndex, errors);
-            if (node == null)
-                return false;
-
-            node.token = new QueryToken(match.Value, startIndex);
-            userData.nodesToStringPosition.Add(node, new QueryToken(startIndex, match.Length));
-            userData.expressionNodes.Add(node);
-            userData.tokens.Add(match.Value);
-            return true;
-        }
-
-        int MatchPartialFilter(string text, int startIndex, int endIndex, ICollection<QueryError> errors, out StringView sv, out Match match, out bool matched)
+        static int MatchKnownBooleanFilter(Regex booleanFilterRx, string text, int startIndex, int endIndex, ICollection<QueryError> errors, out StringView sv, out Match match, out bool matched)
         {
             sv = text.GetStringView();
-            match = m_PartialFilterRx.Match(text, startIndex, endIndex - startIndex);
+            match = booleanFilterRx.Match(text, startIndex, endIndex - startIndex);
+            matched = false;
 
             if (!match.Success)
-            {
-                matched = false;
                 return -1;
-            }
+
+            if (match.Groups.Count < 2)
+                return -1;
 
             matched = true;
             return match.Length;
         }
 
-        bool ConsumePartialFilter(string text, int startIndex, int endIndex, StringView sv, Match match, ICollection<QueryError> errors, QueryEngineParserData userData)
+        bool ConsumeBooleanFilter(string text, int startIndex, int endIndex, in StringView sv, Match match, ICollection<QueryError> errors, QueryEngineParserData userData)
         {
-            var node = CreatePartialFilterToken(match.Value, match, startIndex, errors);
+            return ConsumeFilter(text, startIndex, endIndex, in sv, match, errors, userData, CreateBooleanFilterToken);
+        }
+
+        int MatchPartialFilter(string text, int startIndex, int endIndex, ICollection<QueryError> errors, out StringView sv, out Match match, out bool matched)
+        {
+            return MatchFilter(m_PartialFilterRx, text, startIndex, endIndex, errors, out sv, out match, out matched);
+        }
+
+        bool ConsumePartialFilter(string text, int startIndex, int endIndex, in StringView sv, Match match, ICollection<QueryError> errors, QueryEngineParserData userData)
+        {
+            return ConsumeFilter(text, startIndex, endIndex, in sv, match, errors, userData, CreatePartialFilterToken);
+        }
+
+        static bool ConsumeFilter(string text, int startIndex, int endIndex, in StringView sv, Match match, ICollection<QueryError> errors, QueryEngineParserData userData, CreateFilterTokenFunction createFilterFunc)
+        {
+            var svToken = new StringView(text, startIndex, startIndex + match.Length);
+            var node = createFilterFunc(text, in svToken, match, startIndex, errors);
             if (node == null)
                 return false;
 
-            node.token = new QueryToken(match.Value, startIndex);
+            node.token = new QueryToken(in svToken, startIndex);
             userData.nodesToStringPosition.Add(node, new QueryToken(startIndex, match.Length));
             userData.expressionNodes.Add(node);
             userData.tokens.Add(match.Value);
             return true;
         }
 
-        protected override bool ConsumeWord(string text, int startIndex, int endIndex, StringView sv, Match match, ICollection<QueryError> errors, QueryEngineParserData userData)
+        protected override bool ConsumeWord(string text, int startIndex, int endIndex, in StringView sv, Match match, ICollection<QueryError> errors, QueryEngineParserData userData)
         {
-            if (validationOptions.validateFilters && searchDataCallback == null)
+            if (validationOptions.validateFilters && searchDataCallback == null && !validationOptions.validateSyntaxOnly)
             {
                 errors.Add(new QueryError(startIndex, match.Length, "Cannot use a search word without setting the search data callback."));
                 return false;
             }
 
-            var node = CreateWordExpressionNode(match.Value);
+            return ConsumeText(text, startIndex, endIndex, in sv, match, errors, userData, CreateWordExpressionNode);
+        }
+
+        protected override bool ConsumeComment(string text, int startIndex, int endIndex, in StringView sv, Match match, ICollection<QueryError> errors, QueryEngineParserData userData)
+        {
+            return ConsumeText(text, startIndex, endIndex, in sv, match, errors, userData, CreateCommentNode);
+        }
+
+        protected override bool ConsumeToggle(string text, int startIndex, int endIndex, in StringView sv, Match match, ICollection<QueryError> errors, QueryEngineParserData userData)
+        {
+            return ConsumeText(text, startIndex, endIndex, in sv, match, errors, userData, CreateToggleNode);
+        }
+
+        static bool ConsumeText(string text, int startIndex, int endIndex, in StringView sv, Match match, ICollection<QueryError> errors, QueryEngineParserData userData, CreateTextNodeFunction createNodeFunc)
+        {
+            var tokenSv = new StringView(text, startIndex, startIndex + match.Length);
+            var node = createNodeFunc(text, in tokenSv, match, errors, userData);
             if (node == null)
                 return false;
 
-            node.token = new QueryToken(match.Value, startIndex);
+            node.token = new QueryToken(in tokenSv, startIndex);
             userData.nodesToStringPosition.Add(node, new QueryToken(startIndex, match.Length));
             userData.expressionNodes.Add(node);
             if (!node.skipped)
@@ -636,19 +877,23 @@ namespace UnityEditor.Search
             return true;
         }
 
-        protected override bool ConsumeGroup(string text, int startIndex, int endIndex, StringView sv, Match match, ICollection<QueryError> errors, QueryEngineParserData userData)
+        protected override bool ConsumeGroup(string text, int startIndex, int endIndex, in StringView sv, Match match, ICollection<QueryError> errors, QueryEngineParserData userData)
         {
-            var groupNode = BuildGraphRecursively(text, startIndex + 1, endIndex - 1, errors, userData.tokens, userData.nodesToStringPosition);
-            if (groupNode == null)
+            var innerNode = BuildGraphRecursively(text, startIndex + 1, endIndex - 1, errors, userData.tokens, userData.toggles, userData.nodesToStringPosition);
+            if (innerNode == null)
                 return false;
 
+            var token = new QueryToken(in sv, startIndex);
+            var groupNode = new GroupNode(in sv) { token = token };
+            groupNode.AddNode(innerNode);
             userData.expressionNodes.Add(groupNode);
+            userData.nodesToStringPosition.Add(groupNode, token);
             return true;
         }
 
-        protected override bool ConsumeNestedQuery(string text, int startIndex, int endIndex, StringView sv, Match match, ICollection<QueryError> errors, QueryEngineParserData userData)
+        protected override bool ConsumeNestedQuery(string text, int startIndex, int endIndex, in StringView sv, Match match, ICollection<QueryError> errors, QueryEngineParserData userData)
         {
-            if (validationOptions.validateFilters && !validationOptions.skipNestedQueries)
+            if (validationOptions.validateFilters && !validationOptions.skipNestedQueries && !validationOptions.validateSyntaxOnly)
             {
                 if (m_NestedQueryHandler == null)
                 {
@@ -663,13 +908,15 @@ namespace UnityEditor.Search
                 }
             }
 
-            var nestedQueryAggregator = match.Groups[1].Value;
-            var queryString = match.Groups[2].Value;
+            var aggregatorGroup = match.Groups["agg"];
+            var nestedGroup = match.Groups["nested"];
+            var nestedQueryAggregator = GetStringViewFromMatch(text, aggregatorGroup);
+            var queryString = GetStringViewFromMatch(text, nestedGroup);
 
             var nestedQueryString = queryString.Substring(1, queryString.Length - 2);
             nestedQueryString = nestedQueryString.Trim();
-            var nestedQueryNode = new NestedQueryNode(nestedQueryString, m_NestedQueryHandler);
-            nestedQueryNode.token = new QueryToken(startIndex + (string.IsNullOrEmpty(nestedQueryAggregator) ? 0 : nestedQueryAggregator.Length), queryString.Length);
+            var nestedQueryNode = new NestedQueryNode(in nestedQueryString, in queryString, m_NestedQueryHandler);
+            nestedQueryNode.token = new QueryToken(startIndex + (nestedQueryAggregator.IsNullOrEmpty() ? 0 : nestedQueryAggregator.Length), queryString.Length);
             userData.nodesToStringPosition.Add(nestedQueryNode, nestedQueryNode.token);
             if (validationOptions.skipNestedQueries)
             {
@@ -680,18 +927,18 @@ namespace UnityEditor.Search
 
             userData.tokens.Add(match.Value);
 
-            if (string.IsNullOrEmpty(nestedQueryAggregator))
+            if (nestedQueryAggregator.IsNullOrEmpty())
                 userData.expressionNodes.Add(nestedQueryNode);
             else
             {
-                var lowerAggregator = nestedQueryAggregator.ToLowerInvariant();
-                if (!m_NestedQueryAggregators.TryGetValue(lowerAggregator, out var aggregator) && validationOptions.validateFilters)
+                var lowerAggregator = nestedQueryAggregator.ToString().ToLowerInvariant();
+                if (!m_NestedQueryAggregators.TryGetValue(lowerAggregator, out var aggregator) && validationOptions.validateFilters && !validationOptions.validateSyntaxOnly)
                 {
                     errors.Add(new QueryError(startIndex, nestedQueryAggregator.Length, $"Unknown nested query aggregator \"{nestedQueryAggregator}\""));
                     return false;
                 }
 
-                var aggregatorNode = new AggregatorNode(nestedQueryAggregator, aggregator);
+                var aggregatorNode = new AggregatorNode(in nestedQueryAggregator, aggregator);
                 aggregatorNode.token = new QueryToken(startIndex, nestedQueryAggregator.Length + nestedQueryNode.token.length);
                 userData.nodesToStringPosition.Add(aggregatorNode, aggregatorNode.token);
                 aggregatorNode.children.Add(nestedQueryNode);
@@ -727,99 +974,103 @@ namespace UnityEditor.Search
             }
         }
 
-        IQueryNode CreateFilterToken(string token, Match match, int index, ICollection<QueryError> errors)
+        IQueryNode CreateFilterToken(string text, in StringView token, Match match, int index, ICollection<QueryError> errors)
         {
-            if (match.Groups.Count != 7) // There is 6 groups plus the balancing group
+            return CreateFilterToken(null, text, in token, match, index, errors);
+        }
+
+        IQueryNode CreateFilterToken(IFilter filter, string text, in StringView token, Match match, int index, ICollection<QueryError> errors)
+        {
+            // Mandatory groups
+            var filterTypeGroup = match.Groups["name"];
+            var filterOperatorGroup = match.Groups["op"];
+            var filterValueGroup = match.Groups["value"];
+            var filterParamGroup = match.Groups["f1"];
+            var nestedQueryGroup = match.Groups["agg"];
+
+            if (!filterTypeGroup.Success || !filterOperatorGroup.Success || !filterValueGroup.Success)
             {
                 errors.Add(new QueryError(index, token.Length, $"Could not parse filter block \"{token}\"."));
                 return null;
             }
 
-            var filterType = match.Groups[1].Value;
-            var filterParam = match.Groups[2].Value;
-            var filterOperator = match.Groups[3].Value;
-            var filterValue = match.Groups[4].Value;
-            var nestedQueryAggregator = match.Groups[5].Value;
+            var filterType = GetStringViewFromMatch(text, filterTypeGroup);
+            var filterParam = GetStringViewFromMatch(text, filterParamGroup);
+            var filterOperator = GetStringViewFromMatch(text, filterOperatorGroup);
+            var filterValue = GetStringViewFromMatch(text, filterValueGroup);
+            var nestedQueryAggregator = GetStringViewFromMatch(text, nestedQueryGroup);
 
-            var filterTypeIndex = match.Groups[1].Index;
-            var filterOperatorIndex = match.Groups[3].Index;
-            var filterValueIndex = match.Groups[4].Index;
+            var filterTypeIndex = filterTypeGroup.Index;
+            var filterOperatorIndex = filterOperatorGroup.Index;
+            var filterValueIndex = filterValueGroup.Index;
 
-            if (!string.IsNullOrEmpty(filterParam))
+            if (!filterParam.IsNullOrEmpty())
             {
                 // Trim () around the group
                 filterParam = filterParam.Trim('(', ')');
             }
 
-            if (!m_Filters.TryGetValue(filterType, out var filter))
+            var args = new CreateFilterTokenArgs(in token, match, index, errors, in filterType, in filterParam, in filterOperator, in filterValue, in nestedQueryAggregator, filterTypeIndex, filterOperatorIndex, filterValueIndex);
+            if (filter == null && !GetFilter(in args, out var queryNode, out filter))
             {
-                // When skipping unknown filter, just return a noop. The graph will get simplified later.
-                if (validationOptions.skipUnknownFilters)
-                {
-                    return new FilterNode(filterType, filterOperator, filterValue, filterParam, token) {skipped = true};
-                }
-
-                if (!HasDefaultHandler(!string.IsNullOrEmpty(filterParam)) && validationOptions.validateFilters)
-                {
-                    errors.Add(new QueryError(filterTypeIndex, filterType.Length, $"Unknown filter \"{filterType}\"."));
-                    return null;
-                }
-                if (string.IsNullOrEmpty(filterParam))
-                    filter = new DefaultFilter<TData>(filterType, m_DefaultFilterHandler ?? ((o, s, fo, value) => false));
-                else
-                    filter = new DefaultParamFilter<TData>(filterType, m_DefaultParamFilterHandler ?? ((o, s, param, fo, value) => false));
+                return queryNode;
             }
 
-            if (!m_FilterOperators.ContainsKey(filterOperator))
-            {
-                errors.Add(new QueryError(filterOperatorIndex, filterOperator.Length, $"Unknown filter operator \"{filterOperator}\"."));
-                return null;
-            }
-            var op = m_FilterOperators[filterOperator];
+            return CreateFilterToken(filter, in args);
+        }
 
-            if (filter.supportedFilters.Any() && !filter.supportedFilters.Any(filterOp => filterOp.Equals(op.token)))
+        IQueryNode CreateFilterToken(IFilter filter, in CreateFilterTokenArgs args)
+        {
+            if (!GetFilterOperator(filter, in args.filterOperator, out var op))
             {
-                errors.Add(new QueryError(filterOperatorIndex, filterOperator.Length, $"The operator \"{op.token}\" is not supported for this filter."));
+                args.errors.Add(new QueryError(args.filterOperatorIndex, args.filterOperator.Length, $"Unknown filter operator \"{args.filterOperator.ToString()}\"."));
                 return null;
             }
 
-            if (QueryEngineUtils.IsPhraseToken(filterValue))
-                filterValue = filterValue.Trim('"');
+            if (!validationOptions.validateSyntaxOnly && filter.supportedOperators.Any() && !filter.supportedOperators.Any(filterOp => filterOp.Equals(op.token)))
+            {
+                args.errors.Add(new QueryError(args.filterOperatorIndex, args.filterOperator.Length, $"The operator \"{op.token}\" is not supported for this filter."));
+                return null;
+            }
+
+            var rawFilterValue = args.filterValue;
+            var filterValue = RemoveQuotes(in rawFilterValue);
 
             IQueryNode filterNode;
 
-            if (QueryEngineUtils.IsNestedQueryToken(filterValue))
+            if (QueryEngineUtils.IsNestedQueryToken(in filterValue))
             {
                 if (validationOptions.skipNestedQueries)
                 {
-                    return new InFilterNode(filter, op, filterValue, filterParam, token) {skipped = true};
+                    return new InFilterNode(filter, args.filterType, in op, args.filterOperator, filterValue, rawFilterValue, args.filterParam, args.token) { skipped = true };
                 }
 
-                if (validationOptions.validateFilters && m_NestedQueryHandler == null)
+                if (validationOptions.validateFilters && m_NestedQueryHandler == null && !validationOptions.validateSyntaxOnly)
                 {
-                    errors.Add(new QueryError(filterValueIndex, filterValue.Length, $"Cannot use a nested query without setting the handler first."));
+                    args.errors.Add(new QueryError(args.filterValueIndex, args.filterValue.Length, $"Cannot use a nested query without setting the handler first."));
                     return null;
                 }
 
-                filterNode = new InFilterNode(filter, op, filterValue, filterParam, token);
+                filterNode = new InFilterNode(filter, args.filterType, in op, args.filterOperator, filterValue, rawFilterValue, args.filterParam, args.token);
 
-                var startIndex = filterValue.IndexOf('{') + 1;
-                filterValue = filterValue.Substring(startIndex, filterValue.Length - startIndex - 1);
+                var startIndex = filterValue.IndexOf('{');
+                var rawNestedQuery = filterValue.Substring(startIndex, filterValue.Length - startIndex);
+                filterValue = rawNestedQuery.Substring(1, rawNestedQuery.Length - 2);
                 filterValue = filterValue.Trim();
-                var nestedQueryNode = new NestedQueryNode(filterValue, filterType, m_NestedQueryHandler);
-                nestedQueryNode.token = new QueryToken(filterValue, filterValueIndex);
+                var nestedQueryNode = new NestedQueryNode(in filterValue, in rawNestedQuery, in args.filterType, m_NestedQueryHandler);
+                nestedQueryNode.token = new QueryToken(filterValue, args.filterValueIndex);
 
-                if (!string.IsNullOrEmpty(nestedQueryAggregator))
+                if (!args.nestedQueryAggregator.IsNullOrEmpty())
                 {
-                    var lowerAggregator = nestedQueryAggregator.ToLowerInvariant();
-                    if (!m_NestedQueryAggregators.TryGetValue(lowerAggregator, out var aggregator) && validationOptions.validateFilters)
+                    var lowerAggregator = args.nestedQueryAggregator.ToString().ToLowerInvariant();
+                    if (!m_NestedQueryAggregators.TryGetValue(lowerAggregator, out var aggregator) && validationOptions.validateFilters && !validationOptions.validateSyntaxOnly)
                     {
-                        errors.Add(new QueryError(filterValueIndex, nestedQueryAggregator.Length, $"Unknown nested query aggregator \"{nestedQueryAggregator}\""));
+                        args.errors.Add(new QueryError(args.filterValueIndex, args.nestedQueryAggregator.Length, $"Unknown nested query aggregator \"{args.nestedQueryAggregator}\""));
                         return null;
                     }
 
-                    var aggregatorNode = new AggregatorNode(nestedQueryAggregator, aggregator);
-                    aggregatorNode.token = new QueryToken(nestedQueryAggregator, filterValueIndex);
+                    var aggregatorNode = new AggregatorNode(args.nestedQueryAggregator, aggregator);
+                    aggregatorNode.token = new QueryToken(args.nestedQueryAggregator, args.filterValueIndex);
 
                     filterNode.children.Add(aggregatorNode);
                     aggregatorNode.parent = filterNode;
@@ -834,13 +1085,18 @@ namespace UnityEditor.Search
             }
             else
             {
-                filterNode = new FilterNode(filter, op, filterValue, filterParam, token);
+                filterNode = new FilterNode(filter, in args.filterType, in op, in args.filterOperator, in filterValue, in rawFilterValue, in args.filterParam, in args.token);
             }
 
             return filterNode;
         }
 
-        IQueryNode CreateBooleanFilterToken(string token, Match match, int index, ICollection<QueryError> errors)
+        IQueryNode CreateBooleanFilterToken(string text, in StringView token, Match match, int index, ICollection<QueryError> errors)
+        {
+            return CreateBooleanFilterToken(null, text, in token, match, index, errors);
+        }
+
+        IQueryNode CreateBooleanFilterToken(IFilter filter, string text, in StringView token, Match match, int index, ICollection<QueryError> errors)
         {
             if (match.Groups.Count != 3) // There is 3 groups
             {
@@ -848,61 +1104,63 @@ namespace UnityEditor.Search
                 return null;
             }
 
-            var filterType = match.Groups[1].Value;
-            var filterParam = match.Groups[2].Value;
-            var filterTypeIndex = match.Groups[1].Index;
+            var filterType = GetStringViewFromMatch(text, match.Groups["name"]);
+            var filterParam = GetStringViewFromMatch(text, match.Groups["f1"]);
+            var filterTypeIndex = match.Groups["name"].Index;
 
-            if (!string.IsNullOrEmpty(filterParam))
+            if (!filterParam.IsNullOrEmpty())
             {
                 // Trim () around the group
                 filterParam = filterParam.Trim('(', ')');
             }
 
-            if (!m_Filters.TryGetValue(filterType, out var filter))
+            var args = new CreateFilterTokenArgs(in token, match, index, errors, in filterType, in filterParam, in StringView.Empty, in StringView.Empty, in StringView.Empty, filterTypeIndex, 0, 0);
+            if (filter == null && !GetFilter(in args, out var queryNode, out filter))
             {
-                // When skipping unknown filter, just return a noop. The graph will get simplified later.
-                if (validationOptions.skipUnknownFilters)
-                {
-                    return new FilterNode(filterType, null, null, filterParam, token) {skipped = true};
-                }
-
-                if (!HasDefaultHandler(!string.IsNullOrEmpty(filterParam)) && validationOptions.validateFilters)
-                {
-                    errors.Add(new QueryError(filterTypeIndex, filterType.Length, $"Unknown filter \"{filterType}\"."));
-                    return null;
-                }
-                if (string.IsNullOrEmpty(filterParam))
-                    filter = new DefaultFilter<TData>(filterType, m_DefaultFilterHandler ?? ((o, s, fo, value) => false));
-                else
-                    filter = new DefaultParamFilter<TData>(filterType, m_DefaultParamFilterHandler ?? ((o, s, param, fo, value) => false));
+                return queryNode;
             }
+            return CreateBooleanFilterToken(filter, in args);
+        }
 
+        IQueryNode CreateBooleanFilterToken(IFilter filter, in CreateFilterTokenArgs args)
+        {
             // Boolean filters default to equal
-            var filterOperator = "=";
-            if (!m_FilterOperators.ContainsKey(filterOperator))
+            var filterOperator = "=".GetStringView();
+            if (!GetFilterOperator(filter, in filterOperator, out var op))
             {
-                errors.Add(new QueryError(index, token.Length, $"Boolean filter not supported."));
+                args.errors.Add(new QueryError(args.index, args.token.Length, $"Boolean filter not supported."));
                 return null;
             }
-            var op = m_FilterOperators[filterOperator];
 
-            IQueryNode filterNode = new FilterNode(filter, op, "true", filterParam, token);
+            var operatorIdSv = filterOperator;
+            var filterValueSv = new StringView("true");
+            IQueryNode filterNode = new FilterNode(filter, in args.filterType, in op, in operatorIdSv, in filterValueSv, in filterValueSv, in args.filterParam, in args.token);
             return filterNode;
         }
 
-        IQueryNode CreatePartialFilterToken(string token, Match match, int index, ICollection<QueryError> errors)
+        IQueryNode CreatePartialFilterToken(string text, in StringView token, Match match, int index, ICollection<QueryError> errors)
         {
-            var filterType = match.Groups["name"].Value;
-            var filterParam = match.Groups["f1"].Value;
-            if (string.IsNullOrEmpty(filterParam))
-                filterParam = match.Groups["f2"].Value;
-            var filterOperator = match.Groups["op"].Value;
-            var filterValue = match.Groups["value"].Value;
+            return CreatePartialFilterToken(null, text, in token, match, index, errors);
+        }
 
-            var filterTypeIndex = match.Groups["name"].Index;
-            var filterOperatorIndex = match.Groups["op"].Index;
+        IQueryNode CreatePartialFilterToken(IFilter filter, string text, in StringView token, Match match, int index, ICollection<QueryError> errors)
+        {
+            var filterTypeGroup = match.Groups["name"];
+            var filterOperatorGroup = match.Groups["op"];
+            var filterValueGroup = match.Groups["value"];
 
-            if (!string.IsNullOrEmpty(filterParam))
+            var filterType = GetStringViewFromMatch(text, filterTypeGroup);
+            var filterParam = GetStringViewFromMatch(text, match.Groups["f1"]);
+            if (filterParam.IsNullOrEmpty())
+                filterParam = GetStringViewFromMatch(text, match.Groups["f2"]);
+            var filterOperator = GetStringViewFromMatch(text, filterOperatorGroup);
+            var filterValue = GetStringViewFromMatch(text, filterValueGroup);
+
+            var filterTypeIndex = filterTypeGroup.Index;
+            var filterOperatorIndex = filterOperatorGroup.Index;
+            var filterValueIndex = filterValueGroup.Index;
+
+            if (!filterParam.IsNullOrEmpty())
             {
                 // Trim () around the group
                 filterParam = filterParam.Trim('(', ')');
@@ -910,52 +1168,85 @@ namespace UnityEditor.Search
 
             if (validationOptions.skipIncompleteFilters)
             {
-                return new FilterNode(filterType, filterOperator, filterValue, filterParam, token) {skipped = true};
+                return new FilterNode(in filterType, in filterOperator, in filterValue, in filterValue, in filterParam, in token) { skipped = true };
             }
 
-            if (!m_Filters.TryGetValue(filterType, out var filter))
+            var args = new CreateFilterTokenArgs(in token, match, index, errors, in filterType, in filterParam, in filterOperator, in filterValue, in StringView.Empty, filterTypeIndex, filterOperatorIndex, filterValueIndex);
+            if (filter == null && !GetFilter(in args, out var queryNode, out filter))
+            {
+                return queryNode;
+            }
+            return CreatePartialFilterToken(filter, in args);
+        }
+
+        IQueryNode CreatePartialFilterToken(IFilter filter, in CreateFilterTokenArgs args)
+        {
+            var op = QueryFilterOperator.invalid;
+            if (!args.filterOperator.IsNullOrEmpty())
+            {
+                if (!GetFilterOperator(filter, in args.filterOperator, out op))
+                {
+                    args.errors.Add(new QueryError(args.filterOperatorIndex, args.filterOperator.Length, $"Unknown filter operator \"{args.filterOperator}\"."));
+                    return null;
+                }
+
+                var opToken = op.token;
+                if (!validationOptions.validateSyntaxOnly && filter.supportedOperators.Any() && !filter.supportedOperators.Any(filterOp => filterOp.Equals(opToken)))
+                {
+                    args.errors.Add(new QueryError(args.filterOperatorIndex, args.filterOperator.Length, $"The operator \"{op.token}\" is not supported for this filter."));
+                    return null;
+                }
+            }
+
+            var rawFilterValue = args.filterValue;
+            var filterValue = RemoveQuotes(in rawFilterValue);
+
+            var filterNode = new FilterNode(filter, in args.filterType, in op, in args.filterOperator, in filterValue, in rawFilterValue, in args.filterParam, in args.token);
+            args.errors.Add(new QueryError(args.index, args.token.Length, $"The filter \"{args.filterType}\" is incomplete."));
+
+            return filterNode;
+        }
+
+        bool GetFilter(in CreateFilterTokenArgs args, out IQueryNode queryNode, out IFilter filter)
+        {
+            queryNode = null;
+            var filterTypeStr = args.filterType.ToString();
+            if (!m_Filters.TryGetValue(filterTypeStr, out filter))
             {
                 // When skipping unknown filter, just return a noop. The graph will get simplified later.
                 if (validationOptions.skipUnknownFilters)
                 {
-                    return new FilterNode(filterType, filterOperator, filterValue, filterParam, token) { skipped = true };
+                    queryNode = new FilterNode(in args.filterType, in args.filterOperator, in args.filterValue, in args.filterValue, in args.filterParam, in args.token) { skipped = true };
+                    return false;
                 }
 
-                if (!HasDefaultHandler(!string.IsNullOrEmpty(filterParam)) && validationOptions.validateFilters)
+                if (!validationOptions.validateSyntaxOnly && !HasDefaultHandler(!args.filterParam.IsNullOrEmpty()) && validationOptions.validateFilters)
                 {
-                    errors.Add(new QueryError(filterTypeIndex, filterType.Length, $"Unknown filter \"{filterType}\"."));
-                    return null;
+                    args.errors.Add(new QueryError(args.filterTypeIndex, args.filterType.Length, $"Unknown filter \"{filterTypeStr}\"."));
+                    queryNode = null;
+                    return false;
                 }
-                if (string.IsNullOrEmpty(filterParam))
-                    filter = new DefaultFilter<TData>(filterType, m_DefaultFilterHandler ?? ((o, s, fo, value) => false));
-                else
-                    filter = new DefaultParamFilter<TData>(filterType, m_DefaultParamFilterHandler ?? ((o, s, param, fo, value) => false));
+                filter = CreateDefaultFilter(filterTypeStr, args.filterParam);
             }
 
-            FilterOperator op = null;
-            if (!string.IsNullOrEmpty(filterOperator))
-            {
-                if (!m_FilterOperators.ContainsKey(filterOperator))
-                {
-                    errors.Add(new QueryError(filterOperatorIndex, filterOperator.Length, $"Unknown filter operator \"{filterOperator}\"."));
-                    return null;
-                }
-                op = m_FilterOperators[filterOperator];
+            return true;
+        }
 
-                if (filter.supportedFilters.Any() && !filter.supportedFilters.Any(filterOp => filterOp.Equals(op.token)))
-                {
-                    errors.Add(new QueryError(filterOperatorIndex, filterOperator.Length, $"The operator \"{op.token}\" is not supported for this filter."));
-                    return null;
-                }
-            }
+        bool GetFilterOperator(IFilter filter, in StringView operatorToken, out QueryFilterOperator op)
+        {
+            op = QueryFilterOperator.invalid;
+            if (filter.operators.TryGetValueByStringView(in operatorToken, out op))
+                return true;
+            if (m_FilterOperators.TryGetValueByStringView(in operatorToken, out op))
+                return true;
+            return op.valid;
+        }
 
-            if (QueryEngineUtils.IsPhraseToken(filterValue))
-                filterValue = filterValue.Trim('"');
-
-            var filterNode = new FilterNode(filter, op, filterValue, filterParam, token);
-            errors.Add(new QueryError(index, token.Length, $"The filter \"{filterType}\" is incomplete."));
-
-            return filterNode;
+        IFilter CreateDefaultFilter(string filterToken, in StringView filterParam)
+        {
+            if (filterParam.IsNullOrEmpty())
+                return new DefaultFilter<TData>(filterToken, m_DefaultFilterHandler ?? ((o, s, fo, value) => false), this);
+            return new DefaultParamFilter<TData>(filterToken, m_DefaultParamFilterHandler ?? ((o, s, param, fo, value) => false), this);
         }
 
         private bool HasDefaultHandler(bool useParamFilter)
@@ -963,20 +1254,20 @@ namespace UnityEditor.Search
             return useParamFilter ? m_DefaultParamFilterHandler != null : m_DefaultFilterHandler != null;
         }
 
-        public IParseResult ParseFilterValue(string filterValue, IFilter filter, FilterOperator op, out Type filterValueType)
+        public IParseResult ParseFilterValue(string filterValue, IFilter filter, in QueryFilterOperator op, out Type filterValueType)
         {
             var foundValueType = false;
             IParseResult parseResult = null;
             filterValueType = filter.type;
 
             // Filter resolver only support values of the same type as the filter in their resolver
-            if (filter.resolver)
+            if (filter.usesResolver)
             {
-                return ParseSpecificType(filterValue, filter.type);
+                return ParseSpecificType(filterValue, filter.type, filter);
             }
 
             // Check custom parsers first
-            foreach (var typeParser in m_TypeParsers)
+            foreach (var typeParser in filter.typeParsers.Concat(m_TypeParsers))
             {
                 parseResult = typeParser.Parse(filterValue);
                 if (parseResult.success)
@@ -1056,9 +1347,9 @@ namespace UnityEditor.Search
             return parseResult;
         }
 
-        IParseResult ParseSpecificType(string filterValue, Type type)
+        IParseResult ParseSpecificType(string filterValue, Type type, IFilter filter)
         {
-            foreach (var typeParser in m_TypeParsers)
+            foreach (var typeParser in filter.typeParsers.Concat(m_TypeParsers))
             {
                 if (type != typeParser.type)
                     continue;
@@ -1069,21 +1360,34 @@ namespace UnityEditor.Search
             return GenerateParseResultForType(filterValue, type);
         }
 
-        IQueryNode CreateWordExpressionNode(string token)
+        IQueryNode CreateWordExpressionNode(string text, in StringView token, Match match, ICollection<QueryError> errors, QueryEngineParserData userData)
         {
-            var isExact = token.StartsWith("!");
+            var localToken = token;
+            var isExact = localToken.StartsWith("!");
             if (isExact)
-                token = token.Remove(0, 1);
-            if (QueryEngineUtils.IsPhraseToken(token))
-                token = token.Trim('"');
+                localToken = localToken.Substring(1, token.Length - 1);
+            var rawToken = localToken;
+            localToken = RemoveQuotes(localToken);
 
             if (searchWordTransformerCallback != null)
-                token = searchWordTransformerCallback(token);
+                localToken = new StringView(searchWordTransformerCallback(localToken.ToString()));
 
-            var searchNode = new SearchNode(token, isExact);
-            if (string.IsNullOrEmpty(token))
+            var searchNode = new SearchNode(in localToken, in rawToken, isExact);
+            if (localToken.IsNullOrEmpty())
                 searchNode.skipped = true;
             return searchNode;
+        }
+
+        static IQueryNode CreateCommentNode(string text, in StringView token, Match match, ICollection<QueryError> errors, QueryEngineParserData userData)
+        {
+            return new CommentNode(in token);
+        }
+
+        static IQueryNode CreateToggleNode(string text, in StringView token, Match match, ICollection<QueryError> errors, QueryEngineParserData userData)
+        {
+            var innerValue = GetStringViewFromMatch(text, match.Groups["inner"]);
+            userData.toggles.Add(new QueryToggle(in token, in innerValue));
+            return new ToggleNode(in token, in innerValue);
         }
 
         IQueryNode CombineNodesToTree(List<IQueryNode> expressionNodes, ICollection<QueryError> errors, NodesToStringPosition nodesToStringPosition)
@@ -1259,8 +1563,11 @@ namespace UnityEditor.Search
                     return;
                 }
 
-                // Otherwise, remove ourselves from our parent
-                node.parent.children.Remove(node);
+                if (node.parent is CombinedNode cn)
+                {
+                    // Otherwise, remove ourselves from our parent
+                    cn.RemoveNode(node);
+                }
             }
             else
             {
@@ -1270,43 +1577,23 @@ namespace UnityEditor.Search
                     RemoveSkippedNodes(ref children[i], errors, nodesToStringPosition);
                 }
 
-                // If we have become a leaf, remove ourselves from our parent
-                if (combinedNode.leaf)
-                {
-                    if (combinedNode.parent != null)
-                        combinedNode.parent.children.Remove(node);
-                    else
-                        node = null;
-
-                    return;
-                }
-
-                // If we are a node with a single child and not a leaf, nothing to do.
-                if (combinedNode.type == QueryNodeType.Not || combinedNode.type == QueryNodeType.Where || combinedNode.type == QueryNodeType.Aggregator)
-                    return;
-
-                // If we are an And or an Or and children count is still 2, nothing to do
-                if (combinedNode.children.Count == 2)
-                    return;
-
-                // If we have no parent, we are the root so the remaining child must take our place
-                if (combinedNode.parent == null)
-                {
-                    node = combinedNode.children[0];
-                    return;
-                }
-
-                // Otherwise, replace ourselves with the remaining child in our parent child list
-                var index = combinedNode.parent.children.IndexOf(combinedNode);
-                if (index == -1)
-                {
-                    var t = nodesToStringPosition[node];
-                    errors.Add(new QueryError(t.position, $"Node {combinedNode.type} not found in its parent's children list."));
-                    return;
-                }
-
-                combinedNode.parent.children[index] = combinedNode.children[0];
+                combinedNode.RemoveFromTreeIfPossible(ref node, errors);
             }
+        }
+
+        static void RemoveGroupNodes(ref IQueryNode node, ICollection<QueryError> errors, NodesToStringPosition nodesToStringPosition)
+        {
+            if (node?.children == null)
+                return;
+
+            var children = node.children.ToArray();
+            for (var i = 0; i < children.Length; ++i)
+                RemoveGroupNodes(ref children[i], errors, nodesToStringPosition);
+
+            if (!(node is GroupNode groupNode))
+                return;
+
+            groupNode.RemoveFromTreeIfPossible(ref node, errors);
         }
 
         static void ValidateGraph(IQueryNode root, ICollection<QueryError> errors, NodesToStringPosition nodesToStringPosition)
@@ -1331,6 +1618,7 @@ namespace UnityEditor.Search
                 {
                     case QueryNodeType.Not:
                     case QueryNodeType.Where:
+                    case QueryNodeType.Group:
                         if (root.children.Count != 1)
                             errors.Add(new QueryError(position, length, $"Node {root.type} should have a child."));
                         break;
@@ -1350,16 +1638,15 @@ namespace UnityEditor.Search
             }
         }
 
-        void BuildFilterRegex()
+        public void BuildFilterRegex()
         {
-            var sortedOperators = m_FilterOperators.Keys.Select(Regex.Escape).ToList();
-            sortedOperators.Sort((s, s1) => s1.Length.CompareTo(s.Length));
-            BuildFilterRegex(sortedOperators);
-
-            var innerOperatorsPattern = $"{string.Join("|", sortedOperators)}";
-            var partialOperatorsPattern = $"(?<op>{innerOperatorsPattern})?";
-            var partialFilterNamePattern = $"\\G(?<name>[\\w.]+(?=\\(|(?:{innerOperatorsPattern})))";
-            m_PartialFilterRx = new Regex(partialFilterNamePattern + QueryRegexValues.k_PartialFilterFunctionPattern + partialOperatorsPattern + QueryRegexValues.k_PartialFilterValuePattern);
+            RebuildAllBasicFilterRegex(m_FilterOperators.Keys, false);
+            RebuildAllBasicPartialFilterRegex(m_FilterOperators.Keys, false);
+            foreach (var filter in m_Filters.Values)
+            {
+                BuildFilterMatchers(filter, false);
+            }
+            SortQueryTokenHandlers();
         }
 
         IParseResult GenerateParseResultForType(string value, Type type)
@@ -1392,7 +1679,15 @@ namespace UnityEditor.Search
 
         void BuildDefaultTypeParsers()
         {
-            AddDefaultTypeParser(s => int.TryParse(s, out var value) ? new ParseResult<int>(true, value) : ParseResult<int>.none);
+            AddDefaultTypeParser(s =>
+            {
+                if (int.TryParse(s, out var value))
+                    return new ParseResult<int>(true, value);
+                if (double.TryParse(s, NumberStyles.Number, NumberFormatInfo.InvariantInfo, out var number))
+                    return new ParseResult<int>(true, (int)number);
+
+                return ParseResult<int>.none;
+            });
             AddDefaultTypeParser(s => float.TryParse(s, NumberStyles.Number, NumberFormatInfo.InvariantInfo, out var value) ? new ParseResult<float>(true, value) : ParseResult<float>.none);
             AddDefaultTypeParser(s => bool.TryParse(s, out var value) ? new ParseResult<bool>(true, value) : ParseResult<bool>.none);
             AddDefaultTypeParser(s => double.TryParse(s, NumberStyles.Number, NumberFormatInfo.InvariantInfo, out var value) ? new ParseResult<double>(true, value) : ParseResult<double>.none);
@@ -1409,8 +1704,10 @@ namespace UnityEditor.Search
             AddFilterOperationGenerator<T>();
         }
 
-        void AddDefaultEnumTypeParser<T>()
+        public void AddDefaultEnumTypeParser<T>()
         {
+            if (m_DefaultTypeParsers.ContainsKey(typeof(T)))
+                return;
             AddDefaultTypeParser(s =>
             {
                 try
@@ -1441,7 +1738,7 @@ namespace UnityEditor.Search
                 .Where(filter => filter != null);
             foreach (var filter in filters)
             {
-                AddFilter(filter.token, filter);
+                AddFilter(filter);
             }
         }
 
@@ -1450,103 +1747,123 @@ namespace UnityEditor.Search
             where TTransformerAttribute : QueryEngineParameterTransformerAttribute
         {
             var attr = mi.GetCustomAttributes(typeof(TFilterAttribute), false).Cast<TFilterAttribute>().First();
-            var filterToken = attr.token;
-            var stringComparison = attr.overridesStringComparison ? attr.comparisonOptions : globalStringComparison;
-            var supportedOperators = attr.supportedOperators;
             var creationParams = new FilterCreationParams(
-                filterToken,
-                supportedOperators,
+                attr.token,
+                new Regex(attr.token),
+                attr.useRegularExpressionToken,
+                attr.supportedOperators,
                 attr.overridesStringComparison,
-                stringComparison,
+                attr.overridesStringComparison ? attr.comparisonOptions : globalStringComparison,
                 attr.useParamTransformer,
                 attr.paramTransformerFunction,
                 typeof(TTransformerAttribute)
             );
 
+            if (attr.useRegularExpressionToken)
+                return CreateFilterFromFilterAttribute(mi, attr, creationParams, creationParams.regexToken.ToString(), typeof(TData), typeof(string));
+            return CreateFilterFromFilterAttribute(mi, attr, creationParams, creationParams.token, typeof(TData));
+        }
+
+        IFilter CreateFilterFromFilterAttribute<TFilterAttribute>(MethodInfo mi, TFilterAttribute attr, FilterCreationParams creationParams, string filterId, params Type[] mandatoryTypes)
+            where TFilterAttribute : QueryEngineFilterAttribute
+        {
             try
             {
+                var mandatoryParamCount = mandatoryTypes.Length;
                 var inputParams = mi.GetParameters();
-                if (inputParams.Length == 0)
+                if (inputParams.Length < mandatoryParamCount)
                 {
-                    Debug.LogWarning($"Filter method {mi.Name} should have at least one input parameter.");
+                    Debug.LogWarning($"Filter method {mi.Name} should have at least {mandatoryParamCount} input parameter{(mandatoryParamCount > 1 ? "s" : "")}.");
                     return null;
                 }
 
-                var objectParam = inputParams[0];
-                if (objectParam.ParameterType != typeof(TData))
+                for (var i = 0; i < mandatoryParamCount; ++i)
                 {
-                    Debug.LogWarning($"Parameter {objectParam.Name}'s type of filter method {mi.Name} must be {typeof(TData)}.");
+                    var param = inputParams[i];
+                    var expectedParamType = mandatoryTypes[i];
+                    if (param.ParameterType != expectedParamType)
+                    {
+                        Debug.LogWarning($"Parameter \"{param.Name}\"'s type of filter method \"{mi.Name}\" must be \"{expectedParamType}\".");
+                        return null;
+                    }
+                }
+
+                var returnType = mi.ReturnType;
+                if (returnType == typeof(void))
+                {
+                    Debug.LogWarning($"Return parameter type of filter method \"{mi.Name}\" cannot be void.");
                     return null;
                 }
-                var returnType = mi.ReturnType;
 
                 // Basic filter
-                if (inputParams.Length == 1)
+                if (inputParams.Length == mandatoryParamCount)
                 {
-                    return CreateFilterForMethodInfo(creationParams, mi, false, false, returnType);
+                    return CreateFilterForMethodInfo(creationParams, mi, false, false, false, creationParams.useRegexToken, returnType);
                 }
 
                 // Filter function
-                if (inputParams.Length == 2)
+                if (inputParams.Length == mandatoryParamCount + 1)
                 {
-                    var filterParamType = inputParams[1].ParameterType;
-                    return CreateFilterForMethodInfo(creationParams, mi, true, false, filterParamType, returnType);
+                    var filterParamType = inputParams[mandatoryParamCount].ParameterType;
+                    return CreateFilterForMethodInfo(creationParams, mi, true, false, false, creationParams.useRegexToken, filterParamType, returnType);
                 }
 
                 // Filter resolver
-                if (inputParams.Length == 3)
+                if (inputParams.Length == mandatoryParamCount + 2)
                 {
-                    var operatorType = inputParams[1].ParameterType;
-                    var filterValueType = inputParams[2].ParameterType;
-                    if (operatorType != typeof(string))
+                    var operatorParam = inputParams[mandatoryParamCount];
+                    var filterValueType = inputParams[mandatoryParamCount + 1].ParameterType;
+                    var isOperatorStruct = operatorParam.ParameterType == typeof(QueryFilterOperator);
+                    if (operatorParam.ParameterType != typeof(string) && !isOperatorStruct)
                     {
-                        Debug.LogWarning($"Parameter {inputParams[1].Name}'s type of filter method {mi.Name} must be {typeof(string)}.");
+                        Debug.LogWarning($"Parameter \"{operatorParam.Name}\"'s type of filter method \"{mi.Name}\" must be \"{typeof(string)}\" or \"{typeof(QueryFilterOperator)}\".");
                         return null;
                     }
 
                     if (returnType != typeof(bool))
                     {
-                        Debug.LogWarning($"Return type of filter method {mi.Name} must be {typeof(bool)}.");
+                        Debug.LogWarning($"Return type of filter method \"{mi.Name}\" must be \"{typeof(bool)}\".");
                         return null;
                     }
 
-                    return CreateFilterForMethodInfo(creationParams, mi, false, true, filterValueType);
+                    return CreateFilterForMethodInfo(creationParams, mi, false, true, isOperatorStruct, creationParams.useRegexToken, filterValueType);
                 }
 
                 // Filter function resolver
-                if (inputParams.Length == 4)
+                if (inputParams.Length == mandatoryParamCount + 3)
                 {
-                    var filterParamType = inputParams[1].ParameterType;
-                    var operatorType = inputParams[2].ParameterType;
-                    var filterValueType = inputParams[3].ParameterType;
-                    if (operatorType != typeof(string))
+                    var filterParamType = inputParams[mandatoryParamCount].ParameterType;
+                    var operatorParam = inputParams[mandatoryParamCount + 1];
+                    var filterValueType = inputParams[mandatoryParamCount + 2].ParameterType;
+                    var isOperatorStruct = operatorParam.ParameterType == typeof(QueryFilterOperator);
+                    if (operatorParam.ParameterType != typeof(string) && !isOperatorStruct)
                     {
-                        Debug.LogWarning($"Parameter {inputParams[1].Name}'s type of filter method {mi.Name} must be {typeof(string)}.");
+                        Debug.LogWarning($"Parameter \"{operatorParam.Name}\"'s type of filter method \"{mi.Name}\" must be \"{typeof(string)}\" or \"{typeof(QueryFilterOperator)}\".");
                         return null;
                     }
 
                     if (returnType != typeof(bool))
                     {
-                        Debug.LogWarning($"Return type of filter method {mi.Name} must be {typeof(bool)}.");
+                        Debug.LogWarning($"Return type of filter method \"{mi.Name}\" must be \"{typeof(bool)}\".");
                         return null;
                     }
 
-                    return CreateFilterForMethodInfo(creationParams, mi, true, true, filterParamType, filterValueType);
+                    return CreateFilterForMethodInfo(creationParams, mi, true, true, isOperatorStruct, creationParams.useRegexToken, filterParamType, filterValueType);
                 }
 
-                Debug.LogWarning($"Error while creating filter {filterToken}. Parameter count mismatch.");
+                Debug.LogWarning($"Error while creating filter \"{filterId}\". Parameter count mismatch.");
                 return null;
             }
             catch (Exception ex)
             {
-                Debug.LogError($"Error while creating filter {filterToken}. {ex.Message}");
+                Debug.LogError($"Error while creating filter \"{filterId}\". {ex.Message}");
                 return null;
             }
         }
 
-        IFilter CreateFilterForMethodInfo(FilterCreationParams creationParams, MethodInfo mi, bool filterFunction, bool resolver, params Type[] methodTypes)
+        IFilter CreateFilterForMethodInfo(FilterCreationParams creationParams, MethodInfo mi, bool filterFunction, bool resolver, bool resolverStruct, bool useRegex, params Type[] methodTypes)
         {
-            var methodName = $"CreateFilter{(filterFunction ? "Function" : "")}{(resolver ? "Resolver" : "")}ForMethodInfoTyped";
+            var methodName = $"Create{(useRegex ? "Regex" : "")}Filter{(filterFunction ? "Function" : "")}{(resolver ? $"{(resolverStruct ? "Struct" : "String")}Resolver" : "")}ForMethodInfoTyped";
             var thisClassType = typeof(QueryEngineImpl<TData>);
             var method = thisClassType.GetMethod(methodName, BindingFlags.NonPublic | BindingFlags.Instance);
             var typedMethod = method.MakeGenericMethod(methodTypes);
@@ -1557,14 +1874,20 @@ namespace UnityEditor.Search
         {
             var methodFunc = Delegate.CreateDelegate(typeof(Func<TData, TFilter>), mi) as Func<TData, TFilter>;
             if (creationParams.overridesGlobalComparisonOptions)
-                return new Filter<TData, TFilter>(creationParams.token, creationParams.supportedOperators, methodFunc, creationParams.comparisonOptions);
-            return new Filter<TData, TFilter>(creationParams.token, creationParams.supportedOperators, methodFunc);
+                return new Filter<TData, TFilter>(creationParams.token, creationParams.supportedOperators, methodFunc, creationParams.comparisonOptions, this);
+            return new Filter<TData, TFilter>(creationParams.token, creationParams.supportedOperators, methodFunc, this);
         }
 
-        IFilter CreateFilterResolverForMethodInfoTyped<TFilter>(FilterCreationParams creationParams, MethodInfo mi)
+        IFilter CreateFilterStringResolverForMethodInfoTyped<TFilter>(FilterCreationParams creationParams, MethodInfo mi)
         {
             var methodFunc = Delegate.CreateDelegate(typeof(Func<TData, string, TFilter, bool>), mi) as Func<TData, string, TFilter, bool>;
-            return new Filter<TData, TFilter>(creationParams.token, creationParams.supportedOperators, methodFunc);
+            return new Filter<TData, TFilter>(creationParams.token, creationParams.supportedOperators, methodFunc, this);
+        }
+
+        IFilter CreateFilterStructResolverForMethodInfoTyped<TFilter>(FilterCreationParams creationParams, MethodInfo mi)
+        {
+            var methodFunc = Delegate.CreateDelegate(typeof(Func<TData, QueryFilterOperator, TFilter, bool>), mi) as Func<TData, QueryFilterOperator, TFilter, bool>;
+            return new Filter<TData, TFilter>(creationParams.token, creationParams.supportedOperators, methodFunc, this);
         }
 
         IFilter CreateFilterFunctionForMethodInfoTyped<TParam, TFilter>(FilterCreationParams creationParams, MethodInfo mi)
@@ -1575,25 +1898,98 @@ namespace UnityEditor.Search
             {
                 var parameterTransformerFunc = GetParameterTransformerFunction<TParam>(mi, creationParams.parameterTransformerFunction, creationParams.parameterTransformerAttributeType);
                 if (creationParams.overridesGlobalComparisonOptions)
-                    return new Filter<TData, TParam, TFilter>(creationParams.token, creationParams.supportedOperators, methodFunc, parameterTransformerFunc, creationParams.comparisonOptions);
-                return new Filter<TData, TParam, TFilter>(creationParams.token, creationParams.supportedOperators, methodFunc, parameterTransformerFunc);
+                    return new Filter<TData, TParam, TFilter>(creationParams.token, creationParams.supportedOperators, methodFunc, parameterTransformerFunc, creationParams.comparisonOptions, this);
+                return new Filter<TData, TParam, TFilter>(creationParams.token, creationParams.supportedOperators, methodFunc, parameterTransformerFunc, this);
             }
 
             if (creationParams.overridesGlobalComparisonOptions)
-                return new Filter<TData, TParam, TFilter>(creationParams.token, creationParams.supportedOperators, methodFunc, creationParams.comparisonOptions);
-            return new Filter<TData, TParam, TFilter>(creationParams.token, creationParams.supportedOperators, methodFunc);
+                return new Filter<TData, TParam, TFilter>(creationParams.token, creationParams.supportedOperators, methodFunc, creationParams.comparisonOptions, this);
+            return new Filter<TData, TParam, TFilter>(creationParams.token, creationParams.supportedOperators, methodFunc, this);
         }
 
-        IFilter CreateFilterFunctionResolverForMethodInfoTyped<TParam, TFilter>(FilterCreationParams creationParams, MethodInfo mi)
+        IFilter CreateFilterFunctionStringResolverForMethodInfoTyped<TParam, TFilter>(FilterCreationParams creationParams, MethodInfo mi)
         {
             var methodFunc = Delegate.CreateDelegate(typeof(Func<TData, TParam, string, TFilter, bool>), mi) as Func<TData, TParam, string, TFilter, bool>;
 
             if (creationParams.useParameterTransformer)
             {
                 var parameterTransformerFunc = GetParameterTransformerFunction<TParam>(mi, creationParams.parameterTransformerFunction, creationParams.parameterTransformerAttributeType);
-                return new Filter<TData, TParam, TFilter>(creationParams.token, creationParams.supportedOperators, methodFunc, parameterTransformerFunc);
+                return new Filter<TData, TParam, TFilter>(creationParams.token, creationParams.supportedOperators, methodFunc, parameterTransformerFunc, this);
             }
-            return new Filter<TData, TParam, TFilter>(creationParams.token, creationParams.supportedOperators, methodFunc);
+            return new Filter<TData, TParam, TFilter>(creationParams.token, creationParams.supportedOperators, methodFunc, this);
+        }
+
+        IFilter CreateFilterFunctionStructResolverForMethodInfoTyped<TParam, TFilter>(FilterCreationParams creationParams, MethodInfo mi)
+        {
+            var methodFunc = Delegate.CreateDelegate(typeof(Func<TData, TParam, QueryFilterOperator, TFilter, bool>), mi) as Func<TData, TParam, QueryFilterOperator, TFilter, bool>;
+
+            if (creationParams.useParameterTransformer)
+            {
+                var parameterTransformerFunc = GetParameterTransformerFunction<TParam>(mi, creationParams.parameterTransformerFunction, creationParams.parameterTransformerAttributeType);
+                return new Filter<TData, TParam, TFilter>(creationParams.token, creationParams.supportedOperators, methodFunc, parameterTransformerFunc, this);
+            }
+            return new Filter<TData, TParam, TFilter>(creationParams.token, creationParams.supportedOperators, methodFunc, this);
+        }
+
+        IFilter CreateRegexFilterForMethodInfoTyped<TFilter>(FilterCreationParams creationParams, MethodInfo mi)
+        {
+            var methodFunc = Delegate.CreateDelegate(typeof(Func<TData, string, TFilter>), mi) as Func<TData, string, TFilter>;
+            if (creationParams.overridesGlobalComparisonOptions)
+                return new RegexFilter<TData, TFilter>(creationParams.regexToken, creationParams.supportedOperators, methodFunc, creationParams.comparisonOptions, this);
+            return new RegexFilter<TData, TFilter>(creationParams.regexToken, creationParams.supportedOperators, methodFunc, this);
+        }
+
+        IFilter CreateRegexFilterStringResolverForMethodInfoTyped<TFilter>(FilterCreationParams creationParams, MethodInfo mi)
+        {
+            var methodFunc = Delegate.CreateDelegate(typeof(Func<TData, string, string, TFilter, bool>), mi) as Func<TData, string, string, TFilter, bool>;
+            return new RegexFilter<TData, TFilter>(creationParams.regexToken, creationParams.supportedOperators, methodFunc, this);
+        }
+
+        IFilter CreateRegexFilterStructResolverForMethodInfoTyped<TFilter>(FilterCreationParams creationParams, MethodInfo mi)
+        {
+            var methodFunc = Delegate.CreateDelegate(typeof(Func<TData, string, QueryFilterOperator, TFilter, bool>), mi) as Func<TData, string, QueryFilterOperator, TFilter, bool>;
+            return new RegexFilter<TData, TFilter>(creationParams.regexToken, creationParams.supportedOperators, methodFunc, this);
+        }
+
+        IFilter CreateRegexFilterFunctionForMethodInfoTyped<TParam, TFilter>(FilterCreationParams creationParams, MethodInfo mi)
+        {
+            var methodFunc = Delegate.CreateDelegate(typeof(Func<TData, string, TParam, TFilter>), mi) as Func<TData, string, TParam, TFilter>;
+
+            if (creationParams.useParameterTransformer)
+            {
+                var parameterTransformerFunc = GetParameterTransformerFunction<TParam>(mi, creationParams.parameterTransformerFunction, creationParams.parameterTransformerAttributeType);
+                if (creationParams.overridesGlobalComparisonOptions)
+                    return new RegexFilter<TData, TParam, TFilter>(creationParams.regexToken, creationParams.supportedOperators, methodFunc, parameterTransformerFunc, creationParams.comparisonOptions, this);
+                return new RegexFilter<TData, TParam, TFilter>(creationParams.regexToken, creationParams.supportedOperators, methodFunc, parameterTransformerFunc, this);
+            }
+
+            if (creationParams.overridesGlobalComparisonOptions)
+                return new RegexFilter<TData, TParam, TFilter>(creationParams.regexToken, creationParams.supportedOperators, methodFunc, creationParams.comparisonOptions, this);
+            return new RegexFilter<TData, TParam, TFilter>(creationParams.regexToken, creationParams.supportedOperators, methodFunc, this);
+        }
+
+        IFilter CreateRegexFilterFunctionStringResolverForMethodInfoTyped<TParam, TFilter>(FilterCreationParams creationParams, MethodInfo mi)
+        {
+            var methodFunc = Delegate.CreateDelegate(typeof(Func<TData, string, TParam, string, TFilter, bool>), mi) as Func<TData, string, TParam, string, TFilter, bool>;
+
+            if (creationParams.useParameterTransformer)
+            {
+                var parameterTransformerFunc = GetParameterTransformerFunction<TParam>(mi, creationParams.parameterTransformerFunction, creationParams.parameterTransformerAttributeType);
+                return new RegexFilter<TData, TParam, TFilter>(creationParams.regexToken, creationParams.supportedOperators, methodFunc, parameterTransformerFunc, this);
+            }
+            return new RegexFilter<TData, TParam, TFilter>(creationParams.regexToken, creationParams.supportedOperators, methodFunc, this);
+        }
+
+        IFilter CreateRegexFilterFunctionStructResolverForMethodInfoTyped<TParam, TFilter>(FilterCreationParams creationParams, MethodInfo mi)
+        {
+            var methodFunc = Delegate.CreateDelegate(typeof(Func<TData, string, TParam, QueryFilterOperator, TFilter, bool>), mi) as Func<TData, string, TParam, QueryFilterOperator, TFilter, bool>;
+
+            if (creationParams.useParameterTransformer)
+            {
+                var parameterTransformerFunc = GetParameterTransformerFunction<TParam>(mi, creationParams.parameterTransformerFunction, creationParams.parameterTransformerAttributeType);
+                return new RegexFilter<TData, TParam, TFilter>(creationParams.regexToken, creationParams.supportedOperators, methodFunc, parameterTransformerFunc, this);
+            }
+            return new RegexFilter<TData, TParam, TFilter>(creationParams.regexToken, creationParams.supportedOperators, methodFunc, this);
         }
 
         static Func<string, TParam> GetParameterTransformerFunction<TParam>(MethodInfo mi, string functionName, Type transformerAttributeType)
@@ -1642,6 +2038,200 @@ namespace UnityEditor.Search
             whereNode.children.Add(rootNode);
             rootNode.parent = whereNode;
             return whereNode;
+        }
+
+        public void BuildFilterMatchers(IFilter filter, bool sort = true)
+        {
+            var filterId = filter.GetHashCode();
+
+            if (m_CustomFilterTokenHandlers.Contains(filterId))
+            {
+                RemoveQueryTokenHandlers(filterId);
+                m_CustomFilterTokenHandlers.Remove(filterId);
+            }
+
+            if (!FilterHasCustomTokenHandlers(filter))
+                return;
+
+            var operators = m_FilterOperators.Keys.Concat(filter.operators.Keys);
+
+            AddCustomFilterTokenHandler(filter, filterId, operators, false);
+            AddCustomPartialFilterTokenHandler(filter, filterId, operators, false);
+            if (filter.type == typeof(bool))
+            {
+                AddCustomBooleanFilterTokenHandler(filter, filterId, false);
+            }
+
+            foreach (var quoteTokens in m_QuoteDelimiters)
+            {
+                AddFilterQuoteTokenHandlers(filter, filterId, operators, quoteTokens, false);
+            }
+
+            m_CustomFilterTokenHandlers.Add(filterId);
+
+            if (sort)
+                SortQueryTokenHandlers();
+        }
+
+        static bool FilterHasCustomTokenHandlers(IFilter filter)
+        {
+            return filter.usesRegularExpressionToken || filter.operators.Any();
+        }
+
+        void AddFilterQuoteTokenHandlers(IFilter filter, in QueryTextDelimiter textDelimiter, bool sort = true)
+        {
+            if (!FilterHasCustomTokenHandlers(filter))
+                return;
+
+            var filterId = filter.GetHashCode();
+            var operators = m_FilterOperators.Keys.Concat(filter.operators.Keys);
+            AddFilterQuoteTokenHandlers(filter, filterId, operators, in textDelimiter, sort);
+        }
+
+        void AddFilterQuoteTokenHandlers(IFilter filter, int filterId, IEnumerable<string> operators, in QueryTextDelimiter textDelimiter, bool sort = true)
+        {
+            if (!FilterHasCustomTokenHandlers(filter))
+                return;
+
+            AddCustomFilterWithQuotesTokenHandler(filter, filterId, operators, in textDelimiter, false);
+            AddCustomPartialFilterWithQuotesTokenHandler(filter, filterId, operators, in textDelimiter, false);
+
+            if (sort)
+                SortQueryTokenHandlers();
+        }
+
+        void AddCustomFilterTokenHandler(IFilter filter, int filterId, IEnumerable<string> operators, bool sort = true)
+        {
+            Regex filterRx;
+            if (filter.usesRegularExpressionToken)
+                filterRx = BuildFilterRegex(BuildFilterNamePatternFromToken(filter.regexToken), operators);
+            else
+                filterRx = BuildFilterRegex(BuildFilterNamePatternFromToken(filter.token), operators);
+            AddCustomTokenHandler(filter, filterId, (int)TokenHandlerPriority.Filter - 1, filterRx, MatchFilter, CreateFilterToken, sort);
+        }
+
+        void AddCustomFilterWithQuotesTokenHandler(IFilter filter, int filterId, IEnumerable<string> operators, in QueryTextDelimiter textDelimiter, bool sort = true)
+        {
+            Regex filterRx;
+            if (filter.usesRegularExpressionToken)
+                filterRx = BuildFilterRegex(BuildFilterNamePatternFromToken(filter.regexToken), BuildFilterValuePatternFromQuoteDelimiter(in textDelimiter), operators);
+            else
+                filterRx = BuildFilterRegex(BuildFilterNamePatternFromToken(filter.token), BuildFilterValuePatternFromQuoteDelimiter(in textDelimiter), operators);
+            AddCustomTokenHandler(filter, filterId, (int)TokenHandlerPriority.FilterWithQuotes - 1, filterRx, MatchFilter, CreateFilterToken, in textDelimiter, sort);
+        }
+
+        void AddCustomBooleanFilterTokenHandler(IFilter filter, int filterId, bool sort = true)
+        {
+            Regex booleanRx;
+            if (filter.usesRegularExpressionToken)
+                booleanRx = BuildBooleanFilterRegex(BuildFilterNamePatternFromToken(filter.regexToken));
+            else
+                booleanRx = BuildBooleanFilterRegex(BuildFilterNamePatternFromToken(filter.token));
+            AddCustomTokenHandler(filter, filterId, (int)ExtendedTokenHandlerPriority.Boolean - 1, booleanRx, MatchKnownBooleanFilter, CreateBooleanFilterToken, sort);
+        }
+
+        void AddCustomPartialFilterTokenHandler(IFilter filter, int filterId, IEnumerable<string> operators, bool sort = true)
+        {
+            Regex partialRx;
+            if (filter.usesRegularExpressionToken)
+                partialRx = BuildPartialFilterRegex(BuildPartialFilterNamePatternFromToken(filter.regexToken, operators), operators);
+            else
+                partialRx = BuildPartialFilterRegex(BuildPartialFilterNamePatternFromToken(filter.token, operators), operators);
+            AddCustomTokenHandler(filter, filterId, (int)ExtendedTokenHandlerPriority.Partial - 1, partialRx, MatchFilter, CreatePartialFilterToken, sort);
+        }
+
+        void AddCustomPartialFilterWithQuotesTokenHandler(IFilter filter, int filterId, IEnumerable<string> operators, in QueryTextDelimiter textDelimiter, bool sort = true)
+        {
+            Regex partialRx;
+            if (filter.usesRegularExpressionToken)
+                partialRx = BuildPartialFilterRegex(BuildPartialFilterNamePatternFromToken(filter.regexToken, operators), BuildPartialFilterValuePatternFromQuoteDelimiter(in textDelimiter), operators);
+            else
+                partialRx = BuildPartialFilterRegex(BuildPartialFilterNamePatternFromToken(filter.token, operators), BuildPartialFilterValuePatternFromQuoteDelimiter(in textDelimiter), operators);
+            AddCustomTokenHandler(filter, filterId, (int)ExtendedTokenHandlerPriority.PartialWithQuotes - 1, partialRx, MatchFilter, CreatePartialFilterToken, in textDelimiter, sort);
+        }
+
+        void AddCustomTokenHandler(IFilter filter, int filterId, int priority, Regex matchRx, MatchFilterFunction matchFilter, CreateFilterFunction createFilter, bool sort = true)
+        {
+            AddCustomTokenHandler(filter, filterId, priority, matchRx, matchFilter, createFilter, null, sort);
+        }
+
+        void AddCustomTokenHandler(IFilter filter, int filterId, int priority, Regex matchRx, MatchFilterFunction matchFilter, CreateFilterFunction createFilter, in QueryTextDelimiter textDelimiter, bool sort = true)
+        {
+            var hashCode = textDelimiter.GetHashCode();
+            AddCustomTokenHandler(filter, filterId, priority, matchRx, matchFilter, createFilter, handler =>
+            {
+                handler.AddOrUpdateUserData(QueryTextDelimiter.k_QueryHandlerDataKey, hashCode);
+                return handler;
+            }, sort);
+        }
+
+        void AddCustomTokenHandler(IFilter filter, int filterId, int priority, Regex matchRx, MatchFilterFunction matchFilter, CreateFilterFunction createFilter, Func<QueryTokenHandler, QueryTokenHandler> customize, bool sort = true)
+        {
+            var queryTokenHandler = new QueryTokenHandler(filterId, priority)
+            {
+                matcher = (string text, int startIndex, int endIndex, ICollection<QueryError> errors, out StringView sv, out Match match, out bool matched) => matchFilter(matchRx, text, startIndex, endIndex, errors, out sv, out match, out matched),
+                consumer = (string text, int startIndex, int endIndex, in StringView sv, Match match, ICollection<QueryError> errors, QueryEngineParserData data) =>
+                {
+                    return ConsumeFilter(text, startIndex, endIndex, in sv, match, errors, data, (string t, in StringView sv, Match m, int index, ICollection<QueryError> e) => createFilter(filter, t, in sv, m, index, e));
+                }
+            };
+            queryTokenHandler = customize?.Invoke(queryTokenHandler) ?? queryTokenHandler;
+            AddQueryTokenHandler(queryTokenHandler, sort);
+        }
+
+        public override void AddQuoteDelimiter(in QueryTextDelimiter textDelimiter, IEnumerable<string> operators, bool sort = true)
+        {
+            base.AddQuoteDelimiter(in textDelimiter, operators, false);
+
+            // Add a new token handler for partial filters
+            AddCustomPartialFilterWithQuotesTokenHandler(0, (int)ExtendedTokenHandlerPriority.PartialWithQuotes, textDelimiter, operators, false);
+
+            // Rebuild filter handlers for custom filter that have regex or operators
+            foreach (var filter in m_Filters.Values)
+            {
+                AddFilterQuoteTokenHandlers(filter, textDelimiter, false);
+            }
+
+            if (sort)
+                SortQueryTokenHandlers();
+        }
+
+        void AddCustomPartialFilterWithQuotesTokenHandler(int handlerId, int priority, in QueryTextDelimiter textDelimiter, IEnumerable<string> operators, bool sort = true)
+        {
+            AddCustomPartialFilterWithQuotesTokenHandler(handlerId, priority, BuildPartialFilterNamePatternFromToken("[\\w.]+", operators), BuildPartialFilterValuePatternFromQuoteDelimiter(textDelimiter), textDelimiter, operators, sort);
+        }
+
+        void AddCustomPartialFilterWithQuotesTokenHandler(int handlerId, int priority, string filterNamePattern, string filterValuePattern, in QueryTextDelimiter textDelimiter, IEnumerable<string> operators, bool sort = true)
+        {
+            var partialFilterRegex = BuildPartialFilterRegex(filterNamePattern, filterValuePattern, operators);
+            var queryTokenHandler = new QueryTokenHandler(handlerId, priority)
+            {
+                matcher = (string text, int startIndex, int endIndex, ICollection<QueryError> errors, out StringView sv, out Match match, out bool matched) => MatchFilter(partialFilterRegex, text, startIndex, endIndex, errors, out sv, out match, out matched),
+                consumer = ConsumePartialFilter
+            };
+            AddCustomQuoteTokenHandler(queryTokenHandler, textDelimiter, sort);
+        }
+
+        void RebuildAllBasicPartialFilterRegex(IEnumerable<string> operators, bool sort = true)
+        {
+            m_PartialFilterRx = BuildPartialFilterRegex(BuildPartialFilterNamePatternFromToken("[\\w.]+", operators), operators);
+
+            // Rebuild all token handlers for partial filters with quotes
+            RemoveQueryTokenHandlers(handler => handler.priority == (int)ExtendedTokenHandlerPriority.PartialWithQuotes);
+            foreach (var queryQuoteTokens in m_QuoteDelimiters)
+            {
+                AddCustomPartialFilterWithQuotesTokenHandler(0, (int)ExtendedTokenHandlerPriority.PartialWithQuotes, queryQuoteTokens, operators, false);
+            }
+
+            if (sort)
+                SortQueryTokenHandlers();
+        }
+
+        static StringView GetStringViewFromMatch(string text, Group matchGroup)
+        {
+            if (matchGroup.Length == 0)
+                return StringView.Empty;
+            return new StringView(text, matchGroup.Index, matchGroup.Index + matchGroup.Length);
         }
     }
 
@@ -1709,6 +2299,18 @@ namespace UnityEditor.Search
             }
         }
 
+        internal bool validateSyntaxOnly
+        {
+            get => m_Impl.validationOptions.validateSyntaxOnly;
+            set
+            {
+                var options = m_Impl.validationOptions;
+                options.validateSyntaxOnly = value;
+                m_Impl.validationOptions = options;
+                m_Impl.BuildFilterRegex();
+            }
+        }
+
         /// <summary>
         /// Global string comparison options for word matching and filter handling (if not overridden).
         /// </summary>
@@ -1760,16 +2362,30 @@ namespace UnityEditor.Search
             m_Impl = new QueryEngineImpl<TData>(validationOptions);
         }
 
+        internal IQueryEngineFilter AddFilter(string token, string[] supportedOperators = null)
+        {
+            var filter = new Filter<TData, string>(token, supportedOperators, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter AddFilter(Regex token, string[] supportedOperators = null)
+        {
+            var filter = new RegexFilter<TData, string>(token, supportedOperators, m_Impl);
+            m_Impl.AddFilter(filter);
+            return filter;
+        }
+
         /// <summary>
         /// Add a new custom filter.
         /// </summary>
         /// <typeparam name="TFilter">The type of the data that is compared by the filter.</typeparam>
-        /// <param name="token">The identifier of the filter. Typically what precedes the operator in a filter (i.e. "id" in "id>=2").</param>
+        /// <param name="token">The identifier of the filter. Typically what precedes the operator in a filter (for example, "id" in "id>=2").</param>
         /// <param name="getDataFunc">Callback used to get the object that is used in the filter. Takes an object of type TData and returns an object of type TFilter.</param>
-        /// <param name="supportedOperatorType">List of supported operator tokens. Null for all operators.</param>
+        /// <param name="supportedOperatorType">List of supported operator tokens. This list contains the supported operator tokens. Use null or an empty list to indicate that all operators are supported.</param>
         public void AddFilter<TFilter>(string token, Func<TData, TFilter> getDataFunc, string[] supportedOperatorType = null)
         {
-            var filter = new Filter<TData, TFilter>(token, supportedOperatorType, getDataFunc);
+            var filter = new Filter<TData, TFilter>(token, supportedOperatorType, getDataFunc, m_Impl);
             m_Impl.AddFilter(token, filter);
         }
 
@@ -1777,13 +2393,13 @@ namespace UnityEditor.Search
         /// Add a new custom filter.
         /// </summary>
         /// <typeparam name="TFilter">The type of the data that is compared by the filter.</typeparam>
-        /// <param name="token">The identifier of the filter. Typically what precedes the operator in a filter (i.e. "id" in "id>=2").</param>
+        /// <param name="token">The identifier of the filter. Typically what precedes the operator in a filter (for example, "id" in "id>=2").</param>
         /// <param name="getDataFunc">Callback used to get the object that is used in the filter. Takes an object of type TData and returns an object of type TFilter.</param>
         /// <param name="stringComparison">String comparison options.</param>
-        /// <param name="supportedOperatorType">List of supported operator tokens. Null for all operators.</param>
+        /// <param name="supportedOperatorType">List of supported operator tokens. This list contains the supported operator tokens. Use null or an empty list to indicate that all operators are supported.</param>
         public void AddFilter<TFilter>(string token, Func<TData, TFilter> getDataFunc, StringComparison stringComparison, string[] supportedOperatorType = null)
         {
-            var filter = new Filter<TData, TFilter>(token, supportedOperatorType, getDataFunc, stringComparison);
+            var filter = new Filter<TData, TFilter>(token, supportedOperatorType, getDataFunc, stringComparison, m_Impl);
             m_Impl.AddFilter(token, filter);
         }
 
@@ -1792,12 +2408,12 @@ namespace UnityEditor.Search
         /// </summary>
         /// <typeparam name="TParam">The type of the constant parameter passed to the function.</typeparam>
         /// <typeparam name="TFilter">The type of the data that is compared by the filter.</typeparam>
-        /// <param name="token">The identifier of the filter. Typically what precedes the operator in a filter (i.e. "id" in "id>=2").</param>
+        /// <param name="token">The identifier of the filter. Typically what precedes the operator in a filter (for example, "id" in "id>=2").</param>
         /// <param name="getDataFunc">Callback used to get the object that is used in the filter. Takes an object of type TData and TParam, and returns an object of type TFilter.</param>
-        /// <param name="supportedOperatorType">List of supported operator tokens. Null for all operators.</param>
+        /// <param name="supportedOperatorType">List of supported operator tokens. This list contains the supported operator tokens. Use null or an empty list to indicate that all operators are supported.</param>
         public void AddFilter<TParam, TFilter>(string token, Func<TData, TParam, TFilter> getDataFunc, string[] supportedOperatorType = null)
         {
-            var filter = new Filter<TData, TParam, TFilter>(token, supportedOperatorType, getDataFunc);
+            var filter = new Filter<TData, TParam, TFilter>(token, supportedOperatorType, getDataFunc, m_Impl);
             m_Impl.AddFilter(token, filter);
         }
 
@@ -1806,13 +2422,13 @@ namespace UnityEditor.Search
         /// </summary>
         /// <typeparam name="TParam">The type of the constant parameter passed to the function.</typeparam>
         /// <typeparam name="TFilter">The type of the data that is compared by the filter.</typeparam>
-        /// <param name="token">The identifier of the filter. Typically what precedes the operator in a filter (i.e. "id" in "id>=2").</param>
+        /// <param name="token">The identifier of the filter. Typically what precedes the operator in a filter (for example, "id" in "id>=2").</param>
         /// <param name="getDataFunc">Callback used to get the object that is used in the filter. Takes an object of type TData and TParam, and returns an object of type TFilter.</param>
         /// <param name="stringComparison">String comparison options.</param>
-        /// <param name="supportedOperatorType">List of supported operator tokens. Null for all operators.</param>
+        /// <param name="supportedOperatorType">List of supported operator tokens. This list contains the supported operator tokens. Use null or an empty list to indicate that all operators are supported.</param>
         public void AddFilter<TParam, TFilter>(string token, Func<TData, TParam, TFilter> getDataFunc, StringComparison stringComparison, string[] supportedOperatorType = null)
         {
-            var filter = new Filter<TData, TParam, TFilter>(token, supportedOperatorType, getDataFunc, stringComparison);
+            var filter = new Filter<TData, TParam, TFilter>(token, supportedOperatorType, getDataFunc, stringComparison, m_Impl);
             m_Impl.AddFilter(token, filter);
         }
 
@@ -1821,13 +2437,13 @@ namespace UnityEditor.Search
         /// </summary>
         /// <typeparam name="TParam">The type of the constant parameter passed to the function.</typeparam>
         /// <typeparam name="TFilter">The type of the data that is compared by the filter.</typeparam>
-        /// <param name="token">The identifier of the filter. Typically what precedes the operator in a filter (i.e. "id" in "id>=2").</param>
+        /// <param name="token">The identifier of the filter. Typically what precedes the operator in a filter (for example, "id" in "id>=2").</param>
         /// <param name="getDataFunc">Callback used to get the object that is used in the filter. Takes an object of type TData and TParam, and returns an object of type TFilter.</param>
         /// <param name="parameterTransformer">Callback used to convert a string to the type TParam. Used when parsing the query to convert what is passed to the function into the correct format.</param>
-        /// <param name="supportedOperatorType">List of supported operator tokens. Null for all operators.</param>
+        /// <param name="supportedOperatorType">List of supported operator tokens. This list contains the supported operator tokens. Use null or an empty list to indicate that all operators are supported.</param>
         public void AddFilter<TParam, TFilter>(string token, Func<TData, TParam, TFilter> getDataFunc, Func<string, TParam> parameterTransformer, string[] supportedOperatorType = null)
         {
-            var filter = new Filter<TData, TParam, TFilter>(token, supportedOperatorType, getDataFunc, parameterTransformer);
+            var filter = new Filter<TData, TParam, TFilter>(token, supportedOperatorType, getDataFunc, parameterTransformer, m_Impl);
             m_Impl.AddFilter(token, filter);
         }
 
@@ -1836,14 +2452,14 @@ namespace UnityEditor.Search
         /// </summary>
         /// <typeparam name="TParam">The type of the constant parameter passed to the function.</typeparam>
         /// <typeparam name="TFilter">The type of the data that is compared by the filter.</typeparam>
-        /// <param name="token">The identifier of the filter. Typically what precedes the operator in a filter (i.e. "id" in "id>=2").</param>
+        /// <param name="token">The identifier of the filter. Typically what precedes the operator in a filter (for example, "id" in "id>=2").</param>
         /// <param name="getDataFunc">Callback used to get the object that is used in the filter. Takes an object of type TData and TParam, and returns an object of type TFilter.</param>
         /// <param name="parameterTransformer">Callback used to convert a string to the type TParam. Used when parsing the query to convert what is passed to the function into the correct format.</param>
         /// <param name="stringComparison">String comparison options.</param>
-        /// <param name="supportedOperatorType">List of supported operator tokens. Null for all operators.</param>
+        /// <param name="supportedOperatorType">List of supported operator tokens. This list contains the supported operator tokens. Use null or an empty list to indicate that all operators are supported.</param>
         public void AddFilter<TParam, TFilter>(string token, Func<TData, TParam, TFilter> getDataFunc, Func<string, TParam> parameterTransformer, StringComparison stringComparison, string[] supportedOperatorType = null)
         {
-            var filter = new Filter<TData, TParam, TFilter>(token, supportedOperatorType, getDataFunc, parameterTransformer, stringComparison);
+            var filter = new Filter<TData, TParam, TFilter>(token, supportedOperatorType, getDataFunc, parameterTransformer, stringComparison, m_Impl);
             m_Impl.AddFilter(token, filter);
         }
 
@@ -1851,12 +2467,18 @@ namespace UnityEditor.Search
         /// Add a new custom filter with a custom resolver. Useful when you wish to handle all operators yourself.
         /// </summary>
         /// <typeparam name="TFilter">The type of the data that is compared by the filter.</typeparam>
-        /// <param name="token">The identifier of the filter. Typically what precedes the operator in a filter (i.e. "id" in "id>=2").</param>
+        /// <param name="token">The identifier of the filter. Typically what precedes the operator in a filter (for example, "id" in "id>=2").</param>
         /// <param name="filterResolver">Callback used to handle any operators for this filter. Takes an object of type TData, the operator token and the filter value, and returns a boolean indicating if the filter passed or not.</param>
-        /// <param name="supportedOperatorType">List of supported operator tokens. Null for all operators.</param>
+        /// <param name="supportedOperatorType">List of supported operator tokens. This list contains the supported operator tokens. Use null or an empty list to indicate that all operators are supported.</param>
         public void AddFilter<TFilter>(string token, Func<TData, string, TFilter, bool> filterResolver, string[] supportedOperatorType = null)
         {
-            var filter = new Filter<TData, TFilter>(token, supportedOperatorType, filterResolver);
+            var filter = new Filter<TData, TFilter>(token, supportedOperatorType, filterResolver, m_Impl);
+            m_Impl.AddFilter(token, filter);
+        }
+
+        internal void AddFilter<TFilter>(string token, Func<TData, QueryFilterOperator, TFilter, bool> filterResolver, string[] supportedOperatorType = null)
+        {
+            var filter = new Filter<TData, TFilter>(token, supportedOperatorType, filterResolver, m_Impl);
             m_Impl.AddFilter(token, filter);
         }
 
@@ -1865,12 +2487,18 @@ namespace UnityEditor.Search
         /// </summary>
         /// <typeparam name="TParam">The type of the constant parameter passed to the function.</typeparam>
         /// <typeparam name="TFilter">The type of the data that is compared by the filter.</typeparam>
-        /// <param name="token">The identifier of the filter. Typically what precedes the operator in a filter (i.e. "id" in "id>=2").</param>
+        /// <param name="token">The identifier of the filter. Typically what precedes the operator in a filter (for example, "id" in "id>=2").</param>
         /// <param name="filterResolver">Callback used to handle any operators for this filter. Takes an object of type TData, an object of type TParam, the operator token and the filter value, and returns a boolean indicating if the filter passed or not.</param>
-        /// <param name="supportedOperatorType">List of supported operator tokens. Null for all operators.</param>
+        /// <param name="supportedOperatorType">List of supported operator tokens. This list contains the supported operator tokens. Use null or an empty list to indicate that all operators are supported.</param>
         public void AddFilter<TParam, TFilter>(string token, Func<TData, TParam, string, TFilter, bool> filterResolver, string[] supportedOperatorType = null)
         {
-            var filter = new Filter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver);
+            var filter = new Filter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver, m_Impl);
+            m_Impl.AddFilter(token, filter);
+        }
+
+        internal void AddFilter<TParam, TFilter>(string token, Func<TData, TParam, QueryFilterOperator, TFilter, bool> filterResolver, string[] supportedOperatorType = null)
+        {
+            var filter = new Filter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver, m_Impl);
             m_Impl.AddFilter(token, filter);
         }
 
@@ -1879,14 +2507,370 @@ namespace UnityEditor.Search
         /// </summary>
         /// <typeparam name="TParam">The type of the constant parameter passed to the function.</typeparam>
         /// <typeparam name="TFilter">The type of the data that is compared by the filter.</typeparam>
-        /// <param name="token">The identifier of the filter. Typically what precedes the operator in a filter (i.e. "id" in "id>=2").</param>
+        /// <param name="token">The identifier of the filter. Typically what precedes the operator in a filter (for example, "id" in "id>=2").</param>
         /// <param name="filterResolver">Callback used to handle any operators for this filter. Takes an object of type TData, an object of type TParam, the operator token and the filter value, and returns a boolean indicating if the filter passed or not.</param>
         /// <param name="parameterTransformer">Callback used to convert a string to the type TParam. Used when parsing the query to convert what is passed to the function into the correct format.</param>
-        /// <param name="supportedOperatorType">List of supported operator tokens. Null for all operators.</param>
+        /// <param name="supportedOperatorType">List of supported operator tokens. This list contains the supported operator tokens. Use null or an empty list to indicate that all operators are supported.</param>
         public void AddFilter<TParam, TFilter>(string token, Func<TData, TParam, string, TFilter, bool> filterResolver, Func<string, TParam> parameterTransformer, string[] supportedOperatorType = null)
         {
-            var filter = new Filter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver, parameterTransformer);
+            var filter = new Filter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver, parameterTransformer, m_Impl);
             m_Impl.AddFilter(token, filter);
+        }
+
+        internal void AddFilter<TParam, TFilter>(string token, Func<TData, TParam, QueryFilterOperator, TFilter, bool> filterResolver, Func<string, TParam> parameterTransformer, string[] supportedOperatorType = null)
+        {
+            var filter = new Filter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver, parameterTransformer, m_Impl);
+            m_Impl.AddFilter(token, filter);
+        }
+
+        /// <summary>
+        /// Add a new custom filter.
+        /// </summary>
+        /// <typeparam name="TFilter">The type of the data that is compared by the filter.</typeparam>
+        /// <param name="token">The regular expression that matches the filter. Matches what precedes the operator in a filter (for example, "id" in "id>=2").</param>
+        /// <param name="getDataFunc">Callback used to get the object that is used in the filter. Takes an object of type TData, a string representing the actual filter name that was matched and returns an object of type TFilter.</param>
+        /// <param name="supportedOperatorType">List of supported operator tokens. This list contains the supported operator tokens. Use null or an empty list to indicate that all operators are supported.</param>
+        /// <returns>A <see cref="IQueryEngineFilter"/>.</returns>
+        internal IQueryEngineFilter AddFilter<TFilter>(Regex token, Func<TData, string, TFilter> getDataFunc, string[] supportedOperatorType = null)
+        {
+            var filter = new RegexFilter<TData, TFilter>(token, supportedOperatorType, getDataFunc, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        /// <summary>
+        /// Add a new custom filter.
+        /// </summary>
+        /// <typeparam name="TFilter">The type of the data that is compared by the filter.</typeparam>
+        /// <param name="token">The regular expression that matches the filter. Matches what precedes the operator in a filter (for example, "id" in "id>=2").</param>
+        /// <param name="getDataFunc">Callback used to get the object that is used in the filter. Takes an object of type TData, a string representing the actual filter name that was matched and returns an object of type TFilter.</param>
+        /// <param name="stringComparison">String comparison options.</param>
+        /// <param name="supportedOperatorType">List of supported operator tokens. This list contains the supported operator tokens. Use null or an empty list to indicate that all operators are supported.</param>
+        /// <returns>A <see cref="IQueryEngineFilter"/>.</returns>
+        internal IQueryEngineFilter AddFilter<TFilter>(Regex token, Func<TData, string, TFilter> getDataFunc, StringComparison stringComparison, string[] supportedOperatorType = null)
+        {
+            var filter = new RegexFilter<TData, TFilter>(token, supportedOperatorType, getDataFunc, stringComparison, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        /// <summary>
+        /// Add a new custom filter function.
+        /// </summary>
+        /// <typeparam name="TParam">The type of the constant parameter passed to the function.</typeparam>
+        /// <typeparam name="TFilter">The type of the data that is compared by the filter.</typeparam>
+        /// <param name="token">The regular expression that matches the filter. Matches what precedes the operator in a filter (for example, "id" in "id>=2").</param>
+        /// <param name="getDataFunc">Callback used to get the object that is used in the filter. Takes an object of type TData, a string representing the actual filter name that was matched, an object of type TParam, and returns an object of type TFilter.</param>
+        /// <param name="supportedOperatorType">List of supported operator tokens. This list contains the supported operator tokens. Use null or an empty list to indicate that all operators are supported.</param>
+        /// <returns>A <see cref="IQueryEngineFilter"/>.</returns>
+        internal IQueryEngineFilter AddFilter<TParam, TFilter>(Regex token, Func<TData, string, TParam, TFilter> getDataFunc, string[] supportedOperatorType = null)
+        {
+            var filter = new RegexFilter<TData, TParam, TFilter>(token, supportedOperatorType, getDataFunc, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        /// <summary>
+        /// Add a new custom filter function.
+        /// </summary>
+        /// <typeparam name="TParam">The type of the constant parameter passed to the function.</typeparam>
+        /// <typeparam name="TFilter">The type of the data that is compared by the filter.</typeparam>
+        /// <param name="token">The regular expression that matches the filter. Matches what precedes the operator in a filter (for example, "id" in "id>=2").</param>
+        /// <param name="getDataFunc">Callback used to get the object that is used in the filter. Takes an object of type TData, a string representing the actual filter name that was matched, an object of type TParam, and returns an object of type TFilter.</param>
+        /// <param name="stringComparison">String comparison options.</param>
+        /// <param name="supportedOperatorType">List of supported operator tokens. This list contains the supported operator tokens. Use null or an empty list to indicate that all operators are supported.</param>
+        /// <returns>A <see cref="IQueryEngineFilter"/>.</returns>
+        internal IQueryEngineFilter AddFilter<TParam, TFilter>(Regex token, Func<TData, string, TParam, TFilter> getDataFunc, StringComparison stringComparison, string[] supportedOperatorType = null)
+        {
+            var filter = new RegexFilter<TData, TParam, TFilter>(token, supportedOperatorType, getDataFunc, stringComparison, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        /// <summary>
+        /// Add a new custom filter function.
+        /// </summary>
+        /// <typeparam name="TParam">The type of the constant parameter passed to the function.</typeparam>
+        /// <typeparam name="TFilter">The type of the data that is compared by the filter.</typeparam>
+        /// <param name="token">The regular expression that matches the filter. Matches what precedes the operator in a filter (for example, "id" in "id>=2").</param>
+        /// <param name="getDataFunc">Callback used to get the object that is used in the filter. Takes an object of type TData, a string representing the actual filter name that was matched, an object of type TParam, and returns an object of type TFilter.</param>
+        /// <param name="parameterTransformer">Callback used to convert a string to the type TParam. Used when parsing the query to convert what is passed to the function into the correct format.</param>
+        /// <param name="supportedOperatorType">List of supported operator tokens. This list contains the supported operator tokens. Use null or an empty list to indicate that all operators are supported.</param>
+        /// <returns>A <see cref="IQueryEngineFilter"/>.</returns>
+        internal IQueryEngineFilter AddFilter<TParam, TFilter>(Regex token, Func<TData, string, TParam, TFilter> getDataFunc, Func<string, TParam> parameterTransformer, string[] supportedOperatorType = null)
+        {
+            var filter = new RegexFilter<TData, TParam, TFilter>(token, supportedOperatorType, getDataFunc, parameterTransformer, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        /// <summary>
+        /// Add a new custom filter function.
+        /// </summary>
+        /// <typeparam name="TParam">The type of the constant parameter passed to the function.</typeparam>
+        /// <typeparam name="TFilter">The type of the data that is compared by the filter.</typeparam>
+        /// <param name="token">The regular expression that matches the filter. Matches what precedes the operator in a filter (for example, "id" in "id>=2").</param>
+        /// <param name="getDataFunc">Callback used to get the object that is used in the filter. Takes an object of type TData, a string representing the actual filter name that was matched, an object of type TParam, and returns an object of type TFilter.</param>
+        /// <param name="parameterTransformer">Callback used to convert a string to the type TParam. Used when parsing the query to convert what is passed to the function into the correct format.</param>
+        /// <param name="stringComparison">String comparison options.</param>
+        /// <param name="supportedOperatorType">List of supported operator tokens. This list contains the supported operator tokens. Use null or an empty list to indicate that all operators are supported.</param>
+        /// <returns>A <see cref="IQueryEngineFilter"/>.</returns>
+        internal IQueryEngineFilter AddFilter<TParam, TFilter>(Regex token, Func<TData, string, TParam, TFilter> getDataFunc, Func<string, TParam> parameterTransformer, StringComparison stringComparison, string[] supportedOperatorType = null)
+        {
+            var filter = new RegexFilter<TData, TParam, TFilter>(token, supportedOperatorType, getDataFunc, parameterTransformer, stringComparison, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        /// <summary>
+        /// Add a new custom filter with a custom resolver. Useful when you wish to handle all operators yourself.
+        /// </summary>
+        /// <typeparam name="TFilter">The type of the data that is compared by the filter.</typeparam>
+        /// <param name="token">The regular expression that matches the filter. Matches what precedes the operator in a filter (for example, "id" in "id>=2").</param>
+        /// <param name="filterResolver">Callback used to handle any operators for this filter. Takes an object of type TData, a string representing the actual filter name that was matched, the operator token and the filter value, and returns a boolean indicating if the filter passed or not.</param>
+        /// <param name="supportedOperatorType">List of supported operator tokens. This list contains the supported operator tokens. Use null or an empty list to indicate that all operators are supported.</param>
+        /// <returns>A <see cref="IQueryEngineFilter"/>.</returns>
+        internal IQueryEngineFilter AddFilter<TFilter>(Regex token, Func<TData, string, string, TFilter, bool> filterResolver, string[] supportedOperatorType = null)
+        {
+            var filter = new RegexFilter<TData, TFilter>(token, supportedOperatorType, filterResolver, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter AddFilter<TFilter>(Regex token, Func<TData, string, QueryFilterOperator, TFilter, bool> filterResolver, string[] supportedOperatorType = null)
+        {
+            var filter = new RegexFilter<TData, TFilter>(token, supportedOperatorType, filterResolver, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        /// <summary>
+        /// Add a new custom filter function with a custom resolver. Useful when you wish to handle all operators yourself.
+        /// </summary>
+        /// <typeparam name="TParam">The type of the constant parameter passed to the function.</typeparam>
+        /// <typeparam name="TFilter">The type of the data that is compared by the filter.</typeparam>
+        /// <param name="token">The regular expression that matches the filter. Matches what precedes the operator in a filter (for example, "id" in "id>=2").</param>
+        /// <param name="filterResolver">Callback used to handle any operators for this filter. Takes an object of type TData, a string representing the actual filter name that was matched, an object of type TParam, the operator token and the filter value, and returns a boolean indicating if the filter passed or not.</param>
+        /// <param name="supportedOperatorType">List of supported operator tokens. This list contains the supported operator tokens. Use null or an empty list to indicate that all operators are supported.</param>
+        /// <returns>A <see cref="IQueryEngineFilter"/>.</returns>
+        internal IQueryEngineFilter AddFilter<TParam, TFilter>(Regex token, Func<TData, string, TParam, string, TFilter, bool> filterResolver, string[] supportedOperatorType = null)
+        {
+            var filter = new RegexFilter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter AddFilter<TParam, TFilter>(Regex token, Func<TData, string, TParam, QueryFilterOperator, TFilter, bool> filterResolver, string[] supportedOperatorType = null)
+        {
+            var filter = new RegexFilter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        /// <summary>
+        /// Add a new custom filter function with a custom resolver. Useful when you wish to handle all operators yourself.
+        /// </summary>
+        /// <typeparam name="TParam">The type of the constant parameter passed to the function.</typeparam>
+        /// <typeparam name="TFilter">The type of the data that is compared by the filter.</typeparam>
+        /// <param name="token">The regular expression that matches the filter. Matches what precedes the operator in a filter (for example, "id" in "id>=2").</param>
+        /// <param name="filterResolver">Callback used to handle any operators for this filter. Takes an object of type TData, a string representing the actual filter name that was matched, an object of type TParam, the operator token and the filter value, and returns a boolean indicating if the filter passed or not.</param>
+        /// <param name="parameterTransformer">Callback used to convert a string to the type TParam. Used when parsing the query to convert what is passed to the function into the correct format.</param>
+        /// <param name="supportedOperatorType">List of supported operator tokens. This list contains the supported operator tokens. Use null or an empty list to indicate that all operators are supported.</param>
+        /// <returns>A <see cref="IQueryEngineFilter"/>.</returns>
+        internal IQueryEngineFilter AddFilter<TParam, TFilter>(Regex token, Func<TData, string, TParam, string, TFilter, bool> filterResolver, Func<string, TParam> parameterTransformer, string[] supportedOperatorType = null)
+        {
+            var filter = new RegexFilter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver, parameterTransformer, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter AddFilter<TParam, TFilter>(Regex token, Func<TData, string, TParam, QueryFilterOperator, TFilter, bool> filterResolver, Func<string, TParam> parameterTransformer, string[] supportedOperatorType = null)
+        {
+            var filter = new RegexFilter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver, parameterTransformer, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter SetFilter(string token, string[] supportedOperatorType = null)
+        {
+            var filter = new Filter<TData, string>(token, supportedOperatorType, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter SetFilter(Regex token, string[] supportedOperatorType = null)
+        {
+            var filter = new RegexFilter<TData, string>(token, supportedOperatorType, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter SetFilter<TFilter>(string token, Func<TData, TFilter> getDataFunc, string[] supportedOperatorType = null)
+        {
+            var filter = new Filter<TData, TFilter>(token, supportedOperatorType, getDataFunc, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter SetFilter<TFilter>(string token, Func<TData, TFilter> getDataFunc, StringComparison stringComparison, string[] supportedOperatorType = null)
+        {
+            var filter = new Filter<TData, TFilter>(token, supportedOperatorType, getDataFunc, stringComparison, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter SetFilter<TParam, TFilter>(string token, Func<TData, TParam, TFilter> getDataFunc, string[] supportedOperatorType = null)
+        {
+            var filter = new Filter<TData, TParam, TFilter>(token, supportedOperatorType, getDataFunc, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter SetFilter<TParam, TFilter>(string token, Func<TData, TParam, TFilter> getDataFunc, StringComparison stringComparison, string[] supportedOperatorType = null)
+        {
+            var filter = new Filter<TData, TParam, TFilter>(token, supportedOperatorType, getDataFunc, stringComparison, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter SetFilter<TParam, TFilter>(string token, Func<TData, TParam, TFilter> getDataFunc, Func<string, TParam> parameterTransformer, string[] supportedOperatorType = null)
+        {
+            var filter = new Filter<TData, TParam, TFilter>(token, supportedOperatorType, getDataFunc, parameterTransformer, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter SetFilter<TParam, TFilter>(string token, Func<TData, TParam, TFilter> getDataFunc, Func<string, TParam> parameterTransformer, StringComparison stringComparison, string[] supportedOperatorType = null)
+        {
+            var filter = new Filter<TData, TParam, TFilter>(token, supportedOperatorType, getDataFunc, parameterTransformer, stringComparison, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter SetFilter<TFilter>(string token, Func<TData, string, TFilter, bool> filterResolver, string[] supportedOperatorType = null)
+        {
+            var filter = new Filter<TData, TFilter>(token, supportedOperatorType, filterResolver, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter SetFilter<TFilter>(string token, Func<TData, QueryFilterOperator, TFilter, bool> filterResolver, string[] supportedOperatorType = null)
+        {
+            var filter = new Filter<TData, TFilter>(token, supportedOperatorType, filterResolver, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter SetFilter<TParam, TFilter>(string token, Func<TData, TParam, string, TFilter, bool> filterResolver, string[] supportedOperatorType = null)
+        {
+            var filter = new Filter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter SetFilter<TParam, TFilter>(string token, Func<TData, TParam, QueryFilterOperator, TFilter, bool> filterResolver, string[] supportedOperatorType = null)
+        {
+            var filter = new Filter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter SetFilter<TParam, TFilter>(string token, Func<TData, TParam, string, TFilter, bool> filterResolver, Func<string, TParam> parameterTransformer, string[] supportedOperatorType = null)
+        {
+            var filter = new Filter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver, parameterTransformer, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter SetFilter<TParam, TFilter>(string token, Func<TData, TParam, QueryFilterOperator, TFilter, bool> filterResolver, Func<string, TParam> parameterTransformer, string[] supportedOperatorType = null)
+        {
+            var filter = new Filter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver, parameterTransformer, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter SetFilter<TFilter>(Regex token, Func<TData, string, TFilter> getDataFunc, string[] supportedOperatorType = null)
+        {
+            var filter = new RegexFilter<TData, TFilter>(token, supportedOperatorType, getDataFunc, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter SetFilter<TFilter>(Regex token, Func<TData, string, TFilter> getDataFunc, StringComparison stringComparison, string[] supportedOperatorType = null)
+        {
+            var filter = new RegexFilter<TData, TFilter>(token, supportedOperatorType, getDataFunc, stringComparison, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter SetFilter<TParam, TFilter>(Regex token, Func<TData, string, TParam, TFilter> getDataFunc, string[] supportedOperatorType = null)
+        {
+            var filter = new RegexFilter<TData, TParam, TFilter>(token, supportedOperatorType, getDataFunc, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter SetFilter<TParam, TFilter>(Regex token, Func<TData, string, TParam, TFilter> getDataFunc, StringComparison stringComparison, string[] supportedOperatorType = null)
+        {
+            var filter = new RegexFilter<TData, TParam, TFilter>(token, supportedOperatorType, getDataFunc, stringComparison, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter SetFilter<TParam, TFilter>(Regex token, Func<TData, string, TParam, TFilter> getDataFunc, Func<string, TParam> parameterTransformer, string[] supportedOperatorType = null)
+        {
+            var filter = new RegexFilter<TData, TParam, TFilter>(token, supportedOperatorType, getDataFunc, parameterTransformer, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter SetFilter<TParam, TFilter>(Regex token, Func<TData, string, TParam, TFilter> getDataFunc, Func<string, TParam> parameterTransformer, StringComparison stringComparison, string[] supportedOperatorType = null)
+        {
+            var filter = new RegexFilter<TData, TParam, TFilter>(token, supportedOperatorType, getDataFunc, parameterTransformer, stringComparison, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter SetFilter<TFilter>(Regex token, Func<TData, string, string, TFilter, bool> filterResolver, string[] supportedOperatorType = null)
+        {
+            var filter = new RegexFilter<TData, TFilter>(token, supportedOperatorType, filterResolver, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter SetFilter<TFilter>(Regex token, Func<TData, string, QueryFilterOperator, TFilter, bool> filterResolver, string[] supportedOperatorType = null)
+        {
+            var filter = new RegexFilter<TData, TFilter>(token, supportedOperatorType, filterResolver, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter SetFilter<TParam, TFilter>(Regex token, Func<TData, string, TParam, string, TFilter, bool> filterResolver, string[] supportedOperatorType = null)
+        {
+            var filter = new RegexFilter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter SetFilter<TParam, TFilter>(Regex token, Func<TData, string, TParam, QueryFilterOperator, TFilter, bool> filterResolver, string[] supportedOperatorType = null)
+        {
+            var filter = new RegexFilter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter SetFilter<TParam, TFilter>(Regex token, Func<TData, string, TParam, string, TFilter, bool> filterResolver, Func<string, TParam> parameterTransformer, string[] supportedOperatorType = null)
+        {
+            var filter = new RegexFilter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver, parameterTransformer, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter SetFilter<TParam, TFilter>(Regex token, Func<TData, string, TParam, QueryFilterOperator, TFilter, bool> filterResolver, Func<string, TParam> parameterTransformer, string[] supportedOperatorType = null)
+        {
+            var filter = new RegexFilter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver, parameterTransformer, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
         }
 
         /// <summary>
@@ -1904,15 +2888,117 @@ namespace UnityEditor.Search
         /// <summary>
         /// Remove a custom filter.
         /// </summary>
-        /// <param name="token">The identifier of the filter. Typically what precedes the operator in a filter (i.e. "id" in "id>=2").</param>
-        /// <remarks>You will get a warning if you try to remove a non existing filter.</remarks>
+        /// <param name="token">The identifier of the filter. Typically what precedes the operator in a filter (for example, "id" in "id>=2").</param>
+        /// <remarks>You will get a warning if you try to remove a filter that does not exist.</remarks>
         public void RemoveFilter(string token)
         {
             m_Impl.RemoveFilter(token);
         }
 
         /// <summary>
-        /// Add a custom filter operator.
+        /// Remove a custom filter.
+        /// </summary>
+        /// <param name="token">The identifier of the filter. Typically what precedes the operator in a filter (for example, "id" in "id>=2").</param>
+        /// <remarks>You will get a warning if you try to remove a filter that does not exist.</remarks>
+        internal void RemoveFilter(Regex token)
+        {
+            m_Impl.RemoveFilter(token);
+        }
+
+        /// <summary>
+        /// Remove a custom filter.
+        /// </summary>
+        /// <param name="filter">A <see cref="IQueryEngineFilter"/> that was returned by <see cref="AddFilter"/>.</param>
+        internal void RemoveFilter(IQueryEngineFilter filter)
+        {
+            m_Impl.RemoveFilter((IFilter)filter);
+        }
+
+        /// <summary>
+        /// Removes all filters that were added on the <see cref="QueryEngine"/>.
+        /// </summary>
+        internal void ClearFilters()
+        {
+            m_Impl.ClearFilters();
+        }
+
+        /// <summary>
+        /// Get a filter by its token.
+        /// </summary>
+        /// <param name="token">The token used to create the filter.</param>
+        /// <returns>Returns the <see cref="IQueryEngineFilter"/>, or null if it does not exist.</returns>
+        internal IQueryEngineFilter GetFilter(string token)
+        {
+            return m_Impl.GetFilter(token);
+        }
+
+        /// <summary>
+        /// Get a filter by its token.
+        /// </summary>
+        /// <param name="token">The token used to create the filter.</param>
+        /// <returns>Returns the <see cref="IQueryEngineFilter"/>, or null if it does not exist.</returns>
+        internal IQueryEngineFilter GetFilter(Regex token)
+        {
+            return m_Impl.GetFilter(token);
+        }
+
+        /// <summary>
+        /// Get all filters added on this <see cref="QueryEngine"/.>
+        /// </summary>
+        /// <returns>An enumerable of <see cref="IQueryEngineFilter"/>.</returns>
+        internal IEnumerable<IQueryEngineFilter> GetAllFilters()
+        {
+            return m_Impl.GetAllFilters();
+        }
+
+        /// <summary>
+        /// Indicates if a filter exists on the <see cref="QueryEngine"/>.
+        /// </summary>
+        /// <param name="token">The token used to create the filter.</param>
+        /// <returns>Returns true if the filter exists, otherwise returns false.</returns>
+        internal bool HasFilter(string token)
+        {
+            return m_Impl.HasFilter(token);
+        }
+
+        /// <summary>
+        /// Indicates if a filter exists.
+        /// </summary>
+        /// <param name="token">The token used to create the filter.</param>
+        /// <returns>Returns true if the filter exists, otherwise returns false.</returns>
+        internal bool HasFilter(Regex token)
+        {
+            return m_Impl.HasFilter(token);
+        }
+
+        /// <summary>
+        /// Try to get a filter by its token.
+        /// </summary>
+        /// <param name="token">The token used to create the filter.</param>
+        /// <param name="filter">The existing <see cref="IQueryEngineFilter"/>, or null if it does not exist.</param>
+        /// <returns>Returns true if the filter was retrieved or false if the filter does not exist.</returns>
+        internal bool TryGetFilter(string token, out IQueryEngineFilter filter)
+        {
+            var success =  m_Impl.TryGetFilter(token, out var engineFilter);
+            filter = engineFilter;
+            return success;
+        }
+
+        /// <summary>
+        /// Try to get a filter by its token.
+        /// </summary>
+        /// <param name="token">The token used to create the filter.</param>
+        /// <param name="filter">The existing <see cref="IQueryEngineFilter"/>, or null if it does not exist.</param>
+        /// <returns>Returns true if the filter was retrieved or false if the filter does not exist.</returns>
+        internal bool TryGetFilter(Regex token, out IQueryEngineFilter filter)
+        {
+            var success =  m_Impl.TryGetFilter(token, out var engineFilter);
+            filter = engineFilter;
+            return success;
+        }
+
+        /// <summary>
+        /// Add a global custom filter operator.
         /// </summary>
         /// <param name="op">The operator identifier.</param>
         public void AddOperator(string op)
@@ -1920,7 +3006,21 @@ namespace UnityEditor.Search
             m_Impl.AddOperator(op);
         }
 
-        internal FilterOperator GetOperator(string op)
+        /// <summary>
+        /// Removes a custom operator that was added on the <see cref="QueryEngine"/>.
+        /// </summary>
+        /// <param name="op">The operator identifier.</param>
+        internal void RemoveOperator(string op)
+        {
+            m_Impl.RemoveOperator(op);
+        }
+
+        /// <summary>
+        /// Get a custom operator added on the <see cref="QueryEngine"/>.
+        /// </summary>
+        /// <param name="op">The operator identifier.</param>
+        /// <returns>The global <see cref="QueryFilterOperator"/> or an invalid <see cref="QueryFilterOperator"/> if it does not exist.</returns>
+        internal QueryFilterOperator GetOperator(string op)
         {
             return m_Impl.GetOperator(op);
         }
@@ -1950,7 +3050,7 @@ namespace UnityEditor.Search
         }
 
         /// <summary>
-        /// Add a type parser that parse a string and returns a custom type. Used
+        /// Add a global type parser that parses a string and returns a custom type. Used
         /// by custom operator handlers.
         /// </summary>
         /// <typeparam name="TFilterConstant">The type of the parsed operand that is on the right hand side of the operator.</typeparam>
@@ -2014,7 +3114,7 @@ namespace UnityEditor.Search
         /// <param name="wordMatcher">The search word matching function. The first parameter is the search word. The second parameter is a boolean for exact match or not. The third parameter is the StringComparison options. The fourth parameter is an element of the array returned by the search data callback. The function returns true for a match or false for no match.</param>
         public void SetSearchWordMatcher(Func<string, bool, StringComparison, string, bool> wordMatcher)
         {
-            m_Impl.SetsearchWordMatcher(wordMatcher);
+            m_Impl.SetSearchWordMatcher(wordMatcher);
         }
 
         /// <summary>
@@ -2035,7 +3135,7 @@ namespace UnityEditor.Search
         public Query<TData> Parse(string text, bool useFastYieldingQueryHandler = false)
         {
             var handlerFactory = new DefaultQueryHandlerFactory<TData>(this, useFastYieldingQueryHandler);
-            return BuildQuery(text, handlerFactory, (evalGraph, queryGraph, errors, tokens, handler) => new Query<TData>(text, evalGraph, queryGraph, errors, tokens, handler));
+            return BuildQuery(text, handlerFactory, (evalGraph, queryGraph, errors, tokens, toggles, handler) => new Query<TData>(text, evalGraph, queryGraph, errors, tokens, toggles, handler));
         }
 
         /// <summary>
@@ -2050,18 +3150,19 @@ namespace UnityEditor.Search
             where TQueryHandler : IQueryHandler<TData, TPayload>
             where TPayload : class
         {
-            return BuildQuery(text, queryHandlerFactory, (evalGraph, queryGraph, errors, tokens, handler) => new Query<TData, TPayload>(text, evalGraph, queryGraph, errors, tokens, handler));
+            return BuildQuery(text, queryHandlerFactory, (evalGraph, queryGraph, errors, tokens, toggles, handler) => new Query<TData, TPayload>(text, evalGraph, queryGraph, errors, tokens, toggles, handler));
         }
 
-        TQuery BuildQuery<TQuery, TQueryHandler, TPayload>(string text, IQueryHandlerFactory<TData, TQueryHandler, TPayload> queryHandlerFactory, Func<QueryGraph, QueryGraph, ICollection<QueryError>, ICollection<string>, TQueryHandler, TQuery> queryCreator)
+        TQuery BuildQuery<TQuery, TQueryHandler, TPayload>(string text, IQueryHandlerFactory<TData, TQueryHandler, TPayload> queryHandlerFactory, Func<QueryGraph, QueryGraph, ICollection<QueryError>, ICollection<string>, ICollection<QueryToggle>, TQueryHandler, TQuery> queryCreator)
             where TQueryHandler : IQueryHandler<TData, TPayload>
             where TPayload : class
             where TQuery : Query<TData, TPayload>
         {
             var errors = new List<QueryError>();
             var tokens = new List<string>();
-            var result = m_Impl.BuildGraph(text, errors, tokens);
-            return queryCreator(result.evaluationGraph, result.queryGraph, errors, tokens, queryHandlerFactory.Create(result.evaluationGraph, errors));
+            var toggles = new List<QueryToggle>();
+            var result = m_Impl.BuildGraph(text, errors, tokens, toggles);
+            return queryCreator(result.evaluationGraph, result.queryGraph, errors, tokens, toggles, queryHandlerFactory.Create(result.evaluationGraph, errors));
         }
 
         /// <summary>
@@ -2079,7 +3180,7 @@ namespace UnityEditor.Search
         /// </summary>
         /// <typeparam name="TNestedQueryData">The type of data returned by the nested query.</typeparam>
         /// <typeparam name="TRhs">The type expected on the right hand side of the filter.</typeparam>
-        /// <param name="filterToken">The identifier of the filter. Typically what precedes the operator in a filter (i.e. "id" in "id>=2").</param>
+        /// <param name="filterToken">The identifier of the filter. Typically what precedes the operator in a filter (for example, "id" in "id>=2").</param>
         /// <param name="transformer">The transformer function.</param>
         public void SetFilterNestedQueryTransformer<TNestedQueryData, TRhs>(string filterToken, Func<TNestedQueryData, TRhs> transformer)
         {
@@ -2097,14 +3198,44 @@ namespace UnityEditor.Search
             m_Impl.AddNestedQueryAggregator(token, aggregator);
         }
 
-        internal IParseResult ParseFilterValue(string filterValue, IFilter filter, FilterOperator op, out Type filterValueType)
+        internal IParseResult ParseFilterValue(string filterValue, IFilter filter, in QueryFilterOperator op, out Type filterValueType)
         {
-            return m_Impl.ParseFilterValue(filterValue, filter, op, out filterValueType);
+            return m_Impl.ParseFilterValue(filterValue, filter, in op, out filterValueType);
         }
 
         internal IFilterOperationGenerator GetGeneratorForType(Type type)
         {
             return m_Impl.GetGeneratorForType(type);
+        }
+
+        internal void AddQuoteDelimiter(in QueryTextDelimiter textDelimiter)
+        {
+            m_Impl.AddQuoteDelimiter(textDelimiter);
+        }
+
+        internal void RemoveQuoteDelimiter(in QueryTextDelimiter textDelimiter)
+        {
+            m_Impl.RemoveQuoteDelimiter(textDelimiter);
+        }
+
+        internal void AddCommentDelimiter(in QueryTextDelimiter textDelimiter)
+        {
+            m_Impl.AddCommentDelimiter(textDelimiter);
+        }
+
+        internal void RemoveCommentDelimiter(in QueryTextDelimiter textDelimiter)
+        {
+            m_Impl.RemoveCommentDelimiter(textDelimiter);
+        }
+
+        internal void AddToggleDelimiter(in QueryTextDelimiter textDelimiter)
+        {
+            m_Impl.AddToggleDelimiter(textDelimiter);
+        }
+
+        internal void RemoveToggleDelimiter(in QueryTextDelimiter textDelimiter)
+        {
+            m_Impl.RemoveToggleDelimiter(textDelimiter);
         }
     }
 

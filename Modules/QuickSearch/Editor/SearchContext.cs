@@ -140,6 +140,11 @@ namespace UnityEditor.Search
         public string searchQuery { get; private set; } = string.Empty;
 
         /// <summary>
+        /// Original search query with all markers
+        /// </summary>
+        internal string rawSearchQuery { get; private set; } = string.Empty;
+
+        /// <summary>
         /// Character offset of the processed search query in the raw search text.
         /// </summary>
         public int searchQueryOffset { get; private set; } = 0;
@@ -196,6 +201,8 @@ namespace UnityEditor.Search
             }
         }
 
+        internal bool empty => string.IsNullOrEmpty(m_SearchText);
+
         /// <summary>
         /// Raw search text (i.e. what is in the search text box)
         /// </summary>
@@ -218,25 +225,19 @@ namespace UnityEditor.Search
             // Reset a few values
             filterId = null;
             textFilters = searchWords = k_Empty;
-            searchQuery = searchText.TrimStart();
+
             searchQueryOffset = 0;
+            rawSearchQuery = SearchUtils.ParseSearchText(searchText, m_Providers, out var filteredProvider);
+            searchQuery = rawSearchQuery;
+            if (filteredProvider != null)
+                filterId = filteredProvider.filterId;
 
             if (string.IsNullOrEmpty(searchQuery))
                 return;
 
-            foreach (var providerFilterId in m_Providers.Select(p => p.filterId))
-            {
-                if (searchQuery.StartsWith(providerFilterId, StringComparison.OrdinalIgnoreCase))
-                {
-                    filterId = providerFilterId;
-                    searchQuery = searchQuery.Remove(0, providerFilterId.Length).TrimStart();
-                    break;
-                }
-            }
-
-            searchQueryOffset = searchText.Length - searchQuery.Length;
+            searchQueryOffset = searchText.Length - rawSearchQuery.Length;
             searchQuery = searchQuery.TrimEnd();
-            var tokens = searchQuery.ToLowerInvariant().Split(' ').ToArray();
+            var tokens = Utils.Simplify(searchQuery).ToLowerInvariant().Split(' ').ToArray();
             searchWords = tokens.Where(t => t.IndexOf(':') == -1).ToArray();
             textFilters = tokens.Where(t => t.IndexOf(':') != -1).ToArray();
         }

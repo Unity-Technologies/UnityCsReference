@@ -10,10 +10,11 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using UnityEditor.Experimental;
+using UnityEditor.Experimental.SceneManagement;
+using UnityEditor.Profiling;
 using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEditor.Experimental.SceneManagement;
+
 
 namespace UnityEditor.Search
 {
@@ -324,7 +325,7 @@ namespace UnityEditor.Search
 
         public static void Reset()
         {
-            s_TransactionManager.ClearAll();
+            s_TransactionManager?.ClearAll();
         }
 
         private static void InvalidateObject(int instanceId)
@@ -342,8 +343,8 @@ namespace UnityEditor.Search
         private static void InvalidateDocument(ulong documentKey)
         {
             s_DocumentsToInvalidate.Add(documentKey);
-            s_DelayedInvalidateOff?.Invoke();
-            s_DelayedInvalidateOff = Utils.CallDelayed(InvalidateDocuments, 1f);
+            if (s_DelayedInvalidateOff == null)
+                s_DelayedInvalidateOff = Utils.CallDelayed(InvalidateDocuments, 1f);
         }
 
         private static void InvalidateDocuments()
@@ -365,16 +366,12 @@ namespace UnityEditor.Search
     {
         public static bool IsAssetImportWorkerProcess()
         {
-            #pragma warning disable CS0618 // Type or member is obsolete
-            return AssetDatabaseExperimental.IsAssetImportWorkerProcess();
-            #pragma warning restore CS0618 // Type or member is obsolete
+            return AssetDatabase.IsAssetImportWorkerProcess();
         }
 
         public static void RegisterCustomDependency(string name, Hash128 hash)
         {
-            #pragma warning disable CS0618 // Type or member is obsolete
-            AssetDatabaseExperimental.RegisterCustomDependency(name, hash);
-            #pragma warning restore CS0618 // Type or member is obsolete
+            AssetDatabase.RegisterCustomDependency(name, hash);
         }
     }
 }

@@ -25,6 +25,8 @@ namespace UnityEditor.DeviceSimulation
             set => m_DeviceView.OverlayTexture = value;
         }
 
+        public DeviceView DeviceView => m_DeviceView;
+
         private int m_Rotation;
         private int Rotation
         {

@@ -9,22 +9,6 @@ using UnityEngine;
 
 namespace UnityEditor.Search
 {
-    [Serializable]
-    class ResultViewState
-    {
-        public bool isValid => displayMode != DisplayMode.None;
-        public float itemSize;
-        public DisplayMode displayMode;
-        public string group;
-
-        public ResultViewState(DisplayMode mode, float itemSize)
-        {
-            displayMode = mode;
-            this.itemSize = itemSize;
-            group = null;
-        }
-    }
-
     /// <summary>
     /// A view able to display a <see cref="ISearchList"/> of <see cref="SearchItem"/>s.
     /// </summary>
@@ -38,17 +22,19 @@ namespace UnityEditor.Search
 
         bool focusSelectedItem { get; set; }
         bool scrollbarVisible { get; }
+        bool showNoResultMessage { get; }
 
         void Draw(Rect rect, ICollection<int> selection);
         void Draw(ICollection<int> selection, float viewWidth);
         int GetDisplayItemCount();
         void HandleInputEvent(Event evt, List<int> selection);
         void DrawControlLayout(float viewWidth);
+        void DrawTabsButtons();
         void Refresh(RefreshFlags flags = RefreshFlags.Default);
-        ResultViewState SaveViewState(string name);
-        void SetViewState(ResultViewState viewState);
-
+        SearchViewState SaveViewState(string name);
+        void SetViewState(SearchViewState viewState);
         void OnGroupChanged(string prevGroupId, string newGroupId);
+        void AddSaveQueryMenuItems(SearchContext context, GenericMenu menu);
     }
 
     abstract class ResultView : IResultView
@@ -76,6 +62,7 @@ namespace UnityEditor.Search
         public bool focusSelectedItem { get; set; }
         protected bool compactView => itemSize == 0;
         public bool scrollbarVisible { get; protected set; }
+        public virtual bool showNoResultMessage => true;
 
         public abstract void Draw(Rect rect, ICollection<int> selection);
 
@@ -98,17 +85,21 @@ namespace UnityEditor.Search
             // Do nothing
         }
 
+        public virtual void DrawTabsButtons()
+        {
+        }
+
         public virtual void OnGroupChanged(string prevGroupId, string newGroupId)
         {
             // Do nothing
         }
 
-        public virtual ResultViewState SaveViewState(string name)
+        public virtual SearchViewState SaveViewState(string name)
         {
-            return new ResultViewState(searchView.displayMode, itemSize);
+            return new SearchViewState(context) { sessionName = name, itemSize = itemSize };
         }
 
-        public virtual void SetViewState(ResultViewState viewState)
+        public virtual void SetViewState(SearchViewState viewState)
         {
             // Do nothing
         }
@@ -135,13 +126,6 @@ namespace UnityEditor.Search
 
             if (AutoComplete.IsHovered(evt.mousePosition))
                 return;
-
-            if (evt.button == 1)
-            {
-                var item = items.ElementAt(clickedItemIndex);
-                if (!searchView.selection.Contains(item))
-                    searchView.SetSelection(clickedItemIndex);
-            }
         }
 
         protected void HandleMouseUp(int clickedItemIndex, int itemTotalCount)
@@ -212,12 +196,10 @@ namespace UnityEditor.Search
 
                     if ((now - m_ClickTime) < 0.3)
                     {
-                        var item = items.ElementAt(clickedItemIndex);
-                        if (item.provider.actions.Count > 0)
-                            searchView.ExecuteAction(item.provider.actions[0], new[] {item}, !SearchSettings.keepOpen);
+                        searchView.ExecuteSelection();
                         GUIUtility.ExitGUI();
                     }
-                    SearchField.Focus();
+                    searchView.FocusSearch();
                     evt.Use();
                     m_ClickTime = now;
                 }
@@ -226,8 +208,11 @@ namespace UnityEditor.Search
                     var item = items.ElementAt(clickedItemIndex);
                     var contextRect = new Rect(evt.mousePosition, new Vector2(1, 1));
                     var selection = searchView.selection;
-                    if (selection.Count <= 1)
+                    if (selection.Count > 0 || item != null)
+                    {
                         searchView.ShowItemContextualMenu(item, contextRect);
+                        evt.Use();
+                    }
                 }
             }
 
@@ -320,35 +305,17 @@ namespace UnityEditor.Search
                 if (selectedIndex == -1 && results.Count > 0)
                     selectedIndex = 0;
 
-                if (selectedIndex != -1)
+                else if (selectedIndex != -1)
                 {
-                    var item = results.ElementAt(selectedIndex);
-                    if (item.provider.actions.Count > 0)
-                    {
-                        SearchAction action = item.provider.actions[0];
-                        if (evt.modifiers.HasAny(EventModifiers.Alt))
-                        {
-                            var actionIndex = 1;
-                            if (evt.modifiers.HasAny(EventModifiers.Control))
-                            {
-                                actionIndex = 2;
-                                if (evt.modifiers.HasAny(EventModifiers.Shift))
-                                    actionIndex = 3;
-                            }
-                            action = item.provider.actions[Math.Max(0, Math.Min(actionIndex, item.provider.actions.Count - 1))];
-                        }
-
-                        if (action != null)
-                        {
-                            evt.Use();
-                            searchView.ExecuteAction(action, searchView.selection.ToArray(), !SearchSettings.keepOpen);
-                            GUIUtility.ExitGUI();
-                        }
-                    }
+                    if (evt.alt && searchView is QuickSearch qs)
+                        qs.ExecuteSelection(1);
+                    else
+                        searchView.ExecuteSelection();
+                    GUIUtility.ExitGUI();
                 }
             }
             else if (!EditorGUIUtility.editingTextField)
-                SearchField.Focus();
+                searchView.FocusSearch();
 
             var newSelection = selection.Count == 0 ? k_ResetSelectionIndex : selection.Last();
             if (selectedIndex != newSelection)
@@ -458,6 +425,11 @@ namespace UnityEditor.Search
         public virtual void Refresh(RefreshFlags flags)
         {
             // Nothing to refresh by default
+        }
+
+        public virtual void AddSaveQueryMenuItems(SearchContext context, GenericMenu menu)
+        {
+            // Do nothing by default
         }
 
         public virtual void Dispose()

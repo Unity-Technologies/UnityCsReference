@@ -11,212 +11,13 @@ using System.Text.RegularExpressions;
 
 namespace UnityEditor.Search
 {
-    static class BuiltinPropositions
-    {
-        private static readonly string[] baseTypeFilters = new[]
-        {
-            "DefaultAsset", "AnimationClip", "AudioClip", "AudioMixer", "ComputeShader", "Font", "GUISKin", "Material", "Mesh",
-            "Model", "PhysicMaterial", "Prefab", "Scene", "Script", "ScriptableObject", "Shader", "Sprite", "StyleSheet", "Texture", "VideoClip"
-        };
-
-        public static Dictionary<string, string> help = new Dictionary<string, string>
-        {
-            {"dir:", "Search parent folder name" },
-            {"ext:", "Search by extension" },
-            {"age:", "Search asset older than N days" },
-            {"size:", "Search by asset file size" },
-            {"ref:", "Search references" },
-            {"a:assets", "Search project assets" },
-            {"a:packages", "Search package assets" },
-            {"t:file", "Search files" },
-            {"t:folder", "Search folders" },
-            {"name:", "Search by object name" },
-            {"id:", "Search by unique id" },
-        };
-
-        static BuiltinPropositions()
-        {
-            foreach (var t in baseTypeFilters.Concat(TypeCache.GetTypesDerivedFrom<ScriptableObject>().Select(t => t.Name)))
-                help[$"t:{t.ToLowerInvariant()}"] = $"Search {t} assets";
-
-            foreach (var t in TypeCache.GetTypesDerivedFrom<Component>().Select(t => t.Name))
-                help[$"t:{t.ToLowerInvariant()}"] = $"Search {t} components";
-        }
-    }
-
-    class SearchProposition : IEquatable<SearchProposition>, IComparable<SearchProposition>
-    {
-        public readonly string label;
-        public readonly string replacement;
-        public string help;
-        public readonly int priority;
-        public readonly TextCursorPlacement moveCursor;
-
-        public SearchProposition(string label, string replacement = null, string help = null, int priority = int.MaxValue, TextCursorPlacement moveCursor = TextCursorPlacement.MoveAutoComplete)
-        {
-            var kparts = label.Split(new char[] { '|' });
-            this.label = kparts[0];
-            this.replacement = replacement ?? this.label;
-            if (kparts.Length >= 2)
-                this.help = kparts[1];
-            else
-                this.help = help;
-            this.priority = priority;
-            this.moveCursor = moveCursor;
-        }
-
-        public int CompareTo(SearchProposition other)
-        {
-            var c = priority.CompareTo(other.priority);
-            if (c != 0)
-                return c;
-            c = label.CompareTo(other.label);
-            if (c != 0)
-                return c;
-            return string.Compare(help, other.help);
-        }
-
-        public bool Equals(SearchProposition other)
-        {
-            return label.Equals(other.label) && string.Equals(help, other.help);
-        }
-
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                if (help != null)
-                    return label.GetHashCode() ^ help.GetHashCode() ^ priority.GetHashCode();
-                return label.GetHashCode() ^ priority.GetHashCode();
-            }
-        }
-
-        public override bool Equals(object other)
-        {
-            if (other is string s)
-                return label.Equals(s);
-            return other is SearchProposition l && Equals(l);
-        }
-
-        public override string ToString()
-        {
-            return $"{label} > {replacement}";
-        }
-    }
-
-    struct SearchPropositionOptions
-    {
-        static readonly char[] s_Delimiters = new[] { '{', '}', '[', ']', '=', ',' };
-        static readonly char[] s_ExtendedDelimiters = new[] { '{', '}', '[', ']', '=', ':' };
-        public SearchPropositionOptions(string query, int cursor)
-        {
-            this.query = query;
-            this.cursor = cursor;
-            m_Word = null;
-            m_Tokens = null;
-            wordStartPos = wordEndPos = -1;
-        }
-
-        public readonly string query;
-        public readonly int cursor;
-        public int wordStartPos;
-        public int wordEndPos;
-
-        private string m_Word;
-        private string[] m_Tokens;
-
-        public string word
-        {
-            get
-            {
-                if (m_Word == null)
-                    m_Word = GetWordAtCursorPosition(query, cursor, out wordStartPos, out wordEndPos);
-                return m_Word;
-            }
-        }
-
-        public string[] tokens
-        {
-            get
-            {
-                if (m_Tokens == null)
-                {
-                    m_Tokens = new[]
-                    {
-                        GetTokenAtCursorPosition(query, cursor, IsDelimiter),
-                        GetTokenAtCursorPosition(query, cursor, IsExtendedDelimiter)
-                    }.Distinct().ToArray();
-                }
-                return m_Tokens;
-            }
-        }
-
-        public static bool IsExtendedDelimiter(char ch)
-        {
-            return char.IsWhiteSpace(ch) || Array.IndexOf(s_ExtendedDelimiters, ch) != -1;
-        }
-
-        public static bool IsDelimiter(char ch)
-        {
-            return char.IsWhiteSpace(ch) || Array.IndexOf(s_Delimiters, ch) != -1;
-        }
-
-        private static string GetWordAtCursorPosition(string txt, int cursorIndex, out int startPos, out int endPos)
-        {
-            return GetTokenAtCursorPosition(txt, cursorIndex, out startPos, out endPos, ch => !char.IsLetterOrDigit(ch) && !(ch == '_'));
-        }
-
-        private static string GetTokenAtCursorPosition(string txt, int cursorIndex, Func<char, bool> comparer)
-        {
-            return GetTokenAtCursorPosition(txt, cursorIndex, out var _, out var _, comparer);
-        }
-
-        internal static void GetTokenBoundariesAtCursorPosition(string txt, int cursorIndex, out int startPos, out int endPos)
-        {
-            GetTokenAtCursorPosition(txt, cursorIndex, out startPos, out endPos, IsDelimiter);
-        }
-
-        private static string GetTokenAtCursorPosition(string txt, int cursorIndex, out int startPos, out int endPos, Func<char, bool> check)
-        {
-            if (txt.Length > 0 && (cursorIndex == txt.Length || IsDelimiter(txt[cursorIndex])))
-                cursorIndex--;
-
-            startPos = cursorIndex;
-            endPos = cursorIndex;
-
-            // Get the character's position.
-            if (cursorIndex >= txt.Length || cursorIndex < 0)
-                return "";
-
-            for (; startPos >= 0; startPos--)
-            {
-                // Allow digits, letters, and underscores as part of the word.
-                char ch = txt[startPos];
-                if (check(ch)) break;
-            }
-            startPos++;
-
-            // Find the end of the word.
-            for (; endPos < txt.Length; endPos++)
-            {
-                char ch = txt[endPos];
-                if (check(ch)) break;
-            }
-            endPos--;
-
-            // Return the result.
-            if (startPos > endPos)
-                return "";
-            return txt.Substring(startPos, endPos - startPos + 1);
-        }
-    }
-
     static class AutoComplete
     {
         private static string s_LastInput;
         private static int s_CurrentSelection = 0;
         private static List<SearchProposition> s_FilteredList = null;
-        private static SearchProposition s_Empty = new SearchProposition(string.Empty);
+        private static List<float> s_ItemLabelWidths = null;
+        private static List<float> s_ItemTooltipWidths = null;
 
         private static Rect position;
         private static Rect parent { get; set; }
@@ -225,7 +26,7 @@ namespace UnityEditor.Search
 
         public static bool enabled { get; set; }
 
-        public static SearchProposition selection
+        public static SearchProposition? selection
         {
             get
             {
@@ -250,16 +51,15 @@ namespace UnityEditor.Search
             }
         }
 
-        public static bool Show(SearchContext context, Rect parentRect)
+        public static bool Show(SearchContext context, Rect parentRect, SearchField searchField)
         {
-            var te = SearchField.GetTextEditor();
+            var te = searchField.GetTextEditor();
             if (te.controlID != GUIUtility.keyboardControl)
                 return false;
 
             parent = parentRect;
-            options = new SearchPropositionOptions(context.searchText, te.cursorIndex);
-
-            propositions = FetchPropositions(context, options);
+            options = new SearchPropositionOptions(context, te.cursorIndex, te.text);
+            propositions = SearchProposition.Fetch(context, options);
 
             enabled = propositions.Count > 0;
             if (!enabled)
@@ -270,46 +70,56 @@ namespace UnityEditor.Search
             return true;
         }
 
-        public static void Draw(SearchContext context, ISearchView view)
+        public static string Draw(SearchField searchField)
         {
             if (!enabled)
-                return;
+                return null;
 
             var evt = Event.current;
             if (evt.type == EventType.MouseDown && !position.Contains(evt.mousePosition))
             {
                 evt.Use();
                 Clear();
-                return;
+                return null;
             }
+
+            var te = searchField.GetTextEditor();
+            var searchText = te.text;
 
             // Check if the cache filtered list should be updated
-            if (evt.type == EventType.Repaint && !context.searchText.Equals(s_LastInput, StringComparison.Ordinal))
-                UpdateCompleteList(SearchField.GetTextEditor());
+            if (evt.type == EventType.Repaint && !searchText.Equals(s_LastInput, StringComparison.Ordinal))
+                UpdateCompleteList(searchField.GetTextEditor());
 
             if (s_FilteredList == null)
-                return;
+                return null;
 
-            var autoFill = DrawItems(evt);
-            if (autoFill != null && autoFill != s_Empty)
+            var selected = DrawItems(evt, out var proposition);
+            if (proposition.valid)
             {
-                if (autoFill.moveCursor == TextCursorPlacement.MoveLineEnd)
+                if (proposition.moveCursor == TextCursorPlacement.MoveLineEnd)
                 {
-                    view.SetSearchText(autoFill.replacement, autoFill.moveCursor);
+                    te.text = proposition.replacement;
+                    te.MoveLineEnd();
+                    GUI.changed = true;
                 }
-                else if (!options.tokens.All(t => t.StartsWith(autoFill.replacement, StringComparison.OrdinalIgnoreCase)))
+                else if (!options.tokens.All(t => t.StartsWith(proposition.replacement, StringComparison.OrdinalIgnoreCase)))
                 {
-                    var insertion = ReplaceText(context.searchText, autoFill.replacement, options.cursor, out var insertTokenPos);
+                    var insertion = ReplaceText(searchText, proposition.replacement, options.cursor, out var insertTokenPos);
                     SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchAutoCompleteInsertSuggestion, insertion);
-                    view.SetSearchText(insertion, autoFill.moveCursor, insertTokenPos);
+
+                    te.text = insertion;
+                    searchField.MoveCursor(proposition.moveCursor, insertTokenPos);
+                    GUI.changed = true;
                 }
-                Clear();
             }
-            else if (autoFill == s_Empty)
+
+            if (selected)
             {
                 // No more results
                 Clear();
             }
+
+            return te.text;
         }
 
         private static int IndexOfDelimiter(string self, int startIndex)
@@ -331,6 +141,20 @@ namespace UnityEditor.Search
                 replaceFrom = 0;
             else
                 replaceFrom++;
+
+            var activeProviders = SearchService.GetActiveProviders();
+            foreach (var provider in activeProviders)
+            {
+                if (replaceFrom + provider.filterId.Length > searchText.Length || provider.filterId.Length == 1)
+                    continue;
+
+                var stringViewTest = new StringView(searchText, replaceFrom, replaceFrom + provider.filterId.Length);
+                if (stringViewTest == provider.filterId)
+                {
+                    replaceFrom += provider.filterId.Length;
+                    break;
+                }
+            }
 
             var replaceTo = IndexOfDelimiter(searchText, cursorPos);
             if (replaceTo == -1)
@@ -400,87 +224,20 @@ namespace UnityEditor.Search
             s_CurrentSelection = 0;
             s_LastInput = null;
             s_FilteredList = null;
+            s_ItemTooltipWidths = null;
+            s_ItemLabelWidths = null;
         }
 
-        private static SortedSet<SearchProposition> FetchPropositions(SearchContext context, SearchPropositionOptions options)
-        {
-            var propositions = new SortedSet<SearchProposition>();
-
-            if (!context.options.HasFlag(SearchFlags.Debug))
-                FillBuiltInPropositions(context, propositions);
-            FillProviderPropositions(context, propositions);
-
-            foreach (var p in propositions)
-            {
-                if (string.IsNullOrEmpty(p.help) && BuiltinPropositions.help.TryGetValue(p.replacement, out var helpText))
-                    p.help = helpText;
-            }
-
-            return propositions;
-        }
-
-        private static void FillProviderPropositions(SearchContext context, SortedSet<SearchProposition> propositions)
-        {
-            var providers = context.providers.Where(p => context.filterId == null || context.filterId == p.filterId).ToList();
-            var queryEmpty = string.IsNullOrWhiteSpace(context.searchText) && providers.Count(p => !p.isExplicitProvider) > 1;
-            foreach (var p in providers)
-            {
-                if (queryEmpty)
-                {
-                    propositions.Add(new SearchProposition($"{p.filterId}", $"{p.filterId} ", p.name, p.priority));
-                }
-                else
-                {
-                    if (p.fetchPropositions == null)
-                        continue;
-                    var currentPropositions = p.fetchPropositions(context, options);
-                    if (currentPropositions != null)
-                        propositions.UnionWith(currentPropositions);
-                }
-            }
-        }
-
-        private static void FillBuiltInPropositions(SearchContext context, SortedSet<SearchProposition> propositions)
-        {
-            int builtPriority = -50;
-
-            if (string.IsNullOrEmpty(context.searchQuery))
-            {
-                foreach (var sf in SearchSettings.searchQueryFavorites)
-                {
-                    propositions.Add(new SearchProposition(Utils.TrimText(sf, 30), sf, "Search Favorite", priority: builtPriority, moveCursor: TextCursorPlacement.MoveLineEnd));
-                    builtPriority += 10;
-                }
-            }
-
-            var savedQueries = SearchQuery.GetAllSearchQueryItems(context);
-            foreach (var item in savedQueries)
-            {
-                if (item.data is SearchQuery sq)
-                {
-                    var helpText = sq.description;
-                    if (string.IsNullOrEmpty(helpText))
-                        helpText = sq.text;
-                    helpText = $"<i>{Utils.TrimText(helpText, 30)}</i> (Saved Query)";
-                    propositions.Add(new SearchProposition(item.GetLabel(context, true), sq.text, helpText, priority: builtPriority, moveCursor: TextCursorPlacement.MoveLineEnd));
-                    builtPriority += 10;
-                }
-            }
-
-            foreach (var rs in SearchSettings.recentSearches.Take(5))
-            {
-                propositions.Add(new SearchProposition(rs, rs, "Recent search", priority: builtPriority, moveCursor: TextCursorPlacement.MoveLineEnd));
-                builtPriority += 10;
-            }
-        }
-
-        private static void UpdateCompleteList(in TextEditor te, in SearchPropositionOptions? baseOptions = null)
+        private static void UpdateCompleteList(in TextEditor te, in SearchPropositionOptions baseOptions = null)
         {
             options = baseOptions ?? new SearchPropositionOptions(te.text, te.cursorIndex);
             position = CalcRect(te, parent.width * 0.55f, parent.height * 0.8f);
 
             var maxVisibleCount = Mathf.FloorToInt(position.height / EditorStyles.toolbarDropDown.fixedHeight);
             BuildCompleteList(options.tokens, maxVisibleCount, 0.4f);
+
+            s_ItemLabelWidths = new List<float>();
+            s_ItemTooltipWidths = new List<float>();
 
             var maxLabelSize = 100f;
             var gc = new GUIContent();
@@ -489,18 +246,21 @@ namespace UnityEditor.Search
                 var sf = 5.0f;
                 gc.text = e.label;
                 Styles.autoCompleteItemLabel.CalcMinMaxWidth(gc, out var minWidth, out var maxWidth);
+                s_ItemLabelWidths.Add(maxWidth);
                 sf += maxWidth;
 
                 if (!string.IsNullOrEmpty(e.help))
                 {
                     gc.text = e.help;
                     Styles.autoCompleteTooltip.CalcMinMaxWidth(gc, out minWidth, out maxWidth);
+                    s_ItemTooltipWidths.Add(maxWidth);
                     sf += maxWidth;
                 }
 
-                if (sf > maxLabelSize)
+                if (sf > maxLabelSize && sf < parent.width)
                     maxLabelSize = sf;
             }
+
             position.width = maxLabelSize;
             var xOffscreen = parent.width - position.xMax;
             if (xOffscreen < 0)
@@ -513,6 +273,7 @@ namespace UnityEditor.Search
         {
             var uniqueSrc = new List<SearchProposition>(propositions);
             int srcCnt = uniqueSrc.Count;
+
             s_FilteredList = new List<SearchProposition>(Math.Min(maxCount, srcCnt));
 
             // Start with - slow
@@ -521,6 +282,7 @@ namespace UnityEditor.Search
             s_FilteredList.Sort();
 
             // Contains - very slow
+            inputs = FilterInputWords(inputs);
             SelectPropositions(ref srcCnt, maxCount, uniqueSrc, (p) =>
             {
                 if (inputs.Any(i => p.label.IndexOf(i, StringComparison.OrdinalIgnoreCase) != -1))
@@ -531,21 +293,29 @@ namespace UnityEditor.Search
             });
 
             // Levenshtein Distance - very very slow.
-            var lvInputs = inputs.Where(i => i.Length > 3).Select(input => input.Replace("<", "").Replace("=", "").Replace(">", "")).ToArray();
-            if (levenshteinDistance > 0f && lvInputs.All(i => i.Length > 3) && s_FilteredList.Count < maxCount)
+            if (levenshteinDistance > 0f && inputs.Length > 0 && s_FilteredList.Count < maxCount)
             {
                 levenshteinDistance = Mathf.Clamp01(levenshteinDistance);
                 SelectPropositions(ref srcCnt, maxCount, uniqueSrc, p =>
                 {
-                    return lvInputs.Any(levenshteinInput =>
+                    return inputs.Any(levenshteinInput =>
                     {
                         int distance = Utils.LevenshteinDistance(p.label, levenshteinInput, caseSensitive: false);
-                        return (int)(levenshteinDistance * p.label.Length) > distance;
+                        return (int)(levenshteinDistance * p.label.Length) >= distance;
                     });
                 });
             }
 
             s_CurrentSelection = Math.Max(-1, Math.Min(s_CurrentSelection, s_FilteredList.Count - 1));
+        }
+
+        private static string[] FilterInputWords(in IEnumerable<string> words)
+        {
+            return words.Where(i => i.Length > 3).Select(w => w
+                .Replace("<", "")
+                .Replace("=", "")
+                .Replace(">", "")
+                .Replace("#m_", "#")).Distinct().ToArray();
         }
 
         private static void SelectPropositions(ref int srcCnt, int maxCount, List<SearchProposition> source, Func<SearchProposition, bool> compare)
@@ -563,11 +333,12 @@ namespace UnityEditor.Search
             }
         }
 
-        private static SearchProposition DrawItems(Event evt)
+        private static bool DrawItems(Event evt, out SearchProposition result)
         {
+            result = default;
             int cnt = s_FilteredList.Count;
             if (cnt == 0)
-                return s_Empty;
+                return true;
 
             position = new Rect(position.x, position.y, position.width, cnt * Styles.autoCompleteItemLabel.fixedHeight + 20f);
             GUI.Box(position, GUIContent.none, Styles.autoCompleteBackground);
@@ -576,13 +347,16 @@ namespace UnityEditor.Search
                 Rect lineRect = new Rect(1, 10, position.width - 2, Styles.autoCompleteItemLabel.fixedHeight);
                 for (int i = 0; i < cnt; i++)
                 {
-                    if (DrawItem(evt, lineRect, i == s_CurrentSelection, s_FilteredList[i]))
-                        return s_FilteredList[i];
+                    if (DrawItem(evt, lineRect, i == s_CurrentSelection, s_FilteredList[i], i))
+                    {
+                        result = s_FilteredList[i];
+                        return true;
+                    }
                     lineRect.y += lineRect.height;
                 }
             }
 
-            return null;
+            return false;
         }
 
         private static bool IsKeySelection(Event evt)
@@ -603,10 +377,22 @@ namespace UnityEditor.Search
             return label;
         }
 
-        private static bool DrawItem(Event evt, Rect rect, bool selected, SearchProposition item)
+        private static bool DrawItem(Event evt, Rect rect, bool selected, SearchProposition item, int index)
         {
             var itemSelected = selected && evt.type == EventType.KeyDown && IsKeySelection(evt);
-            if (itemSelected || GUI.Button(rect, Utils.TrimText(HightlightLabel(item.label)), selected ? Styles.autoCompleteSelectedItemLabel : Styles.autoCompleteItemLabel))
+            string trimmedLabel;
+            if (s_ItemLabelWidths[index] > position.width)
+            {
+                var width = position.width - s_ItemTooltipWidths[index] - 20f;
+                var numCharacters = Utils.GetNumCharactersThatFitWithinWidth(Styles.autoCompleteItemLabel, item.label, width);
+                trimmedLabel = Utils.TrimText(HightlightLabel(item.label), numCharacters);
+            }
+            else
+            {
+                trimmedLabel = Utils.TrimText(HightlightLabel(item.label));
+            }
+
+            if (itemSelected || GUI.Button(rect, trimmedLabel, selected ? Styles.autoCompleteSelectedItemLabel : Styles.autoCompleteItemLabel))
             {
                 evt.Use();
                 GUI.changed = true;

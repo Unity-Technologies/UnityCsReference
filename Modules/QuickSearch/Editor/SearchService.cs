@@ -68,7 +68,7 @@ namespace UnityEditor.Search
             if (!Utils.IsMainProcess())
                 return;
 
-            if (SearchDatabase.EnumeratePaths(SearchDatabase.IndexLocation.assets).Count() == 0)
+            if (!SearchDatabase.Enumerate(SearchDatabase.IndexLocation.assets).Any())
                 SearchDatabase.CreateDefaultIndex();
 
             SearchSettings.onBoardingDoNotAskAgain = true;
@@ -83,6 +83,17 @@ namespace UnityEditor.Search
         public static SearchProvider GetProvider(string providerId)
         {
             return Providers.Find(p => p.id == providerId);
+        }
+
+        internal static SearchProvider GetProvider(Type providerType)
+        {
+            if (providerType.BaseType != typeof(SearchProvider))
+            {
+                Debug.LogFormat(LogType.Warning, LogOption.NoStacktrace, null, $"Trying to instantiate a type that is not a Search Provider: \"{providerType.FullName}\".");
+                return null;
+            }
+
+            return Activator.CreateInstance(providerType) as SearchProvider;
         }
 
         /// <summary>
@@ -128,6 +139,9 @@ namespace UnityEditor.Search
         /// </summary>
         public static void RefreshWindows()
         {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+                return;
+
             var windows = Resources.FindObjectsOfTypeAll<QuickSearch>();
             if (windows == null)
                 return;
@@ -146,7 +160,7 @@ namespace UnityEditor.Search
         /// <returns>New SearchContext</returns>
         public static SearchContext CreateContext(IEnumerable<string> providerIds, string searchText = "", SearchFlags flags = SearchFlags.Default)
         {
-            return new SearchContext(providerIds.Select(id => GetProvider(id)).Where(p => p != null), searchText, flags);
+            return new SearchContext(GetProviders(providerIds), searchText, flags);
         }
 
         /// <summary>
@@ -190,7 +204,7 @@ namespace UnityEditor.Search
         /// <returns></returns>
         public static SearchContext CreateContext(string searchText, SearchFlags flags)
         {
-            return CreateContext(Providers.Where(p => p.active).ToList(), searchText, flags);
+            return CreateContext(GetActiveProviders(), searchText, flags);
         }
 
         public static SearchContext CreateContext(string searchText)
@@ -220,6 +234,7 @@ namespace UnityEditor.Search
 
             int fetchProviderCount = 0;
             var allItems = new List<SearchItem>(3);
+
             foreach (var provider in context.providers)
             {
                 try
@@ -228,31 +243,7 @@ namespace UnityEditor.Search
                     watch.Start();
                     fetchProviderCount++;
                     var iterator = provider.fetchItems(context, allItems, provider);
-                    if (iterator != null && options.HasAny(SearchFlags.Synchronous))
-                    {
-                        using (var stackedEnumerator = new SearchEnumerator<SearchItem>(iterator))
-                        {
-                            while (stackedEnumerator.MoveNext())
-                            {
-                                if (stackedEnumerator.Current != null)
-                                    allItems.Add(stackedEnumerator.Current);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        var session = context.sessions.GetProviderSession(context, provider.id);
-                        session.Reset(context, iterator, k_MaxFetchTimeMs);
-                        session.Start();
-                        var sessionEnded = !session.FetchSome(allItems, k_MaxFetchTimeMs);
-                        if (options.HasAny(SearchFlags.FirstBatchAsync))
-                        {
-                            session.SendItems(context.subset != null ? allItems.Intersect(context.subset) : allItems);
-                            allItems.Clear();
-                        }
-                        if (sessionEnded)
-                            session.Stop();
-                    }
+                    HandleItemsIteratorSession(iterator, allItems, provider.id, context, options);
                     provider.RecordFetchTime(watch.Elapsed.TotalMilliseconds);
                 }
                 catch (Exception ex)
@@ -277,6 +268,35 @@ namespace UnityEditor.Search
             return allItems.GroupBy(i => i.id).Select(i => i.First()).ToList();
         }
 
+        static void HandleItemsIteratorSession(object iterator, List<SearchItem> allItems,  string id, SearchContext context, SearchFlags options)
+        {
+            if (iterator != null && options.HasAny(SearchFlags.Synchronous))
+            {
+                using (var stackedEnumerator = new SearchEnumerator<SearchItem>(iterator))
+                {
+                    while (stackedEnumerator.MoveNext())
+                    {
+                        if (stackedEnumerator.Current != null)
+                            allItems.Add(stackedEnumerator.Current);
+                    }
+                }
+            }
+            else
+            {
+                var session = context.sessions.GetProviderSession(context, id);
+                session.Reset(context, iterator, k_MaxFetchTimeMs);
+                session.Start();
+                var sessionEnded = !session.FetchSome(allItems, k_MaxFetchTimeMs);
+                if (options.HasAny(SearchFlags.FirstBatchAsync))
+                {
+                    session.SendItems(context.subset != null ? allItems.Intersect(context.subset) : allItems);
+                    allItems.Clear();
+                }
+                if (sessionEnded)
+                    session.Stop();
+            }
+        }
+
         /// <summary>
         /// Execute a search request that will fetch search results asynchronously.
         /// </summary>
@@ -285,12 +305,6 @@ namespace UnityEditor.Search
         /// <returns>Asynchronous list of search items.</returns>
         public static ISearchList Request(SearchContext context, SearchFlags options = SearchFlags.None)
         {
-            if (options.HasAny(SearchFlags.Synchronous))
-            {
-                throw new NotSupportedException($"Use {nameof(SearchService)}.{nameof(GetItems)}(context, " +
-                    $"{nameof(SearchFlags)}.{nameof(SearchFlags.Synchronous)}) to fetch items synchronously.");
-            }
-
             ISearchList results = null;
             if (!InternalEditorUtility.CurrentThreadIsMainThread())
             {
@@ -321,7 +335,7 @@ namespace UnityEditor.Search
         /// <returns></returns>
         public static ISearchList Request(string searchText, SearchFlags options = SearchFlags.None)
         {
-            var activeProviders = Providers.Where(p => p.active).ToList();
+            var activeProviders = GetActiveProviders();
             var context = CreateContext(activeProviders, searchText, options);
             return Request(context, options);
         }
@@ -370,7 +384,7 @@ namespace UnityEditor.Search
                 options);
         }
 
-        // <summary>
+        /// <summary>
         /// Execute a search request and callback for every incoming items and when the search is completed.
         /// The user is responsible for disposing of the search context.
         /// </summary>
@@ -386,19 +400,22 @@ namespace UnityEditor.Search
             var firstBatchResolved = false;
             var completed = false;
             var batchCount = 1;
-            context.asyncItemReceived += (c, items) =>
+
+            void ReceiveItems(SearchContext c, IEnumerable<SearchItem> items)
             {
                 if (options.HasAny(SearchFlags.Debug))
                     Debug.Log($"{requestId} #{batchCount++} Request incoming batch {context.searchText}");
                 onIncomingItems?.Invoke(c, items.Where(e => e != null));
-            };
-            context.sessionStarted += c =>
+            }
+
+            void OnSessionStarted(SearchContext c)
             {
                 if (options.HasAny(SearchFlags.Debug))
                     Debug.Log($"{requestId} Request session begin {context.searchText}");
                 ++sessionCount;
-            };
-            context.sessionEnded += c =>
+            }
+
+            void OnSessionEnded(SearchContext c)
             {
                 if (options.HasAny(SearchFlags.Debug))
                     Debug.Log($"{requestId} Request session ended {context.searchText}");
@@ -407,16 +424,26 @@ namespace UnityEditor.Search
                 {
                     if (options.HasAny(SearchFlags.Debug))
                         Debug.Log($"{requestId} Request async ended {context.searchText}");
+                    context.asyncItemReceived -= ReceiveItems;
+                    context.sessionStarted -= OnSessionStarted;
+                    context.sessionEnded -= OnSessionEnded;
                     onSearchCompleted?.Invoke(c);
                     completed = true;
                 }
-            };
+            }
+
+            context.asyncItemReceived += ReceiveItems;
+            context.sessionStarted += OnSessionStarted;
+            context.sessionEnded += OnSessionEnded;
             GetItems(context, options | SearchFlags.FirstBatchAsync);
             firstBatchResolved = true;
             if (sessionCount == 0 && !completed)
             {
                 if (options.HasAny(SearchFlags.Debug))
                     Debug.Log($"{requestId} Request sync ended {context.searchText}");
+                context.asyncItemReceived -= ReceiveItems;
+                context.sessionStarted -= OnSessionStarted;
+                context.sessionEnded -= OnSessionEnded;
                 onSearchCompleted?.Invoke(context);
             }
         }
@@ -469,7 +496,7 @@ namespace UnityEditor.Search
             }
             catch (Exception ex)
             {
-                Debug.LogException(ex);
+                Debug.LogWarning($"Cannot load Search Provider method: {methodInfo.Name} ({ex.Message})");
                 return null;
             }
         }
@@ -477,8 +504,19 @@ namespace UnityEditor.Search
         private static void RefreshProviderActions()
         {
             foreach (var action in TypeCache.GetMethodsWithAttribute<SearchActionsProviderAttribute>()
-                     .SelectMany(methodInfo => methodInfo.Invoke(null, null) as IEnumerable<object>)
-                     .Where(a => a != null).Cast<SearchAction>())
+                     .Select(methodInfo => {
+                         try
+                         {
+                             return methodInfo.Invoke(null, null) as IEnumerable<object>;
+                         }
+                         catch (Exception ex)
+                         {
+                             Debug.LogWarning($"Cannot load register Search Actions method: {methodInfo.Name} ({ex.Message})");
+                             return null;
+                         }
+                     }).Where(actionArray => actionArray != null)
+                     .SelectMany(actionArray => actionArray)
+                     .Where(action => action != null).Cast<SearchAction>())
             {
                 var provider = Providers.Find(p => p.id == action.providerId);
                 if (provider == null)
@@ -508,7 +546,17 @@ namespace UnityEditor.Search
             if (reuseExisting) flags |= SearchFlags.ReuseExistingWindow;
             if (multiselect) flags |= SearchFlags.Multiselect;
             if (dockable) flags |= SearchFlags.Dockable;
-            return QuickSearch.Create(context, topic, flags).ShowWindow(defaultWidth, defaultHeight, flags);
+            return QuickSearch.Create<QuickSearch>(context, topic, flags).ShowWindow(defaultWidth, defaultHeight, flags);
+        }
+
+        /// <summary>
+        /// Show a search window.
+        /// </summary>
+        /// <param name="viewState">Defines search view parameters for creation</param>
+        /// <returns></returns>
+        internal static ISearchView ShowWindow(SearchViewState viewState)
+        {
+            return QuickSearch.Create(viewState).ShowWindow();
         }
 
         /// <summary>
@@ -537,9 +585,15 @@ namespace UnityEditor.Search
             Action<UnityEngine.Object, bool> selectHandler,
             Action<UnityEngine.Object> trackingHandler,
             string searchText, string typeName, Type filterType,
-            float defaultWidth = 850, float defaultHeight = 539, SearchFlags flags = SearchFlags.OpenPicker)
+            float defaultWidth = 850, float defaultHeight = 539,
+            SearchFlags flags = SearchFlags.None)
         {
-            return QuickSearch.ShowObjectPicker(selectHandler, trackingHandler, searchText, typeName, filterType, defaultWidth, defaultHeight, flags);
+            var context = CreateContext(GetObjectProviders(), searchText, flags | SearchFlags.OpenPicker);
+            SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchPickerOpens, searchText, "object", "api");
+            return ShowPicker(new SearchViewState(context, selectHandler, trackingHandler, typeName, filterType)
+            {
+                position = new Rect(0, 0, defaultWidth, defaultHeight)
+            }.SetSearchViewFlags(SearchViewFlags.None));
         }
 
         public static ISearchView ShowPicker(
@@ -548,9 +602,151 @@ namespace UnityEditor.Search
             Action<SearchItem> trackingHandler = null,
             Func<SearchItem, bool> filterHandler = null,
             IEnumerable<SearchItem> subset = null,
-            string title = null, float itemSize = 64f, float defaultWidth = 850, float defaultHeight = 539, SearchFlags flags = SearchFlags.OpenPicker)
+            string title = null, float itemSize = 64f, float defaultWidth = 850f, float defaultHeight = 539f, SearchFlags flags = SearchFlags.None)
         {
-            return QuickSearch.ShowPicker(context, selectHandler, trackingHandler, filterHandler, subset, title, itemSize, defaultWidth, defaultHeight, flags);
+            if (subset != null)
+                context.subset = subset.ToList();
+            context.options |= flags | SearchFlags.OpenPicker;
+            SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchPickerOpens, context.searchText, "item", "api");
+            return SearchPickerWindow.ShowPicker(new SearchViewState(context, selectHandler)
+            {
+                trackingHandler = trackingHandler,
+                filterHandler = filterHandler,
+                title = title,
+                itemSize = itemSize,
+                position = new Rect(0, 0, defaultWidth, defaultHeight)
+            }.SetSearchViewFlags(SearchViewFlags.None));
+        }
+
+        /// <summary>
+        /// Open and show the Search Picker window.
+        /// </summary>
+        /// <param name="viewState">View parameters</param>
+        /// <returns>Returns the newly create search view instance.</returns>
+        internal static ISearchView ShowPicker(SearchViewState viewState)
+        {
+            return SearchPickerWindow.ShowPicker(viewState);
+        }
+
+        internal static IEnumerable<SearchProvider> GetActiveProviders()
+        {
+            return Providers.Where(p => p.active);
+        }
+
+        internal static IEnumerable<SearchProvider> GetProviders(params string[] providerIds)
+        {
+            return providerIds.Select(GetProvider).Where(p => p != null);
+        }
+
+        internal static IEnumerable<SearchProvider> GetProviders(IEnumerable<string> providerIds)
+        {
+            return providerIds.Select(GetProvider).Where(p => p != null);
+        }
+
+        internal static IEnumerable<SearchProvider> GetObjectProviders()
+        {
+            yield return GetProvider(Search.Providers.BuiltInSceneObjectsProvider.type);
+            yield return GetProvider(Search.Providers.AssetProvider.type);
+        }
+
+        /// <summary>
+        /// Create a new index and callback user code to indicate that the indexing is finished.
+        /// </summary>
+        /// <param name="name">Unique name of the index to be used.</param>
+        /// <param name="onIndexReady">Callback invoked when the new search index is ready to be used.</param>
+        internal static void CreateIndex(
+            in string name,
+            in IndexingOptions options,
+            IEnumerable<string> roots,
+            IEnumerable<string> includes,
+            IEnumerable<string> excludes,
+            Action<string, string, Action> onIndexReady)
+        {
+            var indexName = name;
+            var indexPath = name;
+            if (name.EndsWith(".index"))
+                indexName = name.Substring(0, name.Length - 6);
+            else
+                indexPath = $"{name}.index";
+
+            if (options.HasNone(IndexingOptions.Temporary))
+            {
+                indexName = System.IO.Path.GetFileNameWithoutExtension(indexPath);
+                if (!AssetDatabase.GetAssetFolderInfo(indexPath, out var rootFolder, out var immutable) || immutable)
+                    indexPath = AssetDatabase.GenerateUniqueAssetPath($"Assets/{indexName}.index");
+            }
+            else
+            {
+                indexPath = AssetDatabase.GenerateUniqueAssetPath($"Temp/{indexPath}");
+
+                if (roots == null)
+                    roots = new[] { "Assets" };
+            }
+
+            roots = roots ?? Enumerable.Empty<string>();
+            includes = includes ?? Enumerable.Empty<string>();
+            excludes = excludes ?? Enumerable.Empty<string>();
+
+            var indexDir = System.IO.Path.GetDirectoryName(indexPath);
+            if (!System.IO.Directory.Exists(indexDir))
+                AssetDatabase.CreateFolder(System.IO.Path.GetDirectoryName(indexDir), System.IO.Path.GetFileName(indexDir));
+
+            Utils.WriteTextFileToDisk(indexPath,
+                $"{{\n\t" +
+                $"\"roots\": [{string.Join(",", roots.Select(p => $"\"{p}\""))}],\n\t" +
+                $"\"includes\": [{string.Join(",", includes.Select(p => $"\"{p}\""))}],\n\t" +
+                $"\"excludes\": [{string.Join(",", excludes.Select(p => $"\"{p}\""))}],\n\t" +
+                $"\"options\": {{\n\t\t" +
+                $"\"types\": {options.HasAny(IndexingOptions.Types).ToString().ToLowerInvariant()},\n\t\t" +
+                $"\"properties\": {options.HasAny(IndexingOptions.Properties).ToString().ToLowerInvariant()},\n\t\t" +
+                $"\"extended\": {options.HasAny(IndexingOptions.Extended).ToString().ToLowerInvariant()},\n\t\t" +
+                $"\"dependencies\": {options.HasAny(IndexingOptions.Dependencies).ToString().ToLowerInvariant()}\n\t}},\n\t" +
+                $"\"baseScore\": 9999\n}}");
+
+            var db = SearchDatabase.ImportAsset(indexPath);
+            TrackCreateIndex(db, options, indexName, indexPath, onIndexReady, 1d);
+        }
+
+        /// <summary>
+        /// Checks if a search index is ready to be used.
+        /// </summary>
+        /// <param name="name">Name or path of the search index to be checked. Pass null if you want to check all available indexes</param>
+        /// <returns></returns>
+        internal static bool IsIndexReady(string name)
+        {
+            return SearchDatabase.EnumerateAll().Where(db =>
+            {
+                if (string.IsNullOrEmpty(name))
+                    return true;
+                if (string.Equals(db.name, name, StringComparison.OrdinalIgnoreCase))
+                    return true;
+                if (string.Equals(db.path, name, StringComparison.OrdinalIgnoreCase))
+                    return true;
+                return false;
+            }).All(db => db.ready && !db.updating);
+        }
+
+        static void TrackCreateIndex(SearchDatabase db, IndexingOptions options, string indexName, string indexPath, Action<string, string, Action> onIndexReady, double delay)
+        {
+            if (db.ready)
+            {
+                onIndexReady?.Invoke(indexName, indexPath.Replace("\\", "/"), () =>
+                {
+                    if (EditorUtility.IsPersistent(db))
+                        Resources.UnloadAsset(db);
+                    if (options.HasNone(IndexingOptions.Keep))
+                        AssetDatabase.DeleteAsset(indexPath);
+                });
+            }
+            else
+                Utils.CallDelayed(() => TrackCreateIndex(db, options, indexName, indexPath, onIndexReady, delay), delay);
+        }
+
+        static bool CouldContainExpression(SearchContext context)
+        {
+            var text = context.searchText;
+            return text.IndexOf('{') != -1 || text.IndexOf('}') != -1 ||
+                text.IndexOf('[') != -1 || text.IndexOf(']') != -1;
         }
     }
 }

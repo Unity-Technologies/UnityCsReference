@@ -4984,7 +4984,7 @@ namespace UnityEditor
             switch (evt.GetTypeForControl(id))
             {
                 case EventType.MouseDown:
-                    if (position.Contains(evt.mousePosition))
+                    if (evt.button == 0 && position.Contains(evt.mousePosition))
                     {
                         s_CurveID = id;
                         GUIUtility.keyboardControl = id;
