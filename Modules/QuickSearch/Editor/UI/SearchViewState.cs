@@ -108,10 +108,9 @@ namespace UnityEditor.Search
             title = filterType?.Name ?? typeName;
         }
 
-        internal SearchViewState(SearchTable tableConfig)
-            : this(null, null)
+        internal SearchViewState(SearchContext context, SearchTable tableConfig, SearchViewFlags flags = SearchViewFlags.None)
+            : this(context, flags | SearchViewFlags.TableView)
         {
-            itemSize = (float)DisplayMode.Table;
             group = null;
             this.tableConfig = tableConfig;
         }
@@ -154,12 +153,15 @@ namespace UnityEditor.Search
             searchText = state.context.searchText;
             sessionId = state.sessionId;
             sessionName = state.sessionName;
+            excludeNoneItem = state.excludeNoneItem;
+            ignoreSaveSearches = state.ignoreSaveSearches;
 
             title = state.title;
             itemSize = state.itemSize;
             position = state.position;
             flags = state.flags;
             forceViewMode = state.forceViewMode;
+            group = state.group;
 
 
             BuildContext();
@@ -229,6 +231,8 @@ namespace UnityEditor.Search
         public void OnAfterDeserialize()
         {
             m_WasDeserialized = true;
+            if (tableConfig != null && tableConfig.columns?.Length == 0)
+                tableConfig = null;
         }
 
         internal IEnumerable<string> GetProviderIds()

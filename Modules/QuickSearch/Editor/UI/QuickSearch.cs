@@ -380,7 +380,7 @@ namespace UnityEditor.Search
         private void SetSelection(bool trackSelection, int[] selection)
         {
             if (!multiselect && selection.Length > 1)
-                throw new Exception("Multi selection is not allowed.");
+                selection = new int[] { selection[selection.Length - 1] };
 
             var lastIndexAdded = k_ResetSelectionIndex;
 
@@ -562,6 +562,7 @@ namespace UnityEditor.Search
             resized += OnWindowResized;
 
             SelectSearch();
+            SetTextEditorState(context.searchText, te => UpdateFocusState(te), true);
 
             UpdateWindowTitle();
 
@@ -2043,6 +2044,7 @@ namespace UnityEditor.Search
 
         internal void SaveUserSearchQuery()
         {
+            m_ViewState.group = m_FilteredItems.currentGroup;
             var query = SearchQuery.AddUserQuery(m_ViewState,
                 m_ResultView.SaveViewState(context.searchText).tableConfig
             );
@@ -2207,7 +2209,7 @@ namespace UnityEditor.Search
             else if (mode == DisplayMode.Grid)
                 m_ResultView = new GridView(this);
             else if (mode == DisplayMode.Table)
-                m_ResultView = new TableView(this);
+                m_ResultView = new TableView(this, viewState.tableConfig);
             RefreshViews(RefreshFlags.DisplayModeChanged);
         }
 

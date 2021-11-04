@@ -681,6 +681,7 @@ namespace UnityEditorInternal
                 }
 
                 arguments.Add($"--generatedcppdir={CommandLineFormatter.PrepareFileName(GetCppOutputDirectory(il2cppBuildCacheSource))}");
+                arguments.Add($"--stats-output-dir={CommandLineFormatter.PrepareFileName(GetStatsOutputDirectory(il2cppBuildCacheSource))}");
                 arguments.Add($"--dotnetprofile=\"{IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup), m_PlatformProvider.target)}\"");
                 arguments.AddRange(IL2CPPUtils.GetDebuggerIL2CPPArguments(m_PlatformProvider, buildTargetGroup));
                 Action<ProcessStartInfo> setupStartInfo = il2CppNativeCodeBuilder.SetupStartInfo;
@@ -702,6 +703,11 @@ namespace UnityEditorInternal
         public static string GetCppOutputDirectory(string directory)
         {
             return Path.Combine(GetShortPathName(Path.GetFullPath(directory)), "il2cppOutput");
+        }
+
+        public static string GetStatsOutputDirectory(string directory)
+        {
+            return Path.Combine(GetShortPathName(Path.GetFullPath(directory)), "il2cppStats");
         }
 
         private void ConvertPlayerDlltoCpp(Il2CppBuildPipelineData data)
@@ -766,6 +772,7 @@ namespace UnityEditorInternal
 
             arguments.Add($"--directory={CommandLineFormatter.PrepareFileName(GetShortPathName(Path.GetFullPath(data.inputDirectory)))}");
             arguments.Add($"--generatedcppdir={CommandLineFormatter.PrepareFileName(GetCppOutputDirectory(m_PlatformProvider.il2cppBuildCacheDirectory))}");
+            arguments.Add($"--stats-output-dir={CommandLineFormatter.PrepareFileName(GetStatsOutputDirectory(m_PlatformProvider.il2cppBuildCacheDirectory))}");
 
             // NOTE: any arguments added here that affect how generated code is built need
             // to also be added to PlatformDependent\Win\Extensions\Managed\VisualStudioProjectHelpers.cs

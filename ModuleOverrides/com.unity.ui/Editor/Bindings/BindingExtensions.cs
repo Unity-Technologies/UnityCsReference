@@ -225,13 +225,19 @@ namespace UnityEditor.UIElements.Bindings
             switch (prop.propertyType)
             {
                 case SerializedPropertyType.Integer:
-                    if (prop.type == "long")
+                    if (prop.type == "long" || prop.type == "ulong")
                     {
-                        if (element is INotifyValueChanged<long>)
+                        if (element is INotifyValueChanged<long> || element is  INotifyValueChanged<string>)
                         {
                             DefaultBind(element,  prop, SerializedPropertyHelper.GetLongPropertyValue, SerializedPropertyHelper.SetLongPropertyValue, SerializedPropertyHelper.ValueEquals);
                         }
-                        else if (element is INotifyValueChanged<int> || element is  INotifyValueChanged<string>)
+                        else if (element is INotifyValueChanged<ulong>)
+                        {
+                            //This is not sustainable, we must fix this
+                            DefaultBind(element,  prop, (x) => (ulong)SerializedPropertyHelper.GetLongPropertyValue(x), (x, v) => SerializedPropertyHelper.SetLongPropertyValue(x, (long)v),
+                                (a, b, c) => SerializedPropertyHelper.ValueEquals((long)a, b, (x) => (long)c(x)));
+                        }
+                        else if (element is INotifyValueChanged<int>)
                         {
                             DefaultBind(element, prop, SerializedPropertyHelper.GetIntPropertyValue, SerializedPropertyHelper.SetIntPropertyValue, SerializedPropertyHelper.ValueEquals);
                         }
@@ -240,11 +246,15 @@ namespace UnityEditor.UIElements.Bindings
                             DefaultBind(element, prop, SerializedPropertyHelper.GetLongPropertyValueAsFloat, SerializedPropertyHelper.SetFloatPropertyValue, SerializedPropertyHelper.ValueEquals);
                         }
                     }
-                    else
+                    else // prop.type == "int"
                     {
                         if (element is INotifyValueChanged<int> || element is  INotifyValueChanged<string>)
                         {
                             DefaultBind(element, prop, SerializedPropertyHelper.GetIntPropertyValue, SerializedPropertyHelper.SetIntPropertyValue, SerializedPropertyHelper.ValueEquals);
+                        }
+                        else if (element is INotifyValueChanged<long>)
+                        {
+                            DefaultBind(element,  prop, SerializedPropertyHelper.GetLongPropertyValue, SerializedPropertyHelper.SetLongPropertyValue, SerializedPropertyHelper.ValueEquals);
                         }
                         else if (element is INotifyValueChanged<float>)
                         {
@@ -267,7 +277,7 @@ namespace UnityEditor.UIElements.Bindings
                             DefaultBind(element, prop, SerializedPropertyHelper.GetFloatPropertyValue, SerializedPropertyHelper.SetFloatPropertyValue, SerializedPropertyHelper.ValueEquals);
                         }
                     }
-                    else
+                    else  // prop.type == "double"
                     {
                         if (element is INotifyValueChanged<float>)
                         {

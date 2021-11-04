@@ -214,34 +214,60 @@ namespace UnityEngine.UIElements
                 }
             }
 
+            // Find a candidate panel for the event
             // Try all the panels, from closest to deepest
+            BaseRuntimePanel candidatePanel = null;
+            Vector2 candidateMousePosition = Vector2.zero;
+            Vector2 candidateDelta = Vector2.zero;
             for (var i = panels.Count - 1; i >= 0; i--)
             {
-                var panel = panels[i];
-                if (panel is BaseRuntimePanel runtimePanel && (targetDisplay == null || runtimePanel.targetDisplay == targetDisplay))
+                if (panels[i] is BaseRuntimePanel runtimePanel && (targetDisplay == null || runtimePanel.targetDisplay == targetDisplay))
                 {
-                    if (!runtimePanel.ScreenToPanel(mousePosition, delta, out var panelPosition, out var panelDelta) ||
-                        runtimePanel.Pick(panelPosition) == null)
-                        continue;
-
-                    using (EventBase evt = evtFactory(panelPosition, panelDelta, arg))
+                    if (runtimePanel.ScreenToPanel(mousePosition, delta, out candidateMousePosition, out candidateDelta) &&
+                        runtimePanel.Pick(candidateMousePosition) != null)
                     {
-                        runtimePanel.visualTree.SendEvent(evt);
-
-                        if (evt.processedByFocusController)
-                        {
-                            UpdateFocusedPanel(runtimePanel);
-                        }
-
-                        // We filter through panel.Pick, so only 1 panel receives an event. The others are blocked.
-                        return;
+                        candidatePanel = runtimePanel;
+                        break;
                     }
                 }
             }
 
-            if (deselectIfNoTarget)
+            BaseRuntimePanel lastActivePanel = PointerDeviceState.GetPanel(pointerId, ContextType.Player) as BaseRuntimePanel;
+            if (lastActivePanel != null && lastActivePanel != candidatePanel)
             {
-                focusedPanel = null;
+                // Send an event to the last panel the pointer was in, so it can dispatch [Mouse|Pointer][Out|Leave] events.
+                lastActivePanel.ScreenToPanel(mousePosition, delta, out var panelPosition, out var panelDelta, true);
+                using (EventBase lastActivePanelEvent = evtFactory(panelPosition, panelDelta, arg))
+                {
+                    lastActivePanel.visualTree.SendEvent(lastActivePanelEvent);
+                }
+            }
+
+            if (candidatePanel != null)
+            {
+                using (EventBase evt = evtFactory(candidateMousePosition, candidateDelta, arg))
+                {
+                    candidatePanel.visualTree.SendEvent(evt);
+
+                    if (evt.processedByFocusController)
+                    {
+                        UpdateFocusedPanel(candidatePanel);
+                    }
+                }
+            }
+            else
+            {
+                if (lastActivePanel == null)
+                {
+                    // Mouse and pointer events calls PointerDeviceState.SavePointerPosition in their PreDispatch().
+                    // If we did not send any event, we need to manually update the pointer position.
+                    PointerDeviceState.SavePointerPosition(pointerId, mousePosition, null, ContextType.Player);
+                }
+
+                if (deselectIfNoTarget)
+                {
+                    focusedPanel = null;
+                }
             }
         }
 

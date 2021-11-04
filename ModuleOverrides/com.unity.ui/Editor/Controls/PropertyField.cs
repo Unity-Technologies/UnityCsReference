@@ -576,6 +576,8 @@ namespace UnityEditor.UIElements
                     return ConfigureField<Toggle, bool>(originalField as Toggle, property, () => new Toggle());
 
                 case SerializedPropertyType.Float:
+                    if (property.type == "double")
+                        return ConfigureField<DoubleField, double>(originalField as DoubleField, property, () => new DoubleField());
                     return ConfigureField<FloatField, float>(originalField as FloatField, property, () => new FloatField());
 
                 case SerializedPropertyType.String:

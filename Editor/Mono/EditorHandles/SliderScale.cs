@@ -12,8 +12,8 @@ namespace UnityEditorInternal
     internal class SliderScale
     {
         private static float s_StartScale, s_ScaleDrawLength = 1.0f;
-        private static float s_ValueDrag;
         private static Vector2 s_StartMousePosition, s_CurrentMousePosition;
+        private static Vector3 s_Direction;
 
         public static float DoAxis(int id, float scale, Vector3 position, Vector3 direction, Quaternion rotation, float size, float snap)
         {
@@ -135,7 +135,10 @@ namespace UnityEditorInternal
                         GUIUtility.hotControl = id;     // Grab mouse focus
                         Tools.LockHandlePosition();
                         s_StartScale = value;
-                        s_ValueDrag = 0;
+                        s_CurrentMousePosition = s_StartMousePosition = evt.mousePosition;
+
+                        var camera = SceneView.lastActiveSceneView.camera;
+                        s_Direction = camera == null? Vector3.one : (camera.transform.right + camera.transform.up).normalized;
                         evt.Use();
                         EditorGUIUtility.SetWantsMouseJumping(1);
                     }
@@ -144,9 +147,10 @@ namespace UnityEditorInternal
                 case EventType.MouseDrag:
                     if (GUIUtility.hotControl == id)
                     {
-                        s_ValueDrag += HandleUtility.niceMouseDelta * .01f;
-                        value = (Handles.SnapValue(s_ValueDrag, snap) + 1.0f) * s_StartScale;
-                        s_ScaleDrawLength = value / s_StartScale;
+                        s_CurrentMousePosition += evt.delta;
+                        var dist = HandleUtility.CalcLineTranslation(s_StartMousePosition, s_CurrentMousePosition, position, s_Direction) / size;
+                        value = (Handles.SnapValue(dist, snap) + 1.0f) * s_StartScale;
+                        s_ScaleDrawLength = value;
                         GUI.changed = true;
                         evt.Use();
                     }

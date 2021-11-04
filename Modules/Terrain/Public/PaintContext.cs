@@ -162,6 +162,13 @@ namespace UnityEngine.TerrainTools
         // TerrainPaintUtilityEditor hooks to this event to do automatic undo
         internal static event Action<PaintContext.ITerrainInfo, ToolAction, string /*editorUndoName*/> onTerrainTileBeforePaint;
 
+        internal const int k_MinimumResolution = 1;
+        internal const int k_MaximumResolution = 8192;
+        internal static int ClampContextResolution(int resolution)
+        {
+            return Mathf.Clamp(resolution, k_MinimumResolution, k_MaximumResolution);
+        }
+
         public PaintContext(
             Terrain terrain, RectInt pixelRect, int targetTextureWidth, int targetTextureHeight,
             [uei.DefaultValue("true")] bool sharedBoundaryTexel = true,
@@ -256,8 +263,17 @@ namespace UnityEngine.TerrainTools
         public void CreateRenderTargets(RenderTextureFormat colorFormat)
         {
             // Extended edge sampling of tiles requires a depth buffer (see TerrainPaintUtility.DrawQuadPadded for more info).
-            sourceRenderTexture = RenderTexture.GetTemporary(pixelRect.width, pixelRect.height, 16, colorFormat, RenderTextureReadWrite.Linear);
-            destinationRenderTexture = RenderTexture.GetTemporary(pixelRect.width, pixelRect.height, 0, colorFormat, RenderTextureReadWrite.Linear);
+            int width = ClampContextResolution(pixelRect.width);
+            int height = ClampContextResolution(pixelRect.height);
+            if (width != pixelRect.width || height != pixelRect.height)
+            {
+                Debug.LogWarning($@"
+TERRAIN EDITOR INTERNAL ERROR: An attempt to create a PaintContext with dimensions of {pixelRect.width}x{pixelRect.height} was made,
+whereas the maximum supported resolution is {k_MaximumResolution}. The size has been clamped to {k_MaximumResolution}."
+                );
+            }
+            sourceRenderTexture = RenderTexture.GetTemporary(width, height, 16, colorFormat, RenderTextureReadWrite.Linear);
+            destinationRenderTexture = RenderTexture.GetTemporary(width, height, 0, colorFormat, RenderTextureReadWrite.Linear);
             sourceRenderTexture.wrapMode = TextureWrapMode.Clamp;
             sourceRenderTexture.filterMode = FilterMode.Point;
             oldRenderTexture = RenderTexture.active;

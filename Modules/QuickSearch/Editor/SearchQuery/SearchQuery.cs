@@ -205,11 +205,7 @@ namespace UnityEditor.Search
 
         public SearchViewState GetResultViewState()
         {
-            return new SearchViewState(tableConfig)
-            {
-                group = null,
-                itemSize = viewState.itemSize
-            };
+            return viewState;
         }
 
         public override int GetHashCode()

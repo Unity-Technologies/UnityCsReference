@@ -15,6 +15,15 @@ using UnityEngine.Scripting;
 namespace UnityEditor
 {
     [NativeHeader("Modules/AssetDatabase/Editor/V2/ArtifactInfo.h")]
+    internal enum ImportActivityWindowStartupData
+    {
+        AllCurrentRevisions,
+        LongestImportDuration,
+        MostDependencies,
+        ClearCache
+    };
+
+    [NativeHeader("Modules/AssetDatabase/Editor/V2/ArtifactInfo.h")]
     [StructLayout(LayoutKind.Sequential)]
     internal struct ArtifactInfoImportStats
     {
@@ -70,6 +79,7 @@ namespace UnityEditor
     }
 
     [NativeHeader("Modules/AssetDatabase/Editor/V2/ArtifactInfo.h")]
+    [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
     internal class ArtifactInfo : IDisposable
     {
@@ -81,6 +91,7 @@ namespace UnityEditor
         internal ArtifactInfo()
         {
             m_Ptr = Internal_Create();
+            m_ArtifactID = kInvalidArtifactID;
         }
 
         ~ArtifactInfo()
@@ -91,7 +102,6 @@ namespace UnityEditor
         public void Dispose()
         {
             Dispose(true);
-            GC.SuppressFinalize(this);
         }
 
         protected virtual void Dispose(bool disposing)
@@ -101,15 +111,18 @@ namespace UnityEditor
                 Internal_Destroy(m_Ptr);
                 m_Ptr = IntPtr.Zero;
             }
+
+            GC.SuppressFinalize(this);
         }
 
         private bool IsValid()
         {
-            return !string.IsNullOrEmpty(artifactID) && string.CompareOrdinal(artifactID, kInvalidArtifactID) != 0;
+            return string.CompareOrdinal(m_ArtifactID, kInvalidArtifactID) != 0;
         }
 
         private static extern IntPtr Internal_Create();
 
+        [FreeFunction("ArtifactInfoBindings::Internal_Destroy", IsThreadSafe = true)]
         private static extern void Internal_Destroy(IntPtr ptr);
 
         [FreeFunction("ArtifactInfoBindings::GetArtifactID_Internal")]
@@ -117,6 +130,15 @@ namespace UnityEditor
 
         [FreeFunction("ArtifactInfoBindings::GetArtifactKey_Internal")]
         private static extern ArtifactKey GetArtifactKey_Internal(ArtifactInfo self);
+
+        [FreeFunction("ArtifactInfoBindings::GetAssetPath_Internal")]
+        private static extern string GetAssetPath_Internal(ArtifactInfo self);
+
+        [FreeFunction("ArtifactInfoBindings::GetImportDuration_Internal")]
+        private static extern ulong GetImportDuration_Internal(ArtifactInfo self);
+
+        [FreeFunction("ArtifactInfoBindings::GetImportTimeStamp_Internal")]
+        private static extern long GetImportTimeStamp_Internal(ArtifactInfo self);
 
         [FreeFunction("ArtifactInfoBindings::GetIsCurrentArtifact_Internal")]
         private static extern bool GetIsCurrentArtifact_Internal(ArtifactInfo self);
@@ -145,8 +167,38 @@ namespace UnityEditor
             }
         }
 
+        internal string assetPath { get { return GetAssetPath_Internal(this); } }
         internal ArtifactKey artifactKey { get { return GetArtifactKey_Internal(this); } }
         internal bool isCurrentArtifact { get { return GetIsCurrentArtifact_Internal(this); } }
+
+        private ulong m_ImportDuration = 0;
+        private long m_TimeStamp = 0;
+
+        internal ulong importDuration
+        {
+            get
+            {
+                if (m_ImportDuration == 0)
+                {
+                    m_ImportDuration = GetImportDuration_Internal(this);
+                }
+
+                return m_ImportDuration;
+            }
+        }
+
+        internal long timeStamp
+        {
+            get
+            {
+                if (m_TimeStamp == 0)
+                {
+                    m_TimeStamp = GetImportTimeStamp_Internal(this);
+                }
+
+                return m_TimeStamp;
+            }
+        }
 
         private ArtifactInfoImportStats m_ImportStats;
 

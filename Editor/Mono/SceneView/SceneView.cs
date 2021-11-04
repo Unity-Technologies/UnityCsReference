@@ -3562,10 +3562,13 @@ namespace UnityEditor
                                 // Ironically, only allow multi object access inside OnSceneGUI if editor does NOT support multi-object editing.
                                 // since there's no harm in going through the serializedObject there if there's always only one target.
                                 Editor.m_AllowMultiObjectAccess = !editor.canEditMultipleObjects;
+                                BeginWindows();
                                 method.Invoke(editor, null);
+                                EndWindows();
                                 Editor.m_AllowMultiObjectAccess = true;
                                 if (EditorGUI.EndChangeCheck())
                                     editor.serializedObject.SetIsDifferentCacheDirty();
+
                             }
 
                             ResetOnSceneGUIState();

@@ -730,7 +730,7 @@ namespace UnityEngine.UIElements
 
             if (((IPointerEventInternal)this).triggeredByOS)
             {
-                PointerDeviceState.SavePointerPosition(pointerId, position, panel);
+                PointerDeviceState.SavePointerPosition(pointerId, position, panel, panel.contextType);
             }
         }
 
@@ -982,7 +982,7 @@ namespace UnityEngine.UIElements
             {
                 panel.ReleasePointer(pointerId);
                 BaseVisualElementPanel basePanel = panel as BaseVisualElementPanel;
-                basePanel?.ClearCachedElementUnderPointer(this);
+                basePanel?.ClearCachedElementUnderPointer(pointerId, this);
             }
 
             if (panel.ShouldSendCompatibilityMouseEvents(this))
@@ -1042,7 +1042,7 @@ namespace UnityEngine.UIElements
             {
                 panel.ReleasePointer(pointerId);
                 BaseVisualElementPanel basePanel = panel as BaseVisualElementPanel;
-                basePanel?.ClearCachedElementUnderPointer(this);
+                basePanel?.ClearCachedElementUnderPointer(pointerId, this);
             }
 
             if (panel.ShouldSendCompatibilityMouseEvents(this))

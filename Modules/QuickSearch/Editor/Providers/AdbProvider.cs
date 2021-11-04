@@ -67,7 +67,7 @@ namespace UnityEditor.Search.Providers
 
         static IEnumerable<SearchItem> FetchItems(SearchContext context, SearchProvider provider)
         {
-            if (context.empty)
+            if (context.empty && context.filterType == null)
                 yield break;
 
             if (m_ResourcesQueryEngine == null)

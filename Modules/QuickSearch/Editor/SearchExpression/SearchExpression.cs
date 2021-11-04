@@ -39,7 +39,10 @@ namespace UnityEditor.Search
     enum SearchExpressionKeyword
     {
         asc,
-        desc
+        desc,
+        any,
+        all,
+        none
     }
 
     static class SearchExpressionTypeExtensions

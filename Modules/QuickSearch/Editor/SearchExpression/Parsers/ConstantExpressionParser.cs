@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+
 namespace UnityEditor.Search
 {
     static partial class Parsers
@@ -69,10 +71,12 @@ namespace UnityEditor.Search
         [SearchExpressionParser("keyword", BuiltinParserPriority.Keyword)]
         internal static SearchExpression KeywordParser(SearchExpressionParserArgs args)
         {
-            if (args.text.Equals(nameof(SearchExpressionKeyword.asc), System.StringComparison.OrdinalIgnoreCase) ||
-                args.text.Equals(nameof(SearchExpressionKeyword.desc), System.StringComparison.OrdinalIgnoreCase))
+            foreach(var enumValue in Enum.GetNames(typeof(SearchExpressionKeyword)))
             {
-                return new SearchExpression(SearchExpressionType.Keyword, args.text, ConstantEvaluator);
+                if (args.text.Equals(enumValue, StringComparison.OrdinalIgnoreCase))
+                {
+                    return new SearchExpression(SearchExpressionType.Keyword, args.text, ConstantEvaluator);
+                }
             }
 
             return null;

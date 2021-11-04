@@ -443,8 +443,6 @@ namespace UnityEditor.Search.Providers
             if (useIndexing)
             {
                 var dbs = SearchDatabase.EnumerateAll();
-                if (context.options.HasAny(SearchFlags.QueryString))
-                    dbs = dbs.Where(db => db.ready);
                 foreach (var db in dbs)
                     yield return SearchIndexes(context.searchQuery, context, provider, db);
             }

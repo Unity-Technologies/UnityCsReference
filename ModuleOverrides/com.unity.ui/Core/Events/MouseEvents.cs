@@ -215,7 +215,7 @@ namespace UnityEngine.UIElements
 
             if (((IMouseEventInternal)this).triggeredByOS)
             {
-                PointerDeviceState.SavePointerPosition(PointerId.mousePointerId, mousePosition, panel);
+                PointerDeviceState.SavePointerPosition(PointerId.mousePointerId, mousePosition, panel, panel.contextType);
             }
         }
 

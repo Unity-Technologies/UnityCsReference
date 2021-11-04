@@ -467,26 +467,28 @@ namespace UnityEngine.UIElements
             return m_TopElementUnderPointers.GetTopElementUnderPointer(pointerId);
         }
 
-        internal VisualElement RecomputeTopElementUnderPointer(Vector2 pointerPos, EventBase triggerEvent)
+        internal VisualElement RecomputeTopElementUnderPointer(int pointerId, Vector2 pointerPos, EventBase triggerEvent)
         {
-            VisualElement element = Pick(pointerPos);
-            m_TopElementUnderPointers.SetElementUnderPointer(element, triggerEvent);
+            VisualElement element = null;
+
+            if (PointerDeviceState.GetPanel(pointerId, contextType) == this &&
+                !PointerDeviceState.HasLocationFlag(pointerId, contextType, PointerDeviceState.LocationFlag.OutsidePanel))
+            {
+                element = Pick(pointerPos);
+            }
+
+            m_TopElementUnderPointers.SetElementUnderPointer(element, pointerId, triggerEvent);
             return element;
         }
 
-        internal void ClearCachedElementUnderPointer(EventBase triggerEvent)
+        internal void ClearCachedElementUnderPointer(int pointerId, EventBase triggerEvent)
         {
-            m_TopElementUnderPointers.SetTemporaryElementUnderPointer(null, triggerEvent);
-        }
-
-        void SetElementUnderPointer(VisualElement newElementUnderPointer, int pointerId, Vector2 pointerPos)
-        {
-            m_TopElementUnderPointers.SetElementUnderPointer(newElementUnderPointer, pointerId, pointerPos);
+            m_TopElementUnderPointers.SetTemporaryElementUnderPointer(null, pointerId, triggerEvent);
         }
 
         internal void CommitElementUnderPointers()
         {
-            m_TopElementUnderPointers.CommitElementUnderPointers(dispatcher);
+            m_TopElementUnderPointers.CommitElementUnderPointers(dispatcher, contextType);
         }
 
         internal abstract Shader standardShader { get; set; }
@@ -530,16 +532,18 @@ namespace UnityEngine.UIElements
         {
             foreach (var pointerId in PointerId.hoveringPointers)
             {
-                if (PointerDeviceState.GetPanel(pointerId) != this)
+                if (PointerDeviceState.GetPanel(pointerId, contextType) != this ||
+                    PointerDeviceState.HasLocationFlag(pointerId, contextType, PointerDeviceState.LocationFlag.OutsidePanel))
                 {
-                    SetElementUnderPointer(null, pointerId, new Vector2(float.MinValue, float.MinValue));
+                    m_TopElementUnderPointers.SetElementUnderPointer(null, pointerId, new Vector2(float.MinValue, float.MinValue));
                 }
                 else
                 {
-                    var pointerPos = PointerDeviceState.GetPointerPosition(pointerId);
+                    var pointerPos = PointerDeviceState.GetPointerPosition(pointerId, contextType);
+
                     // Here it's important to call PickAll instead of Pick to ensure we don't use the cached value.
                     VisualElement elementUnderPointer = PickAll(pointerPos, null);
-                    SetElementUnderPointer(elementUnderPointer, pointerId, pointerPos);
+                    m_TopElementUnderPointers.SetElementUnderPointer(elementUnderPointer, pointerId, pointerPos);
                 }
             }
 

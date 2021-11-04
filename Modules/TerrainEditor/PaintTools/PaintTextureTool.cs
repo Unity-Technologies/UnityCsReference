@@ -113,8 +113,10 @@ namespace UnityEditor.TerrainTools
                 (m_TemplateMaterialEditor as MaterialEditor)?.customShaderGUI as ITerrainLayerCustomUI);
             EditorGUILayout.Space();
 
-            int textureRez = terrain.terrainData.alphamapResolution;
-            editContext.ShowBrushesGUI(5, BrushGUIEditFlags.All, textureRez);
+            // Texture painting needs to know the largest of the splat map and the height map, as the result goes to
+            // the splat map, but the height map is used for previewing.
+            int resolution = Mathf.Max(terrain.terrainData.heightmapResolution, terrain.terrainData.alphamapResolution);
+            editContext.ShowBrushesGUI(5, BrushGUIEditFlags.All, resolution);
         }
     }
 }
