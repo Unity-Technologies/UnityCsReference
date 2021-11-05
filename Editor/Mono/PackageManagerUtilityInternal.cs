@@ -5,6 +5,7 @@
 using System;
 using System.Linq;
 using UnityEditor.PackageManager;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
@@ -47,6 +48,8 @@ namespace UnityEditor
                 package.source == PackageSource.Local);
         }
 
+        private static int s_HiddenPackagesCount = -1;
+
         /// <summary>
         /// Count of hidden packages. (packages with property hideInEditor set to true, except embedded packages)
         /// </summary>
@@ -54,11 +57,22 @@ namespace UnityEditor
         {
             get
             {
-                return PackageManager.PackageInfo.GetAll().Count(info => info.type != "module" &&
-                    info.source != PackageSource.Embedded &&
-                    info.source != PackageSource.Local &&
-                    info.hideInEditor);
+                if (s_HiddenPackagesCount == -1)
+                {
+                    s_HiddenPackagesCount = PackageManager.PackageInfo.GetAll().Count(info => info.type != "module" &&
+                        info.source != PackageSource.Embedded &&
+                        info.source != PackageSource.Local &&
+                        info.hideInEditor);
+                }
+
+                return s_HiddenPackagesCount;
             }
+        }
+
+        [UsedByNativeCode]
+        internal static void OnPackageManagerResolve()
+        {
+            s_HiddenPackagesCount = -1;
         }
     }
 }

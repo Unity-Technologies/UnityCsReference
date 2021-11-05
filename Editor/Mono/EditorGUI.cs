@@ -4904,7 +4904,7 @@ namespace UnityEditor
             position.width = Mathf.Max(position.width, 2);
             position.height = Mathf.Max(position.height, 2);
 
-            if (GUIUtility.keyboardControl == id && Event.current.type != EventType.Layout)
+            if (GUIUtility.keyboardControl == id && evt.type != EventType.Layout && GUIView.current == CurveEditorWindow.instance.delegateView)
             {
                 if (s_CurveID != id)
                 {
@@ -4928,7 +4928,7 @@ namespace UnityEditor
             switch (evt.GetTypeForControl(id))
             {
                 case EventType.MouseDown:
-                    if (position.Contains(evt.mousePosition))
+                    if (evt.button == 0 && position.Contains(evt.mousePosition))
                     {
                         s_CurveID = id;
                         GUIUtility.keyboardControl = id;
@@ -4953,7 +4953,7 @@ namespace UnityEditor
                     EditorStyles.colorPickerBox.Draw(position2, GUIContent.none, id, false);
                     break;
                 case EventType.ExecuteCommand:
-                    if (s_CurveID == id)
+                    if (s_CurveID == id && GUIView.current == CurveEditorWindow.instance.delegateView)
                     {
                         switch (evt.commandName)
                         {
@@ -5998,10 +5998,7 @@ namespace UnityEditor
                 Highlighter.HighlightIdentifier(totalPosition, property.propertyPath);
 
             s_PropertyFieldTempContent.text = (label == null) ? property.localizedDisplayName : label.text; // no necessary to be translated.
-            s_PropertyFieldTempContent.tooltip = isCollectingTooltips ? ((label == null) ? property.tooltip : label.tooltip) : null;
-            string attributeTooltip = ScriptAttributeUtility.GetHandler(property).tooltip;
-            if (attributeTooltip != null)
-                s_PropertyFieldTempContent.tooltip = attributeTooltip;
+            s_PropertyFieldTempContent.tooltip = (label == null) ? property.tooltip : label.tooltip;
             s_PropertyFieldTempContent.image = label?.image;
 
             // In inspector debug mode & when holding down alt. Show the property path of the property.
