@@ -231,6 +231,9 @@ namespace UnityEditor.SearchService
 
         public void SetActiveSearchEngine(string searchEngineName)
         {
+            if (string.Equals(activeSearchEngineName, searchEngineName, StringComparison.Ordinal))
+                return;
+
             activeEngineChanged?.Invoke(searchEngineName);
             activeSearchEngineName = searchEngineName;
             EditorPrefs.SetString(SearchService.activeSearchEnginesPrefKey + engineScope, searchEngineName);
@@ -301,6 +304,7 @@ namespace UnityEditor.SearchService
         void LoadActiveSearchEngine()
         {
             activeSearchEngineName = EditorPrefs.GetString(SearchService.activeSearchEnginesPrefKey + engineScope, GetDefaultEngine().name);
+            m_ActiveSearchEngine = GetActiveSearchEngine();
         }
 
         public void RegisterEngine(TEngine engine)

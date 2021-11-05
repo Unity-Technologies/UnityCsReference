@@ -10,6 +10,7 @@ using UnityEditor.Experimental;
 using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.Internal;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
@@ -587,10 +588,21 @@ namespace UnityEditor
             Private_DisplayPopupMenu(position, menuItemPath, context, contextUserData, shouldDiscardMenuOnSecondClick);
         }
 
+        internal static void ConfigurePreviewObjectSRP(GameObject go)
+        {
+            if (GraphicsSettings.renderPipelineAsset != null &&
+                go.TryGetComponent<Renderer>(out var renderer))
+            {
+                // Case 1297670: Force the ambient probe for object preview in SRP.
+                renderer.lightProbeUsage = LightProbeUsage.Off;
+            }
+        }
+
         internal static void InitInstantiatedPreviewRecursive(GameObject go)
         {
             go.hideFlags = HideFlags.HideAndDontSave;
             go.layer = Camera.PreviewCullingLayer;
+            ConfigurePreviewObjectSRP(go);
             foreach (Transform c in go.transform)
                 InitInstantiatedPreviewRecursive(c.gameObject);
         }

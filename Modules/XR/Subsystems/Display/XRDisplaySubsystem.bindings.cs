@@ -158,6 +158,8 @@ namespace UnityEngine.XR
             public Rect viewport;
             public Mesh occlusionMesh;
             public int textureArraySlice;
+            public Matrix4x4 previousView;
+            public bool isPreviousViewValid;
         }
 
         [NativeHeader("Runtime/Graphics/RenderTextureDesc.h")]

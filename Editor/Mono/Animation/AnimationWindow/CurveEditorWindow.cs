@@ -43,7 +43,8 @@ namespace UnityEditor
         GUIContent m_GUIContent = new GUIContent();
 
         [SerializeField]
-        GUIView delegateView;
+        GUIView m_DelegateView;
+        internal GUIView delegateView => m_DelegateView;
 
         public const string CurveChangedCommand = "CurveChanged";
         public const string CurveChangeCompletedCommand = "CurveChangeCompleted";
@@ -269,7 +270,7 @@ namespace UnityEditor
 
         public void Show(GUIView viewToUpdate, CurveEditorSettings settings)
         {
-            delegateView = viewToUpdate;
+            m_DelegateView = viewToUpdate;
             m_OnCurveChanged = null;
 
             Init(settings);
@@ -281,7 +282,7 @@ namespace UnityEditor
         public void Show(Action<AnimationCurve> onCurveChanged, CurveEditorSettings settings)
         {
             m_OnCurveChanged = onCurveChanged;
-            delegateView = null;
+            m_DelegateView = null;
 
             Init(settings);
             ShowAuxWindow();
@@ -451,7 +452,7 @@ namespace UnityEditor
         {
             bool gotMouseUp = (Event.current.type == EventType.MouseUp);
 
-            if (delegateView == null && m_OnCurveChanged == null)
+            if (m_DelegateView == null && m_OnCurveChanged == null)
                 m_Curve = null;
 
             if (ms_Styles == null)
@@ -576,11 +577,11 @@ namespace UnityEditor
 
         void SendEvent(string eventName, bool exitGUI)
         {
-            if (delegateView)
+            if (m_DelegateView)
             {
                 Event e = EditorGUIUtility.CommandEvent(eventName);
                 Repaint();
-                delegateView.SendEvent(e);
+                m_DelegateView.SendEvent(e);
                 if (exitGUI)
                     GUIUtility.ExitGUI();
             }

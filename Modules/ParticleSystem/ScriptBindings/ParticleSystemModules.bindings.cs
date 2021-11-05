@@ -358,6 +358,7 @@ namespace UnityEngine
             extern public ParticleSystemGameObjectFilter influenceFilter { get; [NativeThrows] set; }
             extern public LayerMask influenceMask { get; [NativeThrows] set; }
 
+            [NativeThrows]
             extern public int influenceCount { get; }
 
             extern public bool IsAffectedBy(ParticleSystemForceField field);
@@ -371,6 +372,7 @@ namespace UnityEngine
 
             [NativeThrows]
             extern public void RemoveInfluence([NotNull] ParticleSystemForceField field);
+            [NativeThrows]
             extern public void RemoveAllInfluences();
             [NativeThrows]
             extern public void SetInfluence(int index, [NotNull] ParticleSystemForceField field);
@@ -447,12 +449,18 @@ namespace UnityEngine
             extern public bool multiplyColliderForceByParticleSpeed { get; [NativeThrows] set; }
             extern public bool multiplyColliderForceByParticleSize { get; [NativeThrows] set; }
 
+            [NativeThrows]
             extern public void AddPlane(Transform transform);
+            [NativeThrows]
             extern public void RemovePlane(int index);
             public void RemovePlane(Transform transform) { RemovePlaneObject(transform); }
+            [NativeThrows]
             extern private void RemovePlaneObject(Transform transform);
+            [NativeThrows]
             extern public void SetPlane(int index, Transform transform);
+            [NativeThrows]
             extern public Transform GetPlane(int index);
+            [NativeThrows]
             extern public int planeCount { get; }
 
             [Obsolete("enableInteriorCollisions property is deprecated and is no longer required and has no effect on the particle system.", false)]
@@ -483,6 +491,7 @@ namespace UnityEngine
             extern public void SetCollider(int index, Component collider);
             [NativeThrows]
             extern public Component GetCollider(int index);
+            [NativeThrows]
             extern public int colliderCount { get; }
         }
 
