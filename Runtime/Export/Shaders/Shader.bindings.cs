@@ -69,6 +69,9 @@ namespace UnityEngine
         extern public Shader GetDependency(string name);
 
         extern public int passCount { [FreeFunction(Name = "ShaderScripting::GetPassCount", HasExplicitThis = true)] get; }
+        extern public int subshaderCount { [FreeFunction(Name = "ShaderScripting::GetSubshaderCount", HasExplicitThis = true)] get; }
+
+        [FreeFunction(Name = "ShaderScripting::GetPassCountInSubshader", HasExplicitThis = true)] extern public int GetPassCountInSubshader(int subshaderIndex);
 
         public Rendering.ShaderTagId FindPassTagValue(int passIndex, Rendering.ShaderTagId tagName)
         {
@@ -78,7 +81,27 @@ namespace UnityEngine
             return new Rendering.ShaderTagId { id = id };
         }
 
+        public Rendering.ShaderTagId FindPassTagValue(int subshaderIndex, int passIndex, Rendering.ShaderTagId tagName)
+        {
+            if (subshaderIndex < 0 || subshaderIndex >= subshaderCount)
+                throw new ArgumentOutOfRangeException("subshaderIndex");
+            if (passIndex < 0 || passIndex >= GetPassCountInSubshader(subshaderIndex))
+                throw new ArgumentOutOfRangeException("passIndex");
+            var id = Internal_FindPassTagValueInSubShader(subshaderIndex, passIndex, tagName.id);
+            return new Rendering.ShaderTagId { id = id };
+        }
+
+        public Rendering.ShaderTagId FindSubshaderTagValue(int subshaderIndex, Rendering.ShaderTagId tagName)
+        {
+            if (subshaderIndex < 0 || subshaderIndex >= subshaderCount)
+                throw new ArgumentOutOfRangeException("subshaderIndex");
+            var id = Internal_FindSubshaderTagValue(subshaderIndex, tagName.id);
+            return new Rendering.ShaderTagId { id = id };
+        }
+
         [FreeFunction(Name = "ShaderScripting::FindPassTagValue", HasExplicitThis = true)] extern private int Internal_FindPassTagValue(int passIndex, int tagName);
+        [FreeFunction(Name = "ShaderScripting::FindPassTagValue", HasExplicitThis = true)] extern private int Internal_FindPassTagValueInSubShader(int subShaderIndex, int passIndex, int tagName);
+        [FreeFunction(Name = "ShaderScripting::FindSubshaderTagValue", HasExplicitThis = true)] extern private int Internal_FindSubshaderTagValue(int subShaderIndex, int tagName);
 
         [NativeProperty("CustomEditorName")] extern internal string customEditor { get; }
         [FreeFunction(Name = "ShaderScripting::GetCustomEditorForRenderPipeline", HasExplicitThis = true)] extern internal void Internal_GetCustomEditorForRenderPipeline(string renderPipelineType, out string customEditor);

@@ -679,6 +679,15 @@ namespace UnityEngine.UIElements
             get { return m_ContentHash; }
             set { m_ContentHash = value; }
         }
+
+        internal void ExtractUsedUxmlQualifiedNames(HashSet<string> names)
+        {
+            foreach (var asset in m_VisualElementAssets)
+            {
+                names.Add(asset.fullTypeName);
+            }
+        }
+
     }
 
     /// <summary>

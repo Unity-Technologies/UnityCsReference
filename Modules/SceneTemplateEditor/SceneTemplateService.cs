@@ -56,6 +56,12 @@ namespace UnityEditor.SceneTemplate
                 throw new Exception("templateScene is empty");
             }
 
+            if (EditorApplication.isUpdating)
+            {
+                Debug.LogFormat(LogType.Warning, LogOption.None, null, "Cannot instantiate a new scene while updating the editor is disallowed.");
+                return null;
+            }
+
             var sourceScenePath = AssetDatabase.GetAssetPath(sceneTemplate.templateScene);
             if (String.IsNullOrEmpty(sourceScenePath))
             {
@@ -120,8 +126,7 @@ namespace UnityEditor.SceneTemplate
             else
             {
                 var needTempSceneCleanup = false;
-                var pi = PackageManager.PackageInfo.FindForAssetPath(sourceScenePath);
-                if (pi != null && SceneTemplateUtils.IsPackageReadOnly(pi))
+                if (SceneTemplateUtils.IsAssetReadOnly(sourceScenePath))
                 {
                     sourceScenePath = CopyToTemporaryScene(sourceScenePath);
                     needTempSceneCleanup = true;
@@ -249,6 +254,34 @@ namespace UnityEditor.SceneTemplate
         }
 
         [InitializeOnLoadMethod]
+        private static void Init()
+        {
+            RegisterDefines();
+            RegisterSceneEventListeners();
+        }
+
+        private static void RegisterSceneEventListeners()
+        {
+            EditorSceneManager.sceneSaved += OnSceneSaved;
+        }
+
+        static void OnSceneSaved(Scene scene)
+        {
+            var infos = SceneTemplateDialog.GetSceneTemplateInfos();
+            foreach (var sceneTemplateInfo in infos)
+            {
+                if (sceneTemplateInfo.IsInMemoryScene || sceneTemplateInfo.isReadonly || sceneTemplateInfo.sceneTemplate == null)
+                    continue;
+
+                var scenePath = sceneTemplateInfo.sceneTemplate.GetTemplateScenePath();
+                if (string.IsNullOrEmpty(scenePath))
+                    continue;
+                if (!scene.path.Equals(scenePath, StringComparison.Ordinal))
+                    continue;
+                sceneTemplateInfo.sceneTemplate.UpdateDependencies();
+            }
+        }
+
         private static void RegisterDefines()
         {
             Build.BuildDefines.getScriptCompilationDefinesDelegates += AddSceneTemplateModuleDefine;

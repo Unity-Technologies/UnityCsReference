@@ -1757,6 +1757,9 @@ namespace UnityEngine.UIElements
 
             FinalizeLayout();
 
+            if (elementPanel?.GetTopElementUnderPointer(PointerId.mousePointerId) == this)
+                elementPanel.cursorManager.SetCursor(m_Style.cursor);
+
             IncrementVersion(changes);
         }
 

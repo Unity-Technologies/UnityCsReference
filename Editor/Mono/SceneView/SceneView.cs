@@ -1348,7 +1348,11 @@ namespace UnityEditor
                 m_LastSceneViewOrtho = false;
                 m_Rotation.value = Quaternion.identity;
                 m_Ortho.value = true;
-                m_2DMode = true;
+                if(!m_2DMode)
+                {
+                    m_2DMode = true;
+                    modeChanged2D?.Invoke(m_2DMode);
+                }
 
                 // Enforcing Rect tool as the default in 2D mode.
                 if (Tools.current == Tool.Move)

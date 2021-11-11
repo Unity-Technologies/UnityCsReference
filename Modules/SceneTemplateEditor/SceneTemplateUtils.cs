@@ -110,5 +110,11 @@ namespace UnityEditor.SceneTemplate
                 return false;
             return true;
         }
+
+        internal static bool IsAssetReadOnly(string assetPath)
+        {
+            var pi = PackageManager.PackageInfo.FindForAssetPath(assetPath);
+            return pi != null && IsPackageReadOnly(pi);
+        }
     }
 }

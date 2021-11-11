@@ -309,7 +309,7 @@ namespace UnityEditor.Toolbars
             SceneViewToolbarElements.AddStyleSheets(this);
         }
 
-        void OnClickableOnclicked()
+        void OnDropdownClicked()
         {
             if (!(containerWindow is SceneView view))
                 return;
@@ -326,14 +326,14 @@ namespace UnityEditor.Toolbars
             sceneView.gridVisibilityChanged += SceneViewOngridVisibilityChanged;
             sceneView.sceneViewGrids.gridRenderAxisChanged += OnSceneViewOngridRenderAxisChanged;
             OnSceneViewOngridRenderAxisChanged(sceneView.sceneViewGrids.gridAxis);
-            dropdownClicked += OnClickableOnclicked;
+            dropdownClicked += OnDropdownClicked;
         }
 
         void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
             sceneView.gridVisibilityChanged -= SceneViewOngridVisibilityChanged;
             sceneView.sceneViewGrids.gridRenderAxisChanged -= OnSceneViewOngridRenderAxisChanged;
-            dropdownClicked -= OnClickableOnclicked;
+            dropdownClicked -= OnDropdownClicked;
         }
 
         void OnSceneViewOngridRenderAxisChanged(SceneViewGrid.GridRenderAxis axis)
@@ -533,17 +533,17 @@ namespace UnityEditor.Toolbars
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
         {
-            clicked += OnOnclicked;
+            clicked += OnDropdownClicked;
         }
 
-        void OnOnclicked()
+        void OnDropdownClicked()
         {
             OverlayPopupWindow.Show<SnapIncrementSettingsWindow>(this, new Vector2(300, 88));
         }
 
         void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
-            clicked -= OnOnclicked;
+            clicked -= OnDropdownClicked;
         }
     }
 }

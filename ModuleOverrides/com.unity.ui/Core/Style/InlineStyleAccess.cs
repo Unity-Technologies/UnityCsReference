@@ -765,25 +765,10 @@ namespace UnityEngine.UIElements
 
         private void ApplyStyleCursor(StyleCursor cursor)
         {
-            ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle);
+            ve.computedStyle.ApplyStyleCursor(cursor.value);
 
-            bool startedTransition = false;
-            if (ve.computedStyle.hasTransition && ve.styleInitialized &&
-                ve.computedStyle.GetTransitionProperty(StylePropertyId.Cursor, out var t))
-            {
-                startedTransition = ComputedStyle.StartAnimationInlineCursor(ve, ref ve.computedStyle,
-                    cursor, t.durationMs, t.delayMs, t.easingCurve);
-            }
-            else
-            {
-                // In case there were older animations running, cancel them.
-                ve.styleAnimation.CancelAnimation(StylePropertyId.Cursor);
-            }
-
-            if (!startedTransition)
-            {
-                ve.computedStyle.ApplyStyleCursor(cursor.value);
-            }
+            if (ve.elementPanel?.GetTopElementUnderPointer(PointerId.mousePointerId) == ve)
+                ve.elementPanel.cursorManager.SetCursor(cursor.value);
         }
 
         private bool SetInlineTextShadow(StyleTextShadow inlineValue)

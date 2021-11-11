@@ -9,9 +9,12 @@ namespace UnityEngine.tvOS
     // keep in sync with DeviceGeneration enum in trampoline.
     public enum DeviceGeneration
     {
-        Unknown       = 0,
-        AppleTV1Gen   = 1001,
-        AppleTV2Gen   = 1002,
+        Unknown = 0,
+        [System.Obsolete(@"AppleTV1Gen has been renamed. Use AppleTVHD instead (UnityUpgradable) -> AppleTVHD", false)] AppleTV1Gen = 1001,
+        AppleTVHD = 1001,
+        [System.Obsolete(@"AppleTV2Gen has been renamed. Use AppleTV4K instead (UnityUpgradable) -> AppleTV4K", false)] AppleTV2Gen = 1002,
+        AppleTV4K = 1002,
+        AppleTV4K2Gen = 1003
     }
 
 
