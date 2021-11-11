@@ -23,7 +23,6 @@ namespace UnityEngine.UIElements
         bool StartTransition(VisualElement owner, StylePropertyId prop, Background startValue, Background endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransition(VisualElement owner, StylePropertyId prop, FontDefinition startValue, FontDefinition endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransition(VisualElement owner, StylePropertyId prop, Font startValue, Font endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
-        bool StartTransition(VisualElement owner, StylePropertyId prop, Cursor startValue, Cursor endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransition(VisualElement owner, StylePropertyId prop, TextShadow startValue, TextShadow endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransition(VisualElement owner, StylePropertyId prop, Scale startValue, Scale endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransition(VisualElement owner, StylePropertyId prop, TransformOrigin startValue, TransformOrigin endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
@@ -1025,25 +1024,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        class ValuesCursor : ValuesDiscrete<Cursor>
-        {
-            protected sealed override void UpdateComputedStyle()
-            {
-                int n = running.count;
-                for (int i = 0; i < n; i++)
-                {
-                    running.elements[i].computedStyle.ApplyPropertyAnimation(running.elements[i],
-                        running.properties[i], running.style[i].currentValue);
-                }
-            }
-
-            protected sealed override void UpdateComputedStyle(int i)
-            {
-                running.elements[i].computedStyle.ApplyPropertyAnimation(running.elements[i],
-                    running.properties[i], running.style[i].currentValue);
-            }
-        }
-
         class ValuesTextShadow : Values<TextShadow>
         {
             public override Func<TextShadow, TextShadow, bool> SameFunc { get; } = IsSame;
@@ -1225,7 +1205,6 @@ namespace UnityEngine.UIElements
         private ValuesBackground m_Backgrounds;
         private ValuesFontDefinition m_FontDefinitions;
         private ValuesFont m_Fonts;
-        private ValuesCursor m_Cursors;
         private ValuesTextShadow m_TextShadows;
         private ValuesScale m_Scale;
         private ValuesRotate m_Rotate;
@@ -1295,11 +1274,6 @@ namespace UnityEngine.UIElements
         public bool StartTransition(VisualElement owner, StylePropertyId prop, Font startValue, Font endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
         {
             return StartTransition(owner, prop, startValue, endValue, durationMs, delayMs, easingCurve, GetOrCreate(ref m_Fonts));
-        }
-
-        public bool StartTransition(VisualElement owner, StylePropertyId prop, Cursor startValue, Cursor endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
-        {
-            return StartTransition(owner, prop, startValue, endValue, durationMs, delayMs, easingCurve, GetOrCreate(ref m_Cursors));
         }
 
         public bool StartTransition(VisualElement owner, StylePropertyId prop, TextShadow startValue, TextShadow endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
@@ -1434,11 +1408,6 @@ namespace UnityEngine.UIElements
         }
 
         public bool StartTransition(VisualElement owner, StylePropertyId prop, Font startValue, Font endValue, int durationMs, int delayMs, Func<float, float> easingCurve)
-        {
-            return false;
-        }
-
-        public bool StartTransition(VisualElement owner, StylePropertyId prop, Cursor startValue, Cursor endValue, int durationMs, int delayMs, Func<float, float> easingCurve)
         {
             return false;
         }

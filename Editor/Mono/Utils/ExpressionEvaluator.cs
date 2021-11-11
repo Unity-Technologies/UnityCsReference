@@ -218,6 +218,11 @@ namespace UnityEditor
                 if (TryParse(stack.Pop(), out value))
                     return true;
             }
+            else if (tokens.Length == 0)
+            {
+                value = 0;
+                return true;
+            }
 
             return false;
         }

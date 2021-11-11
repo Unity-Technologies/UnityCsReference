@@ -42,6 +42,8 @@ namespace UnityEditor.SceneTemplate
 
         public bool addToDefaults;
 
+        internal bool hasCloneableDependencies => dependencies.Any(dep => dep.instantiationMode == TemplateInstantiationMode.Clone);
+
         void OnEnable()
         {
             if (dependencies == null)
@@ -106,7 +108,8 @@ namespace UnityEditor.SceneTemplate
                 };
             }).ToArray();
 
-            if (newDependenciesAdded)
+            var isAssetReadOnly = SceneTemplateUtils.IsAssetReadOnly(scenePath);
+            if (newDependenciesAdded && !isAssetReadOnly)
             {
                 EditorUtility.SetDirty(this);
                 AssetDatabase.SaveAssets();
@@ -158,6 +161,13 @@ namespace UnityEditor.SceneTemplate
 
             var pipelineInstance = Activator.CreateInstance(templatePipeline.GetClass()) as ISceneTemplatePipeline;
             return pipelineInstance;
+        }
+
+        internal string GetTemplateScenePath()
+        {
+            if (!templateScene)
+                return null;
+            return AssetDatabase.GetAssetPath(templateScene.GetInstanceID());
         }
 
         [MenuItem("Assets/Create/Scene Template", priority = 201)]

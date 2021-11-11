@@ -534,6 +534,38 @@ namespace UnityEngine.Yoga
             }
         }
 
+        public float LayoutBorderLeft
+        {
+            get
+            {
+                return Native.YGNodeLayoutGetBorder(_ygNode, YogaEdge.Left);
+            }
+        }
+
+        public float LayoutBorderTop
+        {
+            get
+            {
+                return Native.YGNodeLayoutGetBorder(_ygNode, YogaEdge.Top);
+            }
+        }
+
+        public float LayoutBorderRight
+        {
+            get
+            {
+                return Native.YGNodeLayoutGetBorder(_ygNode, YogaEdge.Right);
+            }
+        }
+
+        public float LayoutBorderBottom
+        {
+            get
+            {
+                return Native.YGNodeLayoutGetBorder(_ygNode, YogaEdge.Bottom);
+            }
+        }
+
         public float LayoutPaddingStart
         {
             get

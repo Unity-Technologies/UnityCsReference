@@ -4155,7 +4155,15 @@ namespace UnityEngine
         // Set all custom shapes.
         public void SetCustomShapes(PhysicsShapeGroup2D physicsShapeGroup)
         {
-            SetCustomShapesAll_Internal(ref physicsShapeGroup.m_GroupState);
+            // Set the custom shapes if we defined any.
+            if (physicsShapeGroup.shapeCount > 0)
+            {
+                SetCustomShapesAll_Internal(ref physicsShapeGroup.m_GroupState);
+                return;
+            }
+
+            // No custom shapes so clear them.
+            ClearCustomShapes();
         }
 
         [NativeMethod("SetCustomShapesAll_Binding")]

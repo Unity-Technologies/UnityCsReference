@@ -323,7 +323,8 @@ namespace UnityEditor
         internal static GUIStyle foldoutSelected { get { return s_Current.m_FoldoutSelected; } }
         private GUIStyle m_FoldoutSelected;
 
-        internal static GUIStyle iconButton { get { return s_Current.m_IconButton; } }
+        // Style used for a standalone icon button
+        public static GUIStyle iconButton { get { return s_Current.m_IconButton; } }
         private GUIStyle m_IconButton;
 
         // Style for tooltips

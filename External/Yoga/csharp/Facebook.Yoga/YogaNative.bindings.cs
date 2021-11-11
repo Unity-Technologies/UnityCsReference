@@ -393,6 +393,9 @@ namespace UnityEngine.Yoga
         public static extern float YGNodeLayoutGetPadding(IntPtr node, YogaEdge edge);
 
         [FreeFunction]
+        public static extern float YGNodeLayoutGetBorder(IntPtr node, YogaEdge edge);
+
+        [FreeFunction]
         public static extern YogaDirection YGNodeLayoutGetDirection(IntPtr node);
 
         #endregion

@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Unity.Collections;
-using UnityEngine.Assertions;
 using UnityEngine.TextCore.Text;
 
 namespace UnityEngine.UIElements.UIR.Implementation
@@ -371,23 +370,22 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 textParams.fontColor *= textParams.playmodeTintColor;
 
             if (handle.IsLegacy())
-                DrawTextNative(textParams, pixelsPerPoint);
+                DrawTextNative(textParams, handle, pixelsPerPoint);
             else
                 DrawTextCore(textParams, handle, pixelsPerPoint);
         }
 
-        internal void DrawTextNative(MeshGenerationContextUtils.TextParams textParams, float pixelsPerPoint)
+        internal void DrawTextNative(MeshGenerationContextUtils.TextParams textParams, ITextHandle handle, float pixelsPerPoint)
         {
             float scaling = TextUtilities.ComputeTextScaling(currentElement.worldTransform, pixelsPerPoint);
-            TextNativeSettings textSettings = MeshGenerationContextUtils.TextParams.GetTextNativeSettings(textParams, scaling);
 
-            Assert.IsNotNull(textSettings.font);
-
-            using (NativeArray<TextVertex> textVertices = TextNative.GetVertices(textSettings))
+            using (NativeArray<TextVertex> textVertices = ((TextNativeHandle)handle).GetVertices(textParams, scaling))
             {
                 if (textVertices.Length == 0)
                     return;
 
+
+                TextNativeSettings textSettings = MeshGenerationContextUtils.TextParams.GetTextNativeSettings(textParams, scaling);
                 Vector2 localOffset = TextNative.GetOffset(textSettings, textParams.rect);
                 m_CurrentEntry.isTextEntry = true;
                 m_CurrentEntry.clipRectID = m_ClipRectID;
@@ -617,7 +615,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
         {
             if (currentElement.layout.width >= UIRUtility.k_Epsilon && currentElement.layout.height >= UIRUtility.k_Epsilon)
             {
-                var style = currentElement.computedStyle;
+                var style = currentElement.resolvedStyle;
                 if (style.borderLeftColor != Color.clear && style.borderLeftWidth > 0.0f ||
                     style.borderTopColor != Color.clear && style.borderTopWidth > 0.0f ||
                     style.borderRightColor != Color.clear &&  style.borderRightWidth > 0.0f ||
@@ -858,13 +856,13 @@ namespace UnityEngine.UIElements.UIR.Implementation
             if (currentElement.layout.width <= UIRUtility.k_Epsilon || currentElement.layout.height <= UIRUtility.k_Epsilon)
                 return;
 
-            var style = currentElement.computedStyle;
+            var resolvedStyle = currentElement.resolvedStyle;
             Vector2 radTL, radTR, radBL, radBR;
             MeshGenerationContextUtils.GetVisualElementRadii(currentElement, out radTL, out radBL, out radTR, out radBR);
-            float widthT = style.borderTopWidth;
-            float widthL = style.borderLeftWidth;
-            float widthB = style.borderBottomWidth;
-            float widthR = style.borderRightWidth;
+            float widthT = resolvedStyle.borderTopWidth;
+            float widthL = resolvedStyle.borderLeftWidth;
+            float widthB = resolvedStyle.borderBottomWidth;
+            float widthR = resolvedStyle.borderRightWidth;
 
             var rp = new MeshGenerationContextUtils.RectangleParams()
             {
@@ -886,12 +884,12 @@ namespace UnityEngine.UIElements.UIR.Implementation
             rp.rect.height -= widthT + widthB;
 
             // Skip padding, when requested
-            if (style.unityOverflowClipBox == OverflowClipBox.ContentBox)
+            if (currentElement.computedStyle.unityOverflowClipBox == OverflowClipBox.ContentBox)
             {
-                rp.rect.x += style.paddingLeft.value;
-                rp.rect.y += style.paddingTop.value;
-                rp.rect.width -= style.paddingLeft.value + style.paddingRight.value;
-                rp.rect.height -= style.paddingTop.value + style.paddingBottom.value;
+                rp.rect.x += resolvedStyle.paddingLeft;
+                rp.rect.y += resolvedStyle.paddingTop;
+                rp.rect.width -= resolvedStyle.paddingLeft + resolvedStyle.paddingRight;
+                rp.rect.height -= resolvedStyle.paddingTop + resolvedStyle.paddingBottom;
             }
 
             m_CurrentEntry.clipRectID = m_ClipRectID;

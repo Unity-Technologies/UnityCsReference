@@ -653,7 +653,7 @@ namespace UnityEditor.SceneTemplate
             Close();
         }
 
-        private static List<SceneTemplateInfo> GetSceneTemplateInfos()
+        internal static List<SceneTemplateInfo> GetSceneTemplateInfos()
         {
             var sceneTemplateList = new List<SceneTemplateInfo>();
             // Add the special Empty and Basic template

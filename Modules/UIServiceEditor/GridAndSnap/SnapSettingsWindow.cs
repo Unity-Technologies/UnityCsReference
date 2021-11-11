@@ -55,10 +55,7 @@ namespace UnityEditor.Snap
             m_GridSize.value = GridSettings.size;
             m_GridSize.linked = Mathf.Approximately(m_GridSize.value.x, m_GridSize.value.y) && Mathf.Approximately(m_GridSize.value.x, m_GridSize.value.z);
             GridSettings.sizeChanged += (value) => m_GridSize.SetValueWithoutNotify(value);
-            m_GridSize.RegisterValueChangedCallback((evt) =>
-            {
-                GridSettings.size = evt.newValue;
-            });
+            m_GridSize.RegisterValueChangedCallback(OnGridSizeChanged);
             rootVisualElement.Add(m_GridSize);
 
             // Align Selected
@@ -104,6 +101,15 @@ namespace UnityEditor.Snap
             m_GridSize.linked = true;
         }
 
+        void OnGridSizeChanged(ChangeEvent<Vector3> evt)
+        {
+            var value = evt.newValue;
+            if (m_GridSize.linked)
+                value = evt.newValue.x * Vector3.one;
+
+            GridSettings.size = value;
+        }
+
         static void SnapSelectionToGrid(SnapAxis axis = SnapAxis.All)
         {
             var selections = Selection.transforms;
@@ -134,11 +140,7 @@ namespace UnityEditor.Snap
             rootVisualElement.Add(m_MoveLinkedField);
 
             EditorSnapSettings.moveChanged += (value) => m_MoveLinkedField.SetValueWithoutNotify(value);
-            m_MoveLinkedField.RegisterValueChangedCallback(evt =>
-            {
-                EditorSnapSettings.move = evt.newValue;
-                EditorSnapSettings.Save();
-            });
+            m_MoveLinkedField.RegisterValueChangedCallback(OnMoveValueChanged);
 
             // Rotate
             var rotate = new FloatField(L10n.Tr("Rotate")) { name = "Rotate" };
@@ -163,6 +165,16 @@ namespace UnityEditor.Snap
                 EditorSnapSettings.scale = evt.newValue;
                 EditorSnapSettings.Save();
             });
+        }
+
+        void OnMoveValueChanged(ChangeEvent<Vector3> evt)
+        {
+            var value = evt.newValue;
+            if (m_MoveLinkedField.linked)
+                value = evt.newValue.x * Vector3.one;
+
+            EditorSnapSettings.move = value;
+            EditorSnapSettings.Save();
         }
 
         void ResetValues()

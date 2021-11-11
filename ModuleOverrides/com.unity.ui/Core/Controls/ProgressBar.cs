@@ -62,6 +62,8 @@ namespace UnityEngine.UIElements
         readonly VisualElement m_Background;
         readonly VisualElement m_Progress;
         readonly Label m_Title;
+        float m_LowValue;
+        float m_HighValue = 100f;
 
         /// <summary>
         /// Sets the title of the ProgressBar that displays in the center of the control.
@@ -72,11 +74,31 @@ namespace UnityEngine.UIElements
             set => m_Title.text = value;
         }
 
-        // TODO the value can be set from UXML but not from C#???
-        internal float lowValue { get; set; }
+        /// <summary>
+        /// Sets the minimum value of the ProgressBar.
+        /// </summary>
+        public float lowValue
+        {
+            get => m_LowValue;
+            set
+            {
+                m_LowValue = value;
+                SetProgress(m_Value);
+            }
+        }
 
-        // TODO the value can be set from UXML but not from C#???
-        internal float highValue { get; set; } = 100f;
+        /// <summary>
+        /// Sets the maximum value of the ProgressBar.
+        /// </summary>
+        public float highValue
+        {
+            get => m_HighValue;
+            set
+            {
+                m_HighValue = value;
+                SetProgress(m_Value);
+            }
+        }
 
         /// <undoc/>
         public AbstractProgressBar()
