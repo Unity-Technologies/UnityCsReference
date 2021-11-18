@@ -41,7 +41,7 @@ namespace UnityEditor.Search
     }
 
     [Serializable]
-    class SearchQuery : ISearchQuery
+    class SearchQuery : ISearchQuery, ISerializationCallbackReceiver
     {
         public static string userSearchSettingsFolder => Utils.CleanPath(Path.Combine(InternalEditorUtility.unityPreferencesFolder, "Search"));
         public string searchText
@@ -170,19 +170,11 @@ namespace UnityEditor.Search
             viewState = new SearchViewState();
         }
 
-        public SearchQuery(SearchContext context, SearchTable table = null)
+        public SearchQuery(SearchViewState state, SearchTable table)
             : this()
         {
-            viewState = new SearchViewState(context);
-            tableConfig = table;
-        }
-
-        public static SearchQuery Create(SearchViewState state, SearchTable table)
-        {
-            var uq = new SearchQuery();
-            uq.name = uq.description = Utils.Simplify(state.context.searchText);
-            uq.Set(state, table ?? state.tableConfig);
-            return uq;
+            Set(state, table);
+            name = description = Utils.Simplify(state.context.searchText);
         }
 
         public void Set(SearchViewState state, SearchTable table)
@@ -191,6 +183,8 @@ namespace UnityEditor.Search
                 viewState = new SearchViewState();
             viewState.Assign(state);
             tableConfig = table?.Clone();
+            if (tableConfig != null)
+                viewState.tableConfig = tableConfig;
         }
 
         public IEnumerable<string> GetProviderIds()
@@ -226,7 +220,7 @@ namespace UnityEditor.Search
 
         public static SearchQuery AddSearchQuery(string folder, SearchViewState state, SearchTable table = null)
         {
-            var query = SearchQuery.Create(state, table);
+            var query = new SearchQuery(state, table);
             query.filePath = Path.Combine(folder, $"{query.guid}.query");
             s_SearchQueries.Add(query);
             SaveSearchQuery(query);
@@ -319,6 +313,16 @@ namespace UnityEditor.Search
                 return query.thumbnail;
             var displayMode = QuickSearch.GetDisplayModeFromItemSize(query.GetResultViewState().itemSize);
             return QuickSearch.GetIconFromDisplayMode(displayMode);
+        }
+
+        public void OnBeforeSerialize()
+        {
+        }
+
+        public void OnAfterDeserialize()
+        {
+            if (viewState.tableConfig == null && tableConfig != null)
+                viewState.tableConfig = tableConfig;
         }
     }
 }

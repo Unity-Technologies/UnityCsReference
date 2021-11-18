@@ -100,10 +100,6 @@ namespace UnityEditor.PackageManager
         private AuthorInfo m_Author = new AuthorInfo();
 
         [SerializeField]
-        [NativeName("hasRegistry")]
-        private bool m_HasRegistry;
-
-        [SerializeField]
         [NativeName("registry")]
         private RegistryInfo m_Registry = new RegistryInfo();
 
@@ -187,14 +183,7 @@ namespace UnityEditor.PackageManager
         internal UnityLifecycleInfo unityLifecycle { get { return m_UnityLifecycle; } }
         internal string projectDependenciesEntry { get { return m_ProjectDependenciesEntry; } }
         internal string upmReserved { get { return m_UpmReserved; } }
-
-        public RegistryInfo registry
-        {
-            get
-            {
-                return m_HasRegistry ? m_Registry : null;
-            }
-        }
+        public RegistryInfo registry { get { return m_Registry; } }
 
         public DateTime? datePublished
         {

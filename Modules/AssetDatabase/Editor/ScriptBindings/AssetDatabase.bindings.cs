@@ -628,6 +628,8 @@ namespace UnityEditor
             ReSerializeAssetsForced(guids, options);
         }
 
+        extern internal static System.Type GetTypeFromVisibleGUIDAndLocalFileIdentifier(GUID guid, long localId);
+
         [FreeFunction("AssetDatabase::GetGUIDAndLocalIdentifierInFile")]
         extern private static bool GetGUIDAndLocalIdentifierInFile(int instanceID, out GUID outGuid, out long outLocalId);
 

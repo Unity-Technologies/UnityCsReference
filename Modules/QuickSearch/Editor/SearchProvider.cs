@@ -355,7 +355,7 @@ namespace UnityEditor.Search
         public Func<SearchItem, Type, UnityEngine.Object> toObject;
 
         /// <summary> Returns any valid item type.</summary>
-        internal Func<SearchItem, Type> toType;
+        internal Func<SearchItem, Type, Type> toType;
 
         /// <summary> Returns a document key in which the item is contained.</summary>
         internal Func<SearchItem, ulong> toKey;

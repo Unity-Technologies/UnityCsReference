@@ -331,7 +331,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshRegistry()
         {
-            var registry = m_Version.packageInfo?.registry;
+            var registry = m_Version.registry;
             var showRegistry = registry != null;
             UIUtils.SetElementDisplay(detailRegistryContainer, showRegistry);
             if (showRegistry)

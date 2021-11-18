@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using System.Runtime.InteropServices;
-using UnityEngine.Assertions;
 using UnityEngine.Bindings;
 using UnityEngine.Internal;
 using UnityEngine.SceneManagement;
@@ -2690,11 +2689,13 @@ namespace UnityEngine
             switch (shape.shapeType)
             {
                 case PhysicsShapeType2D.Circle:
-                    Assert.IsTrue(radius > 0.0f, string.Format("Circle radius {0} must be greater than zero.", radius));
+                    if (radius <= 0.0f)
+                        throw new ArgumentException(string.Format("Circle radius {0} must be greater than zero.", radius));
                     break;
 
                 case PhysicsShapeType2D.Capsule:
-                    Assert.IsTrue(radius > 0.00001f, string.Format("Capsule radius: {0} is too small.", radius));
+                    if (radius <= 0.00001f)
+                        throw new ArgumentException(string.Format("Capsule radius: {0} is too small.", radius));
                     break;
 
                 case PhysicsShapeType2D.Edges:
@@ -2765,7 +2766,8 @@ namespace UnityEngine
         // Add a circle shape.
         public int AddCircle(Vector2 center, float radius)
         {
-            Assert.IsTrue(radius > 0.0f, string.Format("radius {0} must be greater than zero.", radius));
+            if (radius <= 0.0f)
+                throw new ArgumentException(string.Format("radius {0} must be greater than zero.", radius));
 
             // Add geometry.
             var vertexStartIndex = groupVertices.Count;
@@ -2788,7 +2790,8 @@ namespace UnityEngine
         // Add a capsule shape.
         public int AddCapsule(Vector2 vertex0, Vector2 vertex1, float radius)
         {
-            Assert.IsTrue(radius > 0.00001f, string.Format("radius: {0} is too small.", radius));
+            if (radius <= 0.00001f)
+                throw new ArgumentException(string.Format("radius: {0} is too small.", radius));
 
             // Add geometry.
             var vertexStartIndex = groupVertices.Count;
@@ -2810,7 +2813,8 @@ namespace UnityEngine
 
         public int AddBox(Vector2 center, Vector2 size, [DefaultValue("0f")] float angle = 0f, [DefaultValue("0f")] float edgeRadius = 0f)
         {
-            Assert.IsTrue(size.x > MinVertexSeparation && size.y > MinVertexSeparation, string.Format("size: {0} is too small. Vertex need to be separated by at least {1}", size, MinVertexSeparation));
+            if (size.x <= MinVertexSeparation || size.y <= MinVertexSeparation)
+                throw new ArgumentException(string.Format("size: {0} is too small. Vertex need to be separated by at least {1}", size, MinVertexSeparation));
 
             // Clamp the edge-radius.
             edgeRadius = Mathf.Max(0f, edgeRadius);
@@ -2851,7 +2855,9 @@ namespace UnityEngine
         public int AddPolygon(List<Vector2> vertices)
         {
             var vertexCount = vertices.Count;
-            Assert.IsTrue(vertexCount >= 3 && vertexCount <= Physics2D.MaxPolygonShapeVertices, string.Format("Vertex Count {0} must be >= 3 and <= {1}.", vertexCount, Physics2D.MaxPolygonShapeVertices));
+
+            if (vertexCount < 3 || vertexCount > Physics2D.MaxPolygonShapeVertices)
+                throw new ArgumentException(string.Format("Vertex Count {0} must be >= 3 and <= {1}.", vertexCount, Physics2D.MaxPolygonShapeVertices));
 
             // Validate vertex separation (squared)
             float minSeparationSqr = MinVertexSeparation * MinVertexSeparation;
@@ -2859,7 +2865,9 @@ namespace UnityEngine
             {
                 var vertex1 = vertices[i - 1];
                 var vertex2 = vertices[i];
-                Assert.IsTrue((vertex2 - vertex1).sqrMagnitude > minSeparationSqr, string.Format("vertices: {0} and {1} are too close. Vertices need to be separated by at least {2}", vertex1, vertex2, minSeparationSqr));
+
+                if ((vertex2 - vertex1).sqrMagnitude <= minSeparationSqr)
+                    throw new ArgumentException(string.Format("vertices: {0} and {1} are too close. Vertices need to be separated by at least {2}", vertex1, vertex2, minSeparationSqr));
             }
 
             // Add geometry.
@@ -2901,7 +2909,8 @@ namespace UnityEngine
             [DefaultValue("0f")] float edgeRadius = 0f)
         {
             var vertexCount = vertices.Count;
-            Assert.IsTrue(vertexCount >= 2, string.Format("Vertex Count {0} must be >= 2.", vertexCount));
+            if (vertexCount < 2)
+                throw new ArgumentOutOfRangeException(string.Format("Vertex Count {0} must be >= 2.", vertexCount));
 
             // Clamp the edge-radius.
             edgeRadius = Mathf.Max(0f, edgeRadius);

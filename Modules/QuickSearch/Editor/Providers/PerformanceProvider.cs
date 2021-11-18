@@ -4,10 +4,8 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEditor.Search;
 using UnityEditor.Profiling;
 using UnityEngine;
-using UnityEditor;
 using System.Text.RegularExpressions;
 using UnityEditorInternal;
 using UnityEngine.Profiling;
@@ -76,7 +74,8 @@ namespace UnityEditor.Search.Providers
             {
                 column.drawer = args =>
                 {
-                    GUI.Label(args.rect, GetTimeLabel((double)args.value, 0.5d, 2.0d), ItemSelectors.GetItemContentStyle(column));
+                    if (Utils.TryGetNumber(args.value, out var d))
+                        GUI.Label(args.rect, GetTimeLabel(d, 0.5d, 2.0d), ItemSelectors.GetItemContentStyle(column));
                     return args.value;
                 };
             }

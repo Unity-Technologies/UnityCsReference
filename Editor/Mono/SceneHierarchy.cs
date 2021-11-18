@@ -847,7 +847,7 @@ namespace UnityEditor
          */
         void AddCreateGameObjectItemsToMenu(GenericMenu menu, UnityEngine.Object[] context, bool includeCreateEmptyChild, bool useCreateEmptyParentMenuItem, bool includeGameObjectInPath, int targetSceneHandle, MenuUtils.ContextMenuOrigin origin)
         {
-            ScriptingMenuItem[] menus = Menu.GetMenuItems("GameObject", false, false);
+            ScriptingMenuItem[] menus = Menu.GetMenuItems("GameObject", true, false);
             int previousMenuItemPosition = -1;
 
             foreach (var menuItem in menus)
@@ -885,10 +885,10 @@ namespace UnityEditor
                     origin,
                     previousMenuItemPosition);
 
-                MenuUtils.RemoveInvalidMenuItems(menu);
-
                 previousMenuItemPosition = menuItem.priority;
             }
+
+            MenuUtils.RemoveInvalidMenuItems(menu);
         }
 
         void BeforeCreateGameObjectMenuItemWasExecuted(string menuPath, UnityEngine.Object[] contextObjects, MenuUtils.ContextMenuOrigin origin, int userData)

@@ -1312,6 +1312,9 @@
     <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\ExposeDSPGraph.cs">
       <Link>Modules\Audio\Public\ScriptBindings\ExposeDSPGraph.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\ExposeVivox.cs">
+      <Link>Modules\Audio\Public\ScriptBindings\ExposeVivox.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Cloth\Cloth.bindings.cs">
       <Link>Modules\Cloth\Cloth.bindings.cs</Link>
     </Compile>

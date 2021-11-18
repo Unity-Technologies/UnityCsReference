@@ -144,7 +144,13 @@ namespace UnityEditor
 
         public void EnableInstancingField(Rect r)
         {
-            EditorGUI.PropertyField(r, m_EnableInstancing, Styles.enableInstancingLabel);
+            using (var scope = new EditorGUI.ChangeCheckScope())
+            {
+                var newBoolValue = EditorGUI.Toggle(r, Styles.enableInstancingLabel, m_EnableInstancing.boolValue);
+                if (scope.changed)
+                    m_EnableInstancing.boolValue = newBoolValue;
+            }
+
             serializedObject.ApplyModifiedProperties();
         }
 
@@ -155,18 +161,24 @@ namespace UnityEditor
 
         public bool DoubleSidedGIField()
         {
+            bool isEnlightenLightMapper = Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper == LightingSettings.Lightmapper.Enlighten;
+
             Rect r = GetControlRectForSingleLine();
-            if (isPrefabAsset || Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper != LightingSettings.Lightmapper.Enlighten)
+            if (isPrefabAsset || !isEnlightenLightMapper)
             {
-                EditorGUI.PropertyField(r, m_DoubleSidedGI, Styles.doubleSidedGILabel);
+                using (var scope = new EditorGUI.ChangeCheckScope())
+                {
+                    var newBoolValue = EditorGUI.Toggle(r, Styles.doubleSidedGILabel, m_DoubleSidedGI.boolValue);
+                    if (scope.changed)
+                        m_DoubleSidedGI.boolValue = newBoolValue;
+                }
                 serializedObject.ApplyModifiedProperties();
                 return true;
             }
-            else
-            {
-                using (new EditorGUI.DisabledScope(Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper == LightingSettings.Lightmapper.Enlighten))
-                    EditorGUI.Toggle(r, Styles.doubleSidedGILabel, false);
-            }
+
+            using (new EditorGUI.DisabledScope(isEnlightenLightMapper))
+                EditorGUI.Toggle(r, Styles.doubleSidedGILabel, false);
+
             return false;
         }
 
@@ -217,14 +229,7 @@ namespace UnityEditor
             if (extraProperty1 == null || extraProperty2 == null)
             {
                 var prop = extraProperty1 ?? extraProperty2;
-                if (prop.type == MaterialProperty.PropType.Color)
-                {
-                    ExtraPropertyAfterTexture(GetLeftAlignedFieldRect(r), prop);
-                }
-                else
-                {
-                    ExtraPropertyAfterTexture(GetRectAfterLabelWidth(r), prop);
-                }
+                ExtraPropertyAfterTexture(GetRectAfterLabelWidth(r), prop, false);
             }
             else // Two extra properties
             {
@@ -269,10 +274,9 @@ namespace UnityEditor
 
             BeginAnimatedCheck(r, colorProperty);
 
-            Rect leftRect = GetLeftAlignedFieldRect(r);
             EditorGUI.BeginChangeCheck();
             EditorGUI.showMixedValue = colorProperty.hasMixedValue;
-            Color newValue = EditorGUI.ColorField(leftRect, GUIContent.none, colorProperty.colorValue, true, showAlpha, true);
+            Color newValue = EditorGUI.ColorField(GetRectAfterLabelWidth(r), GUIContent.none, colorProperty.colorValue, true, showAlpha, true);
             EditorGUI.showMixedValue = false;
             if (EditorGUI.EndChangeCheck())
                 colorProperty.colorValue = newValue;
@@ -325,9 +329,9 @@ namespace UnityEditor
             return EditorGUILayout.GetControlRect(true, EditorGUI.kSingleLineHeight + extraSpacing, EditorStyles.layerMaskField);
         }
 
-        void ExtraPropertyAfterTexture(Rect r, MaterialProperty property)
+        void ExtraPropertyAfterTexture(Rect r, MaterialProperty property, bool adjustLabelWidth = true)
         {
-            if ((property.type == MaterialProperty.PropType.Float || property.type == MaterialProperty.PropType.Color) && r.width > EditorGUIUtility.fieldWidth)
+            if (adjustLabelWidth && (property.type == MaterialProperty.PropType.Float || property.type == MaterialProperty.PropType.Color) && r.width > EditorGUIUtility.fieldWidth)
             {
                 // We want color fields and float fields to have same width as EditorGUIUtility.fieldWidth
                 // so controls aligns vertically.

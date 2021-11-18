@@ -29,11 +29,11 @@ namespace UnityEditor.Search
 
             // Select dataset
             var dataset = c.args[0].Execute(c);
-            var sIt = c.args.Skip(1).GetEnumerator();
             const int batchSize = 100;
             foreach (var batch in dataset.Batch(batchSize))
             {
                 var results = batch;
+                var sIt = c.args.Skip(1).GetEnumerator();
                 while (sIt.MoveNext())
                 {
                     var selector = sIt.Current;

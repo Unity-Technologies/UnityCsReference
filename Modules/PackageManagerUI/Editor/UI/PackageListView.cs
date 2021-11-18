@@ -256,6 +256,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (newSelectedIndex < 0 || newSelectedIndex >= itemsSource.Count)
                 return false;
             selectedIndex = newSelectedIndex;
+            ScrollToItem(newSelectedIndex);
             return true;
         }
 

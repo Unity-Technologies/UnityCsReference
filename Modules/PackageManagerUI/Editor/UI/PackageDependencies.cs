@@ -95,9 +95,20 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private string GetVersionText(DependencyInfo dependency, IPackage package)
         {
-            if (package == null || package.Is(PackageType.BuiltIn) || package.Is(PackageType.Feature))
+            if (package == null || package.Is(PackageType.Feature))
                 return string.Empty;
-            return dependency.version.ToString();
+            if (package.Is(PackageType.BuiltIn))
+                return "---";
+            return dependency.version;
+        }
+
+        private string GetVersionText(IPackageVersion packageVersion)
+        {
+            if (packageVersion == null || packageVersion.HasTag(PackageTag.Feature))
+                return string.Empty;
+            if (packageVersion.HasTag(PackageTag.BuiltIn))
+                return "---";
+            return packageVersion.version.ToString();
         }
 
         private string GetStatusText(DependencyInfo dependency, IPackageVersion installedVersion)
@@ -185,7 +196,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             foreach (var version in reverseDependencies)
             {
                 var nameText = version.displayName ?? string.Empty;
-                var versionText = version.HasTag(PackageTag.Feature | PackageTag.BuiltIn) ? string.Empty : version.version.ToString();
+                var versionText = GetVersionText(version);
 
                 reverseDependenciesNames.Add(BuildSelectableLabel(nameText, "text"));
                 reverseDependenciesVersions.Add(BuildSelectableLabel(versionText, "text"));

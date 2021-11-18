@@ -17,6 +17,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             All = -1
         }
 
+        private bool m_Enabled;
         private long m_Total;
         private long m_NumberOfPackagesShown;
         private static readonly string k_All = L10n.Tr("All");
@@ -61,6 +62,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnEnable()
         {
+            m_Enabled = true;
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
             m_Application.onInternetReachabilityChange += OnInternetReachabilityChange;
             m_PackageFiltering.onFilterTabChanged += SetFilter;
@@ -74,6 +76,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnDisable()
         {
+            m_Enabled = false;
             m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
             m_Application.onInternetReachabilityChange -= OnInternetReachabilityChange;
             m_PackageFiltering.onFilterTabChanged -= SetFilter;
@@ -90,7 +93,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var menu = new DropdownMenu();
 
-            if (m_Total == 0)
+            if (m_Enabled && m_Total == 0)
                 EditorApplication.delayCall += () => UpdateMenu();
 
             AddDropdownItems(menu);

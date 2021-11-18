@@ -76,5 +76,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!s_CurrentSpinners.Any())
                 EditorApplication.update -= UpdateProgress;
         }
+
+        public static void ClearAllSpinners()
+        {
+            if (!s_CurrentSpinners.Any())
+                return;
+
+            s_CurrentSpinners.Clear();
+            EditorApplication.update -= UpdateProgress;
+        }
     }
 }

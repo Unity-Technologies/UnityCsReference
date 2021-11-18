@@ -64,7 +64,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             Cancel,
             Import,
             Reset,
-            GitUpdate
+            GitUpdate,
+            ReDownload
         }
 
         internal static readonly string[] k_PackageActionVerbs =
@@ -82,7 +83,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             L10n.Tr("Cancel"),
             L10n.Tr("Import"),
             L10n.Tr("Reset"),
-            L10n.Tr("Update")
+            L10n.Tr("Update"),
+            L10n.Tr("Re-Download")
         };
 
         private static readonly string[] k_PackageActionInProgressVerbs =
@@ -100,7 +102,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             L10n.Tr("Cancel"),
             L10n.Tr("Import"),
             L10n.Tr("Resetting"),
-            L10n.Tr("Update")
+            L10n.Tr("Update"),
+            L10n.Tr("Re-Download")
         };
 
         internal static readonly string[] k_PackageActionTooltips =
@@ -118,7 +121,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             L10n.Tr("Click to cancel the download of this {0}."),
             L10n.Tr("Click to import assets from the {0} into your project."),
             L10n.Tr("Click to reset this {0} dependencies to their default versions."),
-            L10n.Tr("Click to check for updates and update to latest version")
+            L10n.Tr("Click to check for updates and update to latest version"),
+            L10n.Tr("Click to re-download the latest version of this {0}.")
         };
 
         private ResourceLoader m_ResourceLoader;
@@ -166,6 +170,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             resetButton.SetIcon(k_CustomizedIcon);
             importButton.clickable.clicked += ImportClick;
             downloadButton.clickable.clicked += DownloadClick;
+            redownloadButton.clickable.clicked += DownloadClick;
             cancelButton.clickable.clicked += CancelClick;
             pauseButton.clickable.clicked += PauseClick;
             resumeButton.clickable.clicked += ResumeClick;
@@ -203,7 +208,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Application.onFinishCompiling += RefreshPackageActionButtons;
             m_Application.onInternetReachabilityChange += OnInternetReachabilityChange;
 
-            m_PackageDatabase.onPackagesChanged += (added, removed, preUpdate, postUpdate) => OnPackagesUpdated(postUpdate);
+            m_PackageDatabase.onPackagesChanged += OnPackagesUpdated;
             m_PackageDatabase.onVerifiedGitPackageUpToDate += OnVerifiedGitPackageUpToDate;
 
             m_PackageDatabase.onPackageProgressUpdate += OnPackageProgressUpdate;
@@ -241,6 +246,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Application.onFinishCompiling -= RefreshPackageActionButtons;
             m_Application.onInternetReachabilityChange -= OnInternetReachabilityChange;
 
+            m_PackageDatabase.onPackagesChanged -= OnPackagesUpdated;
+            m_PackageDatabase.onVerifiedGitPackageUpToDate -= OnVerifiedGitPackageUpToDate;
+
             m_PackageDatabase.onPackageProgressUpdate -= OnPackageProgressUpdate;
 
             m_PackageDatabase.onTermOfServiceAgreementStatusChange -= OnTermOfServiceAgreementStatusChange;
@@ -261,6 +269,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 new ButtonDisableCondition(!value, message));
 
             RefreshButtonStatusAndTooltip(downloadButton, PackageAction.Download,
+                new ButtonDisableCondition(!value, message));
+
+            RefreshButtonStatusAndTooltip(redownloadButton, PackageAction.ReDownload,
                 new ButtonDisableCondition(!value, message));
 
             if (value)
@@ -428,6 +439,11 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (updatedVersion?.isFullyFetched ?? false)
                     SetEnabled(true);
             }
+        }
+
+        private void OnPackagesUpdated(IEnumerable<IPackage> added, IEnumerable<IPackage> removed, IEnumerable<IPackage> preUpdated, IEnumerable<IPackage> postUpdated)
+        {
+            OnPackagesUpdated(postUpdated);
         }
 
         private void RefreshErrorDisplay()
@@ -668,6 +684,23 @@ namespace UnityEditor.PackageManager.UI.Internal
                         disableIfCompiling);
                 }
 
+                var showReDownloadButton = isLatestVersionOnDisk && (isDownloadRequested || operation == null || !showCancelButton);
+                UIUtils.SetElementDisplay(redownloadButton, showReDownloadButton);
+                if (showReDownloadButton)
+                {
+                    var action = PackageAction.ReDownload;
+                    redownloadButton.text = GetButtonText(action);
+
+                    RefreshButtonStatusAndTooltip(redownloadButton, action,
+                        new ButtonDisableCondition(isDownloadRequested,
+                            L10n.Tr("The re-download request has been sent. Please wait for the download to start.")),
+                        new ButtonDisableCondition(packageDisabled,
+                            L10n.Tr("This package is no longer available and can not be downloaded anymore.")),
+                        new ButtonDisableCondition(!m_Application.isInternetReachable,
+                            L10n.Tr("You need to restore your network connection to perform this action.")),
+                        disableIfCompiling);
+                }
+
                 var importable = displayVersion?.HasTag(PackageTag.Importable) ?? false;
                 var showImportButton = !showCancelButton && importable && isAvailableOnDisk && package.state != PackageState.InProgress;
                 UIUtils.SetElementDisplay(importButton, showImportButton);
@@ -685,6 +718,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             else
             {
                 UIUtils.SetElementDisplay(downloadButton, false);
+                UIUtils.SetElementDisplay(redownloadButton, false);
                 UIUtils.SetElementDisplay(cancelButton, false);
                 UIUtils.SetElementDisplay(pauseButton, false);
                 UIUtils.SetElementDisplay(resumeButton, false);
@@ -1009,6 +1043,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal DropdownButton resetButton => cache.Get<DropdownButton>("reset");
         internal Button importButton { get { return cache.Get<Button>("import"); } }
         internal Button downloadButton { get { return cache.Get<Button>("download"); } }
+        internal Button redownloadButton { get { return cache.Get<Button>("redownload"); } }
         private Button cancelButton { get { return cache.Get<Button>("cancel"); } }
         internal Button pauseButton { get { return cache.Get<Button>("pause"); } }
         internal Button resumeButton { get { return cache.Get<Button>("resume"); } }

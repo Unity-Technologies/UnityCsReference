@@ -385,13 +385,14 @@ namespace UnityEditor.Search.Providers
         {
 
             var goIcon = Utils.LoadIcon("GameObject Icon");
-            yield return new SearchProposition(category: "GameObject", label: "InstanceID", replacement: "id=0", help: "Search object with InstanceID", icon: goIcon);
-            yield return new SearchProposition(category: "GameObject", label: "Path", replacement: "path=/root/children1", help: "Search object with Transform path", icon: goIcon);
-            yield return new SearchProposition(category: "GameObject", label: "Volume Size", replacement: "size>1", help: "Search object by volume size", icon: goIcon);
-            yield return new SearchProposition(category: "GameObject", label: "Components count", replacement: "components>1", help: "Search object with more than # components", icon: goIcon);
+            yield return new SearchProposition(category: "GameObject", label: "InstanceID", replacement: "id=0", help: "Search object with InstanceID", icon: goIcon, color: QueryColors.filter);
+            yield return new SearchProposition(category: "GameObject", label: "Path", replacement: "path=/root/children1", help: "Search object with Transform path", icon: goIcon, color: QueryColors.filter);
+            yield return new SearchProposition(category: "GameObject", label: "Volume Size", replacement: "size>1", help: "Search object by volume size", icon: goIcon, color: QueryColors.filter);
+            yield return new SearchProposition(category: "GameObject", label: "Components count", replacement: "components>1", help: "Search object with more than # components", icon: goIcon, color: QueryColors.filter);
+            yield return new SearchProposition(category: "GameObject", label: "Active", "active=true", "Search active objects", icon: goIcon, color: QueryColors.filter);
 
             var filterIcon = Utils.LoadIcon("Filter Icon");
-            yield return new SearchProposition(category: "Filters", label: "Active", "active=true", "Search active objects", icon: filterIcon);
+
 
             var sceneIcon = Utils.LoadIcon("SceneAsset Icon");
             var queryEngineFunctions = TypeCache.GetMethodsWithAttribute<SceneQueryEngineFilterAttribute>();
@@ -415,7 +416,7 @@ namespace UnityEditor.Search.Providers
                     label = descriptionAttr.Description;
                 }
 
-                yield return new SearchProposition(category: "Scene Filters", label: label, help: help, replacement: replacement, icon: sceneIcon);
+                yield return new SearchProposition(category: "Custom Scene Filters", label: label, help: help, replacement: replacement, icon: sceneIcon, color: QueryColors.filter);
             }
 
             var sceneObjects = context.searchView?.results.Count > 0 ?
@@ -424,9 +425,9 @@ namespace UnityEditor.Search.Providers
                 yield return p;
 
 
-            yield return new SearchProposition(category: "Reference", "Reference By Path (Object)", "ref=<$object:none,UnityEngine.Object$>", "Find all objects referencing a specific asset.", icon: sceneIcon);
-            yield return new SearchProposition(category: "Reference", "Reference By Instance ID (Number)", "ref=1000", "Find all objects referencing a specific instance ID (Number).", icon: sceneIcon);
-            yield return new SearchProposition(category: "Reference", "Reference By Asset Expression", "ref={p: }", "Find all objects referencing for a given asset search.", icon: sceneIcon);
+            yield return new SearchProposition(category: "Reference", "Reference By Path (Object)", "ref=<$object:none,UnityEngine.Object$>", "Find all objects referencing a specific asset.", icon:sceneIcon, color: QueryColors.filter);
+            yield return new SearchProposition(category: "Reference", "Reference By Instance ID (Number)", "ref=1000", "Find all objects referencing a specific instance ID (Number).", icon: sceneIcon, color: QueryColors.filter);
+            yield return new SearchProposition(category: "Reference", "Reference By Asset Expression", "ref={p: }", "Find all objects referencing for a given asset search.", icon: sceneIcon, color: QueryColors.filter);
         }
     }
 

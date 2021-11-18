@@ -16,7 +16,10 @@ namespace UnityEditor.Search
     [DebuggerDisplay("{m_SearchText}")]
     public class SearchContext : IDisposable
     {
+        private static volatile int s_NextSessionId = 0;
         private static readonly string[] k_Empty = new string[0];
+
+        internal int sessionId;
         private string m_SearchText = "";
         private string m_CachedPhrase;
         private bool m_Disposed = false;
@@ -376,8 +379,10 @@ namespace UnityEditor.Search
 
         private void BeginSession()
         {
+            sessionId = System.Threading.Interlocked.Increment(ref s_NextSessionId);
+
             if (options.HasAny(SearchFlags.Debug))
-                UnityEngine.Debug.Log($"Start search session {String.Join(", ", providers.Select(p=>p.id))} -> {searchText}");
+                UnityEngine.Debug.Log($"[{sessionId}] Start search session {String.Join(", ", providers.Select(p=>p.id))} -> {searchText}");
 
             foreach (var p in m_Providers)
             {
@@ -397,7 +402,7 @@ namespace UnityEditor.Search
                 p.OnDisable();
 
             if (options.HasAny(SearchFlags.Debug))
-                UnityEngine.Debug.Log($"End search session {string.Join(", ", providers.Select(p => p.id))}");
+                UnityEngine.Debug.Log($"[{sessionId}] End search session {string.Join(", ", providers.Select(p => p.id))}");
         }
 
         /// <summary>

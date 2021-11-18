@@ -96,6 +96,8 @@ namespace UnityEditor.Search
             public bool isDeveloperMode;
             public PreferenceData preferences;
 
+            public bool useQueryBuilder;
+
             public string package;
             public string package_ver;
 
@@ -170,6 +172,7 @@ namespace UnityEditor.Search
             public string sceneSearchEngine;
             public string projectSearchEngine;
             public string objectSelectorEngine;
+            public bool useQueryBuilder;
         }
 
         enum EventName
@@ -253,7 +256,10 @@ namespace UnityEditor.Search
             QuickSearchImportReport,
             ReportViewOpen,
 
-            QuickSearchPickerOpens
+            QuickSearchPickerOpens,
+
+            QuickSearchToggleBuilder,
+            QuickSearchHelperWidgetExecuted
         }
 
         public static readonly string Package = "com.unity.quicksearch";
@@ -423,6 +429,7 @@ namespace UnityEditor.Search
             report.sceneSearchEngine = UnityEditor.SearchService.SceneSearch.GetActiveSearchEngine().GetType().FullName;
             report.projectSearchEngine = UnityEditor.SearchService.ProjectSearch.GetActiveSearchEngine().GetType().FullName;
             report.objectSelectorEngine = UnityEditor.SearchService.ObjectSelectorSearch.GetActiveSearchEngine().GetType().FullName;
+
 
             var allIndexes = SearchDatabase.Enumerate(SearchDatabase.IndexLocation.assets).ToArray();
             report.indexCount = allIndexes.Length;

@@ -1290,11 +1290,6 @@ namespace UnityEditor.UIElements.Bindings
                         if (string.IsNullOrEmpty(ve.tooltip))
                         {
                             ve.tooltip = boundProperty.tooltip;
-
-                            string attributeTooltip = ScriptAttributeUtility.GetHandler(boundProperty)?.tooltip;
-                            if (attributeTooltip != null)
-                                ve.tooltip = attributeTooltip;
-
                             m_TooltipWasSet = true;
                         }
                     }

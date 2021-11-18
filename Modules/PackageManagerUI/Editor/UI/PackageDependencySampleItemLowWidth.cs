@@ -31,6 +31,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             itemSizeOrVersion.value = version;
             itemSizeOrVersion.tooltip = version;
+            if (version == "---")
+                UIUtils.SetElementDisplay(itemSizeOrVersion, false);
 
             if (installStatus != null && !string.IsNullOrEmpty(installStatus.text))
                 item.Add(installStatus);
