@@ -76,6 +76,9 @@ namespace UnityEditor.SceneManagement
             set;
         }
 
+        [FreeFunction("GetSceneTracker().CanOpenScene")]
+        internal static extern bool CanOpenScene();
+
         [NativeThrows]
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("OpenScene")]
@@ -110,12 +113,12 @@ namespace UnityEditor.SceneManagement
         private extern static bool CreateSceneAssetInternal(string scenePath, bool createDefaultGameObjects);
 
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
-        [NativeMethod("RemapAssetReferencesInternal")]
-        private extern static void RemapAssetReferencesInternal(UnityEngine.SceneManagement.Scene scene, string[] srcPaths, string[] dstPaths, int[] srcIds, int[] dstIds);
+        [NativeMethod("RemapAssetReferencesInSceneInternal")]
+        private extern static void RemapAssetReferencesInSceneInternal(UnityEngine.SceneManagement.Scene scene, string[] srcPaths, string[] dstPaths, int[] srcIds, int[] dstIds);
 
         internal static void RemapAssetReferencesInScene(UnityEngine.SceneManagement.Scene scene, Dictionary<string, string> pathMap, Dictionary<int, int> idMap = null)
         {
-            RemapAssetReferencesInternal(scene,
+            RemapAssetReferencesInSceneInternal(scene,
                 pathMap.Keys.ToArray(), pathMap.Values.ToArray(),
                 idMap == null ? new int[0] : idMap.Keys.ToArray(),
                 idMap == null ? new int[0] : idMap.Values.ToArray()
@@ -245,6 +248,9 @@ namespace UnityEditor.SceneManagement
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("LoadSceneManagerSetup")]
         internal extern static bool LoadSceneManagerSetup(string path);
+
+        [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
+        internal static extern bool LoadLastSceneManagerSetup();
 
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("DetectCrossSceneReferences")]

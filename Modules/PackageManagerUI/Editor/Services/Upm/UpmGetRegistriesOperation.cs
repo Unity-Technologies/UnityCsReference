@@ -21,10 +21,5 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             return m_ClientProxy.GetRegistries();
         }
-
-        public void Cancel()
-        {
-            CancelInternal();
-        }
     }
 }

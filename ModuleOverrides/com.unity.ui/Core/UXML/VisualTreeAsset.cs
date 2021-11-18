@@ -605,6 +605,29 @@ namespace UnityEngine.UIElements
                         return CreateError();
                     }
                 }
+                // TODO: Do it differently (UIE-814).
+                else if (asset.fullTypeName == "UnityEditor.UIElements.FloatField"
+                         || asset.fullTypeName == "UnityEditor.UIElements.DoubleField"
+                         || asset.fullTypeName == "UnityEditor.UIElements.EnumField"
+                         || asset.fullTypeName == "UnityEditor.UIElements.Hash128Field"
+                         || asset.fullTypeName == "UnityEditor.UIElements.IntegerField"
+                         || asset.fullTypeName == "UnityEditor.UIElements.LongField"
+                         || asset.fullTypeName == "UnityEditor.UIElements.RectField"
+                         || asset.fullTypeName == "UnityEditor.UIElements.Vector2Field"
+                         || asset.fullTypeName == "UnityEditor.UIElements.RectIntField"
+                         || asset.fullTypeName == "UnityEditor.UIElements.Vector3Field"
+                         || asset.fullTypeName == "UnityEditor.UIElements.Vector4Field"
+                         || asset.fullTypeName == "UnityEditor.UIElements.Vector2IntField"
+                         || asset.fullTypeName == "UnityEditor.UIElements.Vector3IntField"
+                         || asset.fullTypeName == "UnityEditor.UIElements.BoundsField"
+                         || asset.fullTypeName == "UnityEditor.UIElements.BoundsIntField")
+                {
+                    string runtimeTypeName = asset.fullTypeName.Replace("UnityEditor", "UnityEngine");
+                    if (!VisualElementFactoryRegistry.TryGetValue(runtimeTypeName, out factoryList))
+                    {
+                        return CreateError();
+                    }
+                }
                 else if (asset.fullTypeName == UxmlRootElementFactory.k_ElementName)
                 {
                     // Support UXML without namespace for backward compatibility.

@@ -23,7 +23,7 @@ namespace UnityEditor.Search
         Expression
     }
 
-    class QueryFilterBlock : QueryBlock
+    class QueryFilterBlock : QueryBlock, IQueryExpressionBlock
     {
         public static readonly string[] ops = new[] { "=", "<", "<=", ">=", ">" };
 
@@ -42,6 +42,7 @@ namespace UnityEditor.Search
         public QueryMarker marker { get; set; }
         public bool property { get; set; }
 
+        public QueryBuilder builder => formatValue as QueryBuilder;
         public override bool formatNames => true;
         public override bool wantsEvents => HasInPlaceEditor();
         public override bool canOpenEditorOnValueClicked => !HasInPlaceEditor();
@@ -85,6 +86,12 @@ namespace UnityEditor.Search
             if (value != null && value.Length > 2 && value[0] == '"' && value[value.Length-1] == '"')
                 return value.Substring(1, value.Length - 2);
             return value;
+        }
+
+        public void ApplyExpression(string searchText)
+        {
+            format = QueryBlockFormat.Expression;
+            formatValue = ExpressionBlock.Create(searchText);
         }
 
         public override void Apply(in SearchProposition searchProposition)
@@ -252,42 +259,35 @@ namespace UnityEditor.Search
                 SetValue(enums.GetValue(0));
         }
 
-        private bool TryGetExpression(in string text, out string expression, out int start, out int end)
+        private bool TryGetExpression(in string text, out SearchExpression expression)
         {
-            end = start = -1;
             expression = null;
-            if (text == null && text.Length <= 2)
+            if (string.IsNullOrEmpty(text) || text.Length <= 2)
                 return false;
 
-            start = text.IndexOfAny(new[] { '{', '[' });
+            var start = text.IndexOfAny(new[] { '{', '[' });
             if (start == -1)
                 return false;
 
-            end = text.IndexOfAny(new[] { '}', ']' });
-            if (end != text.Length-1)
+            var end = text.LastIndexOfAny(new[] { '}', ']' });
+            if (end == -1)
                 return false;
 
-            expression = text.Substring(start + 1, end - start - 1);
-            return true;
-        }
+            expression = SearchExpression.Parse(text, SearchExpressionParserFlags.None);
+            if (expression == null)
+                return false;
 
-        public QueryBuilder CreateExpressionBuilder(in string expression)
-        {
-            var embeddedBuilder = new QueryBuilder(expression) { drawBackground = false, @readonly = true };
-            foreach (var b in embeddedBuilder.blocks)
-            {
-                b.@readonly = true;
-                b.disableHovering = true;
-            }
-            return embeddedBuilder;
+            if (!expression.types.HasAny(SearchExpressionType.Iterable | SearchExpressionType.Function))
+                return false;
+
+            return true;
         }
 
         private bool ParseValue(in string value)
         {
-            if (TryGetExpression(value, out var expression, out _, out _))
+            if (TryGetExpression(value, out var expression))
             {
-                format = QueryBlockFormat.Expression;
-                formatValue = CreateExpressionBuilder(expression);
+                ApplyExpression(expression.outerText.ToString());
             }
             else if (string.Equals(value, "true", StringComparison.OrdinalIgnoreCase))
             {
@@ -425,7 +425,7 @@ namespace UnityEditor.Search
                 return FormatObjectValue();
 
             if (format == QueryBlockFormat.Expression && formatValue is QueryBuilder qb)
-                return $"{{{qb.searchText}}}";
+                return qb.searchText;
 
             if (marker.valid || format == QueryBlockFormat.Enum)
                 return $"<${format.ToString().ToLowerInvariant()}:{formatValue?.ToString() ?? sv}{GetFormatMarkerArgs()}$>";
@@ -459,7 +459,7 @@ namespace UnityEditor.Search
             }
             else if (format == QueryBlockFormat.Expression)
             {
-                formatValue = CreateExpressionBuilder(value);
+                formatValue = ExpressionBlock.Create(value);
             }
             source.Repaint();
         }
@@ -485,13 +485,7 @@ namespace UnityEditor.Search
                 case QueryBlockFormat.Object: return 120f;
                 case QueryBlockFormat.Color: return 20f;
                 case QueryBlockFormat.Toggle: return 4f;
-                case QueryBlockFormat.Expression:
-                    if (formatValue is QueryBuilder qb)
-                    {
-                        qb.LayoutBlocks(10000f);
-                        return qb.width;
-                    }
-                    break;
+                case QueryBlockFormat.Expression: return ExpressionBlock.Layout(builder, 10000f);
             }
 
             return 0f;
@@ -529,14 +523,9 @@ namespace UnityEditor.Search
                     return value;
 
                 case QueryBlockFormat.Expression:
-                    if (formatValue is QueryBuilder qb)
-                    {
-                        valueRect = new Rect(x - 5f, blockRect.yMin - 5f, qb.width + 24f, qb.height);
-                        qb.Draw(Event.current, valueRect, createLayout: false);
-                        DrawArrow(blockRect, mousePosition, editor != null ? QueryContent.UpArrow : QueryContent.DownArrow);
-                        return qb;
-                    }
-                    break;
+                    ExpressionBlock.Draw(x, blockRect, builder);
+                    DrawArrow(blockRect, mousePosition, editor != null ? QueryContent.UpArrow : QueryContent.DownArrow);
+                    return builder;
             }
 
             return null;

@@ -33,7 +33,8 @@ namespace UnityEditor.Search
 
         private IBlockEditor AddBlock(in Rect buttonRect)
         {
-            return QuerySelector.Open(buttonRect, this);
+            var title = source.context.empty ? QueryAreaBlock.title : "Add Search Filter";
+            return QuerySelector.Open(buttonRect, this, title);
         }
 
         public override void Apply(in SearchProposition searchProposition)
@@ -43,12 +44,21 @@ namespace UnityEditor.Search
 
         public override IEnumerable<SearchProposition> FetchPropositions()
         {
-            if (source.context.empty)
-                return QueryAreaBlock.FetchPropositions(context);
-
             var options = new SearchPropositionOptions(string.Empty,
-                SearchPropositionFlags.IgnoreRecents | SearchPropositionFlags.QueryBuilder);
-            return SearchProposition.Fetch(context, options).Concat(QueryAndOrBlock.BuiltInQueryBuilderPropositions());
+                SearchPropositionFlags.IgnoreRecents |
+                SearchPropositionFlags.QueryBuilder |
+                (source.context.empty ? SearchPropositionFlags.ForceAllProviders : SearchPropositionFlags.None));
+            if (source.context.empty)
+            {
+                return QueryAreaBlock.FetchPropositions(context)
+                    .Concat(new[] { SearchProposition.CreateSeparator() })
+                    .Concat(SearchProposition.Fetch(context, options).OrderBy(p => p));
+            }
+            else
+            {
+                return SearchProposition.Fetch(context, options)
+                    .Concat(QueryAndOrBlock.BuiltInQueryBuilderPropositions()).OrderBy(p => p);
+            }
         }
     }
 }

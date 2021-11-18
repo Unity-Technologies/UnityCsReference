@@ -39,7 +39,7 @@ namespace UnityEditor.Search
                 if (m_IgnoredProperties == null)
                 {
                     m_IgnoredProperties = new HashSet<string>(SearchSettings.ignoredProperties.Split(new char[] { ';', '\n' },
-                        StringSplitOptions.RemoveEmptyEntries).Select(t => t.ToLowerInvariant()));
+                                            StringSplitOptions.RemoveEmptyEntries).Select(t => t.ToLowerInvariant()));
                 }
                 return m_IgnoredProperties;
             }
@@ -82,7 +82,8 @@ namespace UnityEditor.Search
                 var documents = subset != null ? subset.Select(r => GetDocument(r.index)) : GetDocuments(ignoreNulls: true);
                 foreach (var r in FindProvider.SearchWord(false, word, options, documents))
                 {
-                    yield return new SearchResult(r.id, m_IndexByDocuments[r.id], baseScore + r.score + 5);
+                    if (m_IndexByDocuments.TryGetValue(r.id, out var documentIndex))
+                        yield return new SearchResult(r.id, documentIndex, baseScore + r.score + 5);
                 }
             }
         }

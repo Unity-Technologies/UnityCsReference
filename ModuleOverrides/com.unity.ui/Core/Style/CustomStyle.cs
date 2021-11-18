@@ -69,42 +69,52 @@ namespace UnityEngine.UIElements
     public interface ICustomStyle
     {
         /// <summary>
-        /// Gets the value associated with the specified <see cref="CustomStyleProperty"/>.
+        /// Gets the value associated with the specified <see cref="CustomStyleProperty{T}"/>.
         /// </summary>
         /// <returns>True if the property is found, false if not.</returns>
         bool TryGetValue(CustomStyleProperty<float> property, out float value);
         /// <summary>
-        /// Gets the value associated with the specified <see cref="CustomStyleProperty"/>.
+        /// Gets the value associated with the specified <see cref="CustomStyleProperty{T}"/>.
         /// </summary>
         /// <returns>True if the property is found, false if not.</returns>
         bool TryGetValue(CustomStyleProperty<int> property, out int value);
         /// <summary>
-        /// Gets the value associated with the specified <see cref="CustomStyleProperty"/>.
+        /// Gets the value associated with the specified <see cref="CustomStyleProperty{T}"/>.
         /// </summary>
         /// <returns>True if the property is found, false if not.</returns>
         bool TryGetValue(CustomStyleProperty<bool> property, out bool value);
         /// <summary>
-        /// Gets the value associated with the specified <see cref="CustomStyleProperty"/>.
+        /// Gets the value associated with the specified <see cref="CustomStyleProperty{T}"/>.
         /// </summary>
         /// <returns>True if the property is found, false if not.</returns>
         bool TryGetValue(CustomStyleProperty<Color> property, out Color value);
         /// <summary>
-        /// Gets the value associated with the specified <see cref="CustomStyleProperty"/>.
+        /// Gets the value associated with the specified <see cref="CustomStyleProperty{T}"/>.
         /// </summary>
         /// <returns>True if the property is found, false if not.</returns>
         bool TryGetValue(CustomStyleProperty<Texture2D> property, out Texture2D value);
         /// <summary>
-        /// Gets the value associated with the specified <see cref="CustomStyleProperty"/>.
+        /// Gets the value associated with the specified <see cref="CustomStyleProperty{T}"/>.
         /// </summary>
         /// <returns>True if the property is found, false if not.</returns>
         bool TryGetValue(CustomStyleProperty<Sprite> property, out Sprite value);
         /// <summary>
-        /// Gets the value associated with the specified <see cref="CustomStyleProperty"/>.
+        /// Gets the value associated with the specified <see cref="CustomStyleProperty{T}"/>.
         /// </summary>
         /// <returns>True if the property is found, false if not.</returns>
         bool TryGetValue(CustomStyleProperty<VectorImage> property, out VectorImage value);
         /// <summary>
-        /// Gets the value associated with the specified <see cref="CustomStyleProperty"/>.
+        /// Gets the value associated with the specified <see cref="CustomStyleProperty{T}"/>.
+        /// </summary>
+        /// <returns>True if the property is found, false if not.</returns>
+        bool TryGetValue(CustomStyleProperty<Object> property, out Object value);
+        /// <summary>
+        /// Gets the value associated with the specified <see cref="CustomStyleProperty{T}"/>.
+        /// </summary>
+        /// <returns>True if the property is found, false if not.</returns>
+        bool TryGetValue<T>(CustomStyleProperty<T> property, out T value) where T : Object;
+        /// <summary>
+        /// Gets the value associated with the specified <see cref="CustomStyleProperty{T}"/>.
         /// </summary>
         /// <returns>True if the property is found, false if not.</returns>
         bool TryGetValue(CustomStyleProperty<string> property, out string value);

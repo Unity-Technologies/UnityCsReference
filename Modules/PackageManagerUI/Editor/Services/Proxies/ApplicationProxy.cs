@@ -32,7 +32,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual bool isBatchMode => Application.isBatchMode;
 
-        public virtual bool isUpmRunning => !Application.HasARGV("noUpm");
+        public virtual bool isUpmRunning => !EditorApplication.isPackageManagerDisabled;
 
         public virtual bool isCompiling
         {
@@ -125,6 +125,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual string OpenFilePanelWithFilters(string title, string directory, string[] filters)
         {
             return EditorUtility.OpenFilePanelWithFilters(title, directory, filters);
+        }
+
+        public virtual string OpenFolderPanel(string title, string folder)
+        {
+            return EditorUtility.OpenFolderPanel(title, folder, string.Empty);
         }
 
         public virtual bool DisplayDialog(string title, string message, string ok, string cancel = "")

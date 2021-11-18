@@ -109,9 +109,9 @@ namespace UnityEditor
         internal const float kObjectFieldThumbnailHeight = 64;
         internal const float kObjectFieldMiniThumbnailHeight = 18f;
         internal const float kObjectFieldMiniThumbnailWidth = 32f;
-        internal static string kFloatFieldFormatString = "g7";
-        internal static string kDoubleFieldFormatString = "g15";
-        internal static string kIntFieldFormatString = "#######0";
+        internal static string kFloatFieldFormatString = UINumericFieldsUtils.k_FloatFieldFormatString;
+        internal static string kDoubleFieldFormatString = UINumericFieldsUtils.k_DoubleFieldFormatString;
+        internal static string kIntFieldFormatString = UINumericFieldsUtils.k_IntFieldFormatString;
         internal static int ms_IndentLevel = 0;
         private const float kIndentPerLevel = 15;
         internal const int kControlVerticalSpacingLegacy = 2;
@@ -163,6 +163,7 @@ namespace UnityEditor
 
         internal static Color k_OverrideMarginColor = new Color(1f / 255f, 153f / 255f, 235f / 255f, 0.75f);
         internal static Color k_OverrideMarginColorSelected = new Color(239f / 255f, 239f / 255f, 239f / 239f, 1f);
+        internal static Color k_OverrideMarginColorNotApplicable = new Color(1f / 255f, 153f / 255f, 235f / 255f, 0.35f);
 
         private const int kInspTitlebarSpacing = 4;
         private static readonly GUIContent s_PropertyFieldTempContent = new GUIContent();
@@ -2240,9 +2241,9 @@ namespace UnityEditor
         // - infinity/nan
         // - expressions
         // - expression evaluation functions
-        internal static readonly string s_AllowedCharactersForFloat = "inftynaeINFTYNAE0123456789.,-*/+%^()cosqrludxvRL=pP#";
+        internal static readonly string s_AllowedCharactersForFloat = UINumericFieldsUtils.k_AllowedCharactersForFloat;
 
-        internal static readonly string s_AllowedCharactersForInt = "0123456789-*/+%^()cosintaqrtelfundxvRL,=pPI#";
+        internal static readonly string s_AllowedCharactersForInt = UINumericFieldsUtils.k_AllowedCharactersForInt;
 
         static bool HasKeyboardFocus(int controlID)
         {
@@ -2361,17 +2362,7 @@ namespace UnityEditor
 
         static void StringToDouble(string str, ref NumberFieldValue value)
         {
-            value.expression = null;
-            value.success = true;
-            string lowered = str.ToLower();
-            if (lowered == "inf" || lowered == "infinity")
-                value.doubleVal = double.PositiveInfinity;
-            else if (lowered == "-inf" || lowered == "-infinity")
-                value.doubleVal = double.NegativeInfinity;
-            else if (lowered == "nan")
-                value.doubleVal = double.NaN;
-            else
-                value.success = ExpressionEvaluator.Evaluate(str, out value.doubleVal, out value.expression);
+            value.success = UINumericFieldsUtils.StringToDouble(str, out value.doubleVal, out value.expression);
         }
 
         internal static bool StringToLong(string str, out long value)
@@ -2385,7 +2376,7 @@ namespace UnityEditor
         static void StringToLong(string str, ref NumberFieldValue value)
         {
             value.expression = null;
-            value.success = ExpressionEvaluator.Evaluate(str, out value.longVal, out value.expression);
+            value.success = UINumericFieldsUtils.StringToLong(str, out value.longVal, out value.expression);
         }
 
         internal static int ArraySizeField(Rect position, GUIContent label, int value, GUIStyle style)
@@ -2887,14 +2878,14 @@ namespace UnityEditor
                         PrefabUtility.HandleApplyRevertMenuItems(
                             null,
                             targetObject,
-                            (menuItemContent, sourceObject) =>
+                            (menuItemContent, sourceObject, _) =>
                             {
                                 // Add apply menu item for this apply target.
                                 TargetChoiceHandler.PropertyAndSourcePathInfo info = new TargetChoiceHandler.PropertyAndSourcePathInfo();
                                 info.properties = properties;
                                 info.assetPath = AssetDatabase.GetAssetPath(sourceObject);
                                 GameObject rootObject = PrefabUtility.GetRootGameObject(sourceObject);
-                                if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject) || EditorUtility.IsPersistent(targetObject))
+                                if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject) || !PrefabUtility.CanPropertyBeAppliedToTarget(property, rootObject))
                                     pm.AddDisabledItem(menuItemContent);
                                 else
                                     pm.AddItem(menuItemContent, false, TargetChoiceHandler.ApplyPrefabPropertyOverride, info);
@@ -5010,18 +5001,28 @@ namespace UnityEditor
 
         public static void MultiPropertyField(Rect position, GUIContent[] subLabels, SerializedProperty valuesIterator, GUIContent label)
         {
+            MultiPropertyField(position, subLabels, valuesIterator, label, PropertyVisibility.OnlyVisible);
+        }
+
+        public static void MultiPropertyField(Rect position, GUIContent[] subLabels, SerializedProperty valuesIterator, GUIContent label, PropertyVisibility visibility)
+        {
             int id = GUIUtility.GetControlID(s_FoldoutHash, FocusType.Keyboard, position);
             position = MultiFieldPrefixLabel(position, id, label, subLabels.Length);
             position.height = kSingleLineHeight;
-            MultiPropertyField(position, subLabels, valuesIterator);
+            MultiPropertyField(position, subLabels, valuesIterator, visibility);
         }
 
         public static void MultiPropertyField(Rect position, GUIContent[] subLabels, SerializedProperty valuesIterator)
         {
-            MultiPropertyFieldInternal(position, subLabels, valuesIterator, PropertyVisibility.OnlyVisible);
+            MultiPropertyField(position, subLabels, valuesIterator, PropertyVisibility.OnlyVisible);
         }
 
-        internal enum PropertyVisibility
+        public static void MultiPropertyField(Rect position, GUIContent[] subLabels, SerializedProperty valuesIterator, PropertyVisibility visibility)
+        {
+            MultiPropertyFieldInternal(position, subLabels, valuesIterator, visibility);
+        }
+
+        public enum PropertyVisibility
         {
             All,
             OnlyVisible
@@ -5698,7 +5699,7 @@ namespace UnityEditor
             if (ShouldDrawOverrideBackground(targetObjs, evt, comp))
             {
                 isAddedComponentAndEventIsRepaint = true;
-                DrawOverrideBackground(position, true);
+                DrawOverrideBackgroundApplicable(position, true);
             }
 
             int enabled = -1;
@@ -5883,7 +5884,7 @@ namespace UnityEditor
                     baseStyle.Draw(position, GUIContent.none, false, false, false, false);
 
                     if (EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None)
-                        DrawOverrideBackground(position, true);
+                        DrawOverrideBackgroundApplicable(position, true);
 
                     EditorStyles.optionsButtonStyle.Draw(settingsRect, GUIContent.none, id, false, settingsRect.Contains(Event.current.mousePosition));
 
@@ -5910,7 +5911,7 @@ namespace UnityEditor
                 PrefabUtility.HandleApplyRevertMenuItems(
                     "Removed Component",
                     instanceGo,
-                    (menuItemContent, sourceObject) =>
+                    (menuItemContent, sourceObject, _) =>
                     {
                         TargetChoiceHandler.ObjectInstanceAndSourceInfo info = new TargetChoiceHandler.ObjectInstanceAndSourceInfo();
                         info.instanceObject = instanceGo;
@@ -6536,7 +6537,7 @@ namespace UnityEditor
 
             bool wasBoldDefaultFont = EditorGUIUtility.GetBoldDefaultFont();
             var so = property.serializedObject;
-            if (so.HasAnyInstantiatedPrefabs() && EditorGUIUtility.comparisonViewMode != EditorGUIUtility.ComparisonViewMode.Original)
+            if (so.HasAnyInstantiatedPrefabsWithValidAsset() && EditorGUIUtility.comparisonViewMode != EditorGUIUtility.ComparisonViewMode.Original)
             {
                 PropertyGUIData parentData = s_PropertyStack.Count > 0 ? s_PropertyStack.Peek() : new PropertyGUIData();
                 bool linkedProperties = parentData.totalPosition == totalPosition;
@@ -6549,7 +6550,11 @@ namespace UnityEditor
                 {
                     Rect highlightRect = totalPosition;
                     highlightRect.xMin += EditorGUI.indent;
-                    DrawOverrideBackground(highlightRect, false);
+
+                    if (!PrefabUtility.CanPropertyBeAppliedToSource(property))
+                        DrawOverrideBackgroundNonApplicable(highlightRect, false);
+                    else
+                        DrawOverrideBackgroundApplicable(highlightRect, false);
                 }
             }
 
@@ -6664,7 +6669,7 @@ namespace UnityEditor
             }
         }
 
-        internal static void DrawOverrideBackground(Rect position, bool fixupRectForHeadersAndBackgrounds = false)
+        internal static void DrawOverrideBackground(Rect position, Color color, bool fixupRectForHeadersAndBackgrounds = false)
         {
             if (fixupRectForHeadersAndBackgrounds)
             {
@@ -6673,7 +6678,17 @@ namespace UnityEditor
                 position.yMax += 1;
             }
 
-            DrawMarginLineForRect(position, k_OverrideMarginColor);
+            DrawMarginLineForRect(position, color);
+        }
+
+        internal static void DrawOverrideBackgroundApplicable(Rect position, bool fixupRectForHeadersAndBackgrounds = false)
+        {
+            DrawOverrideBackground(position, k_OverrideMarginColor, fixupRectForHeadersAndBackgrounds);
+        }
+
+        internal static void DrawOverrideBackgroundNonApplicable(Rect position, bool fixupRectForHeadersAndBackgrounds = false)
+        {
+            DrawOverrideBackground(position, k_OverrideMarginColorNotApplicable, fixupRectForHeadersAndBackgrounds);
         }
 
         internal static void DrawMarginLineForRect(Rect position, Color color)
@@ -8564,7 +8579,8 @@ namespace UnityEditor
         [ExcludeFromDocs]
         public static bool PropertyField(Rect position, SerializedProperty property)
         {
-            return PropertyField(position, property, false);
+            // Allow reorderable list to include children by default to keep similar behaviour to old arrays
+            return PropertyField(position, property, PropertyHandler.UseReorderabelListControl(property));
         }
 
         public static bool PropertyField(Rect position, SerializedProperty property, [DefaultValue("false")] bool includeChildren)
@@ -8575,7 +8591,8 @@ namespace UnityEditor
         [ExcludeFromDocs]
         public static bool PropertyField(Rect position, SerializedProperty property, GUIContent label)
         {
-            return PropertyField(position, property, label, false);
+            // Allow reorderable list to include children by default to keep similar behaviour to old arrays
+            return PropertyField(position, property, label, PropertyHandler.UseReorderabelListControl(property));
         }
 
         public static bool PropertyField(Rect position, SerializedProperty property, GUIContent label, [DefaultValue("false")] bool includeChildren)
@@ -11021,7 +11038,7 @@ namespace UnityEditor
                         overrideRect.y += margin;
                         overrideRect.height -= margin * 2;
                         EditorGUIUtility.leftMarginCoord = overrideRect.x + margin;
-                        EditorGUI.DrawOverrideBackground(overrideRect);
+                        EditorGUI.DrawOverrideBackgroundApplicable(overrideRect);
                         EditorGUIUtility.leftMarginCoord = prevMargin;
                     }
                 }

@@ -20,7 +20,7 @@ namespace UnityEditor
             public static readonly GUIContent nameLabel = EditorGUIUtility.TrTextContent("Name", "The name for the Sprite.");
             public static readonly GUIContent spriteAlignmentLabel = EditorGUIUtility.TrTextContent("Pivot", "The value is normalized to the Sprite's size where (0, 0) is the lower left and (1, 1) is the upper right. May be used for syncing animation frames of different sizes.");
             public static readonly GUIContent spriteAlignmentText = EditorGUIUtility.TrTextContent("X:{0:0.##}, Y:{1:0.##}");
-            public static readonly GUIContent borderLabel = EditorGUIUtility.TrTextContent("Border", "Border values for the Sprite set in Sprite Editor window. May be useful for 9-Slicing Sprites.");
+            public static readonly GUIContent borderLabel = EditorGUIUtility.TrTextContent("Border", "Border values for the Sprite set in Sprite Editor window. May be useful for 9-Slicing Sprites. The values are in pixels units.");
             public static readonly GUIContent borderText = EditorGUIUtility.TrTextContent("L:{0:0.##} B:{1:0.##} R:{2:0.##} T:{3:0.##}");
             public static readonly GUIContent multiValueText = EditorGUIUtility.TrTextContent("-");
         }
@@ -37,20 +37,12 @@ namespace UnityEditor
         {
             m_Name = serializedObject.FindProperty("m_Name");
             m_Pivot = serializedObject.FindProperty("m_Pivot");
-            m_BorderValue = GetSpriteBorderValue(sprite);
+            m_BorderValue = sprite.border;
 
             CheckBorderHasSameValue();
             m_SpriteNameContent = new GUIContent(sprite.name);
             m_SpriteAlignmentContent = new GUIContent(UnityString.Format(Styles.spriteAlignmentText.text, m_Pivot.vector2Value.x, m_Pivot.vector2Value.y));
             m_SpriteBorderContent = new GUIContent(UnityString.Format(Styles.borderText.text, m_BorderValue.x, m_BorderValue.y, m_BorderValue.z, m_BorderValue.w));
-        }
-
-        Vector4 GetSpriteBorderValue(Sprite sprite)
-        {
-            return new Vector4(sprite.border.x / sprite.rect.width,
-                sprite.border.y / sprite.rect.height,
-                sprite.border.z / sprite.rect.width,
-                sprite.border.w / sprite.rect.height);
         }
 
         void CheckBorderHasSameValue()
@@ -62,7 +54,7 @@ namespace UnityEditor
                 if (obj is Sprite)
                 {
                     var spr = (Sprite)obj;
-                    var borderValue = GetSpriteBorderValue(spr);
+                    var borderValue = spr.border;
                     if (borderValue != m_BorderValue)
                     {
                         m_BorderHasSameValue = false;

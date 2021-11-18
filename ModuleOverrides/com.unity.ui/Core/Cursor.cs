@@ -45,6 +45,14 @@ namespace UnityEngine.UIElements
             return hashCode;
         }
 
+        internal static IEnumerable<Type> allowedAssetTypes
+        {
+            get
+            {
+                yield return typeof(Texture2D);
+            }
+        }
+
         /// <undoc/>
         public static bool operator==(Cursor style1, Cursor style2)
         {

@@ -1262,7 +1262,7 @@ namespace UnityEditor
                 PrefabUtility.HandleApplyRevertMenuItems(
                     (selectedGOs.Length > 1) ? "Added GameObjects" : "Added GameObject",
                     parentTransform.gameObject,
-                    (menuItemContent, sourceGo) =>
+                    (menuItemContent, sourceGo, _) =>
                     {
                         GameObject rootGo = PrefabUtility.GetRootGameObject(sourceGo);
                         if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootGo) || EditorUtility.IsPersistent(parentTransform) || !PrefabUtility.HasSameParent(selectedGOs))

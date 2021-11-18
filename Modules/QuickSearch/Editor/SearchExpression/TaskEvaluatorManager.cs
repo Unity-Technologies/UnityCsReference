@@ -63,11 +63,20 @@ namespace UnityEditor.Search
         {
             var concurrentList = new ConcurrentBag<SearchItem>();
             var yieldSignal = new EventWaitHandle(false, EventResetMode.AutoReset);
+            var cancelToken = c.search.sessions.cancelToken;
+
             var task = Task.Run(() =>
             {
                 var enumerable = expression.Execute(c, SearchExpressionExecutionFlags.ThreadedEvaluation);
                 foreach (var searchItem in enumerable)
                 {
+                    if (cancelToken.IsCancellationRequested)
+                    {
+                        if (c.search.options.HasAny(SearchFlags.Debug))
+                            UnityEngine.Debug.LogWarning($"Interrupt {c.search.sessionId}");
+                        return;
+                    }
+
                     if (searchItem != null)
                     {
                         concurrentList.Add(searchItem);
@@ -78,6 +87,13 @@ namespace UnityEditor.Search
 
             while (!concurrentList.IsEmpty || !TaskHelper.IsTaskFinished(task))
             {
+                if (cancelToken.IsCancellationRequested)
+                {
+                    if (c.search.options.HasAny(SearchFlags.Debug))
+                        UnityEngine.Debug.LogWarning($"Interrupt {c.search.sessionId}");
+                    break;
+                }
+
                 if (!yieldSignal.WaitOne(0))
                 {
                     if (concurrentList.IsEmpty)

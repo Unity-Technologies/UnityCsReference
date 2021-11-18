@@ -8,8 +8,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageVersionItem : VisualElement, ISelectableItem
     {
-        public IPackage package { get; set; }
-        public IPackageVersion version { get; set; }
+        public IPackage package { get; private set; }
+        public IPackageVersion version { get; private set; }
 
         private ResourceLoader m_ResourceLoader;
         private PageManager m_PageManager;
@@ -32,7 +32,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             this.version = version;
 
             RefreshLabel(multipleVersionsVisible, isLatestVersion, version.isUnityPackage == true);
-            this.OnLeftClick(() => m_PageManager.SetSelected(package, version, true));
         }
 
         public IPackageVersion targetVersion { get { return version; } }
@@ -74,6 +73,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             var tagLabel = PackageTagLabel.CreateTagLabel(version, true);
             if (tagLabel != null)
                 stateContainer.Add(tagLabel);
+        }
+
+        public void SelectVersionItem()
+        {
+            m_PageManager.SetSelected(package, version, true);
         }
 
         private VisualElementCache cache { get; set; }

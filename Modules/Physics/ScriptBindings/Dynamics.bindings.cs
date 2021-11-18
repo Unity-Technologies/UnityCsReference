@@ -14,7 +14,6 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 
 
-
 namespace UnityEngine
 {
     [NativeHeader("Modules/Physics/PhysicMaterial.h")]
@@ -553,7 +552,7 @@ namespace UnityEngine
         public float separation { get { return m_Separation; }}
 
         [FreeFunction]
-        extern private static Collider GetColliderByInstanceID(int instanceID);
+        extern internal static Collider GetColliderByInstanceID(int instanceID);
     }
 
     #region Scene
@@ -1832,7 +1831,15 @@ namespace UnityEngine
 
         [StaticAccessor("GetPhysicsManager()")]
         [ThreadSafe]
-        public static extern void BakeMesh(int meshID, bool convex);
+        public static extern void BakeMesh(int meshID, bool convex, MeshColliderCookingOptions cookingOptions);
+
+        public static void BakeMesh(int meshID, bool convex)
+        {
+            BakeMesh(meshID, convex, MeshColliderCookingOptions.CookForFasterSimulation |
+                                     MeshColliderCookingOptions.EnableMeshCleaning |
+                                     MeshColliderCookingOptions.WeldColocatedVertices |
+                                     MeshColliderCookingOptions.UseFastMidphase);
+        }
     }
 }
 

@@ -12,6 +12,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal class PackageManagerPrefs
     {
         private const string k_SkipRemoveConfirmationPrefs = "PackageManager.SkipRemoveConfirmation";
+        private const string k_SkipMultiSelectRemoveConfirmationPrefs = "PackageManager.SkipMultiSelectRemoveConfirmation";
         private const string k_SkipDisableConfirmationPrefs = "PackageManager.SkipDisableConfirmation";
         private const string k_SplitterFlexGrowPrefs = "PackageManager.SplitterFlexGrowPrefs";
         private const string k_LastUsedFilterPrefsPrefix = "PackageManager.Filter_";
@@ -31,6 +32,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             get { return EditorPrefs.GetBool(k_SkipRemoveConfirmationPrefs, false); }
             set { EditorPrefs.SetBool(k_SkipRemoveConfirmationPrefs, value); }
+        }
+
+        public virtual bool skipMultiSelectRemoveConfirmation
+        {
+            get { return EditorPrefs.GetBool(k_SkipMultiSelectRemoveConfirmationPrefs, false); }
+            set { EditorPrefs.SetBool(k_SkipMultiSelectRemoveConfirmationPrefs, value); }
         }
 
         public virtual bool skipDisableConfirmation

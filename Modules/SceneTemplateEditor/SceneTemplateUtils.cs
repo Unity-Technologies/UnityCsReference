@@ -32,6 +32,7 @@ namespace UnityEditor.SceneTemplate
         public const string TemplateDescriptionPropertyName = nameof(SceneTemplateAsset.description);
         public const string TemplateAddToDefaultsPropertyName = nameof(SceneTemplateAsset.addToDefaults);
         public const string TemplateThumbnailPropertyName = nameof(SceneTemplateAsset.preview);
+        public const string TemplateThumbnailBadgePropertyName = nameof(SceneTemplateAsset.badge);
         public const string DependenciesPropertyName = nameof(SceneTemplateAsset.dependencies);
         public const string DependencyPropertyName = nameof(DependencyInfo.dependency);
         public const string InstantiationModePropertyName = nameof(DependencyInfo.instantiationMode);
@@ -49,6 +50,7 @@ namespace UnityEditor.SceneTemplate
             name = "Basic 2D (Built-in)",
             isPinned = true,
             thumbnailPath = $"{Styles.k_IconsFolderFolder}scene-template-2d-scene.png",
+            badgePath = $"{Styles.k_IconsFolderFolder}2d-badge-scene-template.png",
             description = L10n.Tr("Contains an orthographic camera setup for 2D games. Works with built-in renderer."),
             onCreateCallback = additive => CreateBuiltinScene(BuiltinTemplateType.Default2D, additive)
         };
@@ -57,6 +59,7 @@ namespace UnityEditor.SceneTemplate
             name = "Basic 3D (Built-in)",
             isPinned = true,
             thumbnailPath = $"{Styles.k_IconsFolderFolder}scene-template-3d-scene.png",
+            badgePath = $"{Styles.k_IconsFolderFolder}3d-badge-scene-template.png",
             description = L10n.Tr("Contains a camera and directional light. Works with built-in renderer."),
             onCreateCallback = additive => CreateBuiltinScene(BuiltinTemplateType.Default2DMode3DCamera, additive)
         };
@@ -65,6 +68,7 @@ namespace UnityEditor.SceneTemplate
             name = "Basic (Built-in)",
             isPinned = true,
             thumbnailPath = $"{Styles.k_IconsFolderFolder}scene-template-3d-scene.png",
+            badgePath = $"{Styles.k_IconsFolderFolder}3d-badge-scene-template.png",
             description = L10n.Tr("Contains a camera and directional light, works with built-in renderer."),
             onCreateCallback = additive => CreateBuiltinScene(BuiltinTemplateType.Default3D, additive)
         };
@@ -74,7 +78,26 @@ namespace UnityEditor.SceneTemplate
 
         internal static IEnumerable<string> GetSceneTemplatePaths()
         {
-            return AssetDatabase.FindAssets("t:SceneTemplateAsset").Select(AssetDatabase.GUIDToAssetPath);
+            return GetSceneTemplates().Select(asset => AssetDatabase.GetAssetPath(asset.GetInstanceID()));
+        }
+
+        internal static IEnumerable<SceneTemplateAsset> GetSceneTemplates()
+        {
+            using (var sceneTemplateItr = AssetDatabase.EnumerateAllAssets(CreateSceneTemplateSearchFilter()))
+            {
+                while (sceneTemplateItr.MoveNext())
+                    yield return sceneTemplateItr.Current.pptrValue as SceneTemplateAsset;
+            }
+        }
+
+        private static SearchFilter CreateSceneTemplateSearchFilter()
+        {
+            return new SearchFilter
+            {
+                searchArea = SearchFilter.SearchArea.AllAssets,
+                classNames = new[] { nameof(SceneTemplateAsset) },
+                showAllHits = false
+            };
         }
 
         internal static Rect GetMainWindowCenteredPosition(Vector2 size)
@@ -144,7 +167,7 @@ namespace UnityEditor.SceneTemplate
 
         internal static void OpenDocumentationUrl()
         {
-            const string documentationUrl = "https://docs.unity3d.com/Packages/com.unity.scene-template@latest/";
+            const string documentationUrl = "https://docs.unity3d.com/2021.1/Documentation/Manual/scene-templates.html";
             var uri = new Uri(documentationUrl);
             Process.Start(uri.AbsoluteUri);
         }
@@ -160,9 +183,9 @@ namespace UnityEditor.SceneTemplate
             }
 
             // Check for real templateAssets:
-            var sceneTemplateAssetInfos = SceneTemplateUtils.GetSceneTemplatePaths().Select(templateAssetPath =>
+            var sceneTemplateAssetInfos = GetSceneTemplates().Select(sceneTemplateAsset =>
             {
-                var sceneTemplateAsset = AssetDatabase.LoadAssetAtPath<SceneTemplateAsset>(templateAssetPath);
+                var templateAssetPath = AssetDatabase.GetAssetPath(sceneTemplateAsset.GetInstanceID());
                 return Tuple.Create(templateAssetPath, sceneTemplateAsset);
             })
                 .Where(templateData =>
@@ -194,6 +217,7 @@ namespace UnityEditor.SceneTemplate
                         assetPath = templateData.Item1,
                         description = templateData.Item2.description,
                         thumbnail = templateData.Item2.preview,
+                        badge = templateData.Item2.badge,
                         sceneTemplate = templateData.Item2,
                         onCreateCallback = loadAdditively => CreateSceneFromTemplate(templateData.Item1, loadAdditively)
                     };
@@ -294,6 +318,15 @@ namespace UnityEditor.SceneTemplate
         {
             var pi = PackageManager.PackageInfo.FindForAssetPath(assetPath);
             return pi != null && IsPackageReadOnly(pi);
+        }
+
+        internal static void DeleteAsset(string path, int retryCount = 5)
+        {
+            var retries = 0;
+            while (retries < retryCount && !AssetDatabase.DeleteAsset(path))
+                ++retries;
+            if (retries >= retryCount)
+                throw new Exception($"Failed to delete asset \"{path}\"");
         }
     }
 }

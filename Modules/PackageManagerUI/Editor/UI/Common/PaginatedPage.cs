@@ -62,11 +62,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var queryArgs = BuildQueryFromFilter(0, m_PackageManagerPrefs.numItemsPerPage ?? PageManager.k_DefaultPageSize);
             m_AssetStoreClient.ListPurchases(queryArgs);
 
-            m_VisualStateList.ClearList();
-            m_VisualStateList.ClearExtraItems();
-
-            RefreshVisualStates();
-            TriggerOnListRebuild();
+            ClearAndRebuild();
             return true;
         }
 
@@ -140,6 +136,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             };
         }
 
+        public void ClearAndRebuild()
+        {
+            m_VisualStateList.ClearList();
+            m_VisualStateList.ClearExtraItems();
+            Rebuild();
+        }
+
         public override void LoadMore(long numberOfPackages)
         {
             if (numCurrentItems >= numTotalItems)
@@ -154,8 +157,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var packageInPage = Contains(package);
             if (!packageInPage)
             {
-                long productId;
-                if (package == null || !long.TryParse(package.uniqueId, out productId))
+                if (package == null || !long.TryParse(package.uniqueId, out _))
                     return;
 
                 m_VisualStateList.AddExtraItem(package.uniqueId);
@@ -165,7 +167,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             else
                 TriggerOnListUpdate(null, new[] { package });
 
-            SetSelected(package.uniqueId, version?.uniqueId ?? package.versions.primary?.uniqueId);
+            SetNewSelection(new[] { new PackageAndVersionIdPair(package.uniqueId, version?.uniqueId)});
         }
 
         public void OnProductFetched(long productId)
@@ -183,7 +185,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     TriggerOnListUpdate(new[] { package });
                 else
                     TriggerOnListUpdate(null, new[] { package });
-                SetSelected(package?.uniqueId, package?.versions.primary?.uniqueId);
+                SetNewSelection(new[] { new PackageAndVersionIdPair(package.uniqueId) });
             }
         }
 

@@ -27,14 +27,14 @@ namespace UnityEditor
     [NativeType(CodegenOptions.Custom, "TextureImporterSettings")]
     [NativeHeader("Editor/Src/AssetPipeline/TextureImporting/TextureImporter.bindings.h")]
     [NativeHeader("Editor/Src/AssetPipeline/TextureImporting/TextureImporterTypes.h")]
-    public sealed partial class TextureImporterSettings
+    public sealed class TextureImporterSettings
     {
         [SerializeField]
-        int   m_AlphaSource;
+        int   m_AlphaSource = (int)TextureImporterAlphaSource.FromInput;
         [SerializeField]
         int   m_MipMapMode;
         [SerializeField]
-        int  m_EnableMipMap;
+        int  m_EnableMipMap = 1;
         [SerializeField]
         int  m_FadeOut;
         [SerializeField]
@@ -59,7 +59,7 @@ namespace UnityEditor
         [SerializeField]
         int m_FlipGreenChannel;
         [SerializeField]
-        uint m_Swizzle;
+        uint m_Swizzle = 0x03020100;
         [SerializeField]
         int  m_IsReadable;
 
@@ -76,7 +76,7 @@ namespace UnityEditor
         [SerializeField]
         int    m_NPOTScale;
         [SerializeField]
-        int  m_sRGBTexture;
+        int  m_sRGBTexture = 1;
 
         [SerializeField]
         int    m_SpriteMode;

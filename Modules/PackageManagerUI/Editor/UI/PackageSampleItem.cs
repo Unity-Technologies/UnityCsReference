@@ -34,6 +34,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             nameLabel.text = sample.displayName;
             nameLabel.tooltip = sample.displayName; // add tooltip for when the label text is cut off
             sizeLabel.text = sample.size;
+            descriptionLabel.SetValueWithoutNotify(sample.description);
+            descriptionLabel.multiline = true;
             RefreshImportStatus();
             importButton.clickable.clicked += OnImportButtonClicked;
         }
@@ -117,6 +119,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal Label nameLabel { get { return m_NameLabel ?? (m_NameLabel = new Label() { classList = { "nameLabel" } }); } }
         private Label m_SizeLabel;
         internal Label sizeLabel { get { return m_SizeLabel ?? (m_SizeLabel = new Label() { classList = { "sizeLabel" } }); } }
+        internal SelectableLabel descriptionLabel { get { return m_DescriptionLabel ?? (m_DescriptionLabel = new SelectableLabel() { classList = { "descriptionLabel" } }); } }
+        private SelectableLabel m_DescriptionLabel;
         private Button m_ImportButton;
         internal Button importButton { get { return m_ImportButton ?? (m_ImportButton = new Button() { classList = { "importButton" } }); } }
     }

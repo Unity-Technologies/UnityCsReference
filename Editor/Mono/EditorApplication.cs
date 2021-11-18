@@ -13,6 +13,8 @@ using UnityEditorInternal;
 using UnityEditor.Scripting;
 using UnityEngine.TestTools;
 using Unity.Profiling;
+using UnityEditor.Profiling;
+using UnityEditor.SceneManagement;
 using UnityEditor.VersionControl;
 using UnityEngine.Profiling;
 
@@ -42,13 +44,12 @@ namespace UnityEditor
 
     internal class ApplicationTitleDescriptor
     {
-        public ApplicationTitleDescriptor(string projectName, string unityVersion, string activeSceneName, string licenseType, string targetName, bool codeCoverageEnabled)
+        public ApplicationTitleDescriptor(string projectName, string unityVersion, string activeSceneName, string targetName, bool codeCoverageEnabled)
         {
             title = "";
             this.projectName = projectName;
             this.unityVersion = unityVersion;
             this.activeSceneName = activeSceneName;
-            this.licenseType = licenseType;
             this.targetName = targetName;
             this.codeCoverageEnabled = codeCoverageEnabled;
         }
@@ -57,7 +58,6 @@ namespace UnityEditor
         public string projectName { get; private set; }
         public string unityVersion { get; private set; }
         public string activeSceneName { get; private set; }
-        public string licenseType { get; private set; }
         public string targetName { get; private set; }
         public bool codeCoverageEnabled { get; private set; }
     }
@@ -314,10 +314,6 @@ namespace UnityEditor
             }
 
             title += $" - Unity {desc.unityVersion}";
-            if (!string.IsNullOrEmpty(desc.licenseType))
-            {
-                title += $" {desc.licenseType}";
-            }
 
             if (desc.codeCoverageEnabled)
             {
@@ -348,7 +344,6 @@ namespace UnityEditor
                 isTemporaryProject ? PlayerSettings.productName : Path.GetFileName(Path.GetDirectoryName(Application.dataPath)),
                 InternalEditorUtility.GetUnityDisplayVersion(),
                 activeSceneName,
-                GetLicenseType(),
                 BuildPipeline.GetBuildTargetGroupDisplayName(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget)),
                 Coverage.enabled
             );
@@ -502,6 +497,51 @@ namespace UnityEditor
         {
             isPlaying = !isPlaying;
             InternalEditorUtility.RepaintAllViews();
+        }
+
+        [RequiredByNativeCode]
+        static void Internal_RestoreLastOpenedScenes()
+        {
+            using (new EditorPerformanceTracker("Application.RestoreLastOpenedScenes"))
+            {
+                // Unfortunately kLastOpenedScene would more appropriately be named kLastSpecifiedScene as it refers
+                // to the last scene file as specified by the user/as chosen using Double-Click on the scene file in
+                // the file browser.  However this editor preference has been around for a while, the name stays.
+                //
+                // Try to open the last specified scene first
+                var lastOpenedScene = EditorPrefs.GetString(kLastOpenedScene);
+
+                // Open requested scene if any
+                if (!string.IsNullOrEmpty(lastOpenedScene))
+                {
+                    if (EditorSceneManager.CanOpenScene())
+                        EditorSceneManager.OpenScene(lastOpenedScene, OpenSceneMode.Single);
+                    else
+                        InstantiateDefaultScene();
+
+                    // Regardless of the operation outcome, reset last opened scene so that we don't
+                    // force it next time around
+                    EditorPrefs.SetString(kLastOpenedScene, "");
+                }
+                else
+                {
+                    // Open last opened scenes
+                    if (!EditorSceneManager.LoadLastSceneManagerSetup())
+                        InstantiateDefaultScene();
+                }
+            }
+        }
+
+        static void InstantiateDefaultScene()
+        {
+            if (CommandService.Exists("Menu/File/InstantiateDefaultScene"))
+            {
+                CommandService.Execute("Menu/File/InstantiateDefaultScene");
+            }
+            else
+            {
+                EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
+            }
         }
     }
 }

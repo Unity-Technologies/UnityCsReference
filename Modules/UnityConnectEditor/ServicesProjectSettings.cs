@@ -218,6 +218,19 @@ namespace UnityEditor.Connect
             };
         }
 
+        protected static bool ShouldShowFallbackProjectSettings(SingleService singleService)
+        {
+            return singleService.canShowFallbackProjectSettings &&
+                !PackageHelper.IsPackageInstalled(singleService.editorGamePackageName);
+        }
+
+        protected static bool ShouldShowBuiltInProjectSettings(SingleService singleService)
+        {
+            return singleService.canShowBuiltInProjectSettings &&
+                (!PackageHelper.IsCorePackageInstalled() ||
+                !PackageHelper.IsInstalledPackageAtMinimumVersionOrHigher(singleService.packageName, singleService.minimumEditorGamePackageVersion));
+        }
+
         bool IsProjectInfoChanged()
         {
             // All struct fields are private, we check the public interface...
@@ -333,7 +346,7 @@ namespace UnityEditor.Connect
             var dismissBrokenBindNotification = UnityConnect.instance.projectInfo.projectBound
                 || string.IsNullOrEmpty(UnityConnect.instance.projectInfo.projectGUID);
             var dismissUnboundNotification = UnityConnect.instance.projectInfo.projectBound;
-            var dismissCoppaNotification = UnityConnect.instance.projectInfo.COPPA != COPPACompliance.COPPAUndefined;
+            var dismissCoppaNotification = UnityConnect.instance.projectInfo.COPPA.ToCOPPACompliance() != COPPACompliance.COPPAUndefined;
 
             var notifications = NotificationManager.instance.GetNotificationsForTopics(Notification.Topic.ProjectBind);
             foreach (var notification in notifications)
@@ -615,7 +628,7 @@ namespace UnityEditor.Connect
                 if (UnityConnect.instance.projectInfo.projectBound
                     && provider.serviceInstance != null
                     && provider.serviceInstance.requiresCoppaCompliance
-                    && UnityConnect.instance.projectInfo.COPPA == COPPACompliance.COPPAUndefined)
+                    && UnityConnect.instance.projectInfo.COPPA.ToCOPPACompliance() == COPPACompliance.COPPAUndefined)
                 {
                     provider.PublishConfigWarningNotification(k_CoppaRequiredMessage);
                     stateMachine.ProcessEvent(Event.SettingCoppa);

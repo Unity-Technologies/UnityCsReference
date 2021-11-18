@@ -292,9 +292,10 @@ namespace UnityEditorInternal
 
             if (runInformation.rcr != null)
             {
+                var buildFiles = runInformation.BuildReport.GetFiles();
                 linkXmlFiles.Add(WriteMethodsToPreserveBlackList(runInformation));
-                linkXmlFiles.Add(WriteTypesInScenesBlacklist(runInformation));
-                linkXmlFiles.Add(WriteSerializedTypesBlacklist(runInformation));
+                linkXmlFiles.Add(WriteTypesInScenesBlacklist(runInformation, buildFiles));
+                linkXmlFiles.Add(WriteSerializedTypesBlacklist(runInformation, buildFiles));
             }
 
             linkXmlFiles.AddRange(ProcessBuildPipelineGenerateAdditionalLinkXmlFiles(runInformation));
@@ -323,7 +324,7 @@ namespace UnityEditorInternal
                     file.role == "ManagedEngineAPI");
         }
 
-        private static string WriteTypesInScenesBlacklist(UnityLinkerRunInformation runInformation)
+        private static string WriteTypesInScenesBlacklist(UnityLinkerRunInformation runInformation, BuildFile[] buildFiles)
         {
             var items = runInformation.rcr.GetAllManagedTypesInScenes();
 
@@ -336,7 +337,7 @@ namespace UnityEditorInternal
                 //
                 // Filter anything out where the assembly doesn't exist so that UnityLinker can be strict about preservations in link xml files
                 var filename = assemblyTypePair.Key.ToNPath().FileNameWithoutExtension;
-                if (runInformation.BuildReport.files.All(file => !BuildFileMatchesAssembly(file, filename)))
+                if (buildFiles.All(file => !BuildFileMatchesAssembly(file, filename)))
                     continue;
 
                 sb.AppendLine($"\t<assembly fullname=\"{filename}\">");
@@ -353,7 +354,7 @@ namespace UnityEditorInternal
             return path;
         }
 
-        private static string WriteSerializedTypesBlacklist(UnityLinkerRunInformation runInformation)
+        private static string WriteSerializedTypesBlacklist(UnityLinkerRunInformation runInformation, BuildFile[] buildFiles)
         {
             var items = runInformation.rcr.GetAllSerializedClassesAsString();
             var oneOrMoreItemsWritten = false;
@@ -362,7 +363,7 @@ namespace UnityEditorInternal
             foreach (var assemblyTypePair in items.OrderBy(t => t.Key))
             {
                 // Filter anything out where the assembly doesn't exist so that UnityLinker can be strict about preservations in link xml files
-                if (runInformation.BuildReport.files.All(file => !BuildFileMatchesAssembly(file, assemblyTypePair.Key)))
+                if (buildFiles.All(file => !BuildFileMatchesAssembly(file, assemblyTypePair.Key)))
                     continue;
 
                 sb.AppendLine($"\t<assembly fullname=\"{assemblyTypePair.Key}\">");

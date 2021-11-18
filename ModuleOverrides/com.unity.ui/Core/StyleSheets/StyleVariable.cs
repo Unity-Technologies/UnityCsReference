@@ -41,6 +41,8 @@ namespace UnityEngine.UIElements
         private List<StyleVariable> m_Variables;
         private List<int> m_SortedHash;
 
+        public List<StyleVariable> variables => m_Variables;
+
         public void Add(StyleVariable sv)
         {
             // Avoid duplicates. Otherwise the variable context explodes as hierarchy gets deeper.

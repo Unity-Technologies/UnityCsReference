@@ -26,22 +26,6 @@ namespace UnityEditor
         static Dictionary<string, bool> managedToDllType = new Dictionary<string, bool>();
         static BuildPlayerDataExtractor m_BuildPlayerDataExtractor = new BuildPlayerDataExtractor();
 
-        // Check if assmebly internal name doesn't match file name, and show the warning.
-        [RequiredByNativeCode]
-        static public void CheckForAssemblyFileNameMismatch(string assemblyPath)
-        {
-            string fileName = Path.GetFileNameWithoutExtension(assemblyPath);
-            string assemblyName = ExtractInternalAssemblyName(assemblyPath);
-
-            if (string.IsNullOrEmpty(assemblyName))
-                return;
-
-            if (fileName != assemblyName)
-            {
-                Debug.LogWarning("Assembly '" + assemblyName + "' has non matching file name: '" + Path.GetFileName(assemblyPath) + "'. This can cause build issues on some platforms.");
-            }
-        }
-
         static public string[] GetNamesOfAssembliesLoadedInCurrentDomain()
         {
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();
@@ -253,14 +237,11 @@ namespace UnityEditor
             // Add the path to all available precompiled assemblies
             var group = EditorUserBuildSettings.activeBuildTargetGroup;
             var target = EditorUserBuildSettings.activeBuildTarget;
-            var precompiledAssemblies = InternalEditorUtility.GetPrecompiledAssemblies(true, group, target);
+            var precompiledAssemblyPaths = InternalEditorUtility.GetPrecompiledAssemblyPaths();
 
-            HashSet<string> searchPaths = new HashSet<string>();
+            HashSet<string> searchPaths = new HashSet<string>(precompiledAssemblyPaths);
 
-            foreach (var asm in precompiledAssemblies)
-                searchPaths.Add(Path.GetDirectoryName(asm.Path));
-
-            precompiledAssemblies = InternalEditorUtility.GetUnityAssemblies(true, group, target);
+            var precompiledAssemblies = InternalEditorUtility.GetUnityAssemblies(true, group, target);
             foreach (var asm in precompiledAssemblies)
                 searchPaths.Add(Path.GetDirectoryName(asm.Path));
 

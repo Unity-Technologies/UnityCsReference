@@ -7,6 +7,9 @@ using System;
 using UnityEngine.Bindings;
 
 using UnityEngine;
+using UnityEngine.Scripting;
+using Unity.Collections.LowLevel.Unsafe;
+using Unity.Collections;
 
 
 namespace UnityEditor
@@ -30,6 +33,21 @@ namespace UnityEditor
             NonConvex = 1
         }
 
+        public enum QueryFilter
+        {
+            All         = ~0,
+            Box         = 1 << 0,
+            Capsule     = 1 << 1,
+            Cast        = 1 << 2,
+            Check       = 1 << 3,
+            None        = 0,
+            Overlap     = 1 << 4,
+            Ray         = 1 << 5,
+            ShowQueries = 1 << 6,
+            Sphere      = 1 << 7,
+        }
+
+        internal extern static bool isDebuggerActive { get; set; }
         public extern static bool devOptions { get; set; }
         public extern static int dirtyCount { get; }
         [Obsolete("Enum PhysicsVisualizationSettings.FilterWorkflow has been deprecated.", true)]
@@ -52,6 +70,17 @@ namespace UnityEditor
         public extern static float inertiaTensorScale { get; set; }
         public extern static float dotAlpha { get; set; }
         public extern static bool forceDot { get; set; }
+        public extern static Color contactColor { get; set; }
+        public extern static Color contactSeparationColor { get; set; }
+        public extern static Color contactImpulseColor { get; set; }
+        public extern static bool showContacts { get; set; }
+        public extern static bool showContactImpulse { get; set; }
+        public extern static bool showContactSeparation { get; set; }
+        public extern static bool showAllContacts { get; set; }
+        public extern static bool useContactFiltering { get; set; }
+        public extern static bool useVariedContactColors { get; set; }
+        public extern static Color queryColor { get; set; }
+        public extern static int maxNumberOfQueries { get; set; }
 
         public extern static void Reset();
         public extern static bool GetShowStaticColliders();
@@ -82,11 +111,16 @@ namespace UnityEditor
         public extern static void SetShowTerrainColliders(bool show);
         public extern static int GetShowPhysicsSceneMask();
         public extern static void SetShowPhysicsSceneMask(int mask);
+        public extern static int GetShowUnitySceneMask();
+        public extern static void SetShowUnitySceneMask(int mask);
+        public extern static bool GetQueryFilterState(QueryFilter filter);
+        public extern static void SetQueryFilterState(QueryFilter filter, bool value);
         public extern static void InitDebugDraw();
         public extern static void DeinitDebugDraw();
         public extern static void ClearMouseHighlight();
         public extern static bool HasMouseHighlight();
         public extern static void UpdateMouseHighlight(Vector2 screenPos);
+        internal extern static void UpdateMouseHighlight_Internal(Vector2 screenPos, [NotNull] Camera providedCamera);
         public extern static GameObject PickClosestGameObject([NotNull] Camera cam, int layers, Vector2 position, GameObject[] ignore, GameObject[] filter, out int materialIndex);
 
         [NativeName("CollectCollidersForDebugDraw")]
@@ -94,6 +128,9 @@ namespace UnityEditor
 
         public static void SetShowForAllFilters(bool selected)
         {
+            SetShowPhysicsSceneMask(selected ? ~0 : 0);
+            SetShowUnitySceneMask(selected ? ~0 : 0);
+
             const int kMaxLayers = 32;
             for (int i = 0; i < kMaxLayers; i++)
                 SetShowCollisionLayer(i, selected);
@@ -111,6 +148,11 @@ namespace UnityEditor
             SetShowMeshColliders(MeshColliderType.Convex, selected);
             SetShowMeshColliders(MeshColliderType.NonConvex, selected);
             SetShowTerrainColliders(selected);
+
+            showContacts = selected;
+            showAllContacts = selected;
+            showContactImpulse = selected;
+            useContactFiltering = !selected;
         }
 
         [Obsolete("Enum PhysicsVisualizationSettings.FilterWorkflow has been deprecated. Use APIs without this argument instead", true)]
@@ -168,6 +210,123 @@ namespace UnityEditor
         public static void SetShowPhysicsSceneMask(FilterWorkflow filterWorkflow, int mask) {}
         [Obsolete("Enum PhysicsVisualizationSettings.FilterWorkflow has been deprecated. Use APIs without this argument instead", true)]
         public static void SetShowForAllFilters(FilterWorkflow filterWorkflow, bool selected) {}
+    }
+
+    [NativeHeader("Modules/Physics/PhysicsDebugDraw.h")]
+    internal static class PhysicsDebugDraw
+    {
+        [FreeFunction("PhysicsDebugDraw::GetPooledQueries")]
+        internal extern static void GetPooledQueries();
+
+        [FreeFunction("PhysicsDebugDraw::GetPooledContacts")]
+        internal extern static void GetPooledContacts();
+
+        [FreeFunction("PhysicsDebugDraw::ClearAllPools")]
+        internal extern static void ClearAllPools();
+
+        [FreeFunction("PhysicsDebugDraw::UpdateFilterConditionally")]
+        internal extern static void UpdateFilterConditionally();
+
+        [FreeFunction("PhysicsDebugDraw::UpdateFilter")]
+        internal extern static void UpdateFilter();
+
+        [FreeFunction("PhysicsDebugDraw::IsContactVisualised")]
+        internal extern static bool IsContactVisualised(Collider collider);
+
+        internal static event Action<NativeArray<VisContactPoint>> OnDrawPooledContacts;
+        internal static event Action<NativeArray<Query>> OnRetrievePooledQueries;
+        internal static event Action BeforeSimulate;
+
+        [RequiredByNativeCode]
+        private static unsafe void OnReportPooledContacts(IntPtr buffer, int count)
+        {
+            var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<VisContactPoint>(buffer.ToPointer(), count, Allocator.None);
+
+            var safety = AtomicSafetyHandle.Create();
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, safety);
+
+            if (OnDrawPooledContacts != null)
+                OnDrawPooledContacts(array);
+
+            AtomicSafetyHandle.Release(safety);
+        }
+
+        [RequiredByNativeCode]
+        private static unsafe void OnReportPooledQueries(IntPtr buffer, int count)
+        {
+            var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Query>(buffer.ToPointer(), count, Allocator.None);
+
+            var safety = AtomicSafetyHandle.Create();
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, safety);
+
+            if (OnRetrievePooledQueries != null)
+                OnRetrievePooledQueries(array);
+
+            AtomicSafetyHandle.Release(safety);
+        }
+
+        [RequiredByNativeCode]
+        private static void InvokeBeforeSimulate()
+        {
+            if (BeforeSimulate != null)
+                BeforeSimulate();
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct Query : IEquatable<Query>
+        {
+            public PhysicsVisualizationSettings.QueryFilter filter;
+            public Vector3 v1;
+            public Vector3 v2;
+            public Quaternion q;
+            public float r;
+            // If this is a cast
+            public float distance;
+            public Vector3 direction;
+
+            public override bool Equals(object obj)
+            {
+                return obj is Query query && Equals(query);
+            }
+
+            public bool Equals(Query other)
+            {
+                return filter == other.filter &&
+                       v1.Equals(other.v1) &&
+                       v2.Equals(other.v2) &&
+                       q.Equals(other.q) &&
+                       r == other.r &&
+                       distance == other.distance &&
+                       direction.Equals(other.direction);
+            }
+
+            public override int GetHashCode()
+            {
+                int hashCode = 1232828845;
+                hashCode = hashCode * -1521134295 + filter.GetHashCode();
+                hashCode = hashCode * -1521134295 + v1.GetHashCode();
+                hashCode = hashCode * -1521134295 + v2.GetHashCode();
+                hashCode = hashCode * -1521134295 + q.GetHashCode();
+                hashCode = hashCode * -1521134295 + r.GetHashCode();
+                hashCode = hashCode * -1521134295 + distance.GetHashCode();
+                hashCode = hashCode * -1521134295 + direction.GetHashCode();
+                return hashCode;
+            }
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct VisContactPoint
+        {
+            public Vector3 point;
+            public Vector3 normal;
+            public Vector3 impulse;
+            public float separation;
+            public int thisColliderInstanceID;
+            public int otherColliderInstanceID;
+
+            public Collider thisCollider { get { return ContactPoint.GetColliderByInstanceID(thisColliderInstanceID); } }
+            public Collider otherCollider { get { return ContactPoint.GetColliderByInstanceID(otherColliderInstanceID); } }
+        };
     }
 }
 

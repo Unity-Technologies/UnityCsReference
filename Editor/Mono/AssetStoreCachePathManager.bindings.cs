@@ -9,10 +9,12 @@ namespace UnityEditorInternal
     [NativeHeader("Editor/Src/AssetStore/AssetStoreCachePathManager.h")]
     internal partial class AssetStoreCachePathManager
     {
+        [FreeFunction("AssetStoreCachePathManager::GetDefaultConfig")]
+        public static extern CachePathConfig GetDefaultConfig();
+
         [FreeFunction("AssetStoreCachePathManager::GetConfig")]
         public static extern CachePathConfig GetConfig();
 
-        // Int return the status of setting the config
         [FreeFunction("AssetStoreCachePathManager::SetConfig")]
         public static extern ConfigStatus SetConfig(string newPath);
 

@@ -13,6 +13,7 @@ namespace UnityEditor
 {
     internal class AvatarPreview
     {
+        const string kDefaultAvatarPreviewOption = "DefaultAvatarPreviewOption";
         const string kIkPref = "AvatarpreviewShowIK";
         const string k2DPref = "Avatarpreview2D";
         const string kReferencePref = "AvatarpreviewShowReference";
@@ -724,7 +725,7 @@ namespace UnityEditor
             SetPreviewCharacterEnabled(true, m_ShowReference);
             foreach (var previewable in m_Previewables)
                 previewable.OnPreviewUpdate();
-            previewUtility.Render(m_Option != PreviewPopupOptions.DefaultModel);
+            previewUtility.Render(option != PreviewPopupOptions.DefaultModel);
             SetPreviewCharacterEnabled(false, false);
 
             // Texture offset - negative in order to compensate the floor movement.
@@ -877,7 +878,12 @@ namespace UnityEditor
             );
         }
 
-        enum PreviewPopupOptions { Auto, DefaultModel, Other }
+        enum PreviewPopupOptions : int
+        {
+            Auto = 0,
+            DefaultModel = 1,
+            Other = 2
+        }
 
         protected enum ViewTool { None, Pan, Zoom, Orbit }
         protected ViewTool m_ViewTool = ViewTool.None;
@@ -1112,21 +1118,32 @@ namespace UnityEditor
                 EditorGUIUtility.AddCursorRect(previewRect, currentCursor);
         }
 
-        private PreviewPopupOptions m_Option;
+        private PreviewPopupOptions option
+        {
+            get => (PreviewPopupOptions) EditorPrefs.GetInt(kDefaultAvatarPreviewOption);
+            set => EditorPrefs.SetInt(kDefaultAvatarPreviewOption, (int)value);
+        }
+
         void SetPreviewAvatarOption(object obj)
         {
-            m_Option = (PreviewPopupOptions)obj;
-            if (m_Option == PreviewPopupOptions.Auto)
+            var newSelectedOption = (PreviewPopupOptions)obj;
+
+            if (option != newSelectedOption)
             {
-                SetPreview(null);
-            }
-            else if (m_Option == PreviewPopupOptions.DefaultModel)
-            {
-                SetPreview(GetHumanoidFallback());
-            }
-            else if (m_Option == PreviewPopupOptions.Other)
-            {
-                ObjectSelectorOperation.Start(this);
+                option = newSelectedOption;
+
+                switch (option)
+                {
+                    case PreviewPopupOptions.Auto:
+                        SetPreview(null);
+                        break;
+                    case PreviewPopupOptions.DefaultModel:
+                        SetPreview(GetHumanoidFallback());
+                        break;
+                    case PreviewPopupOptions.Other:
+                        ObjectSelectorOperation.Start(this);
+                        break;
+                }
             }
         }
 

@@ -62,7 +62,7 @@ namespace UnityEditor.Search
             {
                 try
                 {
-                    return UnityEditor.ExpressionEvaluator.Evaluate(expression, out result);
+                    return UnityEngine.ExpressionEvaluator.Evaluate(expression, out result);
                 }
                 catch (Exception)
                 {

@@ -618,6 +618,13 @@ namespace UnityEngine.UIElements
             get => (m_Flags & VisualElementFlags.WorldBoundingBoxDirty) == VisualElementFlags.WorldBoundingBoxDirty;
             set => m_Flags = value ? m_Flags | VisualElementFlags.WorldBoundingBoxDirty : m_Flags & ~VisualElementFlags.WorldBoundingBoxDirty;
         }
+
+        private const VisualElementFlags worldBoundingBoxDirtyDependencies =
+            VisualElementFlags.WorldBoundingBoxDirty | VisualElementFlags.BoundingBoxDirty |
+            VisualElementFlags.WorldTransformDirty;
+
+        internal bool isWorldBoundingBoxOrDependenciesDirty => (m_Flags & worldBoundingBoxDirtyDependencies) != 0;
+
         private Rect m_WorldBoundingBox;
 
         internal Rect boundingBox
@@ -638,7 +645,7 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                if (isWorldBoundingBoxDirty || isBoundingBoxDirty)
+                if (isWorldBoundingBoxOrDependenciesDirty)
                 {
                     UpdateWorldBoundingBox();
                     isWorldBoundingBoxDirty = false;
@@ -738,6 +745,12 @@ namespace UnityEngine.UIElements
             set => m_Flags = value ? m_Flags | VisualElementFlags.WorldTransformInverseDirty : m_Flags & ~VisualElementFlags.WorldTransformInverseDirty;
         }
 
+        private const VisualElementFlags worldTransformInverseDirtyDependencies =
+            VisualElementFlags.WorldTransformInverseDirty | VisualElementFlags.WorldTransformDirty;
+
+        internal bool isWorldTransformInverseOrDependenciesDirty =>
+            (m_Flags & worldTransformInverseDirtyDependencies) != 0;
+
         private Matrix4x4 m_WorldTransformCache = Matrix4x4.identity;
         private Matrix4x4 m_WorldTransformInverseCache = Matrix4x4.identity;
 
@@ -776,7 +789,7 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                if (isWorldTransformDirty || isWorldTransformInverseDirty)
+                if (isWorldTransformInverseOrDependenciesDirty)
                     UpdateWorldTransformInverse();
                 return ref m_WorldTransformInverseCache;
             }
@@ -785,7 +798,7 @@ namespace UnityEngine.UIElements
         internal void UpdateWorldTransform()
         {
             // If we are during a layout we don't want to remove the dirty transform flag
-            // since this could lead to invalid computed transform (see ScopeContentainer.DoMeasure)
+            // since this could lead to invalid computed transform (see ScopeContentContainer.DoMeasure)
             if (elementPanel != null && !elementPanel.duringLayoutPhase)
             {
                 isWorldTransformDirty = false;
@@ -1004,6 +1017,43 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal int containedPointerIds { get; private set; }
+
+        void UpdateHoverPseudoState()
+        {
+            // An element has the hover pseudoState if and only if it has at least one contained pointer which is
+            // captured by itself or no element.
+
+            // With multi-finger touch events, there can be multiple unrelated elements hovered at once, or a single
+            // element hovered by multiple fingers. In that case, the hover pseudoState for a given element will match
+            // a logical OR of the hover state of each finger on that element.
+
+            if (containedPointerIds == 0)
+            {
+                pseudoStates &= ~PseudoStates.Hover;
+                return;
+            }
+
+            bool hovered = false;
+            for (var pointerId = 0; pointerId < PointerId.maxPointers; pointerId++)
+            {
+                if ((containedPointerIds & (1 << pointerId)) != 0)
+                {
+                    var capturingElement = panel?.GetCapturingElement(pointerId);
+                    if (capturingElement == null || capturingElement == this)
+                    {
+                        hovered = true;
+                        break;
+                    }
+                }
+            }
+
+            if (hovered)
+                pseudoStates |= PseudoStates.Hover;
+            else
+                pseudoStates &= ~PseudoStates.Hover;
+        }
+
         /// <summary>
         /// Determines if this element can be pick during mouseEvents or <see cref="IPanel.Pick"/> queries.
         /// </summary>
@@ -1118,7 +1168,8 @@ namespace UnityEngine.UIElements
         }
 
         [EventInterest(typeof(MouseOverEvent), typeof(MouseOutEvent), typeof(PointerEnterEvent),
-            typeof(PointerLeaveEvent), typeof(BlurEvent), typeof(FocusEvent))]
+            typeof(PointerLeaveEvent), typeof(PointerCaptureEvent), typeof(PointerCaptureOutEvent),
+            typeof(BlurEvent), typeof(FocusEvent))]
         protected override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
@@ -1135,16 +1186,27 @@ namespace UnityEngine.UIElements
             }
             else if (evt.eventTypeId == PointerEnterEvent.TypeId())
             {
-                var capturingElement = panel?.GetCapturingElement(((IPointerEvent)evt).pointerId);
-                if (capturingElement == null || capturingElement == this)
-                    pseudoStates |= PseudoStates.Hover;
+                containedPointerIds |= (1 << ((IPointerEvent)evt).pointerId);
+                UpdateHoverPseudoState();
             }
             else if (evt.eventTypeId == PointerLeaveEvent.TypeId())
             {
-                // With multi-finger touch events, there can be multiple unrelated elements hovered at once, or a single
-                // element hovered by multiple fingers. In that case, the hover pseudoState will match the last finger
-                // to have entered or left the element.
-                pseudoStates &= ~PseudoStates.Hover;
+                containedPointerIds &= ~(1 << ((IPointerEvent)evt).pointerId);
+                UpdateHoverPseudoState();
+            }
+            else if (evt.eventTypeId == PointerCaptureEvent.TypeId() ||
+                     evt.eventTypeId == PointerCaptureOutEvent.TypeId())
+            {
+                // Pointer capture changes can influence if an element is hovered or not.
+                UpdateHoverPseudoState();
+
+                // Make sure to also reevaluate the hover state of the elements under pointer.
+                var elementUnderPointer =
+                    elementPanel?.GetTopElementUnderPointer(((IPointerCaptureEventInternal) evt).pointerId);
+                for (var ve = elementUnderPointer; ve != null && ve != this; ve = ve.parent)
+                {
+                    ve.UpdateHoverPseudoState();
+                }
             }
             else if (evt.eventTypeId == BlurEvent.TypeId())
             {

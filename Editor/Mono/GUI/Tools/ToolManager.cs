@@ -136,27 +136,36 @@ namespace UnityEditor.EditorTools
             return EditorToolManager.activeToolContext == context;
         }
 
-        static IEnumerable<Type> allContextsExceptGameObject
+        internal static IEnumerable<Type> allContextsExceptGameObject
         {
             get
             {
+                foreach(var ctx in EditorToolManager.componentContexts)
+                    yield return ctx.editorType;
+
                 foreach(var ctx in EditorToolUtility.availableGlobalToolContexts)
                     if (ctx.editor != typeof(GameObjectToolContext))
                         yield return ctx.editor;
-
-                foreach(var ctx in EditorToolManager.componentContexts)
-                    yield return ctx.editorType;
             }
         }
 
+        internal static Type GetLastContextType()
+        {
+            var lastContext = EditorToolManager.lastCustomContext;
+            if (lastContext != null && lastContext != typeof(GameObjectToolContext))
+                return lastContext;
+
+            return allContextsExceptGameObject.FirstOrDefault();
+        }
+
         [Shortcut("Tools/Enter GameObject Mode", typeof(ToolShortcutContext))]
-        static void ExitToolContext()
+        internal static void ExitToolContext()
         {
             SetActiveContext<GameObjectToolContext>();
         }
 
         [Shortcut("Tools/Cycle Tool Modes", typeof(ToolShortcutContext))]
-        static void CycleToolContexts()
+        internal static void CycleToolContexts()
         {
             if (EditorToolUtility.toolContextsInProject < 2)
                 return;

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-
 using UnityEditor.Collaboration;
 
 namespace UnityEditor.Connect
@@ -14,11 +13,17 @@ namespace UnityEditor.Connect
         public override string title { get; }
         public override string description { get; }
         public override string pathTowardIcon { get; }
-        public override string projectSettingsPath { get; }
+        public override string projectSettingsPath { get; } = "Project/Services/Collaborate";
         public override string settingsProviderClassName => nameof(CollabProjectSettings);
         public override bool displayToggle { get; }
         public override Notification.Topic notificationTopic => Notification.Topic.CollabService;
         public override string packageName { get; }
+
+        public override string editorGamePackageName { get; } = "com.unity.collab-proxy";
+        public override bool canShowFallbackProjectSettings { get; } = true;
+        public override bool canShowBuiltInProjectSettings { get; } = false;
+        public override string minimumEditorGamePackageVersion { get; } = "1.0.0";
+
         public override string serviceFlagName { get; }
         public override bool shouldSyncOnProjectRebind => true;
 
@@ -56,7 +61,6 @@ namespace UnityEditor.Connect
             title = L10n.Tr("Collaborate");
             description = L10n.Tr("Create together seamlessly");
             pathTowardIcon = @"Builtin Skins\Shared\Images\ServicesWindow-ServiceIcon-Collab.png";
-            projectSettingsPath = "Project/Services/Collaborate";
             displayToggle = true;
             packageName = "com.unity.collab-proxy";
             serviceFlagName = "collab";

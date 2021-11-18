@@ -549,6 +549,8 @@ whereas the maximum supported resolution is {k_MaximumResolution}. The size has 
                 t =>
                 {   // before blit -- setup layer mask in the material
                     SplatmapUserData userData = GetTerrainLayerUserData(t);
+                    if (userData == null)
+                        return;
                     copyTerrainLayerMaterial.SetVector("_LayerMask", layerMasks[userData.channelIndex]);
                 });
         }

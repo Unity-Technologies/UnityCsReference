@@ -2,17 +2,22 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine.UIElements;
+using System.Collections.Generic;
 
 namespace UnityEditor.Overlays
 {
-    interface ICreateHorizontalToolbar
+    public interface ICreateHorizontalToolbar
     {
-        VisualElement CreateHorizontalToolbarContent();
+        OverlayToolbar CreateHorizontalToolbarContent();
     }
 
-    interface ICreateVerticalToolbar
+    public interface ICreateVerticalToolbar
     {
-        VisualElement CreateVerticalToolbarContent();
+        OverlayToolbar CreateVerticalToolbarContent();
+    }
+
+    public interface ICreateToolbar
+    {
+        public IEnumerable<string> toolbarElements { get; }
     }
 }

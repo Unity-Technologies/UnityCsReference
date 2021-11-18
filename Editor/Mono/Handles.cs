@@ -543,15 +543,28 @@ namespace UnityEditor
             return UnityEditorInternal.Slider1D.Do(controlID, position, offset, direction, direction, size, capFunction, snap);
         }
 
+        [Obsolete("Rotation parameter is obsolete. (UnityUpgradable) -> !1")]
         public static Vector3 FreeMoveHandle(Vector3 position, Quaternion rotation, float size, Vector3 snap, CapFunction capFunction)
         {
             int id = GUIUtility.GetControlID(s_FreeMoveHandleHash, FocusType.Passive);
             return UnityEditorInternal.FreeMove.Do(id, position, rotation, size, snap, capFunction);
         }
 
+        [Obsolete("Rotation parameter is obsolete. (UnityUpgradable) -> !2")]
         public static Vector3 FreeMoveHandle(int controlID, Vector3 position, Quaternion rotation, float size, Vector3 snap, CapFunction capFunction)
         {
             return UnityEditorInternal.FreeMove.Do(controlID, position, rotation, size, snap, capFunction);
+        }
+
+        public static Vector3 FreeMoveHandle(Vector3 position, float size, Vector3 snap, CapFunction capFunction)
+        {
+            int id = GUIUtility.GetControlID(s_FreeMoveHandleHash, FocusType.Passive);
+            return UnityEditorInternal.FreeMove.Do(id, position, size, snap, capFunction);
+        }
+
+        public static Vector3 FreeMoveHandle(int controlID, Vector3 position, float size, Vector3 snap, CapFunction capFunction)
+        {
+            return UnityEditorInternal.FreeMove.Do(controlID, position, size, snap, capFunction);
         }
 
         // Make a single-float draggable handle.

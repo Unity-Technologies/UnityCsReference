@@ -27,11 +27,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Progress = progress;
             m_VersionList = new PlaceholderVersionList(new PlaceholderPackageVersion(uniqueId, uniqueId, displayName, tag, error));
             m_Errors = new List<UIError>();
+            LinkPackageAndVersions();
         }
 
         public override IPackage Clone()
         {
-            return (IPackage)MemberwiseClone();
+            var clone = (BasePackage)MemberwiseClone();
+            clone.LinkPackageAndVersions();
+            return clone;
         }
     }
 }

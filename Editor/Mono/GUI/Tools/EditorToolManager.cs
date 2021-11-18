@@ -45,6 +45,8 @@ namespace UnityEditor.EditorTools
 
         internal static int availableComponentContextCount => instance.m_ComponentContexts.Count;
 
+        internal static IEnumerable<Type> additionalContextToolTypesCache = Enumerable.Empty<Type>();
+
         [SerializeField]
         EditorToolContext m_ActiveToolContext;
 
@@ -271,11 +273,15 @@ namespace UnityEditor.EditorTools
             ActiveEditorTracker.editorTrackerRebuilt += TrackerRebuilt;
             Selection.selectedObjectWasDestroyed += SelectedObjectWasDestroyed;
             AssemblyReloadEvents.beforeAssemblyReload += BeforeAssemblyReload;
+            ToolManager.activeContextChanged += ActiveContextChanged;
 
             if (activeTool != null)
                 EditorApplication.delayCall += activeTool.OnActivated;
-            if (activeToolContext != null)
+            if(activeToolContext != null)
+            {
                 EditorApplication.delayCall += activeToolContext.OnActivated;
+                ActiveContextChanged();
+            }
         }
 
         void OnDisable()
@@ -284,6 +290,7 @@ namespace UnityEditor.EditorTools
             ActiveEditorTracker.editorTrackerRebuilt -= TrackerRebuilt;
             Selection.selectedObjectWasDestroyed -= SelectedObjectWasDestroyed;
             AssemblyReloadEvents.beforeAssemblyReload -= BeforeAssemblyReload;
+            ToolManager.activeContextChanged -= ActiveContextChanged;
         }
 
         void BeforeAssemblyReload()
@@ -293,6 +300,11 @@ namespace UnityEditor.EditorTools
 
             if (m_ActiveToolContext != null)
                 m_ActiveToolContext.OnWillBeDeactivated();
+        }
+
+        void ActiveContextChanged()
+        {
+            additionalContextToolTypesCache = activeToolContext.GetAdditionalToolTypes();
         }
 
         // used by tests
@@ -466,6 +478,23 @@ namespace UnityEditor.EditorTools
             {
                 current.OnToolGUI(window);
             }
+
+            var evt = Event.current;
+            if(evt.type == EventType.KeyDown && evt.keyCode == KeyCode.Escape)
+            {
+                if(!Tools.viewToolActive
+                    && !EditorToolUtility.IsManipulationTool(EditorToolUtility.GetEnumWithEditorTool(current, instance.m_ActiveToolContext))
+                    && additionalContextToolTypesCache.All(toolType => toolType != current.GetType()))
+                {
+                    RestorePreviousPersistentTool();
+                    evt.Use();
+                }
+                else
+                {
+                    //if is in a Manipulation or additional tool leaves the current context to return to GameObject Context
+                    ToolManager.SetActiveContext<GameObjectToolContext>();
+                }
+            }
         }
 
         static bool IsCustomEditorTool(EditorTool tool)
@@ -577,8 +606,8 @@ namespace UnityEditor.EditorTools
                 if (!searchLockedInspectors && customEditorTool.lockedInspector)
                     continue;
 
-                if (predicate(customEditorTool))
-                    return customEditorTool.GetEditor<EditorTool>();
+                if (predicate(customEditorTool) && customEditorTool.editor is EditorTool tool && tool.IsAvailable())
+                    return tool;
             }
 
             return null;
@@ -589,7 +618,13 @@ namespace UnityEditor.EditorTools
         // case you can use `GetComponentTools(x => x.inspector == editor)`.
         public static void GetComponentToolsForSharedTracker(List<EditorTool> list)
         {
-            GetComponentTools(x => x.typeAssociation.targetContext == null, list, false);
+            var ctx = activeToolContext.GetType();
+
+            GetComponentTools(x =>
+            {
+                var target_ctx = x.typeAssociation.targetContext;
+                return (target_ctx == null || target_ctx == ctx) && x.editorToolScope == ComponentEditor.EditorToolScope.ComponentTool;
+            }, list, false);
         }
 
         // Used by tests.
@@ -610,8 +645,8 @@ namespace UnityEditor.EditorTools
                 if (!searchLockedInspectors && customEditorTool.lockedInspector)
                     continue;
 
-                if (predicate(customEditorTool))
-                    list.Add(customEditorTool.GetEditor<EditorTool>());
+                if (predicate(customEditorTool) && customEditorTool.editor is EditorTool tool && tool.IsAvailable())
+                    list.Add(tool);
             }
         }
 

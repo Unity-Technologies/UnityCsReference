@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using Object = UnityEngine.Object;
+using Debug = UnityEngine.Debug;
 using UnityEngine.Bindings;
 using System;
 using System.ComponentModel;
@@ -682,7 +683,12 @@ namespace UnityEditor
         // Enables a development build.
         public static extern bool development { get; set; }
 
-        public static extern Build.Il2CppCodeGeneration il2CppCodeGeneration { get; set; }
+        [Obsolete("Use PlayerSettings.SetIl2CppCodeGeneration and PlayerSettings.GetIl2CppCodeGeneration instead.", true)]
+        public static Build.Il2CppCodeGeneration il2CppCodeGeneratione
+        {
+            get { return Build.Il2CppCodeGeneration.OptimizeSpeed; }
+            set { Debug.LogWarning("EditorUserBuildSettings.il2CppCodeGeneratione is obsolete. Please use PlayerSettings.SetIl2CppCodeGeneration and PlayerSettings.GetIl2CppCodeGeneration instead." ); }
+        }
 
         [Obsolete("Building with pre-built Engine option is no longer supported.", true)]
         public static bool webGLUsePreBuiltUnityEngine

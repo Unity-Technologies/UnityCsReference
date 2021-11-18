@@ -95,7 +95,9 @@ namespace UnityEditor
             return mods;
         }
 
-        public bool hasModifications { get; set; }
+        public bool hasModifications { get; private set; }
+
+        public bool hasApplicableModifications { get; private set; }
 
         public bool IsValidTargetPrefabInstance()
         {
@@ -182,8 +184,11 @@ namespace UnityEditor
             }
         }
 
-        internal void ComparisonPopupClosed(Object instanceObject)
+        internal void ComparisonPopupClosed(Object instanceObject, bool ownerNeedsRefresh)
         {
+            if(ownerNeedsRefresh)
+                ReloadOverridesDisplay();
+
             if (instanceObject != null && instanceObject is GameObject)
                 SyncTreeViewItemNameForGameObject((GameObject)instanceObject);
         }
@@ -217,9 +222,29 @@ namespace UnityEditor
 
             var hiddenRoot = new TreeViewItem { id = 0, depth = -1, displayName = "Hidden Root" };
             var idSequence = new IdSequence();
+
+            hasApplicableModifications = false;
             hasModifications = AddTreeViewItemRecursive(hiddenRoot, m_PrefabInstanceRoot, instanceIDToPrefabOverridesMap, idSequence);
             if (!hasModifications)
                 hiddenRoot.AddChild(new TreeViewItem { id = 1, depth = 0, displayName = "No Overrides" });
+            else
+            {
+                bool CanAnyPropertiesBeApplied()
+                {
+                    if (m_AllModifications.addedComponents.Count != 0 || m_AllModifications.removedComponents.Count != 0 || m_AllModifications.addedGameObjects.Count != 0)
+                        return true;
+
+                    foreach (var objectOverride in m_AllModifications.objectOverrides)
+                    {
+                        if (PrefabUtility.HasApplicableObjectOverrides(objectOverride.instanceObject, false))
+                            return true;
+                    }
+
+                    return false;
+                }
+
+                hasApplicableModifications = CanAnyPropertiesBeApplied();
+            }
 
             if (m_Debug)
                 AddDebugItems(hiddenRoot, idSequence);
@@ -555,6 +580,7 @@ namespace UnityEditor
             Vector2 m_PreviewSize = new Vector2(600f, 0);
             Vector2 m_Scroll;
             bool m_RenderOverlayAfterResizeChange;
+            bool m_OwnerNeedsRefresh;
 
             static class Styles
             {
@@ -617,7 +643,7 @@ namespace UnityEditor
             public override void OnClose()
             {
                 Undo.postprocessModifications -= RecheckOverrideStatus;
-                m_Owner.ComparisonPopupClosed(m_Instance);
+                m_Owner.ComparisonPopupClosed(m_Instance, m_OwnerNeedsRefresh);
 
                 base.OnClose();
                 if (m_SourceEditor != null)
@@ -803,11 +829,8 @@ namespace UnityEditor
 
             void UpdateAndClose()
             {
-                if (editorWindow != null)
-                {
-                    editorWindow.Close();
-                    m_Owner.ReloadOverridesDisplay();
-                }
+                m_OwnerNeedsRefresh = true;
+                editorWindow?.Close();
             }
 
             float DrawEditor(Rect rect, Editor editor, bool disabled, EditorGUIUtility.ComparisonViewMode comparisonViewMode)
@@ -832,6 +855,7 @@ namespace UnityEditor
                         }
                         else
                         {
+                            EditorGUI.BeginChangeCheck();
                             if (editor.target is GameObject)
                             {
                                 editor.DrawHeader();
@@ -845,6 +869,9 @@ namespace UnityEditor
                                 EditorGUILayout.Space();
                                 EditorGUILayout.EndVertical();
                             }
+
+                            if (EditorGUI.EndChangeCheck())
+                                m_OwnerNeedsRefresh = true;
                         }
                     }
                 }

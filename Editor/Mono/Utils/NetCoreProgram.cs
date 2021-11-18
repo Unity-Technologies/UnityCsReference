@@ -24,13 +24,10 @@ namespace UnityEditor.Scripting
                 CreateNoWindow = true,
                 FileName = DotNetMuxerPath.ToString(SlashMode.Native),
                 WorkingDirectory = new NPath(Application.dataPath).Parent.ToString(SlashMode.Native),
-                EnvironmentVariables =
-                {
-                    // Suppress using a user installed dotnet version.
-                    { "DOTNET_ROOT", DotNetRuntimePath.ToString(SlashMode.Native) },
-                    { "DOTNET_MULTILEVEL_LOOKUP", "0" },
-                }
             };
+            _process.StartInfo.EnvironmentVariables["DOTNET_ROOT"] = DotNetRuntimePath.ToString(SlashMode.Native); // if unity is run from a process where it is already set, the
+            // initialization expression we used to have would fail
+            _process.StartInfo.EnvironmentVariables["DOTNET_MULTILEVEL_LOOKUP"] = "0";
             setupStartInfo?.Invoke(_process.StartInfo);
         }
     }

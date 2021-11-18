@@ -10,14 +10,19 @@ namespace UnityEditor.PackageManager.UI
     internal struct PackageSelectionArgs
     {
         /// <summary>
-        /// The selected package
+        /// The selected package, it will be set to null when there are multiple packages selected
         /// </summary>
         public IPackage package { get; internal set; }
 
         /// <summary>
-        /// The selected package version
+        /// The selected package version, it will be set to null when there are multiple packages selected
         /// </summary>
         public IPackageVersion packageVersion { get; internal set; }
+
+        /// <summary>
+        /// The selected package versions
+        /// </summary>
+        public IPackageVersion[] versions { get; internal set; }
 
         /// <summary>
         /// The handle to the Package Manager window

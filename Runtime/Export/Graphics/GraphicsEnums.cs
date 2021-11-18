@@ -772,6 +772,8 @@ namespace UnityEngine
                 RGBA_ASTC8X8_UFloat = 148,
                 RGBA_ASTC10X10_UFloat = 149,
                 RGBA_ASTC12X12_UFloat = 150,
+
+                D16_UNorm_S8_UInt = 151,
             }
             // Match RayTracingMode on C++ side
             public enum RayTracingMode

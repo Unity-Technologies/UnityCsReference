@@ -13,9 +13,9 @@ namespace UnityEngine.UIElements
 
         public void DispatchEvent(EventBase evt, IPanel panel)
         {
-            if (evt.target != null)
+            if (evt.target is VisualElement ve && ve.panel == panel)
             {
-                evt.propagateToIMGUI = evt.target is IMGUIContainer;
+                evt.propagateToIMGUI = ve.isIMGUIContainer;
                 EventDispatchUtilities.PropagateEvent(evt);
             }
             else

@@ -64,6 +64,7 @@ namespace UnityEditor.UIElements
             panelDebug = new PanelDebug(this);
             standardShader = EditorShader;
             updateMaterial += OnUpdateMaterial;
+            uiElementsBridge = new EditorUIElementsBridge();
         }
 
         static void OnUpdateMaterial(Material mat)

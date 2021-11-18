@@ -115,7 +115,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 EditorApplication.delayCall += () =>
                 {
                     OnError(new UIError(UIErrorCode.UpmError, "UPM server is not running"));
-                    CancelInternal();
+                    Cancel();
                 };
                 return;
             }
@@ -133,7 +133,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             EditorApplication.update += Progress;
         }
 
-        protected void CancelInternal()
+        public void Cancel()
         {
             OnFinalize();
             m_Request = null;

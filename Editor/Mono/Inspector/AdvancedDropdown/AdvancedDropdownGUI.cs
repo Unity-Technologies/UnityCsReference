@@ -59,7 +59,7 @@ namespace UnityEditor.IMGUI.Controls
             //we need to pretend we have an icon to calculate proper width in case
             if (content.image == null)
                 content.image = Texture2D.whiteTexture;
-            var rect = GUILayoutUtility.GetRect(content, lineStyle, GUILayout.ExpandWidth(true));
+            var rect = GetItemRect(content);
             content.image = imgTemp;
 
             if (!string.IsNullOrEmpty(content.tooltip) && rect.Contains(Event.current.mousePosition) &&
@@ -88,7 +88,8 @@ namespace UnityEditor.IMGUI.Controls
                 rect.width -= iconSize.x + 1;
             }
             EditorGUI.BeginDisabled(!enabled);
-            lineStyle.Draw(rect, content, false, false, selected, selected);
+
+            DrawItemContent(item, rect, content, false, false, selected, selected);
             content.image = imageTemp;
             if (drawArrow)
             {
@@ -203,7 +204,7 @@ namespace UnityEditor.IMGUI.Controls
             foreach (var child in dataSource.mainTree.children)
             {
                 var content = child.content;
-                var a = lineStyle.CalcSize(content);
+                var a = CalcItemSize(content);
                 a.x += iconSize.x + 1;
 
                 if (maxWidth < a.x)
@@ -217,7 +218,7 @@ namespace UnityEditor.IMGUI.Controls
                 }
                 else
                 {
-                    maxHeight += lineStyle.CalcHeight(content, maxWidth);
+                    maxHeight += CalcItemHeight(content, maxWidth);
                 }
             }
             if (includeArrow)
@@ -258,7 +259,7 @@ namespace UnityEditor.IMGUI.Controls
                 var content = child.content;
                 if (state.GetSelectedIndex(dataSource.mainTree) == i)
                 {
-                    var diff = (lineStyle.CalcHeight(content, 0) - buttonRect.height) / 2f;
+                    var diff = (CalcItemHeight(content, 0) - buttonRect.height) / 2f;
                     return heigth + diff;
                 }
                 if (child.IsSeparator())
@@ -267,10 +268,30 @@ namespace UnityEditor.IMGUI.Controls
                 }
                 else
                 {
-                    heigth += lineStyle.CalcHeight(content, 0);
+                    heigth += CalcItemHeight(content, 0);
                 }
             }
             return heigth;
+        }
+
+        internal virtual Rect GetItemRect(in GUIContent content)
+        {
+            return GUILayoutUtility.GetRect(content, lineStyle, GUILayout.ExpandWidth(true));
+        }
+
+        internal virtual float CalcItemHeight(GUIContent content, float width)
+        {
+            return lineStyle.CalcHeight(content, width);
+        }
+
+        internal virtual Vector2 CalcItemSize(GUIContent content)
+        {
+            return lineStyle.CalcSize(content);
+        }
+
+        internal virtual void DrawItemContent(AdvancedDropdownItem item, Rect rect, GUIContent content, bool isHover, bool isActive, bool on, bool hasKeyboardFocus)
+        {
+            lineStyle.Draw(rect, content, isHover, isActive, on, hasKeyboardFocus);
         }
     }
 }

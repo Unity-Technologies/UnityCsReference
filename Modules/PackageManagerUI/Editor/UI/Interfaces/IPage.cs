@@ -18,13 +18,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
     internal interface IPage
     {
-        event Action<IPackageVersion> onSelectionChanged;
+        event Action<PageSelection> onSelectionChanged;
         // triggered when the state of the UI item is updated (expanded, hidden, see all versions toggled)
         event Action<IEnumerable<VisualState>> onVisualStateChange;
         // triggered when packages are added/updated or removed
         event Action<ListUpdateArgs> onListUpdate;
         event Action<IPage> onListRebuild;
-        event Action<IPage> onSubPageAdded;
+        event Action<IPage> onSubPageChanged;
         event Action<PageFilters> onFiltersChange;
         PageFilters filters { get; }
         PackageFilterTab tab { get; }
@@ -44,7 +44,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         string contentType { get; }
 
         VisualState GetVisualState(string packageUniqueId);
-        VisualState GetSelectedVisualState();
         void LoadMore(long numberOfPackages);
 
         // return true if filters are changed
@@ -52,17 +51,17 @@ namespace UnityEditor.PackageManager.UI.Internal
         // return true if filters are changed
         bool UpdateFilters(PageFilters filters);
 
-        IPackageVersion GetSelectedVersion();
-
-        void GetSelectedPackageAndVersion(out IPackage package, out IPackageVersion version);
+        PageSelection GetSelection();
+        IEnumerable<VisualState> GetSelectedVisualStates();
 
         void OnPackagesChanged(IEnumerable<IPackage> added, IEnumerable<IPackage> removed, IEnumerable<IPackage> preUpdate, IEnumerable<IPackage> postUpdate);
 
         void Rebuild();
         void Load(IPackage package, IPackageVersion version = null);
 
-        void SetSelected(IPackage package, IPackageVersion version = null);
-        void SetSelected(string packageUniqueId, string versionUniqueId);
+        bool SetNewSelection(IEnumerable<PackageAndVersionIdPair> packageAndVersionIdPairs);
+        bool AmendSelection(IEnumerable<PackageAndVersionIdPair> toAddOrUpdate, IEnumerable<PackageAndVersionIdPair> toRemove);
+        bool ToggleSelection(string packageUniqueId);
         void TriggerOnSelectionChanged();
 
         void SetExpanded(string packageUniqueId, bool value);

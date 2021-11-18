@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -116,6 +117,26 @@ namespace UnityEditor.PackageManager.UI.Internal
             return string.Empty;
         }
 
+        public static string GetUseCasesUrl(IPackageVersion version)
+        {
+            return EditorGameServiceExtension.GetUseCasesUrl(version);
+        }
+
+        public static string GetOfflineUseCasesUrl(IOProxy IOProxy, IPackageVersion version)
+        {
+            return string.Empty;
+        }
+
+        public static string GetDashboardUrl(IPackageVersion version)
+        {
+            return EditorGameServiceExtension.GetDashboardUrl(version);
+        }
+
+        public static string GetOfflineDashboardUrl(IOProxy IOProxy, IPackageVersion version)
+        {
+            return string.Empty;
+        }
+
         public static bool HasDocs(IPackageVersion version)
         {
             var upmVersion = version as UpmPackageVersion;
@@ -138,6 +159,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!string.IsNullOrEmpty(upmVersion?.licensesUrl))
                 return true;
             return upmVersion != null && !version.HasTag(PackageTag.BuiltIn | PackageTag.Feature);
+        }
+
+        public static bool HasUseCases(IPackageVersion version)
+        {
+            return !string.IsNullOrEmpty(EditorGameServiceExtension.GetUseCasesUrl(version));
+        }
+
+        public static bool HasDashboard(IPackageVersion version)
+        {
+            return !string.IsNullOrEmpty(EditorGameServiceExtension.GetDashboardUrl(version));
         }
     }
 }

@@ -117,7 +117,9 @@ namespace UnityEditor
 
             var behaviour = target as MonoBehaviour;
             var property = m_SerializedObject.GetIterator();
-            var isInspectorModeNormal = inspectorMode == InspectorMode.Normal;
+            bool isInspectorModeNormal = inspectorMode == InspectorMode.Normal;
+            bool isInPrefabInstance = PrefabUtility.GetPrefabInstanceHandle(behaviour) != null;
+            bool isMultiSelection = m_SerializedObject.targetObjectsCount > 1;
 
             using (new LocalizationGroup(behaviour))
             {
@@ -131,7 +133,7 @@ namespace UnityEditor
                     if (contentRect.Overlaps(visibleRect))
                     {
                         EditorGUI.indentLevel = property.depth;
-                        using (new EditorGUI.DisabledScope(isInspectorModeNormal && string.Equals("m_Script", property.propertyPath, System.StringComparison.Ordinal)))
+                        using (new EditorGUI.DisabledScope((isInspectorModeNormal || isInPrefabInstance || isMultiSelection) && string.Equals("m_Script", property.propertyPath, System.StringComparison.Ordinal)))
                             childrenAreExpanded &= handler.OnGUI(contentRect, property, GetPropertyLabel(property), PropertyHandler.UseReorderabelListControl(property), visibleRect);
                     }
 

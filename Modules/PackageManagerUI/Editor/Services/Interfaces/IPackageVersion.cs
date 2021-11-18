@@ -24,6 +24,8 @@ namespace UnityEditor.PackageManager.UI
 
         string packageUniqueId { get; }
 
+        IPackage package { get; }
+
         PackageInfo packageInfo { get; }
 
         bool isInstalled { get; }
@@ -34,6 +36,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal interface IPackageVersion : UI.IPackageVersion
     {
+        new IPackage package { get; set; }
+
         string author { get; }
 
         string authorLink { get; }
@@ -82,5 +86,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         IEnumerable<PackageSizeInfo> sizes { get; }
 
         EntitlementsInfo entitlements { get; }
+
+        bool IsDifferentVersionThanRequested { get; }
+
+        bool IsRequestedButOverriddenVersion { get; }
+
+        RegistryInfo registry { get; }
     }
 }

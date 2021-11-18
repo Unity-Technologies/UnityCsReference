@@ -223,7 +223,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             toolbarSettingsMenu.tooltip = L10n.Tr("Advanced");
 
             var dropdownItem = toolbarSettingsMenu.AddBuiltInDropdownItem();
-            dropdownItem.text = L10n.Tr("Advanced Project Settings");
+            dropdownItem.text = L10n.Tr("Project Settings");
             dropdownItem.action = () =>
             {
                 if (!m_SettingsProxy.advancedSettingsExpanded)
@@ -233,6 +233,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }
                 SettingsWindow.Show(SettingsScope.Project, PackageManagerProjectSettingsProvider.k_PackageManagerSettingsPath);
                 PackageManagerWindowAnalytics.SendEvent("advancedProjectSettings");
+            };
+
+            dropdownItem = toolbarSettingsMenu.AddBuiltInDropdownItem();
+            dropdownItem.text = L10n.Tr("Preferences");
+            dropdownItem.action = () =>
+            {
+                SettingsWindow.Show(SettingsScope.User, PackageManagerUserSettingsProvider.k_PackageManagerUserSettingsPath);
+                PackageManagerWindowAnalytics.SendEvent("packageManagerUserSettings");
             };
 
             dropdownItem = toolbarSettingsMenu.AddBuiltInDropdownItem();
@@ -300,8 +308,15 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                     if (!m_PackageDatabase.isInstallOrUninstallInProgress)
                     {
-                        m_PackageDatabase.InstallFromPath(m_IOProxy.GetParentDirectory(path));
+                        m_PackageDatabase.InstallFromPath(m_IOProxy.GetParentDirectory(path), out var tempPackageId);
                         PackageManagerWindowAnalytics.SendEvent("addFromDisk");
+
+                        var package = m_PackageDatabase.GetPackage(tempPackageId);
+                        if (package != null)
+                        {
+                            m_PackageFiltering.currentFilterTab = PackageFilterTab.InProject;
+                            m_PageManager.SetSelected(package);
+                        }
                     }
                 }
                 catch (System.IO.IOException e)
@@ -318,8 +333,15 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var path = m_Application.OpenFilePanelWithFilters(L10n.Tr("Select package on disk"), "", new[] { "Package tarball", "tgz, tar.gz" });
                 if (!string.IsNullOrEmpty(path) && !m_PackageDatabase.isInstallOrUninstallInProgress)
                 {
-                    m_PackageDatabase.InstallFromPath(path);
+                    m_PackageDatabase.InstallFromPath(path, out var tempPackageId);
                     PackageManagerWindowAnalytics.SendEvent("addFromTarball");
+
+                    var package = m_PackageDatabase.GetPackage(tempPackageId);
+                    if (package != null)
+                    {
+                        m_PackageFiltering.currentFilterTab = PackageFilterTab.InProject;
+                        m_PageManager.SetSelected(package);
+                    }
                 }
             };
 

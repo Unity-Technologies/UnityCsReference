@@ -100,63 +100,63 @@ namespace Unity.UI.Builder
         {
             ClearUI();
 
-            if (info != null)
+            if (!info.IsValid())
+                return;
+
+            if (info.sheet)
             {
-                if (info.value.sheet)
-                {
-                    var varStyleSheetOrigin = info.value.sheet;
-                    var fullPath = AssetDatabase.GetAssetPath(varStyleSheetOrigin);
-                    string displayPath = null;
+                var varStyleSheetOrigin = info.sheet;
+                var fullPath = AssetDatabase.GetAssetPath(varStyleSheetOrigin);
+                string displayPath = null;
 
-                    if (string.IsNullOrEmpty(fullPath))
-                    {
+                if (string.IsNullOrEmpty(fullPath))
+                {
+                    displayPath = varStyleSheetOrigin.name;
+                }
+                else
+                {
+                    if (fullPath == "Library/unity editor resources")
                         displayPath = varStyleSheetOrigin.name;
-                    }
                     else
-                    {
-                        if (fullPath == "Library/unity editor resources")
-                            displayPath = varStyleSheetOrigin.name;
-                        else
-                            displayPath = Path.GetFileName(fullPath);
-                    }
-                    var valueText = StyleSheetToUss.ValueHandleToUssString(info.value.sheet, new UssExportOptions(), "", info.value.handle);
-
-                    variableValue = valueText;
-                    sourceStyleSheet = displayPath;
+                        displayPath = Path.GetFileName(fullPath);
                 }
+                var valueText = StyleSheetToUss.ValueHandleToUssString(info.sheet, new UssExportOptions(), "", info.styleVariable.handles[0]);
 
-                variableName = info.name;
-                description = info.description;
+                variableValue = valueText;
+                sourceStyleSheet = displayPath;
+            }
 
-                if (info.value.handle.valueType == StyleValueType.Color)
+            variableName = info.name;
+            description = info.description;
+
+            if (info.styleVariable.handles[0].valueType == StyleValueType.Color)
+            {
+                m_Preview.style.backgroundColor = info.sheet.ReadColor(info.styleVariable.handles[0]);
+                m_Preview.RemoveFromClassList(BuilderConstants.HiddenStyleClassName);
+            }
+            else if (info.styleVariable.handles[0].valueType == StyleValueType.Enum)
+            {
+                var colorName = info.sheet.ReadAsString(info.styleVariable.handles[0]);
+                if (StyleSheetColor.TryGetColor(colorName.ToLower(), out var color))
                 {
-                    m_Preview.style.backgroundColor = info.value.sheet.ReadColor(info.value.handle);
+                    m_Preview.style.backgroundColor = color;
                     m_Preview.RemoveFromClassList(BuilderConstants.HiddenStyleClassName);
                 }
-                else if (info.value.handle.valueType == StyleValueType.Enum)
+            }
+            else if (info.styleVariable.handles[0].valueType == StyleValueType.ResourcePath || info.styleVariable.handles[0].valueType == StyleValueType.AssetReference)
+            {
+                var source = new ImageSource();
+                var dpiScaling = 1.0f;
+                if (StylePropertyReader.TryGetImageSourceFromValue(new StylePropertyValue{ sheet = info.sheet, handle = info.styleVariable.handles[0]}, dpiScaling, out source) == false)
                 {
-                    var colorName = info.value.sheet.ReadAsString(info.value.handle);
-                    if (StyleSheetColor.TryGetColor(colorName.ToLower(), out var color))
-                    {
-                        m_Preview.style.backgroundColor = color;
-                        m_Preview.RemoveFromClassList(BuilderConstants.HiddenStyleClassName);
-                    }
+                    // Load a stand-in picture to make it easier to identify which image element is missing its picture
+                    source.texture = Panel.LoadResource("d_console.warnicon", typeof(Texture2D), dpiScaling) as Texture2D;
                 }
-                else if (info.value.handle.valueType == StyleValueType.ResourcePath || info.value.handle.valueType == StyleValueType.AssetReference)
-                {
-                    var source = new ImageSource();
-                    var dpiScaling = 1.0f;
-                    if (StylePropertyReader.TryGetImageSourceFromValue(info.value, dpiScaling, out source) == false)
-                    {
-                        // Load a stand-in picture to make it easier to identify which image element is missing its picture
-                        source.texture = Panel.LoadResource("d_console.warnicon", typeof(Texture2D), dpiScaling) as Texture2D;
-                    }
 
-                    m_Thumbnail.image = source.texture;
-                    m_Thumbnail.vectorImage = source.vectorImage;
-                    m_Preview.RemoveFromClassList(BuilderConstants.HiddenStyleClassName);
-                    m_ValueAndPreviewContainer.AddToClassList(s_PreviewThumbnailUssClassName);
-                }
+                m_Thumbnail.image = source.texture;
+                m_Thumbnail.vectorImage = source.vectorImage;
+                m_Preview.RemoveFromClassList(BuilderConstants.HiddenStyleClassName);
+                m_ValueAndPreviewContainer.AddToClassList(s_PreviewThumbnailUssClassName);
             }
         }
     }

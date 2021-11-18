@@ -103,14 +103,6 @@ namespace UnityEngine.VFX
         SampleCurve,
         SampleGradient,
 
-        //Deprecated Sample Mesh (kept for 9.x.x compatibility)
-        SampleMeshFloat,
-        SampleMeshFloat2,
-        SampleMeshFloat3,
-        SampleMeshFloat4,
-        SampleMeshColor,
-
-        //Correct Sample Mesh considering vertex format and channel index
         SampleMeshVertexFloat,
         SampleMeshVertexFloat2,
         SampleMeshVertexFloat3,
@@ -141,6 +133,13 @@ namespace UnityEngine.VFX
         CastIntToUint,
         CastFloatToInt,
         CastUintToInt,
+
+        CastIntToBool,
+        CastUintToBool,
+        CastFloatToBool,
+        CastBoolToInt,
+        CastBoolToUint,
+        CastBoolToFloat,
 
         // Color transformations
         RGBtoHSV,

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEditor.Collaboration;
+using UnityEditor.Connect.Fallback;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Connect
@@ -53,7 +54,18 @@ namespace UnityEditor.Connect
         [SettingsProvider]
         public static SettingsProvider CreateServicesProvider()
         {
-            return new CollabProjectSettings(CollabService.instance.projectSettingsPath, SettingsScope.Project);
+            SettingsProvider projectSettings = null;
+
+            if (ShouldShowBuiltInProjectSettings(CollabService.instance))
+            {
+                projectSettings = new CollabProjectSettings(CollabService.instance.projectSettingsPath, SettingsScope.Project);
+            }
+            else if (ShouldShowFallbackProjectSettings(CollabService.instance))
+            {
+                projectSettings = new FallbackProjectSettings(CollabService.instance, SettingsScope.Project);
+            }
+
+            return projectSettings;
         }
 
         SimpleStateMachine<CollabEvent> m_StateMachine;

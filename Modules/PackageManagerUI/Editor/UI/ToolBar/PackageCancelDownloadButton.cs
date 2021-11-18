@@ -16,47 +16,46 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageDatabase = packageDatabase;
         }
 
-        protected override bool TriggerAction()
+        protected override bool TriggerAction(IList<IPackageVersion> versions)
         {
-            m_PackageDatabase.AbortDownload(m_Package);
-
-            PackageManagerWindowAnalytics.SendEvent("abortDownload", m_Package.uniqueId);
+            m_PackageDatabase.AbortDownload(versions);
             return true;
         }
 
-        protected override bool isVisible
+        protected override bool TriggerAction(IPackageVersion version)
         {
-            get
-            {
-                if (m_Version?.HasTag(PackageTag.Downloadable) != true)
-                    return false;
-
-                var operation = m_AssetStoreDownloadManager.GetDownloadOperation(m_Version.packageUniqueId);
-                return operation?.isInProgress == true
-                    || operation?.state == DownloadState.Pausing
-                    || operation?.state == DownloadState.Paused
-                    || operation?.state == DownloadState.ResumeRequested;
-            }
+            m_PackageDatabase.AbortDownload(version.package);
+            PackageManagerWindowAnalytics.SendEvent("abortDownload", version.packageUniqueId);
+            return true;
         }
 
-        protected override IEnumerable<ButtonDisableCondition> GetDisableConditions()
+        protected override bool IsVisible(IPackageVersion version)
         {
-            var operation = m_AssetStoreDownloadManager.GetDownloadOperation(m_Version.packageUniqueId);
+            if (version?.HasTag(PackageTag.Downloadable) != true)
+                return false;
+
+            var operation = m_AssetStoreDownloadManager.GetDownloadOperation(version.packageUniqueId);
+            return operation?.isProgressVisible == true;
+        }
+
+        protected override IEnumerable<ButtonDisableCondition> GetDisableConditions(IPackageVersion version)
+        {
+            var operation = m_AssetStoreDownloadManager.GetDownloadOperation(version.packageUniqueId);
             var resumeRequsted = operation?.state == DownloadState.ResumeRequested;
             yield return new ButtonDisableCondition(resumeRequsted,
                 L10n.Tr("A resume request has been sent. You cannot cancel this download until it is resumed."));
         }
 
-        protected override string GetTooltip(bool isInProgress)
+        protected override string GetTooltip(IPackageVersion version, bool isInProgress)
         {
-            return string.Format(L10n.Tr("Click to cancel the download of this {0}."), m_Package.GetDescriptor());
+            return string.Format(L10n.Tr("Click to cancel the download of this {0}."), version.package.GetDescriptor());
         }
 
-        protected override string GetText(bool isInProgress)
+        protected override string GetText(IPackageVersion version, bool isInProgress)
         {
             return L10n.Tr("Cancel");
         }
 
-        protected override bool isInProgress => false;
+        protected override bool IsInProgress(IPackageVersion version) => false;
     }
 }

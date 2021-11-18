@@ -33,6 +33,7 @@ namespace UnityEngine.UIElements
             TricklesDown = 2,
             Cancellable = 4,
             SkipDisabledElements = 8,
+            IgnoreCompositeRoots = 16,
         }
 
         [Flags]
@@ -159,6 +160,22 @@ namespace UnityEngine.UIElements
                 else
                 {
                     propagation &= ~EventPropagation.SkipDisabledElements;
+                }
+            }
+        }
+
+        internal bool ignoreCompositeRoots
+        {
+            get { return (propagation & EventPropagation.IgnoreCompositeRoots) != 0; }
+            set
+            {
+                if (value)
+                {
+                    propagation |= EventPropagation.IgnoreCompositeRoots;
+                }
+                else
+                {
+                    propagation &= ~EventPropagation.IgnoreCompositeRoots;
                 }
             }
         }

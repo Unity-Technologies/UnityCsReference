@@ -2,10 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-
-using UnityEngine;
-using System;
-
 namespace UnityEditor.Connect
 {
     [InitializeOnLoad]
@@ -15,11 +11,17 @@ namespace UnityEditor.Connect
         public override string title { get; }
         public override string description { get; }
         public override string pathTowardIcon { get; }
-        public override string projectSettingsPath { get; }
+        public override string projectSettingsPath { get; } = "Project/Services/Cloud Build";
         public override string settingsProviderClassName => nameof(CloudBuildProjectSettings);
         public override bool displayToggle { get; }
         public override Notification.Topic notificationTopic => Notification.Topic.BuildService;
         public override string packageName { get; }
+
+        public override string editorGamePackageName { get; } = "com.unity.services.cloud-build";
+        public override bool canShowFallbackProjectSettings { get; } = true;
+        public override bool canShowBuiltInProjectSettings { get; } = false;
+        public override string minimumEditorGamePackageVersion { get; } = "1.0.0";
+
         public override string serviceFlagName { get; }
         public override bool shouldSyncOnProjectRebind => true;
 
@@ -43,7 +45,6 @@ namespace UnityEditor.Connect
             title = L10n.Tr("Cloud Build");
             description = L10n.Tr("Build games faster");
             pathTowardIcon = @"Builtin Skins\Shared\Images\ServicesWindow-ServiceIcon-Build.png";
-            projectSettingsPath = "Project/Services/Cloud Build";
             displayToggle = true;
             packageName = null;
             serviceFlagName = "build";

@@ -145,9 +145,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        private void OnSelectionChanged(IPackageVersion version)
+        private void OnSelectionChanged(PageSelection selection)
         {
-            currentView.GetPackageItem(version?.packageUniqueId)?.RefreshState();
+            var currentView = this.currentView;
+            foreach (var item in selection.previousSelections.Where(s => !selection.Contains(s.packageUniqueId)).Concat(selection))
+                currentView.GetPackageItem(item.packageUniqueId)?.RefreshSelection();
         }
 
         private void OnCheckUpdateProgress()

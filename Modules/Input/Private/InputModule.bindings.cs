@@ -16,8 +16,10 @@ namespace UnityEngineInternal.Input
     {
         internal static extern bool hasDeviceDiscoveredCallback { set; }
 
+        [NativeProperty(IsThreadSafe = true)]
         public static extern double currentTime { get; }
 
+        [NativeProperty(IsThreadSafe = true)]
         public static extern double currentTimeOffsetToRealtimeSinceStartup { get; }
 
         [FreeFunction("AllocateInputDeviceId")]
@@ -31,6 +33,7 @@ namespace UnityEngineInternal.Input
             QueueInputEvent((IntPtr)UnsafeUtility.AddressOf<TInputEvent>(ref inputEvent));
         }
 
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void QueueInputEvent(IntPtr inputEvent);
 
         public static extern long IOCTL(int deviceId, int code, IntPtr data, int sizeInBytes);

@@ -99,9 +99,12 @@ namespace UnityEngine.UIElements
         private static void HandleEventAcrossPropagationPath(EventBase evt)
         {
             // Build and store propagation path
-            var path = PropagationPaths.Build((VisualElement)evt.leafTarget, evt);
+            var leafTarget = (VisualElement) evt.leafTarget;
+            var path = PropagationPaths.Build(leafTarget, evt);
             evt.path = path;
             EventDebugger.LogPropagationPaths(evt, path);
+
+            var panel = leafTarget.panel;
 
             // Phase 1: TrickleDown phase
             // Propagate event from root to target.parent
@@ -114,12 +117,13 @@ namespace UnityEngine.UIElements
                     if (evt.isPropagationStopped)
                         break;
 
-                    if (evt.Skip(path.trickleDownPath[i]))
+                    var element = path.trickleDownPath[i];
+                    if (evt.Skip(element) || element.panel != panel)
                     {
                         continue;
                     }
 
-                    evt.currentTarget = path.trickleDownPath[i];
+                    evt.currentTarget = element;
                     evt.currentTarget.HandleEvent(evt);
                 }
             }
@@ -131,7 +135,7 @@ namespace UnityEngine.UIElements
             evt.propagationPhase = PropagationPhase.AtTarget;
             foreach (var element in path.targetElements)
             {
-                if (evt.Skip(element))
+                if (evt.Skip(element) || element.panel != panel)
                 {
                     continue;
                 }
@@ -145,7 +149,7 @@ namespace UnityEngine.UIElements
             evt.propagationPhase = PropagationPhase.DefaultActionAtTarget;
             foreach (var element in path.targetElements)
             {
-                if (evt.Skip(element))
+                if (evt.Skip(element) || element.panel != panel)
                 {
                     continue;
                 }
@@ -166,7 +170,7 @@ namespace UnityEngine.UIElements
 
                 foreach (var element in path.bubbleUpPath)
                 {
-                    if (evt.Skip(element))
+                    if (evt.Skip(element) || element.panel != panel)
                     {
                         continue;
                     }
@@ -223,7 +227,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        public static void ExecuteDefaultAction(EventBase evt, IPanel panel)
+        public static void ExecuteDefaultAction(EventBase evt)
         {
             if (evt.target is VisualElement ve && ve.HasDefaultAction(evt.eventCategory))
             {

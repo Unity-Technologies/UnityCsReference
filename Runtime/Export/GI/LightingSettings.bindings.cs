@@ -220,6 +220,10 @@ namespace UnityEngine
         [NativeName("TiledBaking")]
         internal extern TiledBaking tiledBaking { get; set; }
 
+        // Force Num rays to shoot per texel
+        [NativeName("NumRaysToShootPerTexel")]
+        internal extern int numRaysToShootPerTexel { get; set; }
+
         // Which path tracer filtering mode is used.
         [NativeName("PVRFilteringMode")]
         public extern FilterMode filteringMode { get; set; }

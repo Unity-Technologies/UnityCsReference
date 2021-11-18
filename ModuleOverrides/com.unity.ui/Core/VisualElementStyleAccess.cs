@@ -321,6 +321,32 @@ namespace UnityEngine.UIElements
                 return false;
             }
 
+            public bool TryGetValue(CustomStyleProperty<Object> property, out Object value)
+            {
+                if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out var customProp))
+                {
+                    return customProp.sheet.TryReadAssetReference(customProp.handle, out value);
+                }
+
+                value = null;
+                return false;
+            }
+
+            public bool TryGetValue<T>(CustomStyleProperty<T> property, out T value) where T : Object
+            {
+                if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out var customProp))
+                {
+                    if (customProp.sheet.TryReadAssetReference(customProp.handle, out Object objValue))
+                    {
+                        value = objValue as T;
+                        return value != null;
+                    }
+                }
+
+                value = null;
+                return false;
+            }
+
             public bool TryGetValue(CustomStyleProperty<string> property, out string value)
             {
                 if (m_CustomProperties != null && m_CustomProperties.TryGetValue(property.name, out var customProp))

@@ -25,28 +25,29 @@ namespace UnityEditor.U2D
         extern public bool isVariant { [NativeMethod("GetIsVariant")] get; }
         extern public void SetIsVariant(bool value);
         extern public void SetMasterAtlas(SpriteAtlas atlas);
-        extern public void SetIncludeInBuild(bool value);
-        extern public bool IsIncludeInBuild();
         extern public SpriteAtlas GetMasterAtlas();
-        extern public void SetVariantScale(float value);
-        extern public void SetPlatformSettings(TextureImporterPlatformSettings src);
-        extern public TextureImporterPlatformSettings GetPlatformSettings(string buildTarget);
-        extern public SpriteAtlasTextureSettings GetTextureSettings();
-        extern public void SetTextureSettings(SpriteAtlasTextureSettings src);
-        extern public SpriteAtlasPackingSettings GetPackingSettings();
-        extern public void SetPackingSettings(SpriteAtlasPackingSettings src);
-
         extern public void Add(UnityEngine.Object[] objects);
         extern public void Remove(UnityEngine.Object[] objects);
         extern internal void RemoveAt(int index);
 
-        extern internal TextureFormat GetTextureFormat(BuildTarget target);
-        extern internal void CopyMasterAtlasSettings();
-        extern internal TextureImporterPlatformSettings GetSecondaryPlatformSettings(string buildTarget, string secondaryTextureName);
-        extern internal void SetSecondaryPlatformSettings(TextureImporterPlatformSettings src, string secondaryTextureName);
-        extern internal bool GetSecondaryColorSpace(string secondaryTextureName);
-        extern internal void SetSecondaryColorSpace(string secondaryTextureName, bool srGB);
-        extern internal void DeleteSecondaryPlatformSettings(string secondaryTextureName);
+        [Obsolete("SetVariantScale is no longer supported and will be removed. Use SpriteAtlasImporter.SetVariantScale instead.")]
+        public void SetVariantScale(float value) { }
+        [Obsolete("SetIncludeInBuild is no longer supported and will be removed. Use SpriteAtlasImporter.SetIncludeInBuild instead.")]
+        public void SetIncludeInBuild(bool value) { }
+        [Obsolete("IsIncludeInBuild is no longer supported and will be removed. Use SpriteAtlasImporter.IsIncludeInBuild instead.")]
+        public bool IsIncludeInBuild() { return true;  }
+        [Obsolete("SetPlatformSettings is no longer supported and will be removed. Use SpriteAtlasImporter.SetPlatformSettings instead.")]
+        public void SetPlatformSettings(TextureImporterPlatformSettings src) { }
+        [Obsolete("SetTextureSettings is no longer supported and will be removed. Use SpriteAtlasImporter.SetTextureSettings instead.")]
+        public void SetTextureSettings(SpriteAtlasTextureSettings src) { }
+        [Obsolete("SetPackingSettings is no longer supported and will be removed. Use SpriteAtlasImporter.SetPackingSettings instead.")]
+        public void SetPackingSettings(SpriteAtlasPackingSettings src) { }
+        [Obsolete("GetPackingSettings is no longer supported and will be removed. Use SpriteAtlasImporter.GetPackingSettings instead.")]
+        public SpriteAtlasPackingSettings GetPackingSettings() { return new SpriteAtlasPackingSettings(); }
+        [Obsolete("GetTextureSettings is no longer supported and will be removed. Use SpriteAtlasImporter.GetTextureSettings instead.")]
+        public SpriteAtlasTextureSettings GetTextureSettings() { return new SpriteAtlasTextureSettings(); }
+        [Obsolete("GetPlatformSettings is no longer supported and will be removed. Use SpriteAtlasImporter.GetPlatformSettingss instead.")]
+        public TextureImporterPlatformSettings GetPlatformSettings(string buildTarget) { return new TextureImporterPlatformSettings(); }
 
         // Load SpriteAtlasAsset
         public static SpriteAtlasAsset Load(string assetPath)

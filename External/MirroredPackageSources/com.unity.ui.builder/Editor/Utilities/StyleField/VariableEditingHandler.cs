@@ -327,14 +327,14 @@ namespace Unity.UI.Builder
 
             string varName = GetBoundVariableName(handler);
 
-            VariableInfo varInfo = null;
+            VariableInfo varInfo = default;
 
             if (!string.IsNullOrEmpty(varName))
             {
                 varInfo = StyleVariableUtilities.FindVariable(handler.m_Inspector.currentVisualElement, varName, handler.inspector.document.fileSettings.editorExtensionMode);
 
-                if (varInfo == null)
-                    varInfo = new VariableInfo { name = varName };
+                if (!varInfo.IsValid())
+                    varInfo = new VariableInfo(varName);
             }
 
             if (handler.variableInfoTooltip == null)

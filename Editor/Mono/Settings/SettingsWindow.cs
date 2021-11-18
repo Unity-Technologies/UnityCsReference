@@ -482,8 +482,33 @@ namespace UnityEditor
         [MenuItem("Edit/Project Settings...", false, 259, false)]
         internal static void OpenProjectSettings()
         {
+            SendTopMenuProjectSettingsEvent();
             Show(SettingsScope.Project);
         }
+
+        static void SendTopMenuProjectSettingsEvent()
+        {
+            EditorAnalytics.SendEventEditorGameService(new EditorGameServiceEvent
+            {
+                action = "Project Settings",
+                assembly_info = "",
+                component = "Top Menu",
+                package = "Unity Editor",
+                package_ver = ""
+            });
+        }
+
+
+        [Serializable]
+        internal struct EditorGameServiceEvent
+        {
+            public string action;
+            public string assembly_info;
+            public string component;
+            public string package;
+            public string package_ver;
+        }
+
 
         internal static SettingsWindow OpenUserPreferences()
         {

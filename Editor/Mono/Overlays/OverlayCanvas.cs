@@ -4,7 +4,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.UIElements;
@@ -112,7 +114,7 @@ namespace UnityEditor.Overlays
 
     //Dock position within container
     //for a horizontal container, Top is left, Bottom is right
-    enum DockPosition
+    public enum DockPosition
     {
         Top,
         Bottom
@@ -126,6 +128,18 @@ namespace UnityEditor.Overlays
         BottomRight,
     }
 
+    // public API to set a default docking zone. default is RightColumnBottom
+    public enum DockZone
+    {
+        LeftToolbar = 0,
+        RightToolbar = 1,
+        TopToolbar = 2,
+        BottomToolbar = 3,
+        LeftColumn = 4,
+        RightColumn = 5,
+        Floating = 6
+    }
+
     [Serializable]
     public sealed class OverlayCanvas : ISerializationCallbackReceiver
     {
@@ -135,6 +149,7 @@ namespace UnityEditor.Overlays
         internal const string k_StyleCommon = "StyleSheets/Overlays/OverlayCommon.uss";
         internal const string k_StyleLight = "StyleSheets/Overlays/OverlayLight.uss";
         internal const string k_StyleDark = "StyleSheets/Overlays/OverlayDark.uss";
+        const int k_ContainerCount = 6;
 
         const string k_FloatingContainer = "overlay-container--floating";
         const string k_ToolbarZone = "overlay-toolbar-zone";
@@ -146,16 +161,46 @@ namespace UnityEditor.Overlays
         static VisualTreeAsset s_TreeAsset;
         static VisualTreeAsset s_DropZoneTreeAsset;
 
-        static readonly SaveData k_DefaultSaveData = new SaveData()
+        static SaveData defaultSaveData => new SaveData()
+            {
+                floating = false,
+                collapsed = false,
+                containerId = null,
+                displayed = false,
+                dockPosition = DockPosition.Bottom,
+                index = int.MaxValue,
+                layout = Layout.Panel
+            };
+
+        // order must match OverlayDockArea
+        static readonly string[] k_DockZoneContainerIDs = new string[7]
         {
-            floating = false,
-            collapsed = false,
-            containerId = null,
-            displayed = false,
-            dockPosition = DockPosition.Bottom,
-            index = int.MaxValue,
-            layout = Layout.Panel
+            "overlay-toolbar__left",
+            "overlay-toolbar__right",
+            "overlay-toolbar__top",
+            "overlay-toolbar__bottom",
+            "overlay-container--left",
+            "overlay-container--right",
+            k_DefaultContainer
         };
+
+        internal static DockZone GetDockZone(OverlayContainer container)
+        {
+            for(int i = 0, c = k_DockZoneContainerIDs.Length; i < c; i++)
+                if (k_DockZoneContainerIDs[i] == container.name)
+                    return (DockZone)i;
+            return DockZone.Floating;
+        }
+
+        // used by tests
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        internal OverlayContainer GetDockZoneContainer(DockZone zone)
+        {
+            foreach(var container in containers)
+                if (container.name == k_DockZoneContainerIDs[(int)zone])
+                    return container;
+            return null;
+        }
 
         OverlayMenu m_Menu;
         internal string lastAppliedPresetName => m_LastAppliedPresetName;
@@ -181,7 +226,7 @@ namespace UnityEditor.Overlays
         OverlayContainer defaultContainer { get; set; }
         OverlayContainer defaultToolbarContainer { get; set; }
 
-        List<OverlayContainer> containers { get; set; }
+        List<OverlayContainer> containers;
         List<VisualElement> toolbarZones { get; set; }
 
         readonly Dictionary<VisualElement, Overlay> m_OverlaysByVE = new Dictionary<VisualElement, Overlay>();
@@ -257,8 +302,8 @@ namespace UnityEditor.Overlays
 
             ve.name = ussClassName;
             ve.style.flexGrow = 1;
-
             containers = ve.Query<OverlayContainer>().ToList();
+
             foreach (var container in containers)
             {
                 container.RegisterCallback<MouseEnterEvent>(OnMouseEnterOverlayContainer);
@@ -539,6 +584,16 @@ namespace UnityEditor.Overlays
             RestoreOverlays();
         }
 
+        internal void Move(Overlay overlay, DockZone zone, DockPosition position = DockPosition.Bottom)
+        {
+            var container = GetDockZoneContainer(zone);
+            if(position == DockPosition.Bottom)
+                container.AddToBottom(overlay);
+            else
+                container.AddToTop(overlay);
+            overlay.RebuildContent();
+        }
+
         public void Add(Overlay overlay, bool show = true)
         {
             if(m_Overlays.Contains(overlay))
@@ -610,7 +665,25 @@ namespace UnityEditor.Overlays
 
         SaveData FindSaveData(Overlay overlay)
         {
-            return m_SaveData.FirstOrDefault(x => x.id == overlay.id) ?? k_DefaultSaveData;
+            var data = m_SaveData.FirstOrDefault(x => x.id == overlay.id);
+
+            if (data == null)
+            {
+                data = defaultSaveData;
+
+                var attrib = overlay.GetType().GetCustomAttribute<OverlayAttribute>();
+
+                if (attrib != null)
+                {
+                    data.containerId = k_DockZoneContainerIDs[(int)attrib.defaultDockZone];
+                    data.index = attrib.defaultDockIndex;
+                    data.dockPosition = attrib.defaultDockPosition;
+                    data.floating = attrib.defaultDockZone == DockZone.Floating;
+                    data.layout = attrib.defaultLayout;
+                }
+            }
+
+            return data;
         }
 
         void RestoreOverlay(Overlay overlay, SaveData data = null)

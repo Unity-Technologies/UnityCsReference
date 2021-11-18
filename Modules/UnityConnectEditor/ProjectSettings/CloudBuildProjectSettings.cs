@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using UnityEditor.Connect.Fallback;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -123,7 +124,18 @@ namespace UnityEditor.Connect
         [SettingsProvider]
         public static SettingsProvider CreateServicesProvider()
         {
-            return new CloudBuildProjectSettings(BuildService.instance.projectSettingsPath, SettingsScope.Project);
+            SettingsProvider projectSettings = null;
+
+            if (ShouldShowBuiltInProjectSettings(BuildService.instance))
+            {
+                projectSettings = new CloudBuildProjectSettings(BuildService.instance.projectSettingsPath, SettingsScope.Project);
+            }
+            else if (ShouldShowFallbackProjectSettings(BuildService.instance))
+            {
+                projectSettings = new FallbackProjectSettings(BuildService.instance, SettingsScope.Project);
+            }
+
+            return projectSettings;
         }
 
         SimpleStateMachine<CloudBuildEvent> m_StateMachine;

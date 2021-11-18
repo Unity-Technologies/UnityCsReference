@@ -48,6 +48,17 @@ namespace UnityEditor.PackageManager.UI.Internal
         public DependencyInfo[] resolvedDependencies => packageInfo?.resolvedDependencies;
         public EntitlementsInfo entitlements => packageInfo?.entitlements;
 
+        public virtual RegistryInfo registry => null;
+
+        [NonSerialized]
+        private IPackage m_Package;
+        public UI.IPackage package => m_Package;
+        IPackage IPackageVersion.package
+        {
+            get => m_Package;
+            set { m_Package = value; }
+        }
+
         [SerializeField]
         protected PackageTag m_Tag;
         public bool HasTag(PackageTag tag)
@@ -88,6 +99,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         public abstract string versionString { get; }
         public abstract string versionId { get; }
         public virtual bool isUnityPackage => false;
+
+        public bool IsDifferentVersionThanRequested
+            => !string.IsNullOrEmpty(packageInfo?.projectDependenciesEntry) && !HasTag(PackageTag.Git | PackageTag.Local | PackageTag.Custom) &&
+                packageInfo.projectDependenciesEntry != versionString;
+
+        public bool IsRequestedButOverriddenVersion
+            => !string.IsNullOrEmpty(versionString) && !isInstalled &&
+                versionString == m_Package?.versions.primary.packageInfo?.projectDependenciesEntry;
 
         public virtual void OnBeforeSerialize()
         {

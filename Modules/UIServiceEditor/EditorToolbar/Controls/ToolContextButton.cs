@@ -5,10 +5,11 @@
 using System.Linq;
 using UnityEditor.EditorTools;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.Toolbars
 {
-    class ToolContextButton : EditorToolbarDropdown
+    class ToolContextButton : EditorToolbarDropdownToggle
     {
         const string k_Tooltip = "The tool context determines what the Move, Rotate, Scale, Rect, and Transform tools" +
             " select and modify. GameObject is the default, and allows you to work with " +
@@ -16,17 +17,19 @@ namespace UnityEditor.Toolbars
 
         public ToolContextButton()
         {
-            RefreshActiveContextIcon();
-            ToolManager.activeContextChanged += RefreshActiveContextIcon;
-            EditorToolManager.availableComponentToolsChanged += RefreshActiveContextIcon;
-            clicked += ShowContextMenu;
+            RefreshActiveContext();
+            ToolManager.activeContextChanged += RefreshActiveContext;
+            EditorToolManager.availableComponentToolsChanged += RefreshActiveContext;
+            dropdownClicked += ShowContextMenu;
+
+            this.RegisterValueChangedCallback(OnValueChanged);
         }
 
         ~ToolContextButton()
         {
-            EditorToolManager.availableComponentToolsChanged -= RefreshActiveContextIcon;
-            ToolManager.activeContextChanged -= RefreshActiveContextIcon;
-            clicked -= ShowContextMenu;
+            EditorToolManager.availableComponentToolsChanged -= RefreshActiveContext;
+            ToolManager.activeContextChanged -= RefreshActiveContext;
+            dropdownClicked -= ShowContextMenu;
         }
 
         void ShowContextMenu()
@@ -35,10 +38,17 @@ namespace UnityEditor.Toolbars
 
             foreach (var ctx in EditorToolUtility.availableGlobalToolContexts)
             {
-                menu.AddItem(
-                    new GUIContent(EditorToolUtility.GetToolName(ctx.editor)),
-                    ToolManager.activeContextType == ctx.editor,
-                    () => { ToolManager.SetActiveContext(ctx.editor); });
+                if (ctx.editor != typeof(GameObjectToolContext))
+                    menu.AddItem(
+                        new GUIContent(EditorToolUtility.GetToolName(ctx.editor)),
+                        ToolManager.activeContextType == ctx.editor,
+                        () =>
+                        {
+                            if(ToolManager.activeContextType == ctx.editor)
+                                ToolManager.ExitToolContext();
+                            else
+                                ToolManager.SetActiveContext(ctx.editor);
+                        });
             }
 
             foreach (var ctx in EditorToolManager.componentContexts)
@@ -46,7 +56,13 @@ namespace UnityEditor.Toolbars
                 menu.AddItem(
                     new GUIContent(EditorToolUtility.GetToolName(ctx.editorType)),
                     EditorToolManager.activeToolContext == ctx.editor,
-                    () => { ToolManager.SetActiveContext(ctx.editorType); });
+                    () =>
+                    {
+                        if(EditorToolManager.activeToolContext == ctx.editor)
+                            ToolManager.ExitToolContext();
+                        else
+                            ToolManager.SetActiveContext(ctx.editorType);
+                    });
             }
 
             menu.DropDown(worldBound);
@@ -61,12 +77,35 @@ namespace UnityEditor.Toolbars
             }
         }
 
-        void RefreshActiveContextIcon()
+        void OnValueChanged(ChangeEvent<bool> evt)
         {
+            var isGOToolContext = ToolManager.activeContextType == typeof(GameObjectToolContext);
+            if (evt.newValue && isGOToolContext)
+                ToolManager.CycleToolContexts();
+            else if (!evt.newValue && !isGOToolContext)
+                ToolManager.ExitToolContext();
+        }
+
+        void RefreshActiveContext()
+        {
+            var isGOToolContext = ToolManager.activeContextType == typeof(GameObjectToolContext);
+            if (value && isGOToolContext)
+                value = false;
+            else if(!value && !isGOToolContext)
+                value = true;
+
+            //Enable button only if at least one other context beside GameObjectToolContext is available
             SetEnabled(availableContextCount > 1);
-            var content = EditorToolUtility.GetIcon(ToolManager.activeContextType, true);
+            //Enable toggle only if at least 2 other contexts are available in addition to GameObjectToolContext
+            ShowDropDown(availableContextCount > 2);
+            var activeContextType = typeof(GameObjectToolContext);
+            if(availableContextCount > 1)
+                activeContextType = isGOToolContext ? ToolManager.GetLastContextType() : ToolManager.activeContextType;
+            var content = EditorToolUtility.GetIcon(activeContextType, true);
             icon = content.image as Texture2D;
-            tooltip = $"{k_Tooltip}\n\nActive Context: {EditorToolUtility.GetToolName(ToolManager.activeContextType)}";
+            var activeContextName = EditorToolUtility.GetToolName(ToolManager.activeContextType)
+                                    + (isGOToolContext ? " (Default)" : "");
+            tooltip = $"{k_Tooltip}\n\nActive Context: {activeContextName}";
         }
     }
 }

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -138,6 +139,9 @@ namespace UnityEditor.UIElements
 
         private bool m_IgnoreOnInspectorGUIErrors;
 
+        static readonly ProfilerMarker k_Reset = new ProfilerMarker("InspectorElement.Reset");
+        static readonly ProfilerMarker k_CreateInspectorGUI = new ProfilerMarker("InspectorElement.CreateInspectorGUI");
+
         /// <summary>
         /// InspectorElement constructor.
         /// </summary>
@@ -270,6 +274,8 @@ namespace UnityEditor.UIElements
 
         private void Reset(SerializedObject bindObject)
         {
+            k_Reset.Begin();
+
             Clear();
 
             prefabOverrideBlueBarsContainer = new VisualElement();
@@ -298,14 +304,9 @@ namespace UnityEditor.UIElements
 
             boundObject = bindObject;
 
-            var customInspector = CreateInspectorElementFromEditor(editor);
-            if (customInspector == null)
-            {
-                customInspector = CreateDefaultInspector(bindObject);
-            }
+            CreateInspectorGUI(false);
 
-            if (customInspector != null && customInspector != this)
-                hierarchy.Add(customInspector);
+            k_Reset.End();
         }
 
         private void PartialReset(SerializedObject bindObject)
@@ -317,17 +318,24 @@ namespace UnityEditor.UIElements
                 return;
             }
 
-            var customInspector = CreateInspectorElementFromEditor(editor, true);
-            if (customInspector == null)
-            {
-                customInspector = CreateDefaultInspector(boundObject);
-            }
+            CreateInspectorGUI(true);
+        }
+
+        void CreateInspectorGUI(bool updateBinding)
+        {
+            k_CreateInspectorGUI.Begin();
 
             Clear();
-            if (customInspector != null && customInspector != this)
-                hierarchy.Add(customInspector);
 
-            customInspector?.Bind(boundObject);
+            var element = CreateInspectorElementFromEditor(editor, true) ?? CreateDefaultInspector(boundObject);
+
+            if (element != null && element != this)
+                hierarchy.Add(element);
+
+            if (updateBinding)
+                element?.Bind(boundObject);
+
+            k_CreateInspectorGUI.End();
         }
 
         [EventInterest(typeof(SerializedObjectBindEvent))]

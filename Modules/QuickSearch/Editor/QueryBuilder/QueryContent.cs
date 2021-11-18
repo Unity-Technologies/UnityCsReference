@@ -44,7 +44,7 @@ namespace UnityEditor.Search
     {
         // TODO: manage the pool size
         static readonly Dictionary<int, QueryContent> s_ContentPool = new Dictionary<int, QueryContent>();
-        public static QueryContent CreateContent(this GUIStyle style, string value, Texture2D image = null)
+        public static QueryContent CreateContent(this GUIStyle style, string value, Texture2D image = null, string tooltip = null)
         {
             if (string.IsNullOrEmpty(value) && image == null)
                 return QueryContent.none;
@@ -54,6 +54,7 @@ namespace UnityEditor.Search
             if (s_ContentPool.TryGetValue(value.GetHashCode(), out var qc))
                 return qc;
             qc = new QueryContent(value, image, style);
+            qc.tooltip = tooltip;
             s_ContentPool[valueHash] = qc;
             return qc;
         }

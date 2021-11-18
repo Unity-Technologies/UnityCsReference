@@ -61,5 +61,7 @@ namespace UnityEditor
     internal static class EditorUIService
     {
         public static IEditorUIService instance { get; set; }
+
+        public static bool disableInspectorElementThrottling { get; set; } = false;
     }
 }

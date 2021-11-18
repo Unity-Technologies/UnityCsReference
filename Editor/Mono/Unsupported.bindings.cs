@@ -116,16 +116,11 @@ namespace UnityEditor
         internal static extern bool SetOverrideLightingSettingsInternal(int sceneHandle);
 
 
+        [NativeThrows]
         public static extern void RestoreOverrideLightingSettings();
 
         [FreeFunction("GetRenderSettings().SetUseFogNoDirty")]
         public static extern void SetRenderSettingsUseFogNoDirty(bool fog);
-
-        [FreeFunction("GetRenderSettings().SetSceneViewDebugModeExposureNoDirty")]
-        public static extern void SetSceneViewDebugModeExposureNoDirty(float exposure);
-
-        [FreeFunction("GetRenderSettings().GetSceneViewDebugModeExposure")]
-        public static extern float GetSceneViewDebugModeExposure();
 
         [FreeFunction("GetQualitySettings().SetShadowDistanceTemporarily")]
         public static extern void SetQualitySettingsShadowDistanceTemporarily(float distance);

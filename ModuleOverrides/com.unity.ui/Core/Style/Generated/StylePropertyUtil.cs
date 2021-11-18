@@ -756,5 +756,24 @@ namespace UnityEngine.UIElements.StyleSheets
                     return false;
             }
         }
+
+        public static IEnumerable<Type> GetAllowedAssetTypesForProperty(StylePropertyId id)
+        {
+            switch (id)
+            {
+                case StylePropertyId.BackgroundImage:
+                    return Background.allowedAssetTypes;
+                case StylePropertyId.Cursor:
+                    return Cursor.allowedAssetTypes;
+                case StylePropertyId.UnityFont:
+                    return new[]{typeof(Font)};
+                case StylePropertyId.UnityFontDefinition:
+                    return FontDefinition.allowedAssetTypes;
+                case StylePropertyId.Custom:
+                    return new[]{typeof(UnityEngine.Object)};
+                default:
+                    return System.Linq.Enumerable.Empty<Type>();
+            }
+        }
     }
 }

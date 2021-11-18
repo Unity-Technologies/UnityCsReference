@@ -161,7 +161,7 @@ namespace UnityEditor.Search.Providers
             if (!options.flags.HasAny(SearchPropositionFlags.QueryBuilder))
                 yield break;
 
-            yield return new SearchProposition(category: null, "Menu Path", "id:create/", "Filter by menu path.");
+            yield return new SearchProposition(category: null, "Menu Path", "id:create/", "Filter by menu path.", priority: 9999);
         }
 
         [SearchActionsProvider]

@@ -87,7 +87,7 @@ namespace UnityEngine.UIElements
 
         internal bool TryGetValueFromBagAsString(IUxmlAttributes bag, CreationContext cc, out string value)
         {
-            // Regardless of whether the attribute is overwridden or not, we want to error here
+            // Regardless of whether the attribute is overridden or not, we want to error here
             // if there is no valid name.
             if (name == null && (m_ObsoleteNames == null || m_ObsoleteNames.Length == 0))
             {
@@ -182,7 +182,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Tries to get the attribute value from the attribute bag.
         /// </summary>
-        /// <param name="bag">A bag containg attributes and their values as strings.</param>
+        /// <param name="bag">A bag contains attributes and their values as strings.</param>
         /// <param name="cc">The context in which the values are retrieved.</param>
         /// <param name="converterFunc">A function to convert a string value to type T.</param>
         /// <param name="defaultValue">The value to return if the attribute is not found in the bag.</param>
@@ -747,12 +747,34 @@ namespace UnityEngine.UIElements
         }
 
         static U ConvertValueToEnum<U>(string v, U defaultValue)
+            where U : struct
         {
-            if (v == null || !Enum.IsDefined(typeof(U), v))
-                return defaultValue;
+            try
+            {
+                if (string.IsNullOrEmpty(v))
+                    return defaultValue;
 
-            var l = (U)Enum.Parse(typeof(U), v);
-            return l;
+                return (U) Enum.Parse(typeof(U), v, true);
+            }
+            catch (ArgumentException)
+            {
+                Debug.LogError(GetEnumNameErrorMessage(v, typeof(U)));
+            }
+            catch (OverflowException)
+            {
+                Debug.LogError(GetEnumRangeErrorMessage(v, typeof(U)));
+            }
+            return defaultValue;
+        }
+
+        static string GetEnumNameErrorMessage(string v, Type enumType)
+        {
+            return $"The {enumType.Name} enum does not contain the value `{v}`. Value must be in range [{string.Join(" | ", Enum.GetNames(enumType))}].";
+        }
+
+        static string GetEnumRangeErrorMessage(string v, Type enumType)
+        {
+            return $"{v} is outside of the range of possible values for the {enumType.Name} enum.";
         }
     }
 

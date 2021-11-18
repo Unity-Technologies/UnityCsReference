@@ -10,6 +10,7 @@ using UnityEditor.UIElements.StyleSheets;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.Scripting;
+using UnityEngine;
 using UXMLImporterImpl = UnityEditor.UIElements.UXMLImporterImpl;
 
 namespace UnityEditor
@@ -24,6 +25,13 @@ namespace UnityEditor
 
             Panel.initEditorUpdaterFunc = EditorPanel.InitEditorUpdater;
             Panel.loadResourceFunc = StyleSheetResourceUtil.LoadResource;
+            BaseCompositeField<Vector2, FloatField, float>.s_SerializedPropertyBindCallback = EditorUIElementsBridge.RegisterSerializedPropertyBindCallback;
+            BaseCompositeField<Vector3, FloatField, float>.s_SerializedPropertyBindCallback = EditorUIElementsBridge.RegisterSerializedPropertyBindCallback;
+            BaseCompositeField<Vector4, FloatField, float>.s_SerializedPropertyBindCallback = EditorUIElementsBridge.RegisterSerializedPropertyBindCallback;
+            BaseCompositeField<Vector2Int, IntegerField, int>.s_SerializedPropertyBindCallback = EditorUIElementsBridge.RegisterSerializedPropertyBindCallback;
+            BaseCompositeField<Vector3Int, IntegerField, int>.s_SerializedPropertyBindCallback = EditorUIElementsBridge.RegisterSerializedPropertyBindCallback;
+            BaseCompositeField<Rect, FloatField, float>.s_SerializedPropertyBindCallback = EditorUIElementsBridge.RegisterSerializedPropertyBindCallback;
+            BaseCompositeField<RectInt, IntegerField, int>.s_SerializedPropertyBindCallback = EditorUIElementsBridge.RegisterSerializedPropertyBindCallback;
             StylePropertyReader.getCursorIdFunc = UIElementsEditorUtility.GetCursorId;
             Panel.TimeSinceStartup = () => (long)(EditorApplication.timeSinceStartup * 1000.0f);
         }

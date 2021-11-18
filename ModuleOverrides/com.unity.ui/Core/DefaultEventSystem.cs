@@ -66,6 +66,7 @@ namespace UnityEngine.UIElements
         private readonly float m_RepeatDelay = 0.5f;
 
         private bool m_SendingTouchEvents;
+        private bool m_SendingPenEvent;
 
         private Event m_Event = new Event();
         private BaseRuntimePanel m_FocusedPanel;
@@ -95,8 +96,11 @@ namespace UnityEngine.UIElements
             if (!isAppFocused && ShouldIgnoreEventsOnAppNotFocused() && updateMode == UpdateMode.IgnoreIfAppNotFocused)
                 return;
 
+            m_SendingPenEvent = ProcessPenEvents();
+
             // touch needs to take precedence because of the mouse emulation layer
-            m_SendingTouchEvents = ProcessTouchEvents();
+            if (!m_SendingPenEvent)
+                m_SendingTouchEvents = ProcessTouchEvents();
 
             SendIMGUIEvents();
 
@@ -114,12 +118,15 @@ namespace UnityEngine.UIElements
                 {
                     SendFocusBasedEvent(self => UIElementsRuntimeUtility.CreateEvent(self.m_Event), this);
                 }
-                else if (!m_SendingTouchEvents && input.mousePresent)
+                else if (!m_SendingTouchEvents && !m_SendingPenEvent && input.mousePresent)
                 {
+                    var pointerType = m_Event.pointerType == UnityEngine.PointerType.Mouse
+                        ? PointerId.mousePointerId
+                        : PointerId.penPointerIdBase;
                     var screenPosition = GetLocalScreenPosition(m_Event, out var targetDisplay);
                     if (m_Event.type == EventType.ScrollWheel)
                     {
-                        SendPositionBasedEvent(screenPosition, m_Event.delta, PointerId.mousePointerId, targetDisplay, (panelPosition, panelDelta, self) =>
+                        SendPositionBasedEvent(screenPosition, m_Event.delta, pointerType, targetDisplay, (panelPosition, panelDelta, self) =>
                         {
                             self.m_Event.mousePosition = panelPosition;
                             return UIElementsRuntimeUtility.CreateEvent(self.m_Event);
@@ -127,7 +134,7 @@ namespace UnityEngine.UIElements
                     }
                     else
                     {
-                        SendPositionBasedEvent(screenPosition, m_Event.delta, PointerId.mousePointerId, targetDisplay, (panelPosition, panelDelta, self) =>
+                        SendPositionBasedEvent(screenPosition, m_Event.delta, pointerType, targetDisplay, (panelPosition, panelDelta, self) =>
                         {
                             self.m_Event.mousePosition = panelPosition;
                             self.m_Event.delta = panelDelta;
@@ -326,6 +333,20 @@ namespace UnityEngine.UIElements
             }
         }
 
+        private static EventBase MakePenEvent(PenData pen, EventModifiers modifiers)
+        {
+            switch (pen.contactType)
+            {
+                case PenEventType.PenDown:
+                    return PointerDownEvent.GetPooled(pen, modifiers);
+                case PenEventType.PenUp:
+                    return PointerUpEvent.GetPooled(pen, modifiers);
+                case PenEventType.NoContact:
+                default:
+                    return null;
+            }
+        }
+
         private bool ProcessTouchEvents()
         {
             for (int i = 0; i < input.touchCount; ++i)
@@ -350,6 +371,22 @@ namespace UnityEngine.UIElements
 
             return input.touchCount > 0;
         }
+        private bool ProcessPenEvents()
+        {
+            PenData p  = input.GetLastPenContactEvent();
+            if (p.contactType == PenEventType.NoContact)
+                return false;
+
+            SendPositionBasedEvent(p.position, p.deltaPos, PointerId.penPointerIdBase, null, (panelPosition, panelDelta, _pen) =>
+            {
+                _pen.position = panelPosition;
+                _pen.deltaPos = panelDelta;
+                return MakePenEvent(_pen, EventModifiers.None);
+            }, p);
+            input.ClearLastPenContactEvent();
+            return true;
+        }
+
 
         private Vector2 GetRawMoveVector()
         {
@@ -437,6 +474,11 @@ namespace UnityEngine.UIElements
         {
             bool GetButtonDown(string button);
             float GetAxisRaw(string axis);
+            void ResetPenEvents();
+            void ClearLastPenContactEvent();
+            int penEventCount { get; }
+            PenData GetPenEvent(int index);
+            PenData GetLastPenContactEvent();
             int touchCount { get; }
             Touch GetTouch(int index);
             bool mousePresent { get; }
@@ -446,6 +488,11 @@ namespace UnityEngine.UIElements
         {
             public bool GetButtonDown(string button) => UnityEngine.Input.GetButtonDown(button);
             public float GetAxisRaw(string axis) => UnityEngine.Input.GetAxis(axis);
+            public void ResetPenEvents() => UnityEngine.Input.ResetPenEvents();
+            public void ClearLastPenContactEvent() => UnityEngine.Input.ClearLastPenContactEvent();
+            public int penEventCount => UnityEngine.Input.penEventCount;
+            public PenData GetPenEvent(int index) => UnityEngine.Input.GetPenEvent(index);
+            public PenData GetLastPenContactEvent() => UnityEngine.Input.GetLastPenContactEvent();
             public int touchCount => UnityEngine.Input.touchCount;
             public Touch GetTouch(int index) => UnityEngine.Input.GetTouch(index);
             public bool mousePresent => UnityEngine.Input.mousePresent;
@@ -457,6 +504,11 @@ namespace UnityEngine.UIElements
             public float GetAxisRaw(string axis) => 0f;
             public int touchCount => 0;
             public Touch GetTouch(int index) => default;
+            public void ResetPenEvents() { }
+            public void ClearLastPenContactEvent() { }
+            public int penEventCount => 0;
+            public PenData GetPenEvent(int index) => default;
+            public PenData GetLastPenContactEvent() => default;
             public bool mousePresent => false;
         }
     }

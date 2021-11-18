@@ -33,10 +33,11 @@ namespace UnityEngine.UIElements
 
         static bool SendEventToRegularTarget(EventBase evt, BaseVisualElementPanel panel)
         {
-            if (evt.target == null)
+            if (!(evt.target is VisualElement ve))
                 return false;
 
-            EventDispatchUtilities.PropagateEvent(evt);
+            if (ve.panel == panel)
+                EventDispatchUtilities.PropagateEvent(evt);
 
             return IsDone(evt);
         }

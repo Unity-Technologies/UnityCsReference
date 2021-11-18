@@ -172,7 +172,6 @@ namespace UnityEditor
         bool m_PlayModeObjects;
         bool m_IsAsset;
         bool m_ImmutableSelf;
-        bool m_IsDisconnected;
         bool m_IsMissing;
         bool m_IsPrefabInstanceAnyRoot;
         bool m_IsPrefabInstanceOutermostRoot;
@@ -213,7 +212,6 @@ namespace UnityEditor
             m_PlayModeObjects = false;
             m_IsAsset = false;
             m_ImmutableSelf = false;
-            m_IsDisconnected = false;
             m_IsMissing = false;
             m_IsPrefabInstanceAnyRoot = true;
             m_IsPrefabInstanceOutermostRoot = true;
@@ -265,8 +263,6 @@ namespace UnityEditor
                         m_ImmutableSelf = true; // Conservative is true if any is true
                     }
                 }
-                if (PrefabUtility.IsDisconnectedFromPrefabAsset(go))
-                    m_IsDisconnected = true;
                 if (PrefabUtility.IsPrefabAssetMissing(go))
                     m_IsMissing = true;
             }
@@ -516,7 +512,7 @@ namespace UnityEditor
                 {
                     EditorGUILayout.BeginHorizontal(GUILayout.Width(kIconSize + Styles.tagFieldWidth));
                     GUILayout.FlexibleSpace();
-                    if (m_IsDisconnected || m_IsMissing)
+                    if (m_IsMissing)
                     {
                         GUI.contentColor = GUI.skin.GetStyle("CN StatusWarn").normal.textColor;
                         DoPrefixLabel(prefixLabel, EditorStyles.whiteLabel);

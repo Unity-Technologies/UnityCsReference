@@ -50,7 +50,7 @@ namespace UnityEditor
         public void OnPostprocessBuild(BuildReport report)
         {
             ReportSceneViewInfo();
-            ReportBuildPackageIds(report.files);
+            ReportBuildPackageIds(report.GetFiles());
             if (EditorUserBuildSettings.activeBuildTarget == BuildTarget.Android)
             {
                 ReportBuildTargetPermissions();

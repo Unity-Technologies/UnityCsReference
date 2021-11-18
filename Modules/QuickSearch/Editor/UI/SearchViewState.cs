@@ -49,6 +49,8 @@ namespace UnityEditor.Search
         [SerializeField] internal bool excludeNoneItem;
         [SerializeField] internal SearchTable tableConfig;
         [SerializeField] internal bool ignoreSaveSearches;
+        [SerializeField] internal bool hideAllGroup;
+        [SerializeField] internal GUIContent windowTitle;
 
         [SerializeField] internal bool queryBuilderEnabled;
 
@@ -58,9 +60,15 @@ namespace UnityEditor.Search
         public SearchViewFlags flags;
         public string group;
 
-        [NonSerialized] internal Action<SearchItem, bool> selectHandler;
-        [NonSerialized] internal Action<SearchItem> trackingHandler;
-        [NonSerialized] internal Func<SearchItem, bool> filterHandler;
+        [SerializeField] private SearchFunctor<Action<SearchItem, bool>> m_SelectHandler;
+        [SerializeField] private SearchFunctor<Action<SearchItem>> m_TrackingHandler;
+        [SerializeField] private SearchFunctor<Func<SearchItem, bool>> m_FilterHandler;
+        [SerializeField] private SearchFunctor<Action<SearchContext, string, string>> m_GroupChanged;
+
+        internal Action<SearchItem, bool> selectHandler { get => m_SelectHandler?.handler; set => m_SelectHandler = new SearchFunctor<Action<SearchItem, bool>>(value); }
+        internal Action<SearchItem> trackingHandler { get => m_TrackingHandler?.handler; set => m_TrackingHandler = new SearchFunctor<Action<SearchItem>>(value); }
+        internal Func<SearchItem, bool> filterHandler { get => m_FilterHandler?.handler; set => m_FilterHandler = new SearchFunctor<Func<SearchItem, bool>>(value); }
+        internal Action<SearchContext, string, string> groupChanged { get => m_GroupChanged?.handler; set => m_GroupChanged = new SearchFunctor<Action<SearchContext, string, string>>(value); }
 
         internal bool hasWindowSize => position.width > 0f && position.height > 0;
         internal Vector2 windowSize => hasWindowSize ? position.size : defaultSize;

@@ -3,12 +3,32 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
+using UnityEditor.Overlays;
+using UnityEditor.Toolbars;
 using UnityEngine;
+using UnityEngine.UIElements;
 using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor.EditorTools
 {
+    // This serves as the default tool setting implementation.
+    [CustomEditor(typeof(EditorToolContext), true)]
+    class GameObjectToolContextCustomEditor : Editor, ICreateToolbar
+    {
+        string[] k_ToolbarIds = new string [0];
+
+        public IEnumerable<string> toolbarElements => k_ToolbarIds;
+
+        public EditorWindow containerWindow { get; set; }
+
+        public override VisualElement CreateInspectorGUI()
+        {
+            return new EditorToolbar(toolbarElements, containerWindow).rootVisualElement;
+        }
+    }
+
     public abstract class EditorToolContext : ScriptableObject, IEditor
     {
         [HideInInspector]
@@ -80,5 +100,7 @@ namespace UnityEditor.EditorTools
                         "View, Custom, and None are not applicable.");
             }
         }
+
+        public virtual IEnumerable<Type> GetAdditionalToolTypes() => Enumerable.Empty<Type>();
     }
 }

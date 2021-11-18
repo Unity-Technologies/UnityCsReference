@@ -455,7 +455,7 @@ namespace UnityEditor
             }
 
             // Sort the roots of the existing tree items
-            SortByMultipleColumns();
+            SortByMultipleColumns(rootItem);
 
             // Update the data with the sorted content
             rows.Clear();
@@ -474,13 +474,14 @@ namespace UnityEditor
             {
                 return;
             }
+            SortByMultipleColumns(node);
             foreach (AssetMarkerTreeViewItem child in node.children)
             {
                 AddAllChildren(rows, child);
             }
         }
 
-        void SortByMultipleColumns()
+        void SortByMultipleColumns(TreeViewItem parent)
         {
             var sortedColumns = multiColumnHeader.state.sortedColumns;
 
@@ -489,7 +490,7 @@ namespace UnityEditor
                 return;
             }
 
-            var myTypes = rootItem.children.Cast<AssetMarkerTreeViewItem>();
+            var myTypes = parent.children.Cast<AssetMarkerTreeViewItem>();
             var orderedQuery = InitialOrder(myTypes, sortedColumns);
             for (int i = 1; i < sortedColumns.Length; i++)
             {
@@ -540,7 +541,7 @@ namespace UnityEditor
                 }
             }
 
-            rootItem.children = orderedQuery.Cast<TreeViewItem>().ToList();
+            parent.children = orderedQuery.Cast<TreeViewItem>().ToList();
         }
 
         IOrderedEnumerable<AssetMarkerTreeViewItem> InitialOrder(IEnumerable<AssetMarkerTreeViewItem> myTypes, int[] history)

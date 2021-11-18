@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-
 using System;
 using System.Text;
 using System.Threading;
@@ -30,12 +29,18 @@ namespace UnityEditor.Connect
         public override string title { get; }
         public override string description { get; }
         public override string pathTowardIcon { get; }
-        public override string projectSettingsPath { get; }
+        public override string projectSettingsPath { get; } = "Project/Services/Ads";
         public override string settingsProviderClassName => nameof(AdsProjectSettings);
         public override bool displayToggle { get; }
         public override Notification.Topic notificationTopic => Notification.Topic.AdsService;
         public override bool requiresCoppaCompliance => true;
         public override string packageName { get; }
+
+        public override string editorGamePackageName { get; } = "com.unity.ads";
+        public override bool canShowFallbackProjectSettings { get; } = true;
+        public override bool canShowBuiltInProjectSettings { get; } = true;
+        public override string minimumEditorGamePackageVersion { get; } = "3.7.5";
+
         public override string serviceFlagName { get; }
         public override bool shouldSyncOnProjectRebind => true;
 
@@ -54,7 +59,6 @@ namespace UnityEditor.Connect
             title = L10n.Tr("Ads");
             description = L10n.Tr("Monetize your games");
             pathTowardIcon = @"Builtin Skins\Shared\Images\ServicesWindow-ServiceIcon-Ads.png";
-            projectSettingsPath = "Project/Services/Ads";
             displayToggle = true;
             packageName = "com.unity.ads";
             serviceFlagName = "ads";

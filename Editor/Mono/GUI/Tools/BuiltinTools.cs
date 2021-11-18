@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor.EditorTools;
 using UnityEditor.SceneManagement;
@@ -14,23 +15,23 @@ namespace UnityEditor
 {
     // This serves as the default tool setting implementation.
     [CustomEditor(typeof(EditorTool), true)]
-    class ManipulationToolCustomEditor : Editor, ICreateHorizontalToolbar, ICreateVerticalToolbar
+    class ManipulationToolCustomEditor : Editor, IAccessContainerWindow, ICreateToolbar
     {
-        VisualElement m_RootVisualElement;
-        EditorToolbar m_Toolbar;
+        public IEnumerable<string> toolbarElements
+        {
+            get
+            {
+                // UIServiceEditor/EditorToolbar/ToolbarElements/BuiltinToolSettings.cs
+                yield return "Tool Settings/Pivot Mode";
+                yield return "Tool Settings/Pivot Rotation";
+            }
+        }
 
-        public VisualElement CreateHorizontalToolbarContent() => CreateInspectorGUI();
-
-        public VisualElement CreateVerticalToolbarContent() => CreateInspectorGUI();
+        public EditorWindow containerWindow { get; set; }
 
         public override VisualElement CreateInspectorGUI()
         {
-            m_Toolbar = OverlayUtilities.CreateToolbar(
-                m_RootVisualElement = new VisualElement() { name = "toolbar-overlay" },
-                null,
-                "Tool Settings/Pivot Mode",
-                "Tool Settings/Pivot Rotation");
-            return m_RootVisualElement;
+            return new EditorToolbar(toolbarElements, containerWindow).rootVisualElement;
         }
     }
 

@@ -8,44 +8,6 @@ using UnityEngine;
 
 namespace UnityEditor.Search
 {
-    static class QueryColors
-    {
-        private static bool isDarkTheme => EditorGUIUtility.isProSkin;
-
-        public static readonly Color area;
-        public static readonly Color filter;
-        public static readonly Color property;
-        public static readonly Color type;
-        public static readonly Color typeIcon;
-        public static readonly Color word;
-        public static readonly Color combine;
-        public static readonly Color textureBackgroundColor = new Color(0.2f, 0.2f, 0.25f, 0.95f);
-        public static readonly Color selectedBorderColor = new Color(58 / 255f, 121 / 255f, 187 / 255f);
-        public static readonly Color hoveredBorderColor = new Color(0.6f, 0.6f, 0.6f);
-        public static readonly Color normalBorderColor = new Color(0.1f, 0.1f, 0.1f);
-        public static readonly Color selectedTint = new Color(1.3f, 1.2f, 1.3f, 1f);
-
-        static QueryColors()
-        {
-            ColorUtility.TryParseHtmlString("#74CBEE", out area);
-            ColorUtility.TryParseHtmlString("#78CAB6", out filter);
-            ColorUtility.TryParseHtmlString("#A38CD0", out property);
-            ColorUtility.TryParseHtmlString("#EBD05F", out type);
-            ColorUtility.TryParseHtmlString("#EBD05F", out typeIcon);
-            ColorUtility.TryParseHtmlString("#739CEB", out word);
-            ColorUtility.TryParseHtmlString("#B7B741", out combine);
-            if (isDarkTheme)
-            {
-                ColorUtility.TryParseHtmlString("#383838", out textureBackgroundColor);
-                selectedBorderColor = Color.white;
-            }
-            else
-            {
-                ColorUtility.TryParseHtmlString("#CBCBCB", out textureBackgroundColor);
-            }
-        }
-    }
-
     abstract class QueryBlock : IBlockSource
     {
         protected const float arrowOffset = 5f;
@@ -77,6 +39,8 @@ namespace UnityEditor.Search
         public bool disableHovering { get; set; }
         public bool excluded { get; set; }
         public bool selected { get; set; }
+        public string tooltip { get; set; }
+        public string editorTitle { get; set; }
 
         public Rect drawRect { get; set; }
         public Rect layoutRect { get; set; }
@@ -153,6 +117,7 @@ namespace UnityEditor.Search
             disabled = !disabled;
             source.Apply();
         }
+
 
         protected virtual void AddContextualMenuItems(GenericMenu menu) {}
 
@@ -279,8 +244,8 @@ namespace UnityEditor.Search
         public virtual Rect Layout(in Vector2 at, in float availableSpace)
         {
             var labelStyle = Styles.QueryBuilder.label;
-            var nameContent = labelStyle.CreateContent(name);
-            var valueContent = labelStyle.CreateContent(value);
+            var nameContent = labelStyle.CreateContent(name, null, tooltip);
+            var valueContent = labelStyle.CreateContent(value, null, tooltip);
             var blockWidth = nameContent.width + valueContent.width + labelStyle.margin.horizontal * 2f;
             if (!@readonly)
                 blockWidth += blockExtraPadding + QueryContent.DownArrow.width;
@@ -290,8 +255,8 @@ namespace UnityEditor.Search
         protected virtual void Draw(in Rect blockRect, in Vector2 mousePosition)
         {
             var labelStyle = Styles.QueryBuilder.label;
-            var nameContent = labelStyle.CreateContent(name);
-            var valueContent = labelStyle.CreateContent(value);
+            var nameContent = labelStyle.CreateContent(name, null, tooltip);
+            var valueContent = labelStyle.CreateContent(value, null, tooltip);
 
             DrawBackground(blockRect, mousePosition);
 
@@ -312,7 +277,7 @@ namespace UnityEditor.Search
                 DrawArrow(blockRect, mousePosition, editor != null ? QueryContent.UpArrow : QueryContent.DownArrow);
         }
 
-        protected void DrawArrow(in Rect blockRect, in Vector2 mousePosition, QueryContent arrowContent)
+        public void DrawArrow(in Rect blockRect, in Vector2 mousePosition, QueryContent arrowContent)
         {
             var arrow = editor != null ? QueryContent.UpArrow : QueryContent.DownArrow;
             arrowRect = new Rect(blockRect.xMax - arrowContent.width - arrowOffset, blockRect.y - 1f, arrow.width, blockRect.height);

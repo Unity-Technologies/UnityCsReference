@@ -1033,9 +1033,9 @@ namespace TreeEditor
                         {
                             case EditMode.MoveNode:
                                 if (pointIndex == 0)
-                                    worldPos = Handles.FreeMoveHandle(worldPos, Quaternion.identity, handleSize, Vector3.zero, Handles.CircleHandleCap);
+                                    worldPos = Handles.FreeMoveHandle(worldPos, handleSize, Vector3.zero, Handles.CircleHandleCap);
                                 else
-                                    worldPos = Handles.FreeMoveHandle(worldPos, Quaternion.identity, handleSize, Vector3.zero, Handles.RectangleHandleCap);
+                                    worldPos = Handles.FreeMoveHandle(worldPos, handleSize, Vector3.zero, Handles.RectangleHandleCap);
 
                                 // check if point was just selected
                                 if (oldEventType == EventType.MouseDown && evt.type == EventType.Used && oldKeyboardControl != GUIUtility.keyboardControl)
@@ -1157,7 +1157,7 @@ namespace TreeEditor
 
                             case EditMode.Freehand:
                                 EditorGUI.BeginChangeCheck();
-                                Vector3 newPosition = Handles.FreeMoveHandle(worldPos, Quaternion.identity, handleSize, Vector3.zero, Handles.CircleHandleCap);
+                                Vector3 newPosition = Handles.FreeMoveHandle(worldPos, handleSize, Vector3.zero, Handles.CircleHandleCap);
                                 if (EditorGUI.EndChangeCheck())
                                 {
                                     Undo.RegisterCompleteObjectUndo(treeData, "Free Hand");
@@ -1300,7 +1300,7 @@ namespace TreeEditor
                     switch (editMode)
                     {
                         case EditMode.MoveNode:
-                            Handles.FreeMoveHandle(worldPos, Quaternion.identity, handleSize, Vector3.zero, Handles.CircleHandleCap);
+                            Handles.FreeMoveHandle(worldPos, handleSize, Vector3.zero, Handles.CircleHandleCap);
 
                             // check if point was just selected
                             if (oldEventType == EventType.MouseDown && evt.type == EventType.Used && oldKeyboardControl != GUIUtility.keyboardControl)

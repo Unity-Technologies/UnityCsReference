@@ -23,6 +23,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private long m_NumberOfPackagesShown;
         private static readonly string k_All = L10n.Tr("All");
 
+        private bool m_Enabled;
         private long m_LoadMore;
         private string m_LoadedText;
         private bool m_DoShowLoadMoreLabel;
@@ -63,6 +64,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnEnable()
         {
+            m_Enabled = true;
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
             m_Application.onInternetReachabilityChange += OnInternetReachabilityChange;
             m_PageManager.onRefreshOperationFinish += Refresh;
@@ -72,6 +74,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnDisable()
         {
+            m_Enabled = false;
             m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
             m_Application.onInternetReachabilityChange -= OnInternetReachabilityChange;
             m_PageManager.onRefreshOperationFinish -= Refresh;
@@ -81,8 +84,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var menu = new DropdownMenu();
 
-            if (m_Total == 0)
-                EditorApplication.delayCall += () => UpdateMenu();
+            EditorApplication.delayCall -= UpdateMenu;
+            if (m_Enabled && m_Total == 0)
+                EditorApplication.delayCall += UpdateMenu;
 
             AddDropdownItems(menu);
             loadAssetsDropdown.menu = menu.MenuItems().Count > 0 ? menu : null;

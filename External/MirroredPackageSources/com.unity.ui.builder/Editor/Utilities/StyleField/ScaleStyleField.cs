@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using JetBrains.Annotations;
 using UnityEngine.UIElements;
 using UnityEditor;
@@ -119,8 +120,8 @@ namespace Unity.UI.Builder
 
         void RefreshSubFields()
         {
-            m_ScaleXField.SetValueWithoutNotify(value.value.x.ToString());
-            m_ScaleYField.SetValueWithoutNotify(value.value.y.ToString());
+            m_ScaleXField.SetValueWithoutNotify(value.value.x.ToString(CultureInfo.InvariantCulture.NumberFormat));
+            m_ScaleYField.SetValueWithoutNotify(value.value.y.ToString(CultureInfo.InvariantCulture.NumberFormat));
         }
 
         void UpdateScaleField()

@@ -77,6 +77,15 @@ namespace UnityEngine.UIElements
             return default;
         }
 
+        internal static IEnumerable<Type> allowedAssetTypes
+        {
+            get
+            {
+                yield return typeof(Font);
+                yield return typeof(FontAsset);
+            }
+        }
+
         internal bool IsEmpty()
         {
             return m_Font == null && m_FontAsset == null;

@@ -97,8 +97,9 @@ namespace UnityEditor.PackageManager.UI
             var unityConnectProxy = container.Resolve<UnityConnectProxy>();
             var applicationProxy = container.Resolve<ApplicationProxy>();
             var upmClient = container.Resolve<UpmClient>();
+            var assetStoreCachePathProxy = container.Resolve<AssetStoreCachePathProxy>();
 
-            m_Root = new PackageManagerWindowRoot(resourceLoader, extensionManager, selection, packageFiltering, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy, applicationProxy, upmClient);
+            m_Root = new PackageManagerWindowRoot(resourceLoader, extensionManager, selection, packageFiltering, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy, applicationProxy, upmClient, assetStoreCachePathProxy);
             try
             {
                 m_Root.OnEnable();

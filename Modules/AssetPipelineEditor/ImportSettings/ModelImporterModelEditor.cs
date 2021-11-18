@@ -26,6 +26,8 @@ namespace UnityEditor
         [CacheProperty]
         SerializedProperty m_ImportBlendShapes;
         [CacheProperty]
+        SerializedProperty m_ImportBlendShapeDeformPercent;
+        [CacheProperty]
         SerializedProperty m_ImportVisibility;
         [CacheProperty]
         protected  SerializedProperty m_ImportCameras;
@@ -116,6 +118,7 @@ namespace UnityEditor
             public static GUIContent UseFileScale = EditorGUIUtility.TrTextContent("Convert Units", "Convert file units to Unity ones.");
 
             public static GUIContent ImportBlendShapes = EditorGUIUtility.TrTextContent("Import BlendShapes", "Should Unity import BlendShapes.");
+            public static GUIContent ImportBlendShapesDeformPercent = EditorGUIUtility.TrTextContent("Import Deform Percent", "Import BlendShapes deform percent. If disabled, all values will be set to 0.");
             public static GUIContent ImportVisibility = EditorGUIUtility.TrTextContent("Import Visibility", "Use visibility properties to enable or disable MeshRenderer components.");
             public static GUIContent ImportCameras = EditorGUIUtility.TrTextContent("Import Cameras");
             public static GUIContent ImportLights = EditorGUIUtility.TrTextContent("Import Lights");
@@ -237,6 +240,10 @@ namespace UnityEditor
 
             EditorGUILayout.PropertyField(m_BakeAxisConversion, Styles.BakeAxisConversion);
             EditorGUILayout.PropertyField(m_ImportBlendShapes, Styles.ImportBlendShapes);
+
+            if(m_ImportBlendShapes.boolValue)
+                EditorGUILayout.PropertyField(m_ImportBlendShapeDeformPercent, Styles.ImportBlendShapesDeformPercent);
+
             EditorGUILayout.PropertyField(m_ImportVisibility, Styles.ImportVisibility);
             EditorGUILayout.PropertyField(m_ImportCameras, Styles.ImportCameras);
             EditorGUILayout.PropertyField(m_ImportLights, Styles.ImportLights);

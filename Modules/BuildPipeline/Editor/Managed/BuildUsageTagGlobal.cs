@@ -19,6 +19,7 @@ namespace UnityEditor.Build.Content
         internal uint m_LegacyLightmapModesUsed;
         internal uint m_DynamicLightmapsUsed;
         internal uint m_FogModesUsed;
+        internal uint m_BrgShaderStripModeMask;
         internal bool m_ForceInstancingStrip;
         internal bool m_ForceInstancingKeep;
         internal bool m_ShadowMasksUsed;
@@ -39,6 +40,7 @@ namespace UnityEditor.Build.Content
             results.m_ShadowMasksUsed = x.m_ShadowMasksUsed | y.m_ShadowMasksUsed;
             results.m_SubtractiveUsed = x.m_SubtractiveUsed | y.m_SubtractiveUsed;
             results.m_HybridRendererPackageUsed = x.m_HybridRendererPackageUsed | y.m_HybridRendererPackageUsed;
+            results.m_BrgShaderStripModeMask = x.m_BrgShaderStripModeMask | y.m_BrgShaderStripModeMask;
             results.m_BuildForLivelink = x.m_BuildForLivelink | y.m_BuildForLivelink;
             results.m_BuildForServer = x.m_BuildForServer | y.m_BuildForServer;
             return results;

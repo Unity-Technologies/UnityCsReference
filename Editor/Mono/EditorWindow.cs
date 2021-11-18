@@ -37,7 +37,6 @@ namespace UnityEditor
         // We use a 24-bit depth/stencil buffer by default to support the UIRenderer clipping feature
         [HideInInspector]
         int m_DepthBufferBits = 24;
-
         [HideInInspector]
         int m_AntiAliasing = 1;
 

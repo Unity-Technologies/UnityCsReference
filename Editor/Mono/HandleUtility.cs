@@ -667,6 +667,7 @@ namespace UnityEditor
         static int s_PreviousNearestControl;
         static int s_NearestControl;
         static float s_NearestDistance;
+        static Camera s_PreviousCamera;
         internal const float kPickDistance = 5.0f;
         internal static float s_CustomPickDistance = kPickDistance;
 
@@ -687,6 +688,12 @@ namespace UnityEditor
             Handles.color = Color.white;
             Handles.zTest = CompareFunction.Always;
             s_CustomPickDistance = kPickDistance;
+
+            if (null != Camera.current)
+            {
+                s_PreviousCamera = Camera.current;
+            }
+
             Handles.Internal_SetCurrentCamera(null);
             EditorGUI.s_DelayedTextEditor.BeginGUI();
         }
@@ -695,11 +702,19 @@ namespace UnityEditor
         internal static void EndHandles()
         {
             if (s_PreviousNearestControl != s_NearestControl
-                && s_NearestControl != 0)
+                && s_NearestControl != 0
+                && Event.current.type != EventType.Layout)
             {
                 s_PreviousNearestControl = s_NearestControl;
                 Repaint();
             }
+
+            if (null != s_PreviousCamera)
+            {
+                Handles.Internal_SetCurrentCamera(s_PreviousCamera);
+                s_PreviousCamera = null;
+            }
+
             // Give the delayed text editor a chance to notice that it lost focus.
             EditorGUI.s_DelayedTextEditor.EndGUI(Event.current.type);
         }

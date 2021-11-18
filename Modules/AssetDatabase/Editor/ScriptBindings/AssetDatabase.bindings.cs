@@ -630,6 +630,8 @@ namespace UnityEditor
             ForceReserializeAssets(guids, options);
         }
 
+        extern internal static System.Type GetTypeFromVisibleGUIDAndLocalFileIdentifier(GUID guid, long localId);
+
         [FreeFunction("AssetDatabase::GetGUIDAndLocalIdentifierInFile")]
         extern private static bool GetGUIDAndLocalIdentifierInFile(int instanceID, out GUID outGuid, out long outLocalId);
 
@@ -753,8 +755,9 @@ namespace UnityEditor
         [FreeFunction("AcceleratorClientCanConnectTo")]
         public extern static bool CanConnectToCacheServer(string ip, UInt16 port);
 
-        [FreeFunction()]
-        public extern static void RefreshSettings();
+        [FreeFunction("RefreshSettings")]
+        private extern static void _RefreshSettings();
+        public static void RefreshSettings() => _RefreshSettings();
 
         public static event Action<CacheServerConnectionChangedParameters> cacheServerConnectionChanged;
         [RequiredByNativeCode]
@@ -768,7 +771,8 @@ namespace UnityEditor
         }
 
         [FreeFunction("AcceleratorClientIsConnected")]
-        public extern static bool IsConnectedToCacheServer();
+        private extern static bool _IsConnectedToCacheServer();
+        public static bool IsConnectedToCacheServer() => _IsConnectedToCacheServer();
 
         [FreeFunction("AcceleratorClientResetReconnectTimer")]
         public extern static void ResetCacheServerReconnectTimer();
@@ -792,7 +796,8 @@ namespace UnityEditor
         public extern static bool GetCacheServerEnableUpload();
 
         [FreeFunction("AssetDatabase::WaitForPendingCacheServerRequestsToComplete")]
-        extern internal static void WaitForPendingCacheServerRequestsToComplete();
+        private extern static void _WaitForPendingCacheServerRequestsToComplete();
+        internal static void WaitForPendingCacheServerRequestsToComplete() => _WaitForPendingCacheServerRequestsToComplete();
 
         [FreeFunction("AssetDatabase::IsDirectoryMonitoringEnabled")]
         public extern static bool IsDirectoryMonitoringEnabled();

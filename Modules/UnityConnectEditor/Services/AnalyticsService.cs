@@ -3,9 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Text;
 using UnityEditor.Analytics;
-using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -18,11 +16,17 @@ namespace UnityEditor.Connect
         public override string title { get; }
         public override string description { get; }
         public override string pathTowardIcon { get; }
-        public override string projectSettingsPath { get; }
+        public override string projectSettingsPath { get; } = "Project/Services/Analytics";
         public override string settingsProviderClassName => nameof(AnalyticsProjectSettings);
         public override bool displayToggle { get; }
         public override Notification.Topic notificationTopic => Notification.Topic.AnalyticsService;
         public override string packageName { get; }
+
+        public override string editorGamePackageName { get; } = "com.unity.services.analytics";
+        public override bool canShowFallbackProjectSettings { get; } = true;
+        public override bool canShowBuiltInProjectSettings { get; } = false;
+        public override string minimumEditorGamePackageVersion { get; } = "1.0.0";
+
         public override string serviceFlagName { get; }
         public override bool shouldEnableOnProjectCreation => false;
         public override bool shouldSyncOnProjectRebind => true;
@@ -45,7 +49,6 @@ namespace UnityEditor.Connect
             title = L10n.Tr(serviceName);
             description = L10n.Tr("Discover player insights");
             pathTowardIcon = @"Builtin Skins\Shared\Images\ServicesWindow-ServiceIcon-Analytics.png";
-            projectSettingsPath = "Project/Services/Analytics";
             displayToggle = true;
             packageName = "com.unity.analytics";
             serviceFlagName = "analytics";

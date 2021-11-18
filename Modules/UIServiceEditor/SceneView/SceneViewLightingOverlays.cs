@@ -78,21 +78,11 @@ namespace UnityEditor
             m_ShouldDisplay = false;
             m_SceneView = view;
             m_SceneView.onCameraModeChanged += OnCameraModeChanged;
-            EditorApplication.playModeStateChanged += UpdateExposureValue;
         }
 
         public override void OnWillBeDestroyed()
         {
             m_SceneView.onCameraModeChanged -= OnCameraModeChanged;
-            EditorApplication.playModeStateChanged -= UpdateExposureValue;
-        }
-
-        private void UpdateExposureValue(PlayModeStateChange state)
-        {
-            if (state == PlayModeStateChange.EnteredEditMode)
-            {
-                Unsupported.SetSceneViewDebugModeExposureNoDirty(m_SceneView.bakedLightmapExposure);
-            }
         }
 
         void OnCollapsedChanged(bool collapsed)
@@ -159,7 +149,6 @@ namespace UnityEditor
             }
 
             UpdateAlbedoMetalValidation();
-            Unsupported.SetSceneViewDebugModeExposureNoDirty(m_SceneView.bakedLightmapExposure);
             Handles.SetSceneViewModeGIContributorsReceiversColors(
                 kSceneViewMaterialNoContributeGI.Color,
                 kSceneViewMaterialReceiveGILightmaps.Color,
@@ -252,7 +241,7 @@ namespace UnityEditor
 
         VisualElement CreateLightExposureContent()
         {
-            var exposure = m_SceneView.bakedLightmapExposure;
+            var exposure = SceneView.s_DrawModeExposure;
 
             var root = new VisualElement();
             root.AddToClassList(k_SliderRowClass);
@@ -290,8 +279,7 @@ namespace UnityEditor
             if (evt.target != m_ExposureField || evt.newValue != 0)
                 m_ExposureField.SetValueWithoutNotify(value);
 
-            m_SceneView.bakedLightmapExposure = value;
-            Unsupported.SetSceneViewDebugModeExposureNoDirty(m_SceneView.bakedLightmapExposure);
+            SceneView.s_DrawModeExposure.value = value;
         }
 
         VisualElement CreateSliderWithField(GUIContent label, float value, float min, float max, EventCallback<ChangeEvent<float>> callback)
@@ -553,7 +541,7 @@ namespace UnityEditor
                     s_ExposureTexture.hideFlags = HideFlags.HideAndDontSave;
                 }
 
-                s_ExposureTexture.SetPixel(0, 0, new Color(Mathf.Pow(2.0f, m_SceneView.bakedLightmapExposure), 0.0f, 0.0f));
+                s_ExposureTexture.SetPixel(0, 0, new Color(Mathf.Pow(2.0f, SceneView.s_DrawModeExposure), 0.0f, 0.0f));
                 s_ExposureTexture.Apply();
 
                 Gizmos.exposure = s_ExposureTexture;

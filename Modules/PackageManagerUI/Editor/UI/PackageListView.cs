@@ -40,7 +40,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             unbindItem = UnbindItem;
             bindItem = BindItem;
 
-            selectionType = SelectionType.Single;
+            selectionType = SelectionType.Multiple;
             virtualizationMethod = CollectionVirtualizationMethod.FixedHeight;
             fixedItemHeight = PackageItem.k_MainItemHeight;
 
@@ -62,20 +62,20 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageManager.onSelectionChanged -= SyncPageManagerSelectionToListView;
         }
 
-        private void SyncPageManagerSelectionToListView(IPackageVersion version)
-        {
-            SyncSelectionIndex(version?.packageUniqueId);
-        }
-
         private void SyncListViewSelectionToPageManager(IEnumerable<object> items)
         {
-            var selectedPackageUniqueId = (selectedItem as VisualState)?.packageUniqueId;
+            var selections = items.Select(item =>
+            {
+                var visualState = item as VisualState;
+                var package = m_PackageDatabase.GetPackage(visualState?.packageUniqueId);
+                if (package != null)
+                    return new PackageAndVersionIdPair(package.uniqueId);
+                return null;
+            }).Where(s => s != null).ToArray();
 
             // SelectionChange happens before BindItems, hence we use m_PageManager.SetSelected instead of packageItem.SelectMainItem
             // as PackageItems are null sometimes when SelectionChange is triggered
-            var package = m_PackageDatabase.GetPackage(selectedPackageUniqueId);
-            if (package != null)
-                m_PageManager.SetSelected(package, null, true);
+            m_PageManager.SetSelected(selections, true);
         }
 
         private void UnbindItem(VisualElement item, int index)
@@ -130,7 +130,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (refresh)
             {
                 RefreshItems();
-                SyncSelectionIndex();
+                SyncPageManagerSelectionToListView();
             }
             return refresh;
         }
@@ -143,9 +143,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         // In PageManager we track selection by keeping track of the package unique ids (hence it's not affected by reordering)
         // In ListView, the selection is tracked by indices. As a result, when we update the itemsSource, we want to sync selection index if needed
         // Because there might be some sort of reordering
-        private void SyncSelectionIndex(string selectedPackageUniqueIdInPageManager = null)
+        private void SyncPageManagerSelectionToListView(PageSelection selection = null)
         {
-
             var visualStates = itemsSource as List<VisualState>;
             if (visualStates == null)
                 return;
@@ -154,20 +153,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (page.tab != PackageFilterTab.AssetStore)
                 return;
 
-            selectedPackageUniqueIdInPageManager ??= page.GetSelectedVisualState()?.packageUniqueId;
-            var selectedPackageUniqueIdInListView = (selectedItem as VisualState)?.packageUniqueId;
-            if (selectedPackageUniqueIdInListView == selectedPackageUniqueIdInPageManager)
+            selection ??= page.GetSelection();
+            var oldSelectedVisualStates = selectedItems.Select(item => item as VisualState).ToArray();
+            if (oldSelectedVisualStates.Length == selection.Count && oldSelectedVisualStates.All(v => selection.Contains(v.packageUniqueId)))
                 return;
 
+            var newSelectionIndices = new List<int>();
             for (var i = 0; i < visualStates.Count; i++)
-            {
-                if (selectedPackageUniqueIdInPageManager == visualStates[i].packageUniqueId)
-                {
-                    if (selectedIndex != i)
-                        selectedIndex = i;
-                    return;
-                }
-            }
+                if (selection.Contains(visualStates[i].packageUniqueId))
+                    newSelectionIndices.Add(i);
+            SetSelection(newSelectionIndices);
         }
 
         public void ScrollToSelection()
@@ -179,14 +174,15 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
 
-            var selectedPackageUniqueId = m_PageManager.GetCurrentPage().GetSelectedVersion()?.packageUniqueId;
-            if (string.IsNullOrEmpty(selectedPackageUniqueId))
+            // For now we want to just scroll to any of the selections, this behaviour might change in the future depending on how users react
+            var firstSelectedPackageUniqueId = m_PageManager.GetSelection().firstSelection?.packageUniqueId;
+            if (string.IsNullOrEmpty(firstSelectedPackageUniqueId))
                 return;
 
             EditorApplication.delayCall -= ScrollToSelection;
 
             var visualStates = itemsSource as List<VisualState>;
-            var index = visualStates?.FindIndex(v => v.packageUniqueId == selectedPackageUniqueId) ?? -1;
+            var index = visualStates?.FindIndex(v => v.packageUniqueId == firstSelectedPackageUniqueId) ?? -1;
             if (index >= 0)
                 ScrollToItem(index);
         }
@@ -243,8 +239,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             // when the focus is not on the ListView so that the behaviour is consistent with the scroll view. Note that once the
             // ListView is focused, this function won't trigger because the KeyDownEvent would get intercepted at the ListView level
             // and will not bubble up. Only the arrow keys are supported in the scroll view, so we do the same for ListView for now.
-            if ((evt.keyCode == KeyCode.UpArrow && SelectNext(true)) || (evt.keyCode == KeyCode.DownArrow && SelectNext(false)))
+            if ((evt.keyCode == KeyCode.UpArrow && SelectNext(true)) || (evt.keyCode == KeyCode.DownArrow && SelectNext(false)) ||
+                (evt.keyCode == KeyCode.A && evt.ctrlKey))
             {
+                if (evt.keyCode == KeyCode.A && evt.ctrlKey) SelectAll();
                 Focus();
                 evt.StopPropagation();
             }

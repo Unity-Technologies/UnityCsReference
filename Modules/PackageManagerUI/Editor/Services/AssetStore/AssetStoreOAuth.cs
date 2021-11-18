@@ -256,7 +256,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     }
                     else
                     {
-                        OnOperationError(authCodeResponse.Exception.ToString());
+                        OnOperationError(string.Format(L10n.Tr("Error while getting auth code: {0}"), authCodeResponse.Exception.ToString()));
                     }
                 });
             }
@@ -264,7 +264,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 m_AuthCode = string.Empty;
                 m_AuthCodeRequested = false;
-                OnOperationError(e.Message);
+                OnOperationError(string.Format(L10n.Tr("Error while getting auth code: {0}"), e.Message));
             }
         }
 
@@ -279,26 +279,38 @@ namespace UnityEditor.PackageManager.UI.Internal
             // Use refresh token if any
             if (!string.IsNullOrEmpty(m_AccessToken?.refreshToken))
             {
-                RefreshAccessToken(doneCallback);
+                GetAccessToken(doneCallback, refreshToken: m_AccessToken.refreshToken);
                 return;
             }
 
             GetAuthCode(authCode =>
             {
-                GetNewAccessToken(doneCallback, authCode);
+                GetAccessToken(doneCallback, authCode: authCode);
             });
         }
 
-        private void GetNewAccessToken(Action<AccessToken> doneCallback, string authCode)
+        private void GetAccessToken(Action<AccessToken> doneCallback, string authCode = null, string refreshToken = null)
         {
             m_OnAccessTokenFetched += doneCallback;
 
             if (m_AccessTokenRequest != null)
                 return;
 
-            m_AccessTokenRequest = m_HttpClientFactory.PostASyncHTTPClient(
-                $"{host}{k_OAuthUri}",
-                $"grant_type=authorization_code&code={authCode}&client_id={k_ServiceId}&client_secret={secret}");
+            if (string.IsNullOrEmpty(secret))
+            {
+                OnGetAccessTokenError(L10n.Tr("Error while getting access token: invalid configuration from Unity Connect"));
+                return;
+            }
+
+            var authorization = string.Empty;
+            if (!string.IsNullOrEmpty(authCode))
+                authorization = $"grant_type=authorization_code&code={authCode}";
+            else if (!string.IsNullOrEmpty(refreshToken))
+                authorization = $"grant_type=refresh_token&refresh_token={refreshToken}";
+            else
+                return;
+
+            m_AccessTokenRequest = m_HttpClientFactory.PostASyncHTTPClient($"{host}{k_OAuthUri}", $"{authorization}&client_id={k_ServiceId}&client_secret={secret}");
             m_AccessTokenRequest.header["Content-Type"] = "application/x-www-form-urlencoded";
             m_AccessTokenRequest.doneCallback = httpClient =>
             {
@@ -310,46 +322,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     if (response.ContainsKey("errorMessage"))
                     {
-                        OnGetAccessTokenError(response.GetString("errorMessage"));
-                        return;
-                    }
-
-                    var accessToken = new AccessToken(response);
-                    if (accessToken.IsValid())
-                    {
-                        m_AccessToken = accessToken;
-                        m_OnAccessTokenFetched?.Invoke(m_AccessToken);
-                        m_OnAccessTokenFetched = null;
-                    }
-                    else
-                        OnGetAccessTokenError(L10n.Tr("Access token invalid"));
-                }
-            };
-            m_AccessTokenRequest.Begin();
-        }
-
-        private void RefreshAccessToken(Action<AccessToken> doneCallback)
-        {
-            m_OnAccessTokenFetched += doneCallback;
-
-            if (m_AccessTokenRequest != null)
-                return;
-
-            m_AccessTokenRequest = m_HttpClientFactory.PostASyncHTTPClient(
-                $"{host}{k_OAuthUri}",
-                $"grant_type=refresh_token&refresh_token={m_AccessToken.refreshToken}&client_id={k_ServiceId}&client_secret={secret}");
-            m_AccessTokenRequest.header["Content-Type"] = "application/x-www-form-urlencoded";
-            m_AccessTokenRequest.doneCallback = httpClient =>
-            {
-                m_AccessTokenRequest = null;
-                m_AccessToken = null;
-
-                var response = AssetStoreUtils.ParseResponseAsDictionary(httpClient);
-                if (response != null)
-                {
-                    if (response.ContainsKey("errorMessage"))
-                    {
-                        OnGetAccessTokenError(response.GetString("errorMessage"));
+                        OnGetAccessTokenError(string.Format(L10n.Tr("Error while getting access token: {0}"), response.GetString("errorMessage")));
                         return;
                     }
 
@@ -393,7 +366,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     {
                         if (response.ContainsKey("errorMessage"))
                         {
-                            OnOperationError(response.GetString("errorMessage"));
+                            OnOperationError(string.Format(L10n.Tr("Error while getting token info: {0}"), response.GetString("errorMessage")));
                             return;
                         }
 
@@ -405,7 +378,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                             m_OnTokenInfoFetched = null;
                         }
                         else
-                            OnOperationError(L10n.Tr("TokenInfo invalid"));
+                            OnOperationError(L10n.Tr("Token info invalid"));
                     }
                 };
                 m_TokenRequest.Begin();
@@ -440,7 +413,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     {
                         if (response.ContainsKey("errorMessage"))
                         {
-                            OnOperationError(response.GetString("errorMessage"));
+                            OnOperationError(string.Format(L10n.Tr("Error while getting user info: {0}"), response.GetString("errorMessage")));
                             return;
                         }
 
@@ -455,7 +428,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                             m_OnError = null;
                         }
                         else
-                            OnOperationError(L10n.Tr("UserInfo invalid"));
+                            OnOperationError(L10n.Tr("User info invalid"));
                     }
                 };
                 m_UserInfoRequest.Begin();
@@ -472,7 +445,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnOperationError(string errorMessage)
         {
-            m_OnError?.Invoke(new UIError(UIErrorCode.AssetStoreAuthorizationError, errorMessage));
+            Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] {0}"), errorMessage));
+            m_OnError?.Invoke(new UIError(UIErrorCode.AssetStoreAuthorizationError, errorMessage, UIError.Attribute.IsDetailInConsole));
             m_OnError = null;
         }
     }

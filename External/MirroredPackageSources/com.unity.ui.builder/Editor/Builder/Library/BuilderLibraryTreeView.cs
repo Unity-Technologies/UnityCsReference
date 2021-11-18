@@ -79,7 +79,7 @@ namespace Unity.UI.Builder
 
                 evt.menu.AppendAction(
                     "Open with IDE",
-                    action => {  AssetDatabase.OpenAsset(libraryItem.sourceAsset); },
+                    action => { AssetDatabase.OpenAsset(libraryItem.sourceAsset, BuilderConstants.OpenInIDELineNumber); },
                     action => DropdownMenuAction.Status.Normal);
             }
         }

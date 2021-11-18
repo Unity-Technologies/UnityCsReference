@@ -212,5 +212,22 @@ namespace UnityEditor.Search
 
             return meshFilter.sharedMesh.triangles.Length;
         }
+
+        [SearchSelector("static", provider: "scene")]
+        [System.ComponentModel.Description("Static States")]
+        public static object SelectObjectStaticStates(SearchItem item)
+        {
+            var go = item.ToObject<GameObject>();
+            if (!go)
+                return (StaticEditorFlags)0;
+            return GameObjectUtility.GetStaticEditorFlags(go);
+        }
+
+        [SceneQueryEngineFilter("static")]
+        [System.ComponentModel.Description("Static States")]
+        public static StaticEditorFlags FilterObjectStaticStates(GameObject go)
+        {
+            return GameObjectUtility.GetStaticEditorFlags(go);
+        }
     }
 }

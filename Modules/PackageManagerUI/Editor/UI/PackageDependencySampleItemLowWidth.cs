@@ -31,6 +31,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             itemSizeOrVersion.value = version;
             itemSizeOrVersion.tooltip = version;
+            if (version == "---")
+                UIUtils.SetElementDisplay(itemSizeOrVersion, false);
 
             if (installStatus != null && !string.IsNullOrEmpty(installStatus.text))
                 item.Add(installStatus);
@@ -49,6 +51,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var name = sampleItem.nameLabel.text;
             var size = sampleItem.sizeLabel.text;
+            var description = sampleItem.descriptionLabel.text;
 
             itemName.text = name;
             itemName.tooltip = name;
@@ -58,7 +61,17 @@ namespace UnityEditor.PackageManager.UI.Internal
             itemSizeOrVersion.value = size;
             itemSizeOrVersion.tooltip = size;
 
-            item.Add(sampleItem.importButton);
+            importButtonContainer.Add(sampleItem.importButton);
+
+            if (!string.IsNullOrEmpty(description))
+            {
+                UIUtils.SetElementDisplay(sampleDescription, true);
+                sampleDescription.SetValueWithoutNotify(description);
+            }
+            else
+            {
+                UIUtils.SetElementDisplay(sampleDescription, false);
+            }
         }
 
         private VisualElement itemStatusNameContainer { get { return cache.Get<VisualElement>("itemStatusNameContainer"); } }
@@ -66,5 +79,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private Label itemName { get { return cache.Get<Label>("itemName"); } }
         private SelectableLabel itemSizeOrVersion { get { return cache.Get<SelectableLabel>("itemSizeOrVersion"); } }
         private VisualElement item { get { return cache.Get<VisualElement>("dependencySampleItemLowWidth"); } }
+        private VisualElement importButtonContainer { get { return cache.Get<VisualElement>("importButtonContainer"); } }
+        private SelectableLabel sampleDescription { get { return cache.Get<SelectableLabel>("sampleDescription"); } }
     }
 }

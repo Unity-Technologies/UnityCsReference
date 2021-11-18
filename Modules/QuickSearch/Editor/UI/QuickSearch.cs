@@ -100,9 +100,9 @@ namespace UnityEditor.Search
         private event Action nextFrame;
         private event Action<Vector2, Vector2> resized;
 
-        public Action<SearchItem, bool> selectCallback { get => m_ViewState.selectHandler; set => m_ViewState.selectHandler = value; }
-        public Func<SearchItem, bool> filterCallback { get => m_ViewState.filterHandler; set => m_ViewState.filterHandler = value; }
-        public Action<SearchItem> trackingCallback { get => m_ViewState.trackingHandler; set => m_ViewState.trackingHandler = value; }
+        public Action<SearchItem, bool> selectCallback { get => (item, canceled) => m_ViewState.selectHandler?.Invoke(item, canceled); set => m_ViewState.selectHandler = value; }
+        public Func<SearchItem, bool> filterCallback { get => (item) => m_ViewState.filterHandler?.Invoke(item) ?? true; set => m_ViewState.filterHandler = value; }
+        public Action<SearchItem> trackingCallback { get => (item) => m_ViewState.trackingHandler?.Invoke(item); set => m_ViewState.trackingHandler = value; }
 
         internal bool searchInProgress => (context?.searchInProgress ?? false) || nextFrame != null || m_DebounceOff != null || m_WaitAsyncResults != null;
         internal string currentGroup => m_FilteredItems.currentGroup;
@@ -559,9 +559,9 @@ namespace UnityEditor.Search
             hideFlags |= HideFlags.DontSaveInEditor;
             m_LastFocusedWindow = m_LastFocusedWindow ?? s_FocusedWindow;
             wantsLessLayoutEvents = true;
-            titleContent = EditorGUIUtility.TrTextContent("Search", Icons.quickSearchWindow);
 
             m_ViewState = s_GlobalViewState ?? m_ViewState ?? SearchViewState.LoadDefaults();
+            titleContent = HasCustomTitle() ? m_ViewState.windowTitle : EditorGUIUtility.TrTextContent("Search", Icons.quickSearchWindow);
 
             m_SearchMonitorView = SearchMonitor.GetView();
 
@@ -591,6 +591,11 @@ namespace UnityEditor.Search
         {
             m_QueryTreeViewState = m_QueryTreeViewState ?? new TreeViewState() { expandedIDs = SearchSettings.expandedQueries.ToList() };
             m_QueryTreeView = new SearchQueryTreeView(m_QueryTreeViewState, this);
+        }
+
+        private bool HasCustomTitle()
+        {
+            return viewState.windowTitle != null && !string.IsNullOrEmpty(viewState.windowTitle.text);
         }
 
         private void InitializeSplitters()
@@ -1004,6 +1009,10 @@ namespace UnityEditor.Search
                 return;
             SearchSettings.queryBuilder = viewState.queryBuilderEnabled = !viewState.queryBuilderEnabled;
             SearchSettings.Save();
+            var evt = CreateEvent(SearchAnalytics.GenericEventType.QuickSearchToggleBuilder, viewState.queryBuilderEnabled.ToString());
+            evt.intPayload1 = viewState.queryBuilderEnabled ? 1 : 0;
+            SearchAnalytics.SendEvent(evt);
+
             RefreshBuilder();
         }
 
@@ -1011,7 +1020,7 @@ namespace UnityEditor.Search
         {
             m_QueryBuilder = viewState.queryBuilderEnabled ? CreateBuilder(context, m_SearchField) : null;
             SelectSearch();
-            SetTextEditorState(m_QueryBuilder?.wordText ?? context.searchText, te => UpdateFocusState(te), true);
+            SetTextEditorState(m_QueryBuilder?.wordText ?? context.searchText, te => UpdateFocusState(te), m_QueryBuilder != null);
             ClearQueryHelper();
         }
 
@@ -1078,23 +1087,30 @@ namespace UnityEditor.Search
                 searchEventStatus = SearchEventStatus.EventSent;
             }
             evt.searchText = context.searchText;
+
+            evt.useQueryBuilder = m_QueryBuilder != null;
             SearchAnalytics.SendSearchEvent(evt, context);
         }
 
         protected virtual void UpdateWindowTitle()
         {
-            titleContent.image = activeQuery?.thumbnail ?? Icons.quickSearchWindow;
-
-            if (!titleContent.image)
-                titleContent.image = Icons.quickSearchWindow;
-
-            if (context == null)
-                return;
-
-            if (m_FilteredItems.Count == 0)
-                titleContent.text = L10n.Tr("Search");
+            if (HasCustomTitle())
+                titleContent = viewState.windowTitle;
             else
-                titleContent.text = $"Search ({m_FilteredItems.Count - (selectCallback != null ? 1 : 0)})";
+            {
+                titleContent.image = activeQuery?.thumbnail ?? Icons.quickSearchWindow;
+
+                if (!titleContent.image)
+                    titleContent.image = Icons.quickSearchWindow;
+
+                if (context == null)
+                    return;
+
+                if (m_FilteredItems.Count == 0)
+                    titleContent.text = L10n.Tr("Search");
+                else
+                    titleContent.text = $"Search ({m_FilteredItems.Count - (selectCallback != null ? 1 : 0)})";
+            }
         }
 
         private static string FormatStatusMessage(SearchContext context, int totalCount)
@@ -1359,7 +1375,7 @@ namespace UnityEditor.Search
             if (HandleDefaultPressEnter(evt))
                 return;
 
-            if (m_SearchField.HandleKeyEvent(evt))
+            if (m_SearchField?.HandleKeyEvent(evt) ?? false)
                 return;
 
             if (evt.type == EventType.KeyDown
@@ -1509,6 +1525,7 @@ namespace UnityEditor.Search
 
         void OnQueryHelperExecute(ISearchQuery query)
         {
+            SendEvent(SearchAnalytics.GenericEventType.QuickSearchHelperWidgetExecuted, viewState.queryBuilderEnabled ? "queryBuilder" : "text");
             ClearQueryHelper();
         }
 
@@ -1523,7 +1540,6 @@ namespace UnityEditor.Search
             queryHelper.Draw(Event.current, m_QueryHelperRect);
             GUILayout.EndVertical();
         }
-
 
         private void DrawTips(float availableSpace)
         {
@@ -1591,7 +1607,7 @@ namespace UnityEditor.Search
 
         public IEnumerable<IGroup> EnumerateGroups()
         {
-            return m_FilteredItems.EnumerateGroups();
+            return m_FilteredItems.EnumerateGroups(!viewState.hideAllGroup);
         }
 
         private void DrawTabs(Event evt, float availableSpace)
@@ -1830,6 +1846,7 @@ namespace UnityEditor.Search
             evt.intPayload1 = m_FilteredItems.GetGroupById(groupId)?.count ?? 0;
             SearchAnalytics.SendEvent(evt);
 
+            viewState.groupChanged?.Invoke(context, groupId, m_FilteredItems.currentGroup);
             m_ResultView?.OnGroupChanged(m_FilteredItems.currentGroup, groupId);
 
             m_FilteredItems.currentGroup = groupId;
@@ -1920,12 +1937,18 @@ namespace UnityEditor.Search
 
         private void DrawSearchField(in Event evt, in Rect toolbarRect, Rect searchTextRect)
         {
-            var searchClearButtonRect = Styles.searchFieldBtn.margin.Remove(searchTextRect);
-            searchClearButtonRect.xMin = searchClearButtonRect.xMax - SearchField.cancelButtonWidth;
-            searchClearButtonRect.y -= 1f;
+            var showClearButton = IsPicker() ? context.searchText != viewState.searchText : !string.IsNullOrEmpty(context.searchText);
+            var searchClearButtonRect = new Rect(0, 0, 1, 1);
+
+            if (showClearButton)
+            {
+                searchClearButtonRect = Styles.searchFieldBtn.margin.Remove(searchTextRect);
+                searchClearButtonRect.xMin = searchClearButtonRect.xMax - SearchField.cancelButtonWidth;
+                searchClearButtonRect.y -= 1f;
+            }
 
             var previousSearchText = context.searchText;
-            if (evt.type == EventType.MouseUp && searchClearButtonRect.Contains(evt.mousePosition))
+            if (showClearButton && evt.type == EventType.MouseUp && searchClearButtonRect.Contains(evt.mousePosition))
             {
                 ClearSearch();
                 evt.Use();
@@ -1953,7 +1976,7 @@ namespace UnityEditor.Search
                 }
             }
 
-            if (string.IsNullOrEmpty(context.searchText))
+            if (!showClearButton)
             {
                 if (m_QueryBuilder == null)
                 {
@@ -2129,6 +2152,14 @@ namespace UnityEditor.Search
             EditorGUIUtility.systemCopyBuffer = Utils.TrimText(trimmedQuery);
         }
 
+        internal SearchViewState SaveViewState(string name)
+        {
+            var viewState = m_ResultView.SaveViewState(name);
+            viewState.Assign(m_ViewState);
+            m_ViewState.group = m_FilteredItems.currentGroup;
+            return viewState;
+        }
+
         internal void SaveActiveSearchQuery()
         {
             if (activeQuery is SearchQueryAsset sqa)
@@ -2141,7 +2172,8 @@ namespace UnityEditor.Search
             }
             else if (activeQuery is SearchQuery sq)
             {
-                sq.Set(m_ViewState, m_ResultView.SaveViewState(context.searchText).tableConfig);
+                var vs = SaveViewState(context.searchText);
+                sq.Set(vs, vs.tableConfig);
                 SearchQuery.SaveSearchQuery(sq);
                 SaveItemCountToPropertyDatabase(true);
             }
@@ -2149,10 +2181,8 @@ namespace UnityEditor.Search
 
         internal void SaveUserSearchQuery()
         {
-            m_ViewState.group = m_FilteredItems.currentGroup;
-            var query = SearchQuery.AddUserQuery(m_ViewState,
-                m_ResultView.SaveViewState(context.searchText).tableConfig
-            );
+            var vs = SaveViewState(context.searchText);
+            var query = SearchQuery.AddUserQuery(vs, vs.tableConfig);
             AddNewQuery(query);
         }
 
@@ -2187,9 +2217,7 @@ namespace UnityEditor.Search
 
                 var folder = Utils.CleanPath(Path.GetDirectoryName(searchQueryPath));
                 var queryName = Path.GetFileNameWithoutExtension(searchQueryPath);
-                searchQuery.viewState = m_ResultView.SaveViewState(queryName);
-                searchQuery.viewState.group = m_FilteredItems.currentGroup;
-                searchQuery.viewState.queryBuilderEnabled = viewState.queryBuilderEnabled;
+                searchQuery.viewState = SaveViewState(queryName);
 
                 if (SearchQueryAsset.SaveQuery(searchQuery, context, folder, queryName) && newQuery)
                 {

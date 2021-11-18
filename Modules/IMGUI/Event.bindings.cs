@@ -19,6 +19,9 @@ namespace UnityEngine
         [NativeProperty("button", false, TargetType.Field)] public extern int button { get; set; }
         [NativeProperty("modifiers", false, TargetType.Field)] public extern EventModifiers modifiers { get; set; }
         [NativeProperty("pressure", false, TargetType.Field)] public extern float pressure { get; set; }
+        [NativeProperty("twist", false, TargetType.Field)] public extern float twist { get; set; }
+        [NativeProperty("tilt", false, TargetType.Field)] public extern Vector2 tilt { get; set; }
+        [NativeProperty("penStatus", false, TargetType.Field)] public extern PenStatus penStatus { get; set; }
         [NativeProperty("clickCount", false, TargetType.Field)] public extern int clickCount { get; set; }
         [NativeProperty("character", false, TargetType.Field)] public extern char character { get; set; }
         [NativeProperty("keycode", false, TargetType.Field)] public extern KeyCode keyCode { get; set; }

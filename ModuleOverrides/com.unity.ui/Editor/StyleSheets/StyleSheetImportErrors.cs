@@ -32,7 +32,6 @@ namespace UnityEditor.UIElements.StyleSheets
         InvalidURILocation,
         InvalidURIScheme,
         InvalidURIProjectAssetPath,
-        InvalidURIProjectAssetType,
         InvalidVarFunction,
         InvalidHighResolutionImage,
     }

@@ -42,5 +42,20 @@ namespace UnityEditor.SceneTemplate
                 dependencies.Add(obj);
             }
         }
+
+        public static void RemapAssetReferences(Dictionary<string, string> pathMap, Dictionary<int, int> idMap = null)
+        {
+            var objects = new List<Object>();
+            foreach (var dstPath in pathMap.Values)
+            {
+                var assetsInDstPath = AssetDatabase.LoadAllAssetsAtPath(dstPath);
+                foreach (var o in assetsInDstPath)
+                {
+                    objects.Add(o);
+                }
+            }
+
+            EditorUtility.RemapAssetReferences(objects.ToArray(), pathMap, idMap);
+        }
     }
 }

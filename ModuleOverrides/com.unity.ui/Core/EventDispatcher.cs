@@ -348,8 +348,11 @@ namespace UnityEngine.UIElements
                 {
                     foreach (var element in evt.path.targetElements)
                     {
-                        evt.target = element;
-                        EventDispatchUtilities.ExecuteDefaultAction(evt, panel);
+                        if (element.panel == panel)
+                        {
+                            evt.target = element;
+                            EventDispatchUtilities.ExecuteDefaultAction(evt);
+                        }
                     }
 
                     // Reset target to leaf target
@@ -362,7 +365,7 @@ namespace UnityEngine.UIElements
                     {
                         evt.target = panel.visualTree;
                     }
-                    EventDispatchUtilities.ExecuteDefaultAction(evt, panel);
+                    EventDispatchUtilities.ExecuteDefaultAction(evt);
                 }
 
                 m_DebuggerEventDispatchingStrategy.PostDispatch(evt, panel);

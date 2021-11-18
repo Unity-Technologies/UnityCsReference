@@ -11,8 +11,22 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal class UIError : Error
     {
         private static readonly string k_EntitlementErrorMessage = L10n.Tr("This package is not available to use because there is no license registered for your user. Please sign in with a licensed account. If the problem persists, please contact your administrator.");
+        internal static readonly string k_InvalidSignatureWarningMessage = L10n.Tr("This package version doesn't have a valid signature. For your security, install a different version or report a bug to Unity.");
+        internal static readonly string k_UnsignedUnityPackageWarningMessage = L10n.Tr("This package version has no signature. For your security, install a different version or review your scoped registry and load the package from the Unity registry.");
+        internal static readonly string k_readMoreDocsUrl = "https://docs.unity3d.com/Manual/upm-errors.html";
         public static readonly UIError k_EntitlementError = new UIError(UIErrorCode.Forbidden, k_EntitlementErrorMessage);
         public static readonly UIError k_EntitlementWarning = new UIError(UIErrorCode.Forbidden, k_EntitlementErrorMessage, Attribute.IsWarning);
+        internal static readonly UIError k_InvalidSignatureWarning = new UIError(
+            UIErrorCode.UpmError_InvalidSignature,
+            k_InvalidSignatureWarningMessage,
+            Attribute.IsWarning,
+            readMoreUrl: k_readMoreDocsUrl);
+
+        internal static readonly UIError k_UnsignedUnityPackageWarning = new UIError(
+            UIErrorCode.UpmError_UnsignedUnityPackage,
+            k_UnsignedUnityPackageWarningMessage,
+            Attribute.IsWarning,
+            readMoreUrl: k_readMoreDocsUrl);
 
         [SerializeField]
         private UIErrorCode m_UIErrorCode;
@@ -22,6 +36,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         private int m_OperationErrorCode;
+
+        public string readMoreURL => m_ReadMoreUrl;
+
+        [SerializeField]
+        private string m_ReadMoreUrl;
 
         [Flags]
         internal enum Attribute
@@ -45,11 +64,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public UIError(UIErrorCode errorCode, string message, int operationErrorCode) : this(errorCode, message, Attribute.None, operationErrorCode) {}
 
-        public UIError(UIErrorCode errorCode, string message, Attribute attribute = Attribute.None, int operationErrorCode = -1) : base(NativeErrorCode.Unknown, message)
+        public UIError(UIErrorCode errorCode, string message, Attribute attribute = Attribute.None, int operationErrorCode = -1, string readMoreUrl = "") : base(NativeErrorCode.Unknown, message)
         {
             m_UIErrorCode = errorCode;
             m_Attribute = attribute;
             m_OperationErrorCode = operationErrorCode;
+            m_ReadMoreUrl = readMoreUrl;
         }
     }
 }

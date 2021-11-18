@@ -65,7 +65,6 @@ namespace UnityEditor
 
             // string and matching enum values for standalone subtarget dropdowm
             public GUIContent debugBuild = EditorGUIUtility.TrTextContent("Development Build");
-            public GUIContent il2cppCodeGeneration = EditorGUIUtility.TrTextContent("IL2CPP Code Generation", "Determines whether IL2CPP should generate code optimized for runtime performance or build size/iteration.");
             public GUIContent autoconnectProfiler = EditorGUIUtility.TrTextContent("Autoconnect Profiler", "When the build is started, an open Profiler Window will automatically connect to the Player and start profiling. The \"Build And Run\" option will also automatically open the Profiler Window.");
             public GUIContent autoconnectProfilerDisabled = EditorGUIUtility.TrTextContent("Autoconnect Profiler", "Profiling is only enabled in a Development Player.");
             public GUIContent buildWithDeepProfiler = EditorGUIUtility.TrTextContent("Deep Profiling Support", "Build Player with Deep Profiling Support. This might affect Player performance.");
@@ -128,12 +127,6 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Default"),
                 EditorGUIUtility.TrTextContent("LZ4"),
                 EditorGUIUtility.TrTextContent("LZ4HC"),
-            };
-
-            public GUIContent[] il2cppCodeGenerationStrings =
-            {
-                EditorGUIUtility.TrTextContent("Faster runtime"),
-                EditorGUIUtility.TrTextContent("Faster (smaller) builds"),
             };
 
             public static GUIStyle boldFoldout;
@@ -299,7 +292,7 @@ namespace UnityEditor
             var rect = EditorGUILayout.s_LastRect;
             var prevMargin = EditorGUIUtility.leftMarginCoord;
             EditorGUIUtility.leftMarginCoord = 2;
-            EditorGUI.DrawOverrideBackground(rect);
+            EditorGUI.DrawOverrideBackgroundApplicable(rect);
             EditorGUIUtility.leftMarginCoord = prevMargin;
         }
 
@@ -992,11 +985,6 @@ namespace UnityEditor
                     buildWindowExtension.DoScriptsOnlyGUI();
 
                 GUI.enabled = true;
-
-                if (PlayerSettings.GetScriptingBackend(namedBuildTarget) == ScriptingImplementation.IL2CPP)
-                {
-                    EditorUserBuildSettings.il2CppCodeGeneration = (Il2CppCodeGeneration)EditorGUILayout.Popup(styles.il2cppCodeGeneration, (int)EditorUserBuildSettings.il2CppCodeGeneration, styles.il2cppCodeGenerationStrings);
-                }
 
                 if (postprocessor != null && postprocessor.SupportsLz4Compression())
                 {

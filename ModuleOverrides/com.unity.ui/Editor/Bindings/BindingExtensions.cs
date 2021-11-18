@@ -241,18 +241,19 @@ namespace UnityEditor.UIElements.Bindings
             switch (prop.propertyType)
             {
                 case SerializedPropertyType.Integer:
-                    if (prop.type == "long" | prop.type == "ulong")
+                    if (prop.type == "long" || prop.type == "ulong")
                     {
-                        if (element is INotifyValueChanged<long> )
+                        if (element is INotifyValueChanged<long> || element is  INotifyValueChanged<string>)
                         {
                             DefaultBind(element,  prop, SerializedPropertyHelper.GetLongPropertyValue, SerializedPropertyHelper.SetLongPropertyValue, SerializedPropertyHelper.ValueEquals);
-                        }else if (element is INotifyValueChanged<ulong>)
+                        }
+                        else if (element is INotifyValueChanged<ulong>)
                         {
                             //This is not sustainable, we must fix this
                             DefaultBind(element,  prop, (x) => (ulong) SerializedPropertyHelper.GetLongPropertyValue(x), (x, v) => SerializedPropertyHelper.SetLongPropertyValue(x, (long)v),
                                 (a, b, c) => SerializedPropertyHelper.ValueEquals((long)a,b, (x) => (long)c(x)));
                         }
-                        else if (element is INotifyValueChanged<int> || element is  INotifyValueChanged<string>)
+                        else if (element is INotifyValueChanged<int>)
                         {
                             DefaultBind(element, prop, SerializedPropertyHelper.GetIntPropertyValue, SerializedPropertyHelper.SetIntPropertyValue, SerializedPropertyHelper.ValueEquals);
                         }
@@ -261,12 +262,13 @@ namespace UnityEditor.UIElements.Bindings
                             DefaultBind(element, prop, SerializedPropertyHelper.GetLongPropertyValueAsFloat, SerializedPropertyHelper.SetFloatPropertyValue, SerializedPropertyHelper.ValueEquals);
                         }
                     }
-                    else
+                    else // prop.type == "int"
                     {
                         if (element is INotifyValueChanged<int> || element is  INotifyValueChanged<string>)
                         {
                             DefaultBind(element, prop, SerializedPropertyHelper.GetIntPropertyValue, SerializedPropertyHelper.SetIntPropertyValue, SerializedPropertyHelper.ValueEquals);
-                        }else if (element is INotifyValueChanged<long>)
+                        }
+                        else if (element is INotifyValueChanged<long>)
                         {
                             DefaultBind(element,  prop, SerializedPropertyHelper.GetLongPropertyValue, SerializedPropertyHelper.SetLongPropertyValue, SerializedPropertyHelper.ValueEquals);
                         }
@@ -291,7 +293,7 @@ namespace UnityEditor.UIElements.Bindings
                             DefaultBind(element, prop, SerializedPropertyHelper.GetFloatPropertyValue, SerializedPropertyHelper.SetFloatPropertyValue, SerializedPropertyHelper.ValueEquals);
                         }
                     }
-                    else
+                    else  // prop.type == "double"
                     {
                         if (element is INotifyValueChanged<float>)
                         {
@@ -1795,6 +1797,8 @@ namespace UnityEditor.UIElements.Bindings
         public static ObjectPool<SerializedDefaultEnumBinding> s_Pool =
             new ObjectPool<SerializedDefaultEnumBinding>(() => new SerializedDefaultEnumBinding(), 32);
 
+        private const int kDefaultValueIndex = -1;
+
         //we need to keep a copy of the last value since some fields will allocate when getting the value
         private int lastFieldValueIndex;
 
@@ -1892,7 +1896,14 @@ namespace UnityEditor.UIElements.Bindings
             }
 
             int propValueIndex = p.enumValueIndex;
-            c.index = lastFieldValueIndex = enumIndexToDisplayIndex[propValueIndex];
+            if (propValueIndex >= 0 && propValueIndex < enumIndexToDisplayIndex.Count)
+            {
+                c.index = lastFieldValueIndex = enumIndexToDisplayIndex[propValueIndex];
+            }
+            else
+            {
+                c.index = lastFieldValueIndex = kDefaultValueIndex;
+            }
         }
 
         protected override void UpdateLastFieldValue()
@@ -1909,7 +1920,8 @@ namespace UnityEditor.UIElements.Bindings
 
         protected override bool SyncFieldValueToProperty()
         {
-            if (boundProperty.enumValueIndex != displayIndexToEnumIndex[lastFieldValueIndex])
+            if (lastFieldValueIndex >= 0 && lastFieldValueIndex < displayIndexToEnumIndex.Count
+                && boundProperty.enumValueIndex != displayIndexToEnumIndex[lastFieldValueIndex])
             {
                 boundProperty.enumValueIndex = displayIndexToEnumIndex[lastFieldValueIndex];
                 boundProperty.m_SerializedObject.ApplyModifiedProperties();
@@ -1947,7 +1959,7 @@ namespace UnityEditor.UIElements.Bindings
             bindingContext = null;
             boundProperty = null;
             field = null;
-            lastFieldValueIndex = -1;
+            lastFieldValueIndex = kDefaultValueIndex;
             isReleased = true;
 
             ResetCachedValues();

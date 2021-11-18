@@ -23,13 +23,19 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (progress != PackageProgress.None)
                     return PackageState.InProgress;
 
-                if (errors.Any())
+                var numErrors = 0;
+                var numWarnings = 0;
+                foreach (var error in GetAllErrorsInPackageAndVersions())
                 {
-                    if (errors.All(error => error.attribute == UIError.Attribute.IsWarning))
-                        return PackageState.Warning;
-                    else if (errors.Any(error => !error.HasAttribute(UIError.Attribute.IsClearable)))
+                    ++numErrors;
+                    if (error.attribute == UIError.Attribute.IsWarning)
+                        ++numWarnings;
+                    else if (!error.HasAttribute(UIError.Attribute.IsClearable))
                         return PackageState.Error;
                 }
+
+                if (numErrors > 0 && numWarnings == numErrors)
+                    return PackageState.Warning;
 
                 var primary = versions.primary;
                 var recommended = versions.recommended;
@@ -68,15 +74,16 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         protected List<UIError> m_Errors;
 
-        // Combined errors for this package or any version.
-        // Stop lookup after first error encountered on a version to save time not looking up redundant errors.
-        public IEnumerable<UIError> errors
+        public IEnumerable<UIError> errors => m_Errors ?? Enumerable.Empty<UIError>();
+
+        private IEnumerable<UIError> GetAllErrorsInPackageAndVersions()
         {
-            get
-            {
-                var versionErrors = versions.Select(v => v.errors).FirstOrDefault(e => e?.Any() ?? false) ?? Enumerable.Empty<UIError>();
-                return m_Errors == null ? versionErrors : m_Errors.Concat(versionErrors);
-            }
+            if (m_Errors != null)
+                foreach (var error in m_Errors)
+                    yield return error;
+            foreach (var version in versions.Where(v => v.errors != null))
+                foreach (var versionError in version.errors)
+                    yield return versionError;
         }
 
         public bool hasEntitlements => Is(PackageType.Unity) && versions.Any(version => version.hasEntitlements);
@@ -133,6 +140,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         public string GetDescriptor(bool isFirstLetterCapitalized = false)
         {
             return isFirstLetterCapitalized ? descriptor.First().ToString().ToUpper() + descriptor.Substring(1) : descriptor;
+        }
+
+        public void LinkPackageAndVersions()
+        {
+            foreach (var version in versions)
+                version.package = this;
         }
     }
 }

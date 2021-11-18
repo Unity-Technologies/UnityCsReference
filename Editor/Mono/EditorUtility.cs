@@ -375,10 +375,10 @@ namespace UnityEditor
             return PrefabUtility.CreateEmptyPrefab(path);
         }
 
-        [Obsolete("Use PrefabUtility.RevertPrefabInstance.", false)]
+        [Obsolete("This method does nothing. Use PrefabUtility.RevertPrefabInstance.", false)]
         public static bool ReconnectToLastPrefab(GameObject go)
         {
-            return PrefabUtility.ReconnectToLastPrefab(go);
+            return false;
         }
 
         [Obsolete("Use PrefabUtility.GetPrefabAssetType and PrefabUtility.GetPrefabInstanceStatus to get the full picture about Prefab types.", false)]
@@ -492,7 +492,7 @@ namespace UnityEditor
                 Component targetComponent = (Component)targetObject;
 
                 // Do nothing if component is not on a prefab instance.
-                if (PrefabUtility.GetCorrespondingConnectedObjectFromSource(targetComponent.gameObject) == null) {}
+                if (PrefabUtility.GetCorrespondingConnectedObjectFromSource(targetComponent.gameObject) == null) { }
                 // Handle added component.
                 else if (PrefabUtility.GetCorrespondingObjectFromSource(targetObject) == null && targetComponent != null)
                 {
@@ -500,7 +500,7 @@ namespace UnityEditor
                     PrefabUtility.HandleApplyRevertMenuItems(
                         "Added Component",
                         instanceGo,
-                        (menuItemContent, sourceGo) =>
+                        (menuItemContent, sourceGo, _) =>
                         {
                             TargetChoiceHandler.ObjectInstanceAndSourcePathInfo info = new TargetChoiceHandler.ObjectInstanceAndSourcePathInfo();
                             info.instanceObject = targetComponent;
@@ -559,13 +559,15 @@ namespace UnityEditor
                         PrefabUtility.HandleApplyRevertMenuItems(
                             "Modified Component",
                             targetObject,
-                            (menuItemContent, sourceObject) =>
+                            (menuItemContent, sourceObject, instanceOrAssetObject) =>
                             {
                                 TargetChoiceHandler.ObjectInstanceAndSourcePathInfo info = new TargetChoiceHandler.ObjectInstanceAndSourcePathInfo();
                                 info.instanceObject = targetObject;
                                 info.assetPath = AssetDatabase.GetAssetPath(sourceObject);
                                 GameObject rootObject = PrefabUtility.GetRootGameObject(sourceObject);
-                                if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject) || EditorUtility.IsPersistent(targetObject))
+                                bool isPersistent = EditorUtility.IsPersistent(instanceOrAssetObject);
+
+                                if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject) || (!isPersistent && !PrefabUtility.HasApplicableObjectOverridesForTarget(instanceOrAssetObject, rootObject, false)))
                                     pm.AddDisabledItem(menuItemContent);
                                 else
                                     pm.AddItem(menuItemContent, false, TargetChoiceHandler.ApplyPrefabObjectOverride, info);

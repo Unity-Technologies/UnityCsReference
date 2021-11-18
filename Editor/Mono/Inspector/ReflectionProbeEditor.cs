@@ -92,24 +92,27 @@ namespace UnityEditor
             public static string[] bakeButtonsText = { "Bake All Reflection Probes" };
 
             public static GUIContent bakeCustomButtonText = EditorGUIUtility.TrTextContent("Bake", "Bakes Reflection Probe's cubemap, overwriting the existing cubemap texture asset (if any).");
-            public static GUIContent runtimeSettingsHeader = EditorGUIUtility.TrTextContent("Runtime Settings", "These settings are used by objects when they render with the cubemap of this probe");
+            public static GUIContent runtimeSettingsHeader = EditorGUIUtility.TrTextContent("Runtime Settings", "These settings determine this Probe's priority, blending, intensity, and zone of effect and works in conjunction with the cubemap of this probe when it is rendered.");
             public static GUIContent backgroundColorText = EditorGUIUtility.TrTextContent("Background Color", "Camera clears the screen to this color before rendering.");
-            public static GUIContent clearFlagsText = EditorGUIUtility.TrTextContent("Clear Flags");
-            public static GUIContent intensityText = EditorGUIUtility.TrTextContent("Intensity");
-            public static GUIContent resolutionText = EditorGUIUtility.TrTextContent("Resolution");
-            public static GUIContent captureCubemapHeader = EditorGUIUtility.TrTextContent("Cubemap Capture Settings");
-            public static GUIContent boxProjectionText = EditorGUIUtility.TrTextContent("Box Projection", "Box projection causes reflections to appear to change based on the object's position within the probe's box, while still using a single probe as the source of the reflection. This works well for reflections on objects that are moving through enclosed spaces such as corridors and rooms. Setting box projection to False and the cubemap reflection will be treated as coming from infinitely far away. Note that this feature can be globally disabled from Graphics Settings -> Tier Settings");
+            public static GUIContent clearFlagsText = EditorGUIUtility.TrTextContent("Clear Flags", "Specify how to fill empty areas of the cubemap.");
+            public static GUIContent intensityText = EditorGUIUtility.TrTextContent("Intensity", "The intensity modifier the Editor applies to this probe's texture in its shader.");
+            public static GUIContent resolutionText = EditorGUIUtility.TrTextContent("Resolution", "The resolution of the cubemap.");
+            public static GUIContent captureCubemapHeader = EditorGUIUtility.TrTextContent("Cubemap Capture Settings", "Settings that determine how to render this probe's cubemap.");
+            public static GUIContent boxProjectionText = EditorGUIUtility.TrTextContent("Box Projection", "When enabled, Unity assumes that the reflected light is originating from the inside of the probe's box, rather than from infinitely far away. This is useful for box-shaped indoor environments.");
             public static GUIContent blendDistanceText = EditorGUIUtility.TrTextContent("Blend Distance", "Area around the probe where it is blended with other probes. Only used in deferred probes.");
             public static GUIContent sizeText = EditorGUIUtility.TrTextContent("Box Size", "The size of the box in which the reflections will be applied to objects. The value is not affected by the Transform of the Game Object.");
             public static GUIContent centerText = EditorGUIUtility.TrTextContent("Box Offset", "The center of the box in which the reflections will be applied to objects. The value is relative to the position of the Game Object.");
-            public static GUIContent customCubemapText = EditorGUIUtility.TrTextContent("Cubemap");
-            public static GUIContent importanceText = EditorGUIUtility.TrTextContent("Importance");
+            public static GUIContent customCubemapText = EditorGUIUtility.TrTextContent("Cubemap", "Sets a custom cubemap for this probe.");
+            public static GUIContent importanceText = EditorGUIUtility.TrTextContent("Importance", "When reflection probes overlap, Unity uses Importance to determine which probe should take priority.");
             public static GUIContent renderDynamicObjects = EditorGUIUtility.TrTextContent("Dynamic Objects", "If enabled dynamic objects are also rendered into the cubemap");
             public static GUIContent timeSlicing = EditorGUIUtility.TrTextContent("Time Slicing", "If enabled this probe will update over several frames, to help reduce the impact on the frame rate");
             public static GUIContent refreshMode = EditorGUIUtility.TrTextContent("Refresh Mode", "Controls how this probe refreshes in the Player");
-            public static GUIContent useOcclusionCulling = EditorGUIUtility.TrTextContent("Occlusion Culling");
+            public static GUIContent useOcclusionCulling = EditorGUIUtility.TrTextContent("Occlusion Culling", "If this property is enabled, geometries which are blocked from the probe's line of sight are skipped during rendering.");
+            public static GUIContent hdrText = EditorGUIUtility.TrTextContent("HDR", "Enable High Dynamic Range rendering.");
+            public static GUIContent shadowDistanceText = EditorGUIUtility.TrTextContent("Shadow Distance", "Maximum distance at which Unity renders shadows associated with this probe.");
+            public static GUIContent cullingMaskText = EditorGUIUtility.TrTextContent("Culling Mask", "Allows objects on specified layers to be included or excluded in the reflection.");
 
-            public static GUIContent typeText = EditorGUIUtility.TrTextContent("Type", "'Baked Cubemap' uses the 'Auto Baking' mode from the Lighting window. If it is enabled, then baking is automatic otherwise manual bake is needed (use the bake button below). \n'Custom' can be used if a custom cubemap is wanted. \n'Realtime' can be used to dynamically re-render the cubemap during runtime (via scripting).");
+            public static GUIContent typeText = EditorGUIUtility.TrTextContent("Type", "Specify the lighting setup for this probe: Baked, Custom, or Realtime.");
             public static GUIContent[] reflectionProbeMode = { EditorGUIUtility.TrTextContent("Baked"), EditorGUIUtility.TrTextContent("Custom"), EditorGUIUtility.TrTextContent("Realtime") };
             public static int[] reflectionProbeModeValues = { (int)ReflectionProbeMode.Baked, (int)ReflectionProbeMode.Custom, (int)ReflectionProbeMode.Realtime };
 
@@ -123,9 +126,13 @@ namespace UnityEditor
             };
             public static int[] clearFlagsValues = { 1, 2 }; // taken from Camera.h
 
+            private static GUIContent customPrivitiveBoundsHandleEditModeButton = new GUIContent(
+                EditorGUIUtility.IconContent("EditCollider").image,
+                EditorGUIUtility.TrTextContent("Adjust the probe's zone of effect. Holding Alt or Shift and click the control handle to pin the center or scale the volume uniformly.").text
+            );
             public static GUIContent[] toolContents =
             {
-                PrimitiveBoundsHandle.editModeButton,
+                customPrivitiveBoundsHandleEditModeButton,
                 EditorGUIUtility.TrIconContent("MoveTool", "Move the selected objects.")
             };
             public static EditMode.SceneViewEditMode[] sceneViewEditModes = new[]
@@ -519,11 +526,11 @@ namespace UnityEditor
                 GetResolutionArray(ref reflectionResolutionValuesArray, ref reflectionResolutionTextArray);
 
                 EditorGUILayout.IntPopup(m_Resolution, reflectionResolutionTextArray, reflectionResolutionValuesArray, Styles.resolutionText, GUILayout.MinWidth(40));
-                EditorGUILayout.PropertyField(m_HDR);
-                EditorGUILayout.PropertyField(m_ShadowDistance);
+                EditorGUILayout.PropertyField(m_HDR, Styles.hdrText);
+                EditorGUILayout.PropertyField(m_ShadowDistance, Styles.shadowDistanceText);
                 EditorGUILayout.IntPopup(m_ClearFlags, Styles.clearFlags, Styles.clearFlagsValues, Styles.clearFlagsText);
                 EditorGUILayout.PropertyField(m_BackgroundColor, Styles.backgroundColorText);
-                EditorGUILayout.PropertyField(m_CullingMask);
+                EditorGUILayout.PropertyField(m_CullingMask, Styles.cullingMaskText);
                 EditorGUILayout.PropertyField(m_UseOcclusionCulling, Styles.useOcclusionCulling);
                 EditorGUILayout.PropertiesField(EditorGUI.s_ClipingPlanesLabel, m_NearAndFarProperties, EditorGUI.s_NearAndFarLabels, EditorGUI.kNearFarLabelsWidth);
 

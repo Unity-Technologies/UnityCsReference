@@ -42,7 +42,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_VersionList = new UpmVersionList();
             m_Errors = new List<UIError>();
             m_Type = type;
+
             RefreshUnityType();
+            LinkPackageAndVersions();
         }
 
         public UpmPackage(PackageInfo info, bool isInstalled, bool isDiscoverable, bool isUnityPackage)
@@ -56,13 +58,22 @@ namespace UnityEditor.PackageManager.UI.Internal
             _ = info.type == "feature" ? m_Type |= PackageType.Feature : m_Type &= ~PackageType.Feature;
 
             RefreshUnityType();
+            LinkPackageAndVersions();
         }
 
         internal void UpdateVersions(IEnumerable<UpmPackageVersion> updatedVersions)
         {
             m_VersionList = new UpmVersionList(updatedVersions, m_VersionList.lifecycleVersionString, m_VersionList.lifecycleNextVersion);
             RefreshUnityType();
+            LinkPackageAndVersions();
             ClearErrors();
+        }
+
+        internal void UpdateVersion(UpmPackageVersion version)
+        {
+            m_VersionList.UpdateVersion(version);
+            RefreshUnityType();
+            LinkPackageAndVersions();
         }
 
         // This function is only used to update the object, not to actually perform the add operation
@@ -70,6 +81,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_VersionList.AddInstalledVersion(newVersion);
             RefreshUnityType();
+            LinkPackageAndVersions();
         }
 
         private void RefreshUnityType()
@@ -83,7 +95,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override IPackage Clone()
         {
-            return (IPackage)MemberwiseClone();
+            var clone = (BasePackage)MemberwiseClone();
+            clone.LinkPackageAndVersions();
+            return clone;
         }
     }
 }

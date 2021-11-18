@@ -60,7 +60,7 @@ namespace Unity.UI.Builder
             onSelectionChange += data =>
             {
                 m_DetailsView.SetInfo(data);
-                if (data != null)
+                if (data.IsValid())
                 {
                     m_DetailsView.RemoveFromClassList(BuilderConstants.HiddenStyleClassName);
                 }

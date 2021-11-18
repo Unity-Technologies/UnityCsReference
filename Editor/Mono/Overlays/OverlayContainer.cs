@@ -396,5 +396,12 @@ namespace UnityEditor.Overlays
                 return top;
             return bottomOverlays.IndexOf(overlay);
         }
+
+        internal DockPosition GetDockPosition(Overlay overlay)
+        {
+            if (topOverlays.Contains(overlay))
+                return DockPosition.Top;
+            return DockPosition.Bottom;
+        }
     }
 }

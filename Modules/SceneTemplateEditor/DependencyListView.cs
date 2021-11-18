@@ -127,8 +127,8 @@ namespace UnityEditor.SceneTemplate
         const string k_HeaderItem = "dependency-list-view-header";
         const string k_SearchFieldItem = "dependency-list-view-search-field";
         const string k_DependencyRowElementName = "scene-template-asset-inspector-dependency-row";
-        const string k_BaseDependenciesLabel = "Dependencies";
-        const string k_BaseTypeLabel = "Type";
+        static readonly string k_BaseDependenciesLabel = L10n.Tr("Dependencies");
+        static readonly string k_BaseTypeLabel = L10n.Tr("Type");
 
         public ListView listView { get; }
         public VisualElement header { get; }
@@ -195,19 +195,19 @@ namespace UnityEditor.SceneTemplate
             {
                 UpdateSortingMode(DependencySortMode.Name);
             });
-            dependenciesLabelField.tooltip = "Scene dependencies";
+            dependenciesLabelField.tooltip = L10n.Tr("Scene dependencies");
             changeAllRowElement.Add(dependenciesLabelField);
 
             var typeLabelField = new SortableHeaderElement(k_BaseTypeLabel, "scene-template-asset-inspector-dependency-header-type-column");
-            typeLabelField.tooltip = "Dependency type";
+            typeLabelField.tooltip = L10n.Tr("Dependency type");
             typeLabelField.RegisterCallback<ClickEvent>(evt =>
             {
                 UpdateSortingMode(DependencySortMode.Type);
             });
             changeAllRowElement.Add(typeLabelField);
 
-            var cloneLabel = new Label("Clone");
-            cloneLabel.tooltip = "Is the dependency cloned on scene template instantiation or is it referenced?";
+            var cloneLabel = new Label(L10n.Tr("Clone"));
+            cloneLabel.tooltip = L10n.Tr("Is the dependency cloned on scene template instantiation or is it referenced?");
             cloneLabel.AddToClassList("dependency-list-view-header-item-label-common");
             changeAllRowElement.Add(cloneLabel);
             m_CloneHeaderToggle = new Toggle();

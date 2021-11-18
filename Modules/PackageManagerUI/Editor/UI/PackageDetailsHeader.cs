@@ -142,7 +142,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     lockedIcon.AddToClassList("unlocked");
                     lockedIcon.RemoveFromClassList("locked");
-                    lockedIcon.tooltip = string.Empty;
+                    lockedIcon.tooltip = L10n.Tr("This package is unlocked. You can now change its version.");
                 }
                 UIUtils.SetElementDisplay(lockedIcon, true);
             }
@@ -251,7 +251,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void RefreshTags()
         {
             foreach (var tag in k_VisibleTags)
-                UIUtils.SetElementDisplay(GetTagLabel(tag.ToString()), m_Version.HasTag(tag));
+            {
+                if (tag == PackageTag.Release && m_Version.HasTag(PackageTag.Feature) &&
+                    m_Version.dependencies.Any(dependency => !m_PackageDatabase.GetPackageInFeatureVersion(dependency.name).HasTag(PackageTag.Release)))
+                    UIUtils.SetElementDisplay(GetTagLabel(PackageTag.Release.ToString()), false);
+                else
+                    UIUtils.SetElementDisplay(GetTagLabel(tag.ToString()), m_Version.HasTag(tag));
+            }
 
             var scopedRegistryTagLabel = GetTagLabel("ScopedRegistry");
             if ((m_Version as UpmPackageVersion)?.isUnityPackage == false && !string.IsNullOrEmpty(m_Version.version?.Prerelease))
@@ -306,11 +312,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             var installedVersionString = installed.versionString;
-            if (UpmPackageVersion.IsDifferentVersionThanRequested(installed))
+            if (installed.IsDifferentVersionThanRequested)
             {
                 UIUtils.SetElementDisplay(versionInfoIcon, true);
 
-                if (UpmPackageVersion.IsRequestedButOverriddenVersion(m_Package, m_Version))
+                if (m_Version.IsRequestedButOverriddenVersion)
                     versionInfoIcon.tooltip = string.Format(L10n.Tr("Unity installed version {0} because another package depends on it (version {0} overrides version {1})."),
                         installedVersionString, m_Version.versionString);
                 else if (m_Version.isInstalled)
@@ -352,7 +358,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshRegistry()
         {
-            var registry = m_Version.packageInfo?.registry;
+            var registry = m_Version.registry;
             var showRegistry = registry != null;
             UIUtils.SetElementDisplay(detailRegistryContainer, showRegistry);
             if (showRegistry)

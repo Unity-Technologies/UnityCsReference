@@ -55,10 +55,7 @@ namespace UnityEditor.Snap
             m_GridSize.value = GridSettings.size;
             m_GridSize.linked = Mathf.Approximately(m_GridSize.value.x, m_GridSize.value.y) && Mathf.Approximately(m_GridSize.value.x, m_GridSize.value.z);
             GridSettings.sizeChanged += (value) => m_GridSize.SetValueWithoutNotify(value);
-            m_GridSize.RegisterValueChangedCallback((evt) =>
-            {
-                GridSettings.size = evt.newValue;
-            });
+            m_GridSize.RegisterValueChangedCallback(OnGridSizeChanged);
             rootVisualElement.Add(m_GridSize);
 
             // Align Selected
@@ -102,6 +99,15 @@ namespace UnityEditor.Snap
         {
             GridSettings.size = Vector3.one * GridSettings.defaultGridSize;
             m_GridSize.linked = true;
+        }
+
+        void OnGridSizeChanged(ChangeEvent<Vector3> evt)
+        {
+            var value = evt.newValue;
+            if (m_GridSize.linked)
+                value = evt.newValue.x * Vector3.one;
+
+            GridSettings.size = value;
         }
 
         static void SnapSelectionToGrid(SnapAxis axis = SnapAxis.All)

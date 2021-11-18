@@ -193,6 +193,7 @@ namespace UnityEditor
             SerializedProperty m_FogKeepExp;
             SerializedProperty m_FogKeepExp2;
             SerializedProperty m_InstancingStripping;
+            SerializedProperty m_BrgStripping;
 
             public void OnEnable()
             {
@@ -208,6 +209,7 @@ namespace UnityEditor
                 m_FogKeepExp = serializedObject.FindProperty("m_FogKeepExp");
                 m_FogKeepExp2 = serializedObject.FindProperty("m_FogKeepExp2");
                 m_InstancingStripping = serializedObject.FindProperty("m_InstancingStripping");
+                m_BrgStripping = serializedObject.FindProperty("m_BrgStripping");
             }
 
             public override void OnInspectorGUI()
@@ -261,6 +263,7 @@ namespace UnityEditor
                 }
 
                 EditorGUILayout.PropertyField(m_InstancingStripping, Styles.instancingVariants);
+                EditorGUILayout.PropertyField(m_BrgStripping, Styles.brgVariants);
 
                 serializedObject.ApplyModifiedProperties();
 
@@ -293,6 +296,7 @@ namespace UnityEditor
                 public static readonly GUIContent fogFromScene = EditorGUIUtility.TrTextContent("Import From Current Scene", "Calculate fog modes used by the current scene.");
 
                 public static readonly GUIContent instancingVariants = EditorGUIUtility.TrTextContent("Instancing Variants");
+                public static readonly GUIContent brgVariants = EditorGUIUtility.TrTextContent("BatchRendererGroup Variants");
 
                 public static readonly GUIContent shaderPreloadSave = EditorGUIUtility.TrTextContent("Save to asset...", "Save currently tracked shaders into a Shader Variant Manifest asset.");
                 public static readonly GUIContent shaderPreloadClear = EditorGUIUtility.TrTextContent("Clear", "Clear currently tracked shader variant information.");

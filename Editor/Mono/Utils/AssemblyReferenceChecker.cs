@@ -9,6 +9,7 @@ using System.Linq;
 using System.Reflection;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
+using UnityEditor.Utils;
 
 namespace UnityEditor
 {
@@ -20,7 +21,7 @@ namespace UnityEditor
         private readonly HashSet<string>    _definedMethods      = new HashSet<string>();
         private HashSet<AssemblyDefinition> _assemblyDefinitions = new HashSet<AssemblyDefinition>();
         private readonly HashSet<string>    _assemblyFileNames   = new HashSet<string>();
-
+        private readonly INetStandardPathProvider _netStandardPathProvider;
         private DateTime _startTime = DateTime.MinValue;
         private float _progressValue = 0.0f;
 
@@ -28,15 +29,37 @@ namespace UnityEditor
 
         public bool HasMouseEvent { get; private set; }
 
-        public AssemblyReferenceChecker()
+        public AssemblyReferenceChecker() : this(new DefaultStandardPathProvider()) { }
+        internal AssemblyReferenceChecker(INetStandardPathProvider netStandardPathProvider)
         {
             HasMouseEvent = false;
             _updateProgressAction = DisplayProgress;
+            _netStandardPathProvider = netStandardPathProvider;
+        }
+
+        internal interface INetStandardPathProvider
+        {
+            IEnumerable<string> GetNetStandardReferenceAndCompatShimDirs();
+        }
+        internal class DefaultStandardPathProvider : INetStandardPathProvider
+        {
+            public IEnumerable<string> GetNetStandardReferenceAndCompatShimDirs()
+            {
+                yield return NetStandardFinder.GetReferenceDirectory();
+                yield return NetStandardFinder.GetDotNetFrameworkCompatShimsDirectory();
+                yield return NetStandardFinder.GetNetStandardCompatShimsDirectory();
+            }
         }
 
         public static AssemblyReferenceChecker AssemblyReferenceCheckerWithUpdateProgressAction(Action action)
         {
             var checker = new AssemblyReferenceChecker();
+            checker._updateProgressAction = action;
+            return checker;
+        }
+        internal static AssemblyReferenceChecker AssemblyReferenceCheckerWithUpdateProgressAction(Action action, INetStandardPathProvider netStandardPathProvider)
+        {
+            var checker = new AssemblyReferenceChecker(netStandardPathProvider);
             checker._updateProgressAction = action;
             return checker;
         }
@@ -308,7 +331,7 @@ namespace UnityEditor
             return checker.HasMouseEvent;
         }
 
-        private static DefaultAssemblyResolver AssemblyResolverFor(string path)
+        private DefaultAssemblyResolver AssemblyResolverFor(string path)
         {
             var resolver = new DefaultAssemblyResolver();
             if (File.Exists(path) || Directory.Exists(path))
@@ -317,6 +340,11 @@ namespace UnityEditor
                 if ((attributes & FileAttributes.Directory) != FileAttributes.Directory)
                     path = Path.GetDirectoryName(path);
                 resolver.AddSearchDirectory(Path.GetFullPath(path));
+            }
+            // add .net standard ref and compat shims dirs
+            foreach(var dir in _netStandardPathProvider.GetNetStandardReferenceAndCompatShimDirs())
+            {
+                resolver.AddSearchDirectory(dir);
             }
 
             return resolver;

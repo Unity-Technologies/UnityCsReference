@@ -4,19 +4,21 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
+    using ConfigStatus = UnityEditorInternal.AssetStoreCachePathManager.ConfigStatus;
+
     [Serializable]
     internal class AssetStoreDownloadOperation : IOperation
     {
-        internal static readonly string k_DownloadErrorMessage = L10n.Tr("The download could not be completed. Please try again.");
+        internal static readonly string k_DownloadErrorMessage = L10n.Tr("The download could not be completed. See details in console.");
         internal static readonly string k_AbortErrorMessage = L10n.Tr("The download could not be aborted. Please try again.");
         internal static readonly string k_AssetStoreDownloadPrefix = "content__";
         internal static readonly string k_ForbiddenErrorMessage = L10n.Tr("The Asset Store package you are trying to download is not available to the current Unity account. If you purchased this asset from the Asset Store using a different account, use that Unity account to sign into the Editor.");
         private static readonly string k_ConsoleLogPrefix = L10n.Tr("[Package Manager Window]");
+
         [SerializeField]
         private string m_ProductId;
         public string packageUniqueId => m_ProductId;
@@ -77,20 +79,24 @@ namespace UnityEditor.PackageManager.UI.Internal
         private AssetStoreUtils m_AssetStoreUtils;
         [NonSerialized]
         private AssetStoreRestAPI m_AssetStoreRestAPI;
+        [NonSerialized]
+        private AssetStoreCachePathProxy m_AssetStoreCachePathProxy;
         public void ResolveDependencies(AssetStoreUtils assetStoreUtils,
-            AssetStoreRestAPI assetStoreRestAPI)
+            AssetStoreRestAPI assetStoreRestAPI,
+            AssetStoreCachePathProxy assetStoreCachePathProxy)
         {
             m_AssetStoreUtils = assetStoreUtils;
             m_AssetStoreRestAPI = assetStoreRestAPI;
+            m_AssetStoreCachePathProxy = assetStoreCachePathProxy;
         }
 
         private AssetStoreDownloadOperation()
         {
         }
 
-        public AssetStoreDownloadOperation(AssetStoreUtils assetStoreUtils, AssetStoreRestAPI assetStoreRestAPI, string productId, string oldPath)
+        public AssetStoreDownloadOperation(AssetStoreUtils assetStoreUtils, AssetStoreRestAPI assetStoreRestAPI, AssetStoreCachePathProxy assetStoreCachePathProxy, string productId, string oldPath)
         {
-            ResolveDependencies(assetStoreUtils, assetStoreRestAPI);
+            ResolveDependencies(assetStoreUtils, assetStoreRestAPI, assetStoreCachePathProxy);
 
             m_ProductId = productId;
             m_ProductOldPath = oldPath;
@@ -140,12 +146,15 @@ namespace UnityEditor.PackageManager.UI.Internal
             onOperationProgress?.Invoke(this);
         }
 
-        private void OnErrorMessage(string errorMessage, int operationErrorCode = -1)
+        private void OnErrorMessage(string errorMessage, int operationErrorCode = -1, UIError.Attribute attr = UIError.Attribute.None)
         {
             m_State = DownloadState.Error;
-            Debug.LogError($"{k_ConsoleLogPrefix} {errorMessage}");
 
-            var attr = UIError.Attribute.None;
+            if ((attr & UIError.Attribute.IsWarning) != 0)
+                Debug.LogWarning($"{k_ConsoleLogPrefix} {errorMessage}");
+            else
+                Debug.LogError($"{k_ConsoleLogPrefix} {errorMessage}");
+
             if (operationErrorCode == 403)
             {
                 m_ErrorMessage = k_ForbiddenErrorMessage;
@@ -175,6 +184,17 @@ namespace UnityEditor.PackageManager.UI.Internal
                 Debug.LogError($"{k_ConsoleLogPrefix} {k_AbortErrorMessage}");
         }
 
+        public void Cancel()
+        {
+            if (downloadInfo?.isValid != true)
+                return;
+
+            m_AssetStoreUtils.AbortDownload(downloadInfo.destination);
+            m_DownloadedBytes = 0;
+            m_State = DownloadState.None;
+            onOperationFinalized?.Invoke(this);
+        }
+
         public void Abort()
         {
             if (downloadInfo?.isValid != true)
@@ -199,6 +219,18 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void Download(bool resume)
         {
+            var config = m_AssetStoreCachePathProxy.GetConfig();
+            if (config.status == ConfigStatus.ReadOnly)
+            {
+                OnErrorMessage("The Assets Cache location is read-only, see configuration in Preferences | Package Manager", -1, UIError.Attribute.IsWarning);
+                return;
+            }
+            if (config.status == ConfigStatus.InvalidPath)
+            {
+                OnErrorMessage("The Assets Cache location is invalid or inaccessible, see configuration in Preferences | Package Manager", -1, UIError.Attribute.IsWarning);
+                return;
+            }
+
             m_State = resume ? DownloadState.ResumeRequested : DownloadState.DownloadRequested;
             var productId = long.Parse(m_ProductId);
             m_AssetStoreRestAPI.GetDownloadDetail(productId, downloadInfo =>

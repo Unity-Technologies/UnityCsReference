@@ -66,10 +66,11 @@ namespace UnityEditor.UIElements
         VisualElement m_PrefabElement;
 
         IMGUIContainer m_Header;
-        internal InspectorElement m_InspectorElement { get; private set; }
+        InspectorElement m_InspectorElement;
         IMGUIContainer m_Footer;
 
-        private bool m_WasVisible = false;
+        bool m_WasVisible;
+        bool m_IsCulled;
 
         static class Styles
         {
@@ -87,6 +88,7 @@ namespace UnityEditor.UIElements
         {
             m_EditorIndex = editorIndex;
             inspectorWindow = iw;
+            m_IsCulled = isCulled;
             pickingMode = PickingMode.Ignore;
 
             if (isCulled)
@@ -113,14 +115,30 @@ namespace UnityEditor.UIElements
                     }
                 }
             }, name);
+
             Add(container);
         }
 
         void Init()
         {
-            var editors = PopulateCache();
+            PopulateCache();
             m_EditorTarget = editor.targets[0];
-            string editorTitle = ObjectNames.GetInspectorTitle(m_EditorTarget);
+            var editorTitle = ObjectNames.GetInspectorTitle(m_EditorTarget);
+
+            m_Header = BuildHeaderElement(editorTitle);
+            m_Footer = BuildFooterElement(editorTitle);
+
+            Add(m_Header);
+            Add(m_Footer);
+
+            if (EditorUIService.disableInspectorElementThrottling)
+                CreateInspectorElement();
+        }
+
+        InspectorElement BuildInspectorElement()
+        {
+            var editors = PopulateCache();
+            var editorTitle = ObjectNames.GetInspectorTitle(m_EditorTarget);
 
             InspectorElement.Mode inspectorElementMode;
 
@@ -138,38 +156,22 @@ namespace UnityEditor.UIElements
                 inspectorElementMode = (InspectorElement.Mode) propertyEditor.inspectorElementModeOverride;
             }
 
-            m_InspectorElement = new InspectorElement(editor, inspectorElementMode)
+            var inspectorElement = new InspectorElement(editor, inspectorElementMode)
             {
-                focusable = false
+                focusable = false,
+                name = editorTitle + "Inspector",
+                style =
+                {
+                    paddingBottom = PropertyEditor.kEditorElementPaddingBottom
+                }
             };
-
-
-            m_Header = BuildHeaderElement(editorTitle);
-            m_Footer = BuildFooterElement(editorTitle);
-
-            m_InspectorElement.name = editorTitle + "Inspector";
-            m_InspectorElement.style.paddingBottom = InspectorWindow.kEditorElementPaddingBottom;
 
             if (EditorNeedsVerticalOffset(editors, m_EditorTarget))
             {
-                m_InspectorElement.style.overflow = Overflow.Hidden;
+                inspectorElement.style.overflow = Overflow.Hidden;
             }
 
-            UpdateInspectorVisibility();
-
-            //Need to update the cache for multi-object edit detection.
-            if (editor.targets.Length != Selection.objects.Length)
-                inspectorWindow.tracker.RebuildIfNecessary();
-
-            Add(m_Header);
-            // If the editor targets contain many target and the multi editing is not supported, we should not add this inspector.
-            // However, the header and footer are kept since these are showing information regarding this state.
-            if (editor != null && ((editor.targets.Length <= 1) || (PropertyEditor.IsMultiEditingSupported(editor, editor.target, inspectorWindow.inspectorMode))))
-            {
-                Add(m_InspectorElement);
-            }
-
-            Add(m_Footer);
+            return inspectorElement;
         }
 
         public void ReinitCulled(int editorIndex)
@@ -213,30 +215,59 @@ namespace UnityEditor.UIElements
 
             m_Header.onGUIHandler = HeaderOnGUI;
             m_Footer.onGUIHandler = FooterOnGUI;
-            m_InspectorElement.AssignExistingEditor(editor);
 
             name = editorTitle;
-            m_InspectorElement.name = editorTitle + "Inspector";
             m_Header.name = editorTitle + "Header";
             m_Footer.name = editorTitle + "Footer";
 
-            UpdateInspectorVisibility();
+            if (m_InspectorElement != null)
+            {
+                m_InspectorElement.AssignExistingEditor(editor);
+                m_InspectorElement.name = editorTitle + "Inspector";
 
-            // InspectorElement should be enabled only if the Editor is open for edit.
-            m_InspectorElement.SetEnabled(editor.IsOpenForEdit());
+                // InspectorElement should be enabled only if the Editor is open for edit.
+                m_InspectorElement.SetEnabled(editor.IsOpenForEdit());
+            }
+
+            UpdateInspectorVisibility();
         }
 
-        private void UpdateInspectorVisibility()
+        public void CreateInspectorElement()
+        {
+            if (null == editor || null != m_InspectorElement || m_IsCulled)
+                return;
+
+            // Need to update the cache for multi-object edit detection.
+            if (editor.targets.Length != Selection.objects.Length)
+                inspectorWindow.tracker.RebuildIfNecessary();
+
+            // If the editor targets contain many targets and multi editing is not supported, we should not add this inspector.
+            if (null != editor && (editor.targets.Length <= 1 || PropertyEditor.IsMultiEditingSupported(editor, editor.target, inspectorWindow.inspectorMode)))
+            {
+                m_InspectorElement = BuildInspectorElement();
+                Insert(IndexOf(m_Header) + 1, m_InspectorElement);
+                UpdateInspectorVisibility();
+                SetElementVisible(m_InspectorElement, m_WasVisible);
+            }
+        }
+
+        void UpdateInspectorVisibility()
         {
             if (editor.CanBeExpandedViaAFoldoutWithoutUpdate())
             {
-                m_Footer.style.marginTop = m_WasVisible ? 0 : -kFooterDefaultHeight;
-                m_InspectorElement.style.paddingBottom = InspectorWindow.kEditorElementPaddingBottom;
+                if (m_Footer != null)
+                    m_Footer.style.marginTop = m_WasVisible ? 0 : -kFooterDefaultHeight;
+
+                if (m_InspectorElement != null)
+                    m_InspectorElement.style.paddingBottom = PropertyEditor.kEditorElementPaddingBottom;
             }
             else
             {
-                m_Footer.style.marginTop = -kFooterDefaultHeight;
-                m_InspectorElement.style.paddingBottom = 0;
+                if (m_Footer != null)
+                    m_Footer.style.marginTop = -kFooterDefaultHeight;
+
+                if (m_InspectorElement != null)
+                    m_InspectorElement.style.paddingBottom = 0;
             }
         }
 
@@ -284,7 +315,10 @@ namespace UnityEditor.UIElements
             var editors = PopulateCache();
             if (!IsEditorValid())
             {
-                SetElementVisible(m_InspectorElement, false);
+                if (m_InspectorElement != null)
+                {
+                    SetElementVisible(m_InspectorElement, false);
+                }
                 return;
             }
 
@@ -296,7 +330,10 @@ namespace UnityEditor.UIElements
             var target = editor.target;
             if (target == null && !NativeClassExtensionUtilities.ExtendsANativeType(target))
             {
-                SetElementVisible(m_InspectorElement, false);
+                if (m_InspectorElement != null)
+                {
+                    SetElementVisible(m_InspectorElement, false);
+                }
                 return;
             }
 
@@ -308,7 +345,7 @@ namespace UnityEditor.UIElements
                 if (openForEdit != m_LastOpenForEdit)
                 {
                     m_LastOpenForEdit = openForEdit;
-                    m_InspectorElement.SetEnabled(openForEdit);
+                    m_InspectorElement?.SetEnabled(openForEdit);
                 }
             }
 
@@ -334,7 +371,7 @@ namespace UnityEditor.UIElements
                 InvalidateIMGUILayouts(this);
             }
 
-            if (m_WasVisible != IsElementVisible(m_InspectorElement))
+            if (m_InspectorElement != null && m_WasVisible != IsElementVisible(m_InspectorElement))
             {
                 SetElementVisible(m_InspectorElement, m_WasVisible);
             }
@@ -368,9 +405,9 @@ namespace UnityEditor.UIElements
                         MessageType.Warning);
             }
 
-            if (IsElementVisible(m_InspectorElement))
+            if (m_WasVisible)
             {
-                m_ContentRect = m_InspectorElement.layout;
+                m_ContentRect = m_InspectorElement?.layout ?? Rect.zero;
             }
             else
             {
@@ -553,7 +590,7 @@ namespace UnityEditor.UIElements
                     rect.height -= 1;
                 }
 
-                EditorGUI.DrawOverrideBackground(rect, true);
+                EditorGUI.DrawOverrideBackgroundApplicable(rect, true);
             }
         }
 
@@ -577,6 +614,11 @@ namespace UnityEditor.UIElements
         internal bool EditorNeedsVerticalOffset(Editor[] editors, Object target)
         {
             return m_EditorIndex > 0 && IsEditorValid() && editors[m_EditorIndex - 1].target is GameObject && target is Component;
+        }
+
+        internal InspectorElement GetInspectorElementInternal()
+        {
+            return m_InspectorElement;
         }
     }
 }

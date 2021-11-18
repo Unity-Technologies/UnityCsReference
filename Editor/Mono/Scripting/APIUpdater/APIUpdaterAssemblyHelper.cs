@@ -29,28 +29,15 @@ namespace UnityEditor.Scripting
 
         internal static int Run(string arguments, string workingDir, out string stdOut, out string stdErr)
         {
-            var monodistribution = MonoInstallationFinder.GetMonoInstallation("MonoBleedingEdge");
-
-            var monoexe = Path.Combine(monodistribution, "bin/mono");
-            if (Application.platform == RuntimePlatform.WindowsEditor)
+            var assemblyUpdaterProcess = new NetCoreProgram(AssemblyUpdaterPath(), arguments, psi =>
             {
-                monoexe = Application.platform == RuntimePlatform.WindowsEditor
-                    ? CommandLineFormatter.EscapeCharsWindows(monoexe + ".exe")
-                    : CommandLineFormatter.EscapeCharsQuote(monoexe + ".exe");
-            }
+                psi.CreateNoWindow = true;
+                psi.RedirectStandardError = true;
+                psi.RedirectStandardOutput = true;
+                psi.WorkingDirectory = workingDir;
+                psi.UseShellExecute = false;
+            });
 
-            var startInfo = new ProcessStartInfo
-            {
-                Arguments = AssemblyUpdaterPath() + " " + arguments,
-                CreateNoWindow = true,
-                FileName = monoexe,
-                RedirectStandardError = true,
-                RedirectStandardOutput = true,
-                WorkingDirectory = workingDir,
-                UseShellExecute = false
-            };
-
-            var assemblyUpdaterProcess = new Program(startInfo);
             assemblyUpdaterProcess.LogProcessStartInfo();
             assemblyUpdaterProcess.Start();
 
@@ -110,7 +97,9 @@ namespace UnityEditor.Scripting
 
         private static string AssemblySearchPathArgument(IEnumerable<string> configurationSourceDirectories = null)
         {
-            var searchPath = Path.Combine(MonoInstallationFinder.GetFrameWorksFolder(), "Managed").Escape(Path.PathSeparator) + Path.PathSeparator
+            var searchPath = NetStandardFinder.GetReferenceDirectory().Escape(Path.PathSeparator) + Path.PathSeparator
+                + NetStandardFinder.GetNetStandardCompatShimsDirectory().Escape(Path.PathSeparator) + Path.PathSeparator
+                + NetStandardFinder.GetDotNetFrameworkCompatShimsDirectory().Escape(Path.PathSeparator) + Path.PathSeparator
                 + "+" + Application.dataPath.Escape(Path.PathSeparator);
 
             if (configurationSourceDirectories != null)

@@ -440,7 +440,7 @@ namespace UnityEditor
                         if (evt.type == EventType.Ignore && evt.rawType == EventType.MouseUp)
                             oldEventType = evt.rawType;
 
-                        Handles.FreeMoveHandle(position, Quaternion.identity, handleSize, Vector3.zero, Handles.RectangleHandleCap);
+                        Handles.FreeMoveHandle(position, handleSize, Vector3.zero, Handles.RectangleHandleCap);
 
                         // Detect selected plane (similar to TreeEditor)
                         if (oldEventType == EventType.MouseDown && evt.type == EventType.Used)

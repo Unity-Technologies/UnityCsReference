@@ -52,6 +52,14 @@ namespace UnityEditor.EditorTools
     [Serializable]
     class ComponentEditor
     {
+        internal enum EditorToolScope
+        {
+            NotInitialized,
+            ToolContext,
+            ComponentTool,
+            ManipulationToolOverride
+        };
+
         [SerializeField]
         bool m_LockedInspector;
 
@@ -64,11 +72,13 @@ namespace UnityEditor.EditorTools
         EditorTypeAssociation m_EditorTypeAssociation;
         public readonly ActiveEditorTracker tracker;
         public List<Editor> additionalEditors;
+        public EditorToolScope m_EditorToolScope;
 
         public Editor inspector => m_Inspector;
         public Type editorType => m_EditorTypeAssociation.editor;
         public EditorTypeAssociation typeAssociation => m_EditorTypeAssociation;
         public bool lockedInspector => m_LockedInspector;
+        public EditorToolScope editorToolScope => m_EditorToolScope;
 
         public UnityObject editor => m_Editor;
 
@@ -88,6 +98,7 @@ namespace UnityEditor.EditorTools
             m_Inspector = inspector;
             m_LockedInspector = tracker.isLocked;
             m_EditorTypeAssociation = typeAssociation;
+            m_EditorToolScope = EditorToolScope.NotInitialized;
         }
 
         public UnityObject target => inspector != null ? inspector.target : null;
@@ -124,6 +135,14 @@ namespace UnityEditor.EditorTools
             });
 
             m_Editor.hideFlags = HideFlags.DontSave;
+
+            if(m_Editor is EditorToolContext)
+                m_EditorToolScope = EditorToolScope.ToolContext;
+            else if(m_Editor is EditorTool tool &&
+                    EditorToolUtility.GetEnumWithEditorTool(tool, EditorToolManager.activeToolContext) != Tool.Custom)
+                m_EditorToolScope = EditorToolScope.ManipulationToolOverride;
+            else
+                m_EditorToolScope = EditorToolScope.ComponentTool;
 
             return m_Editor;
         }
@@ -228,6 +247,7 @@ namespace UnityEditor.EditorTools
 
         void CollectEditorsForTracker(EditorToolContext ctx, ActiveEditorTracker tracker, List<ComponentEditor> editors)
         {
+
             var trackerEditors = tracker.activeEditors;
 
             for (int i = 0, c = trackerEditors.Length; i < c; i++)

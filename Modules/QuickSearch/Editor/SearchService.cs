@@ -233,6 +233,8 @@ namespace UnityEditor.Search
             context.sessionEnded -= OnSearchEnded;
             context.sessionEnded += OnSearchEnded;
 
+            context.sessions.StartSessions();
+
             if (options.HasAny(SearchFlags.WantsMore))
                 context.wantsMore = true;
 

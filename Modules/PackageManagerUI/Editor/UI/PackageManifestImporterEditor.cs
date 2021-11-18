@@ -20,7 +20,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         enum PackageVisibility
         {
-            DependsOnType,
+            DefaultVisibility,
             AlwaysHidden,
             AlwaysVisible
         }
@@ -319,8 +319,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (isFeatureSet)
                     return;
 
-                m_Type.stringValue = EditorGUILayout.DelayedTextFieldDropDown(Styles.type, m_Type.stringValue, PackageInfo.GetPredefinedPackageTypes());
-
                 EditorGUILayout.PropertyField(m_UnityVersionEnabled, Styles.unity);
                 if (m_UnityVersionEnabled.boolValue)
                 {
@@ -406,15 +404,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             if ((PackageVisibility)m_Visibility.intValue == PackageVisibility.AlwaysVisible)
             {
                 warningMessages.Add("This package and all its assets will be visible by default in Editor because its visibility is set to 'Always Visible'");
-            }
-            else
-            {
-                if (string.IsNullOrWhiteSpace(packageState.info.type))
-                    warningMessages.Add("This package and all its assets will be hidden by default in Editor because its type is empty");
-                else if (PackageInfo.GetPredefinedHiddenByDefaultPackageTypes().Contains(packageState.info.type))
-                    warningMessages.Add($"This package and all its assets will be hidden by default in Editor because its type is '{packageState.info.type}'");
-                else
-                    warningMessages.Add($"This package and all its assets will be visible by default in Editor because its type is '{packageState.info.type}'");
             }
         }
 
@@ -548,7 +537,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     if (info.ContainsKey("hideInEditor") && info["hideInEditor"] is bool)
                         packageState.info.settings.visibility = (bool)info["hideInEditor"] ? PackageVisibility.AlwaysHidden : PackageVisibility.AlwaysVisible;
                     else
-                        packageState.info.settings.visibility = PackageVisibility.DependsOnType;
+                        packageState.info.settings.visibility = PackageVisibility.DefaultVisibility;
 
                     if (info.ContainsKey("unity") && info["unity"] is string)
                     {
@@ -641,7 +630,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             else
                 json.Remove("type");
 
-            if (packageState.info.settings.visibility == PackageVisibility.DependsOnType)
+            if (packageState.info.settings.visibility == PackageVisibility.DefaultVisibility)
                 json.Remove("hideInEditor");
             else
                 json["hideInEditor"] = packageState.info.settings.visibility == PackageVisibility.AlwaysHidden;

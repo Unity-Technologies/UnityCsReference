@@ -27,6 +27,24 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected string[] m_PackagesNamesToRemove = new string[0];
         public IEnumerable<string> packagesNamesToRemove => m_PackagesNamesToRemove;
 
+        public void AddByIds(IEnumerable<string> versionIds)
+        {
+            m_PackageIdsToReset = new string[0];
+            m_PackageIdsToAdd = (versionIds ?? Enumerable.Empty<string>()).ToArray();
+            m_PackagesNamesToRemove = new string[0];
+            SetPrimaryPackageNameOrId();
+            Start();
+        }
+
+        public void RemoveByNames(IEnumerable<string> packagesNames)
+        {
+            m_PackageIdsToReset = new string[0];
+            m_PackageIdsToAdd = new string[0];
+            m_PackagesNamesToRemove = (packagesNames ?? Enumerable.Empty<string>()).ToArray();
+            SetPrimaryPackageNameOrId();
+            Start();
+        }
+
         public void AddAndResetDependencies(string packageId, IEnumerable<string> dependencyPackagesNames)
         {
             m_PackageIdsToReset = new string[0];

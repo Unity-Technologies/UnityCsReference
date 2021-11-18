@@ -38,6 +38,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     return;
                 m_SelectedSubPageName = newSelectedSubpageName;
                 Rebuild();
+                TriggerOnSubPageChanged();
             }
         }
 
@@ -118,15 +119,15 @@ namespace UnityEditor.PackageManager.UI.Internal
             TriggerOnVisualStateChange(unlockedVisualStates);
         }
 
-        public override void SetSelected(string packageUniqueId, string versionUniqueId)
+        public override void TriggerOnSelectionChanged()
         {
-            if (!string.IsNullOrEmpty(packageUniqueId) && subPages.Any())
+            if (subPages.Skip(1).Any())
             {
-                var package = m_PackageDatabase.GetPackage(packageUniqueId);
-                if (currentSubPage?.filter?.Invoke(package) != true)
-                    currentSubPage = subPages.FirstOrDefault(p => p.filter?.Invoke(package) == true);
+                var packages = GetSelection().Select(s => m_PackageDatabase.GetPackage(s.packageUniqueId)).ToArray();
+                if (packages.Any(p => currentSubPage?.filter?.Invoke(p) != true))
+                    currentSubPage = subPages.FirstOrDefault(subPage => packages.All(p => subPage.filter?.Invoke(p) == true)) ?? currentSubPage;
             }
-            base.SetSelected(packageUniqueId, versionUniqueId);
+            base.TriggerOnSelectionChanged();
         }
 
         public override void Rebuild()
@@ -207,13 +208,25 @@ namespace UnityEditor.PackageManager.UI.Internal
             var changedVisualStates = new List<VisualState>();
             foreach (var state in m_VisualStateList)
             {
+                var stateChanged = false;
+
                 var package = m_PackageDatabase.GetPackage(state.packageUniqueId);
                 var visible = m_PackageFiltering.FilterByCurrentSearchText(package);
                 if (state.visible != visible)
                 {
                     state.visible = visible;
-                    changedVisualStates.Add(state);
+                    stateChanged = true;
                 }
+
+                var expandable = GetSelection().Count <= 1;
+                if (state.expandable != expandable)
+                {
+                    state.expandable = expandable;
+                    stateChanged = true;
+                }
+
+                if (stateChanged)
+                    changedVisualStates.Add(state);
             }
 
             if (changedVisualStates.Any())
@@ -260,7 +273,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_SubPages = new List<SubPage>();
             m_SubPages.Add(subPage);
             m_SubPages.Sort((p1, p2) => p1.priority - p2.priority);
-            TriggerOnSubPageAdded();
+            if (m_SelectedSubPageName == subPage.name)
+                Rebuild();
+            TriggerOnSubPageChanged();
         }
 
         public override string GetGroupName(IPackage package)

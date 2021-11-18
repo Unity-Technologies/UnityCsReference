@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -51,7 +52,7 @@ namespace Unity.UI.Builder
             set
             {
                 innerValue = value;
-                SetValueWithoutNotify(innerValue.ToString());
+                SetValueWithoutNotify(innerValue.ToString(CultureInfo.InvariantCulture.NumberFormat));
             }
         }
 
@@ -144,7 +145,7 @@ namespace Unity.UI.Builder
         protected bool TryParseValue(string val, out float value)
         {
             var num = new string(val.Where((c) => Char.IsDigit(c) || c == '.' || c == '-').ToArray());
-            return float.TryParse(num, out value);
+            return float.TryParse(num, NumberStyles.Any, CultureInfo.InvariantCulture.NumberFormat, out value);
         }
 
         protected override bool SetInnerValueFromValue(string val)
@@ -191,7 +192,15 @@ namespace Unity.UI.Builder
             if (styleKeywords.Contains(option))
                 return option;
 
-            return innerValue.ToString() + option;
+            return innerValue.ToString(CultureInfo.InvariantCulture.NumberFormat) + option;
+        }
+
+        protected override string GetTextFromValue()
+        {
+            if (styleKeywords.Contains(option))
+                return option;
+
+            return innerValue.ToString(CultureInfo.InvariantCulture.NumberFormat);
         }
 
         protected override void RefreshChildFields()
@@ -211,8 +220,7 @@ namespace Unity.UI.Builder
             if (isKeyword)
                 option = defaultUnit;
 
-            value = (evt.newValue * m_DragStep).ToString();
-
+            value = (evt.newValue * m_DragStep).ToString(CultureInfo.InvariantCulture.NumberFormat);
             evt.StopImmediatePropagation();
             evt.PreventDefault();
         }

@@ -5,10 +5,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditorInternal;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
+    using CachePathConfig = AssetStoreCachePathManager.CachePathConfig;
+    using ConfigStatus = AssetStoreCachePathManager.ConfigStatus;
+
     [Serializable]
     internal class AssetStoreDownloadManager : ISerializationCallbackReceiver
     {
@@ -36,13 +40,16 @@ namespace UnityEditor.PackageManager.UI.Internal
         private AssetStoreUtils m_AssetStoreUtils;
         [NonSerialized]
         private AssetStoreRestAPI m_AssetStoreRestAPI;
+        [NonSerialized]
+        private AssetStoreCachePathProxy m_AssetStoreCachePathProxy;
         public void ResolveDependencies(ApplicationProxy application,
             HttpClientFactory httpClientFactory,
             UnityConnectProxy unityConnect,
             IOProxy ioProxy,
             AssetStoreCache assetStoreCache,
             AssetStoreUtils assetStoreUtils,
-            AssetStoreRestAPI assetStoreRestAPI)
+            AssetStoreRestAPI assetStoreRestAPI,
+            AssetStoreCachePathProxy assetStoreCachePathProxy)
         {
             m_Application = application;
             m_UnityConnect = unityConnect;
@@ -51,9 +58,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreCache = assetStoreCache;
             m_AssetStoreUtils = assetStoreUtils;
             m_AssetStoreRestAPI = assetStoreRestAPI;
+            m_AssetStoreCachePathProxy = assetStoreCachePathProxy;
 
             foreach (var operation in m_DownloadOperations.Values)
-                operation.ResolveDependencies(assetStoreUtils, assetStoreRestAPI);
+                operation.ResolveDependencies(assetStoreUtils, assetStoreRestAPI, m_AssetStoreCachePathProxy);
         }
 
         // The AssetStoreDownloadManager implementation requires the help of a ScriptableObject to dispatch download progress event.
@@ -116,6 +124,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             return m_DownloadOperations.Values.Any(d => d.isInProgress);
         }
 
+        public virtual bool IsAnyDownloadInProgressOrPause()
+        {
+            return m_DownloadOperations.Values.Any(d => d.isInProgress || d.isInPause);
+        }
+
         public virtual void Download(IPackage package)
         {
             var packageId = package?.uniqueId;
@@ -127,7 +140,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (operation?.isInProgress ?? false)
                 return;
 
-            operation = new AssetStoreDownloadOperation(m_AssetStoreUtils, m_AssetStoreRestAPI, packageId, v?.localPath);
+            operation = new AssetStoreDownloadOperation(m_AssetStoreUtils, m_AssetStoreRestAPI, m_AssetStoreCachePathProxy, packageId, v?.localPath);
             SetupDownloadOperation(operation);
             operation.Download(false);
         }
@@ -197,9 +210,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual void AbortAllDownloads()
         {
-            foreach (var operation in m_DownloadOperations.Values)
-                operation.Abort();
+            var operations = m_DownloadOperations.Values.ToList();
             m_DownloadOperations.Clear();
+            foreach (var operation in operations)
+                operation.Cancel();
         }
 
         public virtual void AbortDownload(string productId)
@@ -231,6 +245,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_Application.onPlayModeStateChanged += OnPlayModeStateChanged;
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
+            m_AssetStoreCachePathProxy.onConfigChanged += OnAssetStoreCacheConfigChange;
             if (m_UnityConnect.isUserLoggedIn)
                 RegisterDownloadDelegate();
         }
@@ -251,6 +266,19 @@ namespace UnityEditor.PackageManager.UI.Internal
             else
             {
                 UnRegisterDownloadDelegate();
+                AbortAllDownloads();
+            }
+        }
+
+        private void OnAssetStoreCacheConfigChange(CachePathConfig config)
+        {
+            if ((config.status == ConfigStatus.Success || config.status == ConfigStatus.ReadOnly) && IsAnyDownloadInProgressOrPause())
+            {
+                if (!m_Application.isBatchMode)
+                    m_Application.DisplayDialog(L10n.Tr("Package Manager"),
+                        L10n.Tr("The Assets Cache location has been changed, all current downloads will be aborted."),
+                        L10n.Tr("Ok"));
+
                 AbortAllDownloads();
             }
         }

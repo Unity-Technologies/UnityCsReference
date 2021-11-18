@@ -33,9 +33,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UnityConnectProxy = container.Resolve<UnityConnectProxy>();
         }
 
-        private IPackage m_Package;
-        private IPackageVersion m_Version;
-
         public PackageDetails()
         {
             ResolveDependencies();
@@ -54,14 +51,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             scrollView.verticalScroller.valueChanged += OnDetailScroll;
             scrollView.RegisterCallback<GeometryChangedEvent>(RecalculateFillerHeight);
             detail.RegisterCallback<GeometryChangedEvent>(RecalculateFillerHeight);
-
-            Refresh();
         }
 
         public void OnEnable()
         {
             body.OnEnable();
             toolbar.OnEnable();
+            multiSelectDetails.OnEnable();
 
             m_Application.onInternetReachabilityChange += OnInternetReachabilityChange;
 
@@ -73,13 +69,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_UnityConnectProxy.onUserLoginStateChange += OnUserLoginStateChange;
 
-            Refresh(m_PageManager.GetSelectedVersion());
+            Refresh(m_PageManager.GetSelection());
         }
 
         public void OnDisable()
         {
             body.OnDisable();
             toolbar.OnDisable();
+            multiSelectDetails.OnDisable();
 
             m_Application.onInternetReachabilityChange -= OnInternetReachabilityChange;
 
@@ -127,34 +124,40 @@ namespace UnityEditor.PackageManager.UI.Internal
             Refresh();
         }
 
-        internal void OnSelectionChanged(IPackageVersion version)
+        internal void OnSelectionChanged(PageSelection selections)
         {
             m_PackageManagerPrefs.packageDetailVerticalScrollOffset = 0;
-            Refresh(version);
+            Refresh(selections);
         }
 
-        private void Refresh(IPackageVersion version)
+        internal void Refresh(PageSelection selections = null)
         {
-            Refresh(m_PackageDatabase.GetPackage(version), version);
+            selections = selections ?? m_PageManager.GetSelection();
+            scrollView.scrollOffset = new Vector2(0, m_PackageManagerPrefs.packageDetailVerticalScrollOffset);
+
+            if (selections.Count == 1)
+            {
+                var selection = selections.FirstOrDefault();
+                m_PackageDatabase.GetPackageAndVersion(selection.packageUniqueId, selection.versionUniqueId, out var package, out var version);
+                Refresh(package, version);
+            }
+            else
+            {
+                // We call Refresh(null, null) to make sure that all single package details elements are hidden properly
+                // We want to hide those elements when 1) there's nothing selected or 2) the multi select details view is visible.
+                Refresh(null, null);
+                UIUtils.SetElementDisplay(multiSelectDetails, multiSelectDetails.Refresh(selections));
+            }
         }
 
-        public void Refresh(IPackage package, IPackageVersion version)
+        private void Refresh(IPackage package, IPackageVersion version)
         {
-            m_Package = package;
-            m_Version = version ?? package?.versions.primary;
-
+            version = version ?? package?.versions.primary;
             if (version?.isFullyFetched == false)
                 m_PackageDatabase.FetchExtraInfo(version);
 
-            Refresh();
-        }
-
-        private void Refresh()
-        {
-            scrollView.scrollOffset = new Vector2(0, m_PackageManagerPrefs.packageDetailVerticalScrollOffset);
-
-            var detailVisible = m_Package != null && m_Version != null && !inProgressView.Refresh(m_Package);
-            var detailEnabled = m_Version == null || m_Version.isFullyFetched;
+            var detailVisible = package != null && version != null && !inProgressView.Refresh(package);
+            var detailEnabled = version == null || version.isFullyFetched;
 
             if (!detailVisible)
             {
@@ -162,22 +165,25 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             else
             {
-                header.Refresh(m_Package, m_Version);
-                body.Refresh(m_Package, m_Version);
-                toolbar.Refresh(m_Package, m_Version);
-                RefreshExtensions(m_Package, m_Version);
+                header.Refresh(package, version);
+                body.Refresh(package, version);
+                toolbar.Refresh(package, version);
+                RefreshExtensions(package, version);
             }
 
             // Set visibility
             UIUtils.SetElementDisplay(detail, detailVisible);
             UIUtils.SetElementDisplay(toolbar, detailVisible);
+            UIUtils.SetElementDisplay(multiSelectDetails, false);
 
             SetEnabled(detailEnabled);
-            RefreshDetailError();
+            RefreshDetailError(package, version);
         }
 
         void RefreshExtensions(IPackage package, IPackageVersion version)
         {
+            // For now packageInfo, package and packageVersion will all be null when there are multiple packages selected.
+            // This way no single select UI will be displayed for multi-select. We might handle it differently in the future in a new story
             var packageInfo = version?.packageInfo;
             PackageManagerExtensions.ExtensionCallback(() =>
             {
@@ -198,31 +204,24 @@ namespace UnityEditor.PackageManager.UI.Internal
             IEnumerable<IPackage> preUpdate,
             IEnumerable<IPackage> postUpdate)
         {
-            var packageUniqudId = m_Package?.uniqueId;
-            if (string.IsNullOrEmpty(packageUniqudId) || !postUpdate.Any())
-                return;
-
-            var updatedPackage = postUpdate.FirstOrDefault(p => p.uniqueId == packageUniqudId);
-            // if Git and updated, inform the user
-            if (updatedPackage != null)
-            {
-                var updatedVersion = m_Version == null ? null : updatedPackage.versions.FirstOrDefault(v => v.uniqueId == m_Version.uniqueId);
-                Refresh(updatedPackage, updatedVersion);
-            }
+            var selection = m_PageManager.GetSelection();
+            if (added.Concat(removed).Concat(preUpdate).Concat(postUpdate).Any(p => selection.Contains(p.uniqueId)))
+                Refresh(selection);
         }
 
-        private void RefreshDetailError()
+        private void RefreshDetailError(IPackage package, IPackageVersion version)
         {
-            var error = m_Version?.errors?.FirstOrDefault(e => !e.HasAttribute(UIError.Attribute.IsClearable))
-                ?? m_Package?.errors?.FirstOrDefault(e => !e.HasAttribute(UIError.Attribute.IsClearable));
+            var error = version?.errors?.FirstOrDefault(e => !e.HasAttribute(UIError.Attribute.IsClearable))
+                ?? package?.errors?.FirstOrDefault(e => !e.HasAttribute(UIError.Attribute.IsClearable));
             if (error == null)
                 detailError.ClearError();
             else
-                detailError.SetError(error);
+                detailError.SetError(error, version);
         }
 
         private VisualElementCache cache { get; set; }
 
+        private MultiSelectDetails multiSelectDetails => cache.Get<MultiSelectDetails>("multiSelectDetails");
         private InProgressView inProgressView => cache.Get<InProgressView>("inProgressView");
         private PackageDetailsHeader header => cache.Get<PackageDetailsHeader>("detailsHeader");
         private PackageDetailsBody body => cache.Get<PackageDetailsBody>("detailsBody");

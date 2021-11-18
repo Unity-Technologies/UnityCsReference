@@ -23,6 +23,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         AssetStoreOperationError,
         AssetStorePackageError,
         UpmError,
-        NetworkError
+        NetworkError,
+        UpmError_InvalidSignature,
+        UpmError_UnsignedUnityPackage
     }
 }

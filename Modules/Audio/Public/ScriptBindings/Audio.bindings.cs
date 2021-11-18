@@ -330,6 +330,8 @@ namespace UnityEngine
         public delegate void AudioConfigurationChangeHandler(bool deviceWasChanged);
 
         static public event AudioConfigurationChangeHandler OnAudioConfigurationChanged;
+        internal static event Action OnAudioSystemShuttingDown;
+        internal static event Action OnAudioSystemStartedUp;
 
         [RequiredByNativeCode]
         static internal void InvokeOnAudioConfigurationChanged(bool deviceWasChanged)
@@ -337,6 +339,14 @@ namespace UnityEngine
             if (OnAudioConfigurationChanged != null)
                 OnAudioConfigurationChanged(deviceWasChanged);
         }
+
+        [RequiredByNativeCode]
+        internal static void InvokeOnAudioSystemShuttingDown()
+            => OnAudioSystemShuttingDown?.Invoke();
+
+        [RequiredByNativeCode]
+        internal static void InvokeOnAudioSystemStartedUp()
+            => OnAudioSystemStartedUp?.Invoke();
 
         extern static internal bool unityAudioDisabled
         {
@@ -1221,6 +1231,12 @@ namespace UnityEngine
         extern static public string[] devices
         {
             [NativeName("GetRecordDevices")]
+            get;
+        }
+
+        internal static extern bool isAnyDeviceRecording
+        {
+            [NativeName("IsAnyRecordDeviceActive")]
             get;
         }
 

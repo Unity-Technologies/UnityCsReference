@@ -1,16 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{F0499708-3EB6-4026-8362-97E6FFC4E7C8}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <RootNamespace>UnityEngine</RootNamespace>
-    <AssemblyName>UnityEngine</AssemblyName>
-    <FileAlignment>512</FileAlignment>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <DefineConstants>$(DefineConstants);COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ACCELERATOR_CLIENT_DEBUGGING;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_GAME_SERVICES;ENABLE_EDITOR_HUB_LICENSE;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MANAGED_UNITYTLS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_BJM_API;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_GAMECORE_API;UNITY_GAMECORE_SCARLETT_API;UNITY_GAMECORE_XBOXONE_API;UNITY_IPHONE_API;UNITY_LUMIN_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
     <LangVersion>latest</LangVersion>
+    <NoWarn>0626</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\External\Yoga\csharp\Facebook.Yoga\BaselineFunction.cs">
@@ -181,6 +178,9 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\BaseBoolField.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\BaseBoolField.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\BaseCompositeField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\BaseCompositeField.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\BaseField.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\BaseField.cs</Link>
     </Compile>
@@ -196,6 +196,12 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\Binding.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\Binding.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\BoundsField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\BoundsField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\BoundsIntField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\BoundsIntField.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\Box.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\Box.cs</Link>
     </Compile>
@@ -205,11 +211,20 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\ButtonStripField.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\ButtonStripField.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\CompoundFields.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\CompoundFields.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\DoubleField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\DoubleField.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\DropdownField.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\DropdownField.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\EnumField.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\EnumField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\FloatField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\FloatField.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\Foldout.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\Foldout.cs</Link>
@@ -219,6 +234,9 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\GroupBox.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\GroupBox.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\Hash128Field.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\Hash128Field.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\HelpBox.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\HelpBox.cs</Link>
@@ -231,6 +249,9 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\Image.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\Image.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\IntegerField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\IntegerField.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\Internal\InternalTreeView.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\Internal\InternalTreeView.cs</Link>
@@ -246,6 +267,9 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\ListView.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\ListView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\LongField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\LongField.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\MinMaxSlider.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\MinMaxSlider.cs</Link>
@@ -291,6 +315,9 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\TextInputFieldBase.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\TextInputFieldBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\TextValueField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\TextValueField.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\Toggle.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\Toggle.cs</Link>
@@ -493,6 +520,9 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\UIEvent.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Events\UIEvent.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\FieldMouseDragger.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\FieldMouseDragger.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\FocusController.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\FocusController.cs</Link>
     </Compile>
@@ -579,6 +609,9 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Panel.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Panel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\PenButton.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\PenButton.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\PointerCaptureController.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\PointerCaptureController.cs</Link>
@@ -949,6 +982,9 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Transitions.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Transitions.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UIElementsBridge.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\UIElementsBridge.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UIElementsPackageUtility.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\UIElementsPackageUtility.cs</Link>
     </Compile>
@@ -990,6 +1026,9 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\VisualTreeAsset.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\UXML\VisualTreeAsset.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UpgradeConstants.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\UpgradeConstants.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\ValueAnimation.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\ValueAnimation.cs</Link>
@@ -1327,11 +1366,17 @@
     <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\AudioSampleProvider.bindings.cs">
       <Link>Modules\Audio\Public\ScriptBindings\AudioSampleProvider.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\AudioSampleProviderExtensions.bindings.cs">
+      <Link>Modules\Audio\Public\ScriptBindings\AudioSampleProviderExtensions.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\AudioSourceExtensions.bindings.cs">
       <Link>Modules\Audio\Public\ScriptBindings\AudioSourceExtensions.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\ExposeDSPGraph.cs">
       <Link>Modules\Audio\Public\ScriptBindings\ExposeDSPGraph.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\ExposeVivox.cs">
+      <Link>Modules\Audio\Public\ScriptBindings\ExposeVivox.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Cloth\Cloth.bindings.cs">
       <Link>Modules\Cloth\Cloth.bindings.cs</Link>
@@ -2359,6 +2404,9 @@
     <Compile Include="..\..\Runtime\Export\ETW\EventProvider.bindings.cs">
       <Link>Runtime\Export\ETW\EventProvider.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\ExpressionEvaluator.cs">
+      <Link>Runtime\Export\ExpressionEvaluator.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\File\AsyncReadManager.bindings.cs">
       <Link>Runtime\Export\File\AsyncReadManager.bindings.cs</Link>
     </Compile>
@@ -2661,6 +2709,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Networking\PlayerConnection\PlayerEditorConnectionEvents.cs">
       <Link>Runtime\Export\Networking\PlayerConnection\PlayerEditorConnectionEvents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\NumericFieldDraggerUtility.cs">
+      <Link>Runtime\Export\NumericFieldDraggerUtility.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\ObjectPool\CollectionPool.cs">
       <Link>Runtime\Export\ObjectPool\CollectionPool.cs</Link>
@@ -3055,9 +3106,6 @@
     <Compile Include="..\..\Runtime\Export\Shaders\GlobalKeyword.bindings.cs">
       <Link>Runtime\Export\Shaders\GlobalKeyword.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Shaders\HybridV2.bindings.cs">
-      <Link>Runtime\Export\Shaders\HybridV2.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\Shaders\LocalKeyword.bindings.cs">
       <Link>Runtime\Export\Shaders\LocalKeyword.bindings.cs</Link>
     </Compile>
@@ -3157,6 +3205,9 @@
     <Compile Include="..\..\Runtime\Export\TouchScreenKeyboard\TouchScreenKeyboardType.cs">
       <Link>Runtime\Export\TouchScreenKeyboard\TouchScreenKeyboardType.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\UINumericFieldsUtils.cs">
+      <Link>Runtime\Export\UINumericFieldsUtils.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Undo\RuntimeUndo.bindings.cs">
       <Link>Runtime\Export\Undo\RuntimeUndo.bindings.cs</Link>
     </Compile>
@@ -3226,6 +3277,12 @@
     <Compile Include="..\..\Runtime\Export\Windows\WindowsFile.bindings.cs">
       <Link>Runtime\Export\Windows\WindowsFile.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Windows\WindowsInput.bindings.cs">
+      <Link>Runtime\Export\Windows\WindowsInput.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Windows\WindowsInput.cs">
+      <Link>Runtime\Export\Windows\WindowsInput.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\XR\Pose.cs">
       <Link>Runtime\Export\XR\Pose.cs</Link>
     </Compile>
@@ -3237,9 +3294,6 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\iOS\iOSDevice.bindings.cs">
       <Link>Runtime\Export\iOS\iOSDevice.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\iOS\iOSNotifications.bindings.cs">
-      <Link>Runtime\Export\iOS\iOSNotifications.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\iOS\iOSReplayKit.bindings.cs">
       <Link>Runtime\Export\iOS\iOSReplayKit.bindings.cs</Link>
@@ -3347,35 +3401,4 @@
       <Link>artifacts\generated\UnityEvent\UnityEvent_4.cs</Link>
     </Compile>
   </ItemGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>..\..\artifacts\UnityEngine.dll\Debug</OutputPath>
-    <DefineConstants>COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ACCELERATOR_CLIENT_DEBUGGING;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_HUB_LICENSE;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MANAGED_UNITYTLS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_BJM_API;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_GAMECORE_API;UNITY_GAMECORE_SCARLETT_API;UNITY_GAMECORE_XBOXONE_API;UNITY_IPHONE_API;UNITY_LUMIN_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <NoWarn>0626</NoWarn>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Prefer32Bit>false</Prefer32Bit>
-    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
-  </PropertyGroup>
-  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Runtime.Serialization" />
-    <Reference Include="System.Xml" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Numerics" />
-    <Reference Include="System.Numerics.Vectors" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Target Name="GenerateTargetFrameworkMonikerAttribute" />
-  <PropertyGroup>
-  </PropertyGroup>
 </Project>

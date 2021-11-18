@@ -19,6 +19,9 @@ namespace UnityEngine.SceneManagement
         extern private static string GetPathInternal(int sceneHandle);
 
         [StaticAccessor("SceneBindings", StaticAccessorType.DoubleColon)]
+        extern private static void SetPathAndGUIDInternal(int sceneHandle, string path, string guid);
+
+        [StaticAccessor("SceneBindings", StaticAccessorType.DoubleColon)]
         extern private static string GetNameInternal(int sceneHandle);
 
         [NativeThrows]

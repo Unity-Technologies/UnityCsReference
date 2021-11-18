@@ -593,6 +593,8 @@ namespace UnityEditor.UIElements
                     return ConfigureField<Toggle, bool>(originalField as Toggle, property, () => new Toggle());
 
                 case SerializedPropertyType.Float:
+                    if (property.type == "double")
+                        return ConfigureField<DoubleField, double>(originalField as DoubleField, property, () => new DoubleField());
                     return ConfigureField<FloatField, float>(originalField as FloatField, property, () => new FloatField());
 
                 case SerializedPropertyType.String:
@@ -652,19 +654,19 @@ namespace UnityEditor.UIElements
                         var enumData = enumType != null ? (EnumData?)EnumDataUtility.GetCachedEnumData(enumType) : null;
                         var propertyDisplayNames = EditorGUI.EnumNamesCache.GetEnumDisplayNames(property);
                         var popupEntries = (enumData?.displayNames ?? propertyDisplayNames).ToList();
+                        int propertyFieldIndex = (property.enumValueIndex < 0 || property.enumValueIndex >= propertyDisplayNames.Length
+                            ? PopupField<string>.kPopupFieldDefaultIndex : (enumData != null
+                                ? Array.IndexOf(enumData.Value.displayNames, propertyDisplayNames[property.enumValueIndex])
+                                : property.enumValueIndex));
                         if (originalField != null && originalField is PopupField<string> popupField)
                         {
                             popupField.choices = popupEntries;
-                            popupField.index = enumData != null
-                                ? Array.IndexOf(enumData.Value.displayNames, propertyDisplayNames[property.enumValueIndex])
-                                : property.enumValueIndex;
+                            popupField.index = propertyFieldIndex;
                         }
                         return ConfigureField<PopupField<string>, string>(originalField as PopupField<string>, property,
                             () => new PopupField<string>(popupEntries, property.enumValueIndex)
                             {
-                                index = enumData != null
-                                    ? Array.IndexOf(enumData.Value.displayNames, propertyDisplayNames[property.enumValueIndex])
-                                    : property.enumValueIndex
+                                index = propertyFieldIndex
                             });
                     }
                 }

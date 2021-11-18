@@ -184,7 +184,7 @@ namespace UnityEditor.Experimental.GraphView
             int count = 0;
             foreach (var port in currentPorts)
             {
-                if ((show || port.connected) && !port.collapsed)
+                if (port.alwaysVisible || (show || port.connected) && !port.collapsed)
                 {
                     SetElementVisible(port, true);
                     count++;

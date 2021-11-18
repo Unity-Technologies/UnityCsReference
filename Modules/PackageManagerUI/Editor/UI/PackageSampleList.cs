@@ -106,17 +106,41 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(samplesListLowWidth, false);
             UIUtils.SetElementDisplay(samplesContainer, true);
 
-            importStatusContainer.Clear();
-            nameAndSizeLabelContainer.Clear();
-            importButtonContainer.Clear();
+            samplesContainer.Clear();
 
             foreach (var sample in m_Samples.Where(s => !string.IsNullOrEmpty(s.displayName)))
             {
                 var sampleItem = new PackageSampleItem(m_Version, sample);
-                importStatusContainer.Add(sampleItem.importStatus);
-                nameAndSizeLabelContainer.Add(sampleItem.nameLabel);
-                nameAndSizeLabelContainer.Add(sampleItem.sizeLabel);
-                importButtonContainer.Add(sampleItem.importButton);
+                var sampleContainer = new VisualElement();
+                sampleContainer.AddClasses("sampleContainer");
+
+                var importStatus = new VisualElement();
+                importStatus.name = "importStatusContainer";
+                importStatus.Add(sampleItem.importStatus);
+
+                var nameAndSizeLabel = new VisualElement();
+                nameAndSizeLabel.name = "nameAndSizeLabelContainer";
+                nameAndSizeLabel.Add(sampleItem.nameLabel);
+                nameAndSizeLabel.Add(sampleItem.sizeLabel);
+                nameAndSizeLabel.Add(importStatus);
+                sampleContainer.Add(nameAndSizeLabel);
+
+                var importButton = new VisualElement();
+                importButton.name = "importButtonContainer";
+                importButton.Add(sampleItem.importButton);
+                sampleContainer.Add(importButton);
+
+                if (!string.IsNullOrEmpty(sample.description))
+                {
+                    var description = new VisualElement();
+                    description.name = "descriptionContainer";
+                    description.Add(sampleItem.descriptionLabel);
+                    sampleContainer.Add(description);
+                }
+
+
+                samplesContainer.Add(sampleContainer);
+
                 sampleItem.importButton.SetEnabled(m_Version.isInstalled);
             }
         }
@@ -126,9 +150,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal VisualElement samplesListLowWidth { get { return cache.Get<VisualElement>("samplesListLowWidth"); } }
         private VisualElement samplesOuterContainer { get { return cache.Get<VisualElement>("samplesOuterContainer"); } }
         internal VisualElement samplesContainer { get { return cache.Get<VisualElement>("samplesContainer"); } }
-        internal VisualElement importStatusContainer { get { return cache.Get<VisualElement>("importStatusContainer"); } }
-        internal VisualElement nameAndSizeLabelContainer { get { return cache.Get<VisualElement>("nameAndSizeLabelContainer"); } }
-        internal VisualElement importButtonContainer { get { return cache.Get<VisualElement>("importButtonContainer"); } }
         internal HelpBox samplesErrorInfoBox => cache.Get<HelpBox>("samplesErrorInfoBox");
     }
 }

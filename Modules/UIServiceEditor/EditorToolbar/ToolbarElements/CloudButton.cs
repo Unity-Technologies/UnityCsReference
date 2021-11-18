@@ -2,6 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using UnityEditor.Connect;
+using UnityEditor.PackageManager.UI;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Toolbars
@@ -35,9 +38,21 @@ namespace UnityEditor.Toolbars
             style.display = MPE.ProcessService.level == MPE.ProcessLevel.Main ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
+        [MenuItem("Window/General/Services %0", false, 302)]
+        static void OpenServicesDiscoveryWindowFromMenu()
+        {
+            OpenServicesDiscoveryWindow(Connect.EditorGameServicesAnalytics.SendTopMenuServicesEvent);
+        }
+
         static void OpenCloudWindow()
         {
-            Connect.ServicesEditorWindow.ShowServicesWindow();
+            OpenServicesDiscoveryWindow(Connect.EditorGameServicesAnalytics.SendToolbarCloudEvent);
+        }
+
+        static void OpenServicesDiscoveryWindow(Action analyticTrackingAction = null)
+        {
+            analyticTrackingAction?.Invoke();
+            PackageManagerWindow.OpenPackageManagerOnFilter(ServicesConstants.ExploreServicesPackageManagerFilter);
         }
     }
 }

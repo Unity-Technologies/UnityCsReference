@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 
 namespace UnityEngine.UIElements
 {
@@ -38,10 +37,11 @@ namespace UnityEngine.UIElements
                 base.Init(ve, bag, cc);
 
                 var slider = ((MinMaxSlider)ve);
-                slider.minValue = m_MinValue.GetValueFromBag(bag, cc);
-                slider.maxValue = m_MaxValue.GetValueFromBag(bag, cc);
                 slider.lowLimit = m_LowLimit.GetValueFromBag(bag, cc);
                 slider.highLimit = m_HighLimit.GetValueFromBag(bag, cc);
+
+                var value = new Vector2(m_MinValue.GetValueFromBag(bag, cc), m_MaxValue.GetValueFromBag(bag, cc));
+                slider.value = value;
             }
         }
         private enum DragState
@@ -232,10 +232,16 @@ namespace UnityEngine.UIElements
         public MinMaxSlider(string label, float minValue = 0, float maxValue = kDefaultHighValue, float minLimit = float.MinValue, float maxLimit = float.MaxValue)
             : base(label, null)
         {
+            m_MinLimit = float.MinValue;
+            m_MaxLimit = float.MaxValue;
+
             lowLimit = minLimit;
             highLimit = maxLimit;
-            this.minValue = minValue;
-            this.maxValue = maxValue;
+
+            // Can't set to value here, because it could be overriden in a derived type.
+            var clampedValue = ClampValues(new Vector2(minValue, maxValue));
+            this.minValue = clampedValue.x;
+            this.maxValue = clampedValue.y;
             AddToClassList(ussClassName);
             labelElement.AddToClassList(labelUssClassName);
             visualInput.AddToClassList(inputUssClassName);

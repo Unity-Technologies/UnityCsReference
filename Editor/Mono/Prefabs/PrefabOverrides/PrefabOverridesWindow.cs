@@ -37,13 +37,12 @@ namespace UnityEditor
         float m_ButtonWidth;
 
         bool m_AnyOverrides;
-        bool m_Disconnected;
+        bool m_HasApplicableOverrides;
         bool m_InvalidComponentOnInstance;
         bool m_ModelPrefab;
         bool m_Immutable;
         bool m_InvalidComponentOnAsset;
         bool m_HasManagedReferencesWithMissingTypesOnAsset;
-
 
         static class Styles
         {
@@ -56,6 +55,8 @@ namespace UnityEditor
             public static GUIContent instanceLabel = EditorGUIUtility.TrTextContent("Overrides to");
             public static GUIContent contextLabel = EditorGUIUtility.TrTextContent("in");
 
+            public static string nonApplicableTooltip = L10n.Tr("There are no overrides that can be applied to Prefab source '{0}'.");
+
             public static GUIContent infoMultiple = EditorGUIUtility.TrTextContent("Multiple Prefabs selected. Cannot show overrides.");
             public static GUIContent infoMultipleNoApply = EditorGUIUtility.TrTextContent("Multiple Prefabs selected. Cannot show overrides.\nApplying is not possible for one or more Prefabs. Select individual Prefabs for details.");
 
@@ -63,7 +64,6 @@ namespace UnityEditor
             public static GUIContent infoModel = EditorGUIUtility.TrTextContent("Click on individual items to review and revert.\nApplying to a Model Prefab is not possible.");
             public static GUIContent infoDefault = EditorGUIUtility.TrTextContent("Click on individual items to review, revert and apply.");
             public static GUIContent infoNoApply = EditorGUIUtility.TrTextContent("Click on individual items to review and revert.");
-            public static GUIContent warningDisconnected = EditorGUIUtility.TrTextContent("Disconnected. Cannot show overrides.");
 
             // Messages related to reasons for inability to apply.
             public static GUIContent warningInvalidAsset = EditorGUIUtility.TrTextContent("The Prefab file contains an invalid script. Applying is not possible. Enter Prefab Mode and remove or recover the script.");
@@ -131,13 +131,7 @@ namespace UnityEditor
                 m_TreeView.CullNonExistingItemsFromSelection();
             }
 
-            if (m_SelectedGameObjects.Length == 1)
-                UpdateTextSingle(PrefabUtility.GetCorrespondingObjectFromSource(m_SelectedGameObjects[0]));
-            else
-                UpdateTextMultiple();
-
             m_AnyOverrides = false;
-            m_Disconnected = false;
             m_InvalidComponentOnInstance = false;
             m_ModelPrefab = false;
             m_Immutable = false;
@@ -146,6 +140,11 @@ namespace UnityEditor
 
             for (int i = 0; i < m_SelectedGameObjects.Length; i++)
                 UpdateStatusChecks(m_SelectedGameObjects[i]);
+
+            if (m_SelectedGameObjects.Length == 1)
+                UpdateTextSingle(PrefabUtility.GetCorrespondingObjectFromSource(m_SelectedGameObjects[0]));
+            else
+                UpdateTextMultiple();
 
             // There are a few cases where the Tree View reports no overrides even though
             // PrefabUtility.HasPrefabInstanceAnyOverrides says there are; for example if
@@ -163,8 +162,6 @@ namespace UnityEditor
 
             if (PrefabUtility.HasPrefabInstanceAnyOverrides(prefabInstanceRoot, false))
                 m_AnyOverrides = true;
-            if (PrefabUtility.IsDisconnectedFromPrefabAsset(prefabInstanceRoot))
-                m_Disconnected = true;
             if (PrefabUtility.HasInvalidComponent(prefabInstanceRoot))
                 m_InvalidComponentOnInstance = true;
 
@@ -179,11 +176,13 @@ namespace UnityEditor
 
             if (PrefabUtility.HasManagedReferencesWithMissingTypes(prefabAssetRoot))
                 m_HasManagedReferencesWithMissingTypesOnAsset = true;
+
+            m_HasApplicableOverrides = m_TreeView == null || m_TreeView.hasApplicableModifications;
         }
 
         bool IsShowingActionButton()
         {
-            return m_AnyOverrides || m_Disconnected;
+            return m_AnyOverrides;
         }
 
         bool HasMultiSelection()
@@ -200,7 +199,7 @@ namespace UnityEditor
         {
             return
                 !HasMultiSelection() &&
-                (m_AnyOverrides || m_Disconnected) &&
+                m_AnyOverrides &&
                 !m_ModelPrefab &&
                 (m_InvalidComponentOnInstance || m_InvalidComponentOnAsset || m_HasManagedReferencesWithMissingTypesOnAsset || m_Immutable);
         }
@@ -284,11 +283,7 @@ namespace UnityEditor
             }
             else
             {
-                if (m_Disconnected)
-                {
-                    EditorGUILayout.HelpBox(Styles.warningDisconnected.text, MessageType.Warning);
-                }
-                else if (m_AnyOverrides)
+                if (m_AnyOverrides)
                 {
                     Rect treeViewRect = GUILayoutUtility.GetRect(100, 10000, 0, 10000);
                     m_TreeView.OnGUI(treeViewRect);
@@ -361,7 +356,7 @@ namespace UnityEditor
                         }
                     }
 
-                    using (new EditorGUI.DisabledScope(m_Immutable || m_InvalidComponentOnInstance))
+                    using (new EditorGUI.DisabledScope(m_Immutable || m_InvalidComponentOnInstance || !m_HasApplicableOverrides))
                     {
                         if (GUILayout.Button(m_ApplyAllContent, GUILayout.Width(m_ButtonWidth)))
                         {
@@ -512,7 +507,7 @@ namespace UnityEditor
             m_RevertSelectedContent = Styles.revertSelectedContent;
 
             m_ButtonWidth = k_ButtonWidth;
-            var applyAllContent = Styles.applyAllContent;
+            var applyAllContent = new GUIContent(Styles.applyAllContent);
             var applySelectedContent = Styles.applySelectedContent;
             if (stage is PrefabStage && PrefabUtility.IsPartOfVariantPrefab(AssetDatabase.LoadAssetAtPath<Object>(stage.assetPath)))
             {
@@ -521,8 +516,10 @@ namespace UnityEditor
                 applySelectedContent = Styles.applySelectedToBaseContent;
             }
 
-            m_ApplyAllContent.text = applyAllContent.text;
-            m_ApplyAllContent.tooltip = string.Format(applyAllContent.tooltip, assetName);
+            if (!m_HasApplicableOverrides)
+                applyAllContent.tooltip = Styles.nonApplicableTooltip;
+
+            m_ApplyAllContent = new GUIContent(applyAllContent.text, string.Format(applyAllContent.tooltip, assetName));
             m_ApplySelectedContent.text = applySelectedContent.text;
             m_ApplySelectedContent.tooltip = string.Format(applySelectedContent.tooltip, assetName);
         }

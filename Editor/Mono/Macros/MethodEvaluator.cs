@@ -81,6 +81,33 @@ namespace UnityEditor.Macros
             }
         }
 
+        private static Type TypeOrTypeName(object o)
+        {
+            switch (o)
+            {
+                case Type t:
+                    return t;
+                case string s:
+                    return Type.GetType(s);
+                default:
+                    throw new FormatException($"Expected {o} to be a string or a Type. It is a {o.GetType()}");
+            }
+        }
+
+        private static Type[] TypesOrTypeNames(object o)
+        {
+
+            switch (o)
+            {
+                case Type[] t:
+                    return t;
+                case string[] s:
+                    return s.Select(Type.GetType).ToArray();
+                default:
+                    throw new FormatException($"Expected {o} to be a string[] or a Type[]. It is a {o.GetType()}");
+            }
+        }
+
         public static object ExecuteExternalCode(string parcel)
         {
             using (var stream = new MemoryStream(Convert.FromBase64String(parcel)))
@@ -89,36 +116,73 @@ namespace UnityEditor.Macros
                 if (header != "com.unity3d.automation")
                     throw new Exception("Invalid parcel for external code execution.");
                 var assemblyPath = (string)s_Formatter.Deserialize(stream);
-                var resolver = new AssemblyResolver(Path.GetDirectoryName(assemblyPath));
+                AssemblyResolver resolver = null;
+                Assembly assembly = null;
+                if (assemblyPath != "netstandard") {
+                    resolver = new AssemblyResolver(Path.GetDirectoryName(assemblyPath));
 
-                AppDomain.CurrentDomain.AssemblyResolve += resolver.AssemblyResolve;
-                AppDomain.CurrentDomain.TypeResolve += resolver.TypeResolve;
-
-                var assembly = Assembly.LoadFrom(assemblyPath);
+                    AppDomain.CurrentDomain.AssemblyResolve += resolver.AssemblyResolve;
+                    AppDomain.CurrentDomain.TypeResolve += resolver.TypeResolve;
+                    assembly = Assembly.LoadFrom(assemblyPath);
+                }
                 try
                 {
-                    var type = (Type)s_Formatter.Deserialize(stream);
+                    var type = TypeOrTypeName(s_Formatter.Deserialize(stream));
 
                     var methodName = (string)s_Formatter.Deserialize(stream);
 
                     const BindingFlags methodVisibility = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
-                    var methodParametersTypes = (Type[])s_Formatter.Deserialize(stream);
+                    var methodParametersTypes = TypesOrTypeNames(s_Formatter.Deserialize(stream));
 
                     var method = type.GetMethod(methodName, methodVisibility, null, methodParametersTypes, null);
                     if (method == null)
                         throw new Exception(string.Format(
                             "Could not find method {0}.{1} in assembly {2} located in {3}.",
-                            type.FullName, methodName, assembly.GetName().Name, assemblyPath));
+                            type.FullName, methodName, type.Assembly.GetName().Name, assemblyPath));
 
                     var arguments = (object[])s_Formatter.Deserialize(stream);
+                    TransformArgumentsBack(methodParametersTypes, arguments);
                     var returnValue = ExecuteCode(type, method, arguments);
                     return returnValue;
                 }
                 finally
                 {
-                    AppDomain.CurrentDomain.AssemblyResolve -= resolver.AssemblyResolve;
+                    if (resolver != null)
+                    {
+                        AppDomain.CurrentDomain.AssemblyResolve -= resolver.AssemblyResolve;
+                    }
                 }
             }
+        }
+
+        private static void  TransformArgumentsBack(Type[] argTypes, object[] args)
+        {
+            for(int i = 0; i<argTypes.Length; i++)
+            {
+                if (argTypes[i] == typeof(Type) && args[i] is string)
+                {
+                    args[i] = TypeOrTypeName(args[i]);
+                }
+                if (argTypes[i].IsSubclassOf(typeof(Delegate)) && args[i] is string str)
+                {
+                    args[i] = DeserializeDelegate(argTypes[i], str);
+                }
+            }
+        }
+
+        private static Delegate DeserializeDelegate(Type t, string serialized)
+        {
+            var parts = serialized.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            var declaringType = TypeOrTypeName(parts[0]);
+            var methodName = parts[1];
+            var parameterTypes = TypesOrTypeNames(parts.Skip(2).ToArray());
+            const BindingFlags methodVisibility = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
+            var method = declaringType.GetMethod(methodName, methodVisibility, null, parameterTypes, null);
+            if (method == null)
+                throw new Exception(string.Format(
+                    "Could not find method {0}.{1} in assembly {2}.",
+                    declaringType.FullName, methodName, declaringType.Assembly.GetName().Name));
+            return method.CreateDelegate(t);
         }
 
         private static object ExecuteCode(Type target, MethodInfo method, object[] args)

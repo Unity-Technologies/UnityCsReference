@@ -197,4 +197,47 @@ namespace UnityEngine
         [FreeFunction("ScheduleBoxcastCommandBatch", ThrowsException = true)]
         unsafe extern private static JobHandle ScheduleBoxcastBatch(ref JobsUtility.JobScheduleParameters parameters, void* commands, int commandLen, void* result, int resultLen, int minCommandsPerJob);
     }
+
+    [NativeHeader("Modules/Physics/BatchCommands/ClosestPointCommand.h")]
+    [NativeHeader("Runtime/Jobs/ScriptBindings/JobsBindingsTypes.h")]
+    public struct ClosestPointCommand
+    {
+        public ClosestPointCommand(Vector3 point, int colliderInstanceID, Vector3 position, Quaternion rotation, Vector3 scale)
+        {
+            this.point = point;
+            this.colliderInstanceID = colliderInstanceID;
+            this.position = position;
+            this.rotation = rotation;
+            this.scale = scale;
+            this.maxHits = 1;
+        }
+
+        public ClosestPointCommand(Vector3 point, Collider collider, Vector3 position, Quaternion rotation, Vector3 scale)
+        {
+            this.point = point;
+            this.colliderInstanceID = collider.GetInstanceID();
+            this.position = position;
+            this.rotation = rotation;
+            this.scale = scale;
+            this.maxHits = 1;
+        }
+
+        public Vector3 point { get; set; }
+        public int colliderInstanceID { get; set; }
+        public Vector3 position { get; set; }
+        public Quaternion rotation { get; set; }
+        public Vector3 scale { get; set; }
+        internal int maxHits {get; set; }
+
+        public unsafe static JobHandle ScheduleBatch(NativeArray<ClosestPointCommand> commands, NativeArray<Vector3> results, int minCommandsPerJob, JobHandle dependsOn = new JobHandle())
+        {
+            var jobData = new BatchQueryJob<ClosestPointCommand, Vector3>(commands, results);
+            var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), BatchQueryJobStruct<BatchQueryJob<ClosestPointCommand, Vector3>>.Initialize(), dependsOn, ScheduleMode.Parallel);
+
+            return ScheduleClosestPointCommandBatch(ref scheduleParams, NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(commands), commands.Length, NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(results), results.Length, minCommandsPerJob);
+        }
+
+        [FreeFunction("ScheduleClosestPointCommandBatch", ThrowsException = true)]
+        unsafe extern private static JobHandle ScheduleClosestPointCommandBatch(ref JobsUtility.JobScheduleParameters parameters, void* commands, int commandLen, void* result, int resultLen, int minCommandsPerJob);
+    }
 }

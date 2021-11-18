@@ -334,7 +334,7 @@ namespace UnityEditor.Search
 
         internal Type ToType(Type constraintedType = null)
         {
-            var itemType = provider?.toType?.Invoke(this);
+            var itemType = provider?.toType?.Invoke(this, constraintedType);
             if (itemType != null)
             {
                 if (typeof(GameObject) != itemType || constraintedType == null || !typeof(Component).IsAssignableFrom(constraintedType))

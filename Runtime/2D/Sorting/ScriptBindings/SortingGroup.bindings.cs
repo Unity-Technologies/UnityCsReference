@@ -23,6 +23,7 @@ namespace UnityEngine.Rendering
         public extern string sortingLayerName { get; set; }
         public extern int sortingLayerID { get; set; }
         public extern int sortingOrder { get; set; }
+        public extern bool sortAtRoot { get; set; }
         internal extern int sortingGroupID { get; }
         internal extern int sortingGroupOrder { get; }
         internal extern int index { get; }

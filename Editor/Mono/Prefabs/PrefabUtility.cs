@@ -30,6 +30,7 @@ namespace UnityEditor
     {
         NotAPrefab = 0,
         Connected = 1,
+        [Obsolete("PrefabInstanceStatus.Disconnected has been deprecated and is not used. Prefabs can not be in a disconnected state.")]
         Disconnected = 2,
         MissingAsset = 3
     }
@@ -58,8 +59,10 @@ namespace UnityEditor
         // The object was an instance of a prefab, but the original prefab could not be found.
         MissingPrefabInstance = 5,
         // The object is an instance of a user created prefab, but the connection is broken.
+        [Obsolete("PrefabType.DisconnectedPrefabInstance has been deprecated and is not used. Prefabs can not be in a disconnected state.")]
         DisconnectedPrefabInstance = 6,
         // The object is an instance of an imported 3D model, but the connection is broken.
+        [Obsolete("PrefabType.DisconnectedModelPrefabInstance has been deprecated and is not used. Prefabs can not be in a disconnected state.")]
         DisconnectedModelPrefabInstance = 7,
     }
 
@@ -75,6 +78,8 @@ namespace UnityEditor
         // Replaces the prefab using name based lookup in the transform hierarchy.
         ReplaceNameBased = 2,
     }
+
+    internal delegate void AddApplyMenuItemDelegate(GUIContent menuItem, Object sourceObject, Object instanceOrAssetObject);
 
     public sealed partial class PrefabUtility
     {
@@ -247,7 +252,7 @@ namespace UnityEditor
                         var comp = (Component)danglingObject;
                         if (comp.gameObject != currentGO)
                         {
-                            addedTypes = new HashSet<Type>() { typeof(Transform) };
+                            addedTypes = new HashSet<Type>();
                             currentGO = comp.gameObject;
                         }
                     }
@@ -256,7 +261,9 @@ namespace UnityEditor
                     var requiredComponentsExist = true;
                     foreach (RequireComponent req in reqs)
                     {
-                        if ((req.m_Type0 != null && !addedTypes.Contains(req.m_Type0)) || (req.m_Type1 != null && !addedTypes.Contains(req.m_Type1)) || (req.m_Type2 != null && !addedTypes.Contains(req.m_Type2)))
+                        bool addedTypesContainsRequired = (req.m_Type0 != null && addedTypes.Contains(req.m_Type0)) || (req.m_Type1 != null && addedTypes.Contains(req.m_Type1)) || (req.m_Type2 != null && addedTypes.Contains(req.m_Type2));
+                        bool gameObjectHasRequired = (req.m_Type0 != null && currentGO.GetComponent(req.m_Type0)) || (req.m_Type1 != null && currentGO.GetComponent(req.m_Type1)) || (req.m_Type2 != null && currentGO.GetComponent(req.m_Type2));
+                        if (!addedTypesContainsRequired && !gameObjectHasRequired)
                         {
                             requiredComponentsExist = false;
                             break;
@@ -344,8 +351,6 @@ namespace UnityEditor
         {
             ThrowExceptionIfNotValidPrefabInstanceObject(instanceRoot, false);
 
-            bool isDisconnected = PrefabUtility.IsDisconnectedFromPrefabAsset(instanceRoot);
-
             GameObject prefabInstanceRoot = GetOutermostPrefabInstanceRoot(instanceRoot);
 
             var actionName = "Revert Prefab Instance";
@@ -363,10 +368,6 @@ namespace UnityEditor
             if (action == InteractionMode.UserAction)
             {
                 RegisterNewObjects(prefabInstanceRoot, hierarchy, actionName);
-                if (isDisconnected)
-                {
-                    Undo.RegisterCreatedObjectUndo(GetPrefabInstanceHandle(prefabInstanceRoot), actionName);
-                }
             }
         }
 
@@ -379,7 +380,6 @@ namespace UnityEditor
             using (new AtomicUndoScope())
             {
                 GameObject prefabInstanceRoot = GetOutermostPrefabInstanceRoot(instanceRoot);
-                var isDisconnected = GetPrefabInstanceHandle(prefabInstanceRoot) == null;
 
                 var actionName = "Apply instance to prefab";
                 Object correspondingSourceObject = GetCorrespondingObjectFromSource(prefabInstanceRoot);
@@ -399,12 +399,6 @@ namespace UnityEditor
                 if (action == InteractionMode.UserAction)
                 {
                     RegisterNewObjects(correspondingSourceObject as GameObject, prefabHierarchy, actionName); // handles created objects
-                    if (isDisconnected)
-                    {
-                        var prefabInstanceHandle = GetPrefabInstanceHandle(prefabInstanceRoot);
-                        Assert.IsNotNull(prefabInstanceHandle);
-                        Undo.RegisterCreatedObjectUndo(prefabInstanceHandle, actionName);
-                    }
                 }
             }
 
@@ -418,14 +412,14 @@ namespace UnityEditor
             );
         }
 
-        private static void MapObjectReferencePropertyToSourceIfApplicable(SerializedProperty property, string assetPath)
+        private static void MapObjectReferencePropertyToSourceIfApplicable(SerializedProperty property, Object prefabSourceObject)
         {
             var referencedObject = property.objectReferenceValue;
             if (referencedObject == null)
             {
                 return;
             }
-            referencedObject = GetCorrespondingObjectFromSourceAtPath(referencedObject, assetPath);
+            referencedObject = GetCorrespondingObjectFromSourceInAsset(referencedObject, prefabSourceObject);
             if (referencedObject != null)
             {
                 property.objectReferenceValue = referencedObject;
@@ -554,7 +548,7 @@ namespace UnityEditor
             if (!property.hasVisibleChildren)
             {
                 if (property.prefabOverride)
-                    ApplySingleProperty(property, prefabSourceSerializedObject, assetPath, isObjectOnRootInAsset, true, allowApplyDefaultOverride, serializedObjects, changedObjects, action);
+                    ApplySingleProperty(property, prefabSourceSerializedObject, prefabSourceObject, isObjectOnRootInAsset, true, allowApplyDefaultOverride, serializedObjects, changedObjects, action);
             }
             else
             {
@@ -580,7 +574,7 @@ namespace UnityEditor
                     // NOTE: all property modifications are leafs except in the context of managed references.
                     // Managed references can be overriden (and have visible children).
                     if (property.prefabOverride && (property.propertyType == SerializedPropertyType.ManagedReference || !property.hasVisibleChildren))
-                        ApplySingleProperty(property, prefabSourceSerializedObject, assetPath, isObjectOnRootInAsset, false, allowApplyDefaultOverride, serializedObjects, changedObjects, action);
+                        ApplySingleProperty(property, prefabSourceSerializedObject, prefabSourceObject, isObjectOnRootInAsset, false, allowApplyDefaultOverride, serializedObjects, changedObjects, action);
                 }
             }
 
@@ -720,7 +714,7 @@ namespace UnityEditor
         static void ApplySingleProperty(
             SerializedProperty instanceProperty,
             SerializedObject prefabSourceSerializedObject,
-            string assetPath,
+            Object applyTarget,
             bool isObjectOnRootInAsset,
             bool singlePropertyOnly,
             bool allowApplyDefaultOverride,
@@ -776,8 +770,9 @@ namespace UnityEditor
             // Abort if property has reference to object in scene.
             if (sourceProperty.propertyType == SerializedPropertyType.ObjectReference)
             {
-                MapObjectReferencePropertyToSourceIfApplicable(sourceProperty, assetPath);
-                if (sourceProperty.objectReferenceValue != null && !EditorUtility.IsPersistent(sourceProperty.objectReferenceValue))
+                if (PrefabUtility.CanPropertyBeAppliedToTarget(instanceProperty, applyTarget))
+                    MapObjectReferencePropertyToSourceIfApplicable(sourceProperty, applyTarget);
+                else
                 {
                     // The property is a reference to a non-persistent object (scene object which could not be mapped to the asset.
                     // It can not be applied.
@@ -1353,7 +1348,7 @@ namespace UnityEditor
         internal static void HandleApplyRevertMenuItems(
             string thingThatChanged,
             Object instanceObject,
-            Action<GUIContent, Object> addApplyMenuItemAction,
+            AddApplyMenuItemDelegate addApplyMenuItemAction,
             Action<GUIContent> addRevertMenuItemAction,
             bool isAllDefaultOverridesComparedToOriginalSource = false,
             int targetCount = 1)
@@ -1367,7 +1362,7 @@ namespace UnityEditor
         internal static void HandleApplyMenuItems(
             string thingThatChanged,
             Object instanceOrAssetObject,
-            Action<GUIContent, Object> addApplyMenuItemAction,
+            AddApplyMenuItemDelegate addApplyMenuItemAction,
             bool isAllDefaultOverridesComparedToOriginalSource = false,
             bool includeSelfAsTarget = false)
         {
@@ -1391,7 +1386,7 @@ namespace UnityEditor
                 if (i == applyTargets.Count - 1)
                     translatedText = L10n.Tr("Apply to Prefab '{0}'");
                 GUIContent applyContent = new GUIContent(thingThatChanged + String.Format(translatedText, sourceRoot.name));
-                addApplyMenuItemAction(applyContent, source);
+                addApplyMenuItemAction(applyContent, source, instanceOrAssetObject);
             }
         }
 
@@ -1457,6 +1452,23 @@ namespace UnityEditor
         public static string GetPrefabAssetPathOfNearestInstanceRoot(Object instanceComponentOrGameObject)
         {
             return AssetDatabase.GetAssetPath(GetOriginalSourceOrVariantRoot(instanceComponentOrGameObject));
+        }
+
+        [Obsolete("The concept of disconnecting Prefab instances has been deprecated. This method always returns False.")]
+        public static bool IsDisconnectedFromPrefabAsset(Object componentOrGameObject)
+        {
+            return false;
+        }
+
+        [Obsolete("The concept of disconnecting Prefab instances has been deprecated. This method does nothing.")]
+        public static void DisconnectPrefabInstance(Object targetObject)
+        {
+        }
+
+        [Obsolete("This method does nothing. Use PrefabUtility.RevertPrefabInstance.", false)]
+        public static bool ReconnectToLastPrefab(GameObject go)
+        {
+            return false;
         }
 
         public static Texture2D GetIconForGameObject(GameObject gameObject)
@@ -1683,21 +1695,9 @@ namespace UnityEditor
             if (!IsPartOfNonAssetPrefabInstance(instance))
                 throw new ArgumentException("Provided GameObject is not a Prefab instance");
 
-            if (IsDisconnectedFromPrefabAsset(instance))
-            {
-                // The concept of disconnecting are being deprecated. For now use FindRootGameObjectWithSameParentPrefab
-                // to re-connect existing disconnected prefabs.
-                var validRoot = PrefabUtility.GetOutermostPrefabInstanceRoot(instance);
-                var ok = validRoot == instance;
-                if (!ok && PrefabUtility.GetCorrespondingObjectFromOriginalSource(instance) != PrefabUtility.GetCorrespondingObjectFromSource(instance))
-                    throw new ArgumentException("Can't save Prefab from an object that originates from a nested Prefab");
-            }
-            else
-            {
-                var root = GetOutermostPrefabInstanceRoot(instance);
-                if (root != instance)
-                    throw new ArgumentException("GameObject to save Prefab from must be a Prefab root");
-            }
+            var root = GetOutermostPrefabInstanceRoot(instance);
+            if (root != instance)
+                throw new ArgumentException("GameObject to save Prefab from must be a Prefab root");
 
             var assetObject = GetCorrespondingObjectFromSource(instance);
             string path = AssetDatabase.GetAssetPath(assetObject);
@@ -1793,11 +1793,9 @@ namespace UnityEditor
         }
 
         // Returns the corresponding object from its immediate source from a connected Prefab,
-        // or null if it can't be found, or the Prefab instance is disconnected.
+        // or null if it can't be found
         internal static TObject GetCorrespondingConnectedObjectFromSource<TObject>(TObject componentOrGameObject) where TObject : Object
         {
-            if (IsDisconnectedFromPrefabAsset(GetGameObject(componentOrGameObject)))
-                return null;
             return (TObject)GetCorrespondingObjectFromSource_internal(componentOrGameObject);
         }
 
@@ -1863,20 +1861,6 @@ namespace UnityEditor
                 return PrefabType.Prefab;
             }
 
-            if (IsDisconnectedFromPrefabAsset(target))
-            {
-                var corresponding = GetCorrespondingObjectFromSource(target);
-                var prefabObject = GetPrefabObject(corresponding);
-                // Object was at some point connected to a prefab, but now it is not attached to one anymore and the prefab no longer exists
-                if (prefabObject == null)
-                    return PrefabType.None;
-
-                if (isModel)
-                    return PrefabType.DisconnectedModelPrefabInstance;
-
-                return PrefabType.DisconnectedPrefabInstance;
-            }
-
             if (IsPrefabAssetMissing(target))
                 return PrefabType.MissingPrefabInstance;
 
@@ -1904,9 +1888,6 @@ namespace UnityEditor
 
             Transform parent = gameObject.transform.parent;
             if (parent == null)
-                return false;
-
-            if (IsDisconnectedFromPrefabAsset(parent))
                 return false;
 
             // Can't be added to a prefab instance if the parent is not part of a prefab instance.
@@ -2088,9 +2069,6 @@ namespace UnityEditor
             if (!PrefabUtility.IsPartOfNonAssetPrefabInstance(componentOrGameObject))
                 return PrefabInstanceStatus.NotAPrefab;
 
-            if (PrefabUtility.IsDisconnectedFromPrefabAsset(componentOrGameObject))
-                return PrefabInstanceStatus.Disconnected;
-
             if (PrefabUtility.IsPrefabAssetMissing(componentOrGameObject))
                 return PrefabInstanceStatus.MissingAsset;
 
@@ -2144,6 +2122,56 @@ namespace UnityEditor
             }
             var scene = contentsRoot.scene;
             EditorSceneManager.ClosePreviewScene(scene);
+        }
+
+        internal static bool CanPropertyBeAppliedToSource(SerializedProperty property)
+        {
+            if (property.hasMultipleDifferentValues)
+                return false;
+
+            if (property.propertyType != SerializedPropertyType.ObjectReference
+                || property.objectReferenceValue == null
+                || EditorUtility.IsPersistent(property.objectReferenceValue))
+                return true;
+
+            Object referenceSource = GetCorrespondingObjectFromSource(property.objectReferenceValue);
+            if (referenceSource == null)
+                return false;  //Points to object not in prefab
+
+            Object applyTarget = GetCorrespondingObjectFromSource(property.m_SerializedObject.targetObject);
+            if (applyTarget == null)
+                return false;  //Added components/gameobjects. Can never be applied to
+
+            var target = PrefabUtility.GetPrefabInstanceHandle(property.objectReferenceValue);
+            var source = PrefabUtility.GetPrefabInstanceHandle(property.serializedObject.targetObject);
+            return target == source;
+        }
+
+        internal static bool CanPropertyBeAppliedToTarget(SerializedProperty property, Object applyTarget)
+        {
+            if (property.hasMultipleDifferentValues || applyTarget == null)
+                return false;
+
+            if (property.propertyType != SerializedPropertyType.ObjectReference
+                || property.objectReferenceValue == null
+                || EditorUtility.IsPersistent(property.objectReferenceValue))
+                return true;
+
+            var referenceRootInScene = FindNearestInstanceOfAsset(property.objectReferenceValue, applyTarget);
+            if (referenceRootInScene == null)
+                return false;
+
+            var targetReference = FindNearestInstanceOfAsset(property.serializedObject.targetObject, applyTarget);
+            if (targetReference == null)
+                return false;
+
+            return referenceRootInScene == targetReference;
+        }
+
+        internal static bool HasApplicableObjectOverrides(Object componentOrGameObjectInInstance, bool includeDefaultOverrides)
+        {
+            var applyTarget = GetCorrespondingObjectFromSource(componentOrGameObjectInInstance);
+            return HasApplicableObjectOverridesForTarget(componentOrGameObjectInInstance, applyTarget, includeDefaultOverrides);
         }
 
         // Since an override can be applied to multiple different apply targets, what is not a default override

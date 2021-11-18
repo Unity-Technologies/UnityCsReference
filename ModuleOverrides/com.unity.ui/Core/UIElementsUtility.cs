@@ -368,10 +368,12 @@ namespace UnityEngine.UIElements
             switch (eventType)
             {
                 case EventType.MouseMove:
+                case EventType.TouchMove:
                     return PointerMoveEvent.GetPooled(systemEvent);
                 case EventType.MouseDrag:
                     return PointerMoveEvent.GetPooled(systemEvent);
                 case EventType.MouseDown:
+                case EventType.TouchDown:
                     // If some buttons are already down, we generate PointerMove/MouseDown events.
                     // Otherwise we generate PointerDown/MouseDown events.
                     // See W3C pointer events recommendation: https://www.w3.org/TR/pointerevents2
@@ -385,6 +387,7 @@ namespace UnityEngine.UIElements
                         return PointerDownEvent.GetPooled(systemEvent);
                     }
                 case EventType.MouseUp:
+                case EventType.TouchUp:
                     // If more buttons are still down, we generate PointerMove/MouseUp events.
                     // Otherwise we generate PointerUp/MouseUp events.
                     // See W3C pointer events recommendation: https://www.w3.org/TR/pointerevents2

@@ -1008,6 +1008,9 @@ namespace UnityEditor
         }
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+        internal static extern bool IsApplicationIdentifierValid(string name, BuildTargetGroup targetGroup);
+
+        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
         internal static extern string SanitizeApplicationIdentifier(string name, BuildTargetGroup targetGroup);
 
         [NativeThrows]
@@ -1096,6 +1099,19 @@ namespace UnityEditor
         private static extern void SetApiCompatibilityLevelInternal(string buildTargetName, ApiCompatibilityLevel value);
         public static void SetApiCompatibilityLevel(NamedBuildTarget buildTarget, ApiCompatibilityLevel value) =>
             SetApiCompatibilityLevelInternal(buildTarget.TargetName, value);
+
+        [NativeThrows]
+        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+        [NativeMethod("GetIl2CppCodeGeneration")]
+        private static extern Il2CppCodeGeneration GetIl2CppCodeGenerationInternal(string buildTargetName);
+        public static Il2CppCodeGeneration GetIl2CppCodeGeneration(NamedBuildTarget buildTarget) => GetIl2CppCodeGenerationInternal(buildTarget.TargetName);
+
+        [NativeThrows]
+        [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
+        [NativeMethod("SetIl2CppCodeGeneration")]
+        private static extern void SetIl2CppCodeGenerationInternal(string buildTargetName, Il2CppCodeGeneration value);
+        public static void SetIl2CppCodeGeneration(NamedBuildTarget buildTarget, Il2CppCodeGeneration value) =>
+            SetIl2CppCodeGenerationInternal(buildTarget.TargetName, value);
 
         [NativeThrows]
         [NativeMethod("SetMobileMTRendering")]

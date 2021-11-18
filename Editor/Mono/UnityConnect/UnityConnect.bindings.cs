@@ -30,12 +30,19 @@ namespace UnityEditor.Connect
         CloudAssetStoreUrl = 13
     }
 
-    //*undocumented*
     internal enum COPPACompliance
     {
         COPPAUndefined = 0,
         COPPACompliant = 1,
         COPPANotCompliant = 2
+    }
+
+    static class COPPAComplianceExtensions
+    {
+        internal static CoppaCompliance ToCoppaCompliance(this COPPACompliance coppaCompliance)
+        {
+            return (CoppaCompliance)coppaCompliance;
+        }
     }
 
 #pragma warning disable 649
@@ -52,13 +59,13 @@ namespace UnityEditor.Connect
         public string organizationId { get { return m_OrganizationID; } }
         public string organizationName { get { return m_OrganizationName; } }
         public string organizationForeignKey { get { return m_OrganizationForeignKey; } }
-        public COPPACompliance COPPA
+        public CoppaCompliance COPPA
         {
             get
             {
-                if (m_COPPA == 1) return COPPACompliance.COPPACompliant;
-                if (m_COPPA == 2) return COPPACompliance.COPPANotCompliant;
-                return COPPACompliance.COPPAUndefined;
+                if (m_COPPA == 1) return COPPACompliance.COPPACompliant.ToCoppaCompliance();
+                if (m_COPPA == 2) return COPPACompliance.COPPANotCompliant.ToCoppaCompliance();
+                return COPPACompliance.COPPAUndefined.ToCoppaCompliance();
             }
         }
         public bool coppaLock { get { return m_COPPALock != 0; } }

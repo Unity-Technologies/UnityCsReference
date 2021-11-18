@@ -38,6 +38,8 @@ namespace UnityEditor.SceneTemplate
 
         public MonoScript templatePipeline;
 
+        public Texture2D badge;
+
         public bool isValid => templateScene;
 
         public bool addToDefaults;

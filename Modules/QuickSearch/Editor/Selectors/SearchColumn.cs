@@ -68,10 +68,21 @@ namespace UnityEditor.Search
     }
 
     [Serializable]
-    class SearchColumnFunctor<T> : ISerializationCallbackReceiver where T : Delegate
+    class SearchFunctor<T> : ISerializationCallbackReceiver where T : Delegate
     {
         public string stream;
         public T handler { get; set; }
+
+        public SearchFunctor()
+        {
+            stream = null;
+            handler = null;
+        }
+
+        public SearchFunctor(T handler)
+        {
+            this.handler = handler;
+        }
 
         public void OnAfterDeserialize()
         {
@@ -117,7 +128,7 @@ namespace UnityEditor.Search
     }
 
     [Serializable]
-    public class SearchColumn : IEquatable<SearchColumn>
+    public class SearchColumn : IEquatable<SearchColumn>, ISerializationCallbackReceiver
     {
         public delegate object GetterEntry(SearchColumnEventArgs args);
         public delegate void SetterEntry(SearchColumnEventArgs args);
@@ -132,10 +143,10 @@ namespace UnityEditor.Search
         public SearchColumnFlags options = SearchColumnFlags.Default;
         public GUIContent content;
 
-        [SerializeField] private SearchColumnFunctor<GetterEntry> m_Getter;
-        [SerializeField] private SearchColumnFunctor<SetterEntry> m_Setter;
-        [SerializeField] private SearchColumnFunctor<DrawEntry> m_Drawer;
-        [SerializeField] private SearchColumnFunctor<CompareEntry> m_Comparer;
+        [SerializeField] private SearchFunctor<GetterEntry> m_Getter;
+        [SerializeField] private SearchFunctor<SetterEntry> m_Setter;
+        [SerializeField] private SearchFunctor<DrawEntry> m_Drawer;
+        [SerializeField] private SearchFunctor<CompareEntry> m_Comparer;
 
         public GetterEntry getter { get => m_Getter?.handler; set => m_Getter.handler = value; }
         public SetterEntry setter { get => m_Setter?.handler; set => m_Setter.handler = value; }
@@ -163,10 +174,10 @@ namespace UnityEditor.Search
             this.content = content ?? new GUIContent(name);
             width = 145f;
 
-            m_Getter = new SearchColumnFunctor<GetterEntry>();
-            m_Setter = new SearchColumnFunctor<SetterEntry>();
-            m_Drawer = new SearchColumnFunctor<DrawEntry>();
-            m_Comparer = new SearchColumnFunctor<CompareEntry>();
+            m_Getter = new SearchFunctor<GetterEntry>();
+            m_Setter = new SearchFunctor<SetterEntry>();
+            m_Drawer = new SearchFunctor<DrawEntry>();
+            m_Comparer = new SearchFunctor<CompareEntry>();
 
             if ((options & SearchColumnFlags.IgnoreSettings) == 0 && !Utils.IsRunningTests())
                 SearchColumnSettings.Load(this);
@@ -218,9 +229,6 @@ namespace UnityEditor.Search
         internal void InitFunctors()
         {
             getter = getter ?? DefaultSelect;
-            //             setter = null;
-            //             drawer = null;
-            //             comparer = null;
             if (!string.IsNullOrEmpty(provider))
                 SearchColumnProvider.Initialize(this);
         }
@@ -247,6 +255,14 @@ namespace UnityEditor.Search
             var columns = new List<SearchColumn>(ItemSelectors.Enumerate(items));
 
             var providerTypes = new HashSet<string>(context.providers.Select(p => p.type));
+
+            // In case there is a valid search group selected in the search view, lets use that instead.
+            if (context.searchView is QuickSearch qs && !string.IsNullOrEmpty(qs.currentGroup) && !string.Equals(qs.currentGroup, "all"))
+            {
+                providerTypes.Clear();
+                providerTypes.Add(qs.currentGroup);
+            }
+
             foreach (var s in SelectorManager.selectors)
             {
                 if (!s.printable)
@@ -263,6 +279,9 @@ namespace UnityEditor.Search
                 if (p.fetchColumns == null)
                     continue;
 
+                if (!providerTypes.Contains(p.type))
+                    continue;
+
                 columns.AddRange(p.fetchColumns(context, items.Take(50)));
             }
 
@@ -274,6 +293,17 @@ namespace UnityEditor.Search
             options &= ~SearchColumnFlags.Volatile;
             this.provider = provider;
             SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchTableChangeColumnFormat, name, provider, selector);
+            InitFunctors();
+        }
+
+        [UnityEngine.Internal.ExcludeFromDocs]
+        public void OnBeforeSerialize()
+        {
+        }
+
+        [UnityEngine.Internal.ExcludeFromDocs]
+        public void OnAfterDeserialize()
+        {
             InitFunctors();
         }
     }

@@ -11,7 +11,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Generic popup selection field.
     /// </summary>
-    [MovedFrom(true, "UnityEditor.UIElements", "UnityEditor.UIElementsModule")]
+    [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     public class PopupField<T> : BasePopupField<T, T>
     {
         /// <summary>
@@ -69,7 +69,8 @@ namespace UnityEngine.UIElements
             base.SetValueWithoutNotify(newValue);
         }
 
-        private int m_Index = -1;
+        internal const int kPopupFieldDefaultIndex = -1;
+        private int m_Index = kPopupFieldDefaultIndex;
         /// <summary>
         /// The currently selected index in the popup menu.
         /// </summary>

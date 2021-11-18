@@ -35,8 +35,10 @@ namespace UnityEngine.UIElements
         {
             if (pointerId == PointerId.mousePointerId)
                 return mouse;
-
-            return touch;
+            else if (pointerId == PointerId.penPointerIdBase)
+                return pen;
+            else
+                return touch;
         }
 
         // A direct manipulation device is a device where the user directly manipulates elements
@@ -143,8 +145,8 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <remarks>
         /// Pressing a mouse button sets a bit. Releasing the button clears the bit. The left mouse button sets/clears Bit 0.
-        /// The right mouse button sets/clears Bit 1. The middle mouse button sets/clears Bit 2. Additional buttons set/clear
-        /// other bits.
+        /// The right mouse button and pen barrel button set/clear Bit 1. The middle mouse button sets/clears Bit 2.
+        /// The pen eraser sets/clears Bit 5. Additional buttons set/clear other bits.
         /// </remarks>
         int pressedButtons { get; }
 
@@ -198,6 +200,15 @@ namespace UnityEngine.UIElements
         /// Gets the rotation of the stylus around its axis, in radians.
         /// </summary>
         float twist { get; }
+        /// <summary>
+        /// Specifies the angle of the pen relative to the X and Y axis respectively, in radians.
+        /// </summary>
+        Vector2 tilt { get; }
+        /// <summary>
+        /// Specifies the state of the pen. For example, whether the pen is in contact with the screen or tablet, whether the pen is inverted, and whether buttons are pressed.
+        /// On macOS, penStatus will not reflect changes to button mappings.
+        /// </summary>
+        PenStatus penStatus { get; }
         /// <summary>
         /// Gets an estimate of the radius of a touch.
         /// </summary>
@@ -276,6 +287,14 @@ namespace UnityEngine.UIElements
     public abstract class PointerEventBase<T> : EventBase<T>, IPointerEvent, IPointerEventInternal
         where T : PointerEventBase<T>, new()
     {
+        private bool m_AltitudeNeedsConversion = true;
+        private bool m_AzimuthNeedsConversion = true;
+        private float m_AltitudeAngle = 0f;
+        private float m_AzimuthAngle = 0f;
+
+        private bool m_TiltNeeded = true;
+        private Vector2 m_Tilt = new Vector2(0, 0);
+
         /// <summary>
         /// Gets the identifier of the pointer that sent the event.
         /// </summary>
@@ -352,18 +371,81 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// A value of 0 indicates that the stylus is parallel to the surface. A value of pi/2 indicates that it is perpendicular to the surface.
         /// </remarks>
-        public float altitudeAngle { get; protected set; }
+        public float altitudeAngle
+        {
+            // only calculate angle when requested
+            get
+            {
+                if (m_AltitudeNeedsConversion)
+                {
+                    m_AltitudeAngle = TiltToAltitude(tilt);
+                    m_AltitudeNeedsConversion = false;
+                }
+                return m_AltitudeAngle;
+            }
+            protected set
+            {
+                m_AltitudeNeedsConversion = true;
+                m_AltitudeAngle  = value;
+            }
+        }
         /// <summary>
         /// Gets the angle of the stylus relative to the x-axis, in radians.
         /// </summary>
         /// <remarks>
         /// A value of 0 indicates that the stylus is pointed along the x-axis of the device.
         /// </remarks>
-        public float azimuthAngle { get; protected set; }
+        public float azimuthAngle
+        {
+            // only calculate angle when requested
+            get
+            {
+                if (m_AzimuthNeedsConversion)
+                {
+                    m_AzimuthAngle = TiltToAzimuth(tilt);
+                    m_AzimuthNeedsConversion = false;
+                }
+                return m_AzimuthAngle;
+            }
+            protected set
+            {
+                m_AzimuthNeedsConversion = true;
+                m_AzimuthAngle  = value;
+            }
+        }
         /// <summary>
         /// Gets the rotation of the stylus around its axis, in radians.
         /// </summary>
         public float twist { get; protected set; }
+        /// <summary>
+        /// Specifies the angle of the pen relative to the X and Y axis respectively, in radians.
+        /// </summary>
+        public Vector2 tilt
+        {
+            // only calculate tilt when requested and not natively provided
+            get
+            {
+                // windows does not provide altitude or azimuth for touch events, so there's nothing to convert
+                if (!(Application.platform == RuntimePlatform.WindowsEditor ||
+                      Application.platform == RuntimePlatform.WindowsPlayer) && this.pointerType == PointerType.touch &&  m_TiltNeeded)
+                {
+                    m_Tilt = AzimuthAndAlitutudeToTilt(m_AltitudeAngle, m_AzimuthAngle);
+                    m_TiltNeeded = false;
+                }
+                return m_Tilt;
+            }
+
+            protected set
+            {
+                m_TiltNeeded = true;
+                m_Tilt = value;
+            }
+        }
+        /// <summary>
+        /// Specifies the state of the pen. For example, whether the pen is in contact with the screen or tablet, whether the pen is inverted, and whether buttons are pressed.
+        /// On macOS, penStatus will not reflect changes to button mappings.
+        /// </summary>
+        public PenStatus penStatus { get; protected set; }
         /// <summary>
         /// Gets an estimate of the radius of a touch.
         /// </summary>
@@ -476,7 +558,9 @@ namespace UnityEngine.UIElements
 
             altitudeAngle = 0;
             azimuthAngle = 0;
-            twist = 0;
+            tilt = new Vector2(0f, 0f);
+            twist = 0.0f;
+            penStatus = PenStatus.None;
             radius = Vector2.zero;
             radiusVariance = Vector2.zero;
 
@@ -523,6 +607,65 @@ namespace UnityEngine.UIElements
                 || t == EventType.MouseLeaveWindow;
         }
 
+        private static bool IsTouch(Event systemEvent)
+        {
+            EventType t = systemEvent.rawType;
+            return t == EventType.TouchMove
+                || t == EventType.TouchDown
+                || t == EventType.TouchUp
+                || t == EventType.TouchStationary
+                || t == EventType.TouchEnter
+                || t == EventType.TouchLeave;
+        }
+
+        /// <summary>
+        /// Converts touch or stylus tilt to azimuth angle.
+        /// </summary>
+        /// <param name="tilt">Angle relative to the X and Y axis, in radians. abs(tilt.y) must be < pi/2</param>
+        /// <returns>Azimuth angle as determined by tilt along x and y axese.</returns>
+        private static float TiltToAzimuth(Vector2 tilt)
+        {
+            float azimuth = 0f;
+            if (tilt.x != 0)
+            {
+                azimuth = Mathf.PI / 2 - Mathf.Atan2(-Mathf.Cos(tilt.x) * Mathf.Sin(tilt.y), Mathf.Cos(tilt.y) * Mathf.Sin(tilt.x));
+                if (azimuth < 0) // fix range to [0, 2*pi)
+                    azimuth += 2 * Mathf.PI;
+                // follow UIKit conventions where azimuth is 0 when the cap end of the stylus points along the positive x axis of the device's screen
+                if (azimuth >= (Mathf.PI / 2))
+                    azimuth -= Mathf.PI / 2;
+                else
+                    azimuth += (3 * Mathf.PI / 2);
+            }
+
+            return azimuth;
+        }
+
+        /// <summary>
+        /// Converts touch or stylus azimuth and altitude to tilt
+        /// </summary>
+        /// <param name="tilt">Angle relative to the X and Y axis, in radians. abs(tilt.y) must be < pi/2</param>
+        /// <returns>Azimuth angle as determined by tilt along x and y axese.</returns>
+        private static Vector2 AzimuthAndAlitutudeToTilt(float altitude, float azimuth)
+        {
+            Vector2 t = new Vector2(0, 0);
+
+            t.x = Mathf.Atan(Mathf.Cos(azimuth) * Mathf.Cos(altitude) / Mathf.Sin(azimuth));
+            t.y = Mathf.Atan(Mathf.Cos(azimuth) * Mathf.Sin(altitude) / Mathf.Sin(azimuth));
+
+            return t;
+        }
+
+        /// <summary>
+        /// Converts touch or stylus tilt to altitude angle.
+        /// </summary>
+        /// <param name="tilt">Angle relative to the X and Y axis, in radians. abs(tilt.y) must be < pi/2</param>
+        /// <returns>Altitude angle as determined by tilt along x and y axese.</returns>
+        private static float TiltToAltitude(Vector2 tilt)
+        {
+            return Mathf.PI / 2 - Mathf.Acos(Mathf.Cos(tilt.x) * Mathf.Cos(tilt.y));
+        }
+
         /// <summary>
         /// Gets an event from the event pool and initializes it with the given values. Use this function instead of creating new events.
         /// Events obtained using this method need to be released back to the pool. You can use `Dispose()` to release them.
@@ -533,7 +676,7 @@ namespace UnityEngine.UIElements
         {
             T e = GetPooled();
 
-            if (!(IsMouse(systemEvent) || systemEvent.rawType == EventType.DragUpdated))
+            if (!(IsMouse(systemEvent) || IsTouch(systemEvent) || systemEvent.rawType == EventType.DragUpdated))
             {
                 Debug.Assert(false, "Unexpected event type: " + systemEvent.rawType + " (" + systemEvent.type + ")");
             }
@@ -551,30 +694,40 @@ namespace UnityEngine.UIElements
                 case UnityEngine.PointerType.Pen:
                     e.pointerType = PointerType.pen;
                     e.pointerId = PointerId.penPointerIdBase;
+                    // system events are not fired for pen buttons, so in order to keep buttonsate up to date we need to check the status of these buttons for all pen events
+                    if (systemEvent.penStatus == PenStatus.Barrel)
+                        PointerDeviceState.PressButton(e.pointerId, (int) PenButton.PenBarrel);
+                    else
+                        PointerDeviceState.ReleaseButton(e.pointerId, (int) PenButton.PenBarrel);
+                    if (systemEvent.penStatus == PenStatus.Eraser)
+                        PointerDeviceState.PressButton(e.pointerId, (int) PenButton.PenEraser);
+                    else
+                        PointerDeviceState.ReleaseButton(e.pointerId, (int) PenButton.PenEraser);
                     break;
             }
 
             e.isPrimary = true;
 
-            e.altitudeAngle = 0;
-            e.azimuthAngle = 0;
-            e.twist = 0;
+            // calculate these on demand
+            e.altitudeAngle = 0f;
+            e.azimuthAngle = 0f;
+
             e.radius = Vector2.zero;
             e.radiusVariance = Vector2.zero;
 
             e.imguiEvent = systemEvent;
 
-            if (systemEvent.rawType == EventType.MouseDown)
+            if (systemEvent.rawType == EventType.MouseDown || systemEvent.rawType == EventType.TouchDown)
             {
-                PointerDeviceState.PressButton(PointerId.mousePointerId, systemEvent.button);
+                PointerDeviceState.PressButton(e.pointerId, systemEvent.button);
                 e.button = systemEvent.button;
             }
-            else if (systemEvent.rawType == EventType.MouseUp)
+            else if (systemEvent.rawType == EventType.MouseUp || systemEvent.rawType == EventType.TouchUp)
             {
-                PointerDeviceState.ReleaseButton(PointerId.mousePointerId, systemEvent.button);
+                PointerDeviceState.ReleaseButton(e.pointerId, systemEvent.button);
                 e.button = systemEvent.button;
             }
-            else if (systemEvent.rawType == EventType.MouseMove)
+            else if (systemEvent.rawType == EventType.MouseMove || systemEvent.rawType == EventType.TouchMove)
             {
                 e.button = -1;
             }
@@ -585,6 +738,9 @@ namespace UnityEngine.UIElements
             e.deltaPosition = systemEvent.delta;
             e.clickCount = systemEvent.clickCount;
             e.modifiers = systemEvent.modifiers;
+            e.tilt = systemEvent.tilt;
+            e.penStatus = systemEvent.penStatus;
+            e.twist = systemEvent.twist;
 
             switch (systemEvent.pointerType)
             {
@@ -592,6 +748,8 @@ namespace UnityEngine.UIElements
                     e.pressure = e.pressedButtons == 0 ? 0f : 0.5f;
                     break;
                 case UnityEngine.PointerType.Touch:
+                    e.pressure = systemEvent.pressure;
+                    break;
                 case UnityEngine.PointerType.Pen:
                     e.pressure = systemEvent.pressure;
                     break;
@@ -658,9 +816,73 @@ namespace UnityEngine.UIElements
 
             e.altitudeAngle = touch.altitudeAngle;
             e.azimuthAngle = touch.azimuthAngle;
-            e.twist = 0;
+            e.twist = 0.0f;
+            e.tilt = new Vector2(0f, 0f);
+            e.penStatus = PenStatus.None;
             e.radius = new Vector2(touch.radius, touch.radius);
             e.radiusVariance = new Vector2(touch.radiusVariance, touch.radiusVariance);
+
+            e.modifiers = modifiers;
+
+            ((IPointerEventInternal)e).triggeredByOS = true;
+
+            return e;
+        }
+
+        /// <summary>
+        /// Gets a pointer event from the event pool and initializes it with the given values. Use this function instead of creating new events.
+        /// Events obtained using this method need to be released back to the pool. You can use `Dispose()` to release them.
+        /// </summary>
+        /// <param name="pen">A <see cref="PenData"/> structure from the InputManager containing pen event information.</param>
+        /// <param name="modifiers">The modifier keys held down during the event.</param>
+        /// <returns>An initialized event.</returns>
+        public static T GetPooled(PenData pen, EventModifiers modifiers = EventModifiers.None)
+        {
+            T e = GetPooled();
+
+            e.pointerId = PointerId.penPointerIdBase;
+            e.pointerType = PointerType.pen;
+
+            e.isPrimary = true;
+
+            if (pen.contactType == PenEventType.PenDown)
+            {
+                PointerDeviceState.PressButton(e.pointerId, 0);
+                e.button = 0;
+            }
+            else if (pen.contactType == PenEventType.PenUp)
+            {
+                PointerDeviceState.ReleaseButton(e.pointerId, 0);
+                e.button = 0;
+            }
+            else
+            {
+                e.button = -1;
+            }
+
+            // system events are not fired for pen buttons, so in order to keep buttonsate up to date we need to check the status of these buttons for all pen events
+            if (pen.penStatus == PenStatus.Barrel)
+                PointerDeviceState.PressButton(e.pointerId, (int) PenButton.PenBarrel);
+            else
+                PointerDeviceState.ReleaseButton(e.pointerId, (int) PenButton.PenBarrel);
+            if (pen.penStatus == PenStatus.Eraser)
+                PointerDeviceState.PressButton(e.pointerId, (int) PenButton.PenEraser);
+            else
+                PointerDeviceState.ReleaseButton(e.pointerId, (int) PenButton.PenEraser);
+
+            e.pressedButtons = PointerDeviceState.GetPressedButtons(e.pointerId);
+            e.position = pen.position;
+            e.localPosition = pen.position;
+            e.deltaPosition = pen.deltaPos;
+            e.clickCount = 0;
+            e.pressure = pen.pressure;
+            e.tangentialPressure = 0;
+
+            e.twist = pen.twist;
+            e.tilt = pen.tilt;
+            e.penStatus = pen.penStatus;
+            e.radius = Vector2.zero;
+            e.radiusVariance = Vector2.zero;
 
             e.modifiers = modifiers;
 
@@ -711,6 +933,8 @@ namespace UnityEngine.UIElements
                 e.altitudeAngle = triggerEvent.altitudeAngle;
                 e.azimuthAngle = triggerEvent.azimuthAngle;
                 e.twist = triggerEvent.twist;
+                e.tilt = triggerEvent.tilt;
+                e.penStatus = triggerEvent.penStatus;
                 e.radius = triggerEvent.radius;
                 e.radiusVariance = triggerEvent.radiusVariance;
 
@@ -1162,7 +1386,7 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            propagation = EventPropagation.TricklesDown;
+            propagation = EventPropagation.TricklesDown | EventPropagation.IgnoreCompositeRoots;
         }
 
         /// <summary>
@@ -1196,7 +1420,7 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            propagation = EventPropagation.TricklesDown;
+            propagation = EventPropagation.TricklesDown | EventPropagation.IgnoreCompositeRoots;
         }
 
         /// <summary>

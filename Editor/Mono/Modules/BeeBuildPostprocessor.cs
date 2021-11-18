@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using Bee.BeeDriver;
@@ -215,13 +214,15 @@ namespace UnityEditor.Modules
 
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(args.target);
             var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup);
+            var namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(buildTargetGroup);
+            var il2cppCodeGeneration = PlayerSettings.GetIl2CppCodeGeneration(namedBuildTarget);
             var platformHasIncrementalGC = BuildPipeline.IsFeatureSupported("ENABLE_SCRIPTING_GC_WBARRIERS", args.target);
             return new Il2CppConfig
             {
                 EnableDeepProfilingSupport = GetDevelopment(args) &&
                     IsBuildOptionSet(args.report.summary.options,
                     BuildOptions.EnableDeepProfilingSupport),
-                EnableFullGenericSharing = EditorUserBuildSettings.il2CppCodeGeneration == Il2CppCodeGeneration.OptimizeSize,
+                EnableFullGenericSharing = il2cppCodeGeneration == Il2CppCodeGeneration.OptimizeSize,
                 Profile = IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup), args.target),
                 ConfigurationName = Il2CppBuildConfigurationNameFor(args),
                 GcWBarrierValidation = platformHasIncrementalGC && PlayerSettings.gcWBarrierValidation,
@@ -275,7 +276,7 @@ namespace UnityEditor.Modules
                 .Select(e => new StreamingAssetsFile { File = e.src.ToString(), RelativePath = e.dst.ToString() })
                 .ToArray(),
             UseNewInputSystem = IsNewInputSystemEnabled(),
-            ManagedAssemblies = args.report.files
+            ManagedAssemblies = args.report.GetFiles()
                 .Where(file => file.role == "ManagedLibrary" || file.role == "DependentManagedLibrary" || file.role == "ManagedEngineAPI")
                 .Select(file => file.path.ToNPath())
                 .GroupBy(file => file.FileName)
@@ -365,11 +366,16 @@ namespace UnityEditor.Modules
             yield return Il2CppConfigFor(args);
         }
 
+        protected virtual RunnableProgram BeeBackendProgram(BuildPostProcessArgs args)
+        {
+            return null;
+        }
+
         void SetupBeeDriver(BuildPostProcessArgs args)
         {
             RunnableProgram buildProgram = MakePlayerBuildProgram(args);
             progressAPI = new PlayerBuildProgressAPI($"Building {args.productName}");
-            Driver = UnityBeeDriver.Make(buildProgram, DagName(args), DagDirectory.ToString(), false, "", progressAPI);
+            Driver = UnityBeeDriver.Make(buildProgram, DagName(args), DagDirectory.ToString(), false, "", progressAPI, BeeBackendProgram(args));
 
             foreach (var o in GetDataForBuildProgramFor(args))
             {

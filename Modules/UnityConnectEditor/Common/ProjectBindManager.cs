@@ -83,7 +83,7 @@ namespace UnityEditor.Connect
         public LinkButtonCallback linkButtonCallback { private get; set; }
         public ExceptionCallback exceptionCallback { private get; set; }
 
-        public VisualElement projectBindContainer { get; private set; }
+        public VisualElement projectBindContainer { get; set; }
 
         internal struct ProjectBindState
         {
@@ -147,6 +147,7 @@ namespace UnityEditor.Connect
 
             SetupCreateProjectIdBlock();
             SetupReuseProjectIdBlock();
+            EditorGameServicesAnalytics.SendProjectBindDisplayEvent();
         }
 
         void SetupCreateProjectIdBlock()

@@ -402,7 +402,6 @@ namespace UnityEditor.Search
         public static readonly GUIContent syncSearchAllGroupTabContent = EditorGUIUtility.TrTextContentWithIcon(string.Empty, "Choose a specific search tab (eg. Project) to enable synchronization.", EditorGUIUtility.LoadIcon("QuickSearch/SyncSearch"));
         public static readonly GUIContent syncSearchProviderNotSupportedContent = EditorGUIUtility.TrTextContentWithIcon(string.Empty, "Search provider doesn't support synchronization", EditorGUIUtility.LoadIcon("QuickSearch/SyncSearch"));
         public static readonly GUIContent syncSearchViewNotEnabledContent = EditorGUIUtility.TrTextContentWithIcon(string.Empty, "Search provider uses a search engine\nthat cannot be synchronized.\nSee Preferences -> Search.", EditorGUIUtility.LoadIcon("QuickSearch/SyncSearch"));
-        public static readonly GUIContent searchTipsHelp = EditorGUIUtility.TrTextContentWithIcon("Type '?' for help", EditorGUIUtility.LoadIcon("QuickSearch/Help"));
         public static readonly GUIContent searchTipsDrag = EditorGUIUtility.TrTextContentWithIcon("Drag from search results to Scene, Hierarchy or Inspector", EditorGUIUtility.LoadIcon("QuickSearch/DragArrow"));
         public static readonly GUIContent searchTipsSaveSearches = EditorGUIUtility.TrTextContentWithIcon("Save Searches you use often", EditorGUIUtility.FindTexture("SaveAs"));
         public static readonly GUIContent searchTipsPreviewInspector = EditorGUIUtility.TrTextContentWithIcon("Enable the Preview Inspector to edit search results in place", EditorGUIUtility.LoadIcon("UnityEditor.InspectorWindow"));
@@ -422,7 +421,6 @@ namespace UnityEditor.Search
 
         public static readonly GUIContent[] searchTipLabels =
         {
-            new GUIContent(L10n.Tr("Type '?' for help")),
             new GUIContent(L10n.Tr("Drag from search results to Scene, Hierarchy or Inspector")),
             new GUIContent(L10n.Tr("Save Searches you use often")),
             new GUIContent(L10n.Tr("Enable the Preview Inspector to edit search results in place")),
@@ -703,7 +701,7 @@ namespace UnityEditor.Search
             public static readonly Color splitterColor;
             public static readonly GUIStyle label;
 
-            public static GUIContent createContent = EditorGUIUtility.IconContent("Toolbar Plus More");
+            public static GUIContent createContent = EditorGUIUtility.IconContent("Toolbar Plus More", "|Add new query block (Tab)");
             public static GUIStyle addNewDropDown = new GUIStyle("ToolbarCreateAddNewDropDown")
             {
                 fixedWidth = 32f,
@@ -725,6 +723,46 @@ namespace UnityEditor.Search
                     normal = new GUIStyleState { textColor = labelColor },
                     hover = new GUIStyleState { textColor = labelColor }
                 };
+            }
+        }
+    }
+
+    static class QueryColors
+    {
+        private static bool isDarkTheme => EditorGUIUtility.isProSkin;
+
+        public static readonly Color area;
+        public static readonly Color filter;
+        public static readonly Color property;
+        public static readonly Color type;
+        public static readonly Color typeIcon;
+        public static readonly Color word;
+        public static readonly Color combine;
+        public static readonly Color expression;
+        public static readonly Color textureBackgroundColor = new Color(0.2f, 0.2f, 0.25f, 0.95f);
+        public static readonly Color selectedBorderColor = new Color(58 / 255f, 121 / 255f, 187 / 255f);
+        public static readonly Color hoveredBorderColor = new Color(0.6f, 0.6f, 0.6f);
+        public static readonly Color normalBorderColor = new Color(0.1f, 0.1f, 0.1f);
+        public static readonly Color selectedTint = new Color(1.3f, 1.2f, 1.3f, 1f);
+
+        static QueryColors()
+        {
+            ColorUtility.TryParseHtmlString("#74CBEE", out area);
+            ColorUtility.TryParseHtmlString("#78CAB6", out filter);
+            ColorUtility.TryParseHtmlString("#A38CD0", out property);
+            ColorUtility.TryParseHtmlString("#EBD05F", out type);
+            ColorUtility.TryParseHtmlString("#EBD05F", out typeIcon);
+            ColorUtility.TryParseHtmlString("#739CEB", out word);
+            ColorUtility.TryParseHtmlString("#B7B741", out combine);
+            ColorUtility.TryParseHtmlString("#8DBB65", out expression);
+            if (isDarkTheme)
+            {
+                ColorUtility.TryParseHtmlString("#383838", out textureBackgroundColor);
+                selectedBorderColor = Color.white;
+            }
+            else
+            {
+                ColorUtility.TryParseHtmlString("#CBCBCB", out textureBackgroundColor);
             }
         }
     }

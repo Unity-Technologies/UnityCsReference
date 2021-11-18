@@ -9,35 +9,100 @@ namespace UnityEditor.Overlays
     [AttributeUsage(AttributeTargets.Class)]
     public sealed class OverlayAttribute : Attribute
     {
-        readonly Type m_EditorWindowType;
-        readonly string m_Id;
-        readonly string m_UssName;
-        readonly bool m_DefaultDisplay;
-        readonly string m_DisplayName;
+        Type m_EditorWindowType;
+        string m_Id;
+        string m_UssName;
+        bool m_DefaultDisplay;
+        string m_DisplayName;
+        DockZone m_DefaultDockZone;
+        DockPosition m_DefaultDockPosition;
+        int m_DefaultDockIndex;
+        Layout m_DefaultLayout;
 
-        public Type editorWindowType => m_EditorWindowType;
-        public string id => m_Id;
-        public string displayName => m_DisplayName;
-        public string ussName => m_UssName;
-        public bool defaultDisplay => m_DefaultDisplay;
-
-        public OverlayAttribute(Type editorWindowType, string id, string displayName, string ussName, bool defaultDisplay = false)
+        public Type editorWindowType
         {
-            m_EditorWindowType = editorWindowType;
-            m_DefaultDisplay = defaultDisplay;
-            m_Id = id;
-            m_DisplayName = displayName;
-            m_UssName = ussName;
+            get => m_EditorWindowType;
+            set => m_EditorWindowType = value;
+        }
+
+        public string id
+        {
+            get => m_Id;
+            set => m_Id = value;
+        }
+
+        public string displayName
+        {
+            get => m_DisplayName;
+            set => m_DisplayName = value;
+        }
+
+        public string ussName
+        {
+            get => m_UssName;
+            set => m_UssName = value;
+        }
+
+        public bool defaultDisplay
+        {
+            get => m_DefaultDisplay;
+            set => m_DefaultDisplay = value;
+        }
+
+        public DockZone defaultDockZone
+        {
+            get => m_DefaultDockZone;
+            set => m_DefaultDockZone = value;
+        }
+
+        public DockPosition defaultDockPosition
+        {
+            get => m_DefaultDockPosition;
+            set => m_DefaultDockPosition = value;
+        }
+
+        public int defaultDockIndex
+        {
+            get => m_DefaultDockIndex;
+            set => m_DefaultDockIndex = value;
+        }
+
+        public Layout defaultLayout
+        {
+            get => m_DefaultLayout;
+            set => m_DefaultLayout = value;
+        }
+
+        public OverlayAttribute()
+        {
+            m_EditorWindowType = null;
+            m_DefaultDisplay = false;
+            m_Id = null;
+            m_DisplayName = null;
+            m_UssName = null;
+            m_DefaultDockZone = DockZone.RightColumn;
+            m_DefaultDockPosition = DockPosition.Bottom;
+            m_DefaultDockIndex = int.MaxValue;
+            m_DefaultLayout = Layout.Panel;
             if (string.IsNullOrEmpty(m_UssName)) m_UssName = m_Id;
         }
 
-        public OverlayAttribute(Type editorWindowType, string id, string displayName, bool defaultLayout = false)
-            : this(editorWindowType, id, displayName, displayName, defaultLayout)
+        public OverlayAttribute(Type editorWindowType, string id, string displayName, string ussName, bool defaultDisplay = false)
+        {
+            this.editorWindowType = editorWindowType;
+            this.displayName = displayName;
+            this.id = id;
+            this.defaultDisplay = defaultDisplay;
+            this.ussName = ussName;
+        }
+
+        public OverlayAttribute(Type editorWindowType, string id, string displayName, bool defaultDisplay = false)
+            : this(editorWindowType, id, displayName, displayName, defaultDisplay)
         {
         }
 
-        public OverlayAttribute(Type editorWindowType, string displayName, bool defaultLayout = false)
-            : this(editorWindowType, displayName, displayName, displayName, defaultLayout)
+        public OverlayAttribute(Type editorWindowType, string displayName, bool defaultDisplay = false)
+            : this(editorWindowType, displayName, displayName, displayName, defaultDisplay)
         {
         }
     }

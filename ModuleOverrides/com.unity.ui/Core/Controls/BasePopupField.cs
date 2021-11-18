@@ -16,7 +16,7 @@ namespace UnityEngine.UIElements
     /// </summary>
     /// <typeparam name="TValueType"> Used for the BaseField</typeparam>
     /// <typeparam name="TValueChoice"> Used for the choices list</typeparam>
-    [MovedFrom(true, "UnityEditor.UIElements", "UnityEditor.UIElementsModule")]
+    [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     public abstract class BasePopupField<TValueType, TValueChoice> : BaseField<TValueType>
     {
         internal List<TValueChoice> m_Choices;

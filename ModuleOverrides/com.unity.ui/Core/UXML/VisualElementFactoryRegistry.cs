@@ -101,7 +101,21 @@ namespace UnityEngine.UIElements
                 new Foldout.UxmlFactory(),
                 new BindableElement.UxmlFactory(),
                 new TextElement.UxmlFactory(),
-                new ButtonStripField.UxmlFactory()
+                new ButtonStripField.UxmlFactory(),
+                new FloatField.UxmlFactory(),
+                new DoubleField.UxmlFactory(),
+                new Hash128Field.UxmlFactory(),
+                new IntegerField.UxmlFactory(),
+                new LongField.UxmlFactory(),
+                new RectField.UxmlFactory(),
+                new Vector2Field.UxmlFactory(),
+                new RectIntField.UxmlFactory(),
+                new Vector3Field.UxmlFactory(),
+                new Vector4Field.UxmlFactory(),
+                new Vector2IntField.UxmlFactory(),
+                new Vector3IntField.UxmlFactory(),
+                new BoundsField.UxmlFactory(),
+                new BoundsIntField.UxmlFactory()
             };
 
             foreach (var factory in factories)

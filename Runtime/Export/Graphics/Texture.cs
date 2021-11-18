@@ -353,8 +353,7 @@ namespace UnityEngine
                 throw new ArgumentException("RenderTextureDesc graphicsFormat and depthStencilFormat cannot both be None.");
             if (desc.graphicsFormat != GraphicsFormat.None && !SystemInfo.IsFormatSupported(desc.graphicsFormat, FormatUsage.Render))
                 throw new ArgumentException("RenderTextureDesc graphicsFormat must be a supported GraphicsFormat. " + desc.graphicsFormat + " is not supported on this platform.", "desc.graphicsFormat");
-            if (desc.depthStencilFormat != GraphicsFormat.None &&
-                !(GraphicsFormatUtility.IsDepthFormat(desc.depthStencilFormat) || GraphicsFormatUtility.IsStencilFormat(desc.depthStencilFormat)))
+            if (desc.depthStencilFormat != GraphicsFormat.None && !GraphicsFormatUtility.IsDepthStencilFormat(desc.depthStencilFormat))
                 throw new ArgumentException("RenderTextureDesc depthStencilFormat must be a supported depth/stencil GraphicsFormat. " + desc.depthStencilFormat + " is not supported on this platform.", "desc.depthStencilFormat");
             if (desc.width <= 0)
                 throw new ArgumentException("RenderTextureDesc width must be greater than zero.", "desc.width");
@@ -368,7 +367,7 @@ namespace UnityEngine
 // Disable deprecation warnings on the ShadowAuto and DepthAuto formats
 #pragma warning disable 618
             if (desc.graphicsFormat != GraphicsFormat.ShadowAuto && desc.graphicsFormat != GraphicsFormat.DepthAuto
-                && (GraphicsFormatUtility.IsDepthFormat(desc.graphicsFormat) || GraphicsFormatUtility.IsStencilFormat(desc.graphicsFormat)))
+                && GraphicsFormatUtility.IsDepthStencilFormat(desc.graphicsFormat))
                 throw new ArgumentException("RenderTextureDesc graphicsFormat must not be a depth/stencil format. " + desc.graphicsFormat + " is not supported.", "desc.graphicsFormat");
 #pragma warning restore 618
         }
@@ -866,7 +865,7 @@ namespace UnityEngine
 
         public bool Reinitialize(int width, int height, TextureFormat format, bool hasMipMap)
         {
-            return ReinitializeWithFormatImpl(width, height, GraphicsFormatUtility.GetGraphicsFormat(format, activeTextureColorSpace == ColorSpace.Gamma), hasMipMap);
+            return ReinitializeWithTextureFormatImpl(width, height, format, hasMipMap);
         }
 
         public bool Reinitialize(int width, int height, GraphicsFormat format, bool hasMipMap)

@@ -132,5 +132,10 @@ namespace UnityEngine.SceneManagement
             Scene rhs = (Scene)other;
             return handle == rhs.handle;
         }
+
+        internal void SetPathAndGuid(string path, string guid)
+        {
+            SetPathAndGUIDInternal(m_Handle, path, guid);
+        }
     }
 }

@@ -266,6 +266,11 @@ namespace Unity.UI.Builder
             if (asset == null)
                 return false;
 
+            // Special case: we use a magic value to distinguish between opening in the UI Builder and opening in the
+            // IDE.
+            if (line == BuilderConstants.OpenInIDELineNumber)
+                return false;
+
             var builderWindow = ActiveWindow;
 
             if (builderWindow == null)

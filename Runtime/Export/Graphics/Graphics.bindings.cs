@@ -505,8 +505,14 @@ namespace UnityEngine
         [FreeFunction("GraphicsScripting::DrawProceduralIndirect")]
         extern private static void Internal_DrawProceduralIndirect(Material material, Bounds bounds, MeshTopology topology, ComputeBuffer bufferWithArgs, int argsOffset, Camera camera, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, int layer);
 
+        [FreeFunction("GraphicsScripting::DrawProceduralIndirect")]
+        extern private static void Internal_DrawProceduralIndirectGraphicsBuffer(Material material, Bounds bounds, MeshTopology topology, GraphicsBuffer bufferWithArgs, int argsOffset, Camera camera, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, int layer);
+
         [FreeFunction("GraphicsScripting::DrawProceduralIndexedIndirect")]
         extern private static void Internal_DrawProceduralIndexedIndirect(Material material, Bounds bounds, MeshTopology topology, GraphicsBuffer indexBuffer, ComputeBuffer bufferWithArgs, int argsOffset, Camera camera, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, int layer);
+
+        [FreeFunction("GraphicsScripting::DrawProceduralIndexedIndirect")]
+        extern private static void Internal_DrawProceduralIndexedIndirectGraphicsBuffer(Material material, Bounds bounds, MeshTopology topology, GraphicsBuffer indexBuffer, GraphicsBuffer bufferWithArgs, int argsOffset, Camera camera, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, int layer);
 
         [FreeFunction("GraphicsScripting::BlitMaterial")]
         extern private static void Internal_BlitMaterial5(Texture source, RenderTexture dest, [NotNull] Material mat, int pass, bool setRT);
@@ -660,27 +666,31 @@ namespace UnityEngine
     [StructLayout(LayoutKind.Sequential)]
     public struct FrameTiming
     {
-        // CPU events
+        // Duration
+        [NativeName("totalFrameTime")]            public double cpuFrameTime;
+        [NativeName("mainThreadActiveTime")]      public double cpuMainThreadFrameTime;
+        [NativeName("mainThreadPresentWaitTime")] public double cpuMainThreadPresentWaitTime;
+        [NativeName("renderThreadActiveTime")]    public double cpuRenderThreadFrameTime;
+        [NativeName("gpuFrameTime")]              public double gpuFrameTime;
 
-        [NativeName("m_CPUTimePresentCalled")]  public UInt64 cpuTimePresentCalled;
-        [NativeName("m_CPUFrameTime")]          public double cpuFrameTime;
+        // Timestamps
+        [NativeName("frameStartTimestamp")]      public UInt64 frameStartTimestamp;
+        [NativeName("firstSubmitTimestamp")]     public UInt64 firstSubmitTimestamp;
+        [NativeName("presentFrameTimestamp")]    public UInt64 cpuTimePresentCalled;
+        [NativeName("frameCompleteTimestamp")]   public UInt64 cpuTimeFrameComplete;
 
-        // GPU events
-
-        //This is the time the GPU finishes rendering the frame and interrupts the CPU
-        [NativeName("m_CPUTimeFrameComplete")]  public UInt64 cpuTimeFrameComplete;
-        [NativeName("m_GPUFrameTime")]          public double gpuFrameTime;
-
-        //Linked data
-
-        [NativeName("m_HeightScale")]           public float heightScale;
-        [NativeName("m_WidthScale")]            public float widthScale;
-        [NativeName("m_SyncInterval")]          public UInt32 syncInterval;
+        // Linked dynamic resolution data
+        [NativeName("heightScale")]              public float heightScale;
+        [NativeName("widthScale")]               public float widthScale;
+        [NativeName("syncInterval")]             public UInt32 syncInterval;
     }
 
     [StaticAccessor("GetUncheckedRealGfxDevice().GetFrameTimingManager()", StaticAccessorType.Dot)]
     static public class FrameTimingManager
     {
+        [StaticAccessor("FrameTimingManager", StaticAccessorType.DoubleColon)]
+        static extern public bool IsFeatureEnabled();
+
         static extern public void CaptureFrameTimings();
         static extern public UInt32 GetLatestTimings(UInt32 numFrames, FrameTiming[] timings);
 

@@ -23,6 +23,7 @@ namespace UnityEditor.Search
         private QueryAddNewBlock m_AddBlock;
         private QueryTextFieldBlock m_TextBlock;
         private SearchField m_SearchField;
+        private bool m_ReadOnly;
 
         private readonly string m_SearchText;
         private readonly SearchContext m_Context;
@@ -31,7 +32,6 @@ namespace UnityEditor.Search
         public float width => m_BuilderWidth;
         public float height => m_BuilderHeight;
 
-        private bool m_ReadOnly;
         public bool @readonly
         {
             get
@@ -44,15 +44,13 @@ namespace UnityEditor.Search
                 if (blocks != null)
                 {
                     foreach (var b in blocks)
-                    {
                         b.@readonly = value;
-                    }
                 }
             }
         }
 
         public Rect rect => m_LayoutRect;
-        public bool drawBackground;
+        public bool drawBackground { get; set; }
         public List<QueryBlock> blocks { get; private set; }
         public List<QueryError> errors { get; private set; }
 
@@ -76,6 +74,9 @@ namespace UnityEditor.Search
         }
 
         public bool valid => errors.Count == 0;
+
+        public QueryBlock currentBlock => selectedBlocks.FirstOrDefault();
+        public IEnumerable<QueryBlock> selectedBlocks => EnumerateBlocks().Where(b => b.selected);
 
         protected QueryBuilder()
         {
@@ -120,9 +121,6 @@ namespace UnityEditor.Search
             searchView?.Repaint();
         }
 
-        public QueryBlock currentBlock => selectedBlocks.FirstOrDefault();
-        public IEnumerable<QueryBlock> selectedBlocks => EnumerateBlocks().Where(b => b.selected);
-
         public void SetSelection(IEnumerable<int> selectedBlockIndexes)
         {
             foreach(var toUnselect in selectedBlocks)
@@ -164,17 +162,15 @@ namespace UnityEditor.Search
             m_LayoutRect.height = m_BuilderHeight;
             if (createLayout)
             {
-                if (m_SearchField == null)
+                if (!drawBackground)
                 {
                     GUILayoutUtility.GetRect(m_LayoutRect.width, m_LayoutRect.height);
                 }
                 else
                 {
                     GUILayoutUtility.GetRect(m_LayoutRect.width, m_LayoutRect.height + Styles.searchField.margin.bottom, Styles.queryBuilderToolbar);
-                }
-
-                if (drawBackground)
                     DrawBackground(evt);
+                }
             }
 
             DrawBlocks(evt);
@@ -276,13 +272,31 @@ namespace UnityEditor.Search
                     }
                 }
 
-                var query = m_QueryEngine.Parse(searchQuery);
-                if (HasFlag(SearchFlags.ShowErrorsWithResults) && !query.valid)
-                    errors.AddRange(query.errors);
+                SearchExpression rootExpression = null;
+                try
+                {
+                    rootExpression = SearchExpression.Parse(searchText);
+                }
+                catch(SearchExpressionParseException)
+                {
 
-                var rootNode = query.queryGraph.root;
-                if (rootNode != null)
-                    ParseNode(rootNode, newBlocks);
+                }
+
+                if (rootExpression != null && rootExpression.types.HasAny(SearchExpressionType.Function))
+                {
+                    newBlocks.Add(new QueryExpressionBlock(this, rootExpression));
+                    m_SearchField = null;
+                }
+                else
+                {
+                    var query = m_QueryEngine.Parse(searchQuery);
+                    if (HasFlag(SearchFlags.ShowErrorsWithResults) && !query.valid)
+                        errors.AddRange(query.errors);
+
+                    var rootNode = query.queryGraph.root;
+                    if (rootNode != null)
+                        ParseNode(rootNode, newBlocks);
+                }
             }
 
             if (m_SearchField != null)
@@ -387,6 +401,8 @@ namespace UnityEditor.Search
 
         public QueryBlock AddProposition(in SearchProposition searchProposition)
         {
+            SetSelection(-1);
+
             if (searchProposition.data is SearchProvider provider)
                 return AddBlock(new QueryAreaBlock(this, provider));
             if (searchProposition.data is QueryBlock block)
@@ -437,10 +453,8 @@ namespace UnityEditor.Search
         {
             var currentIndex = currentBlock == block ? GetBlockIndex(block) : -1;
             blocks.Remove(block);
-            if (currentIndex != -1)
+            if (currentIndex != -1 && currentIndex < blocks.Count())
             {
-                if (currentIndex == blocks.Count())
-                    currentIndex--;
                 SetSelection(currentIndex);
             }
             Apply();
@@ -471,6 +485,9 @@ namespace UnityEditor.Search
             if (@readonly || context == null || evt.type != EventType.KeyDown)
                 return false;
 
+            if (Utils.IsEditingTextField() && GUIUtility.keyboardControl != m_TextBlock?.GetSearchField().controlID)
+                return false;
+
             if (evt.keyCode == KeyCode.Home)
             {
                 var cb = currentBlock;
@@ -485,7 +502,7 @@ namespace UnityEditor.Search
             {
                 var cb = currentBlock;
                 var currentIndex = GetBlockIndex(currentBlock);
-                if (currentIndex == -1)
+                if (m_TextBlock != null && currentIndex == -1)
                 {
                     // Focus is in the textfield:
                     var te = m_TextBlock.GetSearchField()?.GetTextEditor();
@@ -509,7 +526,7 @@ namespace UnityEditor.Search
             {
                 var currentIndex = GetBlockIndex(currentBlock);
                 var toSelectIndex = -1;
-                if (currentIndex == -1)
+                if (m_TextBlock != null && currentIndex == -1)
                 {
                     // Focus is in the textfield:
                     var te = m_TextBlock.GetSearchField()?.GetTextEditor();
@@ -535,7 +552,7 @@ namespace UnityEditor.Search
                 var currentIndex = GetBlockIndex(currentBlock);
                 if (currentIndex != -1)
                 {
-                    if (currentIndex + 1 == blocks.Count)
+                    if (m_TextBlock != null && currentIndex + 1 == blocks.Count)
                     {
                         // Put focus back in the textfield:
                         m_TextBlock.GetSearchField()?.Focus();
@@ -548,7 +565,7 @@ namespace UnityEditor.Search
             else if (evt.keyCode == KeyCode.Backspace)
             {
                 QueryBlock toRemoveBlock = currentBlock;
-                if (toRemoveBlock != null)
+                if (toRemoveBlock != null && !toRemoveBlock.@readonly)
                 {
                     RemoveBlock(toRemoveBlock);
                     evt.Use();
@@ -558,7 +575,7 @@ namespace UnityEditor.Search
             else if (evt.keyCode == KeyCode.Delete)
             {
                 var cb = currentBlock;
-                if (cb != null)
+                if (cb != null && !cb.@readonly)
                 {
                     RemoveBlock(cb);
                     evt.Use();
@@ -582,35 +599,8 @@ namespace UnityEditor.Search
                     }
                 }
             }
-            else if (!IsModifiersKeyCode(evt.keyCode))
-            {
-                // Assume that if a key is down and not handled, we want to put focus in the textfield and remove selection
-                m_TextBlock.GetSearchField()?.Focus();
-                SetSelection(-1);
-            }
-            return false;
-        }
 
-        private bool IsModifiersKeyCode(KeyCode keyCode)
-        {
-            switch (keyCode)
-            {
-                case KeyCode.AltGr:
-                case KeyCode.LeftAlt:
-                case KeyCode.LeftCommand:
-                case KeyCode.LeftControl:
-                case KeyCode.LeftShift:
-                case KeyCode.LeftWindows:
-                case KeyCode.Menu:
-                case KeyCode.RightAlt:
-                case KeyCode.RightCommand:
-                case KeyCode.RightControl:
-                case KeyCode.RightShift:
-                case KeyCode.RightWindows:
-                    return true;
-                default:
-                    return false;
-            }
+            return false;
         }
     }
 }

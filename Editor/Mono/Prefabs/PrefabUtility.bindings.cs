@@ -67,6 +67,13 @@ namespace UnityEditor
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         extern public static void SetPropertyModifications(Object targetPrefab, PropertyModification[] modifications);
 
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        [NativeThrows]
+        extern internal static bool HasApplicableObjectOverridesForTarget([NotNull] Object targetPrefab, [NotNull] Object applyTarget, bool includeDefaultOverrides);
+
+        [NativeMethod("PrefabUtilityBindings::FindNearestInstanceOfAsset", IsFreeFunction = true)]
+        extern internal static GameObject FindNearestInstanceOfAsset(Object componentOrGameObjectInstance, Object prefab);
+
         [FreeFunction]
         extern public static bool HasPrefabInstanceAnyOverrides(GameObject instanceRoot, bool includeDefaultOverrides);
 
@@ -92,11 +99,6 @@ namespace UnityEditor
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]
         extern private static GameObject[] FindAllInstancesOfPrefab_internal([NotNull("NullExceptionObject")] GameObject prefabRoot, int sceneHandle);
-
-        // Disconnects the prefab instance from its parent prefab.
-        [Obsolete("The concept of disconnecting Prefab instances has been deprecated.")]
-        [FreeFunction]
-        extern public static void DisconnectPrefabInstance(Object targetObject);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]
@@ -126,11 +128,6 @@ namespace UnityEditor
         [NativeMethod("FindInstanceRootGameObject", IsFreeFunction = true)]
         [Obsolete("FindValidUploadPrefabInstanceRoot is deprecated, please use GetOutermostPrefabInstanceRoot instead.")]
         extern public static GameObject FindValidUploadPrefabInstanceRoot([NotNull("NullExceptionObject")] GameObject target);
-
-        // Connects the game object to the prefab that it was last connected to.
-        [FreeFunction]
-        [Obsolete("Use RevertPrefabInstance.")]
-        extern public static bool ReconnectToLastPrefab([NotNull("NullExceptionObject")] GameObject go);
 
         // Resets the properties of the component or game object to the parent prefab state
         [Obsolete("Use RevertObjectOverride.")]
@@ -290,7 +287,7 @@ namespace UnityEditor
 
         // Returns true if the object is an instance of a prefab,
         // regardless of whether the instance is a regular prefab, a variant or model.
-        // Also returns true if disconnected, and if the asset is missing.
+        // Also returns if the asset is missing.
         // Is also true for prefab instances inside persistent prefab assets -
         // use IsPartOfNonAssetPrefabInstance to exclude those.
         [FreeFunction]
@@ -298,7 +295,7 @@ namespace UnityEditor
 
         // Returns true if the object is an instance of a prefab,
         // regardless of whether the instance is a regular prefab, a variant or model.
-        // Also returns true if disconnected, and if the asset is missing.
+        // Also returns true if the asset is missing.
         // Is false for prefab instances inside persistent prefab assets -
         // use IsPartOfPrefabInstance to include those.
         // Note that prefab instances in prefab mode are not assets/persistent since technically,
@@ -328,9 +325,6 @@ namespace UnityEditor
         // Examples are Model Prefabs and Prefabs in read-only folders.
         [FreeFunction]
         extern public static bool IsPartOfImmutablePrefab([NotNull] Object componentOrGameObject);
-
-        [FreeFunction]
-        extern public static bool IsDisconnectedFromPrefabAsset([NotNull] Object componentOrGameObject);
 
         [FreeFunction]
         extern public static bool IsPrefabAssetMissing([NotNull] Object instanceComponentOrGameObject);

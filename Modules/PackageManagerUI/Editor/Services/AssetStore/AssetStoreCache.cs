@@ -193,17 +193,17 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual AssetStorePurchaseInfo GetPurchaseInfo(string productIdString)
         {
-            return m_PurchaseInfos.Get(productIdString);
+            return productIdString != null ? m_PurchaseInfos.Get(productIdString) : null;
         }
 
         public virtual AssetStoreProductInfo GetProductInfo(string productIdString)
         {
-            return m_ProductInfos.Get(productIdString);
+            return productIdString != null ? m_ProductInfos.Get(productIdString) : null;
         }
 
         public virtual AssetStoreLocalInfo GetLocalInfo(string productIdString)
         {
-            return m_LocalInfos.Get(productIdString);
+            return productIdString != null ? m_LocalInfos.Get(productIdString) : null;
         }
 
         public virtual void SetPurchaseInfo(AssetStorePurchaseInfo info)

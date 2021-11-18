@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace UnityEditor.Toolbars
 {
@@ -127,13 +128,19 @@ namespace UnityEditor.Toolbars
 
         internal static string GetUserInitials(string name)
         {
-            var nameElements = name?.Split(' ').Where(x => !string.IsNullOrEmpty(x)).ToArray() ?? new string[0];
+            if(string.IsNullOrEmpty(name))
+                return string.Empty;
+
+            var nameElements = Regex.Replace(name, @"/\s+/g", " ", RegexOptions.IgnoreCase).Trim().Split(' ');
+
+            nameElements = nameElements.Where(element => !string.IsNullOrEmpty(element) &&
+            Regex.IsMatch(element[0].ToString(), @"[A-Za-z\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]")).ToArray() ?? new string[0];
+
             if (nameElements.Length > 1)
-                return $"{ nameElements[0][0] }{ nameElements[nameElements.Length - 1][0] }";
+                return $"{ nameElements[0][0] }{ nameElements[nameElements.Length - 1][0] }".ToUpper();
             else if (nameElements.Length == 1)
-                return $"{ nameElements[0][0] }";
+                return $"{ nameElements[0][0] }".ToUpper();
             return string.Empty;
         }
-
     }
 }

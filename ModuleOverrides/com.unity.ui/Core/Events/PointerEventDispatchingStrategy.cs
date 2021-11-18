@@ -14,13 +14,13 @@ namespace UnityEngine.UIElements
         public virtual void DispatchEvent(EventBase evt, IPanel panel)
         {
             SetBestTargetForEvent(evt, panel);
-            SendEventToTarget(evt);
+            SendEventToTarget(evt, panel);
             evt.stopDispatch = true;
         }
 
-        static void SendEventToTarget(EventBase evt)
+        static void SendEventToTarget(EventBase evt, IPanel panel)
         {
-            if (evt.target != null)
+            if (evt.target is VisualElement ve && ve.panel == panel)
             {
                 EventDispatchUtilities.PropagateEvent(evt);
             }

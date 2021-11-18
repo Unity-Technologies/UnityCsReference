@@ -281,14 +281,26 @@ namespace Unity.UI.Builder
             else if (attributeType.IsGenericType && attributeType.GetGenericArguments()[0].IsEnum)
             {
                 var propInfo = attributeType.GetProperty("defaultValue");
-                var enumValue = propInfo.GetValue(attribute, null) as Enum;
+                var defaultEnumValue = propInfo.GetValue(attribute, null) as Enum;
 
-                // Create and initialize the EnumField.
-                var uiField = new EnumField(fieldLabel);
-                uiField.Init(enumValue);
+                if (defaultEnumValue.GetType().GetCustomAttribute<FlagsAttribute>() == null)
+                {
+                    // Create and initialize the EnumField.
+                    var uiField = new EnumField(fieldLabel);
+                    uiField.Init(defaultEnumValue);
 
-                uiField.RegisterValueChangedCallback(OnAttributeValueChange);
-                fieldElement = uiField;
+                    uiField.RegisterValueChangedCallback(OnAttributeValueChange);
+                    fieldElement = uiField;
+                }
+                else
+                {
+                    // Create and initialize the EnumField.
+                    var uiField = new EnumFlagsField(fieldLabel);
+                    uiField.Init(defaultEnumValue);
+
+                    uiField.RegisterValueChangedCallback(OnAttributeValueChange);
+                    fieldElement = uiField;
+                }
             }
             else
             {
@@ -311,7 +323,7 @@ namespace Unity.UI.Builder
             // Setup field binding path.
             fieldElement.bindingPath = attribute.name;
             fieldElement.tooltip = attribute.name;
-			
+
             // Context menu.
             fieldElement.AddManipulator(new ContextualMenuManipulator(BuildAttributeFieldContextualMenu));
 
@@ -342,6 +354,10 @@ namespace Unity.UI.Builder
                 {
 // Use old API only if version is >= 2019_4 and <= 2020_3
                     return scrollView.verticalScrollerVisibility != ScrollerVisibility.Hidden;
+                }
+                else if (attributeName == "touch-scroll-type")
+                {
+                    return scrollView.touchScrollBehavior;
                 }
             }
             else if (currentVisualElement is ListView listView)
@@ -374,8 +390,20 @@ namespace Unity.UI.Builder
 
             if (veValueAbstract == null)
             {
-                if (currentVisualElement is EnumField && attribute.name == "value")
-                    fieldElement.SetEnabled(false);
+                if (currentVisualElement is EnumField defaultEnumField &&
+                    attribute.name == "value")
+                {
+                    if (defaultEnumField.type == null)
+                    {
+                        fieldElement.SetEnabled(false);
+                    }
+                    else
+                    {
+                        ((EnumField)fieldElement).PopulateDataFromType(defaultEnumField.type);
+                        fieldElement.SetEnabled(true);
+                    }
+                }
+
                 return;
             }
 
@@ -458,13 +486,12 @@ namespace Unity.UI.Builder
             }
             else if (attributeType.IsGenericType &&
                      attributeType.GetGenericArguments()[0].IsEnum &&
-                     fieldElement is EnumField)
+                     fieldElement is BaseField<Enum>)
             {
                 var propInfo = attributeType.GetProperty("defaultValue");
-                var enumValue = propInfo.GetValue(attribute, null) as Enum;
+                var defaultEnumValue = propInfo.GetValue(attribute, null) as Enum;
 
-                // Create and initialize the EnumField.
-                var uiField = fieldElement as EnumField;
+                var uiField = fieldElement as BaseField<Enum>;
 
                 string enumAttributeValueStr;
                 if (m_Selection.selectionType == BuilderSelectionType.ElementInTemplateInstance)
@@ -491,8 +518,23 @@ namespace Unity.UI.Builder
                 // Set the value from the UXML attribute.
                 if (!string.IsNullOrEmpty(enumAttributeValueStr))
                 {
-                    var parsedValue = Enum.Parse(enumValue.GetType(), enumAttributeValueStr, true) as Enum;
-                    uiField.SetValueWithoutNotify(parsedValue);
+                    try
+                    {
+                        var parsedValue = Enum.Parse(defaultEnumValue.GetType(), enumAttributeValueStr, true) as Enum;
+                        uiField.SetValueWithoutNotify(parsedValue);
+                    }
+                    catch (ArgumentException exception)
+                    {
+                        Debug.LogException(exception);
+                        // use default if anything went wrong
+                        uiField.SetValueWithoutNotify(defaultEnumValue);
+                    }
+                    catch (OverflowException exception)
+                    {
+                        Debug.LogException(exception);
+                        // use default if anything went wrong
+                        uiField.SetValueWithoutNotify(defaultEnumValue);
+                    }
                 }
             }
             else if (fieldElement is TextField)
@@ -623,13 +665,13 @@ namespace Unity.UI.Builder
             }
             else if (attributeType.IsGenericType &&
                      attributeType.GetGenericArguments()[0].IsEnum &&
-                     fieldElement is EnumField)
+                     fieldElement is BaseField<Enum>)
             {
                 var propInfo = attributeType.GetProperty("defaultValue");
-                var enumValue = propInfo.GetValue(attribute, null) as Enum;
+                var defaultEnumValue = propInfo.GetValue(attribute, null) as Enum;
 
-                var uiField = fieldElement as EnumField;
-                uiField.SetValueWithoutNotify(enumValue);
+                var uiField = fieldElement as BaseField<Enum>;
+                uiField.SetValueWithoutNotify(defaultEnumValue);
             }
             else if (fieldElement is TextField)
             {
@@ -924,7 +966,7 @@ namespace Unity.UI.Builder
 
         void OnAttributeValueChange(ChangeEvent<Enum> evt)
         {
-            var field = evt.target as EnumField;
+            var field = evt.target as BaseField<Enum>;
             PostAttributeValueChange(field, evt.newValue.ToString());
         }
 

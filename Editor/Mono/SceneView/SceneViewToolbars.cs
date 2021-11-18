@@ -2,12 +2,18 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using UnityEditor.Overlays;
+using UnityEditor.Toolbars;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
+     // See also
+     // - UIServiceEditor/SceneView/SceneViewToolbarElements.cs
+     // - UIServiceEditor/EditorToolbar/ToolbarElements/BuiltinTools.cs
+
     [Overlay(typeof(SceneView), k_Id, "Tools", true)]
     [Icon("Icons/Overlays/ToolsToggle.png")]
     class TransformToolsOverlayToolBar : ToolbarOverlay
@@ -40,20 +46,20 @@ namespace UnityEditor
     {
         const string k_Id = "unity-search-toolbar";
 
+        public OverlayToolbar CreateHorizontalToolbarContent()
+        {
+            return EditorToolbar.CreateOverlay(toolbarElements, containerWindow);
+        }
+
         public override VisualElement CreatePanelContent()
         {
-            return new IMGUIContainer { onGUIHandler = OnGUI };
+            return CreatePanelContent();
         }
 
-        void OnGUI()
+        public IEnumerable<string> toolbarElements
         {
-            EditorGUILayout.BeginHorizontal();
-            if (containerWindow is SceneView sceneView)
-                sceneView.ToolbarSearchFieldGUI();
-            EditorGUILayout.EndHorizontal();
+            get { yield return "SceneView/Search"; }
         }
-
-        public VisualElement CreateHorizontalToolbarContent() => CreatePanelContent();
     }
 
     [Overlay(typeof(SceneView), k_Id, "Grid and Snap", true)]

@@ -152,7 +152,7 @@ namespace UnityEditor
                 {
                     // Ensure colored margin here for component body doesn't overlap colored margin from InspectorTitlebar,
                     // and extends down to exactly touch the separator line between/after components.
-                    EditorGUI.DrawOverrideBackground(new Rect(position.x, position.y + 3 + adjust, position.width,
+                    EditorGUI.DrawOverrideBackgroundApplicable(new Rect(position.x, position.y + 3 + adjust, position.width,
                         position.height - 2));
                 }
             }

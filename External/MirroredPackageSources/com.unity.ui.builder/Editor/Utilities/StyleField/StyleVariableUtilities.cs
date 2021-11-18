@@ -60,64 +60,38 @@ namespace Unity.UI.Builder
             }
         }
 
-        private static List<VariableInfo> s_AllVariables = new List<VariableInfo>();
-
         public static IEnumerable<VariableInfo> GetAllAvailableVariables(VisualElement currentVisualElement, StyleValueType[] compatibleTypes, bool editorExtensionMode)
         {
-            s_AllVariables.Clear();
-            HashSet<string> names = new HashSet<string>();
-
-            // Traverse the element's parent hierarchy
-            var current = currentVisualElement;
-
-            while (current != null)
-            {
-                var customStyles = current.computedStyle.customProperties;
-
-                if (customStyles != null)
+            return currentVisualElement.variableContext.variables
+                .Where(variable =>
                 {
-                    foreach (var varPair in customStyles)
+                    if (variable.name == BuilderConstants.SelectedStyleRulePropertyName)
+                        return false;
+
+                    if (!editorExtensionMode && variable.sheet.IsUnityEditorStyleSheet())
+                        return false;
+
+                    var valueHandle = variable.handles[0];
+                    var valueType = valueHandle.valueType;
+                    if (valueType == StyleValueType.Enum)
                     {
-                        var varName = varPair.Key;
-
-                        if (varName == BuilderConstants.SelectedStyleRulePropertyName)
-                            continue;
-                        var propValue = varPair.Value;
-
-                        if (!editorExtensionMode && propValue.sheet.IsUnityEditorStyleSheet())
-                            continue;
-
-                        var valueType = propValue.handle.valueType;
-
-                        // If the value of the style property is a color name (red, black, ...) then threat it as a color and not an enum
-                        if (propValue.handle.valueType == StyleValueType.Enum)
-                        {
-                            var colorName = propValue.sheet.ReadAsString(propValue.handle);
-                            if (StyleSheetColor.TryGetColor(colorName.ToLower(), out var color))
-                                valueType = StyleValueType.Color;
-                        }
-
-                        if ((compatibleTypes == null || compatibleTypes.Contains(valueType)) && !varName.StartsWith("--unity-theme") && !names.Contains(varName))
-                        {
-                            names.Add(varName);
-                            string descr = null;
-                            if (propValue.sheet.IsUnityEditorStyleSheet())
-                            {
-                                editorVariableDescriptions.TryGetValue(varName, out descr);
-                            }
-                            s_AllVariables.Add(new VariableInfo()
-                            {
-                                name = varName,
-                                value = propValue,
-                                description = descr
-                            });
-                        }
+                        var colorName = variable.sheet.ReadAsString(valueHandle);
+                        if (StyleSheetColor.TryGetColor(colorName.ToLower(), out var color))
+                            valueType = StyleValueType.Color;
                     }
-                }
-                current = current.parent;
-            }
 
-            return s_AllVariables;
+                    return (compatibleTypes == null || compatibleTypes.Contains(valueType)) && !variable.name.StartsWith("--unity-theme");
+                })
+                .Distinct()
+                .Select(variable =>
+                {
+                    string descr = null;
+                    if (variable.sheet.IsUnityEditorStyleSheet())
+                    {
+                        editorVariableDescriptions.TryGetValue(variable.name, out descr);
+                    }
+                    return new VariableInfo(variable, descr);
+                });
         }
 
         public static VariableEditingHandler GetOrCreateVarHandler(BindableElement field)
@@ -145,88 +119,28 @@ namespace Unity.UI.Builder
 
         public static VariableInfo FindVariable(VisualElement currentVisualElement, string variableName, bool editorExtensionMode)
         {
-            // Traverse the element's parent hierarchy
-            var current = currentVisualElement;
+            var variables = currentVisualElement.variableContext.variables;
 
-            while (current != null)
+            for (int i = variables.Count - 1; i >= 0; --i)
             {
-                var customStyles = current.computedStyle.customProperties;
-                if (customStyles != null)
+                var variable = variables[i];
+
+                if (!editorExtensionMode && variable.sheet.isDefaultStyleSheet)
+                    continue;
+
+                if (variables[i].name == variableName)
                 {
-                    foreach (var varPair in customStyles)
+                    string descr = null;
+                    if (variable.sheet.isDefaultStyleSheet)
                     {
-                        var varName = varPair.Key;
-                        var propValue = varPair.Value;
-
-                        if (!editorExtensionMode && propValue.sheet.isDefaultStyleSheet)
-                            continue;
-                        if (varName == variableName)
-                        {
-                            string descr = null;
-                            if (propValue.sheet.isDefaultStyleSheet)
-                            {
-                                editorVariableDescriptions.TryGetValue(varName, out descr);
-                            }
-                            return new VariableInfo()
-                            {
-                                name = varName,
-                                value = propValue,
-                                description = descr
-                            };
-                        }
+                        editorVariableDescriptions.TryGetValue(variableName, out descr);
                     }
+
+                    return new VariableInfo(variable, descr);
                 }
-                current = current.parent;
-            }
-            return null;
-        }
-
-        public static bool FindVariableOrigin(VisualElement currentVisualElement, string variableName, out StyleSheet outStyleSheet, out StyleComplexSelector outSelector)
-        {
-            outSelector = null;
-            outStyleSheet = null;
-
-            if (string.IsNullOrEmpty(variableName))
-                return false;
-
-            // Traverse the element's parent hierarchy to find best matching selector that define the variable
-            var extractor = new MatchedRulesExtractor();
-            var current = currentVisualElement;
-
-            while (current != null)
-            {
-                extractor.selectedElementRules.Clear();
-                extractor.selectedElementStylesheets.Clear();
-                extractor.FindMatchingRules(current);
-
-                var matchedRules = extractor.selectedElementRules;
-
-                for (var i = matchedRules.Count - 1; i >= 0; --i)
-                {
-                    var matchRecord = matchedRules.ElementAt(i).matchRecord;
-                    var ruleProperty = matchRecord.sheet.FindProperty(matchRecord.complexSelector.rule, variableName);
-
-                    if (ruleProperty != null)
-                    {
-                        outSelector = matchRecord.complexSelector;
-                        outStyleSheet = matchRecord.sheet;
-                        break;
-                    }
-                }
-
-                if (outSelector != null)
-                    break;
-
-                current = current.parent;
             }
 
-            // If the current visual element is a fake element created for the selector being edited and that the selector found is a fake selector then return the effective selector associated to the fake visual element
-            if (outSelector != null && current == currentVisualElement && StyleSheetToUss.ToUssSelector(outSelector).Contains(BuilderConstants.StyleSelectorElementName))
-            {
-                outSelector = currentVisualElement.GetStyleComplexSelector();
-            }
-
-            return outSelector != null;
+            return default;
         }
     }
 }

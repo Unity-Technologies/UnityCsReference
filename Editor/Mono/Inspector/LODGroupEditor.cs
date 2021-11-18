@@ -24,6 +24,9 @@ namespace UnityEditor
         private bool m_IsPrefab;
         private bool m_IsPreset;
 
+        private int m_SelectedLODGroupCount;
+        private int m_MaxLODCountForMultiselection;
+
         private SerializedProperty m_FadeMode;
         private SerializedProperty m_AnimateCrossFading;
         private SerializedProperty m_LastLODIsBillboard;
@@ -90,6 +93,8 @@ namespace UnityEditor
             EditorApplication.update += Update;
 
             m_LODGroup = (LODGroup)target;
+            m_SelectedLODGroupCount = targets.Length;
+            m_MaxLODCountForMultiselection = GetMaxLODCountForMultiSelection();
 
             // Calculate if the newly selected LOD group is a prefab... they require special handling
             m_IsPrefab = PrefabUtility.IsPartOfPrefabAsset(m_LODGroup.gameObject);
@@ -215,14 +220,21 @@ namespace UnityEditor
 
         public void OnSceneGUI()
         {
+            if (!target)
+                return;
+
+            if (m_SelectedLODGroupCount > 1)
+                return;
+
+            LODGroup lodGroup = (LODGroup)target;
             Camera camera = SceneView.lastActiveSceneView.camera;
-            var worldReferencePoint = LODUtility.CalculateWorldReferencePoint(m_LODGroup);
+            var worldReferencePoint = LODUtility.CalculateWorldReferencePoint(lodGroup);
 
             if (Vector3.Dot(camera.transform.forward,
                 (camera.transform.position - worldReferencePoint).normalized) > 0)
                 return;
 
-            var info = LODUtility.CalculateVisualizationData(camera, m_LODGroup, -1);
+            var info = LODUtility.CalculateVisualizationData(camera, lodGroup, -1);
             float size = info.worldSpaceSize;
 
             // Draw cap around LOD to visualize it's size
@@ -346,14 +358,12 @@ namespace UnityEditor
             if (camera == null)
                 return;
 
-            var count = GetMaxLODCountForMultiSelection();
-
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < m_MaxLODCountForMultiselection; i++)
             {
                 if (targets.Length == 1)
                     DrawLODGroupFoldout(camera, i, ref m_LODGroupFoldoutHeaderValues[i]);
                 else
-                    DrawLODTransitionPropertyField(camera, i, count);
+                    DrawLODTransitionPropertyField(camera, i, m_MaxLODCountForMultiselection);
             }
         }
 

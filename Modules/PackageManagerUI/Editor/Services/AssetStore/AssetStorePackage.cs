@@ -71,6 +71,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_Labels = new List<string>();
             m_PurchasedTimeTicks = 0;
+
+            LinkPackageAndVersions();
         }
 
         public AssetStorePackage(AssetStoreUtils assetStoreUtils, IOProxy ioProxy, AssetStorePurchaseInfo purchaseInfo, AssetStoreProductInfo productInfo, AssetStoreLocalInfo localInfo = null)
@@ -116,6 +118,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }
                 m_VersionList.AddVersion(latestVersion);
             }
+
+            LinkPackageAndVersions();
         }
 
         public AssetStorePackage(AssetStoreUtils assetStoreUtils, IOProxy ioProxy, AssetStorePurchaseInfo purchaseInfo, AssetStoreProductInfo productInfo, UpmPackage package)
@@ -154,11 +158,15 @@ namespace UnityEditor.PackageManager.UI.Internal
                 AddError(new UIError(UIErrorCode.AssetStorePackageError, L10n.Tr("Unable to retrieve asset product details.")));
             else if (string.IsNullOrEmpty(package?.name))
                 AddError(new UIError(UIErrorCode.AssetStorePackageError, L10n.Tr("Unable to retrieve asset package info.")));
+
+            LinkPackageAndVersions();
         }
 
         public override IPackage Clone()
         {
-            return (IPackage)MemberwiseClone();
+            var clone = (BasePackage)MemberwiseClone();
+            clone.LinkPackageAndVersions();
+            return clone;
         }
     }
 }

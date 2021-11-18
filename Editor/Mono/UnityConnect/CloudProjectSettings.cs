@@ -9,6 +9,10 @@ namespace UnityEditor
 {
     public class CloudProjectSettings
     {
+        /// <summary>
+        /// The user ID is derived from the user name without the domain (removing all characters starting with '@'),
+        /// formatted in lowercase with no symbols.
+        /// </summary>
         public static string userId
         {
             get
@@ -17,6 +21,9 @@ namespace UnityEditor
             }
         }
 
+        /// <summary>
+        /// The user name is the email used for the user's Unity account.
+        /// </summary>
         public static string userName
         {
             get
@@ -38,6 +45,17 @@ namespace UnityEditor
             UnityConnect.instance.RefreshAccessToken(refresh);
         }
 
+        /// <summary>
+        /// This method shows the Unity login popup.
+        /// </summary>
+        public static void ShowLogin()
+        {
+            UnityConnect.instance.ShowLogin();
+        }
+
+        /// <summary>
+        /// The Project ID, or GUID.
+        /// </summary>
         public static string projectId
         {
             get
@@ -46,6 +64,9 @@ namespace UnityEditor
             }
         }
 
+        /// <summary>
+        /// The name of the project.
+        /// </summary>
         public static string projectName
         {
             get
@@ -54,6 +75,9 @@ namespace UnityEditor
             }
         }
 
+        /// <summary>
+        /// The Organization ID, formatted in lowercase with no symbols.
+        /// </summary>
         public static string organizationId
         {
             get
@@ -62,11 +86,47 @@ namespace UnityEditor
             }
         }
 
+        /// <summary>
+        /// The Organization name used on the dashboard.
+        /// </summary>
         public static string organizationName
         {
             get
             {
                 return UnityConnect.instance.GetOrganizationName();
+            }
+        }
+
+        /// <summary>
+        /// The key of the organization used on the dashboard
+        /// </summary>
+        public static string organizationKey
+        {
+            get
+            {
+                return UnityConnect.instance.GetOrganizationForeignKey();
+            }
+        }
+
+        /// <summary>
+        /// The current COPPA compliance state.
+        /// </summary>
+        public static CoppaCompliance coppaCompliance
+        {
+            get
+            {
+                return UnityConnect.instance.projectInfo.COPPA;
+            }
+        }
+
+        /// <summary>
+        /// Returns true if the project has been bound.
+        /// </summary>
+        public static bool projectBound
+        {
+            get
+            {
+                return UnityConnect.instance.projectInfo.projectBound;
             }
         }
     }

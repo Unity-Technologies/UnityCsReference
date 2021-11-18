@@ -36,6 +36,7 @@ namespace UnityEngine.Profiling
     [UsedByNativeCode]
     [MovedFrom("UnityEngine")]
     [NativeHeader("Runtime/Allocator/MemoryManager.h")]
+    [NativeHeader("Runtime/Profiler/MemoryProfiler.h")]
     [NativeHeader("Runtime/Profiler/Profiler.h")]
     [NativeHeader("Runtime/Profiler/ScriptBindings/Profiler.bindings.h")]
     [NativeHeader("Runtime/ScriptingBackend/ScriptingApi.h")]
@@ -306,8 +307,8 @@ namespace UnityEngine.Profiling
         [NativeConditional("ENABLE_MEMORY_MANAGER")]
         private extern static long InternalGetTotalFragmentationInfo(IntPtr pStats, int count);
 
-        [NativeMethod(Name = "GetRegisteredGFXDriverMemory")]
-        [StaticAccessor("GetMemoryManager()", StaticAccessorType.Dot)]
+        [NativeMethod(Name = "GetRegisteredGFXDriverMemory", IsThreadSafe = true)]
+        [StaticAccessor("MemoryProfiler", StaticAccessorType.DoubleColon)]
         [NativeConditional("ENABLE_PROFILER")]
         public extern static long GetAllocatedMemoryForGraphicsDriver();
 

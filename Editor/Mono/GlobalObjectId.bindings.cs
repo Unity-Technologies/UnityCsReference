@@ -64,18 +64,13 @@ namespace UnityEditor
         {
             id = new GlobalObjectId();
             string[] tokens = stringValue.Split('-');
-            if (tokens.Length != 5 || tokens[0] != "GlobalObjectId_V1")
+            if (tokens.Length != 5 || !string.Equals(tokens[0], "GlobalObjectId_V1", StringComparison.Ordinal))
                 return false;
 
-            int identifierType;
-            GUID assetGUID;
-            ulong targetObject;
-            ulong targetPrefab;
-
-            if (!int.TryParse(tokens[1], out identifierType) ||
-                !GUID.TryParse(tokens[2], out assetGUID) ||
-                !ulong.TryParse(tokens[3], out targetObject) ||
-                !ulong.TryParse(tokens[4], out targetPrefab))
+            if (!int.TryParse(tokens[1], out var identifierType) ||
+                !GUID.TryParse(tokens[2], out var assetGUID) ||
+                !ulong.TryParse(tokens[3], out var targetObject) ||
+                !ulong.TryParse(tokens[4], out var targetPrefab))
                 return false;
 
             id.m_IdentifierType = identifierType;

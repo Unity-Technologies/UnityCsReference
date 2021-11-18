@@ -6,7 +6,7 @@ using UnityEngine;
 using System.Linq;
 using UnityEngine.SceneManagement;
 using System;
-using System.Collections.Generic;
+using UnityEditor.SceneManagement;
 
 namespace UnityEditor
 {
@@ -18,6 +18,8 @@ namespace UnityEditor
             public Transform Transform { get; private set; }
             public VisualisationState State { get; set; }
             public bool HasBody { get; private set; }
+
+            [SerializeField] private bool m_ShowFolduot = false;
 
             private Rigidbody m_Rigidbody;
             private ArticulationBody m_Articulation;
@@ -64,10 +66,8 @@ namespace UnityEditor
 
             public bool IsValid()
             {
-                return m_Rigidbody != null || m_Articulation != null;
+                return m_Rigidbody || m_Articulation;
             }
-
-            // Draw info tables -------
 
             public void DrawInfoTable()
             {
@@ -80,23 +80,37 @@ namespace UnityEditor
                     DrawArticulationBodyInfo(m_Articulation);
             }
 
+            public void Visualize()
+            {
+                if (!HasBody)
+                    return;
+
+                var showCenterOfMass = (State & VisualisationState.CenterOfMass) == VisualisationState.CenterOfMass;
+                var showInertiaTensor = (State & VisualisationState.InertiaTensor) == VisualisationState.InertiaTensor;
+
+                if (m_Rigidbody)
+                    VisualizeRigidbody(m_Rigidbody, showCenterOfMass, showInertiaTensor);
+                else if (m_Articulation)
+                    VisualizeArticulationBody(m_Articulation, showCenterOfMass, showInertiaTensor);
+            }
+
             private void DrawRigidbodyInfo(Rigidbody body)
             {
                 EditorGUI.indentLevel++;
                 EditorGUI.BeginDisabledGroup(true);
-                EditorGUILayout.FloatField("Speed", body.velocity.magnitude);
-                EditorGUILayout.Vector3Field("Velocity", body.velocity);
-                EditorGUILayout.Vector3Field("Angular Velocity", body.angularVelocity);
-                EditorGUILayout.Vector3Field("Inertia Tensor", body.inertiaTensor);
-                EditorGUILayout.Vector3Field("Inertia Tensor Rotation", body.inertiaTensorRotation.eulerAngles);
-                EditorGUILayout.Vector3Field("Local Center of Mass", body.centerOfMass);
-                EditorGUILayout.Vector3Field("World Center of Mass", body.worldCenterOfMass);
-                EditorGUILayout.LabelField("Sleep State", body.IsSleeping() ? "Asleep" : "Awake");
-                EditorGUILayout.FloatField("Sleep Threshold", body.sleepThreshold);
-                EditorGUILayout.FloatField("Max Linear Velocity", body.maxLinearVelocity);
-                EditorGUILayout.FloatField("Max Angular Velocity", body.maxAngularVelocity);
-                EditorGUILayout.FloatField("Solver Iterations", body.solverIterations);
-                EditorGUILayout.FloatField("Solver Velocity Iterations", body.solverVelocityIterations);
+                EditorGUILayout.FloatField(Style.infoSpeed                  , body.velocity.magnitude);
+                EditorGUILayout.Vector3Field(Style.infoVel                  , body.velocity);
+                EditorGUILayout.Vector3Field(Style.infoAngVel               , body.angularVelocity);
+                EditorGUILayout.Vector3Field(Style.infoInertiaTensor        , body.inertiaTensor);
+                EditorGUILayout.Vector3Field(Style.infoInertiaTensorRotation, body.inertiaTensorRotation.eulerAngles);
+                EditorGUILayout.Vector3Field(Style.infoLocalCenterOfMass    , body.centerOfMass);
+                EditorGUILayout.Vector3Field(Style.infoWorldCenterOfMass    , body.worldCenterOfMass);
+                EditorGUILayout.LabelField(Style.infoSleepState             , body.IsSleeping() ? Style.sleep : Style.awake);
+                EditorGUILayout.FloatField(Style.infoSleepThreshold         , body.sleepThreshold);
+                EditorGUILayout.FloatField(Style.infoMaxLinVel              , body.maxLinearVelocity);
+                EditorGUILayout.FloatField(Style.infoMaxAngVel              , body.maxAngularVelocity);
+                EditorGUILayout.FloatField(Style.infoSolverIterations       , body.solverIterations);
+                EditorGUILayout.FloatField(Style.infoSolverVelIterations    , body.solverVelocityIterations);
                 EditorGUI.EndDisabledGroup();
                 EditorGUI.indentLevel--;
             }
@@ -105,33 +119,59 @@ namespace UnityEditor
             {
                 EditorGUI.indentLevel++;
                 EditorGUI.BeginDisabledGroup(true);
-                EditorGUILayout.FloatField("Speed", body.velocity.magnitude);
-                EditorGUILayout.Vector3Field("Velocity", body.velocity);
-                EditorGUILayout.Vector3Field("Angular Velocity", body.angularVelocity);
-                EditorGUILayout.Vector3Field("Inertia Tensor", body.inertiaTensor);
-                EditorGUILayout.Vector3Field("Inertia Tensor Rotation", body.inertiaTensorRotation.eulerAngles);
-                EditorGUILayout.Vector3Field("Local Center of Mass", body.centerOfMass);
-                EditorGUILayout.Vector3Field("World Center of Mass", body.worldCenterOfMass);
-                EditorGUILayout.LabelField("Sleep State", body.IsSleeping() ? "Asleep" : "Awake");
-                EditorGUILayout.FloatField("Sleep Threshold", body.sleepThreshold);
-                EditorGUILayout.FloatField("Max Linear Velocity", body.maxLinearVelocity);
-                EditorGUILayout.FloatField("Max Angular Velocity", body.maxAngularVelocity);
-                EditorGUILayout.FloatField("Solver Iterations", body.solverIterations);
-                EditorGUILayout.FloatField("Solver Velocity Iterations", body.solverVelocityIterations);
-                EditorGUILayout.IntField("Body Index", body.index);
+                EditorGUILayout.FloatField(Style.infoSpeed                  , body.velocity.magnitude);
+                EditorGUILayout.Vector3Field(Style.infoVel                  , body.velocity);
+                EditorGUILayout.Vector3Field(Style.infoAngVel               , body.angularVelocity);
+                EditorGUILayout.Vector3Field(Style.infoInertiaTensor        , body.inertiaTensor);
+                EditorGUILayout.Vector3Field(Style.infoInertiaTensorRotation, body.inertiaTensorRotation.eulerAngles);
+                EditorGUILayout.Vector3Field(Style.infoLocalCenterOfMass    , body.centerOfMass);
+                EditorGUILayout.Vector3Field(Style.infoWorldCenterOfMass    , body.worldCenterOfMass);
+                EditorGUILayout.LabelField(Style.infoSleepState             , body.IsSleeping() ? Style.sleep : Style.awake);
+                EditorGUILayout.FloatField(Style.infoSleepThreshold         , body.sleepThreshold);
+                EditorGUILayout.FloatField(Style.infoMaxLinVel              , body.maxLinearVelocity);
+                EditorGUILayout.FloatField(Style.infoMaxAngVel              , body.maxAngularVelocity);
+                EditorGUILayout.FloatField(Style.infoSolverIterations       , body.solverIterations);
+                EditorGUILayout.FloatField(Style.infoSolverVelIterations    , body.solverVelocityIterations);
+                EditorGUILayout.IntField(Style.infoBodyIndex, body.index);
+
+                if (!body.isRoot && body.jointType != ArticulationJointType.FixedJoint)
+                {
+                    m_ShowFolduot = EditorGUILayout.Foldout(m_ShowFolduot, Style.infoJointInfo);
+                    if (m_ShowFolduot)
+                    {
+                        DrawArticulationReducedSpaceField(body.jointPosition, Style.infoJointPosition);
+                        DrawArticulationReducedSpaceField(body.jointVelocity, Style.infoJointVelocity);
+                        DrawArticulationReducedSpaceField(body.jointForce, Style.infoJointForce);
+                        DrawArticulationReducedSpaceField(body.jointAcceleration, Style.infoJointAcceleration);
+                    }
+                }
+
                 EditorGUI.EndDisabledGroup();
                 EditorGUI.indentLevel--;
+            }
+
+            private void DrawArticulationReducedSpaceField(ArticulationReducedSpace ars, GUIContent label)
+            {
+                if (ars.dofCount == 0)
+                    return;
+
+                if (ars.dofCount == 1)
+                    EditorGUILayout.FloatField(label, ars[0]);
+                else if (ars.dofCount == 2)
+                    EditorGUILayout.Vector2Field(label, new Vector2(ars[0], ars[1]));
+                else if (ars.dofCount == 3)
+                    EditorGUILayout.Vector3Field(label, new Vector3(ars[0], ars[1], ars[2]));
             }
         }
 
         private bool DrawInfoTabHeader()
         {
-            m_Collumns.value = EditorGUILayout.IntSlider("Number of items per row:", m_Collumns.value, 1, 10);
+            m_Collumns.value = EditorGUILayout.IntSlider(Style.numOfItems, m_Collumns.value, 1, 10);
 
             EditorGUILayout.BeginHorizontal();
 
             EditorGUILayout.LabelField("Tracked objects: " + m_TransformsToRender.Count);
-            if (GUILayout.Button("Clear locked  objects", GUILayout.MaxWidth(150f)))
+            if (GUILayout.Button(Style.clearLocked, Style.maxWidth150))
                 ClearAllLockedObjects();
 
             EditorGUILayout.EndHorizontal();
@@ -152,34 +192,37 @@ namespace UnityEditor
 
             if (!tr.IsValid())
             {
-                m_ObjectsToRemove.Add(tr.Transform);
+                m_ObjectsToRemove.AddLast(tr.Transform);
                 return;
             }
 
-            DrawObjectHeader(tr.Transform);
+            DrawObjectHeader(tr);
             tr.DrawInfoTable();
         }
 
-        private void DrawObjectHeader(Transform tr)
+        private void DrawObjectHeader(RenderedTransform renderedTransform)
         {
-            var locked = m_LockedObjects.ContainsKey(tr);
+            var locked = m_LockedObjects.ContainsKey(renderedTransform.Transform);
             var lockedPrev = locked;
 
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("GameObject: " + tr.name);
+            EditorGUILayout.LabelField("GameObject: " + renderedTransform.Transform.name);
 
             GUILayout.FlexibleSpace();
 
-            var state = locked ? m_LockedObjects[tr] : VisualisationState.None;
+            var state = locked ? m_LockedObjects[renderedTransform.Transform] : VisualisationState.None;
             var statePrev = state;
 
             EditorGUIUtility.labelWidth = 50f;
-            EditorGUILayout.LabelField("Draw Gizmos for:", GUILayout.ExpandWidth(false));
+            EditorGUILayout.LabelField(Style.drawGizmosFor, Style.notExpandWidth);
             EditorGUIUtility.labelWidth = 0f;
             state = (VisualisationState)EditorGUILayout.EnumPopup(state);
 
             if (locked)
-                m_LockedObjects[tr] = state;
+            {
+                m_LockedObjects[renderedTransform.Transform] = state;
+                renderedTransform.State = state;
+            }
             else if (state != statePrev)
             {
                 locked = true;
@@ -189,15 +232,15 @@ namespace UnityEditor
             if (state != statePrev)
                 RepaintSceneAndGameViews();
 
-            locked = EditorGUILayout.ToggleLeft("Lock", locked, GUILayout.MaxWidth(50f));
+            locked = EditorGUILayout.ToggleLeft(Style.lockToggle, locked, Style.maxWidth50);
 
             EditorGUILayout.EndHorizontal();
 
             if (locked != lockedPrev)
             {
                 if (locked)
-                    m_ObjectsToAdd.Add(new RenderedTransform(tr, state));
-                else m_ObjectsToRemove.Add(tr);
+                    m_ObjectsToAdd.AddLast(new RenderedTransform(renderedTransform.Transform, state));
+                else m_ObjectsToRemove.AddLast(renderedTransform.Transform);
 
                 RepaintSceneAndGameViews();
             }
@@ -215,7 +258,7 @@ namespace UnityEditor
             return ab != null;
         }
 
-        // Manage lists ----------
+        #region Manage lists
 
         private RenderedTransform GetNextTransform(int index)
         {
@@ -290,17 +333,32 @@ namespace UnityEditor
 
         private void OnSceneClose(Scene scene)
         {
-            ClearInvalidLockedObjects();
+            ClearInvalidObjects();
+            PhysicsDebugDraw.UpdateFilter();
+        }
+
+        private void OnSceneOpen(Scene scene, OpenSceneMode mode)
+        {
+            PhysicsDebugDraw.UpdateFilter();
         }
 
         // This is usefull when Transfrom references change and they start pointing to null Transforms
-        private void ClearInvalidLockedObjects()
+        private void ClearInvalidObjects()
         {
             foreach (var lockedObject in m_LockedObjects)
                 if (lockedObject.Key == null)
-                    m_ObjectsToRemove.Add(lockedObject.Key);
+                    m_ObjectsToRemove.AddLast(lockedObject.Key);
 
             RemoveLockedObjects();
+
+            for(int i = 0; i < m_TransformsToRender.Count; i++)
+            {
+                if(m_TransformsToRender[i].Transform == null)
+                {
+                    m_TransformsToRender.RemoveAt(i);
+                    i--;
+                }
+            }
         }
 
         private void UpdateSelection()
@@ -350,34 +408,38 @@ namespace UnityEditor
             return m_LockedObjects.ContainsKey(transform) ? m_LockedObjects[transform] : VisualisationState.None;
         }
 
-        // Gizmos
-
-        [DrawGizmo(GizmoType.InSelectionHierarchy | GizmoType.NotInSelectionHierarchy)]
-        static void DrawGizmoForRigidbody(Rigidbody rb, GizmoType gizmoType)
+        private void RecalculateItemsPerRow(int totalItems, int rows)
         {
-            if (!EditorWindow.HasOpenInstances<PhysicsDebugWindow>())
-                return;
+            m_NumberOfItemPerRow.Clear();
 
-            var state = s_Window.ShouldDrawObject(rb.transform);
-
-            var showCenterOfMass = (state & VisualisationState.CenterOfMass) == VisualisationState.CenterOfMass;
-            var showInertiaTensor = (state & VisualisationState.InertiaTensor) == VisualisationState.InertiaTensor;
-
-            VisualizeRigidbody(rb, showCenterOfMass, showInertiaTensor);
+            for (int i = 0; i < rows; i++)
+            {
+                if (totalItems > m_Collumns)
+                {
+                    m_NumberOfItemPerRow.Add(m_Collumns);
+                    totalItems -= m_Collumns;
+                }
+                else
+                {
+                    m_NumberOfItemPerRow.Add(totalItems);
+                    totalItems = 0;
+                }
+            }
         }
 
-        [DrawGizmo(GizmoType.InSelectionHierarchy | GizmoType.NotInSelectionHierarchy)]
-        static void DrawGizmoForArticulationBody(ArticulationBody ab, GizmoType gizmoType)
+        #endregion
+
+        #region Gizmos
+
+        private void DrawComAndInertia()
         {
-            if (!EditorWindow.HasOpenInstances<PhysicsDebugWindow>())
-                return;
+            foreach(var lockedObject in m_TransformsToRender)
+            {
+                if (lockedObject.State == VisualisationState.None)
+                    continue;
 
-            var state = s_Window.ShouldDrawObject(ab.transform);
-
-            var showCenterOfMass = (state & VisualisationState.CenterOfMass) == VisualisationState.CenterOfMass;
-            var showInertiaTensor = (state & VisualisationState.InertiaTensor) == VisualisationState.InertiaTensor;
-
-            VisualizeArticulationBody(ab, showCenterOfMass, showInertiaTensor);
+                lockedObject.Visualize();
+            }
         }
 
         private static void VisualizeRigidbody(Rigidbody rigidbody, bool showCenterOfMass, bool showInertiaTensor)
@@ -450,9 +512,12 @@ namespace UnityEditor
 
         private static Color ApplyAlphaToColor(Color color)
         {
+            color.a += 0.4f;
             color.a *= PhysicsVisualizationSettings.baseAlpha;
             color.a = Mathf.Clamp01(color.a);
             return color;
         }
+
+        #endregion
     }
 }

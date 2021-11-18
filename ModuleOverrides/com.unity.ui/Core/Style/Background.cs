@@ -157,6 +157,17 @@ namespace UnityEngine.UIElements
             return default;
         }
 
+        internal static IEnumerable<Type> allowedAssetTypes
+        {
+            get
+            {
+                yield return typeof(Texture2D);
+                yield return typeof(RenderTexture);
+                yield return typeof(Sprite);
+                yield return typeof(VectorImage);
+            }
+        }
+
         /// <undoc/>
         public static bool operator==(Background lhs, Background rhs)
         {

@@ -130,7 +130,8 @@ namespace UnityEditor.Experimental
             }
         }
 
-        public extern static AssetDatabaseCounters counters { get; }
+        private extern static AssetDatabaseCounters GetCounters();
+        public static AssetDatabaseCounters counters => GetCounters();
 
         [FreeFunction("CacheServerCountersResetDeltas")]
         private extern static void CacheServerCountersResetDeltas();
@@ -149,7 +150,9 @@ namespace UnityEditor.Experimental
             [FreeFunction("Virtualization_IsEnabled")] get;
         }
 
-        public extern static ArtifactID LookupArtifact(ArtifactKey artifactKey);
+        [FreeFunction("AssetDatabaseExperimental::LookupArtifact")]
+        private extern static ArtifactID _LookupArtifact(ArtifactKey artifactKey);
+        public static ArtifactID LookupArtifact(ArtifactKey artifactKey) => _LookupArtifact(artifactKey);
         public extern static ArtifactID ProduceArtifact(ArtifactKey artifactKey);
         public extern static ArtifactID ProduceArtifactAsync(ArtifactKey artifactKey);
         public extern static ArtifactID[] ProduceArtifactsAsync(GUID[] artifactKey, [uei.DefaultValue("null")] Type importerType = null);
@@ -243,7 +246,8 @@ namespace UnityEditor.Experimental
             return GetOnDemandArtifactProgress(new ArtifactKey(new GUID(guid), importerType));
         }
 
-        [FreeFunction()]
-        internal extern static Hash128 GetArtifactStaticDependencyHash(ArtifactID artifactId);
+        [FreeFunction("AssetDatabase::GetArtifactStaticDependencyHash")]
+        private extern static Hash128 _GetArtifactStaticDependencyHash(ArtifactID artifactId);
+        internal static Hash128 GetArtifactStaticDependencyHash(ArtifactID artifactID) => _GetArtifactStaticDependencyHash(artifactID);
     }
 }

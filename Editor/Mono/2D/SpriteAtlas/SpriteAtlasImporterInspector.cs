@@ -11,12 +11,12 @@ using UnityEditor.Build;
 using UnityEditor.U2D.Common;
 using UnityEditor.U2D.Interface;
 using UnityEditorInternal;
+using UnityEditor.AssetImporters;
 
 namespace UnityEditor.U2D
 {
     [CustomEditor(typeof(SpriteAtlasImporter))]
-    [ExcludeFromPreset]
-    internal class SpriteAtlasImporterInspector : Editor
+    internal class SpriteAtlasImporterInspector : AssetImporterEditor
     {
         class SpriteAtlasInspectorPlatformSettingView : TexturePlatformSettingsView
         {
@@ -116,6 +116,10 @@ namespace UnityEditor.U2D
         {
             get { return m_TargetAsset; }
         }
+        private SpriteAtlasImporter spriteAtlasImporter
+        {
+            get { return target as SpriteAtlasImporter; }
+        }
         private enum AtlasType { Undefined = -1, Master = 0, Variant = 1 }
 
         private SerializedProperty m_FilterMode;
@@ -148,11 +152,11 @@ namespace UnityEditor.U2D
 
         private float m_MipLevel = 0;
         private bool m_ShowAlpha;
-        private bool m_HasChanged = false;
 
         private List<string> m_PlatformSettingsOptions;
         private int m_SelectedPlatformSettings = 0;
 
+        private int m_ContentHash = 0;
         private List<BuildPlatform> m_ValidPlatforms;
         private Dictionary<string, List<TextureImporterPlatformSettings>> m_TempPlatformSettings;
 
@@ -180,19 +184,21 @@ namespace UnityEditor.U2D
 
         bool IsTargetVariant()
         {
-            return spriteAtlasAsset.isVariant;
+            return spriteAtlasAsset ? spriteAtlasAsset.isVariant : false;
         }
 
         bool IsTargetMaster()
         {
-            return !spriteAtlasAsset.isVariant;
+            return spriteAtlasAsset ? !spriteAtlasAsset.isVariant : true;
         }
+
+        protected override bool needsApplyRevert => false;
 
         internal override string targetTitle
         {
             get
             {
-                return Path.GetFileNameWithoutExtension(m_AssetPath) + " (Sprite Atlas)";
+                return spriteAtlasAsset ? ( Path.GetFileNameWithoutExtension(m_AssetPath) + " (Sprite Atlas)" ) : "SpriteAtlasImporter Settings";
             }
         }
 
@@ -212,6 +218,43 @@ namespace UnityEditor.U2D
                 return GetSerializedAssetObject();
             }
         }
+
+        internal static int SpriteAtlasAssetHash(SerializedObject obj)
+        {
+            int hashCode = 0;
+            if (obj == null)
+                return 0;
+            unchecked
+            {
+                hashCode = (int)2166136261 ^ (int) obj.FindProperty("m_MasterAtlas").contentHash;
+                hashCode = hashCode * 16777619 ^ (int) obj.FindProperty("m_ImporterData").contentHash;
+                hashCode = hashCode * 16777619 ^ (int) obj.FindProperty("m_IsVariant").contentHash;
+            }
+            return hashCode;
+        }
+
+        internal static int SpriteAtlasImporterHash(SerializedObject obj)
+        {
+            int hashCode = 0;
+            if (obj == null)
+                return 0;
+            unchecked
+            {
+                hashCode = (int)2166136261 ^ (int)obj.FindProperty("m_PackingSettings").contentHash;
+                hashCode = hashCode * 16777619 ^ (int)obj.FindProperty("m_TextureSettings").contentHash;
+                hashCode = hashCode * 16777619 ^ (int)obj.FindProperty("m_PlatformSettings").contentHash;
+                hashCode = hashCode * 16777619 ^ (int)obj.FindProperty("m_SecondaryTextureSettings").contentHash;
+                hashCode = hashCode * 16777619 ^ (int)obj.FindProperty("m_BindAsDefault").contentHash;
+                hashCode = hashCode * 16777619 ^ (int)obj.FindProperty("m_VariantMultiplier").contentHash;
+            }
+            return hashCode;
+        }
+
+        internal int GetInspectorHash()
+        {
+            return SpriteAtlasAssetHash(m_SerializedAssetObject) * 16777619 ^ SpriteAtlasImporterHash(m_SerializedObject);
+        }
+
         private SerializedObject GetSerializedAssetObject()
         {
             if (m_SerializedAssetObject == null)
@@ -220,6 +263,7 @@ namespace UnityEditor.U2D
                 {
                     m_SerializedAssetObject = new SerializedObject(spriteAtlasAsset, m_Context);
                     m_SerializedAssetObject.inspectorMode = inspectorMode;
+                    m_ContentHash = GetInspectorHash();
                     m_EnabledProperty = m_SerializedAssetObject.FindProperty("m_Enabled");
                 }
                 catch (System.ArgumentException e)
@@ -232,36 +276,23 @@ namespace UnityEditor.U2D
             return m_SerializedAssetObject;
         }
 
-        void OnEnable()
+       public override void OnEnable()
         {
-            m_AssetPath = LoadSourceAsset();
-            if (spriteAtlasAsset == null)
-                return;
+            base.OnEnable();
 
-            m_FilterMode = serializedAssetObject.FindProperty("m_ImporterData.textureSettings.filterMode");
-            m_AnisoLevel = serializedAssetObject.FindProperty("m_ImporterData.textureSettings.anisoLevel");
-            m_GenerateMipMaps = serializedAssetObject.FindProperty("m_ImporterData.textureSettings.generateMipMaps");
-            m_Readable = serializedAssetObject.FindProperty("m_ImporterData.textureSettings.readable");
-            m_UseSRGB = serializedAssetObject.FindProperty("m_ImporterData.textureSettings.sRGB");
+            m_FilterMode = serializedObject.FindProperty("m_TextureSettings.filterMode");
+            m_AnisoLevel = serializedObject.FindProperty("m_TextureSettings.anisoLevel");
+            m_GenerateMipMaps = serializedObject.FindProperty("m_TextureSettings.generateMipMaps");
+            m_Readable = serializedObject.FindProperty("m_TextureSettings.readable");
+            m_UseSRGB = serializedObject.FindProperty("m_TextureSettings.sRGB");
 
-            m_EnableTightPacking = serializedAssetObject.FindProperty("m_ImporterData.packingSettings.enableTightPacking");
-            m_EnableRotation = serializedAssetObject.FindProperty("m_ImporterData.packingSettings.enableRotation");
-            m_EnableAlphaDilation = serializedAssetObject.FindProperty("m_ImporterData.packingSettings.enableAlphaDilation");
-            m_Padding = serializedAssetObject.FindProperty("m_ImporterData.packingSettings.padding");
-
-            m_MasterAtlas = serializedAssetObject.FindProperty("m_MasterAtlas");
-            m_BindAsDefault = serializedAssetObject.FindProperty("m_ImporterData.bindAsDefault");
-            m_VariantScale = serializedAssetObject.FindProperty("m_ImporterData.variantMultiplier");
-
+            m_EnableTightPacking = serializedObject.FindProperty("m_PackingSettings.enableTightPacking");
+            m_EnableRotation = serializedObject.FindProperty("m_PackingSettings.enableRotation");
+            m_EnableAlphaDilation = serializedObject.FindProperty("m_PackingSettings.enableAlphaDilation");
+            m_Padding = serializedObject.FindProperty("m_PackingSettings.padding");
+            m_BindAsDefault = serializedObject.FindProperty("m_BindAsDefault");
+            m_VariantScale = serializedObject.FindProperty("m_VariantMultiplier");
             PopulatePlatformSettingsOptions();
-
-            m_Packables = serializedAssetObject.FindProperty("m_ImporterData.packables");
-            m_PackableList = new ReorderableList(serializedAssetObject, m_Packables, true, true, true, true);
-            m_PackableList.onAddCallback = AddPackable;
-            m_PackableList.onRemoveCallback = RemovePackable;
-            m_PackableList.drawElementCallback = DrawPackableElement;
-            m_PackableList.elementHeight = EditorGUIUtility.singleLineHeight;
-            m_PackableList.headerHeight = 0f;
 
             SyncPlatformSettings();
 
@@ -271,13 +302,25 @@ namespace UnityEditor.U2D
 
             // Don't show max size option for secondary textures as they must have the same size as the main texture.
             m_SecondaryTexturePlatformSettingsView = new SpriteAtlasInspectorPlatformSettingView(false);
+
+            m_AssetPath = LoadSourceAsset();
+            if (spriteAtlasAsset == null)
+                return;
+
+            m_MasterAtlas = serializedAssetObject.FindProperty("m_MasterAtlas");
+            m_Packables = serializedAssetObject.FindProperty("m_ImporterData.packables");
+            m_PackableList = new ReorderableList(serializedAssetObject, m_Packables, true, true, true, true);
+            m_PackableList.onAddCallback = AddPackable;
+            m_PackableList.drawElementCallback = DrawPackableElement;
+            m_PackableList.elementHeight = EditorGUIUtility.singleLineHeight;
+            m_PackableList.headerHeight = 0f;
         }
 
         // Populate the platform settings dropdown list with secondary texture names found through serialized properties of the Sprite Atlas assets.
         private void PopulatePlatformSettingsOptions()
         {
             m_PlatformSettingsOptions = new List<string> { L10n.Tr("Main Texture"), "", "", L10n.Tr("New Secondary Texture settings.") };
-            SerializedProperty secondaryPlatformSettings = serializedAssetObject.FindProperty("m_ImporterData.secondaryTextureSettings");
+            SerializedProperty secondaryPlatformSettings = serializedObject.FindProperty("m_SecondaryTextureSettings");
             if (secondaryPlatformSettings != null && !secondaryPlatformSettings.hasMultipleDifferentValues)
             {
                 int numSecondaryTextures = secondaryPlatformSettings.arraySize;
@@ -305,8 +348,8 @@ namespace UnityEditor.U2D
             var defaultSettings = new List<TextureImporterPlatformSettings>();
             m_TempPlatformSettings.Add(TextureImporterInspector.s_DefaultPlatformName, defaultSettings);
             var settings = secondaryTextureSelected
-                ? spriteAtlasAsset.GetSecondaryPlatformSettings(TextureImporterInspector.s_DefaultPlatformName, secondaryTextureName)
-                : spriteAtlasAsset.GetPlatformSettings(TextureImporterInspector.s_DefaultPlatformName);
+                ? spriteAtlasImporter.GetSecondaryPlatformSettings(TextureImporterInspector.s_DefaultPlatformName, secondaryTextureName)
+                : spriteAtlasImporter.GetPlatformSettings(TextureImporterInspector.s_DefaultPlatformName);
             defaultSettings.Add(settings);
 
             m_ValidPlatforms = BuildPlatforms.instance.GetValidPlatforms();
@@ -314,7 +357,7 @@ namespace UnityEditor.U2D
             {
                 var platformSettings = new List<TextureImporterPlatformSettings>();
                 m_TempPlatformSettings.Add(platform.name, platformSettings);
-                var perPlatformSettings = secondaryTextureSelected ? spriteAtlasAsset.GetSecondaryPlatformSettings(platform.name, secondaryTextureName) : spriteAtlasAsset.GetPlatformSettings(platform.name);
+                var perPlatformSettings = secondaryTextureSelected ? spriteAtlasImporter.GetSecondaryPlatformSettings(platform.name, secondaryTextureName) : spriteAtlasImporter.GetPlatformSettings(platform.name);
                 // setting will be in default state if copy failed
                 platformSettings.Add(perPlatformSettings);
             }
@@ -322,15 +365,15 @@ namespace UnityEditor.U2D
 
         void RenameSecondaryPlatformSettings(string oldName, string newName)
         {
-            spriteAtlasAsset.DeleteSecondaryPlatformSettings(oldName);
+            spriteAtlasImporter.DeleteSecondaryPlatformSettings(oldName);
 
             var defaultPlatformSettings = m_TempPlatformSettings[TextureImporterInspector.s_DefaultPlatformName];
-            spriteAtlasAsset.SetSecondaryPlatformSettings(defaultPlatformSettings[0], newName);
+            spriteAtlasImporter.SetSecondaryPlatformSettings(defaultPlatformSettings[0], newName);
 
             foreach (var buildPlatform in m_ValidPlatforms)
             {
                 var platformSettings = m_TempPlatformSettings[buildPlatform.name];
-                spriteAtlasAsset.SetSecondaryPlatformSettings(platformSettings[0], newName);
+                spriteAtlasImporter.SetSecondaryPlatformSettings(platformSettings[0], newName);
             }
         }
 
@@ -339,13 +382,6 @@ namespace UnityEditor.U2D
             ObjectSelector.get.Show(null, typeof(Object), null, false);
             ObjectSelector.get.searchFilter = "t:sprite t:texture2d t:folder";
             ObjectSelector.get.objectSelectorID = styles.packableSelectorHash;
-        }
-
-        void RemovePackable(ReorderableList list)
-        {
-            var index = list.index;
-            if (index != -1)
-                spriteAtlasAsset.RemoveAt(index);
         }
 
         void DrawPackableElement(Rect rect, int index, bool selected, bool focused)
@@ -357,11 +393,7 @@ namespace UnityEditor.U2D
             var changedObject = EditorGUI.DoObjectField(rect, rect, controlID, previousObject, target, typeof(Object), ValidateObjectForPackableFieldAssignment, false);
             if (changedObject != previousObject)
             {
-                // Always call Remove() on the previous object if we swapping the object field item.
-                // This ensure the Sprites was pack in this atlas will be refreshed of it unbound.
                 Undo.RegisterCompleteObjectUndo(spriteAtlasAsset, styles.swapObjectRegisterUndo);
-                if (previousObject != null)
-                    spriteAtlasAsset.Remove(new Object[] { previousObject });
                 property.objectReferenceValue = changedObject;
             }
 
@@ -369,30 +401,24 @@ namespace UnityEditor.U2D
                 m_PackableList.index = index;
         }
 
-        public virtual void OnDestroy()
+        protected override void Apply()
         {
             if (HasModified())
             {
-                ApplyAndImport();
+                if (spriteAtlasAsset)
+                    SpriteAtlasAsset.Save(spriteAtlasAsset, m_AssetPath);
+                m_ContentHash = GetInspectorHash();
             }
+            base.Apply();
         }
 
-        protected void Apply()
-        {
-            if (HasModified())
-            {
-                serializedAssetObject.ApplyModifiedPropertiesWithoutUndo();
-                SpriteAtlasAsset.Save(spriteAtlasAsset, m_AssetPath);
-            }
-        }
-
-        public void ApplyAndImport()
+        public void ApplyAndImportSpriteAtlas()
         {
             Apply();
-            AssetDatabase.ImportAsset(m_AssetPath);
+            base.ApplyAndImport();
         }
 
-        protected void ApplyRevertGUI()
+        protected void PackPreviewGUI()
         {
             EditorGUILayout.Space();
 
@@ -406,9 +432,8 @@ namespace UnityEditor.U2D
                     {
                         GUI.FocusControl(null);
                         SpriteAtlasUtility.EnableV2Import(true);
-                        ApplyAndImport();
+                        ApplyAndImportSpriteAtlas();
                         SpriteAtlasUtility.EnableV2Import(false);
-                        m_HasChanged = false;
                     }
                 }
             }
@@ -422,9 +447,29 @@ namespace UnityEditor.U2D
                 return true;
         }
 
-        public bool HasModified()
+        public override void OnDisable()
         {
-            return m_HasChanged;
+
+            if (Unsupported.IsDestroyScriptableObject(this))
+            {
+                if (spriteAtlasAsset && HasModified())
+                {
+                    if (EditorUtility.DisplayDialog("Unapplied import settings", "Unapplied import settings for \'" + m_AssetPath + "\'", "Apply", "Revert"))
+                    {
+                        ApplyAndImportSpriteAtlas();
+                    }
+                    else
+                    {
+                        ResetValues();
+                    }
+                }
+            }
+            base.OnDisable();
+        }
+
+        public override bool HasModified()
+        {
+            return base.HasModified() || m_ContentHash != GetInspectorHash();
         }
 
         private void ValidateMasterAtlas()
@@ -451,24 +496,27 @@ namespace UnityEditor.U2D
 
         public override void OnInspectorGUI()
         {
-            if (spriteAtlasAsset == null)
-                return;
-
-            EditorGUI.BeginChangeCheck();
-
             // Ensure changes done through script are reflected immediately in Inspector by Syncing m_TempPlatformSettings with Actual Settings.
             SyncPlatformSettings();
 
-            serializedAssetObject.Update();
-
-            HandleCommonSettingUI();
+            serializedObject.Update();
+            if (spriteAtlasAsset)
+            {
+                serializedAssetObject.Update();
+                HandleCommonSettingUI();
+            }
+            EditorGUILayout.PropertyField(m_BindAsDefault, styles.bindAsDefaultLabel);
 
             GUILayout.Space(EditorGUI.kSpacing);
 
-            if (IsTargetVariant())
-                HandleVariantSettingUI();
-            else if (IsTargetMaster())
+            bool isTargetMaster = true;
+            if (spriteAtlasAsset)
+                isTargetMaster = IsTargetMaster();
+
+            if (isTargetMaster)
                 HandleMasterSettingUI();
+            if (!spriteAtlasAsset || IsTargetVariant())
+                HandleVariantSettingUI();
 
             GUILayout.Space(EditorGUI.kSpacing);
 
@@ -478,16 +526,15 @@ namespace UnityEditor.U2D
 
             // Only show the packable object list when:
             // - This is a master atlas.
-            if (targets.Length == 1 && IsTargetMaster())
+            if (targets.Length == 1 && IsTargetMaster() && spriteAtlasAsset)
                 HandlePackableListUI();
 
-            serializedAssetObject.ApplyModifiedPropertiesWithoutUndo();
-
-            if (EditorGUI.EndChangeCheck())
+            serializedObject.ApplyModifiedProperties();
+            if (spriteAtlasAsset)
             {
-                m_HasChanged = true;
+                serializedAssetObject.ApplyModifiedProperties();
+                PackPreviewGUI();
             }
-            ApplyRevertGUI();
         }
 
         private void HandleCommonSettingUI()
@@ -520,13 +567,10 @@ namespace UnityEditor.U2D
                     ValidateMasterAtlas();
                     // Apply modified properties here to have latest master atlas reflected in native codes.
                     serializedAssetObject.ApplyModifiedPropertiesWithoutUndo();
-                    spriteAtlasAsset.CopyMasterAtlasSettings();
                     PopulatePlatformSettingsOptions();
                     SyncPlatformSettings();
                 }
             }
-
-            EditorGUILayout.PropertyField(m_BindAsDefault, styles.bindAsDefaultLabel);
         }
 
         private void HandleVariantSettingUI()
@@ -594,7 +638,6 @@ namespace UnityEditor.U2D
                         m_SelectedPlatformSettings--;
                         EditorGUI.FocusTextInControl(s_Styles.secondaryTextureNameTextControlName);
                     }
-                    m_HasChanged = true;
                     SyncPlatformSettings();
                 }
 
@@ -605,7 +648,7 @@ namespace UnityEditor.U2D
                     {
                         EditorGUI.EndEditingActiveTextField();
 
-                        spriteAtlasAsset.DeleteSecondaryPlatformSettings(m_PlatformSettingsOptions[m_SelectedPlatformSettings]);
+                        spriteAtlasImporter.DeleteSecondaryPlatformSettings(m_PlatformSettingsOptions[m_SelectedPlatformSettings]);
 
                         m_PlatformSettingsOptions.RemoveAt(m_SelectedPlatformSettings);
 
@@ -613,7 +656,6 @@ namespace UnityEditor.U2D
                         if (m_SelectedPlatformSettings == 1)
                             m_SelectedPlatformSettings = 0;
 
-                        m_HasChanged = true;
                         SyncPlatformSettings();
                     }
                 }
@@ -654,14 +696,13 @@ namespace UnityEditor.U2D
                                 Debug.LogWarning(s_Styles.nameUniquenessWarning);
                                 EditorGUI.FocusTextInControl(s_Styles.secondaryTextureNameTextControlName);
                             }
-                            m_HasChanged = true;
                         }
 
                         string secondaryTextureName = m_PlatformSettingsOptions[m_SelectedPlatformSettings];
                         EditorGUI.BeginChangeCheck();
-                        bool value = EditorGUILayout.Toggle(s_Styles.sRGBLabel, spriteAtlasAsset.GetSecondaryColorSpace(secondaryTextureName));
+                        bool value = EditorGUILayout.Toggle(s_Styles.sRGBLabel, spriteAtlasImporter.GetSecondaryColorSpace(secondaryTextureName));
                         if (EditorGUI.EndChangeCheck())
-                            spriteAtlasAsset.SetSecondaryColorSpace(secondaryTextureName, value);
+                            spriteAtlasImporter.SetSecondaryColorSpace(secondaryTextureName, value);
 
                         HandlePlatformSettingUI(textFieldText);
                     }
@@ -684,11 +725,10 @@ namespace UnityEditor.U2D
                     for (var i = 0; i < defaultPlatformSettings.Count; ++i)
                     {
                         if (isSecondary)
-                            spriteAtlasAsset.SetSecondaryPlatformSettings(defaultPlatformSettings[i], secondaryTextureName);
+                            spriteAtlasImporter.SetSecondaryPlatformSettings(defaultPlatformSettings[i], secondaryTextureName);
                         else
-                            spriteAtlasAsset.SetPlatformSettings(defaultPlatformSettings[i]);
+                            spriteAtlasImporter.SetPlatformSettings(defaultPlatformSettings[i]);
                     }
-                    m_HasChanged = true;
                 }
             }
             else
@@ -704,7 +744,7 @@ namespace UnityEditor.U2D
                     {
                         if (defaultPlatformSettings[0].format == TextureImporterFormat.Automatic)
                         {
-                            settings.format = (TextureImporterFormat)spriteAtlasAsset.GetTextureFormat(buildPlatform.defaultTarget);
+                            settings.format = (TextureImporterFormat)spriteAtlasImporter.GetTextureFormat(buildPlatform.defaultTarget);
                         }
                         else
                         {
@@ -723,11 +763,10 @@ namespace UnityEditor.U2D
                     for (var i = 0; i < platformSettings.Count; ++i)
                     {
                         if (isSecondary)
-                            spriteAtlasAsset.SetSecondaryPlatformSettings(platformSettings[i], secondaryTextureName);
+                            spriteAtlasImporter.SetSecondaryPlatformSettings(platformSettings[i], secondaryTextureName);
                         else
-                            spriteAtlasAsset.SetPlatformSettings(platformSettings[i]);
+                            spriteAtlasImporter.SetPlatformSettings(platformSettings[i]);
                     }
-                    m_HasChanged = true;
                 }
             }
 

@@ -17,7 +17,7 @@ namespace UnityEditorInternal
         {
             Success = 0,
             InvalidPath,
-            WritePermissionError,
+            ReadOnly,
             EnvironmentOverride,
             NotFound,
             Failed

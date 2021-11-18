@@ -21,20 +21,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageManager = pageManager;
         }
 
-        private IPackage[] m_CustomizedDependenciesCache;
-        private IPackage[] customizedDependencies => m_CustomizedDependenciesCache ??= m_PackageDatabase.GetCustomizedDependencies(m_Version);
-
-        protected override void SetPackageAndVersion(IPackage package, IPackageVersion version)
+        protected override bool TriggerAction(IPackageVersion version)
         {
-            base.SetPackageAndVersion(package, version);
-
-            // Reset the cache to make sure that the cache is recalculated in the refresh
-            m_CustomizedDependenciesCache = null;
-        }
-
-        protected override bool TriggerAction()
-        {
-            var packagesToUninstall = m_PackageDatabase.GetCustomizedDependencies(m_Version, true);
+            var packagesToUninstall = m_PackageDatabase.GetCustomizedDependencies(version, true);
             if (!packagesToUninstall.Any())
                 return false;
 
@@ -43,57 +32,55 @@ namespace UnityEditor.PackageManager.UI.Internal
             var message = packagesToUninstall.Length == 1 ?
                 string.Format(
                 L10n.Tr("Are you sure you want to reset this {0}?\nThe following included package will reset to the required version:\n\u2022 {1}"),
-                m_Package.GetDescriptor(), packageNameAndVersions) :
+                version.package.GetDescriptor(), packageNameAndVersions) :
                 string.Format(
                 L10n.Tr("Are you sure you want to reset this {0}?\nThe following included packages will reset to their required versions:\n\u2022 {1}"),
-                m_Package.GetDescriptor(), packageNameAndVersions);
+                version.package.GetDescriptor(), packageNameAndVersions);
 
             if (!m_Application.DisplayDialog(L10n.Tr("Unity Package Manager"), message, L10n.Tr("Continue"), L10n.Tr("Cancel")))
                 return false;
 
             m_PageManager.SetPackagesUserUnlockedState(packagesToUninstall.Select(p => p.uniqueId), false);
-            m_PackageDatabase.ResetDependencies(m_Version, packagesToUninstall);
+            m_PackageDatabase.ResetDependencies(version, packagesToUninstall);
 
-            PackageManagerWindowAnalytics.SendEvent("reset", m_Version?.uniqueId);
+            PackageManagerWindowAnalytics.SendEvent("reset", version?.uniqueId);
             return true;
         }
 
-        protected override bool isVisible
+        protected override bool IsVisible(IPackageVersion version)
         {
-            get
-            {
-                var installed = m_Package?.versions.installed;
-                return installed != null
-                    && installed == m_Version
-                    && m_Package.Is(PackageType.Feature)
-                    && !m_Version.HasTag(PackageTag.Custom)
-                    && m_Version.HasTag(PackageTag.Removable)
-                    && customizedDependencies.Any();
-            }
+            var installed = version?.package.versions.installed;
+            return installed != null
+                && installed == version
+                && version.package.Is(PackageType.Feature)
+                && !version.HasTag(PackageTag.Custom)
+                && version.HasTag(PackageTag.Removable)
+                && m_PackageDatabase.GetCustomizedDependencies(version).Any();
         }
 
-        protected override string GetTooltip(bool isInProgress)
+        protected override string GetTooltip(IPackageVersion version, bool isInProgress)
         {
-            return string.Format(L10n.Tr("Click to reset this {0} dependencies to their default versions."), m_Package.GetDescriptor());
+            return string.Format(L10n.Tr("Click to reset this {0} dependencies to their default versions."), version.package.GetDescriptor());
         }
 
-        protected override string GetText(bool isInProgress)
+        protected override string GetText(IPackageVersion version, bool isInProgress)
         {
             return L10n.Tr("Reset");
         }
 
-        protected override bool isInProgress => false;
+        protected override bool IsInProgress(IPackageVersion version) => false;
 
-        protected override IEnumerable<ButtonDisableCondition> GetDisableConditions()
+        protected override IEnumerable<ButtonDisableCondition> GetDisableConditions(IPackageVersion version)
         {
+            var customizedDependencies = m_PackageDatabase.GetCustomizedDependencies(version);
             var oneDependencyIsInDevelopment = customizedDependencies.Any(p => p.versions.installed?.HasTag(PackageTag.Custom) ?? false);
             yield return new ButtonDisableCondition(oneDependencyIsInDevelopment,
-                string.Format(L10n.Tr("You cannot reset this {0} because one of its included packages is customized. You must remove them manually. See the list of packages in the {0} for more information."), m_Package.GetDescriptor()));
+                string.Format(L10n.Tr("You cannot reset this {0} because one of its included packages is customized. You must remove them manually. See the list of packages in the {0} for more information."), version.package.GetDescriptor()));
 
             var oneDependencyIsDirectAndMatchManifestVersion = customizedDependencies.Any(p => (p.versions.installed?.isDirectDependency ?? false) &&
                 p.versions.installed?.versionString == p.versions.installed?.packageInfo.projectDependenciesEntry);
             yield return new ButtonDisableCondition(!oneDependencyIsDirectAndMatchManifestVersion,
-                string.Format(L10n.Tr("You cannot reset this {0} because one of its included packages has changed version. See the list of packages in the {0} for more information."), m_Package.GetDescriptor()));
+                string.Format(L10n.Tr("You cannot reset this {0} because one of its included packages has changed version. See the list of packages in the {0} for more information."), version.package.GetDescriptor()));
         }
     }
 }

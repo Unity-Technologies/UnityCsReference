@@ -170,7 +170,7 @@ namespace UnityEngine
         // Contains the path to the game data folder (RO).
         extern public static string dataPath
         {
-            [FreeFunction("GetAppDataPath")]
+            [FreeFunction("GetAppDataPath", IsThreadSafe = true)]
             get;
         }
 

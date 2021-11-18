@@ -18,6 +18,7 @@ namespace UnityEditor.Toolbars
         internal static readonly string toggleIconClassName = ussClassName + "__icon";
         internal static readonly string toggleTextClassName = ussClassName + "__text";
         internal static readonly string toggleNoIconClassName = ussClassName + "-noicon";
+        internal static readonly string toggleNoDropdownClassName = toggleClassName + "-no-dropdown";
 
         readonly Image m_IconElement;
         readonly TextElement m_TextElement;
@@ -60,6 +61,8 @@ namespace UnityEditor.Toolbars
         public EditorToolbarDropdownToggle(string text, Texture2D icon, Action dropdownClickEvent) : base(null)
         {
             AddToClassList(ussClassName);
+
+            focusable = false;
 
             m_Toggle = new Button(ToggleValue);
             m_Toggle.AddToClassList(toggleClassName);
@@ -118,6 +121,28 @@ namespace UnityEditor.Toolbars
                 m_DropdownButton.pseudoStates &= ~PseudoStates.Checked;
             }
             base.SetValueWithoutNotify(newValue);
+        }
+
+        public void ShowDropDown(bool show)
+        {
+            m_DropdownButton.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+
+            if (!show)
+            {
+                if(!m_Toggle.ClassListContains(toggleNoDropdownClassName))
+                    m_Toggle.AddToClassList(toggleNoDropdownClassName);
+
+                if(!m_Toggle.ClassListContains(toggleClassName))
+                    m_Toggle.RemoveFromClassList(toggleClassName);
+            }
+            else if(show)
+            {
+                if(m_Toggle.ClassListContains(toggleNoDropdownClassName))
+                    m_Toggle.RemoveFromClassList(toggleNoDropdownClassName);
+
+                if(!m_Toggle.ClassListContains(toggleClassName))
+                    m_Toggle.AddToClassList(toggleClassName);
+            }
         }
     }
 }

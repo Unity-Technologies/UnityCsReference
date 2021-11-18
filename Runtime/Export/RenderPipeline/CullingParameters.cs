@@ -287,6 +287,7 @@ namespace UnityEngine.Rendering
 
         uint m_CullingMask;
         ulong m_SceneMask;
+        ulong m_ViewID;
 
         // can't make fixed types private, because then the compiler generates different code which BindinsgGenerator does not handle yet.
         const int k_LayerCount = 32;
@@ -516,6 +517,7 @@ namespace UnityEngine.Rendering
                 && m_CullingPlaneCount == other.m_CullingPlaneCount
                 && m_CullingMask == other.m_CullingMask
                 && m_SceneMask == other.m_SceneMask
+                && m_ViewID == other.m_ViewID
                 && m_LayerCull == other.m_LayerCull
                 && m_CullingMatrix.Equals(other.m_CullingMatrix)
                 && m_Origin.Equals(other.m_Origin)
@@ -548,6 +550,7 @@ namespace UnityEngine.Rendering
                 hashCode = (hashCode * 397) ^ m_CullingPlaneCount;
                 hashCode = (hashCode * 397) ^ (int)m_CullingMask;
                 hashCode = (hashCode * 397) ^ m_SceneMask.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_ViewID.GetHashCode();
                 hashCode = (hashCode * 397) ^ m_LayerCull;
                 hashCode = (hashCode * 397) ^ m_CullingMatrix.GetHashCode();
                 hashCode = (hashCode * 397) ^ m_Origin.GetHashCode();

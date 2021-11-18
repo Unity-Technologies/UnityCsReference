@@ -16,6 +16,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         public static readonly string k_ViewDocumentationText = L10n.Tr("View documentation");
         public static readonly string k_ViewChangelogText = L10n.Tr("View changelog");
         public static readonly string k_ViewLicensesText = L10n.Tr("View licenses");
+        public static readonly string k_ViewUseCasesText = L10n.Tr("Use Cases");
+        public static readonly string k_ViewDashboardText = L10n.Tr("Go to Dashboard");
         public static readonly string k_ViewQuickStartText = L10n.Tr("QuickStart");
 
         public const string k_LinkClass = "link";
@@ -75,6 +77,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (UpmPackageDocs.HasLicenses(version))
                 AddToLinks(leftItems, new Button(ViewLicensesClick) { text = k_ViewLicensesText, classList = { k_LinkClass } });
+
+            if (UpmPackageDocs.HasUseCases(version))
+                AddToLinks(leftItems, new Button(ViewUseCasesClick) { text = k_ViewUseCasesText, classList = { k_LinkClass } });
+
+            if (UpmPackageDocs.HasDashboard(version))
+                AddToLinks(leftItems, new Button(ViewDashboardClick) { text = k_ViewDashboardText, classList = { k_LinkClass } });
 
             var topOffset = false;
             if (package.Is(PackageType.Feature) && !string.IsNullOrEmpty(GetQuickStartUrl(m_Version)))
@@ -172,6 +180,16 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void ViewLicensesClick()
         {
             ViewUrl(UpmPackageDocs.GetLicensesUrl(m_Version), UpmPackageDocs.GetOfflineLicenses(m_IOProxy, m_Version), L10n.Tr("license documentation"), "viewLicense");
+        }
+
+        private void ViewUseCasesClick()
+        {
+            ViewUrl(UpmPackageDocs.GetUseCasesUrl(m_Version), UpmPackageDocs.GetOfflineUseCasesUrl(m_IOProxy, m_Version), L10n.Tr("use cases"), "viewUseCases");
+        }
+
+        private void ViewDashboardClick()
+        {
+            ViewUrl(UpmPackageDocs.GetDashboardUrl(m_Version), UpmPackageDocs.GetOfflineDashboardUrl(m_IOProxy, m_Version), L10n.Tr("dashboard"), "viewDashboard");
         }
 
         private void ViewQuickStartClick()

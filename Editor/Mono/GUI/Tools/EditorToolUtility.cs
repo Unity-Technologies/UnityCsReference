@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using UObject = UnityEngine.Object;
@@ -56,10 +55,20 @@ namespace UnityEditor.EditorTools
 
         internal static string GetToolMenuPath(Type tool)
         {
-            if (typeof(EditorTool).IsAssignableFrom(tool))
+            if (typeof(EditorTool).IsAssignableFrom(tool) || typeof(EditorToolContext).IsAssignableFrom(tool))
             {
-                var editorToolAttribute = tool.GetCustomAttributes(typeof(EditorToolAttribute), false).FirstOrDefault();
-                if (editorToolAttribute is EditorToolAttribute attrib && !string.IsNullOrEmpty(attrib.displayName))
+                var toolAttribute = tool.GetCustomAttributes(typeof(ToolAttribute), false).FirstOrDefault();
+                if (toolAttribute is ToolAttribute attrib && !string.IsNullOrEmpty(attrib.displayName))
+                {
+                    string path = SanitizeToolPath(attrib.displayName);
+                    if (!string.IsNullOrEmpty(path))
+                        return L10n.Tr(path);
+                }
+            }
+            else if (typeof(EditorToolContext).IsAssignableFrom(tool))
+            {
+                var editorToolAttribute = tool.GetCustomAttributes(typeof(EditorToolContextAttribute), false).FirstOrDefault();
+                if (editorToolAttribute is EditorToolContextAttribute attrib && !string.IsNullOrEmpty(attrib.displayName))
                 {
                     string path = SanitizeToolPath(attrib.displayName);
                     if (!string.IsNullOrEmpty(path))
@@ -84,7 +93,8 @@ namespace UnityEditor.EditorTools
 
         internal static int GetNonBuiltinToolCount()
         {
-            return GetCustomEditorToolsForType(null).Count();
+            var globalEditorTools = GetCustomEditorToolsForType(null).Where(t => EditorToolManager.additionalContextToolTypesCache.All(tc => tc != t.editor));
+            return globalEditorTools.Count();
         }
 
         internal static bool IsComponentEditor(Type type)
@@ -179,6 +189,18 @@ namespace UnityEditor.EditorTools
         internal static bool IsComponentTool(Type type)
         {
             return s_ToolCache.GetTargetType(type) != null;
+        }
+
+        internal static bool IsGlobalTool(EditorTool tool)
+        {
+            if(GetEnumWithEditorTool(tool) == Tool.Custom)
+            {
+                var type = tool.GetType();
+                return !IsComponentTool(type)
+                    && EditorToolManager.additionalContextToolTypesCache.All(t => t != type);
+            }
+
+            return false;
         }
 
         internal static GUIContent GetToolbarIcon<T>(T obj) where T : IEditor

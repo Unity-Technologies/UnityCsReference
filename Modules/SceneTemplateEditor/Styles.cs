@@ -19,6 +19,7 @@ namespace UnityEditor.SceneTemplate
         public const string classBorder = "scene-template-dialog-border";
         public const string classWrappingText = "scene-template-dialog-wrapping-text";
         public const string classPreviewArea = "scene-template-preview-area";
+        public const string classPreviewAreaBadge = "scene-template-preview-area-badge";
         public const string classUnityBaseField = "unity-base-field";
         public const string classUnityLabel = "unity-label";
         public const string classUnityBaseFieldLabel = "unity-base-field__label";
@@ -41,6 +42,7 @@ namespace UnityEditor.SceneTemplate
         public const string gridViewHeader = "grid-view-header";
         public const string gridViewItemIcon = "grid-view-item-icon";
         public const string gridViewItemPin = "grid-view-item-pin";
+        public const string gridViewItemBadge = "grid-view-item-badge";
         public const string gridViewItemLabel = "grid-view-item-label";
         public const string gridViewHeaderSearchField = "grid-view-header-search-field";
         public const string gridViewItemsScrollView = "grid-view-items-scrollview";

@@ -67,6 +67,11 @@ namespace UnityEditor.Connect
         public virtual bool isPackage { get; }
         public abstract string packageName { get; }
 
+        public abstract string editorGamePackageName { get; }
+        public abstract bool canShowFallbackProjectSettings { get; }
+        public abstract bool canShowBuiltInProjectSettings { get; }
+        public abstract string minimumEditorGamePackageVersion { get; }
+
         public virtual string serviceFlagName { get; }
 
         /// <summary>
@@ -116,7 +121,7 @@ namespace UnityEditor.Connect
 
         void HandleCoppaCompliance(bool enable, bool shouldUpdateApiFlag)
         {
-            if (enable && requiresCoppaCompliance && UnityConnect.instance.projectInfo.COPPA == COPPACompliance.COPPAUndefined)
+            if (enable && requiresCoppaCompliance && UnityConnect.instance.projectInfo.COPPA.ToCOPPACompliance() == COPPACompliance.COPPAUndefined)
             {
                 NotificationManager.instance.Publish(notificationTopic, Notification.Severity.Warning, L10n.Tr(string.Format(k_NoCoppaComplianceMessage, name)));
                 SettingsService.OpenProjectSettings(GeneralProjectSettings.generalProjectSettingsPath);
@@ -147,12 +152,6 @@ namespace UnityEditor.Connect
                 return;
             }
 
-            // The ServicesEditorWindow instance can be null if the window is closed.
-            var servicesEditorWindow = ServicesEditorWindow.instance;
-            if (servicesEditorWindow != null)
-            {
-                servicesEditorWindow.SetServiceStatusValue(name, enable);
-            }
 
             try
             {

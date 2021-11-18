@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UIElements;
 
@@ -184,17 +185,27 @@ namespace UnityEditor.Connect
                 !string.IsNullOrEmpty(unityWebRequest.downloadHandler.text));
         }
 
-        public static void OpenServicesProjectSettings(SingleService singleService)
-        {
-            OpenServicesProjectSettings(singleService.projectSettingsPath, singleService.settingsProviderClassName);
-        }
 
         public static void OpenServicesProjectSettings(string servicesProjectSettingsPath, string projectSettingsClassName)
         {
-            var currentProvider = ((ProjectSettingsWindow)SettingsService.OpenProjectSettings()).GetCurrentProvider();
+            var editorWindow = SettingsService.OpenProjectSettings();
+            var projectSettingsWindow = editorWindow as SettingsWindow;
+
+            if (projectSettingsWindow == null)
+            {
+                Debug.LogError($"Unsupported settings window. Retrieved window : {editorWindow.GetType()}. Expected window {typeof(SettingsWindow)}");
+                return;
+            }
+
+            var currentProvider = projectSettingsWindow.GetCurrentProvider();
+
             if (currentProvider == null || !currentProvider.GetType().Name.Equals(projectSettingsClassName))
             {
                 SettingsService.OpenProjectSettings(servicesProjectSettingsPath);
+            }
+            else
+            {
+                Debug.LogError($"Failed to open project settings at path {servicesProjectSettingsPath}");
             }
         }
     }

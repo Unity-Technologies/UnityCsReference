@@ -153,12 +153,12 @@ namespace UnityEditor
         {
             if (m_Type != null)
             {
-                Debug.LogErrorFormat("{0} created a PreviewRenderUtility but didn't call its Cleanup() during OnDisable. This is leaking the Preview scene in the Editor and should be fixed.", m_Type);
+                Debug.LogErrorFormat("{0} created a PreviewRenderUtility but didn't call its Cleanup() during OnDisable (or its execution was interrupted). This is leaking the Preview scene in the Editor and should be fixed.", m_Type);
             }
             else
             {
                 Debug.LogError("A PreviewRenderUtility was not clean up properly before assembly reloading which lead to leaking this scene in the Editor. " +
-                    "This can be caused by not calling Cleanup() during the OnDisable of an Editor or an EditorWindow.");
+                    "This can be caused by not calling Cleanup() (or its execution being interrupted) during the OnDisable of an Editor or an EditorWindow.");
             }
         }
 

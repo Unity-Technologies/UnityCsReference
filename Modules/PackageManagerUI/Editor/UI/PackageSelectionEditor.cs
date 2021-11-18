@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    [CustomEditor(typeof(PackageSelectionObject))]
+    [CustomEditor(typeof(PackageSelectionObject)), CanEditMultipleObjects]
     internal sealed class PackageEditor : Editor
     {
         private const float kMinHeightForAssetStore = 192f;
@@ -18,6 +18,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private const float kLabelMinWidth = 64f;
 
         private static readonly string k_PackageNotAccessibleMessage = L10n.Tr("This package is not accessible anymore.");
+        private static readonly string k_MultiPackagesSelectionMessage = L10n.Tr("Multi-object editing not supported.");
         internal override string targetTitle
         {
             get
@@ -86,17 +87,33 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageDatabase.onPackagesChanged -= OnPackagesChanged;
         }
 
+        private void GetPackageAndVersion(PackageSelectionObject packageSelectionObject)
+        {
+            m_PackageDatabase.GetPackageAndVersion(packageSelectionObject.packageUniqueId, packageSelectionObject.versionUniqueId, out m_Package, out m_Version);
+            if (m_Version == null && string.IsNullOrEmpty(packageSelectionObject.versionUniqueId))
+                m_Version = m_Package?.versions.primary;
+        }
+
         private void OnPackagesChanged(IEnumerable<IPackage> added, IEnumerable<IPackage> removed, IEnumerable<IPackage> preUpdated, IEnumerable<IPackage> postUpdate)
         {
             var selectedPackageUniqueId = packageSelectionObject?.packageUniqueId;
             if (string.IsNullOrEmpty(selectedPackageUniqueId))
                 return;
             if (added.Concat(removed).Concat(preUpdated).Any(p => p.uniqueId == selectedPackageUniqueId))
-                m_PackageDatabase.GetPackageAndVersion(packageSelectionObject.packageUniqueId, packageSelectionObject.versionUniqueId, out m_Package, out m_Version);
+            {
+                GetPackageAndVersion(packageSelectionObject);
+                isInspectorDirty = true;
+            }
         }
 
         public override void OnInspectorGUI()
         {
+            if (targets.Length > 1)
+            {
+                GUILayout.Label(k_MultiPackagesSelectionMessage, EditorStyles.helpBox);
+                return;
+            }
+
             if (packageSelectionObject == null)
             {
                 EditorGUILayout.HelpBox(k_PackageNotAccessibleMessage, MessageType.Error);
@@ -105,7 +122,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (m_Package == null || m_Version == null)
             {
-                m_PackageDatabase.GetPackageAndVersion(packageSelectionObject.packageUniqueId, packageSelectionObject.versionUniqueId, out m_Package, out m_Version);
+                GetPackageAndVersion(packageSelectionObject);
                 if (m_Package == null || m_Version == null)
                 {
                     EditorGUILayout.HelpBox(k_PackageNotAccessibleMessage, MessageType.Error);
@@ -148,12 +165,23 @@ namespace UnityEditor.PackageManager.UI.Internal
             GUI.enabled = previousEnabled;
         }
 
+        internal override void OnHeaderTitleGUI(Rect titleRect, string header)
+        {
+            if (targets.Length > 1)
+                header = string.Format(L10n.Tr("{0} Packages"), targets.Length);
+
+            base.OnHeaderTitleGUI(titleRect, header);
+        }
+
         internal override void OnHeaderControlsGUI()
         {
             base.OnHeaderControlsGUI();
 
+            if (targets.Length > 1)
+                return;
+
             var previousEnabled = GUI.enabled;
-            GUI.enabled =  targets.Length == 1 && m_Package?.state == PackageState.InDevelopment && (m_Version?.isInstalled ?? false);
+            GUI.enabled =  m_Package?.state == PackageState.InDevelopment && (m_Version?.isInstalled ?? false);
             if (GUILayout.Button(Styles.editPackage, EditorStyles.miniButton))
             {
                 var path = m_Version.packageInfo.assetPath;
@@ -161,7 +189,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (manifest != null)
                     m_Selection.activeObject = manifest;
             }
-            GUI.enabled = targets.Length == 1 && m_Package != null && m_Version != null;
+            GUI.enabled = m_Package != null && m_Version != null;
             if (GUILayout.Button(Styles.viewInPackageManager, EditorStyles.miniButton))
             {
                 PackageManagerWindow.SelectPackageAndFilterStatic(m_Package.Is(PackageType.AssetStore) ? m_Version.packageUniqueId : m_Version.uniqueId);

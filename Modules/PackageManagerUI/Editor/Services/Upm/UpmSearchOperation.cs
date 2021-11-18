@@ -71,10 +71,5 @@ namespace UnityEditor.PackageManager.UI.Internal
             else
                 return m_ClientProxy.Search(m_PackageNameOrId, isOfflineMode);
         }
-
-        public void Cancel()
-        {
-            CancelInternal();
-        }
     }
 }

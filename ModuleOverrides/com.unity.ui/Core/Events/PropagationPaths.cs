@@ -64,7 +64,7 @@ namespace UnityEngine.UIElements
             // 2. It would require dirtying the parent categories when we set isCompositeRoot, so more overhead
             for (var ve = elem.nextParentWithEventCallback; ve != null; ve = ve.nextParentWithEventCallback)
             {
-                if (ve.isCompositeRoot)
+                if (ve.isCompositeRoot && !evt.ignoreCompositeRoots)
                 {
                     // Callback for elem must be called at the Target phase. Skip if no callback.
                     if (ve.HasEventCallbacksOrDefaultActions(eventCategory))

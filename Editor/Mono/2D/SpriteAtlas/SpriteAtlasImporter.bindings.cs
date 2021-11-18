@@ -16,9 +16,20 @@ namespace UnityEditor.U2D
 {
     // SpriteAtlas Importer lets you modify [[SpriteAtlas]]
     [NativeHeader("Editor/Src/2D/SpriteAtlas/SpriteAtlasImporter.h")]
-    [ExcludeFromPreset]
     public sealed partial class SpriteAtlasImporter : AssetImporter
     {
         extern internal static void MigrateAllSpriteAtlases();
+        extern public float variantScale { get; set; }
+        extern public bool includeInBuild { get; set; }
+        extern public SpriteAtlasPackingSettings packingSettings { get; set; }
+        extern public SpriteAtlasTextureSettings textureSettings { get; set; }
+        extern public void SetPlatformSettings(TextureImporterPlatformSettings src);
+        extern public TextureImporterPlatformSettings GetPlatformSettings(string buildTarget);
+        extern internal TextureFormat GetTextureFormat(BuildTarget target);
+        extern internal TextureImporterPlatformSettings GetSecondaryPlatformSettings(string buildTarget, string secondaryTextureName);
+        extern internal void SetSecondaryPlatformSettings(TextureImporterPlatformSettings src, string secondaryTextureName);
+        extern internal bool GetSecondaryColorSpace(string secondaryTextureName);
+        extern internal void SetSecondaryColorSpace(string secondaryTextureName, bool srGB);
+        extern internal void DeleteSecondaryPlatformSettings(string secondaryTextureName);
     }
 };

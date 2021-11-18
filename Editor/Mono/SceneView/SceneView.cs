@@ -153,6 +153,18 @@ namespace UnityEditor
         internal static SavedBool s_PreferenceEnableFilteringWhileSearching = new SavedBool("SceneView.enableFilteringWhileSearching", true);
         internal static SavedBool s_PreferenceEnableFilteringWhileLodGroupEditing = new SavedBool("SceneView.enableFilteringWhileLodGroupEditing", true);
 
+        internal static SavedFloat s_DrawModeExposure = new SavedFloat("SceneView.drawModeExposure", 0.0f);
+
+        [RequiredByNativeCode]
+        internal static float GetDrawModeExposure()
+        {
+            return SceneView.s_DrawModeExposure;
+        }
+
+        internal bool showExposureSettings =>
+            (this.cameraMode.drawMode == DrawCameraMode.BakedEmissive || this.cameraMode.drawMode == DrawCameraMode.BakedLightmap ||
+                this.cameraMode.drawMode == DrawCameraMode.RealtimeEmissive || this.cameraMode.drawMode == DrawCameraMode.RealtimeIndirect || this.cameraMode.drawMode == DrawCameraMode.LitClustering);
+
         internal static Transform GetDefaultParentObjectIfSet()
         {
             Transform parentObject = null;
@@ -601,19 +613,6 @@ namespace UnityEditor
                 Shader.SetGlobalFloat("_CheckPureMetal", m_DoValidateTrueMetals ? 1.0f : 0.0f);
             }
         }
-
-        [SerializeField]
-        float m_ExposureSliderValue = 0.0f;
-
-        internal float bakedLightmapExposure
-        {
-            get => m_ExposureSliderValue;
-            set => m_ExposureSliderValue = value;
-        }
-
-        internal bool showExposureSettings =>
-            (this.cameraMode.drawMode == DrawCameraMode.BakedEmissive || this.cameraMode.drawMode == DrawCameraMode.BakedLightmap ||
-                this.cameraMode.drawMode == DrawCameraMode.RealtimeEmissive || this.cameraMode.drawMode == DrawCameraMode.RealtimeIndirect || this.cameraMode.drawMode == DrawCameraMode.LitClustering);
 
         [SerializeField]
         SceneViewState m_SceneViewState;
@@ -1378,7 +1377,11 @@ namespace UnityEditor
                 m_LastSceneViewOrtho = false;
                 m_Rotation.value = Quaternion.identity;
                 m_Ortho.value = true;
-                m_2DMode = true;
+                if(!m_2DMode)
+                {
+                    m_2DMode = true;
+                    modeChanged2D?.Invoke(m_2DMode);
+                }
 
                 // Enforcing Rect tool as the default in 2D mode.
                 if (Tools.current == Tool.Move)
@@ -2304,6 +2307,8 @@ namespace UnityEditor
 
             HandleClickAndDragToFocus();
 
+            BeginWindows();
+
             if (evt.type == EventType.Layout)
                 m_ShowSceneViewWindows = (lastActiveSceneView == this);
 
@@ -2442,7 +2447,7 @@ namespace UnityEditor
             Handles.SetCameraFilterMode(m_Camera, Handles.CameraFilterMode.Off);
 
             // Handle Dragging of stuff over scene view
-            HandleDragging();
+            HandleDragging(evt);
 
             if (evt.type == EventType.Repaint)
             {
@@ -2463,6 +2468,8 @@ namespace UnityEditor
 
             GUI.EndGroup();
             GUI.color = origColor;
+
+            EndWindows();
 
             HandleMouseCursor();
 
@@ -3256,10 +3263,8 @@ namespace UnityEditor
             return true;
         }
 
-        void HandleDragging()
+        internal void HandleDragging(Event evt)
         {
-            Event evt = Event.current;
-
             Object[] dragAndDropObjects = DragAndDrop.objectReferences;
 
             switch (evt.type)
@@ -3275,35 +3280,42 @@ namespace UnityEditor
                     if (!CanDoDrag(dragAndDropObjects))
                     {
                         DragAndDrop.visualMode = DragAndDropVisualMode.Rejected;
-                        break;
+                        return;
                     }
 
                     bool isPerform = evt.type == EventType.DragPerform;
-                    var defaultParentObject = GetDefaultParentObjectIfSet();
-                    var parent = defaultParentObject != null ? defaultParentObject : customParentForDraggedObjects;
-                    var go = HandleUtility.PickGameObject(Event.current.mousePosition, true);
+                    GameObject pickedObject = null;
+                    Transform parentTransform = null;
+                    bool dropHandled = false;
 
                     // Allow user defined Custom Drop Handler
                     if (DragAndDrop.HasHandler(DragAndDropWindowTarget.sceneView))
                     {
-                        DragAndDrop.visualMode = DragAndDrop.Drop(DragAndDropWindowTarget.sceneView, go, pivot, Event.current.mousePosition, parent, isPerform);
+                        PickObject(ref pickedObject, ref parentTransform);
+                        DragAndDrop.visualMode = DragAndDrop.Drop(DragAndDropWindowTarget.sceneView, pickedObject, pivot, Event.current.mousePosition, parentTransform, isPerform);
+                        dropHandled = DragAndDrop.visualMode != DragAndDropVisualMode.None;
                     }
 
                     // Allow editor Wrapper Drop Handler
                     var allObjectsHandled = false;
-                    if (DragAndDrop.visualMode == DragAndDropVisualMode.None)
+                    if (!dropHandled)
                     {
                         allObjectsHandled = CallEditorDragFunctions(dragAndDropObjects);
                     }
 
+                    if (evt.type == EventType.Used || allObjectsHandled)
+                        return;
+
                     // C++ legacy Drop Handler
-                    if (!IsDropAccepted(allObjectsHandled))
+                    if (!dropHandled)
                     {
-                        DragAndDrop.visualMode = InternalEditorUtility.SceneViewDrag(go, pivot, Event.current.mousePosition, parent, isPerform);
+                        if (pickedObject == null || parentTransform == null)
+                            PickObject(ref pickedObject, ref parentTransform);
+                        DragAndDrop.visualMode = InternalEditorUtility.SceneViewDrag(pickedObject, pivot, Event.current.mousePosition, parentTransform, isPerform);
                     }
 
                     evt.Use();
-                    if (IsDropAccepted(allObjectsHandled))
+                    if (isPerform && DragAndDrop.visualMode != DragAndDropVisualMode.None && DragAndDrop.visualMode != DragAndDropVisualMode.Rejected)
                     {
                         DragAndDrop.AcceptDrag();
                         // Bail out as state can be messed up by now.
@@ -3317,9 +3329,11 @@ namespace UnityEditor
             }
         }
 
-        bool IsDropAccepted(bool allObjectsHandledInExternalHandlers)
+        void PickObject(ref GameObject dropUpon, ref Transform parentTransform)
         {
-            return allObjectsHandledInExternalHandlers || DragAndDrop.visualMode != DragAndDropVisualMode.None || DragAndDrop.visualMode != DragAndDropVisualMode.Rejected;
+            var defaultParentObject = GetDefaultParentObjectIfSet();
+            parentTransform = defaultParentObject != null ? defaultParentObject : customParentForDraggedObjects;
+            dropUpon = HandleUtility.PickGameObject(Event.current.mousePosition, true);
         }
 
         void CommandsGUI()
@@ -3682,9 +3696,7 @@ namespace UnityEditor
                                     // Ironically, only allow multi object access inside OnSceneGUI if editor does NOT support multi-object editing.
                                     // since there's no harm in going through the serializedObject there if there's always only one target.
                                     Editor.m_AllowMultiObjectAccess = !canEditMultipleObjects;
-                                    BeginWindows();
                                     onSceneGui(editor);
-                                    EndWindows();
                                     Editor.m_AllowMultiObjectAccess = true;
                                     if (EditorGUI.EndChangeCheck())
                                         editor.serializedObject.SetIsDifferentCacheDirty();
@@ -3700,8 +3712,8 @@ namespace UnityEditor
                             GUIUtility.ExitGUI();
                     }
                 }
-
             }
+
             EditorToolManager.InvokeOnSceneGUICustomEditorTools();
 
             if (duringSceneGui != null)

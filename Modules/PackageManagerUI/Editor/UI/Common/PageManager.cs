@@ -26,11 +26,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             RefreshOptions.UpmList | RefreshOptions.UpmSearch,                  // PackageFilterTab.MyRegistries
         };
 
-        public virtual event Action<IPackageVersion> onSelectionChanged = delegate {};
+        public virtual event Action<PageSelection> onSelectionChanged = delegate {};
         public virtual event Action<IEnumerable<VisualState>> onVisualStateChange = delegate {};
         public virtual event Action<ListUpdateArgs> onListUpdate = delegate {};
         public virtual event Action<IPage> onListRebuild = delegate {};
-        public virtual event Action<IPage> onSubPageAdded = delegate {};
+        public virtual event Action<IPage> onSubPageChanged = delegate {};
         public virtual event Action<PageFilters> onFiltersChange = delegate {};
 
         public virtual event Action onRefreshOperationStart = delegate {};
@@ -146,22 +146,28 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_RefreshErrors[m_SerializedRefreshErrorsKeys[i]] = m_SerializedRefreshErrorsValues[i];
         }
 
+        public virtual PackageSelectionObject GetPackageSelectionObject(PackageAndVersionIdPair pair, bool createIfNotFound = false)
+        {
+            m_PackageDatabase.GetPackageAndVersion(pair?.packageUniqueId, pair?.versionUniqueId, out var package, out var version);
+            return GetPackageSelectionObject(package, version, createIfNotFound);
+        }
+
         public virtual PackageSelectionObject GetPackageSelectionObject(IPackage package, IPackageVersion version = null, bool createIfNotFound = false)
         {
             if (package == null)
                 return null;
 
-            version = version ?? package.versions.primary;
-            var packageSelectionObject = m_PackageSelectionObjects.Get(version.uniqueId);
+            var uniqueId = version?.uniqueId ?? package.uniqueId;
+            var packageSelectionObject = m_PackageSelectionObjects.Get(uniqueId);
             if (packageSelectionObject == null && createIfNotFound)
             {
                 packageSelectionObject = ScriptableObject.CreateInstance<PackageSelectionObject>();
                 packageSelectionObject.hideFlags = HideFlags.DontSave;
-                packageSelectionObject.name = version.displayName;
-                packageSelectionObject.displayName = version.displayName;
+                packageSelectionObject.name = package.displayName;
+                packageSelectionObject.displayName = package.displayName;
                 packageSelectionObject.packageUniqueId = package.uniqueId;
-                packageSelectionObject.versionUniqueId = version.uniqueId;
-                m_PackageSelectionObjects[version.uniqueId] = packageSelectionObject;
+                packageSelectionObject.versionUniqueId = version?.uniqueId;
+                m_PackageSelectionObjects[uniqueId] = packageSelectionObject;
             }
             return packageSelectionObject;
         }
@@ -169,9 +175,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private IPage GetPageFromTab(PackageFilterTab? tab = null)
         {
             var filterTab = tab ?? m_PackageFiltering.currentFilterTab;
-
-            IPage page;
-            return m_Pages.TryGetValue(filterTab, out page) ? page : CreatePageFromTab(tab);
+            return m_Pages.TryGetValue(filterTab, out var page) ? page : CreatePageFromTab(tab);
         }
 
         private T GetPageFromTab<T>(PackageFilterTab? tab = null) where T : class, IPage
@@ -272,7 +276,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             page.onVisualStateChange += TriggerOnVisualStateChange;
             page.onListUpdate += TriggerOnPageUpdate;
             page.onListRebuild += TriggerOnPageRebuild;
-            page.onSubPageAdded += TriggerOnSubPageAdded;
+            page.onSubPageChanged += TriggerOnSubPageChanged;
             page.onFiltersChange += TriggerOnFiltersChange;
         }
 
@@ -282,15 +286,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             page.onVisualStateChange -= TriggerOnVisualStateChange;
             page.onListUpdate -= TriggerOnPageUpdate;
             page.onListRebuild -= TriggerOnPageRebuild;
-            page.onSubPageAdded -= TriggerOnSubPageAdded;
+            page.onSubPageChanged -= TriggerOnSubPageChanged;
             page.onFiltersChange -= TriggerOnFiltersChange;
         }
 
-        private void OnPageSelectionChanged(IPackageVersion version)
+        private void OnPageSelectionChanged(PageSelection selection)
         {
-            onSelectionChanged?.Invoke(version);
-
-            SelectInInspector(m_PackageDatabase.GetPackage(version), version, false);
+            onSelectionChanged?.Invoke(selection);
+            SelectInInspector(selection, false);
         }
 
         private void TriggerOnVisualStateChange(IEnumerable<VisualState> visualStates)
@@ -308,9 +311,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             onListRebuild?.Invoke(page);
         }
 
-        private void TriggerOnSubPageAdded(IPage page)
+        private void TriggerOnSubPageChanged(IPage page)
         {
-            onSubPageAdded?.Invoke(page);
+            onSubPageChanged?.Invoke(page);
         }
 
         private void TriggerOnFiltersChange(PageFilters filters)
@@ -328,60 +331,89 @@ namespace UnityEditor.PackageManager.UI.Internal
             return GetPageFromTab(tab);
         }
 
-        public virtual IPackageVersion GetSelectedVersion()
+        public virtual PageSelection GetSelection()
         {
-            return GetPageFromTab().GetSelectedVersion();
-        }
-
-        public virtual void GetSelectedPackageAndVersion(out IPackage package, out IPackageVersion version)
-        {
-            GetPageFromTab().GetSelectedPackageAndVersion(out package, out version);
+            return GetPageFromTab().GetSelection();
         }
 
         public virtual void ClearSelection()
         {
-            SetSelected(null);
+            SetSelected(Enumerable.Empty<PackageAndVersionIdPair>());
         }
 
         public virtual void SetSelected(IPackage package, IPackageVersion version = null, bool forceSelectInInspector = false)
         {
-            GetPageFromTab().SetSelected(package, version);
-            SelectInInspector(package, version, forceSelectInInspector);
+            SetSelected(new[] { new PackageAndVersionIdPair(package?.uniqueId, version?.uniqueId) }, forceSelectInInspector);
+        }
+
+        public virtual void SetSelected(IEnumerable<PackageAndVersionIdPair> newSelection, bool forceSelectInInspector = false)
+        {
+            var page = GetPageFromTab();
+            page.SetNewSelection(newSelection);
+            if (forceSelectInInspector)
+                SelectInInspector(page.GetSelection(), true);
+        }
+
+        public virtual void ToggleSelected(string packageUniqueId, bool forceSelectInInspector = false)
+        {
+            var page = GetPageFromTab();
+            page.ToggleSelection(packageUniqueId);
+            if (forceSelectInInspector)
+                SelectInInspector(page.GetSelection(), true);
+        }
+
+        public virtual void AmendSelection(IEnumerable<PackageAndVersionIdPair> toAddOrUpdate, IEnumerable<PackageAndVersionIdPair> toRemove, bool forceSelectInInspector = false)
+        {
+            var page = GetPageFromTab();
+            page.AmendSelection(toAddOrUpdate, toRemove);
+            if (forceSelectInInspector)
+                SelectInInspector(page.GetSelection(), true);
+        }
+
+        public virtual void RemoveSelection(IEnumerable<PackageAndVersionIdPair> toRemove, bool forceSelectInInspector = false)
+        {
+            var previousFirstSelection = GetSelection().firstSelection;
+            AmendSelection(Enumerable.Empty<PackageAndVersionIdPair>(), toRemove, forceSelectInInspector);
+            if (!GetSelection().Any())
+                SetSelected(new[] { previousFirstSelection });
         }
 
         // Returns true if selection is updated after this call, otherwise returns false
         public virtual bool UpdateSelectionIfCurrentSelectionIsInvalid()
         {
             var page = GetCurrentPage();
-            var selectedVisualState = page.GetSelectedVisualState();
+            var selection = page.GetSelection();
 
-            // Re-select the primary version of a package if the previous selected version could not be found anymore (while the package could still be found)
-            // This could happen when we uninstall a package or when we change from a package with a placeholder versions to a real package with real versions.
-            if (selectedVisualState?.visible == true)
+            var toAddOrUpdate = new List<PackageAndVersionIdPair>();
+            var toRemove = new List<PackageAndVersionIdPair>();
+            foreach (var item in selection)
             {
-                m_PackageDatabase.GetPackageAndVersion(selectedVisualState.packageUniqueId, selectedVisualState.selectedVersionId, out IPackage package, out IPackageVersion version);
-                if (package != null)
+                m_PackageDatabase.GetPackageAndVersion(item, out var package, out var version);
+                var visualState = page.GetVisualState(item.packageUniqueId);
+                if (package == null || visualState?.visible != true)
                 {
-                    if (version != null)
-                        return false;
-                    SetSelected(package, package?.versions.primary);
-                    return true;
+                    toRemove.Add(item);
+                    continue;
                 }
+
+                // Re-select the primary version of a package if the package item is no longer expanded,
+                // or if the previous selected version could not be found anymore (while the package could still be found)
+                // This could happen when we uninstall a package or when we change from placeholder version to the real version.
+                if (!string.IsNullOrEmpty(item.versionUniqueId) && (version == null || !visualState.expanded))
+                    toAddOrUpdate.Add(new PackageAndVersionIdPair(item.packageUniqueId));
             }
 
-            var firstVisible = page.visualStates.FirstOrDefault(v => v.visible && v.packageUniqueId != selectedVisualState?.packageUniqueId);
-            if (firstVisible == null)
+            if (selection.Count > 0 && toAddOrUpdate.Count + toRemove.Count == 0)
+                return false;
+
+            if (toRemove.Count == selection.Count)
             {
-                if (selectedVisualState == null)
-                    return false;
-                ClearSelection();
+                var firstVisible = page.visualStates.FirstOrDefault(v => v.visible && !selection.Contains(v.packageUniqueId));
+                if (firstVisible != null)
+                    toAddOrUpdate.Add(new PackageAndVersionIdPair(firstVisible.packageUniqueId));
             }
-            else
-            {
-                m_PackageDatabase.GetPackageAndVersion(firstVisible.packageUniqueId, firstVisible.selectedVersionId, out IPackage package, out IPackageVersion version);
-                SetSelected(package, version);
-            }
-            return true;
+
+            return page.AmendSelection(toAddOrUpdate, toRemove);
         }
 
         public virtual void TriggerOnSelectionChanged()
@@ -389,17 +421,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             GetPageFromTab().TriggerOnSelectionChanged();
         }
 
-        private void SelectInInspector(IPackage package, IPackageVersion version, bool forceSelectInInspector)
+        private void SelectInInspector(PageSelection selection, bool forceSelectInInspector)
         {
-            // There are two situations when we want to select a package in the inspector
+            // There are 3 situations when we want to select a package in the inspector
             // 1) we explicitly/force to select it as a result of a manual action (in this case, forceSelectInInspector should be set to true)
-            // 2) currently another package is selected in inspector, hence we are sure that we are not stealing selection from some other window
-            var currentPackageSelection = m_Selection.activeObject as PackageSelectionObject;
-            if (forceSelectInInspector || currentPackageSelection != null)
+            // 2) currently there's no active selection at all
+            // 3) currently another package is selected in inspector, hence we are sure that we are not stealing selection from some other window
+            if (forceSelectInInspector || m_Selection.activeObject == null || m_Selection.activeObject is PackageSelectionObject)
             {
-                var packageSelectionObject = GetPackageSelectionObject(package, version, true);
-                if (m_Selection.activeObject != packageSelectionObject)
-                    m_Selection.activeObject = packageSelectionObject;
+                var packageSelectionObjects = selection.Select(s => GetPackageSelectionObject(s, true)).ToArray();
+                m_Selection.objects = packageSelectionObjects;
             }
         }
 
@@ -425,37 +456,46 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual PackageFilterTab FindTab(IPackage package, IPackageVersion version = null)
         {
-            var page = GetPageFromTab();
-            if (page.Contains(package?.uniqueId))
-                return page.tab;
+            return FindTab(new[] { version ?? package?.versions.primary });
+        }
 
-            if (package?.Is(PackageType.BuiltIn) == true)
+        private PackageFilterTab FindTab(IEnumerable<IPackageVersion> packageVersions)
+        {
+            var firstPackageVersion = packageVersions?.FirstOrDefault();
+            if (firstPackageVersion == null)
+                return m_PackageFiltering.currentFilterTab;
+
+            // Since built in package and asset store packages have their own tabs, we only need to check the first item to know which tab these packages belong to
+            if (firstPackageVersion.package.Is(PackageType.BuiltIn))
                 return PackageFilterTab.BuiltIn;
-
-            if (package?.Is(PackageType.AssetStore) == true)
+            if (firstPackageVersion.package.Is(PackageType.AssetStore))
                 return PackageFilterTab.AssetStore;
 
-            if (version?.isInstalled == true || package?.versions?.installed != null
-                || (package?.progress == PackageProgress.Installing && package is PlaceholderPackage))
-                return PackageFilterTab.InProject;
+            var page = GetPageFromTab();
+            if (packageVersions.All(v => page.Contains(v.packageUniqueId)))
+                return page.tab;
 
-            if (!m_SettingsProxy.enablePreReleasePackages && ((version?.version?.Prerelease.StartsWith("pre.") ?? false) ||
-                                                              (package?.versions.primary.version?.Prerelease.StartsWith("-pre.") ?? false)))
+            if (!m_SettingsProxy.enablePreReleasePackages && packageVersions.Any(v => v.version?.Prerelease.StartsWith("pre.") == true))
             {
                 Debug.Log("You must check \"Enable Pre-release Packages\" in Project Settings > Package Manager in order to see this package.");
-                return page.tab;
+                return m_PackageFiltering.currentFilterTab;
             }
 
-            if (package?.Is(PackageType.Unity) == true)
+            if (packageVersions.All(v => v.package.versions.installed != null || (v.package.progress == PackageProgress.Installing && v.package is PlaceholderPackage)))
+                return PackageFilterTab.InProject;
+
+            if (packageVersions.All(v => v.package.Is(PackageType.Unity)))
                 return PackageFilterTab.UnityRegistry;
 
             return PackageFilterTab.MyRegistries;
         }
 
-        private void OnInstalledOrUninstalled(IPackage package)
+        private void OnPackageUniqueIdFinalize(string tempPackageUniqueId, string finalPackageUniqueId)
         {
-            if (package != null)
-                SetSelected(package, package.versions.installed);
+            var selection = GetSelection();
+            if (!selection.Contains(tempPackageUniqueId))
+                return;
+            AmendSelection(new[] { new PackageAndVersionIdPair(finalPackageUniqueId) }, new[] { new PackageAndVersionIdPair(tempPackageUniqueId) });
         }
 
         private void OnSearchTextChanged(string searchText)
@@ -468,30 +508,20 @@ namespace UnityEditor.PackageManager.UI.Internal
             var page = GetPageFromTab(filterTab);
 
             page.ResetUserUnlockedState();
-
             if (GetRefreshTimestamp(page.tab) == 0)
                 Refresh(filterTab);
             page.Rebuild();
             UpdateSearchTextOnPage(page, m_PackageFiltering.currentSearchText);
 
-            // When the filter tab is changed, on a page level, the selection hasn't changed because selection is kept for each filter
-            // However, the active selection is still changed if you look at package manager as a whole
-            // If the package has been re-locked, change the selected version back to the package's primary version
-            IPackage selectedPackage;
-            IPackageVersion selectedVersion;
-            page.GetSelectedPackageAndVersion(out selectedPackage, out selectedVersion);
+            OnPageSelectionChanged(page.GetSelection());
 
-            var versionToSelect = GetVisualState(selectedPackage)?.isLocked == true ? selectedPackage?.versions.primary
-                : selectedVersion;
-
-            OnPageSelectionChanged(versionToSelect);
-
-            if (m_PackageFiltering.previousFilterTab != null)
+            if (m_PackageFiltering.previousFilterTab != null && m_PackageFiltering.previousFilterTab != PackageFilterTab.AssetStore)
             {
                 var previousPage = GetPage((PackageFilterTab)m_PackageFiltering.previousFilterTab);
-                var selectedGoup = previousPage.GetSelectedVisualState()?.groupName;
-                if (!string.IsNullOrEmpty(selectedGoup))
-                    previousPage.SetGroupExpanded(selectedGoup, true);
+                var selectedVisualStates = previousPage.GetSelectedVisualStates();
+                var selectedGroups = new HashSet<string>(selectedVisualStates.Select(v => v.groupName).Where(groupName => !string.IsNullOrEmpty(groupName)));
+                foreach (var group in selectedGroups)
+                    previousPage.SetGroupExpanded(group, true);
             }
         }
 
@@ -521,7 +551,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var packageSelectionObject = GetPackageSelectionObject(package);
                 if (packageSelectionObject != null)
                 {
-                    m_PackageSelectionObjects.Remove(packageSelectionObject.versionUniqueId);
+                    m_PackageSelectionObjects.Remove(packageSelectionObject.uniqueId);
                     UnityEngine.Object.DestroyImmediate(packageSelectionObject);
                 }
             }
@@ -644,30 +674,36 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
         {
-            var canRefresh = m_PackageFiltering.currentFilterTab == PackageFilterTab.AssetStore &&
-                m_Application.isInternetReachable &&
-                !EditorApplication.isPlaying &&
-                !EditorApplication.isCompiling &&
-                !IsRefreshInProgress(RefreshOptions.Purchased);
-            if (canRefresh && loggedIn)
+            if (m_PackageFiltering.currentFilterTab != PackageFilterTab.AssetStore)
+                return;
+
+            if (!loggedIn)
+                GetPageFromTab<PaginatedPage>(PackageFilterTab.AssetStore).ClearAndRebuild();
+            else if (m_Application.isInternetReachable && !EditorApplication.isPlaying && !EditorApplication.isCompiling && !IsRefreshInProgress(RefreshOptions.Purchased))
                 Refresh(RefreshOptions.Purchased);
         }
 
         private void OnEditorSelectionChanged()
         {
-            var packageSelectionObject = m_Selection.activeObject as PackageSelectionObject;
-            if (packageSelectionObject == null)
+            var selectionIds = new List<PackageAndVersionIdPair>();
+            var selectedVersions = new List<IPackageVersion>();
+            foreach (var selectionObject in m_Selection.objects)
+            {
+                var packageSelectionObject = selectionObject as PackageSelectionObject;
+                if (packageSelectionObject == null)
+                    return;
+                m_PackageDatabase.GetPackageAndVersion(packageSelectionObject.packageUniqueId, packageSelectionObject.versionUniqueId, out var package, out var version);
+                if (package == null && version == null)
+                    continue;
+                selectedVersions.Add(version ?? package?.versions.primary);
+                selectionIds.Add(new PackageAndVersionIdPair(packageSelectionObject.packageUniqueId, packageSelectionObject.versionUniqueId));
+            }
+
+            if (!selectionIds.Any())
                 return;
 
-            IPackage package;
-            IPackageVersion version;
-            m_PackageDatabase.GetPackageAndVersion(packageSelectionObject.packageUniqueId, packageSelectionObject.versionUniqueId, out package, out version);
-            if (package == null || version == null)
-                return;
-
-            var tab = FindTab(package, version);
-            m_PackageFiltering.currentFilterTab = tab;
-            SetSelected(package, version);
+            m_PackageFiltering.currentFilterTab = FindTab(selectedVersions);
+            SetSelected(selectionIds);
         }
 
         public void OnEnable()
@@ -685,7 +721,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreClient.onProductListFetched += OnProductListFetched;
             m_AssetStoreClient.onProductFetched += OnProductFetched;
 
-            m_PackageDatabase.onInstallOrUninstallSuccess += OnInstalledOrUninstalled;
+            m_PackageDatabase.onPackageUniqueIdFinalize += OnPackageUniqueIdFinalize;
             m_PackageDatabase.onPackagesChanged += OnPackagesChanged;
 
             m_PackageFiltering.onFilterTabChanged += OnFilterChanged;
@@ -708,7 +744,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreClient.onProductListFetched -= OnProductListFetched;
             m_AssetStoreClient.onProductFetched -= OnProductFetched;
 
-            m_PackageDatabase.onInstallOrUninstallSuccess -= OnInstalledOrUninstalled;
+            m_PackageDatabase.onPackageUniqueIdFinalize -= OnPackageUniqueIdFinalize;
             m_PackageDatabase.onPackagesChanged -= OnPackagesChanged;
 
             m_PackageFiltering.onFilterTabChanged -= OnFilterChanged;
@@ -754,7 +790,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 var packageSelectionObject = UnityEngine.Object.FindObjectFromInstanceID(id) as PackageSelectionObject;
                 if (packageSelectionObject != null)
-                    m_PackageSelectionObjects[packageSelectionObject.versionUniqueId] = packageSelectionObject;
+                    m_PackageSelectionObjects[packageSelectionObject.uniqueId] = packageSelectionObject;
             }
         }
 
@@ -789,7 +825,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             foreach (var page in m_Pages.Values)
             {
-                page.SetSelected(null);
+                page.SetNewSelection(Enumerable.Empty<PackageAndVersionIdPair>());
                 page.Rebuild();
                 UnregisterPageEvents(page);
             }

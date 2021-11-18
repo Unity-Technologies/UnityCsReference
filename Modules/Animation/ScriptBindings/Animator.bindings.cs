@@ -972,6 +972,15 @@ namespace UnityEngine
 
         public Transform GetBoneTransform(HumanBodyBones humanBoneId)
         {
+            if (avatar == null)
+                throw new InvalidOperationException("Avatar is null.");
+
+            if (!avatar.isValid)
+                throw new InvalidOperationException("Avatar is not valid.");
+
+            if (!avatar.isHuman)
+                throw new InvalidOperationException("Avatar is not of type humanoid.");
+
             if (humanBoneId < 0 || humanBoneId >= HumanBodyBones.LastBone)
                 throw new IndexOutOfRangeException("humanBoneId must be between 0 and " + HumanBodyBones.LastBone);
 

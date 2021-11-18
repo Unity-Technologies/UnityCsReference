@@ -265,6 +265,8 @@ namespace Unity.UI.Builder
                 new BuilderLibraryTreeItem("Integer", nameof(IntegerField), typeof(IntegerField), () => new IntegerField("Int Field") { value = 42 }),
                 new BuilderLibraryTreeItem("Float", nameof(FloatField), typeof(FloatField), () => new FloatField("Float Field") { value = 42.2f }),
                 new BuilderLibraryTreeItem("Long", nameof(LongField), typeof(LongField), () => new LongField("Long Field") { value = 42 }),
+                new BuilderLibraryTreeItem("Double", nameof(DoubleField), typeof(DoubleField), () => new DoubleField("Double Field") { value = 42.2 }),
+                new BuilderLibraryTreeItem("Hash128", nameof(Hash128Field), typeof(Hash128Field), () => new Hash128Field("Hash128 Field") { value = Hash128.Compute("42") }),
 
                 new BuilderLibraryTreeItem("Progress Bar", nameof(ProgressBar), typeof(ProgressBar), () => new ProgressBar() { title = "my-progress", value = 22 }),
 
@@ -277,8 +279,7 @@ namespace Unity.UI.Builder
                 new BuilderLibraryTreeItem("Vector3 (Int)", nameof(Vector3IntField), typeof(Vector3IntField), () => new Vector3IntField("Vector3Int")),
                 new BuilderLibraryTreeItem("Rect (Int)", nameof(RectIntField), typeof(RectIntField), () => new RectIntField("RectInt")),
                 new BuilderLibraryTreeItem("Bounds (Int)", nameof(BoundsIntField), typeof(BoundsIntField), () => new BoundsIntField("BoundsInt")),
-                new BuilderLibraryTreeItem("Object Field", nameof(ObjectField), typeof(ObjectField), () => new ObjectField("Object Field") { value = new Texture2D(10, 10) { name = "new_texture" } }),
-            }) { isEditorOnly = true, isHeader = true };
+            }) { isHeader = true };
 
             var valueFields = new BuilderLibraryTreeItem("Value Fields", null, null, null, null, new List<TreeViewItem<string>>
             {
@@ -326,6 +327,7 @@ namespace Unity.UI.Builder
 
             var inspectors = new BuilderLibraryTreeItem("Inspectors", null, null, null, null, new List<TreeViewItem<string>>
             {
+                new BuilderLibraryTreeItem("Object Field", nameof(ObjectField), typeof(ObjectField), () => new ObjectField("Object Field") { value = new Texture2D(10, 10) { name = "new_texture" } }),
                 new BuilderLibraryTreeItem("PropertyField", nameof(PropertyField), typeof(PropertyField), () => new PropertyField())
             }) { isEditorOnly = true, isHeader = true };
 

@@ -20,7 +20,7 @@ namespace UnityEditor.Toolbars
 
         static StyleSheet s_Style;
         static StyleSheet s_Skin;
-        static internal void AddStyleSheets(VisualElement ve)
+        internal static  void AddStyleSheets(VisualElement ve)
         {
             if (s_Skin == null)
             {
@@ -309,7 +309,7 @@ namespace UnityEditor.Toolbars
             SceneViewToolbarElements.AddStyleSheets(this);
         }
 
-        void OnClickableOnclicked()
+        void OnDropdownClicked()
         {
             if (!(containerWindow is SceneView view))
                 return;
@@ -326,14 +326,14 @@ namespace UnityEditor.Toolbars
             sceneView.gridVisibilityChanged += SceneViewOngridVisibilityChanged;
             sceneView.sceneViewGrids.gridRenderAxisChanged += OnSceneViewOngridRenderAxisChanged;
             OnSceneViewOngridRenderAxisChanged(sceneView.sceneViewGrids.gridAxis);
-            dropdownClicked += OnClickableOnclicked;
+            dropdownClicked += OnDropdownClicked;
         }
 
         void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
             sceneView.gridVisibilityChanged -= SceneViewOngridVisibilityChanged;
             sceneView.sceneViewGrids.gridRenderAxisChanged -= OnSceneViewOngridRenderAxisChanged;
-            dropdownClicked -= OnClickableOnclicked;
+            dropdownClicked -= OnDropdownClicked;
         }
 
         void OnSceneViewOngridRenderAxisChanged(SceneViewGrid.GridRenderAxis axis)
@@ -533,18 +533,39 @@ namespace UnityEditor.Toolbars
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
         {
-            clicked += OnClicked;
+            clicked += OnDropdownClicked;
         }
 
-        void OnClicked()
+        void OnDropdownClicked()
         {
             OverlayPopupWindow.Show<SnapIncrementSettingsWindow>(this, new Vector2(300, 88));
         }
 
         void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
-            clicked -= OnClicked;
+            clicked -= OnDropdownClicked;
+        }
+    }
+
+    [EditorToolbarElement("SceneView/Search", typeof(SceneView))]
+    sealed class SceneViewSearchElement : VisualElement, IAccessContainerWindow
+    {
+        public EditorWindow containerWindow { get; set; }
+
+        public SceneViewSearchElement()
+        {
+            name = "Search";
+            tooltip = "Search the Hierarchy / Scene View";
+            SceneViewToolbarElements.AddStyleSheets(this);
+            Add(new IMGUIContainer { onGUIHandler = OnGUI });
+        }
+
+        void OnGUI()
+        {
+            EditorGUILayout.BeginHorizontal();
+            if (containerWindow is SceneView sceneView)
+                sceneView.ToolbarSearchFieldGUI();
+            EditorGUILayout.EndHorizontal();
         }
     }
 }
-// namespace

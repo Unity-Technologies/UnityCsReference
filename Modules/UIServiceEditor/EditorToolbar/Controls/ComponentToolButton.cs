@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEditor.EditorTools;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -18,6 +19,7 @@ namespace UnityEditor.Toolbars
             GUIContent content = EditorToolUtility.GetToolbarIcon(m_Tool);
             tooltip = content.tooltip;
             icon = content.image as Texture2D;
+            name = m_Tool == null ? "null" : m_Tool.GetType().Name;
 
             this.RegisterValueChangedCallback(evt => { SetToolActive(evt.newValue); });
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);

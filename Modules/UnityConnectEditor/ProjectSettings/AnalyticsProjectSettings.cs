@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.Connect.Fallback;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -71,15 +72,26 @@ namespace UnityEditor.Connect
         [SettingsProvider]
         public static SettingsProvider CreateServicesProvider()
         {
-            return new AnalyticsProjectSettings(k_ProjectSettingsPath, SettingsScope.Project, new List<string>()
+            SettingsProvider projectSettings = null;
+
+            if (ShouldShowBuiltInProjectSettings(AnalyticsService.instance))
             {
-                L10n.Tr(k_KeywordAnalytics),
-                L10n.Tr(k_KeywordInsights),
-                L10n.Tr(k_KeywordEvents),
-                L10n.Tr(k_KeywordMonetization),
-                L10n.Tr(k_KeywordDashboard),
-                L10n.Tr(k_KeywordValidator),
-            });
+                projectSettings = new AnalyticsProjectSettings(k_ProjectSettingsPath, SettingsScope.Project, new List<string>()
+                    {
+                        L10n.Tr(k_KeywordAnalytics),
+                        L10n.Tr(k_KeywordInsights),
+                        L10n.Tr(k_KeywordEvents),
+                        L10n.Tr(k_KeywordMonetization),
+                        L10n.Tr(k_KeywordDashboard),
+                        L10n.Tr(k_KeywordValidator),
+                    });
+            }
+            else if (ShouldShowFallbackProjectSettings(AnalyticsService.instance))
+            {
+                projectSettings = new FallbackProjectSettings(AnalyticsService.instance, SettingsScope.Project);
+            }
+
+            return projectSettings;
         }
 
         protected override SingleService serviceInstance

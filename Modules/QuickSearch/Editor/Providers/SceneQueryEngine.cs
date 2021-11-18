@@ -228,8 +228,8 @@ namespace UnityEditor.Search.Providers
             {
                 var documentKey = SearchUtils.GetDocumentKey(go);
                 var recordKey = PropertyDatabase.CreateRecordKey(documentKey, PropertyDatabase.CreatePropertyHash(propertyName));
-                if (view.TryLoadProperty(recordKey, out object data))
-                    return (SearchValue)data;
+                if (view.TryLoadProperty(recordKey, out object data) && data is SearchValue sv)
+                    return sv;
 
                 foreach (var c in EnumerateSubObjects(go))
                 {

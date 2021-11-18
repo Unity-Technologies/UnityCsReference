@@ -475,10 +475,14 @@ namespace UnityEditorInternal
             }
             else
             {
-                float temp;
-                if (float.TryParse(modification.value, NumberStyles.Float, CultureInfo.InvariantCulture, out temp))
+                if(binding.isDiscreteCurve && int.TryParse(modification.value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int tempInt))
                 {
-                    outObject = temp;
+                    outObject = tempInt;
+                    return true;
+                }
+                else if (float.TryParse(modification.value, NumberStyles.Float, CultureInfo.InvariantCulture, out float tempFloat))
+                {
+                    outObject = tempFloat;
                     return true;
                 }
                 else
@@ -505,7 +509,15 @@ namespace UnityEditorInternal
                 if (curve.length == 0)
                 {
                     if (state.currentFrame != 0)
+                    {
+                        // case 1373924
+                        // In the case of a new curve, we also have to convert the previousValue to float for a discrete int
+                        if(binding.isDiscreteCurve)
+                        {
+                            previousValue = UnityEngine.Animations.DiscreteEvaluationAttributeUtilities.ConvertDiscreteIntToFloat((int)previousValue);
+                        }
                         AnimationWindowUtility.AddKeyframeToCurve(curve, previousValue, type, AnimationKeyTime.Frame(0, clip.frameRate));
+                    }
                 }
             }
 

@@ -25,21 +25,21 @@ namespace UnityEditor.Search
                 flags = SearchViewFlags.DisableInspectorPreview |
                         SearchViewFlags.DisableSavedSearchQuery |
                         SearchViewFlags.GridView,
-                title = "Scenes",
+                title = L10n.Tr("Scenes"),
                 excludeNoneItem = true
             });
         }
 
         static IEnumerable<SearchProvider> CreateOpenSceneProviders()
         {
-            yield return new SearchProvider("stemplates", "Templates", FetchTemplates)
+            yield return new SearchProvider("stemplates", L10n.Tr("Templates"), FetchTemplates)
             {
                 priority = 2998,
                 fetchPreview = FetchTemplatePreview,
                 fetchThumbnail = FetchTemplateThumbnail
             };
 
-            yield return new SearchProvider("sassets", "Scenes", FetchScenes)
+            yield return new SearchProvider("sassets", L10n.Tr("Scenes"), FetchScenes)
             {
                 priority = 2999,
                 fetchLabel = FetchSceneLabel,

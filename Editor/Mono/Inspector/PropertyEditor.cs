@@ -19,6 +19,7 @@ using UnityEditor.SceneManagement;
 using Object = UnityEngine.Object;
 using AssetImporterEditor = UnityEditor.AssetImporters.AssetImporterEditor;
 using JetBrains.Annotations;
+using Unity.Profiling;
 
 namespace UnityEditor
 {
@@ -65,6 +66,16 @@ namespace UnityEditor
 
         protected const long delayRepaintWhilePlayingAnimation = 150; // Delay between repaints in milliseconds while playing animation
         protected long m_LastUpdateWhilePlayingAnimation = 0;
+
+        /// <summary>
+        /// The number of inspector elements to create on the initial draw.
+        /// </summary>
+        const int k_CreateInspectorElementMinCount = 2;
+
+        /// <summary>
+        /// The target number of milliseconds to spend on creating inspector elements per update.
+        /// </summary>
+        const int k_CreateInspectorElementTargetUpdateTime = 5;
 
         [SerializeField] protected List<Object> m_ObjectsLockedBeforeSerialization = new List<Object>();
         [SerializeField] protected List<int> m_InstanceIDsLockedBeforeSerialization = new List<int>();
@@ -115,6 +126,8 @@ namespace UnityEditor
         public Editor lastInteractedEditor { get; set; }
         internal static PropertyEditor HoveredPropertyEditor { get; private set; }
         internal static PropertyEditor FocusedPropertyEditor { get; private set; }
+
+        EditorElementUpdater m_EditorElementUpdater;
 
         public InspectorMode inspectorMode
         {
@@ -276,6 +289,7 @@ namespace UnityEditor
         {
             editorDragging = new EditorDragging(this);
             minSize = new Vector2(k_MinimumWindowWidth, minSize.y);
+            m_EditorElementUpdater = new EditorElementUpdater(this);
         }
 
         [UsedImplicitly]
@@ -410,6 +424,8 @@ namespace UnityEditor
                     wantsRepaint = true;
             }
 
+            m_EditorElementUpdater.CreateInspectorElementsForMilliseconds(k_CreateInspectorElementTargetUpdateTime);
+
             if (wantsRepaint && m_lastRenderedTime + 0.033f < EditorApplication.timeSinceStartup)
             {
                 m_lastRenderedTime = EditorApplication.timeSinceStartup;
@@ -428,6 +444,7 @@ namespace UnityEditor
                 RefreshTitle();
                 // Clear the editors Element so that a real rebuild is done
                 editorsElement.Clear();
+                m_EditorElementUpdater.Clear();
                 tracker.inspectorMode = mode;
                 m_ResetKeyboardControl = true;
                 SceneView.SetActiveEditorsDirty(true);
@@ -519,6 +536,7 @@ namespace UnityEditor
             useUIElementsDefaultInspector = !useUIElementsDefaultInspector;
             // Clear the editors Element so that a real rebuild is done
             editorsElement.Clear();
+            m_EditorElementUpdater.Clear();
             RebuildContentsContainers();
         }
 
@@ -860,6 +878,8 @@ namespace UnityEditor
             return result;
         }
 
+        static readonly ProfilerMarker k_CreateInspectorElements = new ProfilerMarker("PropertyEditor.CreateInspectorElements");
+
         protected virtual void BeginRebuildContentContainers() {}
         protected virtual void EndRebuildContentContainers() {}
         internal virtual void RebuildContentsContainers()
@@ -942,6 +962,19 @@ namespace UnityEditor
                 if (previewAndLabelElement != null)
                     previewAndLabelElement.Add(previewAndLabelsContainer);
             }
+
+            k_CreateInspectorElements.Begin();
+            // Only trigger the fixed count and viewport creation if this is the first build. Otherwise let the update method handle it.
+            if (m_EditorElementUpdater.Position == 0)
+            {
+                // Force create a certain number of inspector elements without invoking a layout pass.
+                // We always want a minimum number of elements to be added.
+                m_EditorElementUpdater.CreateInspectorElementsWithoutLayout(k_CreateInspectorElementMinCount);
+
+                // Continue creating elements until the viewport is full.
+                m_EditorElementUpdater.CreateInspectorElementsForViewport(m_ScrollView, editorsElement);
+            }
+            k_CreateInspectorElements.End();
 
             rootVisualElement.MarkDirtyRepaint();
 
@@ -1662,6 +1695,7 @@ namespace UnityEditor
             if (mapping == null)
             {
                 editorsElement.Clear();
+                m_EditorElementUpdater.Clear();
             }
 
             if (editors.Length == 0)
@@ -1678,11 +1712,10 @@ namespace UnityEditor
             if (m_RemovedComponents == null)
                 ExtractPrefabComponents(); // needed after assembly reload (due to HashSet not being serializable)
 
-            bool checkForRemovedComponents = m_ComponentsInPrefabSource != null;
             int prefabComponentIndex = -1;
             int targetGameObjectIndex = -1;
             GameObject targetGameObject = null;
-            if (checkForRemovedComponents)
+            if (m_ComponentsInPrefabSource != null)
             {
                 targetGameObjectIndex = editors[0] is PrefabImporterEditor ? 1 : 0;
                 targetGameObject = (GameObject)editors[targetGameObjectIndex].target;
@@ -1692,7 +1725,7 @@ namespace UnityEditor
             {
                 editors[editorIndex].propertyViewer = this;
                 VisualElement prefabsComponentElement = new VisualElement() { name = "PrefabComponentElement" };
-                if (checkForRemovedComponents && editorIndex > targetGameObjectIndex)
+                if (m_ComponentsInPrefabSource != null && editorIndex > targetGameObjectIndex)
                 {
                     if (prefabComponentIndex == -1)
                         prefabComponentIndex = 0;
@@ -1735,6 +1768,9 @@ namespace UnityEditor
                             culledEditorContainer =
                                 EditorUIService.instance.CreateCulledEditorElement(editorIndex, this, editorTitle);
                             editorsElement.Add(culledEditorContainer as VisualElement);
+
+                            if (!EditorUIService.disableInspectorElementThrottling)
+                                m_EditorElementUpdater.Add(culledEditorContainer);
                         }
 
                         continue;
@@ -1747,6 +1783,9 @@ namespace UnityEditor
                             $"{editor.GetType().Name}_{editorTarget.GetType().Name}_{editorTarget.GetInstanceID()}";
                         editorContainer = EditorUIService.instance.CreateEditorElement(editorIndex, this, editorTitle);
                         editorsElement.Add(editorContainer as VisualElement);
+
+                        if (!EditorUIService.disableInspectorElementThrottling)
+                            m_EditorElementUpdater.Add(editorContainer);
                     }
 
                     if (prefabsComponentElement.childCount > 0)
@@ -1771,10 +1810,10 @@ namespace UnityEditor
             }
 
             // Make sure to display any remaining removed components that come after the last component on the GameObject.
-            if (checkForRemovedComponents)
+            if (m_ComponentsInPrefabSource != null)
             {
                 VisualElement prefabsComponentElement = new VisualElement() { name = "RemainingPrefabComponentElement" };
-                while (prefabComponentIndex < m_ComponentsInPrefabSource.Length)
+                while (prefabComponentIndex > -1 && prefabComponentIndex < m_ComponentsInPrefabSource.Length)
                 {
                     Component nextInSource = m_ComponentsInPrefabSource[prefabComponentIndex];
                     AddRemovedPrefabComponentElement(targetGameObject, nextInSource, prefabsComponentElement);

@@ -51,6 +51,22 @@ namespace UnityEditor
             return EditorAnalytics.SendEvent("closeService", parameters);
         }
 
+        const string k_EventName = "editorgameserviceeditor";
+        internal static bool RegisterEventEditorGameService()
+        {
+            const int maxEventsPerHour = 100;
+            const int maxItems = 10;
+            const string vendorKey = "unity.services.core.editor";
+            const int version = 1;
+            var result = EditorAnalytics.RegisterEventWithLimit(k_EventName, maxEventsPerHour, maxItems, vendorKey, version);
+            return result == AnalyticsResult.Ok;
+        }
+
+        internal static bool SendEventEditorGameService(object parameters)
+        {
+            return EditorAnalytics.SendEvent(k_EventName, parameters);
+        }
+
         internal static bool SendImportServicePackageEvent(object parameters)
         {
             return EditorAnalytics.SendEvent("importServicePackage", parameters);

@@ -12,28 +12,28 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageDatabase = packageDatabase;
         }
 
-        protected override bool TriggerAction()
+        protected override bool TriggerAction(IPackageVersion version)
         {
-            var installedVersion = m_Package.versions.installed;
+            var installedVersion = version.package.versions.installed;
             m_PackageDatabase.Install(installedVersion.packageInfo.packageId);
             PackageManagerWindowAnalytics.SendEvent("updateGit", installedVersion.uniqueId);
             return true;
         }
 
-        protected override bool isVisible => m_Package?.versions.installed?.HasTag(PackageTag.Git) == true;
+        protected override bool IsVisible(IPackageVersion version) => version?.package.versions.installed?.HasTag(PackageTag.Git) == true;
 
-        protected override string GetTooltip(bool isInProgress)
+        protected override string GetTooltip(IPackageVersion version, bool isInProgress)
         {
             if (isInProgress)
                 return k_InProgressGenericTooltip;
             return L10n.Tr("Click to check for updates and update to latest version");
         }
 
-        protected override string GetText(bool isInProgress)
+        protected override string GetText(IPackageVersion version, bool isInProgress)
         {
             return L10n.Tr("Update");
         }
 
-        protected override bool isInProgress => m_PackageDatabase.IsInstallInProgress(m_Version);
+        protected override bool IsInProgress(IPackageVersion version) => m_PackageDatabase.IsInstallInProgress(version);
     }
 }

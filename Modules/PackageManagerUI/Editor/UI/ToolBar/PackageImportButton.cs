@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
+
 namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageImportButton : PackageToolBarRegularButton
@@ -14,43 +16,40 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageDatabase = packageDatabase;
         }
 
-        protected override bool TriggerAction()
+        protected override bool TriggerAction(IPackageVersion version)
         {
-            m_PackageDatabase.Import(m_Package);
-            PackageManagerWindowAnalytics.SendEvent("import", m_Package.uniqueId);
+            m_PackageDatabase.Import(version.package);
+            PackageManagerWindowAnalytics.SendEvent("import", version.packageUniqueId);
             return true;
         }
 
-        protected override bool isVisible
+        protected override bool IsVisible(IPackageVersion version)
         {
-            get
-            {
-                if (m_Version?.HasTag(PackageTag.Downloadable) != true)
-                    return false;
+            if (version?.HasTag(PackageTag.Downloadable) != true)
+                return false;
 
-                var operation = m_AssetStoreDownloadManager.GetDownloadOperation(m_Version.packageUniqueId);
-                var isDownloadOperationInProgress = operation?.isInProgress == true
-                    || operation?.state == DownloadState.Pausing
-                    || operation?.state == DownloadState.Paused
-                    || operation?.state == DownloadState.ResumeRequested;
-
-                return !isDownloadOperationInProgress
-                    && m_Version.HasTag(PackageTag.Importable)
-                    && m_Version.isAvailableOnDisk
-                    && m_Package.state != PackageState.InProgress;
-            }
+            return version.HasTag(PackageTag.Importable)
+                && version.isAvailableOnDisk
+                && version.package.state != PackageState.InProgress
+                && m_AssetStoreDownloadManager.GetDownloadOperation(version.packageUniqueId)?.isProgressVisible != true;
         }
 
-        protected override string GetTooltip(bool isInProgress)
+        protected override string GetTooltip(IPackageVersion version, bool isInProgress)
         {
-            return string.Format(L10n.Tr("Click to import assets from the {0} into your project."), m_Package.GetDescriptor());
+            return string.Format(L10n.Tr("Click to import assets from the {0} into your project."), version.package.GetDescriptor());
         }
 
-        protected override string GetText(bool isInProgress)
+        protected override string GetText(IPackageVersion version, bool isInProgress)
         {
             return L10n.Tr("Import");
         }
 
-        protected override bool isInProgress => false;
+        protected override bool IsInProgress(IPackageVersion version) => false;
+
+        protected override IEnumerable<ButtonDisableCondition> GetDisableConditions(IPackageVersion version)
+        {
+            yield return new ButtonDisableCondition(() => version?.HasTag(PackageTag.Disabled) ?? false,
+                L10n.Tr("This package is no longer available and can not be imported anymore."));
+        }
     }
 }

@@ -37,11 +37,25 @@ namespace UnityEditor
             public bool supportsAddComponent;
         }
 
+        private static bool s_SuppressRootEditor = false;
         private static readonly List<RootEditorDesc> kSRootEditor = new List<RootEditorDesc>();
 
         static RootEditorUtils()
         {
             Rebuild();
+        }
+
+        internal static Editor CreateNonRootEditor(UnityEngine.Object[] objects)
+        {
+            try
+            {
+                s_SuppressRootEditor = true;
+                return Editor.CreateEditor(objects);
+            }
+            finally
+            {
+                s_SuppressRootEditor = false;
+            }
         }
 
         internal static bool SupportsAddComponent(Editor[] editors)
@@ -61,6 +75,8 @@ namespace UnityEditor
 
         internal static Type FindRootEditor(UnityEngine.Object[] objects)
         {
+            if (s_SuppressRootEditor)
+                return null;
             foreach (var desc in kSRootEditor)
             {
                 var rootEditorType = desc.needsRootEditor(objects);

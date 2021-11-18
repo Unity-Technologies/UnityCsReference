@@ -88,7 +88,16 @@ namespace UnityEditor.Search.Providers
             m_QueryEngine.AddFilter<string>("is", OnIsFilter, new[] {":"});
 
             m_QueryEngine.AddFilter<string>("t", OnTypeFilter, new[] {"=", ":"});
-            m_QueryEngine.AddFilter<string>("ref", GetReferences, new[] {"=", ":"});
+            m_QueryEngine.SetFilter<string>("ref", GetReferences, new[] {"=", ":"}).AddTypeParser(s =>
+            {
+                if (!s.StartsWith("GlobalObjectId", StringComparison.Ordinal) || !GlobalObjectId.TryParse(s, out var gid))
+                    return ParseResult<string>.none;
+
+                if (gid.targetPrefabId == 0 && gid.identifierType != 2 && gid.identifierType != 4)
+                    return new ParseResult<string>(true, AssetDatabase.GUIDToAssetPath(gid.assetGUID));
+
+                return new ParseResult<string>(true, GlobalObjectId.GlobalObjectIdentifierToInstanceIDSlow(gid).ToString());
+            });
 
             SearchValue.SetupEngine(m_QueryEngine);
 
@@ -367,16 +376,11 @@ namespace UnityEditor.Search.Providers
                 god.refs = refs;
             }
 
+            if (god.refs.Count == 0)
+                return false;
+
             if (Utils.TryParse(value, out int instanceId))
                 return god.refs.Contains(instanceId);
-
-            if (value.StartsWith("GlobalObjectId", StringComparison.Ordinal) && GlobalObjectId.TryParse(value, out var gid))
-            {
-                var assetPath = AssetDatabase.GUIDToAssetPath(gid.assetGUID).ToLowerInvariant();
-                if (god.refs.Contains(assetPath.GetHashCode()))
-                    return true;
-                return god.refs.Contains(GlobalObjectId.GlobalObjectIdentifierToInstanceIDSlow(gid));
-            }
 
             return god.refs.Contains(value.ToLowerInvariant().GetHashCode());
         }

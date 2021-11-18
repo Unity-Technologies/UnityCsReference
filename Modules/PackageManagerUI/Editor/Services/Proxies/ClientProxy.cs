@@ -67,5 +67,20 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             return Client.UpdateScopedRegistry(registryName, options);
         }
+
+        public virtual GetCacheRootRequest GetCacheRoot()
+        {
+            return Client.GetCacheRoot();
+        }
+
+        public virtual SetCacheRootRequest SetCacheRoot(string path)
+        {
+            return Client.SetCacheRoot(path);
+        }
+
+        public virtual ClearCacheRootRequest ClearCacheRoot()
+        {
+            return Client.ClearCacheRoot();
+        }
     }
 }

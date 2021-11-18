@@ -38,38 +38,28 @@ namespace UnityEditor.Overlays
                         .ToArray();
 
                     int len = ovrls.Length;
-                    var overlays = new List<OverlayEditorWindowAssociation>(len);
+                    var overlayWindows = new List<OverlayEditorWindowAssociation>(len);
 
                     for (int i = 0; i < len; i++)
                     {
                         var overlayAttribute = (OverlayAttribute)ovrls[i].GetCustomAttributes(typeof(OverlayAttribute), false).FirstOrDefault();
 
-                        if (!ValidateOverlayWindowType(ovrls[i], overlayAttribute.editorWindowType))
+                        // Overlays that are implemented as instances don't need to define a target editor window.
+                        if (overlayAttribute?.editorWindowType == null)
                             continue;
 
-                        overlays.Add(new OverlayEditorWindowAssociation
+                        overlayWindows.Add(new OverlayEditorWindowAssociation
                         {
                             overlay = ovrls[i],
                             editorWindowType = overlayAttribute.editorWindowType
                         });
                     }
 
-                    s_Overlays = overlays.ToArray();
+                    s_Overlays = overlayWindows.ToArray();
                 }
 
                 return s_Overlays;
             }
-        }
-
-        internal static bool ValidateOverlayWindowType(Type overlayType, Type windowType)
-        {
-            if (windowType == null)
-            {
-                Debug.LogErrorFormat(nullWindowTypeErrorMsg, overlayType.FullName);
-                return false;
-            }
-
-            return true;
         }
 
         internal static List<Type> GetOverlaysForType(Type type)
@@ -160,16 +150,6 @@ namespace UnityEditor.Overlays
             }
 
             return words[0].Substring(0, 1) + words[1].Substring(0, 1);
-        }
-
-        // Context is usually the containing EditorWindow
-        public static EditorToolbar CreateToolbar(this VisualElement rootVisualElement, EditorWindow context = null, params string[] elementIDs)
-        {
-            rootVisualElement.AddToClassList("unity-toolbar-overlay");
-            var toolbar = new EditorToolbar(context, rootVisualElement);
-            foreach (var id in elementIDs)
-                toolbar.AddElement(id);
-            return toolbar;
         }
 
         internal static bool EnsureValidId(IEnumerable<Overlay> existing, Overlay overlay)

@@ -156,7 +156,7 @@ namespace UnityEditor
                     EditorGUILayout.PropertyField(m_DepthStencilFormat, styles.depthStencilFormat);
                 }
 
-                if (isDepthStencilFormatIncompatible && depthStencilFormat != compatibleDepthStencilFormat)
+                if (depthStencilFormat != compatibleDepthStencilFormat)
                 {
                     string text = string.Format("Format {0} is not supported on this platform. ", depthStencilFormat.ToString());
                     if (compatibleDepthStencilFormat != GraphicsFormat.None)

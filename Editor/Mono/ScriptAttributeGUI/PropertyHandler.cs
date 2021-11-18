@@ -185,6 +185,9 @@ namespace UnityEditor
             }
             else
             {
+                if (!includeChildren)
+                    return EditorGUI.DefaultPropertyField(position, property, label);
+
                 if (UseReorderabelListControl(property))
                 {
                     ReorderableListWrapper reorderableList;
@@ -208,9 +211,6 @@ namespace UnityEditor
                     reorderableList.Draw(label, position, listVisibility, tooltip, includeChildren);
                     return !includeChildren && property.isExpanded;
                 }
-
-                if (!includeChildren)
-                    return EditorGUI.DefaultPropertyField(position, property, label);
 
                 // Remember state
                 Vector2 oldIconSize = EditorGUIUtility.GetIconSize();
@@ -280,22 +280,6 @@ namespace UnityEditor
                 foreach (DecoratorDrawer drawer in m_DecoratorDrawers)
                     height += drawer.GetHeight();
 
-            if (UseReorderabelListControl(property))
-            {
-                ReorderableListWrapper reorderableList;
-                string key = ReorderableListWrapper.GetPropertyIdentifier(property);
-
-                // If collection doesn't have a ReorderableList assigned to it, create one and assign it
-                if (!s_reorderableLists.TryGetValue(key, out reorderableList))
-                {
-                    reorderableList = new ReorderableListWrapper(property, label, true);
-                    s_reorderableLists[key] = reorderableList;
-                }
-
-                reorderableList.Property = property;
-                height += s_reorderableLists[key].GetHeight(includeChildren);
-                return height;
-            }
 
             if (propertyDrawer != null)
             {
@@ -309,6 +293,22 @@ namespace UnityEditor
             else if (!includeChildren)
             {
                 height += EditorGUI.GetSinglePropertyHeight(property, label);
+            }
+            else if (UseReorderabelListControl(property))
+            {
+                ReorderableListWrapper reorderableList;
+                string key = ReorderableListWrapper.GetPropertyIdentifier(property);
+
+                // If collection doesn't have a ReorderableList assigned to it, create one and assign it
+                if (!s_reorderableLists.TryGetValue(key, out reorderableList))
+                {
+                    reorderableList = new ReorderableListWrapper(property, label, true);
+                    s_reorderableLists[key] = reorderableList;
+                }
+
+                reorderableList.Property = property;
+                height += s_reorderableLists[key].GetHeight();
+                return height;
             }
             else
             {
@@ -430,7 +430,9 @@ namespace UnityEditor
         {
             const BindingFlags fieldFilter = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
-            if (property == null) return false;
+            if (property == null || property.serializedObject == null || !property.serializedObject.targetObject)
+                return false;
+
             if (property.IsReorderable()) return true;
 
             FieldInfo listInfo = null;

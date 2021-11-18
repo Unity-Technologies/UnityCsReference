@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+// #define PROFILE_SCENE_TEMPLATE
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -10,6 +11,7 @@ using System.Linq;
 using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
+
 
 namespace UnityEditor.SceneTemplate
 {
@@ -25,6 +27,31 @@ namespace UnityEditor.SceneTemplate
         public SceneAsset sceneAsset { get; internal set; }
     }
 
+    struct InMemorySceneState
+    {
+        public string guid;
+        public string path;
+        public string rootFolder;
+        public bool hasCloneableDependencies;
+        public string dependencyFolderName;
+
+        public static InMemorySceneState None = new InMemorySceneState();
+
+        public bool valid => !string.IsNullOrEmpty(guid);
+
+        internal static InMemorySceneState Import(string sessionData)
+        {
+            if (string.IsNullOrEmpty(sessionData))
+                return None;
+            return JsonUtility.FromJson<InMemorySceneState>(sessionData);
+        }
+
+        internal string Export(bool format = false)
+        {
+            return JsonUtility.ToJson(this, format);
+        }
+    }
+
     public static class SceneTemplateService
     {
         public delegate void NewTemplateInstantiating(SceneTemplateAsset sceneTemplateAsset, string newSceneOutputPath, bool additiveLoad);
@@ -33,6 +60,25 @@ namespace UnityEditor.SceneTemplate
         public static event NewTemplateInstantiating newSceneTemplateInstantiating;
         public static event NewTemplateInstantiated newSceneTemplateInstantiated;
 
+        const string k_SceneTemplateServiceBaseSessionKey = "SceneTemplateServiceSession";
+        static readonly string k_TempFolderBaseSessionKey = $"{k_SceneTemplateServiceBaseSessionKey}_TempFolder";
+        static readonly string k_RegisteredTempFolderSessionKey = $"{k_SceneTemplateServiceBaseSessionKey}_RegisteredTempFolder";
+        static readonly string k_InMemorySceneStateSessionKey = $"{k_SceneTemplateServiceBaseSessionKey}_InMemorySceneState";
+
+        static string s_TempFolderBase;
+        const string k_MountPoint = "SceneTemplates";
+        const string k_InMemoryTempFolder = "InMemory";
+        static readonly string k_InMemoryTempFolderGuid = Hash128.Compute("SceneTemplates/InMemory").ToString();
+        static InMemorySceneState s_CurrentInMemorySceneState = InMemorySceneState.None;
+
+        // For testing
+        internal static bool registeredTempFolder { get; private set; }
+        internal static InMemorySceneState currentInMemorySceneState => s_CurrentInMemorySceneState;
+
+        private static void ClearInMemorySceneState()
+        {
+            s_CurrentInMemorySceneState = InMemorySceneState.None;
+        }
 
         public static InstantiationResult Instantiate(SceneTemplateAsset sceneTemplate, bool loadAdditively, string newSceneOutputPath = null)
         {
@@ -62,6 +108,13 @@ namespace UnityEditor.SceneTemplate
                 return null;
             }
 
+            // If we are loading additively, we cannot add a new Untitled scene if another unsaved Untitled scene is already opened
+            if (loadAdditively && SceneTemplateUtils.HasSceneUntitled())
+            {
+                Debug.LogFormat(LogType.Warning, LogOption.None, null, "Cannot instantiate a new scene additively while an unsaved Untitled scene already exists.");
+                return null;
+            }
+
             var sourceScenePath = AssetDatabase.GetAssetPath(sceneTemplate.templateScene);
             if (String.IsNullOrEmpty(sourceScenePath))
             {
@@ -86,41 +139,51 @@ namespace UnityEditor.SceneTemplate
 
             if (hasAnyCloneableDependencies || loadAdditively)
             {
-                if (!InstantiateScene(sceneTemplate, sourceScenePath, ref newSceneOutputPath))
+                if (!InstantiateInMemoryScene(sceneTemplate, sourceScenePath, ref newSceneOutputPath, out var rootFolder, out var isTempMemory))
                 {
                     instantiateEvent.isCancelled = true;
                     SceneTemplateAnalytics.SendSceneInstantiationEvent(instantiateEvent);
                     return null;
                 }
 
-                templatePipeline?.BeforeTemplateInstantiation(sceneTemplate, loadAdditively, newSceneOutputPath);
-                newSceneTemplateInstantiating?.Invoke(sceneTemplate, newSceneOutputPath, loadAdditively);
+                templatePipeline?.BeforeTemplateInstantiation(sceneTemplate, loadAdditively, isTempMemory ? null : newSceneOutputPath);
+                newSceneTemplateInstantiating?.Invoke(sceneTemplate, isTempMemory ? null : newSceneOutputPath, loadAdditively);
 
-                var refPathMap = new Dictionary<string, string>();
-                var refMap = new Dictionary<Object, Object>();
-                if (hasAnyCloneableDependencies)
-                    refMap = CopyCloneableDependencies(sceneTemplate, newSceneOutputPath, ref refPathMap);
-
-                newScene = EditorSceneManager.OpenScene(newSceneOutputPath, loadAdditively ? OpenSceneMode.Additive : OpenSceneMode.Single);
                 newSceneAsset = AssetDatabase.LoadAssetAtPath<SceneAsset>(newSceneOutputPath);
 
+                var refPathMap = new Dictionary<string, string>();
+                var idMap = new Dictionary<int, int>();
                 if (hasAnyCloneableDependencies)
                 {
-                    var idMap = new Dictionary<int, int>();
+                    var refMap = CopyCloneableDependencies(sceneTemplate, newSceneOutputPath, ref refPathMap);
                     idMap.Add(sceneTemplate.templateScene.GetInstanceID(), newSceneAsset.GetInstanceID());
-                    EditorSceneManager.RemapAssetReferencesInScene(newScene, refPathMap, idMap);
-                }
+                    ReferenceUtils.RemapAssetReferences(refPathMap, idMap);
 
-                EditorSceneManager.SaveScene(newScene, newSceneOutputPath);
-
-                if (hasAnyCloneableDependencies)
-                {
                     foreach (var clone in refMap.Values)
                     {
                         if (clone)
                             EditorUtility.SetDirty(clone);
                     }
                     AssetDatabase.SaveAssets();
+                }
+
+                newScene = EditorSceneManager.OpenScene(newSceneOutputPath, loadAdditively ? OpenSceneMode.Additive : OpenSceneMode.Single);
+
+                if (hasAnyCloneableDependencies)
+                {
+                    EditorSceneManager.RemapAssetReferencesInScene(newScene, refPathMap, idMap);
+                }
+
+                EditorSceneManager.SaveScene(newScene, newSceneOutputPath);
+
+                if (isTempMemory)
+                {
+                    newSceneAsset = null;
+                    newScene.SetPathAndGuid("", newScene.guid);
+                    s_CurrentInMemorySceneState.guid = newScene.guid;
+                    s_CurrentInMemorySceneState.rootFolder = rootFolder;
+                    s_CurrentInMemorySceneState.hasCloneableDependencies = hasAnyCloneableDependencies;
+                    s_CurrentInMemorySceneState.dependencyFolderName = Path.GetFileNameWithoutExtension(newSceneOutputPath);
                 }
             }
             else
@@ -145,7 +208,7 @@ namespace UnityEditor.SceneTemplate
 
                 if (needTempSceneCleanup)
                 {
-                    AssetDatabase.DeleteAsset(sourceScenePath);
+                    SceneTemplateUtils.DeleteAsset(sourceScenePath);
                 }
             }
 
@@ -202,9 +265,9 @@ namespace UnityEditor.SceneTemplate
 
         internal static MonoScript CreateNewSceneTemplatePipeline(string folder)
         {
-            var path = EditorUtility.SaveFilePanelInProject("Create new Scene Template Pipeline",
+            var path = EditorUtility.SaveFilePanelInProject(L10n.Tr("Create new Scene Template Pipeline"),
                 "NewSceneTemplatePipeline", "cs",
-                "Please enter a file name for the new Scene Template Pipeline.",
+                L10n.Tr("Please enter a file name for the new Scene Template Pipeline."),
                 folder);
             return CreateNewSceneTemplatePipelineAtPath(path);
         }
@@ -221,34 +284,32 @@ namespace UnityEditor.SceneTemplate
             return scriptAsset;
         }
 
-        private static bool InstantiateScene(SceneTemplateAsset sceneTemplate, string sourceScenePath, ref string newSceneOutputPath)
+        static bool InstantiateInMemoryScene(SceneTemplateAsset sceneTemplate, string sourceScenePath, ref string newSceneOutputPath, out string rootFolder, out bool isTempMemory)
         {
-            if (String.IsNullOrEmpty(newSceneOutputPath))
+            isTempMemory = false;
+            if (string.IsNullOrEmpty(newSceneOutputPath))
             {
-                newSceneOutputPath = SceneTemplateUtils.SaveFilePanelUniqueName(
-                    $"Save scene instantiated from template ({sceneTemplate.name})",
-                    SceneTemplateUtils.GetLastFolder("unity"),
-                    Path.GetFileNameWithoutExtension(sourceScenePath), "unity");
-                if (string.IsNullOrEmpty(newSceneOutputPath))
-                    return false;
+                if (!registeredTempFolder)
+                    RegisterInMemoryTempFolder();
+
+                var instanceName = "Untitled.unity";
+                var instancePath = $"{k_MountPoint}/{k_InMemoryTempFolder}/{Guid.NewGuid():N}/{instanceName}";
+                newSceneOutputPath = instancePath;
+                isTempMemory = true;
             }
 
             if (Path.IsPathRooted(newSceneOutputPath))
-            {
                 newSceneOutputPath = FileUtil.GetProjectRelativePath(newSceneOutputPath);
-            }
 
-            if (sourceScenePath == newSceneOutputPath)
+            rootFolder = Path.GetDirectoryName(newSceneOutputPath);
+            if (rootFolder != null && !Directory.Exists(rootFolder))
+                Directory.CreateDirectory(rootFolder);
+
+            if (!AssetDatabase.CopyAsset(sourceScenePath, newSceneOutputPath))
             {
-                Debug.LogError($"Cannot instantiate over template scene: {newSceneOutputPath}");
+                Debug.LogError($"Could not copy scene \"{sourceScenePath}\" to \"{newSceneOutputPath}\"");
                 return false;
             }
-
-            var destinationDir = Path.GetDirectoryName(newSceneOutputPath);
-            if (destinationDir != null && !Directory.Exists(destinationDir))
-                Directory.CreateDirectory(destinationDir);
-
-            AssetDatabase.CopyAsset(sourceScenePath, newSceneOutputPath);
 
             return true;
         }
@@ -258,14 +319,45 @@ namespace UnityEditor.SceneTemplate
         {
             RegisterDefines();
             RegisterSceneEventListeners();
+            RegisterApplicationEvent();
         }
 
-        private static void RegisterSceneEventListeners()
+        static void RegisterApplicationEvent()
         {
-            EditorSceneManager.sceneSaved += OnSceneSaved;
+            EditorApplication.quitting += EditorApplicationQuitting;
+            AssemblyReloadEvents.beforeAssemblyReload += BeforeAssemblyReload;
+            AssemblyReloadEvents.afterAssemblyReload += AfterAssemblyReload;
         }
 
-        static void OnSceneSaved(Scene scene)
+        static void BeforeAssemblyReload()
+        {
+            StoreSessionState();
+            UnregisterInMemoryTempFolder();
+        }
+
+        static void AfterAssemblyReload()
+        {
+            var restored = RestoreSessionState();
+            if (restored && registeredTempFolder)
+                RegisterInMemoryTempFolder(s_TempFolderBase);
+        }
+
+        static void EditorApplicationQuitting()
+        {
+            if (registeredTempFolder)
+            {
+                try
+                {
+                    AssetDatabase.UnregisterRedirectedAssetFolder(k_MountPoint, k_InMemoryTempFolder);
+                    if (Directory.Exists(s_TempFolderBase))
+                        Directory.Delete(s_TempFolderBase, true);
+                }
+                catch { }
+            }
+        }
+
+
+        static void UpdateSceneTemplatesOnSceneSave(Scene scene)
         {
             var infos = SceneTemplateUtils.GetSceneTemplateInfos();
             foreach (var sceneTemplateInfo in infos)
@@ -285,6 +377,90 @@ namespace UnityEditor.SceneTemplate
         private static void RegisterDefines()
         {
             Build.BuildDefines.getScriptCompilationDefinesDelegates += AddSceneTemplateModuleDefine;
+        }
+
+        private static void RegisterSceneEventListeners()
+        {
+            EditorSceneManager.sceneSaved += OnSceneSaved;
+            EditorSceneManager.sceneSaving += OnSceneSaving;
+            EditorSceneManager.sceneOpened += OnSceneOpened;
+            EditorSceneManager.newSceneCreated += OnNewSceneCreated;
+
+            // We can't really rely on sceneClosed, as this event happens just before
+            // a domain reload when entering playmode, and we don't really want
+            // to lose the current in memory state at this point.
+            // EditorSceneManager.sceneClosed += OnSceneClosed;
+        }
+
+        static void OnNewSceneCreated(Scene scene, NewSceneSetup setup, NewSceneMode mode)
+        {
+            if (!s_CurrentInMemorySceneState.valid || mode != NewSceneMode.Single)
+                return;
+            if (s_CurrentInMemorySceneState.guid != scene.guid)
+                ClearInMemorySceneState();
+        }
+
+        static void OnSceneOpened(Scene scene, OpenSceneMode mode)
+        {
+            if (!s_CurrentInMemorySceneState.valid || mode != OpenSceneMode.Single)
+                return;
+
+            if (s_CurrentInMemorySceneState.guid != scene.guid)
+                ClearInMemorySceneState();
+        }
+
+        static void OnSceneSaving(Scene scene, string path)
+        {
+            if (scene.guid == s_CurrentInMemorySceneState.guid)
+                s_CurrentInMemorySceneState.path = path;
+        }
+
+        static void OnSceneSaved(Scene scene)
+        {
+            UpdateSceneTemplatesOnSceneSave(scene);
+
+            if (!s_CurrentInMemorySceneState.valid)
+                return;
+
+            if (scene.path != s_CurrentInMemorySceneState.path)
+                return;
+
+            HandleSceneSave(scene);
+            ClearInMemorySceneState();
+        }
+
+        static void HandleSceneSave(Scene scene)
+        {
+            {
+                var result = scene.path;
+
+                var directory = Path.GetDirectoryName(result);
+                var filenameWithoutExt = Path.GetFileNameWithoutExtension(result);
+
+                if (s_CurrentInMemorySceneState.hasCloneableDependencies)
+                {
+                    var oldDependencyFolder = Path.Combine(s_CurrentInMemorySceneState.rootFolder, s_CurrentInMemorySceneState.dependencyFolderName);
+                    var newDependencyFolder = Path.Combine(directory, filenameWithoutExt);
+                    if (Directory.Exists(newDependencyFolder))
+                        SceneTemplateUtils.DeleteAsset(newDependencyFolder);
+                    var errorMsg = AssetDatabase.MoveAsset(oldDependencyFolder, newDependencyFolder);
+                    if (!string.IsNullOrEmpty(errorMsg))
+                    {
+                        Debug.LogError(errorMsg);
+                        return;
+                    }
+                }
+
+                SceneTemplateUtils.DeleteAsset(s_CurrentInMemorySceneState.rootFolder);
+
+                var success = EditorSceneManager.ReloadScene(scene);
+                if (!success)
+                {
+                    Debug.LogError($"Failed to reload scene {scene.path}");
+                }
+
+                ClearInMemorySceneState();
+            }
         }
 
         private static void AddSceneTemplateModuleDefine(BuildTarget target, HashSet<string> defines)
@@ -342,6 +518,61 @@ namespace UnityEditor.SceneTemplate
             return tempScenePath;
         }
 
+        static void RegisterInMemoryTempFolder()
+        {
+            if (registeredTempFolder)
+                return;
+
+            RegisterInMemoryTempFolder(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()));
+        }
+
+        static void RegisterInMemoryTempFolder(string tempFolderBase)
+        {
+            s_TempFolderBase = tempFolderBase;
+            var inMemoryFolderPath = Path.Combine(s_TempFolderBase, k_MountPoint, k_InMemoryTempFolder);
+            if (!Directory.Exists(inMemoryFolderPath))
+                Directory.CreateDirectory(inMemoryFolderPath);
+            AssetDatabase.RegisterRedirectedAssetFolder(k_MountPoint, k_InMemoryTempFolder, inMemoryFolderPath, false, k_InMemoryTempFolderGuid);
+            AssetDatabase.Refresh();
+            registeredTempFolder = true;
+        }
+
+        static void UnregisterInMemoryTempFolder()
+        {
+            if (!registeredTempFolder)
+                return;
+
+            AssetDatabase.UnregisterRedirectedAssetFolder(k_MountPoint, k_InMemoryTempFolder);
+            registeredTempFolder = false;
+        }
+
+        static void StoreSessionState()
+        {
+            SessionState.SetString(k_TempFolderBaseSessionKey, s_TempFolderBase);
+            SessionState.SetBool(k_RegisteredTempFolderSessionKey, registeredTempFolder);
+
+            var json = s_CurrentInMemorySceneState.Export();
+            SessionState.SetString(k_InMemorySceneStateSessionKey, json);
+        }
+
+        static bool RestoreSessionState()
+        {
+            var json = SessionState.GetString(k_InMemorySceneStateSessionKey, null);
+            if (string.IsNullOrEmpty(json))
+                return false;
+            s_CurrentInMemorySceneState = InMemorySceneState.Import(json);
+
+            s_TempFolderBase = SessionState.GetString(k_TempFolderBaseSessionKey, Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()));
+            registeredTempFolder = SessionState.GetBool(k_RegisteredTempFolderSessionKey, false);
+
+            // To make sure that we don't affect future session in case something happens, we delete everything
+            SessionState.EraseString(k_InMemorySceneStateSessionKey);
+            SessionState.EraseString(k_TempFolderBaseSessionKey);
+            SessionState.EraseBool(k_RegisteredTempFolderSessionKey);
+
+            return true;
+        }
+
         #region MenuActions
         [MenuItem("File/Save As Scene Template...", false, 172)]
         private static void SaveTemplateFromCurrentScene()
@@ -349,12 +580,12 @@ namespace UnityEditor.SceneTemplate
             var currentScene = SceneManager.GetActiveScene();
             if (string.IsNullOrEmpty(currentScene.path))
             {
-                var suggestedScenePath = SceneTemplateUtils.SaveFilePanelUniqueName("Save scene", "Assets", "newscene", "unity");
+                var suggestedScenePath = SceneTemplateUtils.SaveFilePanelUniqueName(L10n.Tr("Save scene"), "Assets", "newscene", "unity");
                 if (string.IsNullOrEmpty(suggestedScenePath) || !EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene(), suggestedScenePath))
                     return;
             }
 
-            var sceneTemplateFile = SceneTemplateUtils.SaveFilePanelUniqueName("Save scene", Path.GetDirectoryName(currentScene.path), Path.GetFileNameWithoutExtension(currentScene.path), SceneTemplateAsset.extension);
+            var sceneTemplateFile = SceneTemplateUtils.SaveFilePanelUniqueName(L10n.Tr("Save scene"), Path.GetDirectoryName(currentScene.path), Path.GetFileNameWithoutExtension(currentScene.path), SceneTemplateAsset.extension);
             if (string.IsNullOrEmpty(sceneTemplateFile))
                 return;
 
@@ -382,6 +613,29 @@ namespace UnityEditor.SceneTemplate
             {
                 Debug.LogWarning("Cannot open the New Scene dialog while playing.");
             }
+        }
+
+        [CommandHandler("Menu/File/InstantiateDefaultScene")]
+        static void InstantiateDefaultScene(CommandExecuteContext context)
+        {
+            if (SceneTemplatePreferences.Get().newDefaultSceneOverride == SceneTemplatePreferences.NewDefaultSceneOverride.DefaultBuiltin)
+            {
+                EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
+                return;
+            }
+
+            var templateInfos = SceneTemplateUtils.GetSceneTemplateInfos();
+            var templateInfo = templateInfos.FirstOrDefault(info => info.isPinned && !info.IsInMemoryScene);
+            if (templateInfo == null)
+                templateInfo = templateInfos.FirstOrDefault(info => !info.isPinned && !info.IsInMemoryScene);
+
+            if (templateInfo != null && templateInfo.sceneTemplate)
+            {
+                Instantiate(templateInfo.sceneTemplate, false);
+                return;
+            }
+
+            EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
         }
 
         [MenuItem("Assets/Create/Scene Template From Scene", false, 201)]

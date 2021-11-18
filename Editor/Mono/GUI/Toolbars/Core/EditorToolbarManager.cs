@@ -11,6 +11,20 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.Toolbars
 {
+    readonly struct ToolbarElementDefinition
+    {
+        public string id { get; }
+        public Type elementType { get; }
+        public Type[] targetContexts { get; }
+
+        public ToolbarElementDefinition(string id, Type elementType, Type[] targetContexts)
+        {
+            this.id = id;
+            this.elementType = elementType;
+            this.targetContexts = targetContexts;
+        }
+    }
+
     sealed class EditorToolbarManager : ScriptableSingleton<EditorToolbarManager>
     {
         readonly Dictionary<string, ToolbarElementDefinition> m_IdToDefinition;

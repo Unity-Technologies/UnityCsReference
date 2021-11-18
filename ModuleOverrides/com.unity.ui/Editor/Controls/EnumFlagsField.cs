@@ -34,9 +34,7 @@ namespace UnityEditor.UIElements
             {
                 base.Init(ve, bag, cc);
 
-                Enum resEnumValue;
-                bool resIncludeObsoleteValues;
-                if (EnumFieldHelpers.ExtractValue(bag, cc, out resEnumValue, out resIncludeObsoleteValues))
+                if (EnumFieldHelpers.ExtractValue(bag, cc, out var resEnumType, out var resEnumValue, out var resIncludeObsoleteValues))
                 {
                     EnumFlagsField enumField = (EnumFlagsField)ve;
                     enumField.Init(resEnumValue, resIncludeObsoleteValues);

@@ -13,6 +13,6 @@ namespace UnityEditor
     internal struct StaticBatchingEditorHelper
     {
         [FreeFunction("StaticBatching::CombineAllStaticMeshesInSceneForStaticBatching")]
-        extern internal static void CombineAllStaticMeshesForScenePostProcessing(ulong sceneHash);
+        extern internal static void CombineAllStaticMeshesForScenePostProcessing(ulong sceneHash, UnityEngine.SceneManagement.Scene scene);
     }
 }

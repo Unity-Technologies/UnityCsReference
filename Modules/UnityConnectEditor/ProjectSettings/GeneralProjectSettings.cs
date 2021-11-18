@@ -2,10 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-
-using System;
 using System.Collections.Generic;
-using UnityEngine;
 using UnityEngine.UIElements;
 using Button = UnityEngine.UIElements.Button;
 
@@ -70,6 +67,13 @@ namespace UnityEditor.Connect
 
         GeneralProjectSettings(string path, SettingsScope scopes, IEnumerable<string> keywords = null)
             : base(path, scopes, k_GeneralLabel, keywords) {}
+
+        [MenuItem("Services/General Settings", false, ServicesConstants.GeneralSettingsServicesTopMenuPriority, false)]
+        static void OpenServicesGeneralSettings()
+        {
+            EditorGameServicesAnalytics.SendTopMenuGeneralSettingsEvent();
+            SettingsService.OpenProjectSettings(k_ProjectSettingsPath);
+        }
 
         protected override Notification.Topic[] notificationTopicsToSubscribe => new[]
         {

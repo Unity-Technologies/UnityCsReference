@@ -14,7 +14,13 @@ namespace UnityEditorInternal
         private static Vector2 s_StartMousePosition, s_CurrentMousePosition, s_CurrentMousePositionScreen;
         private static Vector3 s_StartPosition;
 
+        [Obsolete("Rotation parameter is obsolete.")]
         public static Vector3 Do(int id, Vector3 position, Quaternion rotation, float size, Vector3 snap, Handles.CapFunction handleFunction)
+        {
+            return Do(id, position, size, snap, handleFunction);
+        }
+
+        public static Vector3 Do(int id, Vector3 position, float size, Vector3 snap, Handles.CapFunction handleFunction)
         {
             Vector3 worldPosition = Handles.matrix.MultiplyPoint(position);
             Matrix4x4 origMatrix = Handles.matrix;

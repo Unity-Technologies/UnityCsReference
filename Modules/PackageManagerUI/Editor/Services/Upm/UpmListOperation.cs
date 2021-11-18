@@ -29,10 +29,5 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             return m_ClientProxy.List(isOfflineMode, true);
         }
-
-        public void Cancel()
-        {
-            CancelInternal();
-        }
     }
 }

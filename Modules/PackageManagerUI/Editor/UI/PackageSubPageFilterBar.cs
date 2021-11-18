@@ -30,13 +30,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void OnEnable()
         {
             m_PackageFiltering.onFilterTabChanged += OnFilterTabChanged;
-            m_PageManager.onSubPageAdded += OnSubPageAdded;
+            m_PageManager.onSubPageChanged += OnSubPageChanged;
         }
 
         public void OnDisable()
         {
             m_PackageFiltering.onFilterTabChanged -= OnFilterTabChanged;
-            m_PageManager.onSubPageAdded -= OnSubPageAdded;
+            m_PageManager.onSubPageChanged -= OnSubPageChanged;
         }
 
         private void OnFilterTabChanged(PackageFilterTab filterTab)
@@ -44,8 +44,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             var page = m_PageManager.GetPage(filterTab);
             Refresh(page);
         }
+        private void OnSubPageChanged(IPage page)
+        {
+            if (page.tab != m_PackageFiltering.currentFilterTab)
+                return;
+            Refresh(page);
+        }
 
-        public void Refresh(IPage page = null)
+        private void Refresh(IPage page = null)
         {
             if (page == null)
                 page = m_PageManager.GetCurrentPage();
@@ -65,25 +71,13 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     if (page.currentSubPage == subPage)
                         return;
-
                     page.currentSubPage = subPage;
-                    foreach (var child in Children())
-                        child.RemoveFromClassList("active");
-                    button.AddToClassList("active");
-
                     PackageManagerWindowAnalytics.SendEvent("changeSubPage");
                 };
                 Add(button);
                 if (subPage == currentSubPage)
                     button.AddToClassList("active");
             }
-        }
-
-        private void OnSubPageAdded(IPage page)
-        {
-            if (page.tab != m_PackageFiltering.currentFilterTab)
-                return;
-            OnFilterTabChanged(page.tab);
         }
     }
 }

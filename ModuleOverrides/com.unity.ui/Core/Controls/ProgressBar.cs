@@ -219,7 +219,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// A control that displays the progress between a lower and upper bound value.
     /// </summary>
-    [MovedFrom(true, "UnityEditor.UIElements", "UnityEditor.UIElementsModule")]
+    [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     public class ProgressBar : AbstractProgressBar
     {
         /// <undoc/>

@@ -14,25 +14,25 @@ namespace UnityEngine.UIElements
         internal static readonly UxmlStringAttributeDescription value = new UxmlStringAttributeDescription { name = "value" };
         internal static readonly UxmlBoolAttributeDescription includeObsoleteValues = new UxmlBoolAttributeDescription() { name = "include-obsolete-values", defaultValue = false };
 
-        internal static bool ExtractValue(IUxmlAttributes bag, CreationContext cc, out Enum resEnumValue, out bool resIncludeObsoleteValues)
+        internal static bool ExtractValue(IUxmlAttributes bag, CreationContext cc, out Type resEnumType, out Enum resEnumValue, out bool resIncludeObsoleteValues)
         {
             resIncludeObsoleteValues = false;
             resEnumValue = null;
 
-            var systemType = type.GetValueFromBag(bag, cc);
-            if (systemType == null)
+            resEnumType = type.GetValueFromBag(bag, cc);
+            if (resEnumType == null)
             {
                 return false;
             }
 
             string specifiedValue = null;
-            if (value.TryGetValueFromBag(bag, cc, ref specifiedValue) && !Enum.IsDefined(systemType, specifiedValue))
+            if (value.TryGetValueFromBag(bag, cc, ref specifiedValue) && !Enum.IsDefined(resEnumType, specifiedValue))
             {
-                Debug.LogErrorFormat("EnumField: Could not parse value of '{0}', because it isn't defined in the {1} enum.", specifiedValue, systemType.FullName);
+                Debug.LogErrorFormat("EnumField: Could not parse value of '{0}', because it isn't defined in the {1} enum.", specifiedValue, resEnumType.FullName);
                 return false;
             }
 
-            resEnumValue = specifiedValue != null ? (Enum)Enum.Parse(systemType, specifiedValue) : (Enum)Enum.ToObject(systemType, 0);
+            resEnumValue = specifiedValue != null ? (Enum)Enum.Parse(resEnumType, specifiedValue) : (Enum)Enum.ToObject(resEnumType, 0);
             resIncludeObsoleteValues = includeObsoleteValues.GetValueFromBag(bag, cc);
 
             return true;
@@ -42,7 +42,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Makes a dropdown for switching between enum values.
     /// </summary>
-    [MovedFrom(true, "UnityEditor.UIElements", "UnityEditor.UIElementsModule")]
+    [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     public class EnumField : BaseField<Enum>
     {
         /// <summary>
@@ -71,17 +71,19 @@ namespace UnityEngine.UIElements
             {
                 base.Init(ve, bag, cc);
 
-                Enum resEnumValue;
-                bool resIncludeObsoleteValues;
-                if (EnumFieldHelpers.ExtractValue(bag, cc, out resEnumValue, out resIncludeObsoleteValues))
+                if (EnumFieldHelpers.ExtractValue(bag, cc, out var resEnumType, out var resEnumValue, out var resIncludeObsoleteValues))
                 {
                     EnumField enumField = (EnumField)ve;
                     enumField.Init(resEnumValue, resIncludeObsoleteValues);
                 }
-                else
+                // If we didn't have a valid value, try to set the type.
+                else if (null != resEnumType)
                 {
                     EnumField enumField = (EnumField)ve;
-                    enumField.m_EnumType = null;
+
+                    enumField.m_EnumType = resEnumType;
+                    if (enumField.m_EnumType != null)
+                        enumField.PopulateDataFromType(enumField.m_EnumType);
                     enumField.value = null;
                 }
             }
@@ -201,11 +203,16 @@ namespace UnityEngine.UIElements
                 throw new ArgumentNullException(nameof(defaultValue));
             }
 
-            m_EnumType = defaultValue.GetType();
-            m_EnumData = EnumDataUtility.GetCachedEnumData(m_EnumType, !includeObsoleteValues);
             m_IncludeObsoleteValues = includeObsoleteValues;
+            PopulateDataFromType(defaultValue.GetType());
 
             SetValueWithoutNotify(defaultValue);
+        }
+
+        internal void PopulateDataFromType(Type enumType)
+        {
+            m_EnumType = enumType;
+            m_EnumData = EnumDataUtility.GetCachedEnumData(m_EnumType, !includeObsoleteValues);
         }
 
         public override void SetValueWithoutNotify(Enum newValue)
@@ -222,6 +229,10 @@ namespace UnityEngine.UIElements
                 if (idx >= 0 & idx < m_EnumData.values.Length)
                 {
                     m_TextElement.text = m_EnumData.displayNames[idx];
+                }
+                else
+                {
+                    m_TextElement.text = string.Empty;
                 }
             }
         }

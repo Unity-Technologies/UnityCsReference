@@ -15,6 +15,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             Selection.selectionChanged += OnSelectionChanged;
         }
 
+        public virtual UnityEngine.Object[] objects
+        {
+            get { return Selection.objects; }
+            set { Selection.objects = value; }
+        }
+
         public virtual UnityEngine.Object activeObject
         {
             get { return Selection.activeObject; }

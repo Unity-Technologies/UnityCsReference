@@ -201,6 +201,7 @@ namespace UnityEditor
             s_GenericData = null;
             paths = null;
             objectReferences = new UnityEngine.Object[] {};
+            visualMode = DragAndDropVisualMode.None;
             PrepareStartDrag_Internal();
         }
 

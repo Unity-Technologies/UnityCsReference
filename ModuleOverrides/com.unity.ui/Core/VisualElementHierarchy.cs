@@ -955,18 +955,19 @@ namespace UnityEngine.UIElements
 
         internal VisualElement GetRootVisualContainer()
         {
+            VisualElement topMostRootContainer = null;
             var hierarchyParent = this;
             while (hierarchyParent != null)
             {
                 if (hierarchyParent.isRootVisualContainer)
                 {
-                    return hierarchyParent;
+                    topMostRootContainer = hierarchyParent;
                 }
 
                 hierarchyParent = hierarchyParent.hierarchy.parent;
             }
 
-            return null;
+            return topMostRootContainer;
         }
 
         internal VisualElement GetNextElementDepthFirst()

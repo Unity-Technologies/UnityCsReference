@@ -69,6 +69,35 @@ namespace UnityEngine
         public float radiusVariance { get { return m_RadiusVariance; } set { m_RadiusVariance = value; }  }
     }
 
+    // Matches PenData::PenStatusEnum in native code
+    [Flags]
+    public enum PenStatus
+    {
+        None = 0x0,
+        Contact = 0x1,
+        Barrel = 0x2,
+        Inverted = 0x4,
+        Eraser = 0x8,
+    }
+
+    public enum PenEventType
+    {
+        NoContact,
+        PenDown,
+        PenUp
+    }
+
+    public struct PenData
+    {
+        public Vector2 position;
+        public Vector2 tilt;
+        public PenStatus penStatus;
+        public float twist;
+        public float pressure;
+        public PenEventType contactType;
+        public Vector2 deltaPos;
+    }
+
     public enum DeviceOrientation
     {
         Unknown = 0,
@@ -298,6 +327,14 @@ namespace UnityEngine
         [NativeThrows]
         public extern static Touch GetTouch(int index);
         [NativeThrows]
+        public extern static PenData GetPenEvent(int index);
+        [NativeThrows]
+        public extern static PenData GetLastPenContactEvent();
+        [NativeThrows]
+        public extern static void ResetPenEvents();
+        [NativeThrows]
+        public extern static void ClearLastPenContactEvent();
+        [NativeThrows]
         public extern static AccelerationEvent GetAccelerationEvent(int index);
 
         public static bool GetKey(KeyCode key)
@@ -364,6 +401,13 @@ namespace UnityEngine
             [FreeFunction("GetMousePresent")]
             get;
         }
+
+        public extern static int penEventCount
+        {
+            [FreeFunction("GetPenEventCount")]
+            get;
+        }
+
         public extern static int touchCount
         {
             [FreeFunction("GetTouchCount")]

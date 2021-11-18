@@ -232,7 +232,7 @@ namespace UnityEditor
                 if (size.x > m_windowSize)
                     m_windowSize = size.x;
             }
-            m_windowSize = Mathf.Clamp(m_windowSize, 100, 386);
+            m_windowSize = Mathf.Clamp(m_windowSize, 100, Screen.currentResolution.width * 0.95f);
 
             Undo.undoRedoPerformed += OnUndoRedoPerformed;
         }

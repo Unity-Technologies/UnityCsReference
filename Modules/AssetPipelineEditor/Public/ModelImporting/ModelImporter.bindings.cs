@@ -503,6 +503,12 @@ namespace UnityEditor
             set;
         }
 
+        public extern bool importBlendShapeDeformPercent
+        {
+            get;
+            set;
+        }
+
         public extern bool importCameras
         {
             get;

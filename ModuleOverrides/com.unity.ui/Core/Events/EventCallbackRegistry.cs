@@ -342,13 +342,15 @@ namespace UnityEngine.UIElements
             }
 
             m_IsInvoking++;
+            var currentTarget = (VisualElement) evt.currentTarget;
+            var panel = currentTarget.panel;
 
             for (var i = 0; i < m_Callbacks.Count; i++)
             {
-                if (evt.isImmediatePropagationStopped)
+                if (evt.isImmediatePropagationStopped || currentTarget.panel != panel)
                     break;
 
-                if (evt.skipDisabledElements && evt.currentTarget is VisualElement ve && !ve.enabledInHierarchy &&
+                if (evt.skipDisabledElements && !currentTarget.enabledInHierarchy &&
                     m_Callbacks[i].invokePolicy != InvokePolicy.IncludeDisabled)
                 {
                     continue;

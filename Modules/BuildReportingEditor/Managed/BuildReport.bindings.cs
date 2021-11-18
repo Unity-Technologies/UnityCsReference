@@ -19,7 +19,10 @@ namespace UnityEditor.Build.Reporting
         {
         }
 
-        public extern BuildFile[] files { get; }
+        [System.Obsolete("Use GetFiles() method instead (UnityUpgradable) -> GetFiles()", true)]
+        public BuildFile[] files => throw new NotSupportedException();
+
+        public extern BuildFile[] GetFiles();
 
         [NativeName("BuildSteps")]
         public extern BuildStep[] steps { get; }

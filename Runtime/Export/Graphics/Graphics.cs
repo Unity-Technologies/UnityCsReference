@@ -777,6 +777,16 @@ namespace UnityEngine
             Internal_DrawProceduralIndirect(material, bounds, topology, bufferWithArgs, argsOffset, camera, properties, castShadows, receiveShadows, layer);
         }
 
+        public static void DrawProceduralIndirect(Material material, Bounds bounds, MeshTopology topology, GraphicsBuffer bufferWithArgs, int argsOffset = 0, Camera camera = null, MaterialPropertyBlock properties = null, ShadowCastingMode castShadows = ShadowCastingMode.On, bool receiveShadows = true, int layer = 0)
+        {
+            if (!SystemInfo.supportsIndirectArgumentsBuffer)
+                throw new InvalidOperationException("Indirect argument buffers are not supported.");
+            if (bufferWithArgs == null)
+                throw new ArgumentNullException("bufferWithArgs");
+
+            Internal_DrawProceduralIndirectGraphicsBuffer(material, bounds, topology, bufferWithArgs, argsOffset, camera, properties, castShadows, receiveShadows, layer);
+        }
+
         public static void DrawProceduralIndirect(Material material, Bounds bounds, MeshTopology topology, GraphicsBuffer indexBuffer, ComputeBuffer bufferWithArgs, int argsOffset = 0, Camera camera = null, MaterialPropertyBlock properties = null, ShadowCastingMode castShadows = ShadowCastingMode.On, bool receiveShadows = true, int layer = 0)
         {
             if (!SystemInfo.supportsIndirectArgumentsBuffer)
@@ -787,6 +797,18 @@ namespace UnityEngine
                 throw new ArgumentNullException("bufferWithArgs");
 
             Internal_DrawProceduralIndexedIndirect(material, bounds, topology, indexBuffer, bufferWithArgs, argsOffset, camera, properties, castShadows, receiveShadows, layer);
+        }
+
+        public static void DrawProceduralIndirect(Material material, Bounds bounds, MeshTopology topology, GraphicsBuffer indexBuffer, GraphicsBuffer bufferWithArgs, int argsOffset = 0, Camera camera = null, MaterialPropertyBlock properties = null, ShadowCastingMode castShadows = ShadowCastingMode.On, bool receiveShadows = true, int layer = 0)
+        {
+            if (!SystemInfo.supportsIndirectArgumentsBuffer)
+                throw new InvalidOperationException("Indirect argument buffers are not supported.");
+            if (indexBuffer == null)
+                throw new ArgumentNullException("indexBuffer");
+            if (bufferWithArgs == null)
+                throw new ArgumentNullException("bufferWithArgs");
+
+            Internal_DrawProceduralIndexedIndirectGraphicsBuffer(material, bounds, topology, indexBuffer, bufferWithArgs, argsOffset, camera, properties, castShadows, receiveShadows, layer);
         }
     }
 }

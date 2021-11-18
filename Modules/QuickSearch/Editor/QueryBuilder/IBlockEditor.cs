@@ -9,6 +9,7 @@ namespace UnityEditor.Search
     interface IBlockSource
     {
         string name { get; }
+        string editorTitle { get; }
         SearchContext context { get; }
         bool formatNames { get; }
 

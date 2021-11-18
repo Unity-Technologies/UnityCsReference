@@ -14,7 +14,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         private const string k_UnityPackageGroupDisplayName = "Unity Technologies";
 
-        internal new class UxmlFactory : UxmlFactory<PackageListScrollView> {}
+        internal new class UxmlFactory : UxmlFactory<PackageListScrollView> { }
 
         private Dictionary<string, PackageItem> m_PackageItemsLookup;
 
@@ -38,6 +38,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private VisualElement m_ItemsList;
 
+        private VisualElement m_ScrollToTarget;
+
         public PackageListScrollView()
         {
             ResolveDependencies();
@@ -51,6 +53,23 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageItemsLookup = new Dictionary<string, PackageItem>();
 
             focusable = true;
+
+            contentContainer.RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            contentContainer.RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+        }
+
+        private void OnAttachToPanel(AttachToPanelEvent evt)
+        {
+            if (evt.destinationPanel == null)
+                return;
+            contentContainer.RegisterCallback<MouseDownEvent>(OnMouseDown);
+        }
+
+        private void OnDetachFromPanel(DetachFromPanelEvent evt)
+        {
+            if (evt.originPanel == null)
+                return;
+            contentContainer.UnregisterCallback<MouseDownEvent>(OnMouseDown);
         }
 
         public PackageItem GetPackageItem(string packageUniqueId)
@@ -58,9 +77,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             return string.IsNullOrEmpty(packageUniqueId) ? null : m_PackageItemsLookup.Get(packageUniqueId);
         }
 
-        private ISelectableItem GetSelectedItem()
+        private ISelectableItem GetFirstSelectedItem()
         {
-            var selectedVersion = m_PageManager.GetSelectedVersion();
+            m_PackageDatabase.GetPackageAndVersion(m_PageManager.GetSelection().firstSelection, out var package, out var version);
+            var selectedVersion = version ?? package?.versions.primary;
             var packageItem = GetPackageItem(selectedVersion?.packageUniqueId);
             if (packageItem == null)
                 return null;
@@ -73,29 +93,42 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void ScrollToSelection()
         {
-            ScrollIfNeeded(this, GetSelectedItem()?.element);
+            // For now we want to just scroll to any of the selections, this behaviour might change in the future depending on how users react
+            ScrollIfNeeded(GetFirstSelectedItem()?.element);
         }
 
-        private void ScrollIfNeeded(ScrollView container, VisualElement target)
+        private void ScrollIfNeeded()
         {
-            if (container == null || target == null)
+            if (m_ScrollToTarget == null)
                 return;
 
-            if (float.IsNaN(layout.height) || layout.height == 0 || float.IsNaN(target.layout.height))
+            EditorApplication.delayCall -= ScrollIfNeeded;
+            if (float.IsNaN(layout.height) || layout.height == 0 || float.IsNaN(m_ScrollToTarget.layout.height))
             {
-                EditorApplication.delayCall += () => ScrollIfNeeded(container, target);
+                EditorApplication.delayCall += ScrollIfNeeded;
                 return;
             }
 
-            var scrollViews = UIUtils.GetParentsOfType<ScrollView>(target);
+            var scrollViews = UIUtils.GetParentsOfType<ScrollView>(m_ScrollToTarget);
             foreach (var scrollview in scrollViews)
-                UIUtils.ScrollIfNeeded(scrollview, target);
+                UIUtils.ScrollIfNeeded(scrollview, m_ScrollToTarget);
+            m_ScrollToTarget = null;
+        }
+
+        private void ScrollIfNeeded(VisualElement target)
+        {
+            m_ScrollToTarget = target;
+            ScrollIfNeeded();
         }
 
         public void SetSelectedItemExpanded(bool value)
         {
-            var selectedVersion = m_PageManager.GetSelectedVersion();
-            GetPackageItem(selectedVersion?.packageUniqueId)?.SetExpanded(value);
+            // Disable item expansion when there are multiple items selected
+            var selection = m_PageManager.GetSelection();
+            if (selection.Count > 1)
+                return;
+
+            GetPackageItem(selection.firstSelection?.packageUniqueId)?.SetExpanded(value);
         }
 
         private void AddOrUpdatePackageItem(VisualState state, IPackage package = null)
@@ -160,7 +193,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 group.onGroupToggle += value =>
                 {
-                    var s = GetSelectedItem();
+                    var s = GetFirstSelectedItem();
                     if (value && s != null && group.Contains(s))
                         EditorApplication.delayCall += ScrollToSelection;
                 };
@@ -272,12 +305,128 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
+        private PackageItem GetPackageItemFromMouseEvent(MouseDownEvent evt, out PackageVersionItem versionItem)
+        {
+            versionItem = null;
+            var target = evt.leafTarget as VisualElement;
+            while (target != null && target != this)
+            {
+                var packageVersionItem = target as PackageVersionItem;
+                if (packageVersionItem != null)
+                    versionItem = packageVersionItem;
+                var packageItem = target as PackageItem;
+                if (packageItem != null)
+                    return packageItem;
+                target = target.parent;
+            }
+            return null;
+        }
+
+        private void SelectAllBetween(string firstPackageUniqueId, string secondPackageUniqueId)
+        {
+            var newSelections = new List<PackageAndVersionIdPair>();
+            var inBetweenTwoPackages = false;
+            if (firstPackageUniqueId == secondPackageUniqueId)
+            {
+                newSelections.Add(new PackageAndVersionIdPair(firstPackageUniqueId));
+            }
+            else
+            {
+                foreach (var item in packageItems)
+                {
+                    if (!UIUtils.IsElementVisible(item))
+                        continue;
+                    var packageUniqueId = item.package?.uniqueId;
+                    if (string.IsNullOrEmpty(packageUniqueId))
+                        continue;
+
+                    var matchFirstPackage = packageUniqueId == firstPackageUniqueId;
+                    var matchSecondPackakge = packageUniqueId == secondPackageUniqueId;
+                    if (matchFirstPackage || matchSecondPackakge || inBetweenTwoPackages)
+                        newSelections.Add(new PackageAndVersionIdPair(packageUniqueId));
+
+                    if (matchFirstPackage || matchSecondPackakge)
+                    {
+                        inBetweenTwoPackages = !inBetweenTwoPackages;
+                        if (!inBetweenTwoPackages)
+                        {
+                            // If we match the second package before we matched the first package then we want to reverse the order
+                            // to first sure that the first selected is in front. Otherwise Shift selections might have weird behaviours.
+                            if (matchFirstPackage)
+                                newSelections.Reverse();
+                            break;
+                        }
+                    }
+                }
+            }
+            m_PageManager.SetSelected(newSelections, true);
+        }
+
+        private void SelectAllVisible()
+        {
+            var validItems = packageItems.Where(p => !string.IsNullOrEmpty(p.package?.uniqueId) && UIUtils.IsElementVisible(p));
+            m_PageManager.SetSelected(validItems.Select(item => new PackageAndVersionIdPair(item.package.uniqueId)), true);
+        }
+
+        private void OnMouseDown(MouseDownEvent evt)
+        {
+            if (evt.button != 0)
+                return;
+
+            var packageItem = GetPackageItemFromMouseEvent(evt, out var packageVersionItem);
+            if (packageItem == null)
+                return;
+
+            if (evt.shiftKey)
+            {
+                var firstItem = m_PageManager.GetSelection().firstSelection?.packageUniqueId;
+                SelectAllBetween(firstItem, packageItem.package.uniqueId);
+                return;
+            }
+
+            if (evt.actionKey)
+                packageItem.ToggleSelectMainItem();
+            else if (packageVersionItem != null)
+                packageVersionItem.SelectVersionItem();
+            else
+                packageItem.SelectMainItem();
+        }
+
+        private bool HandleShiftSelection(KeyDownEvent evt)
+        {
+            if (!evt.shiftKey)
+                return false;
+
+            if (evt.keyCode == KeyCode.UpArrow || evt.keyCode == KeyCode.DownArrow)
+            {
+                var selection = m_PageManager.GetSelection();
+                var firstItem = selection.firstSelection?.packageUniqueId;
+                var lastItem = selection.lastSelection?.packageUniqueId;
+
+                var nextItem = FindNextVisiblePackageItem(GetPackageItem(lastItem), evt.keyCode == KeyCode.UpArrow);
+                SelectAllBetween(firstItem, nextItem?.package.uniqueId ?? lastItem);
+                return true;
+            }
+            return false;
+        }
+
         public void OnKeyDownShortcut(KeyDownEvent evt)
         {
             if (!UIUtils.IsElementVisible(this))
                 return;
 
-            if (evt.keyCode == KeyCode.RightArrow)
+            if (HandleShiftSelection(evt))
+            {
+                evt.StopPropagation();
+                return;
+            }
+
+            if (evt.keyCode == KeyCode.A && evt.actionKey)
+            {
+                SelectAllVisible();
+                evt.StopPropagation();
+            }
+            else if (evt.keyCode == KeyCode.RightArrow)
             {
                 SetSelectedItemExpanded(true);
                 evt.StopPropagation();
@@ -305,8 +454,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (nextElement != null)
             {
                 m_PageManager.SetSelected(nextElement.package, nextElement.targetVersion);
-                foreach (var scrollView in UIUtils.GetParentsOfType<ScrollView>(nextElement.element))
-                    ScrollIfNeeded(scrollView, nextElement.element);
+                ScrollIfNeeded(nextElement.element);
                 return true;
             }
             return false;
@@ -314,14 +462,18 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private ISelectableItem FindNextVisibleSelectableItem(bool reverseOrder)
         {
-            var selectedVersion = m_PageManager.GetSelectedVersion();
-            var packageItem = GetPackageItem(selectedVersion?.packageUniqueId);
+            // We use the `lastSelection` here as that is the one the user interacted last and it feels more natural that way when navigating with keyboard
+            var lastSelection = m_PageManager.GetSelection().lastSelection;
+            var packageItem = GetPackageItem(lastSelection?.packageUniqueId);
             if (packageItem == null)
                 return null;
 
             // First we try to look for the next visible options within all the versions of the current package when the list is expanded
             if (packageItem.visualState.expanded)
             {
+                m_PackageDatabase.GetPackageAndVersion(lastSelection, out var package, out var version);
+                var selectedVersion = version ?? package?.versions.primary;
+
                 var versionItem = packageItem.versionItems.FirstOrDefault(v => v.targetVersion == selectedVersion);
                 var nextVersionItem = UIUtils.FindNextSibling(versionItem, reverseOrder, UIUtils.IsElementVisible) as PackageVersionItem;
                 if (nextVersionItem != null)
@@ -379,18 +531,15 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private static PackageItem FindNextVisiblePackageItem(PackageItem packageItem, bool reverseOrder)
         {
-            PackageItem nextVisibleItem = null;
-            if (packageItem.packageGroup.expanded)
-                nextVisibleItem = UIUtils.FindNextSibling(packageItem, reverseOrder, UIUtils.IsElementVisible) as PackageItem;
-
+            var nextVisibleItem = UIUtils.FindNextSibling(packageItem, reverseOrder, UIUtils.IsElementVisible) as PackageItem;
             if (nextVisibleItem == null)
             {
-                Func<VisualElement, bool> expandedNonEmptyGroup = (element) =>
+                Func<VisualElement, bool> nonEmptyGroup = (element) =>
                 {
                     var group = element as PackageGroup;
-                    return group.expanded && group.packageItems.Any(p => UIUtils.IsElementVisible(p));
+                    return group.packageItems.Any(p => UIUtils.IsElementVisible(p));
                 };
-                var nextGroup = UIUtils.FindNextSibling(packageItem.packageGroup, reverseOrder, expandedNonEmptyGroup) as PackageGroup;
+                var nextGroup = UIUtils.FindNextSibling(packageItem.packageGroup, reverseOrder, nonEmptyGroup) as PackageGroup;
                 if (nextGroup != null)
                     nextVisibleItem = reverseOrder ? nextGroup.packageItems.LastOrDefault(p => UIUtils.IsElementVisible(p))
                         : nextGroup.packageItems.FirstOrDefault(p => UIUtils.IsElementVisible(p));
@@ -402,26 +551,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (m_PackageFiltering.currentFilterTab == PackageFilterTab.BuiltIn || m_PackageFiltering.currentFilterTab == PackageFilterTab.AssetStore)
                 return;
+
             var page = m_PageManager.GetPage(m_PackageFiltering.currentFilterTab);
+            foreach (var visualState in page.visualStates)
+                visualState.expanded = false;
             page.Rebuild();
-
-            var openedItems = packageItems.Where((p => p.visualState.expanded)).ToList();
-            if (!value && openedItems.Count() > 0)
-            {
-                foreach (var packageItem in openedItems)
-                {
-                    packageItem.visualState.expanded = false;
-                    packageItem.UpdateVisualState(null);
-                }
-
-                var packageToSelect = openedItems.FirstOrDefault(p => !string.IsNullOrEmpty(p.visualState.selectedVersionId));
-                if (packageToSelect != null)
-                {
-                    PackageManagerWindow.SelectPackageAndFilterStatic(packageToSelect.package.uniqueId);
-                    packageToSelect.visualState.expanded = false;
-                    packageToSelect.UpdateVisualState(null);
-                }
-            }
         }
     }
 }

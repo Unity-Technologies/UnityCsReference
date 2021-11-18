@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using UnityEngine.UIElements;
@@ -47,13 +48,16 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnEnable()
         {
-            m_PackageDatabase.onPackagesChanged += (added, removed, preUpdate, postUpdate) => RefreshDependencies();
-            m_SettingsProxy.onEnablePackageDependenciesChanged += (value) => RefreshDependencies();
+            m_PackageDatabase.onPackagesChanged += RefreshDependencies;
+            m_SettingsProxy.onEnablePackageDependenciesChanged += RefreshDependencies;
         }
 
         public void OnDisable()
         {
             detailsImages.OnDisable();
+
+            m_PackageDatabase.onPackagesChanged -= RefreshDependencies;
+            m_SettingsProxy.onEnablePackageDependenciesChanged -= RefreshDependencies;
         }
 
         public void Refresh(IPackage package, IPackageVersion version)
@@ -86,6 +90,16 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             featureDependencies.SetPackageVersion(m_Version);
             dependencies.SetPackageVersion(m_Version);
+        }
+
+        private void RefreshDependencies(bool _)
+        {
+            RefreshDependencies();
+        }
+
+        private void RefreshDependencies(IEnumerable<IPackage> added, IEnumerable<IPackage> removed, IEnumerable<IPackage> preUpdate, IEnumerable<IPackage> postUpdate)
+        {
+            RefreshDependencies();
         }
 
         private void RefreshLabels()

@@ -58,10 +58,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private readonly Dictionary<string, UpmSearchOperation> m_ExtraFetchOperations = new Dictionary<string, UpmSearchOperation>();
 
-        private HashSet<string> m_PackagesToExtraFetchForRegistryVersions = new HashSet<string>();
-        [SerializeField]
-        private string[] m_SerializedPackagesToExtraFetchForRegistryVersions;
-
         [SerializeField]
         private string[] m_SerializedPRegistriesUrlKeys;
 
@@ -116,15 +112,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_SerializedPRegistriesUrlKeys = m_RegistriesUrl?.Keys.ToArray() ?? new string[0];
             m_SerializedRegistriesUrlValues = m_RegistriesUrl?.Values.ToArray() ?? new bool[0];
-            m_SerializedPackagesToExtraFetchForRegistryVersions = m_PackagesToExtraFetchForRegistryVersions.ToArray() ?? new string[0];
         }
 
         public void OnAfterDeserialize()
         {
             for (var i = 0; i < m_SerializedPRegistriesUrlKeys.Length; i++)
                 m_RegistriesUrl[m_SerializedPRegistriesUrlKeys[i]] = m_SerializedRegistriesUrlValues[i];
-            foreach (var packageName in m_SerializedPackagesToExtraFetchForRegistryVersions)
-                m_PackagesToExtraFetchForRegistryVersions.Add(packageName);
         }
 
         public virtual bool isAddRemoveOrEmbedInProgress => (m_AddOperation?.isInProgress  ?? false) ||
@@ -186,10 +179,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             List(true);
         }
 
-        public virtual void AddByPath(string path)
+        public virtual bool AddByPath(string path, out string tempPackageId)
         {
+            tempPackageId = string.Empty;
             if (isAddRemoveOrEmbedInProgress)
-                return;
+                return false;
 
             try
             {
@@ -205,12 +199,15 @@ namespace UnityEditor.PackageManager.UI.Internal
                         path = $"../{relativePathToProjectRoot}";
                 }
 
-                addOperation.AddByUrlOrPath($"file:{path}", PackageTag.Local);
+                tempPackageId = $"file:{path}";
+                addOperation.AddByUrlOrPath(tempPackageId, PackageTag.Local);
                 SetupAddOperation();
+                return true;
             }
             catch (System.IO.IOException e)
             {
                 Debug.Log($"[Package Manager] Cannot add package {path}: {e.Message}");
+                return false;
             }
         }
 
@@ -221,6 +218,22 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             addOperation.AddByUrlOrPath(url, PackageTag.Git);
             SetupAddOperation();
+        }
+
+        public virtual void AddByIds(IEnumerable<string> versionIds)
+        {
+            if (isAddRemoveOrEmbedInProgress)
+                return;
+            addAndRemoveOperation.AddByIds(versionIds);
+            SetupAddAndRemoveOperation();
+        }
+
+        public virtual void RemoveByNames(IEnumerable<string> packagesNames)
+        {
+            if (isAddRemoveOrEmbedInProgress)
+                return;
+            addAndRemoveOperation.RemoveByNames(packagesNames);
+            SetupAddAndRemoveOperation();
         }
 
         public virtual void AddAndResetDependencies(string packageId, IEnumerable<string> dependencyPackagesNames)
@@ -561,14 +574,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 var registryInfo = installedInfo.registry;
                 var compatibleVersions = installedInfo.versions?.compatible;
-
-                // if main version was installed from outside a registry but has other registry versions,
-                //  need to fetch extra info for the other registry versions so they can be tagged properly
-                if (result.versions?.installed?.HasTag(PackageTag.Bundled) == false
-                    && registryInfo == null && compatibleVersions?.Count() > 0)
-                {
-                    ExtraFetchForRegistryVersions(installedInfo.name);
-                }
             }
             else
             {
@@ -579,37 +584,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             return result;
-        }
-
-        public void ExtraFetchForRegistryVersions(string packageName)
-        {
-            m_PackagesToExtraFetchForRegistryVersions.Add(packageName);
-
-            var extraFetchOperation = ExtraFetchInternal(packageName);
-
-            if (extraFetchOperation != null)
-            {
-                extraFetchOperation.onProcessResult += (request) => OnProcessExtraFetchRegistryVersionsResult(request);
-                extraFetchOperation.onOperationFinalized += (op) => OnExtraFetchRegistryVersionsFinalized(op.packageUniqueId);
-            }
-        }
-
-        private void OnExtraFetchRegistryVersionsFinalized(string packageName)
-        {
-            m_PackagesToExtraFetchForRegistryVersions.Remove(packageName);
-        }
-
-        private void OnProcessExtraFetchRegistryVersionsResult(SearchRequest request)
-        {
-            var packageInfo = request.Result.FirstOrDefault();
-            var isUnityPackage = IsUnityPackage(packageInfo);
-
-            var existingExtraPackageInfos = m_UpmCache.GetExtraPackageInfos(packageInfo.name);
-            foreach (var registryVersion in packageInfo.versions.compatible)
-            {
-                if (!existingExtraPackageInfos.ContainsKey(registryVersion))
-                    onPackageVersionUpdated?.Invoke(packageInfo.name, new UpmPackageVersion(packageInfo, false, Scripting.ScriptCompilation.SemVersionParser.Parse(registryVersion), packageInfo.displayName, isUnityPackage));
-            }
         }
 
         private void UpdateExtraPackageInfos(string packageName, IVersionList versions)
@@ -696,11 +670,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (m_SearchOperation?.isInProgress ?? false)
                 SearchAll();
-
-            foreach (var packageName in m_PackagesToExtraFetchForRegistryVersions)
-            {
-                ExtraFetchForRegistryVersions(packageName);
-            }
         }
 
         public void OnEnable()

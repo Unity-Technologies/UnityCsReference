@@ -146,7 +146,7 @@ namespace Unity.UI.Builder
             m_OptionsPopup.SetValueWithoutNotify(GetOptionFromValue());
         }
 
-        protected string GetTextFromValue()
+        protected virtual string GetTextFromValue()
         {
             if (styleKeywords.Contains(option))
                 return option;

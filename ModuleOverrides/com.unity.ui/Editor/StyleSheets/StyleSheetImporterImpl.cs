@@ -36,6 +36,7 @@ namespace UnityEditor.UIElements.StyleSheets
         protected readonly StyleValidator m_Validator;
         protected string m_AssetPath;
         protected int m_CurrentLine;
+        protected string m_CurrentPropertyName;
 
         public StyleValueImporter(UnityEditor.AssetImporters.AssetImportContext context)
         {
@@ -448,7 +449,7 @@ namespace UnityEditor.UIElements.StyleSheets
                     spriteAsset = AssetDatabase.LoadAssetAtPath<Sprite>(projectRelativePath);
                 }
 
-                if (isTexture || asset is Sprite || asset is Font || asset is FontAsset || asset is VectorImage || asset is RenderTexture)
+                if (asset != null)
                 {
                     // Looking suffixed images files only
                     if (isTexture)
@@ -474,30 +475,50 @@ namespace UnityEditor.UIElements.StyleSheets
                             DeclareDependencyAndLoad(hiResImageLocation);
                     }
 
-                    m_Builder.AddValue(spriteAsset != null ? spriteAsset : asset);
+                    Object assetToStore = spriteAsset != null ? spriteAsset : asset;
+
+                    m_Builder.AddValue(assetToStore);
+
+                    if (!disableValidation)
+                    {
+                        var propertyName = new StylePropertyName(m_CurrentPropertyName);
+
+                        // Unknown properties (not custom) should beforehand
+                        if (propertyName.id == StylePropertyId.Unknown)
+                            return;
+
+                        var allowed = StylePropertyUtil.GetAllowedAssetTypesForProperty(propertyName.id);
+
+                        // If no types were returned, it means this property doesn't support assets.
+                        // Normal syntax validation should cover this.
+                        if (!allowed.Any())
+                            return;
+
+                        Type assetType = assetToStore.GetType();
+
+                        // If none of the allowed types are compatible with the asset type, output a warning
+                        if (!allowed.Any(t => t.IsAssignableFrom(assetType)))
+                        {
+                            string allowedTypes = string.Join(", ", allowed.Select(t => t.Name));
+                            m_Errors.AddValidationWarning(
+                                string.Format(glossary.invalidAssetType, assetType.Name, projectRelativePath, allowedTypes),
+                                m_CurrentLine);
+
+                        }
+                    }
                 }
                 else
                 {
+                    // Asset is actually missing OR we couldn't load it for some reason; this should result in
+                    // response.result != URIValidationResult.OK (above) but if assets are deleted while Unity is
+                    // already open, we fall in here instead.
+                    var(_, message) = ConvertErrorCode(URIValidationResult.InvalidURIProjectAssetPath);
+
                     // In case of error, we still want to call AddValue, with parameters to indicate the problem, in order
                     // to keep the full layout from being discarded. We also add appropriate warnings to explain to the
                     // user what is wrong.
-                    if (asset == null)
-                    {
-                        // Asset is actually missing OR we couldn't load it for some reason; this should result in
-                        // response.result != URIValidationResult.OK (above) but if assets are deleted while Unity is
-                        // already open, we fall in here instead.
-                        var(_, message) = ConvertErrorCode(URIValidationResult.InvalidURIProjectAssetPath);
-
-                        m_Builder.AddValue(path, StyleValueType.MissingAssetReference);
-                        m_Errors.AddValidationWarning(string.Format(message, path), m_CurrentLine);
-                    }
-                    else
-                    {
-                         // Asset is of an unsupported type. We still add a value, of type invalid, in order to keep the
-                         // layout from breaking entirely.
-                        m_Builder.AddValue(path, StyleValueType.Invalid);
-                        m_Errors.AddSemanticWarning(StyleSheetImportErrorCode.InvalidURIProjectAssetType, string.Format(glossary.invalidAssetType, asset.GetType().Name, projectRelativePath), m_CurrentLine);
-                    }
+                    m_Builder.AddValue(path, StyleValueType.MissingAssetReference);
+                    m_Errors.AddValidationWarning(string.Format(message, path), m_CurrentLine);
                 }
             }
         }
@@ -1001,6 +1022,7 @@ namespace UnityEditor.UIElements.StyleSheets
                 foreach (Property property in rule.Declarations)
                 {
                     m_CurrentLine = property.Line;
+                    m_CurrentPropertyName = property.Name;
 
                     ValidateProperty(property);
 

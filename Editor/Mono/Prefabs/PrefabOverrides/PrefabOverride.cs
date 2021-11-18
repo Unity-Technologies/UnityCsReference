@@ -69,11 +69,13 @@ namespace UnityEditor.SceneManagement
             PrefabUtility.HandleApplyMenuItems(
                 null,
                 obj,
-                (menuItemContent, sourceObject) =>
+                (menuItemContent, sourceObject, instanceOrAssetObject) =>
                 {
                     string prefabAssetPath = AssetDatabase.GetAssetPath(sourceObject);
                     GameObject rootObject = PrefabUtility.GetRootGameObject(sourceObject);
-                    if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject))
+                    bool isPersistent = EditorUtility.IsPersistent(instanceOrAssetObject);
+
+                    if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject) || (!isPersistent && !PrefabUtility.HasApplicableObjectOverridesForTarget(instanceOrAssetObject, sourceObject, false)))
                         menu.AddDisabledItem(menuItemContent);
                     else
                         menu.AddItem(menuItemContent, false, applyAction, prefabAssetPath);

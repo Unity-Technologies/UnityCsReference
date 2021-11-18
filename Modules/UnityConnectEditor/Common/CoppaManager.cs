@@ -84,7 +84,7 @@ namespace UnityEditor.Connect
 
             var originalCoppaValue = UnityConnect.instance.GetProjectInfo().COPPA;
             var coppaChoicesList = new List<String>() { L10n.Tr(k_No), L10n.Tr(k_Yes) };
-            if (originalCoppaValue == COPPACompliance.COPPAUndefined)
+            if (originalCoppaValue == COPPACompliance.COPPAUndefined.ToCoppaCompliance())
             {
                 coppaChoicesList.Insert(0, L10n.Tr(k_Undefined));
             }
@@ -125,7 +125,7 @@ namespace UnityEditor.Connect
                                         }
                                         else
                                         {
-                                            originalCoppaValue = newCompliancyValue;
+                                            originalCoppaValue = newCompliancyValue.ToCoppaCompliance();
                                             SetCoppaFieldValue(originalCoppaValue, coppaField);
                                             SetPersistContainerVisibility(originalCoppaValue, persistContainer, coppaField);
                                             NotificationManager.instance.Publish(Notification.Topic.CoppaCompliance, Notification.Severity.Info,
@@ -206,14 +206,14 @@ namespace UnityEditor.Connect
             coppaContainer.Q(k_CoppaFieldName).SetEnabled(enable);
         }
 
-        static void SetCoppaFieldValue(COPPACompliance coppaCompliance, PopupField<String> coppaField)
+        static void SetCoppaFieldValue(CoppaCompliance coppaCompliance, PopupField<String> coppaField)
         {
-            coppaField.SetValueWithoutNotify(GetFieldValueForCompliancy(coppaCompliance));
+            coppaField.SetValueWithoutNotify(GetFieldValueForCompliancy(coppaCompliance.ToCOPPACompliance()));
         }
 
-        static void SetPersistContainerVisibility(COPPACompliance coppaCompliance, VisualElement persistContainer, PopupField<String> coppaField)
+        static void SetPersistContainerVisibility(CoppaCompliance coppaCompliance, VisualElement persistContainer, PopupField<String> coppaField)
         {
-            persistContainer.style.display = coppaField.GetValueToDisplay() != GetFieldValueForCompliancy(coppaCompliance)
+            persistContainer.style.display = coppaField.GetValueToDisplay() != GetFieldValueForCompliancy(coppaCompliance.ToCOPPACompliance())
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
         }
@@ -260,11 +260,11 @@ namespace UnityEditor.Connect
             return coppaField.value == L10n.Tr(k_Yes) ? k_CoppaCompliantJsonValue : k_CoppaNotCompliantJsonValue;
         }
 
-        public delegate void SaveButtonCallback(COPPACompliance coppaCompliance);
+        public delegate void SaveButtonCallback(CoppaCompliance coppaCompliance);
 
-        public delegate void CancelButtonCallback(COPPACompliance coppaCompliance);
+        public delegate void CancelButtonCallback(CoppaCompliance coppaCompliance);
 
-        public delegate void ExceptionCallback(COPPACompliance coppaCompliance, Exception exception);
+        public delegate void ExceptionCallback(CoppaCompliance coppaCompliance, Exception exception);
     }
 
     internal class CoppaComplianceEditorConfigurationException : Exception

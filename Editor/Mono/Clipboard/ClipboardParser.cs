@@ -327,6 +327,18 @@ namespace UnityEditor
             return typeof(T).FullName + "JSON:";
         }
 
+        static object GetIntegerValue(in SerializedProperty p)
+        {
+            switch (p.type)
+            {
+                case "long":
+                case "ulong":
+                    return p.longValue;
+            }
+
+            return p.intValue;
+        }
+
         // Given a serialized property, produce an object structure for JSON encoding of it.
         internal static Dictionary<string, object> WriteGenericSerializedProperty(SerializedProperty p)
         {
@@ -340,7 +352,7 @@ namespace UnityEditor
                 case SerializedPropertyType.Integer:
                 case SerializedPropertyType.LayerMask:
                 case SerializedPropertyType.Character:
-                    res["val"] = p.intValue; break;
+                    res["val"] = GetIntegerValue(p); break;
                 case SerializedPropertyType.Boolean: res["val"] = p.boolValue; break;
                 case SerializedPropertyType.Float: res["val"] = p.floatValue; break;
                 case SerializedPropertyType.String: res["val"] = p.stringValue; break;
@@ -415,7 +427,11 @@ namespace UnityEditor
                     case SerializedPropertyType.Integer:
                     case SerializedPropertyType.LayerMask:
                     case SerializedPropertyType.Character:
-                        prop.intValue = Convert.ToInt32(oval);
+                        if (string.Equals(prop.type, "long", StringComparison.Ordinal) ||
+                            string.Equals(prop.type, "ulong", StringComparison.Ordinal))
+                            prop.longValue = Convert.ToInt64(oval);
+                        else
+                            prop.intValue = Convert.ToInt32(oval);
                         break;
                     case SerializedPropertyType.Boolean:
                         prop.boolValue = Convert.ToBoolean(oval);

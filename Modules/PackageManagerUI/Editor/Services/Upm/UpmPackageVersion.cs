@@ -24,9 +24,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override string category => m_PackageInfo.category;
 
-        public override IEnumerable<UIError> errors => hasEntitlementsError ? new[] { UIError.k_EntitlementError } : m_PackageInfo.errors.Select(error => new UIError((UIErrorCode)error.errorCode, error.message));
-
         public override bool isDirectDependency => isFullyFetched && m_PackageInfo.isDirectDependency;
+
+        [SerializeField]
+        private List<UIError> m_Errors;
+        public override IEnumerable<UIError> errors => m_Errors;
 
         [SerializeField]
         private string m_PackageId;
@@ -51,7 +53,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         public bool isRegistryPackage => m_PackageInfo?.source == PackageSource.Registry;
-        public bool isFromScopedRegistry => this.isRegistryPackage && m_PackageInfo?.registry?.isDefault == false;
+        public bool isFromScopedRegistry => isRegistryPackage && m_PackageInfo?.registry?.isDefault == false;
+        public override RegistryInfo registry => isRegistryPackage ? m_PackageInfo.registry : null;
 
         [SerializeField]
         private bool m_IsFullyFetched;
@@ -93,6 +96,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override string versionString => m_Version.ToString();
 
         public override string versionId => m_Version.ToString();
+
 
         public UpmPackageVersion(PackageInfo packageInfo, bool isInstalled, SemVersion? version, string displayName, bool isUnityPackage)
         {
@@ -141,6 +145,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_PackageId = m_PackageInfo.packageId;
                 if (installedFromPath)
                     m_PackageId = m_PackageId.Replace("\\", "/");
+
+                ProcessSignatureErrors(newPackageInfo);
             }
             else
             {
@@ -251,20 +257,24 @@ namespace UnityEditor.PackageManager.UI.Internal
             return $"{name.ToLower()}@{version}";
         }
 
-        public static bool IsDifferentVersionThanRequested(IPackageVersion packageVersion)
+        private void ProcessSignatureErrors(PackageInfo info)
         {
-            return !string.IsNullOrEmpty(packageVersion?.packageInfo?.projectDependenciesEntry) &&
-                !packageVersion.HasTag(PackageTag.Git | PackageTag.Local | PackageTag.Custom) &&
-                packageVersion.packageInfo.projectDependenciesEntry != packageVersion.versionString;
-        }
+            // Setup the initial value for errors
+            m_Errors = hasEntitlementsError ? new List<UIError> {UIError.k_EntitlementError} : info.errors.Select(error => new UIError((UIErrorCode)error.errorCode, error.message)).ToList();
 
-        public static bool IsRequestedButOverriddenVersion(IPackage package, IPackageVersion version)
-        {
-            var isVersionInProjectManifest =
-                !string.IsNullOrEmpty(version?.versionString) &&
-                version.versionString == package?.versions.primary.packageInfo?.projectDependenciesEntry;
-
-            return isVersionInProjectManifest && !version.isInstalled;
+            if (info.signature.status == SignatureStatus.Invalid)
+            {
+                m_Errors.Add(UIError.k_InvalidSignatureWarning);
+            }
+            else if (info.signature.status == SignatureStatus.Unsigned && name.StartsWith(k_UnityPrefix) &&
+                     (info.source == PackageSource.LocalTarball ||
+                      (info.source == PackageSource.Registry && !info.registry.isDefault)))
+            {
+                // Flag Unsigned packages on a non-default registry and local tarballs
+                // when the name starts with "com.unity."
+                // to prevent dependency confusion
+                m_Errors.Add(UIError.k_UnsignedUnityPackageWarning);
+            }
         }
     }
 }

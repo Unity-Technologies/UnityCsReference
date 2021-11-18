@@ -36,7 +36,7 @@ namespace UnityEngine.UIElements
                     }
                     else
                     {
-                        evt.target = panel.focusController.GetLeafFocusedElement();
+                        evt.target = leafFocusElement;
                         EventDispatchUtilities.PropagateEvent(evt);
                         if (!evt.isPropagationStopped && evt.propagateToIMGUI)
                         {

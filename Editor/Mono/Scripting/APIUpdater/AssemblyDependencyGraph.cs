@@ -259,7 +259,9 @@ namespace UnityEditor.Scripting.APIUpdater
             stream.Write(hash, 0, hash.Length); // and reserve space of the "payload" hash.
 
             var formatter = new BinaryFormatter();
+#pragma warning disable SYSLIB0011
             formatter.Serialize(stream, this);
+#pragma warning restore SYSLIB0011
 
             var endOfStream = stream.Position;
 
@@ -301,7 +303,9 @@ namespace UnityEditor.Scripting.APIUpdater
             stream.Position = startOfSerializedData;
 
             var serializer = new BinaryFormatter();
+#pragma warning disable SYSLIB0011
             return (AssemblyDependencyGraph)serializer.Deserialize(stream);
+#pragma warning restore SYSLIB0011
         }
 
         internal DependencyEntry FindAssembly(string dependent)

@@ -10,6 +10,9 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
+    using AssetStoreCachePathConfig = UnityEditorInternal.AssetStoreCachePathManager.CachePathConfig;
+    using AssetStoreConfigStatus = UnityEditorInternal.AssetStoreCachePathManager.ConfigStatus;
+
     internal class PackageManagerWindowRoot : VisualElement, IWindow
     {
         private string m_PackageToSelectOnLoaded;
@@ -29,6 +32,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private UnityConnectProxy m_UnityConnectProxy;
         private ApplicationProxy m_ApplicationProxy;
         private UpmClient m_UpmClient;
+        private AssetStoreCachePathProxy m_AssetStoreCachePathProxy;
         private void ResolveDependencies(ResourceLoader resourceLoader,
             ExtensionManager extensionManager,
             SelectionProxy selection,
@@ -39,7 +43,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             PackageManagerProjectSettingsProxy settingsProxy,
             UnityConnectProxy unityConnectProxy,
             ApplicationProxy applicationProxy,
-            UpmClient upmClient)
+            UpmClient upmClient,
+            AssetStoreCachePathProxy assetStoreCachePathProxy)
         {
             m_ResourceLoader = resourceLoader;
             m_ExtensionManager = extensionManager;
@@ -52,6 +57,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UnityConnectProxy = unityConnectProxy;
             m_ApplicationProxy = applicationProxy;
             m_UpmClient = upmClient;
+            m_AssetStoreCachePathProxy = assetStoreCachePathProxy;
         }
 
         public PackageManagerWindowRoot(ResourceLoader resourceLoader,
@@ -64,9 +70,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                                         PackageManagerProjectSettingsProxy settingsProxy,
                                         UnityConnectProxy unityConnectProxy,
                                         ApplicationProxy applicationProxy,
-                                        UpmClient upmClient)
+                                        UpmClient upmClient,
+                                        AssetStoreCachePathProxy assetStoreCachePathProxy)
         {
-            ResolveDependencies(resourceLoader, extensionManager, selection, packageFiltering, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy, applicationProxy, upmClient);
+            ResolveDependencies(resourceLoader, extensionManager, selection, packageFiltering, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy, applicationProxy, upmClient, assetStoreCachePathProxy);
         }
 
         public void OnEnable()
@@ -92,6 +99,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_PageManager.onRefreshOperationFinish += OnRefreshOperationFinish;
             m_UnityConnectProxy.onUserLoginStateChange += OnUserLoginStateChange;
+
+            m_AssetStoreCachePathProxy.onConfigChanged += OnAssetStoreCacheConfigChange;
 
             PackageManagerWindowAnalytics.Setup();
 
@@ -184,6 +193,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_PageManager.onRefreshOperationFinish -= OnRefreshOperationFinish;
             m_UnityConnectProxy.onUserLoginStateChange -= OnUserLoginStateChange;
+            m_AssetStoreCachePathProxy.onConfigChanged -= OnAssetStoreCacheConfigChange;
 
             packageDetails.OnDisable();
             packageList.OnDisable();
@@ -195,6 +205,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Selection.onSelectionChanged -= RefreshSelectedInInspectorClass;
 
             m_PackageManagerPrefs.splitterFlexGrow = leftColumnContainer.resolvedStyle.flexGrow;
+        }
+
+        private void OnAssetStoreCacheConfigChange(AssetStoreCachePathConfig config)
+        {
+            if ((config.status == AssetStoreConfigStatus.Success || config.status == AssetStoreConfigStatus.ReadOnly) && m_PageManager.GetRefreshTimestamp(PackageFilterTab.AssetStore) > 0)
+                m_PageManager.Refresh(RefreshOptions.PurchasedOffline);
         }
 
         private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
@@ -226,6 +242,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void OnDestroy()
         {
             m_ExtensionManager.OnWindowDestroy();
+            LoadingSpinner.ClearAllSpinners();
         }
 
         private void OnRefreshOperationFinish()
@@ -275,7 +292,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                     {
                         var subPage = page.subPages.FirstOrDefault(page => string.Compare(page.name, subPageName, StringComparison.InvariantCultureIgnoreCase) == 0) ?? page.subPages.First();
                         page.currentSubPage = subPage;
-                        packageSubPageFilterBar.Refresh();
                     }
 
                     void OnFilterTabChangedSelectSubPage(PackageFilterTab filterTab)
@@ -434,8 +450,18 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             get
             {
-                m_PageManager.GetSelectedPackageAndVersion(out var package, out var packageVersion);
-                return new PackageSelectionArgs { package = package, packageVersion = packageVersion, window = this };
+                var selections = m_PageManager.GetSelection();
+
+                // When there are multiple versions selected, we want to make the legacy single select arguments to be null
+                // that way extension UI implemented for single package selection will not show for multi-select cases.
+                var versions = selections.Select(selection =>
+                {
+                    m_PackageDatabase.GetPackageAndVersion(selection, out var package, out var version);
+                    return version ?? package?.versions.primary;
+                }).ToArray();
+
+                var version = versions.Length > 1 ? null : versions.FirstOrDefault();
+                return new PackageSelectionArgs { package = version?.package, packageVersion = version, versions = versions, window = this };
             }
         }
 

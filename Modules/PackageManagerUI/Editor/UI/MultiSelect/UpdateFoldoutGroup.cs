@@ -1,0 +1,18 @@
+// Unity C# reference source
+// Copyright (c) Unity Technologies. For terms of use, see
+// https://unity3d.com/legal/licenses/Unity_Reference_Only_License
+
+namespace UnityEditor.PackageManager.UI.Internal
+{
+    internal class UpdateFoldoutGroup : MultiSelectFoldoutGroup
+    {
+        public UpdateFoldoutGroup(ApplicationProxy applicationProxy,
+                                  PackageDatabase packageDatabase,
+                                  PageManager pageManager)
+            : base(new UpdateFoldout(applicationProxy, packageDatabase, pageManager), new MultiSelectFoldout())
+        {
+            mainFoldout.headerTextTemplate = L10n.Tr("Update {0}");
+            inProgressFoldout.headerTextTemplate = L10n.Tr("Updating {0}...");
+        }
+    }
+}

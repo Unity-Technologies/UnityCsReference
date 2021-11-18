@@ -22,6 +22,12 @@ namespace UnityEditor
     [StaticAccessor("EditorApplicationBindings", StaticAccessorType.DoubleColon)]
     public sealed partial class EditorApplication
     {
+        internal static extern string kLastOpenedScene
+        {
+            [NativeMethod("GetLastOpenedScenePref")]
+            get;
+        }
+
         // Load the level at /path/ in play mode.
         [Obsolete("Use EditorSceneManager.LoadSceneInPlayMode instead.")]
         public static void LoadLevelInPlayMode(string path)
@@ -179,10 +185,17 @@ namespace UnityEditor
             get;
         }
 
-        // Retuns true if resources are being built
+        // Returns true if resources are being built
         internal static extern bool isBuildingAnyResources
         {
             [FreeFunction("IsBuildingAnyResources")]
+            get;
+        }
+
+        // Returns true if the Package Manager is disabled
+        internal static extern bool isPackageManagerDisabled
+        {
+            [FreeFunction("IsPackageManagerDisabled")]
             get;
         }
 

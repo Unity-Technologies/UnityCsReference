@@ -33,13 +33,21 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             get
             {
-                if (package == null || string.IsNullOrEmpty(visualState?.selectedVersionId))
-                    return null;
-                return package.versions.FirstOrDefault(v => v.uniqueId == visualState.selectedVersionId);
+                if (package != null && m_PageManager.GetSelection().TryGetValue(package.uniqueId, out var selection))
+                {
+                    if (string.IsNullOrEmpty(selection.versionUniqueId))
+                        return package.versions.primary;
+                    return package.versions.FirstOrDefault(v => v.uniqueId == selection.versionUniqueId);
+                }
+                return null;
             }
         }
 
         internal IEnumerable<PackageVersionItem> versionItems => m_VersionList?.Children().Cast<PackageVersionItem>() ?? Enumerable.Empty<PackageVersionItem>();
+
+        internal bool isLocked => m_LockedIcon?.visible ?? false;
+        internal bool isExpanded => m_ArrowExpander?.value ?? false;
+        internal bool isDependency => !package?.versions.installed?.isDirectDependency ?? false;
 
         private PageManager m_PageManager;
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
@@ -75,7 +83,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_IsFeatureLayout = isFeature;
 
             m_MainItem = new VisualElement {name = "mainItem"};
-            m_MainItem.OnLeftClick(SelectMainItem);
             Add(m_MainItem);
 
             m_LeftContainer = new VisualElement {name = "leftContainer", classList = {"left"}};
@@ -169,9 +176,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (m_NumPackagesInFeature != null)
                 m_NumPackagesInFeature.text = string.Format(L10n.Tr("{0} packages"), package.versions.primary?.dependencies?.Length ?? 0);
 
-            var expandable = !package.Is(PackageType.BuiltIn | PackageType.Feature | PackageType.AssetStore);
+            var expandable = !package.Is(PackageType.BuiltIn | PackageType.Feature | PackageType.AssetStore) && (newVisualState?.expandable ?? true);
             UIUtils.SetElementDisplay(m_ArrowExpander, expandable);
-            UIUtils.SetElementDisplay(m_ExpanderHidden, !expandable);
+            UIUtils.SetElementDisplay(m_ExpanderHidden, !expandable && !visualState.isLocked);
 
             var showVersionLabel = !package.Is(PackageType.BuiltIn | PackageType.Feature);
             UIUtils.SetElementDisplay(m_VersionLabel, showVersionLabel);
@@ -197,10 +204,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (showVersionList)
                 RefreshVersions();
 
-            var selectedVersionIdOld = previousVisualState.selectedVersionId ?? string.Empty;
-            if (showVersionList || selectedVersionIdOld != visualState.selectedVersionId)
-                RefreshSelection();
-
+            RefreshSelection();
             RefreshTags();
             RefreshEntitlement();
         }
@@ -301,8 +305,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             var enable = selectedVersion != null;
             EnableInClassList(k_SelectedClassName, enable);
             m_MainItem.EnableInClassList(k_SelectedClassName, enable);
-            foreach (var versionItem in versionItems)
-                versionItem.EnableInClassList(k_SelectedClassName, selectedVersion == versionItem.targetVersion);
+
+            if (UIUtils.IsElementVisible(m_VersionList))
+                foreach (var versionItem in versionItems)
+                    versionItem.EnableInClassList(k_SelectedClassName, selectedVersion == versionItem.targetVersion);
         }
 
         private void RefreshTags()
@@ -330,6 +336,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageManager.SetSelected(package, null, true);
         }
 
+        public void ToggleSelectMainItem()
+        {
+            m_PageManager.ToggleSelected(package?.uniqueId, true);
+        }
+
         private void ToggleExpansion(ChangeEvent<bool> evt)
         {
             SetExpanded(evt.newValue);
@@ -339,11 +350,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (!UIUtils.IsElementVisible(m_ArrowExpander))
                 return;
-
-            // mark the package as expanded in the page manager,
-            // the UI will be updated through the callback chain
-            if (!value || string.IsNullOrEmpty(visualState.selectedVersionId))
-                SelectMainItem();
 
             m_PageManager.SetExpanded(package, value);
         }

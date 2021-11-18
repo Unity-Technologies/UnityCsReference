@@ -24,6 +24,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual event Action<IOperation> onListOperation = delegate {};
 
+        public virtual event Action<IEnumerable<string>> onUpdateChecked = delegate {};
+
         [SerializeField]
         private AssetStoreListOperation m_ListOperation;
 
@@ -143,7 +145,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             // create a placeholder before fetching data from the cloud for the first time
             if (m_AssetStoreCache.GetProductInfo(id) == null)
-                onPackagesChanged?.Invoke(new[] { new PlaceholderPackage(id, purchaseInfo?.displayName ?? string.Empty, PackageType.AssetStore, PackageTag.None, PackageProgress.Refreshing) });
+                onPackagesChanged?.Invoke(new[] { new PlaceholderPackage(id, purchaseInfo?.displayName ?? string.Empty, PackageType.AssetStore, PackageTag.Downloadable, PackageProgress.Refreshing) });
 
             FetchDetails(new[] { productId });
             onProductFetched?.Invoke(productId);
@@ -171,7 +173,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                         // create a placeholder before fetching data from the cloud for the first time
                         var productInfo = m_AssetStoreCache.GetProductInfo(productIdString);
                         if (productInfo == null)
-                            updatedPackages.Add(new PlaceholderPackage(productIdString, purchaseInfo.displayName, PackageType.AssetStore, PackageTag.None, PackageProgress.Refreshing));
+                            updatedPackages.Add(new PlaceholderPackage(productIdString, purchaseInfo.displayName, PackageType.AssetStore, PackageTag.Downloadable, PackageProgress.Refreshing));
                         else if (oldPurchaseInfo != null)
                         {
                             // for now, `tags` is the only component in `purchase info` that can be updated over time, so we only check for changes there
@@ -231,7 +233,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     var purchaseInfo = m_AssetStoreCache.GetPurchaseInfo(idString);
                     m_AssetStoreCache.RemoveProductInfo(idString);
                     var uiError = new UIError(UIErrorCode.AssetStoreClientError, error);
-                    package = new PlaceholderPackage(idString, purchaseInfo?.displayName ?? string.Empty, PackageType.AssetStore, PackageTag.None, PackageProgress.None, uiError);
+                    package = new PlaceholderPackage(idString, purchaseInfo?.displayName ?? string.Empty, PackageType.AssetStore, PackageTag.Downloadable, PackageProgress.None, uiError);
                 }
 
                 if (package != null)
@@ -367,6 +369,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                             }
                         }
                     }
+                    onUpdateChecked?.Invoke(productIds);
                 }
                 doneCallbackAction?.Invoke();
             });

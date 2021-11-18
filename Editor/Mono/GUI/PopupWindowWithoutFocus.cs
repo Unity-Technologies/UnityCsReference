@@ -63,8 +63,8 @@ namespace UnityEditor
 
         protected override void OnDisable()
         {
-            base.OnDisable();
             s_PopupWindowWithoutFocus = null;
+            base.OnDisable();
         }
 
         // Invoked from C++

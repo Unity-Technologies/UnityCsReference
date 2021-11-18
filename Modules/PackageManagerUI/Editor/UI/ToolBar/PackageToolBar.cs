@@ -13,6 +13,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private ApplicationProxy m_Application;
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
+        private AssetStoreCache m_AssetStoreCache;
         private PackageManagerPrefs m_PackageManagerPrefs;
         private PackageDatabase m_PackageDatabase;
         private PageManager m_PageManager;
@@ -22,6 +23,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var container = ServicesContainer.instance;
             m_Application = container.Resolve<ApplicationProxy>();
             m_AssetStoreDownloadManager = container.Resolve<AssetStoreDownloadManager>();
+            m_AssetStoreCache = container.Resolve<AssetStoreCache>();
             m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
             m_PackageDatabase = container.Resolve<PackageDatabase>();
             m_PageManager = container.Resolve<PageManager>();
@@ -34,10 +36,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private ButtonDisableCondition m_DisableIfCompiling;
         private ButtonDisableCondition m_DisableIfInstallOrUninstallInProgress;
         private ButtonDisableCondition m_DisableIfNoNetwork;
-        private ButtonDisableCondition m_DisableIfEntitlementsError;
-        private ButtonDisableCondition m_DisableIfPackageDisabled;
 
         private PackageAddButton m_AddButton;
+        private PackageUpdateButton m_UpdateButton;
         private PackageGitUpdateButton m_GitUpdateButton;
         private PackageRemoveButton m_RemoveButton;
         private PackageResetButton m_ResetButton;
@@ -47,7 +48,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private PackageCancelDownloadButton m_CancelButton;
 
         private PackageImportButton m_ImportButton;
+        private PackageRedownloadButton m_RedownloadButton;
         private PackageDownloadButton m_DownloadButton;
+        private PackageDownloadUpdateButton m_DownloadUpdateButton;
 
         private PackageUnlockButton m_UnlockButton;
         private PackageSignInButton m_SignInButton;
@@ -99,64 +102,75 @@ namespace UnityEditor.PackageManager.UI.Internal
                 L10n.Tr("You need to wait until other install or uninstall operations are finished to perform this action."));
             m_DisableIfNoNetwork = new ButtonDisableCondition(() => !m_Application.isInternetReachable,
                 L10n.Tr("You need to restore your network connection to perform this action."));
-            m_DisableIfEntitlementsError = new ButtonDisableCondition(() => m_Package?.hasEntitlementsError ?? false,
-                L10n.Tr("You need to sign in with a licensed account to perform this action."));
-            m_DisableIfPackageDisabled = new ButtonDisableCondition(() => m_Version?.HasTag(PackageTag.Disabled) ?? false,
-                L10n.Tr("This package is no longer available and can not be downloaded or imported anymore."));
 
             m_UnlockButton = new PackageUnlockButton(m_PageManager);
             m_UnlockButton.onAction += RefreshBuiltInButtons;
             m_BuiltInActions.Add(m_UnlockButton.element);
 
-            m_AddButton = new PackageAddButton(m_Application, m_PackageDatabase, m_PageManager);
-            m_AddButton.SetCommonDisableConditions(m_DisableIfInstallOrUninstallInProgress, m_DisableIfCompiling, m_DisableIfEntitlementsError);
+            m_AddButton = new PackageAddButton(m_Application, m_PackageDatabase);
+            m_AddButton.SetGlobalDisableConditions(m_DisableIfInstallOrUninstallInProgress, m_DisableIfCompiling);
             m_AddButton.onAction += RefreshBuiltInButtons;
             m_BuiltInActions.Add(m_AddButton.element);
 
+            m_UpdateButton = new PackageUpdateButton(m_Application, m_PackageDatabase, m_PageManager);
+            m_UpdateButton.SetGlobalDisableConditions(m_DisableIfInstallOrUninstallInProgress, m_DisableIfCompiling);
+            m_UpdateButton.onAction += RefreshBuiltInButtons;
+            m_BuiltInActions.Add(m_UpdateButton.element);
+
             m_GitUpdateButton = new PackageGitUpdateButton(m_PackageDatabase);
-            m_GitUpdateButton.SetCommonDisableConditions(m_DisableIfInstallOrUninstallInProgress, m_DisableIfCompiling);
+            m_GitUpdateButton.SetGlobalDisableConditions(m_DisableIfInstallOrUninstallInProgress, m_DisableIfCompiling);
             m_GitUpdateButton.onAction += RefreshBuiltInButtons;
             m_BuiltInActions.Add(m_GitUpdateButton.element);
 
             m_RemoveButton = new PackageRemoveButton(m_Application, m_PackageManagerPrefs, m_PackageDatabase, m_PageManager);
-            m_RemoveButton.SetCommonDisableConditions(m_DisableIfInstallOrUninstallInProgress, m_DisableIfCompiling);
+            m_RemoveButton.SetGlobalDisableConditions(m_DisableIfInstallOrUninstallInProgress, m_DisableIfCompiling);
             m_RemoveButton.onAction += RefreshBuiltInButtons;
             m_BuiltInActions.Add(m_RemoveButton.element);
 
             m_ResetButton = new PackageResetButton(m_Application, m_PackageDatabase, m_PageManager);
-            m_ResetButton.SetCommonDisableConditions(m_DisableIfInstallOrUninstallInProgress, m_DisableIfCompiling);
+            m_ResetButton.SetGlobalDisableConditions(m_DisableIfInstallOrUninstallInProgress, m_DisableIfCompiling);
             m_ResetButton.onAction += RefreshBuiltInButtons;
             m_ResetButton.element.SetIcon("customizedIcon");
             m_BuiltInActions.Add(m_ResetButton.element);
 
             m_ImportButton = new PackageImportButton(m_AssetStoreDownloadManager, m_PackageDatabase);
-            m_ImportButton.SetCommonDisableConditions(m_DisableIfPackageDisabled, m_DisableIfCompiling);
+            m_ImportButton.SetGlobalDisableConditions(m_DisableIfCompiling);
             m_ImportButton.onAction += RefreshBuiltInButtons;
             m_BuiltInActions.Add(m_ImportButton.element);
 
-            m_DownloadButton = new PackageDownloadButton(m_AssetStoreDownloadManager, m_PackageDatabase);
-            m_DownloadButton.SetCommonDisableConditions(m_DisableIfPackageDisabled, m_DisableIfNoNetwork, m_DisableIfCompiling);
+            m_RedownloadButton = new PackageRedownloadButton(m_AssetStoreDownloadManager, m_AssetStoreCache, m_PackageDatabase);
+            m_RedownloadButton.SetGlobalDisableConditions(m_DisableIfCompiling);
+            m_RedownloadButton.onAction += RefreshBuiltInButtons;
+            m_BuiltInActions.Add(m_RedownloadButton.element);
+
+            m_DownloadButton = new PackageDownloadButton(m_AssetStoreDownloadManager, m_AssetStoreCache, m_PackageDatabase);
+            m_DownloadButton.SetGlobalDisableConditions(m_DisableIfNoNetwork, m_DisableIfCompiling);
             m_DownloadButton.onAction += Refresh;
             m_BuiltInActions.Add(m_DownloadButton.element);
 
+            m_DownloadUpdateButton = new PackageDownloadUpdateButton(m_AssetStoreDownloadManager, m_AssetStoreCache, m_PackageDatabase);
+            m_DownloadUpdateButton.SetGlobalDisableConditions(m_DisableIfNoNetwork, m_DisableIfCompiling);
+            m_DownloadUpdateButton.onAction += Refresh;
+            m_BuiltInActions.Add(m_DownloadUpdateButton.element);
+
             m_SignInButton = new PackageSignInButton(m_UnityConnectProxy);
-            m_SignInButton.SetCommonDisableConditions(m_DisableIfNoNetwork);
+            m_SignInButton.SetGlobalDisableConditions(m_DisableIfNoNetwork);
             m_SignInButton.onAction += RefreshBuiltInButtons;
             m_BuiltInActions.Add(m_SignInButton.element);
 
             // Since pause, resume, cancel buttons are only used to control the download progress, we want to put them in the progress container instead
             m_CancelButton = new PackageCancelDownloadButton(m_AssetStoreDownloadManager, m_PackageDatabase);
-            m_CancelButton.SetCommonDisableConditions(m_DisableIfCompiling);
+            m_CancelButton.SetGlobalDisableConditions(m_DisableIfCompiling);
             m_CancelButton.onAction += Refresh;
             m_ProgressContainer.Add(m_CancelButton.element);
 
             m_PauseButton = new PackagePauseDownloadButton(m_AssetStoreDownloadManager, m_PackageDatabase);
-            m_PauseButton.SetCommonDisableConditions(m_DisableIfCompiling);
+            m_PauseButton.SetGlobalDisableConditions(m_DisableIfCompiling);
             m_PauseButton.onAction += RefreshProgressControlButtons;
             m_ProgressContainer.Add(m_PauseButton.element);
 
             m_ResumeButton = new PackageResumeDownloadButton(m_AssetStoreDownloadManager, m_PackageDatabase);
-            m_ResumeButton.SetCommonDisableConditions(m_DisableIfNoNetwork, m_DisableIfCompiling);
+            m_ResumeButton.SetGlobalDisableConditions(m_DisableIfNoNetwork, m_DisableIfCompiling);
             m_ResumeButton.onAction += RefreshProgressControlButtons;
             m_ProgressContainer.Add(m_ResumeButton.element);
         }
@@ -241,23 +255,26 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshBuiltInButtons()
         {
-            m_SignInButton.Refresh(m_Package, m_Version);
+            m_SignInButton.Refresh(m_Version);
 
-            m_UnlockButton.Refresh(m_Package, m_Version);
-            m_GitUpdateButton.Refresh(m_Package, m_Version);
-            m_AddButton.Refresh(m_Package, m_Version);
-            m_RemoveButton.Refresh(m_Package, m_Version);
-            m_ResetButton.Refresh(m_Package, m_Version);
+            m_UnlockButton.Refresh(m_Version);
+            m_GitUpdateButton.Refresh(m_Version);
+            m_AddButton.Refresh(m_Version);
+            m_UpdateButton.Refresh(m_Version);
+            m_RemoveButton.Refresh(m_Version);
+            m_ResetButton.Refresh(m_Version);
 
-            m_ImportButton.Refresh(m_Package, m_Version);
-            m_DownloadButton.Refresh(m_Package, m_Version);
+            m_ImportButton.Refresh(m_Version);
+            m_RedownloadButton.Refresh(m_Version);
+            m_DownloadButton.Refresh(m_Version);
+            m_DownloadUpdateButton.Refresh(m_Version);
         }
 
         private void RefreshProgressControlButtons()
         {
-            m_PauseButton.Refresh(m_Package, m_Version);
-            m_ResumeButton.Refresh(m_Package, m_Version);
-            m_CancelButton.Refresh(m_Package, m_Version);
+            m_PauseButton.Refresh(m_Version);
+            m_ResumeButton.Refresh(m_Version);
+            m_CancelButton.Refresh(m_Version);
         }
 
         private void RefreshExtensionItems()

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using UnityEditor.Toolbars;
 using UnityEngine.UIElements;
 
@@ -9,34 +10,53 @@ namespace UnityEditor
 {
     class DefaultMainToolbar : MainToolbarVisual
     {
-        EditorToolbar m_LeftToolbar;
-        EditorToolbar m_CenterToolbar;
-        EditorToolbar m_RightToolbar;
+        static IEnumerable<string> leftToolbar
+        {
+            get
+            {
+                yield return "Services/Account";
+                yield return "Services/Cloud";
+                yield return "Editor Utility/Imgui Subtoolbars";
+            }
+        }
+
+        static IEnumerable<string> middleToolbar
+        {
+            get
+            {
+                yield return "Editor Utility/Play Mode";
+            }
+        }
+
+        static IEnumerable<string> rightToolbar
+        {
+            get
+            {
+                yield return "Editor Utility/Layout";
+                yield return "Editor Utility/Layers";
+                yield return "Editor Utility/Search";
+                yield return "Editor Utility/Modes";
+                yield return "Package Manager/PreviewPackagesInUse";
+                yield return "Editor Utility/Undo";
+            }
+        }
 
         protected override VisualElement CreateRoot()
         {
             var visualTree = EditorToolbarUtility.LoadUxml("MainToolbar");
+
             VisualElement root = new VisualElement();
             root.style.flexGrow = 1;
             visualTree.CloneTree(root);
 
-            var leftContainer = root.Q("ToolbarZoneLeftAlign");
-            m_LeftToolbar = new EditorToolbar(null, leftContainer,
-                "Services/Account",
-                "Services/Cloud",
-                "Editor Utility/Imgui Subtoolbars");
+            var left = new EditorToolbar(leftToolbar);
+            left.LoadToolbarElements(root.Q("ToolbarZoneLeftAlign"));
 
-            m_CenterToolbar = new EditorToolbar(null, root.Q("ToolbarZonePlayMode"),
-                "Editor Utility/Play Mode");
+            var middle = new EditorToolbar(middleToolbar);
+            middle.LoadToolbarElements(root.Q("ToolbarZonePlayMode"));
 
-            var rightContainer = root.Q("ToolbarZoneRightAlign");
-            m_RightToolbar = new EditorToolbar(null, rightContainer,
-                "Editor Utility/Layout",
-                "Editor Utility/Layers",
-                "Editor Utility/Search",
-                "Editor Utility/Modes",
-                "Package Manager/PreviewPackagesInUse",
-                "Editor Utility/Undo");
+            var right = new EditorToolbar(rightToolbar);
+            right.LoadToolbarElements(root.Q("ToolbarZoneRightAlign"));
 
             EditorToolbarUtility.LoadStyleSheets("MainToolbar", root);
             return root;

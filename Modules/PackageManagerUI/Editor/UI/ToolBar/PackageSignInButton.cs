@@ -12,25 +12,25 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UnityConnectProxy = unityConnectProxy;
         }
 
-        protected override bool TriggerAction()
+        protected override bool TriggerAction(IPackageVersion version)
         {
             m_UnityConnectProxy.ShowLogin();
-            PackageManagerWindowAnalytics.SendEvent("signInFromToolbar", m_Version?.uniqueId);
+            PackageManagerWindowAnalytics.SendEvent("signInFromToolbar", version?.uniqueId);
             return true;
         }
 
-        protected override bool isVisible => !m_UnityConnectProxy.isUserLoggedIn && m_Package?.hasEntitlementsError == true;
+        protected override bool IsVisible(IPackageVersion version) => !m_UnityConnectProxy.isUserLoggedIn && version?.package.hasEntitlementsError == true;
 
-        protected override string GetTooltip(bool isInProgress)
+        protected override string GetTooltip(IPackageVersion version, bool isInProgress)
         {
             return string.Empty;
         }
 
-        protected override string GetText(bool isInProgress)
+        protected override string GetText(IPackageVersion version, bool isInProgress)
         {
             return L10n.Tr("Sign In");
         }
 
-        protected override bool isInProgress => false;
+        protected override bool IsInProgress(IPackageVersion version) => false;
     }
 }

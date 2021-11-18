@@ -2,8 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using System.Linq;
 using UnityEditor.EditorTools;
-using UnityEditor.Overlays;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -11,6 +12,8 @@ namespace UnityEditor.Toolbars
 {
     sealed class LastCustomToolButton : EditorToolbarDropdownToggle
     {
+        EditorTool m_LastGlobalTool;
+
         public LastCustomToolButton()
         {
             dropdownClicked += DropDownMenu;
@@ -23,15 +26,15 @@ namespace UnityEditor.Toolbars
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
         {
-            ToolManager.activeToolChanged += UpdateContents;
             EditorToolManager.availableComponentToolsChanged += UpdateContents;
+            ToolManager.activeToolChanged += UpdateContents;
             SceneViewMotion.viewToolActiveChanged += UpdateState;
         }
 
         void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
-            SceneViewMotion.viewToolActiveChanged -= UpdateState;
             ToolManager.activeToolChanged -= UpdateContents;
+            SceneViewMotion.viewToolActiveChanged -= UpdateState;
             EditorToolManager.availableComponentToolsChanged -= UpdateContents;
         }
 
@@ -39,16 +42,17 @@ namespace UnityEditor.Toolbars
         {
             if (evt.newValue)
             {
-                var last = EditorToolManager.lastCustomTool;
-
-                if (last == null || last is NoneTool)
+                if(m_LastGlobalTool == null || m_LastGlobalTool is NoneTool)
+                {
                     DropDownMenu();
+                    SetValueWithoutNotify(false);
+                }
                 else
-                    ToolManager.SetActiveTool(last);
+                    ToolManager.SetActiveTool(m_LastGlobalTool);
             }
             else
             {
-                ToolManager.RestorePreviousTool();
+                ToolManager.RestorePreviousPersistentTool();
             }
         }
 
@@ -59,17 +63,19 @@ namespace UnityEditor.Toolbars
 
         void UpdateState()
         {
-            var last = EditorToolManager.lastCustomTool;
-            SetValueWithoutNotify(ToolManager.IsActiveTool(last));
+            SetValueWithoutNotify(EditorToolUtility.IsGlobalTool(EditorToolManager.activeTool));
         }
 
         void UpdateContents()
         {
-            var last = EditorToolManager.lastCustomTool;
-            var content = EditorToolUtility.GetToolbarIcon(last);
+            var tool = EditorToolManager.activeTool;
+            if(EditorToolUtility.IsGlobalTool(tool))
+                m_LastGlobalTool = tool;
+
+            var content = EditorToolUtility.GetToolbarIcon(m_LastGlobalTool);
             icon = content.image as Texture2D;
             tooltip = content.tooltip;
-            SetEnabled(EditorToolUtility.GetNonBuiltinToolCount() > 0);
+            style.display = EditorToolUtility.GetNonBuiltinToolCount() > 0 ? DisplayStyle.Flex : DisplayStyle.None;
             UpdateState();
         }
     }

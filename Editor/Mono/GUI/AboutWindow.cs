@@ -111,33 +111,27 @@ namespace UnityEditor
                 {
                     ListenForSecretCodes();
 
-                    var licenseTypeString = "";
-                    if (InternalEditorUtility.HasFreeLicense())
-                        licenseTypeString = " Personal";
-                    if (InternalEditorUtility.HasEduLicense())
-                        licenseTypeString = " Edu";
                     string extensionVersion = FormatExtensionVersionString();
 
-                     m_ShowDetailedVersion |= evt.alt;
+                    m_ShowDetailedVersion |= evt.alt;
                     if (m_ShowDetailedVersion)
                     {
                         int t = InternalEditorUtility.GetUnityVersionDate();
                         DateTime dt = new DateTime(1970, 1, 1, 0, 0, 0, 0);
                         string branch = InternalEditorUtility.GetUnityBuildBranch();
                         EditorGUILayout.SelectableLabel(
-                            string.Format("{0}{1}{2}\nRevision: {3} {4}\nBuilt: {5:r}",
-                                InternalEditorUtility.GetUnityDisplayVersionVerbose(), licenseTypeString, extensionVersion,
+                            string.Format("{0}{1}\nRevision: {2} {3}\nBuilt: {4:r}",
+                                InternalEditorUtility.GetUnityDisplayVersionVerbose(), extensionVersion,
                                 branch, InternalEditorUtility.GetUnityBuildHash(), dt.AddSeconds(t)),
                             Styles.versionStyle, GUILayout.MaxWidth(mainLayoutWidth), GUILayout.Height(38f));
                     }
                     else
                     {
-                        GUILayout.Label(string.Format("{0}{1}{2}", InternalEditorUtility.GetUnityDisplayVersion(), licenseTypeString, extensionVersion), Styles.versionStyle);
+                        GUILayout.Label(string.Format("{0}{1}", InternalEditorUtility.GetUnityDisplayVersion(), extensionVersion), Styles.versionStyle);
                     }
 
                     if (evt.type == EventType.ValidateCommand)
                         return;
-
                 }
 
                 using (new GUILayout.HorizontalScope(Styles.creditsLayout))

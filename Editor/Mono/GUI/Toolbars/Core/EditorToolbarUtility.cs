@@ -18,7 +18,6 @@ namespace UnityEditor.Toolbars
         internal const string middleStripElementClassName = stripElementClassName + "--middle";
         internal const string rightStripElementClassName = stripElementClassName + "--right";
         internal const string aloneStripElementClassName = stripElementClassName + "--alone";
-
         static bool IsRendered(VisualElement element) => element.style.display != DisplayStyle.None && element.visible;
 
         public static void SetupChildrenAsButtonStrip(VisualElement root)
@@ -28,7 +27,6 @@ namespace UnityEditor.Toolbars
                 child.AddToClassList(stripElementClassName);
             ApplyButtonStripStylesToChildren(root);
         }
-
         internal static void ApplyButtonStripStylesToChildren(VisualElement root)
         {
             int count = root.hierarchy.childCount;
@@ -57,7 +55,6 @@ namespace UnityEditor.Toolbars
                 element.EnableInClassList(middleStripElementClassName, i != begin && i != end);
             }
         }
-
         internal static void LoadStyleSheets(string name, VisualElement target)
         {
             var path = k_StyleSheetsPath + name;

@@ -331,6 +331,7 @@ namespace UnityEngine.Tilemaps
         [NativeMethod(Name = "ClearAllEditorPreviewTileAssets")]
         public extern void ClearAllEditorPreviewTiles();
 
+
         [RequiredByNativeCode]
         public struct SyncTile
         {
@@ -354,26 +355,27 @@ namespace UnityEngine.Tilemaps
             }
         }
 
-        internal static bool HasSyncTileCallback()
+        [RequiredByNativeCode]
+        internal void GetSyncTileCallbackSettings(ref bool hasSyncTileCallback, ref bool hasPositionsChangedCallback, ref bool isBufferSyncTile)
         {
-            return (Tilemap.tilemapTileChanged != null);
+            hasSyncTileCallback = HasSyncTileCallback();
+            hasPositionsChangedCallback = HasPositionsChangedCallback();
+            isBufferSyncTile = bufferSyncTile;
         }
 
-        [RequiredByNativeCode]
-        internal static void HasSyncTileCallbackRef(ref bool hasCallback)
-        {
-            hasCallback = HasSyncTileCallback();
-        }
+        internal extern void SendAndClearSyncTileBuffer();
 
         [RequiredByNativeCode]
         private void DoSyncTileCallback(SyncTile[] syncTiles)
         {
-            if (Tilemap.tilemapTileChanged == null)
-                return;
-
             HandleSyncTileCallback(syncTiles);
         }
 
+        [RequiredByNativeCode]
+        private void DoPositionsChangedCallback(int count, IntPtr positionsIntPtr)
+        {
+            HandlePositionsChangedCallback(count, positionsIntPtr);
+        }
     }
 
     [RequireComponent(typeof(Tilemap))]

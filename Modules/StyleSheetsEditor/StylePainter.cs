@@ -312,8 +312,14 @@ namespace UnityEditor.StyleSheets
             // Draw border
             if (border.any)
             {
+                float ppp = EditorGUIUtility.pixelsPerPoint;
+                Vector4 tempWidth = border.widths;
+                tempWidth.x = UnityEngine.UIElements.AlignmentUtils.RoundToPixelGrid(tempWidth.x, ppp);
+                tempWidth.y = UnityEngine.UIElements.AlignmentUtils.RoundToPixelGrid(tempWidth.y, ppp);
+                tempWidth.z = UnityEngine.UIElements.AlignmentUtils.RoundToPixelGrid(tempWidth.z, ppp);
+                tempWidth.w = UnityEngine.UIElements.AlignmentUtils.RoundToPixelGrid(tempWidth.w, ppp);
                 GUI.DrawTexture(drawRect, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill, true, 0f, border.borderLeftColor * colorTint,
-                    border.borderTopColor * colorTint, border.borderRightColor * colorTint, border.borderBottomColor * colorTint, border.widths, border.radius);
+                    border.borderTopColor * colorTint, border.borderRightColor * colorTint, border.borderBottomColor * colorTint, tempWidth, border.radius);
             }
 
             if (block.GetKeyword(k_EnableHovering) == StyleValue.Keyword.True)

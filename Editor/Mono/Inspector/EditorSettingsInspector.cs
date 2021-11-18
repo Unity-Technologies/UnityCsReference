@@ -42,6 +42,7 @@ namespace UnityEditor
             public static GUIContent cacheServerEnableAuthLabel = EditorGUIUtility.TrTextContent("Authentication (using Unity ID)", "Enable authentication for cache server using Unity ID. Also forces TLS/SSL encryption.");
             public static GUIContent cacheServerAuthUserLabel = EditorGUIUtility.TrTextContent("User");
             public static GUIContent cacheServerAuthPasswordLabel = EditorGUIUtility.TrTextContent("Password");
+            public static GUIContent cacheServerValidationLabel = EditorGUIUtility.TrTextContent("Content Validation");
             public static readonly GUIContent cacheServerLearnMore = new GUIContent("Learn more...", "Go to cacheserver documentation.");
 
             public static GUIContent assetSerialization = EditorGUIUtility.TrTextContent("Asset Serialization");
@@ -70,8 +71,9 @@ namespace UnityEditor
             public static GUIContent lineEndingForNewScripts = EditorGUIUtility.TrTextContent("Line Endings For New Scripts");
 
             public static GUIContent streamingSettings = EditorGUIUtility.TrTextContent("Streaming Settings");
-            public static GUIContent enablePlayModeTextureStreaming = EditorGUIUtility.TrTextContent("Enable Texture Streaming In Play Mode", "Texture Streaming must be enabled in Quality Settings for mipmap streaming to function in Play Mode");
-            public static GUIContent enableEditModeTextureStreaming = EditorGUIUtility.TrTextContent("Enable Texture Streaming In Edit Mode", "Texture Streaming must be enabled in Quality Settings for mipmap streaming to function in Edit Mode");
+            public static GUIContent enablePlayModeTextureStreaming = EditorGUIUtility.TrTextContent("Enable Texture Streaming In Play Mode", "Texture Streaming must be enabled in Quality Settings for mipmap streaming to function in Play Mode. This reduces GPU memory by streaming mips in and out as needed.");
+            public static GUIContent enableEditModeTextureStreaming = EditorGUIUtility.TrTextContent("Enable Texture Streaming In Edit Mode", "Texture Streaming must be enabled in Quality Settings for mipmap streaming to function in Edit Mode. This reduces GPU memory by streaming mips in and out as needed.");
+            public static GUIContent enableEditorAsyncCPUTextureLoading = EditorGUIUtility.TrTextContent("Load texture data on demand", "While in Editor, load CPU side texture data for streaming textures from disk asynchronously on demand (will avoid some stalls and reduce CPU memory usage). Change requires Editor restart.");
 
             public static GUIContent shaderCompilation = EditorGUIUtility.TrTextContent("Shader Compilation");
             public static GUIContent asyncShaderCompilation = EditorGUIUtility.TrTextContent("Asynchronous Shader Compilation", "Enables async shader compilation in Game and Scene view. Async compilation for custom editor tools can be achieved via script API and is not affected by this option.");
@@ -86,6 +88,7 @@ namespace UnityEditor
             public static readonly GUIContent enterPlayModeOptionsEnabled = EditorGUIUtility.TrTextContent("Enter Play Mode Options", "Enables options when Entering Play Mode");
             public static readonly GUIContent enterPlayModeOptionsEnableDomainReload = EditorGUIUtility.TrTextContent("Reload Domain", "Enables Domain Reload when Entering Play Mode. Domain reload reinitializes game completely making loading behavior very close to the Player");
             public static readonly GUIContent enterPlayModeOptionsEnableSceneReload = EditorGUIUtility.TrTextContent("Reload Scene", "Enables Scene Reload when Entering Play Mode. Scene reload makes loading behavior and performance characteristics very close to the Player");
+            public static readonly GUIContent enterPlayModeOptionsDisableSceneBackup = EditorGUIUtility.TrTextContent("Disable Scene Backup", "Conditionally skips writing a backup of the open scenes to disk. Only scenes that are modified in-memory need to be backed up, but making modifications from script may change the scene without setting the scene's dirty flag.");
 
             public static readonly GUIContent numberingScheme = EditorGUIUtility.TrTextContent("Numbering Scheme");
 
@@ -142,8 +145,8 @@ namespace UnityEditor
             new PopupElement("Disabled"),
             new PopupElement("Sprite Atlas V1 - Enabled For Builds"),
             new PopupElement("Sprite Atlas V1 - Always Enabled"),
-            new PopupElement("Sprite Atlas V2 (Experimental) - Enabled"),
-            new PopupElement("Sprite Atlas V2 (Experimental) - Enabled for Builds"),
+            new PopupElement("Sprite Atlas V2 - Enabled"),
+            new PopupElement("Sprite Atlas V2 - Enabled for Builds"),
         };
         private static readonly int spritePackDeprecatedEnums = 2;
 
@@ -190,6 +193,14 @@ namespace UnityEditor
             new PopupElement("Basic")
         };
 
+        private GUIContent[] cacheServerValidationPopupList =
+        {
+            EditorGUIUtility.TrTextContent("Disabled", "Content hashes are not calculated for uploaded artifacts and are not validated for downloaded artifacts."),
+            EditorGUIUtility.TrTextContent("Upload Only", "Content hashes are calculated for uploaded artifacts and sent to the Accelerator. Content hashes are not validated for downloaded artifacts." ),
+            EditorGUIUtility.TrTextContent("Enabled", "Content hashes are calculated for uploaded artifacts and sent to the Accelerator. Content hashes, if provided by the Accelerator, are validated for downloaded artifacts."),
+            EditorGUIUtility.TrTextContent("Required", "Content hashes are calculated for uploaded artifacts and sent to the Accelerator. Content hashes are required and validated for downloaded artifacts."),
+        };
+
         private GUIContent[] bc7TextureCompressorOptions =
         {
             EditorGUIUtility.TrTextContent("Default", "Use default BC7 compressor (currently bc7e)"),
@@ -227,6 +238,7 @@ namespace UnityEditor
 
         SerializedProperty m_EnableTextureStreamingInPlayMode;
         SerializedProperty m_EnableTextureStreamingInEditMode;
+        SerializedProperty m_EnableEditorAsyncCPUTextureLoading;
 
         SerializedProperty m_EnableRoslynAnalyzers;
 
@@ -255,6 +267,7 @@ namespace UnityEditor
         SerializedProperty m_EnterPlayModeOptions;
         SerializedProperty m_ProjectGenerationIncludedExtensions;
         SerializedProperty m_ProjectGenerationRootNamespace;
+        SerializedProperty m_CacheServerValidationMode;
 
         bool m_IsGlobalSettings;
 
@@ -273,6 +286,7 @@ namespace UnityEditor
 
             m_EnableTextureStreamingInPlayMode = serializedObject.FindProperty("m_EnableTextureStreamingInPlayMode");
             m_EnableTextureStreamingInEditMode = serializedObject.FindProperty("m_EnableTextureStreamingInEditMode");
+            m_EnableEditorAsyncCPUTextureLoading = serializedObject.FindProperty("m_EnableEditorAsyncCPUTextureLoading");
 
             m_EnableRoslynAnalyzers = serializedObject.FindProperty("m_EnableRoslynAnalyzers");
 
@@ -340,6 +354,9 @@ namespace UnityEditor
             Assert.IsNotNull(m_ProjectGenerationIncludedExtensions);
 
             m_ProjectGenerationRootNamespace = serializedObject.FindProperty("m_ProjectGenerationRootNamespace");
+            Assert.IsNotNull(m_ProjectGenerationRootNamespace);
+
+            m_CacheServerValidationMode = serializedObject.FindProperty("m_CacheServerValidationMode");
             Assert.IsNotNull(m_ProjectGenerationRootNamespace);
 
             m_CacheServerConnectionState = CacheServerConnectionState.Unknown;
@@ -545,12 +562,6 @@ namespace UnityEditor
             EditorGUILayout.IntSlider(m_SpritePackerCacheSize, 1, 200, Content.spriteMaxCacheSize);
             index = Mathf.Clamp(m_SpritePackerMode.intValue - spritePackDeprecatedEnums, 0, spritePackerPopupList.Length - 1);
             CreatePopupMenu(Content.mode.text, spritePackerPopupList, index, SetSpritePackerMode);
-
-            if (m_SpritePackerMode.intValue < (int)SpritePackerMode.SpriteAtlasV2)
-            {
-                var message = "Sprite Atlas V2 (Experimental) supports CacheServer with Importer workflow. Please take a backup of your project before switching to V2.";
-                EditorGUILayout.HelpBox(message, MessageType.Info, true);
-            }
 
             DoProjectGenerationSettings();
             var compressorsChanged = DoTextureCompressorSettings();
@@ -835,6 +846,10 @@ namespace UnityEditor
                             EditorSettings.cacheServerEnableTls = true;
                         }
                     }
+
+                    int validationIndex = Mathf.Clamp((int)EditorSettings.cacheServerValidationMode, 0, cacheServerValidationPopupList.Length - 1);
+
+                    EditorGUILayout.Popup(m_CacheServerValidationMode, cacheServerValidationPopupList, Content.cacheServerValidationLabel);
                 }
             }
         }
@@ -866,6 +881,7 @@ namespace UnityEditor
 
             EditorGUILayout.PropertyField(m_EnableTextureStreamingInPlayMode, Content.enablePlayModeTextureStreaming);
             EditorGUILayout.PropertyField(m_EnableTextureStreamingInEditMode, Content.enableEditModeTextureStreaming);
+            EditorGUILayout.PropertyField(m_EnableEditorAsyncCPUTextureLoading, Content.enableEditorAsyncCPUTextureLoading);
         }
 
         EditorSettings.NamingScheme m_PrevGoNamingScheme;
@@ -924,6 +940,7 @@ namespace UnityEditor
                 EnterPlayModeOptions options = (EnterPlayModeOptions)m_EnterPlayModeOptions.intValue;
                 options = ToggleEnterPlayModeOptions(options, EnterPlayModeOptions.DisableDomainReload, Content.enterPlayModeOptionsEnableDomainReload);
                 options = ToggleEnterPlayModeOptions(options, EnterPlayModeOptions.DisableSceneReload, Content.enterPlayModeOptionsEnableSceneReload);
+                options = ToggleEnterPlayModeOptions(options, EnterPlayModeOptions.DisableSceneBackupUnlessDirty, Content.enterPlayModeOptionsDisableSceneBackup);
 
                 if (m_EnterPlayModeOptions.intValue != (int)options)
                 {
@@ -1093,6 +1110,11 @@ namespace UnityEditor
         private void SetCacheServerAuthMode(object data)
         {
             EditorUserSettings.SetConfigValue("cacheServerAuthMode", $"{(int)data}");
+        }
+
+        private void SetCacheServerValidationMode(object data)
+        {
+            EditorSettings.cacheServerValidationMode = (CacheServerValidationMode)data;
         }
 
         private void SetEtcTextureCompressorBehavior(object data)

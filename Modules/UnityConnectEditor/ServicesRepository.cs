@@ -71,10 +71,25 @@ namespace UnityEditor.Connect
         /// <param name="singleService">Configuration for the service to add</param>
         public static void AddService(SingleService singleService)
         {
-            if (k_Services.ContainsKey(singleService.name))
+            if (!CanAddService(singleService))
                 return;
 
             k_Services.Add(singleService.name, singleService);
+        }
+
+
+        /// <remarks>General rule: do not double add; if Core package exists, do not add services
+        /// Exception: Installed services which do not have a hard dependency to Core</remarks>
+        static bool CanAddService(SingleService singleService)
+        {
+            var isServiceAlreadyAdded = k_Services.ContainsKey(singleService.name);
+
+            var isCorePackageInstalled = PackageHelper.IsCorePackageInstalled();
+            var servicePackageInstalled = PackageHelper.IsPackageInstalled(singleService.editorGamePackageName);
+            var servicePackageHasCoreDependency = PackageHelper.HasCoreDependency(singleService.editorGamePackageName);
+
+            return !isServiceAlreadyAdded &&
+                (!isCorePackageInstalled || (servicePackageInstalled && !servicePackageHasCoreDependency));
         }
 
         public static List<SingleService> GetServices()

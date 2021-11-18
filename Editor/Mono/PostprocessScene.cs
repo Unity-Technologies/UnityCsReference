@@ -19,7 +19,7 @@ namespace UnityEditor
                 using (StaticBatchingUtility.s_CombineMarker.Auto())
                 {
                     ulong sceneHash = Hash128.Compute(AssetDatabase.AssetPathToGUID(scene.path)).u64_0;
-                    StaticBatchingEditorHelper.CombineAllStaticMeshesForScenePostProcessing(sceneHash);
+                    StaticBatchingEditorHelper.CombineAllStaticMeshesForScenePostProcessing(sceneHash, scene);
                 }
             }
         }

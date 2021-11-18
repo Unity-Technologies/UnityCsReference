@@ -7,36 +7,48 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.SceneTemplate
 {
-    internal class SceneTemplatePreviewArea
+    class SceneTemplatePreviewArea
     {
-        private string m_Name;
-        private string m_NoPreviewText;
+        string m_Name;
+        string m_NoPreviewText;
+        Texture2D m_PreviewTexture;
+        Texture2D m_BadgeTexture;
 
         public VisualElement Element { get; private set; }
 
-        public SceneTemplatePreviewArea(string name, Texture2D preview, string noPreviewText)
+        public SceneTemplatePreviewArea(string name, Texture2D preview, Texture2D badge, string noPreviewText)
         {
             m_Name = name;
             m_NoPreviewText = noPreviewText;
-            MakeElement(preview);
+            MakeElement(preview, badge);
         }
 
-        private void MakeElement(Texture2D preview)
+        void MakeElement(Texture2D preview, Texture2D badge)
         {
             var previewAreaElement = new VisualElement();
             previewAreaElement.name = m_Name;
             previewAreaElement.AddToClassList(Styles.classPreviewArea);
             Element = previewAreaElement;
 
-            UpdatePreview(preview);
+            UpdatePreview(preview, badge);
         }
 
-        public void UpdatePreview(Texture2D preview)
+        public void UpdatePreview(Texture2D preview, Texture2D badge)
         {
             Element.Clear();
+            m_PreviewTexture = preview;
+            m_BadgeTexture = badge;
             if (preview != null)
             {
                 Element.style.backgroundImage = new StyleBackground(preview);
+
+                if (badge != null)
+                {
+                    var badgeElement = new VisualElement();
+                    badgeElement.style.backgroundImage = new StyleBackground(badge);
+                    badgeElement.AddToClassList(Styles.classPreviewAreaBadge);
+                    Element.Add(badgeElement);
+                }
             }
             else
             {
@@ -46,6 +58,43 @@ namespace UnityEditor.SceneTemplate
                 noThumbnailLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
                 Element.Add(noThumbnailLabel);
             }
+        }
+
+        public void UpdatePreviewAreaSize()
+        {
+            // Because I can't figure out how to get the resolved style values coming from uss on the first pass.
+            const float badgeMaxHeight = 64;
+
+            if (m_PreviewTexture == null)
+            {
+                Element.style.height = Length.Percent(50);
+                return;
+            }
+
+            float newHeight;
+            if (m_PreviewTexture.height > m_PreviewTexture.width)
+            {
+                newHeight = Element.parent.worldBound.height * 0.5f;
+                Element.style.height = newHeight;
+            }
+            else
+            {
+                var aspectRatio = (float)m_PreviewTexture.height / m_PreviewTexture.width;
+                var width = Element.worldBound.width;
+                newHeight = width * aspectRatio;
+                // Debug.Log($"Preview size: {info.name} width: {info.thumbnail.width} height:{info.thumbnail.height} ratio: {aspectRatio} AreaW: {width} NewHeigth: {newHeight}");
+                Element.style.height = newHeight;
+            }
+
+            var badgeElement = Element.Q(null, Styles.classPreviewAreaBadge);
+            if (m_BadgeTexture == null || badgeElement == null)
+                return;
+
+            var badgeAspectRatio = m_BadgeTexture.width / m_BadgeTexture.height;
+            var newBadgeHeight = Mathf.Min(newHeight * 0.25f, badgeMaxHeight);
+            var newBadgeWidth = newBadgeHeight * badgeAspectRatio;
+            badgeElement.style.height = newBadgeHeight;
+            badgeElement.style.width = newBadgeWidth;
         }
     }
 }

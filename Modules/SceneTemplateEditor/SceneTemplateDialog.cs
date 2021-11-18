@@ -10,7 +10,6 @@ using UnityEditor.Experimental;
 using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.Assertions;
-using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.SceneTemplate
@@ -22,6 +21,8 @@ namespace UnityEditor.SceneTemplate
         public string description;
         public string thumbnailPath;
         public Texture2D thumbnail;
+        public string badgePath;
+        public Texture2D badge;
         public Func<bool, bool> onCreateCallback;
         public bool isPinned;
         public bool isReadonly;
@@ -66,8 +67,8 @@ namespace UnityEditor.SceneTemplate
         private const string k_SceneTemplateEditTemplateButtonName = "scene-template-edit-template-button";
         private const string k_SceneTemplateCreateAdditiveButtonName = "scene-template-create-additive-button";
 
-        private const string k_LoadAdditivelyError = "Cannot load an in-memory scene additively while another in-memory scene is loaded. Save the current scene or load a project scene.";
-        private const string k_LoadAdditivelyToolTip = "Load the Scene alongside the current one.";
+        private static readonly string k_LoadAdditivelyToolTip = L10n.Tr("Load the scene alongside the current one.");
+        private static readonly string k_LoadAdditivelyToolTipDisabledHasUnsavedUntitled = L10n.Tr("Cannot load the scene additively. You can only have one unsaved untitled scene at a time.");
 
         private SceneTemplateInfo m_LastSelectedTemplate;
 
@@ -77,7 +78,7 @@ namespace UnityEditor.SceneTemplate
         private VisualSplitter m_Splitter;
 
         private const int k_ListViewRowHeight = 32;
-        internal Texture2D m_DefaultListViewThumbnail;
+        Texture2D m_DefaultThumbnail;
 
         private static readonly Vector2 k_DefaultWindowSize = new Vector2(800, 600);
         private static readonly Vector2 k_MinWindowSize = new Vector2(775, 240);
@@ -90,6 +91,11 @@ namespace UnityEditor.SceneTemplate
         }
         private List<ButtonInfo> m_Buttons;
         private int m_SelectedButtonIndex = -1;
+
+        internal const float k_MinTileSize = 64;
+        internal const float k_MaxTileSize = 256;
+
+        const float k_ShowThumbnailTileSizeThreshold = 80;
 
         public static SceneTemplateDialog ShowWindow()
         {
@@ -217,7 +223,13 @@ namespace UnityEditor.SceneTemplate
                     offsetContainer.Add(buttonRow);
                     buttonRow.style.flexDirection = FlexDirection.Row;
 
-                    var loadAdditiveToggle = new Toggle() { name = k_SceneTemplateCreateAdditiveButtonName, text = "Load additively", tooltip = k_LoadAdditivelyToolTip };
+                    var loadAdditiveToggle = new Toggle() { name = k_SceneTemplateCreateAdditiveButtonName, text = L10n.Tr("Load additively"), tooltip = k_LoadAdditivelyToolTip };
+                    if (SceneTemplateUtils.HasSceneUntitled())
+                    {
+                        loadAdditiveToggle.SetEnabled(false);
+                        loadAdditiveToggle.tooltip = k_LoadAdditivelyToolTipDisabledHasUnsavedUntitled;
+
+                    }
                     buttonRow.Add(loadAdditiveToggle);
                     {
                         // The buttons need to be right-aligned
@@ -231,9 +243,9 @@ namespace UnityEditor.SceneTemplate
                                 return;
                             OnCreateNewScene(m_LastSelectedTemplate);
                         })
-                        { text = "Create", tooltip = "Instantiate a new scene from a template" };
+                        { text = L10n.Tr("Create"), tooltip = L10n.Tr("Instantiate a new scene from a template") };
                         createSceneButton.AddToClassList(Styles.classButton);
-                        var cancelButton = new Button(Close) { text = "Cancel", tooltip = "Close scene template dialog without instantiating a new scene." };
+                        var cancelButton = new Button(Close) { text = L10n.Tr("Cancel"), tooltip = L10n.Tr("Close scene template dialog without instantiating a new scene.") };
                         cancelButton.AddToClassList(Styles.classButton);
                         buttonSection.Add(cancelButton);
                         buttonSection.Add(createSceneButton);
@@ -317,7 +329,7 @@ namespace UnityEditor.SceneTemplate
                 return;
 
             var templateItems = CreateGridViewItems();
-            m_GridView = new GridView(templateItems, "Scene Templates in Project", k_ListViewRowHeight, 64, 256, 4f / 3f);
+            m_GridView = new GridView(templateItems, L10n.Tr("Scene Templates in Project"), k_ListViewRowHeight, k_MinTileSize, k_MaxTileSize, k_ShowThumbnailTileSizeThreshold, m_DefaultThumbnail, 4f / 3f);
             m_GridView.wrapAroundKeyboardNavigation = true;
             m_GridView.sizeLevel = EditorPrefs.GetFloat(GetKeyName(nameof(m_GridView.sizeLevel)), 128);
             rootContainer.Add(m_GridView);
@@ -345,7 +357,7 @@ namespace UnityEditor.SceneTemplate
                 m_GridView.SetSelection(templateItems.First());
             }
 
-            m_NoUserTemplateHelpBox = new HelpBox("To begin using a template, create a template from an existing scene in your project. Click to see Scene template documentation.", HelpBoxMessageType.Info);
+            m_NoUserTemplateHelpBox = new HelpBox(L10n.Tr("To begin using a template, create a template from an existing scene in your project. Click to see Scene template documentation."), HelpBoxMessageType.Info);
             m_NoUserTemplateHelpBox.AddToClassList(Styles.sceneTemplateNoTemplateHelpBox);
             m_NoUserTemplateHelpBox.RegisterCallback<MouseDownEvent>(e =>
             {
@@ -368,10 +380,9 @@ namespace UnityEditor.SceneTemplate
         private IEnumerable<GridView.Item> CreateGridViewItems()
         {
             // What to do with defaults item? auto pin them?
-            var defaultThumbnail = EditorGUIUtility.IconContent("d_SceneAsset Icon").image as Texture2D;
             var templateItems = m_SceneTemplateInfos.Select(info =>
             {
-                var item = new GridView.Item(info.GetHashCode(), info.name, info.thumbnail ? info.thumbnail : defaultThumbnail, info);
+                var item = new GridView.Item(info.GetHashCode(), info.name, info.thumbnail ? info.thumbnail : m_DefaultThumbnail, info.badge, info);
                 return item;
             });
             return templateItems;
@@ -382,11 +393,11 @@ namespace UnityEditor.SceneTemplate
             rootContainer.style.flexDirection = FlexDirection.Column;
 
             // Thumbnail container
-            m_PreviewArea = new SceneTemplatePreviewArea(k_SceneTemplateThumbnailName, m_LastSelectedTemplate?.thumbnail, "No preview thumbnail available");
+            m_PreviewArea = new SceneTemplatePreviewArea(k_SceneTemplateThumbnailName, m_LastSelectedTemplate?.thumbnail, m_LastSelectedTemplate?.badge, L10n.Tr("No preview thumbnail available"));
             var thumbnailElement = m_PreviewArea.Element;
             rootContainer.Add(thumbnailElement);
 
-            rootContainer.RegisterCallback<GeometryChangedEvent>(evt => UpdatePreviewAreaSize());
+            rootContainer.RegisterCallback<GeometryChangedEvent>(evt => m_PreviewArea?.UpdatePreviewAreaSize());
 
             // Text container
             var sceneTitleLabel = new Label();
@@ -406,7 +417,7 @@ namespace UnityEditor.SceneTemplate
                 editLocateRow.style.flexDirection = FlexDirection.Row;
                 {
                     var scenePathLocate = new Label();
-                    scenePathLocate.text = "Locate";
+                    scenePathLocate.text = L10n.Tr("Locate");
                     scenePathLocate.AddToClassList(Styles.classTextLink);
                     scenePathLocate.RegisterCallback<MouseDownEvent>(e =>
                     {
@@ -429,7 +440,7 @@ namespace UnityEditor.SceneTemplate
 
                     var scenePathEdit = new Label();
                     scenePathEdit.name = k_SceneTemplateEditTemplateButtonName;
-                    scenePathEdit.text = "Edit";
+                    scenePathEdit.text = L10n.Tr("Edit");
                     scenePathEdit.AddToClassList(Styles.classTextLink);
                     scenePathEdit.RegisterCallback<MouseDownEvent>(e =>
                     {
@@ -446,7 +457,7 @@ namespace UnityEditor.SceneTemplate
             {
                 var descriptionLabel = new Label();
                 descriptionLabel.AddToClassList(Styles.classHeaderLabel);
-                descriptionLabel.text = "Description";
+                descriptionLabel.text = L10n.Tr("Description");
                 descriptionSection.Add(descriptionLabel);
 
                 var sceneDescriptionLabel = new Label();
@@ -455,26 +466,6 @@ namespace UnityEditor.SceneTemplate
                 descriptionSection.Add(sceneDescriptionLabel);
             }
             rootContainer.Add(descriptionSection);
-        }
-
-        private void UpdatePreviewAreaSize(SceneTemplateInfo info = null)
-        {
-            info = info ?? m_LastSelectedTemplate;
-            if (m_PreviewArea == null)
-                return;
-
-            if (info == null || info.thumbnail == null || info.thumbnail.height > info.thumbnail.width)
-            {
-                m_PreviewArea.Element.style.height = Length.Percent(50);
-                return;
-            }
-
-            var thumbnail = info.thumbnail;
-            var aspectRatio = (float)thumbnail.height / (float)thumbnail.width;
-            var width = m_PreviewArea.Element.worldBound.width;
-            var newHeight = m_PreviewArea.Element.worldBound.width * aspectRatio;
-            // Debug.Log($"Preview size: {info.name} width: {info.thumbnail.width} height:{info.thumbnail.height} ratio: {aspectRatio} AreaW: {width} NewHeigth: {newHeight}");
-            m_PreviewArea.Element.style.height = newHeight;
         }
 
         private void UpdateTemplateDescriptionUI(SceneTemplateInfo newSceneTemplateInfo)
@@ -503,15 +494,15 @@ namespace UnityEditor.SceneTemplate
             }
 
             // Thumbnail
-            m_PreviewArea?.UpdatePreview(newSceneTemplateInfo?.thumbnail);
-            UpdatePreviewAreaSize(newSceneTemplateInfo);
+            m_PreviewArea?.UpdatePreview(newSceneTemplateInfo?.thumbnail, newSceneTemplateInfo?.badge);
+            m_PreviewArea?.UpdatePreviewAreaSize();
         }
 
         private void SetupData()
         {
             m_SceneTemplateInfos = SceneTemplateUtils.GetSceneTemplateInfos();
             LoadSessionPreferences();
-            m_DefaultListViewThumbnail = UnityEditorInternal.InternalEditorUtility.FindIconForFile("foo.unity");
+            m_DefaultThumbnail = EditorGUIUtility.IconContent("d_SceneAsset Icon").image as Texture2D;
 
             foreach (var builtinTemplateInfo in SceneTemplateUtils.builtinTemplateInfos)
             {
@@ -519,6 +510,12 @@ namespace UnityEditor.SceneTemplate
                 {
                     builtinTemplateInfo.thumbnail = EditorResources.Load<Texture2D>(builtinTemplateInfo.thumbnailPath);
                     Assert.IsNotNull(builtinTemplateInfo.thumbnail);
+                }
+
+                if (builtinTemplateInfo.badge == null && !string.IsNullOrEmpty(builtinTemplateInfo.badgePath))
+                {
+                    builtinTemplateInfo.badge = EditorResources.Load<Texture2D>(builtinTemplateInfo.badgePath);
+                    Assert.IsNotNull(builtinTemplateInfo.badge);
                 }
             }
         }
@@ -603,30 +600,6 @@ namespace UnityEditor.SceneTemplate
         {
             SceneTemplateService.newSceneTemplateInstantiating -= TemplateInstantiating;
             Close();
-        }
-
-        internal static bool HasMultipleScenes()
-        {
-            return SceneManager.sceneCount > 0;
-        }
-
-        private static void CreateCamera(Scene scene, bool isPerspective)
-        {
-            var cameraObj = ObjectFactory.CreateGameObject(scene, HideFlags.None, L10n.Tr("Main Camera"), new[] { typeof(Camera), typeof(AudioListener) });
-            var camera = cameraObj.GetComponent<Camera>();
-            camera.depth = -1;
-            cameraObj.tag = "MainCamera";
-
-            if (isPerspective)
-            {
-                camera.transform.position = new Vector3(0, 1, -10);
-            }
-            else
-            {
-                camera.transform.position = new Vector3(0, 0, -10);
-                camera.orthographic = true;
-                camera.clearFlags = CameraClearFlags.SolidColor;
-            }
         }
 
         private void SetLastSelectedTemplate(SceneTemplateInfo info)

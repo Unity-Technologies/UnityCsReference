@@ -15,6 +15,7 @@ namespace UnityEditor
 
         void Reinit(int editorIndex);
         void ReinitCulled(int editorIndex);
+        void CreateInspectorElement();
 
         void AddPrefabComponent(VisualElement comp);
 

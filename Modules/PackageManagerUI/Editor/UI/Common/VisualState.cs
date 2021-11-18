@@ -14,9 +14,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         public bool visible;
         public bool expanded;
         public bool seeAllVersions;
-        public string selectedVersionId;
         public bool lockedByDefault;
         public bool userUnlocked;
+        public bool expandable;
 
         public bool isLocked => lockedByDefault && !userUnlocked;
 
@@ -28,8 +28,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             visible = true;
             expanded = false;
             seeAllVersions = false;
-            selectedVersionId = string.Empty;
             userUnlocked = false;
+            expandable = true;
         }
 
         public bool Equals(VisualState other)
@@ -39,9 +39,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 && visible == other.visible
                 && expanded == other.expanded
                 && seeAllVersions == other.seeAllVersions
-                && selectedVersionId == other.selectedVersionId
                 && lockedByDefault == other.lockedByDefault
-                && userUnlocked == other.userUnlocked;
+                && userUnlocked == other.userUnlocked
+                && expandable == other.expandable;
         }
 
         public VisualState Clone()

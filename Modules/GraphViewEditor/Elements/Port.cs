@@ -53,6 +53,8 @@ namespace UnityEditor.Experimental.GraphView
             set { m_ConnectorText.text = value; }
         }
 
+        internal bool alwaysVisible { get; set; }
+
         private bool m_portCapLit;
         public bool portCapLit
         {

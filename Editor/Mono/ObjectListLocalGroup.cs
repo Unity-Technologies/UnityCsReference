@@ -1231,7 +1231,7 @@ namespace UnityEditor
                 string path = AssetDatabase.GetAssetPath(instanceId);
                 if (m_AssetExtensionsPreviewIgnoreList.Contains(System.IO.Path.GetExtension(path).ToLowerInvariant()))
                     return false;
-                Type assetDataType = AssetDatabase.GetMainAssetTypeAtPath(path);
+                Type assetDataType = InternalEditorUtility.GetTypeWithoutLoadingObject(instanceId);
                 if (m_AssetPreviewIgnoreList.Contains(assetDataType))
                     return false;
                 return true;

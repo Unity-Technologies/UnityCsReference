@@ -39,8 +39,9 @@ namespace UnityEditor.Search
 
         public static IEnumerable<SearchProposition> BuiltInQueryBuilderPropositions(string category = "Operators")
         {
-            yield return new SearchProposition(category: category, label: "OR", replacement: "or");
-            yield return new SearchProposition(category: category, label: "AND", replacement: "and");
+            var icon = Utils.LoadIcon("LayoutElement Icon");
+            yield return new SearchProposition(category: category, label: "OR", replacement: "or", icon: icon, color: QueryColors.combine);
+            yield return new SearchProposition(category: category, label: "AND", replacement: "and", icon: icon, color: QueryColors.combine);
         }
     }
 

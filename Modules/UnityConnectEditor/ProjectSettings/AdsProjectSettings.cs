@@ -8,7 +8,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.Advertisements;
-using UnityEngine.Networking;
+using UnityEditor.Connect.Fallback;
 
 namespace UnityEditor.Connect
 {
@@ -62,7 +62,18 @@ namespace UnityEditor.Connect
         [SettingsProvider]
         public static SettingsProvider CreateServicesProvider()
         {
-            return new AdsProjectSettings(AdsService.instance.projectSettingsPath, SettingsScope.Project);
+            SettingsProvider projectSettings = null;
+
+            if (ShouldShowBuiltInProjectSettings(AdsService.instance))
+            {
+                projectSettings = new AdsProjectSettings(AdsService.instance.projectSettingsPath, SettingsScope.Project);
+            }
+            else if (ShouldShowFallbackProjectSettings(AdsService.instance))
+            {
+                projectSettings = new FallbackProjectSettings(AdsService.instance, SettingsScope.Project);
+            }
+
+            return projectSettings;
         }
 
         SimpleStateMachine<AdsEvent> m_StateMachine;

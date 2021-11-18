@@ -797,6 +797,7 @@ namespace UnityEditor
             float xPos = 0f;
             switch (evt.GetTypeForControl(id))
             {
+                case EventType.TouchDown:
                 case EventType.MouseDown:
                     // Handle double click
                     if (EditorWindow.focusedWindow != null)
@@ -836,7 +837,12 @@ namespace UnityEditor
                             PopupGenericMenu(null, menuPos);
                     }
                     break;
+                case EventType.TouchMove:
                 case EventType.MouseDrag:
+
+                    if (evt.pointerType == PointerType.Pen && !evt.penStatus.HasFlag(PenStatus.Contact))
+                        break;
+
                     if (GUIUtility.hotControl == id)
                     {
                         Vector2 delta = evt.mousePosition - s_StartDragPosition;
@@ -936,6 +942,7 @@ namespace UnityEditor
                         }
                     }
                     break;
+                case EventType.TouchUp:
                 case EventType.MouseUp:
                     if (GUIUtility.hotControl == id)
                     {

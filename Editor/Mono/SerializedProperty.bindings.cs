@@ -19,7 +19,7 @@ namespace UnityEditor
     // Type of a [[SerializedProperty]].
     public enum SerializedPropertyType
     {
-        //*undocumented
+        // Struct, array or class that is serialized by value.
         Generic = -1,
         // Integer property.
         Integer = 0,
@@ -270,31 +270,159 @@ namespace UnityEditor
                 Debug.LogError(target.name + " does not have the property " + propertyPath);
                 return;
             }
-            switch (propertyType)
+
+            try
             {
-                case SerializedPropertyType.Integer: intValue = targetProperty.intValue; break;
-                case SerializedPropertyType.Boolean: boolValue = targetProperty.boolValue; break;
-                case SerializedPropertyType.Float: floatValue = targetProperty.floatValue; break;
-                case SerializedPropertyType.String: stringValue = targetProperty.stringValue; break;
-                case SerializedPropertyType.Color: colorValue = targetProperty.colorValue; break;
-                case SerializedPropertyType.ObjectReference: objectReferenceValue = targetProperty.objectReferenceValue; break;
-                case SerializedPropertyType.LayerMask: intValue = targetProperty.intValue; break;
-                case SerializedPropertyType.Enum: enumValueIndex = targetProperty.enumValueIndex >= 0 ? targetProperty.enumValueIndex : 0;
-                    intValue = targetProperty.intValue >= 0 ? targetProperty.intValue : intValue; break;
-                case SerializedPropertyType.Vector2: vector2Value = targetProperty.vector2Value; break;
-                case SerializedPropertyType.Vector3: vector3Value = targetProperty.vector3Value; break;
-                case SerializedPropertyType.Vector4: vector4Value = targetProperty.vector4Value; break;
-                case SerializedPropertyType.Vector2Int: vector2IntValue = targetProperty.vector2IntValue; break;
-                case SerializedPropertyType.Vector3Int: vector3IntValue = targetProperty.vector3IntValue; break;
-                case SerializedPropertyType.Rect: rectValue = targetProperty.rectValue; break;
-                case SerializedPropertyType.RectInt: rectIntValue = targetProperty.rectIntValue; break;
-                case SerializedPropertyType.ArraySize: intValue = targetProperty.intValue; break;
-                case SerializedPropertyType.Character: intValue = targetProperty.intValue; break;
-                case SerializedPropertyType.AnimationCurve: animationCurveValue = targetProperty.animationCurveValue; break;
-                case SerializedPropertyType.Bounds: boundsValue = targetProperty.boundsValue; break;
-                case SerializedPropertyType.BoundsInt: boundsIntValue = targetProperty.boundsIntValue; break;
-                case SerializedPropertyType.Gradient: gradientValue = targetProperty.gradientValue; break;
-                case SerializedPropertyType.ExposedReference: exposedReferenceValue = targetProperty.exposedReferenceValue; break;
+                boxedValue = targetProperty.boxedValue;
+            }
+            catch (NotSupportedException ex)
+            {
+                // Previous implementation silently did nothing for unsupported types, now moving towards more strict error handling with this warning
+                Debug.LogWarning(ex.Message);
+            }
+        }
+
+        public System.Object boxedValue
+        {
+            get
+            {
+                switch (propertyType)
+                {
+                    case SerializedPropertyType.Generic: return structValue;
+                    case SerializedPropertyType.Enum: goto case SerializedPropertyType.Integer;
+                    case SerializedPropertyType.Integer:
+                    {
+                        switch (numericType)
+                        {
+                            case SerializedPropertyNumericType.UInt64:
+                                return ulongValue;
+                            case SerializedPropertyNumericType.Int64:
+                                return longValue;
+                            case SerializedPropertyNumericType.UInt32:
+                                return uintValue;
+                            case SerializedPropertyNumericType.UInt16:
+                                return (System.UInt16)uintValue;
+                            case SerializedPropertyNumericType.Int16:
+                                return (System.Int16)intValue;
+                            case SerializedPropertyNumericType.UInt8:
+                                return (System.Byte)uintValue;
+                            case SerializedPropertyNumericType.Int8:
+                                return (System.SByte)intValue;
+                            default:
+                                return intValue;
+                        }
+                    }
+                    case SerializedPropertyType.Boolean: return boolValue;
+                    case SerializedPropertyType.Float:
+                    {
+                        if (numericType == SerializedPropertyNumericType.Double)
+                            return doubleValue;
+                        else
+                            return floatValue;
+                    }
+
+                    case SerializedPropertyType.String: return stringValue;
+                    case SerializedPropertyType.Color: return colorValue;
+                    case SerializedPropertyType.ObjectReference: return objectReferenceValue;
+                    case SerializedPropertyType.LayerMask: return (LayerMask)intValue;
+                    case SerializedPropertyType.Vector2: return vector2Value;
+                    case SerializedPropertyType.Vector3: return vector3Value;
+                    case SerializedPropertyType.Vector4: return vector4Value;
+                    case SerializedPropertyType.Rect: return rectValue;
+                    case SerializedPropertyType.ArraySize: return intValue;
+                    case SerializedPropertyType.Character: return (System.UInt16)uintValue;
+                    case SerializedPropertyType.AnimationCurve: return animationCurveValue;
+                    case SerializedPropertyType.Bounds: return boundsValue;
+                    case SerializedPropertyType.Gradient: return gradientValue;
+                    case SerializedPropertyType.Quaternion: return quaternionValue;
+                    case SerializedPropertyType.ExposedReference: return exposedReferenceValue;
+                    case SerializedPropertyType.FixedBufferSize: return intValue;
+                    case SerializedPropertyType.Vector2Int: return vector2IntValue;
+                    case SerializedPropertyType.Vector3Int: return vector3IntValue;
+                    case SerializedPropertyType.RectInt: return rectIntValue;
+                    case SerializedPropertyType.BoundsInt: return boundsIntValue;
+                    case SerializedPropertyType.ManagedReference: return managedReferenceValue;
+                    case SerializedPropertyType.Hash128: return hash128Value;
+
+                    default:
+                        throw new NotSupportedException(string.Format("The boxedValue property is not supported on \"{0}\" because it has an unsupported propertyType {1}.", propertyPath, propertyType));
+                }
+            }
+
+            set
+            {
+                try
+                {
+                    // Note: typecast from System.Object enforces strict match between the boxed type and cast type.
+                    // The Convert API is used for cases where multiple types can safely and commonly be converted to the underlying SerializedProperty type.
+                    switch (propertyType)
+                    {
+                        case SerializedPropertyType.Generic: structValue = value; break;
+                        case SerializedPropertyType.Enum: goto case SerializedPropertyType.Integer;
+                        case SerializedPropertyType.ArraySize: goto case SerializedPropertyType.Integer;
+                        case SerializedPropertyType.Integer:
+                        {
+                            //Convert so that simple mismatches like sbyte to int are accepted
+                            if (numericType == SerializedPropertyNumericType.UInt64)
+                            {
+                                ulongValue = Convert.ToUInt64(value);
+                            }
+                            else
+                            {
+                                // all smaller numeric datatypes fit into the range of long and are cast back to the correct type internally
+                                longValue = Convert.ToInt64(value);
+                            }
+                            break;
+                        }
+                        case SerializedPropertyType.Boolean: boolValue = (bool)value; break;
+                        case SerializedPropertyType.Float:
+                        {
+                            if (numericType == SerializedPropertyNumericType.Double)
+                                doubleValue = Convert.ToDouble(value);
+                            else
+                                floatValue = Convert.ToSingle(value);
+                            break;
+                        }
+                        case SerializedPropertyType.String: stringValue = (string)value; break;
+                        case SerializedPropertyType.Color: colorValue = (Color)value; break;
+                        case SerializedPropertyType.ObjectReference: objectReferenceValue = (UnityEngine.Object)value; break;
+                        case SerializedPropertyType.LayerMask:
+                        {
+                            try
+                            {
+                                intValue = ((LayerMask)value).value;
+                            }
+                            catch (InvalidCastException)
+                            {
+                                intValue = Convert.ToInt32(value);
+                            }
+                            break;
+                        }
+                        case SerializedPropertyType.Vector2: vector2Value = (Vector2)value; break;
+                        case SerializedPropertyType.Vector3: vector3Value = (Vector3)value; break;
+                        case SerializedPropertyType.Vector4: vector4Value = (Vector4)value; break;
+                        case SerializedPropertyType.Rect: rectValue = (Rect)value; break;
+                        case SerializedPropertyType.Character: uintValue = Convert.ToUInt16(value); break;
+                        case SerializedPropertyType.AnimationCurve: animationCurveValue = (AnimationCurve)value; break;
+                        case SerializedPropertyType.Bounds: boundsValue = (Bounds)value; break;
+                        case SerializedPropertyType.Gradient: gradientValue = (Gradient)value; break;
+                        case SerializedPropertyType.Quaternion: quaternionValue = (Quaternion)value; break;
+                        case SerializedPropertyType.ExposedReference: exposedReferenceValue = (UnityEngine.Object)value; break;
+                        case SerializedPropertyType.Vector2Int: vector2IntValue = (Vector2Int)value; break;
+                        case SerializedPropertyType.Vector3Int: vector3IntValue = (Vector3Int)value; break;
+                        case SerializedPropertyType.RectInt: rectIntValue = (RectInt)value; break;
+                        case SerializedPropertyType.BoundsInt: boundsIntValue = (BoundsInt)value; break;
+                        case SerializedPropertyType.ManagedReference: managedReferenceValue = value; break;
+                        case SerializedPropertyType.Hash128: hash128Value = (Hash128)value; break;
+
+                        default: // FixedBufferSize is read-only
+                            throw new NotSupportedException(string.Format("Set on boxedValue property is not supported on \"{0}\" because it has an unsupported propertyType {1}.", propertyPath, propertyType));
+                    }
+                }
+                catch (InvalidCastException)
+                {
+                    throw new InvalidCastException(string.Format("The value passed to boxedValue on \"{0}\" cannot be cast to expected propertyType {1}.", propertyPath, propertyType));
+                }
             }
         }
 
@@ -1155,6 +1283,51 @@ namespace UnityEditor
 
         [NativeName("SetManagedReferenceValue")]
         private extern void SetManagedReferenceValueInternal(object value);
+
+        [NativeName("SetStructValue")]
+        [NativeThrows]
+        internal extern void SetStructValueInternal(object value);
+
+        [NativeName("GetStructValue")]
+        [NativeThrows]
+        internal extern object GetStructValueInternal(string assemblyName, string nameSpace, string className);
+
+        // exposed for public access via boxedValue
+        internal object structValue
+        {
+            get
+            {
+                if (isArray)
+                    throw new System.InvalidOperationException($"'{propertyPath}' is an array so it cannot be read with boxedValue.");
+
+                // Unlike managed references, the precise type for a struct or by-value class field is easier to determine in C#
+                // rather than at the native level, so we pass that info in.
+                UnityEditor.ScriptAttributeUtility.GetFieldInfoAndStaticTypeFromProperty(this, out Type type);
+
+                var nameSpace = type.Namespace;
+                string typeName = type.FullName.Replace("+", "/");
+
+                if (!string.IsNullOrEmpty(nameSpace))
+                    typeName = typeName.Substring(nameSpace.Length + 1);
+
+                return GetStructValueInternal(type.Assembly.GetName().Name, nameSpace, typeName);
+            }
+
+            set
+            {
+                if (isArray)
+                    throw new System.InvalidOperationException($"'{propertyPath}' is an array so it cannot be set with boxedValue.");
+
+                // Retrieve the C# type info this property
+                UnityEditor.ScriptAttributeUtility.GetFieldInfoAndStaticTypeFromProperty(this, out Type propertyType);
+
+                if (propertyType.FullName != value.GetType().FullName)
+                    throw new System.InvalidOperationException(
+                        $"The input to boxedValue has type '{value.GetType().FullName.Replace("+","/")}', which does not match the expected type '{propertyType.FullName.Replace("+","/")}'.");
+
+                SetStructValueInternal(value);
+            }
+        }
 
         [NativeName("LookupInstanceById")]
         private extern object LookupInstanceByIdInternal(RefId refId);

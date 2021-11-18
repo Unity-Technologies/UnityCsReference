@@ -13,43 +13,4 @@ namespace UnityEditor.Android
     {
         void OnPostGenerateGradleAndroidProject(string path);
     }
-
-    internal static class AndroidBuildPipelineInterfaces
-    {
-        private static List<IPostGenerateGradleAndroidProject> buildPostProjectGeneratedProcessors;
-
-        internal static void InitializeBuildCallbacks()
-        {
-            buildPostProjectGeneratedProcessors = new List<IPostGenerateGradleAndroidProject>();
-
-            foreach (var type in TypeCache.GetTypesDerivedFrom<IPostGenerateGradleAndroidProject>())
-            {
-                if (type.IsAbstract || type.IsInterface)
-                    continue;
-                buildPostProjectGeneratedProcessors.Add(Activator.CreateInstance(type) as IPostGenerateGradleAndroidProject);
-            }
-
-            buildPostProjectGeneratedProcessors.Sort(BuildPipelineInterfaces.CompareICallbackOrder);
-        }
-
-        internal static void OnGeneratePlatformProjectPostprocess(string path, bool strict)
-        {
-            if (buildPostProjectGeneratedProcessors != null)
-            {
-                foreach (var pggapp in buildPostProjectGeneratedProcessors)
-                {
-                    try
-                    {
-                        pggapp.OnPostGenerateGradleAndroidProject(path);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.LogException(ex);
-                        if (strict)
-                            throw;
-                    }
-                }
-            }
-        }
-    }
 }

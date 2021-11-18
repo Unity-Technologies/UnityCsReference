@@ -13,7 +13,11 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal class PackageDatabase : ISerializationCallbackReceiver
     {
-        public virtual event Action<IPackage> onInstallOrUninstallSuccess = delegate {};
+        // Normally package unique Id never changes for a package, but when we are installing a package from git or a tarball
+        // we only had a temporary unique id at first. For example, for `com.unity.a` is a unique id for a package, but when
+        // we are installing from git, the only identifier we know is something like `git@example.com/com.unity.a.git`.
+        // We only know the id `com.unity.a` after the package has been successfully installed, and we'll trigger an event for that.
+        public virtual event Action<string, string> onPackageUniqueIdFinalize = delegate {};
 
         public virtual event Action<IPackage> onPackageProgressUpdate = delegate {};
         public virtual event Action<IPackage> onVerifiedGitPackageUpToDate = delegate {};
@@ -153,7 +157,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual IPackage GetPackageByIdOrName(string idOrName)
         {
-            GetPackageAndVersionByIdOrName(idOrName, out var package, out var version);
+            GetPackageAndVersionByIdOrName(idOrName, out var package, out _);
             return package;
         }
 
@@ -163,12 +167,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             version = package?.versions.FirstOrDefault(v => v.uniqueId == versionUniqueId);
         }
 
-        public virtual IPackageVersion GetPackageVersion(string packageUniqueId, string versionUniqueId)
+        public virtual void GetPackageAndVersion(PackageAndVersionIdPair pair, out IPackage package, out IPackageVersion version)
         {
-            IPackage package;
-            IPackageVersion version;
-            GetPackageAndVersion(packageUniqueId, versionUniqueId, out package, out version);
-            return version;
+            GetPackageAndVersion(pair?.packageUniqueId, pair?.versionUniqueId, out package, out version);
         }
 
         public virtual void GetPackageAndVersion(DependencyInfo info, out IPackage package, out IPackageVersion version)
@@ -244,14 +245,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnAfterDeserialize()
         {
-            foreach (var p in m_SerializedPlaceholderPackages)
+            var serializedPackages = m_SerializedPlaceholderPackages.Concat<BasePackage>(m_SerializedUpmPackages).Concat(m_SerializedAssetStorePackages);
+            foreach (var p in serializedPackages)
+            {
+                p.LinkPackageAndVersions();
                 m_Packages[p.uniqueId] = p;
-
-            foreach (var p in m_SerializedUpmPackages)
-                m_Packages[p.uniqueId] = p;
-
-            foreach (var p in m_SerializedAssetStorePackages)
-                m_Packages[p.uniqueId] = p;
+            }
         }
 
         public void OnBeforeSerialize()
@@ -491,7 +490,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 if (match != null)
                 {
-                    onInstallOrUninstallSuccess?.Invoke(match);
+                    onPackageUniqueIdFinalize?.Invoke(specialUniqueId, match.uniqueId);
                     SetPackageProgress(match, PackageProgress.None);
                     RemoveSpecialInstallation(specialUniqueId);
                 }
@@ -506,13 +505,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 SetPackageProgress(GetPackageByIdOrName(packageId), PackageProgress.Installing);
             foreach (var packageName in operation.packagesNamesToRemove)
                 SetPackageProgress(GetPackage(packageName), PackageProgress.Removing);
-
-            operation.onOperationSuccess += (op) =>
-            {
-                var package = GetPackage(op.packageUniqueId);
-                if (package != null)
-                    onInstallOrUninstallSuccess?.Invoke(package);
-            };
 
             operation.onOperationError += (op, err) =>
             {
@@ -546,7 +538,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
             SetPackageProgress(GetPackage(operation.packageUniqueId), PackageProgress.Installing);
-            operation.onOperationSuccess += (op) => onInstallOrUninstallSuccess?.Invoke(GetPackage(op.packageUniqueId));
             operation.onOperationError += OnUpmOperationError;
             operation.onOperationFinalized += OnUpmOperationFinalized;
         }
@@ -566,7 +557,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnUpmEmbedOperation(IOperation operation)
         {
             SetPackageProgress(GetPackage(operation.packageUniqueId), PackageProgress.Installing);
-            operation.onOperationSuccess += (op) => onInstallOrUninstallSuccess?.Invoke(GetPackage(op.packageUniqueId));
             operation.onOperationError += OnUpmOperationError;
             operation.onOperationFinalized += OnUpmOperationFinalized;
         }
@@ -574,7 +564,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnUpmRemoveOperation(IOperation operation)
         {
             SetPackageProgress(GetPackage(operation.packageUniqueId), PackageProgress.Removing);
-            operation.onOperationSuccess += (op) => onInstallOrUninstallSuccess?.Invoke(GetPackage(operation.packageUniqueId));
             operation.onOperationError += OnUpmOperationError;
             operation.onOperationFinalized += OnUpmOperationFinalized;
         }
@@ -593,12 +582,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnUpmPackageVersionUpdated(string packageUniqueId, IPackageVersion version)
         {
-            var package = GetPackage(packageUniqueId);
-            var upmVersions = package?.versions as UpmVersionList;
-            if (upmVersions != null)
+            var package = GetPackage(packageUniqueId) as UpmPackage;
+            if (package != null)
             {
                 var packagePreUpdate = package.Clone();
-                upmVersions.UpdateVersion(version as UpmPackageVersion);
+                package.UpdateVersion(version as UpmPackageVersion);
                 onPackagesChanged?.Invoke(k_EmptyList, k_EmptyList, new[] { packagePreUpdate }, new[] { package });
             }
         }
@@ -615,6 +603,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmClient.AddById(version.uniqueId);
         }
 
+        public virtual void Install(IEnumerable<IPackageVersion> versions)
+        {
+            if (versions == null || !versions.Any())
+                return;
+
+            m_UpmClient.AddByIds(versions.Select(v => v.uniqueId));
+        }
+
         public virtual void Install(string packageId)
         {
             m_UpmClient.AddById(packageId);
@@ -625,9 +621,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmClient.AddByUrl(url);
         }
 
-        public virtual void InstallFromPath(string path)
+        public virtual bool InstallFromPath(string path, out string tempPackageId)
         {
-            m_UpmClient.AddByPath(path);
+            return m_UpmClient.AddByPath(path, out tempPackageId);
         }
 
         public virtual void Uninstall(IPackage package)
@@ -635,6 +631,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (package.versions.installed == null)
                 return;
             m_UpmClient.RemoveByName(package.name);
+        }
+
+        public virtual void Uninstall(IEnumerable<IPackage> packages)
+        {
+            if (packages == null || !packages.Any())
+                return;
+            m_UpmClient.RemoveByNames(packages.Select(p => p.name));
         }
 
         public virtual void InstallAndResetDependencies(IPackageVersion version, IEnumerable<IPackage> dependenciesToReset)
@@ -678,49 +681,73 @@ namespace UnityEditor.PackageManager.UI.Internal
             return m_AssetStoreDownloadManager.GetDownloadOperation(version.packageUniqueId)?.isInPause ?? false;
         }
 
-        public virtual bool Download(IPackage package)
+        private bool CheckTermOfServiceAgreement(Action onTosAccepted, Action<UIError> onError)
         {
-            if (!(package is AssetStorePackage))
-                return false;
-
-            if (!PlayModeDownload.CanBeginDownload())
-                return false;
-
             if (termOfServiceAgreementStatus == TermOfServiceAgreementStatus.NotAccepted)
             {
                 m_AssetStoreClient.CheckTermOfServiceAgreement(status =>
                 {
                     termOfServiceAgreementStatus = status;
                     if (termOfServiceAgreementStatus == TermOfServiceAgreementStatus.Accepted)
-                        Download_Internal(package);
-                }, error => AddPackageError(package, error));
+                        onTosAccepted?.Invoke();
+                }, error => onError?.Invoke(error));
                 return false;
             }
 
-            Download_Internal(package);
+            onTosAccepted?.Invoke();
             return true;
+        }
+
+        public virtual bool Download(IPackage package)
+        {
+            if (!package.Is(PackageType.AssetStore) || !PlayModeDownload.CanBeginDownload())
+                return false;
+
+            return CheckTermOfServiceAgreement(() => Download_Internal(package), error => AddPackageError(package, error));
+        }
+
+        public virtual void Download(IEnumerable<IPackageVersion> versions)
+        {
+            // We need better error handling in this function.
+            // It will be addressed in https://jira.unity3d.com/browse/PAX-1994.
+            CheckTermOfServiceAgreement(() => Download_Internal(versions), error => Debug.Log(error));
         }
 
         private void Download_Internal(IPackage package)
         {
-            SetPackageProgress(package, PackageProgress.Downloading);
-            m_AssetStoreDownloadManager.Download(package);
             // When we start a new download, we want to clear past operation errors to give it a fresh start.
             // Eventually we want a better design on how to show errors, to be further addressed in https://jira.unity3d.com/browse/PAX-1332
+            // We need to clear errors before calling download because Download can fail right away (
             package.ClearErrors(e => e.errorCode == UIErrorCode.AssetStoreOperationError);
+            SetPackageProgress(package, PackageProgress.Downloading);
+            m_AssetStoreDownloadManager.Download(package);
+        }
+
+        private void Download_Internal(IEnumerable<IPackageVersion> versions)
+        {
+            foreach (var version in versions)
+                Download_Internal(version.package);
         }
 
         public virtual void AbortDownload(IPackage package)
         {
-            if (!(package is AssetStorePackage))
+            if (!package.Is(PackageType.AssetStore))
                 return;
             SetPackageProgress(package, PackageProgress.None);
             m_AssetStoreDownloadManager.AbortDownload(package.uniqueId);
         }
 
+        public virtual void AbortDownload(IEnumerable<IPackageVersion> versions)
+        {
+            // We need to figure out why the IEnumerable is being altered instead of using ToArray.
+            // It will be addressed in https://jira.unity3d.com/browse/PAX-1995.
+            foreach (var version in versions.ToArray())
+                AbortDownload(version.package);
+        }
+
         public virtual void PauseDownload(IPackage package)
         {
-            if (!(package is AssetStorePackage))
+            if (!package.Is(PackageType.AssetStore))
                 return;
             SetPackageProgress(package, PackageProgress.Pausing);
             m_AssetStoreDownloadManager.PauseDownload(package.uniqueId);
@@ -728,7 +755,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual void ResumeDownload(IPackage package)
         {
-            if (!(package is AssetStorePackage))
+            if (!package.Is(PackageType.AssetStore))
                 return;
 
             if (!PlayModeDownload.CanBeginDownload())

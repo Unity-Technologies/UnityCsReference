@@ -54,8 +54,19 @@ namespace UnityEditor.UIElements.Debugger
         protected void TryFocusCorrespondingWindow(ScriptableObject panelOwner)
         {
             var hostView = panelOwner as HostView;
-            if (hostView != null && hostView.actualView != null)
-                hostView.actualView.Focus();
+            EditorWindow correspondingWindow = null;
+            // If it's a runtime panel, the owner is a PanelSettings and we need to focus the GameView
+            if (hostView == null && panelOwner is PanelSettings)
+            {
+                correspondingWindow = EditorWindow.GetWindowDontShow<GameView>();
+            }
+            else
+            {
+                correspondingWindow = hostView?.actualView;
+            }
+
+            if (correspondingWindow != null)
+                correspondingWindow.Focus();
         }
 
         public IPanelDebug panelDebug { get; set; }

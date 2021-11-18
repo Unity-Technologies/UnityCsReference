@@ -26,7 +26,6 @@ namespace UnityEditor.UIElements.StyleSheets
         public readonly string unexpectedTokenInFunction = L10n.Tr("Expected ',', got '{0}'");
         public readonly string missingVariablePrefix = L10n.Tr("Variable '{0}' is missing '--' prefix");
         public readonly string invalidHighResAssetType = L10n.Tr("Unsupported type {0} for asset at path '{1}' ; only Texture2D is supported for variants with @2x suffix\nSuggestion: verify the import settings of this asset.");
-        public readonly string invalidAssetType = L10n.Tr("Unsupported type {0} for asset at path '{1}' ; only Font, FontAsset, Sprite, Texture2D and VectorImage are supported\nSuggestion: verify the import settings of this asset.");
 
         public readonly string invalidSelectorListDelimiter = L10n.Tr("Invalid selector list delimiter: '{0}'");
         public readonly string invalidComplexSelectorDelimiter = L10n.Tr("Invalid complex selector delimiter: '{0}'");
@@ -38,5 +37,6 @@ namespace UnityEditor.UIElements.StyleSheets
         public readonly string invalidUriLocation = L10n.Tr("Invalid URI location: '{0}'");
         public readonly string invalidUriScheme = L10n.Tr("Invalid URI scheme: '{0}'");
         public readonly string invalidAssetPath = L10n.Tr("Invalid asset path: '{0}'");
+        public readonly string invalidAssetType = L10n.Tr("Unsupported type {0} for asset at path '{1}' ; only the following types are supported: {2}\nSuggestion: verify the import settings of this asset.");
     }
 }

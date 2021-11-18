@@ -433,6 +433,7 @@ namespace UnityEditor
             if (entry != null)
             {
                 m_ActiveText = entry.message;
+                entry.callstackTextStartUTF8 = entry.message.Length;
                 m_CallstackTextStart = entry.callstackTextStartUTF16;
                 // ping object referred by the log entry
                 if (m_ActiveInstanceID != entry.instanceID)

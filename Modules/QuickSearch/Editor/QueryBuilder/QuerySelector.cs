@@ -10,6 +10,131 @@ using UnityEngine;
 
 namespace UnityEditor.Search
 {
+    class QuerySelectorItemGUI : AdvancedDropdownGUI
+    {
+        class Styles
+        {
+            public static readonly GUIStyle itemStyle = new GUIStyle("DD LargeItemStyle")
+            {
+                fixedHeight = 22
+            };
+
+            public static readonly GUIStyle textStyle = new GUIStyle(Search.Styles.QueryBuilder.label)
+            {
+                padding = new RectOffset(0, 0, 0, 0),
+                alignment = TextAnchor.MiddleCenter
+            };
+
+            public static readonly GUIStyle propositionIcon = new GUIStyle("label")
+            {
+                fixedWidth = 18f,
+                fixedHeight = 18f,
+                padding = new RectOffset(0, 0, 0, 0),
+                margin = new RectOffset(0, 0, 0, 0)
+            };
+
+            public static readonly GUIStyle lineSeparator = new GUIStyle("DefaultLineSeparator")
+            {
+                margin = new RectOffset(25, 25, 10, 5)
+            };
+
+            public static readonly Vector4 borderWidth4 = new Vector4(1, 1, 1, 1);
+            public static readonly Vector4 borderRadius4 = new Vector4(8f, 8f, 8f, 8f);
+
+            public static readonly float sepColor = (EditorGUIUtility.isProSkin) ? 0.43f : 0.6f;
+        }
+
+        internal QuerySelector host;
+        internal override GUIStyle lineStyle => Styles.itemStyle;
+        internal override Vector2 iconSize => new Vector2(Styles.propositionIcon.fixedWidth, Styles.propositionIcon.fixedHeight);
+
+        public QuerySelectorItemGUI(AdvancedDropdownDataSource dataSource, QuerySelector host)
+            : base(dataSource)
+        {
+            this.host = host;
+        }
+
+        internal override Rect GetItemRect(in GUIContent content)
+        {
+            return GUILayoutUtility.GetRect(host.window.position.width - 18f, SearchField.minSinglelineTextHeight + 2, lineStyle, GUILayout.ExpandWidth(true));
+        }
+
+        internal override Vector2 CalcItemSize(GUIContent content)
+        {
+            return lineStyle.CalcSize(GUIContent.Temp(content.text)) + new Vector2(Styles.propositionIcon.fixedWidth + 40f, 0);
+        }
+
+        internal override float CalcItemHeight(GUIContent content, float width)
+        {
+            return SearchField.minSinglelineTextHeight + 2;
+        }
+
+        internal override void DrawLineSeparator()
+        {
+            var rect = GUILayoutUtility.GetRect(GUIContent.none, Styles.lineSeparator, GUILayout.ExpandWidth(true));
+            if (Event.current.type != EventType.Repaint)
+                return;
+
+            Color orgColor = GUI.color;
+            Color tintColor = new Color(Styles.sepColor, Styles.sepColor, Styles.sepColor, 1.0f);
+            GUI.color = GUI.color * tintColor;
+            GUI.DrawTexture(rect, EditorGUIUtility.whiteTexture);
+            GUI.color = orgColor;
+        }
+
+        internal override void DrawItemContent(AdvancedDropdownItem item, Rect rect, GUIContent content, bool isHover, bool isActive, bool on, bool hasKeyboardFocus)
+        {
+            if (item.children.Any())
+            {
+                base.DrawItemContent(item, rect, content, isHover, isActive, on, hasKeyboardFocus);
+                return;
+            }
+
+            var proposition = (SearchProposition)item.userData;
+            var bgColor = proposition.color;
+            if (bgColor == Color.clear)
+                bgColor = QueryColors.filter;
+
+            // Add spacing between items
+            rect.y += 2;
+            rect.yMax -= 3;
+
+            // Left margin
+            rect.x += 2;
+
+            var iconRect = new Rect(rect.x, rect.y, iconSize.x, iconSize.y);
+            if (content.image != null)
+            {
+                // Draw icon if needed. If no icon, rect is already offsetted.
+                Styles.propositionIcon.Draw(iconRect, content.image, false, false, false, false);
+                rect.xMin += iconSize.x + 2;
+            }
+            else
+            {
+                iconRect = new Rect(rect.x, rect.y, 0, 0);
+            }
+
+            var textContent = GUIContent.Temp(content.text);
+            var size = Styles.textStyle.CalcSize(textContent).x;
+            var backgroundRect = new Rect(iconRect.xMax + 2f, rect.yMin, size + 10f, rect.height);
+
+            var selected = isHover || on;
+            var color = selected ? bgColor * QueryColors.selectedTint : bgColor;
+
+            // Draw block background
+            GUI.DrawTexture(backgroundRect, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill, false, 0f, color, Vector4.zero, Styles.borderRadius4);
+
+            // Draw Text
+            Styles.textStyle.Draw(backgroundRect, textContent, false, false, false, false);
+
+            if (selected)
+            {
+                // Draw border
+                GUI.DrawTexture(backgroundRect, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill, false, 0f, QueryColors.selectedBorderColor, Styles.borderWidth4, Styles.borderRadius4);
+            }
+        }
+    }
+
     class QuerySelector : AdvancedDropdown, IBlockEditor
     {
         private readonly string m_Title;
@@ -19,20 +144,23 @@ namespace UnityEditor.Search
         public SearchContext context => m_BlockSource.context;
         public EditorWindow window => m_WindowInstance;
 
-        public QuerySelector(Rect rect, IBlockSource dataSource)
+        public QuerySelector(Rect rect, IBlockSource dataSource, string title = null)
             : base(new AdvancedDropdownState())
         {
             m_BlockSource = dataSource;
-            m_Title = m_BlockSource.name ?? string.Empty;
+            m_Title = title ?? m_BlockSource.editorTitle ?? m_BlockSource.name ?? string.Empty;
             m_Propositions = m_BlockSource.FetchPropositions().Where(p => p.valid);
 
-            minimumSize = new Vector2(Mathf.Max(rect.width, 300f), 350f);
+            minimumSize = new Vector2(Mathf.Max(rect.width, 250f), 350f);
             maximumSize = new Vector2(Mathf.Max(rect.width, 400f), 450f);
+
+            m_DataSource = new CallbackDataSource(BuildRoot);
+            m_Gui = new QuerySelectorItemGUI(m_DataSource, this);
         }
 
-        public static QuerySelector Open(Rect r, IBlockSource source)
+        public static QuerySelector Open(Rect r, IBlockSource source, string title = null)
         {
-            var w = new QuerySelector(r, source);
+            var w = new QuerySelector(r, source, title);
             w.Show(r);
             w.Bind();
             return w;
@@ -102,7 +230,7 @@ namespace UnityEditor.Search
                 var newItem = new AdvancedDropdownItem(path)
                 {
                     displayName = formatNames ? ObjectNames.NicifyVariableName(name) : name,
-                    icon = p.icon,
+                    icon = p.icon ?? Icons.quicksearch,
                     tooltip = p.help,
                     userData = p
                 };
@@ -111,11 +239,18 @@ namespace UnityEditor.Search
                 if (prefix != null)
                     parent = MakeParents(prefix, p, rootItem);
 
-                var fit = FindItem(name, parent);
-                if (fit == null)
-                    parent.AddChild(newItem);
-                else if (p.icon)
-                    fit.icon = p.icon;
+                if (p.isSeparator)
+                {
+                    (parent ?? rootItem).AddSeparator();
+                }
+                else
+                {
+                    var fit = FindItem(name, parent);
+                    if (fit == null)
+                        parent.AddChild(newItem);
+                    else if (p.icon)
+                        fit.icon = p.icon;
+                }
             }
 
             return rootItem;

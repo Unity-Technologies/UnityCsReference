@@ -3,8 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine.Tilemaps
 {
@@ -12,16 +12,7 @@ namespace UnityEngine.Tilemaps
     {
         public static event Action<Tilemap, SyncTile[]> tilemapTileChanged;
 
-        private Dictionary<Vector3Int, SyncTile> m_SyncTileBuffer;
-        private Dictionary<Vector3Int, SyncTile> syncTileBuffer
-        {
-            get
-            {
-                if (m_SyncTileBuffer == null)
-                    m_SyncTileBuffer = new Dictionary<Vector3Int, SyncTile>();
-                return m_SyncTileBuffer;
-            }
-        }
+        public static event Action<Tilemap, NativeArray<Vector3Int>> tilemapPositionsChanged;
 
         private bool m_BufferSyncTile;
         internal bool bufferSyncTile
@@ -29,24 +20,44 @@ namespace UnityEngine.Tilemaps
             get { return m_BufferSyncTile; }
             set
             {
-                if (value == false && m_BufferSyncTile != value && HasSyncTileCallback() && syncTileBuffer.Count > 0)
-                    SendTilemapTileChangedCallback(syncTileBuffer.Values.ToArray());
-                syncTileBuffer.Clear();
+                if (value == false && m_BufferSyncTile != value && HasSyncTileCallback())
+                    SendAndClearSyncTileBuffer();
                 m_BufferSyncTile = value;
             }
         }
 
+        internal static bool HasSyncTileCallback()
+        {
+            return (Tilemap.tilemapTileChanged != null);
+        }
+
+        internal static bool HasPositionsChangedCallback()
+        {
+            return (Tilemap.tilemapPositionsChanged != null);
+        }
+
         private void HandleSyncTileCallback(SyncTile[] syncTiles)
         {
-            if (bufferSyncTile)
-            {
-                foreach (var syncTile in syncTiles)
-                {
-                    syncTileBuffer[syncTile.m_Position] = syncTile;
-                }
+            if (Tilemap.tilemapTileChanged == null)
                 return;
-            }
+
             SendTilemapTileChangedCallback(syncTiles);
+        }
+
+        private unsafe void HandlePositionsChangedCallback(int count, IntPtr positionsIntPtr)
+        {
+            if (Tilemap.tilemapPositionsChanged == null)
+                return;
+
+            void* positionsPtr = positionsIntPtr.ToPointer();
+            var positions = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector3Int>(positionsPtr, count, Allocator.Invalid);
+            var safety = AtomicSafetyHandle.Create();
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref positions, safety);
+
+            SendTilemapPositionsChangedCallback(positions);
+
+            AtomicSafetyHandle.CheckDeallocateAndThrow(safety);
+            AtomicSafetyHandle.Release(safety);
         }
 
         private void SendTilemapTileChangedCallback(SyncTile[] syncTiles)
@@ -54,6 +65,19 @@ namespace UnityEngine.Tilemaps
             try
             {
                 Tilemap.tilemapTileChanged(this, syncTiles);
+            }
+            catch (Exception e)
+            {
+                // Case 1215834: Log user exception/s and ensure engine code continues to run
+                Debug.LogException(e, this);
+            }
+        }
+
+        private void SendTilemapPositionsChangedCallback(NativeArray<Vector3Int> positions)
+        {
+            try
+            {
+                Tilemap.tilemapPositionsChanged(this, positions);
             }
             catch (Exception e)
             {
@@ -71,6 +95,5 @@ namespace UnityEngine.Tilemaps
         {
             Tilemap.tilemapTileChanged -= callback;
         }
-
     }
 }

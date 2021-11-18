@@ -334,7 +334,7 @@ namespace UnityEditor
             {
                 color = ToActiveColorSpace(centerColor);
                 GUI.SetNextControlName("FreeMoveAxis");
-                position = FreeMoveHandle(ids.xyz, position, rotation, size * kFreeMoveHandleSizeFactor, GridSnapping.active ? Vector3.zero : EditorSnapSettings.move, RectangleHandleCap);
+                position = FreeMoveHandle(ids.xyz, position, size * kFreeMoveHandleSizeFactor, GridSnapping.active ? Vector3.zero : EditorSnapSettings.move, RectangleHandleCap);
             }
 
             if (GridSnapping.active)

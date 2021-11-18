@@ -10,93 +10,54 @@ namespace UnityEditor
 {
     public class MathUtils
     {
-        // We cannot round to more decimals than 15 according to docs for System.Math.Round.
-        private const int kMaxDecimals = 15;
-
         internal static float ClampToFloat(double value)
         {
-            if (double.IsPositiveInfinity(value))
-                return float.PositiveInfinity;
-
-            if (double.IsNegativeInfinity(value))
-                return float.NegativeInfinity;
-
-            if (value < float.MinValue)
-                return float.MinValue;
-
-            if (value > float.MaxValue)
-                return float.MaxValue;
-
-            return (float)value;
+            return Mathf.ClampToFloat(value);
         }
 
         internal static int ClampToInt(long value)
         {
-            if (value < int.MinValue)
-                return int.MinValue;
-
-            if (value > int.MaxValue)
-                return int.MaxValue;
-
-            return (int)value;
+            return Mathf.ClampToInt(value);
         }
 
         internal static float RoundToMultipleOf(float value, float roundingValue)
         {
-            if (roundingValue == 0)
-                return value;
-            return Mathf.Round(value / roundingValue) * roundingValue;
+            return Mathf.RoundToMultipleOf(value, roundingValue);
         }
 
         internal static float GetClosestPowerOfTen(float positiveNumber)
         {
-            if (positiveNumber <= 0)
-                return 1;
-            return Mathf.Pow(10, Mathf.RoundToInt(Mathf.Log10(positiveNumber)));
+            return Mathf.GetClosestPowerOfTen(positiveNumber);
         }
 
         internal static int GetNumberOfDecimalsForMinimumDifference(float minDifference)
         {
-            return Mathf.Clamp(-Mathf.FloorToInt(Mathf.Log10(Mathf.Abs(minDifference))), 0, kMaxDecimals);
+            return Mathf.GetNumberOfDecimalsForMinimumDifference(minDifference);
         }
 
         internal static int GetNumberOfDecimalsForMinimumDifference(double minDifference)
         {
-            return (int)System.Math.Max(0.0, -System.Math.Floor(System.Math.Log10(System.Math.Abs(minDifference))));
+            return Mathf.GetNumberOfDecimalsForMinimumDifference(minDifference);
         }
 
         internal static float RoundBasedOnMinimumDifference(float valueToRound, float minDifference)
         {
-            if (minDifference == 0)
-                return DiscardLeastSignificantDecimal(valueToRound);
-            return (float)System.Math.Round(valueToRound, GetNumberOfDecimalsForMinimumDifference(minDifference), System.MidpointRounding.AwayFromZero);
+            return Mathf.RoundBasedOnMinimumDifference(valueToRound, minDifference);
         }
 
         internal static double RoundBasedOnMinimumDifference(double valueToRound, double minDifference)
         {
-            if (minDifference == 0)
-                return DiscardLeastSignificantDecimal(valueToRound);
-            return System.Math.Round(valueToRound, GetNumberOfDecimalsForMinimumDifference(minDifference), System.MidpointRounding.AwayFromZero);
+            return Mathf.RoundBasedOnMinimumDifference(valueToRound, minDifference);
         }
 
         internal static float DiscardLeastSignificantDecimal(float v)
         {
-            int decimals = Mathf.Clamp((int)(5 - Mathf.Log10(Mathf.Abs(v))), 0, kMaxDecimals);
-            return (float)System.Math.Round(v, decimals, System.MidpointRounding.AwayFromZero);
+            return Mathf.DiscardLeastSignificantDecimal(v);
         }
 
         internal static double DiscardLeastSignificantDecimal(double v)
         {
-            int decimals = System.Math.Max(0, (int)(5 - System.Math.Log10(System.Math.Abs(v))));
-            try
-            {
-                return System.Math.Round(v, decimals);
-            }
-            catch (System.ArgumentOutOfRangeException)
-            {
-                // This can happen for very small numbers.
-                return 0;
-            }
+            return Mathf.DiscardLeastSignificantDecimal(v);
         }
 
         public static float GetQuatLength(Quaternion q)

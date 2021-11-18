@@ -2,10 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-
-using UnityEngine;
 using UnityEditor.CrashReporting;
-using System;
 
 namespace UnityEditor.Connect
 {
@@ -16,11 +13,17 @@ namespace UnityEditor.Connect
         public override string title { get; }
         public override string description { get; }
         public override string pathTowardIcon { get; }
-        public override string projectSettingsPath { get; }
+        public override string projectSettingsPath { get; } = "Project/Services/Cloud Diagnostics";
         public override string settingsProviderClassName => nameof(CloudDiagProjectSettings);
         public override bool displayToggle { get; }
         public override Notification.Topic notificationTopic => Notification.Topic.CrashService;
         public override string packageName { get; }
+
+        public override string editorGamePackageName { get; } = "com.unity.services.cloud-diagnostics";
+        public override bool canShowFallbackProjectSettings { get; } = true;
+        public override bool canShowBuiltInProjectSettings { get; } = false;
+        public override string minimumEditorGamePackageVersion { get; } = "1.0.0";
+
         public override string serviceFlagName { get; }
         public override bool shouldSyncOnProjectRebind => true;
 
@@ -41,7 +44,6 @@ namespace UnityEditor.Connect
             title = L10n.Tr("Cloud Diagnostics");
             description = L10n.Tr("Discover app errors and collect user feedback");
             pathTowardIcon = @"Builtin Skins\Shared\Images\ServicesWindow-ServiceIcon-Crash.png";
-            projectSettingsPath = "Project/Services/Cloud Diagnostics";
             displayToggle = false;
             packageName = null;
             serviceFlagName = "gameperf";

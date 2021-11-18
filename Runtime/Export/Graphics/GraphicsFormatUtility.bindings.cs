@@ -17,7 +17,7 @@ namespace UnityEngine
             [NativeHeader("Runtime/Graphics/GraphicsFormatUtility.bindings.h")]
             public class GraphicsFormatUtility
             {
-                [FreeFunction("GetTextureGraphicsFormat")]
+                [FreeFunction("GetGraphicsFormat_Native_Texture")]
                 extern internal static GraphicsFormat GetFormat([NotNull("NullExceptionObject")] Texture texture);
 
                 public static GraphicsFormat GetGraphicsFormat(TextureFormat format, bool isSRGB)
@@ -67,7 +67,7 @@ namespace UnityEngine
                 //8bit or 16bit depth + stencil maps to D24_UNorm_S8_UInt (so more bits for depth)
                 //depth bit depth 0, 8, 16, 24, 32
                 private static readonly GraphicsFormat[] tableNoStencil = { GraphicsFormat.None, GraphicsFormat.D16_UNorm, GraphicsFormat.D16_UNorm, GraphicsFormat.D24_UNorm, GraphicsFormat.D32_SFloat };
-                private static readonly GraphicsFormat[] tableStencil = { GraphicsFormat.None, GraphicsFormat.D24_UNorm_S8_UInt, GraphicsFormat.D24_UNorm_S8_UInt, GraphicsFormat.D24_UNorm_S8_UInt, GraphicsFormat.D32_SFloat_S8_UInt };
+                private static readonly GraphicsFormat[] tableStencil = { GraphicsFormat.S8_UInt, GraphicsFormat.D16_UNorm_S8_UInt, GraphicsFormat.D16_UNorm_S8_UInt, GraphicsFormat.D24_UNorm_S8_UInt, GraphicsFormat.D32_SFloat_S8_UInt };
 
                 public static GraphicsFormat GetDepthStencilFormat(int minimumDepthBits, int minimumStencilBits)
                 {
@@ -84,7 +84,11 @@ namespace UnityEngine
                         throw new ArgumentException("Number of stencil buffer bits cannot exceed 8.");
 
                     //the legacy DepthBufferFormatFromBits rounded up so mimicking that here
-                    if (minimumDepthBits <= 16)
+                    if (minimumDepthBits == 0)
+                    {
+                        minimumDepthBits = 0;
+                    }
+                    else if (minimumDepthBits <= 16)
                     {
                         minimumDepthBits = 16;
                     }
@@ -183,6 +187,9 @@ namespace UnityEngine
 
                 [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsStencilFormat(GraphicsFormat format);
+
+                [FreeFunction(IsThreadSafe = true)]
+                extern public static bool IsDepthStencilFormat(GraphicsFormat format);
 
                 [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsIEEE754Format(GraphicsFormat format);

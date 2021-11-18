@@ -2,71 +2,79 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
+
 namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageDownloadButton : PackageToolBarRegularButton
     {
-        public static readonly string k_DownloadButtonText = L10n.Tr("Download");
-        public static readonly string k_UpdateButtonText = L10n.Tr("Update");
-
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
+        private AssetStoreCache m_AssetStoreCache;
         private PackageDatabase m_PackageDatabase;
-        public PackageDownloadButton(AssetStoreDownloadManager assetStoreDownloadManager, PackageDatabase packageDatabase)
+        public PackageDownloadButton(AssetStoreDownloadManager assetStoreDownloadManager, AssetStoreCache assetStoreCache, PackageDatabase packageDatabase)
         {
             m_AssetStoreDownloadManager = assetStoreDownloadManager;
+            m_AssetStoreCache = assetStoreCache;
             m_PackageDatabase = packageDatabase;
         }
 
-        protected override bool TriggerAction()
+        protected override bool TriggerAction(IList<IPackageVersion> versions)
         {
-            var canDownload = m_PackageDatabase.Download(m_Package);
+            m_PackageDatabase.Download(versions);
+            return true;
+        }
+
+        protected override bool TriggerAction(IPackageVersion version)
+        {
+            var canDownload = m_PackageDatabase.Download(version.package);
             if (canDownload)
-            {
-                var isUpdate = m_Package.state == PackageState.UpdateAvailable;
-                var eventName = isUpdate ? "startDownloadUpdate" : "startDownloadNew";
-                PackageManagerWindowAnalytics.SendEvent(eventName, m_Package.uniqueId);
-                return true;
-            }
-            return false;
+                PackageManagerWindowAnalytics.SendEvent("startDownloadNew", version.packageUniqueId);
+            return canDownload;
         }
 
-        protected override bool isVisible
+        protected override bool IsVisible(IPackageVersion version)
         {
-            get
-            {
-                if (m_Version?.HasTag(PackageTag.Downloadable) != true)
-                    return false;
+            if (version?.HasTag(PackageTag.Downloadable) != true)
+                return false;
 
-                var operation = m_AssetStoreDownloadManager.GetDownloadOperation(m_Version.packageUniqueId);
-                var isDownloadOperationInProgress = operation?.isInProgress == true
-                    || operation?.state == DownloadState.Pausing
-                    || operation?.state == DownloadState.Paused
-                    || operation?.state == DownloadState.ResumeRequested;
+            var localInfo = m_AssetStoreCache.GetLocalInfo(version.packageUniqueId);
+            if (localInfo != null)
+                return false;
 
-                var isAvailableOnDisk = m_Version?.isAvailableOnDisk ?? false;
-                var hasUpdateAvailable = m_Package.state == PackageState.UpdateAvailable;
-                var isLatestVersionOnDisk = isAvailableOnDisk && !hasUpdateAvailable;
-                var isDownloadRequested = operation?.state == DownloadState.DownloadRequested;
-                return !isLatestVersionOnDisk && (isDownloadRequested || operation == null || !isDownloadOperationInProgress);
-            }
+            var operation = m_AssetStoreDownloadManager.GetDownloadOperation(version.packageUniqueId);
+            return operation == null || operation.state == DownloadState.DownloadRequested || !operation.isProgressVisible;
         }
 
-        protected override string GetTooltip(bool isInProgress)
+        protected override string GetTooltip(IPackageVersion version, bool isInProgress)
         {
             if (isInProgress)
                 return L10n.Tr("The download request has been sent. Please wait for the download to start.");
-
-            if (m_Package.state == PackageState.UpdateAvailable)
-                return string.Format(L10n.Tr("Click to download the latest version of this {0}."), m_Package.GetDescriptor());
-
-            return string.Format(L10n.Tr("Click to download this {0} for later use."), m_Package.GetDescriptor());
+            return string.Format(L10n.Tr("Click to download this {0} for later use."), version.package.GetDescriptor());
         }
 
-        protected override string GetText(bool isInProgress)
+        protected override string GetText(IPackageVersion version, bool isInProgress)
         {
-            return m_Package.state == PackageState.UpdateAvailable ? k_UpdateButtonText : k_DownloadButtonText;
+            return L10n.Tr("Download");
         }
 
-        protected override bool isInProgress => m_AssetStoreDownloadManager.GetDownloadOperation(m_Version.packageUniqueId)?.state == DownloadState.DownloadRequested;
+        protected override bool IsInProgress(IPackageVersion version)
+        {
+            var operation = m_AssetStoreDownloadManager.GetDownloadOperation(version?.packageUniqueId);
+            var localInfo = m_AssetStoreCache.GetLocalInfo(version?.packageUniqueId);
+            return localInfo == null
+                && operation != null
+                && operation.state != DownloadState.Aborted
+                && operation.state != DownloadState.Error
+                && operation.state != DownloadState.Completed
+                && operation.state != DownloadState.None;
+        }
+
+        protected override IEnumerable<ButtonDisableCondition> GetDisableConditions(IPackageVersion version)
+        {
+            yield return new ButtonDisableCondition(() => version?.HasTag(PackageTag.Disabled) ?? false,
+                L10n.Tr("This package is no longer available and cannot be downloaded anymore."));
+        }
+
+        protected override bool IsHiddenWhenInProgress(IPackageVersion version) => true;
     }
 }

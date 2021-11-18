@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using System.Linq;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -14,58 +15,27 @@ namespace UnityEditor.PackageManager.UI.Internal
         public static readonly string k_EnableButtonText = L10n.Tr("Enable");
         public static readonly string k_EnablingButtonText = L10n.Tr("Enabling");
 
-        public static readonly string k_UpdateToButtonTextFormat = L10n.Tr("Update to {0}");
-        public static readonly string k_UpdatingToButtonTextFormat = L10n.Tr("Updating to {0}");
-
-        private IPackageVersion targetVersion
-        {
-            get
-            {
-                if (m_Version?.isInstalled == true && m_Version != m_Package.versions.recommended)
-                    return m_Package.versions.latest ?? m_Version;
-                return m_Version;
-            }
-        }
-
         private ApplicationProxy m_Application;
         private PackageDatabase m_PackageDatabase;
-        private PageManager m_PageManager;
         public PackageAddButton(ApplicationProxy applicationProxy,
-                                PackageDatabase packageDatabase,
-                                PageManager pageManager)
+                                PackageDatabase packageDatabase)
         {
             m_Application = applicationProxy;
             m_PackageDatabase = packageDatabase;
-            m_PageManager = pageManager;
         }
 
-        protected override bool TriggerAction()
+        protected override bool TriggerAction(IList<IPackageVersion> versions)
         {
-            var installedVersion = m_Package.versions.installed;
-            var targetVersion = this.targetVersion;
-            if (installedVersion != null && !installedVersion.isDirectDependency && installedVersion != targetVersion)
-            {
-                var featureSetDependents = m_PackageDatabase.GetFeatureDependents(m_Package.versions.installed);
-                // if the installed version is being used by a Feature Set show the more specific
-                //  Feature Set dialog instead of the generic one
-                if (featureSetDependents.Any())
-                {
-                    var message = string.Format(L10n.Tr("Changing a {0} that is part of a feature can lead to errors. Are you sure you want to proceed?"), m_Package.GetDescriptor());
-                    if (!m_Application.DisplayDialog(L10n.Tr("Warning"), message, L10n.Tr("Yes"), L10n.Tr("No")))
-                        return false;
-                }
-                else
-                {
-                    var message = L10n.Tr("This version of the package is being used by other packages. Upgrading a different version might break your project. Are you sure you want to continue?");
-                    if (!m_Application.DisplayDialog(L10n.Tr("Unity Package Manager"), message, L10n.Tr("Yes"), L10n.Tr("No")))
-                        return false;
-                }
-            }
+            m_PackageDatabase.Install(versions);
+            return true;
+        }
 
+        protected override bool TriggerAction(IPackageVersion version)
+        {
             IPackage[] packageToUninstall = null;
-            if (targetVersion.HasTag(PackageTag.Feature))
+            if (version.HasTag(PackageTag.Feature))
             {
-                var customizedDependencies = m_PackageDatabase.GetCustomizedDependencies(targetVersion, true);
+                var customizedDependencies = m_PackageDatabase.GetCustomizedDependencies(version, true);
                 if (customizedDependencies.Any())
                 {
                     var packageNameAndVersions = string.Join("\n\u2022 ",
@@ -74,10 +44,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                     var message = customizedDependencies.Length == 1 ?
                         string.Format(
                         L10n.Tr("This {0} includes a package version that is different from what's already installed. Would you like to reset the following package to the required version?\n\u2022 {1}"),
-                        m_Package.GetDescriptor(), packageNameAndVersions) :
+                        version.package.GetDescriptor(), packageNameAndVersions) :
                         string.Format(
                         L10n.Tr("This {0} includes package versions that are different from what are already installed. Would you like to reset the following packages to the required versions?\n\u2022 {1}"),
-                        m_Package.GetDescriptor(), packageNameAndVersions);
+                        version.package.GetDescriptor(), packageNameAndVersions);
 
                     var result = m_Application.DisplayDialogComplex(L10n.Tr("Unity Package Manager"), message, L10n.Tr("Install and Reset"), L10n.Tr("Cancel"), L10n.Tr("Install Only"));
                     if (result == 1) // Cancel
@@ -89,62 +59,52 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (packageToUninstall?.Any() == true)
             {
-                m_PackageDatabase.InstallAndResetDependencies(targetVersion, packageToUninstall);
-                PackageManagerWindowAnalytics.SendEvent("installAndReset", targetVersion?.uniqueId);
+                m_PackageDatabase.InstallAndResetDependencies(version, packageToUninstall);
+                PackageManagerWindowAnalytics.SendEvent("installAndReset", version.uniqueId);
             }
             else
             {
-                m_PackageDatabase.Install(targetVersion);
+                m_PackageDatabase.Install(version);
 
-                var installType = installedVersion == null ? "New" : "Update";
-                var installRecommended = m_Package.versions.recommended == targetVersion ? "Recommended" : "NonRecommended";
-                var eventName = $"install{installType}{installRecommended}";
-                PackageManagerWindowAnalytics.SendEvent(eventName, targetVersion?.uniqueId);
+                var installRecommended = version.package.versions.recommended == version ? "Recommended" : "NonRecommended";
+                var eventName = $"installNew{installRecommended}";
+                PackageManagerWindowAnalytics.SendEvent(eventName, version.uniqueId);
             }
             return true;
         }
 
-        protected override bool isVisible
+        protected override bool IsVisible(IPackageVersion version)
         {
-            get
-            {
-                var installed = m_Package?.versions.installed;
-                var targetVersion = this.targetVersion;
-                return installed?.HasTag(PackageTag.VersionLocked) != true
-                    && m_Version != null
-                    && targetVersion?.HasTag(PackageTag.Installable) == true
-                    && installed != targetVersion
-                    && !UpmPackageVersion.IsRequestedButOverriddenVersion(m_Package, m_Version)
-                    && m_PageManager.GetVisualState(m_Package)?.isLocked != true
-                    && m_Version?.HasTag(PackageTag.Local) == false;
-            }
+            return version != null
+                && version.package.versions.installed == null
+                && version.HasTag(PackageTag.Installable);
         }
 
-        protected override string GetTooltip(bool isInProgress)
+        protected override string GetTooltip(IPackageVersion version, bool isInProgress)
         {
             if (isInProgress)
                 return k_InProgressGenericTooltip;
 
-            if (m_Version?.HasTag(PackageTag.BuiltIn) == true)
-                return string.Format(L10n.Tr("Enable the use of this {0} in your project."), m_Package.GetDescriptor());
+            if (version?.HasTag(PackageTag.BuiltIn) == true)
+                return string.Format(L10n.Tr("Click to enable this {0} in your project."), version.package.GetDescriptor());
 
-            if (m_Package.versions.installed != null)
-                return string.Format(L10n.Tr("Click to update this {0} to the specified version."), m_Package.GetDescriptor());
-
-            return string.Format(L10n.Tr("Click to install this {0} into your project."), m_Package.GetDescriptor());
+            return string.Format(L10n.Tr("Click to install this {0} into your project."), version.package.GetDescriptor());
         }
 
-        protected override string GetText(bool isInProgress)
+        protected override string GetText(IPackageVersion version, bool isInProgress)
         {
-            if (m_Version?.HasTag(PackageTag.BuiltIn) == true)
+            if (version?.HasTag(PackageTag.BuiltIn) == true)
                 return isInProgress ? k_EnablingButtonText : k_EnableButtonText;
-
-            if (m_Package.versions.installed != null)
-                return string.Format(isInProgress ? k_UpdatingToButtonTextFormat : k_UpdateToButtonTextFormat, targetVersion.version);
 
             return isInProgress ? k_InstallingButtonText : k_InstallButtonText;
         }
 
-        protected override bool isInProgress => m_PackageDatabase.IsInstallInProgress(targetVersion);
+        protected override bool IsInProgress(IPackageVersion version) => m_PackageDatabase.IsInstallInProgress(version);
+
+        protected override IEnumerable<ButtonDisableCondition> GetDisableConditions(IPackageVersion version)
+        {
+            yield return new ButtonDisableCondition(() => version?.package.hasEntitlementsError ?? false,
+                L10n.Tr("You need to sign in with a licensed account to perform this action."));
+        }
     }
 }

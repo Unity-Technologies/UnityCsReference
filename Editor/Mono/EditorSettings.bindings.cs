@@ -55,12 +55,21 @@ namespace UnityEditor
         Disabled = 2
     }
 
+    public enum CacheServerValidationMode
+    {
+        Disabled = 0,
+        UploadOnly = 1,
+        Enabled = 2,
+        Required = 3
+    }
+
     [Flags]
     public enum EnterPlayModeOptions
     {
-        None                = 0,
+        None = 0,
         DisableDomainReload = 1 << 0,
-        DisableSceneReload  = 1 << 1
+        DisableSceneReload = 1 << 1,
+        DisableSceneBackupUnlessDirty = 1 << 2
     }
 
     [NativeHeader("Editor/Src/EditorSettings.h")]
@@ -279,6 +288,9 @@ namespace UnityEditor
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern bool cacheServerEnableTls { get; set; }
+
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        public static extern CacheServerValidationMode cacheServerValidationMode { get; set; }
 
         public enum NamingScheme
         {

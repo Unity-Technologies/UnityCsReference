@@ -1,16 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{016C8D73-3641-47FB-8D33-7A015A7EC7DB}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <RootNamespace>UnityEditor</RootNamespace>
-    <AssemblyName>UnityEditor</AssemblyName>
-    <FileAlignment>512</FileAlignment>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <DefineConstants>$(DefineConstants);COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ACCELERATOR_CLIENT_DEBUGGING;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLUSTERINPUT;ENABLE_CLUSTER_SYNC;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_GAME_SERVICES;ENABLE_EDITOR_HUB_LICENSE;ENABLE_ETC_COMPRESSION;ENABLE_EVENT_QUEUE;ENABLE_GAMECENTER_API;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MANAGED_UNITYTLS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_NVIDIA;ENABLE_PHYSICS;ENABLE_RUNTIME_GI;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIRTUALTEXTURING;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WEBSOCKET_HOST;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_GAMEPAD_AUDIO;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_BJM_API;UNITY_CAN_SHOW_SPLASH_SCREEN;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_EDITOR_LINUX;UNITY_GAMECORE_API;UNITY_GAMECORE_SCARLETT_API;UNITY_GAMECORE_XBOXONE_API;UNITY_IPHONE_API;UNITY_LUMIN_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_GGP_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TINYPROFILING_INTERNAL;UNITY_TVOS_API;UNITY_UNITYADS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API;USE_PROPERTY_DATABASE;USE_QUERY_BUILDER;USE_SEARCH_MODULE</DefineConstants>
     <LangVersion>latest</LangVersion>
+    <NoWarn>0169;0649;0626</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\Editor\Mono\2D\Common\ScriptBindings\SpriteEditorExtension.bindings.cs">
@@ -2041,6 +2038,9 @@
     <Compile Include="..\..\Editor\Mono\Inspector\EditorDragging.cs">
       <Link>Editor\Mono\Inspector\EditorDragging.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\EditorElementUpdater.cs">
+      <Link>Editor\Mono\Inspector\EditorElementUpdater.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\EditorSettingsInspector.cs">
       <Link>Editor\Mono\Inspector\EditorSettingsInspector.cs</Link>
     </Compile>
@@ -2551,9 +2551,6 @@
     <Compile Include="..\..\Editor\Mono\Networking\PlayerConnection\EditorConnection.cs">
       <Link>Editor\Mono\Networking\PlayerConnection\EditorConnection.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\NumericFieldDraggerUtility.cs">
-      <Link>Editor\Mono\NumericFieldDraggerUtility.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\OSUtil.bindings.cs">
       <Link>Editor\Mono\OSUtil.bindings.cs</Link>
     </Compile>
@@ -2625,6 +2622,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Overlays\OverlayPresetManager.cs">
       <Link>Editor\Mono\Overlays\OverlayPresetManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Overlays\OverlayToolbar.cs">
+      <Link>Editor\Mono\Overlays\OverlayToolbar.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Overlays\OverlayUtilities.cs">
       <Link>Editor\Mono\Overlays\OverlayUtilities.cs</Link>
@@ -3526,6 +3526,12 @@
     <Compile Include="..\..\Editor\Mono\UnityConnect\CloudProjectSettings.cs">
       <Link>Editor\Mono\UnityConnect\CloudProjectSettings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\UnityConnect\CloudProjectSettingsEventManager.cs">
+      <Link>Editor\Mono\UnityConnect\CloudProjectSettingsEventManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\UnityConnect\CoppaCompliance.cs">
+      <Link>Editor\Mono\UnityConnect\CoppaCompliance.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\UnityConnect\Services\EditorProjectAccess.bindings.cs">
       <Link>Editor\Mono\UnityConnect\Services\EditorProjectAccess.bindings.cs</Link>
     </Compile>
@@ -3552,9 +3558,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Utils\EnumUtility.cs">
       <Link>Editor\Mono\Utils\EnumUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Utils\ExpressionEvaluator.cs">
-      <Link>Editor\Mono\Utils\ExpressionEvaluator.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Utils\IDeviceUtils.cs">
       <Link>Editor\Mono\Utils\IDeviceUtils.cs</Link>
@@ -4249,15 +4252,6 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\Transitions\UIStyleValue.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\Transitions\UIStyleValue.cs</Link>
     </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\TwoPaneSplitView\TwoPaneSplitView.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\TwoPaneSplitView\TwoPaneSplitView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\TwoPaneSplitView\TwoPaneSplitViewResizer.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\TwoPaneSplitView\TwoPaneSplitViewResizer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\TwoPaneSplitView\TwoPaneSplitViewTestWindow.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\TwoPaneSplitView\TwoPaneSplitViewTestWindow.cs</Link>
-    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\TypeField\BuilderAttributeTypeName.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\TypeField\BuilderAttributeTypeName.cs</Link>
     </Compile>
@@ -4330,50 +4324,23 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Bindings\SerializedPropertyHelper.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\Bindings\SerializedPropertyHelper.cs</Link>
     </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\BaseCompositeField.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Controls\BaseCompositeField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\BoundsField.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Controls\BoundsField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\BoundsIntField.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Controls\BoundsIntField.cs</Link>
-    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\ColorField.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\Controls\ColorField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\CompoundFields.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Controls\CompoundFields.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\CurveField.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\Controls\CurveField.cs</Link>
     </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\DoubleField.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Controls\DoubleField.cs</Link>
-    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\EnumFlagsField.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\Controls\EnumFlagsField.cs</Link>
     </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\FloatField.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Controls\FloatField.cs</Link>
-    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\GradientField.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\Controls\GradientField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\Hash128Field.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Controls\Hash128Field.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\IntegerField.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Controls\IntegerField.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\LayerField.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\Controls\LayerField.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\LayerMaskField.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\Controls\LayerMaskField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\LongField.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Controls\LongField.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\MaskField.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\Controls\MaskField.cs</Link>
@@ -4389,9 +4356,6 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\TagField.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\Controls\TagField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Controls\TextValueField.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Controls\TextValueField.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\BoxModelView.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\BoxModelView.cs</Link>
@@ -4489,8 +4453,8 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\EditorPanel.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\EditorPanel.cs</Link>
     </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\FieldMouseDragger.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\FieldMouseDragger.cs</Link>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\EditorUIElementsBridge.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\EditorUIElementsBridge.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\GameObjects\Converter\GUIDConversionTask.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\GameObjects\Converter\GUIDConversionTask.cs</Link>
@@ -5275,8 +5239,17 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Extensions\PackageSelectionArgs.cs">
       <Link>Modules\PackageManagerUI\Editor\Extensions\PackageSelectionArgs.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\External\EditorGameServiceExtension.cs">
+      <Link>Modules\PackageManagerUI\Editor\External\EditorGameServiceExtension.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\External\SemVersionExtension.cs">
       <Link>Modules\PackageManagerUI\Editor\External\SemVersionExtension.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\External\ServicesTab\ServiceGroupingsWrapper.cs">
+      <Link>Modules\PackageManagerUI\Editor\External\ServicesTab\ServiceGroupingsWrapper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\External\ServicesTab\ServicesTabConfiguration.cs">
+      <Link>Modules\PackageManagerUI\Editor\External\ServicesTab\ServicesTabConfiguration.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Analytics\PackageManagerWindowAnalytics.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Analytics\PackageManagerWindowAnalytics.cs</Link>
@@ -5386,6 +5359,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IVersionList.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IVersionList.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageAndVersionIdPair.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageAndVersionIdPair.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageDatabase.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageDatabase.cs</Link>
     </Compile>
@@ -5443,6 +5419,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\AssetDatabaseProxy.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Proxies\AssetDatabaseProxy.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\AssetStoreCachePathProxy.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Proxies\AssetStoreCachePathProxy.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\ClientProxy.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Proxies\ClientProxy.cs</Link>
     </Compile>
@@ -5482,11 +5461,20 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmCache.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmCache.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmCacheRootClient.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmCacheRootClient.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmClearCacheRootOperation.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmClearCacheRootOperation.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmClient.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmClient.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmEmbedOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmEmbedOperation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmGetCacheRootOperation.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmGetCacheRootOperation.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmGetRegistriesOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmGetRegistriesOperation.cs</Link>
@@ -5515,11 +5503,17 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmSearchOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmSearchOperation.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmSetCacheRootOperation.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmSetCacheRootOperation.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmUpdateRegistryOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmUpdateRegistryOperation.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmVersionList.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmVersionList.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\UserSettings\PackageManagerUserSettingsProvider.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\UserSettings\PackageManagerUserSettingsProvider.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\AddPackageByNameDropdown.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\AddPackageByNameDropdown.cs</Link>
@@ -5550,6 +5544,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\PageManager.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Common\PageManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\PageSelection.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\Common\PageSelection.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\PaginatedPage.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Common\PaginatedPage.cs</Link>
@@ -5625,6 +5622,48 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Interfaces\ISelectableItem.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Interfaces\ISelectableItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\MultiSelect\CheckUpdateFoldout.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\MultiSelect\CheckUpdateFoldout.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\MultiSelect\DownloadFoldoutGroup.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\MultiSelect\DownloadFoldoutGroup.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\MultiSelect\DownloadUpdateFoldoutGroup.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\MultiSelect\DownloadUpdateFoldoutGroup.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\MultiSelect\IMultiSelectFoldoutElement.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\MultiSelect\IMultiSelectFoldoutElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\MultiSelect\InstallFoldoutGroup.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\MultiSelect\InstallFoldoutGroup.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\MultiSelect\MultiSelectDetails.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\MultiSelect\MultiSelectDetails.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\MultiSelect\MultiSelectFoldout.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\MultiSelect\MultiSelectFoldout.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\MultiSelect\MultiSelectFoldoutGroup.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\MultiSelect\MultiSelectFoldoutGroup.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\MultiSelect\MultiSelectItem.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\MultiSelect\MultiSelectItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\MultiSelect\NoActionsFoldout.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\MultiSelect\NoActionsFoldout.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\MultiSelect\RemoveFoldoutGroup.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\MultiSelect\RemoveFoldoutGroup.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\MultiSelect\UnlockFoldout.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\MultiSelect\UnlockFoldout.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\MultiSelect\UpdateFoldout.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\MultiSelect\UpdateFoldout.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\MultiSelect\UpdateFoldoutGroup.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\MultiSelect\UpdateFoldoutGroup.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageDependencies.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageDependencies.cs</Link>
@@ -5731,8 +5770,14 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ToolBar\PackageCancelDownloadButton.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\ToolBar\PackageCancelDownloadButton.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ToolBar\PackageDeselectButton.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\ToolBar\PackageDeselectButton.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ToolBar\PackageDownloadButton.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\ToolBar\PackageDownloadButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ToolBar\PackageDownloadUpdateButton.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\ToolBar\PackageDownloadUpdateButton.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ToolBar\PackageGitUpdateButton.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\ToolBar\PackageGitUpdateButton.cs</Link>
@@ -5742,6 +5787,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ToolBar\PackagePauseDownloadButton.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\ToolBar\PackagePauseDownloadButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ToolBar\PackageRedownloadButton.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\ToolBar\PackageRedownloadButton.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ToolBar\PackageRemoveButton.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\ToolBar\PackageRemoveButton.cs</Link>
@@ -5766,6 +5814,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ToolBar\PackageUnlockButton.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\ToolBar\PackageUnlockButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ToolBar\PackageUpdateButton.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\ToolBar\PackageUpdateButton.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\AuthorInfo.cs">
       <Link>Modules\PackageManager\Editor\Managed\AuthorInfo.cs</Link>
@@ -5938,6 +5989,12 @@
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Search\SearchResults.cs">
       <Link>Modules\PackageManager\Editor\Managed\Search\SearchResults.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\SignatureInfo.cs">
+      <Link>Modules\PackageManager\Editor\Managed\SignatureInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\SignatureStatus.cs">
+      <Link>Modules\PackageManager\Editor\Managed\SignatureStatus.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\StatusCode.cs">
       <Link>Modules\PackageManager\Editor\Managed\StatusCode.cs</Link>
     </Compile>
@@ -6109,8 +6166,14 @@
     <Compile Include="..\..\Modules\PhysicsEditor\PhysicsDebugWindow.cs">
       <Link>Modules\PhysicsEditor\PhysicsDebugWindow.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PhysicsEditor\PhysicsDebugWindowContactsTab.cs">
+      <Link>Modules\PhysicsEditor\PhysicsDebugWindowContactsTab.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PhysicsEditor\PhysicsDebugWindowInfoTab.cs">
       <Link>Modules\PhysicsEditor\PhysicsDebugWindowInfoTab.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsEditor\PhysicsDebugWindowQueries.cs">
+      <Link>Modules\PhysicsEditor\PhysicsDebugWindowQueries.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PhysicsEditor\PhysicsManagerInspector.cs">
       <Link>Modules\PhysicsEditor\PhysicsManagerInspector.cs</Link>
@@ -6583,6 +6646,9 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\QueryBuilder\Blocks\QueryBlockEditor.cs">
       <Link>Modules\QuickSearch\Editor\QueryBuilder\Blocks\QueryBlockEditor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\QueryBuilder\Blocks\QueryExpressionBlock.cs">
+      <Link>Modules\QuickSearch\Editor\QueryBuilder\Blocks\QueryExpressionBlock.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\QueryBuilder\Blocks\QueryFilterBlock.cs">
       <Link>Modules\QuickSearch\Editor\QueryBuilder\Blocks\QueryFilterBlock.cs</Link>
     </Compile>
@@ -7021,9 +7087,6 @@
     <Compile Include="..\..\Modules\SceneTemplateEditor\DependencyListView.cs">
       <Link>Modules\SceneTemplateEditor\DependencyListView.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SceneTemplateEditor\DropdownWindow.cs">
-      <Link>Modules\SceneTemplateEditor\DropdownWindow.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\SceneTemplateEditor\GridView.cs">
       <Link>Modules\SceneTemplateEditor\GridView.cs</Link>
     </Compile>
@@ -7051,6 +7114,9 @@
     <Compile Include="..\..\Modules\SceneTemplateEditor\SceneTemplatePipeline.cs">
       <Link>Modules\SceneTemplateEditor\SceneTemplatePipeline.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\SceneTemplateEditor\SceneTemplatePreferences.cs">
+      <Link>Modules\SceneTemplateEditor\SceneTemplatePreferences.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\SceneTemplateEditor\SceneTemplatePreviewArea.cs">
       <Link>Modules\SceneTemplateEditor\SceneTemplatePreviewArea.cs</Link>
     </Compile>
@@ -7065,9 +7131,6 @@
     </Compile>
     <Compile Include="..\..\Modules\SceneTemplateEditor\SnapshotUtils.cs">
       <Link>Modules\SceneTemplateEditor\SnapshotUtils.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\SceneTemplateEditor\StringListView.cs">
-      <Link>Modules\SceneTemplateEditor\StringListView.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\SceneTemplateEditor\Styles.cs">
       <Link>Modules\SceneTemplateEditor\Styles.cs</Link>
@@ -7738,11 +7801,20 @@
     <Compile Include="..\..\Modules\UMPE\Editor\UMPE.bindings.cs">
       <Link>Modules\UMPE\Editor\UMPE.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\Analytics\EditorGameServicesAnalytics.cs">
+      <Link>Modules\UnityConnectEditor\Analytics\EditorGameServicesAnalytics.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\Common\CoppaDrawer.cs">
+      <Link>Modules\UnityConnectEditor\Common\CoppaDrawer.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UnityConnectEditor\Common\CoppaManager.cs">
       <Link>Modules\UnityConnectEditor\Common\CoppaManager.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UnityConnectEditor\Common\INotificationSubscriber.cs">
       <Link>Modules\UnityConnectEditor\Common\INotificationSubscriber.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\Common\IProjectEditorDrawer.cs">
+      <Link>Modules\UnityConnectEditor\Common\IProjectEditorDrawer.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UnityConnectEditor\Common\Notification.cs">
       <Link>Modules\UnityConnectEditor\Common\Notification.cs</Link>
@@ -7750,11 +7822,20 @@
     <Compile Include="..\..\Modules\UnityConnectEditor\Common\NotificationManager.cs">
       <Link>Modules\UnityConnectEditor\Common\NotificationManager.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\Common\PackageHelper.cs">
+      <Link>Modules\UnityConnectEditor\Common\PackageHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\Common\ProjectBindDrawer.cs">
+      <Link>Modules\UnityConnectEditor\Common\ProjectBindDrawer.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UnityConnectEditor\Common\ProjectBindManager.cs">
       <Link>Modules\UnityConnectEditor\Common\ProjectBindManager.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UnityConnectEditor\Common\ServicesConfiguration.cs">
       <Link>Modules\UnityConnectEditor\Common\ServicesConfiguration.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\Common\ServicesConstants.cs">
+      <Link>Modules\UnityConnectEditor\Common\ServicesConstants.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UnityConnectEditor\Common\SimpleStateMachine.cs">
       <Link>Modules\UnityConnectEditor\Common\SimpleStateMachine.cs</Link>
@@ -7780,14 +7861,29 @@
     <Compile Include="..\..\Modules\UnityConnectEditor\ProjectSettings\CollabProjectSettings.cs">
       <Link>Modules\UnityConnectEditor\ProjectSettings\CollabProjectSettings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\ProjectSettings\Fallback\FallbackProjectSettings.cs">
+      <Link>Modules\UnityConnectEditor\ProjectSettings\Fallback\FallbackProjectSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\ProjectSettings\Fallback\InstallPackageSection.cs">
+      <Link>Modules\UnityConnectEditor\ProjectSettings\Fallback\InstallPackageSection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\ProjectSettings\Fallback\PackageInstallationHandler.cs">
+      <Link>Modules\UnityConnectEditor\ProjectSettings\Fallback\PackageInstallationHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\ProjectSettings\Fallback\VisualElementConstants.cs">
+      <Link>Modules\UnityConnectEditor\ProjectSettings\Fallback\VisualElementConstants.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityConnectEditor\ProjectSettings\Fallback\VisualElementUtils.cs">
+      <Link>Modules\UnityConnectEditor\ProjectSettings\Fallback\VisualElementUtils.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UnityConnectEditor\ProjectSettings\GeneralProjectSettings.cs">
       <Link>Modules\UnityConnectEditor\ProjectSettings\GeneralProjectSettings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UnityConnectEditor\ProjectSettings\PurchasingProjectSettings.cs">
       <Link>Modules\UnityConnectEditor\ProjectSettings\PurchasingProjectSettings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UnityConnectEditor\ServicesEditorWindow.cs">
-      <Link>Modules\UnityConnectEditor\ServicesEditorWindow.cs</Link>
+    <Compile Include="..\..\Modules\UnityConnectEditor\ServicesExploreMenu.cs">
+      <Link>Modules\UnityConnectEditor\ServicesExploreMenu.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UnityConnectEditor\ServicesProjectSettings.cs">
       <Link>Modules\UnityConnectEditor\ServicesProjectSettings.cs</Link>
@@ -7897,72 +7993,16 @@
     <Compile Include="..\..\Modules\XREditor\XRManagementInstaller.cs">
       <Link>Modules\XREditor\XRManagementInstaller.cs</Link>
     </Compile>
+    <Reference Include="../../External/Unity.Compiler.Client/Unity.CompilationPipeline.Common.dll" />
+    <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.dll" />
+    <Reference Include="../../External/ExCSS/builds/builds/lib/net35/ExCSS.Unity.dll" />
+    <Reference Include="../../artifacts/Stevedore/bee_bcfb/BeeAsALibrary/Bee.BeeDriver.dll" />
+    <Reference Include="../../External/NetStandardExtensions/System.CodeDom.dll" />
+    <ProjectReference Include="UnityEngine.csproj" />
+    <ProjectReference Include="../../Tools/Unity.CecilTools/Unity.CecilTools.gen.csproj" />
+    <ProjectReference Include="../../Tools/Unity.SerializationLogic/Unity.SerializationLogic.gen.csproj" />
+    <ProjectReference Include="../../Editor/IncrementalBuildPipeline/ScriptCompilationBuildProgram.Data/ScriptCompilationBuildProgram.Data.gen.csproj" />
+    <ProjectReference Include="../../Editor/IncrementalBuildPipeline/PlayerBuildProgramLibrary.Data/PlayerBuildProgramLibrary.Data.gen.csproj" />
+    <ProjectReference Include="../../Editor/IncrementalBuildPipeline/BeeBuildProgramCommon.Data/BeeBuildProgramCommon.Data.gen.csproj" />
   </ItemGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>..\..\artifacts\UnityEditor.dll\Debug</OutputPath>
-    <DefineConstants>COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ACCELERATOR_CLIENT_DEBUGGING;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLUSTERINPUT;ENABLE_CLUSTER_SYNC;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_HUB_LICENSE;ENABLE_ETC_COMPRESSION;ENABLE_EVENT_QUEUE;ENABLE_GAMECENTER_API;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MANAGED_UNITYTLS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_NVIDIA;ENABLE_PHYSICS;ENABLE_RUNTIME_GI;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIRTUALTEXTURING;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WEBSOCKET_HOST;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_GAMEPAD_AUDIO;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_BJM_API;UNITY_CAN_SHOW_SPLASH_SCREEN;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_EDITOR_LINUX;UNITY_GAMECORE_API;UNITY_GAMECORE_SCARLETT_API;UNITY_GAMECORE_XBOXONE_API;UNITY_IPHONE_API;UNITY_LUMIN_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_GGP_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TINYPROFILING_INTERNAL;UNITY_TVOS_API;UNITY_UNITYADS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API;USE_PROPERTY_DATABASE;USE_QUERY_BUILDER;USE_SEARCH_MODULE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <NoWarn>0169;0649;0626</NoWarn>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Prefer32Bit>false</Prefer32Bit>
-    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
-  </PropertyGroup>
-  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Runtime.Serialization" />
-    <Reference Include="System.Xml" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Numerics" />
-    <Reference Include="System.Numerics.Vectors" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="Unity.CompilationPipeline.Common">
-      <HintPath>..\..\External\Unity.Compiler.Client\Unity.CompilationPipeline.Common.dll</HintPath>
-    </Reference>
-    <Reference Include="Unity.Cecil">
-      <HintPath>..\..\External\Unity.Cecil\builds\lib\net35\Unity.Cecil.dll</HintPath>
-    </Reference>
-    <Reference Include="ExCSS.Unity">
-      <HintPath>..\..\External\ExCSS\builds\builds\lib\net35\ExCSS.Unity.dll</HintPath>
-    </Reference>
-    <Reference Include="Bee.BeeDriver">
-      <HintPath>..\..\artifacts\Stevedore\bee_530d\BeeAsALibrary\Bee.BeeDriver.dll</HintPath>
-    </Reference>
-    <ProjectReference Include="UnityEngine.csproj">
-      <Project>{F0499708-3EB6-4026-8362-97E6FFC4E7C8}</Project>
-      <Name>UnityEngine</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Tools\Unity.CecilTools\Unity.CecilTools.gen.csproj">
-      <Project>{9FF9353C-A911-2421-DCC8-4F55C0215E58}</Project>
-      <Name>Unity.CecilTools</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Tools\Unity.SerializationLogic\Unity.SerializationLogic.gen.csproj">
-      <Project>{C870EE19-8C55-83AD-8D5A-16B6E8AD8FDA}</Project>
-      <Name>Unity.SerializationLogic</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Editor\IncrementalBuildPipeline\ScriptCompilationBuildProgram.Data\ScriptCompilationBuildProgram.Data.gen.csproj">
-      <Project>{2BA9D0ED-D2EF-DA84-1599-37A046A44915}</Project>
-      <Name>ScriptCompilationBuildProgram.Data</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Editor\IncrementalBuildPipeline\PlayerBuildProgramLibrary.Data\PlayerBuildProgramLibrary.Data.gen.csproj">
-      <Project>{0B340C5C-3844-3B45-E3FD-DA591C333973}</Project>
-      <Name>PlayerBuildProgramLibrary.Data</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Editor\IncrementalBuildPipeline\BeeBuildProgramCommon.Data\BeeBuildProgramCommon.Data.gen.csproj">
-      <Project>{236F6903-2F21-1CCA-571E-C6D1D859E1EA}</Project>
-      <Name>BeeBuildProgramCommon.Data</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Target Name="GenerateTargetFrameworkMonikerAttribute" />
-  <PropertyGroup>
-  </PropertyGroup>
 </Project>

@@ -6,7 +6,10 @@ using System;
 
 namespace UnityEngine
 {
-    // Key codes returned by Event.keyCode. These map directly to a physical key on the keyboard.
+    // Key codes returned by Event.keyCode.
+    // If "Use Physical Keys" is enabled in Input Manager in Project Settings, these map directly to a physical key on the keyboard.
+    // If "Use Physical Keys" is disabled these map to language dependent mapping, different for every platform and cannot be guaranteed to work.
+    // "Use Physical Keys" is enabled by default from 2022.1
     public enum KeyCode
     {
         // Not assigned (never returned as the result of a keystroke)
@@ -134,27 +137,27 @@ namespace UnityEngine
         // The '9' key on the top of the alphanumeric keyboard.
         Alpha9          = 57,
 
-        // Exclamation mark key '!'
+        // Exclamation mark key '!'. Deprecated if "Use Physical Keys" is enabled, use Alpha1 instead.
         Exclaim     = 33,
-        // Double quote key '"'
+        // Double quote key '"'. Deprecated if "Use Physical Keys" is enabled, use Quote instead.
         DoubleQuote     = 34,
-        // Hash key '#'
+        // Hash key '#'. Deprecated if "Use Physical Keys" is enabled, use Alpha3 instead.
         Hash        = 35,
-        // Dollar sign key '$'
+        // Dollar sign key '$'. Deprecated if "Use Physical Keys" is enabled, use Alpha4 instead.
         Dollar      = 36,
-        // Percent sign key '%'
+        // Percent sign key '%'. Deprecated if "Use Physical Keys" is enabled, use Alpha5 instead.
         Percent     = 37,
-        // Ampersand key '&'
+        // Ampersand key '&'. Deprecated if "Use Physical Keys" is enabled, use Alpha7 instead.
         Ampersand       = 38,
         // Quote key '
         Quote       = 39,
-        // Left Parenthesis key '('
+        // Left Parenthesis key '('. Deprecated if "Use Physical Keys" is enabled, use Alpha9 instead.
         LeftParen       = 40,
-        // Right Parenthesis key ')'
+        // Right Parenthesis key ')'. Deprecated if "Use Physical Keys" is enabled, use Alpha0 instead.
         RightParen      = 41,
-        // Asterisk key '*'
+        // Asterisk key '*'. Deprecated if "Use Physical Keys" is enabled, use Alpha8 instead.
         Asterisk        = 42,
-        // Plus key '+'
+        // Plus key '+'. Deprecated if "Use Physical Keys" is enabled, use Equals instead.
         Plus        = 43,
         // Comma ',' key
         Comma       = 44,
@@ -166,19 +169,19 @@ namespace UnityEngine
         // Slash '/' key
         Slash       = 47,
 
-        // Colon ':' key
+        // Colon ':' key. Deprecated if "Use Physical Keys" is enabled, use Semicolon instead.
         Colon       = 58,
         // Semicolon ';' key
         Semicolon      = 59,
-        // Less than '<' key
+        // Less than '<' key. Deprecated if "Use Physical Keys" is enabled, use Comma instead.
         Less        = 60,
         // Equals '=' key
         Equals      = 61,
-        // Greater than '>' key
+        // Greater than '>' key. Deprecated if "Use Physical Keys" is enabled, use Period instead.
         Greater     = 62,
-        // Question mark '?' key
+        // Question mark '?' key. Deprecated if "Use Physical Keys" is enabled, use Slash instead.
         Question        = 63,
-        // At key '@'
+        // At key '@'. Deprecated if "Use Physical Keys" is enabled, use Alpha2 instead.
         At          = 64,
 
         // Left square bracket key '['
@@ -187,9 +190,9 @@ namespace UnityEngine
         Backslash       = 92,
         // Right square bracket key ']'
         RightBracket    = 93,
-        // Caret key '^'
+        // Caret key '^'. Deprecated if "Use Physical Keys" is enabled, use Alpha6 instead.
         Caret       = 94,
-        // Underscore '_' key
+        // Underscore '_' key. Deprecated if "Use Physical Keys" is enabled, use Minus instead.
         Underscore      = 95,
         // Back quote key '`'
         BackQuote       = 96,
@@ -247,13 +250,13 @@ namespace UnityEngine
         // 'z' key
         Z           = 122,
 
-        // Left curly bracket key '{'
+        // Left curly bracket key '{'. Deprecated if "Use Physical Keys" is enabled, use LeftBracket instead.
         LeftCurlyBracket        = 123,
-        // Pipe key '|'
+        // Pipe key '|'. Deprecated if "Use Physical Keys" is enabled, use Backslash instead.
         Pipe        = 124,
-        // Right curly bracket key '}'
+        // Right curly bracket key '}'. Deprecated if "Use Physical Keys" is enabled, use RightBracket instead.
         RightCurlyBracket       = 125,
-        // Tilde key '~'
+        // Tilde key '~'. Deprecated if "Use Physical Keys" is enabled, use BackQuote instead.
         Tilde       = 126,
 
         // Numlock key
@@ -281,7 +284,7 @@ namespace UnityEngine
         LeftCommand     = 310,
         // Left Command key
         LeftApple       = 310,
-        // Left Windows key
+        // Left Windows key. Deprecated if "Use Physical Keys" is enabled, use LeftMeta instead.
         LeftWindows     = 311,
         // Right Meta key
         RightMeta       = 309,
@@ -289,18 +292,18 @@ namespace UnityEngine
         RightCommand    = 309,
         // Right Command key
         RightApple      = 309,
-        // Right Windows key
-        RightWindows        = 312,
-        // Alt Gr key
-        AltGr       = 313,
+        // Right Windows key. Deprecated if "Use Physical Keys" is enabled, use RightMeta instead.
+        RightWindows    = 312,
+        // Alt Gr key. Deprecated if "Use Physical Keys" is enabled, use RightAlt instead.
+        AltGr           = 313,
 
-        // Help key
+        // Help key. Deprecated if "Use Physical Keys" is enabled, doesn't map to any physical key.
         Help        = 315,
         // Print key
         Print       = 316,
-        // Sys Req key
+        // Sys Req key. Deprecated if "Use Physical Keys" is enabled, doesn't map to any physical key.
         SysReq      = 317,
-        // Break key
+        // Break key. Deprecated if "Use Physical Keys" is enabled, doesn't map to any physical key.
         Break       = 318,
         // Menu key
         Menu        = 319,

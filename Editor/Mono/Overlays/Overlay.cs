@@ -4,6 +4,7 @@
 
 using System;
 using System.ComponentModel;
+using UnityEditor.Toolbars;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -39,6 +40,7 @@ namespace UnityEditor.Overlays
         // Persistent State Data
         string m_Id, m_RootVisualElementName, m_DisplayName;
         Layout m_Layout = Layout.Panel;
+        Layout m_ActiveLayout = Layout.Panel;
         bool m_Collapsed;
         internal bool dontSaveInLayout {get; set;}
         internal bool m_HasMenuEntry = true;
@@ -124,6 +126,9 @@ namespace UnityEditor.Overlays
             }
         }
 
+        // layout is the preferred layout, active layout is what this overlay is actually using
+        internal Layout activeLayout => m_ActiveLayout;
+
         public bool collapsed
         {
             get => collapsedContent.parent == contentRoot;
@@ -161,6 +166,10 @@ namespace UnityEditor.Overlays
             get => m_Container;
             set => m_Container = value;
         }
+
+        internal DockZone dockZone => floating ? DockZone.Floating : OverlayCanvas.GetDockZone(container);
+
+        internal DockPosition dockPosition => container?.GetDockPosition(this) ?? DockPosition.Bottom;
 
         internal static VisualTreeAsset treeAsset
         {
@@ -201,6 +210,8 @@ namespace UnityEditor.Overlays
             get
             {
                 var supported = Layout.Panel;
+                if (this is ICreateToolbar)
+                    supported |= Layout.HorizontalToolbar | Layout.VerticalToolbar;
                 if (this is ICreateHorizontalToolbar)
                     supported |= Layout.HorizontalToolbar;
                 if (this is ICreateVerticalToolbar)
@@ -292,7 +303,7 @@ namespace UnityEditor.Overlays
             // We need to invoke a callback if the collapsed state changes (either from user request or invalid layout)
             bool wasCollapsed = collapsedContent.parent == contentRoot;
             var prevLayout = layout;
-            var activeLayout = GetBestLayoutForState();
+            m_ActiveLayout = GetBestLayoutForState();
 
             // Clear any existing contents.
             m_CurrentContent?.RemoveFromHierarchy();
@@ -305,7 +316,7 @@ namespace UnityEditor.Overlays
             // An Overlay can collapsed by request, or by necessity. If collapsed due to invalid layout/container match,
             // the collapsed property is not modified. The next time a content rebuild is requested we'll try again to
             // create the contents with the st  ored state.
-            bool isCollapsed = m_Collapsed || activeLayout == 0;
+            bool isCollapsed = m_Collapsed || m_ActiveLayout == 0;
 
             if (isCollapsed)
             {
@@ -314,13 +325,13 @@ namespace UnityEditor.Overlays
             }
             else
             {
-                m_CurrentContent = CreateContent(activeLayout);
+                m_CurrentContent = CreateContent(m_ActiveLayout);
                 contentRoot.Add(m_CurrentContent);
             }
 
             m_ContentsChanged = true;
 
-            activeLayout = activeLayout == 0 ? container.preferredLayout : activeLayout;
+            m_ActiveLayout = m_ActiveLayout == 0 ? container.preferredLayout : m_ActiveLayout;
 
             // Update styling
             if (floating)
@@ -335,9 +346,9 @@ namespace UnityEditor.Overlays
                 rootVisualElement.RemoveFromClassList(k_Floating);
             }
 
-            rootVisualElement.EnableInClassList(k_ToolbarVerticalLayout, activeLayout == Layout.VerticalToolbar);
-            rootVisualElement.EnableInClassList(k_ToolbarHorizontalLayout, activeLayout == Layout.HorizontalToolbar);
-            rootVisualElement.EnableInClassList(k_PanelLayout, activeLayout == Layout.Panel);
+            rootVisualElement.EnableInClassList(k_ToolbarVerticalLayout, m_ActiveLayout == Layout.VerticalToolbar);
+            rootVisualElement.EnableInClassList(k_ToolbarHorizontalLayout, m_ActiveLayout == Layout.HorizontalToolbar);
+            rootVisualElement.EnableInClassList(k_PanelLayout, m_ActiveLayout == Layout.Panel);
             rootVisualElement.EnableInClassList(k_Collapsed, isCollapsed);
             rootVisualElement.EnableInClassList(k_Expanded, !isCollapsed);
 
@@ -352,8 +363,8 @@ namespace UnityEditor.Overlays
             if(wasCollapsed != isCollapsed)
                 collapsedChanged?.Invoke(isCollapsed);
 
-            if (prevLayout != activeLayout)
-                layoutChanged?.Invoke(activeLayout);
+            if (prevLayout != m_ActiveLayout)
+                layoutChanged?.Invoke(m_ActiveLayout);
         }
 
         // CreateContent always returns a new VisualElement tree with the Overlay contents. It does not modify the
@@ -362,13 +373,13 @@ namespace UnityEditor.Overlays
         // supports it. The only reason that content would not be created with the requested layout is if the Overlay
         // does not implement the correct ICreate{Horizontal, Vertical}Toolbar interface.
         // To rebuild content taking into account the parent container, use RebuildContent().
-        VisualElement CreateContent(Layout requestedLayout)
+        public VisualElement CreateContent(Layout requestedLayout)
         {
             var previousContent = m_ContentRoot;
 
             try
             {
-                VisualElement content;
+                VisualElement content = null;
 
                 switch (requestedLayout)
                 {
@@ -389,8 +400,13 @@ namespace UnityEditor.Overlays
                         break;
 
                     default:
-                        Debug.LogError($"Overlay {GetType()} attempting to set unsupported layout: {requestedLayout}");
-                        goto case Layout.Panel;
+                        if (!(this is ICreateToolbar toolbar))
+                        {
+                            Debug.LogError($"Overlay {GetType()} attempting to set unsupported layout: {requestedLayout}");
+                            goto case Layout.Panel;
+                        }
+                        content = new EditorToolbar(toolbar.toolbarElements, canvas.containerWindow).rootVisualElement;
+                        break;
                 }
 
                 if (content != null)

@@ -204,6 +204,9 @@ namespace UnityEngine
         [FreeFunction(Name = "Texture2DScripting::ReinitializeWithFormat", HasExplicitThis = true)]
         extern private bool ReinitializeWithFormatImpl(int width, int height, GraphicsFormat format, bool hasMipMap);
 
+        [FreeFunction(Name = "Texture2DScripting::ReinitializeWithTextureFormat", HasExplicitThis = true)]
+        extern private bool ReinitializeWithTextureFormatImpl(int width, int height, TextureFormat textureFormat, bool hasMipMap);
+
         [FreeFunction(Name = "Texture2DScripting::ReadPixels", HasExplicitThis = true)]
         extern private void ReadPixelsImpl(Rect source, int destX, int destY, bool recalculateMipMaps);
 

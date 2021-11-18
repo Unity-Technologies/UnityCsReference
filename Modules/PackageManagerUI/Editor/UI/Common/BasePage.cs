@@ -12,16 +12,15 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal abstract class BasePage : IPage
     {
-        public event Action<IPackageVersion> onSelectionChanged = delegate {};
+        public event Action<PageSelection> onSelectionChanged = delegate { };
         public event Action<IEnumerable<VisualState>> onVisualStateChange = delegate {};
         public event Action<ListUpdateArgs> onListUpdate = delegate {};
         public event Action<IPage> onListRebuild = delegate {};
-        public event Action<IPage> onSubPageAdded = delegate {};
+        public event Action<IPage> onSubPageChanged = delegate {};
         public event Action<PageFilters> onFiltersChange = delegate {};
 
-        // keep track of a list of selected items by remembering the uniqueIds
         [SerializeField]
-        protected List<string> m_SelectedUniqueIds = new List<string>();
+        private PageSelection m_Selection = new PageSelection();
 
         [SerializeField]
         private List<string> m_CollapsedGroups = new List<string>();
@@ -138,72 +137,83 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual void TriggerOnSelectionChanged()
         {
-            TriggerOnSelectionChanged(GetSelectedVersion());
+            onSelectionChanged?.Invoke(GetSelection());
         }
 
-        public void TriggerOnSelectionChanged(IPackageVersion version)
+        public void TriggerOnSubPageChanged()
         {
-            onSelectionChanged?.Invoke(version);
-        }
-
-        public void TriggerOnSubPageAdded()
-        {
-            onSubPageAdded?.Invoke(this);
+            onSubPageChanged?.Invoke(this);
         }
 
         public abstract VisualState GetVisualState(string packageUniqueId);
 
-        public VisualState GetSelectedVisualState()
+        private VisualState GetVisualState(PackageAndVersionIdPair packageAndVersionId)
         {
-            var selectedUniqueId = m_SelectedUniqueIds.FirstOrDefault();
-            return string.IsNullOrEmpty(selectedUniqueId) ? null : GetVisualState(selectedUniqueId);
+            return GetVisualState(packageAndVersionId?.packageUniqueId);
         }
 
-        public IPackageVersion GetSelectedVersion()
+        public PageSelection GetSelection() => m_Selection;
+
+        public IEnumerable<VisualState> GetSelectedVisualStates()
         {
-            IPackage package;
-            IPackageVersion version;
-            GetSelectedPackageAndVersion(out package, out version);
-            return version;
+            return m_Selection.Select(s => GetVisualState(s)).Where(v => v != null);
         }
 
-        public void GetSelectedPackageAndVersion(out IPackage package, out IPackageVersion version)
+        private void UpdateVisualStatesExpandableAndTriggerChangeEvent(int numOldSelections, int numNewSelections)
         {
-            var selected = GetVisualState(m_SelectedUniqueIds.FirstOrDefault());
-            m_PackageDatabase.GetPackageAndVersion(selected?.packageUniqueId, selected?.selectedVersionId, out package, out version);
-        }
-
-        public void SetSelected(IPackage package, IPackageVersion version = null)
-        {
-            SetSelected(package?.uniqueId, version?.uniqueId ?? package?.versions.primary?.uniqueId);
-        }
-
-        public virtual void SetSelected(string packageUniqueId, string versionUniqueId)
-        {
-            var oldPackageUniqueId = m_SelectedUniqueIds.FirstOrDefault();
-            var oldSelection = GetVisualState(oldPackageUniqueId);
-            if (oldPackageUniqueId == packageUniqueId && oldSelection?.selectedVersionId == versionUniqueId)
+            bool expandable;
+            if (numOldSelections == 1 && numNewSelections > 1)
+                expandable = false;
+            else if (numOldSelections > 1 && numNewSelections == 1)
+                expandable = true;
+            else
                 return;
 
-            foreach (var uniqueId in m_SelectedUniqueIds)
+            var updatedVisualStates = new List<VisualState>();
+            foreach (var visualState in visualStates)
             {
-                var state = GetVisualState(uniqueId);
-                if (state != null)
-                    state.selectedVersionId = string.Empty;
-            }
-            m_SelectedUniqueIds.Clear();
-
-            if (!string.IsNullOrEmpty(packageUniqueId) && !string.IsNullOrEmpty(versionUniqueId))
-            {
-                var selectedState = GetVisualState(packageUniqueId);
-                if (selectedState != null)
+                if (visualState.expandable != expandable)
                 {
-                    selectedState.selectedVersionId = versionUniqueId;
-                    m_SelectedUniqueIds.Add(packageUniqueId);
+                    visualState.expandable = expandable;
+                    visualState.expanded &= expandable;
+                    updatedVisualStates.Add(visualState);
                 }
             }
+            if (updatedVisualStates.Any())
+                TriggerOnVisualStateChange(updatedVisualStates);
+        }
+
+        public virtual bool SetNewSelection(IEnumerable<PackageAndVersionIdPair> packageAndVersionIds)
+        {
+            var numOldSelections = m_Selection.Count;
+            if (!m_Selection.SetNewSelection(packageAndVersionIds))
+                return false;
+
             TriggerOnSelectionChanged();
-            TriggerOnVisualStateChange(new[] { GetVisualState(oldPackageUniqueId), GetVisualState(packageUniqueId) }.Where(s => s != null));
+            UpdateVisualStatesExpandableAndTriggerChangeEvent(numOldSelections, m_Selection.Count);
+            return true;
+        }
+
+        public virtual bool AmendSelection(IEnumerable<PackageAndVersionIdPair> toAddOrUpdate, IEnumerable<PackageAndVersionIdPair> toRemove)
+        {
+            var numOldSelections = m_Selection.Count;
+            if (!m_Selection.AmendSelection(toAddOrUpdate, toRemove))
+                return false;
+
+            TriggerOnSelectionChanged();
+            UpdateVisualStatesExpandableAndTriggerChangeEvent(numOldSelections, m_Selection.Count);
+            return true;
+        }
+
+        public virtual bool ToggleSelection(string packageUniqueId)
+        {
+            var numOldSelections = m_Selection.Count;
+            if (!m_Selection.ToggleSelection(packageUniqueId))
+                return false;
+
+            TriggerOnSelectionChanged();
+            UpdateVisualStatesExpandableAndTriggerChangeEvent(numOldSelections, m_Selection.Count);
+            return true;
         }
 
         public void SetExpanded(IPackage package, bool value)

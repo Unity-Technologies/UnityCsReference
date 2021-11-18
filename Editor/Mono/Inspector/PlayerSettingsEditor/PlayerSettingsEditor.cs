@@ -148,6 +148,9 @@ namespace UnityEditor
             public static readonly GUIContent graphicsJobsNonExperimental = EditorGUIUtility.TrTextContent("Graphics Jobs");
             public static readonly GUIContent graphicsJobsExperimental = EditorGUIUtility.TrTextContent("Graphics Jobs (Experimental)");
             public static readonly GUIContent graphicsJobsMode = EditorGUIUtility.TrTextContent("Graphics Jobs Mode");
+            public static readonly GUIContent applicationIdentifierWarning = EditorGUIUtility.TrTextContent("Invalid characters have been removed from the Application Identifier.");
+            public static readonly GUIContent applicationIdentifierError = EditorGUIUtility.TrTextContent("The Application Identifier must follow the convention 'com.YourCompanyName.YourProductName' and must contain only alphanumeric and hyphen characters.");
+            public static readonly GUIContent packageNameError = EditorGUIUtility.TrTextContent("The Package Name must follow the convention 'com.YourCompanyName.YourProductName' and must contain only alphanumeric and underscore characters. Each segment must start with an alphabetical character.");
             public static readonly GUIContent applicationBuildNumber = EditorGUIUtility.TrTextContent("Build");
             public static readonly GUIContent appleDeveloperTeamID = EditorGUIUtility.TrTextContent("iOS Developer Team ID", "Developers can retrieve their Team ID by visiting the Apple Developer site under Account > Membership.");
             public static readonly GUIContent useOnDemandResources = EditorGUIUtility.TrTextContent("Use on-demand resources*");
@@ -177,8 +180,7 @@ namespace UnityEditor
             public static readonly GUIContent require31 = EditorGUIUtility.TrTextContent("Require ES3.1");
             public static readonly GUIContent requireAEP = EditorGUIUtility.TrTextContent("Require ES3.1+AEP");
             public static readonly GUIContent require32 = EditorGUIUtility.TrTextContent("Require ES3.2");
-            public static readonly GUIContent skinOnGPU = EditorGUIUtility.TrTextContent("GPU Skinning*", "Use DX11/ES3 GPU Skinning");
-            public static readonly GUIContent skinOnGPUCompute = EditorGUIUtility.TrTextContent("Compute Skinning*", "Use Compute pipeline for Skinning");
+            public static readonly GUIContent skinOnGPU = EditorGUIUtility.TrTextContent("GPU Compute Skinning*", "Calculate mesh skinning and blend shapes on the GPU via compute shaders");
             public static readonly GUIContent scriptingDefineSymbols = EditorGUIUtility.TrTextContent("Scripting Define Symbols", "Preprocessor defines passed to the C# script compiler.");
             public static readonly GUIContent additionalCompilerArguments = EditorGUIUtility.TrTextContent("Additional Compiler Arguments", "Additional arguments passed to the C# script compiler.");
             public static readonly GUIContent scriptingDefineSymbolsApply = EditorGUIUtility.TrTextContent("Apply");
@@ -188,6 +190,8 @@ namespace UnityEditor
             public static readonly GUIContent scriptingBackend = EditorGUIUtility.TrTextContent("Scripting Backend");
             public static readonly GUIContent managedStrippingLevel = EditorGUIUtility.TrTextContent("Managed Stripping Level", "If scripting backend is IL2CPP, managed stripping can't be disabled.");
             public static readonly GUIContent il2cppCompilerConfiguration = EditorGUIUtility.TrTextContent("C++ Compiler Configuration");
+            public static readonly GUIContent il2cppCodeGeneration = EditorGUIUtility.TrTextContent("IL2CPP Code Generation", "Determines whether IL2CPP should generate code optimized for runtime performance or build size/iteration.");
+            public static readonly GUIContent[] il2cppCodeGenerationNames =  new GUIContent[] { EditorGUIUtility.TrTextContent("Faster runtime"), EditorGUIUtility.TrTextContent("Faster (smaller) builds") };
             public static readonly GUIContent scriptingMono2x = EditorGUIUtility.TrTextContent("Mono");
             public static readonly GUIContent scriptingIL2CPP = EditorGUIUtility.TrTextContent("IL2CPP");
             public static readonly GUIContent scriptingDefault = EditorGUIUtility.TrTextContent("Default");
@@ -421,6 +425,7 @@ namespace UnityEditor
         SerializedProperty m_APICompatibilityLevel;
         SerializedProperty m_DefaultAPICompatibilityLevel;
         SerializedProperty m_Il2CppCompilerConfiguration;
+        SerializedProperty m_Il2CppCodeGeneration;
         SerializedProperty m_ScriptingDefines;
         SerializedProperty m_AdditionalCompilerArguments;
         SerializedProperty m_StackTraceTypes;
@@ -564,6 +569,7 @@ namespace UnityEditor
             m_APICompatibilityLevel         = FindPropertyAssert("apiCompatibilityLevelPerPlatform");
             m_DefaultAPICompatibilityLevel  = FindPropertyAssert("apiCompatibilityLevel");
             m_Il2CppCompilerConfiguration   = FindPropertyAssert("il2cppCompilerConfiguration");
+            m_Il2CppCodeGeneration          = FindPropertyAssert("il2cppCodeGeneration");
             m_ScriptingDefines              = FindPropertyAssert("scriptingDefineSymbols");
             m_StackTraceTypes               = FindPropertyAssert("m_StackTraceTypes");
             m_ManagedStrippingLevel         = FindPropertyAssert("managedStrippingLevel");
@@ -1123,7 +1129,11 @@ namespace UnityEditor
                 if (name.Contains("OpenGLES"))
                     name += " (Deprecated)";
             }
-            if (name == "Direct3D12")
+            else if (graphicsDeviceType == GraphicsDeviceType.OpenGLES2)
+            {
+                name += " (Deprecated)";
+            }
+            else if (name == "Direct3D12")
                 name = "Direct3D12 (Experimental)";
             return name;
         }
@@ -1834,13 +1844,8 @@ namespace UnityEditor
             // GPU Skinning toggle (only show on relevant platforms)
             if (!BuildTargetDiscovery.PlatformHasFlag(platform.defaultTarget, TargetAttributes.GPUSkinningNotSupported))
             {
-                GraphicsDeviceType[] gfxAPIs = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
-                bool computeSkinningOnly =
-                    gfxAPIs[0] != GraphicsDeviceType.XboxOneD3D12 &&
-                    gfxAPIs[0] != GraphicsDeviceType.Direct3D11 &&
-                    gfxAPIs[0] != GraphicsDeviceType.Direct3D12;
                 EditorGUI.BeginChangeCheck();
-                EditorGUILayout.PropertyField(m_SkinOnGPU, computeSkinningOnly ? SettingsContent.skinOnGPUCompute : SettingsContent.skinOnGPU);
+                EditorGUILayout.PropertyField(m_SkinOnGPU, SettingsContent.skinOnGPU);
                 if (EditorGUI.EndChangeCheck())
                 {
                     ShaderUtil.RecreateSkinnedMeshResources();
@@ -2248,11 +2253,21 @@ namespace UnityEditor
             m_IconsEditor.ShowPlatformIconsByKind(iconFieldGroup, foldByKind, foldBySubkind);
         }
 
+        internal static GUIContent GetApplicationIdentifierError(BuildTargetGroup targetGroup)
+        {
+            if (targetGroup == BuildTargetGroup.Android)
+                return SettingsContent.packageNameError;
+
+            return SettingsContent.applicationIdentifierError;
+        }
+
         internal static void ShowApplicationIdentifierUI(SerializedProperty prop, BuildTargetGroup targetGroup, bool overrideDefaultID, string defaultID, string label, string tooltip)
         {
             var oldIdentifier = "";
-            string currentIdentifier = PlayerSettings.SanitizeApplicationIdentifier(defaultID, targetGroup);
+            var currentIdentifier = PlayerSettings.SanitizeApplicationIdentifier(defaultID, targetGroup);
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroupName(targetGroup);
+            var warningMessage = SettingsContent.applicationIdentifierWarning.text;
+            var errorMessage = GetApplicationIdentifierError(targetGroup).text;
 
             if (!prop.serializedObject.isEditingMultipleObjects)
             {
@@ -2269,13 +2284,14 @@ namespace UnityEditor
                         prop.SetMapValue(buildTargetGroup, currentIdentifier);
                 }
 
+                EditorGUILayout.BeginVertical();
                 EditorGUI.BeginChangeCheck();
 
                 using (new EditorGUI.DisabledScope(!overrideDefaultID))
                 {
                     var sanitizedIdentifier = PlayerSettings.SanitizeApplicationIdentifier(currentIdentifier, targetGroup);
-                    if (overrideDefaultID && sanitizedIdentifier != currentIdentifier)
-                        Debug.LogError("Invalid characters have been removed from the Applicaton Identifier");
+                    if (currentIdentifier != oldIdentifier && (sanitizedIdentifier != currentIdentifier || currentIdentifier != defaultID))
+                        Debug.LogError(warningMessage);
                     currentIdentifier = sanitizedIdentifier;
                     currentIdentifier = EditorGUILayout.TextField(EditorGUIUtility.TrTextContent(label, tooltip), currentIdentifier);
                 }
@@ -2283,11 +2299,18 @@ namespace UnityEditor
                 if (EditorGUI.EndChangeCheck())
                 {
                     var sanitizedIdentifier = PlayerSettings.SanitizeApplicationIdentifier(currentIdentifier, targetGroup);
-                    if (overrideDefaultID && sanitizedIdentifier != currentIdentifier)
-                        Debug.LogError("Invalid characters have been removed from the Applicaton Identifier");
+                    if (currentIdentifier != oldIdentifier && (sanitizedIdentifier != currentIdentifier || currentIdentifier != defaultID))
+                        Debug.LogError(warningMessage);
                     currentIdentifier = sanitizedIdentifier;
                     prop.SetMapValue(buildTargetGroup, currentIdentifier);
                 }
+
+                if (!PlayerSettings.IsApplicationIdentifierValid(currentIdentifier, targetGroup))
+                    EditorGUILayout.HelpBox(errorMessage, MessageType.Error);
+                else if (!overrideDefaultID && currentIdentifier != defaultID)
+                    EditorGUILayout.HelpBox(warningMessage, MessageType.Warning);
+
+                EditorGUILayout.EndVertical();
             }
         }
 
@@ -2326,6 +2349,13 @@ namespace UnityEditor
                 return (Il2CppCompilerConfiguration)entry.FindPropertyRelative("second").intValue;
             else
                 return Il2CppCompilerConfiguration.Release;
+        }
+        private Il2CppCodeGeneration GetCurrentIl2CppCodeGenerationForTarget(NamedBuildTarget namedBuildTarget)
+        {
+            if (m_Il2CppCodeGeneration.TryGetMapEntry(namedBuildTarget.TargetName, out var entry))
+                return (Il2CppCodeGeneration)entry.FindPropertyRelative("second").intValue;
+            else
+                return Il2CppCodeGeneration.OptimizeSpeed;
         }
 
         private ManagedStrippingLevel GetCurrentManagedStrippingLevelForTarget(NamedBuildTarget namedBuildTarget, ScriptingImplementation backend)
@@ -2436,6 +2466,27 @@ namespace UnityEditor
                                 {
                                     SetReason(RecompileReason.apiCompatibilityLevelModified);
                                 }
+                            }
+                        }
+                    }
+                }
+
+                // Il2cpp Code Generation
+                using (new EditorGUI.DisabledScope(m_SerializedObject.isEditingMultipleObjects))
+                {
+                    using (var horizontal = new EditorGUILayout.HorizontalScope())
+                    {
+                        using (var propertyScope = new EditorGUI.PropertyScope(horizontal.rect, GUIContent.none, m_Il2CppCodeGeneration))
+                        {
+                            using (new EditorGUI.DisabledScope(currentBackend != ScriptingImplementation.IL2CPP))
+                            {
+                               var currentCodeGeneration = GetCurrentIl2CppCodeGenerationForTarget(platform.namedBuildTarget);
+
+                                var codeGenerationValues = new [] { Il2CppCodeGeneration.OptimizeSpeed, Il2CppCodeGeneration.OptimizeSize };
+                                var newCodeGeneration = BuildEnumPopup(SettingsContent.il2cppCodeGeneration, currentCodeGeneration, codeGenerationValues, SettingsContent.il2cppCodeGenerationNames);
+
+                                if (currentCodeGeneration != newCodeGeneration)
+                                    m_Il2CppCodeGeneration.SetMapValue(platform.namedBuildTarget.TargetName, (int)newCodeGeneration);
                             }
                         }
                     }

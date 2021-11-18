@@ -70,13 +70,13 @@ namespace UnityEditor.Search
         protected SearchProposition CreateProposition(SearchPropositionFlags flags, string label, string data, string help = "", int score = 0)
         {
             return new SearchProposition(category: GetCategory(flags), label: label, help: help,
-                    data: data, priority: score, icon: icon, type: GetType());
+                    data: data, priority: score, icon: icon, type: GetType(), color: GetBackgroundColor());
         }
 
         protected SearchProposition CreateProposition(SearchPropositionFlags flags, string label, string data, string help, Texture2D icon, int score = 0)
         {
             return new SearchProposition(category: GetCategory(flags), label: label, help: help,
-                    data: data, priority: score, icon: icon, type: GetType());
+                    data: data, priority: score, icon: icon, type: GetType(), color: GetBackgroundColor());
         }
 
         public override Rect Layout(in Vector2 at, in float availableSpace)
@@ -356,7 +356,7 @@ namespace UnityEditor.Search
         }
     }
 
-    [QueryListBlock("Filters", "is", "is", ":")]
+    [QueryListBlock("Hierarchy Filters", "is", "is", ":")]
     class QueryIsFilterBlock : QueryListBlock
     {
         public QueryIsFilterBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)

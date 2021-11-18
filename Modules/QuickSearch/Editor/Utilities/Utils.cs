@@ -175,11 +175,18 @@ namespace UnityEditor.Search
                 if (assetType == typeof(AudioClip))
                     return GetAssetThumbnailFromPath(path);
 
-                var fi = new FileInfo(path);
-                if (!fi.Exists)
+                try
+                {
+                    var fi = new FileInfo(path);
+                    if (!fi.Exists)
+                        return null;
+                    if (fi.Length > 16 * 1024 * 1024)
+                        return GetAssetThumbnailFromPath(path);
+                }
+                catch
+                {
                     return null;
-                if (fi.Length > 16 * 1024 * 1024)
-                    return GetAssetThumbnailFromPath(path);
+                }
             }
 
             if (!typeof(Texture).IsAssignableFrom(assetType))

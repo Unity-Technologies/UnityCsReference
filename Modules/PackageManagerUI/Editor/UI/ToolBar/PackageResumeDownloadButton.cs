@@ -15,37 +15,34 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageDatabase = packageDatabase;
         }
 
-        protected override bool TriggerAction()
+        protected override bool TriggerAction(IPackageVersion version)
         {
-            m_PackageDatabase.ResumeDownload(m_Package);
-            PackageManagerWindowAnalytics.SendEvent("resumeDownload", m_Package.uniqueId);
+            m_PackageDatabase.ResumeDownload(version.package);
+            PackageManagerWindowAnalytics.SendEvent("resumeDownload", version.packageUniqueId);
             return true;
         }
 
-        protected override bool isVisible
+        protected override bool IsVisible(IPackageVersion version)
         {
-            get
-            {
-                if (m_Version?.HasTag(PackageTag.Downloadable) != true)
-                    return false;
+            if (version?.HasTag(PackageTag.Downloadable) != true)
+                return false;
 
-                var operation = m_AssetStoreDownloadManager.GetDownloadOperation(m_Version.packageUniqueId);
-                return operation?.state == DownloadState.Paused || operation?.state == DownloadState.ResumeRequested;
-            }
+            var operation = m_AssetStoreDownloadManager.GetDownloadOperation(version.packageUniqueId);
+            return operation?.state == DownloadState.Paused || operation?.state == DownloadState.ResumeRequested;
         }
 
-        protected override string GetTooltip(bool isInProgress)
+        protected override string GetTooltip(IPackageVersion version, bool isInProgress)
         {
             if (isInProgress)
                 return L10n.Tr("The resume request has been sent. Please wait for the download to resume.");
-            return string.Format(L10n.Tr("Click to resume the download of this {0}."), m_Package.GetDescriptor());
+            return string.Format(L10n.Tr("Click to resume the download of this {0}."), version.package.GetDescriptor());
         }
 
-        protected override string GetText(bool isInProgress)
+        protected override string GetText(IPackageVersion version, bool isInProgress)
         {
             return L10n.Tr("Resume");
         }
 
-        protected override bool isInProgress => m_AssetStoreDownloadManager.GetDownloadOperation(m_Version.packageUniqueId)?.state == DownloadState.ResumeRequested;
+        protected override bool IsInProgress(IPackageVersion version) => m_AssetStoreDownloadManager.GetDownloadOperation(version.packageUniqueId)?.state == DownloadState.ResumeRequested;
     }
 }

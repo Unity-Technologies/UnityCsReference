@@ -1229,20 +1229,25 @@ namespace UnityEngine.UIElements
 
             if (touchScrollBehavior == TouchScrollBehavior.Elastic || hasInertia)
             {
-                ComputeInitialSpringBackVelocity();
-
-                if (m_PostPointerUpAnimation == null)
-                {
-                    m_PostPointerUpAnimation = schedule.Execute(PostPointerUpAnimation).Every(30);
-                }
-                else
-                {
-                    m_PostPointerUpAnimation.Resume();
-                }
+                ExecuteElasticSpringAnimation();
             }
 
             contentContainer.ReleasePointer(pointerId);
             return true;
+        }
+
+        void ExecuteElasticSpringAnimation()
+        {
+            ComputeInitialSpringBackVelocity();
+
+            if (m_PostPointerUpAnimation == null)
+            {
+                m_PostPointerUpAnimation = schedule.Execute(PostPointerUpAnimation).Every(30);
+            }
+            else
+            {
+                m_PostPointerUpAnimation.Resume();
+            }
         }
 
         void AdjustScrollers()
@@ -1345,7 +1350,22 @@ namespace UnityEngine.UIElements
             }
 
             if (updateContentViewTransform)
+            {
+                // Update elastic behavior
+                if (touchScrollBehavior == TouchScrollBehavior.Elastic)
+                {
+                    m_LowBounds = new Vector2(
+                        Mathf.Min(horizontalScroller.lowValue, horizontalScroller.highValue),
+                        Mathf.Min(verticalScroller.lowValue, verticalScroller.highValue));
+                    m_HighBounds = new Vector2(
+                        Mathf.Max(horizontalScroller.lowValue, horizontalScroller.highValue),
+                        Mathf.Max(verticalScroller.lowValue, verticalScroller.highValue));
+
+                    ExecuteElasticSpringAnimation();
+                }
+
                 UpdateContentViewTransform();
+            }
         }
 
         void OnRootCustomStyleResolved(CustomStyleResolvedEvent evt)

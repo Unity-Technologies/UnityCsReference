@@ -244,10 +244,26 @@ namespace UnityEngine.UIElements
 
         internal event Action<BaseVisualElementPanel> panelDisposed;
 
+        private UIElementsBridge m_UIElementsBridge;
+
+        internal UIElementsBridge uiElementsBridge
+        {
+            get
+            {
+                if (m_UIElementsBridge != null)
+                    return m_UIElementsBridge;
+
+                throw new Exception("Panel has no UIElementsBridge.");
+            }
+
+            set => m_UIElementsBridge = value;
+        }
+
         protected BaseVisualElementPanel()
         {
             yogaConfig = new YogaConfig();
             yogaConfig.UseWebDefaults = YogaConfig.Default.UseWebDefaults;
+            m_UIElementsBridge = new RuntimeUIElementsBridge();
         }
 
         public void Dispose()
@@ -929,6 +945,15 @@ namespace UnityEngine.UIElements
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Layout);
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.TransformClip);
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Repaint);
+        }
+
+        internal void UpdateWithoutRepaint()
+        {
+            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.ViewData);
+            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Bindings);
+            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Animation);
+            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Styles);
+            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Layout);
         }
 
         public override void DirtyStyleSheets()
