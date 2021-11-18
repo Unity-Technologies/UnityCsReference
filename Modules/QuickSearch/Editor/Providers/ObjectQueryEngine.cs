@@ -88,7 +88,16 @@ namespace UnityEditor.Search.Providers
             m_QueryEngine.AddFilter<string>("is", OnIsFilter, new[] {":"});
 
             m_QueryEngine.AddFilter<string>("t", OnTypeFilter, new[] {"=", ":"});
-            m_QueryEngine.AddFilter<string>("ref", GetReferences, new[] {"=", ":"});
+            m_QueryEngine.SetFilter<string>("ref", GetReferences, new[] {"=", ":"}).AddTypeParser(s =>
+            {
+                if (!s.StartsWith("GlobalObjectId", StringComparison.Ordinal) || !GlobalObjectId.TryParse(s, out var gid))
+                    return ParseResult<string>.none;
+
+                if (gid.targetPrefabId == 0 && gid.identifierType != 2 && gid.identifierType != 4)
+                    return new ParseResult<string>(true, AssetDatabase.GUIDToAssetPath(gid.assetGUID));
+
+                return new ParseResult<string>(true, GlobalObjectId.GlobalObjectIdentifierToInstanceIDSlow(gid).ToString());
+            });
 
             SearchValue.SetupEngine(m_QueryEngine);
 
@@ -168,7 +177,7 @@ namespace UnityEditor.Search.Providers
 
         #endregion
 
-        public virtual bool GetId(T obj, string op, int instanceId)
+        public virtual bool GetId(T obj, QueryFilterOperator op, int instanceId)
         {
             return instanceId == obj.GetInstanceID();
         }
@@ -194,7 +203,7 @@ namespace UnityEditor.Search.Providers
             return god;
         }
 
-        protected virtual bool OnIsFilter(T obj, string op, string value)
+        protected virtual bool OnIsFilter(T obj, QueryFilterOperator op, string value)
         {
             if (string.Equals(value, "object", StringComparison.Ordinal))
                 return true;
@@ -252,7 +261,7 @@ namespace UnityEditor.Search.Providers
             return null;
         }
 
-        bool OnTypeFilter(T obj, string op, string value)
+        bool OnTypeFilter(T obj, QueryFilterOperator op, string value)
         {
             if (!obj)
                 return false;
@@ -338,7 +347,7 @@ namespace UnityEditor.Search.Providers
             return true;
         }
 
-        private bool GetReferences(T obj, string op, string value)
+        private bool GetReferences(T obj, QueryFilterOperator op, string value)
         {
             var god = GetGOD(obj);
 
@@ -367,23 +376,18 @@ namespace UnityEditor.Search.Providers
                 god.refs = refs;
             }
 
+            if (god.refs.Count == 0)
+                return false;
+
             if (Utils.TryParse(value, out int instanceId))
                 return god.refs.Contains(instanceId);
-
-            if (value.StartsWith("GlobalObjectId", StringComparison.Ordinal) && GlobalObjectId.TryParse(value, out var gid))
-            {
-                var assetPath = AssetDatabase.GUIDToAssetPath(gid.assetGUID).ToLowerInvariant();
-                if (god.refs.Contains(assetPath.GetHashCode()))
-                    return true;
-                return god.refs.Contains(GlobalObjectId.GlobalObjectIdentifierToInstanceIDSlow(gid));
-            }
 
             return god.refs.Contains(value.ToLowerInvariant().GetHashCode());
         }
 
-        protected bool CompareWords(in string op, string value, in IEnumerable<string> words, StringComparison stringComparison = StringComparison.Ordinal)
+        protected bool CompareWords(in QueryFilterOperator op, string value, in IEnumerable<string> words, StringComparison stringComparison = StringComparison.Ordinal)
         {
-            if (string.Equals(op, "=", stringComparison))
+            if (op.type == FilterOperatorType.Equal)
                 return words.Any(t => t.Equals(value, stringComparison));
             return words.Any(t => t.IndexOf(value, stringComparison) != -1);
         }

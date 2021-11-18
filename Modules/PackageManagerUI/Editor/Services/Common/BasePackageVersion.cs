@@ -47,6 +47,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         public DependencyInfo[] resolvedDependencies => packageInfo?.resolvedDependencies;
         public EntitlementsInfo entitlements => packageInfo?.entitlements;
 
+        public virtual RegistryInfo registry => null;
+
         [SerializeField]
         protected PackageTag m_Tag;
         public bool HasTag(PackageTag tag)

@@ -6521,10 +6521,7 @@ namespace UnityEditor
                 Highlighter.HighlightIdentifier(totalPosition, property.propertyPath);
 
             s_PropertyFieldTempContent.text = (label == null) ? property.localizedDisplayName : label.text; // no necessary to be translated.
-            s_PropertyFieldTempContent.tooltip = isCollectingTooltips ? ((label == null) ? property.tooltip : label.tooltip) : null;
-            string attributeTooltip = ScriptAttributeUtility.GetHandler(property).tooltip;
-            if (attributeTooltip != null)
-                s_PropertyFieldTempContent.tooltip = attributeTooltip;
+            s_PropertyFieldTempContent.tooltip = (label == null) ? property.tooltip : label.tooltip;
             s_PropertyFieldTempContent.image = label?.image;
 
             // In inspector debug mode & when holding down alt. Show the property path of the property.

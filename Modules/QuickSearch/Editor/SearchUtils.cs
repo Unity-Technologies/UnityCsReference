@@ -478,6 +478,7 @@ namespace UnityEditor.Search
             return null;
         }
 
+        static Dictionary<Type, List<Type>> s_BaseTypes = new Dictionary<Type, List<Type>>();
         internal static IEnumerable<SearchProposition> FetchTypePropositions<T>(string category = "Types", Type blockType = null, int priority = -1444) where T : UnityEngine.Object
         {
             if (category != null)
@@ -489,29 +490,33 @@ namespace UnityEditor.Search
                     icon: EditorGUIUtility.FindTexture("FilterByType"));
 
                 yield return new SearchProposition(category: category, label: "Prefabs", replacement: "t:prefab",
-                    icon: GetTypeIcon(typeof(GameObject)), data: typeof(GameObject), type: blockType, priority: priority);
+                    icon: GetTypeIcon(typeof(GameObject)), data: typeof(GameObject), type: blockType, priority: priority, color: QueryColors.type);
             }
 
             if (string.Equals(category, "Types", StringComparison.Ordinal))
             {
                 yield return new SearchProposition(category: "Types", label: "Scripts", replacement: "t:script",
-                    icon: GetTypeIcon(typeof(MonoScript)), data: typeof(MonoScript), type: blockType, priority: priority);
+                    icon: GetTypeIcon(typeof(MonoScript)), data: typeof(MonoScript), type: blockType, priority: priority, color: QueryColors.type);
                 yield return new SearchProposition(category: "Types", label: "Scenes", replacement: "t:scene",
-                    icon: GetTypeIcon(typeof(SceneAsset)), data: typeof(SceneAsset), type: blockType, priority: priority);
+                    icon: GetTypeIcon(typeof(SceneAsset)), data: typeof(SceneAsset), type: blockType, priority: priority, color: QueryColors.type);
             }
 
-            var ignoredAssemblies = new[]
+            if (!s_BaseTypes.TryGetValue(typeof(T), out var types))
             {
-                typeof(EditorApplication).Assembly,
-                typeof(UnityEditorInternal.InternalEditorUtility).Assembly
-            };
-            var types = TypeCache.GetTypesDerivedFrom<T>()
+                var ignoredAssemblies = new[]
+                {
+                    typeof(EditorApplication).Assembly,
+                    typeof(UnityEditorInternal.InternalEditorUtility).Assembly
+                };
+                types = TypeCache.GetTypesDerivedFrom<T>()
                 .Where(t => t.IsVisible)
                 .Where(t => !t.IsGenericType)
                 .Where(t => !ignoredAssemblies.Contains(t.Assembly))
                 .Where(t => !typeof(Editor).IsAssignableFrom(t))
                 .Where(t => !typeof(EditorWindow).IsAssignableFrom(t))
-                .Where(t => !t.FullName.StartsWith("UnityEditor", StringComparison.Ordinal));
+                .Where(t => t.Assembly.GetName().Name.IndexOf("Editor", StringComparison.Ordinal) == -1).ToList();
+                s_BaseTypes[typeof(T)] = types;
+            }
             foreach (var t in types)
             {
                 yield return new SearchProposition(
@@ -521,7 +526,8 @@ namespace UnityEditor.Search
                     replacement: $"t:{t.Name}",
                     data: t,
                     type: blockType,
-                    icon: GetTypeIcon(t));
+                    icon: GetTypeIcon(t),
+                    color: QueryColors.type);
             }
         }
 
@@ -546,9 +552,10 @@ namespace UnityEditor.Search
                 label: $"{tokens[1]} ({blockType?.Name ?? valueType})",
                 replacement: replacement,
                 help: tokens[2],
+                color: replacement.StartsWith("#", StringComparison.Ordinal) ? QueryColors.property : QueryColors.filter,
                 icon:
-                AssetPreview.GetMiniTypeThumbnailFromType(blockType) ??
-                GetTypeIcon(ownerType));
+                    AssetPreview.GetMiniTypeThumbnailFromType(blockType) ??
+                    GetTypeIcon(ownerType));
         }
 
         static Dictionary<Type, Texture2D> s_TypeIcons = new Dictionary<Type, Texture2D>();
@@ -556,9 +563,26 @@ namespace UnityEditor.Search
         {
             if (s_TypeIcons.TryGetValue(type, out var t) && t)
                 return t;
-            t = AssetPreview.GetMiniTypeThumbnail(type);
-            s_TypeIcons[type] = t;
-            return t;
+            if (!type.IsAbstract && typeof(MonoBehaviour) != type && typeof(MonoBehaviour).IsAssignableFrom(type))
+            {
+                var go = new GameObject { hideFlags = HideFlags.HideAndDontSave };
+                try
+                {
+                    go.SetActive(false);
+                    var c = go.AddComponent(type);
+                    var p = AssetPreview.GetMiniThumbnail(c);
+                    if (p)
+                        return s_TypeIcons[type] = p;
+                }
+                catch
+                {
+                }
+                finally
+                {
+                    UnityEngine.Object.DestroyImmediate(go);
+                }
+            }
+            return s_TypeIcons[type] = AssetPreview.GetMiniTypeThumbnail(type) ?? AssetPreview.GetMiniTypeThumbnail(typeof(MonoScript));
         }
 
         internal static IEnumerable<SearchProposition> EnumeratePropertyPropositions(IEnumerable<UnityEngine.Object> objs)

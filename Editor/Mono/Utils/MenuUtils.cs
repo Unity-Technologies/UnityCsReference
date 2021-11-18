@@ -152,15 +152,16 @@ namespace UnityEditor
         static void RemoveInvalidSeparators(GenericMenu menu)
         {
             var items = menu.menuItems;
+            var itemsCount = items.Count - 1;
 
-            for (int i = items.Count - 1; i > -1; --i)
+            for (int i = itemsCount; i > -1; --i)
             {
                 if (GetSeparatorInfo(items, i, out var info))
                 {
                     if (info.hasTitle && info.hasItemBelow)
                         continue;
 
-                    if (info.hasItemAbove && info.hasItemBelow)
+                    if (info.hasItemAbove && i < itemsCount)
                         continue;
 
                     items.RemoveAt(i);

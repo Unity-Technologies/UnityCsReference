@@ -397,8 +397,8 @@ namespace UnityEditor.Search
         private volatile bool m_RebuildFilters = true;
 
         private static readonly QueryValidationOptions k_QueryEngineOptions = new QueryValidationOptions {validateFilters = true, skipNestedQueries = true};
-        private readonly QueryEngine<SearchResult> m_QueryEngine = new QueryEngine<SearchResult>(k_QueryEngineOptions);
-        private readonly Dictionary<string, Query<SearchResult, object>> m_QueryPool = new Dictionary<string, Query<SearchResult, object>>();
+        private QueryEngine<SearchResult> m_QueryEngine;
+        private Dictionary<string, Query<SearchResult, object>> m_QueryPool;
 
         private readonly Dictionary<RangeSet, IndexRange> m_FixedRanges;
         private SearchResultCollection m_AllDocumentIndexes;
@@ -444,12 +444,17 @@ namespace UnityEditor.Search
             m_FixedRanges = new Dictionary<RangeSet, IndexRange>();
             m_SourceDocuments = new Dictionary<string, Hash128>();
             m_MetaInfo = new Dictionary<string, string>();
-
-            m_QueryEngine.SetSearchDataCallback(e => null, s => s.Length < minWordIndexationLength ? null : s, StringComparison.Ordinal);
         }
 
         private Query<SearchResult, object> BuildQuery(string searchQuery)
         {
+            if (m_QueryEngine == null)
+            {
+                m_QueryEngine = new QueryEngine<SearchResult>(k_QueryEngineOptions);
+                m_QueryEngine.SetSearchDataCallback(e => null, s => s.Length < minWordIndexationLength ? null : s, StringComparison.Ordinal);
+                m_QueryPool = new Dictionary<string, Query<SearchResult, object>>();
+            }
+
             if (m_RebuildFilters)
             {
                 AddFilters();

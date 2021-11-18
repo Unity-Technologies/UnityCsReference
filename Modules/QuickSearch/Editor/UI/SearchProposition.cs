@@ -14,11 +14,11 @@ namespace UnityEditor.Search
     enum SearchPropositionFlags
     {
         None = 0,
-
         FilterOnly    = 1 << 0,
         IgnoreRecents = 1 << 1,
         QueryBuilder  = 1 << 2,
-        NoCategory    = 1 << 3
+        NoCategory    = 1 << 3,
+        ForceAllProviders = 1 << 4
     }
 
     static class SearchPropositionFlagsExtensions
@@ -36,6 +36,7 @@ namespace UnityEditor.Search
         internal readonly TextCursorPlacement moveCursor;
         internal readonly Texture2D icon;
         internal readonly string category;
+        internal readonly Color color;
         internal readonly Type type;
         internal readonly object data;
 
@@ -47,20 +48,20 @@ namespace UnityEditor.Search
 
         public SearchProposition(string label, string replacement = null, string help = null,
                                  int priority = int.MaxValue, TextCursorPlacement moveCursor = TextCursorPlacement.MoveAutoComplete,
-                                 Texture2D icon = null)
-            : this(null, label, replacement, help, priority, moveCursor, icon, null, null)
+                                 Texture2D icon = null, Color color = new Color())
+            : this(null, label, replacement, help, priority, moveCursor, icon, null, null, color)
         {
         }
 
         internal SearchProposition(string label, string replacement, string help,
-                                   int priority, Texture2D icon, object data)
-            : this(null, label, replacement, help, priority, TextCursorPlacement.MoveAutoComplete, icon, null, data)
+                                   int priority, Texture2D icon, object data, Color color = new Color())
+            : this(null, label, replacement, help, priority, TextCursorPlacement.MoveAutoComplete, icon, null, data, color)
         {
         }
 
         internal SearchProposition(string category = null, string label = null, string replacement = null, string help = null,
                                    int priority = 0, TextCursorPlacement moveCursor = TextCursorPlacement.MoveAutoComplete,
-                                   Texture2D icon = null, Type type = null, object data = null)
+                                   Texture2D icon = null, Type type = null, object data = null, Color color = new Color())
         {
             var kparts = label.Split(new char[] { '|' });
             this.label = kparts[0];
@@ -72,22 +73,41 @@ namespace UnityEditor.Search
             this.category = category;
             this.type = type;
             this.data = data;
+            this.color = color;
         }
+
+        const string kSeparator = "-------------------------";
+
+        internal static SearchProposition CreateSeparator(string category = null)
+        {
+            var s = new SearchProposition(category: category, label: kSeparator);
+            return s;
+        }
+
+        internal bool isSeparator => label == kSeparator;
 
         public int CompareTo(SearchProposition other)
         {
+            if (category == null && other.category != null)
+                return 1;
+
+            if (category != null && other.category == null)
+                return -1;
+
             var c = priority.CompareTo(other.priority);
             if (c != 0)
                 return c;
-            c = string.CompareOrdinal(label, other.label);
+
+            c = string.CompareOrdinal(path, other.path);
             if (c != 0)
                 return c;
+
             return string.CompareOrdinal(help, other.help);
         }
 
         public bool Equals(SearchProposition other)
         {
-            return label.Equals(other.label) && string.Equals(help, other.help);
+            return path.Equals(other.path) && string.Equals(help, other.help);
         }
 
         public override int GetHashCode()
@@ -95,15 +115,15 @@ namespace UnityEditor.Search
             unchecked
             {
                 if (help != null)
-                    return label.GetHashCode() ^ help.GetHashCode() ^ priority.GetHashCode();
-                return label.GetHashCode() ^ priority.GetHashCode();
+                    return path.GetHashCode() ^ help.GetHashCode() ^ priority.GetHashCode();
+                return path.GetHashCode() ^ priority.GetHashCode();
             }
         }
 
         public override bool Equals(object other)
         {
             if (other is string s)
-                return label.Equals(s);
+                return path.Equals(s);
             return other is SearchProposition l && Equals(l);
         }
 
@@ -128,9 +148,9 @@ namespace UnityEditor.Search
             var queryEmpty = string.IsNullOrWhiteSpace(context.searchText) && providers.Count(p => !p.isExplicitProvider) > 1;
             foreach (var p in providers)
             {
-                if (queryEmpty)
+                if (queryEmpty && !options.HasAny(SearchPropositionFlags.ForceAllProviders))
                 {
-                    propositions.Add(new SearchProposition($"{p.filterId}", $"{p.filterId} ", p.name, p.priority));
+                    propositions.Add(new SearchProposition(p.filterId, $"{p.filterId} ", p.name, p.priority));
                 }
                 else
                 {

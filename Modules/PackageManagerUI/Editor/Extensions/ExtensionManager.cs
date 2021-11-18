@@ -186,12 +186,18 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_EventDispatcher.SendWindowDestroyEvent();
 
             m_DetailsExtensionContainer.Clear();
+            m_DetailsExtensionContainer = null;
             m_DetailsExtensions.Clear();
+
+            m_ToolbarExtensionContainer = null;
 
             m_PackageActionContainer.Clear();
             m_PackageActions.Clear();
             m_PackageActionContainer.RemoveFromHierarchy();
             m_CollapsedPackageActions.RemoveFromHierarchy();
+
+            m_PackageActionContainer = null;
+            m_CollapsedPackageActions = null;
 
             m_Window = null;
         }

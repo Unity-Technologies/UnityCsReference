@@ -80,5 +80,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         IEnumerable<PackageSizeInfo> sizes { get; }
 
         EntitlementsInfo entitlements { get; }
+
+        RegistryInfo registry { get; }
     }
 }

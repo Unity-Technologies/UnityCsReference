@@ -129,6 +129,10 @@ namespace UnityEditor.Search
             Hash128 globalIndexersHash = default;
             foreach (var customIndexerMethodInfo in TypeCache.GetMethodsWithAttribute<CustomObjectIndexerAttribute>())
             {
+                var name = $"{customIndexerMethodInfo.DeclaringType.FullName}.{customIndexerMethodInfo.Name}";
+                if (SearchSettings.disabledIndexers.Contains(name))
+                    continue;
+
                 try
                 {
                     var customIndexerAttribute = customIndexerMethodInfo.GetCustomAttribute<CustomObjectIndexerAttribute>();

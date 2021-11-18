@@ -125,6 +125,19 @@ namespace UnityEngine
         }
 
 
+        // Some platforms require us to always open TouchScreenKeyboard even if a physical keyboard is connected
+        // and in-place editing is used.
+        internal static bool isRequiredToForceOpen
+        {
+            get
+            {
+                return IsRequiredToForceOpen();
+            }
+        }
+
+        [FreeFunction("TouchScreenKeyboard_IsRequiredToForceOpen")]
+        extern private static bool IsRequiredToForceOpen();
+
         // Opens the native keyboard provided by OS on the screen.
         public static TouchScreenKeyboard Open(string text, [DefaultValue("TouchScreenKeyboardType.Default")]  TouchScreenKeyboardType keyboardType, [DefaultValue("true")]  bool autocorrection, [DefaultValue("false")]  bool multiline, [DefaultValue("false")]  bool secure, [DefaultValue("false")]  bool alert, [DefaultValue("\"\"")]  string textPlaceholder, [DefaultValue("0")]  int characterLimit)
         {

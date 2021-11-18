@@ -8,7 +8,7 @@ namespace UnityEditor
 {
     static class TextRenderingCommands
     {
-        [MenuItem("GameObject/3D Object/3D Text", priority = 4000)]
+        [MenuItem("GameObject/3D Object/Legacy/TextMesh", priority = 31)]
         static void Create3DText(MenuCommand command)
         {
             var parent = command.context as GameObject;

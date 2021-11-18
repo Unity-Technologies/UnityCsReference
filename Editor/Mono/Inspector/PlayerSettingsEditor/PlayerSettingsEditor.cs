@@ -1149,7 +1149,11 @@ namespace UnityEditor
                 if (name.Contains("OpenGLES"))
                     name += " (Deprecated)";
             }
-            if (name == "Direct3D12")
+            else if (graphicsDeviceType == GraphicsDeviceType.OpenGLES2)
+            {
+                name += " (Deprecated)";
+            }
+            else if (name == "Direct3D12")
                 name = "Direct3D12 (Experimental)";
             return name;
         }

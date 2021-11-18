@@ -196,17 +196,6 @@ namespace UnityEditor.Search
             {"-", () => new NotNode()}
         };
 
-        enum DefaultOperator
-        {
-            Contains,
-            Equal,
-            NotEqual,
-            Greater,
-            GreaterOrEqual,
-            Less,
-            LessOrEqual
-        }
-
         enum ExtendedTokenHandlerPriority
         {
             Boolean = TokenHandlerPriority.Filter + 5,
@@ -307,46 +296,46 @@ namespace UnityEditor.Search
             this.validationOptions = validationOptions;
 
             // Default operators
-            AddOperator(":", false)
-                .AddHandler((FilterOperatorContext ctx, object ev, object fv, StringComparison sc) => CompareObjects(ctx, ev, fv, sc, DefaultOperator.Contains, ":"))
+            AddOperator(":", FilterOperatorType.Contains, false)
+                .AddHandler((FilterOperatorContext ctx, object ev, object fv, StringComparison sc) => CompareObjects(ctx, ev, fv, sc, FilterOperatorType.Contains, ":"))
                 .AddHandler((string ev, string fv, StringComparison sc) => ev?.IndexOf(fv, sc) >= 0)
                 .AddHandler((int ev, int fv, StringComparison sc) => ev.ToString().IndexOf(fv.ToString(), sc) != -1)
                 .AddHandler((float ev, float fv, StringComparison sc) => ev.ToString().IndexOf(fv.ToString(), sc) != -1)
                 .AddHandler((double ev, double fv, StringComparison sc) => ev.ToString().IndexOf(fv.ToString(), sc) != -1);
-            AddOperator("=", false)
-                .AddHandler((FilterOperatorContext ctx, object ev, object fv, StringComparison sc) => CompareObjects(ctx, ev, fv, sc, DefaultOperator.Equal, "="))
+            AddOperator("=", FilterOperatorType.Equal, false)
+                .AddHandler((FilterOperatorContext ctx, object ev, object fv, StringComparison sc) => CompareObjects(ctx, ev, fv, sc, FilterOperatorType.Equal, "="))
                 .AddHandler((int ev, int fv) => ev == fv)
                 .AddHandler((float ev, float fv) => Math.Abs(ev - fv) < Mathf.Epsilon)
                 .AddHandler((double ev, double fv) => Math.Abs(ev - fv) < double.Epsilon)
                 .AddHandler((bool ev, bool fv) => ev == fv)
                 .AddHandler((string ev, string fv, StringComparison sc) => string.Equals(ev, fv, sc));
-            AddOperator("!=", false)
-                .AddHandler((FilterOperatorContext ctx, object ev, object fv, StringComparison sc) => CompareObjects(ctx, ev, fv, sc, DefaultOperator.NotEqual, "!="))
+            AddOperator("!=", FilterOperatorType.NotEqual, false)
+                .AddHandler((FilterOperatorContext ctx, object ev, object fv, StringComparison sc) => CompareObjects(ctx, ev, fv, sc, FilterOperatorType.NotEqual, "!="))
                 .AddHandler((int ev, int fv) => ev != fv)
                 .AddHandler((float ev, float fv) => Math.Abs(ev - fv) >= Mathf.Epsilon)
                 .AddHandler((double ev, double fv) => Math.Abs(ev - fv) >= double.Epsilon)
                 .AddHandler((bool ev, bool fv) => ev != fv)
                 .AddHandler((string ev, string fv, StringComparison sc) => !string.Equals(ev, fv, sc));
-            AddOperator("<", false)
-                .AddHandler((FilterOperatorContext ctx, object ev, object fv, StringComparison sc) => CompareObjects(ctx, ev, fv, sc, DefaultOperator.Less, "<"))
+            AddOperator("<", FilterOperatorType.Lesser, false)
+                .AddHandler((FilterOperatorContext ctx, object ev, object fv, StringComparison sc) => CompareObjects(ctx, ev, fv, sc, FilterOperatorType.Lesser, "<"))
                 .AddHandler((int ev, int fv) => ev < fv)
                 .AddHandler((float ev, float fv) => ev < fv)
                 .AddHandler((double ev, double fv) => ev < fv)
                 .AddHandler((string ev, string fv, StringComparison sc) => string.Compare(ev, fv, sc) < 0);
-            AddOperator(">", false)
-                .AddHandler((FilterOperatorContext ctx, object ev, object fv, StringComparison sc) => CompareObjects(ctx, ev, fv, sc, DefaultOperator.Greater, ">"))
+            AddOperator(">", FilterOperatorType.Greater, false)
+                .AddHandler((FilterOperatorContext ctx, object ev, object fv, StringComparison sc) => CompareObjects(ctx, ev, fv, sc, FilterOperatorType.Greater, ">"))
                 .AddHandler((int ev, int fv) => ev > fv)
                 .AddHandler((float ev, float fv) => ev > fv)
                 .AddHandler((double ev, double fv) => ev > fv)
                 .AddHandler((string ev, string fv, StringComparison sc) => string.Compare(ev, fv, sc) > 0);
-            AddOperator("<=", false)
-                .AddHandler((FilterOperatorContext ctx, object ev, object fv, StringComparison sc) => CompareObjects(ctx, ev, fv, sc, DefaultOperator.LessOrEqual, "<="))
+            AddOperator("<=", FilterOperatorType.LesserOrEqual, false)
+                .AddHandler((FilterOperatorContext ctx, object ev, object fv, StringComparison sc) => CompareObjects(ctx, ev, fv, sc, FilterOperatorType.LesserOrEqual, "<="))
                 .AddHandler((int ev, int fv) => ev <= fv)
                 .AddHandler((float ev, float fv) => ev <= fv)
                 .AddHandler((double ev, double fv) => ev <= fv)
                 .AddHandler((string ev, string fv, StringComparison sc) => string.Compare(ev, fv, sc) <= 0);
-            AddOperator(">=", false)
-                .AddHandler((FilterOperatorContext ctx, object ev, object fv, StringComparison sc) => CompareObjects(ctx, ev, fv, sc, DefaultOperator.GreaterOrEqual, ">="))
+            AddOperator(">=", FilterOperatorType.GreaterOrEqual, false)
+                .AddHandler((FilterOperatorContext ctx, object ev, object fv, StringComparison sc) => CompareObjects(ctx, ev, fv, sc, FilterOperatorType.GreaterOrEqual, ">="))
                 .AddHandler((int ev, int fv) => ev >= fv)
                 .AddHandler((float ev, float fv) => ev >= fv)
                 .AddHandler((double ev, double fv) => ev >= fv)
@@ -362,7 +351,7 @@ namespace UnityEditor.Search
             AddQueryTokenHandler(new QueryTokenHandler(MatchPartialFilter, ConsumePartialFilter, (int)ExtendedTokenHandlerPriority.Partial));
         }
 
-        bool CompareObjects(FilterOperatorContext ctx, object ev, object fv, StringComparison sc, DefaultOperator op, string opToken)
+        bool CompareObjects(FilterOperatorContext ctx, object ev, object fv, StringComparison sc, FilterOperatorType op, string opToken)
         {
             if (ev == null || fv == null)
                 return false;
@@ -392,13 +381,13 @@ namespace UnityEditor.Search
             {
                 switch (op)
                 {
-                    case DefaultOperator.Contains: return evs.IndexOf(fvs, sc) != -1;
-                    case DefaultOperator.Equal: return evs.Equals(fvs, sc);
-                    case DefaultOperator.NotEqual: return !evs.Equals(fvs, sc);
-                    case DefaultOperator.Greater: return string.Compare(evs, fvs, sc) > 0;
-                    case DefaultOperator.GreaterOrEqual: return string.Compare(evs, fvs, sc) >= 0;
-                    case DefaultOperator.Less: return string.Compare(evs, fvs, sc) < 0;
-                    case DefaultOperator.LessOrEqual: return string.Compare(evs, fvs, sc) <= 0;
+                    case FilterOperatorType.Contains: return evs.IndexOf(fvs, sc) != -1;
+                    case FilterOperatorType.Equal: return evs.Equals(fvs, sc);
+                    case FilterOperatorType.NotEqual: return !evs.Equals(fvs, sc);
+                    case FilterOperatorType.Greater: return string.Compare(evs, fvs, sc) > 0;
+                    case FilterOperatorType.GreaterOrEqual: return string.Compare(evs, fvs, sc) >= 0;
+                    case FilterOperatorType.Lesser: return string.Compare(evs, fvs, sc) < 0;
+                    case FilterOperatorType.LesserOrEqual: return string.Compare(evs, fvs, sc) <= 0;
                 }
 
                 return false;
@@ -406,13 +395,13 @@ namespace UnityEditor.Search
 
             switch (op)
             {
-                case DefaultOperator.Contains: return ev.ToString().IndexOf(fv.ToString(), sc) >= 0;
-                case DefaultOperator.Equal: return ev.Equals(fv);
-                case DefaultOperator.NotEqual: return !ev.Equals(fv);
-                case DefaultOperator.Greater: return Comparer<object>.Default.Compare(ev, fv) > 0;
-                case DefaultOperator.GreaterOrEqual: return Comparer<object>.Default.Compare(ev, fv) >= 0;
-                case DefaultOperator.Less: return Comparer<object>.Default.Compare(ev, fv) < 0;
-                case DefaultOperator.LessOrEqual: return Comparer<object>.Default.Compare(ev, fv) <= 0;
+                case FilterOperatorType.Contains: return ev.ToString().IndexOf(fv.ToString(), sc) >= 0;
+                case FilterOperatorType.Equal: return ev.Equals(fv);
+                case FilterOperatorType.NotEqual: return !ev.Equals(fv);
+                case FilterOperatorType.Greater: return Comparer<object>.Default.Compare(ev, fv) > 0;
+                case FilterOperatorType.GreaterOrEqual: return Comparer<object>.Default.Compare(ev, fv) >= 0;
+                case FilterOperatorType.Lesser: return Comparer<object>.Default.Compare(ev, fv) < 0;
+                case FilterOperatorType.LesserOrEqual: return Comparer<object>.Default.Compare(ev, fv) <= 0;
             }
 
             return false;
@@ -526,9 +515,16 @@ namespace UnityEditor.Search
 
         QueryFilterOperator AddOperator(string op, bool rebuildFilterRegex)
         {
+            // This is called only by users. If they try to add an existing default
+            // operator, the default operator is returned and the type doesn't matter.
+            return AddOperator(op, FilterOperatorType.Custom, rebuildFilterRegex);
+        }
+
+        QueryFilterOperator AddOperator(string op, FilterOperatorType type, bool rebuildFilterRegex)
+        {
             if (m_FilterOperators.ContainsKey(op))
                 return m_FilterOperators[op];
-            var filterOperator = new QueryFilterOperator(op, this);
+            var filterOperator = new QueryFilterOperator(op, type, this);
             m_FilterOperators.Add(op, filterOperator);
             if (rebuildFilterRegex)
                 BuildFilterRegex();
@@ -1358,7 +1354,9 @@ namespace UnityEditor.Search
                 if (type != typeParser.type)
                     continue;
 
-                return typeParser.Parse(filterValue);
+                var result = typeParser.Parse(filterValue);
+                if (result.success)
+                    return result;
             }
 
             return GenerateParseResultForType(filterValue, type);
@@ -1802,14 +1800,14 @@ namespace UnityEditor.Search
                 // Basic filter
                 if (inputParams.Length == mandatoryParamCount)
                 {
-                    return CreateFilterForMethodInfo(creationParams, mi, false, false, creationParams.useRegexToken, returnType);
+                    return CreateFilterForMethodInfo(creationParams, mi, false, false, false, creationParams.useRegexToken, returnType);
                 }
 
                 // Filter function
                 if (inputParams.Length == mandatoryParamCount + 1)
                 {
                     var filterParamType = inputParams[mandatoryParamCount].ParameterType;
-                    return CreateFilterForMethodInfo(creationParams, mi, true, false, creationParams.useRegexToken, filterParamType, returnType);
+                    return CreateFilterForMethodInfo(creationParams, mi, true, false, false, creationParams.useRegexToken, filterParamType, returnType);
                 }
 
                 // Filter resolver
@@ -1817,9 +1815,10 @@ namespace UnityEditor.Search
                 {
                     var operatorParam = inputParams[mandatoryParamCount];
                     var filterValueType = inputParams[mandatoryParamCount + 1].ParameterType;
-                    if (operatorParam.ParameterType != typeof(string))
+                    var isOperatorStruct = operatorParam.ParameterType == typeof(QueryFilterOperator);
+                    if (operatorParam.ParameterType != typeof(string) && !isOperatorStruct)
                     {
-                        Debug.LogWarning($"Parameter \"{operatorParam.Name}\"'s type of filter method \"{mi.Name}\" must be \"{typeof(string)}\".");
+                        Debug.LogWarning($"Parameter \"{operatorParam.Name}\"'s type of filter method \"{mi.Name}\" must be \"{typeof(string)}\" or \"{typeof(QueryFilterOperator)}\".");
                         return null;
                     }
 
@@ -1829,7 +1828,7 @@ namespace UnityEditor.Search
                         return null;
                     }
 
-                    return CreateFilterForMethodInfo(creationParams, mi, false, true, creationParams.useRegexToken, filterValueType);
+                    return CreateFilterForMethodInfo(creationParams, mi, false, true, isOperatorStruct, creationParams.useRegexToken, filterValueType);
                 }
 
                 // Filter function resolver
@@ -1838,9 +1837,10 @@ namespace UnityEditor.Search
                     var filterParamType = inputParams[mandatoryParamCount].ParameterType;
                     var operatorParam = inputParams[mandatoryParamCount + 1];
                     var filterValueType = inputParams[mandatoryParamCount + 2].ParameterType;
-                    if (operatorParam.ParameterType != typeof(string))
+                    var isOperatorStruct = operatorParam.ParameterType == typeof(QueryFilterOperator);
+                    if (operatorParam.ParameterType != typeof(string) && !isOperatorStruct)
                     {
-                        Debug.LogWarning($"Parameter \"{operatorParam.Name}\"'s type of filter method \"{mi.Name}\" must be \"{typeof(string)}\".");
+                        Debug.LogWarning($"Parameter \"{operatorParam.Name}\"'s type of filter method \"{mi.Name}\" must be \"{typeof(string)}\" or \"{typeof(QueryFilterOperator)}\".");
                         return null;
                     }
 
@@ -1850,7 +1850,7 @@ namespace UnityEditor.Search
                         return null;
                     }
 
-                    return CreateFilterForMethodInfo(creationParams, mi, true, true, creationParams.useRegexToken, filterParamType, filterValueType);
+                    return CreateFilterForMethodInfo(creationParams, mi, true, true, isOperatorStruct, creationParams.useRegexToken, filterParamType, filterValueType);
                 }
 
                 Debug.LogWarning($"Error while creating filter \"{filterId}\". Parameter count mismatch.");
@@ -1863,9 +1863,9 @@ namespace UnityEditor.Search
             }
         }
 
-        IFilter CreateFilterForMethodInfo(FilterCreationParams creationParams, MethodInfo mi, bool filterFunction, bool resolver, bool useRegex, params Type[] methodTypes)
+        IFilter CreateFilterForMethodInfo(FilterCreationParams creationParams, MethodInfo mi, bool filterFunction, bool resolver, bool resolverStruct, bool useRegex, params Type[] methodTypes)
         {
-            var methodName = $"Create{(useRegex ? "Regex" : "")}Filter{(filterFunction ? "Function" : "")}{(resolver ? "Resolver" : "")}ForMethodInfoTyped";
+            var methodName = $"Create{(useRegex ? "Regex" : "")}Filter{(filterFunction ? "Function" : "")}{(resolver ? $"{(resolverStruct ? "Struct" : "String")}Resolver" : "")}ForMethodInfoTyped";
             var thisClassType = typeof(QueryEngineImpl<TData>);
             var method = thisClassType.GetMethod(methodName, BindingFlags.NonPublic | BindingFlags.Instance);
             var typedMethod = method.MakeGenericMethod(methodTypes);
@@ -1880,9 +1880,15 @@ namespace UnityEditor.Search
             return new Filter<TData, TFilter>(creationParams.token, creationParams.supportedOperators, methodFunc, this);
         }
 
-        IFilter CreateFilterResolverForMethodInfoTyped<TFilter>(FilterCreationParams creationParams, MethodInfo mi)
+        IFilter CreateFilterStringResolverForMethodInfoTyped<TFilter>(FilterCreationParams creationParams, MethodInfo mi)
         {
             var methodFunc = Delegate.CreateDelegate(typeof(Func<TData, string, TFilter, bool>), mi) as Func<TData, string, TFilter, bool>;
+            return new Filter<TData, TFilter>(creationParams.token, creationParams.supportedOperators, methodFunc, this);
+        }
+
+        IFilter CreateFilterStructResolverForMethodInfoTyped<TFilter>(FilterCreationParams creationParams, MethodInfo mi)
+        {
+            var methodFunc = Delegate.CreateDelegate(typeof(Func<TData, QueryFilterOperator, TFilter, bool>), mi) as Func<TData, QueryFilterOperator, TFilter, bool>;
             return new Filter<TData, TFilter>(creationParams.token, creationParams.supportedOperators, methodFunc, this);
         }
 
@@ -1903,9 +1909,21 @@ namespace UnityEditor.Search
             return new Filter<TData, TParam, TFilter>(creationParams.token, creationParams.supportedOperators, methodFunc, this);
         }
 
-        IFilter CreateFilterFunctionResolverForMethodInfoTyped<TParam, TFilter>(FilterCreationParams creationParams, MethodInfo mi)
+        IFilter CreateFilterFunctionStringResolverForMethodInfoTyped<TParam, TFilter>(FilterCreationParams creationParams, MethodInfo mi)
         {
             var methodFunc = Delegate.CreateDelegate(typeof(Func<TData, TParam, string, TFilter, bool>), mi) as Func<TData, TParam, string, TFilter, bool>;
+
+            if (creationParams.useParameterTransformer)
+            {
+                var parameterTransformerFunc = GetParameterTransformerFunction<TParam>(mi, creationParams.parameterTransformerFunction, creationParams.parameterTransformerAttributeType);
+                return new Filter<TData, TParam, TFilter>(creationParams.token, creationParams.supportedOperators, methodFunc, parameterTransformerFunc, this);
+            }
+            return new Filter<TData, TParam, TFilter>(creationParams.token, creationParams.supportedOperators, methodFunc, this);
+        }
+
+        IFilter CreateFilterFunctionStructResolverForMethodInfoTyped<TParam, TFilter>(FilterCreationParams creationParams, MethodInfo mi)
+        {
+            var methodFunc = Delegate.CreateDelegate(typeof(Func<TData, TParam, QueryFilterOperator, TFilter, bool>), mi) as Func<TData, TParam, QueryFilterOperator, TFilter, bool>;
 
             if (creationParams.useParameterTransformer)
             {
@@ -1923,9 +1941,15 @@ namespace UnityEditor.Search
             return new RegexFilter<TData, TFilter>(creationParams.regexToken, creationParams.supportedOperators, methodFunc, this);
         }
 
-        IFilter CreateRegexFilterResolverForMethodInfoTyped<TFilter>(FilterCreationParams creationParams, MethodInfo mi)
+        IFilter CreateRegexFilterStringResolverForMethodInfoTyped<TFilter>(FilterCreationParams creationParams, MethodInfo mi)
         {
             var methodFunc = Delegate.CreateDelegate(typeof(Func<TData, string, string, TFilter, bool>), mi) as Func<TData, string, string, TFilter, bool>;
+            return new RegexFilter<TData, TFilter>(creationParams.regexToken, creationParams.supportedOperators, methodFunc, this);
+        }
+
+        IFilter CreateRegexFilterStructResolverForMethodInfoTyped<TFilter>(FilterCreationParams creationParams, MethodInfo mi)
+        {
+            var methodFunc = Delegate.CreateDelegate(typeof(Func<TData, string, QueryFilterOperator, TFilter, bool>), mi) as Func<TData, string, QueryFilterOperator, TFilter, bool>;
             return new RegexFilter<TData, TFilter>(creationParams.regexToken, creationParams.supportedOperators, methodFunc, this);
         }
 
@@ -1946,9 +1970,21 @@ namespace UnityEditor.Search
             return new RegexFilter<TData, TParam, TFilter>(creationParams.regexToken, creationParams.supportedOperators, methodFunc, this);
         }
 
-        IFilter CreateRegexFilterFunctionResolverForMethodInfoTyped<TParam, TFilter>(FilterCreationParams creationParams, MethodInfo mi)
+        IFilter CreateRegexFilterFunctionStringResolverForMethodInfoTyped<TParam, TFilter>(FilterCreationParams creationParams, MethodInfo mi)
         {
             var methodFunc = Delegate.CreateDelegate(typeof(Func<TData, string, TParam, string, TFilter, bool>), mi) as Func<TData, string, TParam, string, TFilter, bool>;
+
+            if (creationParams.useParameterTransformer)
+            {
+                var parameterTransformerFunc = GetParameterTransformerFunction<TParam>(mi, creationParams.parameterTransformerFunction, creationParams.parameterTransformerAttributeType);
+                return new RegexFilter<TData, TParam, TFilter>(creationParams.regexToken, creationParams.supportedOperators, methodFunc, parameterTransformerFunc, this);
+            }
+            return new RegexFilter<TData, TParam, TFilter>(creationParams.regexToken, creationParams.supportedOperators, methodFunc, this);
+        }
+
+        IFilter CreateRegexFilterFunctionStructResolverForMethodInfoTyped<TParam, TFilter>(FilterCreationParams creationParams, MethodInfo mi)
+        {
+            var methodFunc = Delegate.CreateDelegate(typeof(Func<TData, string, TParam, QueryFilterOperator, TFilter, bool>), mi) as Func<TData, string, TParam, QueryFilterOperator, TFilter, bool>;
 
             if (creationParams.useParameterTransformer)
             {
@@ -2442,6 +2478,12 @@ namespace UnityEditor.Search
             m_Impl.AddFilter(token, filter);
         }
 
+        internal void AddFilter<TFilter>(string token, Func<TData, QueryFilterOperator, TFilter, bool> filterResolver, string[] supportedOperatorType = null)
+        {
+            var filter = new Filter<TData, TFilter>(token, supportedOperatorType, filterResolver, m_Impl);
+            m_Impl.AddFilter(token, filter);
+        }
+
         /// <summary>
         /// Add a new custom filter function with a custom resolver. Useful when you wish to handle all operators yourself.
         /// </summary>
@@ -2451,6 +2493,12 @@ namespace UnityEditor.Search
         /// <param name="filterResolver">Callback used to handle any operators for this filter. Takes an object of type TData, an object of type TParam, the operator token and the filter value, and returns a boolean indicating if the filter passed or not.</param>
         /// <param name="supportedOperatorType">List of supported operator tokens. This list contains the supported operator tokens. Use null or an empty list to indicate that all operators are supported.</param>
         public void AddFilter<TParam, TFilter>(string token, Func<TData, TParam, string, TFilter, bool> filterResolver, string[] supportedOperatorType = null)
+        {
+            var filter = new Filter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver, m_Impl);
+            m_Impl.AddFilter(token, filter);
+        }
+
+        internal void AddFilter<TParam, TFilter>(string token, Func<TData, TParam, QueryFilterOperator, TFilter, bool> filterResolver, string[] supportedOperatorType = null)
         {
             var filter = new Filter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver, m_Impl);
             m_Impl.AddFilter(token, filter);
@@ -2466,6 +2514,12 @@ namespace UnityEditor.Search
         /// <param name="parameterTransformer">Callback used to convert a string to the type TParam. Used when parsing the query to convert what is passed to the function into the correct format.</param>
         /// <param name="supportedOperatorType">List of supported operator tokens. This list contains the supported operator tokens. Use null or an empty list to indicate that all operators are supported.</param>
         public void AddFilter<TParam, TFilter>(string token, Func<TData, TParam, string, TFilter, bool> filterResolver, Func<string, TParam> parameterTransformer, string[] supportedOperatorType = null)
+        {
+            var filter = new Filter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver, parameterTransformer, m_Impl);
+            m_Impl.AddFilter(token, filter);
+        }
+
+        internal void AddFilter<TParam, TFilter>(string token, Func<TData, TParam, QueryFilterOperator, TFilter, bool> filterResolver, Func<string, TParam> parameterTransformer, string[] supportedOperatorType = null)
         {
             var filter = new Filter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver, parameterTransformer, m_Impl);
             m_Impl.AddFilter(token, filter);
@@ -2585,6 +2639,13 @@ namespace UnityEditor.Search
             return filter;
         }
 
+        internal IQueryEngineFilter AddFilter<TFilter>(Regex token, Func<TData, string, QueryFilterOperator, TFilter, bool> filterResolver, string[] supportedOperatorType = null)
+        {
+            var filter = new RegexFilter<TData, TFilter>(token, supportedOperatorType, filterResolver, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
         /// <summary>
         /// Add a new custom filter function with a custom resolver. Useful when you wish to handle all operators yourself.
         /// </summary>
@@ -2595,6 +2656,13 @@ namespace UnityEditor.Search
         /// <param name="supportedOperatorType">List of supported operator tokens. This list contains the supported operator tokens. Use null or an empty list to indicate that all operators are supported.</param>
         /// <returns>A <see cref="IQueryEngineFilter"/>.</returns>
         public IQueryEngineFilter AddFilter<TParam, TFilter>(Regex token, Func<TData, string, TParam, string, TFilter, bool> filterResolver, string[] supportedOperatorType = null)
+        {
+            var filter = new RegexFilter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter AddFilter<TParam, TFilter>(Regex token, Func<TData, string, TParam, QueryFilterOperator, TFilter, bool> filterResolver, string[] supportedOperatorType = null)
         {
             var filter = new RegexFilter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver, m_Impl);
             m_Impl.AddFilter(token, filter);
@@ -2612,6 +2680,13 @@ namespace UnityEditor.Search
         /// <param name="supportedOperatorType">List of supported operator tokens. This list contains the supported operator tokens. Use null or an empty list to indicate that all operators are supported.</param>
         /// <returns>A <see cref="IQueryEngineFilter"/>.</returns>
         public IQueryEngineFilter AddFilter<TParam, TFilter>(Regex token, Func<TData, string, TParam, string, TFilter, bool> filterResolver, Func<string, TParam> parameterTransformer, string[] supportedOperatorType = null)
+        {
+            var filter = new RegexFilter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver, parameterTransformer, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter AddFilter<TParam, TFilter>(Regex token, Func<TData, string, TParam, QueryFilterOperator, TFilter, bool> filterResolver, Func<string, TParam> parameterTransformer, string[] supportedOperatorType = null)
         {
             var filter = new RegexFilter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver, parameterTransformer, m_Impl);
             m_Impl.AddFilter(token, filter);
@@ -2681,6 +2756,13 @@ namespace UnityEditor.Search
             return filter;
         }
 
+        internal IQueryEngineFilter SetFilter<TFilter>(string token, Func<TData, QueryFilterOperator, TFilter, bool> filterResolver, string[] supportedOperatorType = null)
+        {
+            var filter = new Filter<TData, TFilter>(token, supportedOperatorType, filterResolver, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
         internal IQueryEngineFilter SetFilter<TParam, TFilter>(string token, Func<TData, TParam, string, TFilter, bool> filterResolver, string[] supportedOperatorType = null)
         {
             var filter = new Filter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver, m_Impl);
@@ -2688,7 +2770,21 @@ namespace UnityEditor.Search
             return filter;
         }
 
+        internal IQueryEngineFilter SetFilter<TParam, TFilter>(string token, Func<TData, TParam, QueryFilterOperator, TFilter, bool> filterResolver, string[] supportedOperatorType = null)
+        {
+            var filter = new Filter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
         internal IQueryEngineFilter SetFilter<TParam, TFilter>(string token, Func<TData, TParam, string, TFilter, bool> filterResolver, Func<string, TParam> parameterTransformer, string[] supportedOperatorType = null)
+        {
+            var filter = new Filter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver, parameterTransformer, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter SetFilter<TParam, TFilter>(string token, Func<TData, TParam, QueryFilterOperator, TFilter, bool> filterResolver, Func<string, TParam> parameterTransformer, string[] supportedOperatorType = null)
         {
             var filter = new Filter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver, parameterTransformer, m_Impl);
             m_Impl.AddFilter(token, filter);
@@ -2744,6 +2840,13 @@ namespace UnityEditor.Search
             return filter;
         }
 
+        internal IQueryEngineFilter SetFilter<TFilter>(Regex token, Func<TData, string, QueryFilterOperator, TFilter, bool> filterResolver, string[] supportedOperatorType = null)
+        {
+            var filter = new RegexFilter<TData, TFilter>(token, supportedOperatorType, filterResolver, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
         internal IQueryEngineFilter SetFilter<TParam, TFilter>(Regex token, Func<TData, string, TParam, string, TFilter, bool> filterResolver, string[] supportedOperatorType = null)
         {
             var filter = new RegexFilter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver, m_Impl);
@@ -2751,7 +2854,21 @@ namespace UnityEditor.Search
             return filter;
         }
 
+        internal IQueryEngineFilter SetFilter<TParam, TFilter>(Regex token, Func<TData, string, TParam, QueryFilterOperator, TFilter, bool> filterResolver, string[] supportedOperatorType = null)
+        {
+            var filter = new RegexFilter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
         internal IQueryEngineFilter SetFilter<TParam, TFilter>(Regex token, Func<TData, string, TParam, string, TFilter, bool> filterResolver, Func<string, TParam> parameterTransformer, string[] supportedOperatorType = null)
+        {
+            var filter = new RegexFilter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver, parameterTransformer, m_Impl);
+            m_Impl.AddFilter(token, filter);
+            return filter;
+        }
+
+        internal IQueryEngineFilter SetFilter<TParam, TFilter>(Regex token, Func<TData, string, TParam, QueryFilterOperator, TFilter, bool> filterResolver, Func<string, TParam> parameterTransformer, string[] supportedOperatorType = null)
         {
             var filter = new RegexFilter<TData, TParam, TFilter>(token, supportedOperatorType, filterResolver, parameterTransformer, m_Impl);
             m_Impl.AddFilter(token, filter);

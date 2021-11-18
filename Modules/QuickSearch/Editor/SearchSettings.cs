@@ -106,6 +106,21 @@ namespace UnityEditor.Search
         public const int k_RecentSearchMaxCount = 20;
         public static List<string> recentSearches = new List<string>(k_RecentSearchMaxCount);
 
+        static string s_DisabledIndexersString;
+        static HashSet<string> s_DisabledIndexers;
+        public static HashSet<string> disabledIndexers
+        {
+            get
+            {
+                if (s_DisabledIndexers == null)
+                {
+                    var entries = s_DisabledIndexersString ?? string.Empty;
+                    s_DisabledIndexers = new HashSet<string>(entries.Split(new string[] { ";;;" }, StringSplitOptions.RemoveEmptyEntries));
+                }
+                return s_DisabledIndexers;
+            }
+        }
+
         public static HashSet<string> searchItemFavorites = new HashSet<string>();
         public static HashSet<string> searchQueryFavorites = new HashSet<string>();
 
@@ -156,6 +171,7 @@ namespace UnityEditor.Search
             queryBuilder = ReadSetting(settings, nameof(queryBuilder), false);
             ignoredProperties = ReadSetting(settings, nameof(ignoredProperties), "id;name;classname;imagecontentshash");
             helperWidgetCurrentArea = ReadSetting(settings, nameof(helperWidgetCurrentArea), "all");
+            s_DisabledIndexersString = ReadSetting(settings, nameof(disabledIndexers), "");
 
             itemIconSize = EditorPrefs.GetFloat(k_ItemIconSizePrefKey, itemIconSize);
 
@@ -200,6 +216,7 @@ namespace UnityEditor.Search
                 [nameof(queryBuilder)] = queryBuilder,
                 [nameof(ignoredProperties)] = ignoredProperties,
                 [nameof(helperWidgetCurrentArea)] = helperWidgetCurrentArea,
+                [nameof(disabledIndexers)] = string.Join(";;;", disabledIndexers),
 
             };
 
@@ -397,27 +414,40 @@ namespace UnityEditor.Search
                 GUILayout.Space(10);
                 GUILayout.BeginVertical();
                 {
+                    EditorGUILayout.HelpBox("Any changes here requires to restart the editor to take effect.", MessageType.Warning);
+                    if (EditorGUILayout.DropdownButton(Utils.GUIContentTemp("Custom Indexers"), FocusType.Passive))
+                        OpenCustomIndexerMenu();
+
                     EditorGUILayout.LabelField(L10n.Tr("Ignored properties (Use line break or ; to separate tokens)"), EditorStyles.largeLabel);
-                    GUILayout.Space(10);
                     EditorGUI.BeginChangeCheck();
-                    {
                         ignoredProperties = EditorGUILayout.TextArea(ignoredProperties, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
-                    }
                     if (EditorGUI.EndChangeCheck())
-                    {
                         Save();
-                    }
                 }
                 GUILayout.EndVertical();
             }
             GUILayout.EndHorizontal();
         }
 
-        private static SearchAnalytics.GenericEvent SendDebounceValueChanged()
+        private static void OpenCustomIndexerMenu()
         {
-            var e = SearchAnalytics.GenericEvent.Create(null, SearchAnalytics.GenericEventType.PreferenceChanged, nameof(debounceMs));
-            e.intPayload1 = debounceMs;
-            return e;
+            var menu = new GenericMenu();
+            foreach (var customIndexerMethodInfo in TypeCache.GetMethodsWithAttribute<CustomObjectIndexerAttribute>())
+            {
+                var name = $"{customIndexerMethodInfo.DeclaringType.FullName}.{customIndexerMethodInfo.Name}";
+                var enabled = !disabledIndexers.Contains(name);
+                menu.AddItem(new GUIContent(name), enabled, () => ToggleCustomIndexer(name, !enabled));
+            }
+            menu.ShowAsContext();
+        }
+
+        private static void ToggleCustomIndexer(string name, bool enable)
+        {
+            if (enable)
+                disabledIndexers.Remove(name);
+            else
+                disabledIndexers.Add(name);
+            Save();
         }
 
         private static bool Toggle(GUIContent content, string propertyName, bool value)

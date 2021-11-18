@@ -272,20 +272,26 @@ namespace UnityEditor.Search
             SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchPickerOpens, "", "object", "ObjectSelectorEngine");
             var searchQuery = string.Join(" ", context.requiredTypeNames.Select(tn => tn == null ? "" : $"t:{tn.ToLowerInvariant()}"));
             if (string.IsNullOrEmpty(searchQuery))
-            {
                 searchQuery = "";
-            }
             else
-            {
                 searchQuery += " ";
-            }
             var viewstate = new SearchViewState(
-                SearchService.CreateContext(searchQuery, viewFlags), selectHandler, trackingHandler,
+                SearchService.CreateContext(GetObjectSelectorProviders(selectContext), searchQuery, viewFlags), selectHandler, trackingHandler,
                 selectContext.requiredTypeNames.First(), selectContext.requiredTypes.First());
 
             qsWindow = SearchService.ShowPicker(viewstate) as QuickSearch;
-
             return qsWindow != null;
+        }
+
+        internal static IEnumerable<SearchProvider> GetObjectSelectorProviders(ObjectSelectorSearchContext context)
+        {
+            bool allowAssetObjects = (context.visibleObjects & VisibleObjects.Assets) == VisibleObjects.Assets;
+            bool allowSceneObjects = (context.visibleObjects & VisibleObjects.Scene) == VisibleObjects.Scene;
+
+            if (allowAssetObjects)
+                yield return SearchService.GetProvider(AssetProvider.type);
+            if (allowSceneObjects)
+                yield return SearchService.GetProvider(BuiltInSceneObjectsProvider.type);
         }
 
         public void SetSearchFilter(ISearchContext context, string searchFilter)

@@ -51,7 +51,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         public bool isRegistryPackage => m_PackageInfo?.source == PackageSource.Registry;
-        public bool isFromScopedRegistry => this.isRegistryPackage && m_PackageInfo?.registry?.isDefault == false;
+        public bool isFromScopedRegistry => isRegistryPackage && m_PackageInfo?.registry?.isDefault == false;
+        public override RegistryInfo registry => isRegistryPackage ? m_PackageInfo.registry : null;
 
         [SerializeField]
         private bool m_IsFullyFetched;

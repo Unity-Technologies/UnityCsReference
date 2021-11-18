@@ -409,7 +409,7 @@ namespace UnityEditor.Search
         public static readonly GUIContent searchTipsSync = EditorGUIUtility.TrTextContentWithIcon("Enable sync to keep other Editor search fields populated ", EditorGUIUtility.LoadIcon("QuickSearch/SyncSearch On"));
         public static readonly GUIContent saveSearchesIconContent = EditorGUIUtility.TrTextContentWithIcon(string.Empty, Utils.LoadIcon("UnityEditor/Search/SearchQueryAsset Icon"));
         public static readonly GUIContent openSaveSearchesIconContent = EditorGUIUtility.TrTextContentWithIcon(string.Empty, "Open Saved Searches Panel (F3)", Utils.LoadIcon("UnityEditor/Search/SearchQueryAsset Icon"));
-        public static readonly GUIContent queryBuilderIconContent = EditorGUIUtility.TrTextContentWithIcon(string.Empty, "Toggle Query Builder Mode (F2)", Utils.LoadIcon("Assembly Icon"));
+        public static readonly GUIContent queryBuilderIconContent = EditorGUIUtility.TrTextContentWithIcon(string.Empty, "Toggle Query Builder Mode (F1)", Utils.LoadIcon("Assembly Icon"));
 
         public static readonly GUIContent[] searchTipIcons =
         {
@@ -703,7 +703,7 @@ namespace UnityEditor.Search
             public static readonly Color splitterColor;
             public static readonly GUIStyle label;
 
-            public static GUIContent createContent = EditorGUIUtility.IconContent("Toolbar Plus More");
+            public static GUIContent createContent = EditorGUIUtility.IconContent("Toolbar Plus More", "|Add new query block (Tab)");
             public static GUIStyle addNewDropDown = new GUIStyle("ToolbarCreateAddNewDropDown")
             {
                 fixedWidth = 32f,
@@ -725,6 +725,46 @@ namespace UnityEditor.Search
                     normal = new GUIStyleState { textColor = labelColor },
                     hover = new GUIStyleState { textColor = labelColor }
                 };
+            }
+        }
+    }
+
+    static class QueryColors
+    {
+        private static bool isDarkTheme => EditorGUIUtility.isProSkin;
+
+        public static readonly Color area;
+        public static readonly Color filter;
+        public static readonly Color property;
+        public static readonly Color type;
+        public static readonly Color typeIcon;
+        public static readonly Color word;
+        public static readonly Color combine;
+        public static readonly Color expression;
+        public static readonly Color textureBackgroundColor = new Color(0.2f, 0.2f, 0.25f, 0.95f);
+        public static readonly Color selectedBorderColor = new Color(58 / 255f, 121 / 255f, 187 / 255f);
+        public static readonly Color hoveredBorderColor = new Color(0.6f, 0.6f, 0.6f);
+        public static readonly Color normalBorderColor = new Color(0.1f, 0.1f, 0.1f);
+        public static readonly Color selectedTint = new Color(1.3f, 1.2f, 1.3f, 1f);
+
+        static QueryColors()
+        {
+            ColorUtility.TryParseHtmlString("#74CBEE", out area);
+            ColorUtility.TryParseHtmlString("#78CAB6", out filter);
+            ColorUtility.TryParseHtmlString("#A38CD0", out property);
+            ColorUtility.TryParseHtmlString("#EBD05F", out type);
+            ColorUtility.TryParseHtmlString("#EBD05F", out typeIcon);
+            ColorUtility.TryParseHtmlString("#739CEB", out word);
+            ColorUtility.TryParseHtmlString("#B7B741", out combine);
+            ColorUtility.TryParseHtmlString("#8DBB65", out expression);
+            if (isDarkTheme)
+            {
+                ColorUtility.TryParseHtmlString("#383838", out textureBackgroundColor);
+                selectedBorderColor = Color.white;
+            }
+            else
+            {
+                ColorUtility.TryParseHtmlString("#CBCBCB", out textureBackgroundColor);
             }
         }
     }

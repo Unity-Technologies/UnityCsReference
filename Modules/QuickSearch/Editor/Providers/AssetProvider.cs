@@ -69,7 +69,14 @@ namespace UnityEditor.Search.Providers
                     {
                         if (source.EndsWith("prefab", StringComparison.OrdinalIgnoreCase))
                             m_Type = AssetDatabase.GetTypeFromPathAndFileID(source, (long)gid.targetObjectId);
-                        else
+                        else if (flags.HasAll(SearchDocumentFlags.Nested | SearchDocumentFlags.Asset))
+                        {
+                            m_Type = AssetDatabase.GetTypeFromVisibleGUIDAndLocalFileIdentifier(gid.assetGUID, (long)gid.targetObjectId);
+                            if (m_Type == null)
+                                m_Type = obj?.GetType();
+                        }
+
+                        if (m_Type == null)
                             m_Type = AssetDatabase.GetMainAssetTypeAtPath(source);
                         m_HasType = true;
                     }
@@ -84,7 +91,7 @@ namespace UnityEditor.Search.Providers
                 {
                     if (!m_Object)
                     {
-                        if (gid.identifierType == 4)
+                        if (gid.identifierType == (int)IdentifierType.kBuiltInAsset || flags.HasAll(SearchDocumentFlags.Nested | SearchDocumentFlags.Asset))
                         {
                             m_Object = GlobalObjectId.GlobalObjectIdentifierToObjectSlow(gid);
                         }
@@ -137,7 +144,7 @@ namespace UnityEditor.Search.Providers
                 supportsSyncViewSearch = true,
                 isEnabledForContextualSearch = () => Utils.IsFocusedWindowTypeName("ProjectBrowser"),
                 toObject = (item, type) => GetObject(item, type),
-                toType = (item) => GetItemAssetType(item),
+                toType = (item, constrainedType) => GetItemAssetType(item, constrainedType),
                 toKey = (item) => GetDocumentKey(item),
                 fetchItems = (context, items, provider) => SearchAssets(context, provider),
                 fetchLabel = (item, context) => FetchLabel(item),
@@ -273,9 +280,10 @@ namespace UnityEditor.Search.Providers
             return GlobalObjectId.GlobalObjectIdentifierToInstanceIDSlow(gid);
         }
 
-        private static Type GetItemAssetType(in SearchItem item)
+        private static Type GetItemAssetType(in SearchItem item, in Type constrainedType)
         {
             var info = GetInfo(item);
+
             return info.type;
         }
 
@@ -300,12 +308,12 @@ namespace UnityEditor.Search.Providers
 
             if (info.flags.HasAny(SearchDocumentFlags.Asset))
             {
-                var assetType = AssetDatabase.GetMainAssetTypeAtPath(info.source);
+                if (info.flags.HasAny(SearchDocumentFlags.Nested))
+                    return info.obj;
+                var assetType = info.type;
                 if (!type.IsAssignableFrom(assetType) && !(typeof(Component).IsAssignableFrom(type) && assetType == typeof(GameObject)))
                     return null;
-                var obj = AssetDatabase.LoadAssetAtPath(info.source, type);
-                if (obj && type.IsAssignableFrom(obj.GetType()))
-                    return obj;
+                return AssetDatabase.LoadAssetAtPath(info.source, type);
             }
 
             return ToObjectType(GlobalObjectId.GlobalObjectIdentifierToObjectSlow(info.gid), type);
@@ -354,14 +362,14 @@ namespace UnityEditor.Search.Providers
                 yield return p;
 
 
-            yield return new SearchProposition(category: "Filters", label: "Directory (Name)", replacement: "dir=\"folder name\"", icon: Icons.quicksearch);
-            yield return new SearchProposition(category: "Filters", label: "File Size", replacement: "size>=8096", help: "File size in bytes", icon: Icons.quicksearch);
-            yield return new SearchProposition(category: "Filters", label: "File Extension", replacement: "ext:png", icon: Icons.quicksearch);
-            yield return new SearchProposition(category: "Filters", label: "Age", replacement: "age>=1.5", help: "In days, when was the file last modified?", icon: Icons.quicksearch);
-            yield return new SearchProposition(category: "Filters", label: "Sub Asset", replacement: "is:subasset", help: "Yield nested assets (i.e. media from FBX files)", icon: Icons.quicksearch);
+            yield return new SearchProposition(category: "Filters", label: "Directory (Name)", replacement: "dir=\"folder name\"", icon: Icons.quicksearch, color: QueryColors.filter);
+            yield return new SearchProposition(category: "Filters", label: "File Size", replacement: "size>=8096", help: "File size in bytes", icon: Icons.quicksearch, color: QueryColors.filter);
+            yield return new SearchProposition(category: "Filters", label: "File Extension", replacement: "ext:png", icon: Icons.quicksearch, color: QueryColors.filter);
+            yield return new SearchProposition(category: "Filters", label: "Age", replacement: "age>=1.5", help: "In days, when was the file last modified?", icon: Icons.quicksearch, color: QueryColors.filter);
+            yield return new SearchProposition(category: "Filters", label: "Sub Asset", replacement: "is:subasset", help: "Yield nested assets (i.e. media from FBX files)", icon: Icons.quicksearch, color: QueryColors.filter);
 
             var sceneIcon = Utils.LoadIcon("SceneAsset Icon");
-            yield return new SearchProposition(category: null, "Reference", "ref=<$object:none,UnityEngine.Object$>", "Find all assets referencing a specific asset.", icon: sceneIcon);
+            yield return new SearchProposition(category: null, "Reference", "ref=<$object:none,UnityEngine.Object$>", "Find all assets referencing a specific asset.", icon: sceneIcon, color: QueryColors.filter);
         }
 
         private static IEnumerable<SearchProposition> FetchIndexPropositions()
@@ -376,6 +384,7 @@ namespace UnityEditor.Search.Providers
                     category: "Area",
                     label: db.name,
                     replacement: $"a:{db.name}",
+                    color: QueryColors.type,
                     icon: Icons.quicksearch);
 
                 foreach (var kw in db.index.GetKeywords())
@@ -427,6 +436,8 @@ namespace UnityEditor.Search.Providers
             {
                 // Perform a quick search on asset paths
                 var findOptions = FindOptions.Words | FindOptions.Regex | FindOptions.Glob;
+                if (context.options.HasAny(SearchFlags.Packages))
+                    findOptions |= FindOptions.Packages;
                 foreach (var e in FindProvider.Search(context, provider, findOptions))
                 {
                     if (!e.valid)
@@ -550,6 +561,8 @@ namespace UnityEditor.Search.Providers
 
             if (flags.HasAny(SearchDocumentFlags.Grouped))
                 provider = SearchUtils.CreateGroupProvider(provider, GetProviderGroupName(tag, path), provider.priority, cacheProvider: true);
+            else if (flags.HasAny(SearchDocumentFlags.Object))
+                provider = SearchUtils.CreateGroupProvider(provider, "Objects", provider.priority, cacheProvider: true);
             var info = new AssetMetaInfo(path, gid, flags);
             return provider.CreateItem(context, gid ?? info.gid.ToString(), itemScore, filename, null, null, info);
         }

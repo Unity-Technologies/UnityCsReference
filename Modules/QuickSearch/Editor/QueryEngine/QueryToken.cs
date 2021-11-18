@@ -44,7 +44,7 @@ namespace UnityEditor.Search
         public QueryToken(string text, int position, int length)
         {
             this.position = position;
-            this.length = text.Length;
+            this.length = length;
             this.stringView = new StringView(text);
             this.text = text;
         }

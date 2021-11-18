@@ -129,9 +129,9 @@ namespace UnityEditor.Search
                     else
                     {
                         if (searchNode.exact)
-                            matchWordFunc = s => s.Equals(searchNode.searchValue, stringComparison);
+                            matchWordFunc = s => s != null && s.Equals(searchNode.searchValue, stringComparison);
                         else
-                            matchWordFunc = s => s.IndexOf(searchNode.searchValue, stringComparison) >= 0;
+                            matchWordFunc = s => s != null && s.IndexOf(searchNode.searchValue, stringComparison) >= 0;
                     }
                     return o => engine.searchDataCallback(o).Any(data => matchWordFunc(data));
                 }
