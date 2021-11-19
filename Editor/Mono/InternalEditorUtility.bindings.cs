@@ -181,9 +181,6 @@ namespace UnityEditorInternal
             return (CanAppendBuild)BuildPipeline.BuildCanBeAppended(target, location);
         }
 
-        [FreeFunction("InternalEditorUtilityBindings::RegisterExtensionDll")]
-        extern internal static void RegisterExtensionDll(string dllLocation, string guid);
-
         [FreeFunction]
         extern internal static void RegisterPlatformModuleAssembly(string dllName, string dllLocation);
 

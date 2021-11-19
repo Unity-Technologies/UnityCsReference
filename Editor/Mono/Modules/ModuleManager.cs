@@ -30,8 +30,6 @@ namespace UnityEditor.Modules
         [NonSerialized]
         static IPlatformSupportModule s_ActivePlatformModule;
 
-        private const string k_IsCacheBuildKey = "ModuleManagerIsExtensionsRegistered";
-
         internal static bool EnableLogging
         {
             get
@@ -44,7 +42,6 @@ namespace UnityEditor.Modules
         {
             get
             {
-                InitializeModuleManager();
                 if (s_PlatformModules == null)
                     RegisterPlatformSupportModules();
                 return s_PlatformModules;
@@ -126,19 +123,6 @@ namespace UnityEditor.Modules
             }
         }
 
-        [NonSerialized]
-        static ProfilerMarker s_InitializeModuleManagerMarker = new ProfilerMarker("ModuleManager.InitializeModuleManager");
-
-        // entry point from native
-        [RequiredByNativeCode]
-        internal static void InitializeModuleManager()
-        {
-            using (s_InitializeModuleManagerMarker.Auto())
-            {
-                RegisterPackageManager();
-            }
-        }
-
         // entry point from native
         // Note that in order for this function to work properly, it must be called between two domain
         // reloads. The first domain reload is needed because RegisterPlatformSupportModules()
@@ -154,7 +138,6 @@ namespace UnityEditor.Modules
                 return;
             }
 
-            InitializeModuleManager();
             foreach (var module in platformSupportModules.Values)
             {
                 foreach (var library in module.NativeLibraries)
@@ -193,22 +176,6 @@ namespace UnityEditor.Modules
             s_PlatformModules = null;
         }
 
-        private static void RegisterPackageManager()
-        {
-            try
-            {
-                if (!SessionState.GetBool(k_IsCacheBuildKey, false))
-                {
-                    SessionState.SetBool(k_IsCacheBuildKey, true);
-                    LoadLegacyExtensionsFromIvyFiles();
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error initializing extension manager. {0}", ex);
-            }
-        }
-
         class IvyPackageFileData
         {
             public string filename;
@@ -230,116 +197,6 @@ namespace UnityEditor.Modules
                     guid = match.Groups["guid"].Value
                 };
             }
-        }
-
-        static void LoadLegacyExtensionsFromIvyFiles()
-        {
-            //We can't use the cached native type scanner here since this is called to early for that to be built up.
-
-            HashSet<string> ivyFiles;
-            try
-            {
-                ivyFiles = new HashSet<string>();
-
-                string unityExtensionsFolder = FileUtil.CombinePaths(Directory.GetParent(EditorApplication.applicationPath).ToString(), "Data", "UnityExtensions");
-                string playbackEngineFolders = FileUtil.CombinePaths(Directory.GetParent(EditorApplication.applicationPath).ToString(), "PlaybackEngines");
-
-                foreach (var searchPath in new[]
-                     {
-                         FileUtil.NiceWinPath(EditorApplication.applicationContentsPath),
-                         FileUtil.NiceWinPath(unityExtensionsFolder),
-                         FileUtil.NiceWinPath(playbackEngineFolders)
-                     })
-                {
-                    if (!Directory.Exists(searchPath))
-                        continue;
-
-                    ivyFiles.UnionWith(Directory.GetFiles(searchPath, "ivy.xml", SearchOption.AllDirectories));
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error scanning for extension ivy.xml files: {0}", ex);
-                return;
-            }
-
-            if (ivyFiles.Count == 0)
-                return;
-
-            var packages = new Dictionary<string, List<IvyPackageFileData>>();
-
-            var artifactRegex = new Regex(@"<artifact(\s+(name=""(?<name>[^""]*)""|type=""(?<type>[^""]*)""|ext=""(?<ext>[^""]*)""|e:guid=""(?<guid>[^""]*)""))+\s*/>",
-                RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
-
-            foreach (var ivyFile in ivyFiles)
-            {
-                try
-                {
-                    var ivyFileContent = File.ReadAllText(ivyFile);
-                    var artifacts = artifactRegex.Matches(ivyFileContent).Cast<Match>()
-                        .Select(IvyPackageFileData.CreateFromRegexMatch).ToList();
-                    if (artifacts.Count > 0)
-                    {
-                        var packageDir = Path.GetDirectoryName(ivyFile);
-                        packages.Add(packageDir, artifacts);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine("Error reading extensions from ivy.xml file at {0}: {1}", ivyFile, ex);
-                }
-            }
-
-            try
-            {
-                foreach (var packageInfo in packages)
-                {
-                    var files = packageInfo.Value;
-                    foreach (var packageInfoFile in files)
-                    {
-                        string fullPath = Paths.NormalizePath(Path.Combine(packageInfo.Key, packageInfoFile.filename));
-
-                        if (!File.Exists(fullPath))
-                            Debug.LogWarningFormat(
-                                "Missing assembly \t{0} listed in ivy file {1}. Extension support may be incomplete.", fullPath,
-                                packageInfo.Key);
-
-                        if (!packageInfoFile.IsDll)
-                            continue;
-
-                        if (!string.IsNullOrEmpty(packageInfoFile.guid))
-                        {
-                            InternalEditorUtility.RegisterExtensionDll(fullPath.Replace('\\', '/'),
-                                packageInfoFile.guid);
-                        }
-                        else
-                        {
-                            InternalEditorUtility.RegisterPrecompiledAssembly(fullPath, fullPath);
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error scanning for extensions. {0}", ex);
-            }
-        }
-
-        static bool TryParseBuildTarget(string targetString, out BuildTargetGroup buildTargetGroup, out BuildTarget target)
-        {
-            buildTargetGroup = BuildTargetGroup.Standalone;
-            target = BuildTarget.StandaloneWindows;
-            try
-            {
-                target = (BuildTarget)Enum.Parse(typeof(BuildTarget), targetString);
-                buildTargetGroup = BuildPipeline.GetBuildTargetGroup(target);
-                return true;
-            }
-            catch
-            {
-                Debug.LogWarning(string.Format("Couldn't find build target for {0}", targetString));
-            }
-            return false;
         }
 
         private static void RegisterPlatformSupportModules()

@@ -138,6 +138,11 @@ namespace UnityEditor
                 }
 
                 base.Apply();
+
+                foreach (var tab in m_Tabs)
+                {
+                    tab.PostApply();
+                }
             }
         }
     }

@@ -71,15 +71,10 @@ namespace UnityEditor.PackageManager.UI
             packageManagerToolbar.OnEnable();
             packageStatusbar.OnEnable();
 
-            packageManagerToolbar.SetEnabled(!m_PackageDatabase.isEmpty);
-            packageDetails.packageToolbarContainer.SetEnabled(!m_PackageDatabase.isEmpty);
-
             leftColumnContainer.style.flexGrow = m_PackageManagerPrefs.splitterFlexGrow;
             rightColumnContainer.style.flexGrow = 1 - m_PackageManagerPrefs.splitterFlexGrow;
 
             m_PageManager.onRefreshOperationFinish += OnRefreshOperationFinish;
-            m_PageManager.onRefreshOperationStart += OnRefreshOperationStart;
-            m_PageManager.onRefreshOperationError += OnRefreshOperationError;
             m_PackageFiltering.onFilterTabChanged += OnFilterChanged;
 
             PackageManagerWindowAnalytics.Setup();
@@ -116,7 +111,6 @@ namespace UnityEditor.PackageManager.UI
 
                 packageList.HidePackagesShowMessage(false, false, L10n.Tr("UPM server is not running"));
                 packageStatusbar.DisableRefresh();
-                packageManagerToolbar.SetEnabled(false);
                 return;
             }
 
@@ -170,8 +164,6 @@ namespace UnityEditor.PackageManager.UI
             m_PackageManagerPrefs.lastUsedPackageFilter = m_PackageFiltering.currentFilterTab;
 
             m_PageManager.onRefreshOperationFinish -= OnRefreshOperationFinish;
-            m_PageManager.onRefreshOperationStart -= OnRefreshOperationStart;
-            m_PageManager.onRefreshOperationError -= OnRefreshOperationError;
             m_PackageFiltering.onFilterTabChanged -= OnFilterChanged;
 
             packageDetails.OnDisable();
@@ -194,9 +186,6 @@ namespace UnityEditor.PackageManager.UI
 
         private void OnRefreshOperationFinish()
         {
-            packageManagerToolbar.SetEnabled(true);
-            packageDetails.packageToolbarContainer.SetEnabled(true);
-
             if (m_FilterToSelectAfterLoad != null && m_PageManager.GetRefreshTimestamp(m_FilterToSelectAfterLoad) > 0)
                 SelectPackageAndFilter();
         }
@@ -210,8 +199,6 @@ namespace UnityEditor.PackageManager.UI
                 packageLoadBar.Refresh();
                 UIUtils.SetElementDisplay(packageLoadBar, true);
             }
-
-            DisableToolbarIfRefreshInProgress(filterTab);
         }
 
         private void SelectPackageAndFilter()
@@ -270,26 +257,6 @@ namespace UnityEditor.PackageManager.UI
                 AddToClassList("selectedInInspector");
             else
                 RemoveFromClassList("selectedInInspector");
-        }
-
-        private void OnRefreshOperationStart()
-        {
-            DisableToolbarIfRefreshInProgress();
-        }
-
-        private void DisableToolbarIfRefreshInProgress(PackageFilterTab? tab = null)
-        {
-            if (m_PageManager.IsRefreshInProgress(tab))
-            {
-                packageManagerToolbar.SetEnabled(false);
-                packageDetails.packageToolbarContainer.SetEnabled(false);
-            }
-        }
-
-        private void OnRefreshOperationError(UIError error)
-        {
-            packageManagerToolbar.SetEnabled(true);
-            packageDetails.packageToolbarContainer.SetEnabled(true);
         }
 
         public void SelectPackageAndFilter(string packageToSelect, PackageFilterTab? filterTab = null, bool refresh = false, string searchText = "")
