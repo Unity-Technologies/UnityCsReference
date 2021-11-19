@@ -218,6 +218,14 @@ namespace UnityEditor
             m_ExposeTransformEditor.ResetExposedTransformList();
         }
 
+        internal override void PostApply()
+        {
+            base.PostApply();
+
+            //The import process may generate a new avatar, find it.
+            ResetAvatar();
+        }
+
         void ResetAvatar()
         {
             if (assetTarget != null)

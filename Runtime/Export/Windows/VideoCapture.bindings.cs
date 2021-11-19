@@ -134,9 +134,6 @@ namespace UnityEngine.Windows.WebCam
                 throw new ArgumentNullException("onCreatedCallback");
             }
 
-            // NOTE: This option no longer works in XR SDK and (as specified in the Documentation) the parameter is ignored.
-            showHolograms = false;
-
             Instantiate_Internal(showHolograms, onCreatedCallback);
         }
 

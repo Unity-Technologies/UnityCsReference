@@ -747,7 +747,9 @@ namespace UnityEngine.Events
         }
 
         void ISerializationCallbackReceiver.OnBeforeSerialize()
-        {}
+        {
+            DirtyPersistentCalls();
+        }
 
         void ISerializationCallbackReceiver.OnAfterDeserialize()
         {

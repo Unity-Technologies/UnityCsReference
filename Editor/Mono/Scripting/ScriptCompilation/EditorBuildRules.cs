@@ -490,6 +490,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     scriptAssembly.CompilerOptions = targetAssembly.CompilerOptions;
 
                 scriptAssembly.CompilerOptions.AdditionalCompilerArguments = settings.AdditionalCompilerArguments;
+                scriptAssembly.CompilerOptions.RoslynAnalyzerDllPaths = new string[0];
+                scriptAssembly.CompilerOptions.RoslynAnalyzerRulesetPath = string.Empty;
 
                 var editorOnlyTargetAssembly = (targetAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly;
 

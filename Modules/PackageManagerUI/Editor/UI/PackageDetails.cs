@@ -54,7 +54,8 @@ namespace UnityEditor.PackageManager.UI
             Pause,
             Resume,
             Cancel,
-            Import
+            Import,
+            ReDownload
         }
 
         internal static readonly string[] k_PackageActionVerbs =
@@ -69,7 +70,8 @@ namespace UnityEditor.PackageManager.UI
             L10n.Tr("Pause"),
             L10n.Tr("Resume"),
             L10n.Tr("Cancel"),
-            L10n.Tr("Import")
+            L10n.Tr("Import"),
+            L10n.Tr("Re-Download")
         };
 
         private static readonly string[] k_PackageActionInProgressVerbs =
@@ -84,7 +86,8 @@ namespace UnityEditor.PackageManager.UI
             L10n.Tr("Pause"),
             L10n.Tr("Resume"),
             L10n.Tr("Cancel"),
-            L10n.Tr("Import")
+            L10n.Tr("Import"),
+            L10n.Tr("Re-Download")
         };
 
         internal static readonly string[] k_PackageActionTooltips =
@@ -99,7 +102,8 @@ namespace UnityEditor.PackageManager.UI
             L10n.Tr("Click to pause the download of this package."),
             L10n.Tr("Click to resume the download of this package."),
             L10n.Tr("Click to cancel the download of this package."),
-            L10n.Tr("Click to import assets from the package into your project.")
+            L10n.Tr("Click to import assets from the package into your project."),
+            L10n.Tr("Click to re-download the latest version of this package."),
         };
 
         internal static readonly PackageTag[] k_VisibleTags =
@@ -174,6 +178,7 @@ namespace UnityEditor.PackageManager.UI
             removeButton.clickable.clicked += RemoveClick;
             importButton.clickable.clicked += ImportClick;
             downloadButton.clickable.clicked += DownloadClick;
+            redownloadButton.clickable.clicked += DownloadClick;
             cancelButton.clickable.clicked += CancelClick;
             pauseButton.clickable.clicked += PauseClick;
             resumeButton.clickable.clicked += ResumeClick;
@@ -252,6 +257,9 @@ namespace UnityEditor.PackageManager.UI
                 new ButtonDisableCondition(!value, L10n.Tr("You need to restore your network connection to perform this action.")));
 
             RefreshButtonStatusAndTooltip(downloadButton, PackageAction.Download,
+                new ButtonDisableCondition(!value, L10n.Tr("You need to restore your network connection to perform this action.")));
+
+            RefreshButtonStatusAndTooltip(redownloadButton, PackageAction.ReDownload,
                 new ButtonDisableCondition(!value, L10n.Tr("You need to restore your network connection to perform this action.")));
 
             if (value)
@@ -883,6 +891,23 @@ namespace UnityEditor.PackageManager.UI
                         disableIfCompiling);
                 }
 
+                var showReDownloadButton = isLatestVersionOnDisk && (isDownloadRequested || operation == null || !showCancelButton);
+                UIUtils.SetElementDisplay(redownloadButton, showReDownloadButton);
+                if (showReDownloadButton)
+                {
+                    var action = PackageAction.ReDownload;
+                    redownloadButton.text = GetButtonText(action);
+
+                    RefreshButtonStatusAndTooltip(redownloadButton, action,
+                        new ButtonDisableCondition(isDownloadRequested,
+                            L10n.Tr("The re-download request has been sent. Please wait for the download to start.")),
+                        new ButtonDisableCondition(packageDisabled,
+                            L10n.Tr("This package is no longer available and can not be downloaded anymore.")),
+                        new ButtonDisableCondition(!m_Application.isInternetReachable,
+                            L10n.Tr("You need to restore your network connection to perform this action.")),
+                        disableIfCompiling);
+                }
+
                 var importable = displayVersion?.HasTag(PackageTag.Importable) ?? false;
                 var showImportButton = !showCancelButton && importable && isAvailableOnDisk && package.state != PackageState.InProgress;
                 UIUtils.SetElementDisplay(importButton, showImportButton);
@@ -900,6 +925,7 @@ namespace UnityEditor.PackageManager.UI
             else
             {
                 UIUtils.SetElementDisplay(downloadButton, false);
+                UIUtils.SetElementDisplay(redownloadButton, false);
                 UIUtils.SetElementDisplay(cancelButton, false);
                 UIUtils.SetElementDisplay(pauseButton, false);
                 UIUtils.SetElementDisplay(resumeButton, false);
@@ -1252,6 +1278,7 @@ namespace UnityEditor.PackageManager.UI
         internal Button removeButton { get { return cache.Get<Button>("remove"); } }
         internal Button importButton { get { return cache.Get<Button>("import"); } }
         internal Button downloadButton { get { return cache.Get<Button>("download"); } }
+        internal Button redownloadButton { get { return cache.Get<Button>("redownload"); } }
         private Button cancelButton { get { return cache.Get<Button>("cancel"); } }
         internal Button pauseButton { get { return cache.Get<Button>("pause"); } }
         internal Button resumeButton { get { return cache.Get<Button>("resume"); } }
