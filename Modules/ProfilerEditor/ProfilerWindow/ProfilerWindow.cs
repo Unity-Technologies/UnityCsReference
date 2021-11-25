@@ -154,6 +154,8 @@ namespace UnityEditor
 
         const float kNameColumnSize = 350;
 
+        const int k_MainThreadIndex = 0;
+
         HierarchyFrameDataView m_FrameDataView;
 
         // used by Tests/PerformanceTests/Profiler ProfilerWindowTests.CPUViewTests through reflection
@@ -743,6 +745,12 @@ namespace UnityEditor
                         break;
                     }
                 }
+            }
+
+            if (threadIndex == -1 && frameIndex >= ProfilerDriver.firstFrameIndex && frameIndex <= ProfilerDriver.lastFrameIndex)
+            {
+                // if the frame index is in range but no valid thread was found for this thread name, fall back to the main thread
+                threadIndex = k_MainThreadIndex;
             }
 
             if (m_FrameDataView != null && m_FrameDataView.valid)

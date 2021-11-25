@@ -674,8 +674,7 @@ namespace UnityEditor.PackageManager.UI
                 downloadInProgress = progress != null && (progress.state == DownloadProgress.State.InProgress || progress.state == DownloadProgress.State.Started);
                 downloadButton.text = GetButtonText(state == PackageState.Outdated ? PackageAction.Upgrade : PackageAction.Download, downloadInProgress);
 
-                var enableDownloadButton = !displayVersion.isAvailableOnDisk || state == PackageState.InProgress || state == PackageState.Outdated;
-                downloadButton.SetEnabled(enableButton && enableDownloadButton);
+                downloadButton.SetEnabled(enableButton);
 
                 if (downloadInProgress)
                     downloadProgress.SetProgress(progress.total == 0 ? 0 : progress.current / (float)progress.total);

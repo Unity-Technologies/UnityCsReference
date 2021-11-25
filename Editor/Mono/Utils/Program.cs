@@ -128,6 +128,9 @@ namespace UnityEditor.Utils
         {
             Kill();
             _process.Dispose();
+            _stdin?.Dispose();
+            _stdout?.Dispose();
+            _stderr?.Dispose();
         }
 
         public void Kill()

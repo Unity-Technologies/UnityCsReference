@@ -285,7 +285,13 @@ namespace UnityEngine.Experimental.TerrainAPI
         internal static void ClearConnectivity()
         {
             foreach (Terrain terrain in Terrain.activeTerrains)
-                terrain.SetNeighbors(null, null, null, null);
+            {
+                //it should clear only allowAutoConnect flag is true.
+                //Otherwise, the setting value will be cleared on first render frame if allowAutoConnect is set to false.
+                //case 1241302
+                if (terrain.allowAutoConnect)
+                    terrain.SetNeighbors(null, null, null, null);
+            }
         }
 
         internal static TerrainGroups CollectTerrains(bool onlyAutoConnectedTerrains = true)

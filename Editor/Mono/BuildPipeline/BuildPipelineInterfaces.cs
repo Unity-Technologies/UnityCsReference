@@ -466,14 +466,7 @@ namespace UnityEditor.Build
             {
                 foreach (IPreprocessShaders abtc in processors.shaderProcessors)
                 {
-                    try
-                    {
-                        abtc.OnProcessShader(shader, snippet, dataList);
-                    }
-                    catch (Exception e)
-                    {
-                        Debug.LogException(e);
-                    }
+                    abtc.OnProcessShader(shader, snippet, dataList);
                 }
             }
             return dataList.ToArray();
