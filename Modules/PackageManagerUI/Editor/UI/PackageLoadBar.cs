@@ -93,8 +93,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var menu = new DropdownMenu();
 
+            EditorApplication.delayCall -= UpdateMenu;
             if (m_Enabled && m_Total == 0)
-                EditorApplication.delayCall += () => UpdateMenu();
+                EditorApplication.delayCall += UpdateMenu;
 
             AddDropdownItems(menu);
             loadAssetsDropdown.menu = menu.MenuItems().Count > 0 ? menu : null;

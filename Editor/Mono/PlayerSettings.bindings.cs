@@ -1500,7 +1500,8 @@ namespace UnityEditor
         // Defines whether the BlendShape weight range in SkinnedMeshRenderers is clamped
         public static extern bool legacyClampBlendShapeWeights { get; set; }
 
-        public static extern bool uploadClearedTextureDataAfterCreationFromScript { get; set; }
+        [Obsolete("uploadClearedTextureDataAfterCreationFromScript was not working as intended and will be superseded with a per-texture flag.", true)]
+        public static bool uploadClearedTextureDataAfterCreationFromScript { get; set; }
 
         // If enabled, metal API validation will be turned on in the editor
         [NativeProperty("MetalAPIValidation")]

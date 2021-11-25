@@ -11,6 +11,14 @@ namespace UnityEngine.Windows
 {
     public static partial class Input
     {
+        public static void ForwardRawInput(IntPtr rawInputHeaderIndices, IntPtr rawInputDataIndices, uint indicesCount, IntPtr rawInputData, uint rawInputDataSize)
+        {
+            unsafe
+            {
+                ForwardRawInput((uint*)rawInputHeaderIndices, (uint*)rawInputDataIndices, indicesCount, (byte*)rawInputData, rawInputDataSize);
+            }
+        }
+
         public unsafe static void ForwardRawInput(uint* rawInputHeaderIndices, uint* rawInputDataIndices, uint indicesCount, byte* rawInputData, uint rawInputDataSize)
         {
             throw new NotSupportedException();
