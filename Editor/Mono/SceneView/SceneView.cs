@@ -1152,7 +1152,10 @@ namespace UnityEditor
         public override void OnEnable()
         {
             baseRootVisualElement.Insert(0, prefabToolbar);
+            bool overlaysInitializedBefore = overlaysInitialized;
             rootVisualElement.Add(cameraViewVisualElement);
+            CopyOverlaysLayoutIfNeeded(overlaysInitializedBefore);
+
             m_OrientationGizmo = overlayCanvas.overlays.FirstOrDefault(x => x is SceneOrientationGizmo) as SceneOrientationGizmo;
 
             titleContent = GetLocalizedTitleContent();
@@ -1282,6 +1285,15 @@ namespace UnityEditor
         void GridOnGridVisibilityChanged(bool visible)
         {
             gridVisibilityChanged?.Invoke(visible);
+        }
+
+        void CopyOverlaysLayoutIfNeeded(bool overlaysInitialized)
+        {
+            if (!overlaysInitialized && s_SceneViews.Count > 0)
+            {
+                lastActiveSceneView.overlayCanvas.CopySaveData(out var overlaySaveData);
+                overlayCanvas.ApplySaveData(overlaySaveData);
+            }
         }
 
         protected virtual bool SupportsStageHandling()

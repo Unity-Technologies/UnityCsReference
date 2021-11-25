@@ -38,6 +38,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private VisualElement m_ItemsList;
 
+        private VisualElement m_ScrollToTarget;
+
         public PackageListScrollView()
         {
             ResolveDependencies();
@@ -73,23 +75,31 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void ScrollToSelection()
         {
-            ScrollIfNeeded(this, GetSelectedItem()?.element);
+            ScrollIfNeeded(GetSelectedItem()?.element);
         }
 
-        private void ScrollIfNeeded(ScrollView container, VisualElement target)
+        private void ScrollIfNeeded()
         {
-            if (container == null || target == null)
+            if (m_ScrollToTarget == null)
                 return;
 
-            if (float.IsNaN(layout.height) || layout.height == 0 || float.IsNaN(target.layout.height))
+            EditorApplication.delayCall -= ScrollIfNeeded;
+            if (float.IsNaN(layout.height) || layout.height == 0 || float.IsNaN(m_ScrollToTarget.layout.height))
             {
-                EditorApplication.delayCall += () => ScrollIfNeeded(container, target);
+                EditorApplication.delayCall += ScrollIfNeeded;
                 return;
             }
 
-            var scrollViews = UIUtils.GetParentsOfType<ScrollView>(target);
+            var scrollViews = UIUtils.GetParentsOfType<ScrollView>(m_ScrollToTarget);
             foreach (var scrollview in scrollViews)
-                UIUtils.ScrollIfNeeded(scrollview, target);
+                UIUtils.ScrollIfNeeded(scrollview, m_ScrollToTarget);
+            m_ScrollToTarget = null;
+        }
+
+        private void ScrollIfNeeded(VisualElement target)
+        {
+            m_ScrollToTarget = target;
+            ScrollIfNeeded();
         }
 
         public void SetSelectedItemExpanded(bool value)
@@ -305,8 +315,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (nextElement != null)
             {
                 m_PageManager.SetSelected(nextElement.package, nextElement.targetVersion);
-                foreach (var scrollView in UIUtils.GetParentsOfType<ScrollView>(nextElement.element))
-                    ScrollIfNeeded(scrollView, nextElement.element);
+                ScrollIfNeeded(nextElement.element);
                 return true;
             }
             return false;

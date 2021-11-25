@@ -158,13 +158,17 @@ namespace UnityEditor
             if (!hintTriggerRect.Contains(mousePosition) || !GUIClip.visibleRect.Contains(mousePosition)) { return; }
 
             string assetPath = AssetDatabase.GUIDToAssetPath(assetReference.guid);
-            var asset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(assetPath);
-            var tooltipGenerators = TypeCache.GetMethodsWithAttribute<DynamicHintGeneratorAttribute>();
+            var assetType = AssetDatabase.GetMainAssetTypeAtPath(assetPath);
 
-            ScriptableObject scriptableObjectAsset = asset as ScriptableObject;
-            if (scriptableObjectAsset != null)
+            if (assetType == null) //this means the object or its base script has been deleted and is "Missing"
             {
-                DynamicHintContent hint = GetDynamicHintContentOf(tooltipGenerators, scriptableObjectAsset);
+                return;
+            }
+
+            var hintGenerators = TypeCache.GetMethodsWithAttribute<DynamicHintGeneratorAttribute>();
+            if (assetType.IsSubclassOf(typeof(ScriptableObject)))
+            {
+                DynamicHintContent hint = GetDynamicHintContentOf(hintGenerators, assetType, assetPath);
                 if (hint != null)
                 {
                     DrawMouseTooltip(hint, hintTriggerRect);
@@ -172,7 +176,7 @@ namespace UnityEditor
                 return;
             }
 
-            if (asset as GameObject != null)
+            if (assetType == typeof(GameObject))
             {
                 /* GameObjects can have multiple components with custom tooltips
                  * so for now we'll just display the first one.
@@ -180,10 +184,21 @@ namespace UnityEditor
                  * 1) Implement a "priority system" (like OrderedCallbacks)
                  * 2) Display one big tooltip made up with all elements from custom tooltip
                  */
-                GameObject assetAsGameObject = asset as GameObject;
-                foreach (Component component in assetAsGameObject.GetComponents<Component>())
+                GameObject assetGameObject = (GetLoadedObjectFromInstanceID(assetReference.instanceID) as GameObject);
+                if (!assetGameObject)
                 {
-                    DynamicHintContent hint = GetDynamicHintContentOf(tooltipGenerators, component);
+                    /* this seems to happen non-deterministically at project startup depending of what the user is hovering when the editor opens,
+                     * or while the user is scrolling a list of objects and hovers one of them casually, even if the object hovered is actually a
+                     * GameObject.
+                     * */
+                    return;
+                }
+
+                foreach (var component in assetGameObject.GetComponents<Component>())
+                {
+                    if (component == null) { continue; } //this means its script has been deleted and is "Missing"
+
+                    DynamicHintContent hint = GetDynamicHintContentOf(hintGenerators, component.GetType(), string.Empty, component);
                     if (hint == null) { continue; }
 
                     DrawMouseTooltip(hint, hintTriggerRect);
@@ -192,21 +207,19 @@ namespace UnityEditor
             }
         }
 
-        static DynamicHintContent GetDynamicHintContentOf<T>(TypeCache.MethodCollection creatorHandlers, T target)
+        static DynamicHintContent GetDynamicHintContentOf(TypeCache.MethodCollection hintGenerators, Type targetType, string assetPath = "", Component targetAsComponent = null)
         {
-            if (target == null) //this means the script has been deleted and is "Missing"
+            foreach (var hintGenerator in hintGenerators)
             {
-                return null;
-            }
-
-            Type targetType = target.GetType();
-            foreach (var creationHandler in creatorHandlers)
-            {
-                foreach (var attribute in creationHandler.GetCustomAttributes(typeof(DynamicHintGeneratorAttribute), false))
+                foreach (var attribute in hintGenerator.GetCustomAttributes(typeof(DynamicHintGeneratorAttribute), false))
                 {
                     if (targetType == (attribute as DynamicHintGeneratorAttribute).m_Type)
                     {
-                        return creationHandler.Invoke(null, new[] { (object)target }) as DynamicHintContent;
+                        var target = targetAsComponent ? targetAsComponent : AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(assetPath);
+                        if (target)
+                        {
+                            return hintGenerator.Invoke(null, new[] { (object)target }) as DynamicHintContent;
+                        }
                     }
                 }
             }

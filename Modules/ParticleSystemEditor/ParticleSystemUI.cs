@@ -595,16 +595,30 @@ namespace UnityEditor
             else
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Remove")); // Do not allow remove module when always show modules is enabled
 
-            ClipboardContextMenu.overrideCopyContent = EditorGUIUtility.TrTextContent("Copy Module");
-            ClipboardContextMenu.overridePasteContent = EditorGUIUtility.TrTextContent("Paste  Module");
+            var copy = EditorGUIUtility.TrTextContent("Copy Module");
+            var paste = EditorGUIUtility.TrTextContent("Paste Module");
 
             SerializedProperty prop = m_ParticleSystemSerializedObject.FindProperty(m_Modules[moduleIndex].moduleName);
-            EditorGUI.DoPropertyContextMenu(prop, null, menu);
+            if (prop != null)
+            {
+                ClipboardContextMenu.overrideCopyContent = copy;
+                ClipboardContextMenu.overridePasteContent = paste;
 
-            ClipboardContextMenu.overrideCopyContent = null;
-            ClipboardContextMenu.overridePasteContent = null;
+                EditorGUI.DoPropertyContextMenu(prop, null, menu);
 
-            Event.current.Use();
+                ClipboardContextMenu.overrideCopyContent = null;
+                ClipboardContextMenu.overridePasteContent = null;
+
+                Event.current.Use();
+            }
+            else if (m_RendererSerializedObject.targetObjectsCount == 1)
+            {
+                menu.AddItem(copy, false, () => UnityEditorInternal.ComponentUtility.CopyComponent(m_RendererSerializedObject.targetObject as Component));
+                menu.AddItem(paste, false, () => UnityEditorInternal.ComponentUtility.PasteComponentValues(m_RendererSerializedObject.targetObject as Component));
+
+                Event.current.Use();
+                menu.ShowAsContext();
+            }
         }
 
         void EmitterMenuCallback(object obj)
