@@ -52,9 +52,9 @@ namespace UnityEditorInternal.Profiling
         [SerializeField]
         MultiColumnHeaderState m_MultiColumnHeaderState;
 
+        // This is NOT the thread index as it would appear in FrameDataView.threadIndex! It's the index of the thread name within m_ThreadNames.
         [SerializeField]
         int m_ThreadIndex = 0;
-
         int threadIndex
         {
             set
@@ -70,6 +70,8 @@ namespace UnityEditorInternal.Profiling
 
         int m_ThreadIndexDuringLastNonLayoutEvent = 0;
 
+        [NonSerialized]
+        ulong m_LastThreadId = 0;
         [NonSerialized]
         List<ThreadInfo> m_ThreadInfoCache;
         [NonSerialized]
@@ -378,6 +380,17 @@ namespace UnityEditorInternal.Profiling
                 }
                 InitIfNeeded();
 
+                if (frameDataView != null && frameDataView.valid && frameDataView.threadId != m_LastThreadId)
+                {
+                    m_LastThreadId = frameDataView.threadId;
+                    // The thread to be displayed according to the passed in frameDataView had a different id to the last thread the Hierarchy view showed
+                    // There is a chance that the thread was changed by something else than the ProfilerFrameHierarchyView.
+                    // The cached threadName and threadIndex are therefore meaningless and the thread names likely outdated
+                    // Store the threads name so that the threadIndex can be adjusted while Rebuilding m_threadNames.
+                    threadName = string.IsNullOrEmpty(frameDataView.threadGroupName) ? frameDataView.threadName : string.Format("{0}.{1}", frameDataView.threadGroupName, frameDataView.threadName);
+                    UpdateThreadNamesAndThreadIndex(frameDataView, forceUpdate: true);
+                }
+
                 var collectingSamples = ProfilerDriver.enabled && (ProfilerDriver.profileEditor || EditorApplication.isPlaying);
                 var isSearchAllowed = string.IsNullOrEmpty(treeView.searchString) || !(collectingSamples && ProfilerDriver.deepProfiling);
 
@@ -522,9 +535,9 @@ namespace UnityEditorInternal.Profiling
             return 10;
         }
 
-        void UpdateThreadNamesAndThreadIndex(HierarchyFrameDataView frameDataView)
+        void UpdateThreadNamesAndThreadIndex(HierarchyFrameDataView frameDataView, bool forceUpdate = false)
         {
-            if (m_FrameIndex == frameDataView.frameIndex)
+            if (m_FrameIndex == frameDataView.frameIndex && !forceUpdate)
                 return;
 
             m_FrameIndex = frameDataView.frameIndex;

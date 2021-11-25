@@ -91,6 +91,7 @@ namespace UnityEditor
         // This is so the garbage collector won't clean up SerializedObject behind the scenes.
         internal SerializedObject m_SerializedObject;
         internal string m_CachedLocalizedDisplayName = "";
+        string m_CachedTooltip;
 
         internal SerializedProperty() {}
         ~SerializedProperty() { Dispose(); }
@@ -195,6 +196,7 @@ namespace UnityEditor
         {
             SerializedProperty property = CopyInternal();
             property.m_SerializedObject = m_SerializedObject;
+            property.m_CachedTooltip = m_CachedTooltip;
             return property;
         }
 
@@ -459,7 +461,15 @@ namespace UnityEditor
             get
             {
                 Verify(VerifyFlags.IteratorNotAtEnd);
-                return GetTooltipInternal();
+                if (!isValidTooltipCache)
+                {
+                    isValidTooltipCache = true;
+                    m_CachedTooltip = GetTooltipInternal();
+                    if (string.IsNullOrEmpty(m_CachedTooltip))
+                        m_CachedTooltip = ScriptAttributeUtility.GetHandler(this).tooltip ?? string.Empty;
+                }
+
+                return m_CachedTooltip;
             }
         }
 
@@ -1529,20 +1539,22 @@ namespace UnityEditor
         // Is the cache for a display name string valid?
         internal bool isValidDisplayNameCache
         {
-            get
-            {
-                Verify(VerifyFlags.IteratorNotAtEnd);
-                return GetIsValidDisplayNameCache();
-            }
-            set
-            {
-                Verify(VerifyFlags.IteratorNotAtEnd);
-                SetIsValidDisplayNameCache(value);
-            }
+            get { return GetIsValidDisplayNameCache(); }
+            set { SetIsValidDisplayNameCache(value); }
         }
 
         extern private bool GetIsValidDisplayNameCache();
         extern private void SetIsValidDisplayNameCache(bool value);
+
+        // Is the cache for a tooltip string valid?
+        internal bool isValidTooltipCache
+        {
+            get { return GetIsValidTooltipCache(); }
+            set { SetIsValidTooltipCache(value); }
+        }
+
+        extern private bool GetIsValidTooltipCache();
+        extern private void SetIsValidTooltipCache(bool value);
 
         public SerializedProperty GetFixedBufferElementAtIndex(int index)
         {

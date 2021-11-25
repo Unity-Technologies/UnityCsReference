@@ -19,6 +19,12 @@ namespace UnityEditor
         private Rect m_LastVisibleRect;
         private OptimizedBlockState m_OptimizedBlockState = OptimizedBlockState.CheckOptimizedBlock;
 
+        static class Styles
+        {
+            public static string missingScriptMessage = L10n.Tr("The associated script can not be loaded.\nPlease fix any compile errors\nand assign a valid script.");
+            public static string missingScriptMessageForPrefabInstance = L10n.Tr("The associated script can not be loaded.\nPlease fix any compile errors\nand open Prefab Mode and assign a valid script to the Prefab Asset.");
+        }
+
         internal override bool GetOptimizedGUIBlock(bool isDirty, bool isVisible, out float height)
         {
             height = -1;
@@ -141,6 +147,17 @@ namespace UnityEditor
             return m_SerializedObject.ApplyModifiedProperties();
         }
 
+        internal static bool IsMissingScriptPartOfPrefabInstance(Editor editor)
+        {
+            if (editor.target is MonoBehaviour)
+            {
+                var id = ((MonoBehaviour)editor.target).GetInstanceID();
+                return PrefabUtility.IsInstanceIDPartOfNonAssetPrefabInstance(id);
+            }
+
+            return false;
+        }
+
         public bool MissingMonoBehaviourGUI()
         {
             serializedObject.Update();
@@ -149,17 +166,20 @@ namespace UnityEditor
                 return false;
 
             bool scriptLoaded = CheckIfScriptLoaded(scriptProperty);
+
             bool oldGUIEnabled = GUI.enabled;
-            if (!GUI.enabled && !scriptLoaded)
+
+            if (!scriptLoaded)
             {
-                GUI.enabled = true;
+                GUI.enabled = IsMissingScriptPartOfPrefabInstance(this) == false; // We don't support changing script as an override on Prefab Instances (case 1255454)
             }
 
             EditorGUILayout.PropertyField(scriptProperty);
 
             if (!scriptLoaded)
             {
-                ShowScriptNotLoadedWarning();
+                GUI.enabled = true;
+                ShowScriptNotLoadedWarning(IsMissingScriptPartOfPrefabInstance(this));
             }
 
             GUI.enabled = oldGUIEnabled;
@@ -176,19 +196,18 @@ namespace UnityEditor
             return targetScript != null && targetScript.GetScriptTypeWasJustCreatedFromComponentMenu();
         }
 
-        private static void ShowScriptNotLoadedWarning()
+        private static void ShowScriptNotLoadedWarning(bool missingScriptIsOnPrefabInstance)
         {
-            var text = L10n.Tr(
-                "The associated script can not be loaded.\nPlease fix any compile errors\nand assign a valid script.");
-            EditorGUILayout.HelpBox(text, MessageType.Warning, true);
+            var message = missingScriptIsOnPrefabInstance ? Styles.missingScriptMessageForPrefabInstance : Styles.missingScriptMessage;
+            EditorGUILayout.HelpBox(message, MessageType.Warning, true);
         }
 
-        internal static void ShowScriptNotLoadedWarning(SerializedProperty scriptProperty)
+        internal static void ShowScriptNotLoadedWarning(SerializedProperty scriptProperty, bool isPartOfPrefabInstance)
         {
             bool scriptLoaded = CheckIfScriptLoaded(scriptProperty);
             if (!scriptLoaded)
             {
-                ShowScriptNotLoadedWarning();
+                ShowScriptNotLoadedWarning(isPartOfPrefabInstance);
             }
         }
 

@@ -69,11 +69,7 @@ namespace UnityEditor.PackageManager.UI
                 packageManagerToolbar.OnEnable();
                 packageStatusbar.OnEnable();
 
-                packageManagerToolbar.SetEnabled(!PackageDatabase.instance.isEmpty);
-                packageDetails.packageToolbarContainer.SetEnabled(!PackageDatabase.instance.isEmpty);
-
                 PackageDatabase.instance.onRefreshOperationFinish += OnRefreshOperationFinish;
-                PackageDatabase.instance.onRefreshOperationStart += OnRefreshOperationStart;
                 PackageDatabase.instance.onRefreshOperationError += OnRefreshOperationError;
 
                 PackageManagerWindowAnalytics.Setup();
@@ -144,7 +140,6 @@ namespace UnityEditor.PackageManager.UI
             PackageManagerPrefs.instance.lastUsedPackageFilter = PackageFiltering.instance.currentFilterTab;
 
             PackageDatabase.instance.onRefreshOperationFinish -= OnRefreshOperationFinish;
-            PackageDatabase.instance.onRefreshOperationStart -= OnRefreshOperationStart;
             PackageDatabase.instance.onRefreshOperationError -= OnRefreshOperationError;
 
             packageDetails.OnDisable();
@@ -169,9 +164,6 @@ namespace UnityEditor.PackageManager.UI
 
         private void OnRefreshOperationFinish(PackageFilterTab tab)
         {
-            packageManagerToolbar.SetEnabled(true);
-            packageDetails.packageToolbarContainer.SetEnabled(true);
-
             if (m_FilterToSelectAfterLoad != null)
             {
                 PackageFiltering.instance.currentFilterTab = (PackageFilterTab)m_FilterToSelectAfterLoad;
@@ -222,26 +214,9 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        private void OnRefreshOperationStart()
-        {
-            DisableToolbarIfRefreshInProgress();
-        }
-
-        private void DisableToolbarIfRefreshInProgress(PackageFilterTab? tab = null)
-        {
-            if (PackageDatabase.instance.IsRefreshInProgress(tab))
-            {
-                packageManagerToolbar.SetEnabled(false);
-                packageDetails.packageToolbarContainer.SetEnabled(false);
-            }
-        }
-
         private void OnRefreshOperationError(Error error)
         {
             Debug.Log("[PackageManager] Error " + error.message);
-
-            packageManagerToolbar.SetEnabled(true);
-            packageDetails.packageToolbarContainer.SetEnabled(true);
         }
 
         [UsedByNativeCode]
