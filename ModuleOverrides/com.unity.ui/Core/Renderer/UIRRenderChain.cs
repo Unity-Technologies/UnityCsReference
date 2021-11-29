@@ -24,7 +24,6 @@ namespace UnityEngine.UIElements.UIR
         public uint updatedMeshAllocations, newMeshAllocations;
         public uint groupTransformElementsChanged;
         public uint immedateRenderersActive;
-        public uint textUpdates;
     }
 
     internal class RenderChain : IDisposable
@@ -164,14 +163,6 @@ namespace UnityEngine.UIElements.UIR
         ChainBuilderStats m_Stats;
         uint m_StatsElementsAdded, m_StatsElementsRemoved;
 
-        // Text regen stuff. Will be removed when UIE uses SDF fonts
-        VisualElement m_FirstTextElement;
-        Implementation.UIRTextUpdatePainter m_TextUpdatePainter;
-        int m_TextElementCount;
-        int m_DirtyTextStartIndex;
-        int m_DirtyTextRemaining;
-        bool m_FontWasReset;
-        Dictionary<VisualElement, Vector2> m_LastGroupTransformElementScale = new Dictionary<VisualElement, Vector2>();
         TextureRegistry m_TextureRegistry = TextureRegistry.instance;
 
         internal RenderChainCommand firstCommand { get { return m_FirstCommand; } }
@@ -221,11 +212,16 @@ namespace UnityEngine.UIElements.UIR
             this.device = deviceObj;
             this.atlas = atlas;
             this.vectorImageManager = vectorImageMan;
+
+            // TODO: Share these across all panels
+            vertsPool = new TempAllocator<Vertex>(8192, 2048, 64 * 1024);
+            indicesPool = new TempAllocator<UInt16>(8192 << 1, 2048 << 1, (64 * 1024) << 1);
+            jobManager = new JobManager();
+
             this.shaderInfoAllocator.Construct();
             this.opacityIdAccelerator = new OpacityIdAccelerator();
 
             painter = new Implementation.UIRStylePainter(this);
-            Font.textureRebuilt += OnFontReset;
 
             var rp = panel as BaseRuntimePanel;
             if (rp != null && rp.drawToCameras)
@@ -252,16 +248,15 @@ namespace UnityEngine.UIElements.UIR
             UIRUtility.Destroy(m_DefaultWorldSpaceMat);
             m_DefaultMat = m_DefaultWorldSpaceMat = null;
 
-            Font.textureRebuilt -= OnFontReset;
-            painter?.Dispose();
-            m_TextUpdatePainter?.Dispose();
+            vertsPool.Dispose();
+            indicesPool.Dispose();
+            jobManager.Dispose();
             vectorImageManager?.Dispose();
             shaderInfoAllocator.Dispose();
             device?.Dispose();
             opacityIdAccelerator?.Dispose();
 
             painter = null;
-            m_TextUpdatePainter = null;
             atlas = null;
             shaderInfoAllocator = new UIRVEShaderInfoAllocator();
             device = null;
@@ -405,6 +400,8 @@ namespace UnityEngine.UIElements.UIR
             }
             s_MarkerTransformProcessing.End();
 
+            jobManager.CompleteNudgeJobs();
+
             m_BlockDirtyRegistration = true; // Processing visuals may call generateVisualContent, which must be restricted to the allowed operations
             m_DirtyTracker.dirtyID++;
             dirtyClass = (int)RenderDataDirtyTypeClasses.Visuals;
@@ -427,29 +424,19 @@ namespace UnityEngine.UIElements.UIR
                     m_Stats.dirtyProcessed++;
                 }
             }
+
+            jobManager.CompleteConvertMeshJobs();
+            jobManager.CompleteClosingMeshJobs();
+
             opacityIdAccelerator.CompleteJobs();
             s_MarkerVisualsProcessing.End();
             m_BlockDirtyRegistration = false;
 
+            vertsPool.Reset();
+            indicesPool.Reset();
+
             // Done with all dirtied elements
             m_DirtyTracker.Reset();
-
-            ProcessTextRegen(true);
-
-            if (m_FontWasReset)
-            {
-                // We regenerate the text when the font texture was reset since we don't have any guarantees
-                // the the glyphs are going to end up at the same spot in the texture.
-                // Up to two passes may be necessary with time-slicing turned off to fully update the text.
-                const int kMaxTextPasses = 2;
-                for (int i = 0; i < kMaxTextPasses; ++i)
-                {
-                    if (!m_FontWasReset)
-                        break;
-                    m_FontWasReset = false;
-                    ProcessTextRegen(false);
-                }
-            }
 
 
             // Commit new requests for atlases if any
@@ -501,41 +488,6 @@ namespace UnityEngine.UIElements.UIR
                 DrawStats();
         }
 
-        private void ProcessTextRegen(bool timeSliced)
-        {
-            if ((timeSliced && m_DirtyTextRemaining == 0) || m_TextElementCount == 0)
-                return;
-
-            s_MarkerTextRegen.Begin();
-            if (m_TextUpdatePainter == null)
-                m_TextUpdatePainter = new Implementation.UIRTextUpdatePainter(this);
-
-            var dirty = m_FirstTextElement;
-            m_DirtyTextStartIndex = timeSliced ? m_DirtyTextStartIndex % m_TextElementCount : 0;
-            for (int i = 0; i < m_DirtyTextStartIndex; i++)
-                dirty = dirty.renderChainData.nextText;
-            if (dirty == null)
-                dirty = m_FirstTextElement;
-
-            int maxCount = timeSliced ? Math.Min(50, m_DirtyTextRemaining) : m_TextElementCount;
-            for (int i = 0; i < maxCount; i++)
-            {
-                Implementation.RenderEvents.ProcessRegenText(this, dirty, m_TextUpdatePainter, device, ref m_Stats);
-                dirty = dirty.renderChainData.nextText;
-                m_DirtyTextStartIndex++;
-                if (dirty == null)
-                {
-                    dirty = m_FirstTextElement;
-                    m_DirtyTextStartIndex = 0;
-                }
-            }
-
-            m_DirtyTextRemaining = Math.Max(0, m_DirtyTextRemaining - maxCount);
-            if (m_DirtyTextRemaining > 0)
-                (panel as BaseVisualElementPanel)?.OnVersionChanged(m_FirstTextElement, VersionChangeType.Transform); // Force a window refresh
-            s_MarkerTextRegen.End();
-        }
-
         #region UIElements event handling callbacks
         public void UIEOnChildAdded(VisualElement ve)
         {
@@ -583,11 +535,6 @@ namespace UnityEngine.UIElements.UIR
 
             m_StatsElementsRemoved += Implementation.RenderEvents.DepthFirstOnChildRemoving(this, ve);
             Debug.Assert(!ve.renderChainData.isInChain);
-        }
-
-        public void StopTrackingGroupTransformElement(VisualElement ve)
-        {
-            m_LastGroupTransformElementScale.Remove(ve);
         }
 
         public void UIEOnRenderHintsChanged(VisualElement ve)
@@ -677,6 +624,9 @@ namespace UnityEngine.UIElements.UIR
         internal UIRenderDevice device { get; private set; }
         internal AtlasBase atlas { get; private set; }
         internal VectorImageManager vectorImageManager { get; private set; }
+        internal TempAllocator<Vertex> vertsPool { get; private set; }
+        internal TempAllocator<UInt16> indicesPool { get; private set; }
+        internal JobManager jobManager { get; private set; }
         internal UIRVEShaderInfoAllocator shaderInfoAllocator; // Not a property because this is a struct we want to mutate
         internal Implementation.UIRStylePainter painter { get; private set; }
         internal bool drawStats { get; set; }
@@ -768,42 +718,6 @@ namespace UnityEngine.UIElements.UIR
         {
             if (firstCommand.prev == null)
                 m_FirstCommand = lastCommand.next;
-        }
-
-        internal void AddTextElement(VisualElement ve)
-        {
-            if (m_FirstTextElement != null)
-            {
-                m_FirstTextElement.renderChainData.prevText = ve;
-                ve.renderChainData.nextText = m_FirstTextElement;
-            }
-            m_FirstTextElement = ve;
-            m_TextElementCount++;
-        }
-
-        internal void RemoveTextElement(VisualElement ve)
-        {
-            if (ve.renderChainData.prevText != null)
-                ve.renderChainData.prevText.renderChainData.nextText = ve.renderChainData.nextText;
-            if (ve.renderChainData.nextText != null)
-                ve.renderChainData.nextText.renderChainData.prevText = ve.renderChainData.prevText;
-            if (m_FirstTextElement == ve)
-                m_FirstTextElement = ve.renderChainData.nextText;
-            ve.renderChainData.prevText = ve.renderChainData.nextText = null;
-            m_TextElementCount--;
-        }
-
-        internal void OnGroupTransformElementChangedTransform(VisualElement ve)
-        {
-            // This is a hack for graph view until UIE moves to TMP
-            Vector2 lastScale;
-            if (!m_LastGroupTransformElementScale.TryGetValue(ve, out lastScale) ||
-                (ve.worldTransform.m00 != lastScale.x) ||
-                (ve.worldTransform.m11 != lastScale.y))
-            {
-                m_DirtyTextRemaining = m_TextElementCount;
-                m_LastGroupTransformElementScale[ve] = new Vector2(ve.worldTransform.m00, ve.worldTransform.m11);
-            }
         }
 
         unsafe static RenderNodeData AccessRenderNodeData(IntPtr obj)
@@ -931,8 +845,6 @@ namespace UnityEngine.UIElements.UIR
             UIEOnOpacityChanged(panel.visualTree);
         }
 
-        void OnFontReset(Font font) { m_FontWasReset = true; }
-
         public void AppendTexture(VisualElement ve, Texture src, TextureId id, bool isAtlas)
         {
             BasicNode<TextureEntry> node = m_TexturePool.Get();
@@ -988,7 +900,6 @@ namespace UnityEngine.UIElements.UIR
             GUI.Label(rc, "Visual update flats\t: " + m_Stats.nonRecursiveVisualUpdates); rc.y += y_off;
             GUI.Label(rc, "Dirty processed\t: " + m_Stats.dirtyProcessed); rc.y += y_off;
             GUI.Label(rc, "Group-xform updates\t: " + m_Stats.groupTransformElementsChanged); rc.y += y_off;
-            GUI.Label(rc, "Text regens\t: " + m_Stats.textUpdates); rc.y += y_off;
 
             if (!realDevice)
                 return;
@@ -1063,7 +974,7 @@ namespace UnityEngine.UIElements.UIR
         internal int childrenStencilRef;
         internal int childrenMaskDepth;
 
-        internal bool disableNudging, usesLegacyText;
+        internal bool disableNudging;
         internal MeshHandle data, closingData;
         internal Matrix4x4 verticesSpace; // Transform describing the space which the vertices in 'data' are relative to
         internal int displacementUVStart, displacementUVEnd;
@@ -1072,21 +983,11 @@ namespace UnityEngine.UIElements.UIR
         internal float compositeOpacity;
         internal Color backgroundColor;
 
-        // Text update acceleration
-        internal VisualElement prevText, nextText;
-        internal List<RenderChainTextEntry> textEntries;
-
         internal BasicNode<TextureEntry> textures;
 
         internal RenderChainCommand lastClosingOrLastCommand { get { return lastClosingCommand ?? lastCommand; } }
         static internal bool AllocatesID(BMPAlloc alloc) { return (alloc.ownedState == OwnedState.Owned) && alloc.IsValid(); }
         static internal bool InheritsID(BMPAlloc alloc) { return (alloc.ownedState == OwnedState.Inherited) && alloc.IsValid(); }
-    }
-
-    internal struct RenderChainTextEntry
-    {
-        internal RenderChainCommand command;
-        internal int firstVertex, vertexCount;
     }
 
     struct TextureEntry

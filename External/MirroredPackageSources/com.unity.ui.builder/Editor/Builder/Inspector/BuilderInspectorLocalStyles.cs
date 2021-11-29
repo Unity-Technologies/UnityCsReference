@@ -1,12 +1,11 @@
-using UnityEngine.UIElements;
-using System.Collections.Generic;
 using System;
-using UnityEngine.Assertions;
-
+using System.Collections.Generic;
 using System.Linq;
-using UnityEditor;
+using UnityEngine.Assertions;
 using UnityEngine.Pool;
+using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
+using UnityEditor;
 
 namespace Unity.UI.Builder
 {
@@ -30,9 +29,6 @@ namespace Unity.UI.Builder
             m_StyleFields.updateStyleCategoryFoldoutOverrides = UpdateStyleCategoryFoldoutOverrides;
 
             m_LocalStylesSection = m_Inspector.Q<PersistedFoldout>("inspector-local-styles-foldout");
-
-            // We need to hide new Text Asset style property fields in any Unity version older than 2021.1.
-            m_LocalStylesSection.Query(className: "unity-builder-no-font-asset-property-container").ForEach(e => e.style.display = DisplayStyle.None);
 
             var styleCategories = m_LocalStylesSection.Query<PersistedFoldout>(
                 className: "unity-builder-inspector__style-category-foldout").ToList();
@@ -303,6 +299,5 @@ namespace Unity.UI.Builder
 
             TransitionPropertyDropdownContent.Content = content;
         }
-
     }
 }

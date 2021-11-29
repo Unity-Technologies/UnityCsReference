@@ -92,7 +92,7 @@ namespace Unity.UI.Builder
             m_Field.Q(TextField.textInputUssName).RegisterCallback<BlurEvent>(e =>
             {
                 value = m_Field?.value?.Trim();
-            });
+            }, TrickleDown.TrickleDown);
 
             m_Field.RegisterValueChangedCallback<string>(e =>
             {

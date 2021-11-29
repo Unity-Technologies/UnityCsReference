@@ -23,13 +23,12 @@ namespace UnityEditor
 {
     internal class EditorApplicationLayout
     {
-        static private PlayModeView m_PlayModeView = null;
         static private bool m_MaximizePending = false;
-
+        static List<PlayModeView> m_PlayModeViewList = null;
 
         static internal bool IsInitializingPlaymodeLayout()
         {
-            return m_PlayModeView != null;
+            return m_PlayModeViewList != null && m_PlayModeViewList.Count > 0;
         }
 
         static internal void SetPlaymodeLayout()
@@ -40,6 +39,22 @@ namespace UnityEditor
 
         static internal void SetStopmodeLayout()
         {
+            if (m_PlayModeViewList != null && m_PlayModeViewList.Count > 0)
+            {
+                var monitorNames = EditorFullscreenController.GetConnectedDisplayNames();
+                foreach (var playModeView in m_PlayModeViewList)
+                {
+                    if (playModeView.fullscreenMonitorIdx >= monitorNames.Length)
+                        continue;
+
+                    EditorFullscreenController.SetSettingsForCurrentDisplay(playModeView.fullscreenMonitorIdx);
+                    EditorFullscreenController.OnExitPlaymode();
+                }
+
+                m_PlayModeViewList.Clear();
+                m_PlayModeViewList = null;
+            }
+
             WindowLayout.ShowAppropriateViewOnEnterExitPlaymode(false);
             Toolbar.RepaintToolbar();
         }
@@ -50,53 +65,104 @@ namespace UnityEditor
             SetStopmodeLayout();
         }
 
+        static internal void InitializePlaymodeViewList()
+        {
+            if (m_PlayModeViewList == null)
+            {
+                m_PlayModeViewList = new List<PlayModeView>();
+            }
+            else
+            {
+                m_PlayModeViewList.Clear();
+            }
+        }
+
         static internal void InitPlaymodeLayout()
         {
-            m_PlayModeView = WindowLayout.ShowAppropriateViewOnEnterExitPlaymode(true) as PlayModeView;
-            if (m_PlayModeView == null)
-                return;
+            InitializePlaymodeViewList();
+            WindowLayout.ShowAppropriateViewOnEnterExitPlaymodeList(true, out m_PlayModeViewList);
 
-            if (m_PlayModeView.enterPlayModeBehavior == PlayModeView.EnterPlayModeBehavior.PlayMaximized)
+            var fullscreenDetected = false;
+            var monitorNames = EditorFullscreenController.GetConnectedDisplayNames();
+
+            foreach (var playModeView in m_PlayModeViewList)
             {
-                if (m_PlayModeView.m_Parent is DockArea dockArea)
+                if (playModeView == null)
+                    continue;
+
+                if (playModeView.fullscreenMonitorIdx >= monitorNames.Length)
+                    continue;
+
+                if (playModeView.enterPlayModeBehavior == PlayModeView.EnterPlayModeBehavior.PlayFullscreen)
                 {
-                    m_MaximizePending = WindowLayout.MaximizePrepare(dockArea.actualView);
+                    EditorFullscreenController.SetSettingsForCurrentDisplay(playModeView.fullscreenMonitorIdx);
+                    EditorFullscreenController.isFullscreenOnPlay = true;
+                    EditorFullscreenController.fullscreenDisplayId = playModeView.fullscreenMonitorIdx;
+                    EditorFullscreenController.isToolbarEnabledOnFullscreen = false;
+                    EditorFullscreenController.targetDisplayID = playModeView.targetDisplay;
 
-                    var gameView = dockArea.actualView as GameView;
-                    if (gameView != null)
-                        m_PlayModeView.m_Parent.EnableVSync(gameView.vSyncEnabled);
+                    if (playModeView.m_Parent is DockArea dockArea && dockArea.actualView is GameView gv)
+                    {
+                        playModeView.m_Parent.EnableVSync(gv.vSyncEnabled);
+                        EditorFullscreenController.enableVSync = gv.vSyncEnabled;
+                        EditorFullscreenController.selectedSizeIndex = gv.selectedSizeIndex;
+                    }
+                    fullscreenDetected = true;
                 }
+                else if (!fullscreenDetected)
+                {
+                    EditorFullscreenController.isFullscreenOnPlay = false;
+                }
+
+                if (playModeView.enterPlayModeBehavior == PlayModeView.EnterPlayModeBehavior.PlayMaximized)
+                {
+                    if (playModeView.m_Parent is DockArea dockArea)
+                    {
+                        m_MaximizePending = WindowLayout.MaximizePrepare(dockArea.actualView);
+                        var gv = dockArea.actualView as GameView;
+                        if (gv != null)
+                        {
+                            playModeView.m_Parent.EnableVSync(gv.vSyncEnabled);
+                        }
+                    }
+                }
+
+                EditorFullscreenController.OnEnterPlaymode();
+
+                if (!EditorFullscreenController.isFullscreenOnPlay)
+                {
+                    playModeView.m_Parent.SetAsStartView();
+                    playModeView.m_Parent.SetAsLastPlayModeView();
+
+                    if (playModeView.maximized)
+                    {
+                        playModeView.m_Parent.Focus();
+                    }
+
+                    if (playModeView is IGameViewOnPlayMenuUser)
+                    {
+                        if (((IGameViewOnPlayMenuUser)playModeView).playFocused)
+                        {
+                            playModeView.m_Parent.Focus();
+                        }
+                    }
+                }
+                Toolbar.RepaintToolbar();
             }
-
-            // Mark this PlayModeView window as the start view so the backend
-            // can set size and mouseoffset properly for this view
-            m_PlayModeView.m_Parent.SetAsStartView();
-            m_PlayModeView.m_Parent.SetAsLastPlayModeView();
-
-            //GameView should be actively focussed If Playmode is entered in maximized state - case 1252097
-            if (m_PlayModeView.maximized)
-                m_PlayModeView.m_Parent.Focus();
-
-            Toolbar.RepaintToolbar();
         }
 
         static internal void FinalizePlaymodeLayout()
         {
-            if (m_PlayModeView != null)
+            foreach (var playModeView in m_PlayModeViewList)
             {
-                if (m_MaximizePending)
-                    WindowLayout.MaximizePresent(m_PlayModeView);
+                if (playModeView != null && playModeView.enterPlayModeBehavior == PlayModeView.EnterPlayModeBehavior.PlayMaximized)
+                {
+                    if (m_MaximizePending)
+                        WindowLayout.MaximizePresent(playModeView);
 
-                m_PlayModeView.m_Parent.ClearStartView();
+                    playModeView.m_Parent.ClearStartView();
+                }
             }
-
-            Clear();
-        }
-
-        static private void Clear()
-        {
-            m_MaximizePending = false;
-            m_PlayModeView = null;
         }
     }
 } // namespace

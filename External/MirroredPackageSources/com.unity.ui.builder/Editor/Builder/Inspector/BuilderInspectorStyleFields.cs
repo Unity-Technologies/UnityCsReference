@@ -1,16 +1,15 @@
-using UnityEngine;
-using UnityEngine.UIElements;
+using Object = UnityEngine.Object;
 using System;
-using System.Reflection;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor.UIElements;
-using Object = UnityEngine.Object;
-using UnityEngine.Assertions;
+using System.Reflection;
 using UnityEditor;
+using UnityEditor.UIElements;
+using UnityEngine;
+using UnityEngine.Assertions;
 using UnityEngine.Pool;
 using UnityEngine.TextCore.Text;
-
+using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
@@ -60,13 +59,14 @@ namespace Unity.UI.Builder
             return fieldList;
         }
 
-        public static StyleProperty GetStyleProperty(StyleRule rule, string styleName)
+        public static StyleProperty GetLastStyleProperty(StyleRule rule, string styleName)
         {
             if (rule == null)
                 return null;
 
-            foreach (var property in rule.properties)
+            for (var i = rule.properties.Length - 1; i >= 0; --i)
             {
+                var property = rule.properties[i];
                 if (property.name == styleName)
                     return property;
             }
@@ -255,6 +255,7 @@ namespace Unity.UI.Builder
                     var choices = new List<string>();
                     var labels = new List<string>();
                     var enumType = enumValue.GetType();
+
                     foreach (Enum item in Enum.GetValues(enumType))
                     {
                         var typeName = item.ToString();
@@ -264,6 +265,7 @@ namespace Unity.UI.Builder
                         // do support it, we'll have to live with a bit of a hack here.
                         if (typeName == "Scroll")
                             continue;
+
                         var label = string.Empty;
                         if (typeName == "Auto")
                             label = "AUTO";
@@ -507,7 +509,7 @@ namespace Unity.UI.Builder
             var val = field.GetValue(currentVisualElement.computedStyle, null);
             var valType = val == null ? typeof(object) : val.GetType();
             var cSharpStyleName = ConvertUssStyleNameToCSharpStyleName(styleName);
-            var styleProperty = GetStyleProperty(currentRule, cSharpStyleName);
+            var styleProperty = GetLastStyleProperty(currentRule, cSharpStyleName);
             bool useStyleProperty = styleProperty != null && !styleProperty.IsVariable();
 
             if (IsComputedStyleFloat(val) && fieldElement is FloatField)
@@ -903,7 +905,7 @@ namespace Unity.UI.Builder
             bool isRowOverride = false;
             foreach (var styleField in styleFields)
             {
-                if (GetStyleProperty(currentRule, styleField.bindingPath) != null)
+                if (GetLastStyleProperty(currentRule, styleField.bindingPath) != null)
                 {
                     isRowOverride = true;
                     styleField.RemoveFromClassList(BuilderConstants.InspectorLocalStyleResetClassName);
@@ -1046,7 +1048,7 @@ namespace Unity.UI.Builder
             foreach (var path in foldoutElement.bindingPathArray)
             {
                 var cSharpStyleName = ConvertUssStyleNameToCSharpStyleName(path);
-                var styleProperty = GetStyleProperty(currentRule, cSharpStyleName);
+                var styleProperty = GetLastStyleProperty(currentRule, cSharpStyleName);
 
                 var field = FindStylePropertyInfo(path);
                 if (field == null)
@@ -1068,7 +1070,7 @@ namespace Unity.UI.Builder
             foreach (var path in foldoutElement.bindingPathArray)
             {
                 var cSharpStyleName = ConvertUssStyleNameToCSharpStyleName(path);
-                var styleProperty = GetStyleProperty(currentRule, cSharpStyleName);
+                var styleProperty = GetLastStyleProperty(currentRule, cSharpStyleName);
 
                 var field = FindStylePropertyInfo(path);
                 if (field == null)
@@ -1184,7 +1186,7 @@ namespace Unity.UI.Builder
                         manipulator.SetVariableAtIndex(index, newValue);
                 }
 
-                if (styleName != "transition-property" && null != GetStyleProperty(currentRule, "transition-property"))
+                if (styleName != "transition-property" && null != GetLastStyleProperty(currentRule, "transition-property"))
                 {
                     var transitionData = currentVisualElement.computedStyle.transitionData.Read();
                     var maxCount = Mathf.Max(transitionData.MaxCount(), manipulator.GetValuesCount());
@@ -1192,6 +1194,7 @@ namespace Unity.UI.Builder
                     if (null == manipulator.styleProperty)
                         TransferTransitionComputedData(manipulator, transitionData.transitionProperty, StyleValueType.Enum);
                 }
+
                 return isNewValue;
             }
         }
@@ -1279,7 +1282,7 @@ namespace Unity.UI.Builder
                     {
                         foreach (var path in foldout.bindingPathArray)
                         {
-                            styleProperty = styleSheet.FindProperty(currentRule, path);
+                            styleProperty = styleSheet.FindLastProperty(currentRule, path);
                             if (normalStatusCondition(styleProperty))
                             {
                                 return DropdownMenuAction.Status.Normal;
@@ -1291,7 +1294,7 @@ namespace Unity.UI.Builder
                 var styleName = fieldElement.GetProperty(BuilderConstants.InspectorStylePropertyNameVEPropertyName) as string;
                 if (!string.IsNullOrEmpty(styleName))
                 {
-                    styleProperty = styleSheet.FindProperty(currentRule, styleName);
+                    styleProperty = styleSheet.FindLastProperty(currentRule, styleName);
                     if (normalStatusCondition(styleProperty))
                         return DropdownMenuAction.Status.Normal;
                 }
@@ -1423,7 +1426,7 @@ namespace Unity.UI.Builder
 
         StyleProperty GetOrCreateStylePropertyByStyleName(string styleName)
         {
-            var styleProperty = styleSheet.FindProperty(currentRule, styleName);
+            var styleProperty = styleSheet.FindLastProperty(currentRule, styleName);
             if (styleProperty == null)
                 styleProperty = styleSheet.AddProperty(currentRule, styleName);
 
@@ -1890,7 +1893,6 @@ namespace Unity.UI.Builder
         void OnFieldValueChangeFont(ChangeEvent<Object> e, string styleName)
         {
             var field = e.target as ObjectField;
-
             var styleProperty = GetOrCreateStylePropertyByStyleName(styleName);
             var isNewValue = styleProperty.values.Length == 0;
 
@@ -1948,7 +1950,7 @@ namespace Unity.UI.Builder
 
             PostStyleFieldSteps(field, styleName, isNewValue);
         }
-        
+
         void OnFieldValueChangeScale(ChangeEvent<BuilderScale> e, string styleName)
         {
             var field = e.target as ScaleStyleField;
@@ -2070,7 +2072,6 @@ namespace Unity.UI.Builder
             return val is StyleTextShadow || val is TextShadow || val is BuilderTextShadow;
         }
 
-
         static public bool IsComputedStyleTransformOrigin(object val)
         {
             return val is StyleTransformOrigin || val is TransformOrigin || val is BuilderTransformOrigin;
@@ -2085,7 +2086,7 @@ namespace Unity.UI.Builder
         {
             return val is StyleRotate || val is Rotate || val is BuilderRotate;
         }
-        
+
         static public bool IsComputedStyleScale(object val)
         {
             return val is StyleScale || val is Scale || val is BuilderScale;
@@ -2167,7 +2168,7 @@ namespace Unity.UI.Builder
             var style = (StyleRotate)val;
             return new BuilderRotate(style);
         }
-        
+
         static public BuilderScale GetComputedStyleScaleValue(object val)
         {
             if (val is BuilderScale)
@@ -2178,7 +2179,7 @@ namespace Unity.UI.Builder
 
             var style = (StyleScale)val;
             return new BuilderScale(style);
-        }     
+        }
 
         static public int GetComputedStyleIntValue(object val)
         {

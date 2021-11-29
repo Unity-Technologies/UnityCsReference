@@ -153,6 +153,7 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public static readonly string contentUssClassName = ussClassName + "__content";
 
+        internal static readonly string toggleInspectorUssClassName = toggleUssClassName + "--inspector";
         internal static readonly string ussFoldoutDepthClassName = ussClassName + "--depth-";
         internal static readonly int ussFoldoutMaxDepth = 4;
 
@@ -205,6 +206,8 @@ namespace UnityEngine.UIElements
                 RemoveFromClassList(ussFoldoutDepthClassName + i);
             }
             RemoveFromClassList(ussFoldoutDepthClassName + "max");
+
+            m_Toggle.AssignInspectorStyleIfNecessary(toggleInspectorUssClassName);
 
             // Figure out the real depth of this actual Foldout...
             var depth = this.GetFoldoutDepth();

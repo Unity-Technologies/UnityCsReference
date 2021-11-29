@@ -1,9 +1,9 @@
 using JetBrains.Annotations;
+using Object = UnityEngine.Object;
 using System;
 using System.Threading;
 using UnityEditor.PackageManager;
 using UnityEditor.UIElements;
-using Object = UnityEngine.Object;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -48,7 +48,6 @@ namespace Unity.UI.Builder
         public ImageStyleField(string label) : base(label)
         {
             AddType(typeof(Texture2D), "Texture");
-
             AddType(typeof(RenderTexture), "Render Texture");
 
             styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(k_UssPath));
@@ -136,7 +135,6 @@ namespace Unity.UI.Builder
 
             return addRequest.Result != null;
         }
-
 
         public void TryEnableVectorGraphicTypeSupport()
         {

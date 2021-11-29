@@ -1,4 +1,3 @@
-
 using System;
 
 namespace Unity.UI.Builder
@@ -27,4 +26,3 @@ namespace Unity.UI.Builder
         }
     }
 }
-

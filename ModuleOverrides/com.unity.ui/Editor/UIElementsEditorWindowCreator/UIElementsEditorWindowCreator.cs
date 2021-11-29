@@ -233,8 +233,8 @@ namespace UnityEditor.UIElements
             cSharpTextField.RegisterCallback<ChangeEvent<string>>(OnCSharpValueChanged);
 
             var cSharpTextInput = cSharpTextField.Q(TextField.textInputUssName);
-            cSharpTextInput.RegisterCallback<KeyDownEvent>(OnReturnKey);
-            cSharpTextInput.RegisterCallback<FocusEvent>(e => HideErrorMessage());
+            cSharpTextInput.RegisterCallback<KeyDownEvent>(OnReturnKey, TrickleDown.TrickleDown);
+            cSharpTextInput.RegisterCallback<FocusEvent>(e => HideErrorMessage(), TrickleDown.TrickleDown);
 
             m_Root.schedule.Execute(() => cSharpTextField.Focus());
 
@@ -246,8 +246,8 @@ namespace UnityEditor.UIElements
             });
 
             var uxmlTextInput = uxmlTextField.Q(TextField.textInputUssName);
-            uxmlTextInput.RegisterCallback<KeyDownEvent>(OnReturnKey);
-            uxmlTextInput.RegisterCallback<FocusEvent>(e => HideErrorMessage());
+            uxmlTextInput.RegisterCallback<KeyDownEvent>(OnReturnKey, TrickleDown.TrickleDown);
+            uxmlTextInput.RegisterCallback<FocusEvent>(e => HideErrorMessage(), TrickleDown.TrickleDown);
 
             m_Root.Q<Toggle>(k_UXMLToggleName).RegisterValueChangedCallback((evt) =>
             {
@@ -271,8 +271,8 @@ namespace UnityEditor.UIElements
             });
 
             var ussTextInput = ussTextField.Q(TextField.textInputUssName);
-            ussTextInput.RegisterCallback<KeyDownEvent>(OnReturnKey);
-            ussTextInput.RegisterCallback<FocusEvent>(e => HideErrorMessage());
+            ussTextInput.RegisterCallback<KeyDownEvent>(OnReturnKey, TrickleDown.TrickleDown);
+            ussTextInput.RegisterCallback<FocusEvent>(e => HideErrorMessage(), TrickleDown.TrickleDown);
 
             m_Root.Q<Toggle>(k_USSToggleName).RegisterValueChangedCallback((evt) =>
             {

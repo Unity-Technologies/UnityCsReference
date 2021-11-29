@@ -10,6 +10,17 @@ using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
+    internal struct PackagesChangeArgs
+    {
+        public IEnumerable<IPackage> added;
+        public IEnumerable<IPackage> removed;
+        public IEnumerable<IPackage> updated;
+
+        // To avoid unnecessary cloning of packages, preUpdate is now set to be optional, the list is either empty or the same size as the the postUpdate list
+        public IEnumerable<IPackage> preUpdate;
+        public IEnumerable<IPackage> progressUpdated;
+    }
+
     [Serializable]
     internal class PackageDatabase : ISerializationCallbackReceiver
     {
@@ -19,13 +30,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         // We only know the id `com.unity.a` after the package has been successfully installed, and we'll trigger an event for that.
         public virtual event Action<string, string> onPackageUniqueIdFinalize = delegate {};
 
-        public virtual event Action<IPackage> onPackageProgressUpdate = delegate {};
         public virtual event Action<IPackage> onVerifiedGitPackageUpToDate = delegate {};
 
-        public virtual event Action<IEnumerable<IPackage> /*added*/,
-                                    IEnumerable<IPackage> /*removed*/,
-                                    IEnumerable<IPackage> /*preUpdated*/,
-                                    IEnumerable<IPackage> /*postUpdated*/> onPackagesChanged = delegate {};
+        public virtual event Action<PackagesChangeArgs> onPackagesChanged = delegate {};
 
         public virtual event Action<TermOfServiceAgreementStatus> onTermOfServiceAgreementStatusChange = delegate {};
 
@@ -94,9 +101,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 package.ResolveDependencies(m_AssetStoreUtils, ioProxy);
         }
 
-        public virtual bool isEmpty { get { return !m_Packages.Any(); } }
+        public virtual bool isEmpty => !m_Packages.Any();
 
-        private static readonly IPackage[] k_EmptyList = new IPackage[0] {};
+        private static readonly IPackage[] k_EmptyList = new IPackage[0] { };
 
         public virtual bool isInstallOrUninstallInProgress
         {
@@ -104,9 +111,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             get { return m_UpmClient.isAddRemoveOrEmbedInProgress; }
         }
 
-        public virtual IEnumerable<IPackage> allPackages { get { return m_Packages.Values; } }
-        public virtual IEnumerable<IPackage> assetStorePackages { get { return m_Packages.Values.Where(p => p is AssetStorePackage); } }
-        public virtual IEnumerable<IPackage> upmPackages { get { return m_Packages.Values.Where(p => p is UpmPackage); } }
+        public virtual IEnumerable<IPackage> allPackages => m_Packages.Values;
 
         public virtual bool IsUninstallInProgress(IPackage package)
         {
@@ -270,30 +275,46 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
+        private void TriggerOnPackagesChanged(IEnumerable<IPackage> added = null, IEnumerable<IPackage> removed = null, IEnumerable<IPackage> updated = null, IEnumerable<IPackage> preUpdate = null, IEnumerable<IPackage> progressUpdated = null)
+        {
+            added ??= k_EmptyList;
+            updated ??= k_EmptyList;
+            removed ??= k_EmptyList;
+            preUpdate ??= k_EmptyList;
+            progressUpdated ??= k_EmptyList;
+
+            if (!added.Any() && !updated.Any() && !removed.Any() && !preUpdate .Any() && !progressUpdated.Any())
+                return;
+
+            onPackagesChanged?.Invoke(new PackagesChangeArgs { added = added, updated = updated, removed = removed, preUpdate = preUpdate, progressUpdated = progressUpdated });
+        }
+
         public virtual void AddPackageError(IPackage package, UIError error)
         {
-            var packagePreUpdate = package.Clone();
             package.AddError(error);
-            onPackagesChanged?.Invoke(k_EmptyList, k_EmptyList, new[] { packagePreUpdate }, new[] { package });
+            TriggerOnPackagesChanged(updated: new[] { package });
         }
 
         public virtual void ClearPackageErrors(IPackage package, Predicate<UIError> match = null)
         {
-            var packagePreUpdate = package.Clone();
             package.ClearErrors(match);
-            onPackagesChanged?.Invoke(k_EmptyList, k_EmptyList, new[] { packagePreUpdate }, new[] { package });
+            TriggerOnPackagesChanged(updated: new[] { package });
         }
 
         public virtual IEnumerable<IPackage> packagesInError => allPackages.Where(p => p.errors.Any());
 
+        public virtual void SetPackagesProgress(IEnumerable<IPackage> packages, PackageProgress progress)
+        {
+            var packagesUpdated = packages.Where(p => p != null && p.progress != progress).ToList();
+            foreach (var package in packagesUpdated)
+                package.progress = progress;
+            if (packagesUpdated.Any())
+                TriggerOnPackagesChanged(updated: packagesUpdated, progressUpdated: packagesUpdated);
+        }
+
         public virtual void SetPackageProgress(IPackage package, PackageProgress progress)
         {
-            if (package == null || package.progress == progress)
-                return;
-
-            package.progress = progress;
-
-            onPackageProgressUpdate?.Invoke(package);
+            SetPackagesProgress(new[] { package }, progress);
         }
 
         public void OnEnable()
@@ -307,7 +328,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_UpmCache.onVerifiedGitPackageUpToDate += OnVerifiedGitPackageUpToDate;
 
-            m_AssetStoreClient.onPackagesChanged += OnPackagesChanged;
+            m_AssetStoreClient.onPackagesChanged += OnAssetStorePackagesChanged;
             m_AssetStoreClient.onPackageVersionUpdated += OnUpmPackageVersionUpdated;
 
             m_AssetStoreDownloadManager.onDownloadProgress += OnDownloadProgress;
@@ -327,7 +348,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmClient.onRemoveOperation -= OnUpmRemoveOperation;
             m_UpmClient.onAddAndRemoveOperation -= OnUpmAddAndRemoveOperation;
 
-            m_AssetStoreClient.onPackagesChanged -= OnPackagesChanged;
+            m_AssetStoreClient.onPackagesChanged -= OnAssetStorePackagesChanged;
             m_AssetStoreClient.onPackageVersionUpdated -= OnUpmPackageVersionUpdated;
 
             m_AssetStoreDownloadManager.onDownloadProgress -= OnDownloadProgress;
@@ -340,7 +361,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual void Reload()
         {
-            onPackagesChanged?.Invoke(Enumerable.Empty<IPackage>(), m_Packages.Values, Enumerable.Empty<IPackage>(), Enumerable.Empty<IPackage>());
+            TriggerOnPackagesChanged(removed: allPackages);
 
             m_AssetStoreClient.ClearCache();
             m_UpmClient.ClearCache();
@@ -409,13 +430,27 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_Packages.Remove(p.uniqueId);
                 m_SerializedAssetStorePackages = new List<AssetStorePackage>();
 
-                onPackagesChanged?.Invoke(k_EmptyList, assetStorePackages, k_EmptyList, k_EmptyList);
+                TriggerOnPackagesChanged(removed: assetStorePackages);
             }
         }
 
         private void OnVerifiedGitPackageUpToDate(string packageId)
         {
             onVerifiedGitPackageUpToDate.Invoke(GetPackage(packageId));
+        }
+
+        // Since an asset store needs to go through the transition from PlaceholderPackage to AssetStorePackage
+        // the progress we set on the PlaceholderPackage is not preserved when the transition happens
+        // as a result, we need a preprocessing step to set the progress again on newly created AssetStorePackages
+        private void OnAssetStorePackagesChanged(IEnumerable<IPackage> packages)
+        {
+            foreach (var package in packages)
+            {
+                if (package.progress != PackageProgress.Downloading && GetPackage(package.uniqueId)?.progress == PackageProgress.Downloading
+                    && m_AssetStoreDownloadManager.GetDownloadOperation(package.uniqueId)?.isInProgress == true)
+                    package.progress = PackageProgress.Downloading;
+            }
+            OnPackagesChanged(packages);
         }
 
         private void OnPackagesChanged(IEnumerable<IPackage> packages)
@@ -427,7 +462,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             var packagesRemoved = new List<IPackage>();
 
             var packagesPreUpdate = new List<IPackage>();
-            var packagesPostUpdate = new List<IPackage>();
+            var packagesUpdated = new List<IPackage>();
+
+            var packageProgressUpdated = new List<IPackage>();
 
             var specialInstallationChecklist = new List<IPackage>();
 
@@ -448,7 +485,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                     if (oldPackage != null)
                     {
                         packagesPreUpdate.Add(oldPackage);
-                        packagesPostUpdate.Add(package);
+                        packagesUpdated.Add(package);
+
+                        if (oldPackage.progress != package.progress)
+                            packageProgressUpdated.Add(package);
                     }
                     else
                         packagesAdded.Add(package);
@@ -460,8 +500,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }
             }
 
-            if (packagesAdded.Count + packagesRemoved.Count + packagesPostUpdate.Count > 0)
-                onPackagesChanged?.Invoke(packagesAdded, packagesRemoved, packagesPreUpdate, packagesPostUpdate);
+            TriggerOnPackagesChanged(added: packagesAdded, removed: packagesRemoved, preUpdate: packagesPreUpdate, updated: packagesUpdated, progressUpdated: packageProgressUpdated);
 
             // special handling to make sure onInstallSuccess events are called correctly when special unique id is used
             for (var i = m_UpmClient.specialInstallations.Count - 1; i >= 0; i--)
@@ -499,12 +538,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnUpmAddAndRemoveOperation(UpmAddAndRemoveOperation operation)
         {
-            foreach (var packageId in operation.packageIdsToReset)
-                SetPackageProgress(GetPackageByIdOrName(packageId), PackageProgress.Resetting);
-            foreach (var packageId in operation.packageIdsToAdd)
-                SetPackageProgress(GetPackageByIdOrName(packageId), PackageProgress.Installing);
-            foreach (var packageName in operation.packagesNamesToRemove)
-                SetPackageProgress(GetPackage(packageName), PackageProgress.Removing);
+            SetPackagesProgress(operation.packageIdsToReset.Select(idOrName => GetPackageByIdOrName(idOrName)), PackageProgress.Resetting);
+            SetPackagesProgress(operation.packageIdsToAdd.Select(idOrName => GetPackageByIdOrName(idOrName)), PackageProgress.Installing);
+            SetPackagesProgress(operation.packagesNamesToRemove.Select(name => GetPackage(name)), PackageProgress.Removing);
 
             operation.onOperationError += (op, err) =>
             {
@@ -517,8 +553,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             };
             operation.onOperationFinalized += (op) =>
             {
-                foreach (var packageIdOrName in operation.packageIdsToAdd.Concat(operation.packageIdsToReset).Concat(operation.packagesNamesToRemove))
-                    SetPackageProgress(GetPackageByIdOrName(packageIdOrName), PackageProgress.None);
+                var packagesToAddOrReset = operation.packageIdsToAdd.Concat(operation.packageIdsToReset).Select(idOrName => GetPackageByIdOrName(idOrName));
+                var packagesToRemove = operation.packagesNamesToRemove.Select(name => GetPackage(name));
+                SetPackagesProgress(packagesToAddOrReset.Concat(packagesToRemove), PackageProgress.None);
             };
         }
 
@@ -549,7 +586,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (placeHolderPackage is PlaceholderPackage)
             {
                 m_Packages.Remove(specialUniqueId);
-                onPackagesChanged?.Invoke(Enumerable.Empty<IPackage>(), new[] { placeHolderPackage }, Enumerable.Empty<IPackage>(), Enumerable.Empty<IPackage>());
+                TriggerOnPackagesChanged(removed: new[] { placeHolderPackage });
             }
             m_UpmClient.specialInstallations.Remove(specialUniqueId);
         }
@@ -583,12 +620,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnUpmPackageVersionUpdated(string packageUniqueId, IPackageVersion version)
         {
             var package = GetPackage(packageUniqueId) as UpmPackage;
-            if (package != null)
-            {
-                var packagePreUpdate = package.Clone();
-                package.UpdateVersion(version as UpmPackageVersion);
-                onPackagesChanged?.Invoke(k_EmptyList, k_EmptyList, new[] { packagePreUpdate }, new[] { package });
-            }
+            if (package == null)
+                return;
+            package.UpdateVersion(version as UpmPackageVersion);
+            TriggerOnPackagesChanged(updated: new[] { package });
         }
 
         public void ClearSamplesCache()
@@ -671,16 +706,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmClient.ExtraFetch(version.uniqueId);
         }
 
-        public virtual bool IsDownloadInProgress(IPackageVersion version)
-        {
-            return m_AssetStoreDownloadManager.GetDownloadOperation(version.packageUniqueId)?.isInProgress ?? false;
-        }
-
-        public virtual bool IsDownloadInPause(IPackageVersion version)
-        {
-            return m_AssetStoreDownloadManager.GetDownloadOperation(version.packageUniqueId)?.isInPause ?? false;
-        }
-
         private bool CheckTermOfServiceAgreement(Action onTosAccepted, Action<UIError> onError)
         {
             if (termOfServiceAgreementStatus == TermOfServiceAgreementStatus.NotAccepted)
@@ -700,49 +725,54 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual bool Download(IPackage package)
         {
-            if (!package.Is(PackageType.AssetStore) || !PlayModeDownload.CanBeginDownload())
+            return Download(new[] { package });
+        }
+
+        public virtual bool Download(IEnumerable<IPackage> packages)
+        {
+            if (!PlayModeDownload.CanBeginDownload())
                 return false;
 
-            return CheckTermOfServiceAgreement(() => Download_Internal(package), error => AddPackageError(package, error));
+            return CheckTermOfServiceAgreement(() => Download_Internal(packages), error =>
+            {
+                var firstPackage = packages.FirstOrDefault();
+                if (firstPackage != null && !packages.Skip(1).Any())
+                    AddPackageError(firstPackage, error);
+                else
+                {
+                    // In the case of bulk download, we don't know which package to add the error to.
+                    // We might need to think of better way to present the error to the user.
+                    // It will be addressed in https://jira.unity3d.com/browse/PAX-1994.
+                    Debug.Log(error);
+                }
+            });
         }
 
-        public virtual void Download(IEnumerable<IPackageVersion> versions)
+        private void Download_Internal(IEnumerable<IPackage> packages)
         {
-            // We need better error handling in this function.
-            // It will be addressed in https://jira.unity3d.com/browse/PAX-1994.
-            CheckTermOfServiceAgreement(() => Download_Internal(versions), error => Debug.Log(error));
-        }
-
-        private void Download_Internal(IPackage package)
-        {
-            // When we start a new download, we want to clear past operation errors to give it a fresh start.
-            // Eventually we want a better design on how to show errors, to be further addressed in https://jira.unity3d.com/browse/PAX-1332
-            // We need to clear errors before calling download because Download can fail right away (
-            package.ClearErrors(e => e.errorCode == UIErrorCode.AssetStoreOperationError);
-            SetPackageProgress(package, PackageProgress.Downloading);
-            m_AssetStoreDownloadManager.Download(package);
-        }
-
-        private void Download_Internal(IEnumerable<IPackageVersion> versions)
-        {
-            foreach (var version in versions)
-                Download_Internal(version.package);
+            foreach (var package in packages)
+            {
+                // When we start a new download, we want to clear past operation errors to give it a fresh start.
+                // Eventually we want a better design on how to show errors, to be further addressed in https://jira.unity3d.com/browse/PAX-1332
+                // We need to clear errors before calling download because Download can fail right away
+                package.ClearErrors(e => e.errorCode == UIErrorCode.AssetStoreOperationError);
+                m_AssetStoreDownloadManager.Download(package);
+            }
+            SetPackagesProgress(packages, PackageProgress.Downloading);
         }
 
         public virtual void AbortDownload(IPackage package)
         {
-            if (!package.Is(PackageType.AssetStore))
-                return;
-            SetPackageProgress(package, PackageProgress.None);
-            m_AssetStoreDownloadManager.AbortDownload(package.uniqueId);
+            AbortDownload(new[] { package });
         }
 
-        public virtual void AbortDownload(IEnumerable<IPackageVersion> versions)
+        public virtual void AbortDownload(IEnumerable<IPackage> packages)
         {
             // We need to figure out why the IEnumerable is being altered instead of using ToArray.
             // It will be addressed in https://jira.unity3d.com/browse/PAX-1995.
-            foreach (var version in versions.ToArray())
-                AbortDownload(version.package);
+            foreach (var package in packages.ToArray())
+                m_AssetStoreDownloadManager.AbortDownload(package.uniqueId);
+            SetPackagesProgress(packages, PackageProgress.None);
         }
 
         public virtual void PauseDownload(IPackage package)

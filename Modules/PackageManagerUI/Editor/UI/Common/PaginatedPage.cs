@@ -68,12 +68,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         // in the case of paginated pages, we don't need to change the list itself (it's predefined and trumps other custom filtering)
         // hence we don't need to trigger any list change event.
-        public override void OnPackagesChanged(IEnumerable<IPackage> added, IEnumerable<IPackage> removed, IEnumerable<IPackage> preUpdate, IEnumerable<IPackage> postUpdate)
+        public override void OnPackagesChanged(PackagesChangeArgs args)
         {
             var addList = new List<IPackage>();
             var updateList = new List<IPackage>();
-            var removeList = removed.Where(Contains).ToList();
-            foreach (var package in added.Concat(postUpdate))
+            var removeList = args.removed.Where(Contains).ToList();
+            foreach (var package in args.added.Concat(args.updated))
             {
                 if (m_PackageFiltering.FilterByCurrentTab(package))
                 {
@@ -163,11 +163,19 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_VisualStateList.AddExtraItem(package.uniqueId);
             }
             if (!packageInPage)
-                TriggerOnListUpdate(new[] { package });
+                TriggerOnListUpdate(added: new[] { package });
             else
-                TriggerOnListUpdate(null, new[] { package });
+                TriggerOnListUpdate(updated: new[] { package });
 
             SetNewSelection(new[] { new PackageAndVersionIdPair(package.uniqueId, version?.uniqueId)});
+        }
+
+        public override void LoadExtraItems(IEnumerable<IPackage> packages)
+        {
+            var addedPackages = packages.Where(p => !Contains(p)).ToArray();
+            foreach (var package in addedPackages)
+                m_VisualStateList.AddExtraItem(package.uniqueId);
+            TriggerOnListUpdate(added: addedPackages);
         }
 
         public void OnProductFetched(long productId)
@@ -182,9 +190,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 var package = m_PackageDatabase.GetPackage(uniqueId);
                 if (isNewItem)
-                    TriggerOnListUpdate(new[] { package });
+                    TriggerOnListUpdate(added: new[] { package });
                 else
-                    TriggerOnListUpdate(null, new[] { package });
+                    TriggerOnListUpdate(updated: new[] { package });
                 SetNewSelection(new[] { new PackageAndVersionIdPair(package.uniqueId) });
             }
         }
@@ -249,7 +257,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 var addedPackages = added?.Select(id => m_PackageDatabase.GetPackage(id));
                 var removedPackages = removed?.Select(id => m_PackageDatabase.GetPackage(id));
-                TriggerOnListUpdate(addedPackages, null, removedPackages);
+                TriggerOnListUpdate(added: addedPackages, removed: removedPackages);
             }
 
             RefreshVisualStates();

@@ -4,7 +4,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Profiling;
 
 namespace UnityEngine.UIElements.UIR.Implementation
@@ -41,7 +43,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             return false;
         }
 
-        public static UIRStylePainter.ClosingInfo PaintElement(RenderChain renderChain, VisualElement ve, ref ChainBuilderStats stats)
+        public unsafe static UIRStylePainter.ClosingInfo PaintElement(RenderChain renderChain, VisualElement ve, ref ChainBuilderStats stats)
         {
             var device = renderChain.device;
 
@@ -94,7 +96,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 painter.DrawVisualElementBackground();
                 painter.DrawVisualElementBorder();
                 painter.ApplyVisualElementClipping();
-                ve.InvokeGenerateVisualContent(painter.meshGenerationContext);
+
+                InvokeGenerateVisualContent(ve, painter.meshGenerationContext);
             }
             else
             {
@@ -202,33 +205,42 @@ namespace UnityEngine.UIElements.UIR.Implementation
                             else if (lastDisplacementUVPlus1 == vertsFilled)
                                 lastDisplacementUVPlus1 += entry.vertices.Length;
                             else ve.renderChainData.disableNudging = true; // Disjoint displacement UV entries, we can't keep track of them, so disable nudging optimization altogether
-
-                            CopyTransformVertsPosAndVec(entry.vertices, targetVerticesSlice, transform, xformClipPages, ids, addFlags, opacityPage, textCoreSettingsPage, entry.isTextEntry, textureId);
                         }
-                        else CopyTransformVertsPos(entry.vertices, targetVerticesSlice, transform, xformClipPages, ids, addFlags, opacityPage, textCoreSettingsPage, entry.isTextEntry, textureId);
 
-                        // Copy indices
                         int entryIndexCount = entry.indices.Length;
                         int entryIndexOffset = vertsFilled + indexOffset;
                         var targetIndicesSlice = indices.Slice(indicesFilled, entryIndexCount);
-
                         bool shapeWindingIsClockwise = UIRUtility.ShapeWindingIsClockwise(entry.maskDepth, entry.stencilRef);
-                        bool transformFlips = ve.renderChainData.worldFlipsWinding;
-                        if (shapeWindingIsClockwise ^ transformFlips)
-                            CopyTriangleIndices(entry.indices, targetIndicesSlice, entryIndexOffset);
-                        else CopyTriangleIndicesFlipWindingOrder(entry.indices, targetIndicesSlice, entryIndexOffset);
+                        bool transformFlipsWinding = ve.renderChainData.worldFlipsWinding;
+
+                        var job = new ConvertMeshJobData
+                        {
+                            vertSrc = (IntPtr)entry.vertices.GetUnsafePtr(),
+                            vertDst = (IntPtr)targetVerticesSlice.GetUnsafePtr(),
+                            vertCount = targetVerticesSlice.Length,
+                            transform = transform,
+                            transformUVs = entry.uvIsDisplacement ? 1 : 0,
+                            xformClipPages = xformClipPages,
+                            ids = ids,
+                            addFlags = addFlags,
+                            opacityPage = opacityPage,
+                            textCoreSettingsPage = textCoreSettingsPage,
+                            isText = entry.isTextEntry ? 1 : 0,
+                            textureId = textureId,
+
+                            indexSrc = (IntPtr)entry.indices.GetUnsafePtr(),
+                            indexDst = (IntPtr)targetIndicesSlice.GetUnsafePtr(),
+                            indexCount = targetIndicesSlice.Length,
+                            indexOffset = entryIndexOffset,
+                            flipIndices = shapeWindingIsClockwise == transformFlipsWinding ? 1 : 0
+                        };
+                        renderChain.jobManager.Add(ref job);
 
                         if (entry.isClipRegisterEntry)
                             painter.LandClipRegisterMesh(targetVerticesSlice, targetIndicesSlice, entryIndexOffset);
 
                         var cmd = InjectMeshDrawCommand(renderChain, ve, ref cmdPrev, ref cmdNext, data, entryIndexCount, indicesFilled, entry.material, entry.texture, entry.stencilRef);
-                        if (entry.isTextEntry && ve.renderChainData.usesLegacyText)
-                        {
-                            if (ve.renderChainData.textEntries == null)
-                                ve.renderChainData.textEntries = new List<RenderChainTextEntry>(1);
-                            ve.renderChainData.textEntries.Add(new RenderChainTextEntry() { command = cmd, firstVertex = vertsFilled, vertexCount = entry.vertices.Length });
-                        }
-                        else if (entry.isTextEntry)
+                        if (entry.isTextEntry)
                         {
                             // Set font atlas texture gradient scale
                             cmd.state.sdfScale = entry.fontTexSDFScale;
@@ -261,9 +273,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 data = null;
             }
             ve.renderChainData.data = data;
-
-            if (ve.renderChainData.usesLegacyText)
-                renderChain.AddTextElement(ve);
 
             if (painter.closingInfo.clipperRegisterIndices.Length == 0 && ve.renderChainData.closingData != null)
             {
@@ -347,6 +356,13 @@ namespace UnityEngine.UIElements.UIR.Implementation
             return closingInfo;
         }
 
+        static void InvokeGenerateVisualContent(VisualElement ve, MeshGenerationContext ctx)
+        {
+            Painter2D.isPainterActive = true;
+            ve.InvokeGenerateVisualContent(ctx);
+            Painter2D.isPainterActive = false;
+        }
+
         static Material s_blitMaterial_LinearToGamma;
         static Material s_blitMaterial_GammaToLinear;
         static Material s_blitMaterial_NoChange;
@@ -390,7 +406,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             }
         }
 
-        public static void ClosePaintElement(VisualElement ve, UIRStylePainter.ClosingInfo closingInfo, RenderChain renderChain, ref ChainBuilderStats stats)
+        public unsafe static void ClosePaintElement(VisualElement ve, UIRStylePainter.ClosingInfo closingInfo, RenderChain renderChain, ref ChainBuilderStats stats)
         {
             if (closingInfo.clipperRegisterIndices.Length > 0)
             {
@@ -402,8 +418,17 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 // if we can just point winding-flipped indices towards the same vertices as the registration mesh.
                 // For now, we duplicate the registration mesh entirely, wasting a bit of vertex memory
                 UpdateOrAllocate(ref ve.renderChainData.closingData, closingInfo.clipperRegisterVertices.Length, closingInfo.clipperRegisterIndices.Length, renderChain.device, out verts, out indices, out indexOffset, ref stats);
-                verts.CopyFrom(closingInfo.clipperRegisterVertices);
-                CopyTriangleIndicesFlipWindingOrder(closingInfo.clipperRegisterIndices, indices, indexOffset - closingInfo.clipperRegisterIndexOffset);
+                var job = new CopyClosingMeshJobData
+                {
+                    vertSrc = (IntPtr)closingInfo.clipperRegisterVertices.GetUnsafePtr(),
+                    vertDst = (IntPtr)verts.GetUnsafePtr(),
+                    vertCount = verts.Length,
+                    indexSrc = (IntPtr)closingInfo.clipperRegisterIndices.GetUnsafePtr(),
+                    indexDst = (IntPtr)indices.GetUnsafePtr(),
+                    indexCount = indices.Length,
+                    indexOffset = indexOffset - closingInfo.clipperRegisterIndexOffset
+                };
+                renderChain.jobManager.Add(ref job);
                 closingInfo.clipUnregisterDrawCommand.mesh = ve.renderChainData.closingData;
                 closingInfo.clipUnregisterDrawCommand.indexCount = indices.Length;
             }
@@ -432,84 +457,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
             {
                 data = device.Allocate((uint)vertexCount, (uint)indexCount, out verts, out indices, out indexOffset);
                 stats.newMeshAllocations++;
-            }
-        }
-
-        static void CopyTransformVertsPos(NativeSlice<Vertex> source, NativeSlice<Vertex> target, Matrix4x4 mat, Color32 xformClipPages, Color32 ids, Color32 addFlags, Color32 opacityPage, Color32 textCoreSettingsPage, bool isText, float textureId)
-        {
-            int count = source.Length;
-            for (int i = 0; i < count; i++)
-            {
-                Vertex v = source[i];
-
-                v.position = mat.MultiplyPoint3x4(v.position);
-                v.xformClipPages = xformClipPages;
-
-                // WARNING: Changes here must be replicated in UpdateOpacityId!!!
-                v.ids.r = ids.r;
-                v.ids.g = ids.g;
-                v.ids.b = ids.b;
-                // Don't override v.ids.a which may be filled by the tessellation code for colors
-
-                v.flags.r += addFlags.r;
-                v.opacityColorPages.r = opacityPage.r;
-                v.opacityColorPages.g = opacityPage.g;
-                if (isText)
-                {
-                    v.opacityColorPages.b = textCoreSettingsPage.r;
-                    v.opacityColorPages.a = textCoreSettingsPage.g;
-                    v.ids.a = ids.a;
-                }
-                v.textureId = textureId;
-                target[i] = v;
-            }
-        }
-
-        static void CopyTransformVertsPosAndVec(NativeSlice<Vertex> source, NativeSlice<Vertex> target, Matrix4x4 mat, Color32 xformClipPages, Color32 ids, Color32 addFlags, Color32 opacityPage, Color32 textCoreSettingsPage, bool isText, float textureId)
-        {
-            int count = source.Length;
-            Vector3 vec = new Vector3(0, 0, UIRUtility.k_MeshPosZ);
-
-            for (int i = 0; i < count; i++)
-            {
-                Vertex v = source[i];
-
-                v.position = mat.MultiplyPoint3x4(v.position);
-                vec.x = v.uv.x;
-                vec.y = v.uv.y;
-                v.uv = mat.MultiplyVector(vec);
-                v.xformClipPages = xformClipPages;
-
-                v.ids.r = ids.r;
-                v.ids.g = ids.g;
-                v.ids.b = ids.b;
-                // Don't override v.ids.a which may be filled by the tessellation code for colors
-
-                v.flags.r += addFlags.r;
-                v.opacityColorPages.r = opacityPage.r;
-                v.opacityColorPages.g = opacityPage.g;
-                if (isText)
-                {
-                    v.opacityColorPages.b = textCoreSettingsPage.r;
-                    v.opacityColorPages.a = textCoreSettingsPage.g;
-                    v.ids.a = ids.a;
-                }
-                v.textureId = textureId;
-                target[i] = v;
-            }
-        }
-
-        static void CopyTriangleIndicesFlipWindingOrder(NativeSlice<UInt16> source, NativeSlice<UInt16> target)
-        {
-            Debug.Assert(source != target); // Not a very robust assert, but readers get the point
-            int indexCount = source.Length;
-            for (int i = 0; i < indexCount; i += 3)
-            {
-                // Using a temp variable to make reads from source sequential
-                UInt16 t = source[i];
-                target[i] = source[i + 1];
-                target[i + 1] = t;
-                target[i + 2] = source[i + 2];
             }
         }
 
@@ -556,7 +503,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             renderChain.opacityIdAccelerator.CreateJob(oldVerts, newVerts, opacityData, vertCount);
         }
 
-        public static bool NudgeVerticesToNewSpace(VisualElement ve, UIRenderDevice device)
+        public static bool NudgeVerticesToNewSpace(VisualElement ve, RenderChain renderChain, UIRenderDevice device)
         {
             k_NudgeVerticesMarker.Begin();
 
@@ -593,48 +540,33 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
             ve.renderChainData.verticesSpace = newTransform; // This is the new space of the vertices
 
-            DoNudgeVertices(ve, device, ve.renderChainData.data, ref nudgeTransform);
+            var job = new NudgeJobData
+            {
+                vertsBeforeUVDisplacement = ve.renderChainData.displacementUVStart,
+                vertsAfterUVDisplacement = ve.renderChainData.displacementUVEnd,
+                transform = nudgeTransform
+            };
+
+            PrepareNudgeVertices(ve, device, ve.renderChainData.data, out job.src, out job.dst, out job.count);
             if (ve.renderChainData.closingData != null)
-                DoNudgeVertices(ve, device, ve.renderChainData.closingData, ref nudgeTransform);
+                PrepareNudgeVertices(ve, device, ve.renderChainData.closingData, out job.closingSrc, out job.closingDst, out job.closingCount);
+
+            renderChain.jobManager.Add(ref job);
 
             k_NudgeVerticesMarker.End();
             return true;
         }
 
-        static void DoNudgeVertices(VisualElement ve, UIRenderDevice device, MeshHandle mesh, ref Matrix4x4 nudgeTransform)
+        static unsafe void PrepareNudgeVertices(VisualElement ve, UIRenderDevice device, MeshHandle mesh, out IntPtr src, out IntPtr dst, out int count)
         {
             int vertCount = (int)mesh.allocVerts.size;
             NativeSlice<Vertex> oldVerts = mesh.allocPage.vertices.cpuData.Slice((int)mesh.allocVerts.start, vertCount);
             NativeSlice<Vertex> newVerts;
             device.Update(mesh, (uint)vertCount, out newVerts);
 
-            int vertsBeforeUVDisplacement = ve.renderChainData.displacementUVStart;
-            int vertsAfterUVDisplacement = ve.renderChainData.displacementUVEnd;
-
-            // Position-only transform loop
-            for (int i = 0; i < vertsBeforeUVDisplacement; i++)
-            {
-                var v = oldVerts[i];
-                v.position = nudgeTransform.MultiplyPoint3x4(v.position);
-                newVerts[i] = v;
-            }
-
-            // Position and UV transform loop
-            for (int i = vertsBeforeUVDisplacement; i < vertsAfterUVDisplacement; i++)
-            {
-                var v = oldVerts[i];
-                v.position = nudgeTransform.MultiplyPoint3x4(v.position);
-                v.uv = nudgeTransform.MultiplyVector(v.uv);
-                newVerts[i] = v;
-            }
-
-            // Position-only transform loop
-            for (int i = vertsAfterUVDisplacement; i < vertCount; i++)
-            {
-                var v = oldVerts[i];
-                v.position = nudgeTransform.MultiplyPoint3x4(v.position);
-                newVerts[i] = v;
-            }
+            src = (IntPtr)oldVerts.GetUnsafePtr();
+            dst = (IntPtr)newVerts.GetUnsafePtr();
+            count = vertCount;
         }
 
         static RenderChainCommand InjectMeshDrawCommand(RenderChain renderChain, VisualElement ve, ref RenderChainCommand cmdPrev, ref RenderChainCommand cmdNext, MeshHandle mesh, int indexCount, int indexOffset, Material material, TextureId texture, int stencilRef)
@@ -862,14 +794,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 renderChain.FreeCommand(c); // Last closing command
             }
             ve.renderChainData.firstClosingCommand = ve.renderChainData.lastClosingCommand = null;
-
-            if (ve.renderChainData.usesLegacyText)
-            {
-                Debug.Assert(ve.renderChainData.textEntries.Count > 0);
-                renderChain.RemoveTextElement(ve);
-                ve.renderChainData.textEntries.Clear();
-                ve.renderChainData.usesLegacyText = false;
-            }
         }
     }
 }

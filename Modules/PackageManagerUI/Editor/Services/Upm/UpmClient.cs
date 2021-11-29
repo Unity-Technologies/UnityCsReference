@@ -125,6 +125,20 @@ namespace UnityEditor.PackageManager.UI.Internal
         (m_AddAndRemoveOperation?.isInProgress  ?? false) ||
         (m_EmbedOperation?.isInProgress  ?? false);
 
+        public virtual IEnumerable<string> packageIdsOrNamesInstalling
+        {
+            get
+            {
+                if (m_AddOperation?.isInProgress == true)
+                    yield return m_AddOperation.packageId;
+                if (m_EmbedOperation?.isInProgress == true)
+                    yield return m_EmbedOperation.packageName;
+                if (m_AddAndRemoveOperation?.isInProgress == true)
+                    foreach (var id in m_AddAndRemoveOperation.packageIdsToAdd)
+                        yield return id;
+            }
+        }
+
         public virtual bool IsEmbedInProgress(string packageName)
         {
             return (m_EmbedOperation?.isInProgress  ?? false) && m_EmbedOperation.packageName == packageName;

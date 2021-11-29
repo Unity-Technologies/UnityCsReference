@@ -35,5 +35,6 @@ namespace BeeBuildProgramCommon.Data
         public string UnitySourceCodePath;
         public bool AdvancedLicense;
         public bool Batchmode;
+        public bool EmitDataForBeeWhy;
     }
 }

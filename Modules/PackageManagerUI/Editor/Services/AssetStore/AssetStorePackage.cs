@@ -161,12 +161,5 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             LinkPackageAndVersions();
         }
-
-        public override IPackage Clone()
-        {
-            var clone = (BasePackage)MemberwiseClone();
-            clone.LinkPackageAndVersions();
-            return clone;
-        }
     }
 }

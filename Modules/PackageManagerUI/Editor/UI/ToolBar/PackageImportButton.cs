@@ -30,7 +30,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             return version.HasTag(PackageTag.Importable)
                 && version.isAvailableOnDisk
-                && version.package.state != PackageState.InProgress
+                && version.package.progress == PackageProgress.None
                 && m_AssetStoreDownloadManager.GetDownloadOperation(version.packageUniqueId)?.isProgressVisible != true;
         }
 

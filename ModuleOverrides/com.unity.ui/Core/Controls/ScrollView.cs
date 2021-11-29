@@ -603,6 +603,21 @@ namespace UnityEngine.UIElements
         /// </summary>
         public static readonly string viewportUssClassName = ussClassName + "__content-viewport";
         /// <summary>
+        /// USS class name that's added when the Viewport is in horizontal mode.
+        /// <seealso cref="ScrollViewMode.Horizontal"/>
+        /// </summary>
+        public static readonly string horizontalVariantViewportUssClassName = viewportUssClassName + "--horizontal";
+        /// <summary>
+        /// USS class name that's added when the Viewport is in vertical mode.
+        /// <seealso cref="ScrollViewMode.Vertical"/>
+        /// </summary>
+        public static readonly string verticalVariantViewportUssClassName = viewportUssClassName + "--vertical";
+        /// <summary>
+        /// USS class name that's added when the Viewport is in both horizontal and vertical mode.
+        /// <seealso cref="ScrollViewMode.VerticalAndHorizontal"/>
+        /// </summary>
+        public static readonly string verticalHorizontalVariantViewportUssClassName = viewportUssClassName + "--vertical-horizontal";
+        /// <summary>
         /// USS class name of content elements in elements of this type.
         /// </summary>
         public static readonly string contentAndVerticalScrollUssClassName = ussClassName + "__content-and-vertical-scroll-container";
@@ -610,6 +625,21 @@ namespace UnityEngine.UIElements
         /// USS class name of content elements in elements of this type.
         /// </summary>
         public static readonly string contentUssClassName = ussClassName + "__content-container";
+        /// <summary>
+        /// USS class name that's added when the ContentContainer is in horizontal mode.
+        /// <seealso cref="ScrollViewMode.Horizontal"/>
+        /// </summary>
+        public static readonly string horizontalVariantContentUssClassName = contentUssClassName + "--horizontal";
+        /// <summary>
+        /// USS class name that's added when the ContentContainer is in vertical mode.
+        /// <seealso cref="ScrollViewMode.Vertical"/>
+        /// </summary>
+        public static readonly string verticalVariantContentUssClassName = contentUssClassName + "--vertical";
+        /// <summary>
+        /// USS class name that's added when the ContentContainer is in both horizontal and vertical mode.
+        /// <seealso cref="ScrollViewMode.VerticalAndHorizontal"/>
+        /// </summary>
+        public static readonly string verticalHorizontalVariantContentUssClassName = contentUssClassName + "--vertical-horizontal";
         /// <summary>
         /// USS class name of horizontal scrollers in elements of this type.
         /// </summary>
@@ -749,19 +779,33 @@ namespace UnityEngine.UIElements
             RemoveFromClassList(verticalHorizontalVariantUssClassName);
             RemoveFromClassList(scrollVariantUssClassName);
 
+            contentContainer.RemoveFromClassList(verticalVariantContentUssClassName);
+            contentContainer.RemoveFromClassList(horizontalVariantContentUssClassName);
+            contentContainer.RemoveFromClassList(verticalHorizontalVariantContentUssClassName);
+
+            contentViewport.RemoveFromClassList(verticalVariantViewportUssClassName);
+            contentViewport.RemoveFromClassList(horizontalVariantViewportUssClassName);
+            contentViewport.RemoveFromClassList(verticalHorizontalVariantViewportUssClassName);
+
             switch (mode)
             {
                 case ScrollViewMode.Vertical:
-                    AddToClassList(verticalVariantUssClassName);
                     AddToClassList(scrollVariantUssClassName);
+                    AddToClassList(verticalVariantUssClassName);
+                    contentViewport.AddToClassList(verticalVariantViewportUssClassName);
+                    contentContainer.AddToClassList(verticalVariantContentUssClassName);
                     break;
                 case ScrollViewMode.Horizontal:
-                    AddToClassList(horizontalVariantUssClassName);
                     AddToClassList(scrollVariantUssClassName);
+                    AddToClassList(horizontalVariantUssClassName);
+                    contentViewport.AddToClassList(horizontalVariantViewportUssClassName);
+                    contentContainer.AddToClassList(horizontalVariantContentUssClassName);
                     break;
                 case ScrollViewMode.VerticalAndHorizontal:
                     AddToClassList(scrollVariantUssClassName);
                     AddToClassList(verticalHorizontalVariantUssClassName);
+                    contentViewport.AddToClassList(verticalHorizontalVariantViewportUssClassName);
+                    contentContainer.AddToClassList(verticalHorizontalVariantContentUssClassName);
                     break;
             }
         }
@@ -1288,12 +1332,12 @@ namespace UnityEngine.UIElements
             horizontalScroller.lowValue = 0f;
             horizontalScroller.highValue = scrollableWidth;
 
-            if (!needsVertical || !(scrollableHeight > 0f))
+            if (scrollableHeight <= 0f)
             {
                 verticalScroller.value = 0f;
             }
 
-            if (!needsHorizontal || !(scrollableWidth > 0f))
+            if (scrollableWidth <= 0f)
             {
                 horizontalScroller.value = 0f;
             }

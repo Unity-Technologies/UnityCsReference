@@ -10,7 +10,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class DropdownButton : VisualElement, IToolbarMenuElement, ITextElement
+    internal class DropdownButton : VisualElement, ITextElement, IToolbarMenuElement
     {
         internal new class UxmlFactory : UxmlFactory<DropdownButton> {}
 
@@ -23,8 +23,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private const float k_DropdownWidth = 12.0f;
 
         public event Action onBeforeShowDropdown = delegate {};
-
         private TextElement m_Label;
+
         public float estimatedWidth
         {
             get

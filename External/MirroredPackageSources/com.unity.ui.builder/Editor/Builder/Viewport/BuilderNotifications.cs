@@ -45,8 +45,6 @@ namespace Unity.UI.Builder
             icon.style.backgroundImage = (Texture2D)EditorGUIUtility.IconContent("console.infoicon.sml").image;
 
             var messageLabel = newNotification.Q<Label>("message");
-            // Cannot use USS because no way to do version checks in USS.
-            // This is not available in 2019.4.
             messageLabel.style.textOverflow = TextOverflow.Ellipsis;
             messageLabel.text = message;
 
@@ -62,7 +60,6 @@ namespace Unity.UI.Builder
         void CheckNotificationWorthyStates()
         {
             m_PendingNotifications = 0;
-
         }
     }
 }

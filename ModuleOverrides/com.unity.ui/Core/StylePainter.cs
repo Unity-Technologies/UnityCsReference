@@ -3,13 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-
 namespace UnityEngine.UIElements
 {
     internal interface IStylePainter
     {
         MeshWriteData DrawMesh(int vertexCount, int indexCount, Texture texture, Material material, MeshGenerationContext.MeshFlags flags);
-        void DrawText(MeshGenerationContextUtils.TextParams textParams, ITextHandle handle, float pixelsPerPoint);
+        void DrawText(TextElement te);
         void DrawRectangle(MeshGenerationContextUtils.RectangleParams rectParams);
         void DrawBorder(MeshGenerationContextUtils.BorderParams borderParams);
         void DrawImmediate(Action callback, bool cullingEnabled);

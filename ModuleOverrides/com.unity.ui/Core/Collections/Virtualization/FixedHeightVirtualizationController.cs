@@ -6,7 +6,7 @@ namespace UnityEngine.UIElements
 {
     internal class FixedHeightVirtualizationController<T> : VerticalVirtualizationController<T> where T : ReusableCollectionItem, new()
     {
-        float resolvedItemHeight => m_ListView.ResolveItemHeight();
+        float resolvedItemHeight => m_CollectionView.ResolveItemHeight();
 
         protected override bool VisibleItemPredicate(T i)
         {
@@ -36,10 +36,10 @@ namespace UnityEngine.UIElements
             {
                 // Scroll to last item
                 int actualCount = (int)(lastHeight / pixelAlignedItemHeight);
-                if (m_ListView.itemsSource.Count < actualCount)
+                if (m_CollectionView.itemsSource.Count < actualCount)
                     m_ScrollView.scrollOffset = new Vector2(0, 0);
                 else
-                    m_ScrollView.scrollOffset = new Vector2(0, (m_ListView.itemsSource.Count + 1) * pixelAlignedItemHeight);
+                    m_ScrollView.scrollOffset = new Vector2(0, (m_CollectionView.itemsSource.Count + 1) * pixelAlignedItemHeight);
             }
             else if (m_FirstVisibleIndex >= index)
             {
@@ -62,7 +62,7 @@ namespace UnityEngine.UIElements
         public override void Resize(Vector2 size, int layoutPass)
         {
             var pixelAlignedItemHeight = resolvedItemHeight;
-            var contentHeight = m_ListView.itemsSource.Count * pixelAlignedItemHeight;
+            var contentHeight = m_CollectionView.itemsSource.Count * pixelAlignedItemHeight;
             m_ScrollView.contentContainer.style.height = contentHeight;
 
             // Restore scroll offset and preemptively update the highValue
@@ -70,7 +70,7 @@ namespace UnityEngine.UIElements
             // the ScrollView's OnGeometryChanged() didn't update the low
             // and highValues.
             var scrollableHeight = Mathf.Max(0, contentHeight - m_ScrollView.contentViewport.layout.height);
-            var scrollOffset = Mathf.Min(m_ListView.m_ScrollOffset.y, scrollableHeight);
+            var scrollOffset = Mathf.Min(m_CollectionView.m_ScrollOffset.y, scrollableHeight);
             m_ScrollView.verticalScroller.slider.SetHighValueWithoutNotify(scrollableHeight);
             m_ScrollView.verticalScroller.slider.SetValueWithoutNotify(scrollOffset);
 
@@ -79,7 +79,7 @@ namespace UnityEngine.UIElements
             if (itemCountFromHeight > 0)
                 itemCountFromHeight += k_ExtraVisibleItems;
 
-            var itemCount = Mathf.Min(itemCountFromHeight, m_ListView.itemsSource.Count);
+            var itemCount = Mathf.Min(itemCountFromHeight, m_CollectionView.itemsSource.Count);
 
             if (visibleItemCount != itemCount)
             {
@@ -93,7 +93,7 @@ namespace UnityEngine.UIElements
                         var lastIndex = m_ActiveItems.Count - 1;
 
                         var recycledItem = m_ActiveItems[lastIndex];
-                        m_ListView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
+                        m_CollectionView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
                         m_Pool.Release(recycledItem);
                         m_ActiveItems.RemoveAt(lastIndex);
                     }
@@ -124,8 +124,8 @@ namespace UnityEngine.UIElements
             var firstVisibleItemIndex = (int)(offset / pixelAlignedItemHeight);
 
             m_ScrollView.contentContainer.style.paddingTop = firstVisibleItemIndex * pixelAlignedItemHeight;
-            m_ScrollView.contentContainer.style.height = m_ListView.itemsSource.Count * pixelAlignedItemHeight;
-            m_ListView.m_ScrollOffset.y = scrollOffset.y;
+            m_ScrollView.contentContainer.style.height = m_CollectionView.itemsSource.Count * pixelAlignedItemHeight;
+            m_CollectionView.m_ScrollOffset.y = scrollOffset.y;
 
             if (firstVisibleItemIndex != m_FirstVisibleIndex)
             {

@@ -19,7 +19,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Use this as the super class if you are declaring a custom VisualElement that displays text. For example, <see cref="Button"/> or <see cref="Label"/> use this as their base class.
     /// </summary>
-    public class TextElement : BindableElement, ITextElement, INotifyValueChanged<string>
+    public partial class TextElement : BindableElement, ITextElement, INotifyValueChanged<string>
     {
         /// <summary>
         /// Instantiates a <see cref="TextElement"/> using the data read from a UXML file.
@@ -71,24 +71,19 @@ namespace UnityEngine.UIElements
         public TextElement()
         {
             requireMeasureFunction = true;
+
+            uitkTextHandle = new UITKTextHandle(this);
+
             AddToClassList(ussClassName);
-            textHandle = TextCoreHandle.New();
+
             generateVisualContent += OnGenerateVisualContent;
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
         }
 
-        private ITextHandle m_TextHandle;
 
-        // For automated testing purposes
-        internal ITextHandle textHandle
-        {
-            get { return m_TextHandle; }
-            set { m_TextHandle = value; }
-        }
-
-        internal static int maxTextVertices = MeshBuilder.s_MaxTextMeshVertices;
+        internal UITKTextHandle uitkTextHandle { get; set; }
 
         private void OnGeometryChanged(GeometryChangedEvent e)
         {
@@ -116,21 +111,18 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public virtual string text
         {
-            get { return ((INotifyValueChanged<string>) this).value; }
-            set
-            {
-                ((INotifyValueChanged<string>) this).value = value;
-            }
+            get => ((INotifyValueChanged<string>) this).value;
+            set => ((INotifyValueChanged<string>) this).value = value;
         }
 
-        private bool m_EnableRichText = true;
+        bool m_EnableRichText = true;
 
         /// <summary>
         /// When false, rich text tags will not be parsed.
         /// </summary>
         public bool enableRichText
         {
-            get { return m_EnableRichText; }
+            get => m_EnableRichText;
             set
             {
                 if (m_EnableRichText == value) return;
@@ -147,7 +139,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         public bool displayTooltipWhenElided
         {
-            get { return m_DisplayTooltipWhenElided; }
+            get => m_DisplayTooltipWhenElided;
             set
             {
                 if (m_DisplayTooltipWhenElided != value)
@@ -174,23 +166,27 @@ namespace UnityEngine.UIElements
         public bool isElided { get; private set; }
 
         internal static readonly string k_EllipsisText = @"..."; // Some web standards seem to suggest "\u2026" (horizontal ellipsis Unicode character)
+        internal string elidedText;
 
         private bool m_WasElided;
-        private bool m_UpdateTextParams = true;
-        private MeshGenerationContextUtils.TextParams m_TextParams;
-        private int m_PreviousTextParamsHashCode = Int32.MaxValue;
 
         private void OnGenerateVisualContent(MeshGenerationContext mgc)
         {
             UpdateVisibleText();
+            mgc.Text(this);
 
-            mgc.Text(m_TextParams, m_TextHandle, this.scaledPixelsPerPoint);
-
-            if (ShouldElide() && TextLibraryCanElide())
-                isElided = textHandle.IsElided();
+            if (ShouldElide() && uitkTextHandle.TextLibraryCanElide())
+                isElided = uitkTextHandle.textHandle.IsElided();
 
             UpdateTooltip();
-            m_UpdateTextParams = true;
+
+            if (edition.hasFocus)
+            {
+                if(selection.HasSelection())
+                    DrawHighlighting(mgc);
+                else if(!edition.isReadOnly && m_SelectingManipulator.RevealCursor())
+                    DrawCaret(mgc);
+            }
         }
 
         internal string ElideText(string drawText, string ellipsisText, float width, TextOverflowPosition textOverflowPosition)
@@ -300,50 +296,27 @@ namespace UnityEngine.UIElements
 
         private void UpdateVisibleText()
         {
-            var textParams = MeshGenerationContextUtils.TextParams.MakeStyleBased(this, text);
-            var textParamsHashCode = textParams.GetHashCode();
-            if (m_UpdateTextParams || textParamsHashCode != m_PreviousTextParamsHashCode)
+            var shouldElide = ShouldElide();
+            if (shouldElide && uitkTextHandle.TextLibraryCanElide())
             {
-                m_TextParams = textParams;
-                var shouldElide = ShouldElide();
-                if (shouldElide && TextLibraryCanElide())
-                {
-                    //nothing to do, the text generation will elide the text and we will update the isElided after in OnGenerateVisualContent
-                }
-                else if (shouldElide)
-                {
-                    m_TextParams.text = ElideText(m_TextParams.text, k_EllipsisText, m_TextParams.rect.width, m_TextParams.textOverflowPosition);
-                    isElided = shouldElide && m_TextParams.text != text;
-                    m_TextParams.textOverflow = TextOverflow.Clip; //Disable the ellipsis in text core so that it does not affect the render later.
-                }
-                else
-                {
-                    m_TextParams.textOverflow = TextOverflow.Clip; //Disable the ellipsis in text core so that it does not affect the render later.
-                    isElided = false;
-                }
-
-                m_PreviousTextParamsHashCode = textParamsHashCode;
-                m_UpdateTextParams = false;
+                //nothing to do, the text generation will elide the text and we will update the isElided after in OnGenerateVisualContent
             }
+            else if (shouldElide)
+            {
+                elidedText = ElideText(text, k_EllipsisText, contentRect.width, computedStyle.unityTextOverflowPosition);
+                isElided = shouldElide && elidedText != text;
+            }
+            else
+            {
+                isElided = false;
+            }
+
         }
 
         private bool ShouldElide()
         {
             return computedStyle.textOverflow == TextOverflow.Ellipsis && computedStyle.overflow == OverflowInternal.Hidden &&
                 computedStyle.whiteSpace == WhiteSpace.NoWrap;
-        }
-
-        private bool TextLibraryCanElide()
-        {
-            // Text Native cannot elide
-            if (textHandle.IsLegacy())
-                return false;
-
-            // TextCore can only elide at the end
-            if (m_TextParams.textOverflowPosition == TextOverflowPosition.End)
-                return true;
-
-            return false;
         }
 
         /// <summary>
@@ -358,29 +331,18 @@ namespace UnityEngine.UIElements
         public Vector2 MeasureTextSize(string textToMeasure, float width, MeasureMode widthMode, float height,
             MeasureMode heightMode)
         {
-            return TextUtilities.MeasureVisualElementTextSize(this, textToMeasure, width, widthMode, height, heightMode, m_TextHandle);
+            return TextUtilities.MeasureVisualElementTextSize(this, textToMeasure, width, widthMode, height, heightMode);
         }
 
         protected internal override Vector2 DoMeasure(float desiredWidth, MeasureMode widthMode, float desiredHeight, MeasureMode heightMode)
         {
-            return MeasureTextSize(text, desiredWidth, widthMode, desiredHeight, heightMode);
-        }
-
-        // Used in tests
-        internal int VerticesCount(string text)
-        {
-            var textParams = m_TextParams;
-            textParams.text = text;
-            return textHandle.VerticesCount(textParams, scaledPixelsPerPoint);
+            return MeasureTextSize(renderedText, desiredWidth, widthMode, desiredHeight, heightMode);
         }
 
         //INotifyValueChange
         string INotifyValueChanged<string>.value
         {
-            get
-            {
-                return m_Text ?? String.Empty;
-            }
+            get => m_Text ?? String.Empty;
 
             set
             {
@@ -407,12 +369,17 @@ namespace UnityEngine.UIElements
         {
             if (m_Text != newValue)
             {
+                renderedText = newValue;
                 m_Text = newValue;
+                if (isSelectable)
+                    m_SelectingManipulator.m_SelectingUtilities.text = newValue;
                 IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
 
                 if (!string.IsNullOrEmpty(viewDataKey))
                     SaveViewData();
             }
         }
+
+
     }
 }

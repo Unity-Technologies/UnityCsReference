@@ -12,6 +12,7 @@ using UnityEditor.IMGUI.Controls;
 using UnityEditor.ShortcutManagement;
 using UnityEditorInternal;
 using UnityEngine.Assertions;
+using System.Text;
 
 namespace UnityEditor
 {
@@ -1294,6 +1295,7 @@ namespace UnityEditor
             {
                 menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Unpack"), false, UnpackPrefab);
                 menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Unpack Completely"), false, UnpackPrefabCompletely);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Check for Unused Overrides"), false, RemoveSelectedPrefabInstanceUnusedOverrides);
             }
 
             GameObject[] selectedGameObjects = Selection.transforms.Select(t => t.gameObject).ToArray();
@@ -1462,6 +1464,9 @@ namespace UnityEditor
                 else
                     menu.AddDisabledItem(addSceneContent);
             }
+
+            menu.AddSeparator("");
+            menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Check for Unused Overrides"), false, RemoveAllPrefabInstancesUnusedOverridesFromSceneForMenuItem, scene);
 
             // Set the context of each MenuItem to the current selection, so the created gameobjects will be added as children
             // Sets includeCreateEmptyChild to false, since that item is superfluous here (the normal "Create Empty" is added as a child anyway)
@@ -1641,6 +1646,63 @@ namespace UnityEditor
                 if (go != null && PrefabUtility.IsPartOfNonAssetPrefabInstance(go) && PrefabUtility.IsOutermostPrefabInstanceRoot(go))
                     PrefabUtility.UnpackPrefabInstance(go, PrefabUnpackMode.Completely, InteractionMode.UserAction);
             }
+        }
+
+        void RemoveAllPrefabInstancesUnusedOverridesFromSceneForMenuItem(object userData)
+        {
+            RemoveAllPrefabInstancesUnusedOverridesFromScene((Scene)userData);
+        }
+
+        void RemoveSelectedPrefabInstanceUnusedOverrides()
+        {
+            PrefabUtility.InstanceOverridesInfo[] instanceOverrideInfos = PrefabUtility.GetPrefabInstancesOverridesInfos(Selection.gameObjects);
+
+            AskUserToRemovePrefabInstanceUnusedOverrides(instanceOverrideInfos);
+        }
+
+        void RemoveAllPrefabInstancesUnusedOverridesFromScene(Scene scene)
+        {
+            if (!scene.IsValid())
+                return;
+
+            PrefabUtility.InstanceOverridesInfo[] instanceOverridesInfos = null;
+
+            List<GameObject> gos = GetScenePrefabInstancesWithNonDefaultOverrides(scene);
+            if (gos != null && gos.Any())
+                instanceOverridesInfos = PrefabUtility.GetPrefabInstancesOverridesInfos(gos.ToArray());
+
+            AskUserToRemovePrefabInstanceUnusedOverrides(instanceOverridesInfos);
+        }
+
+        bool AskUserToRemovePrefabInstanceUnusedOverrides(PrefabUtility.InstanceOverridesInfo[] instanceOverridesInfos)
+        {
+            if (PrefabUtility.DoRemovePrefabInstanceUnusedOverridesDialog(instanceOverridesInfos))
+            {
+                PrefabUtility.RemovePrefabInstanceUnusedOverrides(instanceOverridesInfos);
+                return true;
+            }
+
+            return false;
+        }
+
+        List<GameObject> GetScenePrefabInstancesWithNonDefaultOverrides(Scene scene)
+        {
+            List<GameObject> gameObjects = new List<GameObject>();
+            TransformVisitor visitor = new TransformVisitor();
+
+            var roots = scene.GetRootGameObjects();
+            foreach (var root in roots)
+            {
+                visitor.VisitAll(root.transform, (transform, list) => {
+                    GameObject go = transform.gameObject;
+                    if (PrefabUtility.IsOutermostPrefabInstanceRoot(go) && PrefabUtility.HasPrefabInstanceNonDefaultOverrides_CachedForUI(go))
+                    {
+                        gameObjects.Add(go);
+                    }
+                }, null);
+            }
+
+            return gameObjects;
         }
 
         void SetSceneActive(object userData)

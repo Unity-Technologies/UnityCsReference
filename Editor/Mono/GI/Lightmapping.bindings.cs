@@ -660,6 +660,10 @@ namespace UnityEditor
         [FreeFunction]
         [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
         extern static internal bool GetGeometryHash([NotNull("NullExceptionObject")] Renderer renderer, out Hash128 geometryHash);
+
+        [FreeFunction]
+        [NativeHeader("Editor/Src/GI/ExtractInstances.h")]
+        extern static internal bool IsRendererValid([NotNull("NullExceptionObject")] Renderer renderer);
     }
 }
 

@@ -129,18 +129,23 @@ namespace UnityEditor.PackageManager.UI.Internal
             return m_DownloadOperations.Values.Any(d => d.isInProgress || d.isInPause);
         }
 
+        public virtual int DownloadInProgressCount()
+        {
+            return m_DownloadOperations.Values.Count(d => d.isInProgress);
+        }
+
         public virtual void Download(IPackage package)
         {
             var packageId = package?.uniqueId;
             if (string.IsNullOrEmpty(packageId))
                 return;
-            var v = package.versions.importAvailable as AssetStorePackageVersion;
 
             var operation = GetDownloadOperation(packageId);
             if (operation?.isInProgress ?? false)
                 return;
 
-            operation = new AssetStoreDownloadOperation(m_AssetStoreUtils, m_AssetStoreRestAPI, m_AssetStoreCachePathProxy, packageId, v?.localPath);
+            var localInfo = m_AssetStoreCache.GetLocalInfo(packageId);
+            operation = new AssetStoreDownloadOperation(m_AssetStoreUtils, m_AssetStoreRestAPI, m_AssetStoreCachePathProxy, packageId, localInfo?.packagePath);
             SetupDownloadOperation(operation);
             operation.Download(false);
         }

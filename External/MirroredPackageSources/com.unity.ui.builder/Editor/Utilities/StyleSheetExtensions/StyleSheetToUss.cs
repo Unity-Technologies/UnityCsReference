@@ -86,9 +86,7 @@ namespace Unity.UI.Builder
                 break;
                 case StyleValueType.Dimension:
                     var dim = sheet.ReadDimension(handle);
-                    if (dim.value == 0
-                        && !dim.unit.IsTimeUnit()
-                    )
+                    if (dim.value == 0 && !dim.unit.IsTimeUnit())
                         str = "0";
                     else
                         str = dim.ToString();

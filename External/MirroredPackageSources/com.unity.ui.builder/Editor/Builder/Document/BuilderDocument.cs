@@ -6,7 +6,6 @@ using UnityEditor.UIElements.StyleSheets;
 using System;
 using System.IO;
 
-
 namespace Unity.UI.Builder
 {
     class BuilderDocument : ScriptableObject, IBuilderSelectionNotifier, ISerializationCallbackReceiver, IBuilderPerFileAssetPostprocessor

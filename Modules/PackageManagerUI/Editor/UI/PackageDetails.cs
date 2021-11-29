@@ -199,13 +199,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             Debug.Log(string.Format(L10n.Tr("{0} is already up-to-date."), package.displayName));
         }
 
-        private void OnPackagesChanged(IEnumerable<IPackage> added,
-            IEnumerable<IPackage> removed,
-            IEnumerable<IPackage> preUpdate,
-            IEnumerable<IPackage> postUpdate)
+        private void OnPackagesChanged(PackagesChangeArgs args)
         {
             var selection = m_PageManager.GetSelection();
-            if (added.Concat(removed).Concat(preUpdate).Concat(postUpdate).Any(p => selection.Contains(p.uniqueId)))
+            if (args.added.Concat(args.removed).Concat(args.updated).Any(p => selection.Contains(p.uniqueId)))
                 Refresh(selection);
         }
 

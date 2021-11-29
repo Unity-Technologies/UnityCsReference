@@ -54,10 +54,22 @@ namespace UnityEditor
         extern internal static bool HasObjectOverride(Object componentOrGameObject, bool includeDefaultOverrides = false);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        extern internal static bool HasPrefabInstanceUnusedOverrides_Internal(GameObject gameObject);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        extern internal static string TryGetCurrentPropertyPathFromOldPropertyPath_Internal(GameObject gameObject, Object target, string propertyPath);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         extern internal static bool HasPrefabInstanceNonDefaultOverrides_CachedForUI_Internal(GameObject gameObject);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        extern internal static bool HasPrefabInstanceUnusedOverrides_CachedForUI_Internal(GameObject gameObject);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         extern internal static void ClearPrefabInstanceNonDefaultOverridesCache_Internal(GameObject gameObject);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        extern internal static void ClearPrefabInstanceUnusedOverridesCache_Internal(GameObject gameObject);
 
         // Extract all modifications that are applied to the prefab instance compared to the parent prefab.
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]

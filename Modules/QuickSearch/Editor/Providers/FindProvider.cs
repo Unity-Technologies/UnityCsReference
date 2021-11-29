@@ -68,7 +68,9 @@ namespace UnityEditor.Search.Providers
             {
                 var options = FindOptions.Words | FindOptions.Regex | FindOptions.Glob;
                 if (context.wantsMore)
-                    options |= FindOptions.Packages | FindOptions.Fuzzy;
+                    options |= FindOptions.Fuzzy;
+                if (context.options.HasAny(SearchFlags.Packages))
+                    options |= FindOptions.Packages;
 
                 foreach (var e in Search(context, provider, options))
                 {

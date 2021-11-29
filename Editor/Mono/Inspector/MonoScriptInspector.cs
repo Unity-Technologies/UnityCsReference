@@ -234,6 +234,10 @@ namespace UnityEditor
                     if (text.Length >= kMaxChars)
                         text = text.Substring(0, kMaxChars) + "...\n\n<...etc...>";
                 }
+                else
+                {
+                    text = $"{EditorUtility.FormatBytes(m_TextAsset.dataSize)} size .bytes file";
+                }
             }
 
             m_CachedPreview = new GUIContent(text);

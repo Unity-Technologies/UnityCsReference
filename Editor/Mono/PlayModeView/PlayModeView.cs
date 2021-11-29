@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Unity.Collections;
 using UnityEditor.Modules;
 using UnityEditorInternal;
 using UnityEngine;
@@ -26,7 +27,9 @@ namespace UnityEditor
     internal abstract class PlayModeView : EditorWindow
     {
         static List<PlayModeView> s_PlayModeViews = new List<PlayModeView>();
-        static PlayModeView s_LastFocused;
+
+        private static PlayModeView s_LastFocused;
+
         static PlayModeView s_RenderingView;
 
         private readonly string m_ViewsCache = Path.GetFullPath(Directory.GetCurrentDirectory() + "/Library/PlayModeViewStates/");
@@ -43,7 +46,13 @@ namespace UnityEditor
         [SerializeField] HideFlags m_TextureHideFlags = HideFlags.HideAndDontSave;
         [SerializeField] bool m_RenderIMGUI;
         [SerializeField] EnterPlayModeBehavior m_EnterPlayModeBehavior;
+        [SerializeField] int m_fullscreenMonitorIdx = 0;
+        [SerializeField] int m_playModeBehaviorIdx = 0;
         [SerializeField] bool m_UseMipMap;
+        [SerializeField] bool m_isFullscreen;
+        [SerializeField] bool m_suppressRenderingForFullscreen;
+
+        private const int k_MaxSupportedDisplays = 8;
 
         private Dictionary<Type, string> m_AvailableWindowTypes;
 
@@ -62,14 +71,11 @@ namespace UnityEditor
             }
         }
 
-        protected int targetDisplay
+        public  int targetDisplay
         {
             get { return m_TargetDisplay; }
-            set
+            protected set
             {
-                if (m_TargetDisplay != value)
-                    SetDisplayViewSize(value, m_TargetSize);
-
                 m_TargetDisplay = value;
             }
         }
@@ -80,7 +86,7 @@ namespace UnityEditor
             set { m_ClearColor = value; }
         }
 
-        protected Vector2 targetSize
+        internal Vector2 targetSize
         {
             get { return m_TargetSize; }
             set
@@ -119,11 +125,41 @@ namespace UnityEditor
             set => SetPlayModeWindowsStates(value);
         }
 
+        public const int kFullscreenInvalidIdx = -1;
+        public const int kFullscreenNone = 0;
+
+        public int fullscreenMonitorIdx
+        {
+            get => m_fullscreenMonitorIdx;
+            set => m_fullscreenMonitorIdx = value;
+        }
+
+        public int playModeBehaviorIdx
+        {
+            get => m_playModeBehaviorIdx;
+            set => m_playModeBehaviorIdx = value;
+        }
+
         [Obsolete("PlayModeView.maximizeOnPlay is obsolete. Use PlayModeView.enterPlayModeBehavior instead")]
         public bool maximizeOnPlay
         {
             get { return m_EnterPlayModeBehavior == EnterPlayModeBehavior.PlayMaximized; }
             set { m_EnterPlayModeBehavior = value ? EnterPlayModeBehavior.PlayMaximized : EnterPlayModeBehavior.PlayFocused; }
+        }
+
+        public bool isFullscreen
+        {
+            get { return m_isFullscreen; }
+            set { m_isFullscreen = value; }
+        }
+
+        internal bool suppressRenderingForFullscreen
+        {
+            get { return m_suppressRenderingForFullscreen; }
+            set
+            {
+                m_suppressRenderingForFullscreen = value;
+            }
         }
 
         protected bool useMipMap
@@ -190,11 +226,14 @@ namespace UnityEditor
             using (var renderingView = new RenderingView(this))
             {
                 SetPlayModeViewSize(targetSize);
+                // This should be called configure virtual display or sth
+                EditorDisplayUtility.AddVirtualDisplay(targetDisplay, (int)targetSize.x, (int)targetSize.y);
+                // EditorDisplayManager.UpdateVirtualDisplay(this);
                 var currentTargetDisplay = 0;
                 if (ModuleManager.ShouldShowMultiDisplayOption())
                 {
                     // Display Targets can have valid targets from 0 to 7.
-                    System.Diagnostics.Debug.Assert(targetDisplay < 8, "Display Target is Out of Range");
+                    System.Diagnostics.Debug.Assert(targetDisplay < k_MaxSupportedDisplays, "Display Target is Out of Range");
                     currentTargetDisplay = targetDisplay;
                 }
 
@@ -252,6 +291,8 @@ namespace UnityEditor
                 throw new ArgumentException("Type should derive from " + typeof(PlayModeView).Name);
             if (type.Name != GetType().Name)
             {
+                EditorFullscreenController.SetMainDisplayPlayModeViewType(type);
+
                 var serializedViews = ListsToDictionary(m_SerializedViewNames, m_SerializedViewValues);
 
                 // Clear serialized views so they wouldn't be serialized again
@@ -369,6 +410,11 @@ namespace UnityEditor
             return s_LastFocused;
         }
 
+        internal static List<PlayModeView> GetAllPlayModeViewWindows()
+        {
+            return s_PlayModeViews;
+        }
+
         internal static PlayModeView GetCorrectPlayModeViewToFocus()
         {
             if (s_PlayModeViews != null)
@@ -395,7 +441,6 @@ namespace UnityEditor
         {
             if (s_PlayModeViews == null)
                 return;
-
             s_PlayModeViews.RemoveAll(window => window == null);
         }
 
@@ -451,9 +496,25 @@ namespace UnityEditor
                 m_Parent.SetMainPlayModeViewSize(targetSize);
                 Display.activeEditorGameViewTarget  = m_TargetDisplay;
                 s_LastFocused = this;
+                // AddLastView(s_LastFocused);
                 Repaint();
             }
             SetDisplayViewSize(m_TargetDisplay, m_TargetSize);
+        }
+
+        internal virtual void ApplyEditorDisplayFullscreenSetting(IPlayModeViewFullscreenSettings settings)
+        {
+            m_isFullscreen = true;
+
+            if (ModuleManager.ShouldShowMultiDisplayOption())
+            {
+                if (targetDisplay != settings.DisplayNumber)
+                {
+                    targetDisplay = settings.DisplayNumber;
+                }
+            }
+
+            SetVSync(settings.VsyncEnabled);
         }
 
         [RequiredByNativeCode]
@@ -475,22 +536,55 @@ namespace UnityEditor
         {
             PlayFocused,
             PlayMaximized,
-            PlayUnfocused
+            PlayUnfocused,
+            PlayFullscreen
         }
 
         void SetPlayModeWindowsStates(EnterPlayModeBehavior behavior)
         {
-            if (m_EnterPlayModeBehavior == behavior)
-                return;
+            var isFullscreen = (behavior == EnterPlayModeBehavior.PlayFullscreen);
+
+            this.m_EnterPlayModeBehavior = behavior;
+            this.fullscreenMonitorIdx = isFullscreen
+                ? GameViewOnPlayMenu.SelectedIndexToDisplayIndex(this.playModeBehaviorIdx)
+                : -1;
 
             foreach (var view in s_PlayModeViews)
             {
-                view.m_EnterPlayModeBehavior = view == this ? behavior : EnterPlayModeBehavior.PlayUnfocused;
+                if (view == this)
+                {
+                    continue;
+                }
+                if (behavior == EnterPlayModeBehavior.PlayMaximized && view.m_EnterPlayModeBehavior == EnterPlayModeBehavior.PlayMaximized)
+                {
+                    // Only one play mode view can be maximized at a time.
+                    view.m_EnterPlayModeBehavior = EnterPlayModeBehavior.PlayUnfocused;
+                    view.playModeBehaviorIdx = 0;
+                    view.fullscreenMonitorIdx = PlayModeView.kFullscreenNone;
+                }
+                else if (behavior == EnterPlayModeBehavior.PlayFullscreen && view.m_EnterPlayModeBehavior == EnterPlayModeBehavior.PlayFullscreen)
+                {
+                    // We can have multiple fullscreen views, so long as they're not on the same monitor
+                    if (this.fullscreenMonitorIdx == view.fullscreenMonitorIdx)
+                    {
+                        view.m_EnterPlayModeBehavior = EnterPlayModeBehavior.PlayUnfocused;
+                        view.playModeBehaviorIdx = 0;
+                        view.fullscreenMonitorIdx = PlayModeView.kFullscreenNone;
+                    }
+                }
+
                 view.OnEnterPlayModeBehaviorChange();
                 view.Repaint();
             }
         }
 
         protected virtual void OnEnterPlayModeBehaviorChange() {}
+        internal static PlayModeView GetAssociatedViewForTargetDisplay(int targetDisplay)
+        {
+            return s_PlayModeViews.Where(v => v.targetDisplay == targetDisplay && !v.m_suppressRenderingForFullscreen)
+                .OrderByDescending(v => v.isFullscreen)
+                .ThenByDescending(v => v.hasFocus)
+                .FirstOrDefault();
+        }
     }
 }

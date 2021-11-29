@@ -539,7 +539,11 @@ namespace UnityEditor.Search
             if (v.type == ValueType.Enum)
                 return comparer(v.text, s);
             if (v.type == ValueType.Object)
+            {
+                if (string.Equals(s, "none", StringComparison.Ordinal) && string.Equals(v.text, string.Empty, StringComparison.Ordinal))
+                    return comparer(s, "none");
                 return !string.IsNullOrEmpty(v.text) && comparer(v.text, s);
+            }
             if (v.type == ValueType.Bool)
             {
                 if (v.boolean && string.Equals(s, "on", StringComparison.OrdinalIgnoreCase))

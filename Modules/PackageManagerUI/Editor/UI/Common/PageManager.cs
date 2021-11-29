@@ -542,11 +542,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             page.Rebuild();
         }
 
-        private void OnPackagesChanged(IEnumerable<IPackage> added, IEnumerable<IPackage> removed, IEnumerable<IPackage> preUpdate, IEnumerable<IPackage> postUpdate)
+        private void OnPackagesChanged(PackagesChangeArgs args)
         {
-            GetPageFromTab().OnPackagesChanged(added, removed, preUpdate, postUpdate);
+            GetPageFromTab().OnPackagesChanged(args);
 
-            foreach (var package in removed)
+            foreach (var package in args.removed)
             {
                 var packageSelectionObject = GetPackageSelectionObject(package);
                 if (packageSelectionObject != null)

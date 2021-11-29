@@ -6,6 +6,8 @@ using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Toolbar = UnityEditor.UIElements.Toolbar;
+using BuilderLibraryItem = UnityEngine.UIElements.TreeViewItemData<Unity.UI.Builder.BuilderLibraryTreeItem>;
+using TreeViewItem = UnityEngine.UIElements.TreeViewItemData<Unity.UI.Builder.BuilderLibraryTreeItem>;
 
 namespace Unity.UI.Builder
 {
@@ -66,10 +68,10 @@ namespace Unity.UI.Builder
         static int s_ProjectUxmlPathsHash;
 
         public static event Action OnLibraryContentUpdated;
-        public static List<ITreeViewItem> standardControlsTree { get; private set; }
-        public static List<ITreeViewItem> standardControlsTreeNoEditor { get; private set; }
-        public static List<ITreeViewItem> projectContentTree { get; private set; }
-        public static List<ITreeViewItem> projectContentTreeNoPackages { get; private set; }
+        public static List<TreeViewItem> standardControlsTree { get; private set; }
+        public static List<TreeViewItem> standardControlsTreeNoEditor { get; private set; }
+        public static List<TreeViewItem> projectContentTree { get; private set; }
+        public static List<TreeViewItem> projectContentTreeNoPackages { get; private set; }
 
         static BuilderLibraryContent()
         {
@@ -89,11 +91,12 @@ namespace Unity.UI.Builder
         public static void RegenerateLibraryContent()
         {
             standardControlsTree = GenerateControlsItemsTree();
-            standardControlsTreeNoEditor = new List<ITreeViewItem>();
+            standardControlsTreeNoEditor = new List<TreeViewItem>();
             var controlsItemsTree = GenerateControlsItemsTree();
             foreach (var item in controlsItemsTree)
             {
-                if (item is BuilderLibraryTreeItem builderLibraryTreeItem && builderLibraryTreeItem.isEditorOnly)
+                var builderLibraryTreeItem = item.data;
+                if (builderLibraryTreeItem.isEditorOnly)
                     continue;
 
                 standardControlsTreeNoEditor.Add(item);
@@ -108,13 +111,14 @@ namespace Unity.UI.Builder
             OnLibraryContentUpdated?.Invoke();
         }
 
-        static void RemoveEditorOnlyControls(ITreeViewItem item)
+        static void RemoveEditorOnlyControls(TreeViewItem item)
         {
-            var children = new List<ITreeViewItem>(item.children);
+            var children = new List<TreeViewItem>(item.children);
             (item.children as IList)?.Clear();
             foreach (var child in children)
             {
-                if (child is BuilderLibraryTreeItem builderLibraryTreeItem && !builderLibraryTreeItem.isEditorOnly)
+                var builderLibraryTreeItem = child.data;
+                if (!builderLibraryTreeItem.isEditorOnly)
                 {
                     item.AddChild(child);
                     if (child.hasChildren)
@@ -160,23 +164,21 @@ namespace Unity.UI.Builder
             return GetUXMLAssetIcon(projectContentTree, uxmlAssetPath);
         }
 
-        static Texture2D GetUXMLAssetIcon(IEnumerable<ITreeViewItem> items, string uxmlAssetPath)
+        static Texture2D GetUXMLAssetIcon(IEnumerable<TreeViewItem> items, string uxmlAssetPath)
         {
             foreach (var item in items)
             {
-                if (item is BuilderLibraryTreeItem builderLibraryTreeItem)
+                var builderLibraryTreeItem = item.data;
+                if (!string.IsNullOrEmpty(builderLibraryTreeItem.sourceAssetPath) && builderLibraryTreeItem.sourceAssetPath.Equals(uxmlAssetPath))
                 {
-                    if (!string.IsNullOrEmpty(builderLibraryTreeItem.sourceAssetPath) && builderLibraryTreeItem.sourceAssetPath.Equals(uxmlAssetPath))
-                    {
-                        return builderLibraryTreeItem.icon;
-                    }
+                    return builderLibraryTreeItem.icon;
+                }
 
-                    if (item.hasChildren)
-                    {
-                        var icon = GetUXMLAssetIcon(item.children, uxmlAssetPath);
-                        if (icon != null)
-                            return icon;
-                    }
+                if (item.hasChildren)
+                {
+                    var icon = GetUXMLAssetIcon(item.children, uxmlAssetPath);
+                    if (icon != null)
+                        return icon;
                 }
             }
 
@@ -185,18 +187,18 @@ namespace Unity.UI.Builder
 
         static void GenerateProjectContentTrees()
         {
-            projectContentTree = new List<ITreeViewItem>();
-            projectContentTreeNoPackages = new List<ITreeViewItem>();
+            projectContentTree = new List<TreeViewItem>();
+            projectContentTreeNoPackages = new List<TreeViewItem>();
 
-            var fromProjectCategory = new BuilderLibraryTreeItem(BuilderConstants.LibraryAssetsSectionHeaderName, null, null, null) { isHeader = true };
+            var fromProjectCategory = CreateItem(BuilderConstants.LibraryAssetsSectionHeaderName, null, null, null, isHeader: true);
             s_ProjectAssetsScanner.ImportUxmlFromProject(fromProjectCategory, true);
             projectContentTree.Add(fromProjectCategory);
 
-            var fromProjectCategoryNoPackages = new BuilderLibraryTreeItem(BuilderConstants.LibraryAssetsSectionHeaderName, null, null, null) { isHeader = true };
+            var fromProjectCategoryNoPackages = CreateItem(BuilderConstants.LibraryAssetsSectionHeaderName, null, null, null, isHeader: true);
             s_ProjectAssetsScanner.ImportUxmlFromProject(fromProjectCategoryNoPackages, false);
             projectContentTreeNoPackages.Add(fromProjectCategoryNoPackages);
 
-            var customControlsCategory = new BuilderLibraryTreeItem(BuilderConstants.LibraryCustomControlsSectionHeaderName, null, null, null) { isHeader = true };
+            var customControlsCategory = CreateItem(BuilderConstants.LibraryCustomControlsSectionHeaderName, null, null, null, isHeader: true);
             s_ProjectAssetsScanner.ImportFactoriesFromSource(customControlsCategory);
             if (customControlsCategory.hasChildren)
             {
@@ -205,13 +207,22 @@ namespace Unity.UI.Builder
             }
         }
 
-        static List<ITreeViewItem> GenerateControlsItemsTree()
+        internal static TreeViewItemData<BuilderLibraryTreeItem> CreateItem(string name, string iconName, Type type, Func<VisualElement> makeVisualElementCallback,
+            Func<VisualTreeAsset, VisualElementAsset, VisualElement, VisualElementAsset> makeElementAssetCallback = null, List<TreeViewItemData<BuilderLibraryTreeItem>> children = null, VisualTreeAsset asset = null,
+            int id = default, bool isHeader = false, bool isEditorOnly = false)
         {
-            var controlsTree = new List<ITreeViewItem>();
-            var containersItem = new BuilderLibraryTreeItem(BuilderConstants.LibraryContainersSectionHeaderName, null, null, null) { isHeader = true };
-            IList<ITreeViewItem> containersItemList = new List<ITreeViewItem>
+            var itemId = BuilderLibraryTreeItem.GetItemId(name, type, asset, id);
+            var data = new BuilderLibraryTreeItem(name, iconName, type, makeVisualElementCallback, makeElementAssetCallback, asset) { isHeader = isHeader, isEditorOnly = isEditorOnly };
+            return new TreeViewItemData<BuilderLibraryTreeItem>(itemId, data, children);
+        }
+
+        static List<TreeViewItem> GenerateControlsItemsTree()
+        {
+            var containersItem = CreateItem(BuilderConstants.LibraryContainersSectionHeaderName, null, null, null, id: 1, isHeader:true);
+            var controlsTree = new List<TreeViewItem>();
+            IList<TreeViewItem> containersItemList = new List<TreeViewItem>
             {
-                new BuilderLibraryTreeItem("VisualElement", "VisualElement", typeof(VisualElement), () =>
+                CreateItem("VisualElement", "VisualElement", typeof(VisualElement), () =>
                 {
                     var ve = new VisualElement();
                     var veMinSizeChild = new VisualElement();
@@ -227,68 +238,62 @@ namespace Unity.UI.Builder
                         inVta.AddElement(inParent, vea);
                         return vea;
                     }),
-                new BuilderLibraryTreeItem("ScrollView", "ScrollView", typeof(ScrollView), () => new ScrollView()),
-                new BuilderLibraryTreeItem("ListView", "ListView", typeof(ListView), () => new ListView()),
-                new BuilderLibraryTreeItem("GroupBox", "VisualElement", typeof(GroupBox), () => new GroupBox()),
+                CreateItem("ScrollView", "ScrollView", typeof(ScrollView), () => new ScrollView()),
+                CreateItem("ListView", "ListView", typeof(ListView), () => new ListView()),
+                CreateItem("GroupBox", "VisualElement", typeof(GroupBox), () => new GroupBox()),
             };
             containersItem.AddChildren(containersItemList);
             controlsTree.Add(containersItem);
 
-            var editorContainersItemList = new BuilderLibraryTreeItem(BuilderConstants.LibraryEditorContainersSectionHeaderName, null, null, null, null, new List<TreeViewItem<string>>
+            var editorContainersItemList = CreateItem(BuilderConstants.LibraryEditorContainersSectionHeaderName, null, null, null, null, new List<TreeViewItemData<BuilderLibraryTreeItem>>
             {
-                new BuilderLibraryTreeItem("IMGUI Container", "VisualElement", typeof(IMGUIContainer), () => new IMGUIContainer()),
-            }){ isEditorOnly = true, isHeader = true };
+                CreateItem("IMGUI Container", "VisualElement", typeof(IMGUIContainer), () => new IMGUIContainer()),
+            }, id: 2, isEditorOnly: true, isHeader: true);
 
-
-            var controlsItem = new BuilderLibraryTreeItem(BuilderConstants.LibraryControlsSectionHeaderName, null, null, null, null, new List<TreeViewItem<string>>
+            var controlsItem = CreateItem(BuilderConstants.LibraryControlsSectionHeaderName, null, null, null, null, new List<TreeViewItemData<BuilderLibraryTreeItem>>
             {
-                new BuilderLibraryTreeItem("Label", nameof(Label), typeof(Label), () => new Label("Label")),
-                new BuilderLibraryTreeItem("Button", nameof(Button), typeof(Button), () => new Button { text = "Button" }),
-                new BuilderLibraryTreeItem("Toggle", nameof(Toggle), typeof(Toggle), () => new Toggle("Toggle")),
-                new BuilderLibraryTreeItem("Scroller", nameof(Scroller), typeof(Scroller), () => new Scroller(0, 100, (v) => {}, SliderDirection.Horizontal) { value = 42 }),
-                new BuilderLibraryTreeItem("Text Field", nameof(TextField), typeof(TextField), () => new TextField("Text Field") { value = "filler text" }),
-                new BuilderLibraryTreeItem("Foldout", nameof(Foldout), typeof(Foldout), () => new Foldout { text = "Foldout" }),
-                new BuilderLibraryTreeItem("Slider", nameof(Slider), typeof(Slider), () => new Slider("Slider", 0, 100) { value = 42 }),
-                new BuilderLibraryTreeItem("Slider (Int)", nameof(SliderInt), typeof(SliderInt), () => new SliderInt("SliderInt", 0, 100) { value = 42 }),
-                new BuilderLibraryTreeItem("Min-Max Slider", nameof(MinMaxSlider), typeof(MinMaxSlider), () => new MinMaxSlider("Min/Max Slider", 0, 20, -10, 40) { value = new Vector2(10, 12) }),
+                CreateItem("Label", nameof(Label), typeof(Label), () => new Label("Label")),
+                CreateItem("Button", nameof(Button), typeof(Button), () => new Button { text = "Button" }),
+                CreateItem("Toggle", nameof(Toggle), typeof(Toggle), () => new Toggle("Toggle")),
+                CreateItem("Scroller", nameof(Scroller), typeof(Scroller), () => new Scroller(0, 100, (v) => {}, SliderDirection.Horizontal) { value = 42 }),
+                CreateItem("Text Field", nameof(TextField), typeof(TextField), () => new TextField("Text Field") { value = "filler text" }),
+                CreateItem("Foldout", nameof(Foldout), typeof(Foldout), () => new Foldout { text = "Foldout" }),
+                CreateItem("Slider", nameof(Slider), typeof(Slider), () => new Slider("Slider", 0, 100) { value = 42 }),
+                CreateItem("Slider (Int)", nameof(SliderInt), typeof(SliderInt), () => new SliderInt("SliderInt", 0, 100) { value = 42 }),
+                CreateItem("Min-Max Slider", nameof(MinMaxSlider), typeof(MinMaxSlider), () => new MinMaxSlider("Min/Max Slider", 0, 20, -10, 40) { value = new Vector2(10, 12) }),
+                CreateItem("Progress Bar", nameof(ProgressBar), typeof(ProgressBar), () => new ProgressBar() { title = "my-progress", value = 22 }),
+                CreateItem("Dropdown", "Dropdown", typeof(DropdownField), () => new DropdownField("Dropdown")),
+                CreateItem("Enum", nameof(EnumField), typeof(EnumField), () => new EnumField("Enum", TextAlignment.Center)),
+                CreateItem("Radio Button", nameof(RadioButton), typeof(RadioButton), () => new RadioButton("Radio Button")),
+                CreateItem("Radio Button Group", nameof(RadioButtonGroup), typeof(RadioButtonGroup), () => new RadioButtonGroup("Radio Button Group")),
+            }, isHeader: true);
 
-                new BuilderLibraryTreeItem("Progress Bar", nameof(ProgressBar), typeof(ProgressBar), () => new ProgressBar() { title = "my-progress", value = 22 }),
-                new BuilderLibraryTreeItem("Dropdown", "Dropdown", typeof(DropdownField), () => new DropdownField("Dropdown")),
-                new BuilderLibraryTreeItem("Enum", nameof(EnumField), typeof(EnumField), () => new EnumField("Enum", TextAlignment.Center)),
-
-                new BuilderLibraryTreeItem("Radio Button", nameof(RadioButton), typeof(RadioButton), () => new RadioButton("Radio Button")),
-                new BuilderLibraryTreeItem("Radio Button Group", nameof(RadioButtonGroup), typeof(RadioButtonGroup), () => new RadioButtonGroup("Radio Button Group")),
-            }) { isHeader = true };
-
-            var numericFields = new BuilderLibraryTreeItem("Numeric Fields", null, null, null, null, new List<TreeViewItem<string>>
+            var numericFields = CreateItem("Numeric Fields", null, null, null, null, new List<TreeViewItemData<BuilderLibraryTreeItem>>
             {
-                new BuilderLibraryTreeItem("Integer", nameof(IntegerField), typeof(IntegerField), () => new IntegerField("Int Field") { value = 42 }),
-                new BuilderLibraryTreeItem("Float", nameof(FloatField), typeof(FloatField), () => new FloatField("Float Field") { value = 42.2f }),
-                new BuilderLibraryTreeItem("Long", nameof(LongField), typeof(LongField), () => new LongField("Long Field") { value = 42 }),
-                new BuilderLibraryTreeItem("Double", nameof(DoubleField), typeof(DoubleField), () => new DoubleField("Double Field") { value = 42.2 }),
-                new BuilderLibraryTreeItem("Hash128", nameof(Hash128Field), typeof(Hash128Field), () => new Hash128Field("Hash128 Field") { value = Hash128.Compute("42") }),
+                CreateItem("Integer", nameof(IntegerField), typeof(IntegerField), () => new IntegerField("Int Field") { value = 42 }),
+                CreateItem("Float", nameof(FloatField), typeof(FloatField), () => new FloatField("Float Field") { value = 42.2f }),
+                CreateItem("Long", nameof(LongField), typeof(LongField), () => new LongField("Long Field") { value = 42 }),
+                CreateItem("Double", nameof(DoubleField), typeof(DoubleField), () => new DoubleField("Double Field") { value = 42.2 }),
+                CreateItem("Hash128", nameof(Hash128Field), typeof(Hash128Field), () => new Hash128Field("Hash128 Field") { value = Hash128.Compute("42") }),
+                CreateItem("Vector2", nameof(Vector2Field), typeof(Vector2Field), () => new Vector2Field("Vec2 Field")),
+                CreateItem("Vector3", nameof(Vector3Field), typeof(Vector3Field), () => new Vector3Field("Vec3 Field")),
+                CreateItem("Vector4", nameof(Vector4Field), typeof(Vector4Field), () => new Vector4Field("Vec4 Field")),
+                CreateItem("Rect", nameof(RectField), typeof(RectField), () => new RectField("Rect")),
+                CreateItem("Bounds", nameof(BoundsField), typeof(BoundsField), () => new BoundsField("Bounds")),
+                CreateItem("Vector2 (Int)", nameof(Vector2IntField), typeof(Vector2IntField), () => new Vector2IntField("Vector2Int")),
+                CreateItem("Vector3 (Int)", nameof(Vector3IntField), typeof(Vector3IntField), () => new Vector3IntField("Vector3Int")),
+                CreateItem("Rect (Int)", nameof(RectIntField), typeof(RectIntField), () => new RectIntField("RectInt")),
+                CreateItem("Bounds (Int)", nameof(BoundsIntField), typeof(BoundsIntField), () => new BoundsIntField("BoundsInt")),
+            }, isHeader: true);
 
-                new BuilderLibraryTreeItem("Progress Bar", nameof(ProgressBar), typeof(ProgressBar), () => new ProgressBar() { title = "my-progress", value = 22 }),
-
-                new BuilderLibraryTreeItem("Vector2", nameof(Vector2Field), typeof(Vector2Field), () => new Vector2Field("Vec2 Field")),
-                new BuilderLibraryTreeItem("Vector3", nameof(Vector3Field), typeof(Vector3Field), () => new Vector3Field("Vec3 Field")),
-                new BuilderLibraryTreeItem("Vector4", nameof(Vector4Field), typeof(Vector4Field), () => new Vector4Field("Vec4 Field")),
-                new BuilderLibraryTreeItem("Rect", nameof(RectField), typeof(RectField), () => new RectField("Rect")),
-                new BuilderLibraryTreeItem("Bounds", nameof(BoundsField), typeof(BoundsField), () => new BoundsField("Bounds")),
-                new BuilderLibraryTreeItem("Vector2 (Int)", nameof(Vector2IntField), typeof(Vector2IntField), () => new Vector2IntField("Vector2Int")),
-                new BuilderLibraryTreeItem("Vector3 (Int)", nameof(Vector3IntField), typeof(Vector3IntField), () => new Vector3IntField("Vector3Int")),
-                new BuilderLibraryTreeItem("Rect (Int)", nameof(RectIntField), typeof(RectIntField), () => new RectIntField("RectInt")),
-                new BuilderLibraryTreeItem("Bounds (Int)", nameof(BoundsIntField), typeof(BoundsIntField), () => new BoundsIntField("BoundsInt")),
-            }) { isHeader = true };
-
-            var valueFields = new BuilderLibraryTreeItem("Value Fields", null, null, null, null, new List<TreeViewItem<string>>
+            var valueFields = CreateItem("Value Fields", null, null, null, null, new List<TreeViewItemData<BuilderLibraryTreeItem>>
             {
-                new BuilderLibraryTreeItem("Color", nameof(ColorField), typeof(ColorField), () => new ColorField("Color") { value = Color.cyan }),
-                new BuilderLibraryTreeItem("Curve", nameof(CurveField), typeof(CurveField), () => new CurveField("Curve")
+                CreateItem("Color", nameof(ColorField), typeof(ColorField), () => new ColorField("Color") { value = Color.cyan }),
+                CreateItem("Curve", nameof(CurveField), typeof(CurveField), () => new CurveField("Curve")
                 {
                     value = new AnimationCurve(new Keyframe(0, 0), new Keyframe(5, 8), new Keyframe(10, 4))
                 }),
-                new BuilderLibraryTreeItem("Gradient", nameof(GradientField), typeof(GradientField), () => new GradientField("Gradient")
+                CreateItem("Gradient", nameof(GradientField), typeof(GradientField), () => new GradientField("Gradient")
                 {
                     value = new Gradient()
                     {
@@ -300,36 +305,36 @@ namespace Unity.UI.Builder
                         }
                     }
                 })
-            }) { isEditorOnly = true, isHeader = true };
+            }, isEditorOnly: true, isHeader: true);
 
-            var choiceFields = new BuilderLibraryTreeItem("Choice Fields", null, null, null, null, new List<TreeViewItem<string>>
+            var choiceFields = CreateItem("Choice Fields", null, null, null, null, new List<TreeViewItemData<BuilderLibraryTreeItem>>
             {
                 // No UXML support for PopupField.
                 //new LibraryTreeItem("Popup", () => new PopupField<string>("Normal Field", choices, 0)),
 
-                new BuilderLibraryTreeItem("Tag", nameof(TagField), typeof(TagField), () => new TagField("Tag", "Player")),
-                new BuilderLibraryTreeItem("Mask", nameof(MaskField), typeof(MaskField), () => new MaskField("Mask")),
-                new BuilderLibraryTreeItem("Layer", nameof(LayerField), typeof(LayerField), () => new LayerField("Layer")),
-                new BuilderLibraryTreeItem("LayerMask", nameof(LayerMaskField), typeof(LayerMaskField), () => new LayerMaskField("LayerMask"))
-            }) { isEditorOnly = true, isHeader = true };
+                CreateItem("Tag", nameof(TagField), typeof(TagField), () => new TagField("Tag", "Player")),
+                CreateItem("Mask", nameof(MaskField), typeof(MaskField), () => new MaskField("Mask")),
+                CreateItem("Layer", nameof(LayerField), typeof(LayerField), () => new LayerField("Layer")),
+                CreateItem("LayerMask", nameof(LayerMaskField), typeof(LayerMaskField), () => new LayerMaskField("LayerMask"))
+            }, isEditorOnly: true, isHeader: true);
 
-            var toolbar = new BuilderLibraryTreeItem("Toolbar", null, null, null, null, new List<TreeViewItem<string>>
+            var toolbar = CreateItem("Toolbar", null, null, null, null, new List<TreeViewItemData<BuilderLibraryTreeItem>>
             {
-                new BuilderLibraryTreeItem("Toolbar", "ToolbarElement", typeof(Toolbar), () => new Toolbar()),
-                new BuilderLibraryTreeItem("Toolbar Menu", "ToolbarElement", typeof(ToolbarMenu), () => new ToolbarMenu()),
-                new BuilderLibraryTreeItem("Toolbar Button", "ToolbarElement", typeof(ToolbarButton), () => new ToolbarButton { text = "Button" }),
-                new BuilderLibraryTreeItem("Toolbar Spacer", "ToolbarElement", typeof(ToolbarSpacer), () => new ToolbarSpacer()),
-                new BuilderLibraryTreeItem("Toolbar Toggle", "ToolbarElement", typeof(ToolbarToggle), () => new ToolbarToggle { label = "Toggle" }),
-                new BuilderLibraryTreeItem("Toolbar Breadcrumbs", "ToolbarElement", typeof(ToolbarBreadcrumbs), () => new ToolbarBreadcrumbs()),
-                new BuilderLibraryTreeItem("Toolbar Search Field", "ToolbarElement", typeof(ToolbarSearchField), () => new ToolbarSearchField()),
-                new BuilderLibraryTreeItem("Toolbar Popup Search Field", "ToolbarElement", typeof(ToolbarPopupSearchField), () => new ToolbarPopupSearchField()),
-            }) { isEditorOnly = true, isHeader = true };
+                CreateItem("Toolbar", "ToolbarElement", typeof(Toolbar), () => new Toolbar()),
+                CreateItem("Toolbar Menu", "ToolbarElement", typeof(ToolbarMenu), () => new ToolbarMenu()),
+                CreateItem("Toolbar Button", "ToolbarElement", typeof(ToolbarButton), () => new ToolbarButton { text = "Button" }),
+                CreateItem("Toolbar Spacer", "ToolbarElement", typeof(ToolbarSpacer), () => new ToolbarSpacer()),
+                CreateItem("Toolbar Toggle", "ToolbarElement", typeof(ToolbarToggle), () => new ToolbarToggle { label = "Toggle" }),
+                CreateItem("Toolbar Breadcrumbs", "ToolbarElement", typeof(ToolbarBreadcrumbs), () => new ToolbarBreadcrumbs()),
+                CreateItem("Toolbar Search Field", "ToolbarElement", typeof(ToolbarSearchField), () => new ToolbarSearchField()),
+                CreateItem("Toolbar Popup Search Field", "ToolbarElement", typeof(ToolbarPopupSearchField), () => new ToolbarPopupSearchField()),
+            }, isEditorOnly: true, isHeader: true);
 
-            var inspectors = new BuilderLibraryTreeItem("Inspectors", null, null, null, null, new List<TreeViewItem<string>>
+            var inspectors = CreateItem("Inspectors", null, null, null, null, new List<TreeViewItemData<BuilderLibraryTreeItem>>
             {
-                new BuilderLibraryTreeItem("Object Field", nameof(ObjectField), typeof(ObjectField), () => new ObjectField("Object Field") { value = new Texture2D(10, 10) { name = "new_texture" } }),
-                new BuilderLibraryTreeItem("PropertyField", nameof(PropertyField), typeof(PropertyField), () => new PropertyField())
-            }) { isEditorOnly = true, isHeader = true };
+                CreateItem("Object Field", nameof(ObjectField), typeof(ObjectField), () => new ObjectField("Object Field") { value = new Texture2D(10, 10) { name = "new_texture" } }),
+                CreateItem("PropertyField", nameof(PropertyField), typeof(PropertyField), () => new PropertyField())
+            }, isEditorOnly: true, isHeader: true);
 
             controlsTree.Add(editorContainersItemList);
             controlsTree.Add(controlsItem);
@@ -342,18 +347,16 @@ namespace Unity.UI.Builder
             return controlsTree;
         }
 
-        static void UpdateControlsTypeCache(IEnumerable<ITreeViewItem> items)
+        static void UpdateControlsTypeCache(IEnumerable<TreeViewItem> items)
         {
             foreach (var item in items)
             {
-                if (item is BuilderLibraryTreeItem builderLibraryTreeItem)
-                {
-                    if (builderLibraryTreeItem.type != null)
-                        s_ControlsTypeCache[builderLibraryTreeItem.type] = builderLibraryTreeItem;
+                var builderLibraryTreeItem = item.data;
+                if (builderLibraryTreeItem.type != null)
+                    s_ControlsTypeCache[builderLibraryTreeItem.type] = builderLibraryTreeItem;
 
-                    if (item.hasChildren)
-                        UpdateControlsTypeCache(item.children);
-                }
+                if (item.hasChildren)
+                    UpdateControlsTypeCache(item.children);
             }
         }
     }

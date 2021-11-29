@@ -1,12 +1,10 @@
 using System.Linq;
-using UnityEngine.UIElements;
-using UnityEngine;
 using System.Reflection;
-
-using UnityEditor.UIElements.StyleSheets;
-
-using UnityEngine.UIElements.StyleSheets;
 using System.Text.RegularExpressions;
+using UnityEditor.UIElements.StyleSheets;
+using UnityEngine;
+using UnityEngine.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
 {

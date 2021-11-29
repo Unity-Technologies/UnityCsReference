@@ -18,7 +18,7 @@ namespace UnityEditor
 
         IFlexibleMenuItemProvider m_ItemProvider;
         FlexibleMenuModifyItemUI m_ModifyItemUI;
-        readonly Action<int, object> m_ItemClickedCallback;
+        Action<int, object> m_ItemClickedCallback;
         Vector2 m_ScrollPosition = Vector2.zero;
         bool m_ShowAddNewPresetItem;
         int m_ShowEditWindowForIndex = -1;
@@ -34,8 +34,19 @@ namespace UnityEditor
         public int selectedIndex { get; set; }
         protected float minTextWidth { get { return m_MinTextWidth; } set { m_MinTextWidth = value; ClearCachedWidth(); } }
 
+        // Note: 'itemClickedCallback' arguments is clicked index, clicked item object
+        public FlexibleMenu(IFlexibleMenuItemProvider itemProvider, int selectionIndex, Action<int, object> itemClickedCallback)
+        {
+            Init(itemProvider, selectionIndex, null, itemClickedCallback);
+        }
+
         // itemClickedCallback arguments is clicked index, clicked item object
         public FlexibleMenu(IFlexibleMenuItemProvider itemProvider, int selectionIndex, FlexibleMenuModifyItemUI modifyItemUi, Action<int, object> itemClickedCallback)
+        {
+            Init(itemProvider, selectionIndex, modifyItemUi, itemClickedCallback);
+        }
+
+        void Init(IFlexibleMenuItemProvider itemProvider, int selectionIndex, FlexibleMenuModifyItemUI modifyItemUi, Action<int, object> itemClickedCallback)
         {
             m_ItemProvider = itemProvider;
             m_ModifyItemUI = modifyItemUi;
@@ -43,6 +54,9 @@ namespace UnityEditor
             m_SeperatorIndices = m_ItemProvider.GetSeperatorIndices();
             selectedIndex = selectionIndex;
             m_ShowAddNewPresetItem = m_ModifyItemUI != null;
+
+            if (m_SeperatorIndices == null)
+                m_SeperatorIndices = new int[0];
         }
 
         public override Vector2 GetWindowSize()
@@ -70,7 +84,7 @@ namespace UnityEditor
             Rect contentRect = new Rect(0, 0, 1, CalcSize().y);
             m_ScrollPosition = GUI.BeginScrollView(rect, m_ScrollPosition, contentRect);
             {
-                float curY = 0f;
+                float curY = 2f;
                 for (int i = 0; i <= maxIndex; ++i)
                 {
                     int itemControlID = i + 1000000;

@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace UnityEditor
 {
-    internal class ArtifactDifferenceReporter
+    internal partial class ArtifactDifferenceReporter
     {
         delegate void ArtifactDifferenceMessageFormatter(ref ArtifactInfoDifference diff, List<string> msgsList);
 
@@ -27,6 +27,44 @@ namespace UnityEditor
             public readonly ArtifactInfo newArtifactInfo;
             public string message;
             public string categoryKey;
+
+            private IDictionary<string, ArtifactInfoDependency> m_OldDependencies;
+            private IDictionary<string, ArtifactInfoDependency> m_NewDependencies;
+
+            internal IDictionary<string, ArtifactInfoDependency> oldDependencies
+            {
+                get
+                {
+                    if(m_OldDependencies == null && oldArtifactInfo != null)
+                    {
+                        m_OldDependencies = oldArtifactInfo.dependencies;
+                    }
+
+                    return m_OldDependencies;
+                }
+                set
+                {
+                    m_OldDependencies = value;
+                }
+            }
+
+            internal IDictionary<string, ArtifactInfoDependency> newDependencies
+            {
+                get
+                {
+                    if (m_NewDependencies == null && newArtifactInfo != null)
+                    {
+                        m_NewDependencies = newArtifactInfo.dependencies;
+                    }
+
+                    return m_NewDependencies;
+                }
+                set
+                {
+                    m_NewDependencies = value;
+                }
+            }
+
 
             internal ArtifactInfoDifference(string key, DiffType diffType, ArtifactInfo oldArtifactInfo, ArtifactInfo newArtifactInfo)
             {
@@ -160,21 +198,21 @@ namespace UnityEditor
         {
             if (diff.diffType == DiffType.Modified)
             {
-                var oldPlatformGroup = diff.oldArtifactInfo.dependencies[diff.key].value;
-                var newPlatformGroup = diff.newArtifactInfo.dependencies[diff.key].value;
+                var oldPlatformGroup = diff.oldDependencies[diff.key].value;
+                var newPlatformGroup = diff.newDependencies[diff.key].value;
                 diff.message = $"the PlatformGroup value was changed from '{oldPlatformGroup}' to '{newPlatformGroup}'";
                 msgsList.Add(diff.message);
             }
             else if (diff.diffType == DiffType.Added)
             {
-                var platformGroup = diff.newArtifactInfo.dependencies[diff.key].value;
+                var platformGroup = diff.newDependencies[diff.key].value;
                 var assetName = GetAssetName(diff.newArtifactInfo);
                 diff.message = $"a dependency on the PlatformGroup '{platformGroup}' was added";
                 msgsList.Add(diff.message);
             }
             else if (diff.diffType == DiffType.Removed)
             {
-                var platformGroup = diff.oldArtifactInfo.dependencies[diff.key].value;
+                var platformGroup = diff.oldDependencies[diff.key].value;
                 var assetName = GetAssetName(diff.newArtifactInfo);
                 diff.message = $"a dependency on the PlatformGroup '{platformGroup}' was removed";
                 msgsList.Add(diff.message);
@@ -186,8 +224,8 @@ namespace UnityEditor
             var propertyName = diff.key.Split('/')[2];
             if (diff.diffType == DiffType.Modified)
             {
-                var oldVersion = diff.oldArtifactInfo.dependencies[diff.key].value;
-                var newVersion = diff.newArtifactInfo.dependencies[diff.key].value;
+                var oldVersion = diff.oldDependencies[diff.key].value;
+                var newVersion = diff.newDependencies[diff.key].value;
                 var assetName = GetAssetName(diff.newArtifactInfo);
                 diff.message = $"the property '{propertyName}' was changed from '{oldVersion}' to '{newVersion}', which is registered as a dependency of '{assetName}'";
                 msgsList.Add(diff.message);
@@ -208,8 +246,8 @@ namespace UnityEditor
         {
             if (diff.diffType == DiffType.Modified)
             {
-                var oldVersion = diff.oldArtifactInfo.dependencies[diff.key].value;
-                var newVersion = diff.newArtifactInfo.dependencies[diff.key].value;
+                var oldVersion = diff.oldDependencies[diff.key].value;
+                var newVersion = diff.newDependencies[diff.key].value;
                 diff.message = $"the Global Importer version value was changed from '{oldVersion}' to '{newVersion}'";
                 msgsList.Add(diff.message);
             }
@@ -223,8 +261,8 @@ namespace UnityEditor
         {
             if (diff.diffType == DiffType.Modified)
             {
-                var oldVersion = diff.oldArtifactInfo.dependencies[diff.key].value;
-                var newVersion = diff.newArtifactInfo.dependencies[diff.key].value;
+                var oldVersion = diff.oldDependencies[diff.key].value;
+                var newVersion = diff.newDependencies[diff.key].value;
                 diff.message = $"the global artifact format version changed from '{oldVersion}' to '{newVersion}'";
                 msgsList.Add(diff.message);
             }
@@ -238,20 +276,20 @@ namespace UnityEditor
         {
             if (diff.diffType == DiffType.Modified)
             {
-                var oldVersion = diff.oldArtifactInfo.dependencies[diff.key].value;
-                var newVersion = diff.newArtifactInfo.dependencies[diff.key].value;
+                var oldVersion = diff.oldDependencies[diff.key].value;
+                var newVersion = diff.newDependencies[diff.key].value;
                 diff.message = $"the project's ScriptingRuntimeVersion changed from '{oldVersion}' to '{newVersion}";
                 msgsList.Add(diff.message);
             }
             else if (diff.diffType == DiffType.Added)
             {
-                var addedVersion = diff.newArtifactInfo.dependencies[diff.key].value;
+                var addedVersion = diff.newDependencies[diff.key].value;
                 diff.message = $"a dependency on the selected Scripting Runtime Version '{addedVersion}' was added";
                 msgsList.Add(diff.message);
             }
             else if (diff.diffType == DiffType.Removed)
             {
-                var removedVersion = diff.newArtifactInfo.dependencies[diff.key].value;
+                var removedVersion = diff.newDependencies[diff.key].value;
                 diff.message = $"a dependency on the selected Scripting Runtime Version '{removedVersion}' was removed";
                 msgsList.Add(diff.message);
             }
@@ -262,33 +300,32 @@ namespace UnityEditor
             //UnityEngine.Rendering.GraphicsDeviceType
             if (diff.diffType == DiffType.Modified)
             {
-                var assetName = GetAssetName(diff.newArtifactInfo);
-                var oldGraphicsAPIValue = diff.oldArtifactInfo.dependencies[diff.key].value;
-                var newGraphicsAPIValue = diff.newArtifactInfo.dependencies[diff.key].value;
+                var oldGraphicsAPIValue = diff.oldDependencies[diff.key].value;
+                var newGraphicsAPIValue = diff.newDependencies[diff.key].value;
                 diff.message = $"the project's GraphicsAPIMask changed from '{oldGraphicsAPIValue}' to '{newGraphicsAPIValue}'";
                 msgsList.Add(diff.message);
             }
             else if (diff.diffType == DiffType.Added)
             {
-                var assetName = GetAssetName(diff.newArtifactInfo);
-                var newGraphicsAPIValue = diff.newArtifactInfo.dependencies[diff.key].value;
+                var assetName = GetAssetName(diff.newDependencies);
+                var newGraphicsAPIValue = diff.newDependencies[diff.key].value;
                 diff.message = $"a dependency on the Graphics API '{newGraphicsAPIValue}' was added to '{assetName}'";
                 msgsList.Add(diff.message);
             }
             else if (diff.diffType == DiffType.Removed)
             {
-                var assetName = GetAssetName(diff.newArtifactInfo);
-                var newGraphicsAPIValue = diff.newArtifactInfo.dependencies[diff.key].value;
-                diff.message = $"the dependency on the Graphics API '{newGraphicsAPIValue}' was removed from '{assetName}'";
+                var assetName = GetAssetName(diff.oldDependencies);
+                var oldGraphicsAPIValue = diff.oldDependencies[diff.key].value;
+                diff.message = $"the dependency on the Graphics API '{oldGraphicsAPIValue}' was removed from '{assetName}'";
                 msgsList.Add(diff.message);
             }
         }
 
         private static void PostProcessorVersionHashModified(ref ArtifactInfoDifference diff, List<string> msgsList)
         {
-            var oldPostProcessorKey = diff.oldArtifactInfo.dependencies.Keys.FirstOrDefault(key => key.StartsWith(kImporterRegistry_PostProcessorVersionHash, StringComparison.Ordinal));
+            var oldPostProcessorKey = diff.oldDependencies.Keys.FirstOrDefault(key => key.StartsWith(kImporterRegistry_PostProcessorVersionHash, StringComparison.Ordinal));
 
-            var newPostProcessorKey = diff.newArtifactInfo.dependencies.Keys.FirstOrDefault(key => key.StartsWith(kImporterRegistry_PostProcessorVersionHash, StringComparison.Ordinal));
+            var newPostProcessorKey = diff.newDependencies.Keys.FirstOrDefault(key => key.StartsWith(kImporterRegistry_PostProcessorVersionHash, StringComparison.Ordinal));
 
             if (!string.IsNullOrEmpty(oldPostProcessorKey) && !string.IsNullOrEmpty(newPostProcessorKey))
             {
@@ -326,7 +363,7 @@ namespace UnityEditor
         {
             if (diff.diffType == DiffType.Added)
             {
-                var entry = diff.newArtifactInfo.dependencies[diff.key];
+                var entry = diff.newDependencies[diff.key];
                 string guid = entry.value.ToString();
 
                 var pathOfDependency = AssetDatabase.GUIDToAssetPath(guid);
@@ -338,7 +375,7 @@ namespace UnityEditor
             }
             else if (diff.diffType == DiffType.Removed)
             {
-                var entry = diff.oldArtifactInfo.dependencies[diff.key];
+                var entry = diff.oldDependencies[diff.key];
                 string guid = entry.value.ToString();
 
                 var pathOfDependency = AssetDatabase.GUIDToAssetPath(guid);
@@ -365,7 +402,7 @@ namespace UnityEditor
             }
             else if (diff.diffType == DiffType.Removed)
             {
-                var assetName = diff.oldArtifactInfo.dependencies[kImportParameter_NameOfAsset].value;
+                var assetName = diff.oldDependencies[kImportParameter_NameOfAsset].value;
                 diff.message = $"a dependency on '{pathOfDependency}' was removed from '{assetName}'";
                 msgsList.Add(diff.message);
             }
@@ -387,8 +424,8 @@ namespace UnityEditor
             }
             else if (diff.diffType == DiffType.Modified)
             {
-                var oldPlatformValue = diff.oldArtifactInfo.dependencies[diff.key].value;
-                var newPlatformValue = diff.newArtifactInfo.dependencies[diff.key].value;
+                var oldPlatformValue = diff.oldDependencies[diff.key].value;
+                var newPlatformValue = diff.newDependencies[diff.key].value;
                 diff.message = $"the project's build target was changed from '{oldPlatformValue}' to '{newPlatformValue}'";
                 msgsList.Add(diff.message);
             }
@@ -398,9 +435,9 @@ namespace UnityEditor
         {
             if (diff.diffType == DiffType.Modified)
             {
-                var oldImporterVersion = diff.oldArtifactInfo.dependencies[diff.key].value;
-                var newImporterVersion = diff.newArtifactInfo.dependencies[diff.key].value;
-                var importerName = diff.newArtifactInfo.dependencies[kImportParameter_ImporterType].value;
+                var oldImporterVersion = diff.oldDependencies[diff.key].value;
+                var newImporterVersion = diff.newDependencies[diff.key].value;
+                var importerName = diff.newDependencies[kImportParameter_ImporterType].value;
                 diff.message = $"The version of the importer '{importerName}' changed from '{oldImporterVersion}' to '{newImporterVersion}'";
                 msgsList.Add(diff.message);
             }
@@ -408,8 +445,8 @@ namespace UnityEditor
 
         private static void ImporterTypeModified(ref ArtifactInfoDifference diff, List<string> msgsList)
         {
-            var newImporterTypeName = diff.newArtifactInfo.dependencies[diff.key].value;
-            var oldImporterTypeName = diff.oldArtifactInfo.dependencies[diff.key].value;
+            var newImporterTypeName = diff.newDependencies[diff.key].value;
+            var oldImporterTypeName = diff.oldDependencies[diff.key].value;
             var assetName = GetAssetName(diff.newArtifactInfo);
             diff.message = $"the importer associated with '{assetName}' changed from '{oldImporterTypeName}' now it is '{newImporterTypeName}'";
             msgsList.Add(diff.message);
@@ -420,7 +457,7 @@ namespace UnityEditor
         {
             if (diff.diffType == DiffType.Added)
             {
-                var newCustomDependencyValue = diff.newArtifactInfo.dependencies[diff.key].value;
+                var newCustomDependencyValue = diff.newDependencies[diff.key].value;
                 var customDependencyName = diff.key.Substring(kEnvironment_CustomDependency.Length + 1);
                 diff.message = $"the custom dependency '{customDependencyName}' was added with value '{newCustomDependencyValue}'";
                 msgsList.Add(diff.message);
@@ -433,8 +470,8 @@ namespace UnityEditor
             }
             else if (diff.diffType == DiffType.Modified)
             {
-                var oldCustomDependencyValue = diff.oldArtifactInfo.dependencies[diff.key].value;
-                var newCustomDependencyValue = diff.newArtifactInfo.dependencies[diff.key].value;
+                var oldCustomDependencyValue = diff.oldDependencies[diff.key].value;
+                var newCustomDependencyValue = diff.newDependencies[diff.key].value;
                 var customDependencyName = diff.key.Substring(kEnvironment_CustomDependency.Length + 1);
                 diff.message = $"the value of the custom dependency '{customDependencyName}' was changed from '{oldCustomDependencyValue}' to '{newCustomDependencyValue}'";
                 msgsList.Add(diff.message);
@@ -483,8 +520,8 @@ namespace UnityEditor
             }
             else if (diff.diffType == DiffType.Modified)
             {
-                var oldHash = diff.oldArtifactInfo.dependencies[diff.key].value;
-                var newHash = diff.newArtifactInfo.dependencies[diff.key].value;
+                var oldHash = diff.oldDependencies[diff.key].value;
+                var newHash = diff.newDependencies[diff.key].value;
                 diff.message = $"the Hash of all the GUIDs belonging to assets inside the folder '{folderpath}' changed from '{oldHash}' to '{newHash}'";
                 msgsList.Add(diff.message);
             }
@@ -506,8 +543,8 @@ namespace UnityEditor
             }
             else if (diff.diffType == DiffType.Modified)
             {
-                var oldTextureCompressionSetting = diff.oldArtifactInfo.dependencies[diff.key].value;
-                var newTextureCompressionSetting = diff.newArtifactInfo.dependencies[diff.key].value;
+                var oldTextureCompressionSetting = diff.oldDependencies[diff.key].value;
+                var newTextureCompressionSetting = diff.newDependencies[diff.key].value;
 
                 diff.message = $"the project's texture compression setting changed from {oldTextureCompressionSetting} to {newTextureCompressionSetting}";
                 msgsList.Add(diff.message);
@@ -524,8 +561,8 @@ namespace UnityEditor
             }
             else if (diff.diffType == DiffType.Modified)
             {
-                var oldColorSpace = diff.oldArtifactInfo.dependencies[diff.key].value;
-                var newColorSpace = diff.newArtifactInfo.dependencies[diff.key].value;
+                var oldColorSpace = diff.oldDependencies[diff.key].value;
+                var newColorSpace = diff.newDependencies[diff.key].value;
                 diff.message = $"the project's color space changed from {oldColorSpace} to {newColorSpace}";
                 msgsList.Add(diff.message);
             }
@@ -533,8 +570,8 @@ namespace UnityEditor
 
         private static void NameOfAssetModified(ref ArtifactInfoDifference diff, List<string> msgsList)
         {
-            var oldName = diff.oldArtifactInfo.dependencies[diff.key].value;
-            var newName = diff.newArtifactInfo.dependencies[diff.key].value;
+            var oldName = diff.oldDependencies[diff.key].value;
+            var newName = diff.newDependencies[diff.key].value;
             diff.message = $"the name of the asset was changed from '{oldName}' to '{newName}'";
             msgsList.Add(diff.message);
         }
@@ -576,7 +613,7 @@ namespace UnityEditor
             goodPath = goodPath.Replace("//", "/");
 
             var guidOfPathLocationKey = $"{kSourceAsset_GuidOfPathLocation}/{goodPath}";
-            return diff.oldArtifactInfo.dependencies.ContainsKey(guidOfPathLocationKey);
+            return diff.oldDependencies.ContainsKey(guidOfPathLocationKey);
         }
 
         private static void MetaFileHashModified(ref ArtifactInfoDifference diff, List<string> msgsList)
@@ -605,6 +642,12 @@ namespace UnityEditor
         private static string GetAssetName(ArtifactInfo artifactInfo)
         {
             var assetName = artifactInfo.dependencies[kImportParameter_NameOfAsset].value.ToString();
+            return assetName;
+        }
+
+        private static string GetAssetName(IDictionary<string, ArtifactInfoDependency> dependencies)
+        {
+            var assetName = dependencies[kImportParameter_NameOfAsset].value.ToString();
             return assetName;
         }
     }

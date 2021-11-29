@@ -59,14 +59,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
             DepthFirstOnVisualsChanged(renderChain, ve, dirtyID, parentHierarchyHidden, hierarchical, ref stats);
         }
 
-        internal static void ProcessRegenText(RenderChain renderChain, VisualElement ve, UIRTextUpdatePainter painter, UIRenderDevice device, ref ChainBuilderStats stats)
-        {
-            stats.textUpdates++;
-            painter.Begin(ve, device);
-            ve.InvokeGenerateVisualContent(painter.meshGenerationContext);
-            painter.End();
-        }
-
         static Matrix4x4 GetTransformIDTransformInfo(VisualElement ve)
         {
             Debug.Assert(RenderChainVEData.AllocatesID(ve.renderChainData.transformID) || (ve.renderHints & (RenderHints.GroupTransform)) != 0);
@@ -190,9 +182,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
             uint deepCount = 0;
             while (childrenCount >= 0)
                 deepCount += DepthFirstOnChildRemoving(renderChain, ve.hierarchy[childrenCount--]);
-
-            if ((ve.renderHints & RenderHints.GroupTransform) != 0)
-                renderChain.StopTrackingGroupTransformElement(ve);
 
             if (ve.renderChainData.isInChain)
             {
@@ -551,7 +540,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
                 SetColorValues(renderChain, ve);
 
-                if (ve is ITextElement && !RenderEvents.UpdateTextCoreSettings(renderChain, ve))
+                if (ve is TextElement && !RenderEvents.UpdateTextCoreSettings(renderChain, ve))
                     shouldUpdateVisuals = true;
             }
             else
@@ -601,7 +590,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             else if ((ve.renderChainData.dirtiedValues & (RenderDataDirtyTypes.Visuals | RenderDataDirtyTypes.VisualsHierarchy)) == 0 && (ve.renderChainData.data != null))
             {
                 // If a visual update will happen, then skip work here as the visual update will incorporate the transformed vertices
-                if (!ve.renderChainData.disableNudging && CommandGenerator.NudgeVerticesToNewSpace(ve, device))
+                if (!ve.renderChainData.disableNudging && CommandGenerator.NudgeVerticesToNewSpace(ve, renderChain, device))
                     stats.nudgeTransformed++;
                 else
                 {
@@ -624,8 +613,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 for (int i = 0; i < childrenCount; i++)
                     DepthFirstOnTransformOrSizeChanged(renderChain, ve, ve.hierarchy[i], dirtyID, device, isAncestorOfChangeSkinned, transformChanged, ref stats);
             }
-            else
-                renderChain.OnGroupTransformElementChangedTransform(ve); // Hack until UIE moves to TMP
         }
 
         static void DepthFirstOnVisualsChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, bool parentHierarchyHidden, bool hierarchical, ref ChainBuilderStats stats)
@@ -654,7 +641,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             Debug.Assert(ve.renderChainData.clipMethod != ClipMethod.Undetermined);
             Debug.Assert(RenderChainVEData.AllocatesID(ve.renderChainData.transformID) || ve.hierarchy.parent == null || ve.renderChainData.transformID.Equals(ve.hierarchy.parent.renderChainData.transformID) || (ve.renderHints & RenderHints.GroupTransform) != 0);
 
-            if (ve is ITextElement)
+            if (ve is TextElement)
                 RenderEvents.UpdateTextCoreSettings(renderChain, ve);
 
             UIRStylePainter.ClosingInfo closingInfo = CommandGenerator.PaintElement(renderChain, ve, ref stats);

@@ -203,7 +203,7 @@ namespace UnityEditor.AssetImporters
         List<Type> m_AvailableImporterTypes;
         const int k_MultipleSelectedImporterTypes = -1;
         int m_SelectedImporterType = k_MultipleSelectedImporterTypes;
-        string[] m_AvailableImporterTypesOptions;
+        string[] m_AvailableImporterTypesOptions = {};
         List<string> m_SelectedAssetsPath = new List<string>();
 
         // Support for postprocessors display
@@ -441,7 +441,7 @@ namespace UnityEditor.AssetImporters
 
         private void DrawImporterSelectionPopup()
         {
-            if (m_AvailableImporterTypesOptions.Length < 2)
+            if (m_AvailableImporterTypes.Count < 2)
                 return;
             var mixed = EditorGUI.showMixedValue;
             EditorGUI.showMixedValue = m_SelectedImporterType == k_MultipleSelectedImporterTypes;
@@ -462,11 +462,17 @@ namespace UnityEditor.AssetImporters
                             Selection.objects = loaded.ToArray();
                     };
                     AssetDatabase.StartAssetEditing();
+
                     foreach (var importer in targets.Cast<AssetImporter>())
                     {
                         Undo.RegisterImporterUndo(importer.assetPath, string.Empty);
-                        AssetDatabase.SetImporterOverrideInternal(importer.assetPath, m_AvailableImporterTypes[newSelection]);
+                        //When selecting an override, set it as an override, when selecting the default importer, clear the override
+                        if(m_AvailableImporterTypes[newSelection] != AssetDatabase.GetDefaultImporter(importer.assetPath))
+                            AssetDatabase.SetImporterOverrideInternal(importer.assetPath, m_AvailableImporterTypes[newSelection]);
+                        else
+                            AssetDatabase.ClearImporterOverride(importer.assetPath);
                     }
+
                     AssetDatabase.StopAssetEditing();
                     GUIUtility.ExitGUI();
                 }
@@ -476,41 +482,24 @@ namespace UnityEditor.AssetImporters
 
         void InitializeAvailableImporters()
         {
-            if (assetTarget == null)
-            {
-                m_AvailableImporterTypes = new List<Type>(0);
-                m_AvailableImporterTypesOptions = new string[0];
-                return;
-            }
+            m_AvailableImporterTypes = new List<Type>(1);
 
-            var typeLists = targets.OfType<AssetImporter>()
-                .Select(t => t.assetPath)
-                .Select(AssetDatabase.GetAvailableImporterTypes);
-            m_AvailableImporterTypes = typeLists
-                .Aggregate(new HashSet<Type>(typeLists.First()),
+            if (assetTarget == null)
+                return;
+
+            var targetsPaths = targets.OfType<AssetImporter>().Select(t => t.assetPath);
+
+            var typeLists = targetsPaths.Select(AssetDatabase.GetAvailableImporters).ToList();
+            m_AvailableImporterTypes.AddRange(typeLists.Aggregate(
+                new HashSet<Type>(typeLists.First()),
                 (h, e) =>
                 {
                     h.IntersectWith(e);
                     return h;
-                })
-                .Where(t => !t.IsAbstract && t != typeof(AssetImporter))
-                .ToList();
-            var assetExtension = Path.GetExtension(((AssetImporter)target).assetPath).Substring(1);
-            m_AvailableImporterTypesOptions = m_AvailableImporterTypes.Select(a =>
-            {
-                if (!a.IsSubclassOf(typeof(ScriptedImporter)))
-                {
-                    return string.Format(Styles.defaultImporterName, a.FullName);
-                }
+                }));
 
-                var attribute = a.GetCustomAttributes(typeof(ScriptedImporterAttribute), false).Cast<ScriptedImporterAttribute>().First();
-#pragma warning disable 618
-                // we have to check on AutoSelect value until this is Obsolete with error to keep the same behaviour with non upgraded user scripts.
-                if (attribute.fileExtensions != null && attribute.AutoSelect && attribute.fileExtensions.Contains(assetExtension))
-                    return string.Format(Styles.defaultImporterName, a.FullName);
-#pragma warning restore 618
-                return a.FullName;
-            }).ToArray();
+            var defaultImporter = targetsPaths.Select(AssetDatabase.GetDefaultImporter).First();
+            m_AvailableImporterTypesOptions = m_AvailableImporterTypes.Select(a => a == defaultImporter ? string.Format(Styles.defaultImporterName, defaultImporter.FullName) : a.FullName).ToArray();
         }
 
         internal override void OnHeaderControlsGUI()

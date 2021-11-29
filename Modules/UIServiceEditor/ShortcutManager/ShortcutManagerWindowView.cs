@@ -1263,19 +1263,19 @@ namespace UnityEditor.ShortcutManagement
 
         private void RegisterEvents(VisualElement input)
         {
-            input.RegisterCallback<KeyDownEvent>(OnKeyDown);
-            input.RegisterCallback<KeyUpEvent>(OnKeyUp);
+            input.RegisterCallback<KeyDownEvent>(OnKeyDown, TrickleDown.TrickleDown);
+            input.RegisterCallback<KeyUpEvent>(OnKeyUp, TrickleDown.TrickleDown);
             input.RegisterCallback<FocusEvent>((evt) => {
                 StartNewCombination();
                 evt.StopPropagation();
-                textInputBase.editorEngine.MoveTextEnd();
-            });
+                textSelection.MoveTextEnd();
+            }, TrickleDown.TrickleDown);
             input.RegisterCallback<BlurEvent>((evt) =>
             {
                 Apply();
                 evt.StopPropagation();
-                textInputBase.editorEngine.MoveTextEnd();
-            });
+                textSelection.MoveTextEnd();
+            }, TrickleDown.TrickleDown);
         }
 
         void OnKeyDown(KeyDownEvent kde)
@@ -1309,14 +1309,14 @@ namespace UnityEditor.ShortcutManagement
                     }
                 }
             }
-            textInputBase.editorEngine.MoveTextEnd();
+            textSelection.MoveTextEnd();
         }
 
         void OnKeyUp(KeyUpEvent kue)
         {
             m_KeyDown.Remove(kue.keyCode);
             kue.StopPropagation();
-            textInputBase.editorEngine.MoveTextEnd();
+            textSelection.MoveTextEnd();
         }
 
         void InvokeWorkingValueChanged()
@@ -1379,6 +1379,11 @@ namespace UnityEditor.ShortcutManagement
         protected override string ValueToString(List<KeyCombination> value)
         {
             return KeyCombination.SequenceToString(value);
+        }
+
+        protected override List<KeyCombination> StringToValue(string str)
+        {
+            return default;
         }
     }
 

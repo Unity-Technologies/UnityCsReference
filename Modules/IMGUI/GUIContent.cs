@@ -24,6 +24,8 @@ namespace UnityEngine
         [SerializeField]
         string m_Tooltip = string.Empty;
 
+        internal event Action OnTextChanged;
+
         private static readonly GUIContent s_Text      = new GUIContent();
         private static readonly GUIContent s_Image     = new GUIContent();
         private static readonly GUIContent s_TextImage = new GUIContent();
@@ -32,7 +34,12 @@ namespace UnityEngine
         public string text
         {
             get { return m_Text; }
-            set { m_Text = value; }
+            set {
+                if (value == m_Text)
+                    return;
+                m_Text = value;
+                OnTextChanged?.Invoke();
+            }
         }
 
         // The icon image contained.

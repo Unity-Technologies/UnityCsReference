@@ -6,6 +6,8 @@ using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 
+using TreeViewItem = UnityEngine.UIElements.TreeViewItemData<Unity.UI.Builder.BuilderLibraryTreeItem>;
+
 namespace Unity.UI.Builder
 {
     class BuilderLibraryTreeView : BuilderLibraryView
@@ -19,36 +21,34 @@ namespace Unity.UI.Builder
         const string k_TreeViewClassName = "unity-builder-library__tree-view";
         const string k_TreeViewItemWithButtonClassName = "unity-builder-library__tree-item-with-edit-button";
 
-        readonly InternalTreeView m_TreeView;
+        readonly TreeView m_TreeView;
         readonly VisualTreeAsset m_TreeViewItemTemplate;
 
-        public override VisualElement primaryFocusable => m_TreeView.Q<ListView>();
+        public override VisualElement primaryFocusable => m_TreeView;
 
-        public BuilderLibraryTreeView(IList<ITreeViewItem> items)
+        public BuilderLibraryTreeView(IList<TreeViewItem> items)
         {
             m_TreeViewItemTemplate = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(BuilderConstants.LibraryUIPath + "/BuilderLibraryTreeViewItem.uxml");
 
             style.flexGrow = 1;
-            m_TreeView = new InternalTreeView { name = k_TreeViewName };
+            m_TreeView = new TreeView { name = k_TreeViewName };
             m_TreeView.AddToClassList(k_TreeViewClassName);
             Add(m_TreeView);
 
             m_TreeView.viewDataKey = "samples-tree";
-            m_TreeView.itemHeight = 20;
-            m_TreeView.rootItems = items;
+            m_TreeView.fixedItemHeight = 20;
+            m_TreeView.SetRootItems(items);
             m_TreeView.makeItem = MakeItem;
             m_TreeView.bindItem = BindItem;
             m_TreeView.onItemsChosen += OnItemsChosen;
-
             m_TreeView.Rebuild();
 
-            foreach (var item in m_TreeView.rootItems)
-                m_TreeView.ExpandItem(item.id);
+            m_TreeView.ExpandRootItems();
         }
 
         void OnContextualMenuPopulateEvent(ContextualMenuPopulateEvent evt)
         {
-            var libraryItem = GetLibraryTreeItem((VisualElement) evt.target);
+            var libraryItem = GetLibraryTreeItem((VisualElement)evt.target);
 
             evt.menu.AppendAction(
                 "Add",
@@ -96,7 +96,7 @@ namespace Unity.UI.Builder
                 root.RegisterCustomBuilderStyleChangeEvent(builderElementStyle =>
                 {
                     var libraryTreeItem = GetLibraryTreeItem(root);
-                    if (libraryTreeItem == null)
+                    if (libraryTreeItem.icon == null)
                         return;
 
                     var libraryTreeItemIcon = libraryTreeItem.icon;
@@ -127,10 +127,10 @@ namespace Unity.UI.Builder
             m_PaneWindow.LoadDocument(item.sourceAsset);
         }
 
-        void BindItem(VisualElement element, ITreeViewItem item)
+        void BindItem(VisualElement element, int index)
         {
-            var builderItem = item as BuilderLibraryTreeItem;
-            Assert.IsNotNull(builderItem);
+            var item = (m_TreeView.viewController as DefaultTreeViewController<BuilderLibraryTreeItem>).GetTreeViewItemDataForIndex(index);
+            var builderItem = item.data;
 
             // Pre-emptive cleanup.
             var row = element.parent.parent;
@@ -156,7 +156,7 @@ namespace Unity.UI.Builder
             // Set label.
             var label = element.Q<Label>(k_TreeItemLabelName);
             Assert.IsNotNull(label);
-            label.text = builderItem.data;
+            label.text = builderItem.name;
 
             // Set open button visibility.
             var openButton = element.Q<Button>(k_OpenButtonName);
@@ -167,7 +167,7 @@ namespace Unity.UI.Builder
             LinkToTreeViewItem(element, builderItem);
         }
 
-        void OnItemsChosen(IEnumerable<ITreeViewItem> selectedItems)
+        void OnItemsChosen(IEnumerable<object> selectedItems)
         {
             var selectedItem = selectedItems.FirstOrDefault();
 
@@ -175,7 +175,7 @@ namespace Unity.UI.Builder
             AddItemToTheDocument(item);
         }
 
-        public override void Refresh() => m_TreeView.Rebuild();  
+        public override void Refresh() => m_TreeView.Rebuild();
 
         void AssignTreeItemIcon(VisualElement itemRoot, Texture2D icon)
         {

@@ -109,6 +109,7 @@ namespace UnityEditor
                 return;
 
             PrefabUtility.ClearPrefabInstanceNonDefaultOverridesCache(go);
+            PrefabUtility.ClearPrefabInstanceUnusedOverridesCache(go);
         }
     }
 }

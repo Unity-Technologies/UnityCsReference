@@ -562,7 +562,9 @@ namespace UnityEditor
             {
                 if (win.m_Parent == null)
                 {
-                    Debug.LogError("Invalid editor window " + win.GetType());
+                    Debug.LogErrorFormat(
+                        "Invalid editor window of type: {0}, title: {1}",
+                        win.GetType(), win.titleContent.text);
                 }
             }
         }
@@ -666,6 +668,97 @@ namespace UnityEditor
             }
 
             return null;
+        }
+
+        internal static EditorWindow ShowAppropriateViewOnEnterExitPlaymodeList(bool entering, out List<PlayModeView> allWindows)
+        {
+            allWindows = new List<PlayModeView>();
+
+            int[] map = new[] { 4, 3, 1, 2 };
+            var allWindowsBase = PlayModeView.GetAllPlayModeViewWindows()
+                .OrderBy(c => map[(int)(c.enterPlayModeBehavior)]).ToList();
+
+            foreach (var w in allWindowsBase)
+            {
+                allWindows.Add(w);
+            }
+
+            // Prevent trying to go into the same state as we're already in, as it will break things
+            if (WindowFocusState.instance.m_CurrentlyInPlayMode == entering)
+                return null;
+
+            WindowFocusState.instance.m_CurrentlyInPlayMode = entering;
+
+            EditorWindow window = null;
+            EditorWindow maximized = GetMaximizedWindow();
+
+            if (entering)
+            {
+                if (!GameView.openWindowOnEnteringPlayMode && !(PlayModeView.GetCorrectPlayModeViewToFocus() is PlayModeView))
+                    return null;
+
+                WindowFocusState.instance.m_WasMaximizedBeforePlay = (maximized != null);
+
+                // If a view is already maximized before entering play mode,
+                // just keep that maximized view, no matter if it's the game view or some other.
+                // Trust that user has a good reason (desire by Ethan etc.)
+                if (maximized != null)
+                {
+                    return maximized;
+                }
+            }
+            else
+            {
+                // If a view was already maximized before entering play mode,
+                // then it was kept when switching to play mode, and can simply still be kept when exiting
+                if (WindowFocusState.instance.m_WasMaximizedBeforePlay)
+                {
+                    return maximized;
+                }
+            }
+
+            // Unmaximize if maximized
+            if (maximized)
+                Unmaximize(maximized);
+
+            // Try finding and focusing appropriate window/tab
+            window = TryFocusAppropriateWindow(entering);
+            if (window)
+            {
+                return window;
+            }
+
+            // If we are entering Play more and no Game View was found, create one
+            if (entering && PlayModeView.openWindowOnEnteringPlayMode)
+            {
+
+                // Try to create and focus a Game View tab docked together with the Scene View tab
+                EditorWindow sceneView = FindEditorWindowOfType(typeof(SceneView));
+                GameView gameView;
+                if (sceneView && sceneView.m_Parent is DockArea)
+                {
+                    DockArea dock = sceneView.m_Parent as DockArea;
+                    if (dock)
+                    {
+                        WindowFocusState.instance.m_LastWindowTypeInSameDock = sceneView.GetType().ToString();
+                        gameView = ScriptableObject.CreateInstance<GameView>();
+                        dock.AddTab(gameView);
+
+                        allWindows.Add(gameView);
+                        return gameView;
+                    }
+                }
+
+                // If no Scene View was found at all, just create a floating Game View
+                gameView = ScriptableObject.CreateInstance<GameView>();
+                gameView.Show(true);
+                gameView.Focus();
+
+                allWindows.Add(gameView);
+                return gameView;
+            }
+
+            return window;
         }
 
         internal static EditorWindow ShowAppropriateViewOnEnterExitPlaymode(bool entering)
@@ -894,6 +987,19 @@ namespace UnityEditor
             }
         }
 
+        private static View FindRootSplitView(EditorWindow win)
+        {
+            View itor = win.m_Parent.parent;
+            View rootSplit = itor;
+            while (itor is SplitView)
+            {
+                rootSplit = itor;
+                itor = itor.parent;
+            }
+
+            return rootSplit;
+        }
+
         public static void AddSplitViewAndChildrenRecurse(View splitview, ArrayList list)
         {
             list.Add(splitview);
@@ -942,14 +1048,8 @@ namespace UnityEditor
 
         public static bool MaximizePrepare(EditorWindow win)
         {
-            // Find Root SplitView
-            View itor = win.m_Parent.parent;
-            View rootSplit = itor;
-            while (itor != null && itor is SplitView)
-            {
-                rootSplit = itor;
-                itor = itor.parent;
-            }
+            View rootSplit = FindRootSplitView(win);
+            View itor = rootSplit.parent;
 
             // Make sure it has a dockarea
             DockArea dockArea = win.m_Parent as DockArea;

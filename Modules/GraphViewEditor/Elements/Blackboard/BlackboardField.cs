@@ -69,7 +69,7 @@ namespace UnityEditor.Experimental.GraphView
             m_TextField.style.display = DisplayStyle.None;
 
             var textinput = m_TextField.Q(TextField.textInputUssName);
-            textinput.RegisterCallback<FocusOutEvent>(e => { OnEditTextFinished(); });
+            textinput.RegisterCallback<FocusOutEvent>(e => { OnEditTextFinished(); }, TrickleDown.TrickleDown);
 
             Add(mainContainer);
 

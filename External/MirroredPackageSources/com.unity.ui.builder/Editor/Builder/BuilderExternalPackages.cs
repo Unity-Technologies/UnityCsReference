@@ -1,7 +1,7 @@
-using UnityEditor;
-using UnityEngine;
 using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 using System.Linq;
+using UnityEditor;
+using UnityEngine;
 
 namespace Unity.UI.Builder
 {

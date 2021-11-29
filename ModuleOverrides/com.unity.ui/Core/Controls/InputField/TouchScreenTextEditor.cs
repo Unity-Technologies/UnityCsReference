@@ -9,9 +9,10 @@ namespace UnityEngine.UIElements
         private IVisualElementScheduledItem m_TouchKeyboardPoller = null;
         private VisualElement m_LastPointerDownTarget;
 
+        internal TouchScreenKeyboard keyboardOnScreen = null;
 
-        public TouchScreenTextEditorEventHandler(TextEditorEngine editorEngine, ITextInputField textInputField)
-            : base(editorEngine, textInputField) {}
+        public TouchScreenTextEditorEventHandler(TextElement textElement, TextEditingUtilities editingUtilities)
+            : base(textElement, editingUtilities) {}
 
         void PollTouchScreenKeyboard()
         {
@@ -19,7 +20,7 @@ namespace UnityEngine.UIElements
             {
                 if (m_TouchKeyboardPoller == null)
                 {
-                    m_TouchKeyboardPoller = (textInputField as VisualElement)?.schedule.Execute(DoPollTouchScreenKeyboard).Every(100);
+                    m_TouchKeyboardPoller = textElement?.schedule.Execute(DoPollTouchScreenKeyboard).Every(100);
                 }
                 else
                 {
@@ -32,24 +33,21 @@ namespace UnityEngine.UIElements
         {
             if (TouchScreenKeyboard.isSupported && !TouchScreenKeyboard.isInPlaceEditingAllowed)
             {
-                if (textInputField.editorEngine.keyboardOnScreen != null)
+                if (keyboardOnScreen != null)
                 {
-                    textInputField.UpdateText(textInputField.CullString(textInputField.editorEngine.keyboardOnScreen.text));
+                    var edition = textElement.edition;
+                    edition.UpdateText(edition.CullString(keyboardOnScreen.text));
 
-                    if (!textInputField.isDelayed)
-                    {
-                        textInputField.UpdateValueFromText();
-                    }
+                    if (!edition.isDelayed)
+                        edition.UpdateValueFromText?.Invoke();
 
-                    if (textInputField.editorEngine.keyboardOnScreen.status != TouchScreenKeyboard.Status.Visible)
+                    if (keyboardOnScreen.status != TouchScreenKeyboard.Status.Visible)
                     {
                         CloseTouchScreenKeyboard();
                         m_TouchKeyboardPoller.Pause();
 
-                        if (textInputField.isDelayed)
-                        {
-                            textInputField.UpdateValueFromText();
-                        }
+                        if (edition.isDelayed)
+                            edition.UpdateValueFromText?.Invoke();
                     }
                 }
             }
@@ -64,20 +62,20 @@ namespace UnityEngine.UIElements
 
         private void CloseTouchScreenKeyboard()
         {
-            if (textInputField.editorEngine.keyboardOnScreen != null)
+            if (keyboardOnScreen != null)
             {
-                textInputField.editorEngine.keyboardOnScreen.active = false;
-                textInputField.editorEngine.keyboardOnScreen = null;
+                keyboardOnScreen.active = false;
+                keyboardOnScreen = null;
             }
         }
 
         private void OpenTouchScreenKeyboard()
         {
-            editorEngine.keyboardOnScreen = TouchScreenKeyboard.Open(textInputField.text,
+            keyboardOnScreen = TouchScreenKeyboard.Open(textElement.text,
                 TouchScreenKeyboardType.Default,
                 true, // autocorrection
-                editorEngine.multiline,
-                textInputField.isPasswordField);
+                textElement.edition.multiline,
+                textElement.edition.isPassword);
 
         }
 
@@ -85,37 +83,37 @@ namespace UnityEngine.UIElements
         {
             base.ExecuteDefaultActionAtTarget(evt);
 
-            if (editorEngine.keyboardOnScreen != null)
+            if (keyboardOnScreen != null)
                 return;
 
-            if (!textInputField.isReadOnly && evt.eventTypeId == PointerDownEvent.TypeId())
+            var edition = textElement.edition;
+            if (!edition.isReadOnly && evt.eventTypeId == PointerDownEvent.TypeId())
             {
                 // CaptureMouse is preventing WebGL from processing pointerDown event in
                 // TextInputFieldBase during the Javascript event handler, preventing the
-                // keybaord from being displayed. Disable the capture behavior for WebGL.
-                textInputField.CaptureMouse();
+                // keyboard from being displayed. Disable the capture behavior for WebGL.
+                textElement.CaptureMouse();
                 m_LastPointerDownTarget = evt.target as VisualElement;
             }
-            else if (!textInputField.isReadOnly && evt.eventTypeId == PointerUpEvent.TypeId())
+            else if (!edition.isReadOnly && evt.eventTypeId == PointerUpEvent.TypeId())
             {
-                textInputField.ReleaseMouse();
+                textElement.ReleaseMouse();
                 if (m_LastPointerDownTarget == null || !m_LastPointerDownTarget.worldBound.Contains(((PointerUpEvent)evt).position))
                     return;
 
                 m_LastPointerDownTarget = null;
 
-                textInputField.SyncTextEngine();
-                textInputField.UpdateText(editorEngine.text);
+                edition.UpdateText(editingUtilities.text);
 
                 OpenTouchScreenKeyboard();
 
-                if (editorEngine.keyboardOnScreen != null)
+                if (keyboardOnScreen != null)
                 {
                     PollTouchScreenKeyboard();
                 }
 
                 // Scroll offset might need to be updated
-                editorEngine.UpdateScrollOffset();
+                edition.UpdateScrollOffset?.Invoke();
                 evt.StopPropagation();
             }
         }

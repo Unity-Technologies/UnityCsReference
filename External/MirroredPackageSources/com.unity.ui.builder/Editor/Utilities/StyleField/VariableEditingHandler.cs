@@ -121,7 +121,7 @@ namespace Unity.UI.Builder
             });
 
             variableField.RegisterValueChangedCallback<string>(e => e.StopImmediatePropagation());
-            input.RegisterCallback<BlurEvent>(e => OnVariableEditingFinished());
+            input.RegisterCallback<BlurEvent>(e => OnVariableEditingFinished(), TrickleDown.TrickleDown);
         }
 
         void OnVariableEditingFinished()
@@ -211,7 +211,7 @@ namespace Unity.UI.Builder
             if (m_CompleterOnTarget != null)
                 m_CompleterOnTarget.enabled = BuilderSharedStyles.IsSelectorElement(m_Inspector.currentVisualElement);
 
-            var property = BuilderInspectorStyleFields.GetStyleProperty(m_Inspector.currentRule, cShartStyleName);
+            var property = BuilderInspectorStyleFields.GetLastStyleProperty(m_Inspector.currentRule, cShartStyleName);
 
             if (property != null)
             {
@@ -242,7 +242,7 @@ namespace Unity.UI.Builder
                 for (var i = matchedRules.Count - 1; i >= 0; --i)
                 {
                     var matchRecord = matchedRules.ElementAt(i).matchRecord;
-                    var ruleProperty = styleSheet.FindProperty(matchRecord.complexSelector.rule, styleName);
+                    var ruleProperty = styleSheet.FindLastProperty(matchRecord.complexSelector.rule, styleName);
 
                     if (ruleProperty != null)
                     {
@@ -272,7 +272,7 @@ namespace Unity.UI.Builder
         static string GetBoundVariableName(VariableEditingHandler handler)
         {
             var styleName = handler.targetField.GetProperty(BuilderConstants.InspectorStylePropertyNameVEPropertyName) as string;
-            var property = BuilderInspectorStyleFields.GetStyleProperty(handler.m_Inspector.currentRule, styleName);
+            var property = BuilderInspectorStyleFields.GetLastStyleProperty(handler.m_Inspector.currentRule, styleName);
             string varName = null;
 
             // Find the name of the variable bound to the field
@@ -295,7 +295,7 @@ namespace Unity.UI.Builder
                 for (var i = matchedRules.Count - 1; i >= 0; --i)
                 {
                     var matchRecord = matchedRules.ElementAt(i).matchRecord;
-                    var ruleProperty = matchRecord.sheet.FindProperty(matchRecord.complexSelector.rule, styleName);
+                    var ruleProperty = matchRecord.sheet.FindLastProperty(matchRecord.complexSelector.rule, styleName);
 
                     if (ruleProperty != null)
                     {

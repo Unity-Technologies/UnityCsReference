@@ -1305,7 +1305,7 @@ namespace UnityEditorInternal
                                 int k = 1;
                                 while (prop1.NextVisible(true) && prop1.depth > depth && tempProp.NextVisible(true) && tempProp.depth > depth)
                                 {
-                                    if (prop1.hasVisibleChildren && tempProp.hasVisibleChildren)
+                                    if (prop1.hasVisibleChildren && tempProp.hasVisibleChildren && tempIsExpanded.Count > k)
                                     {
                                         prop1.isExpanded = tempIsExpanded[k];
                                         k++;

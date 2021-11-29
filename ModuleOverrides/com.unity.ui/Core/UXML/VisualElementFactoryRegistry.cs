@@ -30,10 +30,9 @@ namespace UnityEngine.UIElements
 
         protected static void RegisterFactory(IUxmlFactory factory)
         {
-            List<IUxmlFactory> factoryList;
-            if (factories.TryGetValue(factory.uxmlQualifiedName, out factoryList))
+            if (factories.TryGetValue(factory.uxmlQualifiedName, out var factoryList))
             {
-                foreach (IUxmlFactory f in factoryList)
+                foreach (var f in factoryList)
                 {
                     if (f.GetType() == factory.GetType())
                     {
@@ -52,7 +51,6 @@ namespace UnityEngine.UIElements
 
         internal static bool TryGetValue(string fullTypeName, out List<IUxmlFactory> factoryList)
         {
-            factoryList = null;
             return factories.TryGetValue(fullTypeName, out factoryList);
         }
 
@@ -96,9 +94,10 @@ namespace UnityEngine.UIElements
                 new ProgressBar.UxmlFactory(),
                 new ListView.UxmlFactory(),
                 new TwoPaneSplitView.UxmlFactory(),
-                new InternalTreeView.UxmlFactory(),
                 new TreeView.UxmlFactory(),
                 new Foldout.UxmlFactory(),
+                new MultiColumnListView.UxmlFactory(),
+                new MultiColumnTreeView.UxmlFactory(),
                 new BindableElement.UxmlFactory(),
                 new TextElement.UxmlFactory(),
                 new ButtonStripField.UxmlFactory(),

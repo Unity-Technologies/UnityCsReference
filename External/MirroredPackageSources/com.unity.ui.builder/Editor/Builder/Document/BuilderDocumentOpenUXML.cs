@@ -261,7 +261,6 @@ namespace Unity.UI.Builder
             if (m_CurrentDocumentRootElement == null)
                 m_CurrentDocumentRootElement = documentRootElement;
 
-
             StyleCache.ClearStyleCache();
             UnityEngine.UIElements.StyleSheets.StyleSheetCache.ClearCaches();
             foreach (var openUSS in m_OpenUSSFiles)
@@ -355,13 +354,11 @@ namespace Unity.UI.Builder
             }
         }
 
-
         public void AddStyleSheetsToAllRootElements(string newUssPath = null, int newUssIndex = 0)
         {
             var rootVEA = visualTreeAsset.GetRootUXMLElement();
             AddStyleSheetsToRootAsset(rootVEA, newUssPath, newUssIndex);
         }
-
 
         void RemoveStyleSheetFromLists(int ussIndex)
         {
@@ -720,7 +717,6 @@ namespace Unity.UI.Builder
         public void HierarchyChanged(VisualElement element)
         {
             hasUnsavedChanges = true;
-
         }
 
         public void StylingChanged()
@@ -892,6 +888,7 @@ namespace Unity.UI.Builder
         internal void ResetCanvasDocumentRootElementStyleSheets(VisualElement documentRootElement)
         {
             documentRootElement.styleSheets.Clear();
+
             // Load stylesheets specific to the document element.
             var documentSheet = BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(BuilderConstants.UIBuilderPackagePath + "/Viewport/BuilderDocument.uss");
             var documentThemeSheet = EditorGUIUtility.isProSkin
@@ -900,6 +897,17 @@ namespace Unity.UI.Builder
 
             documentRootElement.styleSheets.Add(documentSheet);
             documentRootElement.styleSheets.Add(documentThemeSheet);
+
+            // Restore the active theme stylesheet
+            if (documentRootElement.HasProperty(BuilderConstants.ElementLinkedActiveThemeStyleSheetVEPropertyName))
+            {
+                var activeThemeStyleSheet = documentRootElement.GetProperty(BuilderConstants.ElementLinkedActiveThemeStyleSheetVEPropertyName) as StyleSheet;
+
+                if (activeThemeStyleSheet != null)
+                {
+                    documentRootElement.styleSheets.Add(activeThemeStyleSheet);
+                }
+            }
         }
 
         void ReloadDocumentToCanvas(VisualElement documentRootElement)
@@ -953,7 +961,6 @@ namespace Unity.UI.Builder
         void ReloadStyleSheetsToCanvas(VisualElement documentRootElement)
         {
             m_CurrentDocumentRootElement = documentRootElement;
-
 
             // Refresh styles.
             RefreshStyle(documentRootElement);

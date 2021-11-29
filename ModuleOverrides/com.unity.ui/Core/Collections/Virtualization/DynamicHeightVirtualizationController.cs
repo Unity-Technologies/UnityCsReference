@@ -33,18 +33,6 @@ namespace UnityEngine.UIElements
             m_FillCallback = Fill;
             m_GeometryChangedCallback = OnRecycledItemGeometryChanged;
             m_IndexOutOfBoundsPredicate = IsIndexOutOfBounds;
-
-            collectionView.destroyItem += element =>
-            {
-                foreach (var item in m_ListView.activeItems)
-                {
-                    if (item.rootElement == element)
-                    {
-                        UnregisterItemHeight(item.index, element.layout.height);
-                        break;
-                    }
-                }
-            };
         }
 
         public override void Refresh(bool rebuild)
@@ -53,12 +41,12 @@ namespace UnityEngine.UIElements
 
             m_WaitingCache.RemoveWhere(m_IndexOutOfBoundsPredicate);
 
-            if (m_ListView.HasValidDataAndBindings())
+            if (m_CollectionView.HasValidDataAndBindings())
             {
                 if (m_WaitingCache.Count == 0)
                     ApplyScrollViewUpdate();
 
-                m_ScheduledItem ??= m_ListView.schedule.Execute(m_FillCallback);
+                m_ScheduledItem ??= m_CollectionView.schedule.Execute(m_FillCallback);
             }
         }
 
@@ -73,7 +61,7 @@ namespace UnityEngine.UIElements
             if (index == -1)
             {
                 // Scroll to last item
-                m_ForcedFirstVisibleItem = m_ListView.viewController.itemsSource.Count - 1;
+                m_ForcedFirstVisibleItem = m_CollectionView.viewController.itemsSource.Count - 1;
                 m_ScrollView.scrollOffset = new Vector2(0, viewportHeight >= currentContentHeight ? 0 : currentContentHeight);
             }
             else if (m_FirstVisibleIndex >= index)
@@ -103,7 +91,7 @@ namespace UnityEngine.UIElements
             // Recalculate offset
             var firstItemPadding = GetContentHeightForIndex(m_FirstVisibleIndex - 1);
 
-            var previousOffset = m_ListView.m_ScrollOffset.y;
+            var previousOffset = m_CollectionView.m_ScrollOffset.y;
             var previousPadding = m_StoredPadding;
             var deltaOffset = previousOffset - previousPadding;
             var offset = firstItemPadding + deltaOffset;
@@ -116,7 +104,7 @@ namespace UnityEngine.UIElements
             var scrollOffset = Mathf.Min(offset, scrollableHeight);
             m_ScrollView.verticalScroller.slider.SetHighValueWithoutNotify(scrollableHeight);
             m_ScrollView.verticalScroller.value = scrollOffset;
-            m_ListView.m_ScrollOffset.y = m_ScrollView.verticalScroller.value;
+            m_CollectionView.m_ScrollOffset.y = m_ScrollView.verticalScroller.value;
             m_ScrollView.contentContainer.style.paddingTop = firstItemPadding;
             m_StoredPadding = firstItemPadding;
 
@@ -127,7 +115,7 @@ namespace UnityEngine.UIElements
             }
             else if (m_ScheduledItem == null)
             {
-                m_ScheduledItem = m_ListView.schedule.Execute(m_FillCallback);
+                m_ScheduledItem = m_CollectionView.schedule.Execute(m_FillCallback);
             }
         }
 
@@ -139,9 +127,9 @@ namespace UnityEngine.UIElements
             var offset = scrollOffset.y;
             var contentHeight = GetContentHeight();
             var maxOffset = Mathf.Max(0, contentHeight - m_ScrollView.contentViewport.layout.height);
-            m_ListView.m_ScrollOffset.y = Mathf.Min(offset, maxOffset);
+            m_CollectionView.m_ScrollOffset.y = Mathf.Min(offset, maxOffset);
 
-            var firstIndex = m_ForcedFirstVisibleItem != -1 ? m_ForcedFirstVisibleItem : GetFirstVisibleItem(m_ListView.m_ScrollOffset.y);
+            var firstIndex = m_ForcedFirstVisibleItem != -1 ? m_ForcedFirstVisibleItem : GetFirstVisibleItem(m_CollectionView.m_ScrollOffset.y);
             var firstVisiblePadding = GetContentHeightForIndex(firstIndex - 1);
             m_ForcedFirstVisibleItem = -1;
 
@@ -166,7 +154,7 @@ namespace UnityEngine.UIElements
                         for (int i = 0; i < count && m_ActiveItems.Count > 0; ++i)
                         {
                             var last = m_ActiveItems[m_ActiveItems.Count - 1];
-                            if (last.rootElement.layout.y < m_ListView.m_ScrollOffset.y + m_ScrollView.contentViewport.layout.height)
+                            if (last.rootElement.layout.y < m_CollectionView.m_ScrollOffset.y + m_ScrollView.contentViewport.layout.height)
                                 break;
 
                             inserting.Add(last);
@@ -181,7 +169,7 @@ namespace UnityEngine.UIElements
                     else // down
                     {
                         var currentLastVisibleItem = lastVisibleItem;
-                        if (m_FirstVisibleIndex < currentLastVisibleItem.index && currentLastVisibleItem.index < m_ListView.itemsSource.Count - 1)
+                        if (m_FirstVisibleIndex < currentLastVisibleItem.index && currentLastVisibleItem.index < m_CollectionView.itemsSource.Count - 1)
                         {
                             var inserting = m_ScrollInsertionList;
 
@@ -208,7 +196,7 @@ namespace UnityEngine.UIElements
                     {
                         var index = m_FirstVisibleIndex + i;
 
-                        if (index >= m_ListView.itemsSource.Count)
+                        if (index >= m_CollectionView.itemsSource.Count)
                         {
                             m_StickToBottom = true;
                             m_ForcedLastVisibleItem = -1;
@@ -216,7 +204,7 @@ namespace UnityEngine.UIElements
                             continue;
                         }
 
-                        var isItemInViewport = itemContentOffset - m_ListView.m_ScrollOffset.y < m_ScrollView.contentViewport.layout.height;
+                        var isItemInViewport = itemContentOffset - m_CollectionView.m_ScrollOffset.y < m_ScrollView.contentViewport.layout.height;
                         var previousIndex = m_ActiveItems[i].index;
                         m_WaitingCache.Remove(previousIndex);
 
@@ -239,7 +227,7 @@ namespace UnityEngine.UIElements
 
             m_StoredPadding = firstVisiblePadding;
             m_ScrollView.contentContainer.style.paddingTop = firstVisiblePadding;
-            m_ScheduledItem ??= m_ListView.schedule.Execute(m_FillCallback);
+            m_ScheduledItem ??= m_CollectionView.schedule.Execute(m_FillCallback);
         }
 
         bool NeedsFill()
@@ -247,12 +235,12 @@ namespace UnityEngine.UIElements
             var lastItemIndex = lastVisibleItem?.index ?? -1;
             var padding = m_StoredPadding;
 
-            if (padding > m_ListView.m_ScrollOffset.y)
+            if (padding > m_CollectionView.m_ScrollOffset.y)
                 return true;
 
-            for (var i = m_FirstVisibleIndex; i < m_ListView.itemsSource.Count; i++)
+            for (var i = m_FirstVisibleIndex; i < m_CollectionView.itemsSource.Count; i++)
             {
-                if (padding - m_ListView.m_ScrollOffset.y > m_ScrollView.contentViewport.layout.height)
+                if (padding - m_CollectionView.m_ScrollOffset.y > m_ScrollView.contentViewport.layout.height)
                     break;
 
                 padding += GetItemHeight(i);
@@ -266,7 +254,7 @@ namespace UnityEngine.UIElements
 
         void Fill()
         {
-            if (!m_ListView.HasValidDataAndBindings())
+            if (!m_CollectionView.HasValidDataAndBindings())
                 return;
 
             var itemsToAdd = 0;
@@ -275,14 +263,14 @@ namespace UnityEngine.UIElements
             var firstVisiblePadding = m_StoredPadding;
             var padding = firstVisiblePadding;
 
-            if (m_ListView.dragger is ListViewDraggerAnimated dragger && dragger.draggedItem != null)
+            if (m_CollectionView.dragger is ListViewDraggerAnimated dragger && dragger.draggedItem != null)
             {
                 padding -= dragger.draggedItem.rootElement.style.height.value.value;
             }
 
-            for (var i = m_FirstVisibleIndex; i < m_ListView.itemsSource.Count; i++)
+            for (var i = m_FirstVisibleIndex; i < m_CollectionView.itemsSource.Count; i++)
             {
-                if (padding - m_ListView.m_ScrollOffset.y > m_ScrollView.contentViewport.layout.height)
+                if (padding - m_CollectionView.m_ScrollOffset.y > m_ScrollView.contentViewport.layout.height)
                     break;
 
                 padding += GetItemHeight(i);
@@ -305,7 +293,7 @@ namespace UnityEngine.UIElements
             }
 
             // Grow upwards
-            while (firstVisiblePadding > m_ListView.m_ScrollOffset.y)
+            while (firstVisiblePadding > m_CollectionView.m_ScrollOffset.y)
             {
                 var index = m_FirstVisibleIndex - 1;
 
@@ -363,7 +351,7 @@ namespace UnityEngine.UIElements
 
         void UpdateScrollViewContainer(int index, float previousHeight, float newHeight)
         {
-            var previousOffset = m_ListView.m_ScrollOffset.y;
+            var previousOffset = m_CollectionView.m_ScrollOffset.y;
             var previousPadding = m_StoredPadding;
 
             m_StoredPadding = GetContentHeightForIndex(m_FirstVisibleIndex - 1);
@@ -374,7 +362,7 @@ namespace UnityEngine.UIElements
             if (m_ForcedLastVisibleItem >= 0)
             {
                 var lastItemHeight = GetContentHeightForIndex(m_ForcedLastVisibleItem);
-                m_ListView.m_ScrollOffset.y = lastItemHeight + InitialAverageHeight - m_ScrollView.contentViewport.layout.height;
+                m_CollectionView.m_ScrollOffset.y = lastItemHeight + InitialAverageHeight - m_ScrollView.contentViewport.layout.height;
             }
             else
             {
@@ -386,7 +374,7 @@ namespace UnityEngine.UIElements
                     offset += newHeight - previousHeight;
                 }
 
-                m_ListView.m_ScrollOffset.y = m_StoredPadding + offset;
+                m_CollectionView.m_ScrollOffset.y = m_StoredPadding + offset;
             }
         }
 
@@ -402,12 +390,12 @@ namespace UnityEngine.UIElements
 
             if (m_StickToBottom)
             {
-                m_ListView.m_ScrollOffset.y = scrollableHeight;
+                m_CollectionView.m_ScrollOffset.y = scrollableHeight;
             }
 
             m_ScrollView.verticalScroller.slider.SetHighValueWithoutNotify(scrollableHeight);
-            m_ScrollView.verticalScroller.slider.SetValueWithoutNotify(m_ListView.m_ScrollOffset.y);
-            m_ListView.m_ScrollOffset.y = m_ScrollView.verticalScroller.slider.value;
+            m_ScrollView.verticalScroller.slider.SetValueWithoutNotify(m_CollectionView.m_ScrollOffset.y);
+            m_CollectionView.m_ScrollOffset.y = m_ScrollView.verticalScroller.slider.value;
 
             if (!NeedsFill())
             {
@@ -422,11 +410,11 @@ namespace UnityEngine.UIElements
                 for (var i = 0; i < m_ActiveItems.Count; i++)
                 {
                     var index = m_FirstVisibleIndex + i;
-                    var isItemInViewport = itemContentOffset - m_ListView.m_ScrollOffset.y < m_ScrollView.contentViewport.layout.height;
+                    var isItemInViewport = itemContentOffset - m_CollectionView.m_ScrollOffset.y < m_ScrollView.contentViewport.layout.height;
 
                     if (!isItemInViewport)
                     {
-                        m_ListView.viewController.InvokeUnbindItem(m_ActiveItems[i], index);
+                        m_CollectionView.viewController.InvokeUnbindItem(m_ActiveItems[i], index);
                         ReleaseItem(i--);
                     }
 
@@ -435,13 +423,13 @@ namespace UnityEngine.UIElements
             }
             else
             {
-                m_ScheduledItem ??= m_ListView.schedule.Execute(m_FillCallback);
+                m_ScheduledItem ??= m_CollectionView.schedule.Execute(m_FillCallback);
             }
         }
 
         float GetContentHeight()
         {
-            var itemCount = m_ListView.viewController.itemsSource.Count;
+            var itemCount = m_CollectionView.viewController.itemsSource.Count;
             return GetContentHeightForIndex(itemCount - 1);
         }
 
@@ -465,14 +453,14 @@ namespace UnityEngine.UIElements
             if (height <= 0)
                 return;
 
-            var resolvedHeight = m_ListView.ResolveItemHeight(height);
+            var resolvedHeight = m_CollectionView.ResolveItemHeight(height);
 
             if (m_ItemHeightCache.TryGetValue(index, out var value))
                 m_AccumulatedHeight -= value;
 
             m_AccumulatedHeight += resolvedHeight;
             var count = m_ItemHeightCache.Count;
-            m_AverageHeight = m_ListView.ResolveItemHeight(count > 0 ? m_AccumulatedHeight / count : m_AccumulatedHeight);
+            m_AverageHeight = m_CollectionView.ResolveItemHeight(count > 0 ? m_AccumulatedHeight / count : m_AccumulatedHeight);
 
             m_ItemHeightCache[index] = resolvedHeight;
         }
@@ -489,7 +477,7 @@ namespace UnityEngine.UIElements
             m_ItemHeightCache.Remove(index);
 
             var count = m_ItemHeightCache.Count;
-            m_AverageHeight = m_ListView.ResolveItemHeight(count > 0 ? m_AccumulatedHeight / count : m_AccumulatedHeight);
+            m_AverageHeight = m_CollectionView.ResolveItemHeight(count > 0 ? m_AccumulatedHeight / count : m_AccumulatedHeight);
         }
 
         void OnRecycledItemGeometryChanged(ReusableCollectionItem item)
@@ -535,6 +523,15 @@ namespace UnityEngine.UIElements
         {
             base.ReplaceActiveItem(index);
             m_WaitingCache.Remove(index);
+
+            foreach (var item in m_CollectionView.activeItems)
+            {
+                if (item.index == index)
+                {
+                    UnregisterItemHeight(item.index, item.rootElement.layout.height);
+                    break;
+                }
+            }
         }
 
         void ReleaseItem(int index)
@@ -548,7 +545,7 @@ namespace UnityEngine.UIElements
 
         bool IsIndexOutOfBounds(int i)
         {
-            return i >= m_ListView.itemsSource.Count;
+            return m_CollectionView.itemsSource == null || i >= m_CollectionView.itemsSource.Count;
         }
     }
 }

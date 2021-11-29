@@ -260,9 +260,9 @@ namespace Unity.UI.Builder
         {
             if (m_TextField != null && enabled)
             {
-                m_TextField.Q(TextField.textInputUssName).RegisterCallback<FocusInEvent>(OnFocusIn);
-                m_TextField.Q(TextField.textInputUssName).RegisterCallback<BlurEvent>(OnBlur);
-                m_TextField.Q(TextField.textInputUssName).RegisterCallback<KeyDownEvent>(OnKeyDown);
+                m_TextField.Q(TextField.textInputUssName).RegisterCallback<FocusInEvent>(OnFocusIn, TrickleDown.TrickleDown);
+                m_TextField.Q(TextField.textInputUssName).RegisterCallback<BlurEvent>(OnBlur, TrickleDown.TrickleDown);
+                m_TextField.Q(TextField.textInputUssName).RegisterCallback<KeyDownEvent>(OnKeyDown, TrickleDown.TrickleDown);
             }
         }
 
@@ -270,9 +270,9 @@ namespace Unity.UI.Builder
         {
             if (m_TextField != null)
             {
-                m_TextField.Q(TextField.textInputUssName).UnregisterCallback<FocusInEvent>(OnFocusIn);
-                m_TextField.Q(TextField.textInputUssName).UnregisterCallback<BlurEvent>(OnBlur);
-                m_TextField.Q(TextField.textInputUssName).UnregisterCallback<KeyDownEvent>(OnKeyDown);
+                m_TextField.Q(TextField.textInputUssName).UnregisterCallback<FocusInEvent>(OnFocusIn, TrickleDown.TrickleDown);
+                m_TextField.Q(TextField.textInputUssName).UnregisterCallback<BlurEvent>(OnBlur, TrickleDown.TrickleDown);
+                m_TextField.Q(TextField.textInputUssName).UnregisterCallback<KeyDownEvent>(OnKeyDown, TrickleDown.TrickleDown);
             }
         }
 

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using System.Linq;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
@@ -18,7 +19,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override bool TriggerAction(IList<IPackageVersion> versions)
         {
-            m_PackageDatabase.AbortDownload(versions);
+            m_PackageDatabase.AbortDownload(versions.Select(v => v.package));
             return true;
         }
 

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEditor.SceneManagement;
@@ -15,6 +16,7 @@ using UnityEditorInternal.VR;
 using UnityEngine.XR;
 using FrameCapture = UnityEngine.Apple.FrameCapture;
 using FrameCaptureDestination = UnityEngine.Apple.FrameCaptureDestination;
+using UnityEditor.ShortcutManagement;
 
 /*
 The main GameView can be in the following states when entering playmode.
@@ -35,7 +37,7 @@ These states should be tested when changing the behavior when entering playmode.
 namespace UnityEditor
 {
     [EditorWindowTitle(title = "Game", useTypeNameAsIconName = true)]
-    internal class GameView : PlayModeView, IHasCustomMenu, IGameViewSizeMenuUser
+    internal class GameView : PlayModeView, IHasCustomMenu, IGameViewSizeMenuUser, IGameViewOnPlayMenuUser
     {
         const int kScaleSliderMinWidth = 30;
         const int kScaleSliderMaxWidth = 150;
@@ -65,6 +67,7 @@ namespace UnityEditor
         }
 
         [SerializeField] bool m_VSyncEnabled;
+        [SerializeField] bool m_PlayFocused;
         [SerializeField] bool m_Gizmos;
         [SerializeField] bool m_Stats;
         [SerializeField] int[] m_SelectedSizes = new int[0]; // We have a selection for each game view size group (e.g standalone, android etc)
@@ -80,10 +83,13 @@ namespace UnityEditor
         [SerializeField] bool[] m_LowResolutionForAspectRatios = new bool[0];
         [SerializeField] int m_XRRenderMode = 0;
         [SerializeField] RenderTexture m_RenderTexture;
+        [SerializeField] bool m_showToolbar = true;
+        [SerializeField] bool m_showToolbarOnFullscreen = false;
 
         int m_SizeChangeID = int.MinValue;
 
         List<XRDisplaySubsystem> m_DisplaySubsystems = new List<XRDisplaySubsystem>();
+        PlayModeStateChange latestState = PlayModeStateChange.EnteredEditMode;
 
         internal override bool liveReloadPreferenceDefault => true;
 
@@ -100,6 +106,9 @@ namespace UnityEditor
             public static GUIContent clearEveryFrameContextMenuContent = EditorGUIUtility.TrTextContent("Clear Every Frame in Edit Mode");
             public static GUIContent lowResAspectRatiosContextMenuContent = EditorGUIUtility.TrTextContent("Low Resolution Aspect Ratios");
             public static GUIContent metalFrameCaptureContent = EditorGUIUtility.TrIconContent("FrameCapture", "Capture the current view and open in Xcode frame debugger");
+            public static GUIContent suppressMessage = EditorGUIUtility.TrTextContent("This GameView is suppressed from rendering during Fullscreen.");
+            public static GUIContent disableFullscreenMainDisplayFormatContent = EditorGUIUtility.TrTextContent("Press {0} to exit fullscreen.");
+
             public static GUIContent renderdocContent;
             public static GUIStyle gameViewBackgroundStyle;
 
@@ -111,7 +120,29 @@ namespace UnityEditor
                 gameViewBackgroundStyle = "GameViewBackground";
                 renderdocContent = EditorGUIUtility.TrIconContent("FrameCapture", UnityEditor.RenderDocUtil.openInRenderDocLabel);
             }
+
+            public static readonly GUIStyle largeCenteredText = new GUIStyle(EditorStyles.label)
+            {
+                name = "large-centered-text",
+                richText = true,
+                wordWrap = true,
+                alignment = TextAnchor.MiddleCenter,
+                margin = new RectOffset(4, 4, 1, 4),
+                padding = new RectOffset(4, 4, 4, 4),
+                fontSize = 42
+            };
+            public static readonly GUIStyle smallCenteredText = new GUIStyle(EditorStyles.label)
+            {
+                name = "small-centered-text",
+                richText = true,
+                wordWrap = true,
+                alignment = TextAnchor.MiddleCenter,
+                margin = new RectOffset(4, 4, 1, 4),
+                padding = new RectOffset(4, 4, 4, 4),
+                fontSize = 12
+            };
         }
+
 
         static double s_LastScrollTime;
 
@@ -126,6 +157,81 @@ namespace UnityEditor
             targetSize = new Vector2(640f, 480f);
             textureFilterMode = FilterMode.Point;
             textureHideFlags = HideFlags.HideAndDontSave;
+        }
+
+        internal override void ApplyEditorDisplayFullscreenSetting(IPlayModeViewFullscreenSettings settings)
+        {
+            var gameviewSetting = settings as GameViewFullscreenSettings;
+            if (gameviewSetting == null)
+            {
+                return;
+            }
+
+            isFullscreen = true;
+
+            var changed = false;
+
+            if (ModuleManager.ShouldShowMultiDisplayOption())
+            {
+                if (targetDisplay != gameviewSetting.DisplayNumber)
+                {
+                    targetDisplay = gameviewSetting.DisplayNumber;
+                    changed = true;
+                }
+            }
+
+            if (m_showToolbarOnFullscreen != gameviewSetting.ShowToolbar)
+            {
+                m_showToolbarOnFullscreen = gameviewSetting.ShowToolbar;
+                changed = true;
+            }
+
+            if (m_Stats != gameviewSetting.ShowStats)
+            {
+                m_Stats = gameviewSetting.ShowStats;
+                changed = true;
+            }
+
+            if (m_Gizmos != gameviewSetting.ShowGizmos)
+            {
+                m_Gizmos = gameviewSetting.ShowGizmos;
+                changed = true;
+            }
+
+            if (canVSync)
+            {
+                if (m_VSyncEnabled != gameviewSetting.VsyncEnabled)
+                {
+                    m_VSyncEnabled = gameviewSetting.VsyncEnabled;
+                    SetVSync(m_VSyncEnabled);
+                    changed = true;
+                }
+            }
+
+            if (selectedSizeIndex != gameviewSetting.SelectedSizeIndex)
+            {
+                selectedSizeIndex = gameviewSetting.SelectedSizeIndex;
+                changed = true;
+            }
+
+            if (changed)
+            {
+                UpdateZoomAreaAndParent();
+            }
+        }
+
+        private bool canVSync
+        {
+            get
+            {
+                var gfxDeviceType = SystemInfo.graphicsDeviceType;
+                return
+                    gfxDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Metal ||
+                    gfxDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Vulkan ||
+                    gfxDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Direct3D11 ||
+                    gfxDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Direct3D12 ||
+                    gfxDeviceType == UnityEngine.Rendering.GraphicsDeviceType.OpenGLCore;
+            }
         }
 
         public bool lowResolutionForAspectRatios
@@ -161,7 +267,13 @@ namespace UnityEditor
             }
         }
 
-        int selectedSizeIndex
+        public bool playFocused
+        {
+            get { return m_PlayFocused; }
+            set { m_PlayFocused = value; }
+        }
+
+        public int selectedSizeIndex
         {
             get
             {
@@ -288,7 +400,11 @@ namespace UnityEditor
 
         float gameMouseScale { get { return EditorGUIUtility.pixelsPerPoint / m_ZoomArea.scale.y; } }
 
-        private bool showToolbar { get; set; }
+        private bool showToolbar
+        {
+            get => isFullscreen ? m_showToolbarOnFullscreen : m_showToolbar;
+            set => m_showToolbar = value;
+        }
 
         internal bool drawGizmos
         {
@@ -536,6 +652,31 @@ namespace UnityEditor
                 || FrameCapture.IsDestinationSupported(FrameCaptureDestination.GPUTraceDocument);
         }
 
+        private void MirrorFullscreenToolbarSettings()
+        {
+            if (enterPlayModeBehavior != EnterPlayModeBehavior.PlayFullscreen)
+                return;
+
+            // Even though there is a 1:1 relationship between a fullscreen game view, and the "suppressed" game view that
+            // spawned it, it's not easy to distingush which game view controls which sub game view. Rather than brutally
+            // enforce the 1:1 relationship allow any game view with the selected fullscreen idx, to control the settings
+            // on that fullscreen container window.
+            int displayIdx = fullscreenMonitorIdx;
+            List<ContainerWindow> fullscreenContainers = EditorFullscreenController.GetFullscreenContainersForDisplayIndex(displayIdx);
+            foreach (var cw in fullscreenContainers)
+            {
+                var fullscreenGameView = (cw.rootView as HostView).actualView as GameView;
+
+                fullscreenGameView.targetDisplay = this.targetDisplay;
+                fullscreenGameView.m_ZoomArea = this.m_ZoomArea;
+                fullscreenGameView.UpdateZoomAreaAndParent();
+                fullscreenGameView.m_Stats = this.m_Stats;
+                fullscreenGameView.m_Gizmos = this.m_Gizmos;
+
+            }
+
+        }
+
         private void DoToolbarGUI()
         {
             if (Event.current.isKey || Event.current.type == EventType.Used)
@@ -545,19 +686,24 @@ namespace UnityEditor
 
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
             {
-                var availableTypes = GetAvailableWindowTypes();
-                if (availableTypes.Count > 1)
+                if (!isFullscreen)
                 {
-                    var typeNames = availableTypes.Values.ToList();
-                    var types = availableTypes.Keys.ToList();
-                    int viewIndex = EditorGUILayout.Popup(typeNames.IndexOf(GetWindowTitle(GetType())), typeNames.ToArray(),
-                        EditorStyles.toolbarPopup,
-                        GUILayout.Width(90));
-                    EditorGUILayout.Space();
-                    if (types[viewIndex] != typeof(GameView))
+                    EditorGUI.BeginDisabled(enterPlayModeBehavior == EnterPlayModeBehavior.PlayFullscreen);
+                    var availableTypes = GetAvailableWindowTypes();
+                    if (availableTypes.Count > 1)
                     {
-                        SwapMainWindow(types[viewIndex]);
+                        var typeNames = availableTypes.Values.ToList();
+                        var types = availableTypes.Keys.ToList();
+                        int viewIndex = EditorGUILayout.Popup(typeNames.IndexOf(titleContent.text), typeNames.ToArray(),
+                            EditorStyles.toolbarPopup,
+                            GUILayout.Width(90));
+                        EditorGUILayout.Space();
+                        if (types[viewIndex] != typeof(GameView))
+                        {
+                            SwapMainWindow(types[viewIndex]);
+                        }
                     }
+                    EditorGUI.EndDisabled();
                 }
 
                 if (ModuleManager.ShouldShowMultiDisplayOption())
@@ -645,11 +791,17 @@ namespace UnityEditor
                         m_XRRenderMode = selectedMirrorViewBlitMode;
                     }
                 }
+                GUILayout.FlexibleSpace();
 
-                enterPlayModeBehavior = (EnterPlayModeBehavior)EditorGUILayout.EnumPopup(enterPlayModeBehavior, EditorStyles.toolbarDropDown, GUILayout.Width(110));
+                // Don't display the fullscreen selection dropdown on gameview toolbars that are already fullscreen.
+                if (!isFullscreen)
+                {
+                    EditorGUI.BeginDisabled(Application.isPlaying);
+                    EditorGUILayout.GameViewOnPlayPopup(playModeBehaviorIdx, this, EditorStyles.toolbarDropDown);
+                    EditorGUI.EndDisabled();
+                }
 
                 EditorUtility.audioMasterMute = GUILayout.Toggle(EditorUtility.audioMasterMute, Styles.muteContent, EditorStyles.toolbarButton);
-
                 m_Stats = GUILayout.Toggle(m_Stats, Styles.statsContent, EditorStyles.toolbarButton);
 
                 if (EditorGUILayout.DropDownToggle(ref m_Gizmos, Styles.gizmosContent, EditorStyles.toolbarDropDownToggleRight))
@@ -662,6 +814,7 @@ namespace UnityEditor
                 }
             }
             GUILayout.EndHorizontal();
+            MirrorFullscreenToolbarSettings();
         }
 
         private int XRTranslateMirrorViewBlitModeToRenderMode(int mirrorViewBlitMode)
@@ -801,6 +954,7 @@ namespace UnityEditor
 
         private void OnPlayModeStateChanged(PlayModeStateChange state)
         {
+            latestState = state;
             if (state == PlayModeStateChange.EnteredPlayMode)
             {
                 // Enable vsync in play mode to get as much as possible frame rate consistency
@@ -865,6 +1019,12 @@ namespace UnityEditor
             if (HandleCommand(evt))
                 return;
 
+            if (suppressRenderingForFullscreen && latestState == PlayModeStateChange.EnteredPlayMode)
+            {
+                DrawDuringFullscreenBackground();
+                return;
+            }
+
             if (position.size * EditorGUIUtility.pixelsPerPoint != m_LastWindowPixelSize) // pixelsPerPoint only reliable in OnGUI()
             {
                 UpdateZoomAreaAndParent();
@@ -918,7 +1078,14 @@ namespace UnityEditor
             if (m_Parent)
             {
                 var zoomedTarget = new Rect(targetInView.position + gameViewTarget.position, targetInView.size);
-                SetParentGameViewDimensions(zoomedTarget, gameViewTarget, targetRenderSize);
+                if (!isFullscreen)
+                {
+                    SetParentGameViewDimensions(zoomedTarget, gameViewTarget, targetRenderSize);
+                }
+                else
+                {
+                    SetParentGameViewDimensions(zoomedTarget, gameViewTarget, EditorFullscreenController.fullscreenDisplayRenderSize);
+                }
             }
 
             var editorMousePosition = Event.current.mousePosition;
@@ -974,6 +1141,13 @@ namespace UnityEditor
             {
                 if (Event.current.isKey && (!EditorApplication.isPlaying || EditorApplication.isPaused))
                     return;
+
+                if (isFullscreen)
+                {
+                    // Let the global eventhandler handle toggling fullscreen after this event (do not use the current event)
+                    // We support fullscreen in both edit mode and play mode
+                    return;
+                }
 
                 bool mousePosInGameViewRect = viewInWindow.Contains(Event.current.mousePosition);
 
@@ -1041,6 +1215,43 @@ namespace UnityEditor
 
             if (m_Stats)
                 GameViewGUI.GameViewStatsGUI();
+        }
+
+        private void DrawDuringFullscreenBackground()
+        {
+            DoToolbarGUI();
+            EditorGUILayout.LabelField(Styles.suppressMessage, Styles.largeCenteredText);
+            var binding = ShortcutManager.instance.GetShortcutBinding(EditorFullscreenController.kFullscreenToggle);
+            string content = string.Format(Styles.disableFullscreenMainDisplayFormatContent.text, binding);
+            EditorGUILayout.LabelField(content, Styles.smallCenteredText);
+        }
+
+        void IGameViewOnPlayMenuUser.OnPlayPopupSelection(int indexClicked, object objectSelected)
+        {
+            playModeBehaviorIdx = indexClicked;
+            if (playModeBehaviorIdx == 0)
+            {
+                if (playFocused)
+                    enterPlayModeBehavior = EnterPlayModeBehavior.PlayFocused;
+                else
+                    enterPlayModeBehavior = EnterPlayModeBehavior.PlayUnfocused;
+                fullscreenMonitorIdx = PlayModeView.kFullscreenNone;
+            }
+            else if (playModeBehaviorIdx == 1)
+            {
+                enterPlayModeBehavior = EnterPlayModeBehavior.PlayMaximized;
+                fullscreenMonitorIdx = PlayModeView.kFullscreenNone;
+            }
+            else
+            {
+                enterPlayModeBehavior = EnterPlayModeBehavior.PlayFullscreen;
+                fullscreenMonitorIdx = GameViewOnPlayMenu.SelectedIndexToDisplayIndex(indexClicked);
+                if (fullscreenMonitorIdx == PlayModeView.kFullscreenInvalidIdx)
+                {
+                    Debug.LogError("Invalid display index(" + fullscreenMonitorIdx + ") for selected index(" + indexClicked + ")");
+                    fullscreenMonitorIdx = PlayModeView.kFullscreenNone;
+                }
+            }
         }
     }
 }

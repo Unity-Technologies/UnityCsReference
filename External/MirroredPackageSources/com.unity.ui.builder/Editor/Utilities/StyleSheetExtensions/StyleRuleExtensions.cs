@@ -8,10 +8,14 @@ namespace Unity.UI.Builder
 {
     internal static class StyleRuleExtensions
     {
-        public static StyleProperty FindProperty(this StyleSheet styleSheet, StyleRule rule, string propertyName)
+        public static StyleProperty FindLastProperty(this StyleSheet styleSheet, StyleRule rule, string propertyName)
         {
-            foreach (var property in rule.properties)
+            if (rule == null)
+                return null;
+
+            for (var i = rule.properties.Length - 1; i >= 0; --i)
             {
+                var property = rule.properties[i];
                 if (property.name == propertyName)
                     return property;
             }
@@ -65,7 +69,7 @@ namespace Unity.UI.Builder
         public static void RemoveProperty(this StyleSheet styleSheet, StyleRule rule,
             string name, string undoMessage = null)
         {
-            var property = styleSheet.FindProperty(rule, name);
+            var property = styleSheet.FindLastProperty(rule, name);
             if (property == null)
                 return;
 

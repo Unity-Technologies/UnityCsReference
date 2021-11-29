@@ -22,7 +22,7 @@ using StyleSheet = UnityEngine.UIElements.StyleSheet;
 namespace UnityEditor.UIElements
 {
     // Make sure UXML is imported after assets than can be addressed in USS
-    [ScriptedImporter(version: 9, ext: "uxml", importQueueOffset: 1102)]
+    [ScriptedImporter(version: 10, ext: "uxml", importQueueOffset: 1102)]
     [ExcludeFromPreset]
     internal class UIElementsViewImporter : ScriptedImporter
     {
@@ -166,6 +166,10 @@ namespace UnityEditor.UIElements
                         return "The specified URI refers to an invalid asset : {0}";
                     case ImportErrorCode.TemplateHasCircularDependency:
                         return "The specified URI contains a circular dependency: {0}";
+                    case ImportErrorCode.InvalidUxmlObjectParent:
+                        return "Uxml object can only be placed under VisualElements or other UxmlObjects: {0}";
+                    case ImportErrorCode.InvalidUxmlObjectChild:
+                        return "Uxml object has an invalid child element: {0}";
                     default:
                         throw new ArgumentOutOfRangeException("Unhandled error code " + errorCode);
                 }
@@ -719,6 +723,9 @@ namespace UnityEditor.UIElements
                 parentHash = parent.id;
             }
 
+            if (!EnsureValidUxmlObjectChild(elt, vea, vta))
+                return;
+
             // id includes the parent id, meaning it's dependent on the whole direct hierarchy
             vea.id = (vta.GetNextChildSerialNumber() + 585386304) * -1521134295 + parentHash;
             vea.orderInDocument = orderInDocument;
@@ -732,6 +739,8 @@ namespace UnityEditor.UIElements
             var templateAsset = vea as TemplateAsset;
             if (templateAsset != null)
                 vta.templateAssets.Add(templateAsset);
+            else if (vea is UxmlObjectAsset uxmlObjectAsset)
+                vta.RegisterUxmlObject(uxmlObjectAsset);
             else
                 vta.visualElementAssets.Add(vea);
 
@@ -846,9 +855,14 @@ namespace UnityEditor.UIElements
                 elementNamespaceName = elementNamespaceName.Replace(".Experimental.UIElements", ".UIElements");
             }
 
-            string fullName = String.IsNullOrEmpty(elementNamespaceName)
+            var fullName = String.IsNullOrEmpty(elementNamespaceName)
                 ? elt.Name.LocalName
                 : elementNamespaceName + "." + elt.Name.LocalName;
+
+            if (UxmlObjectFactoryRegistry.factories.ContainsKey(fullName))
+            {
+                return new UxmlObjectAsset(fullName);
+            }
 
             if (elt.Name.LocalName == k_TemplateInstanceNode && elementNamespaceName == typeof(TemplateContainer).Namespace)
             {
@@ -878,6 +892,35 @@ namespace UnityEditor.UIElements
             }
 
             return new VisualElementAsset(fullName);
+        }
+
+        bool EnsureValidUxmlObjectChild(XElement elt, VisualElementAsset vea, VisualTreeAsset vta)
+        {
+            if (vea is UxmlObjectAsset)
+            {
+                // UxmlObjects can't be at the root of a visual tree or child of style and template nodes.
+                if (elt.Parent == null || elt.Parent.Name.LocalName == k_RootNode)
+                {
+                    LogError(vta, ImportErrorType.Semantic, ImportErrorCode.InvalidUxmlObjectParent, vea.fullTypeName, elt);
+                    return false;
+                }
+
+                // UxmlObjects can be child of other UxmlObjects or VisualElements.
+                return true;
+            }
+
+            // Other types can't be child of a UxmlObject.
+            if (vta.uxmlObjectIds != null)
+            {
+                var isUxmlObjectChild = vta.uxmlObjectIds.Contains(vea.parentId);
+                if (isUxmlObjectChild)
+                {
+                    LogError(vta, ImportErrorType.Semantic, ImportErrorCode.InvalidUxmlObjectChild, vea.fullTypeName, elt);
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         bool ParseAttributes(XElement elt, VisualElementAsset res, VisualTreeAsset vta, VisualElementAsset parent)
@@ -1002,7 +1045,9 @@ namespace UnityEditor.UIElements
         ReferenceInvalidURIScheme,
         ReferenceInvalidURIProjectAssetPath,
         ReferenceInvalidAssetType,
-        TemplateHasCircularDependency
+        TemplateHasCircularDependency,
+        InvalidUxmlObjectParent,
+        InvalidUxmlObjectChild,
     }
 
     internal enum ImportErrorType

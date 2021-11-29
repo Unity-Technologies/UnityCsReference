@@ -6,7 +6,7 @@
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <EnableDefaultItems>false</EnableDefaultItems>
     <LangVersion>latest</LangVersion>
-    <NoWarn></NoWarn>
+    <NoWarn>1071</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Data.cs" />

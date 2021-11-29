@@ -40,11 +40,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool isOfflineMode => false;
 
-        public bool isInProgress => state == DownloadState.Connecting || state == DownloadState.Downloading || state == DownloadState.Decrypting;
+        public bool isInProgress => (state & DownloadState.InProgress) != 0;
 
-        public bool isInPause => state == DownloadState.Paused || state == DownloadState.Pausing;
+        public bool isInPause => (state & DownloadState.InPause) != 0;
 
-        public bool isProgressVisible => state == DownloadState.ResumeRequested || isInProgress || isInPause;
+        public bool isProgressVisible => (state & ~DownloadState.DownloadRequested & (DownloadState.InPause | DownloadState.InProgress)) != 0;
 
         public bool isProgressTrackable => true;
 
@@ -197,10 +197,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void Abort()
         {
-            if (downloadInfo?.isValid != true)
-                return;
-
-            if (state == DownloadState.Aborted || state == DownloadState.Completed || state == DownloadState.Error)
+            if (!isInProgress && !isInPause)
                 return;
 
             // We reset everything if we cancel after pausing a download
@@ -211,6 +208,11 @@ namespace UnityEditor.PackageManager.UI.Internal
                 onOperationFinalized?.Invoke(this);
                 return;
             }
+
+            m_State = DownloadState.AbortRequsted;
+
+            if (downloadInfo?.isValid != true)
+                return;
 
             // the actual download state change from `downloading` to `aborted` happens in `OnDownloadProgress` callback
             if (!m_AssetStoreUtils.AbortDownload(downloadInfo.destination))
@@ -235,6 +237,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             var productId = long.Parse(m_ProductId);
             m_AssetStoreRestAPI.GetDownloadDetail(productId, downloadInfo =>
             {
+                // if the user requested to abort before receiving the download details, we can simply discard the download info and do nothing
+                if (m_State == DownloadState.AbortRequsted)
+                    return;
+
                 m_DownloadInfo = downloadInfo;
                 if (!downloadInfo.isValid)
                 {

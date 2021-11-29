@@ -45,7 +45,7 @@ namespace UnityEngine.UIElements
         internal Color32 ids; //XYZW (xform,clip,opacity,color/textcore)
         internal Color32 flags; //X (flags) Y (textcore-dilate) Z (is-arc) W (is-dynamic-color)
         internal Color32 opacityColorPages; //XY (opacity) ZW (color, textcore or SVG setting)
-        internal Vector4 circle; // XY (center) Z (outer-radius) W (inner-radius, inner-center in uv)
+        internal Vector4 circle; // XY (outer) ZW (inner)
         internal float textureId;
 
         // Winding order of vertices matters. CCW is for clipped meshes.
@@ -633,99 +633,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        public struct TextParams
-        {
-            public Rect rect;
-            public string text;
-            public Font font;
-            public FontDefinition fontDefinition;
-            public int fontSize;
-            public Length letterSpacing;
-            public Length wordSpacing;
-            public Length paragraphSpacing;
-            public FontStyle fontStyle;
-            public Color fontColor;
-            public TextAnchor anchor;
-            public bool wordWrap;
-            public float wordWrapWidth;
-            public bool richText;
-            public Color playmodeTintColor;
-            public TextOverflow textOverflow;
-            public TextOverflowPosition textOverflowPosition;
-            public OverflowInternal overflow;
-            public IPanel panel;
-
-            public override int GetHashCode()
-            {
-                var hashCode = rect.GetHashCode();
-                hashCode = (hashCode * 397) ^ (text != null ? text.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ (font != null ? font.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ (fontDefinition != null ? fontDefinition.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ fontSize;
-                hashCode = (hashCode * 397) ^ (int)fontStyle;
-                hashCode = (hashCode * 397) ^ fontColor.GetHashCode();
-                hashCode = (hashCode * 397) ^ (int)anchor;
-                hashCode = (hashCode * 397) ^ wordWrap.GetHashCode();
-                hashCode = (hashCode * 397) ^ wordWrapWidth.GetHashCode();
-                hashCode = (hashCode * 397) ^ richText.GetHashCode();
-                hashCode = (hashCode * 397) ^ playmodeTintColor.GetHashCode();
-                hashCode = (hashCode * 397) ^ textOverflow.GetHashCode();
-                hashCode = (hashCode * 397) ^ textOverflowPosition.GetHashCode();
-                hashCode = (hashCode * 397) ^ overflow.GetHashCode();
-                hashCode = (hashCode * 397) ^ letterSpacing.GetHashCode();
-                hashCode = (hashCode * 397) ^ wordSpacing.GetHashCode();
-                hashCode = (hashCode * 397) ^ paragraphSpacing.GetHashCode();
-                return hashCode;
-            }
-
-            // TODO remove TextParams once TextNative is stripped
-            internal static TextParams MakeStyleBased(VisualElement ve, string text)
-            {
-                var style = ve.computedStyle;
-                var textElement = ve as TextElement;
-                var isTextElement = textElement == null;
-                return new TextParams
-                {
-                    rect = ve.contentRect,
-                    text = text,
-                    fontDefinition = style.unityFontDefinition,
-                    font = TextUtilities.GetFont(ve),
-                    fontSize = (int)style.fontSize.value,
-                    fontStyle = style.unityFontStyleAndWeight,
-                    fontColor = style.color,
-                    anchor = style.unityTextAlign,
-                    wordWrap = style.whiteSpace == WhiteSpace.Normal,
-                    wordWrapWidth = style.whiteSpace == WhiteSpace.Normal ? ve.contentRect.width : 0.0f,
-                    richText = textElement?.enableRichText ?? false,
-                    playmodeTintColor = ve.panel?.contextType == ContextType.Editor ? UIElementsUtility.editorPlayModeTintColor : Color.white,
-                    textOverflow = style.textOverflow,
-                    textOverflowPosition = style.unityTextOverflowPosition,
-                    overflow = style.overflow,
-                    letterSpacing = isTextElement ? 0 : style.letterSpacing,
-                    wordSpacing = isTextElement ? 0 : style.wordSpacing,
-                    paragraphSpacing = isTextElement ? 0 : style.unityParagraphSpacing,
-                    panel = ve.panel,
-                };
-            }
-
-            internal static TextNativeSettings GetTextNativeSettings(TextParams textParams, float scaling)
-            {
-                return new TextNativeSettings
-                {
-                    text = textParams.text,
-                    font = TextUtilities.GetFont(textParams),
-                    size = textParams.fontSize,
-                    scaling = scaling,
-                    style = textParams.fontStyle,
-                    color = textParams.fontColor,
-                    anchor = textParams.anchor,
-                    wordWrap = textParams.wordWrap,
-                    wordWrapWidth = textParams.wordWrapWidth,
-                    richText = textParams.richText
-                };
-            }
-        }
-
         public static void Rectangle(this MeshGenerationContext mgc, RectangleParams rectParams)
         {
             mgc.painter.DrawRectangle(rectParams);
@@ -736,10 +643,10 @@ namespace UnityEngine.UIElements
             mgc.painter.DrawBorder(borderParams);
         }
 
-        public static void Text(this MeshGenerationContext mgc, TextParams textParams, ITextHandle handle, float pixelsPerPoint)
+        public static void Text(this MeshGenerationContext mgc, TextElement te)
         {
-            if (TextUtilities.IsFontAssigned(textParams))
-                mgc.painter.DrawText(textParams, handle, pixelsPerPoint);
+            if (TextUtilities.IsFontAssigned(te))
+                mgc.painter.DrawText(te);
         }
 
         static Vector2 ConvertBorderRadiusPercentToPoints(Vector2 borderRectSize, Length length)
@@ -865,6 +772,22 @@ namespace UnityEngine.UIElements
         /// The element for which <see cref="VisualElement.generateVisualContent"/> was invoked.
         /// </summary>
         public VisualElement visualElement { get { return painter.visualElement; } }
+
+        /// <summary>
+        /// The vector painter object used to issue drawing commands.
+        /// </summary>
+        public Painter2D painter2D
+        {
+            get
+            {
+                if (m_Painter2D == null)
+                    m_Painter2D = new Painter2D(this);
+                return m_Painter2D;
+            }
+        }
+        private Painter2D m_Painter2D;
+
+        internal bool hasPainter2D => m_Painter2D != null;
 
         internal MeshGenerationContext(IStylePainter painter) { this.painter = painter; }
 

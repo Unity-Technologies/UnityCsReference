@@ -225,7 +225,7 @@ namespace Unity.UI.Builder
             var rule = m_VisualTreeAsset.GetOrCreateInlineStyleRule(vea);
             var styleSheet = m_VisualTreeAsset.inlineSheet;
 
-            var styleProperty = styleSheet.FindProperty(rule, styleName);
+            var styleProperty = styleSheet.FindLastProperty(rule, styleName);
             if (styleProperty == null)
                 styleProperty = styleSheet.AddProperty(rule, styleName);
 
@@ -255,7 +255,7 @@ namespace Unity.UI.Builder
             var rule = m_VisualTreeAsset.GetOrCreateInlineStyleRule(vea);
             var styleSheet = m_VisualTreeAsset.inlineSheet;
 
-            var styleProperty = styleSheet.FindProperty(rule, styleName);
+            var styleProperty = styleSheet.FindLastProperty(rule, styleName);
             if (styleProperty == null)
                 return;
 

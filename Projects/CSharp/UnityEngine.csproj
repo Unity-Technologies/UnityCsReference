@@ -7,7 +7,7 @@
     <EnableDefaultItems>false</EnableDefaultItems>
     <DefineConstants>$(DefineConstants);COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ACCELERATOR_CLIENT_DEBUGGING;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_GAME_SERVICES;ENABLE_EDITOR_HUB_LICENSE;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MANAGED_UNITYTLS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_BJM_API;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_GAMECORE_API;UNITY_GAMECORE_SCARLETT_API;UNITY_GAMECORE_XBOXONE_API;UNITY_IPHONE_API;UNITY_LUMIN_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
     <LangVersion>latest</LangVersion>
-    <NoWarn>0626</NoWarn>
+    <NoWarn>1071;0626</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\External\Yoga\csharp\Facebook.Yoga\BaselineFunction.cs">
@@ -136,11 +136,29 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Clickable.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Clickable.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Controllers\BaseListViewController.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Collections\Controllers\BaseListViewController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Controllers\BaseTreeViewController.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Collections\Controllers\BaseTreeViewController.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Controllers\CollectionViewController.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Collections\Controllers\CollectionViewController.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Controllers\IDefaultTreeViewController.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Collections\Controllers\IDefaultTreeViewController.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Controllers\ListViewController.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Collections\Controllers\ListViewController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Controllers\MultiColumnListViewController.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Collections\Controllers\MultiColumnListViewController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Controllers\MultiColumnTreeViewController.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Collections\Controllers\MultiColumnTreeViewController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Controllers\TreeDataController.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Collections\Controllers\TreeDataController.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Controllers\TreeViewController.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Collections\Controllers\TreeViewController.cs</Link>
@@ -163,6 +181,12 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Virtualization\ReusableListViewItem.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Collections\Virtualization\ReusableListViewItem.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Virtualization\ReusableMultiColumnListViewItem.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Collections\Virtualization\ReusableMultiColumnListViewItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Virtualization\ReusableMultiColumnTreeViewItem.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Collections\Virtualization\ReusableMultiColumnTreeViewItem.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Virtualization\ReusableTreeViewItem.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Collections\Virtualization\ReusableTreeViewItem.cs</Link>
     </Compile>
@@ -181,14 +205,17 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\BaseCompositeField.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\BaseCompositeField.cs</Link>
     </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\BaseField.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\BaseField.cs</Link>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\BaseListView.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\BaseListView.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\BasePopupField.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\BasePopupField.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\BaseSlider.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\BaseSlider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\BaseTreeView.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\BaseTreeView.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\BaseVerticalCollectionView.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\BaseVerticalCollectionView.cs</Link>
@@ -250,17 +277,26 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\Image.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\Image.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\InputField\BaseField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\InputField\BaseField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\InputField\KeyboardTextEditor.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\InputField\KeyboardTextEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\InputField\TextEditor.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\InputField\TextEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\InputField\TextField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\InputField\TextField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\InputField\TextInputFieldBase.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\InputField\TextInputFieldBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\InputField\TouchScreenTextEditor.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\InputField\TouchScreenTextEditor.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\IntegerField.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\IntegerField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\Internal\InternalTreeView.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\Internal\InternalTreeView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\Internal\InternalTreeViewItem.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\Internal\InternalTreeViewItem.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\KeyboardTextEditor.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\KeyboardTextEditor.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\Label.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\Label.cs</Link>
@@ -273,6 +309,45 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\MinMaxSlider.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\MinMaxSlider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\Column.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\Column.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\ColumnLayout.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\ColumnLayout.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\ColumnMover.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\ColumnMover.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\ColumnResizer.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\ColumnResizer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\Columns.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\Columns.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\MultiColumnCollectionHeader.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\MultiColumnCollectionHeader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\MultiColumnController.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\MultiColumnController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\MultiColumnHeaderColumn.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\MultiColumnHeaderColumn.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\MultiColumnHeaderColumnResizeHandle.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\MultiColumnHeaderColumnResizeHandle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\MultiColumnListView.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\MultiColumnListView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\MultiColumnTreeView.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\MultiColumnTreeView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\SortColumnDescription.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\SortColumnDescription.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\SortColumnDescriptions.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\MultiColumn\SortColumnDescriptions.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\PopupField.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\PopupField.cs</Link>
@@ -304,32 +379,17 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\SliderInt.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\SliderInt.cs</Link>
     </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\TextEditor.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\TextEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\TextEditorEngine.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\TextEditorEngine.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\TextField.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\TextField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\TextInputFieldBase.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\TextInputFieldBase.cs</Link>
-    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\TextValueField.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\TextValueField.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\Toggle.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\Toggle.cs</Link>
     </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\TouchScreenTextEditor.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\TouchScreenTextEditor.cs</Link>
-    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\TreeView.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\TreeView.cs</Link>
     </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\TreeViewExperimental.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Controls\TreeViewExperimental.cs</Link>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\TreeViewHelpers.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\TreeViewHelpers.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\TreeViewItem.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\TreeViewItem.cs</Link>
@@ -640,6 +700,12 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRGradientSettingsAtlas.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRGradientSettingsAtlas.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRJobManager.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRJobManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRJobMerger.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRJobMerger.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRLayoutUpdater.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRLayoutUpdater.cs</Link>
     </Compile>
@@ -652,8 +718,14 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRMeshGenerationContext.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRMeshGenerationContext.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRNativePagedList.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRNativePagedList.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIROpacityIdAccelerator.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIROpacityIdAccelerator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRPainter2D.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRPainter2D.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRRenderChain.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRRenderChain.cs</Link>
@@ -672,6 +744,9 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRStylePainter.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRStylePainter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRTempAllocator.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRTempAllocator.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRTessellation.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRTessellation.cs</Link>
@@ -970,14 +1045,26 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\TextElement.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\TextElement.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\TextElementEdition.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\TextElementEdition.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\TextElementSelection.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\TextElementSelection.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\TextShadow.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\TextShadow.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Text\PanelTextSettings.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Text\PanelTextSettings.cs</Link>
     </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Text\TextHandle.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Text\TextHandle.cs</Link>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Text\TextEditingManipulator.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Text\TextEditingManipulator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Text\TextSelectingManipulator.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Text\TextSelectingManipulator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Text\UITKTextHandle.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Text\UITKTextHandle.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Transitions.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Transitions.cs</Link>
@@ -1014,6 +1101,12 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\UxmlFactory.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\UXML\UxmlFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\UxmlObjectAsset.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\UXML\UxmlObjectAsset.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\UxmlObjectFactoryRegistry.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\UXML\UxmlObjectFactoryRegistry.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\UxmlTypeRestriction.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\UXML\UxmlTypeRestriction.cs</Link>
@@ -1543,8 +1636,14 @@
     <Compile Include="..\..\Modules\IMGUI\SliderHandler.cs">
       <Link>Modules\IMGUI\SliderHandler.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\IMGUI\TextEditingUtilities.cs">
+      <Link>Modules\IMGUI\TextEditingUtilities.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\IMGUI\TextEditor.cs">
       <Link>Modules\IMGUI\TextEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\IMGUI\TextSelectingUtilities.cs">
+      <Link>Modules\IMGUI\TextSelectingUtilities.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ImageConversion\ScriptBindings\ImageConversion.bindings.cs">
       <Link>Modules\ImageConversion\ScriptBindings\ImageConversion.bindings.cs</Link>
@@ -1843,6 +1942,9 @@
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGeneratorUtilities.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextGeneratorUtilities.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextHandle.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextHandle.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextInfo.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextInfo.cs</Link>
     </Compile>
@@ -1909,14 +2011,20 @@
     <Compile Include="..\..\Modules\UIElementsNative\ImmediateStylePainter.bindings.cs">
       <Link>Modules\UIElementsNative\ImmediateStylePainter.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElementsNative\Renderer\UIRenderer\UIRenderer.bindings.cs">
-      <Link>Modules\UIElementsNative\Renderer\UIRenderer\UIRenderer.bindings.cs</Link>
+    <Compile Include="..\..\Modules\UIElementsNative\Renderer\UIRenderer.bindings.cs">
+      <Link>Modules\UIElementsNative\Renderer\UIRenderer.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsNative\Renderer\UIRendererJobProcessor.bindings.cs">
+      <Link>Modules\UIElementsNative\Renderer\UIRendererJobProcessor.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElementsNative\TextNative.bindings.cs">
       <Link>Modules\UIElementsNative\TextNative.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElementsNative\UIElementsUtility.bindings.cs">
       <Link>Modules\UIElementsNative\UIElementsUtility.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsNative\UITessellation.bindings.cs">
+      <Link>Modules\UIElementsNative\UITessellation.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UI\ScriptBindings\CanvasGroup.bindings.cs">
       <Link>Modules\UI\ScriptBindings\CanvasGroup.bindings.cs</Link>

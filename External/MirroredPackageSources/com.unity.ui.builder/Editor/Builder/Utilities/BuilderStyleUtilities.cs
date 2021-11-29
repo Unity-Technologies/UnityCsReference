@@ -17,7 +17,7 @@ namespace Unity.UI.Builder
 
         static StyleProperty GetOrCreateStylePropertyByStyleName(StyleSheet styleSheet, StyleRule styleRule, string styleName)
         {
-            var styleProperty = styleSheet.FindProperty(styleRule, styleName);
+            var styleProperty = styleSheet.FindLastProperty(styleRule, styleName);
             if (styleProperty == null)
                 styleProperty = styleSheet.AddProperty(styleRule, styleName);
 

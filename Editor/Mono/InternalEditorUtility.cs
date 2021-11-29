@@ -295,8 +295,10 @@ namespace UnityEditorInternal
             if (!allowMultiSelection)
                 useShift = useActionKey = false;
 
+            int firstIndex;
+            int lastIndex;
             // Toggle selected node from selection
-            if (useActionKey)
+            if (useActionKey && !useShift)
             {
                 var newSelection = new List<int>(selectedInstanceIDs);
                 if (newSelection.Contains(clickedEntry.instanceID))
@@ -320,8 +322,6 @@ namespace UnityEditorInternal
                     return new List<int>(selectedInstanceIDs);
                 }
 
-                int firstIndex;
-                int lastIndex;
                 if (!GetFirstAndLastSelected(allEntryInstanceIDs, selectedInstanceIDs, out firstIndex, out lastIndex))
                 {
                     // We had no selection
@@ -371,30 +371,48 @@ namespace UnityEditorInternal
                 var addExisting = false;
 
                 bool usingArrowKeys = Event.current != null ? Event.current.keyCode == KeyCode.DownArrow || Event.current.keyCode == KeyCode.UpArrow : false;
+                var clickedInTheMiddle = lastIndex > newIndex && firstIndex < newIndex;
 
                 if (selectedInstanceIDs.Count > 1)
                 {
-                    var clicked = allEntryInstanceIDs.IndexOf(clickedInstanceID);
-                    if (dir > 0)
+                    var clickedID = allEntryInstanceIDs[newIndex];
+                    var noGapsInSelection = (allEntryInstanceIDs.Count - firstIndex + selectedInstanceIDs.Count) == allEntryInstanceIDs.Count - lastIndex;
+                    var isInSelection = selectedInstanceIDs.Contains(clickedID);
+                    // if the newly clicked item is already selected,
+                    // we treat this as a combination of selecting items from the highest selected item to the clicked item
+                    // or from the lowest selected item to the clicked item depending on the direction of the selection,
+                    // e.g. if we select item 1 and shift-select item 5, then shift-select item 3, we'll have items 1 to 3 selected
+                    if (isInSelection || noGapsInSelection || clickedInTheMiddle)
                     {
-                        if (clicked > lastIndex)
+                        from = dir > 0 ? firstIndex : newIndex;
+                        to = dir > 0 ? newIndex : lastIndex;
+
+                        // if we clicked in-between the lowest and highest selected indices of a selection containing gaps
+                        // and the item was not already in the selection
+                        // make sure that the new selection is added to the currently existing one
+                        if (clickedInTheMiddle && !noGapsInSelection && !isInSelection)
+                            addExisting = true;
+                    }
+                    else if (dir > 0)
+                    {
+                        if (newIndex > lastIndex)
                         {
                             from = lastIndex + 1;
-                            to = clicked;
+                            to = newIndex;
 
                             addExisting = true;
                         }
                         else
                         {
-                            from = clicked;
+                            from = newIndex;
                             to = lastIndex;
                         }
                     }
                     else if (dir < 0)
                     {
-                        if (clicked < firstIndex)
+                        if (newIndex < firstIndex)
                         {
-                            from = clicked;
+                            from = newIndex;
                             to = firstIndex - 1;
 
                             addExisting = true;
@@ -402,7 +420,7 @@ namespace UnityEditorInternal
                         else
                         {
                             from = firstIndex;
-                            to = clicked;
+                            to = newIndex;
                         }
                     }
                 }
@@ -434,8 +452,6 @@ namespace UnityEditorInternal
                     }
                 }
 
-                // Outcomment to debug
-                //Debug.Log (clickedEntry + ",   firstIndex " + firstIndex + ", lastIndex " + lastIndex + ",    newIndex " + newIndex + " " + ", lastClickedIndex " + prevIndex + ",     from " + from + ", to " + to);
                 if (allEntryGuids == null)
                 {
                     List<int> allSelectedInstanceIDs = new List<int>();
@@ -444,6 +460,9 @@ namespace UnityEditorInternal
                     {
                         allSelectedInstanceIDs.AddRange(selectedInstanceIDs.GetRange(0, selectedInstanceIDs.Count));
                         allSelectedInstanceIDs.AddRange(allEntryInstanceIDs.GetRange(from, to - from + 1));
+
+                        if (clickedInTheMiddle)
+                            allSelectedInstanceIDs = allSelectedInstanceIDs.Distinct().ToList();
                     }
                     else
                     {
@@ -460,11 +479,13 @@ namespace UnityEditorInternal
                     // in the last entry being duplicated later on
                     // thus when selecting upwards we add the existing selection - 1;
                     // when selecting downwards don't add the last index from the new selection
-                    if (addExisting || !usingArrowKeys)
+                    if (addExisting && !usingArrowKeys)
                     {
                         List<int> allSelectedInstanceIDs = new List<int>();
                         allSelectedInstanceIDs.AddRange(selectedInstanceIDs.GetRange(0, selectedInstanceIDs.Count));
                         allSelectedInstanceIDs.AddRange(allEntryInstanceIDs.GetRange(from, to - from + 1));
+                        if (clickedInTheMiddle)
+                            allSelectedInstanceIDs = allSelectedInstanceIDs.Distinct().ToList();
 
                         return allSelectedInstanceIDs;
                     }

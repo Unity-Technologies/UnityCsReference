@@ -9,7 +9,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class PackageListView : BaseVerticalCollectionView, IPackageListView
+    internal class PackageListView : ListView, IPackageListView
     {
         internal new class UxmlFactory : UxmlFactory<PackageListView> {}
 

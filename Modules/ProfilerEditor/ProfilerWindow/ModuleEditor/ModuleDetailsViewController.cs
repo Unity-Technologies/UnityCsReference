@@ -35,7 +35,7 @@ namespace UnityEditor.Profiling.ModuleEditor
 
         // Data
         ModuleData m_Module;
-        List<ITreeViewItem> m_TreeDataItems;
+        List<TreeViewItemData<ModuleDetailsItemData>> m_TreeDataItems;
 
         // UI
         // Any members of type Button below that are suffixed 'ToolbarButton' are defined as ToolbarButtons in the UXML and are therefore ToolbarButtons at runtime. They are declared as Buttons here because we cannot use ToolbarButton (UnityEditor.UIElements) from the Editor assembly without moving this code to its own assembly/module.
@@ -50,7 +50,8 @@ namespace UnityEditor.Profiling.ModuleEditor
         Button m_DeleteModuleButton;
         Label m_AllCountersTitleLabel;
         Label m_AllCountersDescriptionLabel;
-        InternalTreeView m_AllCountersTreeView;
+        TreeView m_AllCountersTreeView;
+        DefaultTreeViewController<ModuleDetailsItemData> m_AllCountersTreeViewController;
         Button m_AllCountersAddSelectedButton;
         Button m_ConfirmButton;
         Label m_NoModuleSelectedLabel;
@@ -94,7 +95,7 @@ namespace UnityEditor.Profiling.ModuleEditor
             m_AllCountersTreeView.bindItem = BindTreeViewItem;
             m_AllCountersTreeView.viewDataKey = k_AllCountersTreeViewDataKey;
             m_AllCountersTreeView.selectionType = SelectionType.Multiple;
-            m_AllCountersTreeView.onSelectionChange += OnTreeViewSelectionChanged;
+            m_AllCountersTreeView.onSelectedIndicesChange += OnTreeViewSelectionChanged;
             m_AllCountersTreeView.onItemsChosen += OnTreeViewSelectionChosen;
             m_AllCountersAddSelectedButton.text = LocalizationDatabase.GetLocalizedString("Add Selected");
             m_AllCountersAddSelectedButton.clicked += AddSelectedTreeViewCountersToModule;
@@ -146,7 +147,7 @@ namespace UnityEditor.Profiling.ModuleEditor
             m_DeleteModuleButton = root.Q<Button>(k_UssSelector_CurrentModuleDetailsDeleteButton);
             m_AllCountersTitleLabel = root.Q<Label>(k_UssSelector_AllCountersTitleLabel);
             m_AllCountersDescriptionLabel = root.Q<Label>(k_UssSelector_AllCountersDescriptionLabel);
-            m_AllCountersTreeView = root.Q<InternalTreeView>(k_UssSelector_AllCountersTreeView);
+            m_AllCountersTreeView = root.Q<TreeView>(k_UssSelector_AllCountersTreeView);
             m_AllCountersAddSelectedButton = root.Q<Button>(k_UssSelector_AllCountersAddSelectedToolbarButton);
             m_ConfirmButton = root.Q<Button>(k_UssSelector_ModuleDetailsConfirmButton);
             m_NoModuleSelectedLabel = root.Q<Label>(k_UssSelector_ModuleDetailsNoModuleSelectedLabel);
@@ -168,36 +169,42 @@ namespace UnityEditor.Profiling.ModuleEditor
 
                 // Format counter data for display in tree view.
                 ProfilerMarkers.k_FormatCountersForDisplay.Begin();
-                m_TreeDataItems = new List<ITreeViewItem>();
-                TreeViewItemData.ResetNextId();
+                m_TreeDataItems = new List<TreeViewItemData<ModuleDetailsItemData>>();
+                ModuleDetailsItemData.ResetNextId();
                 AddCounterGroupToTreeDataItems(unityCounters, "Unity", m_TreeDataItems);
                 AddCounterGroupToTreeDataItems(userCounters, "User", m_TreeDataItems);
                 ProfilerMarkers.k_FormatCountersForDisplay.End();
 
                 // Update tree view UI.
                 ProfilerMarkers.k_RebuildCountersUI.Begin();
-                m_AllCountersTreeView.rootItems = m_TreeDataItems;
+                m_AllCountersTreeView.SetRootItems(m_TreeDataItems);
                 m_AllCountersTreeView.Rebuild();
                 ProfilerMarkers.k_RebuildCountersUI.End();
+
+                // Get a reference to the controller now that items are set.
+                m_AllCountersTreeViewController = m_AllCountersTreeView.viewController as DefaultTreeViewController<ModuleDetailsItemData>;
             }
         }
 
-        void AddCounterGroupToTreeDataItems(SortedDictionary<string, List<string>> counterDictionary, string groupName, List<ITreeViewItem> treeDataItems)
+        void AddCounterGroupToTreeDataItems(SortedDictionary<string, List<string>> counterDictionary, string groupName, List<TreeViewItemData<ModuleDetailsItemData>> treeDataItems)
         {
             if (counterDictionary.Count == 0)
             {
                 return;
             }
 
-            var group = new GroupTreeViewItemData(groupName);
+            var groupData = new GroupItemData(groupName);
+            var group = new TreeViewItemData<ModuleDetailsItemData>(groupData.treeViewItem.id, groupData);
             foreach (var categoryName in counterDictionary.Keys)
             {
-                var category = new CategoryTreeViewItemData(categoryName);
+                var categoryData = new CategoryItemData(categoryName);
+                var category = new TreeViewItemData<ModuleDetailsItemData>(categoryData.treeViewItem.id, categoryData);
 
-                var counters = new List<ITreeViewItem>();
+                var counters = new List<TreeViewItemData<ModuleDetailsItemData>>();
                 foreach (var counter in counterDictionary[categoryName])
                 {
-                    counters.Add(new CounterTreeViewItemData(counter));
+                    var data = new CounterItemData(counter, categoryName);
+                    counters.Add(new TreeViewItemData<ModuleDetailsItemData>(data.treeViewItem.id, data));
                 }
 
                 category.AddChildren(counters);
@@ -227,18 +234,18 @@ namespace UnityEditor.Profiling.ModuleEditor
             return treeViewItem;
         }
 
-        void BindTreeViewItem(VisualElement element, ITreeViewItem item)
+        void BindTreeViewItem(VisualElement element, int index)
         {
-            var itemData = item as TreeViewItemData;
+            var itemData = m_AllCountersTreeViewController.GetTreeViewItemDataForIndex(index);
             var treeViewItem = element as CounterTreeViewItem;
             var titleLabel = treeViewItem.titleLabel;
-            titleLabel.text = itemData.data;
+            titleLabel.text = itemData.data.treeViewItem.data;
 
             bool moduleHasCounter = false;
-            if ((m_Module != null) && (itemData is CounterTreeViewItemData counterItemData))
+            if ((m_Module != null) && (itemData.data is CounterItemData counterItemData))
             {
                 var category = counterItemData.category;
-                var counter = counterItemData.data;
+                var counter = counterItemData.treeViewItem.data;
                 moduleHasCounter = m_Module.ContainsChartCounter(counter, category);
             }
 
@@ -258,11 +265,12 @@ namespace UnityEditor.Profiling.ModuleEditor
             onModuleNameChanged?.Invoke();
         }
 
-        void OnTreeViewSelectionChanged(IEnumerable<ITreeViewItem> selectedItems)
+        void OnTreeViewSelectionChanged(IEnumerable<int> selectedIndices)
         {
             var selectedCounterItems = new List<int>();
-            foreach (var selectedItem in selectedItems)
+            foreach (var index in selectedIndices.ToList())
             {
+                var selectedItem = m_AllCountersTreeViewController.GetTreeViewItemDataForIndex(index);
                 // Only counters have no children.
                 if (!selectedItem.hasChildren)
                 {
@@ -281,26 +289,27 @@ namespace UnityEditor.Profiling.ModuleEditor
                     }
                 }
             }
-            m_AllCountersTreeView.SetSelectionWithoutNotify(selectedCounterItems);
+            m_AllCountersTreeView.SetSelectionByIdWithoutNotify(selectedCounterItems);
         }
 
-        void OnTreeViewSelectionChosen(IEnumerable<ITreeViewItem> selectedItems)
+        void OnTreeViewSelectionChosen(IEnumerable<object> selectedItems)
         {
             AddSelectedTreeViewCountersToModule();
         }
 
         void AddSelectedTreeViewCountersToModule()
         {
-            var selectedItems = m_AllCountersTreeView.selectedItems;
-            foreach (var selectedItem in selectedItems)
+            var selectedItems = m_AllCountersTreeView.selectedIndices;
+            foreach (var index in selectedItems)
             {
-                var counterTreeViewItemData = selectedItem as CounterTreeViewItemData;
-                if (counterTreeViewItemData != null)
+                var selectedItem = m_AllCountersTreeViewController.GetTreeViewItemDataForIndex(index);
+                var itemData = selectedItem.data;
+                if (itemData != null && itemData is CounterItemData counterTreeViewItemData)
                 {
                     var counter = new ProfilerCounterData()
                     {
                         m_Category = counterTreeViewItemData.category,
-                        m_Name = counterTreeViewItemData.data,
+                        m_Name = counterTreeViewItemData.treeViewItem.data,
                     };
                     AddCounterToModuleWithoutUIRefresh(counter);
                 }
@@ -389,41 +398,42 @@ namespace UnityEditor.Profiling.ModuleEditor
             public static readonly ProfilerMarker k_RebuildCountersUI = new ProfilerMarker("ModuleEditor.RebuildCountersUI");
         }
 
-        class TreeViewItemData : TreeViewItem<string>
+        class ModuleDetailsItemData
         {
-            static int m_NextId = 0;
+            static int s_NextId = 0;
 
-            public TreeViewItemData(string data, List<TreeViewItem<string>> children = null)
-                : base(m_NextId++, data, children) {}
+            public TreeViewItemData<string> treeViewItem { get; }
+
+            public ModuleDetailsItemData(string data, List<TreeViewItemData<string>> children = null)
+            {
+                treeViewItem = new TreeViewItemData<string>(s_NextId++, data, children);
+            }
 
             public static void ResetNextId()
             {
-                m_NextId = 0;
+                s_NextId = 0;
             }
         }
 
-        class GroupTreeViewItemData : TreeViewItemData
+        class GroupItemData : ModuleDetailsItemData
         {
-            public GroupTreeViewItemData(string group) : base(group) {}
+            public GroupItemData(string group) : base(group) {}
         }
 
-        class CategoryTreeViewItemData : TreeViewItemData
+        class CategoryItemData : ModuleDetailsItemData
         {
-            public CategoryTreeViewItemData(string category) : base(category) {}
+            public CategoryItemData(string category) : base(category) {}
         }
 
-        class CounterTreeViewItemData : TreeViewItemData
+        class CounterItemData : ModuleDetailsItemData
         {
-            public CounterTreeViewItemData(string counter) : base(counter) {}
-
-            public string category
+            public CounterItemData(string counter, string category)
+                : base(counter)
             {
-                get
-                {
-                    var categoryTreeViewItemData = parent as CategoryTreeViewItemData;
-                    return categoryTreeViewItemData.data;
-                }
+                this.category = category;
             }
+
+            public string category { get; }
         }
 
         abstract class CounterItem : VisualElement

@@ -5,13 +5,15 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using UnityEngine.UIElements;
+using UnityEditor.UIElements;
 
 namespace UnityEditorInternal
 {
     [CustomPropertyDrawer(typeof(ParticleSystem.MinMaxGradient))]
     public class MinMaxGradientPropertyDrawer : PropertyDrawer
     {
-        class PropertyData
+        internal class PropertyData
         {
             public SerializedProperty mode;
             public SerializedProperty gradientMin;
@@ -127,6 +129,13 @@ namespace UnityEditorInternal
                     DrawTwoPropertyFields(fieldRect, label, m_Property.gradientMin, m_Property.gradientMax, false);
                     break;
             }
+        }
+
+        public override VisualElement CreatePropertyGUI(SerializedProperty property)
+        {
+            Init(property);
+
+            return new MinMaxGradientField(m_Property, property.localizedDisplayName);
         }
     }
 }

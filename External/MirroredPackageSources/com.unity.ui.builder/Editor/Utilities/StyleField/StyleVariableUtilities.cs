@@ -135,7 +135,6 @@ namespace Unity.UI.Builder
                     {
                         editorVariableDescriptions.TryGetValue(variableName, out descr);
                     }
-
                     return new VariableInfo(variable, descr);
                 }
             }

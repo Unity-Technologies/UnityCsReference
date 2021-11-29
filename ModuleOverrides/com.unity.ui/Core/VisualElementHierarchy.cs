@@ -840,6 +840,25 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// Walks up the hierarchy, starting from this element's parent, and returns the first VisualElement that satisfies the predicate.
+        /// </summary>
+        /// <param name="predicate">The predicate to be satisfied by the ancestor to find.</param>
+        /// <returns>The first ancestor satisfying the predicate or null otherwise.</returns>
+        internal VisualElement GetFirstAncestorWhere(Predicate<VisualElement> predicate)
+        {
+            VisualElement ancestor = hierarchy.parent;
+            while (ancestor != null)
+            {
+                if (predicate(ancestor))
+                {
+                    return ancestor;
+                }
+                ancestor = ancestor.hierarchy.parent;
+            }
+            return null;
+        }
+
+        /// <summary>
         /// Checks if this element is an ancestor of the specified child element.
         /// </summary>
         /// <remarks>

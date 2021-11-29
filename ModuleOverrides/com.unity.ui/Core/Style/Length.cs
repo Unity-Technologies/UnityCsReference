@@ -29,7 +29,7 @@ namespace UnityEngine.UIElements
     public struct Length : IEquatable<Length>
     {
         // Float clamping value (2 ^ 23).
-        private const float k_MaxValue = 8388608.0f;
+        internal const float k_MaxValue = 8388608.0f;
 
         // Extension of the LengthUnit to include keywords that can be used with StyleLength
         private enum Unit

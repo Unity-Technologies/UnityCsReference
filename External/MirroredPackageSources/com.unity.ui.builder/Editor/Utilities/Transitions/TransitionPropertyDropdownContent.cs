@@ -1,4 +1,3 @@
-
 namespace Unity.UI.Builder
 {
     static class TransitionPropertyDropdownContent
@@ -6,4 +5,3 @@ namespace Unity.UI.Builder
         public static CategoryDropdownContent Content;
     }
 }
-

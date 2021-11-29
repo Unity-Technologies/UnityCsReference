@@ -17,19 +17,18 @@ namespace UnityEngine.UIElements
         public event Action<PointerUpEvent> onPointerUp;
         public event Action<ChangeEvent<bool>> onToggleValueChanged;
 
-        Pool.ObjectPool<VisualElement> m_IndentPool = new Pool.ObjectPool<VisualElement>(
+        static Pool.ObjectPool<VisualElement> s_IndentPool = new Pool.ObjectPool<VisualElement>(
             () =>
             {
                 var indentElement = new VisualElement();
-                indentElement.AddToClassList(Experimental.TreeView.itemIndentUssClassName);
+                indentElement.AddToClassList(BaseTreeView.itemIndentUssClassName);
                 return indentElement;
             });
 
-        protected EventCallback<PointerUpEvent> m_PointerUpCallback;
-        protected EventCallback<ChangeEvent<bool>> m_ToggleValueChangedCallback;
+        EventCallback<PointerUpEvent> m_PointerUpCallback;
+        EventCallback<ChangeEvent<bool>> m_ToggleValueChangedCallback;
 
         public ReusableTreeViewItem()
-            : base()
         {
             m_PointerUpCallback = OnPointerUp;
             m_ToggleValueChangedCallback = OnToggleValueChanged;
@@ -39,41 +38,37 @@ namespace UnityEngine.UIElements
         {
             base.Init(item);
 
-            m_Container = new VisualElement()
-            {
-                name = Experimental.TreeView.itemUssClassName,
-                style =
-                {
-                    flexDirection = FlexDirection.Row
-                }
-            };
-            m_Container.AddToClassList(Experimental.TreeView.itemUssClassName);
+            var container = new VisualElement() { name = BaseTreeView.itemUssClassName };
+            container.AddToClassList(BaseTreeView.itemUssClassName);
+
+            InitExpandHierarchy(container, item);
+        }
+
+        protected void InitExpandHierarchy(VisualElement root, VisualElement item)
+        {
+            m_Container = root;
+            m_Container.style.flexDirection = FlexDirection.Row;
 
             m_IndentContainer = new VisualElement()
             {
-                name = Experimental.TreeView.itemIndentsContainerUssClassName,
-                style =
-                {
-                    flexDirection = FlexDirection.Row
-                }
+                name = BaseTreeView.itemIndentsContainerUssClassName,
+                style = { flexDirection = FlexDirection.Row },
             };
-            m_IndentContainer.AddToClassList(Experimental.TreeView.itemIndentsContainerUssClassName);
+            m_IndentContainer.AddToClassList(BaseTreeView.itemIndentsContainerUssClassName);
             m_Container.hierarchy.Add(m_IndentContainer);
 
-            m_Toggle = new Toggle { name = Experimental.TreeView.itemToggleUssClassName };
+            m_Toggle = new Toggle { name = BaseTreeView.itemToggleUssClassName };
             m_Toggle.userData = this;
             m_Toggle.AddToClassList(Foldout.toggleUssClassName);
             m_Container.hierarchy.Add(m_Toggle);
 
             m_BindableContainer = new VisualElement()
             {
-                name = Experimental.TreeView.itemContentContainerUssClassName,
-                style =
-                {
-                    flexGrow = 1
-                }
+                name = BaseTreeView.itemContentContainerUssClassName,
+                style = { flexGrow = 1 },
             };
-            m_BindableContainer.AddToClassList(Experimental.TreeView.itemContentContainerUssClassName);
+
+            m_BindableContainer.AddToClassList(BaseTreeView.itemContentContainerUssClassName);
             m_Container.Add(m_BindableContainer);
             m_BindableContainer.Add(item);
         }
@@ -81,43 +76,47 @@ namespace UnityEngine.UIElements
         public override void PreAttachElement()
         {
             base.PreAttachElement();
-            rootElement.AddToClassList(Experimental.TreeView.itemUssClassName);
-            m_Container.RegisterCallback(m_PointerUpCallback);
-            m_Toggle.RegisterValueChangedCallback(m_ToggleValueChangedCallback);
+            rootElement.AddToClassList(BaseTreeView.itemUssClassName);
+            m_Container?.RegisterCallback(m_PointerUpCallback);
+            m_Toggle?.RegisterValueChangedCallback(m_ToggleValueChangedCallback);
         }
 
         public override void DetachElement()
         {
             base.DetachElement();
-            rootElement.RemoveFromClassList(Experimental.TreeView.itemUssClassName);
-            m_Container.UnregisterCallback(m_PointerUpCallback);
-            m_Toggle.UnregisterValueChangedCallback(m_ToggleValueChangedCallback);
+            rootElement.RemoveFromClassList(BaseTreeView.itemUssClassName);
+            m_Container?.UnregisterCallback(m_PointerUpCallback);
+            m_Toggle?.UnregisterValueChangedCallback(m_ToggleValueChangedCallback);
         }
 
         public void Indent(int depth)
         {
+            if (m_IndentContainer == null)
+                return;
+
             for (var i = 0; i < m_IndentContainer.childCount; i++)
             {
-                m_IndentPool.Release(m_IndentContainer[i]);
+                s_IndentPool.Release(m_IndentContainer[i]);
             }
 
             m_IndentContainer.Clear();
 
             for (var i = 0; i < depth; ++i)
             {
-                var indentElement = m_IndentPool.Get();
+                var indentElement = s_IndentPool.Get();
                 m_IndentContainer.Add(indentElement);
             }
         }
 
         public void SetExpandedWithoutNotify(bool expanded)
         {
-            m_Toggle.SetValueWithoutNotify(expanded);
+            m_Toggle?.SetValueWithoutNotify(expanded);
         }
 
         public void SetToggleVisibility(bool visible)
         {
-            m_Toggle.visible = visible;
+            if (m_Toggle != null)
+                m_Toggle.visible = visible;
         }
 
         void OnPointerUp(PointerUpEvent evt)

@@ -7,32 +7,12 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace UnityEngine.UIElements.Experimental
+namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// A TreeView is a vertically scrollable area that links to, and displays, a list of items organized in a tree.
+    /// Base class for a tree view, a vertically scrollable area that links to, and displays, a list of items organized in a tree.
     /// </summary>
-    /// <remarks>
-    /// A <see cref="TreeView"/> is a <see cref="ScrollView"/> with additional logic to display a tree of vertically-arranged
-    /// VisualElements. Each VisualElement in the tree is bound to a corresponding element in a data-source list. The
-    /// data-source list can contain elements of any type. <see cref="TreeViewItemData{T}"/>\\
-    /// \\
-    /// The logic required to create VisualElements, and to bind them to or unbind them from the data source, varies depending
-    /// on the intended result. It's up to you to implement logic that is appropriate to your use case. For the ListView to function
-    /// correctly, you must supply at least the following:
-    ///
-    ///- <see cref="BaseVerticalCollectionView.fixedItemHeight"/>
-    ///
-    /// It is also recommended to supply the following for more complex items:
-    ///
-    ///- <see cref="TreeView.makeItem"/>
-    ///- <see cref="TreeView.bindItem"/>
-    ///- <see cref="BaseVerticalCollectionView.fixedItemHeight"/>, in the case of <c>FixedHeight</c> ListView
-    ///
-    /// The TreeView creates VisualElements for the visible items, and supports binding many more. As the user scrolls, the TreeView
-    /// recycles VisualElements and re-binds them to new data items.
-    /// </remarks>
-    internal class TreeView : BaseVerticalCollectionView
+    public abstract class BaseTreeView : BaseVerticalCollectionView
     {
         /// <summary>
         /// The USS class name for TreeView elements.
@@ -84,27 +64,14 @@ namespace UnityEngine.UIElements.Experimental
         public static readonly string itemContentContainerUssClassName = ussClassName + "__item-content";
 
         /// <summary>
-        /// Instantiates a <see cref="TreeView"/> using data from a UXML file.
-        /// </summary>
-        /// <remarks>
-        /// This class is added to every <see cref="VisualElement"/> created from UXML.
-        /// </remarks>
-        public new class UxmlFactory : UxmlFactory<TreeView, UxmlTraits> {}
-
-        /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="TreeView"/>.
         /// </summary>
         /// <remarks>
         /// This class defines the TreeView element properties that you can use in a UI document asset (UXML file).
         /// </remarks>
-        public new class UxmlTraits : VisualElement.UxmlTraits
+        public new class UxmlTraits : BaseVerticalCollectionView.UxmlTraits
         {
-            private readonly UxmlIntAttributeDescription m_FixedItemHeight = new UxmlIntAttributeDescription { name = "fixed-item-height", obsoleteNames = new[] { "item-height" }, defaultValue = s_DefaultItemHeight };
-            private readonly UxmlEnumAttributeDescription<CollectionVirtualizationMethod> m_VirtualizationMethod = new UxmlEnumAttributeDescription<CollectionVirtualizationMethod> { name = "virtualization-method", defaultValue = CollectionVirtualizationMethod.FixedHeight };
-            private readonly UxmlBoolAttributeDescription m_ShowBorder = new UxmlBoolAttributeDescription { name = "show-border", defaultValue = false };
             private readonly UxmlBoolAttributeDescription m_AutoExpand = new UxmlBoolAttributeDescription { name = "auto-expand", defaultValue = false };
-            private readonly UxmlEnumAttributeDescription<SelectionType> m_SelectionType = new UxmlEnumAttributeDescription<SelectionType> { name = "selection-type", defaultValue = SelectionType.Single };
-            private readonly UxmlEnumAttributeDescription<AlternatingRowBackground> m_ShowAlternatingRowBackgrounds = new UxmlEnumAttributeDescription<AlternatingRowBackground> { name = "show-alternating-row-backgrounds", defaultValue = AlternatingRowBackground.None };
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
@@ -114,17 +81,8 @@ namespace UnityEngine.UIElements.Experimental
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
-                int itemHeight = 0;
-                if (m_FixedItemHeight.TryGetValueFromBag(bag, cc, ref itemHeight))
-                {
-                    ((TreeView)ve).fixedItemHeight = itemHeight;
-                }
-
-                ((TreeView)ve).virtualizationMethod = m_VirtualizationMethod.GetValueFromBag(bag, cc);
-                ((TreeView)ve).autoExpand = m_AutoExpand.GetValueFromBag(bag, cc);
-                ((TreeView)ve).showBorder = m_ShowBorder.GetValueFromBag(bag, cc);
-                ((TreeView)ve).selectionType = m_SelectionType.GetValueFromBag(bag, cc);
-                ((TreeView)ve).showAlternatingRowBackgrounds = m_ShowAlternatingRowBackgrounds.GetValueFromBag(bag, cc);
+                var treeView = (BaseTreeView)ve;
+                treeView.autoExpand = m_AutoExpand.GetValueFromBag(bag, cc);
             }
         }
 
@@ -141,25 +99,19 @@ namespace UnityEngine.UIElements.Experimental
         }
 
         /// <summary>
-        /// Sets the root items.
+        /// Sets the root items to use with the default tree view controller.
         /// </summary>
         /// <remarks>
         /// Root items can include their children directly.
+        /// This will force the use of a <see cref="DefaultTreeViewController{T}"/>.
         /// </remarks>
         /// <param name="rootItems">The TreeView root items.</param>
         public void SetRootItems<T>(IList<TreeViewItemData<T>> rootItems)
         {
-            if (base.viewController is DefaultTreeViewController<T> defaultController)
-            {
-                defaultController.SetRootItems(rootItems);
-            }
-            else
-            {
-                var defaultTreeViewController = new DefaultTreeViewController<T>();
-                SetViewController(defaultTreeViewController);
-                defaultTreeViewController.SetRootItems(rootItems);
-            }
+            SetRootItemsInternal(rootItems);
         }
+
+        internal abstract void SetRootItemsInternal<T>(IList<TreeViewItemData<T>> rootItems);
 
         /// <summary>
         /// Gets the root item identifiers.
@@ -176,34 +128,37 @@ namespace UnityEngine.UIElements.Experimental
         /// <returns>The TreeView's total number of items.</returns>
         public int GetTreeCount()
         {
-            return viewController.GetTreeCount();
+            return viewController.GetTreeItemsCount();
         }
 
-        internal new TreeViewController viewController => base.viewController as TreeViewController;
+        /// <summary>
+        /// The view controller for this view, cast as a <see cref="BaseTreeViewController"/>.
+        /// </summary>
+        public new BaseTreeViewController viewController => base.viewController as BaseTreeViewController;
 
         private protected override void CreateVirtualizationController()
         {
             CreateVirtualizationController<ReusableTreeViewItem>();
         }
 
-        private protected override void CreateViewController()
-        {
-            SetViewController(new DefaultTreeViewController<object>());
-        }
-
-        internal void SetViewController(TreeViewController controller)
+        /// <summary>
+        /// Assigns the view controller for this view and registers all events required for it to function properly.
+        /// </summary>
+        /// <param name="controller">The controller to use with this view.</param>
+        /// <remarks>The controller should implement <see cref="BaseTreeViewController"/>.</remarks>
+        public override void SetViewController(CollectionViewController controller)
         {
             if (viewController != null)
             {
-                controller.itemIndexChanged -= OnItemIndexChanged;
+                viewController.itemIndexChanged -= OnItemIndexChanged;
             }
 
             base.SetViewController(controller);
             RefreshItems();
 
-            if (controller != null)
+            if (viewController != null)
             {
-                controller.itemIndexChanged += OnItemIndexChanged;
+                viewController.itemIndexChanged += OnItemIndexChanged;
             }
         }
 
@@ -244,9 +199,17 @@ namespace UnityEngine.UIElements.Experimental
         /// </summary>
         /// <remarks>
         /// Use <see cref="SetRootItems{T}"/> to add content.
-        /// You can also define
         /// </remarks>
-        public TreeView()
+        public BaseTreeView() : this((int)ItemHeightUnset) {}
+
+        /// <summary>
+        /// Creates a <see cref="TreeView"/> with specified factory methods using the fixed height virtualization method.
+        /// </summary>
+        /// <param name="itemHeight">The item height to use in FixedHeight virtualization mode.</param>
+        /// <remarks>
+        /// Use <see cref="SetRootItems{T}"/> to add content.
+        /// </remarks>
+        public BaseTreeView(int itemHeight) : base(null, itemHeight)
         {
             m_ExpandedItemIds = new List<int>();
 
@@ -290,6 +253,19 @@ namespace UnityEngine.UIElements.Experimental
         }
 
         /// <summary>
+        /// Gets tree data for the selected item indices.
+        /// </summary>
+        /// <typeparam name="T">Type of the data inside TreeViewItemData.</typeparam>
+        /// <returns>The selected TreeViewItemData items.</returns>
+        /// <exception cref="ArgumentException">Throws if the type does not match with the item source data type of the default controller.</exception>
+        public IEnumerable<TreeViewItemData<T>> GetSelectedItems<T>()
+        {
+            return GetSelectedItemsInternal<T>();
+        }
+
+        private protected abstract IEnumerable<TreeViewItemData<T>> GetSelectedItemsInternal<T>();
+
+        /// <summary>
         /// Gets data for the specified TreeView item index.
         /// </summary>
         /// <param name="index">The TreeView item index.</param>
@@ -298,23 +274,10 @@ namespace UnityEngine.UIElements.Experimental
         /// <exception cref="ArgumentException">Throws if the type does not match with the item source data type.</exception>
         public T GetItemDataForIndex<T>(int index)
         {
-            // Support default case
-            if (viewController is DefaultTreeViewController<T> defaultController)
-                return defaultController.GetDataForIndex(index);
-
-            // Support user-defined controller case.
-            var obj = viewController?.GetItemForIndex(index);
-            var objectType = obj?.GetType();
-            if (objectType == typeof(T))
-                return (T)obj;
-
-            if (objectType == null && viewController?.GetType().GetGenericTypeDefinition() == typeof(DefaultTreeViewController<>))
-            {
-                objectType = viewController.GetType().GetGenericArguments()[0];
-            }
-
-            throw new ArgumentException($"Type parameter ({typeof(T)}) differs from data source ({objectType}) and is not recognized by the controller.");
+            return GetItemDataForIndexInternal<T>(index);
         }
+
+        private protected abstract T GetItemDataForIndexInternal<T>(int index);
 
         /// <summary>
         /// Gets data for the specified TreeView item id.
@@ -325,23 +288,10 @@ namespace UnityEngine.UIElements.Experimental
         /// <exception cref="ArgumentException">Throws if the type does not match with the item source data type.</exception>
         public T GetItemDataForId<T>(int id)
         {
-            // Support default case
-            if (viewController is DefaultTreeViewController<T> defaultController)
-                return defaultController.GetDataForId(id);
-
-            // Support user-defined controller case.
-            var obj = viewController?.GetItemForIndex(viewController.GetIndexForId(id));
-            var objectType = obj?.GetType();
-            if (objectType == typeof(T))
-                return (T)obj;
-
-            if (objectType == null && viewController?.GetType().GetGenericTypeDefinition() == typeof(DefaultTreeViewController<>))
-            {
-                objectType = viewController.GetType().GetGenericArguments()[0];
-            }
-
-            throw new ArgumentException($"Type parameter ({typeof(T)}) differs from data source ({objectType}) and is not recognized by the controller.");
+            return GetItemDataForIdInternal<T>(id);
         }
+
+        private protected abstract T GetItemDataForIdInternal<T>(int id);
 
         /// <summary>
         /// Adds an item to the existing tree.
@@ -349,25 +299,15 @@ namespace UnityEngine.UIElements.Experimental
         /// <param name="item">Item to add.</param>
         /// <param name="parentId">The parent id for the item.</param>
         /// <param name="childIndex">The child index in the parent's children list.</param>
+        /// <param name="rebuildTree">Whether we should call RebuildTree and RefreshItems or not. Set to false when doing multiple additions to save a few rebuilds.</param>
         /// <typeparam name="T">Type of the data inside TreeViewItemData.</typeparam>
         /// <exception cref="ArgumentException">Throws if the type does not match with the item source data type.</exception>
-        public void AddItem<T>(TreeViewItemData<T> item, int parentId = -1, int childIndex = -1)
+        public void AddItem<T>(TreeViewItemData<T> item, int parentId = -1, int childIndex = -1, bool rebuildTree = true)
         {
-            if (viewController is DefaultTreeViewController<T> defaultController)
-            {
-                defaultController.AddItem(item, parentId, childIndex);
-                RefreshItems();
-                return;
-            }
-
-            Type dataSourceType = null;
-            if (viewController?.GetType().GetGenericTypeDefinition() == typeof(DefaultTreeViewController<>))
-            {
-                dataSourceType = viewController.GetType().GetGenericArguments()[0];
-            }
-
-            throw new ArgumentException($"Type parameter ({typeof(T)}) differs from data source ({dataSourceType})and is not recognized by the controller.");
+            AddItemInternal(item, parentId, childIndex, rebuildTree);
         }
+
+        private protected abstract void AddItemInternal<T>(TreeViewItemData<T> item, int parentId, int childIndex, bool rebuildTree);
 
         /// <summary>
         /// Removes an item of the tree if it can find it.
@@ -458,40 +398,79 @@ namespace UnityEngine.UIElements.Experimental
             if (ids == null)
                 return;
 
-            var selectedIndexes = ids.Select(id =>
-            {
-                viewController.ExpandItem(id, false);
-                return viewController.GetIndexForId(id);
-            }).ToList();
+            var selectedIndexes = ids.Select(id => GetItemIndex(id, true)).ToList();
 
             SetSelectionInternal(selectedIndexes, sendNotification);
         }
 
-        internal void CopyExpandedStates(ITreeViewItem source, ITreeViewItem target)
+        /// <summary>
+        /// Adds an item to the current selection by id.
+        /// </summary>
+        /// <remarks>
+        /// This will also expand the selected item if not expanded already.
+        /// </remarks>
+        /// <param name="id">The item id.</param>
+        public void AddToSelectionById(int id)
         {
-            if (IsExpanded(source.id))
-            {
-                ExpandItem(target.id);
+            var index = GetItemIndex(id, true);
+            Rebuild();
+            AddToSelection(index);
+        }
 
-                if (source.children != null && source.children.Count() > 0)
+        /// <summary>
+        /// Removes an item from the current selection by id.
+        /// </summary>
+        /// <param name="id">The item id.</param>
+        public void RemoveFromSelectionById(int id)
+        {
+            var index = GetItemIndex(id);
+            RemoveFromSelection(index);
+        }
+
+        int GetItemIndex(int id, bool expand = false)
+        {
+            if (expand)
+            {
+                var parentId = viewController.GetParentId(id);
+                while (parentId != -1)
                 {
-                    if (target.children == null || source.children.Count() != target.children.Count())
+                    if (!m_ExpandedItemIds.Contains(parentId))
+                    {
+                        viewController.ExpandItem(parentId, false);
+                    }
+
+                    parentId = viewController.GetParentId(parentId);
+                }
+            }
+
+            return viewController.GetIndexForId(id);
+        }
+
+        internal void CopyExpandedStates(int sourceId, int targetId)
+        {
+            if (IsExpanded(sourceId))
+            {
+                ExpandItem(targetId);
+
+                if (viewController.HasChildren(sourceId))
+                {
+                    if (viewController.GetChildrenIds(sourceId).Count() != viewController.GetChildrenIds(targetId).Count())
                     {
                         Debug.LogWarning("Source and target hierarchies are not the same");
                         return;
                     }
 
-                    for (int i = 0; i < source.children.Count(); i++)
+                    for (var i = 0; i < viewController.GetChildrenIds(sourceId).Count(); i++)
                     {
-                        var sourceChild = source.children.ElementAt(i);
-                        var targetchild = target.children.ElementAt(i);
-                        CopyExpandedStates(sourceChild, targetchild);
+                        var sourceChild = viewController.GetChildrenIds(sourceId).ElementAt(i);
+                        var targetChild = viewController.GetChildrenIds(targetId).ElementAt(i);
+                        CopyExpandedStates(sourceChild, targetChild);
                     }
                 }
             }
             else
             {
-                CollapseItem(target.id);
+                CollapseItem(targetId);
             }
         }
 
@@ -523,7 +502,6 @@ namespace UnityEngine.UIElements.Experimental
         public void ExpandItem(int id, bool expandAllChildren = false)
         {
             viewController.ExpandItem(id, expandAllChildren);
-            RefreshItems();
         }
 
         /// <summary>
@@ -532,7 +510,7 @@ namespace UnityEngine.UIElements.Experimental
         public void ExpandRootItems()
         {
             foreach (var itemId in viewController.GetRootItemIds())
-                viewController.ExpandItem(itemId, false);
+                viewController.ExpandItem(itemId, false, false);
 
             RefreshItems();
         }

@@ -13,14 +13,14 @@ namespace UnityEditor.UIElements.Bindings
     {
         public SerializedObjectList serializedObjectList => itemsSource as SerializedObjectList;
 
-        public override int GetItemCount()
+        public override int GetItemsCount()
         {
             return serializedObjectList?.Count ?? 0;
         }
 
         public override void AddItems(int itemCount)
         {
-            var previousCount = GetItemCount();
+            var previousCount = GetItemsCount();
             serializedObjectList.ArrayProperty.arraySize += itemCount;
             serializedObjectList.ApplyChanges();
 

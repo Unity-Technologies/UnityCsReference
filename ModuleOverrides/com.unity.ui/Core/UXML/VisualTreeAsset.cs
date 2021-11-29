@@ -105,6 +105,19 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [Serializable]
+        internal struct UxmlObjectEntry
+        {
+            [SerializeField] public int parentId;
+            [SerializeField] public List<UxmlObjectAsset> uxmlObjectAssets;
+
+            public UxmlObjectEntry(int parentId, List<UxmlObjectAsset> uxmlObjectAssets)
+            {
+                this.parentId = parentId;
+                this.uxmlObjectAssets = uxmlObjectAssets;
+            }
+        }
+
 #pragma warning disable 0649
         [SerializeField] private List<UsingEntry> m_Usings;
 #pragma warning restore 0649
@@ -199,6 +212,109 @@ namespace UnityEngine.UIElements
         {
             get { return m_TemplateAssets; }
             set { m_TemplateAssets = value; }
+        }
+
+        [SerializeField] private List<UxmlObjectEntry> m_UxmlObjectEntries;
+        [SerializeField] private List<int> m_UxmlObjectIds;
+
+        internal List<UxmlObjectEntry> uxmlObjectEntries => m_UxmlObjectEntries;
+        internal List<int> uxmlObjectIds => m_UxmlObjectIds;
+
+        internal void RegisterUxmlObject(UxmlObjectAsset uxmlObjectAsset)
+        {
+            m_UxmlObjectEntries ??= new List<UxmlObjectEntry>();
+            m_UxmlObjectIds ??= new List<int>();
+
+            var entry = GetUxmlObjectEntry(uxmlObjectAsset.parentId);
+
+            if (entry.uxmlObjectAssets != null)
+            {
+                entry.uxmlObjectAssets.Add(uxmlObjectAsset);
+            }
+            else
+            {
+                m_UxmlObjectEntries.Add(new UxmlObjectEntry(uxmlObjectAsset.parentId, new List<UxmlObjectAsset> { uxmlObjectAsset }));
+                m_UxmlObjectIds.Add(uxmlObjectAsset.id);
+            }
+        }
+
+        internal List<T> GetUxmlObjects<T>(IUxmlAttributes asset, CreationContext cc) where T : new()
+        {
+            if (m_UxmlObjectEntries == null)
+                return null;
+
+            if (asset is VisualElementAsset vea)
+            {
+                var entry = GetUxmlObjectEntry(vea.id);
+
+                if (entry.uxmlObjectAssets != null)
+                {
+                    List<T> uxmlObjects = null;
+
+                    foreach (var uxmlObjectAsset in entry.uxmlObjectAssets)
+                    {
+                        var factory = GetUxmlObjectFactory(uxmlObjectAsset);
+
+                        if (!(factory is IUxmlObjectFactory<T> typedFactory))
+                            continue;
+
+                        var obj = typedFactory.CreateObject(uxmlObjectAsset, cc);
+
+                        if (uxmlObjects == null)
+                            uxmlObjects = new List<T>() { obj };
+                        else
+                            uxmlObjects.Add(obj);
+                    }
+
+                    return uxmlObjects;
+                }
+            }
+
+            return null;
+        }
+
+        internal UxmlObjectEntry GetUxmlObjectEntry(int id)
+        {
+            if (m_UxmlObjectEntries != null)
+            {
+                foreach (var e in m_UxmlObjectEntries)
+                {
+                    if (e.parentId == id)
+                    {
+                        return e;
+                    }
+                }
+            }
+
+            return default;
+        }
+
+        IBaseUxmlObjectFactory GetUxmlObjectFactory(UxmlObjectAsset uxmlObjectAsset)
+        {
+            if (!UxmlObjectFactoryRegistry.TryGetFactories(uxmlObjectAsset.fullTypeName, out var factories))
+            {
+                Debug.LogErrorFormat("Element '{0}' has no registered factory method.", uxmlObjectAsset.fullTypeName);
+                return null;
+            }
+
+            IBaseUxmlObjectFactory factory = null;
+            var ctx = new CreationContext(null, this, null);
+            foreach (var f in factories)
+            {
+                if (f.AcceptsAttributeBag(uxmlObjectAsset, ctx))
+                {
+                    factory = f;
+                    break;
+                }
+            }
+
+            if (factory == null)
+            {
+                Debug.LogErrorFormat("Element '{0}' has a no factory that accept the set of XML attributes specified.", uxmlObjectAsset.fullTypeName);
+                return null;
+            }
+
+            return factory;
         }
 
         [SerializeField] private List<SlotDefinition> m_Slots;
@@ -366,35 +482,29 @@ namespace UnityEngine.UIElements
             foreach (var rootElement in rootAssets)
             {
                 Assert.IsNotNull(rootElement);
-                VisualElement rootVe = CloneSetupRecursively(rootElement, idToChildren,
+                var rootVe = CloneSetupRecursively(rootElement, idToChildren,
                     new CreationContext(slotInsertionPoints, attributeOverrides, this, target));
 
-                if (rootVe != null)
-                {
-                    // Save reference to the visualElementAsset so elements can be reinitialized when
-                    // we set their attributes in the editor
-                    rootVe.SetProperty(LinkedVEAInTemplatePropertyName, rootElement);
+                // Save reference to the visualElementAsset so elements can be reinitialized when
+                // we set their attributes in the editor
+                rootVe.SetProperty(LinkedVEAInTemplatePropertyName, rootElement);
 
-                    // Save reference to the VisualTreeAsset itself on the containing VisualElement so it can be
-                    // tracked for live reloading on changes, and also accessible for users that need to keep track
-                    // of their cloned VisualTreeAssets.
-                    rootVe.visualTreeAssetSource = this;
+                // Save reference to the VisualTreeAsset itself on the containing VisualElement so it can be
+                // tracked for live reloading on changes, and also accessible for users that need to keep track
+                // of their cloned VisualTreeAssets.
+                rootVe.visualTreeAssetSource = this;
 
-                    // if contentContainer == this, the shadow and the logical hierarchy are identical
-                    // otherwise, if there is a CC, we want to insert in the shadow
-                    target.hierarchy.Add(rootVe);
-                }
-                else
-                {
-                    Debug.LogWarning("VisualTreeAsset instantiated an empty UI. Check the syntax of your UXML document.");
-                }
+                // if contentContainer == this, the shadow and the logical hierarchy are identical
+                // otherwise, if there is a CC, we want to insert in the shadow
+                target.hierarchy.Add(rootVe);
             }
         }
 
         private VisualElement CloneSetupRecursively(VisualElementAsset root,
             Dictionary<int, List<VisualElementAsset>> idToChildren, CreationContext context)
         {
-            VisualElement ve = Create(root, context);
+            var ve = Create(root, context);
+
             if (ve == null)
             {
                 return null;
@@ -428,6 +538,17 @@ namespace UnityEngine.UIElements
                 }
             }
 
+            if (root.ruleIndex != -1)
+            {
+                if (inlineSheet == null)
+                    Debug.LogWarning("VisualElementAsset has a RuleIndex but no inlineStyleSheet");
+                else
+                {
+                    StyleRule r = inlineSheet.rules[root.ruleIndex];
+                    ve.SetInlineRule(inlineSheet, r);
+                }
+            }
+
             var templateAsset = root as TemplateAsset;
             List<VisualElementAsset> children;
             if (idToChildren.TryGetValue(root.id, out children))
@@ -436,8 +557,12 @@ namespace UnityEngine.UIElements
 
                 foreach (VisualElementAsset childVea in children)
                 {
+                    if (childVea is UxmlObjectAsset)
+                        continue;
+
                     // this will fill the slotInsertionPoints mapping
-                    VisualElement childVe = CloneSetupRecursively(childVea, idToChildren, context);
+                    var childVe = CloneSetupRecursively(childVea, idToChildren, context);
+
                     if (childVe == null)
                         continue;
 
@@ -586,8 +711,7 @@ namespace UnityEngine.UIElements
                 return new Label(string.Format("Unknown type: '{0}'", asset.fullTypeName));
             }
 
-            List<IUxmlFactory> factoryList;
-            if (!VisualElementFactoryRegistry.TryGetValue(asset.fullTypeName, out factoryList))
+            if (!VisualElementFactoryRegistry.TryGetValue(asset.fullTypeName, out var factoryList))
             {
                 if (asset.fullTypeName.StartsWith("UnityEngine.Experimental.UIElements.") || asset.fullTypeName.StartsWith("UnityEditor.Experimental.UIElements."))
                 {
@@ -640,7 +764,7 @@ namespace UnityEngine.UIElements
             }
 
             IUxmlFactory factory = null;
-            foreach (IUxmlFactory f in factoryList)
+            foreach (var f in factoryList)
             {
                 if (f.AcceptsAttributeBag(asset, ctx))
                 {
@@ -655,14 +779,14 @@ namespace UnityEngine.UIElements
                 return new Label(string.Format("Type with no factory: '{0}'", asset.fullTypeName));
             }
 
-            VisualElement res = factory.Create(asset, ctx);
-            if (res != null)
+            var ve = factory.Create(asset, ctx);
+            if (ve != null)
             {
-                AssignClassListFromAssetToElement(asset, res);
-                AssignStyleSheetFromAssetToElement(asset, res);
+                AssignClassListFromAssetToElement(asset, ve);
+                AssignStyleSheetFromAssetToElement(asset, ve);
             }
 
-            return res;
+            return ve;
         }
 
         static void AssignClassListFromAssetToElement(VisualElementAsset asset, VisualElement element)

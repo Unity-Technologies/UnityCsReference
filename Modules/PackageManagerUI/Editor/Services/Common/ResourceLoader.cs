@@ -49,6 +49,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             internal static readonly string filtersDropdown = "StyleSheets/PackageManager/Filters.uss";
             internal static readonly string inputDropdown = "StyleSheets/PackageManager/InputDropdown.uss";
+            internal static readonly string inProgressDropdown = "StyleSheets/PackageManager/InProgressDropdown.uss";
         }
 
         private enum StyleSheetId : int
@@ -57,6 +58,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             PackageManagerWindow,
             InputDropdown,
             FiltersDropdown,
+            InProgressDropdown,
 
             Count
         }
@@ -144,6 +146,21 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
+        public StyleSheet inProgressDropdownStyleSheet
+        {
+            get
+            {
+                var styleSheet = resolvedStyleSheets[(int)StyleSheetId.InProgressDropdown];
+                if (styleSheet == null)
+                {
+                    styleSheet = ResolveStyleSheets(StyleSheetPath.defaultCommon, StyleSheetPath.packageManagerVariables, StyleSheetPath.inProgressDropdown);
+                    styleSheet.name = "InProgressDropdown" + lightOrDarkTheme;
+                    resolvedStyleSheets[(int)StyleSheetId.InProgressDropdown] = styleSheet;
+                }
+                return styleSheet;
+            }
+        }
+
         private StyleSheet ResolveStyleSheets(params string[] styleSheetPaths)
         {
             return ResolveStyleSheets(styleSheetPaths.Select(p =>
@@ -216,6 +233,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             _ = packageManagerWindowStyleSheet;
             _ = filtersDropdownStyleSheet;
             _ = inputDropdownStyleSheet;
+            _ = inProgressDropdownStyleSheet;
         }
     }
 }

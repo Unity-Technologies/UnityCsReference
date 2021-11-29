@@ -64,12 +64,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             return true;
         }
 
-        public override void OnPackagesChanged(IEnumerable<IPackage> added, IEnumerable<IPackage> removed, IEnumerable<IPackage> preUpdate, IEnumerable<IPackage> postUpdate)
+        public override void OnPackagesChanged(PackagesChangeArgs args)
         {
             var addList = new List<IPackage>();
             var updateList = new List<IPackage>();
-            var removeList = removed.Where(Contains).ToList();
-            foreach (var package in added.Concat(postUpdate))
+            var removeList = args.removed.Where(Contains).ToList();
+            foreach (var package in args.added.Concat(args.updated))
             {
                 if (m_PackageFiltering.FilterByCurrentTab(package))
                 {
@@ -205,6 +205,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshVisualStates()
         {
+            var expandable = GetSelection().Count <= 1;
             var changedVisualStates = new List<VisualState>();
             foreach (var state in m_VisualStateList)
             {
@@ -218,7 +219,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                     stateChanged = true;
                 }
 
-                var expandable = GetSelection().Count <= 1;
                 if (state.expandable != expandable)
                 {
                     state.expandable = expandable;
@@ -261,6 +261,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         public override void Load(IPackage package, IPackageVersion version = null)
+        {
+            // do nothing, as for a single page we have a complete/known list and there's no more to load
+        }
+
+        public override void LoadExtraItems(IEnumerable<IPackage> packages)
         {
             // do nothing, as for a single page we have a complete/known list and there's no more to load
         }

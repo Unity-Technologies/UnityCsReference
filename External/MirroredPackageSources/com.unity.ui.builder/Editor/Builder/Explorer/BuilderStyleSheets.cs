@@ -76,7 +76,7 @@ namespace Unity.UI.Builder
             m_NewSelectorTextInputField.RegisterCallback<FocusEvent>((evt) =>
             {
                 var input = evt.target as VisualElement;
-                var field = input.parent as TextField;
+                var field = GetTextFieldParent(input);
                 m_FieldFocusStep = FieldFocusStep.FocusedFromStandby;
                 if (field.text == BuilderConstants.ExplorerInExplorerNewClassSelectorInfoMessage || m_ShouldRefocusSelectorFieldOnBlur)
                 {
@@ -85,7 +85,7 @@ namespace Unity.UI.Builder
                 }
 
                 ShowTooltip();
-            });
+            }, TrickleDown.TrickleDown);
 
             m_NewSelectorTextField.RegisterCallback<ChangeEvent<string>>((evt) =>
             {
@@ -99,7 +99,9 @@ namespace Unity.UI.Builder
                 m_NewSelectorTextField.SelectRange(m_NewSelectorTextField.value.Length, m_NewSelectorTextField.value.Length);
             });
 
-            m_NewSelectorTextInputField.RegisterCallback<MouseUpEvent>((evt) =>
+            // Since MouseDown captures the mouse, we need to RegisterCallback directly on the target in order to intercept the event.
+            // This could be replaced by setting selectAllOnMouseUp to false.
+            m_NewSelectorTextInputField.Q<TextElement>().RegisterCallback<MouseUpEvent>((evt) =>
             {
                 // We want to prevent the default action on mouse up in KeyboardTextEditor, but only when
                 // the field selection behaviour was changed by us.
@@ -113,12 +115,15 @@ namespace Unity.UI.Builder
                 {
                     m_NewSelectorTextField.SelectRange(m_NewSelectorTextField.value.Length, m_NewSelectorTextField.value.Length);
                 });
-            });
+                
+                evt.PreventDefault();
+                evt.StopImmediatePropagation();
+            }, TrickleDown.TrickleDown);
 
             m_NewSelectorTextInputField.RegisterCallback<BlurEvent>((evt) =>
             {
                 var input = evt.target as VisualElement;
-                var field = input.parent as TextField;
+                var field = GetTextFieldParent(input);
                 if (m_ShouldRefocusSelectorFieldOnBlur)
                 {
                     field.schedule.Execute(PostEnterRefocus);
@@ -134,7 +139,7 @@ namespace Unity.UI.Builder
                 }
 
                 HideTooltip();
-            });
+            }, TrickleDown.TrickleDown);
 
             // Setup New USS Menu.
             m_AddUSSMenu = parent.Q<ToolbarMenu>("add-uss-menu");
@@ -151,6 +156,11 @@ namespace Unity.UI.Builder
             styleSheetsDragger.builderStylesheetRoot = container;
 
             RegisterCallback<GeometryChangedEvent>(e => AdjustPosition());
+        }
+        
+        TextField GetTextFieldParent(VisualElement ve)
+        {
+            return ve.GetFirstAncestorOfType<TextField>();
         }
 
         protected override bool IsSelectedItemValid(VisualElement element)
@@ -299,8 +309,7 @@ namespace Unity.UI.Builder
 
         void UpdateNewSelectorFieldEnabledStateFromDocument()
         {
-            bool enabled = true;
-            m_NewSelectorTextField.SetEnabled(enabled);
+            m_NewSelectorTextField.SetEnabled(true);
             SetUpAddUSSMenu();
         }
 

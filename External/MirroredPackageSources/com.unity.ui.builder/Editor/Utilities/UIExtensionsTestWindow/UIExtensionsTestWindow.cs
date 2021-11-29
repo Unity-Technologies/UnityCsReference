@@ -133,12 +133,12 @@ namespace Unity.UI.Builder
                 }
                 { // Change border of canvas.
                     var rule = m_VisualTreeAsset.GetOrCreateInlineStyleRule(canvasAsset);
-                    var prop = m_VisualTreeAsset.inlineSheet.FindProperty(rule, "border-width");
+                    var prop = m_VisualTreeAsset.inlineSheet.FindLastProperty(rule, "border-width");
                     m_VisualTreeAsset.inlineSheet.SetValue(prop.values[0], 10);
                 }
                 { // Remove max-width
                     var rule = m_VisualTreeAsset.GetOrCreateInlineStyleRule(canvasAsset);
-                    var prop = m_VisualTreeAsset.inlineSheet.FindProperty(rule, "max-width");
+                    var prop = m_VisualTreeAsset.inlineSheet.FindLastProperty(rule, "max-width");
                     m_VisualTreeAsset.inlineSheet.RemoveProperty(rule, prop);
                 }
 

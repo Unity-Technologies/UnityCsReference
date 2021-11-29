@@ -77,8 +77,11 @@ namespace Unity.UI.Builder
 
                 foreach (VisualElementAsset childVea in children)
                 {
+                    if (childVea is UxmlObjectAsset)
+                        continue;
+
                     // this will fill the slotInsertionPoints mapping
-                    VisualElement childVe = CloneSetupRecursively(vta, childVea, idToChildren, context);
+                    var childVe = CloneSetupRecursively(vta, childVea, idToChildren, context);
                     if (childVe == null)
                         continue;
 
@@ -163,7 +166,7 @@ namespace Unity.UI.Builder
                 if (rootElement.fullTypeName == BuilderConstants.SelectedVisualTreeAssetSpecialElementTypeName)
                     continue;
 
-                VisualElement rootVe = CloneSetupRecursively(vta, rootElement, idToChildren,
+                var rootVe = CloneSetupRecursively(vta, rootElement, idToChildren,
                     new CreationContext(slotInsertionPoints, attributeOverrides, vta, target));
 
                 // if contentContainer == this, the shadow and the logical hierarchy are identical

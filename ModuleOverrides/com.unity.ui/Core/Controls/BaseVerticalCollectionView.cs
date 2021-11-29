@@ -10,7 +10,7 @@ using System.Linq;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// Options to display alternating background colors for ListView rows.
+    /// Options to display alternating background colors for collection view rows.
     /// </summary>
     /// <remarks>
     /// If there are more rows with content than there are visible rows, you will not see a difference between
@@ -33,16 +33,16 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Options to change the virtualization method used by the ListView to display its content.
+    /// Options to change the virtualization method used by the collection view to display its content.
     /// </summary>
     public enum CollectionVirtualizationMethod
     {
         /// <summary>
-        /// ListView won't wait for the layout to update items, as the all have the same height. <c>fixedItemHeight</c> Needs to be set. More performant but less flexible.
+        /// Collection view won't wait for the layout to update items, as the all have the same height. <c>fixedItemHeight</c> Needs to be set. More performant but less flexible.
         /// </summary>
         FixedHeight,
         /// <summary>
-        /// ListView will use the actual height of every item when geometry changes. More flexible but less performant.
+        /// Collection view will use the actual height of every item when geometry changes. More flexible but less performant.
         /// </summary>
         DynamicHeight,
     }
@@ -52,6 +52,59 @@ namespace UnityEngine.UIElements
     /// </summary>
     public abstract class BaseVerticalCollectionView : BindableElement, ISerializationCallbackReceiver
     {
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="BaseVerticalCollectionView"/>.
+        /// </summary>
+        /// <remarks>
+        /// This class defines the BaseVerticalCollectionView element properties that you can use in a UI document asset (UXML file).
+        /// </remarks>
+        public new class UxmlTraits : BindableElement.UxmlTraits
+        {
+            private readonly UxmlIntAttributeDescription m_FixedItemHeight = new UxmlIntAttributeDescription { name = "fixed-item-height", obsoleteNames = new[] { "itemHeight, item-height" }, defaultValue = s_DefaultItemHeight };
+            private readonly UxmlEnumAttributeDescription<CollectionVirtualizationMethod> m_VirtualizationMethod = new UxmlEnumAttributeDescription<CollectionVirtualizationMethod> { name = "virtualization-method", defaultValue = CollectionVirtualizationMethod.FixedHeight };
+            private readonly UxmlBoolAttributeDescription m_ShowBorder = new UxmlBoolAttributeDescription { name = "show-border", defaultValue = false };
+            private readonly UxmlEnumAttributeDescription<SelectionType> m_SelectionType = new UxmlEnumAttributeDescription<SelectionType> { name = "selection-type", defaultValue = SelectionType.Single };
+            private readonly UxmlEnumAttributeDescription<AlternatingRowBackground> m_ShowAlternatingRowBackgrounds = new UxmlEnumAttributeDescription<AlternatingRowBackground> { name = "show-alternating-row-backgrounds", defaultValue = AlternatingRowBackground.None };
+            private readonly UxmlBoolAttributeDescription m_Reorderable = new UxmlBoolAttributeDescription { name = "reorderable", defaultValue = false };
+            private readonly UxmlBoolAttributeDescription m_HorizontalScrollingEnabled = new UxmlBoolAttributeDescription { name = "horizontal-scrolling", defaultValue = false };
+
+            /// <summary>
+            /// Returns an empty enumerable, because list views usually do not have child elements.
+            /// </summary>
+            /// <returns>An empty enumerable.</returns>
+            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+            {
+                get { yield break; }
+            }
+
+            /// <summary>
+            /// Initializes <see cref="BaseVerticalCollectionView"/> properties using values from the attribute bag.
+            /// </summary>
+            /// <param name="ve">The object to initialize.</param>
+            /// <param name="bag">The attribute bag.</param>
+            /// <param name="cc">The creation context; unused.</param>
+            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            {
+                base.Init(ve, bag, cc);
+                var itemHeight = 0;
+                var view = (BaseVerticalCollectionView)ve;
+                view.reorderable = m_Reorderable.GetValueFromBag(bag, cc);
+
+                // Avoid setting itemHeight unless it's explicitly defined.
+                // Setting itemHeight property will activate inline property mode.
+                if (m_FixedItemHeight.TryGetValueFromBag(bag, cc, ref itemHeight))
+                {
+                    view.fixedItemHeight = itemHeight;
+                }
+
+                view.virtualizationMethod = m_VirtualizationMethod.GetValueFromBag(bag, cc);
+                view.showBorder = m_ShowBorder.GetValueFromBag(bag, cc);
+                view.selectionType = m_SelectionType.GetValueFromBag(bag, cc);
+                view.showAlternatingRowBackgrounds = m_ShowAlternatingRowBackgrounds.GetValueFromBag(bag, cc);
+                view.horizontalScrollingEnabled = m_HorizontalScrollingEnabled.GetValueFromBag(bag, cc);
+            }
+        }
+
         /// <summary>
         /// Callback triggered when a user double-clicks an item to activate it. This is different from selecting the item.
         /// </summary>
@@ -127,69 +180,45 @@ namespace UnityEngine.UIElements
 
         internal virtual bool sourceIncludesArraySize => false;
 
-        Func<VisualElement> m_MakeItem;
-
         /// <summary>
         /// Callback for constructing the VisualElement that is the template for each recycled and re-bound element in the list.
         /// </summary>
-        /// <remarks>
-        /// This callback needs to call a function that constructs a blank <see cref="VisualElement"/> that is
-        /// bound to an element from the list.
-        ///
-        /// The BaseVerticalCollectionView automatically creates enough elements to fill the visible area, and adds more if the area
-        /// is expanded. As the user scrolls, the BaseVerticalCollectionView cycles elements in and out as they appear or disappear.
-        ///
-        /// If this property and <see cref="bindItem"/> are not set, Unity will either create a PropertyField if bound
-        /// to a SerializedProperty, or create an empty label for any other case.
-        /// </remarks>
+        [Obsolete("makeItem has been moved to ListView and TreeView. Use these ones instead.")]
         public Func<VisualElement> makeItem
         {
-            get => m_MakeItem;
-            set
-            {
-                m_MakeItem = value;
-                Rebuild();
-            }
+            get => throw new UnityException("makeItem has been moved to ListView and TreeView. Use these ones instead.");
+            set => throw new UnityException("makeItem has been moved to ListView and TreeView. Use these ones instead.");
         }
-
-        private Action<VisualElement, int> m_BindItem;
 
         /// <summary>
         /// Callback for binding a data item to the visual element.
         /// </summary>
-        /// <remarks>
-        /// The method called by this callback receives the VisualElement to bind, and the index of the
-        /// element to bind it to.
-        ///
-        /// If this property and <see cref="makeItem"/> are not set, Unity will try to bind to a SerializedProperty if
-        /// bound, or simply set text in the created Label.
-        /// </remarks>
+        [Obsolete("makeItem has been moved to ListView and TreeView. Use these ones instead.")]
         public Action<VisualElement, int> bindItem
         {
-            get => m_BindItem;
-            set
-            {
-                m_BindItem = value;
-                RefreshItems();
-            }
+            get => throw new UnityException("bindItem has been moved to ListView and TreeView. Use these ones instead.");
+            set => throw new UnityException("bindItem has been moved to ListView and TreeView. Use these ones instead.");
         }
 
         /// <summary>
         /// Callback for unbinding a data item from the VisualElement.
         /// </summary>
-        /// <remarks>
-        /// The method called by this callback receives the VisualElement to unbind, and the index of the
-        /// element to unbind it from.
-        /// </remarks>
-        public Action<VisualElement, int> unbindItem { get; set; }
+        [Obsolete("makeItem has been moved to ListView and TreeView. Use these ones instead.")]
+        public Action<VisualElement, int> unbindItem
+        {
+            get => throw new UnityException("unbindItem has been moved to ListView and TreeView. Use these ones instead.");
+            set => throw new UnityException("unbindItem has been moved to ListView and TreeView. Use these ones instead.");
+        }
 
         /// <summary>
         /// Callback invoked when a <see cref="VisualElement"/> created via <see cref="makeItem"/> is no longer needed and will be destroyed.
         /// </summary>
-        /// <remarks>
-        /// The method called by this callback receives the VisualElement that will be destroyed from the pool.
-        /// </remarks>
-        public Action<VisualElement> destroyItem { get; set; }
+        [Obsolete("makeItem has been moved to ListView and TreeView. Use these ones instead.")]
+        public Action<VisualElement> destroyItem
+        {
+            get => throw new UnityException("destroyItem has been moved to ListView and TreeView. Use these ones instead.");
+            set => throw new UnityException("destroyItem has been moved to ListView and TreeView. Use these ones instead.");
+        }
 
         /// <summary>
         /// Returns the content container for the <see cref="BaseVerticalCollectionView"/>. Because the BaseVerticalCollectionView
@@ -259,8 +288,12 @@ namespace UnityEngine.UIElements
         internal IEnumerable<ReusableCollectionItem> activeItems => m_VirtualizationController?.activeItems ?? k_EmptyItems;
         internal ScrollView scrollView => m_ScrollView;
         internal ListViewDragger dragger => m_Dragger;
-        internal CollectionViewController viewController => m_ViewController;
         internal CollectionVirtualizationController virtualizationController => GetOrCreateVirtualizationController();
+
+        /// <summary>
+        /// The view controller for this view.
+        /// </summary>
+        public CollectionViewController viewController => m_ViewController;
 
         /// <summary>
         /// The computed pixel-aligned height for the list elements.
@@ -491,23 +524,31 @@ namespace UnityEngine.UIElements
         {
             if (m_ViewController == null)
             {
-                CreateViewController();
+                SetViewController(CreateViewController());
             }
 
             return m_ViewController;
         }
 
-        private protected virtual void CreateViewController()
-        {
-            SetViewController(new CollectionViewController());
-        }
+        /// <summary>
+        /// Creates the view controller for this view.
+        /// Override this method in inheritors to change the controller type.
+        /// </summary>
+        /// <returns>The view controller.</returns>
+        protected abstract CollectionViewController CreateViewController();
 
-        internal void SetViewController(CollectionViewController controller)
+        /// <summary>
+        /// Assigns the view controller for this view and registers all events required for it to function properly.
+        /// </summary>
+        /// <param name="controller">The controller to use with this view.</param>
+        public virtual void SetViewController(CollectionViewController controller)
         {
             if (m_ViewController != null)
             {
                 m_ViewController.itemIndexChanged -= m_ItemIndexChangedCallback;
                 m_ViewController.itemsSourceChanged -= m_ItemsSourceChangedCallback;
+                m_ViewController.Dispose();
+                m_ViewController = null;
             }
 
             m_ViewController = controller;
@@ -566,7 +607,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// Unity adds this USS class to an instance of the BaseVerticalCollectionView element if the instance's
         /// <see cref="BaseVerticalCollectionView.showBorder"/> property is set to true. Any styling applied to this class
-        /// affects every such ListView located beside, or below the stylesheet in the visual tree.
+        /// affects every such BaseVerticalCollectionView located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string borderUssClassName = ussClassName + "--with-border";
         /// <summary>
@@ -583,7 +624,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// Unity adds this USS class to the bar that appears when an item element is dragged. The
         /// <see cref="BaseVerticalCollectionView.reorderable"/> property must be true in order for items to be dragged.
-        /// Any styling applied to this class affects every ListView located beside, or below the stylesheet in the
+        /// Any styling applied to this class affects every BaseVerticalCollectionView located beside, or below the stylesheet in the
         /// visual tree.
         /// </remarks>
         public static readonly string dragHoverBarUssClassName = ussClassName + "__drag-hover-bar";
@@ -668,10 +709,31 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="itemsSource">The list of items to use as a data source.</param>
         /// <param name="itemHeight">The height of each item, in pixels. For <c>FixedHeight</c> virtualization only.</param>
+        public BaseVerticalCollectionView(IList itemsSource, float itemHeight = ItemHeightUnset)
+            : this()
+        {
+            if (Math.Abs(itemHeight - ItemHeightUnset) > float.Epsilon)
+            {
+                m_FixedItemHeight = itemHeight;
+                m_ItemHeightIsInline = true;
+            }
+
+            if (itemsSource != null)
+            {
+                this.itemsSource = itemsSource;
+            }
+        }
+
+        /// <summary>
+        /// Constructs a <see cref="BaseVerticalCollectionView"/>, with all required properties provided.
+        /// </summary>
+        /// <param name="itemsSource">The list of items to use as a data source.</param>
+        /// <param name="itemHeight">The height of each item, in pixels. For <c>FixedHeight</c> virtualization only.</param>
         /// <param name="makeItem">The factory method to call to create a display item. The method should return a
         /// VisualElement that can be bound to a data item.</param>
         /// <param name="bindItem">The method to call to bind a data item to a display item. The method
         /// receives as parameters the display item to bind, and the index of the data item to bind it to.</param>
+        [Obsolete("makeItem and bindItem are now in ListView and TreeView directly, please use a constructor without these parameters.")]
         public BaseVerticalCollectionView(IList itemsSource, float itemHeight = ItemHeightUnset, Func<VisualElement> makeItem = null, Action<VisualElement, int> bindItem = null)
             : this()
         {
@@ -682,8 +744,6 @@ namespace UnityEngine.UIElements
             }
 
             this.itemsSource = itemsSource;
-            this.makeItem = makeItem;
-            this.bindItem = bindItem;
         }
 
         /// <summary>
@@ -693,7 +753,7 @@ namespace UnityEngine.UIElements
         /// <returns>The TreeView item's root element.</returns>
         public VisualElement GetRootElementForId(int id)
         {
-            return activeItems.FirstOrDefault(t => t.id == id)?.GetRootElement();
+            return activeItems.FirstOrDefault(t => t.id == id)?.rootElement;
         }
 
         /// <summary>
@@ -710,9 +770,9 @@ namespace UnityEngine.UIElements
             return GetRootElementForId(viewController.GetIdForIndex(index));
         }
 
-        internal bool HasValidDataAndBindings()
+        internal virtual bool HasValidDataAndBindings()
         {
-            return m_ViewController != null && itemsSource != null && !(makeItem != null ^ bindItem != null);
+            return m_ViewController != null && itemsSource != null;
         }
 
         void OnItemIndexChanged(int srcIndex, int dstIndex)
@@ -845,13 +905,22 @@ namespace UnityEngine.UIElements
         /// Scrolls to a specific item id and makes it visible.
         /// </summary>
         /// <param name="id">Item id to scroll to.</param>
+        [Obsolete("ScrollToId() has been deprecated. Use ScrollToItemById() instead. (UnityUpgradable) -> ScrollToItemById(*)", false)]
         public void ScrollToId(int id)
         {
-            var index = viewController.GetIndexForId(id);
+            ScrollToItemById(id);
+        }
 
+        /// <summary>
+        /// Scrolls to a specific item id and makes it visible.
+        /// </summary>
+        /// <param name="id">Item id to scroll to.</param>
+        public void ScrollToItemById(int id)
+        {
             if (!HasValidDataAndBindings())
                 return;
 
+            var index = viewController.GetIndexForId(id);
             virtualizationController.ScrollToItem(index);
         }
 
@@ -1372,7 +1441,7 @@ namespace UnityEngine.UIElements
             base.ExecuteDefaultAction(evt);
 
             // We always need to know when pointer up event occurred to reset DragEventsProcessor flags.
-            // Some controls may capture the mouse, but the ListView is a composite root (isCompositeRoot),
+            // Some controls may capture the mouse, but the collection view is a composite root (isCompositeRoot),
             // and will always receive ExecuteDefaultAction despite what the actual event target is.
             if (evt.eventTypeId == PointerUpEvent.TypeId())
             {

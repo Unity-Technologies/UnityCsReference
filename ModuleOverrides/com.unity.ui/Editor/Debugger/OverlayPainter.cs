@@ -360,4 +360,99 @@ namespace UnityEditor.UIElements.Debugger
             DrawBorder(mgc, od.element.worldBound, kBoundColor, od.alpha);
         }
     }
+
+    internal class WireframeOverlayPainter : BaseOverlayPainter
+    {
+        private static readonly float kDefaultAlpha = 1.0f;
+        private static readonly Color kUnselectedColor = Color.gray;
+        private static readonly Color kSelectedColor = new Color(1.0f, 1.0f, 0.0f, 1.0f);
+
+        public VisualElement selectedElement;
+
+        public void AddOverlay(VisualElement ve)
+        {
+            if (ve == null)
+                throw new ArgumentNullException("ve");
+
+            OverlayData overlayData = null;
+            if (!m_OverlayData.TryGetValue(ve, out overlayData))
+            {
+                overlayData = new OverlayData(ve, kDefaultAlpha);
+                m_OverlayData[ve] = overlayData;
+            }
+        }
+
+        public override void Draw(MeshGenerationContext mgc)
+        {
+            base.Draw(mgc);
+
+            if (selectedElement != null)
+                DrawWireframe(mgc, selectedElement, kSelectedColor, kDefaultAlpha);
+        }
+
+        protected override void DrawOverlayData(MeshGenerationContext mgc, OverlayData od)
+        {
+            DrawWireframe(mgc, od.element, kUnselectedColor, od.alpha);
+        }
+
+        void DrawWireframe(MeshGenerationContext mgc, VisualElement ve, Color wireColor, float alpha)
+        {
+            var verts = new List<Vector2>(64);
+            var cmd = ve.renderChainData.firstCommand;
+            while (cmd != null && cmd.owner == ve)
+            {
+                if (cmd.type == UnityEngine.UIElements.UIR.CommandType.Draw)
+                {
+                    var allocPage = cmd.mesh.allocPage;
+                    for (int i = 0; i < cmd.indexCount; ++i)
+                    {
+                        var index = allocPage.indices.cpuData[(int)cmd.mesh.allocIndices.start + cmd.indexOffset + i];
+                        var vert = allocPage.vertices.cpuData[index];
+                        verts.Add(vert.position);
+                    }
+                }
+                cmd = cmd.next;
+            }
+            DrawTriangles(mgc, verts, wireColor, alpha);
+        }
+
+        void DrawTriangles(MeshGenerationContext mgc, List<Vector2> verts, Color wireColor, float alpha)
+        {
+            var count = verts.Count;
+            for (int i = 0; i < count; i += 3)
+            {
+                var v0 = verts[i];
+                var v1 = verts[i + 1];
+                var v2 = verts[i + 2];
+                DrawLine(mgc, v0, v1, wireColor, alpha);
+                DrawLine(mgc, v1, v2, wireColor, alpha);
+                DrawLine(mgc, v2, v0, wireColor, alpha);
+            }
+        }
+
+        void DrawLine(MeshGenerationContext mgc, Vector2 v0, Vector2 v1, Color wireColor, float alpha)
+        {
+            var v = (v1 - v0);
+            var leftPerp = new Vector2(v.y, -v.x).normalized * 0.5f;
+            var p0 = v0 + leftPerp;
+            var p1 = v1 + leftPerp;
+            var p2 = v1 - leftPerp;
+            var p3 = v0 - leftPerp;
+
+            wireColor.a = alpha;
+
+            var mesh = mgc.Allocate(4, 6);
+            mesh.SetNextVertex(new Vertex() { position = new Vector3(p0.x, p0.y, Vertex.nearZ), tint = wireColor });
+            mesh.SetNextVertex(new Vertex() { position = new Vector3(p1.x, p1.y, Vertex.nearZ), tint = wireColor });
+            mesh.SetNextVertex(new Vertex() { position = new Vector3(p2.x, p2.y, Vertex.nearZ), tint = wireColor });
+            mesh.SetNextVertex(new Vertex() { position = new Vector3(p3.x, p3.y, Vertex.nearZ), tint = wireColor });
+
+            mesh.SetNextIndex(0);
+            mesh.SetNextIndex(1);
+            mesh.SetNextIndex(2);
+            mesh.SetNextIndex(0);
+            mesh.SetNextIndex(2);
+            mesh.SetNextIndex(3);
+        }
+    }
 }

@@ -10,7 +10,6 @@ using Object = UnityEngine.Object;
 using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 using Toolbar = UnityEditor.UIElements.Toolbar;
 
-
 namespace Unity.UI.Builder
 {
     internal class BuilderToolbar : VisualElement, IBuilderAssetModificationProcessor, IBuilderSelectionNotifier
@@ -651,6 +650,8 @@ namespace Unity.UI.Builder
 
             if (themeStyleSheet != null)
                 element.styleSheets.Add(themeStyleSheet);
+
+            element.SetProperty(BuilderConstants.ElementLinkedActiveThemeStyleSheetVEPropertyName, themeStyleSheet);
         }
 
         void ApplyCanvasBackground(VisualElement element, BuilderDocument.CanvasTheme theme, ThemeStyleSheet themeStyleSheet)
@@ -730,9 +731,7 @@ namespace Unity.UI.Builder
 
         void SetViewportSubTitle()
         {
-            var subTitle = string.Empty;
-
-            m_Viewport.subTitle = subTitle;
+            m_Viewport.subTitle = string.Empty;
         }
 
         void UpdateHasUnsavedChanges()

@@ -92,12 +92,5 @@ namespace UnityEditor.PackageManager.UI.Internal
             _ = primaryUpmVersion?.isRegistryPackage ?? false ? (!primaryUpmVersion?.isUnityPackage ?? false ?
                 m_Type |= PackageType.MainNotUnity : m_Type &= ~PackageType.ScopedRegistry) : m_Type &= ~PackageType.MainNotUnity;
         }
-
-        public override IPackage Clone()
-        {
-            var clone = (BasePackage)MemberwiseClone();
-            clone.LinkPackageAndVersions();
-            return clone;
-        }
     }
 }

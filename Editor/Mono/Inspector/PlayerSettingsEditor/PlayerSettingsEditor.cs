@@ -230,7 +230,6 @@ namespace UnityEditor
             public static readonly GUIContent shaderPrecisionModel = EditorGUIUtility.TrTextContent("Shader precision model*", "Mobile targets prefer lower precision by default to improve performance, but your rendering pipeline may prefer full precision by default and to optimize against lower precision cases explicitly.");
             public static readonly GUIContent[] shaderPrecisionModelOptions = { EditorGUIUtility.TrTextContent("Use platform defaults for sampler precision"), EditorGUIUtility.TrTextContent("Use full sampler precision by default, lower precision explicitly declared") };
             public static readonly GUIContent stereo360CaptureCheckbox = EditorGUIUtility.TrTextContent("360 Stereo Capture*");
-            public static readonly GUIContent uploadClearedTextureDataAfterCreationFromScript = EditorGUIUtility.TrTextContent("Upload Cleared Texture Data", "When set, if you create a Texture from script the initial data is cleared and automatically uploaded to video memory. This was the default behavior in previous Unity versions. In most cases this upload is not needed and wastes bandwith because the GPU data gets overwritten anyway. You typically upload (by calling Apply) or copy new data into the new texture right after you create it. Only turn this on for debugging purposes or if your project depends on having the GPU texture data cleared.");
             public static readonly GUIContent forceSRGBBlit = EditorGUIUtility.TrTextContent("Force SRGB blit", "Force SRGB blit for Linear color space.");
             public static readonly GUIContent notApplicableInfo = EditorGUIUtility.TrTextContent("Not applicable for this platform.");
 
@@ -413,7 +412,6 @@ namespace UnityEditor
         SerializedProperty m_LegacyClampBlendShapeWeights;
         SerializedProperty m_AndroidEnableTango;
         SerializedProperty m_Enable360StereoCapture;
-        SerializedProperty m_UploadClearedTextureDataAfterCreationFromScript;
 
         SerializedProperty m_VirtualTexturingSupportEnabled;
         SerializedProperty m_ShaderPrecisionModel;
@@ -620,7 +618,6 @@ namespace UnityEditor
             m_RequireES32                   = FindPropertyAssert("openGLRequireES32");
 
             m_LegacyClampBlendShapeWeights = FindPropertyAssert("legacyClampBlendShapeWeights");
-            m_UploadClearedTextureDataAfterCreationFromScript = FindPropertyAssert("uploadClearedTextureDataAfterCreationFromScript");
             m_AndroidEnableTango           = FindPropertyAssert("AndroidEnableTango");
 
             SerializedProperty property = FindPropertyAssert("vrSettings");
@@ -3066,7 +3063,6 @@ namespace UnityEditor
             GUILayout.Label(SettingsContent.legacyTitle, EditorStyles.boldLabel);
 
             EditorGUILayout.PropertyField(m_LegacyClampBlendShapeWeights, SettingsContent.legacyClampBlendShapeWeights);
-            EditorGUILayout.PropertyField(m_UploadClearedTextureDataAfterCreationFromScript, SettingsContent.uploadClearedTextureDataAfterCreationFromScript);
 
             EditorGUILayout.Space();
         }

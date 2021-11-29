@@ -3,12 +3,14 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Linq;
 using UnityEditor.PackageManager.UI;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.StyleSheets;
 using UnityEditor.Toolbars;
 using UnityEditor.UIElements;
 using UnityEditor.UIElements.StyleSheets;
+using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
@@ -65,6 +67,75 @@ namespace UnityEditor
                     Debug.LogFormat(LogType.Warning, LogOption.NoStacktrace, styleSheet, err.ToString());
             }
             return styleSheet;
+        }
+
+        public VisualElement CreateUnityEventItem()
+        {
+            return new UnityEventItem();
+        }
+
+        public void BindUnityEventItem(VisualElement item, UnityEventDrawer.PropertyData propertyData, Func<GenericMenu> createMenuCallback, Func<string, string> formatSelectedValueCallback, Func<SerializedProperty> getArgumentCallback)
+        {
+            var eventItem = item as UnityEventItem;
+            eventItem.BindFields(propertyData, createMenuCallback, formatSelectedValueCallback, getArgumentCallback);
+        }
+
+        public BindableElement CreateObjectField()
+        {
+            var objectField = new ObjectField();
+            return objectField;
+        }
+
+        public void SetObjectField(VisualElement element, UnityEngine.Object value, Type type, string label)
+        {
+            var objectField = element as ObjectField;
+            objectField.label = label;
+            objectField.objectType = type;
+            objectField.value = value;
+        }
+
+        public ListView CreateListViewBinding(SerializedObject serializedObject)
+        {
+            var listView = new ListView();
+            listView.Bind(serializedObject);
+            return listView;
+        }
+
+        public VisualElement CreateDropdownField(string[] options, Func<int> getSelectedChoiceCallback)
+        {
+            var dropdownField = new DropdownField();
+            dropdownField.choices = options.ToList();
+            dropdownField.createMenuCallback = () =>
+            {
+                var osMenu = new GenericOSMenu();
+
+                for (int i = 0; i < options.Length; i++)
+                {
+                    var option = options[i];
+                    var isValueSelected = getSelectedChoiceCallback.Invoke() == i;
+
+                    osMenu.AddItem(option, isValueSelected, () =>
+                    {
+                        dropdownField.value = option;
+                    });
+                }
+
+                return osMenu;
+            };
+            dropdownField.formatSelectedValueCallback = (value) =>
+            {
+                // Don't show label for this dropdown
+                return "";
+            };
+
+            dropdownField.index = getSelectedChoiceCallback.Invoke();
+
+            return dropdownField;
+        }
+
+        public VisualElement CreatePropertyField(SerializedProperty serializedProperty, string label)
+        {
+            return new PropertyField(serializedProperty, label);
         }
 
         public BindableElement CreateFloatField(string name, Func<float, float> onValidateValue = null, bool isDelayed = false)

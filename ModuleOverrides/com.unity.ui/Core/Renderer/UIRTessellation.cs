@@ -355,7 +355,7 @@ namespace UnityEngine.UIElements.UIR
         // The lines are defined by the following parametric equations:
         // Line A: p0 + (p1 - p0) * s
         // Line B: p2 + (p3 - p2) * t
-        static Vector2 IntersectLines(Vector2 p0, Vector2 p1, Vector2 p2, Vector2 p3)
+        internal static Vector2 IntersectLines(Vector2 p0, Vector2 p1, Vector2 p2, Vector2 p3)
         {
             Vector2 d32 = p3 - p2;
             Vector2 d20 = p2 - p0;
@@ -370,6 +370,13 @@ namespace UnityEngine.UIElements.UIR
             float s = num / den;
             Vector2 i = p0 + d10 * s;
             return i;
+        }
+
+        internal static float PointLineDistance(Vector2 p, Vector2 p0, Vector2 p1)
+        {
+            var v = (p1 - p0);
+            var n = new Vector2(v.y, -v.x).normalized;
+            return Mathf.Abs(Vector2.Dot(p - p0, n));
         }
 
         static int LooseCompare(float a, float b)
@@ -842,7 +849,7 @@ namespace UnityEngine.UIElements.UIR
             indexCount += 6;
         }
 
-        static Vector4 GetInterpolatedCircle(Vector2 p, ref Vertex v0, ref Vertex v1, ref Vertex v2)
+        internal static Vector4 GetInterpolatedCircle(Vector2 p, ref Vertex v0, ref Vertex v1, ref Vertex v2)
         {
             // Interpolate using barycentric coordinates
             float u, v, w;

@@ -4,8 +4,6 @@ using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 
-
-
 namespace Unity.UI.Builder
 {
     sealed class FoldoutTransitionField : FoldoutField

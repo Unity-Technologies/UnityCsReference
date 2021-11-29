@@ -18,7 +18,10 @@ namespace UnityEditor.Search
         protected virtual void Apply(in T value)
         {
             if (block is QueryFilterBlock filterBlock)
+            {
                 filterBlock.formatValue = value;
+                filterBlock.UpdateName();
+            }
             block.source.Apply();
         }
 
@@ -58,8 +61,8 @@ namespace UnityEditor.Search
             minSize = Vector2.zero;
             maxSize = new Vector2(width, EditorGUI.kSingleLineHeight * 1.5f);
 
-            var popupRect = new Rect(rect.x, rect.yMax, rect.width, rect.height);
-            var windowRect = new Rect(rect.x, rect.yMax + rect.height, rect.width, rect.height);
+            var popupRect = new Rect(new Vector2(rect.x, rect.yMax), maxSize);
+            var windowRect = new Rect(new Vector2(rect.x, rect.yMax + rect.height), maxSize);
             ShowAsDropDown(popupRect, maxSize);
             position = windowRect;
             m_Parent.window.m_DontSaveToLayout = true;
@@ -85,6 +88,28 @@ namespace UnityEditor.Search
         protected override void Apply(in string value)
         {
             block.value = value;
+            base.Apply(value);
+        }
+    }
+
+    class QueryParamBlockEditor : QueryBlockEditor<string, QueryFilterBlock>
+    {
+        public static IBlockEditor Open(in Rect rect, QueryFilterBlock block)
+        {
+            var w = CreateInstance<QueryParamBlockEditor>();
+            w.value = block.formatParam;
+            return w.Show(block, rect, 200f);
+        }
+
+        protected override string Draw()
+        {
+            GUIUtility.SetKeyboardControlToFirstControlId();
+            return EditorGUILayout.TextField(value, GUILayout.ExpandWidth(true));
+        }
+
+        protected override void Apply(in string value)
+        {
+            block.formatParam = value;
             base.Apply(value);
         }
     }

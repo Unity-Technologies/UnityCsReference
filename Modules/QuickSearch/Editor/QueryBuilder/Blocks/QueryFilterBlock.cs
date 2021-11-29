@@ -11,7 +11,7 @@ namespace UnityEditor.Search
 {
     enum QueryBlockFormat
     {
-        Default = 0,
+        Text = 0,
         Toggle,
         Number,
         Object,
@@ -37,6 +37,7 @@ namespace UnityEditor.Search
         private int m_InPlaceEditorId;
         public string id { get; private set; }
         public object formatValue { get; set; }
+        public string formatParam { get; set; }
         public QueryBlockFormat format { get; set; }
         public Type formatType { get; set; }
         public QueryMarker marker { get; set; }
@@ -54,14 +55,7 @@ namespace UnityEditor.Search
             this.op = op;
             this.value = UnQuoteString(value) ?? string.Empty;
 
-            if (id.Length > 0 && id[0] == '#')
-            {
-                property = true;
-                name = ObjectNames.NicifyVariableName(id.TrimStart('#').Replace("m_", "").Replace(".", ""));
-            }
-            else
-                name = id.ToLowerInvariant();
-
+            UpdateName();
             marker = default;
             formatValue = null;
             formatType = null;
@@ -79,6 +73,16 @@ namespace UnityEditor.Search
         public QueryFilterBlock(IQuerySource source, FilterNode node)
             : this(source, node.filterId, node.operatorId, node.rawFilterValueStringView.ToString())
         {
+            if (!string.IsNullOrEmpty(node.paramValue))
+            {
+                formatParam = node.paramValue;
+                UpdateName();
+            }
+        }
+
+        private string NiceName(in string name)
+        {
+            return ObjectNames.NicifyVariableName(name.TrimStart('#').Replace("m_", "").Replace(".", ""));
         }
 
         private string UnQuoteString(string value)
@@ -110,7 +114,14 @@ namespace UnityEditor.Search
 
         public override string ToString()
         {
-            return $"{id}{op}{FormatStringValue(value)}";
+            return $"{FormatFilterName()}{op}{FormatStringValue(value)}";
+        }
+
+        private string FormatFilterName()
+        {
+            if (formatParam != null)
+                return $"{id}({formatParam})";
+            return id;
         }
 
         public override IBlockEditor OpenEditor(in Rect rect)
@@ -120,7 +131,6 @@ namespace UnityEditor.Search
             {
                 case QueryBlockFormat.Expression: return QueryExpressionBlockEditor.Open(screenRect, this);
                 case QueryBlockFormat.Number: return QueryNumberBlockEditor.Open(screenRect, this);
-                case QueryBlockFormat.Default: return QueryTextBlockEditor.Open(screenRect, this);
                 case QueryBlockFormat.Vector2: return QueryVectorBlockEditor.Open(screenRect, this, 2);
                 case QueryBlockFormat.Vector3: return QueryVectorBlockEditor.Open(screenRect, this, 3);
                 case QueryBlockFormat.Vector4: return QueryVectorBlockEditor.Open(screenRect, this, 4);
@@ -248,6 +258,35 @@ namespace UnityEditor.Search
             menu.AddItem(EditorGUIUtility.TrTextContent($"Operator/Greater Than or Equal (>=)"), string.Equals(op, ">=", StringComparison.Ordinal), () => SetOperator(">="));
             menu.AddItem(EditorGUIUtility.TrTextContent($"Operator/Less Than (<)"), string.Equals(op, "<", StringComparison.Ordinal), () => SetOperator("<"));
             menu.AddItem(EditorGUIUtility.TrTextContent($"Operator/Greater Than (>)"), string.Equals(op, ">", StringComparison.Ordinal), () => SetOperator(">"));
+
+            if (formatParam != null)
+                menu.AddItem(EditorGUIUtility.TrTextContent($"Edit Parameter..."), false, () => EditParameter());
+        }
+
+        private void EditParameter()
+        {
+            var screenRect = new Rect(drawRect.position + context.searchView.position.position, drawRect.size);
+            editor = QueryParamBlockEditor.Open(screenRect, this);
+        }
+
+        public void UpdateName()
+        {
+            property = false;
+            if (formatParam != null)
+            {
+                property = true;
+                name = $"<b>{id}</b>(<i>{NiceName(formatParam)}</i>)";
+            }
+            else
+            {
+                if (id.Length > 0 && id[0] == '#')
+                {
+                    property = true;
+                    name = NiceName(id);
+                }
+                else
+                    name = id.ToLowerInvariant();
+            }
         }
 
         private void SetEnumType(in Type type)
@@ -328,7 +367,7 @@ namespace UnityEditor.Search
             }
             else
             {
-                format = QueryBlockFormat.Default;
+                format = QueryBlockFormat.Text;
                 formatValue = value ?? string.Empty;
                 return false;
             }
@@ -468,6 +507,7 @@ namespace UnityEditor.Search
         {
             switch (format)
             {
+                case QueryBlockFormat.Text:
                 case QueryBlockFormat.Object:
                 case QueryBlockFormat.Color:
                 case QueryBlockFormat.Toggle:
@@ -482,7 +522,9 @@ namespace UnityEditor.Search
         {
             switch (format)
             {
-                case QueryBlockFormat.Object: return 120f;
+                case QueryBlockFormat.Text:
+                case QueryBlockFormat.Object:
+                    return Mathf.Min(Mathf.Max(80f, Styles.QueryBuilder.label.CalcSize(Utils.GUIContentTemp(Convert.ToString(formatValue))).x), 200f);
                 case QueryBlockFormat.Color: return 20f;
                 case QueryBlockFormat.Toggle: return 4f;
                 case QueryBlockFormat.Expression: return ExpressionBlock.Layout(builder, 10000f);
@@ -496,13 +538,18 @@ namespace UnityEditor.Search
             var x = at.xMax - 4f;
             switch (format)
             {
-                case QueryBlockFormat.Object:
+                case QueryBlockFormat.Text:
                     var editorRect = new Rect(x, blockRect.y + 1f, blockRect.width - (x - blockRect.xMin) - 6f, blockRect.height - 2f);
+                    var newText = EditorGUI.TextField(editorRect, Convert.ToString(formatValue));
+                    m_InPlaceEditorId = EditorGUIUtility.s_LastControlID;
+                    return newText;
+                case QueryBlockFormat.Object:
                     var objectFieldType = formatType ?? typeof(UnityEngine.Object);
                     var allowSceneObjects = typeof(Component).IsAssignableFrom(objectFieldType) || typeof(GameObject).IsAssignableFrom(objectFieldType);
-                    var result = EditorGUI.ObjectField(editorRect, formatValue as UnityEngine.Object, objectFieldType, allowSceneObjects: allowSceneObjects, InPlaceStyles.objectField, InPlaceStyles.objectFieldButton);
+                    editorRect = new Rect(x, blockRect.y + 1f, blockRect.width - (x - blockRect.xMin) - 6f, blockRect.height - 2f);
+                    var newObject = EditorGUI.ObjectField(editorRect, formatValue as UnityEngine.Object, objectFieldType, allowSceneObjects: allowSceneObjects, InPlaceStyles.objectField, InPlaceStyles.objectFieldButton);
                     m_InPlaceEditorId = EditorGUIUtility.s_LastControlID;
-                    return result;
+                    return newObject;
                 case QueryBlockFormat.Color:
                     Color c = Color.black;
                     if (formatValue is Color fc)

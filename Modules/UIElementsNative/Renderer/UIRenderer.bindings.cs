@@ -30,7 +30,7 @@ namespace UnityEngine.UIElements.UIR
         public int vertsReferenced;
     }
 
-    [NativeHeader("Modules/UIElementsNative/UIRendererUtility.h")]
+    [NativeHeader("Modules/UIElementsNative/Renderer/UIRendererUtility.h")]
     [VisibleToOtherModules("Unity.UIElements")]
     internal partial class Utility
     {

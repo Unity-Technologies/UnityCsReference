@@ -64,8 +64,9 @@ namespace Unity.UI.Builder
             nameLabel?.AddToClassList(BuilderConstants.HiddenStyleClassName);
             labelContainer?.AddToClassList(BuilderConstants.HiddenStyleClassName);
 
-            var baseInput = renameTextfield.Q(TextField.textInputUssName);
+            var baseInput = renameTextfield.Q(TextField.textInputUssName).Q<TextElement>();
             if (baseInput.focusController != null)
+                // Since renameTextfield isn't attached to a panel yet, we are using DoFocusChange() to bypass canGrabFocus.
                 baseInput.focusController.DoFocusChange(baseInput);
 
             renameTextfield.SelectAll();

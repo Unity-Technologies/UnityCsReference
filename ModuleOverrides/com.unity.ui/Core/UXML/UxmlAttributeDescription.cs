@@ -821,4 +821,72 @@ namespace UnityEngine.UIElements
             return TryGetValueFromBag(bag, cc, (s, i) => i = Hash128.Parse(s), defaultValue, ref value);
         }
     }
+
+    /// <summary>
+    /// Describes a UXML object defined as a child in Uxml. The UXML object then has a set of attributes.
+    /// </summary>
+    /// <typeparam name="T">Type of the created UXML object.</typeparam>
+    /// <remarks>UXML objects are defined using <see cref="UxmlObjectFactory{TCreatedType,TTraits}"/> and <see cref="UxmlObjectTraits{T}"/> on a simple class or structure.</remarks>
+    internal class UxmlObjectAttributeDescription<T> where T : new()
+    {
+        /// <summary>
+        /// The default value to be used for that specific attribute.
+        /// </summary>
+        public T defaultValue { get; set; }
+
+        /// <summary>
+        /// Retrieves the value of this attribute from the attribute bag. Returns it if it is found, otherwise return <see cref="defaultValue"/>.
+        /// </summary>
+        /// <param name="bag">The bag of attributes.</param>
+        /// <param name="cc">The context in which the values are retrieved.</param>
+        /// <returns>The initialized UXML object.</returns>
+        public virtual T GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
+        {
+            var uxmlObjects = cc.visualTreeAsset?.GetUxmlObjects<T>(bag, cc);
+            if (uxmlObjects != null)
+            {
+                foreach (var child in uxmlObjects)
+                {
+                    return child;
+                }
+            }
+
+            return defaultValue;
+        }
+    }
+
+    /// <summary>
+    /// Describes a list of UXML objects defined as children in Uxml. Each UXML object then has a set of attributes.
+    /// </summary>
+    /// <typeparam name="T">Type of the created UXML objects.</typeparam>
+    /// <remarks>UXML objects are defined using <see cref="UxmlObjectFactory{TCreatedType,TTraits}"/> and <see cref="UxmlObjectTraits{T}"/> on a simple class or structure.</remarks>
+    internal class UxmlObjectListAttributeDescription<T> : UxmlObjectAttributeDescription<List<T>> where T : new()
+    {
+        /// <summary>
+        /// Retrieves the value of this attribute from the attribute bag. Returns it if it is found, otherwise return <see cref="defaultValue"/>.
+        /// </summary>
+        /// <param name="bag">The bag of attributes.</param>
+        /// <param name="cc">The context in which the values are retrieved.</param>
+        /// <returns>The list of initialized UXML objects.</returns>
+        public override List<T> GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
+        {
+            var uxmlObjects = cc.visualTreeAsset?.GetUxmlObjects<T>(bag, cc);
+            if (uxmlObjects != null)
+            {
+                List<T> list = null;
+
+                foreach (var child in uxmlObjects)
+                {
+                    if (list == null)
+                        list = new List<T>();
+
+                    list.Add(child);
+                }
+
+                return list;
+            }
+
+            return defaultValue;
+        }
+    }
 }

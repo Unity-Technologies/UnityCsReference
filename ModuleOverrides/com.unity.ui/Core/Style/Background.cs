@@ -181,6 +181,12 @@ namespace UnityEngine.UIElements
         }
 
         /// <undoc/>
+        public static implicit operator Background(Texture2D v)
+        {
+            return FromTexture2D(v);
+        }
+
+        /// <undoc/>
         public bool Equals(Background other)
         {
             return other == this;

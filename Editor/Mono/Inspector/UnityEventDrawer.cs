@@ -12,12 +12,23 @@ using UnityEditor;
 using UnityEngine.Events;
 using Object = UnityEngine.Object;
 using UnityEngine.Pool;
+using UnityEngine.UIElements;
 
 namespace UnityEditorInternal
 {
     [CustomPropertyDrawer(typeof(UnityEventBase), true)]
     public class UnityEventDrawer : PropertyDrawer
     {
+        internal struct PropertyData
+        {
+            public SerializedProperty mode;
+            public SerializedProperty arguments;
+            public SerializedProperty callState;
+            public SerializedProperty listenerTarget;
+            public SerializedProperty methodName;
+            public SerializedProperty objectArgument;
+        }
+
         protected class State
         {
             internal ReorderableList m_ReorderableList;
@@ -33,6 +44,7 @@ namespace UnityEditorInternal
         internal const string kArgumentsPath  = "m_Arguments";
         internal const string kModePath       = "m_Mode";
         internal const string kMethodNamePath = "m_MethodName";
+        internal const string kCallsPath      = "m_PersistentCalls.m_Calls";
 
         //ArgumentCache paths
         internal const string kFloatArgument  = "m_FloatArgument";
@@ -47,6 +59,15 @@ namespace UnityEditorInternal
         private const string kArrayDataString = "Array.data[";
         private static readonly char[] kDotSeparator = { '.' };
         private static readonly char[] kClosingSquareBraceSeparator = { ']' };
+
+        // uss names
+        internal const string kUssClassName = "unity-event";
+        internal const string kLeftColumnClassName = kUssClassName + "__left-column";
+        internal const string kRightColumnClassName = kUssClassName + "__right-column";
+        internal const string kContainerClassName = kUssClassName + "__container";
+        internal const string kHeaderClassName = kUssClassName + "__header";
+        internal const string kListViewScrollViewClassName = kUssClassName + "__list-view-scroll-view";
+        internal const string kListViewItemClassName = kUssClassName + "__list-view-item";
 
         string m_Text;
         UnityEventBase m_DummyEvent;
@@ -91,7 +112,7 @@ namespace UnityEditorInternal
                 if (state == null)
                     state = new State();
 
-                SerializedProperty listenersArray = prop.FindPropertyRelative("m_PersistentCalls.m_Calls");
+                SerializedProperty listenersArray = prop.FindPropertyRelative(kCallsPath);
                 state.m_ReorderableList =
                     new ReorderableList(prop.serializedObject, listenersArray, true, true, true, true)
                 {
@@ -132,6 +153,179 @@ namespace UnityEditorInternal
             state.lastSelectedIndex = m_LastSelectedIndex;
         }
 
+        private ListView CreateListView(SerializedProperty property)
+        {
+            var listView = EditorUIService.instance.CreateListViewBinding(property.serializedObject);
+            listView.showAddRemoveFooter = true;
+            listView.reorderMode = ListViewReorderMode.Animated;
+            listView.showBorder = true;
+            listView.showFoldoutHeader = false;
+            listView.showBoundCollectionSize = false;
+            listView.showAlternatingRowBackgrounds = AlternatingRowBackground.None;
+            listView.fixedItemHeight = GetElementHeight();
+
+            var propertyRelative = property.FindPropertyRelative(kCallsPath);
+            listView.bindingPath = propertyRelative.propertyPath;
+
+            listView.makeItem += () =>
+            {
+                return EditorUIService.instance.CreateUnityEventItem();
+            };
+
+            listView.bindItem += (VisualElement element, int i) =>
+            {
+                if (i >= propertyRelative.arraySize)
+                {
+                    return;
+                }
+
+                var pListener = propertyRelative.GetArrayElementAtIndex(i);
+                var arguments = pListener.FindPropertyRelative(kArgumentsPath);
+                var listenerTarget = pListener.FindPropertyRelative(kInstancePath);
+
+                var propertyData = new PropertyData()
+                {
+                    mode = pListener.FindPropertyRelative(kModePath),
+                    arguments = arguments,
+                    callState = pListener.FindPropertyRelative(kCallStatePath),
+                    listenerTarget = listenerTarget,
+                    methodName = pListener.FindPropertyRelative(kMethodNamePath),
+                    objectArgument = arguments.FindPropertyRelative(kObjectArgument)
+                };
+
+
+                Func<GenericMenu> createMenuCallback = () =>
+                {
+                    var genericMenu = BuildPopupList(listenerTarget.objectReferenceValue, m_DummyEvent, pListener);
+                    return genericMenu;
+                };
+                Func<string, string> formatSelectedValueCallback = (value) =>
+                {
+                    return GetFunctionDropdownText(pListener);
+                };
+                Func<SerializedProperty> getArgumentCallback = () =>
+                {
+                    return GetArgument(pListener);
+                };
+
+                EditorUIService.instance.BindUnityEventItem(element, propertyData, createMenuCallback, formatSelectedValueCallback, getArgumentCallback);
+            };
+
+            return listView;
+        }
+
+        private SerializedProperty GetArgument(SerializedProperty pListener)
+        {
+            var listenerTarget = pListener.FindPropertyRelative(kInstancePath);
+            var methodName = pListener.FindPropertyRelative(kMethodNamePath);
+            var mode = pListener.FindPropertyRelative(kModePath);
+            var arguments = pListener.FindPropertyRelative(kArgumentsPath);
+
+            SerializedProperty argument;
+            var modeEnum = GetMode(mode);
+            //only allow argument if we have a valid target / method
+            if (listenerTarget.objectReferenceValue == null || string.IsNullOrEmpty(methodName.stringValue))
+                modeEnum = PersistentListenerMode.Void;
+
+            switch (modeEnum)
+            {
+                case PersistentListenerMode.Float:
+                    argument = arguments.FindPropertyRelative(kFloatArgument);
+                    break;
+                case PersistentListenerMode.Int:
+                    argument = arguments.FindPropertyRelative(kIntArgument);
+                    break;
+                case PersistentListenerMode.Object:
+                    argument = arguments.FindPropertyRelative(kObjectArgument);
+                    break;
+                case PersistentListenerMode.String:
+                    argument = arguments.FindPropertyRelative(kStringArgument);
+                    break;
+                case PersistentListenerMode.Bool:
+                    argument = arguments.FindPropertyRelative(kBoolArgument);
+                    break;
+                default:
+                    argument = arguments.FindPropertyRelative(kIntArgument);
+                    break;
+            }
+
+            return argument;
+        }
+
+        public override VisualElement CreatePropertyGUI(SerializedProperty property)
+        {
+            m_Prop = property;
+            m_Text = property.displayName;
+            m_DummyEvent = GetDummyEvent(m_Prop);
+
+            var listViewContainer = new VisualElement();
+            listViewContainer.AddToClassList(kContainerClassName);
+
+            var header = new Label();
+            header.text = GetHeaderText();
+            header.AddToClassList(kHeaderClassName);
+
+            var listView = CreateListView(property);
+            listView.scrollView.AddToClassList(kListViewScrollViewClassName);
+
+            listViewContainer.Add(header);
+            listViewContainer.Add(listView);
+
+            return listViewContainer;
+        }
+
+        private float GetElementHeight()
+        {
+            return EditorGUI.kSingleLineHeight * 2 + EditorGUI.kControlVerticalSpacing + kExtraSpacing;
+        }
+
+        private string GetHeaderText()
+        {
+            return (string.IsNullOrEmpty(m_Text) ? "Event" : m_Text) + GetEventParams(m_DummyEvent);
+        }
+
+        private string GetFunctionDropdownText(SerializedProperty pListener)
+        {
+            var listenerTarget = pListener.FindPropertyRelative(kInstancePath);
+            var methodName = pListener.FindPropertyRelative(kMethodNamePath);
+            var mode = pListener.FindPropertyRelative(kModePath);
+            var arguments = pListener.FindPropertyRelative(kArgumentsPath);
+            var desiredArgTypeName = arguments.FindPropertyRelative(kObjectArgumentAssemblyTypeName).stringValue;
+            var desiredType = typeof(Object);
+            if (!string.IsNullOrEmpty(desiredArgTypeName))
+                desiredType = Type.GetType(desiredArgTypeName, false) ?? typeof(Object);
+
+            var buttonLabel = new StringBuilder();
+            if (listenerTarget.objectReferenceValue == null || string.IsNullOrEmpty(methodName.stringValue))
+            {
+                buttonLabel.Append(kNoFunctionString);
+            }
+            else if (!IsPersistantListenerValid(m_DummyEvent, methodName.stringValue, listenerTarget.objectReferenceValue, GetMode(mode), desiredType))
+            {
+                var instanceString = "UnknownComponent";
+                var instance = listenerTarget.objectReferenceValue;
+                if (instance != null)
+                    instanceString = instance.GetType().Name;
+
+                buttonLabel.Append(string.Format("<Missing {0}.{1}>", instanceString, methodName.stringValue));
+            }
+            else
+            {
+                buttonLabel.Append(listenerTarget.objectReferenceValue.GetType().Name);
+
+                if (!string.IsNullOrEmpty(methodName.stringValue))
+                {
+                    buttonLabel.Append(".");
+                    if (methodName.stringValue.StartsWith("set_"))
+                        buttonLabel.Append(methodName.stringValue.Substring(4));
+                    else
+                        buttonLabel.Append(methodName.stringValue);
+                }
+            }
+
+            return buttonLabel.ToString();
+        }
+
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
             //TODO: Also we need to have a constructor or initializer called for this property Drawer, before OnGUI or GetPropertyHeight
@@ -167,13 +361,13 @@ namespace UnityEditorInternal
         protected virtual void SetupReorderableList(ReorderableList list)
         {
             // Two standard lines with standard spacing between and extra spacing below to better separate items visually.
-            list.elementHeight = EditorGUI.kSingleLineHeight * 2 + EditorGUI.kControlVerticalSpacing + kExtraSpacing;
+            list.elementHeight = GetElementHeight();
         }
 
         protected virtual void DrawEventHeader(Rect headerRect)
         {
             headerRect.height = EditorGUI.kSingleLineHeight;
-            string text = (string.IsNullOrEmpty(m_Text) ? "Event" : m_Text) + GetEventParams(m_DummyEvent);
+            string text = GetHeaderText();
             GUI.Label(headerRect, text);
         }
 
@@ -213,33 +407,11 @@ namespace UnityEditorInternal
                     methodName.stringValue = null;
             }
 
-            SerializedProperty argument;
+            SerializedProperty argument = GetArgument(pListener);
             var modeEnum = GetMode(mode);
             //only allow argument if we have a valid target / method
             if (listenerTarget.objectReferenceValue == null || string.IsNullOrEmpty(methodName.stringValue))
                 modeEnum = PersistentListenerMode.Void;
-
-            switch (modeEnum)
-            {
-                case PersistentListenerMode.Float:
-                    argument = arguments.FindPropertyRelative(kFloatArgument);
-                    break;
-                case PersistentListenerMode.Int:
-                    argument = arguments.FindPropertyRelative(kIntArgument);
-                    break;
-                case PersistentListenerMode.Object:
-                    argument = arguments.FindPropertyRelative(kObjectArgument);
-                    break;
-                case PersistentListenerMode.String:
-                    argument = arguments.FindPropertyRelative(kStringArgument);
-                    break;
-                case PersistentListenerMode.Bool:
-                    argument = arguments.FindPropertyRelative(kBoolArgument);
-                    break;
-                default:
-                    argument = arguments.FindPropertyRelative(kIntArgument);
-                    break;
-            }
 
             var desiredArgTypeName = arguments.FindPropertyRelative(kObjectArgumentAssemblyTypeName).stringValue;
             var desiredType = typeof(Object);
@@ -267,33 +439,7 @@ namespace UnityEditorInternal
                     }
                     else
                     {
-                        var buttonLabel = new StringBuilder();
-                        if (listenerTarget.objectReferenceValue == null || string.IsNullOrEmpty(methodName.stringValue))
-                        {
-                            buttonLabel.Append(kNoFunctionString);
-                        }
-                        else if (!IsPersistantListenerValid(m_DummyEvent, methodName.stringValue, listenerTarget.objectReferenceValue, GetMode(mode), desiredType))
-                        {
-                            var instanceString = "UnknownComponent";
-                            var instance = listenerTarget.objectReferenceValue;
-                            if (instance != null)
-                                instanceString = instance.GetType().Name;
-
-                            buttonLabel.Append(string.Format("<Missing {0}.{1}>", instanceString, methodName.stringValue));
-                        }
-                        else
-                        {
-                            buttonLabel.Append(listenerTarget.objectReferenceValue.GetType().Name);
-
-                            if (!string.IsNullOrEmpty(methodName.stringValue))
-                            {
-                                buttonLabel.Append(".");
-                                if (methodName.stringValue.StartsWith("set_"))
-                                    buttonLabel.Append(methodName.stringValue.Substring(4));
-                                else
-                                    buttonLabel.Append(methodName.stringValue);
-                            }
-                        }
+                        var buttonLabel = GetFunctionDropdownText(pListener);
                         buttonContent = GUIContent.Temp(buttonLabel.ToString());
                     }
 

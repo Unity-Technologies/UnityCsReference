@@ -101,27 +101,20 @@ namespace UnityEditor.PackageManager.UI.Internal
             // Foldout groups
             m_InstallFoldoutGroup = new InstallFoldoutGroup(m_Application, m_PackageDatabase);
             m_InstallFoldoutGroup.mainButton.SetGlobalDisableConditions(disableIfCompiling, disableIfInstallOrUninstallInProgress);
-            m_InstallFoldoutGroup.mainButton.onAction += Refresh;
 
             m_RemoveFoldoutGroup = new RemoveFoldoutGroup(m_Application, m_PackageManagerPrefs, m_PackageDatabase, m_PageManager);
             m_RemoveFoldoutGroup.mainButton.SetGlobalDisableConditions(disableIfCompiling, disableIfInstallOrUninstallInProgress);
-            m_RemoveFoldoutGroup.mainButton.onAction += Refresh;
 
             m_UpdateFoldoutGroup = new UpdateFoldoutGroup(m_Application, m_PackageDatabase, m_PageManager);
             m_UpdateFoldoutGroup.mainButton.SetGlobalDisableConditions(disableIfCompiling, disableIfInstallOrUninstallInProgress);
-            m_UpdateFoldoutGroup.mainButton.onAction += Refresh;
 
             m_DownloadFoldoutGroup = new DownloadFoldoutGroup(m_AssetStoreDownloadManager, m_AssetStoreCache, m_PackageDatabase);
             m_DownloadFoldoutGroup.mainButton.SetGlobalDisableConditions(disableIfCompiling, disableIfNoNetwork);
-            m_DownloadFoldoutGroup.mainButton.onAction += Refresh;
             m_DownloadFoldoutGroup.cancelButton.SetGlobalDisableConditions(disableIfCompiling);
-            m_DownloadFoldoutGroup.cancelButton.onAction += Refresh;
 
             m_DownloadUpdateFoldoutGroup = new DownloadUpdateFoldoutGroup(m_AssetStoreDownloadManager, m_AssetStoreCache, m_PackageDatabase);
             m_DownloadUpdateFoldoutGroup.mainButton.SetGlobalDisableConditions(disableIfCompiling, disableIfNoNetwork);
-            m_DownloadUpdateFoldoutGroup.mainButton.onAction += Refresh;
             m_DownloadUpdateFoldoutGroup.cancelButton.SetGlobalDisableConditions(disableIfCompiling);
-            m_DownloadUpdateFoldoutGroup.cancelButton.onAction += Refresh;
 
             m_UpmFoldoutGroups = new MultiSelectFoldoutGroup[] { m_InstallFoldoutGroup, m_RemoveFoldoutGroup, m_UpdateFoldoutGroup};
             m_AssetStoreFoldoutGroups = new MultiSelectFoldoutGroup[] { m_DownloadFoldoutGroup, m_DownloadUpdateFoldoutGroup };

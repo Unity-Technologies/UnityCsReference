@@ -29,12 +29,5 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Errors = new List<UIError>();
             LinkPackageAndVersions();
         }
-
-        public override IPackage Clone()
-        {
-            var clone = (BasePackage)MemberwiseClone();
-            clone.LinkPackageAndVersions();
-            return clone;
-        }
     }
 }

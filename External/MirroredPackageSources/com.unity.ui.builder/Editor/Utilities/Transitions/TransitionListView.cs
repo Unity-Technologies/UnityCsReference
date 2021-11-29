@@ -1,4 +1,3 @@
-
 using UnityEditor;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
@@ -222,4 +221,3 @@ namespace Unity.UI.Builder
         }
     }
 }
-

@@ -36,8 +36,6 @@ namespace Unity.UI.Builder
                 var editorOnlyLabel = new Label(BuilderConstants.EditorOnlyTag);
                 nameLabel.AddToClassList(s_ItemNameLabelUssClassName);
                 nameLabel.name = s_ItemNameLabelName;
-                // Cannot use USS because no way to do version checks in USS.
-                // This is not available in 2019.4.
                 nameLabel.style.textOverflow = TextOverflow.Ellipsis;
                 editorOnlyLabel.AddToClassList(s_ItemEditorOnlyLabelUssClassName);
                 editorOnlyLabel.AddToClassList("unity-builder-tag-pill");
@@ -88,37 +86,41 @@ namespace Unity.UI.Builder
             var val = field.GetValue(handler.inspector.currentVisualElement.computedStyle, null);
             var valType = val == null ? typeof(object) : val.GetType();
 
-            if (BuilderInspectorStyleFields.IsComputedStyleFloat(val) || BuilderInspectorStyleFields.IsComputedStyleInt(val)
-                || BuilderInspectorStyleFields.IsComputedStyleLength(val)
-                || BuilderInspectorStyleFields.IsComputedStyleList<TimeValue>(val)
-            )
+            if (BuilderInspectorStyleFields.IsComputedStyleFloat(val) ||
+                BuilderInspectorStyleFields.IsComputedStyleInt(val) ||
+                BuilderInspectorStyleFields.IsComputedStyleLength(val) ||
+                BuilderInspectorStyleFields.IsComputedStyleList<TimeValue>(val))
             {
                 return new[] { StyleValueType.Float, StyleValueType.Dimension };
             }
-            else if (BuilderInspectorStyleFields.IsComputedStyleColor(val))
+
+            if (BuilderInspectorStyleFields.IsComputedStyleColor(val))
             {
                 return new[] { StyleValueType.Color };
             }
-            else if (BuilderInspectorStyleFields.IsComputedStyleFont(val, handler.styleName))
+
+            if (BuilderInspectorStyleFields.IsComputedStyleFont(val, handler.styleName))
             {
                 return new[] { StyleValueType.AssetReference, StyleValueType.ResourcePath };
             }
-            else if (BuilderInspectorStyleFields.IsComputedStyleBackground(val))
+
+            if (BuilderInspectorStyleFields.IsComputedStyleBackground(val))
             {
                 return new[] { StyleValueType.ScalableImage, StyleValueType.AssetReference, StyleValueType.ResourcePath };
             }
-            else if (BuilderInspectorStyleFields.IsComputedStyleCursor(val)
-            || BuilderInspectorStyleFields.IsComputedStyleList<StylePropertyName>(val)
-            )
+
+            if (BuilderInspectorStyleFields.IsComputedStyleCursor(val) ||
+                BuilderInspectorStyleFields.IsComputedStyleList<StylePropertyName>(val))
             {
                 return new[] { StyleValueType.Enum, StyleValueType.ScalableImage, StyleValueType.AssetReference, StyleValueType.ResourcePath };
             }
-            else if (BuilderInspectorStyleFields.IsComputedStyleEnum(val, valType)
-            || BuilderInspectorStyleFields.IsComputedStyleList<EasingFunction>(val)
-            )
+
+            if (BuilderInspectorStyleFields.IsComputedStyleEnum(val, valType) ||
+                BuilderInspectorStyleFields.IsComputedStyleList<EasingFunction>(val))
             {
                 return new[] { StyleValueType.Enum };
             }
+
             return new[] { StyleValueType.Invalid };
         }
 

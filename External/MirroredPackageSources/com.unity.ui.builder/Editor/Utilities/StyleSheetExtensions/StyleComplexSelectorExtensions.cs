@@ -1,10 +1,9 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor.StyleSheets;
-using System;
-using UnityEngine.UIElements;
 using UnityEngine;
-
+using UnityEngine.UIElements;
+using UnityEditor.StyleSheets;
 using UnityEditor.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
@@ -77,7 +76,7 @@ namespace Unity.UI.Builder
 
         public static StyleProperty FindProperty(this StyleSheet styleSheet, StyleComplexSelector selector, string propertyName)
         {
-            return styleSheet.FindProperty(selector.rule, propertyName);
+            return styleSheet.FindLastProperty(selector.rule, propertyName);
         }
 
         public static StyleProperty AddProperty(

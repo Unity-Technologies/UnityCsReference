@@ -154,7 +154,7 @@ namespace Unity.UI.Builder
             textEditor.schedule.Execute(a => textInput.Focus());
             textEditor.SelectAll();
 
-            textInput.RegisterCallback<FocusOutEvent>(OnFocusOutEvent);
+            textInput.RegisterCallback<FocusOutEvent>(OnFocusOutEvent, TrickleDown.TrickleDown);
             textEditor.RegisterCallback<ChangeEvent<string>>(OnTextChanged);
         }
 
@@ -189,7 +189,7 @@ namespace Unity.UI.Builder
             if (s_Viewport == null)
                 return;
 
-            s_Viewport.textEditor.Q(TextField.textInputUssName).UnregisterCallback<FocusOutEvent>(OnFocusOutEvent);
+            s_Viewport.textEditor.UnregisterCallback<FocusOutEvent>(OnFocusOutEvent, TrickleDown.TrickleDown);
             s_Viewport.textEditor.UnregisterCallback<ChangeEvent<string>>(OnTextChanged);
             s_Viewport.editorLayer.AddToClassList(BuilderConstants.HiddenStyleClassName);
             s_EditedTextElement.UnregisterCallback<GeometryChangedEvent>(OnTextElementGeometryChanged);

@@ -80,6 +80,8 @@ namespace UnityEditor
             public static readonly GUIContent resolutionTooLowWarning = EditorGUIUtility.TrTextContent("Precompute/indirect resolution for this terrain is probably too low. If the Clustering stage takes a long time, try using a higher realtime/indirect resolution setting in the Lighting window or assign LightmapParameters that use a higher resolution setting.");
             public static readonly GUIContent giNotEnabledInfo = EditorGUIUtility.TrTextContent("Lightmapping settings are currently disabled. Enable Baked Global Illumination or Realtime Global Illumination to display these settings.");
             public static readonly GUIContent isPresetInfo = EditorGUIUtility.TrTextContent("The Contribute Global Illumination property cannot be stored in a preset.");
+            public static readonly GUIContent giMeshNotValid = EditorGUIUtility.TrTextContent("It is not possible to generate lighting for this Mesh because it is missing the required attribute(s). Ensure that this Mesh has normals, vertices, and texture coordinates.");
+            public static readonly GUIContent giMeshNotValidMultiple = EditorGUIUtility.TrTextContent("It is not possible to generate lighting for these Meshes because one or more of them are missing the required attribute(s). Ensure that all the Meshes you've selected have normals, vertices, and texture coordinates.");
 
             public static readonly GUIContent openPreview = EditorGUIUtility.TrTextContent("Open Preview");
             public static readonly GUIStyle openPreviewStyle = EditorStyles.objectFieldThumb.name + "LightmapPreviewOverlay";
@@ -432,12 +434,18 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
             contributeGI = EditorGUILayout.Toggle(Styles.contributeGI, contributeGI);
 
+
             if (EditorGUI.EndChangeCheck())
             {
                 SceneModeUtility.SetStaticFlags(m_GameObjectsSerializedObject.targetObjects, (int)StaticEditorFlags.ContributeGI, contributeGI);
                 m_GameObjectsSerializedObject.SetIsDifferentCacheDirty();
                 m_GameObjectsSerializedObject.Update();
             }
+
+            // show a warning if not all renderers are valid, even when not active or enabled
+            if (contributeGI || mixedValue)
+                if (m_Renderers != null && !m_Renderers.All(Lightmapping.IsRendererValid))
+                    EditorGUILayout.HelpBox(m_Renderers.Length > 1 ? Styles.giMeshNotValidMultiple.text : Styles.giMeshNotValid.text, MessageType.Warning);
 
             EditorGUI.showMixedValue = false;
 

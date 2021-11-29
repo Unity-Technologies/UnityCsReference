@@ -425,7 +425,7 @@ namespace UnityEditor
             if (!go)
                 return;
 
-            if (PrefabUtility.IsOutermostPrefabInstanceRoot(go) && PrefabUtility.HasPrefabInstanceNonDefaultOverrides_CachedForUI(go))
+            if (PrefabUtility.IsOutermostPrefabInstanceRoot(go) && PrefabUtility.HasPrefabInstanceNonDefaultOverridesOrUnusedOverrides_CachedForUI(go))
             {
                 Rect overridesMarkerRect = new Rect(rect.x + SceneVisibilityHierarchyGUI.utilityBarWidth, rect.y + 1, 2, rect.height - 2);
 

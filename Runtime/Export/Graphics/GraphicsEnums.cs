@@ -564,11 +564,15 @@ namespace UnityEngine
             {
                 None = 0,
                 MipChain = 1 << 0,
-                //DontInitializePixels = 1 << 2, // this is only used internally.
+                DontInitializePixels = 1 << 2, // this is only used internally.
                 //DontDestroyTexture = 1 << 3, // this is only used internally.
                 //DontCreateSharedTextureData = 1 << 4, // this is only used internally.
                 //APIShareable = 1 << 5, // this is only used internally.
                 Crunch = 1 << 6,
+                //InheritMemoryLabel = 1 << 7, // this is only used internally.
+                //IsNativeTexture = 1 << 8, // this is only used internally.
+                //DontCheckGraphicsCaps = 1 << 9, // this is only used internally.
+                DontUploadUponCreate = 1 << 10,
             }
 
             // Keep in sync with FormatUsage in Runtime/Graphics/Format.h

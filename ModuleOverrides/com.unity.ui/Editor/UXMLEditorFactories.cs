@@ -15,6 +15,7 @@ namespace UnityEditor.UIElements
     internal class UXMLEditorFactories : VisualElementFactoryRegistry
     {
         private static readonly bool k_Registered;
+        static readonly string k_UIECoreModule = "UnityEngine.UIElementsModule";
 
         static UXMLEditorFactories()
         {
@@ -42,12 +43,40 @@ namespace UnityEditor.UIElements
             var types = TypeCache.GetTypesDerivedFrom<IUxmlFactory>();
             foreach (var type in types)
             {
-                TypeAttributes attributes = type.Attributes;
-                if (type.Assembly.GetName().Name == "UnityEngine.UIElementsModule" // Exclude core UIElements factories which are registered manually
+                var attributes = type.Attributes;
+                if (type.Assembly.GetName().Name == k_UIECoreModule // Exclude core UIElements factories which are registered manually
                     || (attributes & (TypeAttributes.Abstract | TypeAttributes.Interface)) != 0
                     || type.IsGenericType)
                     continue;
                 var factory = (IUxmlFactory)Activator.CreateInstance(type);
+                RegisterFactory(factory);
+            }
+        }
+    }
+
+    [InitializeOnLoad]
+    internal class UxmlObjectEditorFactories : UxmlObjectFactoryRegistry
+    {
+        private static readonly bool k_Registered;
+        static readonly string k_UIECoreModule = "UnityEngine.UIElementsModule";
+
+        static UxmlObjectEditorFactories()
+        {
+            if (k_Registered)
+                return;
+
+            k_Registered = true;
+
+            // Discover all factories thanks to the type cache!
+            var types = TypeCache.GetTypesDerivedFrom<IBaseUxmlObjectFactory>();
+            foreach (var type in types)
+            {
+                var attributes = type.Attributes;
+                if (type.Assembly.GetName().Name == k_UIECoreModule // Exclude core UIElements factories which are registered manually
+                    || (attributes & (TypeAttributes.Abstract | TypeAttributes.Interface)) != 0
+                    || type.IsGenericType)
+                    continue;
+                var factory = (IBaseUxmlObjectFactory)Activator.CreateInstance(type);
                 RegisterFactory(factory);
             }
         }

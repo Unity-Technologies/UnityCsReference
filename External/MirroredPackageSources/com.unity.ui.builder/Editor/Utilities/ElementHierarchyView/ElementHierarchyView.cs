@@ -7,6 +7,9 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
+using TreeViewItem = UnityEngine.UIElements.TreeViewItemData<UnityEngine.UIElements.VisualElement>;
+using TreeViewItemVE = UnityEngine.UIElements.TreeViewItemData<UnityEngine.UIElements.VisualElement>;
+
 namespace Unity.UI.Builder
 {
     internal class ElementHierarchyView : VisualElement
@@ -19,26 +22,24 @@ namespace Unity.UI.Builder
 
         VisualTreeAsset m_ClassPillTemplate;
 
-        public IList<ITreeViewItem> treeRootItems
+        public IList<TreeViewItem> treeRootItems => m_TreeRootItems;
+
+        public IEnumerable<TreeViewItemData<VisualElement>> treeItems
         {
             get
             {
-                return m_TreeRootItems;
-            }
-            set {}
-        }
-
-        public IEnumerable<ITreeViewItem> treeItems
-        {
-            get
-            {
-                return m_TreeView.items;
+                foreach (var itemId in m_TreeView.viewController.GetAllItemIds())
+                {
+                    yield return m_TreeViewController.GetTreeViewItemDataForId(itemId);
+                }
             }
         }
 
-        IList<ITreeViewItem> m_TreeRootItems;
+        DefaultTreeViewController<VisualElement> m_TreeViewController;
 
-        InternalTreeView m_TreeView;
+
+        IList<TreeViewItem> m_TreeRootItems;
+        TreeView m_TreeView;
         HighlightOverlayPainter m_TreeViewHoverOverlay;
 
         VisualElement m_Container;
@@ -108,13 +109,15 @@ namespace Unity.UI.Builder
                 BuilderConstants.UIBuilderPackagePath + "/BuilderClassPill.uxml");
 
             // Create TreeView.
-            m_TreeRootItems = new List<ITreeViewItem>();
-            m_TreeView = new InternalTreeView(m_TreeRootItems, 20, MakeItem, FillItem);
+            m_TreeRootItems = new List<TreeViewItem>();
+            m_TreeView = new TreeView(20, MakeItem, FillItem);
+            m_TreeView.SetRootItems(m_TreeRootItems);
+            m_TreeViewController = m_TreeView.viewController as DefaultTreeViewController<VisualElement>;
 
             m_TreeView.selectionType = SelectionType.Multiple;
             m_TreeView.viewDataKey = "unity-builder-explorer-tree";
             m_TreeView.style.flexGrow = 1;
-            m_TreeView.onSelectionChange += OnSelectionChange;
+            m_TreeView.onSelectedIndicesChange += OnSelectionChange;
 
             m_TreeView.RegisterCallback<MouseDownEvent>(OnLeakedMouseClick);
             m_Container.Add(m_TreeView);
@@ -124,15 +127,13 @@ namespace Unity.UI.Builder
 
         public void CopyTreeViewItemStates(VisualElementAsset sourceVEA, VisualElementAsset targetVEA)
         {
-            ITreeViewItem templateTreeItem = null;
-            ITreeViewItem unpackedElementTreeItem = null;
+            var templateTreeItem = new TreeViewItemData<VisualElement>();
+            var unpackedElementTreeItem = new TreeViewItemData<VisualElement>();
 
-            foreach (TreeViewItem<VisualElement> item in treeItems)
+            foreach (var item in treeItems)
             {
-                if (item == null || item.data == null)
-                {
+                if (item.data == null)
                     continue;
-                }
 
                 var elementAsset = item.data.GetVisualElementAsset();
 
@@ -146,14 +147,13 @@ namespace Unity.UI.Builder
                 }
             }
 
-            if (templateTreeItem != null && unpackedElementTreeItem != null)
-            {
-                m_TreeView.CopyExpandedStates(templateTreeItem, unpackedElementTreeItem);
-            }
+            if (templateTreeItem.data != null && unpackedElementTreeItem.data != null)
+                m_TreeView.CopyExpandedStates(templateTreeItem.id, unpackedElementTreeItem.id);
         }
 
-        void FillItem(VisualElement element, ITreeViewItem item)
+        void FillItem(VisualElement element, int index)
         {
+            var item = m_TreeViewController.GetTreeViewItemDataForIndex(index);
             var explorerItem = element as BuilderExplorerItem;
             explorerItem.Clear();
 
@@ -164,14 +164,14 @@ namespace Unity.UI.Builder
             row.RemoveFromClassList(BuilderConstants.ExplorerActiveStyleSheetClassName);
 
             // Get target element (in the document).
-            var documentElement = (item as TreeViewItem<VisualElement>).data;
+            var documentElement = item.data;
             documentElement.SetProperty(BuilderConstants.ElementLinkedExplorerItemVEPropertyName, explorerItem);
             explorerItem.SetProperty(BuilderConstants.ElementLinkedDocumentVisualElementVEPropertyName, documentElement);
             row.userData = documentElement;
 
             // If we have a FillItem callback (override), we call it and stop creating the rest of the item.
             var fillItemCallback =
-                documentElement.GetProperty(BuilderConstants.ExplorerItemFillItemCallbackVEPropertyName) as Action<VisualElement, ITreeViewItem, BuilderSelection>;
+                documentElement.GetProperty(BuilderConstants.ExplorerItemFillItemCallbackVEPropertyName) as Action<VisualElement, TreeViewItem, BuilderSelection>;
             if (fillItemCallback != null)
             {
                 fillItemCallback(explorerItem, item, m_Selection);
@@ -479,8 +479,9 @@ namespace Unity.UI.Builder
 
             if (m_TreeView != null)
             {
-                foreach (TreeViewItem<VisualElement> selectedItem in m_TreeView.selectedItems)
+                foreach (var selectedIndex in m_TreeView.selectedIndices)
                 {
+                    var selectedItem = m_TreeViewController.GetTreeViewItemDataForIndex(selectedIndex);
                     var documentElement = selectedItem.data;
                     HighlightAllRelatedDocumentElements(documentElement);
                 }
@@ -498,7 +499,7 @@ namespace Unity.UI.Builder
             // Save focus state.
             bool wasTreeFocused = false;
             if (m_TreeView != null)
-                wasTreeFocused = m_TreeView.Q<ListView>().IsFocused();
+                wasTreeFocused = m_TreeView.IsFocused();
 
             m_CurrentPanelDebug = rootVisualElement.panel;
 
@@ -512,11 +513,12 @@ namespace Unity.UI.Builder
             if (m_TreeView != null)
             {
                 m_TreeView.ClearSelection();
-                m_TreeView.rootItems = m_TreeRootItems;
+                m_TreeView.SetRootItems(m_TreeRootItems);
+                m_TreeView.Rebuild();
 
                 // Restore focus state.
                 if (wasTreeFocused)
-                    m_TreeView.Q<ListView>()?.Focus();
+                    m_TreeView.Focus();
             }
 
             hierarchyHasChanged = false;
@@ -526,15 +528,14 @@ namespace Unity.UI.Builder
         {
             // Auto-expand root items on load.
             if (m_TreeRootItems != null)
-                foreach (var item in m_TreeView.rootItems)
-                    m_TreeView.ExpandItem(item.id);
+                m_TreeView.ExpandRootItems();
         }
 
         public void ExpandItem(VisualElement element)
         {
             var item = FindElement(m_TreeRootItems, element);
 
-            if (item != null)
+            if (item.data != null)
             {
                 m_TreeView.ExpandItem(item.id);
             }
@@ -544,8 +545,7 @@ namespace Unity.UI.Builder
         {
             // Auto-expand all items on load.
             if (m_TreeRootItems != null)
-                foreach (var item in InternalTreeView.GetAllItems(m_TreeView.rootItems))
-                    m_TreeView.ExpandItem(item.id);
+                m_TreeView.ExpandAll();
         }
 
         void OnLeakedMouseClick(MouseDownEvent evt)
@@ -557,21 +557,24 @@ namespace Unity.UI.Builder
             evt.StopPropagation();
         }
 
-        void OnSelectionChange(IEnumerable<ITreeViewItem> items)
+        void OnSelectionChange(IEnumerable<int> itemIndices)
         {
             if (m_SelectElementCallback == null)
                 return;
 
-            if (items.Count() == 0)
+            if (!itemIndices.Any())
             {
                 m_SelectElementCallback(null);
                 return;
             }
 
             var elements = new List<VisualElement>();
-            foreach (TreeViewItem<VisualElement> item in items)
-                if (item != null)
+            foreach (var index in itemIndices)
+            {
+                var item = m_TreeViewController.GetTreeViewItemDataForIndex(index);
+                if (item.data != null)
                     elements.Add(item.data);
+            }
 
             m_SelectElementCallback(elements);
         }
@@ -650,34 +653,31 @@ namespace Unity.UI.Builder
             return element;
         }
 
-        TreeViewItem<VisualElement> FindElement(IEnumerable<ITreeViewItem> list, VisualElement element)
+        TreeViewItemVE FindElement(IEnumerable<TreeViewItem> list, VisualElement element)
         {
             if (list == null)
-                return null;
+                return default;
 
             foreach (var item in list)
             {
-                var treeItem = item as TreeViewItem<VisualElement>;
+                var treeItem = item;
                 if (treeItem.data == element)
                     return treeItem;
 
-                TreeViewItem<VisualElement> itemFoundInChildren = null;
+                var itemFoundInChildren = new TreeViewItemData<VisualElement>();
                 if (treeItem.hasChildren)
                     itemFoundInChildren = FindElement(treeItem.children, element);
 
-                if (itemFoundInChildren != null)
+                if (itemFoundInChildren.data != null)
                     return itemFoundInChildren;
             }
 
-            return null;
+            return default;
         }
 
         public void ClearSelection()
         {
-            if (m_TreeView == null)
-                return;
-
-            m_TreeView.ClearSelection();
+            m_TreeView?.ClearSelection();
         }
 
         public void ClearSearchResults()
@@ -690,12 +690,12 @@ namespace Unity.UI.Builder
 
         public int GetSelectedItemId()
         {
-            return m_TreeView.selectedItem.id;
+            return m_TreeView.GetIdForIndex(m_TreeView.selectedIndex);
         }
 
         public void SelectItemById(int id)
         {
-            m_TreeView.SetSelection(id);
+            m_TreeView.SetSelectionById(id);
         }
 
         public void SelectElements(IEnumerable<VisualElement> elements)
@@ -708,24 +708,24 @@ namespace Unity.UI.Builder
             foreach (var element in elements)
             {
                 var item = FindElement(m_TreeRootItems, element);
-                if (item == null)
+                if (item.data == null)
                     continue;
 
-                m_TreeView.AddToSelection(item.id);
-                m_TreeView.ScrollToItem(item.id);
+                m_TreeView.AddToSelectionById(item.id);
+                m_TreeView.ScrollToItemById(item.id);
             }
         }
 
-        IList<ITreeViewItem> GetTreeItemsFromVisualTreeIncludingParent(VisualElement parent, ref int nextId)
+        IList<TreeViewItem> GetTreeItemsFromVisualTreeIncludingParent(VisualElement parent, ref int nextId)
         {
             if (parent == null)
                 return null;
 
-            var items = new List<ITreeViewItem>();
+            var items = new List<TreeViewItem>();
             var id = nextId;
             nextId++;
 
-            var item = new TreeViewItem<VisualElement>(id, parent);
+            var item = new TreeViewItemVE(id, parent);
             items.Add(item);
 
             var childItems = GetTreeItemsFromVisualTree(parent, ref nextId);
@@ -737,9 +737,9 @@ namespace Unity.UI.Builder
             return items;
         }
 
-        IList<ITreeViewItem> GetTreeItemsFromVisualTree(VisualElement parent, ref int nextId)
+        IList<TreeViewItem> GetTreeItemsFromVisualTree(VisualElement parent, ref int nextId)
         {
-            List<ITreeViewItem> items = null;
+            List<TreeViewItem> items = null;
 
             if (parent == null)
                 return null;
@@ -756,7 +756,7 @@ namespace Unity.UI.Builder
                     continue;
 
                 if (items == null)
-                    items = new List<ITreeViewItem>();
+                    items = new List<TreeViewItem>();
 
                 var id = 0;
                 var linkedAsset = element.GetVisualElementAsset();
@@ -770,7 +770,7 @@ namespace Unity.UI.Builder
                     nextId++;
                 }
 
-                var item = new TreeViewItem<VisualElement>(id, element);
+                var item = new TreeViewItemVE(id, element);
                 items.Add(item);
 
                 var childItems = GetTreeItemsFromVisualTree(element, ref nextId);

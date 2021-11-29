@@ -94,7 +94,6 @@ namespace Unity.UI.Builder
             return vta.visualElementAssets.Count <= 1 && vta.templateAssets.Count <= 0; // Because of the <UXML> tag, there's always one.
         }
 
-
         public static VisualElementAsset GetRootUXMLElement(this VisualTreeAsset vta)
         {
             return vta.visualElementAssets.Count > 0 ? vta.visualElementAssets[0] : null;
@@ -633,6 +632,5 @@ namespace Unity.UI.Builder
                     if (asset.stylesheets[i] != null)
                         element.styleSheets.Add(asset.stylesheets[i]);
         }
-
     }
 }

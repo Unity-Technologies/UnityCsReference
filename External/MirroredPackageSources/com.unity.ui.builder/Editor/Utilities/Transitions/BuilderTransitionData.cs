@@ -1,4 +1,3 @@
-
 using System;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -78,4 +77,3 @@ namespace Unity.UI.Builder
         }
     }
 }
-

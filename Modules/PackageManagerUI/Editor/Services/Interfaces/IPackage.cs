@@ -54,8 +54,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         // Use `PackageDatabase.ClearPackageErrors` instead if you want to trigger `onPackagesChanged` events
         void ClearErrors(Predicate<UIError> match = null);
 
-        IPackage Clone();
-
         DateTime? firstPublishedDate { get; }
 
         string GetDescriptor(bool isFirstLetterCapitalized = false);

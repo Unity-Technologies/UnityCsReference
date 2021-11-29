@@ -100,6 +100,7 @@ namespace Unity.UI.Builder
         public static readonly string ElementLinkedDocumentVisualElementVEPropertyName = "__unity-ui-builder-linked-document-visual-element";
         public static readonly string ElementLinkedVariableHandlerVEPropertyName = "__unity-ui-builder-linked-variable-handler";
         public static readonly string ElementLinkedVariableTooltipVEPropertyName = "__unity-ui-builder-linked-variable-tooltip";
+        public static readonly string ElementLinkedActiveThemeStyleSheetVEPropertyName = "__unity-ui-builder-linked-active-theme-stylesheet";
 
         //
         // Inspector
@@ -373,6 +374,11 @@ namespace Unity.UI.Builder
         public static readonly string TssExtension = ".tss";
 
         // UXML
+        public static readonly string UxmlOpenTagSymbol = "<";
+        public static readonly string UxmlCloseTagSymbol = ">";
+        public static readonly string UxmlEndTagSymbol = "/" + UxmlCloseTagSymbol;
+        public static readonly string UxmlTemplateClassTag = "Template";
+        public static readonly string UxmlNameAttr = "name";
         public static readonly string UxmlHeader = "<ui:UXML xmlns:ui=\"UnityEngine.UIElements\" xmlns:uie=\"UnityEditor.UIElements\"";
         public static readonly string UxmlFooter = "</ui:UXML>";
         public static readonly string UxmlEngineNamespace = "UnityEngine.UIElements.";

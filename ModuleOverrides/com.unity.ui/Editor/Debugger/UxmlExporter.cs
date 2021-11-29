@@ -95,7 +95,7 @@ namespace UnityEditor.UIElements.Debugger
             foreach (var attr in attrs)
                 elt.SetAttributeValue(attr.Key, attr.Value);
 
-            var elementText = ve is ITextElement ? (ve as ITextElement).text : "";
+            var elementText = ve is TextElement ? (ve as TextElement).text : "";
 
             if (!String.IsNullOrEmpty(ve.name) && ve.name[0] != '_')
                 elt.SetAttributeValue("name", ve.name);

@@ -29,6 +29,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private PackageDatabase m_PackageDatabase;
         private PageManager m_PageManager;
         private UpmClient m_UpmClient;
+        private AssetStoreDownloadManager m_AssetStoreDownloadManager;
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
         private IOProxy m_IOProxy;
 
@@ -42,6 +43,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageDatabase = container.Resolve<PackageDatabase>();
             m_PageManager = container.Resolve<PageManager>();
             m_UpmClient = container.Resolve<UpmClient>();
+            m_AssetStoreDownloadManager = container.Resolve<AssetStoreDownloadManager>();
             m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
             m_IOProxy = container.Resolve<IOProxy>();
         }
@@ -59,6 +61,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             SetupFilterTabsMenu();
             SetupOrdering();
             SetupFilters();
+            SetupInProgressSpinner();
             SetupAdvancedMenu();
 
             m_SearchTextChangeTimestamp = 0;
@@ -75,6 +78,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageManager.onFiltersChange += UpdateFiltersMenuText;
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
             m_Application.onInternetReachabilityChange += OnInternetReachabilityChange;
+
+            RefreshInProgressSpinner();
         }
 
         public void OnDisable()
@@ -85,6 +90,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageManager.onFiltersChange -= UpdateFiltersMenuText;
             m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
             m_Application.onInternetReachabilityChange -= OnInternetReachabilityChange;
+
+            RefreshInProgressSpinner(false);
         }
 
         public void FocusOnSearch()
@@ -94,20 +101,32 @@ namespace UnityEditor.PackageManager.UI.Internal
             searchToolbar.Q<TextField>()?.visualInput?.Focus();
         }
 
-        private void OnPackagesChanged(IEnumerable<IPackage> added, IEnumerable<IPackage> removed, IEnumerable<IPackage> preUpdate, IEnumerable<IPackage> postUpdate)
+        private void RefreshInProgressSpinner(bool? showSpinner = null)
+        {
+            if (showSpinner ?? (m_AssetStoreDownloadManager.IsAnyDownloadInProgress() || m_UpmClient.packageIdsOrNamesInstalling.Any()))
+                inProgressSpinner.Start();
+            else
+                inProgressSpinner.Stop();
+            UIUtils.SetElementDisplay(spinnerButtonContainer, inProgressSpinner.started);
+        }
+
+        private void OnPackagesChanged(PackagesChangeArgs args)
         {
             UpdateOrdering(m_PageManager.GetCurrentPage());
 
             if (m_PackageFiltering.currentFilterTab == PackageFilterTab.MyRegistries)
             {
-                // we can skip the whole database scan to save some time
-                var changed = added.Concat(removed).Concat(preUpdate).Concat(postUpdate);
-                if (!changed.Any(p => p.Is(PackageType.ScopedRegistry)))
+                // We can skip the whole database scan to save some time if non of the packages changed are related to scoped registry
+                // Note that we also check `preUpdate` to catch the cases where packages are move from ScopedRegistry to UnityRegistry
+                if (!args.added.Concat(args.removed).Concat(args.updated).Concat(args.preUpdate).Any(p => p.Is(PackageType.ScopedRegistry)))
                     return;
 
                 if (!m_PackageDatabase.allPackages.Any(p => p.Is(PackageType.ScopedRegistry)))
                     SetFilter(PackageFilterTab.UnityRegistry);
             }
+
+            if (args.progressUpdated.Any() || args.added.Any() || args.removed.Any())
+                RefreshInProgressSpinner();
         }
 
         private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
@@ -216,6 +235,20 @@ namespace UnityEditor.PackageManager.UI.Internal
             SetCurrentSearch(string.Empty);
             SetFilter(filter);
             PackageManagerWindowAnalytics.SendEvent("changeFilter");
+        }
+
+        private void SetupInProgressSpinner()
+        {
+            spinnerButtonContainer.tooltip = L10n.Tr("Click to see progress details");
+            spinnerButtonContainer.OnLeftClick(() =>
+            {
+                if (!inProgressSpinner.started)
+                    return;
+
+                var rect = GUIUtility.GUIToScreenRect(spinnerButtonContainer.worldBound);
+                var dropdown = new InProgressDropdown(m_ResourceLoader, m_PackageFiltering, m_UpmClient, m_AssetStoreDownloadManager, m_PackageDatabase, m_PageManager) { position = rect };
+                DropdownContainer.ShowDropdown(dropdown);
+            });
         }
 
         private void SetupAdvancedMenu()
@@ -526,5 +559,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private ToolbarButton clearFiltersButton { get { return cache.Get<ToolbarButton>("toolbarClearFiltersButton"); } }
         private ToolbarSearchField searchToolbar { get { return cache.Get<ToolbarSearchField>("toolbarSearch"); } }
         internal ExtendableToolbarMenu toolbarSettingsMenu { get { return cache.Get<ExtendableToolbarMenu>("toolbarSettingsMenu"); } }
+        internal VisualElement spinnerButtonContainer => cache.Get<VisualElement>("spinnerButtonContainer");
+        internal LoadingSpinner inProgressSpinner => cache.Get<LoadingSpinner>("inProgressSpinner");
     }
 }

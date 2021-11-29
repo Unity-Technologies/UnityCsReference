@@ -91,7 +91,7 @@ namespace UnityEditor.UIElements
             m_TextField.RegisterValueChangedCallback(OnValueChanged);
 
             var textInput = m_TextField.Q(TextField.textInputUssName);
-            textInput.RegisterCallback<KeyDownEvent>(OnTextFieldKeyDown);
+            textInput.RegisterCallback<KeyDownEvent>(OnTextFieldKeyDown, TrickleDown.TrickleDown);
             textInput.AddToClassList(textInputUssClassName);
 
             m_CancelButton = new Button(() => {}) { name = "unity-cancel" };

@@ -2288,7 +2288,6 @@ namespace UnityEditor
             }
 
             LegacyOverlayPreOnGUI();
-
             s_CurrentDrawingSceneView = this;
 
             Event evt = Event.current;

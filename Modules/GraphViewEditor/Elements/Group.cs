@@ -56,8 +56,8 @@ namespace UnityEditor.Experimental.GraphView
             m_TitleEditor.style.display = DisplayStyle.None;
 
             var titleinput = m_TitleEditor.Q(TextField.textInputUssName);
-            titleinput.RegisterCallback<FocusOutEvent>(e => { OnEditTitleFinished(); });
-            titleinput.RegisterCallback<KeyDownEvent>(TitleEditorOnKeyDown);
+            titleinput.RegisterCallback<FocusOutEvent>(e => { OnEditTitleFinished(); }, TrickleDown.TrickleDown);
+            titleinput.RegisterCallback<KeyDownEvent>(TitleEditorOnKeyDown, TrickleDown.TrickleDown);
 
             VisualElement contentContainerPlaceholder = this.Q(name: "contentContainerPlaceholder");
             contentContainerPlaceholder.Insert(0, m_DropArea);

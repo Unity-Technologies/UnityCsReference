@@ -54,10 +54,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         PageSelection GetSelection();
         IEnumerable<VisualState> GetSelectedVisualStates();
 
-        void OnPackagesChanged(IEnumerable<IPackage> added, IEnumerable<IPackage> removed, IEnumerable<IPackage> preUpdate, IEnumerable<IPackage> postUpdate);
+        void OnPackagesChanged(PackagesChangeArgs args);
 
         void Rebuild();
         void Load(IPackage package, IPackageVersion version = null);
+        void LoadExtraItems(IEnumerable<IPackage> packages);
 
         bool SetNewSelection(IEnumerable<PackageAndVersionIdPair> packageAndVersionIdPairs);
         bool AmendSelection(IEnumerable<PackageAndVersionIdPair> toAddOrUpdate, IEnumerable<PackageAndVersionIdPair> toRemove);

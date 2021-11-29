@@ -178,7 +178,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void OnEnable()
         {
             m_Application.onFinishCompiling += Refresh;
-            m_PackageDatabase.onPackageProgressUpdate += OnPackageProgressUpdate;
 
             m_AssetStoreDownloadManager.onDownloadProgress += OnDownloadProgress;
             m_AssetStoreDownloadManager.onDownloadFinalized += OnDownloadProgress;
@@ -188,7 +187,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void OnDisable()
         {
             m_Application.onFinishCompiling -= Refresh;
-            m_PackageDatabase.onPackageProgressUpdate -= OnPackageProgressUpdate;
 
             m_AssetStoreDownloadManager.onDownloadProgress -= OnDownloadProgress;
             m_AssetStoreDownloadManager.onDownloadFinalized -= OnDownloadProgress;
@@ -283,12 +281,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             foreach (var item in extensions.Children())
                 item.SetEnabled(disableCondition == null);
             extensions.tooltip = disableCondition?.tooltip ?? string.Empty;
-        }
-
-        private void OnPackageProgressUpdate(IPackage package)
-        {
-            RefreshBuiltInButtons();
-            RefreshExtensionItems();
         }
 
         private void OnDownloadProgress(IOperation operation)

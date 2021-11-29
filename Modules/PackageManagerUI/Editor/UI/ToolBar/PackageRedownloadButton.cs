@@ -57,12 +57,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var operation = m_AssetStoreDownloadManager.GetDownloadOperation(version?.packageUniqueId);
             var localInfo = m_AssetStoreCache.GetLocalInfo(version?.packageUniqueId);
-            return localInfo?.canUpdate == false
-                && operation != null
-                && operation.state != DownloadState.Aborted
-                && operation.state != DownloadState.Error
-                && operation.state != DownloadState.Completed
-                && operation.state != DownloadState.None;
+            return localInfo?.canUpdate == false && operation?.isInProgress == true;
         }
 
         protected override IEnumerable<ButtonDisableCondition> GetDisableConditions(IPackageVersion version)

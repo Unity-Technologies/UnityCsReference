@@ -292,7 +292,11 @@ namespace UnityEngine
         extern public void SetJointAccelerations(List<float> accelerations);
         extern public int GetJointForces(List<float> forces);
         extern public void SetJointForces(List<float> forces);
+        extern public ArticulationReducedSpace GetJointForcesForAcceleration(ArticulationReducedSpace acceleration);
         extern public int GetDriveForces(List<float> forces);
+        extern public int GetJointGravityForces(List<float> forces);
+        extern public int GetJointCoriolisCentrifugalForces(List<float> forces);
+
         extern public int GetDriveTargets(List<float> targets);
         extern public void SetDriveTargets(List<float> targets);
         extern public int GetDriveTargetVelocities(List<float> targetVelocities);

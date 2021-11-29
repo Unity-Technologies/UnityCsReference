@@ -132,7 +132,7 @@ namespace UnityEditor.UIElements.Samples
                 }),
             };
 
-            var treeView = new UnityEngine.UIElements.Experimental.TreeView() { name = k_TreeViewName };
+            var treeView = new TreeView() { name = k_TreeViewName };
             treeView.AddToClassList(k_TreeViewClassName);
             m_ContentPanel = new VisualElement() { name = k_ContentPanelName };
             m_ContentPanel.AddToClassList(k_ContentPanelClassName);

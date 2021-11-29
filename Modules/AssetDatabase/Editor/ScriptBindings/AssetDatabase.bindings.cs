@@ -16,6 +16,7 @@ using Object = UnityEngine.Object;
 using UnityEngine.Scripting;
 using UnityEditor.Experimental;
 using UnityEngine.Internal;
+using UnityEditor.AssetImporters;
 
 namespace UnityEditor
 {
@@ -741,16 +742,49 @@ namespace UnityEditor
         extern internal static void SetImporterOverrideInternal(string path, System.Type importer);
 
         public static void SetImporterOverride<T>(string path)
-            where T : UnityEditor.AssetImporters.ScriptedImporter
+            where T : AssetImporter
         {
-            SetImporterOverrideInternal(path, typeof(T));
+            if (GUIDFromExistingAssetPath(path).Empty())
+            {
+                Debug.LogError(
+                    $"Cannot set Importer override at \"{path}\". No Asset found at that path.");
+                return;
+            }
+
+            var availableImporters = GetAvailableImporters(path);
+            if (availableImporters.Contains(typeof(T)))
+            {
+                SetImporterOverrideInternal(path, typeof(T));
+            }
+            else
+            {
+                if (GetDefaultImporter(path) == typeof(T))
+                {
+                    ClearImporterOverride(path);
+                    Debug.LogWarning("This usage is deprecated. Use ClearImporterOverride to revert to the default Importer instead.");
+                }
+                else
+                {
+                    Debug.LogError(
+                        $"Cannot set Importer override at {path} because {typeof(T).Name} is not a valid Importer for this asset.");
+                }
+            }
         }
 
         [FreeFunction("AssetDatabase::GetImporterOverride")]
         extern public static System.Type GetImporterOverride(string path);
 
-        [FreeFunction("AssetDatabase::GetAvailableImporterTypes")]
-        extern public static Type[] GetAvailableImporterTypes(string path);
+        [Obsolete("GetAvailableImporterTypes() has been deprecated. Use GetAvailableImporters() instead (UnityUpgradable) -> GetAvailableImporters(*)")]
+        public static Type[] GetAvailableImporterTypes(string path)
+        {
+            return GetAvailableImporters(path);
+        }
+
+        [FreeFunction("AssetDatabase::GetAvailableImporters")]
+        extern public static Type[] GetAvailableImporters(string path);
+
+        [FreeFunction("AssetDatabase::GetDefaultImporter")]
+        extern public static Type GetDefaultImporter(string path);
 
         [FreeFunction("AcceleratorClientCanConnectTo")]
         public extern static bool CanConnectToCacheServer(string ip, UInt16 port);

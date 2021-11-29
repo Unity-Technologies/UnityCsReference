@@ -452,6 +452,8 @@ namespace UnityEditor.Search.Providers
             {
                 // Perform a quick search on asset paths
                 var findOptions = FindOptions.Words | FindOptions.Regex | FindOptions.Glob;
+                if (context.options.HasAny(SearchFlags.Packages))
+                    findOptions |= FindOptions.Packages;
                 foreach (var e in FindProvider.Search(context, provider, findOptions))
                 {
                     if (!e.valid)

@@ -76,8 +76,8 @@ namespace Unity.UI.Builder
             primaryFocusable = m_Code;
 
             // Make sure no key events get through to the code field.
-            m_Code.Q(TextInputBaseField<string>.textInputUssName).RegisterCallback<KeyDownEvent>(BlockEvent);
-            m_Code.Q(TextInputBaseField<string>.textInputUssName).RegisterCallback<KeyUpEvent>(BlockEvent);
+            m_Code.RegisterCallback<KeyDownEvent>(BlockEvent, TrickleDown.TrickleDown);
+            m_Code.RegisterCallback<KeyUpEvent>(BlockEvent, TrickleDown.TrickleDown);
 
             SetText(string.Empty);
         }

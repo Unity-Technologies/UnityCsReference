@@ -166,7 +166,7 @@ namespace UnityEditor.UIElements.Debugger
             m_SelectedElement.name = EditorGUILayout.TextField("Name", m_SelectedElement.name);
             EditorGUILayout.LabelField("Debug Id", m_SelectedElement.controlid.ToString());
             m_SelectedElement.tooltip = EditorGUILayout.TextField("Tooltip", m_SelectedElement.tooltip);
-            var textElement = m_SelectedElement as ITextElement;
+            var textElement = m_SelectedElement as TextElement;
             if (textElement != null)
             {
                 textElement.text = EditorGUILayout.TextField("Text", textElement.text);

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
@@ -28,6 +29,19 @@ namespace UnityEditor
 
             if (EditorGUI.EndChangeCheck())
                 property.objectReferenceValue = value;
+        }
+
+        public override VisualElement CreatePropertyGUI(SerializedProperty property)
+        {
+            ScriptAttributeUtility.GetFieldInfoFromProperty(property, out var fieldType);
+
+            var objectField = EditorUIService.instance.CreateObjectField();
+            var genericType = fieldType.GetGenericArguments()[0];
+
+            EditorUIService.instance.SetObjectField(objectField, property.objectReferenceValue, genericType, property.displayName);
+            objectField.bindingPath = property.propertyPath;
+
+            return objectField;
         }
     }
 }

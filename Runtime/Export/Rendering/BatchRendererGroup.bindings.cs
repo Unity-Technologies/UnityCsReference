@@ -172,7 +172,8 @@ namespace UnityEngine.Rendering
         Unknown = 0,
         Camera = 1,
         Light = 2,
-        ShadowMap = 3
+        ShadowMap = 3,
+        Picking = 4,
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -303,6 +304,8 @@ namespace UnityEngine.Rendering
         public BatchDrawRange* drawRanges;
         // TempJob allocated by C#, released by C++
         public float* instanceSortingPositions;
+        // TempJob allocated by C#, released by C++
+        public int* drawCommandPickingInstanceIDs;
         public int drawCommandCount;
         public int visibleInstanceCount;
         public int drawRangeCount;
@@ -446,6 +449,8 @@ namespace UnityEngine.Rendering
         public extern Mesh GetRegisteredMesh(BatchMeshID mesh);
 
         public extern void SetGlobalBounds(Bounds bounds);
+
+        public extern void SetPickingMaterial(Material material);
 
         static extern unsafe IntPtr Create(BatchRendererGroup group, void* userContext);
         static extern void Destroy(IntPtr groupHandle);

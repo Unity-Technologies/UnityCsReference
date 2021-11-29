@@ -11,6 +11,7 @@ namespace UnityEngine.UIElements
     {
         private static readonly HashSet<string> s_usedNames = new HashSet<string>();
         private static readonly Type s_FoldoutType = typeof(Foldout);
+        private static readonly string s_InspectorElementUssClassName = "unity-inspector-element";
 
         public static string GetUniqueName(string nameBase)
         {
@@ -46,6 +47,37 @@ namespace UnityEngine.UIElements
                 }
             }
 
+            return depth;
+        }
+
+        internal static void AssignInspectorStyleIfNecessary(this VisualElement element, string classNameToEnable)
+        {
+            var inspector = element.GetFirstAncestorWhere((i) => i.ClassListContains(s_InspectorElementUssClassName));
+            element.EnableInClassList(classNameToEnable, inspector != null);
+        }
+
+        /// <summary>
+        /// Computes the depth of the visual element including list views, i.e. the number of parenting foldouts and list views.
+        /// </summary>
+        /// <param name="element">The visual element to check.</param>
+        /// <returns>The list and foldout depth.</returns>
+        internal static int GetListAndFoldoutDepth(this VisualElement element)
+        {
+            var depth = 0;
+            if (element.hierarchy.parent != null)
+            {
+                var currentParent = element.hierarchy.parent;
+                while (currentParent != null)
+                {
+                    var currentParentType = currentParent.GetType();
+                    if (currentParent is Foldout || currentParent is ListView)
+                    {
+                        depth++;
+                    }
+
+                    currentParent = currentParent.hierarchy.parent;
+                }
+            }
             return depth;
         }
     }

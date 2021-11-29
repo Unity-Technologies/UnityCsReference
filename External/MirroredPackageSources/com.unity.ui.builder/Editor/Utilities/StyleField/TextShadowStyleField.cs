@@ -30,7 +30,6 @@ namespace Unity.UI.Builder
             blurRadius = new Dimension(textShadow.blurRadius, Dimension.Unit.Pixel);
             color = textShadow.color;
         }
-
     }
 
     [UsedImplicitly]
@@ -158,6 +157,5 @@ namespace Unity.UI.Builder
 
             return isNewValue;
         }
-
     }
 }

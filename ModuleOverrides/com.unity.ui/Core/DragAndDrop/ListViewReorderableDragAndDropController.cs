@@ -9,9 +9,9 @@ namespace UnityEngine.UIElements
 {
     internal class ListViewReorderableDragAndDropController : BaseReorderableDragAndDropController
     {
-        protected readonly ListView m_ListView;
+        protected readonly BaseListView m_ListView;
 
-        public ListViewReorderableDragAndDropController(ListView view)
+        public ListViewReorderableDragAndDropController(BaseListView view)
             : base(view)
         {
             m_ListView = view;

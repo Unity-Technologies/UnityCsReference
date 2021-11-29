@@ -114,10 +114,15 @@ namespace UnityEngine.Networking
         {
             unsafe
             {
-                if (data.Length == 0)
+                if (!data.IsCreated || data.Length == 0)
                     m_Ptr = Create(this, null, 0);
                 else
-                    m_Ptr = Create(this, (byte*)data.GetUnsafeReadOnlyPtr(), data.Length);
+                {
+                    if (data.Length == 0)
+                        m_Ptr = Create(this, null, 0);
+                    else
+                        m_Ptr = Create(this, (byte*)data.GetUnsafeReadOnlyPtr(), data.Length);
+                }
             }
         }
 

@@ -30,7 +30,10 @@ namespace UnityEngine.UIElements
 
         public TreeViewItemData<T> GetDataForId(int id)
         {
-            return m_Tree[id];
+            if (m_Tree.TryGetValue(id, out var item))
+                return item;
+
+            return default;
         }
 
         public int GetParentId(int id)
@@ -55,6 +58,10 @@ namespace UnityEngine.UIElements
             if (m_ParentIds.TryGetValue(id, out var parentId))
             {
                 RemoveFromParent(id, parentId);
+            }
+            else
+            {
+                m_RootItemIds.Remove(id);
             }
 
             return TryRemoveChildrenIds(id);
@@ -86,12 +93,33 @@ namespace UnityEngine.UIElements
             AddItemToParent(child, newParentId, childIndex);
         }
 
+        public bool HasAncestor(int childId, int ancestorId)
+        {
+            if (childId == TreeItem.invalidId || ancestorId == TreeItem.invalidId)
+                return false;
+
+            int parentId;
+            var currentId = childId;
+
+            while ((parentId = GetParentId(currentId)) != TreeItem.invalidId)
+            {
+                if (ancestorId == parentId)
+                {
+                    return true;
+                }
+
+                currentId = parentId;
+            }
+
+            return false;
+        }
+
         void AddItemToParent(TreeViewItemData<T> item, int parentId, int childIndex)
         {
             if (parentId == TreeItem.invalidId)
             {
                 m_ParentIds.Remove(item.id);
-                if (childIndex == -1)
+                if (childIndex < 0 || childIndex >= m_RootItemIds.Count)
                     m_RootItemIds.Add(item.id);
                 else
                     m_RootItemIds.Insert(childIndex, item.id);
@@ -149,6 +177,7 @@ namespace UnityEngine.UIElements
             }
 
             var removed = false;
+            removed |= m_RootItemIds.Remove(id);
             removed |= m_ChildrenIds.Remove(id);
             removed |= m_ParentIds.Remove(id);
             removed |= m_Tree.Remove(id);

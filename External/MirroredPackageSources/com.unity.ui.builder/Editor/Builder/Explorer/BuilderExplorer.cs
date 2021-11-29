@@ -90,11 +90,8 @@ namespace Unity.UI.Builder
                 contextMenuManipulator, ElementSelectionChanged, highlightOverlayPainter);
             m_ElementHierarchyView.style.flexGrow = 1;
             Add(m_ElementHierarchyView);
-
-            // Enable horizontal scrolling.
-
             // Make sure the Hierarchy View gets focus when the pane gets focused.
-            primaryFocusable = m_ElementHierarchyView.Q<ListView>();
+            primaryFocusable = m_ElementHierarchyView;
 
             UpdateHierarchyAndSelection(false);
             m_ShouldRebuildHierarchyOnStyleChange = true;

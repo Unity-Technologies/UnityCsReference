@@ -1,9 +1,10 @@
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
+using BuilderLibraryItem = UnityEngine.UIElements.TreeViewItemData<Unity.UI.Builder.BuilderLibraryTreeItem>;
+using TreeViewItem = UnityEngine.UIElements.TreeViewItemData<Unity.UI.Builder.BuilderLibraryTreeItem>;
 
 namespace Unity.UI.Builder
 {
@@ -11,13 +12,13 @@ namespace Unity.UI.Builder
     {
         public class LibraryPlainViewItem : VisualElement
         {
-            readonly BuilderLibraryTreeItem m_TreeItem;
+            readonly BuilderLibraryItem m_TreeItem;
             readonly VisualElement m_Icon;
 
             public int Id => m_TreeItem.id;
             public VisualElement content { get; }
 
-            public LibraryPlainViewItem(BuilderLibraryTreeItem libraryTreeItem)
+            public LibraryPlainViewItem(BuilderLibraryItem libraryTreeItem)
             {
                 m_TreeItem = libraryTreeItem;
                 var template = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(BuilderConstants.LibraryUIPath + "/BuilderLibraryPlainViewItem.uxml");
@@ -27,20 +28,20 @@ namespace Unity.UI.Builder
                 styleSheets.Add(styleSheet);
 
                 content = ElementAt(0);
-                if (m_TreeItem == null)
+                if (m_TreeItem.data == null)
                 {
                     content.AddToClassList(k_PlainViewNoHoverVariantUssClassName);
                     content.Clear();
                     return;
                 }
 
-                this.Q<Label>().text = m_TreeItem.data;
                 m_Icon = this.Q<VisualElement>("icon");
-                SetIcon(m_TreeItem.largeIcon);
+                this.Q<Label>().text = m_TreeItem.data.name;
+                SetIcon(m_TreeItem.data.largeIcon);
             }
 
-            public void SwitchToDarkSkinIcon() => SetIcon(m_TreeItem.darkSkinLargeIcon);
-            public void SwitchToLightSkinIcon() => SetIcon(m_TreeItem.lightSkinLargeIcon);
+            public void SwitchToDarkSkinIcon() => SetIcon(m_TreeItem.data.darkSkinLargeIcon);
+            public void SwitchToLightSkinIcon() => SetIcon(m_TreeItem.data.lightSkinLargeIcon);
 
             void SetIcon(Texture2D icon)
             {
@@ -60,7 +61,7 @@ namespace Unity.UI.Builder
         readonly VisualElement m_ContentContainer;
         readonly List<LibraryPlainViewItem> m_DummyItems = new List<LibraryPlainViewItem>();
         readonly List<LibraryPlainViewItem> m_PlainViewItems = new List<LibraryPlainViewItem>();
-        readonly IEnumerable<ITreeViewItem> m_Items;
+        readonly IEnumerable<TreeViewItem> m_Items;
 
         LibraryPlainViewItem m_SelectedItem;
 
@@ -69,7 +70,7 @@ namespace Unity.UI.Builder
 
         public override VisualElement primaryFocusable => m_ContentContainer;
 
-        public BuilderLibraryPlainView(IEnumerable<ITreeViewItem> items)
+        public BuilderLibraryPlainView(IEnumerable<TreeViewItem> items)
         {
             var builderTemplate = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(BuilderConstants.LibraryUIPath + "/BuilderLibraryPlainView.uxml");
             builderTemplate.CloneTree(this);
@@ -126,7 +127,7 @@ namespace Unity.UI.Builder
 
             var plainViewItem = foldout.contentContainer.Q<LibraryPlainViewItem>();
             var plainViewItemSize = new Vector2(plainViewItem.resolvedStyle.width, plainViewItem.resolvedStyle.height);
-            var itemsInRow = (int) Mathf.Floor(foldout.contentContainer.resolvedStyle.width / plainViewItemSize.x);
+            var itemsInRow = (int)Mathf.Floor(foldout.contentContainer.resolvedStyle.width / plainViewItemSize.x);
 
             var foldoutItemsCount = foldout.contentContainer.childCount;
             if (foldoutItemsCount <= itemsInRow)
@@ -153,55 +154,57 @@ namespace Unity.UI.Builder
                 return item;
             }
 
-            var newItem = new LibraryPlainViewItem(null);
+            var id = (int)Random.Range(0, float.MaxValue);
+            while (m_Items.Any(i => i.id == id))
+                id = (int)Random.Range(0, float.MaxValue);
+            var newItem = new LibraryPlainViewItem(new TreeViewItemData<BuilderLibraryTreeItem>(id, null));
+
             m_DummyItems.Add(newItem);
             return newItem;
         }
 
         public override VisualElement contentContainer => m_ContentContainer == null ? this : m_ContentContainer;
 
-        void FillView(IEnumerable<ITreeViewItem> items, VisualElement itemsParent = null)
+        void FillView(IEnumerable<TreeViewItem> items, VisualElement itemsParent = null)
         {
             foreach (var item in items)
             {
-                if (item is BuilderLibraryTreeItem libraryTreeItem)
+                var libraryTreeItem = item.data;
+                if (libraryTreeItem.isHeader)
                 {
-                    if (libraryTreeItem.isHeader)
+                    var categoryFoldout = new LibraryFoldout {text = libraryTreeItem.name};
+                    if (libraryTreeItem.isEditorOnly)
                     {
-                        var categoryFoldout = new LibraryFoldout {text = libraryTreeItem.data};
-                        if (libraryTreeItem.isEditorOnly)
-                        {
-                            categoryFoldout.tag = BuilderConstants.EditorOnlyTag;
-                            categoryFoldout.Q(LibraryFoldout.TagLabelName).AddToClassList(BuilderConstants.TagPillClassName);
-                        }
-                        categoryFoldout.contentContainer.RegisterCallback<GeometryChangedEvent>(e => AdjustSpace(categoryFoldout));
-                        categoryFoldout.AddToClassList(k_PlainViewFoldoutStyle);
-                        Add(categoryFoldout);
-                        FillView(libraryTreeItem.children, categoryFoldout);
-                        continue;
+                        categoryFoldout.tag = BuilderConstants.EditorOnlyTag;
+                        categoryFoldout.Q(LibraryFoldout.TagLabelName).AddToClassList(BuilderConstants.TagPillClassName);
                     }
-
-                    var plainViewItem = new LibraryPlainViewItem(libraryTreeItem);
-                    plainViewItem.AddManipulator(new ContextualMenuManipulator(OnContextualMenuPopulateEvent));
-                    plainViewItem.RegisterCallback<MouseDownEvent, LibraryPlainViewItem>(OnPlainViewItemMouseDown, plainViewItem);
-
-                    LinkToTreeViewItem(plainViewItem, libraryTreeItem);
-
-                    // The element set up is not yet completed at this point.
-                    // SetupView has to be called as well.
-                    plainViewItem.RegisterCallback<AttachToPanelEvent>(e =>
-                    {
-                        RegisterControlContainer(plainViewItem);
-                    });
-
-                    plainViewItem.RegisterCallback<MouseDownEvent>(e =>
-                    {
-                        if (e.clickCount == 2)
-                            AddItemToTheDocument(libraryTreeItem);
-                    });
-                    itemsParent?.Add(plainViewItem);
-                    m_PlainViewItems.Add(plainViewItem);
+                    categoryFoldout.contentContainer.RegisterCallback<GeometryChangedEvent>(e => AdjustSpace(categoryFoldout));
+                    categoryFoldout.AddToClassList(k_PlainViewFoldoutStyle);
+                    Add(categoryFoldout);
+                    FillView(item.children, categoryFoldout);
+                    continue;
                 }
+
+                var plainViewItem = new LibraryPlainViewItem(item);
+                plainViewItem.AddManipulator(new ContextualMenuManipulator(OnContextualMenuPopulateEvent));
+                plainViewItem.RegisterCallback<MouseDownEvent, LibraryPlainViewItem>(OnPlainViewItemMouseDown, plainViewItem);
+
+                LinkToTreeViewItem(plainViewItem, libraryTreeItem);
+
+                // The element set up is not yet completed at this point.
+                // SetupView has to be called as well.
+                plainViewItem.RegisterCallback<AttachToPanelEvent>(e =>
+                {
+                    RegisterControlContainer(plainViewItem);
+                });
+
+                plainViewItem.RegisterCallback<MouseDownEvent>(e =>
+                {
+                    if (e.clickCount == 2)
+                        AddItemToTheDocument(libraryTreeItem);
+                });
+                itemsParent?.Add(plainViewItem);
+                m_PlainViewItems.Add(plainViewItem);
             }
         }
 
@@ -217,10 +220,10 @@ namespace Unity.UI.Builder
 
         void OnPlainViewItemMouseDown(MouseDownEvent evt, LibraryPlainViewItem plainViewItem)
         {
-             if (evt.button != (int)MouseButton.LeftMouse)
-                 return;
+            if (evt.button != (int)MouseButton.LeftMouse)
+                return;
 
-             DoSelected(plainViewItem.Id);
+            DoSelected(plainViewItem.Id);
         }
 
         void DoSelected(int itemId)
@@ -250,7 +253,7 @@ namespace Unity.UI.Builder
 
         void OnContextualMenuPopulateEvent(ContextualMenuPopulateEvent evt)
         {
-            var libraryItem = GetLibraryTreeItem((VisualElement) evt.target);
+            var libraryItem = GetLibraryTreeItem((VisualElement)evt.target);
 
             evt.menu.AppendAction(
                 "Add",
@@ -258,6 +261,6 @@ namespace Unity.UI.Builder
                 action => DropdownMenuAction.Status.Normal);
         }
 
-        public override void Refresh() { }
+        public override void Refresh() {}
     }
 }

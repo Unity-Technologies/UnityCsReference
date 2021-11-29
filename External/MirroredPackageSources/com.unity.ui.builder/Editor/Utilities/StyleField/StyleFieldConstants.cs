@@ -25,7 +25,6 @@ namespace Unity.UI.Builder
             { UnitGrad, Dimension.Unit.Gradian },
             { UnitRad, Dimension.Unit.Radian },
             { UnitTurn, Dimension.Unit.Turn },
-
             { UnitSecond, Dimension.Unit.Second },
             { UnitMillisecond, Dimension.Unit.Millisecond },
         };

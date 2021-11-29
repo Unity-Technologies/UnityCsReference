@@ -45,6 +45,13 @@ namespace UnityEditor
         Embedded = 2
     }
 
+    public enum WebGLMemoryGrowthMode
+    {
+        None = 0,
+        Linear = 1,
+        Geometric = 2
+    }
+
     public sealed partial class PlayerSettings : UnityEngine.Object
     {
         [NativeHeader("Editor/Mono/PlayerSettingsWebGL.bindings.h")]
@@ -172,6 +179,48 @@ namespace UnityEditor
 
             [NativeProperty("webGLWasmArithmeticExceptions", TargetType.Field)]
             public extern static WebGLWasmArithmeticExceptions wasmArithmeticExceptions
+            {
+                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)] get;
+                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)] set;
+            }
+
+            [NativeProperty("webGLInitialMemorySize", TargetType.Field)]
+            public extern static int initialMemorySize
+            {
+                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)] get;
+                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)] set;
+            }
+
+            [NativeProperty("webGLMaximumMemorySize", TargetType.Field)]
+            public extern static int maximumMemorySize
+            {
+                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)] get;
+                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)] set;
+            }
+
+            [NativeProperty("webGLMemoryGrowthMode", TargetType.Field)]
+            public extern static WebGLMemoryGrowthMode memoryGrowthMode
+            {
+                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)] get;
+                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)] set;
+            }
+
+            [NativeProperty("webGLMemoryLinearGrowthStep", TargetType.Field)]
+            public extern static int linearMemoryGrowthStep
+            {
+                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)] get;
+                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)] set;
+            }
+
+            [NativeProperty("webGLMemoryGeometricGrowthStep", TargetType.Field)]
+            public extern static float geometricMemoryGrowthStep
+            {
+                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)] get;
+                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)] set;
+            }
+
+            [NativeProperty("webGLMemoryGeometricGrowthCap", TargetType.Field)]
+            public extern static int memoryGeometricGrowthCap
             {
                 [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)] get;
                 [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)] set;

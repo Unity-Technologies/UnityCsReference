@@ -6,11 +6,12 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Unity.Collections;
+using UnityEngine.Assertions;
 using UnityEngine.TextCore.Text;
 
 namespace UnityEngine.UIElements.UIR.Implementation
 {
-    internal class UIRStylePainter : IStylePainter, IDisposable
+    internal class UIRStylePainter : IStylePainter
     {
         internal struct Entry
         {
@@ -52,63 +53,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             public int maskStencilRef; // What's the stencil ref value used before pushing/popping the mask?
         }
 
-        internal struct TempDataAlloc<T> : IDisposable where T : struct
-        {
-            int maxPoolElemCount; // Requests larger than this will potentially be served individually without pooling
-            NativeArray<T> pool;
-            List<NativeArray<T>> excess;
-            uint takenFromPool;
 
-            public TempDataAlloc(int maxPoolElems)
-            {
-                maxPoolElemCount = maxPoolElems;
-                pool = new NativeArray<T>();
-                excess = new List<NativeArray<T>>();
-                takenFromPool = 0;
-            }
-
-            public void Dispose()
-            {
-                foreach (var e in excess)
-                    e.Dispose();
-                excess.Clear();
-                if (pool.IsCreated)
-                    pool.Dispose();
-            }
-
-            internal NativeSlice<T> Alloc(uint count)
-            {
-                if (takenFromPool + count <= pool.Length)
-                {
-                    NativeSlice<T> slice = pool.Slice((int)takenFromPool, (int)count);
-                    takenFromPool += count;
-                    return slice;
-                }
-
-                var exceeding = new NativeArray<T>((int)count, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-                excess.Add(exceeding);
-                return exceeding;
-            }
-
-            internal void SessionDone()
-            {
-                int totalNewSize = pool.Length;
-                foreach (var e in excess)
-                {
-                    if (e.Length < maxPoolElemCount)
-                        totalNewSize += e.Length;
-                    e.Dispose();
-                }
-                excess.Clear();
-                if (totalNewSize > pool.Length)
-                {
-                    if (pool.IsCreated)
-                        pool.Dispose();
-                    pool = new NativeArray<T>(totalNewSize, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-                }
-                takenFromPool = 0;
-            }
-        }
 
         RenderChain m_Owner;
         List<Entry> m_Entries = new List<Entry>();
@@ -122,8 +67,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         BMPAlloc m_ClipRectID = UIRVEShaderInfoAllocator.infiniteClipRect;
         int m_SVGBackgroundEntryIndex = -1;
-        TempDataAlloc<Vertex> m_VertsPool = new TempDataAlloc<Vertex>(8192);
-        TempDataAlloc<UInt16> m_IndicesPool = new TempDataAlloc<UInt16>(8192 << 1);
+        TempAllocator<Vertex> m_VertsPool;
+        TempAllocator<UInt16> m_IndicesPool;
         List<MeshWriteData> m_MeshWriteDataPool;
         int m_NextMeshWriteDataPoolItem;
 
@@ -141,8 +86,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         MeshWriteData AllocRawVertsIndices(uint vertexCount, uint indexCount, ref MeshBuilder.AllocMeshData allocatorData)
         {
-            m_CurrentEntry.vertices = m_VertsPool.Alloc(vertexCount);
-            m_CurrentEntry.indices = m_IndicesPool.Alloc(indexCount);
+            m_CurrentEntry.vertices = m_VertsPool.Alloc((int)vertexCount);
+            m_CurrentEntry.indices = m_IndicesPool.Alloc((int)indexCount);
             var mwd = GetPooledMeshWriteData();
             mwd.Reset(m_CurrentEntry.vertices, m_CurrentEntry.indices);
             return mwd;
@@ -171,6 +116,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
             m_MeshWriteDataPool = new List<MeshWriteData>(meshWriteDataPoolStartingSize);
             for (int i = 0; i < meshWriteDataPoolStartingSize; i++)
                 m_MeshWriteDataPool.Add(new MeshWriteData());
+            m_VertsPool = renderChain.vertsPool;
+            m_IndicesPool = renderChain.indicesPool;
         }
 
         public MeshGenerationContext meshGenerationContext { get; }
@@ -180,41 +127,11 @@ namespace UnityEngine.UIElements.UIR.Implementation
         public int totalVertices { get; private set; }
         public int totalIndices { get; private set; }
 
-        #region Dispose Pattern
-
-        protected bool disposed { get; private set; }
-
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected void Dispose(bool disposing)
-        {
-            if (disposed)
-                return;
-
-            if (disposing)
-            {
-                m_IndicesPool.Dispose();
-                m_VertsPool.Dispose();
-            }
-            else
-                UnityEngine.UIElements.DisposeHelper.NotifyMissingDispose(this);
-
-            disposed = true;
-        }
-
-        #endregion // Dispose Pattern
-
         public void Begin(VisualElement ve)
         {
             currentElement = ve;
             m_NextMeshWriteDataPoolItem = 0;
             m_SVGBackgroundEntryIndex = -1;
-            currentElement.renderChainData.usesLegacyText = currentElement.renderChainData.disableNudging = false;
             currentElement.renderChainData.displacementUVStart = currentElement.renderChainData.displacementUVEnd = 0;
 
             m_MaskDepth = 0;
@@ -260,6 +177,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 m_Entries.Add(new Entry() { customCommand = cmd });
                 m_ClosingInfo.needsClosing = m_ClosingInfo.PopDefaultMaterial = true;
             }
+
+            if (meshGenerationContext.hasPainter2D)
+                meshGenerationContext.painter2D.Reset(); // Reset vector API before client usage
         }
 
         public void LandClipUnregisterMeshDrawCommand(RenderChainCommand cmd)
@@ -287,8 +207,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
             m_CurrentEntry = new Entry()
             {
-                vertices = m_VertsPool.Alloc((uint)vertexCount),
-                indices = m_IndicesPool.Alloc((uint)indexCount),
+                vertices = m_VertsPool.Alloc(vertexCount),
+                indices = m_IndicesPool.Alloc(indexCount),
                 material = material,
                 texture = texture,
                 clipRectID = m_ClipRectID,
@@ -319,8 +239,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
             m_CurrentEntry = new Entry()
             {
-                vertices = m_VertsPool.Alloc((uint)vertexCount),
-                indices = m_IndicesPool.Alloc((uint)indexCount),
+                vertices = m_VertsPool.Alloc(vertexCount),
+                indices = m_IndicesPool.Alloc(indexCount),
                 material = material,
                 uvIsDisplacement = (flags & MeshGenerationContext.MeshFlags.UVisDisplacement) == MeshGenerationContext.MeshFlags.UVisDisplacement,
                 clipRectID = m_ClipRectID,
@@ -360,54 +280,12 @@ namespace UnityEngine.UIElements.UIR.Implementation
             return mwd;
         }
 
-        public void DrawText(MeshGenerationContextUtils.TextParams textParams, ITextHandle handle, float pixelsPerPoint)
+        public void DrawText(TextElement te)
         {
-            if (!TextUtilities.IsFontAssigned(textParams))
+            if (!TextUtilities.IsFontAssigned(te))
                 return;
 
-            if (currentElement.panel.contextType == ContextType.Editor)
-                textParams.fontColor *= textParams.playmodeTintColor;
-
-            if (handle.IsLegacy())
-                DrawTextNative(textParams, handle, pixelsPerPoint);
-            else
-                DrawTextCore(textParams, handle, pixelsPerPoint);
-        }
-
-        internal void DrawTextNative(MeshGenerationContextUtils.TextParams textParams, ITextHandle handle, float pixelsPerPoint)
-        {
-            float scaling = TextUtilities.ComputeTextScaling(currentElement.worldTransform, pixelsPerPoint);
-
-            using (NativeArray<TextVertex> textVertices = ((TextNativeHandle)handle).GetVertices(textParams, scaling))
-            {
-                if (textVertices.Length == 0)
-                    return;
-
-
-                TextNativeSettings textSettings = MeshGenerationContextUtils.TextParams.GetTextNativeSettings(textParams, scaling);
-                Vector2 localOffset = TextNative.GetOffset(textSettings, textParams.rect);
-                m_CurrentEntry.isTextEntry = true;
-                m_CurrentEntry.clipRectID = m_ClipRectID;
-                m_CurrentEntry.stencilRef = m_StencilRef;
-                m_CurrentEntry.maskDepth = m_MaskDepth;
-                MeshBuilder.MakeText(textVertices, localOffset, new MeshBuilder.AllocMeshData() { alloc = m_AllocRawVertsIndicesDelegate });
-
-                var texture = textParams.font.material.mainTexture;
-                m_CurrentEntry.texture = TextureRegistry.instance.Acquire(texture);
-                m_Owner.AppendTexture(currentElement, texture, m_CurrentEntry.texture, false);
-
-                m_Entries.Add(m_CurrentEntry);
-                totalVertices += m_CurrentEntry.vertices.Length;
-                totalIndices += m_CurrentEntry.indices.Length;
-                m_CurrentEntry = new Entry();
-                currentElement.renderChainData.usesLegacyText = true;
-                currentElement.renderChainData.disableNudging = true;
-            }
-        }
-
-        internal void DrawTextCore(MeshGenerationContextUtils.TextParams textParams, ITextHandle handle, float pixelsPerPoint)
-        {
-            TextInfo textInfo = handle.Update(textParams, pixelsPerPoint);
+            TextInfo textInfo = te.uitkTextHandle.Update();
             for (int i = 0; i < textInfo.materialCount; i++)
             {
                 if (textInfo.meshInfo[i].vertexCount == 0)
@@ -429,7 +307,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
                     MeshBuilder.MakeText(
                         textInfo.meshInfo[i],
-                        textParams.rect.min,
+                        te.contentRect.min,
                         new MeshBuilder.AllocMeshData() { alloc = m_AllocRawVertsIndicesDelegate },
                         VertexFlags.IsTextured);
                 }
@@ -450,7 +328,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
                     MeshBuilder.MakeText(
                         textInfo.meshInfo[i],
-                        textParams.rect.min,
+                        te.contentRect.min,
                         new MeshBuilder.AllocMeshData() { alloc = m_AllocRawVertsIndicesDelegate },
                         VertexFlags.IsText,
                         isDynamicColor);
@@ -821,17 +699,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         internal void Reset()
         {
-            if (disposed)
-            {
-                DisposeHelper.NotifyDisposedUsed(this);
-                return;
-            }
-
             ValidateMeshWriteData();
 
             m_Entries.Clear(); // Doesn't shrink, good
-            m_VertsPool.SessionDone();
-            m_IndicesPool.SessionDone();
             m_ClosingInfo = new ClosingInfo();
             m_NextMeshWriteDataPoolItem = 0;
             currentElement = null;
@@ -941,7 +811,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
             // Adjust vertices for stencil clipping
             int vertexCount = m_CurrentEntry.vertices.Length;
-            var clipVerts = m_VertsPool.Alloc((uint)vertexCount);
+            var clipVerts = m_VertsPool.Alloc(vertexCount);
             for (int i = 0; i < vertexCount; i++)
             {
                 Vertex v = m_CurrentEntry.vertices[i];
@@ -954,130 +824,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
             m_Entries.Add(m_CurrentEntry);
             m_CurrentEntry = new Entry();
-        }
-    }
-
-    internal class UIRTextUpdatePainter : IStylePainter, IDisposable
-    {
-        RenderChain m_Owner;
-        VisualElement m_CurrentElement;
-        int m_TextEntryIndex;
-        NativeArray<Vertex> m_DudVerts;
-        NativeArray<UInt16> m_DudIndices;
-        NativeSlice<Vertex> m_MeshDataVerts;
-        Color32 m_XFormClipPages, m_IDs, m_Flags, m_OpacityColorPages;
-
-        public MeshGenerationContext meshGenerationContext { get; }
-
-        public UIRTextUpdatePainter(RenderChain renderChain)
-        {
-            m_Owner = renderChain;
-            meshGenerationContext = new MeshGenerationContext(this);
-        }
-
-        public void Begin(VisualElement ve, UIRenderDevice device)
-        {
-            Debug.Assert(ve.renderChainData.usesLegacyText && ve.renderChainData.textEntries.Count > 0);
-            m_CurrentElement = ve;
-            m_TextEntryIndex = 0;
-            var oldVertexAlloc = ve.renderChainData.data.allocVerts;
-            var oldVertexData = ve.renderChainData.data.allocPage.vertices.cpuData.Slice((int)oldVertexAlloc.start, (int)oldVertexAlloc.size);
-            device.Update(ve.renderChainData.data, ve.renderChainData.data.allocVerts.size, out m_MeshDataVerts);
-            RenderChainTextEntry firstTextEntry = ve.renderChainData.textEntries[0];
-            if (ve.renderChainData.textEntries.Count > 1 || firstTextEntry.vertexCount != m_MeshDataVerts.Length)
-                m_MeshDataVerts.CopyFrom(oldVertexData); // Preserve old data because we're not just updating the text vertices, but the entire mesh surrounding it though we won't touch but the text vertices
-
-            // Case 1222517: Background and border are clipped by the parent, which implies that they may have a
-            // different clip id when compared to the content, if overflow-clip-box is set to content-box. As a result,
-            // we must NOT use the "first vertex" but rather the "first vertex of the first text entry".
-            int first = firstTextEntry.firstVertex;
-            m_XFormClipPages = oldVertexData[first].xformClipPages;
-            m_IDs = oldVertexData[first].ids;
-            m_Flags = oldVertexData[first].flags;
-            m_OpacityColorPages = oldVertexData[first].opacityColorPages;
-        }
-
-        public void End()
-        {
-            Debug.Assert(m_TextEntryIndex == m_CurrentElement.renderChainData.textEntries.Count); // Or else element repaint logic diverged for some reason
-            m_CurrentElement = null;
-        }
-
-        public void Dispose()
-        {
-            if (m_DudVerts.IsCreated)
-                m_DudVerts.Dispose();
-            if (m_DudIndices.IsCreated)
-                m_DudIndices.Dispose();
-        }
-
-        public void DrawRectangle(MeshGenerationContextUtils.RectangleParams rectParams) {}
-        public void DrawBorder(MeshGenerationContextUtils.BorderParams borderParams) {}
-        public void DrawImmediate(Action callback, bool cullingEnabled) {}
-
-        public VisualElement visualElement { get { return m_CurrentElement; } }
-
-        public MeshWriteData DrawMesh(int vertexCount, int indexCount, Texture texture, Material material, MeshGenerationContext.MeshFlags flags)
-        {
-            // Ideally we should allow returning 0 here and the client would handle that properly
-            if (m_DudVerts.Length < vertexCount)
-            {
-                if (m_DudVerts.IsCreated)
-                    m_DudVerts.Dispose();
-                m_DudVerts = new NativeArray<Vertex>(vertexCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-            }
-            if (m_DudIndices.Length < indexCount)
-            {
-                if (m_DudIndices.IsCreated)
-                    m_DudIndices.Dispose();
-                m_DudIndices = new NativeArray<UInt16>(indexCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-            }
-            return new MeshWriteData() { m_Vertices = m_DudVerts.Slice(0, vertexCount), m_Indices = m_DudIndices.Slice(0, indexCount) };
-        }
-
-        public void DrawText(MeshGenerationContextUtils.TextParams textParams, ITextHandle handle, float pixelsPerPoint)
-        {
-            if (!TextUtilities.IsFontAssigned(textParams))
-                return;
-
-            if (m_CurrentElement.panel.contextType == ContextType.Editor)
-                textParams.fontColor *= textParams.playmodeTintColor;
-
-            float scaling = TextNative.ComputeTextScaling(m_CurrentElement.worldTransform, pixelsPerPoint);
-            TextNativeSettings textSettings = MeshGenerationContextUtils.TextParams.GetTextNativeSettings(textParams, scaling);
-
-            using (NativeArray<TextVertex> textVertices = TextNative.GetVertices(textSettings))
-            {
-                var textEntry = m_CurrentElement.renderChainData.textEntries[m_TextEntryIndex++];
-
-                // Only acquire the texture if it is not already acquired.
-                // Text updates don't go through the usual ResetTextures() code path, so we
-                // should avoid increasing the ref-count for no good reason.
-                var texture = textParams.font.material.mainTexture;
-                var textureId = TextureId.invalid;
-                for (var node = m_CurrentElement.renderChainData.textures; node != null; node = node.next)
-                {
-                    if (node.data.source == texture)
-                    {
-                        textureId = node.data.actual;
-                        break;
-                    }
-                }
-
-                if (textureId == TextureId.invalid)
-                {
-                    textureId = TextureRegistry.instance.Acquire(texture);
-                    m_Owner.AppendTexture(m_CurrentElement, texture, textureId, false);
-                }
-
-                textEntry.command.state.texture = textureId;
-
-                Vector2 localOffset = TextNative.GetOffset(textSettings, textParams.rect);
-                MeshBuilder.UpdateText(textVertices, localOffset, m_CurrentElement.renderChainData.verticesSpace,
-                    m_XFormClipPages, m_IDs, m_Flags, m_OpacityColorPages,
-                    m_MeshDataVerts.Slice(textEntry.firstVertex, textEntry.vertexCount),
-                    textureId);
-            }
         }
     }
 }

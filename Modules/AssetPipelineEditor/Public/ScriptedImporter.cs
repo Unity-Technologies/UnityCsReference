@@ -4,8 +4,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEngine.Scripting.APIUpdating;
 
@@ -16,6 +18,7 @@ namespace UnityEditor.AssetImporters
     [Preserve]
     [UsedByNativeCode]
     [MovedFrom("UnityEditor.Experimental.AssetImporters")]
+    [NativeHeader("Modules/AssetPipelineEditor/Public/ScriptedImporter.h")]
     public abstract class ScriptedImporter : AssetImporter
     {
         // Called by native code to invoke the import handling code of the specialized scripted importer class.
@@ -138,29 +141,29 @@ namespace UnityEditor.AssetImporters
             var handledExts = new SortedDictionary<string, bool>();
             if (attribute.fileExtensions != null)
             {
-#pragma warning disable 618
-                // AutoSelect is now obsolete, but in order to support user scripts still using it we need to read its value until we make it Obsolete error.
-                var isDefault = attribute.AutoSelect;
-#pragma warning restore 618
-                for (var index = 0; index < attribute.fileExtensions.Length; index++)
+                var fileExtensions = attribute.fileExtensions.Distinct(StringComparer.OrdinalIgnoreCase);
+                foreach (var fileExtension in fileExtensions)
                 {
-                    var cleanExt = attribute.fileExtensions[index].Trim('.');
+                    var cleanExt = fileExtension.Trim('.');
                     if (!string.IsNullOrEmpty(cleanExt))
-                        handledExts.Add(cleanExt, isDefault);
+                        handledExts.Add(cleanExt, true);
                 }
             }
 
             if (attribute.overrideFileExtensions != null)
             {
-                for (var index = 0; index < attribute.overrideFileExtensions.Length; index++)
+                var overrideFileExtensions = attribute.overrideFileExtensions.Distinct(StringComparer.OrdinalIgnoreCase);
+                foreach (var fileExtension in overrideFileExtensions)
                 {
-                    var cleanExt = attribute.overrideFileExtensions[index].Trim('.');
-                    if (!string.IsNullOrEmpty(cleanExt))
+                    var cleanExt = fileExtension.Trim('.');
+                    if (!string.IsNullOrEmpty(cleanExt) && !handledExts.ContainsKey(cleanExt))
                         handledExts.Add(cleanExt, false);
                 }
             }
             return handledExts;
         }
+
+        internal extern static void UnregisterScriptedImporters();
     }
 
     // Class Concept: Class attribute that describes Scriptable importers and their static characteristics.
@@ -178,7 +181,7 @@ namespace UnityEditor.AssetImporters
 
         public string[] overrideFileExtensions { get; private set; }
 
-        [Obsolete("Use overrideFileExtensions instead to specify this importer is an override for those file extensions")]
+        [Obsolete("Use overrideFileExtensions instead to specify this importer is an override for those file extensions",true)]
         public bool AutoSelect = true;
 
         public bool AllowCaching = false;

@@ -89,6 +89,11 @@ namespace UnityEditor.UIElements
             m_GenericMenu = new GenericMenu();
         }
 
+        public GenericOSMenu(GenericMenu genericMenu)
+        {
+            m_GenericMenu = genericMenu;
+        }
+
         public void AddItem(string itemName, bool isChecked, System.Action action)
         {
             if (action == null)

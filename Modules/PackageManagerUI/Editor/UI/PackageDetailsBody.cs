@@ -97,7 +97,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             RefreshDependencies();
         }
 
-        private void RefreshDependencies(IEnumerable<IPackage> added, IEnumerable<IPackage> removed, IEnumerable<IPackage> preUpdate, IEnumerable<IPackage> postUpdate)
+        private void RefreshDependencies(PackagesChangeArgs _)
         {
             RefreshDependencies();
         }

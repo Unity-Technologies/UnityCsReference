@@ -18,7 +18,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private UnityConnectProxy m_UnityConnect;
         private PackageFiltering m_PackageFiltering;
         private PackageManagerPrefs m_PackageManagerPrefs;
-        private PackageDatabase m_PackageDatabase;
         private PageManager m_PageManager;
         private AssetStoreCallQueue m_AssetStoreCallQueue;
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
@@ -29,7 +28,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UnityConnect = container.Resolve<UnityConnectProxy>();
             m_PackageFiltering = container.Resolve<PackageFiltering>();
             m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
-            m_PackageDatabase = container.Resolve<PackageDatabase>();
             m_PageManager = container.Resolve<PageManager>();
             m_AssetStoreCallQueue = container.Resolve<AssetStoreCallQueue>();
             m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
@@ -57,8 +55,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnEnable()
         {
-            m_PackageDatabase.onPackageProgressUpdate += OnPackageProgressUpdate;
-
             m_PageManager.onRefreshOperationStart += OnRefreshOperationStartOrFinish;
             m_PageManager.onRefreshOperationFinish += OnRefreshOperationStartOrFinish;
 
@@ -91,8 +87,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnDisable()
         {
-            m_PackageDatabase.onPackageProgressUpdate -= OnPackageProgressUpdate;
-
             m_PageManager.onRefreshOperationStart -= OnRefreshOperationStartOrFinish;
             m_PageManager.onRefreshOperationFinish -= OnRefreshOperationStartOrFinish;
 
@@ -276,11 +270,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var numItems = ((int)containerHeight - heightCalculationBuffer - PackageLoadBar.k_FixedHeight) / PackageItem.k_MainItemHeight;
                 m_PackageManagerPrefs.numItemsPerPage = numItems <= 0 ? null : (int?)numItems;
             }
-        }
-
-        private void OnPackageProgressUpdate(IPackage package)
-        {
-            currentView.GetPackageItem(package?.uniqueId)?.RefreshState();
         }
 
         private void OnRefreshOperationStartOrFinish()

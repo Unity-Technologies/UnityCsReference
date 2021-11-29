@@ -5,6 +5,7 @@
 using System;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.UIElements;
+using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -37,6 +38,13 @@ namespace UnityEditor
         // UIToolkit
         void AddDefaultEditorStyleSheets(VisualElement ve);
 
+        VisualElement CreateUnityEventItem();
+        void BindUnityEventItem(VisualElement item, UnityEventDrawer.PropertyData propertyData, Func<GenericMenu> createMenuCallback, Func<string, string> formatSelectedValueCallback, Func<SerializedProperty> getArgumentCallback);
+        BindableElement CreateObjectField();
+        void SetObjectField(VisualElement element, UnityEngine.Object value, Type type, string label);
+        ListView CreateListViewBinding(SerializedObject serializedObject);
+        VisualElement CreateDropdownField(string[] options, Func<int> getSelectedChoiceCallback);
+        VisualElement CreatePropertyField(SerializedProperty serializedProperty, string label);
         BindableElement CreateFloatField(string name, Func<float, float> onValidateValue = null, bool isDelayed = false);
         BindableElement CreateDoubleField(string name, Func<double, double> onValidateValue = null, bool isDelayed = false);
         BindableElement CreateIntField(string name, Func<int, int> onValidateValue = null, bool isDelayed = false);

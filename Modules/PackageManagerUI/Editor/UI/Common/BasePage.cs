@@ -93,21 +93,21 @@ namespace UnityEditor.PackageManager.UI.Internal
             return true;
         }
 
-        public abstract void OnPackagesChanged(IEnumerable<IPackage> added, IEnumerable<IPackage> removed, IEnumerable<IPackage> preUpdate, IEnumerable<IPackage> postUpdate);
+        public abstract void OnPackagesChanged(PackagesChangeArgs args);
 
         public abstract void Rebuild();
 
-        protected void TriggerOnListUpdate(IEnumerable<IPackage> added, IEnumerable<IPackage> updated = null, IEnumerable<IPackage> removed = null)
+        protected void TriggerOnListUpdate(IEnumerable<IPackage> added = null, IEnumerable<IPackage> updated = null, IEnumerable<IPackage> removed = null)
         {
-            var args = new ListUpdateArgs
-            {
-                page = this,
-                added = added ?? Enumerable.Empty<IPackage>(),
-                updated = updated ?? Enumerable.Empty<IPackage>(),
-                removed = removed ?? Enumerable.Empty<IPackage>()
-            };
-            args.reorder = capability.supportLocalReordering && (args.added.Any() || args.updated.Any());
-            onListUpdate?.Invoke(args);
+            added ??= Enumerable.Empty<IPackage>();
+            updated ??= Enumerable.Empty<IPackage>();
+            removed ??= Enumerable.Empty<IPackage>();
+            var anyAddedOrUpdated = added.Any() || updated.Any();
+            if (!anyAddedOrUpdated && !removed.Any())
+                return;
+
+            var reorder = capability.supportLocalReordering && anyAddedOrUpdated;
+            onListUpdate?.Invoke(new ListUpdateArgs { page = this, added = added, updated = updated, removed = removed, reorder = reorder });
         }
 
         protected void TriggerOnListRebuild()
@@ -274,6 +274,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         public abstract void LoadMore(long numberOfPackages);
 
         public abstract void Load(IPackage package, IPackageVersion version = null);
+
+        public abstract void LoadExtraItems(IEnumerable<IPackage> packages);
 
         public abstract void AddSubPage(SubPage subPage);
     }

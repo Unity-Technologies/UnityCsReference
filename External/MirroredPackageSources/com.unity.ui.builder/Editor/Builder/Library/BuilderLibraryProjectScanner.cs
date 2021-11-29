@@ -10,6 +10,8 @@ using UnityEditor.Utils;
 using UnityEngine;
 using UnityEngine.UIElements;
 using PackageInfo = UnityEditor.PackageManager.PackageInfo;
+using BuilderLibraryItem = UnityEngine.UIElements.TreeViewItemData<Unity.UI.Builder.BuilderLibraryTreeItem>;
+using TreeViewItem = UnityEngine.UIElements.TreeViewItemData<Unity.UI.Builder.BuilderLibraryTreeItem>;
 
 namespace Unity.UI.Builder
 {
@@ -71,11 +73,11 @@ namespace Unity.UI.Builder
             return true;
         }
 
-        public void ImportFactoriesFromSource(BuilderLibraryTreeItem sourceCategory)
+        public void ImportFactoriesFromSource(BuilderLibraryItem sourceCategory)
         {
             var deferredFactories = new List<IUxmlFactory>();
             var processingData = new FactoryProcessingHelper();
-            var emptyNamespaceControls = new List<ITreeViewItem>();
+            var emptyNamespaceControls = new List<TreeViewItem>();
 
             foreach (var factories in VisualElementFactoryRegistry.factories)
             {
@@ -113,7 +115,7 @@ namespace Unity.UI.Builder
                 Debug.Log("Some factories could not be processed because their base type is missing.");
             }
 
-            var categoryStack = new List<BuilderLibraryTreeItem>();
+            var categoryStack = new List<BuilderLibraryItem>();
             foreach (var known in processingData.knownTypes.Values)
             {
                 var split = known.uxmlNamespace.Split('.');
@@ -144,9 +146,9 @@ namespace Unity.UI.Builder
                         factoryType = factoryType.BaseType;
                 }
 
-                var newItem = new BuilderLibraryTreeItem(
-                    known.uxmlName, elementType.Equals(typeof(TemplateContainer)) ? nameof(TemplateContainer) : "CustomCSharpElement", elementType, () => known.Create(asset, context));
-                newItem.hasPreview = true;
+                var newItem = BuilderLibraryContent.CreateItem(
+                    known.uxmlName, elementType == typeof(TemplateContainer) ? nameof(TemplateContainer) : "CustomCSharpElement", elementType, () => known.Create(asset, context));
+                newItem.data.hasPreview = true;
 
                 if (string.IsNullOrEmpty(split[0]))
                 {
@@ -165,7 +167,7 @@ namespace Unity.UI.Builder
             sourceCategory.AddChildren(emptyNamespaceControls);
         }
 
-        static void AddCategoriesToStack(BuilderLibraryTreeItem sourceCategory, List<BuilderLibraryTreeItem> categoryStack, string[] split)
+        static void AddCategoriesToStack(BuilderLibraryItem sourceCategory, List<BuilderLibraryItem> categoryStack, string[] split)
         {
             if (categoryStack.Count > split.Length)
             {
@@ -179,11 +181,12 @@ namespace Unity.UI.Builder
                 fullName += part;
                 if (categoryStack.Count > i)
                 {
-                    if (categoryStack[i].name == part)
+                    var data = categoryStack[i].data;
+                    if (data.name == part)
                     {
                         continue;
                     }
-                    else if (categoryStack[i].name != part)
+                    else if (data.name != part)
                     {
                         categoryStack.RemoveRange(i, categoryStack.Count - i);
                     }
@@ -191,9 +194,9 @@ namespace Unity.UI.Builder
 
                 if (categoryStack.Count <= i)
                 {
-                    var newCategory = new BuilderLibraryTreeItem(part,
+                    var newCategory = BuilderLibraryContent.CreateItem(part,
                         null, null, null,
-                        null, new List<TreeViewItem<string>>(),
+                        null, null,
                         null, fullName.GetHashCode());
 
                     if (categoryStack.Count == 0)
@@ -221,10 +224,10 @@ namespace Unity.UI.Builder
             return pathsStr.GetHashCode();
         }
 
-        public void ImportUxmlFromProject(BuilderLibraryTreeItem projectCategory, bool includePackages)
+        public void ImportUxmlFromProject(BuilderLibraryItem projectCategory, bool includePackages)
         {
+            var categoryStack = new List<BuilderLibraryItem>();
             var assets = AssetDatabase.FindAllAssets(m_SearchFilter);
-            var categoryStack = new List<BuilderLibraryTreeItem>();
             foreach (var asset in assets)
             {
                 var assetPath = AssetDatabase.GetAssetPath(asset.instanceID);
@@ -245,13 +248,13 @@ namespace Unity.UI.Builder
                 // Anoter way to check the above. Leaving it here for references in case the above stops working.
                 //AssetDatabase.GetAssetFolderInfo(assetPath, out bool isRoot, out bool isImmutable);
                 //if (isImmutable)
-                    //continue;
+                //continue;
 
                 var split = prettyPath.Split('/');
                 AddCategoriesToStack(projectCategory, categoryStack, split);
 
                 var vta = asset.pptrValue as VisualTreeAsset;
-                var newItem = new BuilderLibraryTreeItem(asset.name + ".uxml", nameof(TemplateContainer), typeof(TemplateContainer),
+                var newItem = BuilderLibraryContent.CreateItem(asset.name + ".uxml", nameof(TemplateContainer), typeof(TemplateContainer),
                     () =>
                     {
                         if (vta == null)
@@ -270,11 +273,13 @@ namespace Unity.UI.Builder
                         return vea;
                     },
                     null, vta);
-                if (newItem.icon == null)
+
+                var data = newItem.data;
+                if (data.icon == null)
                 {
-                    newItem.SetIcon((Texture2D) EditorGUIUtility.IconContent("VisualTreeAsset Icon").image);
+                    data.SetIcon((Texture2D) EditorGUIUtility.IconContent("VisualTreeAsset Icon").image);
                 }
-                newItem.hasPreview = true;
+                data.hasPreview = true;
 
                 if (categoryStack.Count == 0)
                     projectCategory.AddChild(newItem);

@@ -8,7 +8,6 @@ using UnityEditor.Profiling;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
-using TreeView = UnityEngine.UIElements.Experimental.TreeView;
 
 namespace UnityEditor
 {

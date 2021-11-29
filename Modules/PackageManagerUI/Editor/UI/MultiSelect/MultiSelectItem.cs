@@ -57,7 +57,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (m_Version.package.Is(PackageType.AssetStore))
                 return;
 
-            if (m_Version.package.state == PackageState.InProgress)
+            if (m_Version.package.progress != PackageProgress.None)
                 StartSpinner();
             else
                 StopSpinner();

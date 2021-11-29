@@ -67,7 +67,5 @@ namespace UnityEngine.UIElements
         {
             onGeometryChanged?.Invoke(this);
         }
-
-        protected internal VisualElement GetRootElement() => rootElement;
     }
 }

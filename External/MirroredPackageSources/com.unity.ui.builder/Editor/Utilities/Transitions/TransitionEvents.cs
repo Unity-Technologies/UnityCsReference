@@ -1,4 +1,3 @@
-
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
@@ -21,4 +20,3 @@ namespace Unity.UI.Builder
         public int index;
     }
 }
-

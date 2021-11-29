@@ -15,6 +15,7 @@ namespace UnityEngine.UIElements
     {
         // This property to alleviate the fact we have to cast all the time
         Hash128Input integerInput => (Hash128Input)textInputBase;
+        internal bool m_UpdateTextFromValue;
 
         /// <summary>
         /// Instantiates a <see cref="Hash128Field"/> using the data read from a UXML file.
@@ -62,6 +63,7 @@ namespace UnityEngine.UIElements
         public Hash128Field(string label, int maxLength = kMaxLengthNone)
             : base(label, maxLength, Char.MinValue, new Hash128Input())
         {
+            m_UpdateTextFromValue = true;
             SetValueWithoutNotify(new Hash128());
             AddToClassList(ussClassName);
             labelElement.AddToClassList(labelUssClassName);
@@ -74,7 +76,7 @@ namespace UnityEngine.UIElements
             set
             {
                 base.value = value;
-                if (integerInput.m_UpdateTextFromValue)
+                if (m_UpdateTextFromValue)
                     text = rawValue.ToString();
             }
         }
@@ -82,7 +84,7 @@ namespace UnityEngine.UIElements
         public override void SetValueWithoutNotify(Hash128 newValue)
         {
             base.SetValueWithoutNotify(newValue);
-            if (integerInput.m_UpdateTextFromValue)
+            if (m_UpdateTextFromValue)
             {
                 // Value is the same but the text might not be in sync
                 // In the case of an expression like 2+2, the text might not be equal to the result
@@ -90,16 +92,98 @@ namespace UnityEngine.UIElements
             }
         }
 
+        protected override string ValueToString(Hash128 value)
+        {
+            return value.ToString();
+        }
+
+        protected override Hash128 StringToValue(string str)
+        {
+            return Hash128.Parse(str);
+        }
+
+        [EventInterest(typeof(KeyDownEvent), typeof(ExecuteCommandEvent))]
+        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
+        {
+            base.ExecuteDefaultActionAtTarget(evt);
+
+            bool hasChanged = false;
+            if (evt.eventTypeId == KeyDownEvent.TypeId())
+            {
+                KeyDownEvent kde = evt as KeyDownEvent;
+
+                if ((kde?.character == 3) ||     // KeyCode.KeypadEnter
+                    (kde?.character == '\n'))    // KeyCode.Return
+                {
+                    if (textEdition.hasFocus)
+                        Focus();
+                    else
+                        textInputBase.textElement.Focus();
+                    evt.StopPropagation();
+                    evt.PreventDefault();
+                }
+                else if (!isReadOnly)
+                {
+                    hasChanged = true;
+                }
+            }
+            else if (!isReadOnly && evt.eventTypeId == ExecuteCommandEvent.TypeId())
+            {
+                ExecuteCommandEvent commandEvt = evt as ExecuteCommandEvent;
+                string cmdName = commandEvt.commandName;
+                if (cmdName == EventCommandNames.Paste || cmdName == EventCommandNames.Cut)
+                {
+                    hasChanged = true;
+                }
+            }
+
+            if (!isDelayed && hasChanged)
+            {
+                // Prevent text from changing when the value change
+                // This allow expression (2+2) or string like 00123 to remain as typed in the TextField until enter is pressed
+                m_UpdateTextFromValue = false;
+                try
+                {
+                    textInputBase.UpdateValueFromText();
+                }
+                finally
+                {
+                    m_UpdateTextFromValue = true;
+                }
+            }
+        }
+
+            [EventInterest(typeof(BlurEvent))]
+        protected override void ExecuteDefaultAction(EventBase evt)
+        {
+            base.ExecuteDefaultAction(evt);
+
+            if (evt == null)
+            {
+                return;
+            }
+
+            if (evt.eventTypeId == BlurEvent.TypeId())
+            {
+                if (string.IsNullOrEmpty(text))
+                {
+                    // Make sure that empty field gets the default value
+                    value = new Hash128();
+                }
+                else
+                {
+                    textInputBase.UpdateValueFromText();
+                }
+            }
+        }
         class Hash128Input : TextInputBase
         {
             Hash128Field hash128Field => (Hash128Field)parent;
 
             internal Hash128Input()
             {
-                m_UpdateTextFromValue = true;
+                textEdition.AcceptCharacter = AcceptCharacter;
             }
-
-            internal bool m_UpdateTextFromValue;
 
             protected string allowedCharacters => "0123456789abcdefABCDEF";
 
@@ -124,78 +208,6 @@ namespace UnityEngine.UIElements
                 return Hash128.Parse(str);
             }
 
-            [EventInterest(typeof(KeyDownEvent), typeof(ExecuteCommandEvent))]
-            protected override void ExecuteDefaultActionAtTarget(EventBase evt)
-            {
-                base.ExecuteDefaultActionAtTarget(evt);
-
-                bool hasChanged = false;
-                if (evt.eventTypeId == KeyDownEvent.TypeId())
-                {
-                    KeyDownEvent kde = evt as KeyDownEvent;
-
-                    if ((kde?.character == 3) ||     // KeyCode.KeypadEnter
-                        (kde?.character == '\n'))    // KeyCode.Return
-                    {
-                        // Here we should update the value, but it will be done when the blur event is handled...
-                        parent.Focus();
-                        evt.StopPropagation();
-                        evt.PreventDefault();
-                    }
-                    else if (!isReadOnly)
-                    {
-                        hasChanged = true;
-                    }
-                }
-                else if (!isReadOnly && evt.eventTypeId == ExecuteCommandEvent.TypeId())
-                {
-                    ExecuteCommandEvent commandEvt = evt as ExecuteCommandEvent;
-                    string cmdName = commandEvt.commandName;
-                    if (cmdName == EventCommandNames.Paste || cmdName == EventCommandNames.Cut)
-                    {
-                        hasChanged = true;
-                    }
-                }
-
-                if (!hash128Field.isDelayed && hasChanged)
-                {
-                    // Prevent text from changing when the value change
-                    // This allow expression (2+2) or string like 00123 to remain as typed in the TextField until enter is pressed
-                    m_UpdateTextFromValue = false;
-                    try
-                    {
-                        UpdateValueFromText();
-                    }
-                    finally
-                    {
-                        m_UpdateTextFromValue = true;
-                    }
-                }
-            }
-
-            [EventInterest(typeof(BlurEvent))]
-            protected override void ExecuteDefaultAction(EventBase evt)
-            {
-                base.ExecuteDefaultAction(evt);
-
-                if (evt == null)
-                {
-                    return;
-                }
-
-                if (evt.eventTypeId == BlurEvent.TypeId())
-                {
-                    if (string.IsNullOrEmpty(text))
-                    {
-                        // Make sure that empty field gets the default value
-                        hash128Field.value = new Hash128();
-                    }
-                    else
-                    {
-                        UpdateValueFromText();
-                    }
-                }
-            }
         }
     }
 }

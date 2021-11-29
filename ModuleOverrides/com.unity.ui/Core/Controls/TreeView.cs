@@ -6,731 +6,199 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine.Assertions;
 
 namespace UnityEngine.UIElements
 {
-    internal class TreeView : VisualElement
+    /// <summary>
+    /// A TreeView is a vertically scrollable area that links to, and displays, a list of items organized in a tree.
+    /// </summary>
+    /// <remarks>
+    /// A <see cref="TreeView"/> is a <see cref="ScrollView"/> with additional logic to display a tree of vertically-arranged
+    /// VisualElements. Each VisualElement in the tree is bound to a corresponding element in a data-source list. The
+    /// data-source list can contain elements of any type. <see cref="TreeViewItemData{T}"/>\\
+    /// \\
+    /// The logic required to create VisualElements, and to bind them to or unbind them from the data source, varies depending
+    /// on the intended result. It's up to you to implement logic that is appropriate to your use case. For the ListView to function
+    /// correctly, you must supply at least the following:
+    ///
+    ///- <see cref="BaseVerticalCollectionView.fixedItemHeight"/>
+    ///
+    /// It is also recommended to supply the following for more complex items:
+    ///
+    ///- <see cref="TreeView.makeItem"/>
+    ///- <see cref="TreeView.bindItem"/>
+    ///- <see cref="BaseVerticalCollectionView.fixedItemHeight"/>, in the case of <c>FixedHeight</c> ListView
+    ///
+    /// The TreeView creates VisualElements for the visible items, and supports binding many more. As the user scrolls, the TreeView
+    /// recycles VisualElements and re-binds them to new data items.
+    /// </remarks>
+    public class TreeView : BaseTreeView
     {
-        private static readonly string s_ListViewName = "unity-tree-view__list-view";
-        private static readonly string s_ItemName = "unity-tree-view__item";
-        private static readonly string s_ItemToggleName = "unity-tree-view__item-toggle";
-        private static readonly string s_ItemIndentsContainerName = "unity-tree-view__item-indents";
-        private static readonly string s_ItemIndentName = "unity-tree-view__item-indent";
-        private static readonly string s_ItemContentContainerName = "unity-tree-view__item-content";
-
+        /// <summary>
+        /// Instantiates a <see cref="TreeView"/> using data from a UXML file.
+        /// </summary>
+        /// <remarks>
+        /// This class is added to every <see cref="VisualElement"/> created from UXML.
+        /// </remarks>
         public new class UxmlFactory : UxmlFactory<TreeView, UxmlTraits> {}
 
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            private readonly UxmlIntAttributeDescription m_ItemHeight = new UxmlIntAttributeDescription { name = "item-height", defaultValue = BaseVerticalCollectionView.s_DefaultItemHeight };
-            private readonly UxmlBoolAttributeDescription m_ShowBorder = new UxmlBoolAttributeDescription { name = "show-border", defaultValue = false };
-            private readonly UxmlEnumAttributeDescription<SelectionType> m_SelectionType = new UxmlEnumAttributeDescription<SelectionType> { name = "selection-type", defaultValue = SelectionType.Single };
-            private readonly UxmlEnumAttributeDescription<AlternatingRowBackground> m_ShowAlternatingRowBackgrounds = new UxmlEnumAttributeDescription<AlternatingRowBackground> { name = "show-alternating-row-backgrounds", defaultValue = AlternatingRowBackground.None };
-
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get { yield break; }
-            }
-
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                int itemHeight = 0;
-                if (m_ItemHeight.TryGetValueFromBag(bag, cc, ref itemHeight))
-                {
-                    ((TreeView)ve).itemHeight = itemHeight;
-                }
-
-                ((TreeView)ve).showBorder = m_ShowBorder.GetValueFromBag(bag, cc);
-                ((TreeView)ve).selectionType = m_SelectionType.GetValueFromBag(bag, cc);
-                ((TreeView)ve).showAlternatingRowBackgrounds = m_ShowAlternatingRowBackgrounds.GetValueFromBag(bag, cc);
-            }
-        }
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="TreeView"/>.
+        /// </summary>
+        /// <remarks>
+        /// This class defines the TreeView element properties that you can use in a UI document asset (UXML file).
+        /// </remarks>
+        public new class UxmlTraits : BaseTreeView.UxmlTraits {}
 
         Func<VisualElement> m_MakeItem;
 
-        public Func<VisualElement> makeItem
+        /// <summary>
+        /// Callback for constructing the VisualElement that is the template for each recycled and re-bound element in the list.
+        /// </summary>
+        /// <remarks>
+        /// This callback needs to call a function that constructs a blank <see cref="VisualElement"/> that is
+        /// bound to an element from the list.
+        ///
+        /// The collection view automatically creates enough elements to fill the visible area, and adds more if the area
+        /// is expanded. As the user scrolls, the collection view cycles elements in and out as they appear or disappear.
+        ///
+        /// If this property and <see cref="bindItem"/> are not set, Unity will either create a PropertyField if bound
+        /// to a SerializedProperty, or create an empty label for any other case.
+        /// </remarks>
+        public new Func<VisualElement> makeItem
         {
-            get { return m_MakeItem; }
+            get => m_MakeItem;
             set
             {
-                if (m_MakeItem == value)
-                    return;
                 m_MakeItem = value;
-                m_ListView.Rebuild();
-            }
-        }
-
-        public event Action<IEnumerable<ITreeViewItem>> onItemsChosen;
-        public event Action<IEnumerable<ITreeViewItem>> onSelectionChange;
-
-        private List<ITreeViewItem> m_SelectedItems;
-        public ITreeViewItem selectedItem => m_SelectedItems.Count == 0 ? null : m_SelectedItems.First();
-
-        public IEnumerable<ITreeViewItem> selectedItems
-        {
-            get
-            {
-                if (m_SelectedItems != null)
-                    return m_SelectedItems;
-
-                m_SelectedItems = new List<ITreeViewItem>();
-                foreach (var treeItem in items)
-                {
-                    foreach (var itemId in m_ListView.currentSelectionIds)
-                    {
-                        if (treeItem.id == itemId)
-                            m_SelectedItems.Add(treeItem);
-                    }
-                }
-
-                return m_SelectedItems;
-            }
-        }
-
-        private Action<VisualElement, ITreeViewItem> m_BindItem;
-
-        public Action<VisualElement, ITreeViewItem> bindItem
-        {
-            get { return m_BindItem; }
-            set
-            {
-                m_BindItem = value;
-                ListViewRefresh();
-            }
-        }
-
-        public Action<VisualElement, ITreeViewItem> unbindItem { get; set; }
-
-        IList<ITreeViewItem> m_RootItems;
-
-        public IList<ITreeViewItem> rootItems
-        {
-            get { return m_RootItems; }
-            set
-            {
-                m_RootItems = value;
                 Rebuild();
             }
         }
 
-        public IEnumerable<ITreeViewItem> items => GetAllItems(m_RootItems);
+        private Action<VisualElement, int> m_BindItem;
 
-        public float resolvedItemHeight => m_ListView.ResolveItemHeight();
-
-        public int itemHeight
+        /// <summary>
+        /// Callback for binding a data item to the visual element.
+        /// </summary>
+        /// <remarks>
+        /// The method called by this callback receives the VisualElement to bind, and the index of the
+        /// element to bind it to.
+        ///
+        /// If this property and <see cref="makeItem"/> are not set, Unity will try to bind to a SerializedProperty if
+        /// bound, or simply set text in the created Label.
+        /// </remarks>
+        public new Action<VisualElement, int> bindItem
         {
-            get { return (int)m_ListView.fixedItemHeight; }
-            set { m_ListView.fixedItemHeight = value; }
+            get => m_BindItem;
+            set
+            {
+                m_BindItem = value;
+                RefreshItems();
+            }
         }
 
-        public bool horizontalScrollingEnabled
+        /// <summary>
+        /// Callback for unbinding a data item from the VisualElement.
+        /// </summary>
+        /// <remarks>
+        /// The method called by this callback receives the VisualElement to unbind, and the index of the
+        /// element to unbind it from.
+        /// </remarks>
+        public new Action<VisualElement, int> unbindItem { get; set; }
+
+        /// <summary>
+        /// Callback invoked when a <see cref="VisualElement"/> created via <see cref="makeItem"/> is no longer needed and will be destroyed.
+        /// </summary>
+        /// <remarks>
+        /// The method called by this callback receives the VisualElement that will be destroyed from the pool.
+        /// </remarks>
+        public new Action<VisualElement> destroyItem { get; set; }
+
+        /// <summary>
+        /// Sets the root items.
+        /// </summary>
+        /// <remarks>
+        /// Root items can include their children directly.
+        /// </remarks>
+        /// <param name="rootItems">The TreeView root items.</param>
+        internal override void SetRootItemsInternal<T>(IList<TreeViewItemData<T>> rootItems)
         {
-            get { return m_ListView.horizontalScrollingEnabled; }
-            set { m_ListView.horizontalScrollingEnabled = value; }
+            TreeViewHelpers<T, DefaultTreeViewController<T>>.SetRootItems(this, rootItems, () => new DefaultTreeViewController<T>());
         }
 
-        public bool showBorder
+        internal override bool HasValidDataAndBindings()
         {
-            get { return m_ListView.showBorder; }
-            set { m_ListView.showBorder = value; }
+            return base.HasValidDataAndBindings() && !(makeItem != null ^ bindItem != null);
         }
 
-        public SelectionType selectionType
-        {
-            get { return m_ListView.selectionType; }
-            set { m_ListView.selectionType = value; }
-        }
+        /// <summary>
+        /// The view controller for this view, cast as a <see cref="TreeViewController"/>.
+        /// </summary>
+        public new TreeViewController viewController => base.viewController as TreeViewController;
 
-        public AlternatingRowBackground showAlternatingRowBackgrounds
-        {
-            get { return m_ListView.showAlternatingRowBackgrounds; }
-            set { m_ListView.showAlternatingRowBackgrounds = value; }
-        }
+        protected override CollectionViewController CreateViewController() => new DefaultTreeViewController<object>();
 
-        private struct TreeViewItemWrapper
-        {
-            public int id => item.id;
-            public int depth;
-
-            public bool hasChildren => item.hasChildren;
-
-            public ITreeViewItem item;
-        }
-
-        [SerializeField]
-        private List<int> m_ExpandedItemIds;
-
-        private List<TreeViewItemWrapper> m_ItemWrappers;
-
-        private readonly ListView m_ListView;
-        private readonly ScrollView m_ScrollView;
-
+        /// <summary>
+        /// Creates a <see cref="TreeView"/> with all default properties.
+        /// </summary>
+        /// <remarks>
+        /// Use <see cref="BaseTreeView.SetRootItems{T}"/> to add content.
+        /// </remarks>
         public TreeView()
+            : this(null, null) { }
+
+        /// <summary>
+        /// Creates a <see cref="TreeView"/> with specified factory methods.
+        /// </summary>
+        /// <param name="makeItem">The factory method to call to create a display item. The method should return a
+        /// VisualElement that can be bound to a data item.</param>
+        /// <param name="bindItem">The method to call to bind a data item to a display item. The method
+        /// receives as parameters the display item to bind, and the index of the data item to bind it to.</param>
+        /// <remarks>
+        /// Use <see cref="BaseTreeView.SetRootItems{T}"/> to add content.
+        /// </remarks>
+        public TreeView(Func<VisualElement> makeItem, Action<VisualElement, int> bindItem)
+            : base((int)ItemHeightUnset)
         {
-            m_SelectedItems = null;
-            m_ExpandedItemIds = new List<int>();
-            m_ItemWrappers = new List<TreeViewItemWrapper>();
-
-            m_ListView = new ListView();
-            m_ListView.name = s_ListViewName;
-            m_ListView.itemsSource = m_ItemWrappers;
-            m_ListView.viewDataKey = s_ListViewName;
-            m_ListView.AddToClassList(s_ListViewName);
-            hierarchy.Add(m_ListView);
-
-            m_ListView.makeItem = MakeTreeItem;
-            m_ListView.bindItem = BindTreeItem;
-            m_ListView.unbindItem = UnbindTreeItem;
-            m_ListView.getItemId = GetItemId;
-            m_ListView.onItemsChosen += OnItemsChosen;
-            m_ListView.onSelectionChange += OnSelectionChange;
-
-            m_ScrollView = m_ListView.scrollView;
-            m_ScrollView.contentContainer.RegisterCallback<KeyDownEvent>(OnKeyDown);
-
-            RegisterCallback<MouseUpEvent>(OnTreeViewMouseUp, TrickleDown.TrickleDown);
-            RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
+            this.makeItem = makeItem;
+            this.bindItem = bindItem;
         }
 
-        public TreeView(
-            IList<ITreeViewItem> items,
-            int fixedItemHeight,
-            Func<VisualElement> makeItem,
-            Action<VisualElement, ITreeViewItem> bindItem)
-            : this()
+        /// <summary>
+        /// Creates a <see cref="TreeView"/> with specified factory methods using the fixed height virtualization method.
+        /// </summary>
+        /// <param name="itemHeight">The item height to use in FixedHeight virtualization mode.</param>
+        /// <param name="makeItem">The factory method to call to create a display item. The method should return a
+        /// VisualElement that can be bound to a data item.</param>
+        /// <param name="bindItem">The method to call to bind a data item to a display item. The method
+        /// receives as parameters the display item to bind, and the index of the data item to bind it to.</param>
+        /// <remarks>
+        /// Use <see cref="BaseTreeView.SetRootItems{T}"/> to add content.
+        /// </remarks>
+        public TreeView(int itemHeight, Func<VisualElement> makeItem, Action<VisualElement, int> bindItem)
+            : this(makeItem, bindItem)
         {
-            m_ListView.fixedItemHeight = fixedItemHeight;
-            m_MakeItem = makeItem;
-            m_BindItem = bindItem;
-            m_RootItems = items;
-
-            Rebuild();
+            fixedItemHeight = itemHeight;
         }
 
-        public void RefreshItems()
+        private protected override IEnumerable<TreeViewItemData<T>> GetSelectedItemsInternal<T>()
         {
-            RegenerateWrappers();
-            ListViewRefresh();
+            return TreeViewHelpers<T, DefaultTreeViewController<T>>.GetSelectedItems(this);
         }
 
-        public void Rebuild()
+        private protected override T GetItemDataForIndexInternal<T>(int index)
         {
-            RegenerateWrappers();
-            m_ListView.Rebuild();
+            return TreeViewHelpers<T, DefaultTreeViewController<T>>.GetItemDataForIndex(this, index);
         }
 
-        internal override void OnViewDataReady()
+        private protected override T GetItemDataForIdInternal<T>(int id)
         {
-            base.OnViewDataReady();
-
-            string key = GetFullHierarchicalViewDataKey();
-
-            OverwriteFromViewData(this, key);
-
-            Rebuild();
+            return TreeViewHelpers<T, DefaultTreeViewController<T>>.GetItemDataForId(this, id);
         }
 
-        public static IEnumerable<ITreeViewItem> GetAllItems(IEnumerable<ITreeViewItem> rootItems)
+        private protected override void AddItemInternal<T>(TreeViewItemData<T> item, int parentId, int childIndex, bool rebuildTree)
         {
-            if (rootItems == null)
-                yield break;
-
-            var iteratorStack = new Stack<IEnumerator<ITreeViewItem>>();
-            var currentIterator = rootItems.GetEnumerator();
-
-            while (true)
-            {
-                bool hasNext = currentIterator.MoveNext();
-                if (!hasNext)
-                {
-                    if (iteratorStack.Count > 0)
-                    {
-                        currentIterator = iteratorStack.Pop();
-                        continue;
-                    }
-
-                    // We're at the end of the root items list.
-                    break;
-                }
-
-                var currentItem = currentIterator.Current;
-                yield return currentItem;
-
-                if (currentItem.hasChildren)
-                {
-                    iteratorStack.Push(currentIterator);
-                    currentIterator = currentItem.children.GetEnumerator();
-                }
-            }
-        }
-
-        public void OnKeyDown(KeyDownEvent evt)
-        {
-            var index = m_ListView.selectedIndex;
-
-            bool shouldStopPropagation = true;
-
-            switch (evt.keyCode)
-            {
-                case KeyCode.RightArrow:
-                    if (!IsExpandedByIndex(index))
-                        ExpandItemByIndex(index);
-                    break;
-                case KeyCode.LeftArrow:
-                    if (IsExpandedByIndex(index))
-                        CollapseItemByIndex(index);
-                    break;
-                default:
-                    shouldStopPropagation = false;
-                    break;
-            }
-
-            if (shouldStopPropagation)
-                evt.StopPropagation();
-        }
-
-        public void SetSelection(int id)
-        {
-            SetSelection(new[] { id });
-        }
-
-        public void SetSelection(IEnumerable<int> ids)
-        {
-            SetSelectionInternal(ids, true);
-        }
-
-        public void SetSelectionWithoutNotify(IEnumerable<int> ids)
-        {
-            SetSelectionInternal(ids, false);
-        }
-
-        internal void SetSelectionInternal(IEnumerable<int> ids, bool sendNotification)
-        {
-            if (ids == null)
-                return;
-
-            var selectedIndexes = ids.Select(id => GetItemIndex(id, true)).ToList();
-            ListViewRefresh();
-            m_ListView.SetSelectionInternal(selectedIndexes, sendNotification);
-        }
-
-        public void AddToSelection(int id)
-        {
-            var index = GetItemIndex(id, true);
-            ListViewRefresh();
-            m_ListView.AddToSelection(index);
-        }
-
-        public void RemoveFromSelection(int id)
-        {
-            var index = GetItemIndex(id);
-            m_ListView.RemoveFromSelection(index);
-        }
-
-        private int GetItemIndex(int id, bool expand = false)
-        {
-            var item = FindItem(id);
-            if (item == null)
-                throw new ArgumentOutOfRangeException(nameof(id), id, $"{nameof(TreeView)}: Item id not found.");
-
-            if (expand)
-            {
-                bool regenerateWrappers = false;
-                var itemParent = item.parent;
-                while (itemParent != null)
-                {
-                    if (!m_ExpandedItemIds.Contains(itemParent.id))
-                    {
-                        m_ExpandedItemIds.Add(itemParent.id);
-                        regenerateWrappers = true;
-                    }
-
-                    itemParent = itemParent.parent;
-                }
-
-                if (regenerateWrappers)
-                    RegenerateWrappers();
-            }
-
-            var index = 0;
-            for (; index < m_ItemWrappers.Count; ++index)
-                if (m_ItemWrappers[index].id == id)
-                    break;
-
-            return index;
-        }
-
-        public void ClearSelection()
-        {
-            m_ListView.ClearSelection();
-        }
-
-        public void ScrollTo(VisualElement visualElement)
-        {
-            m_ListView.ScrollTo(visualElement);
-        }
-
-        public void ScrollToItem(int id)
-        {
-            var index = GetItemIndex(id, true);
-            RefreshItems();
-            m_ListView.ScrollToItem(index);
-        }
-
-        internal void CopyExpandedStates(ITreeViewItem source, ITreeViewItem target)
-        {
-            if (IsExpanded(source.id))
-            {
-                ExpandItem(target.id);
-
-                if (source.children != null && source.children.Count() > 0)
-                {
-                    if (target.children == null || source.children.Count() != target.children.Count())
-                    {
-                        Debug.LogWarning("Source and target hierarchies are not the same");
-                        return;
-                    }
-
-                    for (int i = 0; i < source.children.Count(); i++)
-                    {
-                        var sourceChild = source.children.ElementAt(i);
-                        var targetchild = target.children.ElementAt(i);
-                        CopyExpandedStates(sourceChild, targetchild);
-                    }
-                }
-            }
-            else
-            {
-                CollapseItem(target.id);
-            }
-        }
-
-        public bool IsExpanded(int id)
-        {
-            return m_ExpandedItemIds.Contains(id);
-        }
-
-        public void CollapseItem(int id)
-        {
-            // Make sure the item is valid.
-            if (FindItem(id) == null)
-                throw new ArgumentOutOfRangeException(nameof(id), id, $"{nameof(TreeView)}: Item id not found.");
-
-            // Try to find it in the currently visible list.
-            for (int i = 0; i < m_ItemWrappers.Count; ++i)
-                if (m_ItemWrappers[i].item.id == id)
-                    if (IsExpandedByIndex(i))
-                    {
-                        CollapseItemByIndex(i);
-                        return;
-                    }
-
-            if (!m_ExpandedItemIds.Contains(id))
-                return;
-
-            m_ExpandedItemIds.Remove(id);
-            RefreshItems();
-        }
-
-        public void ExpandItem(int id)
-        {
-            // Make sure the item is valid.
-            if (FindItem(id) == null)
-                throw new ArgumentOutOfRangeException(nameof(id), id, $"{nameof(TreeView)}: Item id not found.");
-
-            // Try to find it in the currently visible list.
-            for (int i = 0; i < m_ItemWrappers.Count; ++i)
-                if (m_ItemWrappers[i].item.id == id)
-                    if (!IsExpandedByIndex(i))
-                    {
-                        ExpandItemByIndex(i);
-                        return;
-                    }
-
-            if (m_ExpandedItemIds.Contains(id))
-                return;
-
-            m_ExpandedItemIds.Add(id);
-            RefreshItems();
-        }
-
-        public ITreeViewItem FindItem(int id)
-        {
-            foreach (var item in items)
-                if (item.id == id)
-                    return item;
-
-            return null;
-        }
-
-        private void ListViewRefresh()
-        {
-            m_ListView.RefreshItems();
-        }
-
-        private void OnItemsChosen(IEnumerable<object> chosenItems)
-        {
-            if (onItemsChosen == null)
-                return;
-
-            var itemsList = new List<ITreeViewItem>();
-            foreach (var item in chosenItems)
-            {
-                var wrapper = (TreeViewItemWrapper)item;
-                itemsList.Add(wrapper.item);
-            }
-
-            onItemsChosen.Invoke(itemsList);
-        }
-
-        private void OnSelectionChange(IEnumerable<object> selectedListItems)
-        {
-            if (m_SelectedItems == null)
-                m_SelectedItems = new List<ITreeViewItem>();
-
-            m_SelectedItems.Clear();
-            foreach (var item in selectedListItems)
-                m_SelectedItems.Add(((TreeViewItemWrapper)item).item);
-
-            onSelectionChange?.Invoke(m_SelectedItems);
-        }
-
-        private void OnTreeViewMouseUp(MouseUpEvent evt)
-        {
-            m_ScrollView.contentContainer.Focus();
-        }
-
-        private void OnItemMouseUp(MouseUpEvent evt)
-        {
-            if ((evt.modifiers & EventModifiers.Alt) == 0)
-                return;
-
-            var target = evt.currentTarget as VisualElement;
-            var toggle = target.Q<Toggle>(s_ItemToggleName);
-            var index = (int)toggle.userData;
-            var item = m_ItemWrappers[index].item;
-            var wasExpanded = IsExpandedByIndex(index);
-
-            if (!item.hasChildren)
-                return;
-
-            var hashSet = new HashSet<int>(m_ExpandedItemIds);
-
-            if (wasExpanded)
-                hashSet.Remove(item.id);
-            else
-                hashSet.Add(item.id);
-
-            foreach (var child in GetAllItems(item.children))
-            {
-                if (child.hasChildren)
-                {
-                    if (wasExpanded)
-                        hashSet.Remove(child.id);
-                    else
-                        hashSet.Add(child.id);
-                }
-            }
-
-            m_ExpandedItemIds = hashSet.ToList();
-
-            RefreshItems();
-
-            evt.StopPropagation();
-        }
-
-        private VisualElement MakeTreeItem()
-        {
-            var itemContainer = new VisualElement()
-            {
-                name = s_ItemName,
-                style =
-                {
-                    flexDirection = FlexDirection.Row
-                }
-            };
-            itemContainer.AddToClassList(s_ItemName);
-            itemContainer.RegisterCallback<MouseUpEvent>(OnItemMouseUp);
-
-            var indents = new VisualElement()
-            {
-                name = s_ItemIndentsContainerName,
-                style =
-                {
-                    flexDirection = FlexDirection.Row
-                }
-            };
-            indents.AddToClassList(s_ItemIndentsContainerName);
-            itemContainer.hierarchy.Add(indents);
-
-            var toggle = new Toggle() { name = s_ItemToggleName };
-            toggle.AddToClassList(Foldout.toggleUssClassName);
-            toggle.RegisterValueChangedCallback(ToggleExpandedState);
-            itemContainer.hierarchy.Add(toggle);
-
-            var userContentContainer = new VisualElement()
-            {
-                name = s_ItemContentContainerName,
-                style =
-                {
-                    flexGrow = 1
-                }
-            };
-            userContentContainer.AddToClassList(s_ItemContentContainerName);
-            itemContainer.Add(userContentContainer);
-
-            if (m_MakeItem != null)
-                userContentContainer.Add(m_MakeItem());
-
-            return itemContainer;
-        }
-
-        private void UnbindTreeItem(VisualElement element, int index)
-        {
-            if (unbindItem == null)
-                return;
-
-            var item = m_ItemWrappers[index].item;
-            var userContentContainer = element.Q(s_ItemContentContainerName).ElementAt(0);
-            unbindItem(userContentContainer, item);
-        }
-
-        private void BindTreeItem(VisualElement element, int index)
-        {
-            var item = m_ItemWrappers[index].item;
-
-            // Add indentation.
-            var indents = element.Q(s_ItemIndentsContainerName);
-            indents.Clear();
-            for (int i = 0; i < m_ItemWrappers[index].depth; ++i)
-            {
-                var indentElement = new VisualElement();
-                indentElement.AddToClassList(s_ItemIndentName);
-                indents.Add(indentElement);
-            }
-
-            // Set toggle data.
-            var toggle = element.Q<Toggle>(s_ItemToggleName);
-            toggle.SetValueWithoutNotify(IsExpandedByIndex(index));
-            toggle.userData = index;
-            if (item.hasChildren)
-                toggle.visible = true;
-            else
-                toggle.visible = false;
-
-            if (m_BindItem == null)
-                return;
-
-            // Bind user content container.
-            var userContentContainer = element.Q(s_ItemContentContainerName).ElementAt(0);
-            m_BindItem(userContentContainer, item);
-        }
-
-        private int GetItemId(int index)
-        {
-            return m_ItemWrappers[index].id;
-        }
-
-        private bool IsExpandedByIndex(int index)
-        {
-            return m_ExpandedItemIds.Contains(m_ItemWrappers[index].id);
-        }
-
-        private void CollapseItemByIndex(int index)
-        {
-            if (!m_ItemWrappers[index].item.hasChildren)
-                return;
-
-            m_ExpandedItemIds.Remove(m_ItemWrappers[index].item.id);
-
-            int recursiveChildCount = 0;
-            int currentIndex = index + 1;
-            int currentDepth = m_ItemWrappers[index].depth;
-            while (currentIndex < m_ItemWrappers.Count && m_ItemWrappers[currentIndex].depth > currentDepth)
-            {
-                recursiveChildCount++;
-                currentIndex++;
-            }
-
-            m_ItemWrappers.RemoveRange(index + 1, recursiveChildCount);
-
-            ListViewRefresh();
-
-            SaveViewData();
-        }
-
-        private void ExpandItemByIndex(int index)
-        {
-            if (!m_ItemWrappers[index].item.hasChildren)
-                return;
-
-            var childWrappers = new List<TreeViewItemWrapper>();
-            CreateWrappers(m_ItemWrappers[index].item.children, m_ItemWrappers[index].depth + 1, ref childWrappers);
-
-            m_ItemWrappers.InsertRange(index + 1, childWrappers);
-
-            m_ExpandedItemIds.Add(m_ItemWrappers[index].item.id);
-
-            ListViewRefresh();
-
-            SaveViewData();
-        }
-
-        private void ToggleExpandedState(ChangeEvent<bool> evt)
-        {
-            var toggle = evt.target as Toggle;
-            var index = (int)toggle.userData;
-            var isExpanded = IsExpandedByIndex(index);
-
-            Assert.AreNotEqual(isExpanded, evt.newValue);
-
-            if (isExpanded)
-                CollapseItemByIndex(index);
-            else
-                ExpandItemByIndex(index);
-
-            // To make sure our TreeView gets focus, we need to force this. :(
-            m_ScrollView.contentContainer.Focus();
-        }
-
-        private void CreateWrappers(IEnumerable<ITreeViewItem> treeViewItems, int depth, ref List<TreeViewItemWrapper> wrappers)
-        {
-            foreach (var item in treeViewItems)
-            {
-                var wrapper = new TreeViewItemWrapper()
-                {
-                    depth = depth,
-                    item = item
-                };
-
-                wrappers.Add(wrapper);
-
-                if (m_ExpandedItemIds.Contains(item.id) && item.hasChildren)
-                    CreateWrappers(item.children, depth + 1, ref wrappers);
-            }
-        }
-
-        private void RegenerateWrappers()
-        {
-            m_ItemWrappers.Clear();
-
-            if (m_RootItems == null)
-                return;
-
-            CreateWrappers(m_RootItems, 0, ref m_ItemWrappers);
-        }
-
-        private void OnCustomStyleResolved(CustomStyleResolvedEvent e)
-        {
-            int height;
-            var oldHeight = m_ListView.fixedItemHeight;
-            if (!m_ListView.m_ItemHeightIsInline && e.customStyle.TryGetValue(BaseVerticalCollectionView.s_ItemHeightProperty, out height))
-                m_ListView.m_FixedItemHeight = height;
-
-            if (m_ListView.m_FixedItemHeight != oldHeight)
-                m_ListView.RefreshItems();
+            TreeViewHelpers<T, DefaultTreeViewController<T>>.AddItem(this, item, parentId, childIndex, rebuildTree);
         }
     }
 }

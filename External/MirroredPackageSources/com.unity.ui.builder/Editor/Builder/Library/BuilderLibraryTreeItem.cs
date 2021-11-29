@@ -6,9 +6,9 @@ using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
-    class BuilderLibraryTreeItem : TreeViewItem<string>
+    class BuilderLibraryTreeItem
     {
-        public string name => data;
+        public string name { get; }
         public Type type { get; }
         public bool isHeader { get; set; }
         public bool hasPreview { get; set; }
@@ -26,10 +26,9 @@ namespace Unity.UI.Builder
 
         public BuilderLibraryTreeItem(
             string name, string iconName, Type type, Func<VisualElement> makeVisualElementCallback,
-            Func<VisualTreeAsset, VisualElementAsset, VisualElement, VisualElementAsset> makeElementAssetCallback = null,
-            List<TreeViewItem<string>> children = null, VisualTreeAsset asset = null, int id = default)
-            : base(GetItemId(name, type, asset, id) , name, children)
+            Func<VisualTreeAsset, VisualElementAsset, VisualElement, VisualElementAsset> makeElementAssetCallback = null, VisualTreeAsset asset = null)
         {
+            this.name = name;
             this.makeVisualElementCallback = makeVisualElementCallback;
             this.makeElementAssetCallback = makeElementAssetCallback;
             sourceAsset = asset;
@@ -45,7 +44,7 @@ namespace Unity.UI.Builder
             }
         }
 
-        static int GetItemId(string name, Type type, VisualTreeAsset asset, int id)
+        internal static int GetItemId(string name, Type type, VisualTreeAsset asset, int id = default)
         {
             if (id != default)
                 return id;

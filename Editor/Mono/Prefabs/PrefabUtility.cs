@@ -1060,7 +1060,7 @@ namespace UnityEditor
             return false;
         }
 
-        private static void RemoveRemovedComponentOverridesWhichAreNull(Object prefabInstanceObject)
+        internal static void RemoveRemovedComponentOverridesWhichAreNull(Object prefabInstanceObject)
         {
             var removedComponents = PrefabUtility.GetRemovedComponents(prefabInstanceObject);
             var filteredRemovedComponents = (from c in removedComponents where c != null select c).ToArray();
@@ -2216,12 +2216,43 @@ namespace UnityEditor
             return HasPrefabInstanceNonDefaultOverrides_CachedForUI_Internal(gameObject);
         }
 
+        internal static bool HasPrefabInstanceUnusedOverrides_CachedForUI(GameObject gameObject)
+        {
+            if (gameObject == null)
+                throw new ArgumentNullException(nameof(gameObject));
+
+            return HasPrefabInstanceUnusedOverrides_CachedForUI_Internal(gameObject);
+        }
+
+        internal static bool HasPrefabInstanceNonDefaultOverridesOrUnusedOverrides_CachedForUI(GameObject gameObject)
+        {
+            if (gameObject == null)
+                throw new ArgumentNullException(nameof(gameObject));
+
+            return HasPrefabInstanceNonDefaultOverrides_CachedForUI_Internal(gameObject) || HasPrefabInstanceUnusedOverrides_CachedForUI_Internal(gameObject);
+        }
+
         internal static void ClearPrefabInstanceNonDefaultOverridesCache(GameObject gameObject)
         {
             if (gameObject == null)
                 throw new ArgumentNullException(nameof(gameObject));
 
             ClearPrefabInstanceNonDefaultOverridesCache_Internal(gameObject);
+        }
+        internal static void ClearPrefabInstanceUnusedOverridesCache(GameObject gameObject)
+        {
+            if (gameObject == null)
+                throw new ArgumentNullException(nameof(gameObject));
+
+            ClearPrefabInstanceUnusedOverridesCache_Internal(gameObject);
+        }
+
+        internal static bool HasPrefabInstanceUnusedOverrides(GameObject gameObject)
+        {
+            if (gameObject == null)
+                throw new ArgumentNullException(nameof(gameObject));
+
+            return HasPrefabInstanceUnusedOverrides_Internal(gameObject);
         }
 
         // Same as IsPropertyOverrideDefaultOverrideComparedToAnySource, but checks if it's the case for all overrides
@@ -2592,6 +2623,251 @@ namespace UnityEditor
                 }
             }
             return dependencies;
+        }
+
+        internal readonly struct InstanceOverridesInfo
+        {
+            public InstanceOverridesInfo(GameObject prefabInstance, PropertyModification[] usedMods, PropertyModification[] unusedMods)
+            {
+                this.instance = prefabInstance;
+                this.usedMods = usedMods;
+                this.unusedMods = unusedMods;
+            }
+
+            public GameObject instance { get; }
+            public PropertyModification[] usedMods { get; }
+            public PropertyModification[] unusedMods { get; }
+        }
+
+        internal static bool HavePrefabInstancesUnusedOverrides(GameObject[] gameObjects)
+        {
+            if (gameObjects == null || !gameObjects.Any())
+                return false;
+
+            foreach (GameObject go in gameObjects)
+            {
+                var outerMostPrefabInstance = PrefabUtility.GetOutermostPrefabInstanceRoot(go);
+
+                if (PrefabUtility.HasPrefabInstanceUnusedOverrides_Internal(outerMostPrefabInstance))
+                    return true;
+            }
+
+            return false;
+        }
+
+        internal static InstanceOverridesInfo[] GetPrefabInstancesOverridesInfos(GameObject[] selectedGameObjects)
+        {
+            if (selectedGameObjects == null || !selectedGameObjects.Any())
+                return new InstanceOverridesInfo[] { };
+
+            List<InstanceOverridesInfo> allInstanceMods = new List<InstanceOverridesInfo>();
+
+            foreach (GameObject go in selectedGameObjects)
+            {
+                var outerMostPrefabInstance = PrefabUtility.GetOutermostPrefabInstanceRoot(go);
+
+                if (PrefabUtility.HasPrefabInstanceNonDefaultOverrides_CachedForUI(outerMostPrefabInstance) || PrefabUtility.HasPrefabInstanceUnusedOverrides(outerMostPrefabInstance))
+                {
+                    InstanceOverridesInfo instancePropMods = GetPrefabInstanceOverridesInfo(outerMostPrefabInstance);
+                    allInstanceMods.Add(instancePropMods);
+                }
+            }
+
+            return allInstanceMods.ToArray();
+        }
+
+        internal static InstanceOverridesInfo GetPrefabInstanceOverridesInfo(GameObject selectedGameObject)
+        {
+            if (selectedGameObject == null)
+                return new InstanceOverridesInfo();
+
+            List<PropertyModification> invalidModifications = new List<PropertyModification>();
+            List<PropertyModification> validModifications = new List<PropertyModification>();
+            SerializedObject serializedObject = null;
+            Object prevTarget = null;
+            HashSet<string> propertyPathSet = new HashSet<string>();
+
+            PropertyModification[] mods = PrefabUtility.GetPropertyModifications(selectedGameObject);
+
+            foreach (PropertyModification mod in mods)
+            {
+                if (mod.target == null)
+                {
+                    invalidModifications.Add(mod);
+                    continue;
+                }
+
+                if (PrefabUtility.IsDefaultOverride(mod))
+                {
+                    validModifications.Add(mod);
+                    continue;
+                }
+
+                if (serializedObject == null || mod.target != prevTarget)
+                {
+                    serializedObject = new SerializedObject(mod.target);
+                    prevTarget = mod.target;
+
+                    propertyPathSet.Clear();
+
+                    SerializedProperty property = serializedObject.GetIterator();
+                    while (property.Next(property.hasChildren))
+                        propertyPathSet.Add(property.propertyPath);
+                }
+
+                if (!propertyPathSet.Contains(mod.propertyPath))
+                {
+                    string currPath = TryGetCurrentPropertyPathFromOldPropertyPath_Internal(selectedGameObject, mod.target, mod.propertyPath);
+
+                    if (currPath != null && currPath.Length > 0)
+                        validModifications.Add(mod);
+                    else
+                        invalidModifications.Add(mod);
+                }
+                else
+                {
+                    validModifications.Add(mod);
+                }
+            }
+
+            return new InstanceOverridesInfo(selectedGameObject, validModifications.ToArray(), invalidModifications.ToArray());
+        }
+
+        internal static bool DoRemovePrefabInstanceUnusedOverridesDialog(InstanceOverridesInfo[] instanceOverridesInfos)
+        {
+            string titleCheckForUnusedOverrides = EditorGUIUtility.TrTextContent("Check for unused overrides").text;
+            string msgNoOverridesWereFound = EditorGUIUtility.TrTextContent("No unused overrides were found.").text;
+
+            string title = titleCheckForUnusedOverrides;
+            string message = string.Empty;
+
+            if (instanceOverridesInfos == null || !instanceOverridesInfos.Any())
+            {
+                title = titleCheckForUnusedOverrides;
+                message = msgNoOverridesWereFound;
+                EditorUtility.DisplayDialog(title, message, L10n.Tr("OK"));
+                return false;
+            }
+
+            string titleRemoveUnusedOverrides = EditorGUIUtility.TrTextContent("Remove unused overrides?").text;
+            string msgDetailsWrittenToTheLog = EditorGUIUtility.TrTextContent("Details will be written to the Editor log.").text;
+            string msgUsedOverridesCount = EditorGUIUtility.TrTextContent("Used overrides count").text;
+
+            string msgAskRemoveMultipleOverridesFromMultipleInstances = EditorGUIUtility.TrTextContent("Do you want to remove {0} unused overrides from {1} Prefab instances?").text;
+            string msgAskRemoveSingleOverrideFromMultipleInstances = EditorGUIUtility.TrTextContent("Do you want to remove 1 unused override from {0} Prefab instances?").text;
+            string msgAskRemoveMultipleOverridesFromSingleInstance = EditorGUIUtility.TrTextContent("Do you want to remove {0} unused overrides from '{1}'?").text;
+            string msgAskRemoveSingleOverrideFromSingleInstance = EditorGUIUtility.TrTextContent("Do you want to remove 1 unused override from '{0}'?").text;
+
+            PrefabUtility.InstanceOverridesInfo currInstanceWithUnusedMods = instanceOverridesInfos[0];
+            int affectedInstanceCount = 0;
+            int unusedOverridesCount = 0;
+            int usedOverridesCount = 0;
+            int selectedInstanceCount = instanceOverridesInfos.Length;
+
+            if (selectedInstanceCount > 1)
+            {
+                foreach (PrefabUtility.InstanceOverridesInfo instanceMods in instanceOverridesInfos)
+                {
+                    if (!instanceMods.unusedMods.Any())
+                        continue;
+
+                    affectedInstanceCount++;
+                    unusedOverridesCount += instanceMods.unusedMods.Length;
+                    usedOverridesCount += instanceMods.usedMods.Length;
+                    currInstanceWithUnusedMods = instanceMods;
+                }
+
+                if (unusedOverridesCount > 0)
+                {
+                    if (affectedInstanceCount > 1)
+                    {
+                        if (unusedOverridesCount > 1)
+                            message = string.Format(msgAskRemoveMultipleOverridesFromMultipleInstances, unusedOverridesCount, affectedInstanceCount);
+                        else
+                            message = string.Format(msgAskRemoveSingleOverrideFromMultipleInstances, affectedInstanceCount);
+                    }
+                    else// Single instance
+                    {
+                        if (unusedOverridesCount > 1)
+                            message = string.Format(msgAskRemoveMultipleOverridesFromSingleInstance, unusedOverridesCount, currInstanceWithUnusedMods.instance.name);
+                        else
+                            message = string.Format(msgAskRemoveSingleOverrideFromSingleInstance, currInstanceWithUnusedMods.instance.name);
+                    }
+                }
+            }
+            else// Single selection
+            {
+                unusedOverridesCount = currInstanceWithUnusedMods.unusedMods.Length;
+                usedOverridesCount = currInstanceWithUnusedMods.usedMods.Length;
+                if (unusedOverridesCount > 0)
+                {
+                    affectedInstanceCount = 1;
+                    if (unusedOverridesCount > 1)
+                        message = string.Format(msgAskRemoveMultipleOverridesFromSingleInstance, unusedOverridesCount, currInstanceWithUnusedMods.instance.name);
+                    else
+                        message = string.Format(msgAskRemoveSingleOverrideFromSingleInstance, currInstanceWithUnusedMods.instance.name);
+                }
+            }
+
+            if (unusedOverridesCount > 0)
+            {
+                title = titleRemoveUnusedOverrides;
+                message += "\n\n" + msgDetailsWrittenToTheLog;
+                if (EditorUtility.DisplayDialog(title, message, L10n.Tr("Yes"), L10n.Tr("No")))
+                    return true;
+            }
+            else
+            {
+                title = titleCheckForUnusedOverrides;
+                message = msgNoOverridesWereFound;
+                EditorUtility.DisplayDialog(title, message, L10n.Tr("OK"));
+                return false;
+            }
+
+            return false;
+        }
+
+        internal static void RemovePrefabInstanceUnusedOverrides(InstanceOverridesInfo[] instanceOverridesInfos)
+        {
+            foreach (InstanceOverridesInfo ipmods in instanceOverridesInfos)
+                PrefabUtility.RemovePrefabInstanceUnusedOverrides(ipmods);
+        }
+
+        private static void RemovePrefabInstanceUnusedOverrides(InstanceOverridesInfo iovInfo)
+        {
+            if (iovInfo.unusedMods.Any())
+            {
+                Undo.RegisterCompleteObjectUndo(iovInfo.instance, "Remove unused overrides");
+
+                SetPropertyModifications(iovInfo.instance, iovInfo.usedMods);
+                PrefabUtility.LogRemovedOverrides(iovInfo.instance, iovInfo.unusedMods);
+
+                PrefabUtility.RemoveRemovedComponentOverridesWhichAreNull(iovInfo.instance);
+            }
+        }
+
+        internal static void LogRemovedOverrides(GameObject instance, PropertyModification[] mods)
+        {
+            if (mods.Length == 0)
+                return;
+
+            System.Text.StringBuilder info = new System.Text.StringBuilder();
+            info.AppendLine("");
+
+            if (mods.Length > 1)
+                info.AppendLine("Removed " + mods.Length + " unused overrides from instance '" + instance.name + "':");
+            else
+                info.AppendLine("Removed 1 unused override from instance '" + instance.name + "':");
+
+            foreach (PropertyModification mod in mods)
+            {
+                if (mod.target == null)
+                    info.AppendLine("   '" + mod.propertyPath + "' refers to a non-existent object.");
+                else
+                    info.AppendLine("   '" + mod.propertyPath + "' refers to a non-existent property.");
+            }
+
+            System.Console.WriteLine(info.ToString(), instance);
         }
 
         internal static class Analytics

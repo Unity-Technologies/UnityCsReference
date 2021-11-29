@@ -70,9 +70,6 @@ namespace Unity.UI.Builder
             m_ValueAndPreviewContainer.AddToClassList(s_ValueAndPreviewUssClassName);
             m_Preview = this.Q("preview");
             m_Thumbnail = this.Q<Image>("thumbnail");
-
-            // Cannot use USS because no way to do version checks in USS.
-            // This is not available in 2019.4.
             m_NameLabel.style.textOverflow = TextOverflow.Ellipsis;
             m_NameLabel.displayTooltipWhenElided = true;
             m_ValueLabel.style.textOverflow = TextOverflow.Ellipsis;
@@ -80,6 +77,7 @@ namespace Unity.UI.Builder
             m_ValueLabel.displayTooltipWhenElided = true;
             m_StyleSheetLabel.style.textOverflow = TextOverflow.Ellipsis;
             m_StyleSheetLabel.displayTooltipWhenElided = true;
+
             ClearUI();
         }
 

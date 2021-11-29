@@ -18,9 +18,6 @@ namespace UnityEditor.UIElements
     {
         internal static readonly string foldoutTitleBoundLabelProperty = "unity-foldout-bound-title";
 
-        static CustomStyleProperty<float> s_LabelWidthRatioProperty = new CustomStyleProperty<float>("--unity-property-field-label-width-ratio");
-        static CustomStyleProperty<float> s_LabelExtraPaddingProperty = new CustomStyleProperty<float>("--unity-property-field-label-extra-padding");
-
         /// <summary>
         /// Instantiates a <see cref="PropertyField"/> using the data read from a UXML file.
         /// </summary>
@@ -80,9 +77,6 @@ namespace UnityEditor.UIElements
 
         private int m_DrawNestingLevel;
         private PropertyField m_DrawParentProperty;
-
-        private float m_LabelWidthRatio;
-        private float m_LabelExtraPadding;
 
         SerializedProperty serializedProperty => m_SerializedProperty;
 
@@ -483,12 +477,7 @@ namespace UnityEditor.UIElements
 
             field.labelElement.AddToClassList(labelUssClassName);
             field.visualInput.AddToClassList(inputUssClassName);
-
-            // These default values are based off IMGUI
-            m_LabelWidthRatio = 0.45f;
-            m_LabelExtraPadding = 2.0f;
-
-            field.RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
+            field.AddToClassList(BaseField<TValue>.alignedFieldUssClassName);
 
             field.RegisterValueChangedCallback((evt) =>
             {
@@ -496,45 +485,6 @@ namespace UnityEditor.UIElements
                 {
                     DispatchPropertyChangedEvent();
                 }
-            });
-
-            var inspectorElement = GetFirstAncestorOfType<InspectorElement>();
-            if (inspectorElement == null)
-                return field;
-
-            field.RegisterCallback<GeometryChangedEvent>(evt =>
-            {
-                var baseField = field as BaseField<TValue>;
-
-                // Calculate all extra padding from the containing element's contents
-                var totalPadding = resolvedStyle.paddingLeft + resolvedStyle.paddingRight +
-                    resolvedStyle.marginLeft + resolvedStyle.marginRight;
-
-                // Get inspector element padding next
-                totalPadding += inspectorElement.resolvedStyle.paddingLeft +
-                    inspectorElement.resolvedStyle.paddingRight +
-                    inspectorElement.resolvedStyle.marginLeft +
-                    inspectorElement.resolvedStyle.marginRight;
-
-                var labelElement = baseField.labelElement;
-
-                // Then get label padding
-                totalPadding += labelElement.resolvedStyle.paddingLeft + labelElement.resolvedStyle.paddingRight +
-                    labelElement.resolvedStyle.marginLeft + labelElement.resolvedStyle.marginRight;
-
-                // Then get base field padding
-                totalPadding += field.resolvedStyle.paddingLeft + field.resolvedStyle.paddingRight +
-                    field.resolvedStyle.marginLeft + field.resolvedStyle.marginRight;
-
-                // Not all visual input controls have the same padding so we can't base our total padding on
-                // that information.  Instead we add a flat value to totalPadding to best match the hard coded
-                // calculation in IMGUI
-                totalPadding += m_LabelExtraPadding;
-
-                // Formula to follow IMGUI label width settings
-                var newWidth = inspectorElement.resolvedStyle.width * m_LabelWidthRatio - totalPadding;
-                if (Mathf.Abs(labelElement.resolvedStyle.width - newWidth) > UIRUtility.k_Epsilon)
-                    labelElement.style.width = Mathf.Max(0f, newWidth);
             });
 
             return field;
@@ -557,19 +507,6 @@ namespace UnityEditor.UIElements
             listView.name = "unity-list-" + property.propertyPath;
             listView.Bind(property.serializedObject);
             return listView;
-        }
-
-        private void OnCustomStyleResolved(CustomStyleResolvedEvent evt)
-        {
-            if (evt.customStyle.TryGetValue(s_LabelWidthRatioProperty, out var labelWidthRatio))
-            {
-                m_LabelWidthRatio = labelWidthRatio;
-            }
-
-            if (evt.customStyle.TryGetValue(s_LabelExtraPaddingProperty, out var labelExtraPadding))
-            {
-                m_LabelExtraPadding = labelExtraPadding;
-            }
         }
 
         private VisualElement CreateOrUpdateFieldFromProperty(SerializedProperty property, object originalField = null)

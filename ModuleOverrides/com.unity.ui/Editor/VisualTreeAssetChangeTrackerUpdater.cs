@@ -397,7 +397,7 @@ namespace UnityEditor.UIElements
             foreach (var textElement in m_TextElements)
             {
                 textElement.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
-                textElement.textHandle.SetDirty();
+                textElement.uitkTextHandle.SetDirty();
             }
         }
     }

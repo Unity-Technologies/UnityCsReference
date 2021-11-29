@@ -12,15 +12,14 @@ namespace UnityEditor.UIElements.Bindings
     internal static class BindingsStyleHelpers
     {
         internal static event Action<VisualElement, SerializedProperty> updateBindingStateStyle;
-        internal static void UpdateElementStyle(VisualElement element, SerializedProperty prop)
+        private static void UpdateElementRecursively(VisualElement element, SerializedProperty prop, Action<VisualElement, SerializedProperty> updateCallback)
         {
-            if (element == null)
-                return;
+            VisualElement elementToUpdate = element;
 
             if (element is Foldout)
             {
                 // We only want to apply override styles onto the Foldout header, not the entire contents.
-                element = element.Q(className: Foldout.toggleUssClassName);
+                elementToUpdate = element.Q(className: Foldout.toggleUssClassName);
             }
             else if (element.ClassListContains(BaseCompositeField<int, IntegerField, int>.ussClassName)
                      || element is BoundsField || element is BoundsIntField)
@@ -36,7 +35,7 @@ namespace UnityEditor.UIElements.Bindings
                 var compositeField = element;
 
                 // The element we style in the main pass is going to be just the label.
-                element = element.Q(className: BaseField<int>.labelUssClassName);
+                elementToUpdate = element.Q(className: BaseField<int>.labelUssClassName);
 
                 // Go through the inputs and find any that match the names of the child PropertyFields.
                 var propCopy = prop.Copy();
@@ -51,12 +50,27 @@ namespace UnityEditor.UIElements.Bindings
                     var subInput = compositeField.Q(subInputName);
                     if (subInput == null)
                         continue;
-
-                    UpdateElementStyle(subInput, propCopy);
+                    UpdateElementRecursively(subInput, propCopy, updateCallback);
                 }
                 while (propCopy.NextVisible(false));     // Never expand children.
             }
 
+            if (elementToUpdate != null)
+            {
+                updateCallback(elementToUpdate, prop);
+            }
+        }
+
+        internal static void UpdateElementStyle(VisualElement element, SerializedProperty prop)
+        {
+            if (element == null)
+                return;
+
+            UpdateElementRecursively(element, prop, UpdateElementStyleFromProperty);
+        }
+
+        private static void UpdateElementStyleFromProperty(VisualElement element, SerializedProperty prop)
+        {
             if (element is IMixedValueSupport mixedValuePropertyField)
                 mixedValuePropertyField.showMixedValue = prop.hasMultipleDifferentValues;
 
@@ -91,6 +105,14 @@ namespace UnityEditor.UIElements.Bindings
         }
 
         internal static void UpdatePrefabStateStyle(VisualElement element, SerializedProperty prop)
+        {
+            if (element == null)
+                return;
+
+            UpdateElementRecursively(element, prop, UpdatePrefabStateStyleFromProperty);
+        }
+
+        private static void UpdatePrefabStateStyleFromProperty(VisualElement element, SerializedProperty prop)
         {
             bool handlePrefabState = false;
 

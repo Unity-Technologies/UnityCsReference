@@ -94,12 +94,12 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_Version = m_Package?.versions.primary;
         }
 
-        private void OnPackagesChanged(IEnumerable<IPackage> added, IEnumerable<IPackage> removed, IEnumerable<IPackage> preUpdated, IEnumerable<IPackage> postUpdate)
+        private void OnPackagesChanged(PackagesChangeArgs args)
         {
             var selectedPackageUniqueId = packageSelectionObject?.packageUniqueId;
             if (string.IsNullOrEmpty(selectedPackageUniqueId))
                 return;
-            if (added.Concat(removed).Concat(preUpdated).Any(p => p.uniqueId == selectedPackageUniqueId))
+            if (args.added.Concat(args.removed).Concat(args.updated).Any(p => p.uniqueId == selectedPackageUniqueId))
             {
                 GetPackageAndVersion(packageSelectionObject);
                 isInspectorDirty = true;

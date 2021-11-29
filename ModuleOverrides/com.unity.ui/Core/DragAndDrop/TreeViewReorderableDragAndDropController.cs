@@ -8,9 +8,9 @@ namespace UnityEngine.UIElements
 {
     internal class TreeViewReorderableDragAndDropController : BaseReorderableDragAndDropController
     {
-        protected readonly Experimental.TreeView m_TreeView;
+        protected readonly BaseTreeView m_TreeView;
 
-        public TreeViewReorderableDragAndDropController(Experimental.TreeView view)
+        public TreeViewReorderableDragAndDropController(BaseTreeView view)
             : base(view)
         {
             m_TreeView = view;
@@ -40,7 +40,7 @@ namespace UnityEngine.UIElements
 
                     var parentId = insertAtId;
                     var childIndex = -1;
-                    m_TreeView.viewController.Move(id, parentId, childIndex);
+                    m_TreeView.viewController.Move(id, parentId, childIndex, false);
                 }
             }
             else
@@ -52,7 +52,7 @@ namespace UnityEngine.UIElements
 
                     var parentId = insertAtParentId;
                     var childIndex = insertAtChildIndex;
-                    m_TreeView.viewController.Move(id, parentId, childIndex);
+                    m_TreeView.viewController.Move(id, parentId, childIndex, false);
                 }
             }
 

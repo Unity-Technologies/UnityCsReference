@@ -71,6 +71,12 @@ namespace UnityEditor
     [StructLayout(LayoutKind.Sequential)]
     internal struct ArtifactInfoDependency
     {
+        internal ArtifactInfoDependency(object value, ArtifactInfoDependencyType type)
+        {
+            m_Value = value;
+            m_Type = type;
+        }
+
         private object m_Value;
         private ArtifactInfoDependencyType m_Type;
 

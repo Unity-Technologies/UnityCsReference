@@ -17,32 +17,34 @@ namespace UnityEngine.UIElements
         public void Init(VisualElement item, bool usesAnimatedDragger)
         {
             base.Init(item);
-            UpdateHierarchy(usesAnimatedDragger);
+
+            var root = new VisualElement() { name = ListView.reorderableItemUssClassName };
+            UpdateHierarchy(root, bindableElement, usesAnimatedDragger);
         }
 
-        void UpdateHierarchy(bool usesAnimatedDragger)
+        protected void UpdateHierarchy(VisualElement root, VisualElement item, bool usesAnimatedDragger)
         {
             if (usesAnimatedDragger)
             {
                 if (m_Container != null)
                     return;
 
-                m_Container = new VisualElement { name = ListView.reorderableItemUssClassName };
-                m_Container.AddToClassList(ListView.reorderableItemUssClassName);
+                m_Container = root;
+                m_Container.AddToClassList(BaseListView.reorderableItemUssClassName);
 
-                m_DragHandle = new VisualElement { name = ListView.reorderableItemHandleUssClassName };
-                m_DragHandle.AddToClassList(ListView.reorderableItemHandleUssClassName);
+                m_DragHandle = new VisualElement { name = BaseListView.reorderableItemHandleUssClassName };
+                m_DragHandle.AddToClassList(BaseListView.reorderableItemHandleUssClassName);
 
-                var handle1 = new VisualElement { name = ListView.reorderableItemHandleBarUssClassName };
-                handle1.AddToClassList(ListView.reorderableItemHandleBarUssClassName);
+                var handle1 = new VisualElement { name = BaseListView.reorderableItemHandleBarUssClassName };
+                handle1.AddToClassList(BaseListView.reorderableItemHandleBarUssClassName);
                 m_DragHandle.Add(handle1);
-                var handle2 = new VisualElement { name = ListView.reorderableItemHandleBarUssClassName };
-                handle2.AddToClassList(ListView.reorderableItemHandleBarUssClassName);
+                var handle2 = new VisualElement { name = BaseListView.reorderableItemHandleBarUssClassName };
+                handle2.AddToClassList(BaseListView.reorderableItemHandleBarUssClassName);
                 m_DragHandle.Add(handle2);
 
-                m_ItemContainer = new VisualElement { name = ListView.reorderableItemContainerUssClassName };
-                m_ItemContainer.AddToClassList(ListView.reorderableItemContainerUssClassName);
-                m_ItemContainer.Add(bindableElement);
+                m_ItemContainer = new VisualElement { name = BaseListView.reorderableItemContainerUssClassName };
+                m_ItemContainer.AddToClassList(BaseListView.reorderableItemContainerUssClassName);
+                m_ItemContainer.Add(item);
 
                 m_Container.Add(m_DragHandle);
                 m_Container.Add(m_ItemContainer);
@@ -64,7 +66,7 @@ namespace UnityEngine.UIElements
                 if (m_DragHandle.parent == null)
                 {
                     rootElement.Insert(0, m_DragHandle);
-                    rootElement.AddToClassList(ListView.reorderableItemUssClassName);
+                    rootElement.AddToClassList(BaseListView.reorderableItemUssClassName);
                 }
             }
             else
@@ -72,7 +74,7 @@ namespace UnityEngine.UIElements
                 if (m_DragHandle?.parent != null)
                 {
                     m_DragHandle.RemoveFromHierarchy();
-                    rootElement.RemoveFromClassList(ListView.reorderableItemUssClassName);
+                    rootElement.RemoveFromClassList(BaseListView.reorderableItemUssClassName);
                 }
             }
         }
@@ -80,13 +82,13 @@ namespace UnityEngine.UIElements
         public override void PreAttachElement()
         {
             base.PreAttachElement();
-            rootElement.AddToClassList(ListView.itemUssClassName);
+            rootElement.AddToClassList(BaseListView.itemUssClassName);
         }
 
         public override void DetachElement()
         {
             base.DetachElement();
-            rootElement.RemoveFromClassList(ListView.itemUssClassName);
+            rootElement.RemoveFromClassList(BaseListView.itemUssClassName);
         }
     }
 }

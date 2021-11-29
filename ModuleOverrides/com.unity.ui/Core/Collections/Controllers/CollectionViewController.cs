@@ -9,15 +9,29 @@ using UnityEngine.Assertions;
 
 namespace UnityEngine.UIElements
 {
-    internal class CollectionViewController
+    /// <summary>
+    /// Base collection view controller. View controllers are meant to take care of data virtualized by any <see cref="BaseVerticalCollectionView"/> inheritor.
+    /// </summary>
+    public abstract class CollectionViewController : IDisposable
     {
         BaseVerticalCollectionView m_View;
         IList m_ItemsSource;
 
+        /// <summary>
+        /// Raised when the <see cref="itemsSource"/> changes.
+        /// </summary>
         public event Action itemsSourceChanged;
+
+        /// <summary>
+        /// Raised when an item in the source changes index.
+        /// The first argument is source index, second is destination index.
+        /// </summary>
         public event Action<int, int> itemIndexChanged;
 
-        public IList itemsSource
+        /// <summary>
+        /// The items source stored in a non-generic list.
+        /// </summary>
+        public virtual IList itemsSource
         {
             get => m_ItemsSource;
             set
@@ -29,36 +43,90 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Set the <see cref="itemsSource"/> without raising the <see cref="itemsSourceChanged"/> event.
+        /// </summary>
+        /// <param name="source">The new source.</param>
         protected void SetItemsSourceWithoutNotify(IList source)
         {
             m_ItemsSource = source;
         }
 
+        /// <summary>
+        /// The view for this controller.
+        /// </summary>
         protected BaseVerticalCollectionView view => m_View;
 
-        public void SetView(BaseVerticalCollectionView view)
+        /// <summary>
+        /// Sets the view for this controller.
+        /// </summary>
+        /// <param name="collectionView">The view for this controller. Must not be null.</param>
+        public void SetView(BaseVerticalCollectionView collectionView)
         {
-            m_View = view;
+            m_View = collectionView;
+            PrepareView();
             Assert.IsNotNull(m_View, "View must not be null.");
         }
 
-        public virtual int GetItemCount()
+        /// <summary>
+        /// Initialization step once the view is set.
+        /// </summary>
+        protected virtual void PrepareView()
+        {
+            // Nothing to do here in the base class.
+        }
+
+        /// <summary>
+        /// Called when this controller is not longer needed to provide a way to release resources.
+        /// </summary>
+        public virtual void Dispose()
+        {
+            itemsSourceChanged = null;
+            itemIndexChanged = null;
+            m_View = null;
+        }
+
+        /// <summary>
+        /// Returns the expected item count in the source.
+        /// </summary>
+        /// <returns>The item count.</returns>
+        public virtual int GetItemsCount()
         {
             return m_ItemsSource?.Count ?? 0;
         }
 
+        /// <summary>
+        /// Returns the index for the specified id.
+        /// </summary>
+        /// <param name="id">The item id..</param>
+        /// <returns>The item index.</returns>
+        /// <remarks>For example, the index will be different from the id in a tree.</remarks>
         public virtual int GetIndexForId(int id)
         {
             return id;
         }
 
+        /// <summary>
+        /// Returns the id for the specified index.
+        /// </summary>
+        /// <param name="index">The item index.</param>
+        /// <returns>The item id.</returns>
+        /// <remarks>For example, the index will be different from the id in a tree.</remarks>
         public virtual int GetIdForIndex(int index)
         {
             return m_View.getItemId?.Invoke(index) ?? index;
         }
 
+        /// <summary>
+        /// Returns the item for the specified index.
+        /// </summary>
+        /// <param name="index">The item index.</param>
+        /// <returns>The object in the source at this index.</returns>
         public virtual object GetItemForIndex(int index)
         {
+            if (m_ItemsSource == null)
+                return null;
+
             if (index < 0 || index >= m_ItemsSource.Count)
                 return null;
 
@@ -87,49 +155,45 @@ namespace UnityEngine.UIElements
             DestroyItem(reusableItem.bindableElement);
         }
 
-        public virtual VisualElement MakeItem()
-        {
-            if (m_View.makeItem == null)
-            {
-                if (m_View.bindItem != null)
-                    throw new NotImplementedException("You must specify makeItem if bindItem is specified.");
-                return new Label();
-            }
+        /// <summary>
+        /// Creates a VisualElement to use in the virtualization of the collection view.
+        /// </summary>
+        /// <returns>A VisualElement for the row.</returns>
+        protected abstract VisualElement MakeItem();
 
-            return m_View.makeItem.Invoke();
-        }
+        /// <summary>
+        /// Binds a row to an item index.
+        /// </summary>
+        /// <param name="element">The element from that row, created by MakeItem().</param>
+        /// <param name="index">The item index.</param>
+        protected abstract void BindItem(VisualElement element, int index);
 
-        public virtual void BindItem(VisualElement element, int index)
-        {
-            if (m_View.bindItem == null)
-            {
-                if (m_View.makeItem != null)
-                    throw new NotImplementedException("You must specify bindItem if makeItem is specified.");
+        /// <summary>
+        /// Unbinds a row to an item index.
+        /// </summary>
+        /// <param name="element">The element from that row, created by MakeItem().</param>
+        /// <param name="index">The item index.</param>
+        protected abstract void UnbindItem(VisualElement element, int index);
 
-                var label = (Label)element;
-                var item = m_ItemsSource[index];
-                label.text = item?.ToString() ?? "null";
-                return;
-            }
+        /// <summary>
+        /// Destroys a VisualElement when the view is rebuilt or cleared.
+        /// </summary>
+        /// <param name="element">The element being destroyed.</param>
+        protected abstract void DestroyItem(VisualElement element);
 
-            m_View.bindItem.Invoke(element, index);
-        }
-
-        public virtual void UnbindItem(VisualElement element, int index)
-        {
-            m_View.unbindItem?.Invoke(element, index);
-        }
-
-        public virtual void DestroyItem(VisualElement element)
-        {
-            m_View.destroyItem?.Invoke(element);
-        }
-
+        /// <summary>
+        /// Invokes the <see cref="itemsSourceChanged"/> event.
+        /// </summary>
         protected void RaiseItemsSourceChanged()
         {
             itemsSourceChanged?.Invoke();
         }
 
+        /// <summary>
+        /// Invokes the <see cref="itemIndexChanged"/> event.
+        /// </summary>
+        /// <param name="srcIndex">The source index.</param>
+        /// <param name="dstIndex">The destination index.</param>
         protected void RaiseItemIndexChanged(int srcIndex, int dstIndex)
         {
             itemIndexChanged?.Invoke(srcIndex, dstIndex);

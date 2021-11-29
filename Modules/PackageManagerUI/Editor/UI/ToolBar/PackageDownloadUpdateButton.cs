@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using System.Linq;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
@@ -20,7 +21,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override bool TriggerAction(IList<IPackageVersion> versions)
         {
-            m_PackageDatabase.Download(versions);
+            m_PackageDatabase.Download(versions.Select(v => v.package));
             return true;
         }
 
@@ -62,11 +63,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var operation = m_AssetStoreDownloadManager.GetDownloadOperation(version?.packageUniqueId);
             var localInfo = m_AssetStoreCache.GetLocalInfo(version?.packageUniqueId);
-            return localInfo?.canUpdate == true && operation != null
-                && operation.state != DownloadState.Aborted
-                && operation.state != DownloadState.Error
-                && operation.state != DownloadState.Completed
-                && operation.state != DownloadState.None;
+            return localInfo?.canUpdate == true && operation?.isInProgress == true;
         }
 
         protected override IEnumerable<ButtonDisableCondition> GetDisableConditions(IPackageVersion version)

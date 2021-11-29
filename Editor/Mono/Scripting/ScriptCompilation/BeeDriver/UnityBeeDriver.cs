@@ -141,7 +141,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 UnityVersionNumeric = new BeeBuildProgramCommon.Data.Version(Application.unityVersionVer, Application.unityVersionMaj, Application.unityVersionMin),
                 UnitySourceCodePath = Unsupported.IsSourceBuild(false) ? Unsupported.GetBaseUnityDeveloperFolder() : null,
                 AdvancedLicense = PlayerSettings.advancedLicense,
-                Batchmode = InternalEditorUtility.inBatchMode
+                Batchmode = InternalEditorUtility.inBatchMode,
+                EmitDataForBeeWhy = (Debug.GetDiagnosticSwitch("EmitDataForBeeWhy").value as bool?)?? false,
             });
             return result;
         }

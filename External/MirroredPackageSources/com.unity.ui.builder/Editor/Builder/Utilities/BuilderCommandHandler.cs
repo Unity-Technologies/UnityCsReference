@@ -152,7 +152,7 @@ namespace Unity.UI.Builder
         void OnDelete(KeyDownEvent evt)
         {
             // HACK: This must be a bug. TextField leaks its key events to everyone!
-            if (evt.leafTarget is ITextInputField)
+            if (evt.leafTarget is TextElement)
                 return;
 
             switch (evt.keyCode)
@@ -410,12 +410,9 @@ namespace Unity.UI.Builder
             if (vea == null)
                 return false;
 
-            {
-                BuilderAssetUtilities.DeleteElementFromAsset(m_PaneWindow.document, element);
-
-                element.RemoveFromHierarchy();
-                m_Selection.NotifyOfHierarchyChange();
-            }
+            BuilderAssetUtilities.DeleteElementFromAsset(m_PaneWindow.document, element);
+            element.RemoveFromHierarchy();
+            m_Selection.NotifyOfHierarchyChange();
 
             return true;
         }

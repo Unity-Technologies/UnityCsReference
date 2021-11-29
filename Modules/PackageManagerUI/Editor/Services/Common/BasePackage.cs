@@ -133,8 +133,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         IEnumerable<UI.IPackageVersion> UI.IPackage.versions => versions.Cast<UI.IPackageVersion>();
 
-        public abstract IPackage Clone();
-
         protected virtual string descriptor => L10n.Tr("package");
 
         public string GetDescriptor(bool isFirstLetterCapitalized = false)

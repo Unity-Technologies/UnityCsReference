@@ -28,7 +28,7 @@ namespace UnityEditor.UIElements.Debugger
 
     internal class SearchResultItem
     {
-        public TreeViewItem<VisualElement> item;
+        public TreeViewItemData<VisualElement> item;
         public SearchHighlight highlight;
     }
 
@@ -163,7 +163,7 @@ namespace UnityEditor.UIElements.Debugger
             m_CurrentQuery = query;
             foreach (var item in items)
             {
-                var treeItem = item as TreeViewItem<VisualElement>;
+                var treeItem = item;
                 var element = treeItem.data;
 
                 if (m_CurrentFilter == DebuggerSearchBarFilter.All &&

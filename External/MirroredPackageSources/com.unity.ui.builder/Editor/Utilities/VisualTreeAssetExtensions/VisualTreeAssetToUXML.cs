@@ -11,6 +11,8 @@ namespace Unity.UI.Builder
 {
     internal static class VisualTreeAssetToUXML
     {
+        static readonly string k_ColumnFullName = typeof(Column).FullName;
+
         static void Indent(StringBuilder stringBuilder, int depth)
         {
             for (int i = 0; i < depth; ++i)
@@ -65,7 +67,6 @@ namespace Unity.UI.Builder
 
         static void AppendElementNonStyleAttributes(VisualElementAsset vea, StringBuilder stringBuilder, bool writingToFile)
         {
-            // In 2019.3, je pense, "class" and "style" are now regular attributes??
             AppendElementAttributes(vea, stringBuilder, writingToFile, "class", "style");
         }
 
@@ -106,51 +107,79 @@ namespace Unity.UI.Builder
         static void AppendTemplateRegistrations(
             VisualTreeAsset vta, string vtaPath, StringBuilder stringBuilder, HashSet<string> templatesFilter = null)
         {
+            var templateAliases = new List<string>();
+
             if (vta.templateAssets != null && vta.templateAssets.Count > 0)
             {
-                var templatesMap = new Dictionary<string, TemplateAsset>();
                 foreach (var templateAsset in vta.templateAssets)
                 {
-                    if (!templatesMap.ContainsKey(templateAsset.templateAlias))
-                        templatesMap.Add(templateAsset.templateAlias, templateAsset);
-                }
-                foreach (var templateAsset in templatesMap.Values)
-                {
-                    // Skip templates if not in filter.
-                    if (templatesFilter != null && !templatesFilter.Contains(templateAsset.templateAlias))
-                        continue;
-
-                    Indent(stringBuilder, 1);
-                    stringBuilder.Append("<");
-                    stringBuilder.Append(BuilderConstants.UxmlEngineNamespaceReplace);
-                    stringBuilder.Append("Template");
-                    AppendElementAttribute("name", templateAsset.templateAlias, stringBuilder);
-
-                    var fieldInfo = VisualTreeAssetExtensions.UsingsListFieldInfo;
-                    if (fieldInfo != null)
-                    {
-                        var usings = fieldInfo.GetValue(vta) as List<VisualTreeAsset.UsingEntry>;
-                        if (usings != null && usings.Count > 0)
-                        {
-                            var lookingFor = new VisualTreeAsset.UsingEntry(templateAsset.templateAlias, string.Empty);
-                            int index = usings.BinarySearch(lookingFor, VisualTreeAsset.UsingEntry.comparer);
-                            if (index >= 0)
-                            {
-                                var usingEntry = usings[index];
-
-                                var path = GetProcessedPathForSrcAttribute(usingEntry.asset, vtaPath, usingEntry.path);
-                                AppendElementAttribute("src", path, stringBuilder);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        Debug.LogError("UI Builder: VisualTreeAsset.m_Usings field has not been found! Update the reflection code!");
-                    }
-                    stringBuilder.Append(" />");
-                    stringBuilder.Append(BuilderConstants.newlineCharFromEditorSettings);
+                    if (!templateAliases.Contains(templateAsset.templateAlias))
+                        templateAliases.Add(templateAsset.templateAlias);
                 }
             }
+
+            if (vta.uxmlObjectEntries != null && vta.uxmlObjectEntries.Count > 0)
+            {
+                foreach (var entry in vta.uxmlObjectEntries)
+                {
+                    if (entry.uxmlObjectAssets == null)
+                        continue;
+
+                    foreach (var uxmlObjectAsset in entry.uxmlObjectAssets)
+                    {
+                        if (uxmlObjectAsset.fullTypeName != k_ColumnFullName)
+                            continue;
+
+                        var templateAlias = uxmlObjectAsset.GetAttributeValue(Column.UxmlObjectTraits<Column>.k_HeaderTemplateAttributeName);
+
+                        if (!string.IsNullOrEmpty(templateAlias) && !templateAliases.Contains(templateAlias))
+                            templateAliases.Add(templateAlias);
+
+                        templateAlias = uxmlObjectAsset.GetAttributeValue(Column.UxmlObjectTraits<Column>.k_CellTemplateAttributeName);
+
+                        if (!string.IsNullOrEmpty(templateAlias) && !templateAliases.Contains(templateAlias))
+                            templateAliases.Add(templateAlias);
+                    }
+                }
+            }
+
+            foreach (var templateAlias in templateAliases)
+            {
+                // Skip templates if not in filter.
+                if (templatesFilter != null && !templatesFilter.Contains(templateAlias))
+                    continue;
+
+                Indent(stringBuilder, 1);
+                stringBuilder.Append(BuilderConstants.UxmlOpenTagSymbol);
+                stringBuilder.Append(BuilderConstants.UxmlEngineNamespaceReplace);
+                stringBuilder.Append(BuilderConstants.UxmlTemplateClassTag);
+                AppendElementAttribute(BuilderConstants.UxmlNameAttr, templateAlias, stringBuilder);
+
+                var fieldInfo = VisualTreeAssetExtensions.UsingsListFieldInfo;
+                if (fieldInfo != null)
+                {
+                    var usings = fieldInfo.GetValue(vta) as List<VisualTreeAsset.UsingEntry>;
+                    if (usings != null && usings.Count > 0)
+                    {
+                        var lookingFor = new VisualTreeAsset.UsingEntry(templateAlias, string.Empty);
+                        int index = usings.BinarySearch(lookingFor, VisualTreeAsset.UsingEntry.comparer);
+                        if (index >= 0)
+                        {
+                            var usingEntry = usings[index];
+
+                            var path = GetProcessedPathForSrcAttribute(usingEntry.asset, vtaPath, usingEntry.path);
+                            AppendElementAttribute("src", path, stringBuilder);
+                        }
+                    }
+                }
+                else
+                {
+                    Debug.LogError("UI Builder: VisualTreeAsset.m_Usings field has not been found! Update the reflection code!");
+                }
+                stringBuilder.Append(" " + BuilderConstants.UxmlEndTagSymbol);
+                stringBuilder.Append(BuilderConstants.newlineCharFromEditorSettings);
+            }
+
         }
 
         static void GatherUsedTemplates(
@@ -206,7 +235,7 @@ namespace Unity.UI.Builder
         {
             if (!newLineAdded)
             {
-                stringBuilder.Append(">");
+                stringBuilder.Append(BuilderConstants.UxmlCloseTagSymbol);
                 stringBuilder.Append(BuilderConstants.newlineCharFromEditorSettings);
                 newLineAdded = true;
             }
@@ -217,7 +246,7 @@ namespace Unity.UI.Builder
                 styleSheetPath = GetProcessedPathForSrcAttribute(styleSheet, vtaPath, styleSheetPath);
                 AppendElementAttribute("src", styleSheetPath, stringBuilder);
             }
-            stringBuilder.Append(" />");
+            stringBuilder.Append(" " + BuilderConstants.UxmlEndTagSymbol);
             stringBuilder.Append(BuilderConstants.newlineCharFromEditorSettings);
 
             hasChildTags = true;
@@ -230,7 +259,7 @@ namespace Unity.UI.Builder
         {
             Indent(stringBuilder, depth);
 
-            stringBuilder.Append("<");
+            stringBuilder.Append(BuilderConstants.UxmlOpenTagSymbol);
             AppendElementTypeName(root, stringBuilder);
 
             // Add all non-style attributes.
@@ -308,7 +337,7 @@ namespace Unity.UI.Builder
             {
                 if (!hasChildTags)
                 {
-                    stringBuilder.Append(">");
+                    stringBuilder.Append(BuilderConstants.UxmlCloseTagSymbol);
                     stringBuilder.Append(BuilderConstants.newlineCharFromEditorSettings);
                 }
 
@@ -326,13 +355,13 @@ namespace Unity.UI.Builder
                     var overrides = attributeOverridePair.Value;
 
                     Indent(stringBuilder, depth + 1);
-                    stringBuilder.Append("<AttributeOverrides");
+                    stringBuilder.Append(BuilderConstants.UxmlOpenTagSymbol + "AttributeOverrides");
                     AppendElementAttribute("element-name", elementName, stringBuilder);
 
                     foreach (var attributeOverride in overrides)
                         AppendElementAttribute(attributeOverride.m_AttributeName, attributeOverride.m_Value, stringBuilder);
 
-                    stringBuilder.Append(" />");
+                    stringBuilder.Append(" " + BuilderConstants.UxmlCloseTagSymbol);
                     stringBuilder.Append(BuilderConstants.newlineCharFromEditorSettings);
                 }
 
@@ -345,13 +374,31 @@ namespace Unity.UI.Builder
             {
                 if (!hasChildTags)
                 {
-                    stringBuilder.Append(">");
+                    stringBuilder.Append(BuilderConstants.UxmlCloseTagSymbol);
                     stringBuilder.Append(BuilderConstants.newlineCharFromEditorSettings);
                 }
 
                 children.Sort(VisualTreeAssetUtilities.CompareForOrder);
 
-                foreach (VisualElementAsset childVea in children)
+                foreach (var childVea in children)
+                    GenerateUXMLRecursive(
+                        vta, vtaPath, childVea, idToChildren, stringBuilder,
+                        depth + 1, writingToFile);
+
+                hasChildTags = true;
+            }
+            
+            // Iterate through Uxml Objects
+            var entry = vta.GetUxmlObjectEntry(root.id);
+            if (entry.uxmlObjectAssets != null && entry.uxmlObjectAssets.Count > 0)
+            {
+                if (!hasChildTags)
+                {
+                    stringBuilder.Append(BuilderConstants.UxmlCloseTagSymbol);
+                    stringBuilder.Append(BuilderConstants.newlineCharFromEditorSettings);
+                }
+                
+                foreach (var childVea in entry.uxmlObjectAssets)
                     GenerateUXMLRecursive(
                         vta, vtaPath, childVea, idToChildren, stringBuilder,
                         depth + 1, writingToFile);
@@ -362,14 +409,14 @@ namespace Unity.UI.Builder
             if (hasChildTags)
             {
                 Indent(stringBuilder, depth);
-                stringBuilder.Append("</");
+                stringBuilder.Append(BuilderConstants.UxmlOpenTagSymbol + "/");
                 AppendElementTypeName(root, stringBuilder);
-                stringBuilder.Append(">");
+                stringBuilder.Append(BuilderConstants.UxmlCloseTagSymbol);
                 stringBuilder.Append(BuilderConstants.newlineCharFromEditorSettings);
             }
             else
             {
-                stringBuilder.Append(" />");
+                stringBuilder.Append(" " + BuilderConstants.UxmlEndTagSymbol);
                 stringBuilder.Append(BuilderConstants.newlineCharFromEditorSettings);
             }
         }
@@ -379,7 +426,7 @@ namespace Unity.UI.Builder
             var stringBuilder = new StringBuilder();
 
             stringBuilder.Append(BuilderConstants.UxmlHeader);
-            stringBuilder.Append(">");
+            stringBuilder.Append(BuilderConstants.UxmlCloseTagSymbol);
             stringBuilder.Append(BuilderConstants.newlineCharFromEditorSettings);
 
             var idToChildren = VisualTreeAssetUtilities.GenerateIdToChildren(vta);
@@ -469,7 +516,7 @@ namespace Unity.UI.Builder
                 (vta.templateAssets == null || vta.templateAssets.Count <= 0))
             {
                 stringBuilder.Append(BuilderConstants.UxmlHeader);
-                stringBuilder.Append(">");
+                stringBuilder.Append(BuilderConstants.UxmlCloseTagSymbol);
                 stringBuilder.Append(BuilderConstants.newlineCharFromEditorSettings);
                 stringBuilder.Append(BuilderConstants.UxmlFooter);
                 stringBuilder.Append(BuilderConstants.newlineCharFromEditorSettings);
@@ -480,7 +527,7 @@ namespace Unity.UI.Builder
 
             stringBuilder.Append(BuilderConstants.UxmlHeader);
             AppendHeaderAttributes(vta, stringBuilder, writingToFile);
-            stringBuilder.Append(">");
+            stringBuilder.Append(BuilderConstants.UxmlCloseTagSymbol);
             stringBuilder.Append(BuilderConstants.newlineCharFromEditorSettings);
 
             // Templates

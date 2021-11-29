@@ -315,6 +315,21 @@ namespace UnityEditor
                 }
             }
 
+            public static string[] compilerFlags
+            {
+                get
+                {
+                    return compilerFlagsInternal.Split(new char[] {' '});
+                }
+                set
+                {
+                    compilerFlagsInternal = string.Join(" ", value);
+                }
+            }
+
+            [NativeProperty("switchCompilerFlags", TargetType.Function)]
+            extern private static string compilerFlagsInternal { get; set; }
+
             //Application ID (shows up in Application meta file)
             [NativeProperty("switchApplicationID", TargetType.Function)]
             extern public static string applicationID { get; set; }

@@ -61,7 +61,7 @@ namespace UnityEngine.UIElements
 
         internal void InsertChild(TreeViewItemData<T> child, int index)
         {
-            if (index == -1)
+            if (index < 0 || index >= m_Children.Count)
                 m_Children.Add(child);
             else
                 m_Children.Insert(index, child);
@@ -94,23 +94,6 @@ namespace UnityEngine.UIElements
             }
 
             return -1;
-        }
-
-        internal bool HasChildRecursive(int childId)
-        {
-            if (!hasChildren)
-                return false;
-
-            foreach (var child in m_Children)
-            {
-                if (child.id == childId)
-                    return true;
-
-                if (child.HasChildRecursive(childId))
-                    return true;
-            }
-
-            return false;
         }
 
         internal void ReplaceChild(TreeViewItemData<T> newChild)

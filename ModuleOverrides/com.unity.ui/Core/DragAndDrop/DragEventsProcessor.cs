@@ -8,7 +8,7 @@ namespace UnityEngine.UIElements
 {
     internal abstract class DragEventsProcessor
     {
-        enum DragState
+        internal enum DragState
         {
             None,
             CanStartDrag,
@@ -16,7 +16,7 @@ namespace UnityEngine.UIElements
         }
 
         bool m_IsRegistered;
-        DragState m_DragState;
+        internal DragState m_DragState;
         private Vector3 m_Start;
         internal readonly VisualElement m_Target;
 
@@ -67,6 +67,7 @@ namespace UnityEngine.UIElements
             m_Target.RegisterCallback<PointerLeaveEvent>(OnPointerLeaveEvent);
             m_Target.RegisterCallback<PointerMoveEvent>(OnPointerMoveEvent);
             m_Target.RegisterCallback<PointerCancelEvent>(OnPointerCancelEvent);
+            m_Target.RegisterCallback<PointerCaptureOutEvent>(OnPointerCapturedOut);
 
             m_Target.RegisterCallback<DragUpdatedEvent>(OnDragUpdate);
             m_Target.RegisterCallback<DragPerformEvent>(OnDragPerformEvent);
@@ -91,6 +92,7 @@ namespace UnityEngine.UIElements
             m_Target.UnregisterCallback<PointerLeaveEvent>(OnPointerLeaveEvent);
             m_Target.UnregisterCallback<PointerMoveEvent>(OnPointerMoveEvent);
             m_Target.UnregisterCallback<PointerCancelEvent>(OnPointerCancelEvent);
+            m_Target.UnregisterCallback<PointerCaptureOutEvent>(OnPointerCapturedOut);
             m_Target.UnregisterCallback<DragUpdatedEvent>(OnDragUpdate);
             m_Target.UnregisterCallback<DragPerformEvent>(OnDragPerformEvent);
             m_Target.UnregisterCallback<DragExitedEvent>(OnDragExitedEvent);
@@ -150,6 +152,15 @@ namespace UnityEngine.UIElements
         {
             if (!useDragEvents)
                 ClearDragAndDropUI();
+        }
+
+        private void OnPointerCapturedOut(PointerCaptureOutEvent evt)
+        {
+            // Whenever the pointer is captured by another element, like a text input, we should reset the drag state.
+            if (!useDragEvents)
+                ClearDragAndDropUI();
+
+            m_DragState = DragState.None;
         }
 
         private void OnDragExitedEvent(DragExitedEvent evt)

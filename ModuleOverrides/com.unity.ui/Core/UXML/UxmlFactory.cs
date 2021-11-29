@@ -11,14 +11,11 @@ using System.Reflection;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// Describes a <see cref="VisualElement"/> derived class for the parsing of UXML files and the generation of UXML schema definition.
+    /// Base class that describes a <see cref="VisualElement"/> derived class for the parsing of UXML files and the generation of UXML schema definition.
     /// </summary>
-    /// <remarks>
-    /// UxmlTraits describes the UXML attributes and children elements of a class deriving from <see cref="VisualElement"/>. It is used by <see cref="UxmlFactory"/> to map UXML attributes to the C# class properties when reading UXML documents. It is also used to generate UXML schema definitions.
-    /// </remarks>
-    public abstract class UxmlTraits
+    public abstract class BaseUxmlTraits
     {
-        protected UxmlTraits()
+        protected BaseUxmlTraits()
         {
             canHaveAnyAttribute = true;
         }
@@ -50,17 +47,6 @@ namespace UnityEngine.UIElements
             get { yield break; }
         }
 
-        /// <summary>
-        /// Initialize a <see cref="VisualElement"/> instance with values from the UXML element attributes.
-        /// </summary>
-        /// <param name="ve">The VisualElement to initialize.</param>
-        /// <param name="bag">A bag of name-value pairs, one for each attribute of the UXML element.</param>
-        /// <param name="cc">When the element is created as part of a template instance inserted in another document, this contains information about the insertion point.</param>
-        /// <remarks>
-        /// Override this function in your traits class to initialize your C# object with values read from the UXML document.
-        /// </remarks>
-        public virtual void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc) {}
-
         IEnumerable<UxmlAttributeDescription> GetAllAttributeDescriptionForType(Type t)
         {
             Type baseType = t.BaseType;
@@ -82,9 +68,49 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Interface for UXML factories. While it is not strictly required, concrete factories should derive from the generic class <see cref="UxmlFactory"/>.
+    /// Describes a <see cref="VisualElement"/> derived class for the parsing of UXML files and the generation of UXML schema definition.
     /// </summary>
-    public interface IUxmlFactory
+    /// <remarks>
+    /// UxmlTraits describes the UXML attributes and children elements of a class deriving from <see cref="VisualElement"/>. It is used by <see cref="UxmlFactory"/> to map UXML attributes to the C# class properties when reading UXML documents. It is also used to generate UXML schema definitions.
+    /// </remarks>
+    public abstract class UxmlTraits : BaseUxmlTraits
+    {
+        /// <summary>
+        /// Initialize a <see cref="VisualElement"/> instance with values from the UXML element attributes.
+        /// </summary>
+        /// <param name="ve">The VisualElement to initialize.</param>
+        /// <param name="bag">A bag of name-value pairs, one for each attribute of the UXML element.</param>
+        /// <param name="cc">When the element is created as part of a template instance inserted in another document, this contains information about the insertion point.</param>
+        /// <remarks>
+        /// Override this function in your traits class to initialize your C# object with values read from the UXML document.
+        /// </remarks>
+        public virtual void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc) {}
+    }
+
+    /// <summary>
+    /// Describes a UxmlObject derived class for the parsing of UXML files and the generation of UXML schema definition.
+    /// </summary>
+    /// <remarks>
+    /// UxmlTraits describes the UXML attributes and children elements of a class or structure. It is used by <see cref="UxmlObjectFactory{TCreatedType,TTraits}"/> to map UXML attributes to the C# class/struct properties when reading UXML documents. It is also used to generate UXML schema definitions.
+    /// </remarks>
+    internal abstract class UxmlObjectTraits<T> : BaseUxmlTraits
+    {
+        /// <summary>
+        /// Initialize a uxml object instance with values from the UXML element attributes.
+        /// </summary>
+        /// <param name="obj">The object to initialize.</param>
+        /// <param name="bag">A bag of name-value pairs, one for each attribute of the UXML element.</param>
+        /// <param name="cc">Contains information about the uxml objects available in the tree for the initialization step.</param>
+        /// <remarks>
+        /// UxmlObject are simple data classes or structs.
+        /// </remarks>
+        public virtual void Init(ref T obj, IUxmlAttributes bag, CreationContext cc) {}
+    }
+
+    /// <summary>
+    /// Base interface for UXML factories. While it is not strictly required, concrete factories should derive from the generic class <see cref="UxmlFactory{TCreatedType,TTraits}"/> or <see cref="UxmlObjectFactory{TCreatedType,TTraits}"/>.
+    /// </summary>
+    public interface IBaseUxmlFactory
     {
         /// <summary>
         /// The name of the UXML element read by the factory.
@@ -141,12 +167,19 @@ namespace UnityEngine.UIElements
         /// Returns true if the factory accepts the content of the attribute bag.
         /// </summary>
         /// <param name="bag">The attribute bag.</param>
+        /// <param name="cc">The creation context.</param>
         /// <remarks>
         /// Use this function to validate the content of the attribute bag against the requirements of your factory. If a required attribute is missing or if an attribute value is incorrect, return false. Otherwise, if the bag content is acceptable to your factory, return true.
         /// </remarks>
         /// <returns>True if the factory accepts the content of the attribute bag. False otherwise.</returns>
         bool AcceptsAttributeBag(IUxmlAttributes bag, CreationContext cc);
+    }
 
+    /// <summary>
+    /// Interface for UXML factories. While it is not strictly required, concrete factories should derive from the generic class <see cref="UxmlFactory{TCreatedType,TTraits}"/>.
+    /// </summary>
+    public interface IUxmlFactory : IBaseUxmlFactory
+    {
         /// <summary>
         /// Instantiate and initialize an object of type <c>T0</c>.
         /// </summary>
@@ -157,19 +190,32 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Generic base class for UXML factories, which instantiate a VisualElement using the data read from a UXML file.
+    /// Base interface for UxmlObject factories. While it is not strictly required, concrete factories should derive from the generic class <see cref="UxmlObjectFactory{TCreatedType,TTraits}"/>.
     /// </summary>
-    /// <remarks>
-    /// /T0/ The type of the element that will be instantiated. It must derive from <see cref="VisualElement"/>.
-    ///
-    /// /T1/ The traits of the element that will be instantiated. It must derive from <see cref="UxmlTraits"/>.
-    /// </remarks>
-    public class UxmlFactory<TCreatedType, TTraits> : IUxmlFactory where TCreatedType : VisualElement, new() where TTraits : UxmlTraits, new()
+    internal interface IBaseUxmlObjectFactory : IBaseUxmlFactory
+    {
+        // Intentionally left blank.
+    }
+
+    /// <summary>
+    /// Typed interface for UxmlObject factories. While it is not strictly required, concrete factories should derive from the generic class <see cref="UxmlObjectFactory{TCreatedType,TTraits}"/>.
+    /// </summary>
+    internal interface IUxmlObjectFactory<out T> : IBaseUxmlObjectFactory where T : new()
+    {
+        T CreateObject(IUxmlAttributes bag, CreationContext cc);
+    }
+
+    /// <summary>
+    /// Generic base class for UXML element factories, which instantiate a VisualElement using the data read from a UXML file.
+    /// </summary>
+    /// <typeparam name="TCreatedType">The type of the class that will be instantiated. It must have a parameterless constructor.</typeparam>
+    /// <typeparam name="TTraits">The traits of the class that will be instantiated. It must derive from <see cref="BaseUxmlTraits"/></typeparam>
+    public abstract class BaseUxmlFactory<TCreatedType, TTraits> where TCreatedType : new() where TTraits : BaseUxmlTraits, new()
     {
         // Make private once we get rid of PropertyControl
         internal TTraits m_Traits;
 
-        protected UxmlFactory()
+        protected BaseUxmlFactory()
         {
             m_Traits = new TTraits();
         }
@@ -257,14 +303,12 @@ namespace UnityEngine.UIElements
         {
             get
             {
+                if (typeof(TCreatedType) == typeof(VisualElement))
                 {
-                    if (typeof(TCreatedType) == typeof(VisualElement))
-                    {
-                        return String.Empty;
-                    }
-
-                    return typeof(VisualElement).Namespace ?? String.Empty;
+                    return String.Empty;
                 }
+
+                return typeof(VisualElement).Namespace ?? String.Empty;
             }
         }
 
@@ -298,7 +342,18 @@ namespace UnityEngine.UIElements
         {
             return true;
         }
+    }
 
+    /// <summary>
+    /// Generic base class for UXML factories, which instantiate a VisualElement using the data read from a UXML file.
+    /// </summary>
+    /// <remarks>
+    /// /T0/ The type of the element that will be instantiated. It must derive from <see cref="VisualElement"/>.
+    ///
+    /// /T1/ The traits of the element that will be instantiated. It must derive from <see cref="UxmlTraits"/>.
+    /// </remarks>
+    public class UxmlFactory<TCreatedType, TTraits> : BaseUxmlFactory<TCreatedType, TTraits>, IUxmlFactory where TCreatedType : VisualElement, new() where TTraits : UxmlTraits, new()
+    {
         /// <summary>
         /// Instantiate an object of type <c>T0</c> and initialize it by calling <c>T1</c> UxmlTraits<see cref="Init"/> method.
         /// </summary>
@@ -307,9 +362,30 @@ namespace UnityEngine.UIElements
         /// <returns>The created element.</returns>
         public virtual VisualElement Create(IUxmlAttributes bag, CreationContext cc)
         {
-            TCreatedType ve = new TCreatedType();
+            var ve = new TCreatedType();
             m_Traits.Init(ve, bag, cc);
             return ve;
+        }
+    }
+
+    /// <summary>
+    /// Generic base class for UxmlObject factories, which instantiate an object/struct using the data read from a UXML file.
+    /// </summary>
+    /// <typeparam name="TCreatedType">The type of the class that will be instantiated. It must have a parameterless constructor.</typeparam>
+    /// <typeparam name="TTraits">The traits of the class that will be instantiated. It must derive from <see cref="UxmlObjectTraits{T}"/></typeparam>
+    internal class UxmlObjectFactory<TCreatedType, TTraits> : BaseUxmlFactory<TCreatedType, TTraits>, IUxmlObjectFactory<TCreatedType> where TCreatedType : new() where TTraits : UxmlObjectTraits<TCreatedType>, new()
+    {
+        /// <summary>
+        /// Instantiate an object of type <c>TCreatedType</c> and initialize it by calling <c>TTraits</c> UxmlTraits<see cref="Init"/> method.
+        /// </summary>
+        /// <param name="bag">A bag of name-value pairs, one for each attribute of the UXML object. This can be used to initialize the properties of the created object.</param>
+        /// <param name="cc">Contains information about the uxml objects available in the tree for the initialization step.</param>
+        /// <returns></returns>
+        public virtual TCreatedType CreateObject(IUxmlAttributes bag, CreationContext cc)
+        {
+            var obj = new TCreatedType();
+            m_Traits.Init(ref obj, bag, cc);
+            return obj;
         }
     }
 

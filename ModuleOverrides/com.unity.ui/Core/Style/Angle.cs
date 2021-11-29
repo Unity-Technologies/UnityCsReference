@@ -46,12 +46,39 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Creates a percentage <see cref="Angle"/> from a float.
+        /// Creates an <see cref="Angle"/> from degrees.
         /// </summary>
         /// <returns>The created angle.</returns>
         public static Angle Degrees(float value)
         {
             return new Angle(value, AngleUnit.Degree);
+        }
+
+        /// <summary>
+        /// Creates an <see cref="Angle"/> from gradians
+        /// </summary>
+        /// <returns>The created angle.</returns>
+        public static Angle Gradians(float value)
+        {
+            return new Angle(value, AngleUnit.Gradian);
+        }
+
+        /// <summary>
+        /// Creates an <see cref="Angle"/> from radians
+        /// </summary>
+        /// <returns>The created angle.</returns>
+        public static Angle Radians(float value)
+        {
+            return new Angle(value, AngleUnit.Radian);
+        }
+
+        /// <summary>
+        /// Creates an <see cref="Angle"/> from turns
+        /// </summary>
+        /// <returns>The created angle.</returns>
+        public static Angle Turns(float value)
+        {
+            return new Angle(value, AngleUnit.Turn);
         }
 
         internal static Angle None()
@@ -124,6 +151,69 @@ namespace UnityEngine.UIElements
                     return m_Value * 180 / Mathf.PI;
                 case Unit.Turn:
                     return m_Value * 360;
+                case Unit.None:
+                    return 0;
+            }
+            return 0;
+        }
+
+        /// <summary>
+        /// Returns the value of the angle, expressed in gradians.
+        /// </summary>
+        public float ToGradians()
+        {
+            switch (m_Unit)
+            {
+                case Unit.Degree:
+                    return m_Value * 10 / 9;
+                case Unit.Gradian:
+                    return m_Value;
+                case Unit.Radian:
+                    return (m_Value * 200) / Mathf.PI;
+                case Unit.Turn:
+                    return m_Value * 400;
+                case Unit.None:
+                    return 0;
+            }
+            return 0;
+        }
+
+        /// <summary>
+        /// Returns the value of the angle, expressed in radians.
+        /// </summary>
+        public float ToRadians()
+        {
+            switch (m_Unit)
+            {
+                case Unit.Degree:
+                    return m_Value * Mathf.PI / 180;
+                case Unit.Gradian:
+                    return m_Value * Mathf.PI / 200;
+                case Unit.Radian:
+                    return m_Value;
+                case Unit.Turn:
+                    return m_Value * Mathf.PI * 2;
+                case Unit.None:
+                    return 0;
+            }
+            return 0;
+        }
+
+        /// <summary>
+        /// Returns the value of the angle, expressed in turns.
+        /// </summary>
+        public float ToTurns()
+        {
+            switch (m_Unit)
+            {
+                case Unit.Degree:
+                    return m_Value / 360;
+                case Unit.Gradian:
+                    return m_Value / 400;
+                case Unit.Radian:
+                    return m_Value / (Mathf.PI * 2);
+                case Unit.Turn:
+                    return m_Value;
                 case Unit.None:
                     return 0;
             }

@@ -49,16 +49,6 @@ namespace UnityEngine.UIElements
             set { textInput.multiline = value; }
         }
 
-
-        /// <summary>
-        /// Selects text in the textfield between cursorIndex and selectionIndex.
-        /// </summary>
-        /// <param name="selectionIndex">The selection end position.</param>
-        public void SelectRange(int rangeCursorIndex, int selectionIndex)
-        {
-            textInput.SelectRange(rangeCursorIndex, selectionIndex);
-        }
-
         /// <summary>
         /// USS class name of elements of this type.
         /// </summary>
@@ -126,14 +116,83 @@ namespace UnityEngine.UIElements
             set
             {
                 base.value = value;
-                text = rawValue;
+                textEdition.UpdateText(rawValue);
             }
         }
 
         public override void SetValueWithoutNotify(string newValue)
         {
             base.SetValueWithoutNotify(newValue);
-            text = rawValue;
+            textEdition.UpdateText(rawValue);
+        }
+
+        [EventInterest(typeof(KeyDownEvent), typeof(ExecuteCommandEvent),
+                typeof(NavigationSubmitEvent), typeof(NavigationCancelEvent), typeof(NavigationMoveEvent))]
+        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
+        {
+            base.ExecuteDefaultActionAtTarget(evt);
+
+            if (evt is KeyDownEvent kde)
+            {
+                if (!isDelayed || (!multiline && ((kde?.keyCode == KeyCode.KeypadEnter) || (kde?.keyCode == KeyCode.Return))))
+                {
+                    value = text;
+                }
+
+                if (multiline)
+                {
+                    // For multiline text fields, make sure tab doesn't trigger a focus change.
+                    if (hasFocus && (kde?.keyCode == KeyCode.Tab || kde?.character == '\t'))
+                    {
+                        evt.StopPropagation();
+                        evt.PreventDefault();
+                    }
+                    else if (((kde?.character == 3) && (kde?.shiftKey == true)) || // KeyCode.KeypadEnter
+                             ((kde?.character == '\n') && (kde?.shiftKey == true))) // KeyCode.Return
+                    {
+                        Focus();
+                        evt.StopPropagation();
+                        evt.PreventDefault();
+                    }
+                }
+                else if ((kde?.character == 3) ||     // KeyCode.KeypadEnter
+                        (kde?.character == '\n'))    // KeyCode.Return
+                {
+                    if (hasFocus)
+                        Focus();
+                    else
+                        textInput.textElement.Focus();
+                    evt.StopPropagation();
+                    evt.PreventDefault();
+                }
+            }
+            else if (evt is ExecuteCommandEvent commandEvt)
+            {
+                string cmdName = commandEvt.commandName;
+                if (!isDelayed && (cmdName == EventCommandNames.Paste || cmdName == EventCommandNames.Cut))
+                {
+                    value = text;
+                }
+            }
+            // Prevent duplicated navigation events, since we're observing KeyDownEvents instead
+            else if (evt.eventTypeId == NavigationSubmitEvent.TypeId() ||
+                     evt.eventTypeId == NavigationCancelEvent.TypeId() ||
+                     evt.eventTypeId == NavigationMoveEvent.TypeId())
+            {
+                evt.StopPropagation();
+                evt.PreventDefault();
+            }
+        }
+
+        [EventInterest(typeof(BlurEvent))]
+        protected override void ExecuteDefaultAction(EventBase evt)
+        {
+            base.ExecuteDefaultAction(evt);
+
+            if (isDelayed && evt?.eventTypeId == BlurEvent.TypeId())
+            {
+                value = text;
+            }
         }
 
         internal override void OnViewDataReady()
@@ -151,19 +210,17 @@ namespace UnityEngine.UIElements
         protected override string ValueToString(string value) => value;
 
         protected override string StringToValue(string str) => str;
+
         class TextInput : TextInputBase
         {
             TextField parentTextField => (TextField)parent;
 
-            // Multiline (lossy behaviour when deactivated)
-            bool m_Multiline;
-
             public bool multiline
             {
-                get { return m_Multiline; }
+                get { return textEdition.multiline; }
                 set
                 {
-                    m_Multiline = value;
+                    textEdition.multiline = value;
                     if (!value)
                         text = text.Replace("\n", "");
                     SetTextAlign();
@@ -172,7 +229,7 @@ namespace UnityEngine.UIElements
 
             private void SetTextAlign()
             {
-                if (m_Multiline)
+                if (multiline)
                 {
                     RemoveFromClassList(singleLineInputUssClassName);
                     AddToClassList(multilineInputUssClassName);
@@ -195,103 +252,7 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            protected override string StringToValue(string str)
-            {
-                return str;
-            }
-
-            public void SelectRange(int cursorIndex, int selectionIndex)
-            {
-                if (editorEngine != null)
-                {
-                    editorEngine.cursorIndex = cursorIndex;
-                    editorEngine.selectIndex = selectionIndex;
-                }
-            }
-
-            internal override void SyncTextEngine()
-            {
-                if (parentTextField != null)
-                {
-                    editorEngine.multiline = multiline;
-                    editorEngine.isPasswordField = isPasswordField;
-                }
-
-                base.SyncTextEngine();
-            }
-
-            [EventInterest(typeof(KeyDownEvent), typeof(ExecuteCommandEvent),
-                typeof(NavigationSubmitEvent), typeof(NavigationCancelEvent), typeof(NavigationMoveEvent))]
-            protected override void ExecuteDefaultActionAtTarget(EventBase evt)
-            {
-                base.ExecuteDefaultActionAtTarget(evt);
-
-                if (evt == null)
-                {
-                    return;
-                }
-
-                if (evt.eventTypeId == KeyDownEvent.TypeId())
-                {
-                    KeyDownEvent kde = evt as KeyDownEvent;
-
-                    if (!parentTextField.isDelayed || (!multiline && ((kde?.keyCode == KeyCode.KeypadEnter) || (kde?.keyCode == KeyCode.Return))))
-                    {
-                        parentTextField.value = text;
-                    }
-
-                    if (multiline)
-                    {
-                        if (kde?.character == '\t' && kde.modifiers == EventModifiers.None)
-                        {
-                            kde?.StopPropagation();
-                            kde?.PreventDefault();
-                        }
-                        else if (((kde?.character == 3) && (kde?.shiftKey == true)) || // KeyCode.KeypadEnter
-                                 ((kde?.character == '\n') && (kde?.shiftKey == true))) // KeyCode.Return
-                        {
-                            parent.Focus();
-                            evt.StopPropagation();
-                            evt.PreventDefault();
-                        }
-                    }
-                    else if ((kde?.character == 3) ||    // KeyCode.KeypadEnter
-                             (kde?.character == '\n'))   // KeyCode.Return
-                    {
-                        parent.Focus();
-                        evt.StopPropagation();
-                        evt.PreventDefault();
-                    }
-                }
-                else if (evt.eventTypeId == ExecuteCommandEvent.TypeId())
-                {
-                    ExecuteCommandEvent commandEvt = evt as ExecuteCommandEvent;
-                    string cmdName = commandEvt.commandName;
-                    if (!parentTextField.isDelayed && (cmdName == EventCommandNames.Paste || cmdName == EventCommandNames.Cut))
-                    {
-                        parentTextField.value = text;
-                    }
-                }
-                // Prevent duplicated navigation events, since we're observing KeyDownEvents instead
-                else if (evt.eventTypeId == NavigationSubmitEvent.TypeId() ||
-                         evt.eventTypeId == NavigationCancelEvent.TypeId() ||
-                         evt.eventTypeId == NavigationMoveEvent.TypeId())
-                {
-                    evt.StopPropagation();
-                    evt.PreventDefault();
-                }
-            }
-
-            [EventInterest(typeof(BlurEvent))]
-            protected override void ExecuteDefaultAction(EventBase evt)
-            {
-                base.ExecuteDefaultAction(evt);
-
-                if (parentTextField.isDelayed && evt?.eventTypeId == BlurEvent.TypeId())
-                {
-                    parentTextField.value = text;
-                }
-            }
+            protected override string StringToValue(string str) => str;
         }
     }
 }

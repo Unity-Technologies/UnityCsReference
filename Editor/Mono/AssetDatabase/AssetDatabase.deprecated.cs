@@ -65,7 +65,7 @@ namespace UnityEditor.Experimental
         [Obsolete("AssetDatabaseExperimental.IsCacheServerEnabled() has been deprecated. Use AssetDatabase.IsCacheServerEnabled() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.IsCacheServerEnabled(*)", false)]
         public extern static bool IsCacheServerEnabled();
 
-        [Obsolete("AssetDatabaseExperimental.SetImporterOverride<T>() has been deprecated. Use AssetDatabase.SetImporterOverride<T>() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.SetImporterOverride<T>(*)", false)]
+        [Obsolete("AssetDatabaseExperimental.SetImporterOverride<T>() has been deprecated. Use AssetDatabase.SetImporterOverride<T>() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.SetImporterOverride<T>(*)", true)]
         public static void SetImporterOverride<T>(string path)
             where T : ScriptedImporter
         {
@@ -73,11 +73,11 @@ namespace UnityEditor.Experimental
         }
 
         [FreeFunction("AssetDatabase::GetImporterOverride")]
-        [Obsolete("AssetDatabaseExperimental.GetImporterOverride() has been deprecated. Use AssetDatabase.GetImporterOverride() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.GetImporterOverride(*)", false)]
+        [Obsolete("AssetDatabaseExperimental.GetImporterOverride() has been deprecated. Use AssetDatabase.GetImporterOverride() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.GetImporterOverride(*)", true)]
         extern public static System.Type GetImporterOverride(string path);
 
-        [FreeFunction("AssetDatabase::GetAvailableImporterTypes")]
-        [Obsolete("AssetDatabaseExperimental.GetAvailableImporterTypes() has been deprecated. Use AssetDatabase.GetAvailableImporterTypes() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.GetAvailableImporterTypes(*)", false)]
+        [FreeFunction("AssetDatabase::GetAvailableImporters")]
+        [Obsolete("AssetDatabaseExperimental.GetAvailableImporterTypes() has been deprecated. Use AssetDatabase.GetAvailableImporters() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.GetAvailableImporters(*)", true)]
         extern public static Type[] GetAvailableImporterTypes(string path);
 
         [FreeFunction("AcceleratorClientCanConnectTo")]
