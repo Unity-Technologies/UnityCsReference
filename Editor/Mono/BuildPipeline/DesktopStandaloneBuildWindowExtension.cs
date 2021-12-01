@@ -207,8 +207,16 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
     {
         var namedBuildTarget = EditorUserBuildSettingsUtils.CalculateSelectedNamedBuildTarget();
 
-        if (namedBuildTarget == NamedBuildTarget.Server && !m_HasServerPlayers)
-            return $"Dedicated Server support for {GetHostPlatformName()} is not installed";
+        if (namedBuildTarget == NamedBuildTarget.Server)
+        {
+            if(!m_HasServerPlayers)
+                return $"Dedicated Server support for {GetHostPlatformName()} is not installed";
+
+            if (PlayerSettings.GetScriptingBackend(namedBuildTarget) == ScriptingImplementation.IL2CPP && !m_IsRunningOnHostPlatform)
+                return string.Format("{0} IL2CPP player can only be built on {0}.", GetHostPlatformName());
+
+            return null;
+        }
 
         if (PlayerSettings.GetScriptingBackend(namedBuildTarget) != ScriptingImplementation.IL2CPP)
         {
@@ -220,8 +228,7 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
             if (!m_IsRunningOnHostPlatform)
                 return string.Format("{0} IL2CPP player can only be built on {0}.", GetHostPlatformName());
 
-            // Il2cpp is always shipped in the Server support installer for the host platform.
-            if (!m_HasIl2CppPlayers && namedBuildTarget != NamedBuildTarget.Server)
+            if (!m_HasIl2CppPlayers)
                 return "Currently selected scripting backend (IL2CPP) is not installed."; // Note: error should match UWP player error message for consistency.
         }
 

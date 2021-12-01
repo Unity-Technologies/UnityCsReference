@@ -8560,7 +8560,8 @@ namespace UnityEditor
         [ExcludeFromDocs]
         public static bool PropertyField(Rect position, SerializedProperty property)
         {
-            return PropertyField(position, property, false);
+            // Allow reorderable list to include children by default to keep similar behaviour to old arrays
+            return PropertyField(position, property, PropertyHandler.UseReorderabelListControl(property));
         }
 
         public static bool PropertyField(Rect position, SerializedProperty property, [DefaultValue("false")] bool includeChildren)
@@ -8571,7 +8572,8 @@ namespace UnityEditor
         [ExcludeFromDocs]
         public static bool PropertyField(Rect position, SerializedProperty property, GUIContent label)
         {
-            return PropertyField(position, property, label, false);
+            // Allow reorderable list to include children by default to keep similar behaviour to old arrays
+            return PropertyField(position, property, label, PropertyHandler.UseReorderabelListControl(property));
         }
 
         public static bool PropertyField(Rect position, SerializedProperty property, GUIContent label, [DefaultValue("false")] bool includeChildren)

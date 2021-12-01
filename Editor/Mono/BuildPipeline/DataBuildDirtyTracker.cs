@@ -64,7 +64,7 @@ namespace UnityEditor.Mono.BuildPipeline
             NPath path = file.path;
             if (!path.Exists())
             {
-                Console.WriteLine($"Rebuiding Data files because {path} is dirty (deleted)");
+                Console.WriteLine($"Rebuilding Data files because {path} is dirty (deleted)");
                 return true;
             }
 
@@ -82,7 +82,7 @@ namespace UnityEditor.Mono.BuildPipeline
 
             if (hash != file.contentHash)
             {
-                Console.WriteLine($"Rebuiding Data files because {path} is dirty (hash)");
+                Console.WriteLine($"Rebuilding Data files because {path} is dirty (hash)");
                 return true;
             }
 
@@ -93,19 +93,19 @@ namespace UnityEditor.Mono.BuildPipeline
         {
             if (Application.unityVersion != buildData.unityVersion)
             {
-                Console.WriteLine($"Rebuiding Data files because they were build with a different Unity version {Application.unityVersion} vs {buildData.unityVersion}");
+                Console.WriteLine($"Rebuilding Data files because they were built with a different Unity version {Application.unityVersion} vs {buildData.unityVersion}");
                 return true;
             }
 
             if (!scenes.SequenceEqual(buildData.scenes.Select(f => f.path)))
             {
-                Console.WriteLine("Rebuiding Data files because the scene list is dirty");
+                Console.WriteLine("Rebuilding Data files because the scene list is dirty");
                 return true;
             }
 
             if (buildOptions != buildData.buildOptions)
             {
-                Console.WriteLine("Rebuiding Data files because the build options have changed");
+                Console.WriteLine("Rebuilding Data files because the build options have changed");
                 return true;
             }
 
@@ -127,7 +127,7 @@ namespace UnityEditor.Mono.BuildPipeline
                     else
                         continue;
 
-                    Console.WriteLine($"Rebuiding Data files because {path} is dirty (Resource file added or removed)");
+                    Console.WriteLine($"Rebuilding Data files because {path} is dirty (Resource file added or removed)");
                     return true;
                 }
             }
@@ -136,11 +136,11 @@ namespace UnityEditor.Mono.BuildPipeline
                 .Where(m => ModuleMetadata.GetModuleIncludeSettingForModule(m) != ModuleIncludeSetting.ForceExclude);
             if (!enabledModules.SequenceEqual(buildData.enabledModules))
             {
-                Console.WriteLine($"Rebuiding Data files because enabled modules have changed");
+                Console.WriteLine($"Rebuilding Data files because enabled modules have changed");
                 return true;
             }
 
-            Console.WriteLine("Not rebuiding Data files -- no changes");
+            Console.WriteLine("Not rebuilding Data files -- no changes");
             return false;
         }
 

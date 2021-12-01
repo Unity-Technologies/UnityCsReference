@@ -2,8 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Text;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine
 {
@@ -25,6 +28,8 @@ namespace UnityEngine
             }
         }
 
+        public long dataSize => GetDataSize();
+
         public override string ToString() { return text; }
 
         public TextAsset() : this(CreateOptions.CreateNativeObject, null)
@@ -41,6 +46,19 @@ namespace UnityEngine
             {
                 Internal_CreateInstance(this, text);
             }
+        }
+
+        public unsafe NativeArray<T> GetData<T>() where T : struct
+        {
+            long size = GetDataSize();
+            long stride = UnsafeUtility.SizeOf<T>();
+            if (size % stride != 0)
+                throw new ArgumentException($"Type passed to {nameof(GetData)} can't capture the asset data. Data size is {size} which is not a multiple of type size {stride}");
+            var arrSize = size / stride;
+
+            var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>((void*)GetDataPtr(), (int)arrSize, Allocator.None);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, GetSafetyHandle(this));
+            return array;
         }
 
         internal string GetPreview(int maxChars)

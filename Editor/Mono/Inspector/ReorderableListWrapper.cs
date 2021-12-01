@@ -102,9 +102,9 @@ namespace UnityEditorInternal
             m_ReorderableList.ClearCache();
         }
 
-        public float GetHeight(bool includeChildren)
+        public float GetHeight()
         {
-            return m_HeaderHeight + (includeChildren && Property.isExpanded && m_ReorderableList != null ? Constants.kHeaderPadding + m_ReorderableList.GetHeight() : 0.0f);
+            return m_HeaderHeight + (Property.isExpanded && m_ReorderableList != null ? Constants.kHeaderPadding + m_ReorderableList.GetHeight() : 0.0f);
         }
 
         public void Draw(GUIContent label, Rect r, Rect visibleArea, string tooltip, bool includeChildren)
@@ -157,8 +157,6 @@ namespace UnityEditorInternal
 
                 m_ReorderableList.ClearCacheRecursive();
             }
-
-            if (!includeChildren) return;
 
             DrawChildren(r, headerRect, sizeRect, visibleArea, prevType);
         }

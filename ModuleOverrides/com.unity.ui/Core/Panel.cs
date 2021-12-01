@@ -891,12 +891,14 @@ namespace UnityEngine.UIElements
 
         public override VisualElement Pick(Vector2 point)
         {
+            // The VisualTreeTransformClipUpdater updates the ElementUnderPointer after each validate layout.
             ValidateLayout();
             var element = m_TopElementUnderPointers.GetTopElementUnderPointer(PointerId.mousePointerId,
                 out Vector2 mousePos, out bool isTemporary);
-            // The VisualTreeTransformClipUpdater updates the ElementUnderPointer after each validate layout.
-            // small enough to be smaller than 1 pixel
-            if (!isTemporary && (mousePos - point).sqrMagnitude < 0.25f)
+
+            // Assume same pixel means same element, given nothing has changed in the layout
+            Vector2Int PixelOf(Vector2 p) => Vector2Int.FloorToInt(p);
+            if (!isTemporary && PixelOf(mousePos) == PixelOf(point))
             {
                 return element;
             }

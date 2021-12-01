@@ -91,6 +91,7 @@ namespace UnityEditor
         private SavedRenderTargetState m_SavedState;
         private bool m_PixelPerfect;
         private Material m_InvisibleMaterial;
+        private bool m_previewOpened;
 
         private string m_Type;
 
@@ -144,18 +145,20 @@ namespace UnityEditor
                     }
                 }
             }
+
+            m_previewOpened = false;
         }
 
         ~PreviewRenderUtility()
         {
             if (m_Type != null)
             {
-                Debug.LogErrorFormat("{0} created a PreviewRenderUtility but didn't call its Cleanup() during OnDisable. This is leaking the Preview scene in the Editor and should be fixed.", m_Type);
+                Debug.LogErrorFormat("{0} created a PreviewRenderUtility but didn't call its Cleanup() during OnDisable (or its execution was interrupted). This is leaking the Preview scene in the Editor and should be fixed.", m_Type);
             }
             else
             {
                 Debug.LogError("A PreviewRenderUtility was not clean up properly before assembly reloading which lead to leaking this scene in the Editor. " +
-                    "This can be caused by not calling Cleanup() during the OnDisable of an Editor or an EditorWindow.");
+                    "This can be caused by not calling Cleanup() (or its execution being interrupted) during the OnDisable of an Editor or an EditorWindow.");
             }
         }
 
@@ -211,6 +214,12 @@ namespace UnityEditor
 
         public void Cleanup()
         {
+            if (m_previewOpened)
+            {
+                Debug.LogError("Missing EndPreview() before cleanup of PreviewRenderUtility");
+                EndPreview();
+            }
+
             if (m_RenderTexture)
             {
                 Object.DestroyImmediate(m_RenderTexture);
@@ -229,6 +238,14 @@ namespace UnityEditor
 
         public void BeginPreview(Rect r, GUIStyle previewBackground)
         {
+            if(m_previewOpened)
+            {
+                Debug.LogError("Previous PreviewRenderUtility.BeginPreview() was not closed with PreviewRenderUtility.EndPreview()");
+                return;
+            }
+
+            m_previewOpened = true;
+
             Texture defaultEnvTexture = ReflectionProbe.defaultTexture;
 
             if (Unsupported.SetOverrideLightingSettings(previewScene.scene))
@@ -355,6 +372,7 @@ namespace UnityEditor
 
             m_SavedState.Restore();
             FinishFrame();
+            m_previewOpened = false;
             return m_RenderTexture;
         }
 
