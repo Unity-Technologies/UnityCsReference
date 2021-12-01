@@ -68,7 +68,8 @@ namespace UnityEditor.UIElements
             base.SetValueWithoutNotify(newValue);
         }
 
-        private int m_Index = -1;
+        internal const int kPopupFieldDefaultIndex = -1;
+        private int m_Index = kPopupFieldDefaultIndex;
         /// <summary>
         /// The currently selected index in the popup menu.
         /// </summary>

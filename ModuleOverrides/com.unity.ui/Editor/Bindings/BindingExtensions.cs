@@ -1889,6 +1889,8 @@ namespace UnityEditor.UIElements.Bindings
         public static ObjectPool<SerializedDefaultEnumBinding> s_Pool =
             new ObjectPool<SerializedDefaultEnumBinding>(32);
 
+        private const int kDefaultValueIndex = -1;
+
         //we need to keep a copy of the last value since some fields will allocate when getting the value
         private int lastFieldValueIndex;
 
@@ -1986,9 +1988,13 @@ namespace UnityEditor.UIElements.Bindings
             }
 
             int propValueIndex = p.enumValueIndex;
-            if (lastFieldValueIndex != enumIndexToDisplayIndex[propValueIndex])
+            if (propValueIndex >= 0 && propValueIndex < enumIndexToDisplayIndex.Count)
             {
                 c.index = lastFieldValueIndex = enumIndexToDisplayIndex[propValueIndex];
+            }
+            else
+            {
+                c.index = lastFieldValueIndex = kDefaultValueIndex;
             }
         }
 
@@ -2006,7 +2012,8 @@ namespace UnityEditor.UIElements.Bindings
 
         protected override bool SyncFieldValueToProperty()
         {
-            if (boundProperty.enumValueIndex != displayIndexToEnumIndex[lastFieldValueIndex])
+            if (lastFieldValueIndex >= 0 && lastFieldValueIndex < displayIndexToEnumIndex.Count
+                && boundProperty.enumValueIndex != displayIndexToEnumIndex[lastFieldValueIndex])
             {
                 boundProperty.enumValueIndex = displayIndexToEnumIndex[lastFieldValueIndex];
                 boundProperty.m_SerializedObject.ApplyModifiedProperties();
@@ -2044,7 +2051,7 @@ namespace UnityEditor.UIElements.Bindings
             bindingContext = null;
             boundProperty = null;
             field = null;
-            lastFieldValueIndex = -1;
+            lastFieldValueIndex = kDefaultValueIndex;
             isReleased = true;
 
             ResetCachedValues();
